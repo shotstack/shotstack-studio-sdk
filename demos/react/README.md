@@ -16,13 +16,13 @@ Clone the repository and navigate to the React example directory.
 
 ```bash
 git clone https://github.com/yourusername/shotstack-studio-sdk-demos.git
-cd shotstack-studio-sdk-demos/react-app
+cd shotstack-studio-sdk-demos/demos/react
 ```
 
 Install the necessary dependencies:
 
 ```bash
-npm install
+yarn install
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ npm install
 Start the development server:
 
 ```bash
-npm start
+yarn start
 ```
 
 Open `http://localhost:3000` in your browser to see the app in action.

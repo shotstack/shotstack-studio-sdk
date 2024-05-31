@@ -1,0 +1,108 @@
+function(instance, context) {
+
+  const script = document.createElement('script');
+  script.src = 'https://js.shotstack.io/studio/0.3.0/shotstack.min.js';
+  script.onload = () => {
+      const template = {
+  "timeline": {
+    "background": "#000000",
+    "tracks": [
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "audio",
+              "src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/wzr6y0wtti/zzz01hz4-9qbd4-334s4-3dkq4-jj2wpn/source.mp3",
+              "volume": 1,
+              "effect": "fadeOut"
+            },
+            "start": 0,
+            "length": 14.95
+          }
+        ]
+      },
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "html",
+              "width": 987,
+              "height": 670,
+              "html": "<p data-html-type=\"text\">VIDEO EDITING SDK</p>",
+              "css": "p { color: #000a33; font-size: 150px; font-family: 'Montserrat ExtraBold'; text-align: left; }"
+            },
+            "start": 0,
+            "fit": "none",
+            "scale": 1,
+            "offset": {
+              "x": -0.182,
+              "y": 0
+            },
+            "position": "center",
+            "transform": {
+              "rotate": {
+                "angle": 0
+              }
+            },
+            "transition": {
+              "in": "slideRight"
+            },
+            "length": 14.95
+          }
+        ]
+      },
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "image",
+              "src": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/logos/shotstack/small/logo.png"
+            },
+            "start": 0,
+            "offset": {
+              "x": 0.373,
+              "y": 0.421
+            },
+            "opacity": 0.75,
+            "transition": {},
+            "position": "center",
+            "scale": 0.1,
+            "length": 14.95
+          }
+        ]
+      },
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "video",
+              "src": "https://shotstack-assets.s3.amazonaws.com/footage/mountains.mp4",
+              "volume": 1
+            },
+            "start": 0,
+            "length": 14.95,
+            "offset": {
+              "x": 0,
+              "y": 0
+            },
+            "position": "center"
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "format": "mp4",
+    "fps": 25,
+    "size": {
+      "width": 1920,
+      "height": 1080
+    },
+    "destinations": []
+  }
+};
+      window.shotstack.create('studio', template, { interactive: true, timeline: true, style: { primaryColor: '#2ecc71', secondaryColor: '#fd79a8' })
+                                                  };
+  document.head.appendChild(script);
+
+}

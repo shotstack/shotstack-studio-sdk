@@ -40,9 +40,9 @@ Example demonstrating how to use the SDK with vanilla JS.
 
 Example demonstrating how to use the SDK with a React application.
 
-### Vue
+### [Vue](https://github.com/shotstack/shotstack-studio-sdk/tree/master/demos/vue)
 
-Example demonstrating how to use the SDK with a Vue application (coming soon).
+Example demonstrating how to use the SDK with a Vue application.
 
 ### Angular
 
