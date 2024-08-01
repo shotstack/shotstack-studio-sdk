@@ -1,0 +1,76 @@
+{
+  "timeline": {
+    "tracks": [
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "text",
+              "text": "Welcome to Shotstack",
+              "font": {
+                "family": "Clear Sans",
+                "color": "#ffffff",
+                "size": 46
+              },
+              "alignment": {
+                "horizontal": "left"
+              },
+              "width": 566,
+              "height": 70
+            },
+            "start": 4,
+            "length": "end",
+            "transition": {
+              "in": "fade",
+              "out": "fade"
+            },
+            "offset": {
+              "x": -0.15,
+              "y": 0
+            },
+            "effect": "zoomIn"
+          }
+        ]
+      },
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "video",
+              "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/footage/earth.mp4",
+              "trim": 5,
+              "volume": 1
+            },
+            "start": 0,
+            "length": "auto",
+            "transition": {
+              "in": "fade",
+              "out": "fade"
+            }
+          }
+        ]
+      },
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "audio",
+              "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/music/freepd/motions.mp3",
+              "effect": "fadeOut",
+              "volume": 1
+            },
+            "start": 0,
+            "length": "end"
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "format": "mp4",
+    "size": {
+      "width": 1280,
+      "height": 720
+    }
+  }
+}

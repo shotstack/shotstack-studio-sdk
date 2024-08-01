@@ -1,4 +1,4 @@
-![Screenshot of Shotstack Studio Frontend Video Editing SDK](screenshot.png)
+![Screenshot of Shotstack Studio Frontend Video Editing SDK](screenshot.gif)
 
 # Shotstack Studio SDK Demos
 [![View on CodePen](https://img.shields.io/badge/View_on-CodePen-orange?logo=codepen)](https://codepen.io/Derk-Zomer/pen/KKLaZOK) [![Edit on CodeSandbox](https://img.shields.io/badge/Edit_on-CodeSandbox-blue?logo=codesandbox)](https://codesandbox.io/p/sandbox/studio-sdk-46xjpj)
@@ -39,14 +39,6 @@ Example demonstrating how to use the SDK with vanilla JS.
 ### [React](https://github.com/shotstack/shotstack-studio-sdk/tree/master/demos/react)
 
 Example demonstrating how to use the SDK with a React application.
-
-### [Vue](https://github.com/shotstack/shotstack-studio-sdk/tree/master/demos/vue)
-
-Example demonstrating how to use the SDK with a Vue application.
-
-### Angular
-
-Example demonstrating how to use the SDK with an Angular application (coming soon).
 
 ## Documentation
 
