@@ -7,7 +7,7 @@ export const ShotstackProvider = ({ children }) => {
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://js.shotstack.io/studio/0.4.0/shotstack.min.js';
+    script.src = 'https://js.shotstack.io/studio/0.5.4/shotstack.min.js';
     script.async = true;
     script.onload = () => {
       if (window.shotstack) {

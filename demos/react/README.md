@@ -1,4 +1,5 @@
 # React Example
+
 [![Edit on CodeSandbox](https://img.shields.io/badge/Edit_on-CodeSandbox-blue?logo=codesandbox)](https://codesandbox.io/p/sandbox/studio-sdk-46xjpj)
 
 This example demonstrates how to use the Shotstack Studio SDK with a React application.

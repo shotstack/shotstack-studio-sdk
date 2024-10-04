@@ -574,13 +574,10 @@ window.shotstack.create('studio', template, {
   owner: 'oknugu1pfd',
   interactive: true,
   timeline: true,
-  sidebar: true,
+  sidepanel: true,
   controls: true,
   style: { 
-      colors: {
-          primaryColor: '#2ecc71',
-          secondaryColor: '#fd79a8'
-      },
+      stylesheet: 'https://shotstack-studio-sdk.s3.amazonaws.com/styles/sdk-custom.css',
       logo: {
           url: 'https://www.reshot.com/preview-assets/icons/XDCHJTKVNP/unicorn-XDCHJTKVNP.svg'
       }
@@ -588,5 +585,5 @@ window.shotstack.create('studio', template, {
 });
 
 window.shotstack.on('update', (data) => {
-  console.log('updated');
+  console.log('updated', data);
 });

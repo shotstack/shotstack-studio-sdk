@@ -12,10 +12,7 @@ function App() {
   const shotstack = useShotstack();
 
   const style = {
-    colors: {
-      primaryColor: '#2ecc71',
-      secondaryColor: '#fd79a8',
-    },
+    stylesheet: 'https://shotstack-studio-sdk.s3.amazonaws.com/styles/sdk-custom.css',
     logo: {
       url: 'https://shotstack-assets.s3.amazonaws.com/icons/unicorn.svg',
     },
@@ -24,6 +21,11 @@ function App() {
   const handleUpdateEvent = event => {
     // Your event handling logic here
     console.log('Update event received:', event);
+  };
+
+  const handleMetadataEvent = event => {
+    // Your event handling logic here
+    console.log('Metadata event received:', event);
   };
 
   const handleLoadResources = () => {
@@ -48,11 +50,13 @@ function App() {
                 owner="oknugu1pfd"
                 interactive={true}
                 timeline={true}
-                sidebar={true}
+                sidepanel={true}
                 controls={true}
+                settings={true}
                 style={style}
                 template={template}
                 onUpdateEvent={handleUpdateEvent}
+                onMetadataEvent={handleMetadataEvent}
               />
             ) : (
               <p>Loading Studio...</p>

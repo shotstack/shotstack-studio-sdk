@@ -1,7 +1,18 @@
 import { useEffect } from 'react';
 import { useShotstack } from './ShotstackContext';
 
-const StudioEditor = ({ owner, interactive, timeline, sidebar, controls, style, template, onUpdateEvent }) => {
+const StudioEditor = ({
+  owner,
+  interactive,
+  timeline,
+  sidepanel,
+  controls,
+  settings,
+  style,
+  template,
+  onUpdateEvent,
+  onMetadataEvent,
+}) => {
   const shotstack = useShotstack();
 
   useEffect(() => {
@@ -12,7 +23,8 @@ const StudioEditor = ({ owner, interactive, timeline, sidebar, controls, style, 
       controls,
       interactive,
       timeline,
-      sidebar,
+      settings,
+      sidepanel,
       style,
     };
     if (shotstack.create) {
@@ -23,6 +35,7 @@ const StudioEditor = ({ owner, interactive, timeline, sidebar, controls, style, 
 
     if (shotstack.on) {
       shotstack.on('update', onUpdateEvent);
+      shotstack.on('metadata', onMetadataEvent);
     } else {
       console.error('Shotstack on method is not available');
     }
@@ -34,7 +47,7 @@ const StudioEditor = ({ owner, interactive, timeline, sidebar, controls, style, 
         console.error('Shotstack off method is not available');
       }
     };
-  }, [shotstack, interactive, timeline, sidebar, style, template, onUpdateEvent]);
+  }, [shotstack, interactive, timeline, sidepanel, settings, style, template, onUpdateEvent]);
 
   return <div id="studio-sdk-editor"></div>;
 };
