@@ -1,0 +1,10 @@
+@import "reset.css";
+
+html,
+body {
+	overscroll-behavior: none;
+}
+
+.c-shotstack-studio {
+	width: 80%;
+}

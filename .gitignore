@@ -1,0 +1,19 @@
+node_modules
+
+# Build
+dist
+dist-ssr
+*.d.ts
+
+# IDE
+.vscode
+.idea
+
+# Miscellaneous
+.DS_Store
+**/.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

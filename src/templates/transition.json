@@ -1,0 +1,121 @@
+{
+	"timeline": {
+		"background": "#000000",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/nvknodbfq0/zzy9mn1z-3qip-rw0t-5x0m-2zfadv0om5mo/source.png"
+						},
+						"start": 0,
+						"length": 2,
+						"position": "center",
+						"scale": 0.1,
+						"transition": {
+							"in": "slideLeft",
+							"out": "slideLeft"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/nvknodbfq0/zzy9mn1z-3qip-rw0t-5x0m-2zfadv0om5mo/source.png"
+						},
+						"start": 2,
+						"length": 2,
+						"position": "center",
+						"scale": 0.1,
+						"transition": {
+							"in": "slideRight",
+							"out": "slideRight"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/nvknodbfq0/zzy9mn1z-3qip-rw0t-5x0m-2zfadv0om5mo/source.png"
+						},
+						"start": 4,
+						"length": 2,
+						"position": "center",
+						"scale": 0.1,
+						"transition": {
+							"in": "slideUp",
+							"out": "slideUp"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/nvknodbfq0/zzy9mn1z-3qip-rw0t-5x0m-2zfadv0om5mo/source.png"
+						},
+						"start": 6,
+						"length": 2,
+						"position": "center",
+						"scale": 0.1,
+						"transition": {
+							"in": "slideDown",
+							"out": "slideDown"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/nvknodbfq0/zzy9mn1z-3qip-rw0t-5x0m-2zfadv0om5mo/source.png"
+						},
+						"start": 8,
+						"length": 2,
+						"position": "center",
+						"scale": 0.1,
+						"transition": {
+							"in": "fade",
+							"out": "fade"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/nvknodbfq0/zzy9mn1z-3qip-rw0t-5x0m-2zfadv0om5mo/source.png"
+						},
+						"start": 10,
+						"length": 2,
+						"position": "center",
+						"scale": 0.1,
+						"transition": {
+							"in": "zoom",
+							"out": "zoom"
+						}
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"size": {
+			"width": 1280,
+			"height": 720
+		}
+	}
+}

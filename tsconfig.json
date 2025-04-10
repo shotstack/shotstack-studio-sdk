@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"useDefineForClassFields": true,
+		"skipLibCheck": true,
+		
+		"moduleResolution": "bundler",
+		"isolatedModules": true,
+		"moduleDetection": "force",
+		"noEmit": false,
+		"stripInternal": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"outDir": "./dist",
+		
+		"strict": true,
+		"noImplicitOverride": true,
+		"noUncheckedSideEffectImports": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"forceConsistentCasingInFileNames": true,
+		"esModuleInterop": true
+	},
+	"include": ["src"]
+}

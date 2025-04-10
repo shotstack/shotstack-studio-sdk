@@ -1,0 +1,56 @@
+{
+	"name": "@shotstack/shotstack-studio",
+	"author": "Shotstack <support@shotstack.io>",
+	"contributors": [
+		"cpuccino",
+		"dazzatron"
+	],
+	"version": "1.0.0",
+	"description": "A video editing library for creating and editing videos with Shotstack",
+	"type": "module",
+	"main": "dist/shotstack-studio.umd.js",
+	"module": "dist/shotstack-studio.es.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist/shotstack-studio.umd.js",
+		"dist/shotstack-studio.es.js",
+		"dist/**/*.d.ts"
+	],
+	"keywords": [
+		"shotstack",
+		"video",
+		"editing",
+		"ffmpeg"
+	],
+	"license": "PolyForm Shield License 1.0.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/shotstack/shotstack-studio-sdk"
+	},
+	"scripts": {
+		"build": "vite build && tsc --emitDeclarationOnly",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@types/howler": "^2.2.12",
+		"@types/node": "^22.9.0",
+		"@types/opentype.js": "^1.3.8",
+		"@typescript-eslint/eslint-plugin": "^7.18.0",
+		"@typescript-eslint/parser": "^7.18.0",
+		"eslint": "^8.57.1",
+		"eslint-config-airbnb-base": "^15.0.0",
+		"eslint-config-airbnb-typescript": "^18.0.0",
+		"eslint-config-prettier": "^9.1.0",
+		"eslint-plugin-import": "^2.31.0",
+		"typescript": "^5.6.2",
+		"vite": "^5.4.10"
+	},
+	"dependencies": {
+		"@ffmpeg/ffmpeg": "^0.12.15",
+		"howler": "^2.2.4",
+		"opentype.js": "^1.3.4",
+		"pixi-filters": "^6.0.5",
+		"pixi.js": "^8.5.2",
+		"zod": "^3.23.8"
+	}
+}
