@@ -1,6 +1,3 @@
-import { EditSchema } from "./core/schemas/edit";
-import helloWorldTemplate from "./templates/hello.json";
-
 import { Edit, Canvas, Controls } from "./index";
 
 /**
@@ -8,40 +5,39 @@ import { Edit, Canvas, Controls } from "./index";
  * Run with `make dev` to see it in action
  */
 async function main() {
-  try {
-    // 1. Initialize an edit with dimensions and background color
-    const size = { width: 1280, height: 720 };
-    const edit = new Edit(size, "#000000");
-    await edit.load();
-    console.log("Edit loaded successfully");
+	try {
+		// 1. Retrieve an edit from a template
+		const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
+		const response = await fetch(templateUrl);
+		const template = await response.json();
 
-    // 2. Create a canvas to display the edit
-    const canvas = new Canvas(edit.size, edit);
-    await canvas.load(); // Renders to [data-shotstack-studio] element
-    console.log("Canvas loaded successfully");
+		// 2. Initialize the edit with dimensions and background color
+		const edit = new Edit(template.output.size, template.timeline.background);
+		await edit.load();
 
-    // 3. Load an edit from a template
-    const template = EditSchema.parse(helloWorldTemplate);
-    await edit.loadEdit(template);
-    console.log("Template loaded successfully");
+		// 3. Create a canvas to display the edit
+		const canvas = new Canvas(template.output.size, edit);
+		await canvas.load(); // Renders to [data-shotstack-studio] element
 
-    // 4. Add keyboard controls
-    const controls = new Controls(edit);
-    await controls.load();
-    console.log("Controls loaded successfully");
+		// 4. Load the template
+		await edit.loadEdit(template);
 
-    // Additional helpful information for the demo
-    console.log("Demo loaded successfully! Try the following keyboard controls:");
-    console.log("- Space: Play/Pause");
-    console.log("- J: Stop");
-    console.log("- K: Pause");
-    console.log("- L: Play");
-    console.log("- Left/Right Arrow: Seek");
-    console.log("- Shift+Left/Right: Seek faster");
-    console.log("- Comma/Period: Step frame by frame");
-  } catch (error) {
-    console.error("Error in Shotstack Studio demo:", error);
-  }
+		// 5. Add keyboard controls
+		const controls = new Controls(edit);
+		await controls.load();
+
+		// Additional helpful information for the demo
+		console.log("Demo loaded successfully! Try the following keyboard controls:");
+		console.log("- Space: Play/Pause");
+		console.log("- J: Stop");
+		console.log("- K: Pause");
+		console.log("- L: Play");
+		console.log("- Left/Right Arrow: Seek");
+		console.log("- Shift+Left/Right: Seek faster");
+		console.log("- Comma/Period: Step frame by frame");
+	} catch (error) {
+		console.error("Error in Shotstack Studio demo:", error);
+	}
 }
 
-main(); 
+main();

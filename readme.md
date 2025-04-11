@@ -6,6 +6,15 @@
 
 A JavaScript library for creating and editing videos in the browser.
 
+## Interactive Examples
+
+Try Shotstack Studio in your preferred framework:
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-StackBlitz-blue?style=for-the-badge&logo=typescript)](https://stackblitz.com/edit/studio-sdk-typescript)
+[![React](https://img.shields.io/badge/React-StackBlitz-blue?style=for-the-badge&logo=react)](https://stackblitz.com/edit/shotstack-studio-react)
+[![Vue](https://img.shields.io/badge/Vue-StackBlitz-blue?style=for-the-badge&logo=vue.js)](https://stackblitz.com/edit/shotstack-studio-vue)
+[![Angular](https://img.shields.io/badge/Angular-StackBlitz-blue?style=for-the-badge&logo=angular)](https://stackblitz.com/edit/shotstack-studio-angular)
+
 ## Installation
 
 ```bash
@@ -20,10 +29,9 @@ yarn add @shotstack/shotstack-studio
 
 ```typescript
 import { Edit, Canvas, Controls } from "@shotstack/shotstack-studio";
-import myTemplateJson from "hello.json"
 
 // 1. Retrieve an edit from a template
-const templateUrl = 'https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json'
+const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
 const response = await fetch(templateUrl);
 const template = await response.json();
 
@@ -36,7 +44,7 @@ const canvas = new Canvas(template.output.size, edit);
 await canvas.load(); // Renders to [data-shotstack-studio] element
 
 // 4. Load the template
-await edit.loadEdit(myTemplateJson);
+await edit.loadEdit(template);
 
 // 5. Add keyboard controls
 const controls = new Controls(edit);
@@ -52,7 +60,7 @@ Your HTML should include a container with the `data-shotstack-studio` attribute:
 ## Features
 
 - Create video compositions with multiple tracks and clips
-- Use in conjunction with the Shotstack Edit API to render video
+- Use in conjunction with the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) to render video
 - Export to video using browser-based FFmpeg
 
 ## Main Components
