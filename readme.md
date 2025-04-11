@@ -54,7 +54,7 @@ await controls.load();
 Your HTML should include a container with the `data-shotstack-studio` attribute:
 
 ```html
-<div data-shotstack-studio class="canvas-container"></div>
+<div data-shotstack-studio></div>
 ```
 
 ## Features
