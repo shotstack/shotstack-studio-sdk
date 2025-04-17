@@ -7,6 +7,12 @@ import type { Player } from "../entities/player";
 import type { AudioAsset } from "../schemas/audio-asset";
 import { Canvas } from "../shotstack-canvas";
 
+/**
+ * Note: @ffmpeg/ffmpeg is a peer dependency and must be installed separately
+ * by applications that want to use the browser-based video export functionality.
+ * npm install @ffmpeg/ffmpeg
+ */
+
 type AudioFileInfo = {
 	filename: string;
 	start: number;

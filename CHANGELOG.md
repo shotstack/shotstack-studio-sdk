@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-04-17
+
+### Changed
+
+- Moved FFmpeg to peer dependencies to reduce compatibility issues with frameworks such as Next.js
+- Updated documentation to clarify FFmpeg installation requirements
+
 ## [1.0.0] - 2025-04-10
 
 ### Added

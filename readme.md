@@ -25,6 +25,16 @@ npm install @shotstack/shotstack-studio
 yarn add @shotstack/shotstack-studio
 ```
 
+### FFmpeg (peer dependency)
+
+Install FFmpeg to use the browser based `VideoExporter` class. This is kept separate to prevent WASM / Web‑Worker clashes in frameworks like Next.js.
+
+```bash
+npm i @ffmpeg/ffmpeg
+```
+
+You can skip this if you’re using the Shotstack Edit API.
+
 ## Quick Start
 
 ```typescript

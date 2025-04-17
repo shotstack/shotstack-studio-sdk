@@ -1,7 +1,12 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
 
-const external = ["pixi.js", "howler", "opentype.js"];
+const external = [
+	"pixi.js", 
+	"howler", 
+	"opentype.js",
+	"@ffmpeg/ffmpeg"
+];
 
 const globals = {
 	"pixi.js": "PIXI",
@@ -23,9 +28,6 @@ export default defineConfig({
 			output: {
 				globals
 			}
-		}
-	},
-	optimizeDeps: {
-		exclude: ["@ffmpeg/ffmpeg"]
+		},
 	}
 });
