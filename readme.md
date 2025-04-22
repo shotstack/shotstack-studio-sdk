@@ -115,6 +115,23 @@ const editJson = edit.getEdit();
 const duration = edit.totalDuration; // in milliseconds
 ```
 
+#### Events
+
+The Edit class provides an event system to listen for specific actions:
+
+```typescript
+// Listen for clip selection events
+edit.events.on("clip:selected", data => {
+	console.log("Clip selected:", data.clip);
+	console.log("Track index:", data.trackIndex);
+	console.log("Clip index:", data.clipIndex);
+});
+```
+
+Available events:
+
+- `clip:selected` - Emitted when a clip is selected, providing data about the clip, its track index, and clip index
+
 ### Canvas
 
 The Canvas class provides the visual rendering of the edit.
@@ -251,6 +268,23 @@ Creates a new Edit instance with the specified dimensions and background color.
 - `getTrack(trackIdx: number)` - Get a track by index
 - `deleteTrack(trackIdx: number)` - Delete a track
 - `getEdit()` - Get the full edit configuration as a JSON object
+
+#### Events
+
+The Edit class provides an event system to listen for specific actions:
+
+```typescript
+// Listen for clip selection events
+edit.events.on("clip:selected", data => {
+	console.log("Clip selected:", data.clip);
+	console.log("Track index:", data.trackIndex);
+	console.log("Clip index:", data.clipIndex);
+});
+```
+
+Available events:
+
+- `clip:selected` - Emitted when a clip is selected, providing data about the clip, its track index, and clip index
 
 ### Canvas
 
