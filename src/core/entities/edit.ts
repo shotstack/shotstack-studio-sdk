@@ -123,6 +123,8 @@ export class Edit extends Entity {
 	}
 
 	public async loadEdit(edit: EditType): Promise<void> {
+		this.clearClips();
+
 		this.edit = EditSchema.parse(edit);
 
 		this.backgroundColor = this.edit.timeline.background || "#000000";
@@ -359,14 +361,13 @@ export class Edit extends Entity {
 	}
 	protected clearClips(): void {
 		for (const clip of this.clips) {
-			clip.shouldDispose = true;
-		}
-
-		for (const clip of this.clipsToDispose) {
 			this.disposeClip(clip);
 		}
 
+		this.clips = [];
+
 		this.clipsToDispose = [];
+
 		this.updateTotalDuration();
 	}
 	private updateTotalDuration(): void {
