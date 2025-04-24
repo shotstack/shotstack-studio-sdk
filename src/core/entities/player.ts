@@ -560,7 +560,7 @@ export abstract class Player extends Entity {
 	}
 
 	private onPointerUp(): void {
-		if (this.isDragging) {
+		if (this.isDragging || this.scaleDirection !== null || this.isRotating) {
 			this.edit.setSelectedClip(this);
 		}
 
