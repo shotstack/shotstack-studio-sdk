@@ -43,6 +43,8 @@ export class Edit extends Entity {
 	public isPlaying: boolean;
 	/** @internal */
 	private selectedClip: Player | null;
+	/** @internal */
+	private updatedClip: Player | null;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -62,6 +64,7 @@ export class Edit extends Entity {
 		this.totalDuration = 0;
 		this.isPlaying = false;
 		this.selectedClip = null;
+		this.updatedClip = null;
 		this.backgroundColor = backgroundColor;
 	}
 
@@ -297,9 +300,7 @@ export class Edit extends Entity {
 		this.selectedClip = clip;
 
 		const trackIndex = clip.layer - 1;
-
-		const clipsByTrack = this.clips.filter((c: Player) => c.layer === clip.layer);
-
+		const clipsByTrack = this.clips.filter((clipItem: Player) => clipItem.layer === clip.layer);
 		const clipIndex = clipsByTrack.indexOf(clip);
 
 		const eventData = {
@@ -309,6 +310,29 @@ export class Edit extends Entity {
 		};
 
 		this.events.emit("clip:selected", eventData);
+	}
+	/** @internal */
+	public setUpdatedClip(clip: Player, initialClipConfig: any = null): void {
+		this.updatedClip = clip;
+
+		const trackIndex = clip.layer - 1;
+		const clipsByTrack = this.clips.filter((clipItem: Player) => clipItem.layer === clip.layer);
+		const clipIndex = clipsByTrack.indexOf(clip);
+
+		const eventData = {
+			previous: {
+				clip: initialClipConfig,
+				trackIndex,
+				clipIndex
+			},
+			current: {
+				clip: clip.clipConfiguration,
+				trackIndex,
+				clipIndex
+			}
+		};
+
+		this.events.emit("clip:updated", eventData);
 	}
 
 	private queueDisposeClip(clipToDispose: Player): void {

@@ -66,6 +66,8 @@ export abstract class Player extends Entity {
 	private rotationStart: number | null;
 	private rotationOffset: Vector;
 
+	private initialClipConfiguration: Clip | null;
+
 	constructor(edit: Edit, clipConfiguration: Clip) {
 		super();
 
@@ -95,6 +97,8 @@ export abstract class Player extends Entity {
 		this.isRotating = false;
 		this.rotationStart = null;
 		this.rotationOffset = { x: 0, y: 0 };
+
+		this.initialClipConfiguration = null;
 	}
 
 	protected configureKeyframes() {
@@ -374,6 +378,10 @@ export abstract class Player extends Entity {
 			return;
 		}
 
+		this.edit.setSelectedClip(this);
+
+		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
+
 		if (this.clipHasKeyframes()) {
 			return;
 		}
@@ -560,8 +568,8 @@ export abstract class Player extends Entity {
 	}
 
 	private onPointerUp(): void {
-		if (this.isDragging) {
-			this.edit.setSelectedClip(this);
+		if ((this.isDragging || this.scaleDirection !== null || this.isRotating) && this.hasStateChanged()) {
+			this.edit.setUpdatedClip(this, this.initialClipConfiguration);
 		}
 
 		this.isDragging = false;
@@ -574,6 +582,8 @@ export abstract class Player extends Entity {
 		this.isRotating = false;
 		this.rotationStart = null;
 		this.rotationOffset = { x: 0, y: 0 };
+
+		this.initialClipConfiguration = null;
 	}
 
 	private onPointerOver(): void {
@@ -597,5 +607,26 @@ export abstract class Player extends Entity {
 			this.clipConfiguration.offset?.y,
 			this.clipConfiguration.transform?.rotate?.angle
 		].some(property => property && typeof property !== "number");
+	}
+
+	private hasStateChanged(): boolean {
+		if (!this.initialClipConfiguration) return false;
+
+		const currentOffsetX = this.clipConfiguration.offset?.x as number;
+		const currentOffsetY = this.clipConfiguration.offset?.y as number;
+		const currentScale = this.clipConfiguration.scale as number;
+		const currentRotation = Number(this.clipConfiguration.transform?.rotate?.angle ?? 0);
+
+		const initialOffsetX = this.initialClipConfiguration.offset?.x as number;
+		const initialOffsetY = this.initialClipConfiguration.offset?.y as number;
+		const initialScale = this.initialClipConfiguration.scale as number;
+		const initialRotation = Number(this.initialClipConfiguration.transform?.rotate?.angle ?? 0);
+
+		return (
+			(initialOffsetX !== undefined && currentOffsetX !== initialOffsetX) ||
+			(initialOffsetY !== undefined && currentOffsetY !== initialOffsetY) ||
+			(initialScale !== undefined && currentScale !== initialScale) ||
+			currentRotation !== initialRotation
+		);
 	}
 }
