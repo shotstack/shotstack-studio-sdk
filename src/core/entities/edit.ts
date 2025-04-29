@@ -148,6 +148,8 @@ export class Edit extends Entity {
 				await this.addPlayer(trackIdx, clipPlayer);
 			}
 		}
+
+		this.updateTotalDuration();
 	}
 	public getEdit(): EditType {
 		const tracks: TrackType[] = [];
