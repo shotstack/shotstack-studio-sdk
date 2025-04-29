@@ -126,11 +126,18 @@ edit.events.on("clip:selected", data => {
 	console.log("Track index:", data.trackIndex);
 	console.log("Clip index:", data.clipIndex);
 });
+
+// Listen for clip update events
+edit.events.on("clip:updated", data => {
+	console.log("Previous state:", data.previous); // { clip, trackIndex, clipIndex }
+	console.log("Current state:", data.current); // { clip, trackIndex, clipIndex }
+});
 ```
 
 Available events:
 
-- `clip:selected` - Emitted when a clip is selected, providing data about the clip, its track index, and clip index
+- `clip:selected` - Emitted when a clip is initially selected, providing data about the clip, its track index, and clip index.
+- `clip:updated` - Emitted when a clip's properties are modified, providing both previous and current states.
 
 ### Canvas
 
@@ -271,20 +278,8 @@ Creates a new Edit instance with the specified dimensions and background color.
 
 #### Events
 
-The Edit class provides an event system to listen for specific actions:
-
-```typescript
-// Listen for clip selection events
-edit.events.on("clip:selected", data => {
-	console.log("Clip selected:", data.clip);
-	console.log("Track index:", data.trackIndex);
-	console.log("Clip index:", data.clipIndex);
-});
-```
-
-Available events:
-
-- `clip:selected` - Emitted when a clip is selected, providing data about the clip, its track index, and clip index
+- `clip:selected` - Triggered when a clip is selected
+- `clip:updated` - Triggered when a clip is modified
 
 ### Canvas
 

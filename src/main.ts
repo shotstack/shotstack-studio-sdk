@@ -26,6 +26,14 @@ async function main() {
 		const controls = new Controls(edit);
 		await controls.load();
 
+		edit.events.on("clip:selected", data => {
+			console.log("Clip selected:", data);
+		});
+
+		edit.events.on("clip:updated", data => {
+			console.log("Clip updated:", data);
+		});
+
 		// Additional helpful information for the demo
 		console.log("Demo loaded successfully! Try the following keyboard controls:");
 		console.log("- Space: Play/Pause");
