@@ -198,7 +198,6 @@ export class Canvas {
 		this.edit.pause();
 	}
 
-	/** @internal */
 	public dispose(): void {
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
 		if (root && root.contains(this.application.canvas)) {

@@ -152,6 +152,7 @@ await canvas.load();
 canvas.centerEdit();
 canvas.zoomToFit();
 canvas.setZoom(1.5); // 1.0 is 100%, 0.5 is 50%, etc.
+canvas.dispose(); // Clean up resources when done
 ```
 
 ### Controls
@@ -304,6 +305,7 @@ Creates a new canvas with specified dimensions for rendering the edit.
 - `centerEdit()` - Center the edit in the canvas
 - `zoomToFit()` - Zoom to fit the entire edit
 - `setZoom(zoom: number)` - Set zoom level
+- `dispose()` - Clean up resources and remove the canvas from the DOM
 
 ### Controls
 
