@@ -2,6 +2,7 @@ import * as pixi from "pixi.js";
 
 import { Edit } from "./entities/edit";
 import { Inspector } from "./entities/inspector";
+import { Timeline } from "./entities/timeline";
 import { type Size } from "./layouts/geometry";
 import { AudioLoadParser } from "./loaders/audio-load-parser";
 import { FontLoadParser } from "./loaders/font-load-parser";
@@ -26,6 +27,8 @@ export class Canvas {
 	private maxZoom = 4;
 	private currentZoom = 0.8;
 
+	private timeline?: Timeline;
+
 	constructor(size: Size, edit: Edit) {
 		this.size = size;
 		this.application = new pixi.Application();
@@ -49,6 +52,7 @@ export class Canvas {
 		this.background.fill();
 
 		await this.configureApplication();
+		await this.inspector.load();
 		this.configureStage();
 
 		this.setupTouchHandling(root);
@@ -163,6 +167,10 @@ export class Canvas {
 		this.edit.update(ticker.deltaTime, ticker.deltaMS);
 		this.edit.draw();
 
+		if (this.timeline) {
+			this.timeline.update(ticker.deltaTime, ticker.deltaMS);
+		}
+
 		this.inspector.fps = Math.ceil(ticker.FPS);
 		this.inspector.playbackTime = this.edit.playbackTime;
 		this.inspector.playbackDuration = this.edit.totalDuration;
@@ -213,5 +221,12 @@ export class Canvas {
 		this.inspector.dispose();
 
 		this.application.destroy(true, { children: true, texture: true });
+	}
+
+	/**
+	 * Register a timeline component to be updated with the animation cycle
+	 */
+	public registerTimeline(timeline: Timeline): void {
+		this.timeline = timeline;
 	}
 }
