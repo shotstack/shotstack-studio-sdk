@@ -8,6 +8,7 @@ body:
     attributes:
       value: |
         ## User Story
+
   - type: input
     id: user_story
     attributes:
@@ -32,6 +33,7 @@ body:
     attributes:
       value: |
         ## Acceptance Criteria
+
   - type: textarea
     id: acceptance_criteria
     attributes:
@@ -46,11 +48,12 @@ body:
     attributes:
       value: |
         ## Implementation Notes (Optional)
+
   - type: textarea
     id: implementation
     attributes:
       label: Implementation notes
-      description: Outline any proposed approach: API endpoints, database changes, UI components.
+      description: "Outline any proposed approach: API endpoints, database changes, UI components."
       placeholder: Describe your high-level technical approach to implement this feature.
       required: false
 
@@ -58,6 +61,7 @@ body:
     attributes:
       value: |
         ## Additional Context (Optional)
+
   - type: textarea
     id: additional_context
     attributes:
