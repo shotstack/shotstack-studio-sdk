@@ -15,6 +15,7 @@ body:
       label: User story
       description: As a [user role], I want [action] so that [benefit]
       placeholder: As an admin, I want to export user data so that I can analyze it externally.
+    validations:
       required: true
 
   - type: markdown
@@ -27,6 +28,7 @@ body:
       label: Motivation & context
       description: Why is this feature needed? Link to any relevant designs, RFCs, or docs.
       placeholder: Provide background on this feature and link any related resources.
+    validations:
       required: true
 
   - type: markdown
@@ -42,6 +44,7 @@ body:
       placeholder: |
         - [ ] Users can select a date range in the export dialog
         - [ ] Exported CSV includes headers and respects applied filters
+    validations:
       required: true
 
   - type: markdown
@@ -55,6 +58,7 @@ body:
       label: Implementation notes
       description: "Outline any proposed approach: API endpoints, database changes, UI components."
       placeholder: Describe your high-level technical approach to implement this feature.
+    validations:
       required: false
 
   - type: markdown
@@ -68,4 +72,5 @@ body:
       label: Additional Context
       description: Add any screenshots, mockups, or links to related issues/docs.
       placeholder: Provide any extra information to help with implementation.
+    validations:
       required: false
