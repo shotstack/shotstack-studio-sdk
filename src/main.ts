@@ -1,4 +1,6 @@
-import { Edit, Canvas, Controls } from "./index";
+import template from "./template.json";
+
+import { Edit, Canvas, Controls, Timeline } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide
@@ -6,10 +8,10 @@ import { Edit, Canvas, Controls } from "./index";
  */
 async function main() {
 	try {
-		// 1. Retrieve an edit from a template
-		const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
-		const response = await fetch(templateUrl);
-		const template = await response.json();
+		// 1. Use local template.json instead of fetching
+		// const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
+		// const response = await fetch(templateUrl);
+		// const template = await response.json();
 
 		// 2. Initialize the edit with dimensions and background color
 		const edit = new Edit(template.output.size, template.timeline.background);
@@ -20,11 +22,26 @@ async function main() {
 		await canvas.load(); // Renders to [data-shotstack-studio] element
 
 		// 4. Load the template
-		await edit.loadEdit(template);
+		await edit.loadEdit(template as any); // Type casting to avoid type errors
+
+		// Initialize the Timeline with matching width
+		const timelineSize = { width: template.output.size.width, height: 150 };
+		const timeline = new Timeline(edit, timelineSize);
+		await timeline.load();
+
+		// Add timeline to the DOM
+		const timelineContainer = document.querySelector("[data-shotstack-timeline]");
+		if (!timelineContainer) {
+			throw new Error("Timeline container element not found");
+		}
+		timelineContainer.appendChild(timeline.getCanvas());
 
 		// 5. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
+
+		// Register timeline with canvas for updates
+		canvas.registerTimeline(timeline);
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);

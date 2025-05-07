@@ -1,0 +1,1078 @@
+{
+	"timeline": {
+		"fonts": [
+			{
+				"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9bqcz-2y2w-6q08-vep0-1mca5g11825v/source.ttf"
+			},
+			{
+				"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9bq9m-0ba7-fz30-3w6n-1aaqbv0putap/source.ttf"
+			}
+		],
+		"background": "#ffffff",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "audio",
+							"src": "https://templates.shotstack.io/basic/asset/audio/music/unminus/white.mp3",
+							"volume": 1,
+							"effect": "fadeInFadeOut"
+						},
+						"start": 0,
+						"length": 29.3
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9jpnc-4f5i-k80p-4snp-4mc5ml2nmvbf/source.png"
+						},
+						"length": 5.49,
+						"offset": {
+							"x": 0.38,
+							"y": 0.375
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideDown"
+						},
+						"start": 23.76,
+						"opacity": 0.95,
+						"fit": "none",
+						"scale": 0.2
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 500,
+							"height": 40,
+							"html": "<p data-html-type=\"text\">+01 234 567 890</p>",
+							"css": "p { color: #ffffff; font-size: 22px; font-family: 'Noto Sans Medium'; text-align: left; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.216,
+							"y": -0.377
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideUp"
+						},
+						"length": 4.25,
+						"start": 25
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9k9yr-31l9-lu0w-heif-1cmvjd0bq16x/source.png"
+						},
+						"length": 4.25,
+						"offset": {
+							"x": -0.07,
+							"y": -0.375
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"scale": 0.04,
+						"start": 25
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 500,
+							"height": 40,
+							"html": "<p data-html-type=\"text\">sales@myestateagent.com</p>",
+							"css": "p { color: #ffffff; font-size: 22px; font-family: 'Noto Sans Medium'; text-align: left; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.216,
+							"y": -0.29
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideUp"
+						},
+						"length": 4.55,
+						"start": 24.7
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9ka6r-2hke-wj1f-jwfn-4piu491yj2we/source.png"
+						},
+						"length": 4.55,
+						"offset": {
+							"x": -0.069,
+							"y": -0.291
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"scale": 0.035,
+						"start": 24.7
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 500,
+							"height": 40,
+							"html": "<p data-html-type=\"text\">www.myestateagent.com</p>",
+							"css": "p { color: #ffffff; font-size: 22px; font-family: 'Noto Sans Medium'; text-align: left; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.216,
+							"y": -0.206
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideUp"
+						},
+						"length": 4.85,
+						"start": 24.4
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9ka7o-0krt-el4d-f6he-1llkwk3dxdt7/source.png"
+						},
+						"length": 4.85,
+						"offset": {
+							"x": -0.069,
+							"y": -0.207
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"scale": 0.035,
+						"start": 24.4
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 557,
+							"height": 53,
+							"html": "<p data-html-type=\"text\">Don't miss out</p>",
+							"css": "p { color: #ffffff; font-size: 45px; font-family: 'Noto Sans Medium'; text-align: right; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.178,
+							"y": -0.009
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideUp"
+						},
+						"length": 5.15,
+						"start": 24.1
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 587,
+							"height": 136,
+							"html": "<p data-html-type=\"text\">Book your tour now.</p>",
+							"css": "p { color: #ffffff; font-size: 60px; font-family: 'Noto Sans Black'; text-align: right; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.167,
+							"y": 0.179
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideLeft"
+						},
+						"length": 5.25,
+						"start": 24
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 710,
+							"height": 1,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">Line horizontal</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.212,
+							"y": -0.094
+						},
+						"position": "center",
+						"transition": {
+							"in": "carouselLeft"
+						},
+						"length": 5.75,
+						"start": 23.5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1,
+							"height": 670,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">line vertical</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": -0.134,
+							"y": 0.067
+						},
+						"position": "center",
+						"length": 5.75,
+						"transition": {
+							"in": "carouselUp"
+						},
+						"start": 23.5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 656,
+							"height": 604,
+							"background": "#adc90e",
+							"html": "<p data-html-type=\"text\">box</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"offset": {
+							"x": 0.185,
+							"y": -0.022
+						},
+						"fit": "none",
+						"scale": 1,
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"opacity": 0.97,
+						"length": 5.75,
+						"start": 23.5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 655,
+							"height": 875,
+							"background": "#adc90e",
+							"html": "<p data-html-type=\"text\">white_matte</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Futura-Medium'; text-align: left; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.185,
+							"y": -0.029
+						},
+						"position": "center",
+						"length": 5.75,
+						"transition": {},
+						"start": 23.5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9k9yr-31l9-lu0w-heif-1cmvjd0bq16x/source.png"
+						},
+						"length": 5.75,
+						"start": 23.5,
+						"offset": {
+							"x": -0.25,
+							"y": 0
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"effect": "zoomIn",
+						"scale": 1
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1099,
+							"height": 606,
+							"background": "#adc90e",
+							"html": "<p data-html-type=\"text\">HELLO WORLD</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.024,
+							"y": 0.006
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"length": 2.33,
+						"start": 22.51
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 974,
+							"height": 68,
+							"position": "center",
+							"html": "<p data-html-type=\"text\">{{ HEADLINE_3 }}</p>",
+							"css": "p { color: #ffffff; font-size: 50px; font-family: 'Noto Sans Medium'; text-align: center; text-scale: shrink; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0,
+							"y": -0.401
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideUp",
+							"out": "slideLeft"
+						},
+						"length": 5.6,
+						"start": 18
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1100,
+							"height": 1,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">Line horizontal</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0,
+							"y": -0.291
+						},
+						"position": "center",
+						"transition": {
+							"in": "carouselLeft"
+						},
+						"start": 17.6,
+						"length": 6
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1090,
+							"height": 184,
+							"background": "#837852",
+							"html": "<p data-html-type=\"text\"> </p>",
+							"css": "p { color: #ffffff; font-size: 32px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"length": 6,
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.014,
+							"y": -0.45
+						},
+						"position": "center",
+						"transition": {},
+						"start": 17.6
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1,
+							"height": 670,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">line vertical 3</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"y": 0,
+							"x": 0.17
+						},
+						"position": "center",
+						"length": 6,
+						"transition": {
+							"in": "carouselUp"
+						},
+						"start": 17.61
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1,
+							"height": 670,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">line vertical 2</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"y": 0.08,
+							"x": -0.17
+						},
+						"position": "center",
+						"length": 6,
+						"transition": {
+							"in": "carouselDown"
+						},
+						"start": 17.6
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9izqs-1kuv-ym2i-gmr3-0yg3fy4b7nii/source.jpg"
+						},
+						"offset": {
+							"x": 0,
+							"y": 0.2
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"length": 5.85,
+						"start": 17.75,
+						"effect": "zoomInSlow",
+						"scale": 1
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1099,
+							"height": 606,
+							"background": "#837852",
+							"html": "<p data-html-type=\"text\">HELLO WORLD</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.005,
+							"y": 0
+						},
+						"position": "center",
+						"start": 16.61,
+						"transition": {
+							"in": "fade"
+						},
+						"length": 7.19
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 300,
+							"height": 260,
+							"html": "<p data-html-type=\"text\">{{ HEADLINE_3B }}</p>",
+							"css": "p { color: #ffffff; font-size: 45px; font-family: 'Noto Sans Medium'; text-align: center; text-scale: shrink; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.342,
+							"y": -0.247
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight",
+							"out": "slideLeft"
+						},
+						"length": 5.79,
+						"start": 11.75
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 300,
+							"height": 260,
+							"html": "<p data-html-type=\"text\">{{ HEADLINE_3A }}</p>",
+							"css": "p { color: #ffffff; font-size: 45px; font-family: 'Noto Sans Medium'; text-align: center; text-scale: shrink; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.342,
+							"y": 0.25
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideLeft",
+							"out": "slideLeft"
+						},
+						"length": 5.78,
+						"start": 11.5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1,
+							"height": 670,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">line vertical</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"y": 0.067,
+							"x": 0.181
+						},
+						"position": "center",
+						"length": 6.4,
+						"transition": {
+							"in": "carouselDown"
+						},
+						"start": 11.25
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 400,
+							"height": 1,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">Line horizontal</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"y": 0,
+							"x": 0.375
+						},
+						"position": "center",
+						"transition": {
+							"in": "carouselRight"
+						},
+						"length": 6.56,
+						"start": 11.06
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 331,
+							"height": 596,
+							"background": "#37acd9",
+							"html": "<p data-html-type=\"text\">HELLO WORLD</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"length": 6.25,
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.343,
+							"y": -0.002
+						},
+						"position": "center",
+						"transition": {},
+						"start": 11.4
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9iwn6-2cbt-jy0x-cci0-2uwodr2q2jyw/source.jpg"
+						},
+						"offset": {
+							"x": -0.25,
+							"y": 0
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"effect": "zoomOutSlow",
+						"start": 11.4,
+						"length": 6.25,
+						"scale": 1
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1099,
+							"height": 606,
+							"background": "#37acd9",
+							"html": "<p data-html-type=\"text\">HELLO WORLD</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": -0.002,
+							"y": -0.002
+						},
+						"position": "center",
+						"start": 10.4,
+						"transition": {
+							"in": "fade"
+						},
+						"length": 2
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 911,
+							"height": 54,
+							"position": "center",
+							"html": "<p data-html-type=\"text\">{{ HEADLINE_2 }}</p>",
+							"css": "p { color: #ffffff; font-size: 50px; font-family: 'Noto Sans Medium'; text-align: right; text-scale: shrink; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": -0.001,
+							"y": -0.382
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight",
+							"out": "slideLeft"
+						},
+						"length": 6.25,
+						"start": 5.25
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1123,
+							"height": 1,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">Line horizontal</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": -0.041,
+							"y": -0.249
+						},
+						"position": "center",
+						"transition": {
+							"in": "carouselRightSlow"
+						},
+						"length": 6.25,
+						"start": 5.25
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1053,
+							"height": 153,
+							"background": "#9d856a",
+							"html": "<p data-html-type=\"text\">HELLO WORLD</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"length": 6.1,
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0,
+							"y": -0.382
+						},
+						"position": "center",
+						"start": 5.4
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9ix6t-2s2q-uv3j-mjfv-1rhwqh0ecrkz/source.jpg"
+						},
+						"offset": {
+							"x": 0,
+							"y": 0.25
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"effect": "zoomOutSlow",
+						"start": 5.4,
+						"length": 6.1,
+						"scale": 1
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1070,
+							"height": 600,
+							"background": "#9d856a",
+							"html": "<p data-html-type=\"text\">HELLO WORLD</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.001,
+							"y": 0
+						},
+						"position": "center",
+						"start": 5,
+						"transition": {
+							"in": "zoom"
+						},
+						"length": 2
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 518,
+							"height": 65,
+							"html": "<p data-html-type=\"text\">{{ ADDRESS }}</p>",
+							"css": "p { color: #ffffff; font-size: 31px; font-family: 'Noto Sans Medium'; text-align: right; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.189,
+							"y": -0.245
+						},
+						"position": "center",
+						"start": 0.75,
+						"transition": {
+							"in": "slideUp",
+							"out": "slideUp"
+						},
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 518,
+							"height": 235,
+							"html": "<p data-html-type=\"text\">My Estate\nAgent</p>",
+							"css": "p { color: #ffffff; font-size: 80px; font-family: 'Noto Sans Medium'; text-align: right; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.189,
+							"y": 0.098
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideLeft",
+							"out": "slideLeft"
+						},
+						"start": 0.5,
+						"length": 5.25
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 1,
+							"height": 670,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">line vertical</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"y": 0.067,
+							"x": -0.08
+						},
+						"position": "center",
+						"length": 5.76,
+						"transition": {
+							"in": "carouselUpSlow"
+						},
+						"start": 0
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 710,
+							"height": 1,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">Line horizontal</p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: left; }"
+						},
+						"start": 0.01,
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.266,
+							"y": -0.139
+						},
+						"position": "center",
+						"transition": {
+							"in": "carouselLeftSlow",
+							"out": "carouselLeft"
+						},
+						"length": 5.75
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9jptf-1pqe-ql48-uii0-1pig4a1l7un6/source.png"
+						},
+						"start": 0,
+						"offset": {
+							"x": 0.33,
+							"y": 0.382
+						},
+						"position": "center",
+						"length": 5.75,
+						"transition": {
+							"in": "slideLeft",
+							"out": "slideRight"
+						},
+						"fit": "none",
+						"scale": 0.12
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 656,
+							"height": 604,
+							"background": "#b98642",
+							"html": "<p data-html-type=\"text\"> </p>",
+							"css": "p { color: #ffffff; font-size: 1px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"offset": {
+							"x": 0.24,
+							"y": 0.016
+						},
+						"fit": "none",
+						"scale": 1,
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"opacity": 0.97,
+						"length": 5.75,
+						"start": 0
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html",
+							"width": 655,
+							"height": 875,
+							"background": "#ffffff",
+							"html": "<p data-html-type=\"text\">white_matte</p>",
+							"css": "p { color: #ffffff; font-size: 32px; font-family: 'Montserrat ExtraBold'; text-align: center; }"
+						},
+						"start": 0,
+						"fit": "none",
+						"scale": 1,
+						"offset": {
+							"x": 0.239,
+							"y": 0.031
+						},
+						"position": "center",
+						"length": 5.75,
+						"transition": {}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/zfe0a140fc/zzy9knci-2hok-uv0e-kqff-0fgrzr2ibnrm/source.jpg"
+						},
+						"offset": {
+							"x": -0.184,
+							"y": 0
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideLeftSlow",
+							"out": "slideRight"
+						},
+						"effect": "zoomOutSlow",
+						"start": 0,
+						"length": 5.75,
+						"scale": 1
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": {
+			"width": 1024,
+			"height": 576
+		}
+	}
+}
