@@ -1,0 +1,97 @@
+name: Bug report
+description: Use this template to file a detailed bug report.
+title: "bug: "
+labels:
+  - Bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Issue Summary
+        Provide a concise, one-line summary of the bug.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Issue Summary
+      description: A clear, one-line description of what went wrong.
+      placeholder: "e.g. App crashes when clicking ‘Save’ on settings page"
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Expected vs Actual Behavior
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened.
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Steps to Reproduce
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the bug.
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Technical Analysis
+
+  - type: textarea
+    id: technical_analysis
+    attributes:
+      label: Technical Analysis
+      description: Error messages, stack traces, logs or your own debugging notes.
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Possible Solutions
+
+  - type: textarea
+    id: possible_solutions
+    attributes:
+      label: Possible Solutions
+      description: Suggest potential fixes or workarounds.
+      placeholder: |
+        **Option 1**: Short description of first approach  
+        **Option 2**: Alternative approach
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Tested Environment
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Tested Environment
+      description: OS, browser, hardware, versions, etc.
+      placeholder: |
+        - Studio Version: 
+        - OS: 
+        - Browser / Version:
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Additional Context
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Attach screenshots, links to logs or related issues.
