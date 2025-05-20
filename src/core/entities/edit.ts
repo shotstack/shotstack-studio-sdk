@@ -17,6 +17,7 @@ import type { Player } from "./player";
 import { ShapePlayer } from "./shape-player";
 import { TextPlayer } from "./text-player";
 import { VideoPlayer } from "./video-player";
+import { LumaPlayer } from "./luma-player";
 
 type EditType = z.infer<typeof EditSchema>;
 type ClipType = z.infer<typeof ClipSchema>;
@@ -439,6 +440,10 @@ export class Edit extends Entity {
 				player = new AudioPlayer(this, clipConfiguration);
 				break;
 			}
+			case "luma": {
+				player = new LumaPlayer(this, clipConfiguration);
+				break;
+			}
 			default:
 				throw new Error(`Unsupported clip type: ${(clipConfiguration.asset as any).type}`);
 		}
@@ -465,8 +470,17 @@ export class Edit extends Entity {
 		}
 
 		trackContainer.addChild(clipToAdd.getContainer());
+
+		// Identify luma clips
+		const isClipMask = clipToAdd instanceof LumaPlayer;
+
 		await clipToAdd.load();
 
+		// Apply mask if luma clip
+		if (isClipMask) {
+			trackContainer.setMask({ mask: clipToAdd.getMask(), inverse: true });
+		}
+		
 		this.updateTotalDuration();
 	}
 }

@@ -1,0 +1,101 @@
+{
+    "timeline": {
+        "soundtrack": {
+            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/music/unminus/palmtrees.mp3",
+            "effect": "fadeOut"
+        },
+        "background": "#000000",
+        "tracks": [
+            {
+                "clips": [
+                	{
+                        "asset": {
+                            "type": "luma",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/examples/luma-mattes/radial.mp4"
+                        },
+                        "start": 2.24,
+                        "length": 1.76
+                    },
+                    {
+                        "asset": {
+                            "type": "video",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/footage/table-mountain.mp4"
+                        },
+                        "start": 0,
+                        "length": 4,
+                        "transition": {
+                            "in": "fade"
+                        }
+                    }
+                ]
+            },
+            {
+                "clips": [
+                	{
+                        "asset": {
+                            "type": "luma",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/examples/luma-mattes/blocks-in.mp4"
+                        },
+                        "start": 4.92,
+                        "length": 1.32
+                    },
+                    {
+                        "asset": {
+                            "type": "video",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/footage/road.mp4"
+                        },
+                        "start": 2.24,
+                        "length": 4
+                    }
+                ]
+            },
+            {
+                "clips": [
+                    {
+                        "asset": {
+                            "type": "luma",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/examples/luma-mattes/lines.mp4"
+                        },
+                        "start": 8.08,
+                        "length": 1.84
+                    },
+                    {
+                        "asset": {
+                            "type": "video",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/footage/lake.mp4"
+                        },
+                        "start": 4.92,
+                        "length": 5,
+                        "transition": {
+                            "out": "fade"
+                        }
+                    }
+                ]
+            },
+            {
+                "clips": [
+                    {
+                        "asset": {
+                            "type": "video",
+                            "src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/footage/beach-cliffs.mp4"
+                        },
+                        "start": 8.08,
+                        "length": 5,
+                        "transition": {
+                            "out": "fade"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "output": {
+        "format": "mp4",
+        "resolution": "hd",
+        "fps": 25,
+        "size": {
+			"width": 1280,
+			"height": 720
+		}
+    }
+}
