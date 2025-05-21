@@ -27,7 +27,8 @@
 		"type": "git",
 		"url": "https://github.com/shotstack/shotstack-studio-sdk"
 	},
-	"scripts": {
+	"scripts": {		
+		"dev": "vite",
 		"build": "vite build && tsc --emitDeclarationOnly",
 		"prepublishOnly": "npm run build"
 	},
