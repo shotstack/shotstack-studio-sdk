@@ -13,6 +13,7 @@ import { AudioPlayer } from "./audio-player";
 import { Entity } from "./entity";
 import { HtmlPlayer } from "./html-player";
 import { ImagePlayer } from "./image-player";
+import { LumaPlayer } from "./luma-player";
 import type { Player } from "./player";
 import { ShapePlayer } from "./shape-player";
 import { TextPlayer } from "./text-player";
@@ -439,6 +440,10 @@ export class Edit extends Entity {
 				player = new AudioPlayer(this, clipConfiguration);
 				break;
 			}
+			case "luma": {
+				player = new LumaPlayer(this, clipConfiguration);
+				break;
+			}
 			default:
 				throw new Error(`Unsupported clip type: ${(clipConfiguration.asset as any).type}`);
 		}
@@ -465,7 +470,14 @@ export class Edit extends Entity {
 		}
 
 		trackContainer.addChild(clipToAdd.getContainer());
+
+		const isClipMask = clipToAdd instanceof LumaPlayer;
+
 		await clipToAdd.load();
+
+		if (isClipMask) {
+			trackContainer.setMask({ mask: clipToAdd.getMask(), inverse: true });
+		}
 
 		this.updateTotalDuration();
 	}
