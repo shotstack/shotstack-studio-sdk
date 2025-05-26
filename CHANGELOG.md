@@ -2,15 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-05-26
+
+### Added
+
+- **Luma mask rendering compatibility with Shotstack Edit API ([#12](https://github.com/shotstack/shotstack-studio-sdk/issues/12))**
+  - Luma masks in Studio now render with the same behaviour as the Shotstack Edit API.
+  - White areas are transparent, black areas are opaque.
+  - Ensures accurate previews of templates using video and image luma clips.
+
 ## [1.1.2] - 2025-04-29
 
 ### Fixed
 
-Corrected totalDuration calculation issue in `loadEdit()` method. Explicitly calls `updateTotalDuration()` after loading all clips to ensure accurate timeline duration and consistent playback behavior (#7).
+Corrected totalDuration calculation issue in `loadEdit()` method. Explicitly calls `updateTotalDuration()` after loading all clips to ensure accurate timeline duration and consistent playback behavior ([#7](https://github.com/shotstack/shotstack-studio-sdk/issues/7)).
 
 ### Changed
 
-- Separated clip selection and state update events (#6):
+- **Separated clip selection and state update events ([#6](https://github.com/shotstack/shotstack-studio-sdk/issues/6))**:
   - `clip:select` event now triggers only on initial selection (pointer down).
   - Added new `clip:update` event triggered after state changes upon manipulation (pointer up), providing structured payload with previous and current clip states.
 
@@ -18,7 +27,7 @@ Corrected totalDuration calculation issue in `loadEdit()` method. Explicitly cal
 
 ### Fixed
 
-- Fixed duplication issue in loadEdit() method where new template content appended instead of replacing existing content. All clips are now cleared before loading new content (#5).
+- Fixed duplication issue in loadEdit() method where new template content appended instead of replacing existing content. All clips are now cleared before loading new content ([#5](https://github.com/shotstack/shotstack-studio-sdk/issues/5)).
 
 ## [1.1.0] - 2025-04-17
 
