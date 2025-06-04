@@ -21,7 +21,7 @@ Corrected totalDuration calculation issue in `loadEdit()` method. Explicitly cal
 
 - **Separated clip selection and state update events ([#6](https://github.com/shotstack/shotstack-studio-sdk/issues/6))**:
   - `clip:select` event now triggers only on initial selection (pointer down).
-  - Added new `clip:update` event triggered after state changes upon manipulation (pointer up), providing structured payload with previous and current clip states.
+  - Added new `clip:updated` event triggered after state changes upon manipulation (pointer up), providing structured payload with previous and current clip states.
 
 ## [1.1.1] - 2025-04-22
 
