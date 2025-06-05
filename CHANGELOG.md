@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2025-06-05
+
+### Fixed
+
+Asset loader now sets required CORS attributes for Webkit video elements, preventing loading hangs ([#15](https://github.com/shotstack/shotstack-studio-sdk/issues/15)).
+
 ## [1.2.0] - 2025-05-26
 
 ### Added
