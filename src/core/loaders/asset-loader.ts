@@ -17,12 +17,8 @@ export class AssetLoader {
 		this.updateAssetLoadMetadata(identifier, "pending", 0);
 
 		try {
-			const url = this.extractUrl(loadOptions);
-
-			if (url && (await this.isPlayableVideo(url))) {
-				const texture = await this.loadVideoTexture(identifier, url, loadOptions);
-				this.updateAssetLoadMetadata(identifier, "success", 1);
-				return texture as TResolvedAsset;
+			if (await this.shouldUseSafariVideoLoader(loadOptions)) {
+				return await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions);
 			}
 
 			const resolvedAsset = await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
@@ -30,7 +26,7 @@ export class AssetLoader {
 			});
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return resolvedAsset;
-		} catch {
+		} catch (error) {
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			return null;
 		}
@@ -78,47 +74,46 @@ export class AssetLoader {
 		return contentType?.startsWith("video/") ? document.createElement("video").canPlayType(contentType) !== "" : false;
 	}
 
-	private async loadVideoTexture(identifier: string, url: string, loadOptions: pixi.UnresolvedAsset): Promise<pixi.Texture> {
+	private async shouldUseSafariVideoLoader(loadOptions: pixi.UnresolvedAsset): Promise<boolean> {
+		const isSafariBrowser = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+		const url = this.extractUrl(loadOptions);
+		return isSafariBrowser && url !== undefined && (await this.isPlayableVideo(url));
+	}
+
+	private async loadVideoForSafari<TResolvedAsset>(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<TResolvedAsset> {
+		const url = this.extractUrl(loadOptions)!;
 		const data = typeof loadOptions === "object" ? (loadOptions.data ?? {}) : {};
 
-		return new Promise((resolve, reject) => {
+		const texture = await new Promise<pixi.Texture>((resolve, reject) => {
 			const video = document.createElement("video");
-
+			
+			// Essential Safari video attributes
 			video.crossOrigin = "anonymous";
 			video.playsInline = true;
+			video.muted = true;
 			video.preload = "metadata";
 
-			const timeoutId = setTimeout(() => reject(new Error("Video loading timeout")), 10000);
-			const cleanup = () => clearTimeout(timeoutId);
-
-			const onLoadedMetadata = () => {
-				cleanup();
-				if (video.readyState >= 1) {
-					try {
-						const source = new pixi.VideoSource({
-							resource: video,
-							...data
-						});
-						resolve(new pixi.Texture({ source }));
-					} catch (error) {
-						reject(error);
-					}
+			video.addEventListener("loadedmetadata", () => {
+				try {
+					const source = new pixi.VideoSource({
+						resource: video,
+						autoPlay: data.autoPlay ?? false,
+						...data
+					});
+					resolve(new pixi.Texture({ source }));
+				} catch (error) {
+					reject(error);
 				}
-			};
+			}, { once: true });
 
-			video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
-			video.addEventListener(
-				"error",
-				() => {
-					cleanup();
-					reject(new Error("Video loading failed"));
-				},
-				{ once: true }
-			);
+			video.addEventListener("error", () => reject(new Error("Video loading failed")), { once: true });
 
 			this.updateAssetLoadMetadata(identifier, "loading", 0.5);
 			video.src = url;
 		});
+
+		this.updateAssetLoadMetadata(identifier, "success", 1);
+		return texture as TResolvedAsset;
 	}
 
 	private updateAssetLoadMetadata(identifier: string, status: AssetLoadInfoStatus, progress: number): void {
