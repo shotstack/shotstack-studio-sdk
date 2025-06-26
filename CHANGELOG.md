@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2025-06-26
+
+### Fixed
+
+- Asset loader video handling now correctly targets only Safari browsers instead of all webkit-based browsers, resolving video loading issues in Chrome and other webkit browsers ([#18](https://github.com/shotstack/shotstack-studio-sdk/issues/18))
+
 ## [1.2.1] - 2025-06-05
 
 ### Fixed
