@@ -15,6 +15,20 @@ const globals = {
 };
 
 export default defineConfig({
+	resolve: {
+		alias: {
+			"@entities": resolve(__dirname, "src/core/entities"),
+			"@schemas": resolve(__dirname, "src/core/schemas"),
+			"@layouts": resolve(__dirname, "src/core/layouts"),
+			"@animations": resolve(__dirname, "src/core/animations"),
+			"@events": resolve(__dirname, "src/core/events"),
+			"@inputs": resolve(__dirname, "src/core/inputs"),
+			"@loaders": resolve(__dirname, "src/core/loaders"),
+			"@export": resolve(__dirname, "src/core/export"),
+			"@styles": resolve(__dirname, "src/styles"),
+			"@templates": resolve(__dirname, "src/templates")
+		}
+	},
 	build: {
 		target: "esnext",
 		lib: {

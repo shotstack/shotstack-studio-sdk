@@ -1,11 +1,10 @@
 import * as pixi from "pixi.js";
 
-import { type Size } from "../layouts/geometry";
-import { type Clip } from "../schemas/clip";
-import { type LumaAsset } from "../schemas/luma-asset";
-
-import type { Edit } from "./edit";
-import { Player } from "./player";
+import { type Size } from "../../layouts/geometry";
+import { type Clip } from "../../schemas/clip";
+import { type LumaAsset } from "../../schemas/luma-asset";
+import { Player } from "../base/player";
+import type { Edit } from "../system/edit";
 
 type LumaSource = pixi.ImageSource | pixi.VideoSource;
 

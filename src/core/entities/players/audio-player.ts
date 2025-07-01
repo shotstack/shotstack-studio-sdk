@@ -1,14 +1,13 @@
 import * as howler from "howler";
 import * as pixi from "pixi.js";
 
-import { KeyframeBuilder } from "../animations/keyframe-builder";
-import { type Size } from "../layouts/geometry";
-import { AudioLoadParser } from "../loaders/audio-load-parser";
-import { type AudioAsset } from "../schemas/audio-asset";
-import { type Clip } from "../schemas/clip";
-
-import type { Edit } from "./edit";
-import { Player } from "./player";
+import { KeyframeBuilder } from "../../animations/keyframe-builder";
+import { type Size } from "../../layouts/geometry";
+import { AudioLoadParser } from "../../loaders/audio-load-parser";
+import { type AudioAsset } from "../../schemas/audio-asset";
+import { type Clip } from "../../schemas/clip";
+import { Player } from "../base/player";
+import type { Edit } from "../system/edit";
 
 export class AudioPlayer extends Player {
 	private audioResource: howler.Howl | null;
