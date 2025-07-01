@@ -3,8 +3,9 @@ import * as pixi from "pixi.js";
 import { type Clip } from "../schemas/clip";
 import { type TextAsset } from "../schemas/text-asset";
 
-import type { TextPlayer } from "./text-player";
 import { TextCursor } from "./text-cursor";
+import { TextInputHandler } from "./text-input-handler";
+import type { TextPlayer } from "./text-player";
 
 /**
  * Enum for horizontal alignment options
@@ -32,7 +33,6 @@ export class TextEditor {
 	private static readonly DOUBLE_CLICK_THRESHOLD_MS = 300;
 	private static readonly EDITING_BG_PADDING_PX = 5;
 	private static readonly EDITING_BG_ALPHA = 0.2;
-	private static readonly FOCUS_DELAY_MS = 50;
 	private static readonly CLICK_HANDLER_DELAY_MS = 100;
 
 	// Core properties
@@ -46,8 +46,7 @@ export class TextEditor {
 	private editingContainer: pixi.Container | null = null;
 	private editableText: pixi.Text | null = null;
 	private textCursor: TextCursor | null = null;
-	private hiddenInput: HTMLTextAreaElement | null = null;
-	private cursorPosition: number = 0;
+	private textInputHandler: TextInputHandler | null = null;
 	private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
 
 	// ------------------------------
@@ -62,13 +61,11 @@ export class TextEditor {
 		// Set up event listeners using class properties
 		this.parent.getContainer().eventMode = "static";
 		this.parent.getContainer().on("click", this.checkForDoubleClick);
-		window.addEventListener("keydown", this.handleKeyDown);
 	}
 
 	public dispose(): void {
 		// Clean up event listeners
 		this.parent.getContainer().off("click", this.checkForDoubleClick);
-		window.removeEventListener("keydown", this.handleKeyDown);
 
 		this.stopEditing();
 
@@ -125,10 +122,10 @@ export class TextEditor {
 			this.textCursor = null;
 		}
 
-		// Remove hidden input
-		if (this.hiddenInput) {
-			this.hiddenInput.remove();
-			this.hiddenInput = null;
+		// Clean up TextInputHandler
+		if (this.textInputHandler) {
+			this.textInputHandler.dispose();
+			this.textInputHandler = null;
 		}
 
 		// Make original text visible again
@@ -139,9 +136,6 @@ export class TextEditor {
 			this.parent.updateTextContent(newText, initialConfig);
 		}
 
-		// Reset cursor position
-		this.cursorPosition = 0;
-
 		// Exit editing mode
 		this.isEditing = false;
 	}
@@ -151,7 +145,7 @@ export class TextEditor {
 	// ------------------------------
 
 	// Define event handlers as class properties using arrow functions
-	private checkForDoubleClick = (event: pixi.FederatedPointerEvent): void => {
+	private checkForDoubleClick = (_: pixi.FederatedPointerEvent): void => {
 		const currentTime = Date.now();
 		const isDoubleClick = currentTime - this.lastClickTime < TextEditor.DOUBLE_CLICK_THRESHOLD_MS;
 
@@ -162,125 +156,6 @@ export class TextEditor {
 		this.lastClickTime = currentTime;
 	};
 
-	private handleKeyDown = (event: KeyboardEvent): void => {
-		if (!this.isEditing || !this.editableText || !this.hiddenInput) return;
-
-		// Don't handle key events if we're not the target
-		if (document.activeElement !== this.hiddenInput) return;
-
-		let handled = false;
-
-		// Get current text and cursor information
-		const { text } = this.editableText;
-		const lines = text.split("\n");
-
-		// Find current line and position within line
-		const textBeforeCursor = text.substring(0, this.cursorPosition);
-		const newlineMatches = textBeforeCursor.match(/\n/g);
-		const currentLineIndex = newlineMatches ? newlineMatches.length : 0;
-		const lastNewlinePos = textBeforeCursor.lastIndexOf("\n");
-		const cursorPosInLine = lastNewlinePos === -1 ? this.cursorPosition : this.cursorPosition - lastNewlinePos - 1;
-
-		// Special keys
-		switch (event.key) {
-			case "Escape":
-				// Cancel editing
-				this.stopEditing(false);
-				event.preventDefault();
-				return;
-
-			case "Enter":
-				// Add a new line
-				this.handleEnter();
-				event.preventDefault();
-				return;
-
-			case "ArrowLeft":
-				// Move cursor left
-				this.cursorPosition = Math.max(0, this.cursorPosition - 1);
-				handled = true;
-				break;
-
-			case "ArrowRight":
-				// Move cursor right
-				this.cursorPosition = Math.min(this.editableText.text.length, this.cursorPosition + 1);
-				handled = true;
-				break;
-
-			case "ArrowUp":
-				// Move cursor to previous line at same horizontal position if possible
-				if (currentLineIndex > 0) {
-					const prevLineIndex = currentLineIndex - 1;
-					const prevLine = lines[prevLineIndex];
-					const prevLinePos = Math.min(cursorPosInLine, prevLine.length);
-
-					// Calculate position in the text
-					let newPosition = 0;
-					for (let i = 0; i < prevLineIndex; i += 1) {
-						newPosition += lines[i].length + 1; // +1 for newline
-					}
-					newPosition += prevLinePos;
-
-					this.cursorPosition = newPosition;
-					handled = true;
-				}
-				break;
-
-			case "ArrowDown":
-				// Move cursor to next line at same horizontal position if possible
-				if (currentLineIndex < lines.length - 1) {
-					const nextLineIndex = currentLineIndex + 1;
-					const nextLine = lines[nextLineIndex];
-					const nextLinePos = Math.min(cursorPosInLine, nextLine.length);
-
-					// Calculate position in the text
-					let newPosition = 0;
-					for (let i = 0; i < nextLineIndex; i += 1) {
-						newPosition += lines[i].length + 1; // +1 for newline
-					}
-					newPosition += nextLinePos;
-
-					this.cursorPosition = newPosition;
-					handled = true;
-				}
-				break;
-
-			case "Delete":
-				this.handleDelete();
-				handled = true;
-				break;
-
-			default:
-				// Other keys are handled by input event
-				break;
-		}
-
-		if (handled) {
-			this.textCursor?.updatePosition(this.cursorPosition);
-			this.syncTextareaSelection();
-			event.preventDefault();
-		}
-	};
-
-
-	private handleInput = (event: Event): void => {
-		if (!this.isEditing || !this.editableText || !this.hiddenInput) return;
-
-		// Get the browser's current selection (caret position)
-		const selectionStart = this.hiddenInput.selectionStart || 0;
-
-		// Update the visible text
-		this.editableText.text = this.hiddenInput.value;
-
-		// Update text alignment if line count changes
-		this.updateTextAlignment();
-
-		// Update cursor position to the browser's current selection
-		this.cursorPosition = selectionStart;
-
-		// Update cursor position
-		this.textCursor?.updatePosition(this.cursorPosition);
-	};
 
 	private setupOutsideClickHandler(initialConfig: Clip): void {
 		// Create the handler as an arrow function to maintain context
@@ -316,9 +191,6 @@ export class TextEditor {
 		// Create editing container with background and editable text
 		this.setupEditingContainer();
 
-		// Initialize cursor position to the end of text
-		this.cursorPosition = this.targetText.text.length;
-
 		// Create and setup TextCursor
 		if (this.editingContainer && this.editableText) {
 			this.textCursor = new TextCursor(
@@ -328,12 +200,12 @@ export class TextEditor {
 			);
 
 			// Position cursor at the end of text initially and start blinking
-			this.textCursor.updatePosition(this.cursorPosition);
+			this.textCursor.updatePosition(this.targetText.text.length);
 			this.textCursor.startBlinking();
 		}
 
-		// Create and setup hidden input
-		this.setupHiddenInput();
+		// Create and setup TextInputHandler
+		this.setupTextInputHandler();
 
 		// Ensure proper alignment of the editing container
 		this.updateTextAlignment();
@@ -365,92 +237,35 @@ export class TextEditor {
 
 
 
-	private setupHiddenInput(): void {
-		// Create a hidden textarea element to capture keyboard input
-		this.hiddenInput = document.createElement("textarea");
-		this.hiddenInput.value = this.targetText.text;
-		this.hiddenInput.style.position = "absolute";
-		this.hiddenInput.style.opacity = "0.01";
-		this.hiddenInput.style.pointerEvents = "none";
-		this.hiddenInput.style.zIndex = "999";
-		this.hiddenInput.style.left = "0";
-		this.hiddenInput.style.top = "0";
-		document.body.appendChild(this.hiddenInput);
+	private setupTextInputHandler(): void {
+		// Create TextInputHandler instance
+		this.textInputHandler = new TextInputHandler();
 
-		// Directly set input handlers using class property
-		this.hiddenInput.addEventListener("input", this.handleInput);
+		// Set up text change callback
+		this.textInputHandler.setTextInputHandler((text: string, cursorPosition: number) => {
+			// Update PIXI text
+			if (this.editableText) {
+				this.editableText.text = text;
+				this.updateTextAlignment(); // Reposition if needed
+			}
+			
+			// Update cursor position via TextCursor
+			this.textCursor?.updatePosition(cursorPosition);
+		});
 
-		// Force focus after a short delay
-		setTimeout(() => {
-			this.hiddenInput?.focus();
-		}, TextEditor.FOCUS_DELAY_MS);
+		// Set up event handlers  
+		this.textInputHandler.setEventHandlers({
+			onEscape: (_) => this.stopEditing(false),
+			onTabNavigation: (_) => this.stopEditing(true)
+			// Note: Enter, arrow keys, and delete keys are handled automatically by TextInputHandler
+			// Text input and cursor movement work through the browser's native textarea behavior
+		});
+
+		// Initialize with current text
+		this.textInputHandler.setupInput(this.targetText.text, { autoFocus: true });
 	}
 
-	// ------------------------------
-	// Text Editing Methods
-	// ------------------------------
 
-	private handleEnter(): void {
-		if (!this.editableText || !this.hiddenInput) return;
-
-		// Insert a newline at cursor position
-		const { text } = this.editableText;
-		const beforeCursor = text.substring(0, this.cursorPosition);
-		const afterCursor = text.substring(this.cursorPosition);
-		const updatedText = `${beforeCursor}\n${afterCursor}`;
-
-		// Update visible text
-		this.editableText.text = updatedText;
-
-		// Update hidden input and ensure proper selection point
-		this.hiddenInput.value = updatedText;
-
-		// Move cursor to beginning of next line
-		this.cursorPosition = beforeCursor.length + 1;
-
-		// Update the text position based on vertical alignment
-		this.updateTextAlignment();
-
-		// Explicitly force redraw before updating cursor position
-		setTimeout(() => {
-			this.refocusInput();
-			// Force immediate cursor update with correct position
-			this.textCursor?.updatePosition(this.cursorPosition);
-		}, 0);
-	}
-
-	private handleDelete(): void {
-		if (!this.editableText || !this.hiddenInput) return;
-
-		// Only delete if not at the end of text
-		if (this.cursorPosition < this.editableText.text.length) {
-			const { text } = this.editableText;
-			const beforeCursor = text.substring(0, this.cursorPosition);
-			const afterCursor = text.substring(this.cursorPosition + 1);
-			const updatedText = beforeCursor + afterCursor;
-
-			// Update visible text and hidden input
-			this.editableText.text = updatedText;
-			this.hiddenInput.value = updatedText;
-
-			// Update vertical alignment if text height changed (e.g., deleted a line break)
-			this.updateTextAlignment();
-
-			// Update cursor position and visuals
-			this.textCursor?.updatePosition(this.cursorPosition);
-		}
-	}
-
-	private refocusInput(): void {
-		if (!this.hiddenInput) return;
-		this.hiddenInput.focus();
-		this.syncTextareaSelection();
-	}
-
-	private syncTextareaSelection(): void {
-		if (!this.hiddenInput) return;
-		this.hiddenInput.setSelectionRange(this.cursorPosition, this.cursorPosition);
-	}
 
 
 
