@@ -35,7 +35,6 @@ export class TextEditor {
 	private static readonly EDITING_BG_ALPHA = 0.2;
 	private static readonly FOCUS_DELAY_MS = 50;
 	private static readonly CLICK_HANDLER_DELAY_MS = 100;
-	private static readonly SELECTION_SYNC_DELAY_MS = 10;
 
 	// Core properties
 	private parent: TextPlayer;
@@ -266,23 +265,6 @@ export class TextEditor {
 		}
 	};
 
-	private handleTextClick = (event: pixi.FederatedPointerEvent): void => {
-		if (!this.isEditing || !this.editableText) return;
-
-		// Get local position within the text object
-		const localPos = event.getLocalPosition(this.editableText);
-
-		// Calculate cursor position from click position, including vertical position
-		this.cursorPosition = this.getCursorPositionFromPoint(localPos.x, localPos.y);
-
-		// Update cursor visual position
-		this.updateCursorPosition();
-
-		// Make sure hidden input still has focus and set its selection
-		setTimeout(() => {
-			this.refocusInput();
-		}, TextEditor.SELECTION_SYNC_DELAY_MS);
-	};
 
 	private handleInput = (event: Event): void => {
 		if (!this.isEditing || !this.editableText || !this.hiddenInput) return;
@@ -378,8 +360,6 @@ export class TextEditor {
 		this.editableText.cursor = "text";
 		this.editingContainer.addChild(this.editableText);
 
-		// Add click handler for cursor positioning
-		this.editableText.on("pointerdown", this.handleTextClick);
 	}
 
 	private createEditingCursor(): void {
@@ -572,66 +552,6 @@ export class TextEditor {
 		this.editingCursor.visible = true;
 	}
 
-	/**
-	 * Find the cursor position based on a click point, handling empty lines
-	 */
-	private getCursorPositionFromPoint(x: number, y: number = 0): number {
-		if (!this.editableText) return 0;
-
-		const { text } = this.editableText;
-		const style = this.editableText.style as pixi.TextStyle;
-
-		// Split text into lines
-		const lines = text.split("\n");
-
-		// Get line height
-		const fontSize = style.fontSize as number;
-		const textAsset = this.clipConfig.asset as TextAsset;
-		const lineHeight = textAsset.font?.lineHeight ?? 1;
-		const actualLineHeight = fontSize * lineHeight;
-
-		// Determine which line was clicked based on y position
-		const clickedLineIndex = Math.max(0, Math.min(Math.floor(y / actualLineHeight), lines.length - 1));
-
-		// If the text is empty, return 0
-		if (text.length === 0) return 0;
-
-		// Calculate character offset for all lines before the clicked line
-		let charOffset = 0;
-		for (let i = 0; i < clickedLineIndex; i += 1) {
-			// +1 for the newline character
-			charOffset += lines[i].length + 1;
-		}
-
-		// If we're on an empty line, return the position at the start of that line
-		if (lines[clickedLineIndex].length === 0) {
-			return charOffset;
-		}
-
-		// For non-empty lines, find the closest character position
-		let closestPos = 0;
-		let closestDist = Number.MAX_VALUE;
-		const currentLine = lines[clickedLineIndex];
-
-		// For each possible cursor position in the current line
-		for (let i = 0; i <= currentLine.length; i += 1) {
-			// Get metric for text up to position i in this line
-			const beforeText = currentLine.substring(0, i);
-			const width = this.measureText(beforeText, style);
-
-			// Calculate distance to clicked position
-			const dist = Math.abs(x - width);
-
-			// If this position is closer than previous best, update
-			if (dist < closestDist) {
-				closestDist = dist;
-				closestPos = i;
-			}
-		}
-
-		// Return the character offset plus the position in the current line
-		return charOffset + closestPos;
-	}
 
 	// ------------------------------
 	// Alignment & Layout Methods
