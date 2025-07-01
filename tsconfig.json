@@ -20,7 +20,21 @@
 		"noUncheckedSideEffectImports": true,
 		"noPropertyAccessFromIndexSignature": true,
 		"forceConsistentCasingInFileNames": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"baseUrl": "./src",
+		"paths": {
+			"@entities/*": ["core/entities/*"],
+			"@entities": ["core/entities/index"],
+			"@schemas/*": ["core/schemas/*"],
+			"@layouts/*": ["core/layouts/*"],
+			"@animations/*": ["core/animations/*"],
+			"@events/*": ["core/events/*"],
+			"@inputs/*": ["core/inputs/*"],
+			"@loaders/*": ["core/loaders/*"],
+			"@export/*": ["core/export/*"],
+			"@styles/*": ["styles/*"],
+			"@templates/*": ["templates/*"]
+		}
 	},
 	"include": ["src"]
 }

@@ -1,13 +1,11 @@
+
+import { Player } from "@entities/base/player";
+import { TextEditor } from "@entities/text/text-editor";
+import { type Size } from "@layouts/geometry";
+import { type Clip } from "@schemas/clip";
+import { type TextAsset } from "@schemas/text-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
-
-import { type Size } from "../layouts/geometry";
-import { type Clip } from "../schemas/clip";
-import { type TextAsset } from "../schemas/text-asset";
-
-import type { Edit } from "./edit";
-import { Player } from "./player";
-import { TextEditor } from "./text-editor";
 
 /**
  * TextPlayer renders and manages editable text elements in the canvas
