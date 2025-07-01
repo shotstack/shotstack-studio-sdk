@@ -4,6 +4,7 @@ import { type Clip } from "../schemas/clip";
 import { type TextAsset } from "../schemas/text-asset";
 
 import type { TextPlayer } from "./text-player";
+import { TextCursor } from "./text-cursor";
 
 /**
  * Enum for horizontal alignment options
@@ -29,8 +30,6 @@ export enum VerticalAlignment {
 export class TextEditor {
 	// UI Constants
 	private static readonly DOUBLE_CLICK_THRESHOLD_MS = 300;
-	private static readonly CURSOR_BLINK_INTERVAL_MS = 500;
-	private static readonly CURSOR_WIDTH_PX = 2;
 	private static readonly EDITING_BG_PADDING_PX = 5;
 	private static readonly EDITING_BG_ALPHA = 0.2;
 	private static readonly FOCUS_DELAY_MS = 50;
@@ -46,10 +45,9 @@ export class TextEditor {
 	// UI components
 	private editingContainer: pixi.Container | null = null;
 	private editableText: pixi.Text | null = null;
-	private editingCursor: pixi.Graphics | null = null;
+	private textCursor: TextCursor | null = null;
 	private hiddenInput: HTMLTextAreaElement | null = null;
 	private cursorPosition: number = 0;
-	private cursorBlinkInterval: number | null = null;
 	private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
 
 	// ------------------------------
@@ -120,12 +118,11 @@ export class TextEditor {
 		}
 
 		this.editableText = null;
-		this.editingCursor = null;
 
-		// Clear blinking interval
-		if (this.cursorBlinkInterval !== null) {
-			window.clearInterval(this.cursorBlinkInterval);
-			this.cursorBlinkInterval = null;
+		// Clean up TextCursor
+		if (this.textCursor) {
+			this.textCursor.dispose();
+			this.textCursor = null;
 		}
 
 		// Remove hidden input
@@ -259,7 +256,7 @@ export class TextEditor {
 		}
 
 		if (handled) {
-			this.updateCursorPosition();
+			this.textCursor?.updatePosition(this.cursorPosition);
 			this.syncTextareaSelection();
 			event.preventDefault();
 		}
@@ -282,7 +279,7 @@ export class TextEditor {
 		this.cursorPosition = selectionStart;
 
 		// Update cursor position
-		this.updateCursorPosition();
+		this.textCursor?.updatePosition(this.cursorPosition);
 	};
 
 	private setupOutsideClickHandler(initialConfig: Clip): void {
@@ -322,14 +319,18 @@ export class TextEditor {
 		// Initialize cursor position to the end of text
 		this.cursorPosition = this.targetText.text.length;
 
-		// Create and setup text cursor
-		this.createEditingCursor();
+		// Create and setup TextCursor
+		if (this.editingContainer && this.editableText) {
+			this.textCursor = new TextCursor(
+				this.editingContainer,
+				this.editableText,
+				this.clipConfig
+			);
 
-		// Position cursor at the end of text initially
-		this.updateCursorPosition();
-
-		// Start cursor blinking
-		this.startCursorBlinking();
+			// Position cursor at the end of text initially and start blinking
+			this.textCursor.updatePosition(this.cursorPosition);
+			this.textCursor.startBlinking();
+		}
 
 		// Create and setup hidden input
 		this.setupHiddenInput();
@@ -362,27 +363,7 @@ export class TextEditor {
 
 	}
 
-	private createEditingCursor(): void {
-		if (!this.editableText || !this.editingContainer) return;
 
-		this.editingCursor = new pixi.Graphics();
-		this.editingCursor.fillStyle = { color: 0xffffff };
-
-		const fontSize = this.editableText.style.fontSize as number;
-		this.editingCursor.rect(0, 0, TextEditor.CURSOR_WIDTH_PX, fontSize);
-		this.editingCursor.fill();
-		this.editingContainer.addChild(this.editingCursor);
-	}
-
-	private startCursorBlinking(): void {
-		if (!this.editingCursor) return;
-
-		this.cursorBlinkInterval = window.setInterval(() => {
-			if (this.editingCursor) {
-				this.editingCursor.visible = !this.editingCursor.visible;
-			}
-		}, TextEditor.CURSOR_BLINK_INTERVAL_MS) as unknown as number;
-	}
 
 	private setupHiddenInput(): void {
 		// Create a hidden textarea element to capture keyboard input
@@ -434,7 +415,7 @@ export class TextEditor {
 		setTimeout(() => {
 			this.refocusInput();
 			// Force immediate cursor update with correct position
-			this.updateCursorPosition();
+			this.textCursor?.updatePosition(this.cursorPosition);
 		}, 0);
 	}
 
@@ -456,7 +437,7 @@ export class TextEditor {
 			this.updateTextAlignment();
 
 			// Update cursor position and visuals
-			this.updateCursorPosition();
+			this.textCursor?.updatePosition(this.cursorPosition);
 		}
 	}
 
@@ -471,86 +452,6 @@ export class TextEditor {
 		this.hiddenInput.setSelectionRange(this.cursorPosition, this.cursorPosition);
 	}
 
-	// ------------------------------
-	// Cursor Management Methods
-	// ------------------------------
-
-	private updateCursorPosition(): void {
-		if (!this.editingCursor || !this.editableText) return;
-
-		const { text } = this.editableText;
-		const style = this.editableText.style as pixi.TextStyle;
-
-		// Get text up to cursor position
-		const textBeforeCursor = text.substring(0, this.cursorPosition);
-
-		// Count the number of newlines to determine the line number
-		const newlineMatches = textBeforeCursor.match(/\n/g);
-		const cursorLine = newlineMatches ? newlineMatches.length : 0;
-
-		// Get the current line's content
-		const lines = text.split("\n");
-		const currentLine = cursorLine < lines.length ? lines[cursorLine] : "";
-
-		// Find the character position within the current line
-		const lastNewlinePos = textBeforeCursor.lastIndexOf("\n");
-		const cursorCharInLine = lastNewlinePos === -1 ? this.cursorPosition : this.cursorPosition - lastNewlinePos - 1;
-
-		// Get text up to cursor on the current line
-		const textUpToCursor = currentLine.substring(0, cursorCharInLine);
-
-		// Special handling for trailing spaces
-		if (textUpToCursor.length > 0 && textUpToCursor.endsWith(" ")) {
-			const fullWidth = this.measureText(`${textUpToCursor}x`, style) - this.measureText("x", style);
-			this.positionCursorForAlignment(cursorLine, fullWidth);
-			return;
-		}
-
-		// Measure exactly where to place the cursor
-		const width = this.measureText(textUpToCursor, style);
-
-		// Position cursor with the measured width
-		this.positionCursorForAlignment(cursorLine, width);
-	}
-
-	private positionCursorForAlignment(cursorLine: number, textWidth: number): void {
-		if (!this.editingCursor || !this.editableText) return;
-
-		const style = this.editableText.style as pixi.TextStyle;
-		const alignment = this.getAlignmentSettings();
-
-		// Calculate line height from the style
-		const { fontSize } = style;
-		const textAsset = this.clipConfig.asset as TextAsset;
-		const lineHeight = textAsset.font?.lineHeight ?? 1;
-		const actualLineHeight = (fontSize as number) * lineHeight;
-
-		// Set cursor Y position based on the line number
-		this.editingCursor.position.y = cursorLine * actualLineHeight;
-
-		// Get the current line for width calculations
-		const { text } = this.editableText;
-		const lines = text.split("\n");
-		const currentLine = cursorLine < lines.length ? lines[cursorLine] : "";
-
-		// Measure the width of the current line for alignment calculations
-		const lineWidth = this.measureText(currentLine, style);
-
-		// Calculate cursor X position based on alignment and textWidth
-		let cursorX = textWidth;
-
-		if (alignment.horizontal !== HorizontalAlignment.LEFT) {
-			// For center and right alignment, we need to calculate the offset
-			// based on where the line starts (not the overall text container)
-			const lineOffset = this.calculateHorizontalPosition({ width: lineWidth }, { width: this.editableText.width }, alignment.horizontal);
-			cursorX = lineOffset + textWidth;
-		}
-
-		this.editingCursor.position.x = cursorX;
-
-		// Ensure cursor is visible
-		this.editingCursor.visible = true;
-	}
 
 
 	// ------------------------------
