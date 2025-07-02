@@ -31,7 +31,7 @@ export class TimelineRuler extends Entity {
 		this.draw();
 	}
 
-	public override update(_deltaTime: number, _elapsed: number): void {
+	public override update(_: number, __: number): void {
 		// Ruler is relatively static, only redraws when needed
 	}
 

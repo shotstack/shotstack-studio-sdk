@@ -6,6 +6,7 @@ dist-ssr
 *.d.ts
 .vite/
 .env
+vite.config.ts
 
 # IDE
 .vscode

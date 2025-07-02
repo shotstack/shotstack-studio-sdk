@@ -38,7 +38,7 @@ export class TimelineClip extends Entity {
 		this.draw();
 	}
 
-	public override update(_deltaTime: number, _elapsed: number): void {
+	public override update(_: number, __: number): void {
 		// Clips are relatively static, only redraw when needed
 	}
 
