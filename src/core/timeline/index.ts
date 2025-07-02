@@ -1,5 +1,5 @@
 // Timeline standalone component exports
-export { Timeline } from './timeline';
+export { Timeline } from "./timeline";
 export type {
 	TimelineClipData,
 	TimelineTrackData,
@@ -16,26 +16,16 @@ export type {
 	TimelineRulerOptions,
 	TimelineTrackOptions,
 	TimelineClipOptions
-} from './timeline-types';
+} from "./timeline-types";
 
 // Export component classes for advanced usage
-export { TimelineRuler } from './components/timeline-ruler';
-export { TimelineTrack } from './components/timeline-track';
-export { TimelineClip } from './components/timeline-clip';
+export { TimelineRuler } from "./components/timeline-ruler";
+export { TimelineTrack } from "./components/timeline-track";
+export { TimelineClip } from "./components/timeline-clip";
 
 // Export type guards for external use
-export {
-	isTextAsset,
-	isVideoAsset,
-	isImageAsset,
-	isAudioAsset,
-	isLumaAsset,
-	hasSourceUrl
-} from './timeline-types';
+export { isTextAsset, isVideoAsset, isImageAsset, isAudioAsset, isLumaAsset, hasSourceUrl } from "./timeline-types";
 
 // Export configuration
-export { 
-	TIMELINE_CONFIG,
-	getAssetColor
-} from './timeline-config';
-export type { TimelineConfig } from './timeline-types';
+export { TIMELINE_CONFIG, getAssetColor } from "./timeline-config";
+export type { TimelineConfig } from "./timeline-types";

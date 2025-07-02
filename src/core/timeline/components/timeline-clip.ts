@@ -11,85 +11,79 @@ export class TimelineClip extends Entity {
 	private scrollPosition: number;
 	private pixelsPerSecond: number;
 	private selectedClipId: string | null;
-	
+
 	private background: pixi.Graphics | null;
 	private label: pixi.Text | null;
-	
+
 	// Event handlers
 	public onClipClick?: (clipData: TimelineClipData, event: pixi.FederatedPointerEvent) => void;
-	
-	constructor(
-		clipData: TimelineClipData,
-		trackHeight: number,
-		scrollPosition: number,
-		pixelsPerSecond: number,
-		selectedClipId: string | null
-	) {
+
+	constructor(clipData: TimelineClipData, trackHeight: number, scrollPosition: number, pixelsPerSecond: number, selectedClipId: string | null) {
 		super();
 		this.clipData = clipData;
 		this.trackHeight = trackHeight;
 		this.scrollPosition = scrollPosition;
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.selectedClipId = selectedClipId;
-		
+
 		this.background = null;
 		this.label = null;
 	}
-	
+
 	public override async load(): Promise<void> {
 		this.background = new pixi.Graphics();
 		this.getContainer().addChild(this.background);
-		
+
 		this.setupInteraction();
 		this.draw();
 	}
-	
+
 	public override update(_deltaTime: number, _elapsed: number): void {
 		// Clips are relatively static, only redraw when needed
 	}
-	
+
 	public override draw(): void {
 		if (!this.background) return;
-		
+
 		const clipId = this.getClipId(this.clipData);
 		const isSelected = this.selectedClipId === clipId;
-		
+
 		// Position based on time
 		const clipX = this.clipData.start * this.pixelsPerSecond - this.scrollPosition;
 		const clipWidth = this.clipData.length * this.pixelsPerSecond;
-		
+
 		this.getContainer().position.x = clipX;
-		
+
 		this.background.clear();
-		
+
 		// Use different style for selected clips
 		if (isSelected) {
 			// Draw selection border first (slightly larger than the clip)
 			this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.selectionBorder, width: 2 };
 			this.background.rect(-1, -1, clipWidth + 2, this.trackHeight - 2);
 			this.background.stroke();
-			
+
 			// Brighter background for selected clips
 			this.background.fillStyle = { color: this.getClipColor(this.clipData.asset.type, true) };
 		} else {
 			this.background.fillStyle = { color: this.getClipColor(this.clipData.asset.type, false) };
 		}
-		
+
 		this.background.rect(0, 0, clipWidth, this.trackHeight);
 		this.background.fill();
-		
+
 		// Add/update label if there's enough space
 		this.updateLabel(clipWidth, isSelected);
 	}
-	
+
 	public override dispose(): void {
 		// Remove event listeners first to prevent memory leaks
 		this.getContainer().removeAllListeners();
-		this.getContainer().eventMode = 'none';
-		
+		this.getContainer().eventMode = "none";
+
 		// Clear event handler references
 		this.onClipClick = undefined;
-		
+
 		// Dispose of PIXI objects with proper cleanup
 		if (this.background) {
 			if (this.background.parent) {
@@ -98,7 +92,7 @@ export class TimelineClip extends Entity {
 			this.background.destroy({ children: true });
 			this.background = null;
 		}
-		
+
 		if (this.label) {
 			if (this.label.parent) {
 				this.label.parent.removeChild(this.label);
@@ -107,41 +101,41 @@ export class TimelineClip extends Entity {
 			this.label = null;
 		}
 	}
-	
+
 	// Public methods for timeline control
 	public updateScrollPosition(scrollPosition: number): void {
 		this.scrollPosition = scrollPosition;
 		this.draw();
 	}
-	
+
 	public updatePixelsPerSecond(pixelsPerSecond: number): void {
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.draw();
 	}
-	
+
 	public updateSelectedClipId(selectedClipId: string | null): void {
 		this.selectedClipId = selectedClipId;
 		this.draw();
 	}
-	
+
 	public updateClipData(clipData: TimelineClipData): void {
 		this.clipData = clipData;
 		this.draw();
 	}
-	
+
 	private setupInteraction(): void {
 		this.getContainer().eventMode = "static";
 		this.getContainer().cursor = "pointer";
 		this.getContainer().on("pointerdown", (event: pixi.FederatedPointerEvent) => {
 			// Stop event from propagating up to prevent timeline click
 			event.stopPropagation();
-			
+
 			if (this.onClipClick) {
 				this.onClipClick(this.clipData, event);
 			}
 		});
 	}
-	
+
 	private updateLabel(clipWidth: number, isSelected: boolean): void {
 		// Remove existing label
 		if (this.label) {
@@ -149,7 +143,7 @@ export class TimelineClip extends Entity {
 			this.label.destroy();
 			this.label = null;
 		}
-		
+
 		// Add label if there's enough space
 		if (clipWidth > 40) {
 			const textColor = isSelected ? TIMELINE_CONFIG.colors.textPrimary : TIMELINE_CONFIG.colors.textSecondary;
@@ -158,38 +152,38 @@ export class TimelineClip extends Entity {
 				fill: textColor,
 				fontWeight: isSelected ? "bold" : "normal"
 			});
-			
+
 			this.label.position.set(5, this.trackHeight / 2 - this.label.height / 2);
 			this.getContainer().addChild(this.label);
 		}
 	}
-	
+
 	private getClipColor(assetType: AssetType, isSelected: boolean = false): number {
 		return getAssetColor(assetType, isSelected);
 	}
-	
+
 	private getClipLabel(clipData: TimelineClipData): string {
 		if (isTextAsset(clipData.asset)) {
 			return clipData.asset.text.substring(0, 20);
 		}
-		
+
 		if (hasSourceUrl(clipData.asset)) {
 			const filename = clipData.asset.src.substring(clipData.asset.src.lastIndexOf("/") + 1);
 			return filename.substring(0, 20);
 		}
-		
+
 		return clipData.asset.type;
 	}
-	
+
 	private getClipId(clip: TimelineClipData): string {
 		let identifier = "";
-		
+
 		if (isTextAsset(clip.asset)) {
 			identifier = clip.asset.text;
 		} else if (hasSourceUrl(clip.asset)) {
 			identifier = clip.asset.src;
 		}
-		
+
 		return `${clip.start}-${clip.asset.type}-${identifier}`;
 	}
 }

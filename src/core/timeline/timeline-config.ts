@@ -44,9 +44,8 @@ export const TIMELINE_CONFIG = {
  * Get asset color with optional selection highlight
  */
 export function getAssetColor(assetType: string, isSelected: boolean = false): number {
-	const baseColor = TIMELINE_CONFIG.colors[assetType as keyof typeof TIMELINE_CONFIG.colors] || 
-		TIMELINE_CONFIG.colors.default;
-	
+	const baseColor = TIMELINE_CONFIG.colors[assetType as keyof typeof TIMELINE_CONFIG.colors] || TIMELINE_CONFIG.colors.default;
+
 	if (!isSelected) {
 		return baseColor;
 	}

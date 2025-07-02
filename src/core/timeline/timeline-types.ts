@@ -76,12 +76,12 @@ export function hasSourceUrl(asset: TimelineAsset): asset is TimelineAsset & { s
 
 // Utility types for enhanced type safety
 export type TimelineEventMap = {
-	'clip:click': ClipClickEventData;
-	'clip:selected': ClipSelectedEventData;
-	'clip:updated': ClipUpdatedEventData;
-	'track:deleted': TrackDeletedEventData;
-	'ruler:click': { time: number; event: TimelinePointerEvent };
-	'track:click': { trackData: TimelineTrackData; event: TimelinePointerEvent };
+	"clip:click": ClipClickEventData;
+	"clip:selected": ClipSelectedEventData;
+	"clip:updated": ClipUpdatedEventData;
+	"track:deleted": TrackDeletedEventData;
+	"ruler:click": { time: number; event: TimelinePointerEvent };
+	"track:click": { trackData: TimelineTrackData; event: TimelinePointerEvent };
 };
 
 // Type-safe event emitter type
