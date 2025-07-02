@@ -185,13 +185,29 @@ export class TextCursor {
 
 		const textWidth = this.measureText(textUpToCursor, style);
 
-		const fontSize = style.fontSize as number;
-		const textAsset = this.clipConfig.asset as TextAsset;
-		const lineHeight = textAsset.font?.lineHeight ?? 1;
-		const actualLineHeight = fontSize * lineHeight;
+		const actualLineHeight = style.lineHeight as number;
 		this.pixelY = this.currentLine * actualLineHeight;
 
-		this.pixelX = textWidth;
+		const textAsset = this.clipConfig.asset as TextAsset;
+		const alignment = textAsset.alignment?.horizontal ?? "center";
+
+		let cursorX = textWidth;
+
+		if (alignment !== "left") {
+			const lineWidth = this.measureText(currentLine, style);
+			const containerWidth = this.textElement.width;
+
+			let lineOffset = 0;
+			if (alignment === "center") {
+				lineOffset = (containerWidth - lineWidth) / 2;
+			} else if (alignment === "right") {
+				lineOffset = containerWidth - lineWidth;
+			}
+
+			cursorX = lineOffset + textWidth;
+		}
+
+		this.pixelX = cursorX;
 	}
 
 	private updateGraphicsPosition(): void {
