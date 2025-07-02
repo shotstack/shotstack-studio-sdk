@@ -1,9 +1,10 @@
 import { Entity } from "@entities/base/entity";
 import { Edit } from "@entities/system/edit";
 import * as pixi from "pixi.js";
+import { TIMELINE_CONFIG } from "../timeline-config";
 
 export class TimelineRuler extends Entity {
-	private static readonly HEIGHT = 20;
+	private static readonly HEIGHT = TIMELINE_CONFIG.dimensions.rulerHeight;
 
 	private edit: Edit;
 	private width: number;
@@ -17,7 +18,7 @@ export class TimelineRuler extends Entity {
 		this.edit = edit;
 		this.width = width;
 		this.scrollPosition = 0;
-		this.pixelsPerSecond = 100;
+		this.pixelsPerSecond = TIMELINE_CONFIG.dimensions.defaultPixelsPerSecond;
 
 		this.background = null;
 	}
@@ -48,12 +49,12 @@ export class TimelineRuler extends Entity {
 		}
 
 		// Draw ruler background
-		this.background.fillStyle = { color: 0x2a2a2a };
+		this.background.fillStyle = { color: TIMELINE_CONFIG.colors.ruler };
 		this.background.rect(0, 0, this.width, TimelineRuler.HEIGHT);
 		this.background.fill();
 
 		// Draw time markers
-		this.background.strokeStyle = { color: 0xcccccc, width: 1 };
+		this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.border.rulerTicks, width: 1 };
 
 		const secondsInView = this.width / this.pixelsPerSecond;
 
@@ -80,7 +81,7 @@ export class TimelineRuler extends Entity {
 			// Add timestamp text
 			const timeText = new pixi.Text(this.formatTime(time), {
 				fontSize: 9,
-				fill: 0xffffff
+				fill: TIMELINE_CONFIG.colors.text.ruler
 			});
 
 			timeText.position.set(x - timeText.width / 2, 2);

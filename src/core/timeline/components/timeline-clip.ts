@@ -3,6 +3,7 @@ import * as pixi from "pixi.js";
 
 import type { TimelineClipData, AssetType } from "../timeline-types";
 import { isTextAsset, hasSourceUrl } from "../timeline-types";
+import { getAssetColor, TIMELINE_CONFIG } from "../timeline-config";
 
 export class TimelineClip extends Entity {
 	private clipData: TimelineClipData;
@@ -64,7 +65,7 @@ export class TimelineClip extends Entity {
 		// Use different style for selected clips
 		if (isSelected) {
 			// Draw selection border first (slightly larger than the clip)
-			this.background.strokeStyle = { color: 0xffffff, width: 2 };
+			this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.border.selection, width: 2 };
 			this.background.rect(-1, -1, clipWidth + 2, this.trackHeight - 2);
 			this.background.stroke();
 			
@@ -151,7 +152,7 @@ export class TimelineClip extends Entity {
 		
 		// Add label if there's enough space
 		if (clipWidth > 40) {
-			const textColor = isSelected ? 0xffffff : 0xdddddd;
+			const textColor = isSelected ? TIMELINE_CONFIG.colors.text.primary : TIMELINE_CONFIG.colors.text.secondary;
 			this.label = new pixi.Text(this.getClipLabel(this.clipData), {
 				fontSize: 10,
 				fill: textColor,
@@ -164,54 +165,7 @@ export class TimelineClip extends Entity {
 	}
 	
 	private getClipColor(assetType: AssetType, isSelected: boolean = false): number {
-		// Base colors
-		let color: number;
-		
-		switch (assetType) {
-			case "video":
-				color = 0x4a90e2;
-				break;
-			case "audio":
-				color = 0x7ed321;
-				break;
-			case "image":
-				color = 0xf5a623;
-				break;
-			case "text":
-				color = 0xbd10e0;
-				break;
-			case "shape":
-				color = 0x9013fe;
-				break;
-			case "html":
-				color = 0x50e3c2;
-				break;
-			default:
-				color = 0x888888;
-				break;
-		}
-		
-		// Brighten the color if selected
-		if (isSelected) {
-			// Convert to RGB
-			// eslint-disable-next-line no-bitwise
-			const r = (color >> 16) & 0xff;
-			// eslint-disable-next-line no-bitwise
-			const g = (color >> 8) & 0xff;
-			// eslint-disable-next-line no-bitwise
-			const b = color & 0xff;
-			
-			// Brighten by 20%
-			const brighterR = Math.min(255, r + 40);
-			const brighterG = Math.min(255, g + 40);
-			const brighterB = Math.min(255, b + 40);
-			
-			// Convert back to hex
-			// eslint-disable-next-line no-bitwise
-			return (brighterR << 16) | (brighterG << 8) | brighterB;
-		}
-		
-		return color;
+		return getAssetColor(assetType, isSelected);
 	}
 	
 	private getClipLabel(clipData: TimelineClipData): string {

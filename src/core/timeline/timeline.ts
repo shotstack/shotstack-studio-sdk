@@ -13,6 +13,7 @@ import type {
 	TrackDeletedEventData
 } from "./timeline-types";
 import { isTextAsset, hasSourceUrl } from "./timeline-types";
+import { TIMELINE_CONFIG, getAssetColor } from "./timeline-config";
 
 export class Timeline extends Entity {
 	private edit: Edit;
@@ -30,8 +31,8 @@ export class Timeline extends Entity {
 	private trackContainer: pixi.Container | null; // Container for all tracks that can be scrolled
 
 	// Timeline parameters
-	private pixelsPerSecond: number = 100;
-	private trackHeight: number = 30; // Reduced from 40 to make tracks tighter
+	private pixelsPerSecond: number = TIMELINE_CONFIG.dimensions.defaultPixelsPerSecond;
+	private trackHeight: number = TIMELINE_CONFIG.dimensions.trackHeight;
 	private scrollPosition: number = 0;
 	private verticalScrollPosition: number = 0;
 	private visibleHeight: number = 0; // Height of the visible area for tracks
@@ -77,7 +78,7 @@ export class Timeline extends Entity {
 		await this.application.init({
 			width: this.width,
 			height: this.height,
-			background: "#232323",
+			background: `#${TIMELINE_CONFIG.colors.background.toString(16).padStart(6, '0')}`,
 			antialias: true
 		});
 
@@ -102,13 +103,13 @@ export class Timeline extends Entity {
 		}
 
 		// Calculate the visible height for tracks (total height minus ruler height)
-		const rulerHeight = 20;
+		const rulerHeight = TIMELINE_CONFIG.dimensions.rulerHeight;
 		this.visibleHeight = this.height - rulerHeight;
 
 		// Create a mask for the track container to enable scrolling
 		if (this.trackContainer) {
 			const mask = new pixi.Graphics();
-			mask.beginFill(0xffffff);
+			mask.beginFill(0xffffff); // White mask for visibility
 			mask.drawRect(0, rulerHeight, this.width, this.visibleHeight);
 			mask.endFill();
 			this.trackContainer.mask = mask;
@@ -147,20 +148,20 @@ export class Timeline extends Entity {
 		this.playhead.position.x = Math.max(0, Math.min(this.width, playheadX));
 
 		// Draw playhead line
-		this.playhead.strokeStyle = { color: 0xff0000, width: 2 };
+		this.playhead.strokeStyle = { color: TIMELINE_CONFIG.colors.playhead, width: TIMELINE_CONFIG.dimensions.playheadWidth };
 		this.playhead.moveTo(0, 0);
 		this.playhead.lineTo(0, this.height);
 		this.playhead.stroke();
 
 		// Draw playhead handle
-		this.playhead.fillStyle = { color: 0xff0000 };
+		this.playhead.fillStyle = { color: TIMELINE_CONFIG.colors.playhead };
 		this.playhead.circle(0, 15, 5);
 		this.playhead.fill();
 
 		// Auto-scroll if needed while playing
 		if (this.edit.isPlaying) {
-			// If playhead is approaching the right edge of the screen (within 100px)
-			const rightEdgeThreshold = this.width - 100;
+			// If playhead is approaching the right edge of the screen
+			const rightEdgeThreshold = this.width - TIMELINE_CONFIG.animation.autoScrollThreshold;
 
 			// If the non-adjusted playhead position is beyond the threshold
 			if (playheadX > rightEdgeThreshold) {
@@ -172,7 +173,7 @@ export class Timeline extends Entity {
 			}
 
 			// If playhead is close to the left edge and we're scrolled
-			if (playheadX < 100 && this.scrollPosition > 0) {
+			if (playheadX < TIMELINE_CONFIG.animation.autoScrollThreshold && this.scrollPosition > 0) {
 				// Scroll back to follow the playhead
 				this.scrollPosition = Math.max(0, this.scrollPosition - 10);
 				this.refreshView();
@@ -318,13 +319,13 @@ export class Timeline extends Entity {
 		this.playhead.clear();
 
 		// Draw playhead line
-		this.playhead.strokeStyle = { color: 0xff0000, width: 2 };
+		this.playhead.strokeStyle = { color: TIMELINE_CONFIG.colors.playhead, width: TIMELINE_CONFIG.dimensions.playheadWidth };
 		this.playhead.moveTo(0, 0);
 		this.playhead.lineTo(0, this.height);
 		this.playhead.stroke();
 
 		// Draw playhead handle
-		this.playhead.fillStyle = { color: 0xff0000 };
+		this.playhead.fillStyle = { color: TIMELINE_CONFIG.colors.playhead };
 		this.playhead.circle(0, 15, 5);
 		this.playhead.fill();
 	}
@@ -412,54 +413,7 @@ export class Timeline extends Entity {
 
 	// Helper methods
 	private getClipColor(assetType: string, isSelected: boolean = false): number {
-		// Base colors
-		let color: number;
-
-		switch (assetType) {
-			case "video":
-				color = 0x4a90e2;
-				break;
-			case "audio":
-				color = 0x7ed321;
-				break;
-			case "image":
-				color = 0xf5a623;
-				break;
-			case "text":
-				color = 0xbd10e0;
-				break;
-			case "shape":
-				color = 0x9013fe;
-				break;
-			case "html":
-				color = 0x50e3c2;
-				break;
-			default:
-				color = 0x888888;
-				break;
-		}
-
-		// Brighten the color if selected
-		if (isSelected) {
-			// Convert to RGB
-			// eslint-disable-next-line no-bitwise
-			const r = (color >> 16) & 0xff;
-			// eslint-disable-next-line no-bitwise
-			const g = (color >> 8) & 0xff;
-			// eslint-disable-next-line no-bitwise
-			const b = color & 0xff;
-
-			// Brighten by 20%
-			const brighterR = Math.min(255, r + 40);
-			const brighterG = Math.min(255, g + 40);
-			const brighterB = Math.min(255, b + 40);
-
-			// Convert back to hex
-			// eslint-disable-next-line no-bitwise
-			return (brighterR << 16) | (brighterG << 8) | brighterB;
-		}
-
-		return color;
+		return getAssetColor(assetType, isSelected);
 	}
 
 	private getClipLabel(clipData: TimelineClipData): string {

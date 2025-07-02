@@ -32,3 +32,13 @@ export {
 	isLumaAsset,
 	hasSourceUrl
 } from './timeline-types';
+
+// Export configuration
+export { 
+	TIMELINE_CONFIG, 
+	DEFAULT_TIMELINE_CONFIG,
+	createTimelineConfig,
+	validateTimelineConfig,
+	getAssetColor
+} from './timeline-config';
+export type { TimelineConfig } from './timeline-types';

@@ -3,6 +3,7 @@ import { Edit } from "@entities/system/edit";
 import * as pixi from "pixi.js";
 
 import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "../timeline-types";
+import { TIMELINE_CONFIG } from "../timeline-config";
 
 import { TimelineClip } from "./timeline-clip";
 
@@ -61,12 +62,12 @@ export class TimelineTrack extends Entity {
 		this.background.clear();
 
 		// Create track background
-		this.background.fillStyle = { color: 0x333333 };
+		this.background.fillStyle = { color: TIMELINE_CONFIG.colors.track };
 		this.background.rect(0, 0, this.width, this.height);
 		this.background.fill();
 
 		// Add track separator line
-		this.background.strokeStyle = { color: 0x222222, width: 1 };
+		this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.border.separator, width: 1 };
 		this.background.moveTo(0, this.height);
 		this.background.lineTo(this.width, this.height);
 		this.background.stroke();
