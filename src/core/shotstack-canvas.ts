@@ -1,6 +1,6 @@
 import { Edit } from "@entities/system/edit";
 import { Inspector } from "@entities/system/inspector";
-import { Timeline } from "@entities/timeline";
+import { Timeline } from "@timeline";
 import * as pixi from "pixi.js";
 import { type Size } from "./layouts/geometry";
 import { AudioLoadParser } from "./loaders/audio-load-parser";

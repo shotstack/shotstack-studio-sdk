@@ -18,6 +18,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@entities": resolve(__dirname, "src/core/entities"),
+			"@timeline": resolve(__dirname, "src/core/timeline"),
 			"@schemas": resolve(__dirname, "src/core/schemas"),
 			"@layouts": resolve(__dirname, "src/core/layouts"),
 			"@animations": resolve(__dirname, "src/core/animations"),
