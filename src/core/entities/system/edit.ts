@@ -252,6 +252,7 @@ export class Edit extends Entity {
 		const trackClips = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
 		for (const clip of trackClips) {
 			clip.shouldDispose = true;
+			this.queueDisposeClip(clip);
 		}
 
 		this.disposeClips();
@@ -288,6 +289,11 @@ export class Edit extends Entity {
 		});
 
 		this.updateTotalDuration();
+
+		this.events.emit("track:deleted", {
+			trackIndex: trackIdx,
+			deletedClips: trackClips.length
+		});
 	}
 
 	public getTotalDuration(): number {

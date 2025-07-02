@@ -9,7 +9,8 @@ import type {
 	TimelineClipData,
 	ClipClickEventData,
 	ClipSelectedEventData,
-	ClipUpdatedEventData
+	ClipUpdatedEventData,
+	TrackDeletedEventData
 } from "./timeline-types";
 import { isTextAsset, hasSourceUrl } from "./timeline-types";
 
@@ -37,6 +38,12 @@ export class Timeline extends Entity {
 
 	// Selection tracking
 	private selectedClipId: string | null = null;
+	
+	// Store bound event handlers for proper cleanup (following Canvas pattern)
+	private readonly boundClipSelectedHandler: (data: ClipSelectedEventData) => void;
+	private readonly boundClipUpdatedHandler: (data: ClipUpdatedEventData) => void;
+	private readonly boundTrackDeletedHandler: (data: TrackDeletedEventData) => void;
+	private readonly boundTimelineClickHandler: (event: pixi.FederatedPointerEvent) => void;
 
 	constructor(edit: Edit, size: Size) {
 		super();
@@ -54,9 +61,16 @@ export class Timeline extends Entity {
 		this.playhead = null;
 		this.trackContainer = null;
 
-		// Add event listeners for edit state changes
-		this.edit.events.on("clip:selected", this.handleClipSelected.bind(this));
-		this.edit.events.on("clip:updated", this.handleClipUpdated.bind(this));
+		// Store bound event handlers for proper cleanup (following established Canvas pattern)
+		this.boundClipSelectedHandler = this.handleClipSelected.bind(this);
+		this.boundClipUpdatedHandler = this.handleClipUpdated.bind(this);
+		this.boundTrackDeletedHandler = this.handleTrackDeleted.bind(this);
+		this.boundTimelineClickHandler = this.handleTimelineClick.bind(this);
+		
+		// Add event listeners for edit state changes using stored references
+		this.edit.events.on("clip:selected", this.boundClipSelectedHandler);
+		this.edit.events.on("clip:updated", this.boundClipUpdatedHandler);
+		this.edit.events.on("track:deleted", this.boundTrackDeletedHandler);
 	}
 
 	public override async load(): Promise<void> {
@@ -173,9 +187,10 @@ export class Timeline extends Entity {
 		this.getContainer().removeAllListeners();
 		this.getContainer().eventMode = 'none';
 		
-		// Remove edit event listeners
-		this.edit.events.off("clip:selected", this.handleClipSelected.bind(this));
-		this.edit.events.off("clip:updated", this.handleClipUpdated.bind(this));
+		// Remove edit event listeners using stored references (following established pattern)
+		this.edit.events.off("clip:selected", this.boundClipSelectedHandler);
+		this.edit.events.off("clip:updated", this.boundClipUpdatedHandler);
+		this.edit.events.off("track:deleted", this.boundTrackDeletedHandler);
 		
 		// Dispose track entities in reverse order to avoid index issues
 		for (let i = this.tracks.length - 1; i >= 0; i -= 1) {
@@ -347,7 +362,7 @@ export class Timeline extends Entity {
 		if (this.background) {
 			this.background.eventMode = "static";
 			this.background.hitArea = new pixi.Rectangle(0, 0, this.width, this.height);
-			this.background.on("pointerdown", this.handleTimelineClick.bind(this));
+			this.background.on("pointerdown", this.boundTimelineClickHandler);
 		}
 
 		// Ruler should be clickable - set up event handling on ruler Entity
@@ -358,8 +373,8 @@ export class Timeline extends Entity {
 			});
 		}
 
-		// Direct click handler on container
-		container.on("pointerdown", this.handleTimelineClick.bind(this));
+		// Direct click handler on container using stored reference
+		container.on("pointerdown", this.boundTimelineClickHandler);
 
 		// Scroll horizontally and vertically
 		container.on("wheel", event => {
@@ -544,6 +559,11 @@ export class Timeline extends Entity {
 	}
 
 	private handleClipUpdated(_data: ClipUpdatedEventData): void {
+		this.refreshView();
+	}
+
+	private handleTrackDeleted(_data: TrackDeletedEventData): void {
+		// Refresh timeline view when tracks are deleted (fixes sync issue)
 		this.refreshView();
 	}
 

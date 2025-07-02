@@ -44,6 +44,11 @@ export type ClipUpdatedEventData = {
 	changes: Partial<TimelineClipData>;
 };
 
+export type TrackDeletedEventData = {
+	trackIndex: number;
+	deletedClips: number;
+};
+
 // Type guards for timeline asset types
 export function isTextAsset(asset: TimelineAsset): asset is TimelineAsset & { type: "text"; text: string } {
 	return asset.type === "text";
@@ -74,6 +79,7 @@ export type TimelineEventMap = {
 	'clip:click': ClipClickEventData;
 	'clip:selected': ClipSelectedEventData;
 	'clip:updated': ClipUpdatedEventData;
+	'track:deleted': TrackDeletedEventData;
 	'ruler:click': { time: number; event: TimelinePointerEvent };
 	'track:click': { trackData: TimelineTrackData; event: TimelinePointerEvent };
 };
