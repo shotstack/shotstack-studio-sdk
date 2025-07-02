@@ -183,7 +183,12 @@ export class TextCursor {
 
 		const textUpToCursor = currentLine.substring(0, cursorCharInLine);
 
-		const textWidth = this.measureText(textUpToCursor, style);
+		let textWidth: number;
+		if (textUpToCursor.length > 0 && textUpToCursor.endsWith(" ")) {
+			textWidth = this.measureText(`${textUpToCursor}x`, style) - this.measureText("x", style);
+		} else {
+			textWidth = this.measureText(textUpToCursor, style);
+		}
 
 		const actualLineHeight = style.lineHeight as number;
 		this.pixelY = this.currentLine * actualLineHeight;
