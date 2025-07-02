@@ -217,6 +217,13 @@ export class TextInputHandler {
 			case "ArrowRight":
 			case "ArrowUp":
 			case "ArrowDown":
+				setTimeout(() => {
+					if (this.hiddenInput) {
+						const text = this.hiddenInput.value;
+						const cursorPosition = this.hiddenInput.selectionStart || 0;
+						this.textChangeCallback?.(text, cursorPosition);
+					}
+				}, 0);
 				handled = false;
 				break;
 
