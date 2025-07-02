@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- WYSIWYG text editing for text clips with double-click activation
+- Real-time cursor positioning with support for all text alignments (left, center, right)
+- Arrow key navigation for precise cursor movement
+
+### Fixed
+
+- Text cursor positioning accuracy for center and right-aligned text
+- Cursor positioning at spaces and word boundaries
+- Arrow key navigation updating visual cursor position
+
 ## [1.2.2] - 2025-06-26
 
 ### Fixed

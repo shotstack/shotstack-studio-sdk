@@ -16,6 +16,13 @@ Try Shotstack Studio in your preferred framework:
 [![Angular](https://img.shields.io/badge/Angular-StackBlitz-blue?style=for-the-badge&logo=angular)](https://stackblitz.com/edit/shotstack-studio-angular?file=src%2Fmain.ts)
 [![Next.js](https://img.shields.io/badge/Next.js-StackBlitz-blue?style=for-the-badge&logo=next.js)](https://stackblitz.com/edit/shotstack-studio-nextjs?file=app%2Fpage.tsx)
 
+## Features
+
+- Create video compositions with multiple tracks and clips
+- WYSIWYG text editing
+- Use in conjunction with the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) to render video
+- Export to video using browser-based FFmpeg
+
 ## Installation
 
 ```bash
@@ -67,12 +74,6 @@ Your HTML should include a container with the `data-shotstack-studio` attribute:
 ```html
 <div data-shotstack-studio></div>
 ```
-
-## Features
-
-- Create video compositions with multiple tracks and clips
-- Use in conjunction with the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) to render video
-- Export to video using browser-based FFmpeg
 
 ## Main Components
 
