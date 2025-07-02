@@ -65,7 +65,7 @@ export class TimelineClip extends Entity {
 		// Use different style for selected clips
 		if (isSelected) {
 			// Draw selection border first (slightly larger than the clip)
-			this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.border.selection, width: 2 };
+			this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.selectionBorder, width: 2 };
 			this.background.rect(-1, -1, clipWidth + 2, this.trackHeight - 2);
 			this.background.stroke();
 			
@@ -152,7 +152,7 @@ export class TimelineClip extends Entity {
 		
 		// Add label if there's enough space
 		if (clipWidth > 40) {
-			const textColor = isSelected ? TIMELINE_CONFIG.colors.text.primary : TIMELINE_CONFIG.colors.text.secondary;
+			const textColor = isSelected ? TIMELINE_CONFIG.colors.textPrimary : TIMELINE_CONFIG.colors.textSecondary;
 			this.label = new pixi.Text(this.getClipLabel(this.clipData), {
 				fontSize: 10,
 				fill: textColor,

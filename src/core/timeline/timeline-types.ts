@@ -132,17 +132,20 @@ export type TimelineConfig = {
 		ruler: number;
 		track: number;
 		playhead: number;
-		text: {
-			primary: number;
-			secondary: number;
-			ruler: number;
-		};
-		border: {
-			selection: number;
-			separator: number;
-			rulerTicks: number;
-		};
-		assets: Record<AssetType, number> & { default: number };
+		textPrimary: number;
+		textSecondary: number;
+		selectionBorder: number;
+		separator: number;
+		rulerTicks: number;
+		// Asset colors
+		video: number;
+		audio: number;
+		image: number;
+		text: number;
+		shape: number;
+		html: number;
+		luma: number;
+		default: number;
 	};
 	dimensions: {
 		rulerHeight: number;

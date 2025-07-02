@@ -67,7 +67,7 @@ export class TimelineTrack extends Entity {
 		this.background.fill();
 
 		// Add track separator line
-		this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.border.separator, width: 1 };
+		this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.separator, width: 1 };
 		this.background.moveTo(0, this.height);
 		this.background.lineTo(this.width, this.height);
 		this.background.stroke();

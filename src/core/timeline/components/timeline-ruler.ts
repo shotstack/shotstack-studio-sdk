@@ -54,7 +54,7 @@ export class TimelineRuler extends Entity {
 		this.background.fill();
 
 		// Draw time markers
-		this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.border.rulerTicks, width: 1 };
+		this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.rulerTicks, width: 1 };
 
 		const secondsInView = this.width / this.pixelsPerSecond;
 
@@ -81,7 +81,7 @@ export class TimelineRuler extends Entity {
 			// Add timestamp text
 			const timeText = new pixi.Text(this.formatTime(time), {
 				fontSize: 9,
-				fill: TIMELINE_CONFIG.colors.text.ruler
+				fill: TIMELINE_CONFIG.colors.textPrimary
 			});
 
 			timeText.position.set(x - timeText.width / 2, 2);
