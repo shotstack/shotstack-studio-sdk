@@ -30,15 +30,18 @@ export class Timeline extends Entity {
 	private playhead: pixi.Graphics | null;
 	private trackContainer: pixi.Container | null; // Container for all tracks that can be scrolled
 
-	// Timeline parameters
-	private pixelsPerSecond: number = TIMELINE_CONFIG.dimensions.defaultPixelsPerSecond;
-	private trackHeight: number = TIMELINE_CONFIG.dimensions.trackHeight;
-	private scrollPosition: number = 0;
-	private verticalScrollPosition: number = 0;
-	private visibleHeight: number = 0; // Height of the visible area for tracks
+	// Timeline state properties
+	private pixelsPerSecondValue: number = TIMELINE_CONFIG.dimensions.defaultPixelsPerSecond;
+	private trackHeightValue: number = TIMELINE_CONFIG.dimensions.trackHeight;
+	private scrollPositionValue: number = 0;
+	private verticalScrollPositionValue: number = 0;
+	private visibleHeightValue: number = 0; // Height of the visible area for tracks
+	private selectedClipIdValue: string | null = null;
+	private isPlayingValue: boolean = false;
 
-	// Selection tracking
-	private selectedClipId: string | null = null;
+	// Performance optimization - debounced refresh
+	private refreshTimeout: number | null = null;
+	private static readonly REFRESH_DEBOUNCE_MS = 16; // ~60fps
 	
 	// Store bound event handlers for proper cleanup (following Canvas pattern)
 	private readonly boundClipSelectedHandler: (data: ClipSelectedEventData) => void;
@@ -82,11 +85,16 @@ export class Timeline extends Entity {
 			antialias: true
 		});
 
-		// Create PIXI objects and Entity components
-		this.background = new pixi.Graphics();
-		this.ruler = new TimelineRuler(this.edit, this.width);
-		this.playhead = new pixi.Graphics();
-		this.trackContainer = new pixi.Container();
+		// Create PIXI objects and Entity components with error handling
+		try {
+			this.background = new pixi.Graphics();
+			this.ruler = new TimelineRuler(this.edit, this.width);
+			this.playhead = new pixi.Graphics();
+			this.trackContainer = new pixi.Container();
+		} catch (error) {
+			console.error('Failed to create timeline components:', error);
+			throw new Error('Timeline component initialization failed');
+		}
 
 		// Set up container hierarchy using Entity's getContainer() for internal organization
 		this.getContainer().addChild(this.background);
@@ -94,8 +102,13 @@ export class Timeline extends Entity {
 		this.getContainer().addChild(this.ruler.getContainer());
 		this.getContainer().addChild(this.playhead);
 
-		// Load ruler component
-		await this.ruler.load();
+		// Load ruler component with error handling
+		try {
+			await this.ruler.load();
+		} catch (error) {
+			console.error('Failed to load timeline ruler:', error);
+			throw new Error('Timeline ruler initialization failed');
+		}
 
 		// Add main container to application stage for standalone functionality
 		if (this.application) {
@@ -104,7 +117,7 @@ export class Timeline extends Entity {
 
 		// Calculate the visible height for tracks (total height minus ruler height)
 		const rulerHeight = TIMELINE_CONFIG.dimensions.rulerHeight;
-		this.visibleHeight = this.height - rulerHeight;
+		this.visibleHeightValue = this.height - rulerHeight;
 
 		// Create a mask for the track container to enable scrolling
 		if (this.trackContainer) {
@@ -187,6 +200,12 @@ export class Timeline extends Entity {
 	}
 
 	public override dispose(): void {
+		// Clean up timers
+		if (this.refreshTimeout !== null) {
+			clearTimeout(this.refreshTimeout);
+			this.refreshTimeout = null;
+		}
+
 		// Remove event listeners first to prevent memory leaks
 		this.getContainer().removeAllListeners();
 		this.getContainer().eventMode = 'none';
@@ -239,15 +258,130 @@ export class Timeline extends Entity {
 		this.application = null;
 	}
 
+	// State management with validation and notifications (following Edit class patterns)
+	public get pixelsPerSecond(): number {
+		return this.pixelsPerSecondValue;
+	}
+
+	public set pixelsPerSecond(value: number) {
+		const validatedValue = Math.max(
+			TIMELINE_CONFIG.dimensions.minZoom,
+			Math.min(TIMELINE_CONFIG.dimensions.maxZoom, value)
+		);
+		
+		if (this.pixelsPerSecondValue !== validatedValue) {
+			this.pixelsPerSecondValue = validatedValue;
+			this.onStateChanged('pixelsPerSecond');
+		}
+	}
+
+	public get scrollPosition(): number {
+		return this.scrollPositionValue;
+	}
+
+	public set scrollPosition(value: number) {
+		const validatedValue = Math.max(0, value);
+		
+		if (this.scrollPositionValue !== validatedValue) {
+			this.scrollPositionValue = validatedValue;
+			this.onStateChanged('scrollPosition');
+		}
+	}
+
+	public get verticalScrollPosition(): number {
+		return this.verticalScrollPositionValue;
+	}
+
+	public set verticalScrollPosition(value: number) {
+		const maxScroll = this.getMaxVerticalScroll();
+		const validatedValue = Math.max(0, Math.min(maxScroll, value));
+		
+		if (this.verticalScrollPositionValue !== validatedValue) {
+			this.verticalScrollPositionValue = validatedValue;
+			this.onStateChanged('verticalScrollPosition');
+		}
+	}
+
+	public get selectedClipId(): string | null {
+		return this.selectedClipIdValue;
+	}
+
+	public set selectedClipId(value: string | null) {
+		if (this.selectedClipIdValue !== value) {
+			this.selectedClipIdValue = value;
+			this.onStateChanged('selectedClipId');
+		}
+	}
+
+	public get isPlaying(): boolean {
+		return this.isPlayingValue;
+	}
+
+	public set isPlaying(value: boolean) {
+		if (this.isPlayingValue !== value) {
+			this.isPlayingValue = value;
+			this.onStateChanged('isPlaying');
+		}
+	}
+
+	public get visibleHeight(): number {
+		return this.visibleHeightValue;
+	}
+
+	public set visibleHeight(value: number) {
+		const validatedValue = Math.max(0, value);
+		
+		if (this.visibleHeightValue !== validatedValue) {
+			this.visibleHeightValue = validatedValue;
+			this.onStateChanged('visibleHeight');
+		}
+	}
+
+	public get trackHeight(): number {
+		return this.trackHeightValue;
+	}
+
+	public set trackHeight(value: number) {
+		const validatedValue = Math.max(1, value);
+		
+		if (this.trackHeightValue !== validatedValue) {
+			this.trackHeightValue = validatedValue;
+			this.onStateChanged('trackHeight');
+		}
+	}
+
+	/**
+	 * Handle state changes with notifications (following Edit class EventEmitter pattern)
+	 */
+	private onStateChanged(property: string): void {
+		// Emit state change event for external listeners
+		if (this.edit?.events) {
+			this.edit.events.emit('timeline:stateChanged' as any, {
+				property,
+				value: (this as any)[`${property}Value`]
+			});
+		}
+
+		// Trigger immediate refresh for scroll operations, debounced for heavy operations
+		const immediateRefreshProperties = ['scrollPosition', 'verticalScrollPosition'];
+		const debouncedRefreshProperties = ['pixelsPerSecond', 'selectedClipId'];
+		
+		if (immediateRefreshProperties.includes(property)) {
+			this.refreshView();
+		} else if (debouncedRefreshProperties.includes(property)) {
+			this.debouncedRefreshView();
+		}
+	}
+
 	// Timeline-specific methods
 	public setZoom(pixelsPerSecond: number): void {
 		this.pixelsPerSecond = pixelsPerSecond;
-		this.refreshView();
+		// refreshView is called automatically by the setter
 	}
 
 	public setScrollPosition(scrollPosition: number): void {
-		this.scrollPosition = Math.max(0, scrollPosition);
-		this.refreshView();
+		this.scrollPosition = scrollPosition;
+		// refreshView is called automatically by the setter
 	}
 
 	// Private implementation methods
@@ -264,15 +398,25 @@ export class Timeline extends Entity {
 		// Clear existing track entities with proper memory management
 		for (let i = this.tracks.length - 1; i >= 0; i -= 1) {
 			const track = this.tracks[i];
-			if (this.trackContainer && track.getContainer().parent === this.trackContainer) {
-				this.trackContainer.removeChild(track.getContainer());
+			try {
+				if (this.trackContainer && track.getContainer().parent === this.trackContainer) {
+					this.trackContainer.removeChild(track.getContainer());
+				}
+				track.dispose();
+			} catch (error) {
+				console.warn('Failed to dispose timeline track:', error);
 			}
-			track.dispose();
 		}
 		this.tracks.length = 0; // Clear array efficiently
 
-		// Get edit data
-		const editData = this.edit.getEdit();
+		// Get edit data with error handling
+		let editData;
+		try {
+			editData = this.edit.getEdit();
+		} catch (error) {
+			console.error('Failed to get edit data:', error);
+			return; // Graceful degradation
+		}
 
 		// Create Entity-based tracks for each track in the edit
 		for (let i = 0; i < editData.timeline.tracks.length; i += 1) {
@@ -285,29 +429,34 @@ export class Timeline extends Entity {
 				continue;
 			}
 
-			// Create TimelineTrack Entity
-			const track = new TimelineTrack(
-				this.edit,
-				trackData,
-				this.width,
-				this.trackHeight,
-				this.scrollPosition,
-				this.pixelsPerSecond,
-				this.selectedClipId
-			);
+			// Create TimelineTrack Entity with error handling
+			try {
+				const track = new TimelineTrack(
+					this.edit,
+					trackData,
+					this.width,
+					this.trackHeight,
+					this.scrollPosition,
+					this.pixelsPerSecond,
+					this.selectedClipId
+				);
 
-			// Position the track
-			track.getContainer().position.y = trackY;
+				// Position the track
+				track.getContainer().position.y = trackY;
 
-			// Set up track event handling
-			track.getContainer().on('clip:click', (data: ClipClickEventData) => {
-				this.handleClipClick(data.clipData);
-			});
+				// Set up track event handling
+				track.getContainer().on('clip:click', (data: ClipClickEventData) => {
+					this.handleClipClick(data.clipData);
+				});
 
-			// Add to timeline and load
-			this.trackContainer?.addChild(track.getContainer());
-			track.load(); // Load asynchronously without waiting
-			this.tracks.push(track);
+				// Add to timeline and load
+				this.trackContainer?.addChild(track.getContainer());
+				track.load(); // Load asynchronously without waiting
+				this.tracks.push(track);
+			} catch (error) {
+				console.warn(`Failed to create track ${i}:`, error);
+				// Continue with other tracks for graceful degradation
+			}
 		}
 	}
 
@@ -359,7 +508,13 @@ export class Timeline extends Entity {
 			if (event.ctrlKey) {
 				// Zoom in/out
 				const oldZoom = this.pixelsPerSecond;
-				this.pixelsPerSecond = Math.max(10, Math.min(200, this.pixelsPerSecond * (1 - event.deltaY * 0.001)));
+				this.pixelsPerSecond = Math.max(
+					TIMELINE_CONFIG.dimensions.minZoom,
+					Math.min(
+						TIMELINE_CONFIG.dimensions.maxZoom,
+						this.pixelsPerSecond * (1 - event.deltaY * TIMELINE_CONFIG.animation.zoomSpeed)
+					)
+				);
 
 				// Adjust scroll to keep point under cursor stable
 				const mouseX = event.getLocalPosition(container).x;
@@ -368,15 +523,12 @@ export class Timeline extends Entity {
 			} else if (event.shiftKey) {
 				// Horizontal scroll when holding shift
 				this.scrollPosition += event.deltaY;
-				this.scrollPosition = Math.max(0, this.scrollPosition);
 			} else {
 				// Vertical scroll without modifiers
-				const maxScroll = this.getMaxVerticalScroll();
-				this.verticalScrollPosition += event.deltaY * 0.5; // Adjust scroll speed
-				this.verticalScrollPosition = Math.max(0, Math.min(maxScroll, this.verticalScrollPosition));
+				this.verticalScrollPosition += event.deltaY * TIMELINE_CONFIG.animation.scrollSpeed;
 			}
 
-			this.refreshView();
+			// Manual refresh removed - state setters handle this automatically
 		});
 	}
 
@@ -390,6 +542,20 @@ export class Timeline extends Entity {
 		this.buildTracks();
 		this.ruler?.updateScrollPosition(this.scrollPosition);
 		this.ruler?.updatePixelsPerSecond(this.pixelsPerSecond);
+	}
+
+	/**
+	 * Debounced refresh to prevent excessive redraws (following existing performance patterns)
+	 */
+	private debouncedRefreshView(): void {
+		if (this.refreshTimeout !== null) {
+			clearTimeout(this.refreshTimeout);
+		}
+		
+		this.refreshTimeout = window.setTimeout(() => {
+			this.refreshView();
+			this.refreshTimeout = null;
+		}, Timeline.REFRESH_DEBOUNCE_MS);
 	}
 
 	private handleTimelineClick(event: pixi.FederatedPointerEvent): void {
@@ -460,17 +626,21 @@ export class Timeline extends Entity {
 		}
 
 		if (trackIndex !== -1 && clipIndex !== -1) {
-			// Get the player from the edit
-			const clip = this.edit.getClip(trackIndex, clipIndex);
+			try {
+				// Get the player from the edit
+				const clip = this.edit.getClip(trackIndex, clipIndex);
 
-			if (clip) {
-				// Notify the edit that this clip is selected
-				// We need to directly call the event since setSelectedClip expects a Player object
-				this.edit.events.emit("clip:selected", {
-					clip,
-					trackIndex,
-					clipIndex
-				});
+				if (clip) {
+					// Notify the edit that this clip is selected
+					// We need to directly call the event since setSelectedClip expects a Player object
+					this.edit.events.emit("clip:selected", {
+						clip,
+						trackIndex,
+						clipIndex
+					});
+				}
+			} catch (error) {
+				console.warn('Failed to handle clip selection:', error);
 			}
 		}
 
