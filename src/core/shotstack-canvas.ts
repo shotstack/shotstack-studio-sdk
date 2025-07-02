@@ -6,7 +6,6 @@ import { type Size } from "./layouts/geometry";
 import { AudioLoadParser } from "./loaders/audio-load-parser";
 import { FontLoadParser } from "./loaders/font-load-parser";
 
-
 export class Canvas {
 	/** @internal */
 	public static readonly CanvasSelector = "[data-shotstack-studio]";
