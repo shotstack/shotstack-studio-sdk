@@ -20,7 +20,7 @@ export class Timeline extends Entity {
 	private height: number;
 
 	// PIXI Application for standalone component functionality
-	public readonly application: pixi.Application;
+	public application: pixi.Application | null;
 
 	// Core visual components using Entity architecture
 	private background: pixi.Graphics | null;
@@ -51,10 +51,8 @@ export class Timeline extends Entity {
 		this.width = size.width;
 		this.height = size.height;
 
-		// Create PIXI application for standalone functionality
-		this.application = new pixi.Application();
-
-		// Initialize graphics as null (following Inspector pattern for internal components)
+		// Initialize all PIXI objects as null (following Inspector pattern)
+		this.application = null;
 		this.background = null;
 		this.ruler = null;
 		this.tracks = [];
@@ -74,7 +72,8 @@ export class Timeline extends Entity {
 	}
 
 	public override async load(): Promise<void> {
-		// Initialize standalone application
+		// Create and initialize standalone application
+		this.application = new pixi.Application();
 		await this.application.init({
 			width: this.width,
 			height: this.height,
@@ -98,22 +97,26 @@ export class Timeline extends Entity {
 		await this.ruler.load();
 
 		// Add main container to application stage for standalone functionality
-		this.application.stage.addChild(this.getContainer());
+		if (this.application) {
+			this.application.stage.addChild(this.getContainer());
+		}
 
 		// Calculate the visible height for tracks (total height minus ruler height)
 		const rulerHeight = 20;
 		this.visibleHeight = this.height - rulerHeight;
 
 		// Create a mask for the track container to enable scrolling
-		const mask = new pixi.Graphics();
-		mask.beginFill(0xffffff);
-		mask.drawRect(0, rulerHeight, this.width, this.visibleHeight);
-		mask.endFill();
-		this.trackContainer.mask = mask;
-		this.getContainer().addChild(mask);
+		if (this.trackContainer) {
+			const mask = new pixi.Graphics();
+			mask.beginFill(0xffffff);
+			mask.drawRect(0, rulerHeight, this.width, this.visibleHeight);
+			mask.endFill();
+			this.trackContainer.mask = mask;
+			this.getContainer().addChild(mask);
 
-		// Position the track container
-		this.trackContainer.position.y = rulerHeight;
+			// Position the track container
+			this.trackContainer.position.y = rulerHeight;
+		}
 
 		// Initialize background
 		this.drawBackground();
@@ -211,54 +214,28 @@ export class Timeline extends Entity {
 			this.ruler = null;
 		}
 		
-		// Dispose PIXI graphics objects with proper cleanup
-		if (this.background) {
-			if (this.background.parent) {
-				this.background.parent.removeChild(this.background);
-			}
-			this.background.destroy({ children: true });
-			this.background = null;
-		}
+		// Dispose PIXI graphics objects following Player class pattern
+		this.background?.destroy({ children: true });
+		this.background = null;
 		
-		if (this.playhead) {
-			if (this.playhead.parent) {
-				this.playhead.parent.removeChild(this.playhead);
-			}
-			this.playhead.destroy({ children: true });
-			this.playhead = null;
-		}
+		this.playhead?.destroy({ children: true });
+		this.playhead = null;
 		
-		if (this.trackContainer) {
-			// Remove mask first if it exists
-			if (this.trackContainer.mask) {
-				const mask = this.trackContainer.mask as pixi.Graphics;
-				this.trackContainer.mask = null;
-				if (mask.parent) {
-					mask.parent.removeChild(mask);
-				}
-				mask.destroy({ children: true });
-			}
-			
-			if (this.trackContainer.parent) {
-				this.trackContainer.parent.removeChild(this.trackContainer);
-			}
-			this.trackContainer.destroy({ children: true });
-			this.trackContainer = null;
+		// Handle trackContainer and its mask
+		if (this.trackContainer?.mask) {
+			const mask = this.trackContainer.mask as pixi.Graphics;
+			this.trackContainer.mask = null;
+			mask.destroy({ children: true });
 		}
+		this.trackContainer?.destroy({ children: true });
+		this.trackContainer = null;
 		
-		// Destroy standalone application with proper cleanup
-		if (this.application) {
-			// Remove main container from stage first
-			if (this.getContainer().parent === this.application.stage) {
-				this.application.stage.removeChild(this.getContainer());
-			}
-			
-			// Destroy application
-			this.application.destroy(true, {
-				children: true,
-				texture: true
-			});
-		}
+		// Destroy standalone application following Player pattern
+		this.application?.destroy(true, {
+			children: true,
+			texture: true
+		});
+		this.application = null;
 	}
 
 	// Timeline-specific methods
@@ -569,6 +546,9 @@ export class Timeline extends Entity {
 
 	// Standalone component interface - provides canvas for developer integration
 	public getCanvas(): HTMLCanvasElement {
+		if (!this.application) {
+			throw new Error("Timeline not loaded - call load() first");
+		}
 		return this.application.canvas;
 	}
 
