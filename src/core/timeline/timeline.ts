@@ -48,6 +48,7 @@ export class Timeline extends Entity {
 	private readonly boundClipUpdatedHandler: (data: ClipUpdatedEventData) => void;
 	private readonly boundTrackDeletedHandler: (data: TrackDeletedEventData) => void;
 	private readonly boundTimelineClickHandler: (event: pixi.FederatedPointerEvent) => void;
+	private readonly boundWheelHandler: (event: pixi.FederatedWheelEvent) => void;
 
 	constructor(edit: Edit, size: Size) {
 		super();
@@ -68,6 +69,7 @@ export class Timeline extends Entity {
 		this.boundClipUpdatedHandler = this.handleClipUpdated.bind(this);
 		this.boundTrackDeletedHandler = this.handleTrackDeleted.bind(this);
 		this.boundTimelineClickHandler = this.handleTimelineClick.bind(this);
+		this.boundWheelHandler = this.handleWheel.bind(this);
 		
 		// Add event listeners for edit state changes using stored references
 		this.edit.events.on("clip:selected", this.boundClipSelectedHandler);
@@ -207,6 +209,7 @@ export class Timeline extends Entity {
 		}
 
 		// Remove event listeners first to prevent memory leaks
+		this.getContainer().off("wheel", this.boundWheelHandler);
 		this.getContainer().removeAllListeners();
 		this.getContainer().eventMode = 'none';
 		
@@ -503,33 +506,8 @@ export class Timeline extends Entity {
 		// Direct click handler on container using stored reference
 		container.on("pointerdown", this.boundTimelineClickHandler);
 
-		// Scroll horizontally and vertically
-		container.on("wheel", event => {
-			if (event.ctrlKey) {
-				// Zoom in/out
-				const oldZoom = this.pixelsPerSecond;
-				this.pixelsPerSecond = Math.max(
-					TIMELINE_CONFIG.dimensions.minZoom,
-					Math.min(
-						TIMELINE_CONFIG.dimensions.maxZoom,
-						this.pixelsPerSecond * (1 - event.deltaY * TIMELINE_CONFIG.animation.zoomSpeed)
-					)
-				);
-
-				// Adjust scroll to keep point under cursor stable
-				const mouseX = event.getLocalPosition(container).x;
-				const timeAtCursor = (mouseX + this.scrollPosition) / oldZoom;
-				this.scrollPosition = timeAtCursor * this.pixelsPerSecond - mouseX;
-			} else if (event.shiftKey) {
-				// Horizontal scroll when holding shift
-				this.scrollPosition += event.deltaY;
-			} else {
-				// Vertical scroll without modifiers
-				this.verticalScrollPosition += event.deltaY * TIMELINE_CONFIG.animation.scrollSpeed;
-			}
-
-			// Manual refresh removed - state setters handle this automatically
-		});
+		// Scroll horizontally and vertically using bound handler
+		container.on("wheel", this.boundWheelHandler);
 	}
 
 	private getMaxVerticalScroll(): number {
@@ -575,6 +553,33 @@ export class Timeline extends Entity {
 			// Seek the edit to that time
 			this.edit.seek(clickTime);
 		}
+	}
+
+	private handleWheel(event: pixi.FederatedWheelEvent): void {
+		if (event.ctrlKey) {
+			// Zoom in/out
+			const oldZoom = this.pixelsPerSecond;
+			this.pixelsPerSecond = Math.max(
+				TIMELINE_CONFIG.dimensions.minZoom,
+				Math.min(
+					TIMELINE_CONFIG.dimensions.maxZoom,
+					this.pixelsPerSecond * (1 - event.deltaY * TIMELINE_CONFIG.animation.zoomSpeed)
+				)
+			);
+
+			// Adjust scroll to keep point under cursor stable
+			const mouseX = event.getLocalPosition(this.getContainer()).x;
+			const timeAtCursor = (mouseX + this.scrollPosition) / oldZoom;
+			this.scrollPosition = timeAtCursor * this.pixelsPerSecond - mouseX;
+		} else if (event.shiftKey) {
+			// Horizontal scroll when holding shift
+			this.scrollPosition += event.deltaY;
+		} else {
+			// Vertical scroll without modifiers
+			this.verticalScrollPosition += event.deltaY * TIMELINE_CONFIG.animation.scrollSpeed;
+		}
+
+		// Manual refresh removed - state setters handle this automatically
 	}
 
 	// Helper methods
