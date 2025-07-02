@@ -2,8 +2,8 @@ import { Entity } from "@entities/base/entity";
 import { Edit } from "@entities/system/edit";
 import * as pixi from "pixi.js";
 
-import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "../timeline-types";
 import { TIMELINE_CONFIG } from "../timeline-config";
+import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "../timeline-types";
 
 import { TimelineClip } from "./timeline-clip";
 

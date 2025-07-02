@@ -1,9 +1,9 @@
 import { Entity } from "@entities/base/entity";
 import * as pixi from "pixi.js";
 
+import { getAssetColor, TIMELINE_CONFIG } from "../timeline-config";
 import type { TimelineClipData, AssetType } from "../timeline-types";
 import { isTextAsset, hasSourceUrl } from "../timeline-types";
-import { getAssetColor, TIMELINE_CONFIG } from "../timeline-config";
 
 export class TimelineClip extends Entity {
 	private clipData: TimelineClipData;

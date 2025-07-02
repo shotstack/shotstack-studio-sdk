@@ -156,8 +156,7 @@ export class Timeline extends Entity {
 		}
 	}
 
-	public override draw(): void {
-	}
+	public override draw(): void {}
 
 	public override dispose(): void {
 		if (this.refreshTimeout !== null) {
@@ -479,7 +478,6 @@ export class Timeline extends Entity {
 		} else {
 			this.verticalScrollPosition += event.deltaY * TIMELINE_CONFIG.animation.scrollSpeed;
 		}
-
 	}
 
 	private getClipColor(assetType: string, isSelected: boolean = false): number {

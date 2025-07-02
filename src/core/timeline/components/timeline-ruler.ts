@@ -1,6 +1,7 @@
 import { Entity } from "@entities/base/entity";
 import { Edit } from "@entities/system/edit";
 import * as pixi from "pixi.js";
+
 import { TIMELINE_CONFIG } from "../timeline-config";
 
 export class TimelineRuler extends Entity {
