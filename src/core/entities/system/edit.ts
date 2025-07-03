@@ -8,6 +8,8 @@ import { FontLoadParser } from "../../loaders/font-load-parser";
 import { ClipSchema } from "../../schemas/clip";
 import { EditSchema } from "../../schemas/edit";
 import { TrackSchema } from "../../schemas/track";
+import type { ClipDeletedEventData } from "../../timeline/timeline-types";
+import { isTextAsset, hasSourceUrl } from "../../timeline/timeline-types";
 import { Entity } from "../base/entity";
 import type { Player } from "../base/player";
 import { AudioPlayer } from "../players/audio-player";
@@ -198,6 +200,15 @@ export class Edit extends Entity {
 		);
 
 		if (clipToDelete) {
+			// Emit deletion event before deleting
+			const clipId = this.getClipId(clipToDelete.clipConfiguration, trackIdx);
+			const eventData: ClipDeletedEventData = {
+				trackIndex: trackIdx,
+				clipIndex: clipIdx,
+				clipId
+			};
+			this.events.emit("clip:deleted", eventData);
+
 			this.queueDisposeClip(clipToDelete);
 			this.updateTotalDuration();
 		}
@@ -302,6 +313,23 @@ export class Edit extends Entity {
 	/** @internal */
 	public getSelectedClip(): Player | null {
 		return this.selectedClip;
+	}
+	/** @internal */
+	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
+		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
+		return clipsByTrack[clipIdx] || null;
+	}
+	/** @internal */
+	private getClipId(clip: ClipType, trackIndex: number): string {
+		let identifier = "";
+
+		if (isTextAsset(clip.asset)) {
+			identifier = clip.asset.text;
+		} else if (hasSourceUrl(clip.asset)) {
+			identifier = clip.asset.src;
+		}
+
+		return `track${trackIndex}-${clip.start}-${clip.asset.type}-${identifier}`;
 	}
 	/** @internal */
 	public setSelectedClip(clip: Player): void {

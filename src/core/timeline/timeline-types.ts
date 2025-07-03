@@ -50,6 +50,12 @@ export type TrackDeletedEventData = {
 	deletedClips: number;
 };
 
+export type ClipDeletedEventData = {
+	trackIndex: number;
+	clipIndex: number;
+	clipId: string;
+};
+
 // Type guards for timeline asset types
 export function isTextAsset(asset: TimelineAsset): asset is TimelineAsset & { type: "text"; text: string } {
 	return asset.type === "text";
@@ -80,6 +86,7 @@ export type TimelineEventMap = {
 	"clip:click": ClipClickEventData;
 	"clip:selected": ClipSelectedEventData;
 	"clip:updated": ClipUpdatedEventData;
+	"clip:deleted": ClipDeletedEventData;
 	"track:deleted": TrackDeletedEventData;
 	"ruler:click": { time: number; event: TimelinePointerEvent };
 	"track:click": { trackData: TimelineTrackData; event: TimelinePointerEvent };
