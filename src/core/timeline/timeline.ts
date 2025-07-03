@@ -476,7 +476,12 @@ export class Timeline extends Entity {
 		} else if (event.shiftKey) {
 			this.scrollPosition += event.deltaY;
 		} else {
-			this.verticalScrollPosition += event.deltaY * TIMELINE_CONFIG.animation.scrollSpeed;
+			if (event.deltaX !== 0) {
+				this.scrollPosition += event.deltaX;
+			}
+			if (event.deltaY !== 0) {
+				this.verticalScrollPosition += event.deltaY * TIMELINE_CONFIG.animation.scrollSpeed;
+			}
 		}
 	}
 
