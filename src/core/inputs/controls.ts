@@ -75,6 +75,26 @@ export class Controls {
 				this.edit.seek(this.edit.playbackTime + this.frameTime);
 				break;
 			}
+			case "Delete":
+			case "Backspace": {
+				const selectedClip = this.edit.getSelectedClip();
+				if (selectedClip) {
+					const trackIndex = selectedClip.layer - 1;
+					const track = this.edit.getTrack(trackIndex);
+					
+					if (track && track.clips) {
+						const clipIndex = track.clips.findIndex(clip => 
+							clip.start === selectedClip.clipConfiguration.start && 
+							clip.asset?.type === selectedClip.clipConfiguration.asset?.type
+						);
+						
+						if (clipIndex !== -1) {
+							this.edit.deleteClip(trackIndex, clipIndex);
+						}
+					}
+				}
+				break;
+			}
 			default: {
 				break;
 			}
