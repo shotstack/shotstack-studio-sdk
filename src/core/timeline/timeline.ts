@@ -378,6 +378,10 @@ export class Timeline extends ComponentBase {
 						this.handleClipClick(data.clipData, data.trackIndex);
 					});
 
+					track.getContainer().on("clip:resize", (data: { trackIndex: number; clipIndex: number; newLength: number; initialLength: number }) => {
+						this.handleClipResize(data.trackIndex, data.clipIndex, data.newLength, data.initialLength);
+					});
+
 					this.trackContainer?.addChild(track.getContainer());
 					track.load();
 					this.tracks.push(track);
@@ -545,6 +549,30 @@ export class Timeline extends ComponentBase {
 		}
 
 		this.refreshView();
+	}
+
+	private handleClipResize(trackIndex: number, clipIndex: number, newLength: number, initialLength: number): void {
+		try {
+			// Get both original and player clips using edit methods
+			const originalClip = this.edit.getClip(trackIndex, clipIndex);
+			const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
+			
+			if (originalClip && playerClip) {
+				// Create a proper "before" state with the initial length from when drag started
+				const beforeClip = { ...playerClip.clipConfiguration, length: initialLength };
+				
+				// Direct manipulation - update clip data immediately
+				playerClip.clipConfiguration.length = newLength;
+				
+				// Notify about completed state change with proper before/after states
+				this.edit.setUpdatedClip(playerClip, beforeClip);
+				
+				// Refresh timeline view to show the changes
+				this.refreshView();
+			}
+		} catch (error) {
+			console.warn("Failed to handle clip resize:", error);
+		}
 	}
 
 	private handleClipSelected(data: ClipSelectedEventData): void {

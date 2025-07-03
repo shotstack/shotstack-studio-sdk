@@ -136,6 +136,10 @@ export class TimelineTrack extends Entity {
 				this.handleClipClick(clipEventData, event);
 			};
 
+			clip.onClipResize = (trackIndex, clipIndex, newLength, initialLength) => {
+				this.handleClipResize(trackIndex, clipIndex, newLength, initialLength);
+			};
+
 			this.clips.push(clip);
 			this.getContainer().addChild(clip.getContainer());
 
@@ -178,5 +182,11 @@ export class TimelineTrack extends Entity {
 		// Emit event to timeline for handling
 		const eventData: ClipClickEventData = { clipData, event, trackIndex: this.trackIndex };
 		this.getContainer().emit("clip:click", eventData);
+	}
+
+	private handleClipResize(trackIndex: number, clipIndex: number, newLength: number, initialLength: number): void {
+		// Emit event to timeline for handling
+		const eventData = { trackIndex, clipIndex, newLength, initialLength };
+		this.getContainer().emit("clip:resize", eventData);
 	}
 }
