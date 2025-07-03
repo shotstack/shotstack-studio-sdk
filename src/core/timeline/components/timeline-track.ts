@@ -128,7 +128,8 @@ export class TimelineTrack extends Entity {
 				this.pixelsPerSecond,
 				this.selectedClipId,
 				this.trackIndex,
-				clipIndex
+				clipIndex,
+				this.trackData
 			);
 
 			// Set up clip event handling
@@ -136,8 +137,8 @@ export class TimelineTrack extends Entity {
 				this.handleClipClick(clipEventData, event);
 			};
 
-			clip.onClipResize = (trackIndex, clipIndex, newLength, initialLength) => {
-				this.handleClipResize(trackIndex, clipIndex, newLength, initialLength);
+			clip.onClipResize = (trackIdx, clipIdx, newLength, initialLength) => {
+				this.handleClipResize(trackIdx, clipIdx, newLength, initialLength);
 			};
 
 			this.clips.push(clip);
