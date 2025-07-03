@@ -1,9 +1,9 @@
 import * as pixi from "pixi.js";
 
-import { type Size } from "../layouts/geometry";
+import { type Size } from "@layouts/geometry";
 
-import { Edit } from "./edit";
-import { Entity } from "./entity";
+import { Edit } from "@entities/system/edit";
+import { Entity } from "@entities/base/entity";
 
 export class Timeline extends Entity {
 	private edit: Edit;
