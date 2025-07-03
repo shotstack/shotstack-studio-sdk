@@ -1,4 +1,4 @@
-import { type Keyframe } from "../schemas/keyframe";
+import { type Keyframe } from "@shared/schemas/keyframe";
 
 import { CurveInterpolator } from "./curve-interpolator";
 

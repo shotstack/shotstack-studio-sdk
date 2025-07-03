@@ -1,6 +1,6 @@
-import { type Size } from "../layouts/geometry";
-import { type Clip } from "../schemas/clip";
-import { type Keyframe } from "../schemas/keyframe";
+import { type Size } from "@shared/layouts/geometry";
+import { type Clip } from "@shared/schemas/clip";
+import { type Keyframe } from "@shared/schemas/keyframe";
 
 export type EffectKeyframeSet = {
 	offsetXKeyframes: Keyframe[];

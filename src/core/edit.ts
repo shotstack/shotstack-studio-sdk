@@ -1,24 +1,23 @@
+
+import { Entity } from "@preview/base/entity";
+import type { Player } from "@preview/base/player";
+import { AudioPlayer } from "@preview/players/audio-player";
+import { HtmlPlayer } from "@preview/players/html-player";
+import { ImagePlayer } from "@preview/players/image-player";
+import { LumaPlayer } from "@preview/players/luma-player";
+import { ShapePlayer } from "@preview/players/shape-player";
+import { TextPlayer } from "@preview/players/text-player";
+import { VideoPlayer } from "@preview/players/video-player";
+import { EventEmitter } from "@shared/events/event-emitter";
+import type { Size } from "@shared/layouts/geometry";
+import { AssetLoader } from "@shared/loaders/asset-loader";
+import { FontLoadParser } from "@shared/loaders/font-load-parser";
+import { ClipSchema } from "@shared/schemas/clip";
+import { EditSchema } from "@shared/schemas/edit";
+import { TrackSchema } from "@shared/schemas/track";
+import type { ClipDeletedEventData } from "@timeline/timeline-types";
 import * as pixi from "pixi.js";
 import { z } from "zod";
-
-import { EventEmitter } from "../../events/event-emitter";
-import type { Size } from "../../layouts/geometry";
-import { AssetLoader } from "../../loaders/asset-loader";
-import { FontLoadParser } from "../../loaders/font-load-parser";
-import { ClipSchema } from "../../schemas/clip";
-import { EditSchema } from "../../schemas/edit";
-import { TrackSchema } from "../../schemas/track";
-import type { ClipDeletedEventData } from "../../timeline/timeline-types";
-import { isTextAsset, hasSourceUrl } from "../../timeline/timeline-types";
-import { Entity } from "../base/entity";
-import type { Player } from "../base/player";
-import { AudioPlayer } from "../players/audio-player";
-import { HtmlPlayer } from "../players/html-player";
-import { ImagePlayer } from "../players/image-player";
-import { LumaPlayer } from "../players/luma-player";
-import { ShapePlayer } from "../players/shape-player";
-import { TextPlayer } from "../players/text-player";
-import { VideoPlayer } from "../players/video-player";
 
 type EditType = z.infer<typeof EditSchema>;
 type ClipType = z.infer<typeof ClipSchema>;
@@ -45,8 +44,6 @@ export class Edit extends Entity {
 	public isPlaying: boolean;
 	/** @internal */
 	private selectedClip: Player | null;
-	/** @internal */
-	private updatedClip: Player | null;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -66,7 +63,6 @@ export class Edit extends Entity {
 		this.totalDuration = 0;
 		this.isPlaying = false;
 		this.selectedClip = null;
-		this.updatedClip = null;
 		this.backgroundColor = backgroundColor;
 	}
 
@@ -201,7 +197,7 @@ export class Edit extends Entity {
 
 		if (clipToDelete) {
 			// Emit deletion event before deleting
-			const clipId = this.getClipId(clipToDelete.clipConfiguration, trackIdx);
+			const clipId = this.getClipId(trackIdx, clipIdx);
 			const eventData: ClipDeletedEventData = {
 				trackIndex: trackIdx,
 				clipIndex: clipIdx,
@@ -320,16 +316,8 @@ export class Edit extends Entity {
 		return clipsByTrack[clipIdx] || null;
 	}
 	/** @internal */
-	private getClipId(clip: ClipType, trackIndex: number): string {
-		let identifier = "";
-
-		if (isTextAsset(clip.asset)) {
-			identifier = clip.asset.text;
-		} else if (hasSourceUrl(clip.asset)) {
-			identifier = clip.asset.src;
-		}
-
-		return `track${trackIndex}-${clip.start}-${clip.asset.type}-${identifier}`;
+	private getClipId(trackIndex: number, clipIndex: number): string {
+		return `track${trackIndex}-clip${clipIndex}`;
 	}
 	/** @internal */
 	public setSelectedClip(clip: Player): void {
@@ -348,27 +336,22 @@ export class Edit extends Entity {
 		this.events.emit("clip:selected", eventData);
 	}
 	/** @internal */
-	public setUpdatedClip(clip: Player, initialClipConfig: any = null): void {
-		this.updatedClip = clip;
-
+	public setUpdatedClip(clip: Player, initialClipConfig: ClipType | null = null): void {
 		const trackIndex = clip.layer - 1;
 		const clipsByTrack = this.clips.filter((clipItem: Player) => clipItem.layer === clip.layer);
 		const clipIndex = clipsByTrack.indexOf(clip);
 
-		const eventData = {
-			previous: {
-				clip: initialClipConfig,
+		// Only emit if we have the initial state to compare against
+		if (initialClipConfig) {
+			const eventData = {
+				previous: initialClipConfig,
+				current: clip.clipConfiguration,
 				trackIndex,
 				clipIndex
-			},
-			current: {
-				clip: clip.clipConfiguration,
-				trackIndex,
-				clipIndex
-			}
-		};
+			};
 
-		this.events.emit("clip:updated", eventData);
+			this.events.emit("clip:updated", eventData);
+		}
 	}
 
 	private queueDisposeClip(clipToDispose: Player): void {

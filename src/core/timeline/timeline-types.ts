@@ -1,6 +1,6 @@
-import { AssetSchema } from "@schemas/asset";
-import { ClipSchema } from "@schemas/clip";
-import { TrackSchema } from "@schemas/track";
+import { AssetSchema } from "@shared/schemas/asset";
+import { ClipSchema } from "@shared/schemas/clip";
+import { TrackSchema } from "@shared/schemas/track";
 import * as pixi from "pixi.js";
 import { z } from "zod";
 
@@ -41,8 +41,10 @@ export type ClipSelectedEventData = {
 };
 
 export type ClipUpdatedEventData = {
-	clip: TimelineClipData;
-	changes: Partial<TimelineClipData>;
+	previous: TimelineClipData;
+	current: TimelineClipData;
+	trackIndex: number;
+	clipIndex: number;
 };
 
 export type TrackDeletedEventData = {
@@ -101,14 +103,14 @@ export type TimelineEventEmitter = {
 
 // Component constructor options for better type safety
 export type TimelineRulerOptions = {
-	edit: import("@entities/system/edit").Edit;
+	edit: import("@edit").Edit;
 	width: number;
 	scrollPosition?: number;
 	pixelsPerSecond?: number;
 };
 
 export type TimelineTrackOptions = {
-	edit: import("@entities/system/edit").Edit;
+	edit: import("@edit").Edit;
 	trackData: TimelineTrackData;
 	width: number;
 	height: number;

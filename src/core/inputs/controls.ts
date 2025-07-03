@@ -1,4 +1,4 @@
-import { Edit } from "@entities/system/edit";
+import { Edit } from "@edit";
 
 export class Controls {
 	private edit: Edit;
@@ -81,13 +81,12 @@ export class Controls {
 				if (selectedClip) {
 					const trackIndex = selectedClip.layer - 1;
 					const track = this.edit.getTrack(trackIndex);
-					
+
 					if (track && track.clips) {
-						const clipIndex = track.clips.findIndex(clip => 
-							clip.start === selectedClip.clipConfiguration.start && 
-							clip.asset?.type === selectedClip.clipConfiguration.asset?.type
+						const clipIndex = track.clips.findIndex(
+							clip => clip.start === selectedClip.clipConfiguration.start && clip.asset?.type === selectedClip.clipConfiguration.asset?.type
 						);
-						
+
 						if (clipIndex !== -1) {
 							this.edit.deleteClip(trackIndex, clipIndex);
 						}

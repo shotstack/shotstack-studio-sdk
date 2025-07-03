@@ -1,14 +1,13 @@
+import { type Edit } from "@edit";
+import { Pointer } from "@inputs/pointer";
+import { EffectPresetBuilder } from "@preview/animations/effect-preset-builder";
+import { KeyframeBuilder } from "@preview/animations/keyframe-builder";
+import { TransitionPresetBuilder } from "@preview/animations/transition-preset-builder";
+import { type Size, type Vector } from "@shared/layouts/geometry";
+import { PositionBuilder } from "@shared/layouts/position-builder";
+import { type Clip } from "@shared/schemas/clip";
+import { type Keyframe } from "@shared/schemas/keyframe";
 import * as pixi from "pixi.js";
-
-import { EffectPresetBuilder } from "../../animations/effect-preset-builder";
-import { KeyframeBuilder } from "../../animations/keyframe-builder";
-import { TransitionPresetBuilder } from "../../animations/transition-preset-builder";
-import { Pointer } from "../../inputs/pointer";
-import { type Size, type Vector } from "../../layouts/geometry";
-import { PositionBuilder } from "../../layouts/position-builder";
-import { type Clip } from "../../schemas/clip";
-import { type Keyframe } from "../../schemas/keyframe";
-import { type Edit } from "../system/edit";
 
 import { Entity } from "./entity";
 

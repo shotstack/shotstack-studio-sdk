@@ -17,14 +17,11 @@ const globals = {
 export default defineConfig({
 	resolve: {
 		alias: {
-			"@entities": resolve(__dirname, "src/core/entities"),
+			"@edit": resolve(__dirname, "src/core/edit"),
+			"@preview": resolve(__dirname, "src/core/preview"),
 			"@timeline": resolve(__dirname, "src/core/timeline"),
-			"@schemas": resolve(__dirname, "src/core/schemas"),
-			"@layouts": resolve(__dirname, "src/core/layouts"),
-			"@animations": resolve(__dirname, "src/core/animations"),
-			"@events": resolve(__dirname, "src/core/events"),
+			"@shared": resolve(__dirname, "src/core/shared"),
 			"@inputs": resolve(__dirname, "src/core/inputs"),
-			"@loaders": resolve(__dirname, "src/core/loaders"),
 			"@export": resolve(__dirname, "src/core/export"),
 			"@styles": resolve(__dirname, "src/styles"),
 			"@templates": resolve(__dirname, "src/templates")

@@ -1,11 +1,11 @@
+import type { Edit } from "@edit";
+import { Player } from "@preview/base/player";
+import { type Size } from "@shared/layouts/geometry";
+import { type Clip } from "@shared/schemas/clip";
+import { type HtmlAsset, HtmlAssetPosition } from "@shared/schemas/html-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
-import { type Size } from "../../layouts/geometry";
-import { type Clip } from "../../schemas/clip";
-import { type HtmlAsset, HtmlAssetPosition } from "../../schemas/html-asset";
-import { Player } from "../base/player";
-import type { Edit } from "../system/edit";
 
 type HtmlDocumentFont = {
 	color?: string;

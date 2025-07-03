@@ -1,9 +1,8 @@
-
-import { Player } from "@entities/base/player";
-import { TextEditor } from "@entities/text/text-editor";
-import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
-import { type TextAsset } from "@schemas/text-asset";
+import { Player } from "@preview/base/player";
+import { TextEditor } from "@preview/text/text-editor";
+import { type Size } from "@shared/layouts/geometry";
+import { type Clip } from "@shared/schemas/clip";
+import { type TextAsset } from "@shared/schemas/text-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 

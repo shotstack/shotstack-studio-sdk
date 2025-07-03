@@ -1,9 +1,8 @@
-import { Entity } from "@entities/base/entity";
-import { Edit } from "@entities/system/edit";
+import { Edit } from "@edit";
+import { Entity } from "@preview/base/entity";
+import { TIMELINE_CONFIG } from "@timeline/timeline-config";
+import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "@timeline/timeline-types";
 import * as pixi from "pixi.js";
-
-import { TIMELINE_CONFIG } from "../timeline-config";
-import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "../timeline-types";
 
 import { TimelineClip } from "./timeline-clip";
 
@@ -120,14 +119,16 @@ export class TimelineTrack extends Entity {
 		this.clearClips();
 
 		// Create clips for this track
-		for (const clipData of this.trackData.clips) {
+		for (let clipIndex = 0; clipIndex < this.trackData.clips.length; clipIndex += 1) {
+			const clipData = this.trackData.clips[clipIndex];
 			const clip = new TimelineClip(
 				clipData,
 				this.height - 4, // Track height minus padding
 				this.scrollPosition,
 				this.pixelsPerSecond,
 				this.selectedClipId,
-				this.trackIndex
+				this.trackIndex,
+				clipIndex
 			);
 
 			// Set up clip event handling

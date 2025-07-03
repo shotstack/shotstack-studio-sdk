@@ -1,11 +1,11 @@
-import { Edit } from "@entities/system/edit";
-import { Inspector } from "@entities/system/inspector";
+import { Edit } from "@edit";
+import { type Size } from "@shared/layouts/geometry";
+import { AudioLoadParser } from "@shared/loaders/audio-load-parser";
+import { FontLoadParser } from "@shared/loaders/font-load-parser";
 import { Timeline } from "@timeline";
 import * as pixi from "pixi.js";
 
-import { type Size } from "./layouts/geometry";
-import { AudioLoadParser } from "./loaders/audio-load-parser";
-import { FontLoadParser } from "./loaders/font-load-parser";
+import { Inspector } from "./inspector";
 
 export class Canvas {
 	/** @internal */

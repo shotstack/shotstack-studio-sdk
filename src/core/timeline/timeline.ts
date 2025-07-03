@@ -1,15 +1,21 @@
-import { Entity } from "@entities/base/entity";
-import { Edit } from "@entities/system/edit";
-import { type Size } from "@layouts/geometry";
+import { Edit } from "@edit";
+import { ComponentBase } from "@shared/base/component-base";
+import { type Size } from "@shared/layouts/geometry";
 import * as pixi from "pixi.js";
 
 import { TimelineRuler, TimelineTrack } from "./components";
 import { TIMELINE_CONFIG, getAssetColor } from "./timeline-config";
-import type { TimelineClipData, ClipClickEventData, ClipSelectedEventData, ClipUpdatedEventData, ClipDeletedEventData, TrackDeletedEventData } from "./timeline-types";
+import type {
+	TimelineClipData,
+	ClipClickEventData,
+	ClipSelectedEventData,
+	ClipUpdatedEventData,
+	ClipDeletedEventData,
+	TrackDeletedEventData
+} from "./timeline-types";
 import { isTextAsset, hasSourceUrl } from "./timeline-types";
 
-export class Timeline extends Entity {
-	private edit: Edit;
+export class Timeline extends ComponentBase {
 	private width: number;
 	private height: number;
 
@@ -29,16 +35,11 @@ export class Timeline extends Entity {
 
 	private refreshTimeout: number | null = null;
 	private static readonly REFRESH_DEBOUNCE_MS = 16;
-	private readonly boundClipSelectedHandler: (data: ClipSelectedEventData) => void;
-	private readonly boundClipUpdatedHandler: (data: ClipUpdatedEventData) => void;
-	private readonly boundClipDeletedHandler: (data: ClipDeletedEventData) => void;
-	private readonly boundTrackDeletedHandler: (data: TrackDeletedEventData) => void;
 	private readonly boundTimelineClickHandler: (event: pixi.FederatedPointerEvent) => void;
 	private readonly boundWheelHandler: (event: pixi.FederatedWheelEvent) => void;
 
 	constructor(edit: Edit, size: Size) {
-		super();
-		this.edit = edit;
+		super(edit);
 		this.width = size.width;
 		this.height = size.height;
 
@@ -49,17 +50,14 @@ export class Timeline extends Entity {
 		this.playhead = null;
 		this.trackContainer = null;
 
-		this.boundClipSelectedHandler = this.handleClipSelected.bind(this);
-		this.boundClipUpdatedHandler = this.handleClipUpdated.bind(this);
-		this.boundClipDeletedHandler = this.handleClipDeleted.bind(this);
-		this.boundTrackDeletedHandler = this.handleTrackDeleted.bind(this);
 		this.boundTimelineClickHandler = this.handleTimelineClick.bind(this);
 		this.boundWheelHandler = this.handleWheel.bind(this);
 
-		this.edit.events.on("clip:selected", this.boundClipSelectedHandler);
-		this.edit.events.on("clip:updated", this.boundClipUpdatedHandler);
-		this.edit.events.on("clip:deleted", this.boundClipDeletedHandler);
-		this.edit.events.on("track:deleted", this.boundTrackDeletedHandler);
+		// Use auto-binding for event handlers
+		this.bindEvent("clip:selected", this.handleClipSelected);
+		this.bindEvent("clip:updated", this.handleClipUpdated);
+		this.bindEvent("clip:deleted", this.handleClipDeleted);
+		this.bindEvent("track:deleted", this.handleTrackDeleted);
 	}
 
 	public override async load(): Promise<void> {
@@ -171,11 +169,6 @@ export class Timeline extends Entity {
 		this.getContainer().removeAllListeners();
 		this.getContainer().eventMode = "none";
 
-		this.edit.events.off("clip:selected", this.boundClipSelectedHandler);
-		this.edit.events.off("clip:updated", this.boundClipUpdatedHandler);
-		this.edit.events.off("clip:deleted", this.boundClipDeletedHandler);
-		this.edit.events.off("track:deleted", this.boundTrackDeletedHandler);
-
 		for (let i = this.tracks.length - 1; i >= 0; i -= 1) {
 			const track = this.tracks[i];
 			if (this.trackContainer && track.getContainer().parent === this.trackContainer) {
@@ -212,6 +205,9 @@ export class Timeline extends Entity {
 			texture: true
 		});
 		this.application = null;
+
+		// Call parent dispose to clean up event bindings
+		super.dispose();
 	}
 
 	public get pixelsPerSecond(): number {
@@ -514,8 +510,6 @@ export class Timeline extends Entity {
 	}
 
 	private handleClipClick(clipData: TimelineClipData, trackIndex: number): void {
-		this.selectedClipId = this.getClipId(clipData, trackIndex);
-
 		const editData = this.edit.getEdit();
 		let clipIndex = -1;
 
@@ -530,6 +524,8 @@ export class Timeline extends Entity {
 			}
 		}
 
+		this.selectedClipId = this.getClipId(trackIndex, clipIndex);
+
 		if (trackIndex !== -1 && clipIndex !== -1) {
 			try {
 				const clip = this.edit.getClip(trackIndex, clipIndex);
@@ -537,16 +533,11 @@ export class Timeline extends Entity {
 				if (clip) {
 					// Get the Player object for this clip
 					const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
-					
+
 					if (playerClip) {
 						this.edit.setSelectedClip(playerClip);
 					}
-					
-					this.edit.events.emit("clip:selected", {
-						clip,
-						trackIndex,
-						clipIndex
-					});
+
 				}
 			} catch (error) {
 				console.warn("Failed to handle clip selection:", error);
@@ -558,7 +549,7 @@ export class Timeline extends Entity {
 
 	private handleClipSelected(data: ClipSelectedEventData): void {
 		if (data.clip) {
-			this.selectedClipId = this.getClipId(data.clip, data.trackIndex);
+			this.selectedClipId = this.getClipId(data.trackIndex, data.clipIndex);
 		} else {
 			this.selectedClipId = null;
 		}
@@ -588,17 +579,7 @@ export class Timeline extends Entity {
 		return this.application.canvas;
 	}
 
-	private getClipId(clip: TimelineClipData, trackIndex?: number): string {
-		let identifier = "";
-
-		if (isTextAsset(clip.asset)) {
-			identifier = clip.asset.text;
-		} else if (hasSourceUrl(clip.asset)) {
-			identifier = clip.asset.src;
-		}
-
-		return trackIndex !== undefined 
-			? `track${trackIndex}-${clip.start}-${clip.asset.type}-${identifier}`
-			: `${clip.start}-${clip.asset.type}-${identifier}`;
+	private getClipId(trackIndex: number, clipIndex: number): string {
+		return `track${trackIndex}-clip${clipIndex}`;
 	}
 }

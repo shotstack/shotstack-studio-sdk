@@ -1,12 +1,10 @@
-import type { Player } from "@entities/base/player";
-import { AudioPlayer } from "@entities/players/audio-player";
-import { Edit } from "@entities/system/edit";
+import { Edit } from "@edit";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
+import type { Player } from "@preview/base/player";
+import { AudioPlayer } from "@preview/players/audio-player";
+import { Canvas } from "@preview/shotstack-canvas";
+import type { AudioAsset } from "@shared/schemas/audio-asset";
 import * as pixi from "pixi.js";
-
-import type { AudioAsset } from "../schemas/audio-asset";
-import { Canvas } from "../shotstack-canvas";
-
 
 /**
  * Note: @ffmpeg/ffmpeg is a peer dependency and must be installed separately

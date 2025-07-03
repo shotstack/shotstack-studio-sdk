@@ -1,8 +1,7 @@
-import { Entity } from "@entities/base/entity";
-import { Edit } from "@entities/system/edit";
+import { Edit } from "@edit";
+import { Entity } from "@preview/base/entity";
+import { TIMELINE_CONFIG } from "@timeline/timeline-config";
 import * as pixi from "pixi.js";
-
-import { TIMELINE_CONFIG } from "../timeline-config";
 
 export class TimelineRuler extends Entity {
 	private static readonly HEIGHT = TIMELINE_CONFIG.dimensions.rulerHeight;

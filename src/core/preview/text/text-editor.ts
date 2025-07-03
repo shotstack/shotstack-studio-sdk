@@ -1,6 +1,6 @@
-import type { TextPlayer } from "@entities/players/text-player";
-import { type Clip } from "@schemas/clip";
-import { type TextAsset } from "@schemas/text-asset";
+import type { TextPlayer } from "@preview/players/text-player";
+import { type Clip } from "@shared/schemas/clip";
+import { type TextAsset } from "@shared/schemas/text-asset";
 import * as pixi from "pixi.js";
 
 import { TextCursor } from "./text-cursor";

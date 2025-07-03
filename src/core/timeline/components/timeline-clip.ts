@@ -1,9 +1,8 @@
-import { Entity } from "@entities/base/entity";
+import { Entity } from "@preview/base/entity";
+import { getAssetColor, TIMELINE_CONFIG } from "@timeline/timeline-config";
+import type { TimelineClipData, AssetType } from "@timeline/timeline-types";
+import { isTextAsset, hasSourceUrl } from "@timeline/timeline-types";
 import * as pixi from "pixi.js";
-
-import { getAssetColor, TIMELINE_CONFIG } from "../timeline-config";
-import type { TimelineClipData, AssetType } from "../timeline-types";
-import { isTextAsset, hasSourceUrl } from "../timeline-types";
 
 export class TimelineClip extends Entity {
 	private clipData: TimelineClipData;
@@ -12,6 +11,7 @@ export class TimelineClip extends Entity {
 	private pixelsPerSecond: number;
 	private selectedClipId: string | null;
 	private trackIndex: number;
+	private clipIndex: number;
 
 	private background: pixi.Graphics | null;
 	private label: pixi.Text | null;
@@ -19,7 +19,15 @@ export class TimelineClip extends Entity {
 	// Event handlers
 	public onClipClick?: (clipData: TimelineClipData, event: pixi.FederatedPointerEvent) => void;
 
-	constructor(clipData: TimelineClipData, trackHeight: number, scrollPosition: number, pixelsPerSecond: number, selectedClipId: string | null, trackIndex: number) {
+	constructor(
+		clipData: TimelineClipData,
+		trackHeight: number,
+		scrollPosition: number,
+		pixelsPerSecond: number,
+		selectedClipId: string | null,
+		trackIndex: number,
+		clipIndex: number
+	) {
 		super();
 		this.clipData = clipData;
 		this.trackHeight = trackHeight;
@@ -27,6 +35,7 @@ export class TimelineClip extends Entity {
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.selectedClipId = selectedClipId;
 		this.trackIndex = trackIndex;
+		this.clipIndex = clipIndex;
 
 		this.background = null;
 		this.label = null;
@@ -47,7 +56,7 @@ export class TimelineClip extends Entity {
 	public override draw(): void {
 		if (!this.background) return;
 
-		const clipId = this.getClipId(this.clipData);
+		const clipId = this.getClipId(this.clipIndex);
 		const isSelected = this.selectedClipId === clipId;
 
 		// Position based on time
@@ -177,15 +186,7 @@ export class TimelineClip extends Entity {
 		return clipData.asset.type;
 	}
 
-	private getClipId(clip: TimelineClipData): string {
-		let identifier = "";
-
-		if (isTextAsset(clip.asset)) {
-			identifier = clip.asset.text;
-		} else if (hasSourceUrl(clip.asset)) {
-			identifier = clip.asset.src;
-		}
-
-		return `track${this.trackIndex}-${clip.start}-${clip.asset.type}-${identifier}`;
+	private getClipId(clipIndex: number): string {
+		return `track${this.trackIndex}-clip${clipIndex}`;
 	}
 }

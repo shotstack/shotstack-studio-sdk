@@ -1,4 +1,4 @@
-import { type ClipAnchor } from "../schemas/clip";
+import { type ClipAnchor } from "@shared/schemas/clip";
 
 import { type Size, type Vector } from "./geometry";
 

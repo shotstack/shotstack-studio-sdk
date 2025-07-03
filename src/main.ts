@@ -1,4 +1,4 @@
-import template from "./template.json";
+import template from "./templates/hello.json";
 
 import { Edit, Canvas, Controls, Timeline } from "./index";
 
