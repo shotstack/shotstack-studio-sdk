@@ -1,9 +1,9 @@
+import { Entity } from "@entities/base/entity";
+import { Edit } from "@entities/system/edit";
+import { type Size } from "@layouts/geometry";
 import * as pixi from "pixi.js";
 
-import { type Size } from "@layouts/geometry";
 
-import { Edit } from "@entities/system/edit";
-import { Entity } from "@entities/base/entity";
 
 export class Timeline extends Entity {
 	private edit: Edit;
@@ -91,7 +91,7 @@ export class Timeline extends Entity {
 		this.drawPlayhead();
 	}
 
-	public override update(deltaTime: number, elapsed: number): void {
+	public override update(_: number, __: number): void {
 		// Update playhead position based on edit time
 		const playheadX = (this.edit.playbackTime / 1000) * this.pixelsPerSecond - this.scrollPosition;
 
@@ -180,40 +180,37 @@ export class Timeline extends Entity {
 		const editData = this.edit.getEdit();
 
 		// Create a track for each track in the edit
-		const rulerHeight = 20;
-		for (let i = 0; i < editData.timeline.tracks.length; i++) {
+		for (let i = 0; i < editData.timeline.tracks.length; i += 1) {
 			const trackData = editData.timeline.tracks[i];
 			const trackY = i * this.trackHeight - this.verticalScrollPosition;
 
 			// Skip tracks that are completely outside the visible area
-			if (trackY + this.trackHeight < 0 || trackY > this.visibleHeight) {
-				continue;
+			if (trackY + this.trackHeight >= 0 && trackY <= this.visibleHeight) {
+				const track = new pixi.Container();
+				track.position.y = trackY;
+
+				// Create track background
+				const trackBg = new pixi.Graphics();
+				trackBg.fillStyle = { color: 0x333333 };
+				trackBg.rect(0, 0, this.width, this.trackHeight);
+				trackBg.fill();
+
+				// Add track separator line
+				trackBg.strokeStyle = { color: 0x222222, width: 1 };
+				trackBg.moveTo(0, this.trackHeight);
+				trackBg.lineTo(this.width, this.trackHeight);
+				trackBg.stroke();
+
+				track.addChild(trackBg);
+
+				// Add clips to track
+				for (const clipData of trackData.clips) {
+					const clip = this.createClipVisual(clipData);
+					track.addChild(clip);
+				}
+
+				this.tracks.addChild(track);
 			}
-
-			const track = new pixi.Container();
-			track.position.y = trackY;
-
-			// Create track background
-			const trackBg = new pixi.Graphics();
-			trackBg.fillStyle = { color: 0x333333 };
-			trackBg.rect(0, 0, this.width, this.trackHeight);
-			trackBg.fill();
-
-			// Add track separator line
-			trackBg.strokeStyle = { color: 0x222222, width: 1 };
-			trackBg.moveTo(0, this.trackHeight);
-			trackBg.lineTo(this.width, this.trackHeight);
-			trackBg.stroke();
-
-			track.addChild(trackBg);
-
-			// Add clips to track
-			for (const clipData of trackData.clips) {
-				const clip = this.createClipVisual(clipData);
-				track.addChild(clip);
-			}
-
-			this.tracks.addChild(track);
 		}
 	}
 
@@ -291,7 +288,6 @@ export class Timeline extends Entity {
 		this.ruler.strokeStyle = { color: 0xcccccc, width: 1 };
 
 		const secondsInView = this.width / this.pixelsPerSecond;
-		const totalSeconds = this.edit.totalDuration / 1000;
 
 		// Determine appropriate interval based on zoom level
 		let interval = 1; // 1 second
@@ -301,23 +297,23 @@ export class Timeline extends Entity {
 		const startTime = Math.floor(this.scrollPosition / this.pixelsPerSecond);
 
 		for (let time = startTime; time <= startTime + secondsInView + 1; time += interval) {
-			if (time < 0) continue;
+			if (time >= 0) {
+				const x = time * this.pixelsPerSecond - this.scrollPosition;
 
-			const x = time * this.pixelsPerSecond - this.scrollPosition;
+				// Draw tick mark
+				this.ruler.moveTo(x, 15);
+				this.ruler.lineTo(x, 20);
+				this.ruler.stroke();
 
-			// Draw tick mark
-			this.ruler.moveTo(x, 15);
-			this.ruler.lineTo(x, 20);
-			this.ruler.stroke();
+				// Add timestamp text
+				const timeText = new pixi.Text(this.formatTime(time), {
+					fontSize: 9,
+					fill: 0xffffff
+				});
 
-			// Add timestamp text
-			const timeText = new pixi.Text(this.formatTime(time), {
-				fontSize: 9,
-				fill: 0xffffff
-			});
-
-			timeText.position.set(x - timeText.width / 2, 2);
-			this.ruler.addChild(timeText);
+				timeText.position.set(x - timeText.width / 2, 2);
+				this.ruler.addChild(timeText);
+			}
 		}
 	}
 
@@ -442,8 +438,11 @@ export class Timeline extends Entity {
 		// Brighten the color if selected
 		if (isSelected) {
 			// Convert to RGB
+			// eslint-disable-next-line no-bitwise
 			const r = (color >> 16) & 0xff;
+			// eslint-disable-next-line no-bitwise
 			const g = (color >> 8) & 0xff;
+			// eslint-disable-next-line no-bitwise
 			const b = color & 0xff;
 
 			// Brighten by 20%
@@ -452,6 +451,7 @@ export class Timeline extends Entity {
 			const brighterB = Math.min(255, b + 40);
 
 			// Convert back to hex
+			// eslint-disable-next-line no-bitwise
 			return (brighterR << 16) | (brighterG << 8) | brighterB;
 		}
 
@@ -464,7 +464,7 @@ export class Timeline extends Entity {
 		}
 
 		if (clipData.asset.src) {
-			const src = clipData.asset.src;
+			const {src} = clipData.asset;
 			const filename = src.substring(src.lastIndexOf("/") + 1);
 			return filename.substring(0, 20);
 		}
@@ -489,9 +489,9 @@ export class Timeline extends Entity {
 		let clipIndex = -1;
 
 		// First, let's find if we can match by reference
-		for (let i = 0; i < editData.timeline.tracks.length; i++) {
+		for (let i = 0; i < editData.timeline.tracks.length; i += 1) {
 			const track = editData.timeline.tracks[i];
-			for (let j = 0; j < track.clips.length; j++) {
+			for (let j = 0; j < track.clips.length; j += 1) {
 				// Try to match by start time and asset type which should be unique enough
 				if (track.clips[j].start === clipData.start && track.clips[j].asset.type === clipData.asset.type) {
 					trackIndex = i;
@@ -506,8 +506,6 @@ export class Timeline extends Entity {
 			// Get the player from the edit
 			const clip = this.edit.getClip(trackIndex, clipIndex);
 
-			// Find the player object associated with this clip
-			const editClips = this.edit.getEdit();
 			if (clip) {
 				// Notify the edit that this clip is selected
 				// We need to directly call the event since setSelectedClip expects a Player object
@@ -534,7 +532,7 @@ export class Timeline extends Entity {
 		this.refreshView();
 	}
 
-	private handleClipUpdated(data: any): void {
+	private handleClipUpdated(_: any): void {
 		this.refreshView();
 	}
 
