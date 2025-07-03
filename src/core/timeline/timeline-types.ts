@@ -31,6 +31,7 @@ export type TimelineEventHandlers = {
 export type ClipClickEventData = {
 	clipData: TimelineClipData;
 	event: TimelinePointerEvent;
+	trackIndex: number;
 };
 
 export type ClipSelectedEventData = {

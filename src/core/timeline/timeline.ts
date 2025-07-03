@@ -368,13 +368,14 @@ export class Timeline extends Entity {
 						this.trackHeight,
 						this.scrollPosition,
 						this.pixelsPerSecond,
-						this.selectedClipId
+						this.selectedClipId,
+						i
 					);
 
 					track.getContainer().position.y = trackY;
 
 					track.getContainer().on("clip:click", (data: ClipClickEventData) => {
-						this.handleClipClick(data.clipData);
+						this.handleClipClick(data.clipData, data.trackIndex);
 					});
 
 					this.trackContainer?.addChild(track.getContainer());
@@ -508,23 +509,21 @@ export class Timeline extends Entity {
 		return `${mins}:${secs.toString().padStart(2, "0")}`;
 	}
 
-	private handleClipClick(clipData: TimelineClipData): void {
-		this.selectedClipId = this.getClipId(clipData);
+	private handleClipClick(clipData: TimelineClipData, trackIndex: number): void {
+		this.selectedClipId = this.getClipId(clipData, trackIndex);
 
 		const editData = this.edit.getEdit();
-		let trackIndex = -1;
 		let clipIndex = -1;
 
-		for (let i = 0; i < editData.timeline.tracks.length; i += 1) {
-			const track = editData.timeline.tracks[i];
+		// Find the clip index within the specific track
+		if (trackIndex < editData.timeline.tracks.length) {
+			const track = editData.timeline.tracks[trackIndex];
 			for (let j = 0; j < track.clips.length; j += 1) {
 				if (track.clips[j].start === clipData.start && track.clips[j].asset.type === clipData.asset.type) {
-					trackIndex = i;
 					clipIndex = j;
 					break;
 				}
 			}
-			if (trackIndex !== -1) break;
 		}
 
 		if (trackIndex !== -1 && clipIndex !== -1) {
@@ -548,7 +547,7 @@ export class Timeline extends Entity {
 
 	private handleClipSelected(data: ClipSelectedEventData): void {
 		if (data.clip) {
-			this.selectedClipId = this.getClipId(data.clip);
+			this.selectedClipId = this.getClipId(data.clip, data.trackIndex);
 		} else {
 			this.selectedClipId = null;
 		}
@@ -571,7 +570,7 @@ export class Timeline extends Entity {
 		return this.application.canvas;
 	}
 
-	private getClipId(clip: TimelineClipData): string {
+	private getClipId(clip: TimelineClipData, trackIndex?: number): string {
 		let identifier = "";
 
 		if (isTextAsset(clip.asset)) {
@@ -580,6 +579,8 @@ export class Timeline extends Entity {
 			identifier = clip.asset.src;
 		}
 
-		return `${clip.start}-${clip.asset.type}-${identifier}`;
+		return trackIndex !== undefined 
+			? `track${trackIndex}-${clip.start}-${clip.asset.type}-${identifier}`
+			: `${clip.start}-${clip.asset.type}-${identifier}`;
 	}
 }

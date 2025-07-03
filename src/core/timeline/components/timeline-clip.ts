@@ -11,6 +11,7 @@ export class TimelineClip extends Entity {
 	private scrollPosition: number;
 	private pixelsPerSecond: number;
 	private selectedClipId: string | null;
+	private trackIndex: number;
 
 	private background: pixi.Graphics | null;
 	private label: pixi.Text | null;
@@ -18,13 +19,14 @@ export class TimelineClip extends Entity {
 	// Event handlers
 	public onClipClick?: (clipData: TimelineClipData, event: pixi.FederatedPointerEvent) => void;
 
-	constructor(clipData: TimelineClipData, trackHeight: number, scrollPosition: number, pixelsPerSecond: number, selectedClipId: string | null) {
+	constructor(clipData: TimelineClipData, trackHeight: number, scrollPosition: number, pixelsPerSecond: number, selectedClipId: string | null, trackIndex: number) {
 		super();
 		this.clipData = clipData;
 		this.trackHeight = trackHeight;
 		this.scrollPosition = scrollPosition;
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.selectedClipId = selectedClipId;
+		this.trackIndex = trackIndex;
 
 		this.background = null;
 		this.label = null;
@@ -184,6 +186,6 @@ export class TimelineClip extends Entity {
 			identifier = clip.asset.src;
 		}
 
-		return `${clip.start}-${clip.asset.type}-${identifier}`;
+		return `track${this.trackIndex}-${clip.start}-${clip.asset.type}-${identifier}`;
 	}
 }

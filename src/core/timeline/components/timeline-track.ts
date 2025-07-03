@@ -15,6 +15,7 @@ export class TimelineTrack extends Entity {
 	private scrollPosition: number;
 	private pixelsPerSecond: number;
 	private selectedClipId: string | null;
+	private trackIndex: number;
 
 	private background: pixi.Graphics | null;
 	private clips: TimelineClip[];
@@ -26,7 +27,8 @@ export class TimelineTrack extends Entity {
 		height: number,
 		scrollPosition: number,
 		pixelsPerSecond: number,
-		selectedClipId: string | null
+		selectedClipId: string | null,
+		trackIndex: number
 	) {
 		super();
 		this.edit = edit;
@@ -36,6 +38,7 @@ export class TimelineTrack extends Entity {
 		this.scrollPosition = scrollPosition;
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.selectedClipId = selectedClipId;
+		this.trackIndex = trackIndex;
 
 		this.background = null;
 		this.clips = [];
@@ -123,7 +126,8 @@ export class TimelineTrack extends Entity {
 				this.height - 4, // Track height minus padding
 				this.scrollPosition,
 				this.pixelsPerSecond,
-				this.selectedClipId
+				this.selectedClipId,
+				this.trackIndex
 			);
 
 			// Set up clip event handling
@@ -171,7 +175,7 @@ export class TimelineTrack extends Entity {
 
 	private handleClipClick(clipData: TimelineClipData, event: pixi.FederatedPointerEvent): void {
 		// Emit event to timeline for handling
-		const eventData: ClipClickEventData = { clipData, event };
+		const eventData: ClipClickEventData = { clipData, event, trackIndex: this.trackIndex };
 		this.getContainer().emit("clip:click", eventData);
 	}
 }
