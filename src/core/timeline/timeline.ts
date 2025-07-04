@@ -4,6 +4,7 @@ import { type Size } from "@shared/layouts/geometry";
 import * as pixi from "pixi.js";
 
 import { TimelineRuler, TimelineTrack } from "./components";
+import { TimelineDragManager } from "./drag";
 import { TIMELINE_CONFIG, getAssetColor } from "./timeline-config";
 import type {
 	TimelineClipData,
@@ -37,6 +38,7 @@ export class Timeline extends ComponentBase {
 	private static readonly REFRESH_DEBOUNCE_MS = 16;
 	private readonly boundTimelineClickHandler: (event: pixi.FederatedPointerEvent) => void;
 	private readonly boundWheelHandler: (event: pixi.FederatedWheelEvent) => void;
+	private dragManager: TimelineDragManager;
 
 	constructor(edit: Edit, size: Size) {
 		super(edit);
@@ -52,6 +54,9 @@ export class Timeline extends ComponentBase {
 
 		this.boundTimelineClickHandler = this.handleTimelineClick.bind(this);
 		this.boundWheelHandler = this.handleWheel.bind(this);
+
+		// Create drag manager instance
+		this.dragManager = new TimelineDragManager();
 
 		// Use auto-binding for event handlers
 		this.bindEvent("clip:selected", this.handleClipSelected);
@@ -369,7 +374,8 @@ export class Timeline extends ComponentBase {
 						this.scrollPosition,
 						this.pixelsPerSecond,
 						this.selectedClipId,
-						i
+						i,
+						this.dragManager
 					);
 
 					track.getContainer().position.y = trackY;

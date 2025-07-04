@@ -17,6 +17,9 @@
 
 		"strict": true,
 		"strictNullChecks": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
 		"noImplicitOverride": true,
 		"noUncheckedSideEffectImports": true,
 		"noPropertyAccessFromIndexSignature": true,

@@ -1,5 +1,6 @@
 import { Edit } from "@edit";
 import { Entity } from "@preview/base/entity";
+import { TimelineDragManager } from "@timeline/drag";
 import { TIMELINE_CONFIG } from "@timeline/timeline-config";
 import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "@timeline/timeline-types";
 import * as pixi from "pixi.js";
@@ -18,6 +19,7 @@ export class TimelineTrack extends Entity {
 
 	private background: pixi.Graphics | null;
 	private clips: TimelineClip[];
+	private dragManager: TimelineDragManager;
 
 	constructor(
 		edit: Edit,
@@ -27,7 +29,8 @@ export class TimelineTrack extends Entity {
 		scrollPosition: number,
 		pixelsPerSecond: number,
 		selectedClipId: string | null,
-		trackIndex: number
+		trackIndex: number,
+		dragManager: TimelineDragManager
 	) {
 		super();
 		this.edit = edit;
@@ -41,6 +44,7 @@ export class TimelineTrack extends Entity {
 
 		this.background = null;
 		this.clips = [];
+		this.dragManager = dragManager;
 	}
 
 	public override async load(): Promise<void> {
@@ -131,6 +135,9 @@ export class TimelineTrack extends Entity {
 				clipIndex,
 				this.trackData
 			);
+
+			// Set the drag manager
+			clip.setDragManager(this.dragManager);
 
 			// Set up clip event handling
 			clip.onClipClick = (clipEventData, event) => {
