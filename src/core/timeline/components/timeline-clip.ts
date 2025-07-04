@@ -16,8 +16,9 @@ export class TimelineClip extends Entity {
 
 	private background: pixi.Graphics | null;
 	private label: pixi.Text | null;
+	private ghostClip: pixi.Graphics | null;
 
-	// Drag state management
+	// Resize drag state management
 	private isDragging: boolean = false;
 	private initialMouseX: number = 0;
 	private initialClipLength: number = 0;
@@ -25,14 +26,25 @@ export class TimelineClip extends Entity {
 	private pendingUpdate: boolean = false;
 	private lastPointerEvent: PointerEvent | null = null;
 
+	// Clip drag state management
+	private isDraggingClip: boolean = false;
+	private dragStartMouseX: number = 0;
+	private dragStartClipStart: number = 0;
+	private pendingClipUpdate: boolean = false;
+	private lastClipPointerEvent: PointerEvent | null = null;
+
 	// Visual preview state
 	private previewLength: number = 0;
 	private isShowingPreview: boolean = false;
+	private previewStart: number = 0;
+	private isShowingClipPreview: boolean = false;
 	private lastDrawnLength: number = 0; // Cache for draw optimization
+	private lastDrawnStart: number = 0; // Cache for position optimization
 
 	// Event handlers
 	public onClipClick?: (clipData: TimelineClipData, event: pixi.FederatedPointerEvent) => void;
 	public onClipResize?: (trackIndex: number, clipIndex: number, newLength: number, initialLength: number) => void;
+	public onClipDrag?: (trackIndex: number, clipIndex: number, newStart: number, initialStart: number) => void;
 
 	constructor(
 		clipData: TimelineClipData,
@@ -56,11 +68,15 @@ export class TimelineClip extends Entity {
 
 		this.background = null;
 		this.label = null;
+		this.ghostClip = null;
 	}
 
 	public override async load(): Promise<void> {
 		this.background = new pixi.Graphics();
 		this.getContainer().addChild(this.background);
+
+		this.ghostClip = new pixi.Graphics();
+		this.getContainer().addChild(this.ghostClip);
 
 		this.setupInteraction();
 		this.draw();
@@ -76,24 +92,26 @@ export class TimelineClip extends Entity {
 		const clipId = this.getClipId(this.clipIndex);
 		const isSelected = this.selectedClipId === clipId;
 
-		// Position based on time
-		const clipX = this.clipData.start * this.pixelsPerSecond - this.scrollPosition;
+		// Use preview start position during drag, otherwise use actual start
+		const actualStart = this.isShowingClipPreview ? this.previewStart : this.clipData.start;
+		const clipX = actualStart * this.pixelsPerSecond - this.scrollPosition;
 
 		// Use preview length during resize drag, otherwise use actual length
 		const actualLength = this.isShowingPreview ? this.previewLength : this.clipData.length;
 		const clipWidth = actualLength * this.pixelsPerSecond;
 
-		// Optimize: Skip redraw if length hasn't changed (for performance)
-		if (actualLength === this.lastDrawnLength && !this.background.destroyed) {
+		// Optimize: Skip redraw if neither position nor length have changed
+		if (actualLength === this.lastDrawnLength && actualStart === this.lastDrawnStart && !this.background.destroyed) {
 			return;
 		}
 		this.lastDrawnLength = actualLength;
+		this.lastDrawnStart = actualStart;
 
 		this.getContainer().position.x = clipX;
 
 		this.background.clear();
 
-		// Use different style for selected clips
+		// Use different style for selected clips and drag states
 		if (isSelected) {
 			// Draw selection border first (slightly larger than the clip)
 			this.background.strokeStyle = { color: TIMELINE_CONFIG.colors.selectionBorder, width: 2 };
@@ -106,8 +124,19 @@ export class TimelineClip extends Entity {
 			this.background.fillStyle = { color: this.getClipColor(this.clipData.asset.type, false) };
 		}
 
+		// Apply drag state visual feedback
+		if (this.isDraggingClip) {
+			// Semi-transparent during drag to show it's being moved
+			this.background.alpha = 0.7;
+		} else {
+			this.background.alpha = 1.0;
+		}
+
 		this.background.rect(0, 0, clipWidth, this.trackHeight);
 		this.background.fill();
+
+		// Draw ghost clip at original position during drag
+		this.drawGhostClip();
 
 		// Add/update label if there's enough space
 		this.updateLabel(clipWidth, isSelected);
@@ -118,6 +147,9 @@ export class TimelineClip extends Entity {
 		if (this.isDragging) {
 			this.cancelResizeDrag();
 		}
+		if (this.isDraggingClip) {
+			this.cancelClipDrag();
+		}
 
 		// Remove event listeners first to prevent memory leaks
 		this.getContainer().removeAllListeners();
@@ -126,6 +158,7 @@ export class TimelineClip extends Entity {
 		// Clear event handler references
 		this.onClipClick = undefined;
 		this.onClipResize = undefined;
+		this.onClipDrag = undefined;
 
 		// Dispose of PIXI objects with proper cleanup
 		if (this.background) {
@@ -143,30 +176,42 @@ export class TimelineClip extends Entity {
 			this.label.destroy({ children: true });
 			this.label = null;
 		}
+
+		if (this.ghostClip) {
+			if (this.ghostClip.parent) {
+				this.ghostClip.parent.removeChild(this.ghostClip);
+			}
+			this.ghostClip.destroy({ children: true });
+			this.ghostClip = null;
+		}
 	}
 
 	// Public methods for timeline control
 	public updateScrollPosition(scrollPosition: number): void {
 		this.scrollPosition = scrollPosition;
 		this.lastDrawnLength = 0; // Reset draw cache for position changes
+		this.lastDrawnStart = 0; // Reset position cache
 		this.draw();
 	}
 
 	public updatePixelsPerSecond(pixelsPerSecond: number): void {
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.lastDrawnLength = 0; // Reset draw cache for zoom changes
+		this.lastDrawnStart = 0; // Reset position cache
 		this.draw();
 	}
 
 	public updateSelectedClipId(selectedClipId: string | null): void {
 		this.selectedClipId = selectedClipId;
 		this.lastDrawnLength = 0; // Reset draw cache for selection changes
+		this.lastDrawnStart = 0; // Reset position cache
 		this.draw();
 	}
 
 	public updateClipData(clipData: TimelineClipData): void {
 		this.clipData = clipData;
 		this.lastDrawnLength = 0; // Reset draw cache
+		this.lastDrawnStart = 0; // Reset position cache
 		this.draw();
 	}
 
@@ -196,9 +241,9 @@ export class TimelineClip extends Entity {
 			// Check if we're starting a resize drag
 			if (this.isInResizeZone(localPos.x)) {
 				this.startResizeDrag(event);
-			} else if (this.onClipClick) {
-				// Regular clip selection for clicks outside resize zone
-				this.onClipClick(this.clipData, event);
+			} else {
+				// Check if it's a drag operation (distinguish from selection click)
+				this.startClipDrag(event);
 			}
 		});
 	}
@@ -312,8 +357,12 @@ export class TimelineClip extends Entity {
 	}
 
 	private updateCursor(event: pixi.FederatedPointerEvent): void {
+		if (this.isDragging || this.isDraggingClip) {
+			return; // Don't change cursor during drag operations
+		}
+		
 		const localPos = event.getLocalPosition(this.getContainer());
-		this.getContainer().cursor = this.isInResizeZone(localPos.x) ? "ew-resize" : "pointer";
+		this.getContainer().cursor = this.isInResizeZone(localPos.x) ? "ew-resize" : "grab";
 	}
 
 	private startResizeDrag(event: pixi.FederatedPointerEvent): void {
@@ -388,8 +437,8 @@ export class TimelineClip extends Entity {
 		// Calculate absolute delta from initial mouse position
 		const absoluteDeltaX = event.clientX - this.initialMouseX;
 
-		// Calculate relative delta from drag start position
-		const relativeDeltaX = event.clientX - this.dragStartPosition.x;
+		// Calculate relative delta from drag start position (for future use)
+		// const relativeDeltaX = event.clientX - this.dragStartPosition.x;
 
 		// Convert pixel delta to time delta using current pixelsPerSecond
 		// Handle coordinate space transformations for zoom/scroll scenarios
@@ -495,5 +544,337 @@ export class TimelineClip extends Entity {
 
 		// Redraw clip with new visual preview
 		this.draw();
+	}
+
+	// Clip drag methods
+	private startClipDrag(event: pixi.FederatedPointerEvent): void {
+		if (this.isDraggingClip || this.isDragging) return; // Prevent multiple drag sessions
+
+		this.isDraggingClip = true;
+		const globalPos = event.global;
+		this.dragStartMouseX = globalPos.x;
+		this.dragStartClipStart = this.clipData.start;
+
+		// Set pointer capture for reliable tracking
+		try {
+			const pointerId = (event.nativeEvent as PointerEvent)?.pointerId;
+			const container = this.getContainer() as any;
+			const { canvas } = container;
+			if (pointerId !== undefined && canvas && canvas.setPointerCapture) {
+				canvas.setPointerCapture(pointerId);
+			}
+		} catch (e) {
+			// Fallback if pointer capture fails
+			console.warn("Pointer capture not available for clip drag, using fallback tracking");
+		}
+
+		// Set up global event listeners for drag
+		document.addEventListener("pointermove", this.handleClipDrag, { passive: false });
+		document.addEventListener("pointerup", this.handleClipDragEnd, { passive: false });
+		document.addEventListener("pointercancel", this.handleClipDragEnd, { passive: false });
+		document.addEventListener("keydown", this.handleClipDragKeyDown);
+
+		// Change cursor globally during drag
+		document.body.style.cursor = "grabbing";
+
+		// Prevent text selection during drag
+		document.body.style.userSelect = "none";
+	}
+
+	private handleClipDrag = (event: PointerEvent): void => {
+		if (!this.isDraggingClip) return;
+
+		// Only handle primary pointer to avoid multi-touch issues
+		if (!event.isPrimary) return;
+
+		// Store the latest event for RAF processing
+		this.lastClipPointerEvent = event;
+
+		// Use RAF for smooth updates
+		if (!this.pendingClipUpdate) {
+			this.pendingClipUpdate = true;
+			requestAnimationFrame(this.processClipDrag);
+		}
+	};
+
+	private processClipDrag = (): void => {
+		this.pendingClipUpdate = false;
+
+		if (!this.isDraggingClip || !this.lastClipPointerEvent) return;
+
+		const event = this.lastClipPointerEvent;
+
+		// Enhanced boundary check - handle timeline edges
+		const screenWidth = window.innerWidth;
+		const timelineLeft = 0;
+		const timelineRight = screenWidth;
+
+		// Allow some tolerance outside screen but prevent extreme values
+		if (event.clientX < timelineLeft - 200 || event.clientX > timelineRight + 200) {
+			return; // Don't process drag if pointer is too far outside timeline
+		}
+
+		// Calculate mouse delta from drag start
+		const mouseDelta = event.clientX - this.dragStartMouseX;
+
+		// Convert pixel delta to time delta with precision handling
+		const effectivePixelsPerSecond = Math.max(0.1, this.pixelsPerSecond);
+		const timeDelta = mouseDelta / effectivePixelsPerSecond;
+
+		// Calculate proposed new start position
+		const proposedStart = this.dragStartClipStart + timeDelta;
+
+		// Apply frame-accurate snapping (snap to 1/30th second intervals)
+		const frameRate = 30; // Assuming 30 FPS
+		const frameInterval = 1 / frameRate;
+		const snappedStart = Math.round(proposedStart / frameInterval) * frameInterval;
+
+		// Apply constraints and collision detection
+		const finalStart = this.applyDragConstraints(snappedStart);
+
+		// Update visual preview
+		this.updateClipPreview(finalStart);
+	};
+
+	private handleClipDragKeyDown = (event: KeyboardEvent): void => {
+		if (!this.isDraggingClip) return;
+
+		// Cancel drag on ESC key
+		if (event.key === "Escape") {
+			this.cancelClipDrag();
+		}
+	};
+
+	private cancelClipDrag(): void {
+		if (!this.isDraggingClip) return;
+
+		this.isDraggingClip = false;
+
+		// Clean up global event listeners
+		document.removeEventListener("pointermove", this.handleClipDrag);
+		document.removeEventListener("pointerup", this.handleClipDragEnd);
+		document.removeEventListener("pointercancel", this.handleClipDragEnd);
+		document.removeEventListener("keydown", this.handleClipDragKeyDown);
+
+		// Clean up RAF state
+		this.pendingClipUpdate = false;
+		this.lastClipPointerEvent = null;
+
+		// Restore cursor and user selection
+		document.body.style.cursor = "";
+		document.body.style.userSelect = "";
+
+		// Reset preview state and redraw to show actual clip position
+		this.isShowingClipPreview = false;
+		this.previewStart = 0;
+		this.draw();
+
+		console.log("Clip drag cancelled");
+	}
+
+	private handleClipDragEnd = (): void => {
+		if (!this.isDraggingClip) return;
+
+		// Store the final preview position before cleanup
+		const finalStart = this.previewStart;
+		const hasChanges = this.isShowingClipPreview && finalStart !== this.clipData.start;
+
+		this.isDraggingClip = false;
+
+		// Clean up global event listeners
+		document.removeEventListener("pointermove", this.handleClipDrag);
+		document.removeEventListener("pointerup", this.handleClipDragEnd);
+		document.removeEventListener("pointercancel", this.handleClipDragEnd);
+		document.removeEventListener("keydown", this.handleClipDragKeyDown);
+
+		// Clean up RAF state
+		this.pendingClipUpdate = false;
+		this.lastClipPointerEvent = null;
+
+		// Restore cursor and user selection
+		document.body.style.cursor = "";
+		document.body.style.userSelect = "";
+
+		// Reset preview state and redraw to show actual clip position
+		this.isShowingClipPreview = false;
+		this.previewStart = 0;
+		this.draw();
+
+		// Commit the drag operation if there were changes
+		if (hasChanges && this.onClipDrag) {
+			this.onClipDrag(this.trackIndex, this.clipIndex, finalStart, this.dragStartClipStart);
+		} else if (!hasChanges && this.onClipClick) {
+			// If no significant movement, treat as a click
+			this.onClipClick(this.clipData, null as any);
+		}
+	};
+
+	private applyDragConstraints(proposedStart: number): number {
+		// Prevent negative start times
+		const minStart = 0;
+		
+		// Apply collision detection to prevent overlapping with other clips
+		const maxStart = this.calculateMaxAllowedStart(proposedStart);
+		
+		// Ensure we don't exceed timeline duration (300 seconds max)
+		const maxTimelineDuration = 300;
+		const timelineConstrainedStart = Math.min(proposedStart, maxTimelineDuration - this.clipData.length);
+		
+		// Apply all constraints - use the most restrictive
+		const finalMinStart = Math.max(minStart, 0);
+		const finalMaxStart = Math.min(maxStart, timelineConstrainedStart);
+		
+		// Ensure min doesn't exceed max (edge case protection)
+		const validMax = Math.max(finalMinStart, finalMaxStart);
+		
+		// Constrain to valid range
+		return Math.max(finalMinStart, Math.min(validMax, proposedStart));
+	}
+
+	private calculateMaxAllowedStart(proposedStart: number): number {
+		if (!this.trackData || !this.trackData.clips || this.trackData.clips.length <= 1) {
+			return 300; // Default maximum if no other clips
+		}
+
+		const epsilon = 0.001; // Small tolerance for floating point comparisons
+
+		// Find collision boundaries
+		let leftBoundary = 0; // Leftmost position we can move to
+		let rightBoundary = 300; // Rightmost position we can move to
+
+		// Performance optimization: Sort clips by start time for efficient collision detection
+		const sortedClips = [...this.trackData.clips].sort((a, b) => a.start - b.start);
+
+		for (let i = 0; i < sortedClips.length; i += 1) {
+			const clip = sortedClips[i];
+			
+			// Skip the current clip
+			if (i === this.clipIndex || clip.start === this.clipData.start) {
+				// Skip to next iteration
+			} else {
+				const otherClipStart = clip.start;
+				const otherClipEnd = clip.start + clip.length;
+				const clipEnd = proposedStart + this.clipData.length;
+
+				// Check collision scenarios
+				if (otherClipEnd <= proposedStart + epsilon) {
+					// This clip ends before our proposed start - it constrains our left boundary
+					leftBoundary = Math.max(leftBoundary, otherClipEnd);
+				} else if (otherClipStart >= clipEnd - epsilon) {
+					// This clip starts after our proposed end - it constrains our right boundary
+					rightBoundary = Math.min(rightBoundary, otherClipStart - this.clipData.length);
+				} else if (otherClipStart < proposedStart) {
+					// Other clip starts before us - we must start after it ends
+					leftBoundary = Math.max(leftBoundary, otherClipEnd);
+				} else {
+					// Other clip starts after us - we must end before it starts
+					rightBoundary = Math.min(rightBoundary, otherClipStart - this.clipData.length);
+				}
+			}
+		}
+
+		// Ensure we don't exceed valid boundaries
+		const validRightBoundary = Math.max(leftBoundary, rightBoundary);
+		
+		// Return the maximum allowed start position
+		return Math.max(0, validRightBoundary);
+	}
+
+	private getCollisionBoundaries(proposedStart: number): { left: number; right: number; hasCollision: boolean } {
+		if (!this.trackData || !this.trackData.clips || this.trackData.clips.length <= 1) {
+			return { left: 0, right: 300, hasCollision: false };
+		}
+
+		const clipEnd = proposedStart + this.clipData.length;
+		const epsilon = 0.001;
+
+		let leftBoundary = 0;
+		let rightBoundary = 300;
+		let hasCollision = false;
+
+		for (let i = 0; i < this.trackData.clips.length; i += 1) {
+			const clip = this.trackData.clips[i];
+			
+			if (i === this.clipIndex || clip.start === this.clipData.start) {
+				// Skip to next iteration
+			} else {
+				const otherClipStart = clip.start;
+				const otherClipEnd = clip.start + clip.length;
+
+				// Check if there would be a collision
+				if (proposedStart < otherClipEnd + epsilon && clipEnd > otherClipStart - epsilon) {
+					hasCollision = true;
+					
+					if (otherClipStart < proposedStart) {
+						leftBoundary = Math.max(leftBoundary, otherClipEnd);
+					} else {
+						rightBoundary = Math.min(rightBoundary, otherClipStart - this.clipData.length);
+					}
+				}
+			}
+		}
+
+		return { left: leftBoundary, right: rightBoundary, hasCollision };
+	}
+
+	private updateClipPreview(newStart: number): void {
+		// Update preview state
+		this.previewStart = newStart;
+		this.isShowingClipPreview = true;
+
+		// Redraw clip with new visual preview
+		this.draw();
+	}
+
+	private drawGhostClip(): void {
+		if (!this.ghostClip || !this.isDraggingClip) {
+			// Hide ghost clip when not dragging
+			if (this.ghostClip) {
+				this.ghostClip.clear();
+			}
+			return;
+		}
+
+		this.ghostClip.clear();
+
+		// Calculate original position
+		const originalX = this.clipData.start * this.pixelsPerSecond - this.scrollPosition;
+		const clipWidth = this.clipData.length * this.pixelsPerSecond;
+
+		// Position ghost at original location (relative to current container position)
+		const currentX = this.getContainer().position.x;
+		const ghostX = originalX - currentX;
+
+		// Draw ghost clip with dashed border and low opacity
+		this.ghostClip.strokeStyle = { 
+			color: TIMELINE_CONFIG.colors.selectionBorder, 
+			width: 1, 
+			alpha: 0.5
+		};
+		
+		// Create dashed line effect by drawing multiple small rectangles
+		const dashLength = 4;
+		const gapLength = 4;
+		const totalLength = dashLength + gapLength;
+		const dashCount = Math.ceil(clipWidth / totalLength);
+
+		for (let i = 0; i < dashCount; i += 1) {
+			const dashStart = i * totalLength;
+			const dashEnd = Math.min(dashStart + dashLength, clipWidth);
+			
+			if (dashEnd > dashStart) {
+				this.ghostClip.rect(ghostX + dashStart, 0, dashEnd - dashStart, this.trackHeight);
+			}
+		}
+		
+		this.ghostClip.stroke();
+
+		// Add semi-transparent fill
+		this.ghostClip.fillStyle = { 
+			color: this.getClipColor(this.clipData.asset.type, false), 
+			alpha: 0.2 
+		};
+		this.ghostClip.rect(ghostX, 0, clipWidth, this.trackHeight);
+		this.ghostClip.fill();
 	}
 }

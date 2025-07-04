@@ -382,6 +382,10 @@ export class Timeline extends ComponentBase {
 						this.handleClipResize(data.trackIndex, data.clipIndex, data.newLength, data.initialLength);
 					});
 
+					track.getContainer().on("clip:drag", (data: { trackIndex: number; clipIndex: number; newStart: number; initialStart: number }) => {
+						this.handleClipDrag(data.trackIndex, data.clipIndex, data.newStart, data.initialStart);
+					});
+
 					this.trackContainer?.addChild(track.getContainer());
 					track.load();
 					this.tracks.push(track);
@@ -572,6 +576,18 @@ export class Timeline extends ComponentBase {
 			}
 		} catch (error) {
 			console.warn("Failed to handle clip resize:", error);
+		}
+	}
+
+	private handleClipDrag(trackIndex: number, clipIndex: number, newStart: number, ___: number): void {
+		try {
+			// Use the Edit class's dedicated updateClipPosition method
+			this.edit.updateClipPosition(trackIndex, clipIndex, newStart);
+			
+			// Refresh timeline view to show the changes
+			this.refreshView();
+		} catch (error) {
+			console.warn("Failed to handle clip drag:", error);
 		}
 	}
 

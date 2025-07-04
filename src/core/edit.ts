@@ -354,6 +354,40 @@ export class Edit extends Entity {
 		}
 	}
 
+	/** @internal */
+	public updateClipPosition(trackIdx: number, clipIdx: number, newStart: number): void {
+		const clip = this.getPlayerClip(trackIdx, clipIdx);
+		if (!clip) {
+			console.warn(`Cannot update position: Clip not found at track ${trackIdx}, index ${clipIdx}`);
+			return;
+		}
+
+		// Store the initial configuration for undo/redo functionality
+		const initialClipConfig = { ...clip.clipConfiguration };
+
+		// Update the clip's start position
+		const updatedConfiguration = {
+			...clip.clipConfiguration,
+			start: newStart
+		};
+
+		// Validate the updated configuration
+		try {
+			const validatedConfig = ClipSchema.parse(updatedConfiguration);
+			clip.clipConfiguration = validatedConfig;
+
+			// Emit update event for undo/redo and other listeners
+			this.setUpdatedClip(clip, initialClipConfig);
+
+			// Update total duration in case the change affects it
+			this.updateTotalDuration();
+		} catch (error) {
+			console.error("Failed to update clip position:", error);
+			// Revert to original configuration on validation failure
+			clip.clipConfiguration = initialClipConfig;
+		}
+	}
+
 	private queueDisposeClip(clipToDispose: Player): void {
 		this.clipsToDispose.push(clipToDispose);
 	}
