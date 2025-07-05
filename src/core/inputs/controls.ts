@@ -1,4 +1,4 @@
-import { Edit } from "@entities/system/edit";
+import { Edit } from "@core/edit";
 
 export class Controls {
 	private edit: Edit;
