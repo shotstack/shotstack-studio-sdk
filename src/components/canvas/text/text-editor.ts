@@ -1,4 +1,4 @@
-import type { TextPlayer } from "@entities/players/text-player";
+import type { TextPlayer } from "@canvas/players/text-player";
 import { type Clip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";
 import * as pixi from "pixi.js";

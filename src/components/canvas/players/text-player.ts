@@ -1,6 +1,5 @@
-
-import { Player } from "@entities/base/player";
-import { TextEditor } from "@entities/text/text-editor";
+import { Player } from "@canvas/players/player";
+import { TextEditor } from "@canvas/text/text-editor";
 import { type Size } from "@layouts/geometry";
 import { type Clip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";

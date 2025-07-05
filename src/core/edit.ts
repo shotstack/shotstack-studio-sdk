@@ -1,22 +1,21 @@
+import { AudioPlayer } from "@canvas/players/audio-player";
+import { HtmlPlayer } from "@canvas/players/html-player";
+import { ImagePlayer } from "@canvas/players/image-player";
+import { LumaPlayer } from "@canvas/players/luma-player";
+import type { Player } from "@canvas/players/player";
+import { ShapePlayer } from "@canvas/players/shape-player";
+import { TextPlayer } from "@canvas/players/text-player";
+import { VideoPlayer } from "@canvas/players/video-player";
+import { EventEmitter } from "@core/events/event-emitter";
+import { Entity } from "@core/shared/entity";
+import type { Size } from "@layouts/geometry";
+import { AssetLoader } from "@loaders/asset-loader";
+import { FontLoadParser } from "@loaders/font-load-parser";
+import { ClipSchema } from "@schemas/clip";
+import { EditSchema } from "@schemas/edit";
+import { TrackSchema } from "@schemas/track";
 import * as pixi from "pixi.js";
 import { z } from "zod";
-
-import { EventEmitter } from "../../events/event-emitter";
-import type { Size } from "../../layouts/geometry";
-import { AssetLoader } from "../../loaders/asset-loader";
-import { FontLoadParser } from "../../loaders/font-load-parser";
-import { ClipSchema } from "../../schemas/clip";
-import { EditSchema } from "../../schemas/edit";
-import { TrackSchema } from "../../schemas/track";
-import { Entity } from "../base/entity";
-import type { Player } from "../base/player";
-import { AudioPlayer } from "../players/audio-player";
-import { HtmlPlayer } from "../players/html-player";
-import { ImagePlayer } from "../players/image-player";
-import { LumaPlayer } from "../players/luma-player";
-import { ShapePlayer } from "../players/shape-player";
-import { TextPlayer } from "../players/text-player";
-import { VideoPlayer } from "../players/video-player";
 
 type EditType = z.infer<typeof EditSchema>;
 type ClipType = z.infer<typeof ClipSchema>;

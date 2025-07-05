@@ -1,11 +1,11 @@
+import { KeyframeBuilder } from "@animations/keyframe-builder";
+import type { Edit } from "@core/edit";
+import { type Size } from "@layouts/geometry";
+import { type Clip } from "@schemas/clip";
+import { type VideoAsset } from "@schemas/video-asset";
 import * as pixi from "pixi.js";
 
-import { KeyframeBuilder } from "../../animations/keyframe-builder";
-import { type Size } from "../../layouts/geometry";
-import { type Clip } from "../../schemas/clip";
-import { type VideoAsset } from "../../schemas/video-asset";
-import { Player } from "../base/player";
-import type { Edit } from "../system/edit";
+import { Player } from "./player";
 
 export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;

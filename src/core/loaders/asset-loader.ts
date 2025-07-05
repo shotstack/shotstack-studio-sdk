@@ -86,25 +86,29 @@ export class AssetLoader {
 
 		const texture = await new Promise<pixi.Texture>((resolve, reject) => {
 			const video = document.createElement("video");
-			
+
 			// Essential Safari video attributes
 			video.crossOrigin = "anonymous";
 			video.playsInline = true;
 			video.muted = true;
 			video.preload = "metadata";
 
-			video.addEventListener("loadedmetadata", () => {
-				try {
-					const source = new pixi.VideoSource({
-						resource: video,
-						autoPlay: data.autoPlay ?? false,
-						...data
-					});
-					resolve(new pixi.Texture({ source }));
-				} catch (error) {
-					reject(error);
-				}
-			}, { once: true });
+			video.addEventListener(
+				"loadedmetadata",
+				() => {
+					try {
+						const source = new pixi.VideoSource({
+							resource: video,
+							autoPlay: data.autoPlay ?? false,
+							...data
+						});
+						resolve(new pixi.Texture({ source }));
+					} catch (error) {
+						reject(error);
+					}
+				},
+				{ once: true }
+			);
 
 			video.addEventListener("error", () => reject(new Error("Video loading failed")), { once: true });
 
