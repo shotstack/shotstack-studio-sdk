@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2025-07-06
+
+### Changed
+
+- **Major refactoring: Implemented command pattern architecture**
+  - Reorganized project structure in anticipation of new UI modules
+  - Extracted all edit operations into dedicated command classes
+
+### Added
+
+- **Complete undo/redo support for all editing operations**
+  - Implemented undo functionality for all commands
+  - Added keyboard shortcuts ctrl/cmd-z for undo ctrl/cmd-shift-z for redo
+
+### Technical Improvements
+
+- Enhanced TypeScript strict mode with `noImplicitAny` enabled
+- Improved import path aliases for better code organization
+
 ## [1.3.0] - 2025-07-02
 
 ### Added
