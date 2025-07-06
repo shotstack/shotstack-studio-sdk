@@ -104,9 +104,6 @@ export class TimelineClip extends Entity {
 		this.lastDrawnStart = actualStart;
 
 		this.getContainer().position.x = clipX;
-		
-		// Update hit area to match current clip width
-		this.getContainer().hitArea = new pixi.Rectangle(0, 0, clipWidth, this.trackHeight);
 
 		this.background.clear();
 
@@ -222,15 +219,6 @@ export class TimelineClip extends Entity {
 		this.getContainer().eventMode = "static";
 		this.getContainer().cursor = "pointer";
 		
-		// Set explicit hit area for the container
-		const clipWidth = this.clipData.length * this.pixelsPerSecond;
-		this.getContainer().hitArea = new pixi.Rectangle(0, 0, clipWidth, this.trackHeight);
-
-		// Also make the background interactive
-		if (this.background) {
-			this.background.eventMode = "static";
-			this.background.cursor = "pointer";
-		}
 
 		// Add hover event for cursor management
 		this.getContainer().on("pointerover", (event: pixi.FederatedPointerEvent) => {
@@ -243,13 +231,6 @@ export class TimelineClip extends Entity {
 
 		this.getContainer().on("pointerout", () => {
 			this.getContainer().cursor = "pointer";
-		});
-
-		// Add click handler for immediate selection
-		this.getContainer().on("click", (event: pixi.FederatedPointerEvent) => {
-			if (this.onClipClick) {
-				this.onClipClick(this.trackIndex, this.clipIndex, event);
-			}
 		});
 
 		this.getContainer().on("pointerdown", (event: pixi.FederatedPointerEvent) => {
