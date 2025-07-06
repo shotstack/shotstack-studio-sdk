@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import dts from "vite-plugin-dts";
 
 const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg"];
 
@@ -11,6 +12,14 @@ const globals = {
 };
 
 export default defineConfig({
+	plugins: [
+		dts({
+			rollupTypes: true,
+			outDir: "dist",
+			exclude: ["src/main.ts"],
+			pathsToAliases: true
+		})
+	],
 	resolve: {
 		alias: {
 			"@core": resolve(__dirname, "src/core"),
