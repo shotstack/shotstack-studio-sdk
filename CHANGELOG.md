@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2025-07-06
+
+### Fixed
+
+- Fixed TypeScript declaration files not resolving path aliases in published npm package
+- Replaced custom build process with vite-plugin-dts for standard declaration file generation
+
 ## [1.4.0] - 2025-07-06
 
 ### Changed
