@@ -196,6 +196,13 @@ export class Edit extends Entity {
 
 		return clipsByTrack[clipIdx].clipConfiguration;
 	}
+
+	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
+		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
+		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
+
+		return clipsByTrack[clipIdx];
+	}
 	public deleteClip(trackIdx: number, clipIdx: number): void {
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
 		this.executeCommand(command);
@@ -273,6 +280,10 @@ export class Edit extends Entity {
 	public updateTextContent(clip: Player, newText: string, initialConfig: ClipType): void {
 		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
 		this.executeCommand(command);
+	}
+
+	public executeEditCommand(command: EditCommand): void | Promise<void> {
+		return this.executeCommand(command);
 	}
 
 	private executeCommand(command: EditCommand): void | Promise<void> {

@@ -1,4 +1,5 @@
-
+import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
 import { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
 import * as pixi from "pixi.js";
@@ -543,14 +544,10 @@ export class Timeline extends TimelineBase {
 
 		if (trackIndex !== -1 && clipIndex !== -1) {
 			try {
-				const clip = this.edit.getClip(trackIndex, clipIndex);
+				const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
 
-				if (clip) {
-					// TODO: Implement player clip selection
-					// const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
-					// if (playerClip) {
-					// 	this.edit.setSelectedClip(playerClip);
-					// }
+				if (playerClip) {
+					this.edit.setSelectedClip(playerClip);
 				}
 			} catch (error) {
 				console.warn("Failed to handle clip selection:", error);
@@ -560,37 +557,19 @@ export class Timeline extends TimelineBase {
 		this.refreshView();
 	}
 
-	private handleClipResize(trackIndex: number, clipIndex: number, newLength: number, initialLength: number): void {
+	private handleClipResize(trackIndex: number, clipIndex: number, newLength: number, _: number): void {
 		try {
-			// Get the original clip
-			const originalClip = this.edit.getClip(trackIndex, clipIndex);
-			// TODO: Implement player clip retrieval
-			const playerClip = null; // this.edit.getPlayerClip(trackIndex, clipIndex);
-
-			if (originalClip) {
-				// TODO: Implement clip resize with player clip
-				// if (playerClip) {
-				// 	const beforeClip = { ...playerClip.clipConfiguration, length: initialLength };
-				// 	playerClip.clipConfiguration.length = newLength;
-				// 	this.edit.setUpdatedClip(playerClip, beforeClip);
-				// }
-
-				// Refresh timeline view to show the changes
-				this.refreshView();
-			}
+			const command = new ResizeClipCommand(trackIndex, clipIndex, newLength);
+			this.edit.executeEditCommand(command);
 		} catch (error) {
 			console.warn("Failed to handle clip resize:", error);
 		}
 	}
 
-	private handleClipDrag(trackIndex: number, clipIndex: number, newStart: number, ___: number): void {
+	private handleClipDrag(trackIndex: number, clipIndex: number, newStart: number, __: number): void {
 		try {
-			// Use the Edit class's dedicated updateClipPosition method
-			// TODO: Implement clip position update
-			// this.edit.updateClipPosition(trackIndex, clipIndex, newStart);
-
-			// Refresh timeline view to show the changes
-			this.refreshView();
+			const command = new UpdateClipPositionCommand(trackIndex, clipIndex, newStart);
+			this.edit.executeEditCommand(command);
 		} catch (error) {
 			console.warn("Failed to handle clip drag:", error);
 		}

@@ -1,4 +1,3 @@
-
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
