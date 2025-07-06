@@ -19,9 +19,9 @@ export type {
 } from "./timeline-types";
 
 // Export component classes for advanced usage
-export { TimelineRuler } from "./components/timeline-ruler";
-export { TimelineTrack } from "./components/timeline-track";
-export { TimelineClip } from "./components/timeline-clip";
+export { TimelineRuler } from "./elements/timeline-ruler";
+export { TimelineTrack } from "./elements/timeline-track";
+export { TimelineClip } from "./elements/timeline-clip";
 
 // Export type guards for external use
 export { isTextAsset, isVideoAsset, isImageAsset, isAudioAsset, isLumaAsset, hasSourceUrl } from "./timeline-types";

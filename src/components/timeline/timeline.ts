@@ -5,8 +5,8 @@ import { type Size } from "@layouts/geometry";
 import * as pixi from "pixi.js";
 
 import { TimelineBase } from "./base/timeline-base";
-import { TimelineRuler, TimelineTrack } from "./components";
 import { TimelineDragManager } from "./drag";
+import { TimelineRuler, TimelineTrack } from "./elements";
 import { TIMELINE_CONFIG } from "./timeline-config";
 import type { ClipSelectedEventData, ClipUpdatedEventData, ClipDeletedEventData, TrackDeletedEventData } from "./timeline-types";
 
