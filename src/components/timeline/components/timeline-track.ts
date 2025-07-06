@@ -2,7 +2,7 @@ import { Edit } from "@core/edit";
 import { Entity } from "@shared/entity";
 import { TimelineDragManager } from "@timeline/drag";
 import { TIMELINE_CONFIG } from "@timeline/timeline-config";
-import type { TimelineTrackData, TimelineClipData, ClipClickEventData } from "@timeline/timeline-types";
+import type { TimelineTrackData } from "@timeline/timeline-types";
 import * as pixi from "pixi.js";
 
 import { TimelineClip } from "./timeline-clip";
@@ -140,8 +140,8 @@ export class TimelineTrack extends Entity {
 			clip.setDragManager(this.dragManager);
 
 			// Set up clip event handling
-			clip.onClipClick = (clipEventData, event) => {
-				this.handleClipClick(clipEventData, event);
+			clip.onClipClick = (trackIdx, clipIdx, event) => {
+				this.handleClipClick(trackIdx, clipIdx, event);
 			};
 
 			clip.onClipResize = (trackIdx, clipIdx, newLength, initialLength) => {
@@ -190,10 +190,9 @@ export class TimelineTrack extends Entity {
 		}
 	}
 
-	private handleClipClick(clipData: TimelineClipData, event: pixi.FederatedPointerEvent): void {
+	private handleClipClick(trackIndex: number, clipIndex: number, event: pixi.FederatedPointerEvent): void {
 		// Emit event to timeline for handling
-		const eventData: ClipClickEventData = { clipData, event, trackIndex: this.trackIndex };
-		this.getContainer().emit("clip:click", eventData);
+		this.getContainer().emit("clip:click", { trackIndex, clipIndex, event });
 	}
 
 	private handleClipResize(trackIndex: number, clipIndex: number, newLength: number, initialLength: number): void {

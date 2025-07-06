@@ -23,7 +23,6 @@ export class TimelineClip extends Entity {
 	private isDragging: boolean = false;
 	private initialMouseX: number = 0;
 	private initialClipLength: number = 0;
-	private dragStartPosition: { x: number; y: number } = { x: 0, y: 0 };
 	private pendingUpdate: boolean = false;
 	private lastPointerEvent: PointerEvent | null = null;
 
@@ -39,7 +38,7 @@ export class TimelineClip extends Entity {
 	private lastDrawnStart: number = 0; // Cache for position optimization
 
 	// Event handlers
-	public onClipClick?: (clipData: TimelineClipData, event: pixi.FederatedPointerEvent) => void;
+	public onClipClick?: (trackIndex: number, clipIndex: number, event: pixi.FederatedPointerEvent) => void;
 	public onClipResize?: (trackIndex: number, clipIndex: number, newLength: number, initialLength: number) => void;
 	public onClipDrag?: (trackIndex: number, clipIndex: number, newStart: number, initialStart: number) => void;
 
@@ -105,6 +104,9 @@ export class TimelineClip extends Entity {
 		this.lastDrawnStart = actualStart;
 
 		this.getContainer().position.x = clipX;
+		
+		// Update hit area to match current clip width
+		this.getContainer().hitArea = new pixi.Rectangle(0, 0, clipWidth, this.trackHeight);
 
 		this.background.clear();
 
@@ -219,6 +221,16 @@ export class TimelineClip extends Entity {
 	private setupInteraction(): void {
 		this.getContainer().eventMode = "static";
 		this.getContainer().cursor = "pointer";
+		
+		// Set explicit hit area for the container
+		const clipWidth = this.clipData.length * this.pixelsPerSecond;
+		this.getContainer().hitArea = new pixi.Rectangle(0, 0, clipWidth, this.trackHeight);
+
+		// Also make the background interactive
+		if (this.background) {
+			this.background.eventMode = "static";
+			this.background.cursor = "pointer";
+		}
 
 		// Add hover event for cursor management
 		this.getContainer().on("pointerover", (event: pixi.FederatedPointerEvent) => {
@@ -231,6 +243,13 @@ export class TimelineClip extends Entity {
 
 		this.getContainer().on("pointerout", () => {
 			this.getContainer().cursor = "pointer";
+		});
+
+		// Add click handler for immediate selection
+		this.getContainer().on("click", (event: pixi.FederatedPointerEvent) => {
+			if (this.onClipClick) {
+				this.onClipClick(this.trackIndex, this.clipIndex, event);
+			}
 		});
 
 		this.getContainer().on("pointerdown", (event: pixi.FederatedPointerEvent) => {
@@ -255,7 +274,7 @@ export class TimelineClip extends Entity {
 							this.onClipDrag(this.trackIndex, this.clipIndex, newStart, initialStart);
 						} else if (!hasChanges && this.onClipClick) {
 							// If no significant movement, treat as a click
-							this.onClipClick(this.clipData, event);
+							this.onClipClick(this.trackIndex, this.clipIndex, event);
 						}
 					},
 					onDragCancel: () => {
@@ -279,10 +298,13 @@ export class TimelineClip extends Entity {
 		// Add label if there's enough space
 		if (clipWidth > 40) {
 			const textColor = isSelected ? TIMELINE_CONFIG.colors.textPrimary : TIMELINE_CONFIG.colors.textSecondary;
-			this.label = new pixi.Text(this.getClipLabel(this.clipData), {
-				fontSize: 10,
-				fill: textColor,
-				fontWeight: isSelected ? "bold" : "normal"
+			this.label = new pixi.Text({
+				text: this.getClipLabel(this.clipData),
+				style: {
+					fontSize: 10,
+					fill: textColor,
+					fontWeight: isSelected ? "bold" : "normal"
+				}
 			});
 
 			this.label.position.set(5, this.trackHeight / 2 - this.label.height / 2);
@@ -390,7 +412,6 @@ export class TimelineClip extends Entity {
 
 		this.isDragging = true;
 		const globalPos = event.global;
-		this.dragStartPosition = { x: globalPos.x, y: globalPos.y };
 		this.initialMouseX = globalPos.x;
 		this.initialClipLength = this.clipData.length;
 
@@ -456,9 +477,6 @@ export class TimelineClip extends Entity {
 
 		// Calculate absolute delta from initial mouse position
 		const absoluteDeltaX = event.clientX - this.initialMouseX;
-
-		// Calculate relative delta from drag start position (for future use)
-		// const relativeDeltaX = event.clientX - this.dragStartPosition.x;
 
 		// Convert pixel delta to time delta using current pixelsPerSecond
 		// Handle coordinate space transformations for zoom/scroll scenarios

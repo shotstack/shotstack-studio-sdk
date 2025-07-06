@@ -7,16 +7,8 @@ import * as pixi from "pixi.js";
 import { TimelineBase } from "./base/timeline-base";
 import { TimelineRuler, TimelineTrack } from "./components";
 import { TimelineDragManager } from "./drag";
-import { TIMELINE_CONFIG, getAssetColor } from "./timeline-config";
-import type {
-	TimelineClipData,
-	ClipClickEventData,
-	ClipSelectedEventData,
-	ClipUpdatedEventData,
-	ClipDeletedEventData,
-	TrackDeletedEventData
-} from "./timeline-types";
-import { isTextAsset, hasSourceUrl } from "./timeline-types";
+import { TIMELINE_CONFIG } from "./timeline-config";
+import type { ClipSelectedEventData, ClipUpdatedEventData, ClipDeletedEventData, TrackDeletedEventData } from "./timeline-types";
 
 export class Timeline extends TimelineBase {
 	private width: number;
@@ -108,9 +100,8 @@ export class Timeline extends TimelineBase {
 
 		if (this.trackContainer) {
 			const mask = new pixi.Graphics();
-			mask.beginFill(0xffffff);
-			mask.drawRect(0, rulerHeight, this.width, this.visibleHeight);
-			mask.endFill();
+			mask.rect(0, rulerHeight, this.width, this.visibleHeight);
+			mask.fill({ color: 0xffffff });
 			this.trackContainer.mask = mask;
 			this.getContainer().addChild(mask);
 
@@ -382,8 +373,8 @@ export class Timeline extends TimelineBase {
 
 					track.getContainer().position.y = trackY;
 
-					track.getContainer().on("clip:click", (data: ClipClickEventData) => {
-						this.handleClipClick(data.clipData, data.trackIndex);
+					track.getContainer().on("clip:click", (data: { trackIndex: number; clipIndex: number; event: pixi.FederatedPointerEvent }) => {
+						this.handleClipClick(data.trackIndex, data.clipIndex);
 					});
 
 					track.getContainer().on("clip:resize", (data: { trackIndex: number; clipIndex: number; newLength: number; initialLength: number }) => {
@@ -502,56 +493,16 @@ export class Timeline extends TimelineBase {
 		}
 	}
 
-	private getClipColor(assetType: string, isSelected: boolean = false): number {
-		return getAssetColor(assetType, isSelected);
-	}
-
-	private getClipLabel(clipData: TimelineClipData): string {
-		if (isTextAsset(clipData.asset)) {
-			return clipData.asset.text.substring(0, 20);
-		}
-
-		if (hasSourceUrl(clipData.asset)) {
-			const filename = clipData.asset.src.substring(clipData.asset.src.lastIndexOf("/") + 1);
-			return filename.substring(0, 20);
-		}
-
-		return clipData.asset.type;
-	}
-
-	private formatTime(seconds: number): string {
-		const mins = Math.floor(seconds / 60);
-		const secs = Math.floor(seconds % 60);
-		return `${mins}:${secs.toString().padStart(2, "0")}`;
-	}
-
-	private handleClipClick(clipData: TimelineClipData, trackIndex: number): void {
-		const editData = this.edit.getEdit();
-		let clipIndex = -1;
-
-		// Find the clip index within the specific track
-		if (trackIndex < editData.timeline.tracks.length) {
-			const track = editData.timeline.tracks[trackIndex];
-			for (let j = 0; j < track.clips.length; j += 1) {
-				if (track.clips[j].start === clipData.start && track.clips[j].asset.type === clipData.asset.type) {
-					clipIndex = j;
-					break;
-				}
-			}
-		}
-
+	private handleClipClick(trackIndex: number, clipIndex: number): void {
 		this.selectedClipId = this.getClipId(trackIndex, clipIndex);
 
-		if (trackIndex !== -1 && clipIndex !== -1) {
-			try {
-				const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
-
-				if (playerClip) {
-					this.edit.setSelectedClip(playerClip);
-				}
-			} catch (error) {
-				console.warn("Failed to handle clip selection:", error);
+		try {
+			const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
+			if (playerClip) {
+				this.edit.setSelectedClip(playerClip);
 			}
+		} catch (error) {
+			console.warn("Failed to handle clip selection:", error);
 		}
 
 		this.refreshView();
