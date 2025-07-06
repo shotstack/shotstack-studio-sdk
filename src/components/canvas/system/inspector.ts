@@ -1,6 +1,5 @@
+import { Entity } from "@core/shared/entity";
 import * as pixi from "pixi.js";
-
-import { Entity } from "../base/entity";
 
 type MemoryInfo = {
 	totalHeapSize?: number;

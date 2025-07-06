@@ -1,11 +1,11 @@
+import type { Edit } from "@core/edit";
+import { type Size } from "@layouts/geometry";
+import { type Clip } from "@schemas/clip";
+import { type ShapeAsset } from "@schemas/shape-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
-import { type Size } from "../../layouts/geometry";
-import { type Clip } from "../../schemas/clip";
-import { type ShapeAsset } from "../../schemas/shape-asset";
-import { Player } from "../base/player";
-import type { Edit } from "../system/edit";
+import { Player } from "./player";
 
 export class ShapePlayer extends Player {
 	private shape: pixi.Graphics | null;

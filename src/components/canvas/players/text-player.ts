@@ -1,6 +1,5 @@
-
-import { Player } from "@entities/base/player";
-import { TextEditor } from "@entities/text/text-editor";
+import { Player } from "@canvas/players/player";
+import { TextEditor } from "@canvas/text/text-editor";
 import { type Size } from "@layouts/geometry";
 import { type Clip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";
@@ -125,21 +124,7 @@ export class TextPlayer extends Player {
 		this.text.position.set(textX, textY);
 	}
 
-	// Used by TextEditor to update internal clip configuration
 	public updateTextContent(newText: string, initialConfig: Clip): void {
-		if (this.clipConfiguration.asset && "text" in this.clipConfiguration.asset) {
-			(this.clipConfiguration.asset as TextAsset).text = newText;
-
-			if (this.text) {
-				// Update the text content
-				this.text.text = newText;
-
-				// Reposition text according to alignment after content change
-				const textAsset = this.clipConfiguration.asset as TextAsset;
-				this.positionText(textAsset);
-			}
-
-			this.edit.setUpdatedClip(this, initialConfig);
-		}
+		this.edit.updateTextContent(this, newText, initialConfig);
 	}
 }

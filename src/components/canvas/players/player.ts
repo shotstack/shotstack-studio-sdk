@@ -1,16 +1,15 @@
+import { EffectPresetBuilder } from "@animations/effect-preset-builder";
+import { KeyframeBuilder } from "@animations/keyframe-builder";
+import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
+import { type Edit } from "@core/edit";
+import { Pointer } from "@inputs/pointer";
+import { type Size, type Vector } from "@layouts/geometry";
+import { PositionBuilder } from "@layouts/position-builder";
+import { type Clip } from "@schemas/clip";
+import { type Keyframe } from "@schemas/keyframe";
 import * as pixi from "pixi.js";
 
-import { EffectPresetBuilder } from "../../animations/effect-preset-builder";
-import { KeyframeBuilder } from "../../animations/keyframe-builder";
-import { TransitionPresetBuilder } from "../../animations/transition-preset-builder";
-import { Pointer } from "../../inputs/pointer";
-import { type Size, type Vector } from "../../layouts/geometry";
-import { PositionBuilder } from "../../layouts/position-builder";
-import { type Clip } from "../../schemas/clip";
-import { type Keyframe } from "../../schemas/keyframe";
-import { type Edit } from "../system/edit";
-
-import { Entity } from "./entity";
+import { Entity } from "../../../core/shared/entity";
 
 /**
  * TODO: Move handles on UI level (screen space)
@@ -99,6 +98,10 @@ export abstract class Player extends Entity {
 		this.rotationOffset = { x: 0, y: 0 };
 
 		this.initialClipConfiguration = null;
+	}
+
+	public reconfigureAfterRestore(): void {
+		this.configureKeyframes();
 	}
 
 	protected configureKeyframes() {
@@ -569,7 +572,7 @@ export abstract class Player extends Entity {
 
 	private onPointerUp(): void {
 		if ((this.isDragging || this.scaleDirection !== null || this.isRotating) && this.hasStateChanged()) {
-			this.edit.setUpdatedClip(this, this.initialClipConfiguration);
+			this.edit.setUpdatedClip(this, this.initialClipConfiguration, structuredClone(this.clipConfiguration));
 		}
 
 		this.isDragging = false;
