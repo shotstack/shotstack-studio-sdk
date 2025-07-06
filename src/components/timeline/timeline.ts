@@ -59,11 +59,11 @@ export class Timeline extends TimelineBase {
 		// Create drag manager instance
 		this.dragManager = new TimelineDragManager();
 
-		// Use auto-binding for event handlers
-		this.bindEvent("clip:selected", this.handleClipSelected);
-		this.bindEvent("clip:updated", this.handleClipUpdated);
-		this.bindEvent("clip:deleted", this.handleClipDeleted);
-		this.bindEvent("track:deleted", this.handleTrackDeleted);
+		// Bind event handlers with proper context
+		this.bindEvent("clip:selected", this.handleClipSelected.bind(this));
+		this.bindEvent("clip:updated", this.handleClipUpdated.bind(this));
+		this.bindEvent("clip:deleted", this.handleClipDeleted.bind(this));
+		this.bindEvent("track:deleted", this.handleTrackDeleted.bind(this));
 	}
 
 	public override async load(): Promise<void> {
