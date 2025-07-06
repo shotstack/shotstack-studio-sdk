@@ -109,6 +109,10 @@ edit.addTrack(1, { clips: [] });
 edit.deleteClip(0, 0);
 edit.deleteTrack(1);
 
+// Undo/Redo
+edit.undo();
+edit.redo();
+
 // Get edit information
 const clip = edit.getClip(0, 0);
 const track = edit.getTrack(0);
@@ -174,6 +178,8 @@ await controls.load();
 // Shift + Arrow - Seek larger amount
 // Comma - Step backward one frame
 // Period - Step forward one frame
+// Cmd/Ctrl + Z - Undo
+// Cmd/Ctrl + Shift + Z - Redo
 ```
 
 ### VideoExporter
@@ -277,11 +283,15 @@ Creates a new Edit instance with the specified dimensions and background color.
 - `getTrack(trackIdx: number)` - Get a track by index
 - `deleteTrack(trackIdx: number)` - Delete a track
 - `getEdit()` - Get the full edit configuration as a JSON object
+- `undo()` - Undo the last editing operation
+- `redo()` - Redo the last undone operation
 
 #### Events
 
 - `clip:selected` - Triggered when a clip is selected
 - `clip:updated` - Triggered when a clip is modified
+- `edit:undo` - Triggered when an undo operation is performed
+- `edit:redo` - Triggered when a redo operation is performed
 
 ### Canvas
 
