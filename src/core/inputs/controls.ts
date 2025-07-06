@@ -1,4 +1,4 @@
-import { Edit } from "@entities/system/edit";
+import { Edit } from "@core/edit";
 
 export class Controls {
 	private edit: Edit;
@@ -73,6 +73,17 @@ export class Controls {
 			case "Period": {
 				// Frame step forward
 				this.edit.seek(this.edit.playbackTime + this.frameTime);
+				break;
+			}
+			case "KeyZ": {
+				if (event.metaKey || event.ctrlKey) {
+					event.preventDefault();
+					if (event.shiftKey) {
+						this.edit.redo();
+					} else {
+						this.edit.undo();
+					}
+				}
 				break;
 			}
 			default: {

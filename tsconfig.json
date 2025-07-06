@@ -5,7 +5,7 @@
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"useDefineForClassFields": true,
 		"skipLibCheck": true,
-		
+
 		"moduleResolution": "bundler",
 		"isolatedModules": true,
 		"moduleDetection": "force",
@@ -14,8 +14,9 @@
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"outDir": "./dist",
-		
+
 		"strict": true,
+		"noImplicitAny": true,
 		"noImplicitOverride": true,
 		"noUncheckedSideEffectImports": true,
 		"noPropertyAccessFromIndexSignature": true,
@@ -23,8 +24,8 @@
 		"esModuleInterop": true,
 		"baseUrl": "./src",
 		"paths": {
-			"@entities/*": ["core/entities/*"],
-			"@entities": ["core/entities/index"],
+			"@core/*": ["core/*"],
+			"@canvas/*": ["components/canvas/*"],
 			"@schemas/*": ["core/schemas/*"],
 			"@layouts/*": ["core/layouts/*"],
 			"@animations/*": ["core/animations/*"],
@@ -36,5 +37,5 @@
 			"@templates/*": ["templates/*"]
 		}
 	},
-	"include": ["src"]
+	"include": ["src", "vite.config.ts"]
 }

@@ -1,22 +1,29 @@
+import { AudioPlayer } from "@canvas/players/audio-player";
+import { HtmlPlayer } from "@canvas/players/html-player";
+import { ImagePlayer } from "@canvas/players/image-player";
+import { LumaPlayer } from "@canvas/players/luma-player";
+import type { Player } from "@canvas/players/player";
+import { ShapePlayer } from "@canvas/players/shape-player";
+import { TextPlayer } from "@canvas/players/text-player";
+import { VideoPlayer } from "@canvas/players/video-player";
+import { AddClipCommand } from "@core/commands/add-clip-command";
+import { AddTrackCommand } from "@core/commands/add-track-command";
+import { DeleteClipCommand } from "@core/commands/delete-clip-command";
+import { DeleteTrackCommand } from "@core/commands/delete-track-command";
+import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
+import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
+import { EventEmitter } from "@core/events/event-emitter";
+import { Entity } from "@core/shared/entity";
+import type { Size } from "@layouts/geometry";
+import { AssetLoader } from "@loaders/asset-loader";
+import { FontLoadParser } from "@loaders/font-load-parser";
+import { ClipSchema } from "@schemas/clip";
+import { EditSchema } from "@schemas/edit";
+import { TrackSchema } from "@schemas/track";
 import * as pixi from "pixi.js";
 import { z } from "zod";
 
-import { EventEmitter } from "../../events/event-emitter";
-import type { Size } from "../../layouts/geometry";
-import { AssetLoader } from "../../loaders/asset-loader";
-import { FontLoadParser } from "../../loaders/font-load-parser";
-import { ClipSchema } from "../../schemas/clip";
-import { EditSchema } from "../../schemas/edit";
-import { TrackSchema } from "../../schemas/track";
-import { Entity } from "../base/entity";
-import type { Player } from "../base/player";
-import { AudioPlayer } from "../players/audio-player";
-import { HtmlPlayer } from "../players/html-player";
-import { ImagePlayer } from "../players/image-player";
-import { LumaPlayer } from "../players/luma-player";
-import { ShapePlayer } from "../players/shape-player";
-import { TextPlayer } from "../players/text-player";
-import { VideoPlayer } from "../players/video-player";
+import type { EditCommand, CommandContext } from "./commands/types";
 
 type EditType = z.infer<typeof EditSchema>;
 type ClipType = z.infer<typeof ClipSchema>;
@@ -32,6 +39,8 @@ export class Edit extends Entity {
 	private tracks: Player[][];
 	private clipsToDispose: Player[];
 	private clips: Player[];
+	private commandHistory: EditCommand[] = [];
+	private commandIndex: number = -1;
 
 	public playbackTime: number;
 	/** @internal */
@@ -178,13 +187,8 @@ export class Edit extends Entity {
 	}
 
 	public addClip(trackIdx: number, clip: ClipType): void {
-		const validatedClip = ClipSchema.parse(clip);
-
-		const clipPlayer = this.createPlayerFromAssetType(validatedClip);
-		clipPlayer.layer = trackIdx + 1;
-		this.addPlayer(trackIdx, clipPlayer);
-
-		this.updateTotalDuration();
+		const command = new AddClipCommand(trackIdx, clip);
+		this.executeCommand(command);
 	}
 	public getClip(trackIdx: number, clipIdx: number): ClipType | null {
 		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
@@ -193,52 +197,14 @@ export class Edit extends Entity {
 		return clipsByTrack[clipIdx].clipConfiguration;
 	}
 	public deleteClip(trackIdx: number, clipIdx: number): void {
-		const clipToDelete = this.clips.find(
-			(clip: Player) => clip.layer === trackIdx + 1 && this.clips.filter((c: Player) => c.layer === trackIdx + 1).indexOf(clip) === clipIdx
-		);
-
-		if (clipToDelete) {
-			this.queueDisposeClip(clipToDelete);
-			this.updateTotalDuration();
-		}
+		const command = new DeleteClipCommand(trackIdx, clipIdx);
+		this.executeCommand(command);
 	}
 
 	public addTrack(trackIdx: number, track: TrackType): void {
-		this.tracks.splice(trackIdx, 0, []);
-
-		const affectedClipIndices = this.clips.map((clip, index) => ({ clip, index })).filter(({ clip }) => clip.layer >= trackIdx + 1);
-
-		affectedClipIndices.forEach(({ clip }) => {
-			const oldZIndex = 100000 - clip.layer * Edit.ZIndexPadding;
-			const oldContainerKey = `shotstack-track-${oldZIndex}`;
-
-			const oldContainer = this.getContainer().getChildByLabel(oldContainerKey, false);
-			oldContainer?.removeChild(clip.getContainer());
-		});
-
-		for (const { index } of affectedClipIndices) {
-			this.clips[index].layer += 1;
-		}
-
-		affectedClipIndices.forEach(({ clip }) => {
-			const newZIndex = 100000 - clip.layer * Edit.ZIndexPadding;
-			const newContainerKey = `shotstack-track-${newZIndex}`;
-
-			let container = this.getContainer().getChildByLabel(newContainerKey, false);
-			if (!container) {
-				container = new pixi.Container({
-					label: newContainerKey,
-					zIndex: newZIndex
-				});
-				this.getContainer().addChild(container);
-			}
-
-			container.addChild(clip.getContainer());
-		});
-
+		const command = new AddTrackCommand(trackIdx);
+		this.executeCommand(command);
 		track?.clips?.forEach(clip => this.addClip(trackIdx, clip));
-
-		this.updateTotalDuration();
 	}
 	public getTrack(trackIdx: number): TrackType | null {
 		const trackClips = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
@@ -249,49 +215,34 @@ export class Edit extends Entity {
 		};
 	}
 	public deleteTrack(trackIdx: number): void {
-		const trackClips = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
-		for (const clip of trackClips) {
-			clip.shouldDispose = true;
-		}
-
-		this.disposeClips();
-
-		this.tracks.splice(trackIdx, 1);
-
-		const affectedClipIndices = this.clips.map((clip, index) => ({ clip, index })).filter(({ clip }) => clip.layer > trackIdx + 1);
-
-		affectedClipIndices.forEach(({ clip }) => {
-			const oldZIndex = 100000 - clip.layer * Edit.ZIndexPadding;
-			const oldContainerKey = `shotstack-track-${oldZIndex}`;
-			const oldContainer = this.getContainer().getChildByLabel(oldContainerKey, false);
-			oldContainer?.removeChild(clip.getContainer());
-		});
-
-		for (const { index } of affectedClipIndices) {
-			this.clips[index].layer -= 1;
-		}
-
-		affectedClipIndices.forEach(({ clip }) => {
-			const newZIndex = 100000 - clip.layer * Edit.ZIndexPadding;
-			const newContainerKey = `shotstack-track-${newZIndex}`;
-
-			let container = this.getContainer().getChildByLabel(newContainerKey, false);
-			if (!container) {
-				container = new pixi.Container({
-					label: newContainerKey,
-					zIndex: newZIndex
-				});
-				this.getContainer().addChild(container);
-			}
-
-			container.addChild(clip.getContainer());
-		});
-
-		this.updateTotalDuration();
+		const command = new DeleteTrackCommand(trackIdx);
+		this.executeCommand(command);
 	}
 
 	public getTotalDuration(): number {
 		return this.totalDuration;
+	}
+
+	public undo(): void {
+		if (this.commandIndex >= 0) {
+			const command = this.commandHistory[this.commandIndex];
+			if (command.undo) {
+				const context = this.createCommandContext();
+				command.undo(context);
+				this.commandIndex -= 1;
+				this.events.emit("edit:undo", { command: command.name });
+			}
+		}
+	}
+
+	public redo(): void {
+		if (this.commandIndex < this.commandHistory.length - 1) {
+			this.commandIndex += 1;
+			const command = this.commandHistory[this.commandIndex];
+			const context = this.createCommandContext();
+			command.execute(context);
+			this.events.emit("edit:redo", { command: command.name });
+		}
 	}
 	/** @internal */
 	public getSelectedClip(): Player | null {
@@ -314,27 +265,49 @@ export class Edit extends Entity {
 		this.events.emit("clip:selected", eventData);
 	}
 	/** @internal */
-	public setUpdatedClip(clip: Player, initialClipConfig: any = null): void {
-		this.updatedClip = clip;
+	public setUpdatedClip(clip: Player, initialClipConfig: ClipType | null = null, finalClipConfig: ClipType | null = null): void {
+		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig);
+		this.executeCommand(command);
+	}
+	/** @internal */
+	public updateTextContent(clip: Player, newText: string, initialConfig: ClipType): void {
+		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
+		this.executeCommand(command);
+	}
 
-		const trackIndex = clip.layer - 1;
-		const clipsByTrack = this.clips.filter((clipItem: Player) => clipItem.layer === clip.layer);
-		const clipIndex = clipsByTrack.indexOf(clip);
+	private executeCommand(command: EditCommand): void | Promise<void> {
+		const context = this.createCommandContext();
+		const result = command.execute(context);
+		this.commandHistory = this.commandHistory.slice(0, this.commandIndex + 1);
+		this.commandHistory.push(command);
+		this.commandIndex += 1;
+		return result;
+	}
 
-		const eventData = {
-			previous: {
-				clip: initialClipConfig,
-				trackIndex,
-				clipIndex
+	private createCommandContext(): CommandContext {
+		return {
+			getClips: () => [...this.clips],
+			getTracks: () => this.tracks,
+			getContainer: () => this.getContainer(),
+			addPlayer: (trackIdx, player) => this.addPlayer(trackIdx, player),
+			createPlayerFromAssetType: clipConfiguration => this.createPlayerFromAssetType(clipConfiguration),
+			queueDisposeClip: player => this.queueDisposeClip(player),
+			disposeClips: () => this.disposeClips(),
+			undeleteClip: (_trackIdx, clip) => {
+				this.clips.push(clip);
+				this.updateTotalDuration();
 			},
-			current: {
-				clip: clip.clipConfiguration,
-				trackIndex,
-				clipIndex
-			}
+			setUpdatedClip: clip => {
+				this.updatedClip = clip;
+			},
+			restoreClipConfiguration: (clip, previousConfig) => {
+				Object.assign(clip.clipConfiguration, structuredClone(previousConfig));
+				clip.reconfigureAfterRestore();
+				clip.draw();
+			},
+			updateDuration: () => this.updateTotalDuration(),
+			emitEvent: (name, data) => this.events.emit(name, data)
 		};
-
-		this.events.emit("clip:updated", eventData);
 	}
 
 	private queueDisposeClip(clipToDispose: Player): void {

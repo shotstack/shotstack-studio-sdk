@@ -1,12 +1,8 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { defineConfig } from "vite";
 import { resolve } from "path";
 
-const external = [
-	"pixi.js", 
-	"howler", 
-	"opentype.js",
-	"@ffmpeg/ffmpeg"
-];
+const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg"];
 
 const globals = {
 	"pixi.js": "PIXI",
@@ -17,7 +13,8 @@ const globals = {
 export default defineConfig({
 	resolve: {
 		alias: {
-			"@entities": resolve(__dirname, "src/core/entities"),
+			"@core": resolve(__dirname, "src/core"),
+			"@canvas": resolve(__dirname, "src/components/canvas"),
 			"@schemas": resolve(__dirname, "src/core/schemas"),
 			"@layouts": resolve(__dirname, "src/core/layouts"),
 			"@animations": resolve(__dirname, "src/core/animations"),
@@ -42,6 +39,6 @@ export default defineConfig({
 			output: {
 				globals
 			}
-		},
+		}
 	}
 });
