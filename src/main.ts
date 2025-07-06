@@ -1,4 +1,4 @@
-import { Edit, Canvas, Controls } from "./index";
+import { Edit, Canvas, Controls, Timeline } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide
@@ -22,9 +22,24 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Add keyboard controls
+		// 5. Initialize the Timeline with matching width
+		const timelineSize = { width: template.output.size.width, height: 150 };
+		const timeline = new Timeline(edit, timelineSize);
+		await timeline.load();
+
+		// Add timeline to the DOM
+		const timelineContainer = document.querySelector("[data-shotstack-timeline]");
+		if (!timelineContainer) {
+			throw new Error("Timeline container element not found");
+		}
+		timelineContainer.appendChild(timeline.getCanvas());
+
+		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
+
+		// Register timeline with canvas for updates
+		canvas.registerTimeline(timeline);
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);

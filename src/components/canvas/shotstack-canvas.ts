@@ -1,8 +1,10 @@
+
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";
+import type { Timeline } from "@timeline/timeline";
 import * as pixi from "pixi.js";
 
 export class Canvas {
@@ -20,6 +22,7 @@ export class Canvas {
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
+	private timeline?: Timeline;
 
 	private minZoom = 0.1;
 	private maxZoom = 4;
@@ -135,6 +138,10 @@ export class Canvas {
 		edit.scale.y = this.currentZoom;
 	}
 
+	public registerTimeline(timeline: Timeline): void {
+		this.timeline = timeline;
+	}
+
 	private registerExtensions(): void {
 		if (!Canvas.extensionsRegistered) {
 			pixi.extensions.add(new AudioLoadParser());
@@ -169,6 +176,11 @@ export class Canvas {
 
 		this.inspector.update(ticker.deltaTime, ticker.deltaMS);
 		this.inspector.draw();
+
+		if (this.timeline) {
+			this.timeline.update(ticker.deltaTime, ticker.deltaMS);
+			this.timeline.draw();
+		}
 	}
 
 	private configureStage(): void {

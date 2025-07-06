@@ -26,6 +26,8 @@
 		"paths": {
 			"@core/*": ["core/*"],
 			"@canvas/*": ["components/canvas/*"],
+			"@timeline/*": ["components/timeline/*"],
+			"@shared/*": ["core/shared/*"],
 			"@schemas/*": ["core/schemas/*"],
 			"@layouts/*": ["core/layouts/*"],
 			"@animations/*": ["core/animations/*"],

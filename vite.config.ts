@@ -8,7 +8,8 @@ const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg"];
 const globals = {
 	"pixi.js": "PIXI",
 	howler: "Howler",
-	"opentype.js": "opentype"
+	"opentype.js": "opentype",
+	"@ffmpeg/ffmpeg": "FFmpeg"
 };
 
 export default defineConfig({
@@ -24,6 +25,8 @@ export default defineConfig({
 		alias: {
 			"@core": resolve(__dirname, "src/core"),
 			"@canvas": resolve(__dirname, "src/components/canvas"),
+			"@timeline": resolve(__dirname, "src/components/timeline"),
+			"@shared": resolve(__dirname, "src/core/shared"),
 			"@schemas": resolve(__dirname, "src/core/schemas"),
 			"@layouts": resolve(__dirname, "src/core/layouts"),
 			"@animations": resolve(__dirname, "src/core/animations"),
