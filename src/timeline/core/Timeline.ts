@@ -54,6 +54,10 @@ export class Timeline extends Entity implements ITimeline {
 		// Add renderer canvas to container
 		this.getContainer().addChild(this.renderer.getStage());
 
+		// Set up cursor element
+		const { canvas } = this.renderer.getApplication();
+		this.toolManager.setCursorElement(canvas);
+
 		// Load default tools and features
 		await this.loadDefaultTools();
 		await this.loadDefaultFeatures();

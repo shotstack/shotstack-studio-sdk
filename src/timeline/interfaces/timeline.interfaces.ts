@@ -98,6 +98,7 @@ export interface IToolManager {
 	getActiveTool(): ITimelineTool | null;
 	getAllTools(): Map<string, ITimelineTool>;
 	setFeatureManager(featureManager: IFeatureManager): void;
+	setCursorElement(element: HTMLElement): void;
 
 	// Input delegation
 	handlePointerDown(event: PointerEvent): void;

@@ -1,7 +1,7 @@
 import { Edit } from "@core/edit";
 
 import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager } from "../interfaces";
-import { TimelinePointerEvent } from "../types";
+import { TimelinePointerEvent, TimelineWheelEvent } from "../types";
 
 /**
  * Manages timeline tools and delegates input events to the active tool
@@ -12,6 +12,7 @@ export class ToolManager implements IToolManager {
 	private state: ITimelineState;
 	private edit: Edit;
 	private featureManager: IFeatureManager | null = null;
+	private cursorElement: HTMLElement | null = null;
 
 	constructor(state: ITimelineState, edit: Edit) {
 		this.state = state;
@@ -60,6 +61,9 @@ export class ToolManager implements IToolManager {
 		this.activeTool = tool;
 		tool.onActivate();
 
+		// Update cursor
+		this.updateCursor(tool.cursor);
+
 		// Update state
 		this.state.update({ activeTool: name });
 
@@ -105,7 +109,17 @@ export class ToolManager implements IToolManager {
 
 	public handleWheel(event: WheelEvent): void {
 		if (this.activeTool?.onWheel) {
-			this.activeTool.onWheel(event);
+			const timelineEvent: TimelineWheelEvent = {
+				deltaX: event.deltaX,
+				deltaY: event.deltaY,
+				deltaMode: event.deltaMode,
+				ctrlKey: event.ctrlKey,
+				shiftKey: event.shiftKey,
+				altKey: event.altKey,
+				metaKey: event.metaKey,
+				preventDefault: () => event.preventDefault()
+			};
+			this.activeTool.onWheel(timelineEvent);
 		}
 	}
 
@@ -140,5 +154,19 @@ export class ToolManager implements IToolManager {
 			preventDefault: () => event.preventDefault(),
 			stopPropagation: () => event.stopPropagation()
 		};
+	}
+
+	public setCursorElement(element: HTMLElement): void {
+		this.cursorElement = element;
+		// Apply current tool cursor if active
+		if (this.activeTool) {
+			this.updateCursor(this.activeTool.cursor);
+		}
+	}
+
+	private updateCursor(cursor: string): void {
+		if (this.cursorElement) {
+			this.cursorElement.style.cursor = cursor;
+		}
 	}
 }
