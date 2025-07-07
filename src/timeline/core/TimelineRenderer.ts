@@ -19,21 +19,23 @@ export class TimelineRenderer implements ITimelineRenderer {
 	constructor(size: Size) {
 		this.size = size;
 
-		// Create PIXI application
-		this.application = new PIXI.Application({
-			width: size.width,
-			height: size.height,
+		// Create PIXI application instance (will be initialized in load)
+		this.application = new PIXI.Application();
+	}
+
+	public async load(): Promise<void> {
+		// Initialize PIXI application with options
+		await this.application.init({
+			width: this.size.width,
+			height: this.size.height,
 			backgroundColor: 0x1a1a1a,
 			antialias: true,
 			resolution: window.devicePixelRatio || 1,
 			autoDensity: true
 		});
 
-		// Initialize default layers
+		// Initialize default layers after application is ready
 		this.initializeLayers();
-	}
-
-	public async load(): Promise<void> {
 		// Initialize ruler
 		this.ruler = new TimelineRuler(this.size.width);
 		await this.ruler.load();
@@ -153,11 +155,12 @@ export class TimelineRenderer implements ITimelineRenderer {
 		const layer = this.getLayer("background");
 		layer.removeChildren();
 
-		// Draw background
-		const bg = new PIXI.Graphics();
-		bg.beginFill(0x1a1a1a);
-		bg.drawRect(0, 0, this.size.width, this.size.height);
-		bg.endFill();
+		// Draw background with PIXI v8 chaining syntax
+		const bg = new PIXI.Graphics()
+			.rect(0, 0, this.size.width, this.size.height)
+			.fill({ color: 0x1a1a1a })
+			.stroke({ width: 1, color: 0x2a2a2a });
+		
 		layer.addChild(bg);
 	}
 

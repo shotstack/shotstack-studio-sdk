@@ -88,18 +88,16 @@ export class TimelinePlayhead extends Entity implements ITimelinePlayhead {
 
 		if (!this.visible) return;
 
-		// Draw playhead line
-		this.graphics.lineStyle(2, 0xff0000);
-		this.graphics.moveTo(0, 0);
-		this.graphics.lineTo(0, this.height);
+		// Draw playhead line with PIXI v8 chaining syntax
+		this.graphics
+			.moveTo(0, 0)
+			.lineTo(0, this.height)
+			.stroke({ width: 2, color: 0xff0000 });
 
-		// Draw playhead handle (triangle at top)
-		this.handle.beginFill(0xff0000);
-		this.handle.moveTo(0, 0);
-		this.handle.lineTo(-6, -10);
-		this.handle.lineTo(6, -10);
-		this.handle.closePath();
-		this.handle.endFill();
+		// Draw playhead handle (triangle at top) with PIXI v8 chaining syntax
+		this.handle
+			.poly([0, 0, -6, -10, 6, -10])
+			.fill({ color: 0xff0000 });
 
 		// Make handle draggable area larger
 		this.handle.hitArea = new PIXI.Rectangle(-10, -15, 20, 20);

@@ -22,6 +22,7 @@ export class Timeline extends Entity implements ITimeline {
 	private edit: Edit;
 	private size: Size;
 	private options: TimelineOptions;
+	private animationFrameId: number | null = null;
 
 	constructor(options: TimelineOptions) {
 		super();
@@ -64,13 +65,17 @@ export class Timeline extends Entity implements ITimeline {
 
 		// Set default tool
 		this.toolManager.activate("selection");
+		
+		// Start animation loop
+		this.startAnimationLoop();
 	}
 
 	public update(deltaTime: number, elapsed: number): void {
 		// Update playback state from Edit
+		// Edit stores time in milliseconds, convert to seconds for Timeline
 		const currentPlayback = this.state.getState().playback;
 		const newPlayback = {
-			currentTime: this.edit.playbackTime,
+			currentTime: this.edit.playbackTime / 1000,
 			isPlaying: this.edit.isPlaying,
 			duration: this.edit.getTotalDuration()
 		};
@@ -112,6 +117,12 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	public dispose(): void {
+		// Stop animation loop
+		if (this.animationFrameId !== null) {
+			cancelAnimationFrame(this.animationFrameId);
+			this.animationFrameId = null;
+		}
+
 		// Dispose all tools
 		this.toolManager.getAllTools().forEach(tool => tool.dispose());
 
@@ -184,8 +195,13 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	private async loadDefaultTools(): Promise<void> {
-		// Default tools will be loaded here
-		// For now, we'll add them in a later task
+		// Register the selection tool
+		const { SelectionTool } = await import("../tools/SelectionTool");
+		const selectionTool = new SelectionTool(this.state, command => {
+			console.log("Timeline command:", command);
+			// TODO: Connect to Edit's command system when available
+		});
+		this.toolManager.register(selectionTool);
 	}
 
 	private async loadDefaultFeatures(): Promise<void> {
@@ -272,5 +288,24 @@ export class Timeline extends Entity implements ITimeline {
 
 	public handleKeyUp(event: KeyboardEvent): void {
 		this.toolManager.handleKeyUp(event);
+	}
+
+	private startAnimationLoop(): void {
+		let lastTime = performance.now();
+		
+		const animate = (currentTime: number) => {
+			const deltaMS = currentTime - lastTime;
+			lastTime = currentTime;
+			
+			// Convert to PIXI-style deltaTime (frame-based)
+			const deltaTime = deltaMS / 16.667;
+
+			this.update(deltaTime, deltaMS);
+			this.draw();
+
+			this.animationFrameId = requestAnimationFrame(animate);
+		};
+		
+		this.animationFrameId = requestAnimationFrame(animate);
 	}
 }

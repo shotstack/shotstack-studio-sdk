@@ -1,4 +1,5 @@
-import { Edit, Canvas, Controls, Timeline } from "./index";
+import { Edit, Canvas, Controls } from "./index";
+import { Timeline } from "./timeline/core/Timeline";
 
 /**
  * This is a simple example that implements the README quick start guide
@@ -24,7 +25,13 @@ async function main() {
 
 		// 5. Initialize the Timeline with matching width
 		const timelineSize = { width: template.output.size.width, height: 150 };
-		const timeline = new Timeline(edit, timelineSize);
+		const timeline = new Timeline({
+			edit,
+			size: timelineSize,
+			pixelsPerSecond: 100,
+			autoScrollEnabled: true,
+			snapEnabled: true
+		});
 		await timeline.load();
 
 		// Add timeline to the DOM
@@ -32,14 +39,16 @@ async function main() {
 		if (!timelineContainer) {
 			throw new Error("Timeline container element not found");
 		}
-		timelineContainer.appendChild(timeline.getCanvas());
+		// The new timeline uses PIXI, get the canvas from the renderer
+		const renderer = timeline.getRenderer();
+		const timelineCanvas = renderer.getApplication().canvas;
+		timelineContainer.appendChild(timelineCanvas);
 
 		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
 
-		// Register timeline with canvas for updates
-		canvas.registerTimeline(timeline);
+		// Timeline has its own animation loop, no need to register with canvas
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);
