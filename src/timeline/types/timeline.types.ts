@@ -105,14 +105,6 @@ export type FeatureCoordinator = {
 };
 
 // Timeline initialization options
-export type TimelineOptions = {
-	edit: Edit;
-	size: Size;
-	pixelsPerSecond?: number;
-	autoScrollEnabled?: boolean;
-	snapEnabled?: boolean;
-	snapGridSize?: number;
-};
 
 // Clip and Track operations
 export type ClipOperation = {

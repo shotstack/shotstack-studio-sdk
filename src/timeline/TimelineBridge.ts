@@ -3,7 +3,6 @@ import { Size } from "@core/layouts/geometry";
 import * as PIXI from "pixi.js";
 
 import { Timeline as NewTimeline } from "./core/Timeline";
-import { TimelineOptions } from "./types";
 
 /**
  * Bridge class that provides backward compatibility with the old Timeline interface
@@ -19,26 +18,24 @@ export class TimelineBridge {
 		this.edit = edit;
 		this.size = size;
 
-		// Create new timeline with options
-		const options: TimelineOptions = {
-			edit,
-			size,
-			pixelsPerSecond: 100,
-			autoScrollEnabled: true,
-			snapEnabled: true,
-			snapGridSize: 1 / 30 // 30fps
-		};
-
-		this.timeline = new NewTimeline(options);
+		// Create new timeline with simplified constructor
+		this.timeline = new NewTimeline(edit, size);
+		
+		// Set default configuration
+		this.timeline.setPixelsPerSecond(100);
+		this.timeline.setAutoScroll(true);
+		this.timeline.setSnapping(true, 1 / 30); // 30fps
 	}
 
 	public async load(): Promise<void> {
 		await this.timeline.load();
 
-		// Create canvas element for compatibility
-		const renderer = this.timeline.getRenderer();
-		const app = renderer.getApplication();
-		this.canvas = app.view as HTMLCanvasElement;
+		// Get canvas element for compatibility
+		// Since Timeline now handles DOM internally, we need to query for it
+		const container = document.querySelector(NewTimeline.TimelineSelector);
+		if (container) {
+			this.canvas = container.querySelector('canvas') as HTMLCanvasElement;
+		}
 
 		// Set up input event handlers
 		if (this.canvas) {
@@ -147,35 +144,7 @@ export class TimelineBridge {
 	}
 
 	private loadTestData(): void {
-		// Add some test tracks and clips for demonstration
-		const renderer = this.timeline.getRenderer();
-
-		// Add a few tracks
-		for (let i = 0; i < 3; i++) {
-			const track = renderer.addTrack(`track-${i}`, i);
-
-			// Add some clips to each track
-			if (track) {
-				const { TimelineClip } = require("./entities/TimelineClip");
-
-				for (let j = 0; j < 2; j++) {
-					const clipId = `clip-${i}-${j}`;
-					const startTime = j * 5; // 5 seconds apart
-					const duration = 3; // 3 seconds each
-
-					const clip = new TimelineClip(clipId, track.getTrackId(), startTime, duration, {
-						asset: {
-							type: ["video", "audio", "image", "text"][Math.floor(Math.random() * 4)],
-							text: `Clip ${i}-${j}`
-						}
-					});
-
-					clip.load().then(() => {
-						clip.setPixelsPerSecond(this.pixelsPerSecond);
-						track.addClip(clip);
-					});
-				}
-			}
-		}
+		// Test data loading temporarily disabled
+		// TODO: Add track/clip management API to Timeline
 	}
 }

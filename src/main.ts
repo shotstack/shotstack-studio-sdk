@@ -23,26 +23,9 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Initialize the Timeline with matching width
-		const timelineSize = { width: template.output.size.width, height: 150 };
-		const timeline = new Timeline({
-			edit,
-			size: timelineSize,
-			pixelsPerSecond: 100,
-			autoScrollEnabled: true,
-			snapEnabled: true
-		});
-		await timeline.load();
-
-		// Add timeline to the DOM
-		const timelineContainer = document.querySelector("[data-shotstack-timeline]");
-		if (!timelineContainer) {
-			throw new Error("Timeline container element not found");
-		}
-		// The new timeline uses PIXI, get the canvas from the renderer
-		const renderer = timeline.getRenderer();
-		const timelineCanvas = renderer.getApplication().canvas;
-		timelineContainer.appendChild(timelineCanvas);
+		// 5. Initialize the Timeline
+		const timeline = new Timeline(edit);
+		await timeline.load(); // Automatically renders to [data-shotstack-timeline]
 
 		// 6. Add keyboard controls
 		const controls = new Controls(edit);

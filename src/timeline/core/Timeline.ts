@@ -3,7 +3,7 @@ import { Size } from "@core/layouts/geometry";
 import { Entity } from "@core/shared/entity";
 
 import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager } from "../interfaces";
-import { TimelineState, TimelineOptions, StateChanges } from "../types";
+import { TimelineState, StateChanges } from "../types";
 
 import { FeatureManager } from "./FeatureManager";
 import { TimelineRenderer } from "./TimelineRenderer";
@@ -15,20 +15,25 @@ import { ToolManager } from "./ToolManager";
  * tools, features, and rendering.
  */
 export class Timeline extends Entity implements ITimeline {
+	public static readonly TimelineSelector = "[data-shotstack-timeline]";
+	
 	private state: ITimelineState;
 	private renderer: ITimelineRenderer;
 	private toolManager: IToolManager;
 	private featureManager: IFeatureManager;
 	private edit: Edit;
 	private size: Size;
-	private options: TimelineOptions;
+	private pixelsPerSecond: number = 100;
+	private autoScrollEnabled: boolean = true;
+	private snapEnabled: boolean = true;
+	private snapGridSize: number = 0.033333; // 1/30 second
 	private animationFrameId: number | null = null;
 
-	constructor(options: TimelineOptions) {
+	constructor(edit: Edit, size?: Size) {
 		super();
-		this.options = options;
-		this.edit = options.edit;
-		this.size = options.size;
+		this.edit = edit;
+		// Default size: use edit width, height 150
+		this.size = size || { width: edit.size.width, height: 150 };
 
 		// Initialize core systems
 		this.state = new TimelineStateManager(this.createInitialState());
@@ -49,14 +54,23 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	public async load(): Promise<void> {
+		// Find the timeline container
+		const container = document.querySelector<HTMLDivElement>(Timeline.TimelineSelector);
+		if (!container) {
+			throw new Error(`Timeline container element '${Timeline.TimelineSelector}' not found.`);
+		}
+
 		// Initialize renderer
 		await this.renderer.load();
 
 		// Add renderer canvas to container
 		this.getContainer().addChild(this.renderer.getStage());
 
-		// Set up cursor element
+		// Append the timeline canvas to the DOM
 		const { canvas } = this.renderer.getApplication();
+		container.appendChild(canvas);
+
+		// Set up cursor element
 		this.toolManager.setCursorElement(canvas);
 
 		// Load default tools and features
@@ -156,8 +170,43 @@ export class Timeline extends Entity implements ITimeline {
 		this.toolManager.activate(name);
 	}
 
-	public getRenderer(): ITimelineRenderer {
-		return this.renderer;
+	public setPixelsPerSecond(pixelsPerSecond: number): void {
+		this.pixelsPerSecond = pixelsPerSecond;
+		this.state.update({
+			viewport: {
+				...this.state.getState().viewport,
+				zoom: pixelsPerSecond
+			}
+		});
+	}
+
+	public setAutoScroll(enabled: boolean): void {
+		this.autoScrollEnabled = enabled;
+		this.state.update({
+			features: {
+				...this.state.getState().features,
+				autoScroll: {
+					...this.state.getState().features.autoScroll,
+					enabled
+				}
+			}
+		});
+	}
+
+	public setSnapping(enabled: boolean, gridSize?: number): void {
+		this.snapEnabled = enabled;
+		if (gridSize !== undefined) {
+			this.snapGridSize = gridSize;
+		}
+		this.state.update({
+			features: {
+				...this.state.getState().features,
+				snapping: {
+					enabled: this.snapEnabled,
+					gridSize: this.snapGridSize
+				}
+			}
+		});
 	}
 
 	private createInitialState(): TimelineState {
@@ -165,7 +214,7 @@ export class Timeline extends Entity implements ITimeline {
 			viewport: {
 				scrollX: 0,
 				scrollY: 0,
-				zoom: this.options.pixelsPerSecond || 100,
+				zoom: this.pixelsPerSecond,
 				width: this.size.width,
 				height: this.size.height
 			},
@@ -181,11 +230,11 @@ export class Timeline extends Entity implements ITimeline {
 			},
 			features: {
 				snapping: {
-					enabled: this.options.snapEnabled ?? true,
-					gridSize: this.options.snapGridSize || 0.033333 // 1/30 second
+					enabled: this.snapEnabled,
+					gridSize: this.snapGridSize
 				},
 				autoScroll: {
-					enabled: this.options.autoScrollEnabled ?? true,
+					enabled: this.autoScrollEnabled,
 					threshold: 0.8 // 80% of viewport
 				}
 			},
