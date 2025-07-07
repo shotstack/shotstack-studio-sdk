@@ -215,7 +215,13 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		if ((!this.isActive() || this.edit.getSelectedClip() !== this) && !this.isHovering) {
+		// Check if this clip is selected
+		const trackIndex = this.layer - 1;
+		const tracks = this.edit['tracks'] as Player[][];
+		const clipIndex = tracks[trackIndex]?.indexOf(this) ?? -1;
+		const isSelected = clipIndex >= 0 && this.edit.isClipSelected(trackIndex, clipIndex);
+		
+		if ((!this.isActive() || !isSelected) && !this.isHovering) {
 			this.outline.clear();
 			this.topLeftScaleHandle?.clear();
 			this.topRightScaleHandle?.clear();
@@ -241,7 +247,7 @@ export abstract class Player extends Entity {
 			!this.bottomRightScaleHandle ||
 			!this.bottomLeftScaleHandle ||
 			!this.isActive() ||
-			this.edit.getSelectedClip() !== this
+			!isSelected
 		) {
 			return;
 		}
@@ -381,7 +387,13 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		this.edit.setSelectedClip(this);
+		// Get indices and use selectClip
+		const trackIndex = this.layer - 1;
+		const tracks = this.edit['tracks'] as Player[][];
+		const clipIndex = tracks[trackIndex]?.indexOf(this) ?? -1;
+		if (clipIndex >= 0) {
+			this.edit.selectClip(trackIndex, clipIndex);
+		}
 
 		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
 

@@ -30,16 +30,24 @@ export class SelectionTool extends TimelineTool {
 		});
 	}
 	
-	public onPointerDown(event: TimelinePointerEvent): void {
+	public override onPointerDown(event: TimelinePointerEvent): void {
 		this.isDragging = true;
 		this.dragStartX = event.x;
 		this.dragStartY = event.y;
 		
-		// TODO: Implement clip selection logic
-		// This would check if click is on a clip and update selection state
+		// If we reach here, it means we clicked on empty space (not a clip)
+		// Clips handle their own click events via PIXI
+		if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
+			// Clear selection when clicking empty space (unless modifier held)
+			this.executeCommand({
+				type: 'CLEAR_SELECTION'
+			} as any);
+		}
+		
+		// TODO: Start box selection
 	}
 	
-	public onPointerMove(event: TimelinePointerEvent): void {
+	public override onPointerMove(event: TimelinePointerEvent): void {
 		if (!this.isDragging) return;
 		
 		const dx = event.x - this.dragStartX;
@@ -48,13 +56,13 @@ export class SelectionTool extends TimelineTool {
 		// TODO: Implement drag selection or clip moving
 	}
 	
-	public onPointerUp(event: TimelinePointerEvent): void {
+	public override onPointerUp(event: TimelinePointerEvent): void {
 		this.isDragging = false;
 		
 		// TODO: Finalize selection or movement
 	}
 	
-	public onKeyDown(event: KeyboardEvent): void {
+	public override onKeyDown(event: KeyboardEvent): void {
 		// Handle keyboard shortcuts
 		if (event.key === "Delete" || event.key === "Backspace") {
 			// TODO: Delete selected clips

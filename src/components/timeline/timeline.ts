@@ -458,10 +458,8 @@ export class Timeline extends TimelineBase {
 		this.selectedClipId = this.getClipId(trackIndex, clipIndex);
 
 		try {
-			const playerClip = this.edit.getPlayerClip(trackIndex, clipIndex);
-			if (playerClip) {
-				this.edit.setSelectedClip(playerClip);
-			}
+			// Use the new selectClip method
+			this.edit.selectClip(trackIndex, clipIndex);
 		} catch (error) {
 			console.warn("Failed to handle clip selection:", error);
 		}

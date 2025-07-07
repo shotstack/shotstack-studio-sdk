@@ -86,6 +86,15 @@ export class Controls {
 				}
 				break;
 			}
+			case "Delete":
+			case "Backspace": {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					this.edit.deleteClip(selected.trackIndex, selected.clipIndex);
+				}
+				break;
+			}
 			default: {
 				break;
 			}

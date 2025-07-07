@@ -252,26 +252,6 @@ export class Edit extends Entity {
 		}
 	}
 	/** @internal */
-	public getSelectedClip(): Player | null {
-		return this.selectedClip;
-	}
-	/** @internal */
-	public setSelectedClip(clip: Player): void {
-		this.selectedClip = clip;
-
-		const trackIndex = clip.layer - 1;
-		const clipsByTrack = this.clips.filter((clipItem: Player) => clipItem.layer === clip.layer);
-		const clipIndex = clipsByTrack.indexOf(clip);
-
-		const eventData = {
-			clip: clip.clipConfiguration,
-			trackIndex,
-			clipIndex
-		};
-
-		this.events.emit("clip:selected", eventData);
-	}
-	/** @internal */
 	public setUpdatedClip(clip: Player, initialClipConfig: ClipType | null = null, finalClipConfig: ClipType | null = null): void {
 		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig);
 		this.executeCommand(command);
@@ -463,5 +443,46 @@ export class Edit extends Entity {
 		}
 
 		this.updateTotalDuration();
+	}
+
+	// Selection management methods
+	public selectClip(trackIndex: number, clipIndex: number): void {
+		if (trackIndex >= 0 && trackIndex < this.tracks.length &&
+			clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
+			
+			const player = this.tracks[trackIndex][clipIndex];
+			this.selectedClip = player;
+			
+			this.events.emit("clip:selected", {
+				clip: player.clipConfiguration,
+				trackIndex,
+				clipIndex
+			});
+		}
+	}
+
+	public clearSelection(): void {
+		if (this.selectedClip) {
+			this.selectedClip = null;
+			this.events.emit("selection:cleared", {});
+		}
+	}
+	
+	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
+		if (!this.selectedClip) return false;
+		
+		const selectedTrackIndex = this.selectedClip.layer - 1;
+		const selectedClipIndex = this.tracks[selectedTrackIndex].indexOf(this.selectedClip);
+		
+		return trackIndex === selectedTrackIndex && clipIndex === selectedClipIndex;
+	}
+	
+	public getSelectedClipInfo(): {trackIndex: number; clipIndex: number; player: Player} | null {
+		if (!this.selectedClip) return null;
+		
+		const trackIndex = this.selectedClip.layer - 1;
+		const clipIndex = this.tracks[trackIndex].indexOf(this.selectedClip);
+		
+		return { trackIndex, clipIndex, player: this.selectedClip };
 	}
 }

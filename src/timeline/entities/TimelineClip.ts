@@ -25,6 +25,9 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.startTime = startTime;
 		this.duration = duration;
 		this.clipData = clipData;
+		
+		// Set container label for identification by event delegation
+		this.getContainer().label = clipId;
 
 		// Create graphics for clip
 		this.graphics = new PIXI.Graphics();
