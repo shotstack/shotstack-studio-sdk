@@ -1,11 +1,8 @@
-import { ResizeClipCommand } from "@core/commands/resize-clip-command";
-import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
 import { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
 import * as pixi from "pixi.js";
 
 import { TimelineBase } from "./base/timeline-base";
-import { TimelineDragManager } from "./drag";
 import { TimelineRuler, TimelineTrack } from "./elements";
 import { TIMELINE_CONFIG } from "./timeline-config";
 import type { ClipSelectedEventData, ClipUpdatedEventData, ClipDeletedEventData, TrackDeletedEventData } from "./timeline-types";
@@ -26,13 +23,11 @@ export class Timeline extends TimelineBase {
 	private verticalScrollPositionValue: number = 0;
 	private visibleHeightValue: number = 0;
 	private selectedClipIdValue: string | null = null;
-	private isPlayingValue: boolean = false;
 
 	private refreshTimeout: number | null = null;
 	private static readonly REFRESH_DEBOUNCE_MS = 16;
 	private readonly boundTimelineClickHandler: (event: pixi.FederatedPointerEvent) => void;
 	private readonly boundWheelHandler: (event: pixi.FederatedWheelEvent) => void;
-	private dragManager: TimelineDragManager;
 
 	constructor(edit: Edit, size: Size) {
 		super(edit);
@@ -48,9 +43,6 @@ export class Timeline extends TimelineBase {
 
 		this.boundTimelineClickHandler = this.handleTimelineClick.bind(this);
 		this.boundWheelHandler = this.handleWheel.bind(this);
-
-		// Create drag manager instance
-		this.dragManager = new TimelineDragManager();
 
 		// Bind event handlers with proper context
 		this.bindEvent("clip:selected", this.handleClipSelected.bind(this));
@@ -108,10 +100,7 @@ export class Timeline extends TimelineBase {
 			this.trackContainer.position.y = rulerHeight;
 		}
 
-		this.drawBackground();
-
 		this.setupInteractions();
-
 		this.drawBackground();
 		this.buildTracks();
 		this.drawPlayhead();
@@ -259,16 +248,6 @@ export class Timeline extends TimelineBase {
 		}
 	}
 
-	public get isPlaying(): boolean {
-		return this.isPlayingValue;
-	}
-
-	public set isPlaying(value: boolean) {
-		if (this.isPlayingValue !== value) {
-			this.isPlayingValue = value;
-			this.onStateChanged("isPlaying");
-		}
-	}
 
 	public get visibleHeight(): number {
 		return this.visibleHeightValue;
@@ -314,13 +293,6 @@ export class Timeline extends TimelineBase {
 		}
 	}
 
-	public setZoom(pixelsPerSecond: number): void {
-		this.pixelsPerSecond = pixelsPerSecond;
-	}
-
-	public setScrollPosition(scrollPosition: number): void {
-		this.scrollPosition = scrollPosition;
-	}
 
 	private drawBackground(): void {
 		if (!this.background) return;
@@ -367,22 +339,13 @@ export class Timeline extends TimelineBase {
 						this.scrollPosition,
 						this.pixelsPerSecond,
 						this.selectedClipId,
-						i,
-						this.dragManager
+						i
 					);
 
 					track.getContainer().position.y = trackY;
 
 					track.getContainer().on("clip:click", (data: { trackIndex: number; clipIndex: number; event: pixi.FederatedPointerEvent }) => {
 						this.handleClipClick(data.trackIndex, data.clipIndex);
-					});
-
-					track.getContainer().on("clip:resize", (data: { trackIndex: number; clipIndex: number; newLength: number; initialLength: number }) => {
-						this.handleClipResize(data.trackIndex, data.clipIndex, data.newLength, data.initialLength);
-					});
-
-					track.getContainer().on("clip:drag", (data: { trackIndex: number; clipIndex: number; newStart: number; initialStart: number }) => {
-						this.handleClipDrag(data.trackIndex, data.clipIndex, data.newStart, data.initialStart);
 					});
 
 					this.trackContainer?.addChild(track.getContainer());
@@ -506,24 +469,6 @@ export class Timeline extends TimelineBase {
 		}
 
 		this.refreshView();
-	}
-
-	private handleClipResize(trackIndex: number, clipIndex: number, newLength: number, _: number): void {
-		try {
-			const command = new ResizeClipCommand(trackIndex, clipIndex, newLength);
-			this.edit.executeEditCommand(command);
-		} catch (error) {
-			console.warn("Failed to handle clip resize:", error);
-		}
-	}
-
-	private handleClipDrag(trackIndex: number, clipIndex: number, newStart: number, __: number): void {
-		try {
-			const command = new UpdateClipPositionCommand(trackIndex, clipIndex, newStart);
-			this.edit.executeEditCommand(command);
-		} catch (error) {
-			console.warn("Failed to handle clip drag:", error);
-		}
 	}
 
 	private handleClipSelected(data: ClipSelectedEventData): void {
