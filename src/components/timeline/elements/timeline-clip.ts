@@ -16,7 +16,6 @@ export class TimelineClip extends Entity {
 	private background: pixi.Graphics | null;
 	private label: pixi.Text | null;
 
-
 	// Event handlers
 	public onClipClick?: (trackIndex: number, clipIndex: number, event: pixi.FederatedPointerEvent) => void;
 
@@ -45,7 +44,6 @@ export class TimelineClip extends Entity {
 	public override async load(): Promise<void> {
 		this.background = new pixi.Graphics();
 		this.getContainer().addChild(this.background);
-
 
 		this.setupInteraction();
 		this.draw();
@@ -83,7 +81,6 @@ export class TimelineClip extends Entity {
 
 		this.background.rect(0, 0, clipWidth, this.trackHeight);
 		this.background.fill();
-
 
 		// Add/update label if there's enough space
 		this.updateLabel(clipWidth, isSelected);
@@ -130,7 +127,6 @@ export class TimelineClip extends Entity {
 		this.selectedClipId = selectedClipId;
 		this.draw();
 	}
-
 
 	private setupInteraction(): void {
 		this.getContainer().eventMode = "static";

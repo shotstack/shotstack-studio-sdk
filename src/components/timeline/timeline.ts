@@ -248,7 +248,6 @@ export class Timeline extends TimelineBase {
 		}
 	}
 
-
 	public get visibleHeight(): number {
 		return this.visibleHeightValue;
 	}
@@ -292,7 +291,6 @@ export class Timeline extends TimelineBase {
 			this.debouncedRefreshView();
 		}
 	}
-
 
 	private drawBackground(): void {
 		if (!this.background) return;

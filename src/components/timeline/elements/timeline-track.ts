@@ -126,12 +126,10 @@ export class TimelineTrack extends Entity {
 				clipIndex
 			);
 
-
 			// Set up clip event handling
 			clip.onClipClick = (trackIdx, clipIdx, event) => {
 				this.handleClipClick(trackIdx, clipIdx, event);
 			};
-
 
 			this.clips.push(clip);
 			this.getContainer().addChild(clip.getContainer());
@@ -170,5 +168,4 @@ export class TimelineTrack extends Entity {
 		// Emit event to timeline for handling
 		this.getContainer().emit("clip:click", { trackIndex, clipIndex, event });
 	}
-
 }
