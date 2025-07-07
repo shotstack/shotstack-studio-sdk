@@ -106,8 +106,10 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	}
 
 	public updateLayout(): void {
-		// Position track at correct vertical position
-		this.getContainer().y = this.index * this.height;
+		// Position track at correct vertical position with offset for ruler
+		const rulerHeight = 30;
+		const trackGap = 2;
+		this.getContainer().y = this.index * (this.height + trackGap) + rulerHeight;
 
 		// Sort clips by start time
 		const sortedClips = Array.from(this.clips.values()).sort((a, b) => a.getStartTime() - b.getStartTime());
@@ -116,7 +118,8 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 		sortedClips.forEach(clip => {
 			// Clips will position themselves based on their start time
 			// This is just to ensure they're in the correct container
-			clip.getContainer().y = 0;
+			const clipContainer = clip.getContainer();
+			clipContainer.y = 0;
 		});
 	}
 
@@ -134,15 +137,16 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	private drawBackground(): void {
 		this.graphics.clear();
 
-		// Draw track background with alternating colors
+		// Draw track background with alternating colors using PIXI v8 API
 		const backgroundColor = this.index % 2 === 0 ? 0x2a2a2a : 0x252525;
-		this.graphics.beginFill(backgroundColor, 0.5);
-		this.graphics.drawRect(0, 0, 5000, this.height); // Wide enough for scrolling
-		this.graphics.endFill();
+		this.graphics
+			.rect(0, 0, 5000, this.height) // Wide enough for scrolling
+			.fill({ color: backgroundColor, alpha: 0.5 });
 
 		// Draw bottom border
-		this.graphics.lineStyle(1, 0x404040);
-		this.graphics.moveTo(0, this.height);
-		this.graphics.lineTo(5000, this.height);
+		this.graphics
+			.moveTo(0, this.height)
+			.lineTo(5000, this.height)
+			.stroke({ width: 1, color: 0x404040 });
 	}
 }

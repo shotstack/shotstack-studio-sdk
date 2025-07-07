@@ -49,7 +49,7 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 		// Base implementation - tools can override if needed
 	}
 	
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Base implementation - tools can override if needed
 	}
 	

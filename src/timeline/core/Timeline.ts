@@ -80,6 +80,9 @@ export class Timeline extends Entity implements ITimeline {
 		// Set default tool
 		this.toolManager.activate("selection");
 		
+		// Load tracks and clips from Edit
+		await this.loadEditData();
+		
 		// Start animation loop
 		this.startAnimationLoop();
 	}
@@ -288,9 +291,9 @@ export class Timeline extends Entity implements ITimeline {
 		this.edit.events.off("track:deleted", this.handleTrackDeleted.bind(this));
 	}
 
-	private handleClipUpdated(data: any): void {
-		// Handle clip updates
-		// This will trigger a re-render in the next draw cycle
+	private handleClipUpdated(_data: any): void {
+		// Reload edit data to reflect changes
+		this.loadEditData();
 	}
 
 	private handleClipDeleted(data: any): void {
@@ -307,11 +310,14 @@ export class Timeline extends Entity implements ITimeline {
 				}
 			});
 		}
+		
+		// Reload edit data to reflect deletion
+		this.loadEditData();
 	}
 
-	private handleTrackDeleted(data: any): void {
-		// Handle track deletion
-		// This will be implemented when we have track management
+	private handleTrackDeleted(_data: any): void {
+		// Reload edit data to reflect track deletion
+		this.loadEditData();
 	}
 
 	// Public methods for input handling (delegated to tool manager)
@@ -337,6 +343,50 @@ export class Timeline extends Entity implements ITimeline {
 
 	public handleKeyUp(event: KeyboardEvent): void {
 		this.toolManager.handleKeyUp(event);
+	}
+
+	private async loadEditData(): Promise<void> {
+		// Get the current edit data
+		const editData = this.edit.getEdit();
+		
+		// Clear existing tracks
+		this.renderer.getTracks().forEach(track => {
+			this.renderer.removeTrack(track.getTrackId());
+		});
+		
+		// Import TimelineClip entity
+		const { TimelineClip } = await import("../entities/TimelineClip");
+		
+		// Load tracks and clips
+		for (const [index, track] of editData.timeline.tracks.entries()) {
+			// Create track in renderer
+			const trackId = `track-${index}`;
+			const timelineTrack = this.renderer.addTrack(trackId, index);
+			
+			// Create and add clips to the track
+			for (const [clipIndex, clip] of track.clips.entries()) {
+				const clipId = `clip-${index}-${clipIndex}`;
+				const timelineClip = new TimelineClip(
+					clipId,
+					trackId,
+					clip.start || 0,
+					clip.length || 1,
+					clip
+				);
+				
+				// Load the clip
+				await timelineClip.load();
+				
+				// Set the zoom level
+				timelineClip.setPixelsPerSecond(this.pixelsPerSecond);
+				
+				// Add clip to track
+				timelineTrack.addClip(timelineClip);
+			}
+		}
+		
+		// Trigger a render to show the loaded data
+		this.draw();
 	}
 
 	private startAnimationLoop(): void {

@@ -151,7 +151,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.createLayer("features", 6);
 	}
 
-	private renderBackground(state: TimelineState): void {
+	private renderBackground(_state: TimelineState): void {
 		const layer = this.getLayer("background");
 		layer.removeChildren();
 
@@ -164,21 +164,8 @@ export class TimelineRenderer implements ITimelineRenderer {
 		layer.addChild(bg);
 	}
 
-	private renderTracks(state: TimelineState): void {
-		const layer = this.getLayer("tracks");
-		layer.removeChildren();
 
-		// Track rendering will be implemented when we have track entities
-	}
-
-	private renderClips(state: TimelineState): void {
-		const layer = this.getLayer("clips");
-		layer.removeChildren();
-
-		// Clip rendering will be implemented when we have clip entities
-	}
-
-	private renderSelection(state: TimelineState): void {
+	private renderSelection(_state: TimelineState): void {
 		const layer = this.getLayer("selection");
 		layer.removeChildren();
 

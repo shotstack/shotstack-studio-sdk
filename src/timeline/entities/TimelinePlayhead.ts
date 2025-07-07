@@ -36,7 +36,7 @@ export class TimelinePlayhead extends Entity implements ITimelinePlayhead {
 		this.updatePlayhead();
 	}
 
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Update position based on current time
 		this.updatePosition();
 	}

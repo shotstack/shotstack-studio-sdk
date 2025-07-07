@@ -1,5 +1,7 @@
-import { Edit, Canvas, Controls } from "./index";
 import { Timeline } from "./timeline/core/Timeline";
+
+import { Edit, Canvas, Controls } from "./index";
+
 
 /**
  * This is a simple example that implements the README quick start guide

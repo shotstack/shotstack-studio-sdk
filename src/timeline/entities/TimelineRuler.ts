@@ -32,7 +32,7 @@ export class TimelineRuler extends Entity implements ITimelineRuler {
 		this.updateRuler();
 	}
 
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Ruler is mostly static, update only if needed
 	}
 

@@ -30,10 +30,13 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.graphics = new PIXI.Graphics();
 		this.getContainer().addChild(this.graphics);
 
-		// Create label
-		this.label = new PIXI.Text("", {
-			fontSize: 12,
-			fill: 0xffffff
+		// Create label using PIXI v8 API
+		this.label = new PIXI.Text({
+			text: "",
+			style: {
+				fontSize: 12,
+				fill: 0xffffff
+			}
 		});
 		this.label.anchor.set(0, 0.5);
 		this.getContainer().addChild(this.label);
@@ -61,7 +64,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.updateVisuals();
 	}
 
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Update any animations or states
 	}
 
@@ -126,15 +129,16 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		const height = 50; // Fixed height for clips
 		const cornerRadius = 4;
 
-		// Draw clip background
-		this.graphics.beginFill(this.clipColor, 0.8);
-		this.graphics.drawRoundedRect(0, 5, width, height, cornerRadius);
-		this.graphics.endFill();
+		// Draw clip background using PIXI v8 API
+		this.graphics
+			.roundRect(0, 5, width, height, cornerRadius)
+			.fill({ color: this.clipColor, alpha: 0.8 });
 
 		// Draw selection border if selected
 		if (this.selected) {
-			this.graphics.lineStyle(2, 0xffff00);
-			this.graphics.drawRoundedRect(-1, 4, width + 2, height + 2, cornerRadius);
+			this.graphics
+				.roundRect(-1, 4, width + 2, height + 2, cornerRadius)
+				.stroke({ width: 2, color: 0xffff00 });
 		}
 
 		// Update label position and truncate if needed

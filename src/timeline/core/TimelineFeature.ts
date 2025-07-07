@@ -9,7 +9,7 @@ import { StateChanges } from "../types";
  */
 export abstract class TimelineFeature extends Entity implements ITimelineFeature {
 	public abstract readonly name: string;
-	protected _enabled: boolean = true;
+	protected isEnabled: boolean = true;
 	
 	protected state: ITimelineState;
 	
@@ -19,13 +19,13 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	}
 	
 	public get enabled(): boolean {
-		return this._enabled;
+		return this.isEnabled;
 	}
 	
 	public setEnabled(enabled: boolean): void {
-		if (this._enabled === enabled) return;
+		if (this.isEnabled === enabled) return;
 		
-		this._enabled = enabled;
+		this.isEnabled = enabled;
 		if (enabled) {
 			this.onEnable();
 		} else {
@@ -50,7 +50,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 		// Note: onEnable is called by setEnabled or during construction if enabled
 	}
 	
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Base implementation - features can override if needed
 	}
 	
@@ -60,7 +60,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	}
 	
 	public dispose(): void {
-		if (this._enabled) {
+		if (this.isEnabled) {
 			this.onDisable();
 		}
 		super.dispose();
