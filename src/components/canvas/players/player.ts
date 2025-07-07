@@ -216,10 +216,8 @@ export abstract class Player extends Entity {
 		}
 
 		// Check if this clip is selected
-		const trackIndex = this.layer - 1;
-		const tracks = this.edit['tracks'] as Player[][];
-		const clipIndex = tracks[trackIndex]?.indexOf(this) ?? -1;
-		const isSelected = clipIndex >= 0 && this.edit.isClipSelected(trackIndex, clipIndex);
+		const indices = this.edit.findClipIndices(this);
+		const isSelected = indices && this.edit.isClipSelected(indices.trackIndex, indices.clipIndex);
 		
 		if ((!this.isActive() || !isSelected) && !this.isHovering) {
 			this.outline.clear();
@@ -387,12 +385,10 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		// Get indices and use selectClip
-		const trackIndex = this.layer - 1;
-		const tracks = this.edit['tracks'] as Player[][];
-		const clipIndex = tracks[trackIndex]?.indexOf(this) ?? -1;
-		if (clipIndex >= 0) {
-			this.edit.selectClip(trackIndex, clipIndex);
+		// Get indices using proper API and use selectClip
+		const indices = this.edit.findClipIndices(this);
+		if (indices) {
+			this.edit.selectClip(indices.trackIndex, indices.clipIndex);
 		}
 
 		this.initialClipConfiguration = structuredClone(this.clipConfiguration);

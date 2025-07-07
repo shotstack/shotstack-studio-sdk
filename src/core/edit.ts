@@ -8,8 +8,10 @@ import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
+import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
+import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
@@ -297,7 +299,13 @@ export class Edit extends Entity {
 				clip.draw();
 			},
 			updateDuration: () => this.updateTotalDuration(),
-			emitEvent: (name, data) => this.events.emit(name, data)
+			emitEvent: (name, data) => this.events.emit(name, data),
+			findClipIndices: player => this.findClipIndices(player),
+			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
+			getSelectedClip: () => this.selectedClip,
+			setSelectedClip: clip => {
+				this.selectedClip = clip;
+			}
 		};
 	}
 
@@ -447,42 +455,48 @@ export class Edit extends Entity {
 
 	// Selection management methods
 	public selectClip(trackIndex: number, clipIndex: number): void {
-		if (trackIndex >= 0 && trackIndex < this.tracks.length &&
-			clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
-			
-			const player = this.tracks[trackIndex][clipIndex];
-			this.selectedClip = player;
-			
-			this.events.emit("clip:selected", {
-				clip: player.clipConfiguration,
-				trackIndex,
-				clipIndex
-			});
-		}
+		const command = new SelectClipCommand(trackIndex, clipIndex);
+		this.executeCommand(command);
 	}
 
 	public clearSelection(): void {
-		if (this.selectedClip) {
-			this.selectedClip = null;
-			this.events.emit("selection:cleared", {});
-		}
+		const command = new ClearSelectionCommand();
+		this.executeCommand(command);
 	}
-	
+
 	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
 		if (!this.selectedClip) return false;
-		
+
 		const selectedTrackIndex = this.selectedClip.layer - 1;
 		const selectedClipIndex = this.tracks[selectedTrackIndex].indexOf(this.selectedClip);
-		
+
 		return trackIndex === selectedTrackIndex && clipIndex === selectedClipIndex;
 	}
-	
-	public getSelectedClipInfo(): {trackIndex: number; clipIndex: number; player: Player} | null {
+
+	public getSelectedClipInfo(): { trackIndex: number; clipIndex: number; player: Player } | null {
 		if (!this.selectedClip) return null;
-		
+
 		const trackIndex = this.selectedClip.layer - 1;
 		const clipIndex = this.tracks[trackIndex].indexOf(this.selectedClip);
-		
+
 		return { trackIndex, clipIndex, player: this.selectedClip };
+	}
+
+	// Clip lookup methods
+	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
+		for (let trackIndex = 0; trackIndex < this.tracks.length; trackIndex += 1) {
+			const clipIndex = this.tracks[trackIndex].indexOf(player);
+			if (clipIndex !== -1) {
+				return { trackIndex, clipIndex };
+			}
+		}
+		return null;
+	}
+
+	public getClipAt(trackIndex: number, clipIndex: number): Player | null {
+		if (trackIndex >= 0 && trackIndex < this.tracks.length && clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
+			return this.tracks[trackIndex][clipIndex];
+		}
+		return null;
 	}
 }
