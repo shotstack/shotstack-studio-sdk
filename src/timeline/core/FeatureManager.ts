@@ -40,17 +40,15 @@ export class FeatureManager implements IFeatureManager {
 
 	public enable(name: string): void {
 		const feature = this.features.get(name);
-		if (feature && !feature.enabled) {
-			(feature as any).enabled = true; // Features should manage their own enabled state
-			feature.onEnable();
+		if (feature) {
+			feature.setEnabled(true);
 		}
 	}
 
 	public disable(name: string): void {
 		const feature = this.features.get(name);
-		if (feature && feature.enabled) {
-			(feature as any).enabled = false;
-			feature.onDisable();
+		if (feature) {
+			feature.setEnabled(false);
 		}
 	}
 

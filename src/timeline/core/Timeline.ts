@@ -190,6 +190,7 @@ export class Timeline extends Entity implements ITimeline {
 
 	private async loadDefaultFeatures(): Promise<void> {
 		// Default features will be loaded here
+		// Example: this.featureManager.register(new SnappingFeature(this.state));
 		// For now, we'll add them in a later task
 	}
 

@@ -52,6 +52,7 @@ export interface ITimelineFeature extends Entity {
 	readonly enabled: boolean;
 
 	// Lifecycle
+	setEnabled(enabled: boolean): void;
 	onEnable(): void;
 	onDisable(): void;
 
