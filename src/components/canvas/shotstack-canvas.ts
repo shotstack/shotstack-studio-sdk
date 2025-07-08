@@ -3,8 +3,9 @@ import { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";
-import type { Timeline } from "../timeline/core/Timeline";
 import * as pixi from "pixi.js";
+
+import type { Timeline } from "../timeline/core/Timeline";
 
 export class Canvas {
 	/** @internal */

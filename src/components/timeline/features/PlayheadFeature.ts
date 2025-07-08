@@ -1,7 +1,8 @@
+import * as PIXI from "pixi.js";
+
 import { TimelineFeature } from "../core/TimelineFeature";
 import { ITimelineRenderer } from "../interfaces";
-import { TimelinePointerEvent, TimelineWheelEvent, StateChanges } from "../types";
-import * as PIXI from "pixi.js";
+import { TimelinePointerEvent, StateChanges } from "../types";
 
 /**
  * Handles playhead visualization and interaction for timeline seeking
@@ -19,7 +20,6 @@ export class PlayheadFeature extends TimelineFeature {
 	private isDragging: boolean = false;
 	private dragStartX: number = 0;
 	private dragStartTime: number = 0;
-
 
 	// Visual configuration
 	private readonly visualConfig = {
@@ -71,15 +71,14 @@ export class PlayheadFeature extends TimelineFeature {
 	 * Handle pointer down events for ruler clicks and playhead dragging
 	 */
 	public handlePointerDown?(event: TimelinePointerEvent): boolean {
-			// Check if click is on playhead handle FIRST
+		// Check if click is on playhead handle FIRST
 		if (this.isOnPlayheadHandle(event)) {
 			// Start dragging playhead handle
 			this.startDragging(event);
 			return true; // Event handled
 		}
 
-		// Get local coordinates from the event
-		const localX = event.global.x;
+		// Get local Y coordinate from the event
 		const localY = event.global.y;
 
 		// Check if click is on ruler area (top 30px)
@@ -143,7 +142,7 @@ export class PlayheadFeature extends TimelineFeature {
 	/**
 	 * Render any overlay elements (not used for playhead)
 	 */
-	public renderOverlay(renderer: ITimelineRenderer): void {
+	public renderOverlay(_renderer: ITimelineRenderer): void {
 		// Playhead renders to its own layer, not as an overlay
 	}
 
@@ -256,21 +255,17 @@ export class PlayheadFeature extends TimelineFeature {
 
 		// Get the playhead's screen position
 		const playheadX = this.playheadContainer.x;
-		
+
 		// Check if click is within handle bounds
 		const localX = event.global.x - playheadX;
 		const localY = event.global.y;
-		
+
 		// Handle is centered at x=0, extends from -handleSize to +handleSize
 		// Y extends from handleHitAreaTop to handleHitAreaBottom
 		const halfSize = this.visualConfig.handleSize;
-		const isWithinBounds = 
-			localX >= -halfSize && 
-			localX <= halfSize && 
-			localY >= this.visualConfig.handleHitAreaTop && 
-			localY <= this.visualConfig.handleHitAreaBottom;
-		
-		
+		const isWithinBounds =
+			localX >= -halfSize && localX <= halfSize && localY >= this.visualConfig.handleHitAreaTop && localY <= this.visualConfig.handleHitAreaBottom;
+
 		return isWithinBounds;
 	}
 
@@ -308,7 +303,6 @@ export class PlayheadFeature extends TimelineFeature {
 		const duration = this.context.edit.getTotalDuration();
 		const clampedTime = Math.max(0, Math.min(newTime, duration));
 
-
 		// Seek to the new time
 		this.seekToTime(clampedTime);
 	}
@@ -328,7 +322,6 @@ export class PlayheadFeature extends TimelineFeature {
 
 		// Final position update
 		this.updateDragging(event);
-
 	}
 
 	/**
@@ -377,7 +370,10 @@ export class PlayheadFeature extends TimelineFeature {
 		this.playheadHandle.clear();
 
 		// Draw the playhead line
-		this.playheadLine.moveTo(0, 0).lineTo(0, this.timelineHeight).stroke({ width: this.visualConfig.playheadWidth, color: this.visualConfig.playheadColor });
+		this.playheadLine
+			.moveTo(0, 0)
+			.lineTo(0, this.timelineHeight)
+			.stroke({ width: this.visualConfig.playheadWidth, color: this.visualConfig.playheadColor });
 
 		// Draw the playhead handle
 		const handleHalfSize = this.visualConfig.handleSize / 2;
@@ -395,17 +391,17 @@ export class PlayheadFeature extends TimelineFeature {
 				-5 // Right point
 			])
 			.fill({ color: this.visualConfig.playheadColor })
-			.stroke({ 
-				width: 1, 
-				color: this.visualConfig.handleOutlineColor, 
-				alpha: this.visualConfig.handleOutlineAlpha 
+			.stroke({
+				width: 1,
+				color: this.visualConfig.handleOutlineColor,
+				alpha: this.visualConfig.handleOutlineAlpha
 			});
 
 		// Set a larger hit area for easier dragging
 		this.playheadHandle.hitArea = new PIXI.Rectangle(
-			-this.visualConfig.handleSize, 
-			this.visualConfig.handleHitAreaTop, 
-			this.visualConfig.handleSize * 2, 
+			-this.visualConfig.handleSize,
+			this.visualConfig.handleHitAreaTop,
+			this.visualConfig.handleSize * 2,
 			this.visualConfig.handleHitAreaBottom - this.visualConfig.handleHitAreaTop
 		);
 	}
