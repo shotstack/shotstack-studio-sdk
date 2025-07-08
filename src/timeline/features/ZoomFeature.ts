@@ -28,36 +28,17 @@ export class ZoomFeature extends TimelineFeature {
 
 		event.preventDefault();
 		
-		// Calculate zoom change with focus point preservation
-		const oldPixelsPerSecond = this.basePixelsPerSecond * this.zoomLevel;
+		// Calculate zoom change
 		const delta = -event.deltaY * 0.01;
 		const newZoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoomLevel + delta));
 		
 		if (newZoomLevel !== this.zoomLevel) {
-			// Calculate focus point for zoom
-			const focusX = event.x || 0;
-			const { viewport } = this.state.getState();
-			const { scrollX } = viewport;
-			const timeAtMouse = (scrollX + focusX) / oldPixelsPerSecond;
-			
 			// Update zoom
 			this.zoomLevel = newZoomLevel;
 			const newPixelsPerSecond = this.basePixelsPerSecond * this.zoomLevel;
 			
-			// Calculate new scroll to maintain focus point
-			const newScrollX = (timeAtMouse * newPixelsPerSecond) - focusX;
-			
 			// Apply changes - this will update the state with the new zoom
 			this.context.timeline.setPixelsPerSecond(newPixelsPerSecond);
-			
-			// Update scroll position along with the latest viewport state
-			const updatedViewport = this.state.getState().viewport;
-			this.state.update({
-				viewport: {
-					...updatedViewport,
-					scrollX: Math.max(0, newScrollX)
-				}
-			});
 		}
 	}
 }
