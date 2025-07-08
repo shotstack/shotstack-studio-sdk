@@ -1,4 +1,5 @@
 import { Edit } from "@core/edit";
+import * as PIXI from "pixi.js";
 
 import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager } from "../interfaces";
 import { TimelinePointerEvent, TimelineWheelEvent } from "../types";
@@ -86,24 +87,21 @@ export class ToolManager implements IToolManager {
 	}
 
 	// Input event delegation
-	public handlePointerDown(event: PointerEvent): void {
+	public handlePointerDown(event: PIXI.FederatedPointerEvent): void {
 		if (this.activeTool?.onPointerDown) {
-			const timelineEvent = this.createTimelinePointerEvent(event);
-			this.activeTool.onPointerDown(timelineEvent);
+			this.activeTool.onPointerDown(event);
 		}
 	}
 
-	public handlePointerMove(event: PointerEvent): void {
+	public handlePointerMove(event: PIXI.FederatedPointerEvent): void {
 		if (this.activeTool?.onPointerMove) {
-			const timelineEvent = this.createTimelinePointerEvent(event);
-			this.activeTool.onPointerMove(timelineEvent);
+			this.activeTool.onPointerMove(event);
 		}
 	}
 
-	public handlePointerUp(event: PointerEvent): void {
+	public handlePointerUp(event: PIXI.FederatedPointerEvent): void {
 		if (this.activeTool?.onPointerUp) {
-			const timelineEvent = this.createTimelinePointerEvent(event);
-			this.activeTool.onPointerUp(timelineEvent);
+			this.activeTool.onPointerUp(event);
 		}
 	}
 
@@ -135,26 +133,6 @@ export class ToolManager implements IToolManager {
 		}
 	}
 
-	private createTimelinePointerEvent(event: PointerEvent): TimelinePointerEvent {
-		const rect = (event.currentTarget as HTMLElement)?.getBoundingClientRect() || { left: 0, top: 0 };
-
-		return {
-			x: event.clientX - rect.left,
-			y: event.clientY - rect.top,
-			globalX: event.clientX,
-			globalY: event.clientY,
-			button: event.button,
-			buttons: event.buttons,
-			ctrlKey: event.ctrlKey,
-			shiftKey: event.shiftKey,
-			altKey: event.altKey,
-			metaKey: event.metaKey,
-			target: event.target,
-			currentTarget: event.currentTarget,
-			preventDefault: () => event.preventDefault(),
-			stopPropagation: () => event.stopPropagation()
-		};
-	}
 
 	public setCursorElement(element: HTMLElement): void {
 		this.cursorElement = element;

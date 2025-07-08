@@ -1,5 +1,6 @@
 import { Edit } from "@core/edit";
 import { Size } from "@core/layouts/geometry";
+import * as PIXI from "pixi.js";
 
 // Core Timeline State
 export type TimelineState = {
@@ -55,22 +56,11 @@ export type StateChanges = {
 // State listener function type
 export type StateListener = (state: TimelineState, changes: StateChanges) => void;
 
-// Timeline event types
-export type TimelinePointerEvent = {
-	x: number;
-	y: number;
-	globalX: number;
-	globalY: number;
-	button: number;
-	buttons: number;
-	ctrlKey: boolean;
-	shiftKey: boolean;
-	altKey: boolean;
-	metaKey: boolean;
-	target: any;
-	currentTarget: any;
-	preventDefault: () => void;
-	stopPropagation: () => void;
+// Timeline event types - simplified to extend PIXI events directly
+export type TimelinePointerEvent = PIXI.FederatedPointerEvent & {
+	// Add timeline-specific properties only if needed
+	timelineX?: number;
+	timelineY?: number;
 };
 
 export type TimelineWheelEvent = {

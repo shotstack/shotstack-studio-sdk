@@ -1,7 +1,6 @@
-import { EditCommand } from "@core/commands/types";
 import { Entity } from "@core/shared/entity";
 
-import { ITimelineTool, ITimelineState } from "../interfaces";
+import { ITimelineTool, ITimelineState, ITimelineToolContext } from "../interfaces";
 import { TimelineState, TimelinePointerEvent, TimelineWheelEvent } from "../types";
 
 /**
@@ -13,12 +12,12 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 	public abstract readonly cursor: string;
 	
 	protected state: ITimelineState;
-	protected commandCallback: ((command: EditCommand) => void) | null = null;
+	protected context: ITimelineToolContext;
 	
-	constructor(state: ITimelineState, commandCallback: (command: EditCommand) => void) {
+	constructor(state: ITimelineState, context: ITimelineToolContext) {
 		super();
 		this.state = state;
-		this.commandCallback = commandCallback;
+		this.context = context;
 	}
 	
 	// Lifecycle methods
@@ -38,10 +37,8 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 		this.state.update(updates);
 	}
 	
-	public executeCommand(command: EditCommand): void {
-		if (this.commandCallback) {
-			this.commandCallback(command);
-		}
+	public executeCommand(command: any): void {
+		this.context.executeCommand(command);
 	}
 	
 	// Entity lifecycle
@@ -58,7 +55,6 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 	}
 	
 	public dispose(): void {
-		this.commandCallback = null;
 		super.dispose();
 	}
 	

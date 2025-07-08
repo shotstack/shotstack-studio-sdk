@@ -3,7 +3,7 @@ import { Size } from "@core/layouts/geometry";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager } from "../interfaces";
+import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager, ITimelineToolContext } from "../interfaces";
 import { TimelineState, StateChanges } from "../types";
 
 import { FeatureManager } from "./FeatureManager";
@@ -71,7 +71,7 @@ export class Timeline extends Entity implements ITimeline {
 		// Enable PIXI event system on the stage and make it interactive
 		this.renderer.getStage().eventMode = "static";
 
-		// Set up PIXI event listeners for selection
+		// Set up PIXI event listeners for tool handling
 		this.renderer.getStage().on("pointerdown", (event: PIXI.FederatedPointerEvent) => {
 			this.handlePixiPointerDown(event);
 		});
@@ -253,6 +253,20 @@ export class Timeline extends Entity implements ITimeline {
 		return this.renderer;
 	}
 
+	// Query method for tools to find clip at a given PIXI display object
+	public findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null {
+		// Walk up the display list to find a clip container
+		let currentTarget: PIXI.Container | null = target;
+		while (currentTarget) {
+			const indices = this.clipIndices.get(currentTarget);
+			if (indices) {
+				return indices;
+			}
+			currentTarget = currentTarget.parent;
+		}
+		return null;
+	}
+
 	private createInitialState(): TimelineState {
 		return {
 			viewport: {
@@ -288,19 +302,26 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	private async loadDefaultTools(): Promise<void> {
+		// Create tool context
+		const toolContext: ITimelineToolContext = {
+			timeline: this,
+			edit: this.edit,
+			executeCommand: (command: any) => {
+				// Handle selection commands
+				if (command.type === "CLEAR_SELECTION") {
+					this.edit.clearSelection();
+				} else {
+					console.log("Timeline command:", command);
+				}
+			}
+		};
+
 		// Register the selection tool
 		const { SelectionTool } = await import("../tools/SelectionTool");
-		const selectionTool = new SelectionTool(this.state, (command: any) => {
-			// Handle selection commands
-			if (command.type === "CLEAR_SELECTION") {
-				this.edit.clearSelection();
-			} else {
-				console.log("Timeline command:", command);
-			}
-		});
+		const selectionTool = new SelectionTool(this.state, toolContext);
 		this.toolManager.register(selectionTool);
 
-		// Note: Clip selection is now handled via PIXI events on the clips themselves
+		// Selection is now handled by SelectionTool
 	}
 
 	private async loadDefaultFeatures(): Promise<void> {
@@ -373,68 +394,23 @@ export class Timeline extends Entity implements ITimeline {
 		this.loadEditData();
 	}
 
-	// Handle PIXI pointer events for selection and tools
+	// Handle PIXI pointer events - forward to tools only
 	private handlePixiPointerDown(event: PIXI.FederatedPointerEvent): void {
-		const target = event.target;
-
-		// First, let the tool manager handle the event
-		const pointerEvent = this.createPointerEventFromPixi(event);
-		this.toolManager.handlePointerDown(pointerEvent);
-
-		// Then handle selection
-		// Walk up the display list to find a clip container
-		let currentTarget = target;
-		while (currentTarget) {
-			const indices = this.clipIndices.get(currentTarget);
-			if (indices) {
-				// Found a clip - emit intent event
-				this.edit.events.emit("timeline:clip:clicked", {
-					trackIndex: indices.trackIndex,
-					clipIndex: indices.clipIndex
-				});
-				event.stopPropagation();
-				return;
-			}
-			currentTarget = currentTarget.parent;
-		}
-
-		// No clip found - emit background click event
-		this.edit.events.emit("timeline:background:clicked", {});
+		// Forward the PIXI event directly to the tool manager
+		// The active tool (e.g., SelectionTool) will handle all selection logic
+		this.toolManager.handlePointerDown(event);
 	}
 
 	// Handle PIXI pointer move events
 	private handlePixiPointerMove(event: PIXI.FederatedPointerEvent): void {
-		const pointerEvent = this.createPointerEventFromPixi(event);
-		this.toolManager.handlePointerMove(pointerEvent);
+		this.toolManager.handlePointerMove(event);
 	}
 
 	// Handle PIXI pointer up events
 	private handlePixiPointerUp(event: PIXI.FederatedPointerEvent): void {
-		const pointerEvent = this.createPointerEventFromPixi(event);
-		this.toolManager.handlePointerUp(pointerEvent);
+		this.toolManager.handlePointerUp(event);
 	}
 
-	// Convert PIXI event to DOM-like PointerEvent for tool compatibility
-	private createPointerEventFromPixi(pixiEvent: PIXI.FederatedPointerEvent): PointerEvent {
-		// Create a synthetic PointerEvent that matches the tool manager's expectations
-		const canvas = this.renderer.getApplication().canvas;
-		const rect = canvas.getBoundingClientRect();
-
-		return new PointerEvent(pixiEvent.type, {
-			clientX: pixiEvent.global.x + rect.left,
-			clientY: pixiEvent.global.y + rect.top,
-			screenX: pixiEvent.screen.x,
-			screenY: pixiEvent.screen.y,
-			button: pixiEvent.button,
-			buttons: pixiEvent.buttons,
-			ctrlKey: pixiEvent.ctrlKey,
-			shiftKey: pixiEvent.shiftKey,
-			altKey: pixiEvent.altKey,
-			metaKey: pixiEvent.metaKey,
-			pointerId: pixiEvent.pointerId,
-			pointerType: pixiEvent.pointerType
-		});
-	}
 
 	public handleWheel(event: WheelEvent): void {
 		this.toolManager.handleWheel(event);

@@ -1,3 +1,5 @@
+import * as PIXI from "pixi.js";
+
 import { TimelineTool } from "../core/TimelineTool";
 import { TimelinePointerEvent } from "../types";
 
@@ -32,26 +34,31 @@ export class SelectionTool extends TimelineTool {
 	
 	public override onPointerDown(event: TimelinePointerEvent): void {
 		this.isDragging = true;
-		this.dragStartX = event.x;
-		this.dragStartY = event.y;
+		this.dragStartX = event.global.x;
+		this.dragStartY = event.global.y;
 		
-		// If we reach here, it means we clicked on empty space (not a clip)
-		// Clips handle their own click events via PIXI
-		if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
-			// Clear selection when clicking empty space (unless modifier held)
-			this.executeCommand({
-				type: 'CLEAR_SELECTION'
-			} as any);
+		// Check what was clicked using Timeline's query method via context
+		const clipInfo = this.context.timeline.findClipAtPoint(event.target as PIXI.Container);
+		
+		if (clipInfo) {
+			// Clicked on a clip - emit the event
+			this.context.edit.events.emit("timeline:clip:clicked", clipInfo);
+			event.stopPropagation();
+		} else {
+			// Clicked on background
+			if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
+				// Clear selection when clicking empty space (unless modifier held)
+			this.context.edit.events.emit("timeline:background:clicked", {});
+			}
+			// TODO: Start box selection for multi-select
 		}
-		
-		// TODO: Start box selection
 	}
 	
 	public override onPointerMove(event: TimelinePointerEvent): void {
 		if (!this.isDragging) return;
 		
-		const dx = event.x - this.dragStartX;
-		const dy = event.y - this.dragStartY;
+		const dx = event.global.x - this.dragStartX;
+		const dy = event.global.y - this.dragStartY;
 		
 		// TODO: Implement drag selection or clip moving
 	}

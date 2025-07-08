@@ -1,9 +1,17 @@
 import { EditCommand } from "@core/commands/types";
+import { Edit } from "@core/edit";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer } from "../types/timeline.types";
 
+
+// Tool context interface for dependency injection
+export interface ITimelineToolContext {
+	timeline: ITimeline;
+	edit: Edit;
+	executeCommand: (command: EditCommand) => void;
+}
 
 // Core Timeline interface
 export interface ITimeline extends Entity {
@@ -13,6 +21,9 @@ export interface ITimeline extends Entity {
 	registerFeature(feature: ITimelineFeature): void;
 	activateTool(name: string): void;
 	getRenderer(): ITimelineRenderer;
+	
+	// Query methods for tools
+	findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null;
 }
 
 // State management interface
@@ -102,9 +113,9 @@ export interface IToolManager {
 	setCursorElement(element: HTMLElement): void;
 
 	// Input delegation
-	handlePointerDown(event: PointerEvent): void;
-	handlePointerMove(event: PointerEvent): void;
-	handlePointerUp(event: PointerEvent): void;
+	handlePointerDown(event: PIXI.FederatedPointerEvent): void;
+	handlePointerMove(event: PIXI.FederatedPointerEvent): void;
+	handlePointerUp(event: PIXI.FederatedPointerEvent): void;
 	handleWheel(event: WheelEvent): void;
 	handleKeyDown(event: KeyboardEvent): void;
 	handleKeyUp(event: KeyboardEvent): void;
