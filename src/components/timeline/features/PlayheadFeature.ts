@@ -60,13 +60,22 @@ export class PlayheadFeature extends TimelineFeature {
 	 * Handle pointer down events for ruler clicks and playhead dragging
 	 */
 	public handlePointerDown?(event: TimelinePointerEvent): void {
+		// Get local coordinates from the event
+		const localX = event.global.x;
+		const localY = event.global.y;
+		
 		// Check if click is on ruler area (top 30px)
-		if (event.y < this.rulerHeight) {
+		if (localY < this.rulerHeight) {
 			// Ruler click - seek to position
 			this.handleRulerClick(event);
-		} else if (this.isOnPlayheadHandle(event)) {
+			return; // Consume the event
+		}
+		
+		// Check if click is on playhead handle
+		if (this.isOnPlayheadHandle(event)) {
 			// Start dragging playhead handle
 			this.startDragging(event);
+			return; // Consume the event
 		}
 	}
 
@@ -203,14 +212,18 @@ export class PlayheadFeature extends TimelineFeature {
 	 */
 	private handleRulerClick(event: TimelinePointerEvent): void {
 		// Calculate time from click position
-		const clickX = event.x;
+		const clickX = event.global.x;
 		const timeAtClick = this.calculateTimeFromX(clickX);
 		
-		// Seek to the calculated time
-		this.seekToTime(timeAtClick);
+		// Clamp time to valid range
+		const duration = this.context.edit.getTotalDuration();
+		const clampedTime = Math.max(0, Math.min(timeAtClick, duration));
 		
-		// TODO: Add visual feedback for click
-		console.log(`Seeking to time: ${timeAtClick}s from click at x: ${clickX}`);
+		// Seek to the calculated time
+		this.seekToTime(clampedTime);
+		
+		// Visual feedback is handled by state update
+		console.log(`Ruler clicked: seeking to ${clampedTime.toFixed(2)}s`);
 	}
 
 	/**
