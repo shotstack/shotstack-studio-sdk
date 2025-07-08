@@ -99,7 +99,7 @@ export class FeatureManager implements IFeatureManager {
 		});
 	}
 
-	private handleStateChange(state: TimelineState, changes: StateChanges): void {
+	private handleStateChange(_state: TimelineState, changes: StateChanges): void {
 		// Forward state changes to features
 		this.onStateChanged(changes);
 	}

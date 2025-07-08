@@ -75,6 +75,6 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 	
 	protected loadToolState<T = Record<string, unknown>>(): T | undefined {
 		const currentState = this.state.getState();
-		return currentState.toolStates.get(this.name);
+		return currentState.toolStates.get(this.name) as T | undefined;
 	}
 }
