@@ -77,7 +77,7 @@ export class Edit extends Entity {
 		this.selectedClip = null;
 		this.updatedClip = null;
 		this.backgroundColor = backgroundColor;
-		
+
 		// Set up event-driven architecture
 		this.setupIntentListeners();
 	}
@@ -344,7 +344,7 @@ export class Edit extends Entity {
 				}
 			}
 		} catch (error) {
-			console.warn("Attempting to unmount an unmounted clip.");
+			console.warn(`Attempting to unmount an unmounted clip: ${error}`);
 		}
 
 		this.unloadClipAssets(clip);

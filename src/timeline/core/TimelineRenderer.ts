@@ -47,7 +47,8 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.getLayer("playhead").addChild(this.playhead.getContainer());
 	}
 
-	public render(state: TimelineState): void {
+	public render(__state: TimelineState): void {
+		const state = __state;
 		// Update ruler
 		if (this.ruler) {
 			this.ruler.setZoom(state.viewport.zoom);
@@ -151,7 +152,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.createLayer("features", 6);
 	}
 
-	private renderBackground(_state: TimelineState): void {
+	private renderBackground(__state: TimelineState): void {
 		const layer = this.getLayer("background");
 		layer.removeChildren();
 
@@ -161,7 +162,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 		layer.addChild(bg);
 	}
 
-	private renderSelection(_state: TimelineState): void {
+	private renderSelection(__state: TimelineState): void {
 		const layer = this.getLayer("selection");
 		layer.removeChildren();
 

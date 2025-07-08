@@ -51,29 +51,27 @@ export class SelectionTool extends TimelineTool {
 		// TODO: Start box selection for multi-select when modifier keys are held
 	}
 	
-	public override onPointerMove(_event: TimelinePointerEvent): void {
-		if (!this.isDragging) {
-			return;
+	public override onPointerMove(__event: TimelinePointerEvent): void {
+		if (this.isDragging) {
+			// Calculate drag delta for future use
+			// const dx = __event.global.x - this.dragStartX;
+			// const dy = __event.global.y - this.dragStartY;
+			
+			// TODO: Implement drag selection or clip moving
 		}
-		
-		// Calculate drag delta for future use
-		// const dx = _event.global.x - this.dragStartX;
-		// const dy = _event.global.y - this.dragStartY;
-		
-		// TODO: Implement drag selection or clip moving
 	}
 	
-	public override onPointerUp(_event: TimelinePointerEvent): void {
+	public override onPointerUp(__event: TimelinePointerEvent): void {
 		this.isDragging = false;
 		
 		// TODO: Finalize selection or movement
 	}
 	
-	public override onKeyDown(_event: KeyboardEvent): void {
+	public override onKeyDown(__event: KeyboardEvent): void {
 		// Handle keyboard shortcuts
-		if (_event.key === "Delete" || _event.key === "Backspace") {
+		if (__event.key === "Delete" || __event.key === "Backspace") {
 			// TODO: Delete selected clips
-			_event.preventDefault();
+			__event.preventDefault();
 		}
 	}
 }

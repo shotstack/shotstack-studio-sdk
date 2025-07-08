@@ -56,7 +56,7 @@ export class SnappingFeature extends TimelineFeature {
 		});
 	}
 	
-	public onToolChanged(newTool: string, previousTool: string | null): void {
+	public onToolChanged(newTool: string, __previousTool: string | null): void {
 		// Clear snap lines when changing tools
 		if (newTool !== "move" && newTool !== "trim") {
 			this.clearSnapLines();
@@ -67,9 +67,9 @@ export class SnappingFeature extends TimelineFeature {
 		// React to state changes
 		if (changes.features) {
 			const config = this.getFeatureConfig();
-			if (config && !config.enabled && this._enabled) {
+			if (config && !config.enabled && this.isEnabled) {
 				// Feature was disabled via state
-				this._enabled = false;
+				this.isEnabled = false;
 				this.onDisable();
 			}
 		}
@@ -105,7 +105,7 @@ export class SnappingFeature extends TimelineFeature {
 		return closestPoint;
 	}
 	
-	private gatherSnapPoints(excludeClipId?: string): number[] {
+	private gatherSnapPoints(__excludeClipId?: string): number[] {
 		const config = this.getFeatureConfig();
 		const points: number[] = [];
 		const state = this.getState();

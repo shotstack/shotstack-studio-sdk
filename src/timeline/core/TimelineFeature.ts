@@ -50,7 +50,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 		// Note: onEnable is called by setEnabled or during construction if enabled
 	}
 	
-	public update(_deltaTime: number, _elapsed: number): void {
+	public update(__deltaTime: number, __elapsed: number): void {
 		// Base implementation - features can override if needed
 	}
 	

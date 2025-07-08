@@ -67,7 +67,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.updateVisuals();
 	}
 
-	public update(_deltaTime: number, _elapsed: number): void {
+	public update(__deltaTime: number, __elapsed: number): void {
 		// Update any animations or states
 	}
 

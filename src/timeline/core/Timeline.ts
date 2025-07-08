@@ -365,7 +365,7 @@ export class Timeline extends Entity implements ITimeline {
 		this.edit.events.off("selection:cleared", this.updateSelectionVisuals.bind(this));
 	}
 
-	private handleClipUpdated(_data: any): void {
+	private handleClipUpdated(__data: any): void {
 		// Reload edit data to reflect changes
 		this.loadEditData();
 	}
@@ -389,7 +389,7 @@ export class Timeline extends Entity implements ITimeline {
 		this.loadEditData();
 	}
 
-	private handleTrackDeleted(_data: any): void {
+	private handleTrackDeleted(__data: any): void {
 		// Reload edit data to reflect track deletion
 		this.loadEditData();
 	}
