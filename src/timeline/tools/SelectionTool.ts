@@ -44,36 +44,36 @@ export class SelectionTool extends TimelineTool {
 			// Clicked on a clip - emit the event
 			this.context.edit.events.emit("timeline:clip:clicked", clipInfo);
 			event.stopPropagation();
-		} else {
-			// Clicked on background
-			if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
-				// Clear selection when clicking empty space (unless modifier held)
+		} else if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
+			// Clear selection when clicking empty space (unless modifier held)
 			this.context.edit.events.emit("timeline:background:clicked", {});
-			}
-			// TODO: Start box selection for multi-select
 		}
+		// TODO: Start box selection for multi-select when modifier keys are held
 	}
 	
-	public override onPointerMove(event: TimelinePointerEvent): void {
-		if (!this.isDragging) return;
+	public override onPointerMove(_event: TimelinePointerEvent): void {
+		if (!this.isDragging) {
+			return;
+		}
 		
-		const dx = event.global.x - this.dragStartX;
-		const dy = event.global.y - this.dragStartY;
+		// Calculate drag delta for future use
+		// const dx = _event.global.x - this.dragStartX;
+		// const dy = _event.global.y - this.dragStartY;
 		
 		// TODO: Implement drag selection or clip moving
 	}
 	
-	public override onPointerUp(event: TimelinePointerEvent): void {
+	public override onPointerUp(_event: TimelinePointerEvent): void {
 		this.isDragging = false;
 		
 		// TODO: Finalize selection or movement
 	}
 	
-	public override onKeyDown(event: KeyboardEvent): void {
+	public override onKeyDown(_event: KeyboardEvent): void {
 		// Handle keyboard shortcuts
-		if (event.key === "Delete" || event.key === "Backspace") {
+		if (_event.key === "Delete" || _event.key === "Backspace") {
 			// TODO: Delete selected clips
-			event.preventDefault();
+			_event.preventDefault();
 		}
 	}
 }
