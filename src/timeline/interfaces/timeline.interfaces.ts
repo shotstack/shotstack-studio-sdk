@@ -31,14 +31,9 @@ export interface ITimeline extends Entity {
 	// Query methods for tools
 	findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null;
 	
-	// Zoom and navigation
-	getPixelsPerSecond(): number;
+	// Core timeline properties
 	setPixelsPerSecond(pixelsPerSecond: number): void;
-	getScrollX(): number;
-	setScrollX(scrollX: number): void;
-	getViewportWidth(): number;
 	getTimelineDuration(): number;
-	setCursor(cursor: string): void;
 	
 	// Feature access
 	getFeature(name: string): ITimelineFeature | null;
@@ -152,6 +147,11 @@ export interface IFeatureManager {
 	onToolChanged(toolName: string, previousTool: string | null): void;
 	onStateChanged(changes: StateChanges): void;
 	renderOverlays(renderer: ITimelineRenderer): void;
+
+	// Event handling
+	handleWheel(event: TimelineWheelEvent): boolean;
+	handleKeyDown(event: KeyboardEvent): boolean;
+	handleKeyUp(event: KeyboardEvent): boolean;
 }
 
 // Timeline Entity interfaces

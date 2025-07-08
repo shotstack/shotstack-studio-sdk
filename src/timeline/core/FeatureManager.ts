@@ -1,5 +1,5 @@
 import { IFeatureManager, ITimelineFeature, ITimelineState, ITimelineRenderer } from "../interfaces";
-import { StateChanges, TimelineState } from "../types";
+import { StateChanges, TimelineState, TimelineWheelEvent } from "../types";
 
 /**
  * Manages timeline features and coordinates their lifecycle
@@ -102,5 +102,45 @@ export class FeatureManager implements IFeatureManager {
 	private handleStateChange(_state: TimelineState, changes: StateChanges): void {
 		// Forward state changes to features
 		this.onStateChanged(changes);
+	}
+
+	// Event handling methods
+	public handleWheel(event: TimelineWheelEvent): boolean {
+		// Check each enabled feature for wheel handling
+		for (const feature of this.features.values()) {
+			if (feature.enabled && 'handleWheel' in feature) {
+				const handled = (feature as any).handleWheel(event);
+				if (handled !== false) {
+					return true; // Event was handled
+				}
+			}
+		}
+		return false;
+	}
+
+	public handleKeyDown(event: KeyboardEvent): boolean {
+		// Check each enabled feature for key down handling
+		for (const feature of this.features.values()) {
+			if (feature.enabled && 'handleKeyDown' in feature) {
+				const handled = (feature as any).handleKeyDown(event);
+				if (handled !== false) {
+					return true; // Event was handled
+				}
+			}
+		}
+		return false;
+	}
+
+	public handleKeyUp(event: KeyboardEvent): boolean {
+		// Check each enabled feature for key up handling
+		for (const feature of this.features.values()) {
+			if (feature.enabled && 'handleKeyUp' in feature) {
+				const handled = (feature as any).handleKeyUp(event);
+				if (handled !== false) {
+					return true; // Event was handled
+				}
+			}
+		}
+		return false;
 	}
 }

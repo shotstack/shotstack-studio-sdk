@@ -27,9 +27,6 @@ export class Timeline extends Entity implements ITimeline {
 	private edit: Edit;
 	private size: Size;
 	private pixelsPerSecond: number = 100;
-	private autoScrollEnabled: boolean = true;
-	private snapEnabled: boolean = true;
-	private snapGridSize: number = 0.033333; // 1/30 second
 	private animationFrameId: number | null = null;
 	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();
 
@@ -222,70 +219,14 @@ export class Timeline extends Entity implements ITimeline {
 		});
 	}
 
-	public setAutoScroll(enabled: boolean): void {
-		this.autoScrollEnabled = enabled;
-		this.state.update({
-			features: {
-				...this.state.getState().features,
-				autoScroll: {
-					...this.state.getState().features.autoScroll,
-					enabled
-				}
-			}
-		});
-	}
-
-	public setSnapping(enabled: boolean, gridSize?: number): void {
-		this.snapEnabled = enabled;
-		if (gridSize !== undefined) {
-			this.snapGridSize = gridSize;
-		}
-		this.state.update({
-			features: {
-				...this.state.getState().features,
-				snapping: {
-					enabled: this.snapEnabled,
-					gridSize: this.snapGridSize
-				}
-			}
-		});
-	}
 
 	public getRenderer(): ITimelineRenderer {
 		return this.renderer;
 	}
 
-	// Zoom and navigation methods
-	public getPixelsPerSecond(): number {
-		return this.pixelsPerSecond;
-	}
-
-	public getScrollX(): number {
-		return this.state.getState().viewport.scrollX;
-	}
-
-	public setScrollX(scrollX: number): void {
-		const { viewport } = this.state.getState();
-		this.state.update({
-			viewport: {
-				...viewport,
-				scrollX
-			}
-		});
-	}
-
-	public getViewportWidth(): number {
-		return this.state.getState().viewport.width;
-	}
-
 	public getTimelineDuration(): number {
 		// Get duration from edit
 		return this.edit.duration;
-	}
-
-	public setCursor(cursor: string): void {
-		const { canvas } = this.renderer.getApplication();
-		canvas.style.cursor = cursor;
 	}
 
 	public getFeature(name: string): ITimelineFeature | null {
@@ -327,11 +268,11 @@ export class Timeline extends Entity implements ITimeline {
 			},
 			features: {
 				snapping: {
-					enabled: this.snapEnabled,
-					gridSize: this.snapGridSize
+					enabled: true,
+					gridSize: 0.033333 // 1/30 second
 				},
 				autoScroll: {
-					enabled: this.autoScrollEnabled,
+					enabled: true,
 					threshold: 0.8 // 80% of viewport
 				}
 			},
@@ -470,24 +411,25 @@ export class Timeline extends Entity implements ITimeline {
 
 
 	public handleWheel(event: WheelEvent): void {
-		// Check if zoom feature should handle it first
-		const zoomFeature = this.featureManager.getFeature("zoom");
-		if (zoomFeature && zoomFeature.enabled && 'handleWheel' in zoomFeature) {
-			const timelineEvent = {
-				deltaX: event.deltaX,
-				deltaY: event.deltaY,
-				deltaMode: event.deltaMode,
-				ctrlKey: event.ctrlKey,
-				shiftKey: event.shiftKey,
-				altKey: event.altKey,
-				metaKey: event.metaKey,
-				x: event.offsetX,
-				preventDefault: () => event.preventDefault()
-			};
-			(zoomFeature as any).handleWheel(timelineEvent);
+		// Create timeline wheel event
+		const timelineEvent = {
+			deltaX: event.deltaX,
+			deltaY: event.deltaY,
+			deltaMode: event.deltaMode,
+			ctrlKey: event.ctrlKey,
+			shiftKey: event.shiftKey,
+			altKey: event.altKey,
+			metaKey: event.metaKey,
+			x: event.offsetX,
+			preventDefault: () => event.preventDefault()
+		};
+
+		// Let features handle it first
+		if (this.featureManager.handleWheel(timelineEvent)) {
+			return;
 		}
 		
-		// Also pass to tool manager
+		// Then pass to tool manager
 		this.toolManager.handleWheel(event);
 	}
 
