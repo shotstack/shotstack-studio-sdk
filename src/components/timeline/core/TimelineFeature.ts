@@ -9,7 +9,7 @@ import { StateChanges } from "../types";
  */
 export abstract class TimelineFeature extends Entity implements ITimelineFeature {
 	public abstract readonly name: string;
-	protected isEnabled: boolean = true;
+	protected isEnabled: boolean = false;
 	
 	protected state: ITimelineState;
 	protected context: ITimelineFeatureContext;

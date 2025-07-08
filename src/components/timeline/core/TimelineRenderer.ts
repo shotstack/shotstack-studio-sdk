@@ -1,8 +1,8 @@
 import { Size } from "@core/layouts/geometry";
 import * as PIXI from "pixi.js";
 
-import { TimelineTrack, TimelineRuler, TimelinePlayhead } from "../entities";
-import { ITimelineRenderer, ITimelineTrack, ITimelineRuler, ITimelinePlayhead } from "../interfaces";
+import { TimelineTrack, TimelineRuler } from "../entities";
+import { ITimelineRenderer, ITimelineTrack, ITimelineRuler } from "../interfaces";
 import { TimelineState, RenderLayer } from "../types";
 
 /**
@@ -14,7 +14,6 @@ export class TimelineRenderer implements ITimelineRenderer {
 	private size: Size;
 	private tracks: Map<string, ITimelineTrack> = new Map();
 	private ruler: ITimelineRuler | null = null;
-	private playhead: ITimelinePlayhead | null = null;
 	private lastZoom: number = 100;
 
 	constructor(size: Size) {
@@ -42,10 +41,10 @@ export class TimelineRenderer implements ITimelineRenderer {
 		await this.ruler.load();
 		this.getLayer("overlay").addChild(this.ruler.getContainer());
 
-		// Initialize playhead
-		this.playhead = new TimelinePlayhead(this.size.height);
-		await this.playhead.load();
-		this.getLayer("playhead").addChild(this.playhead.getContainer());
+		// Initialize playhead - now handled by PlayheadFeature
+		// this.playhead = new TimelinePlayhead(this.size.height);
+		// await this.playhead.load();
+		// this.getLayer("playhead").addChild(this.playhead.getContainer());
 	}
 
 	public render(__state: TimelineState): void {
@@ -57,13 +56,13 @@ export class TimelineRenderer implements ITimelineRenderer {
 			this.ruler.draw();
 		}
 
-		// Update playhead
-		if (this.playhead) {
-			this.playhead.setTime(state.playback.currentTime);
-			this.playhead.setPixelsPerSecond(state.viewport.zoom);
-			this.playhead.setScrollX(state.viewport.scrollX);
-			this.playhead.draw();
-		}
+		// Update playhead - now handled by PlayheadFeature
+		// if (this.playhead) {
+		// 	this.playhead.setTime(state.playback.currentTime);
+		// 	this.playhead.setPixelsPerSecond(state.viewport.zoom);
+		// 	this.playhead.setScrollX(state.viewport.scrollX);
+		// 	this.playhead.draw();
+		// }
 
 		// Update clips zoom only when it changes
 		if (state.viewport.zoom !== this.lastZoom) {
@@ -138,14 +137,10 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.tracks.forEach(track => track.dispose());
 		this.tracks.clear();
 
-		// Dispose ruler and playhead
+		// Dispose ruler
 		if (this.ruler) {
 			this.ruler.dispose();
 			this.ruler = null;
-		}
-		if (this.playhead) {
-			this.playhead.dispose();
-			this.playhead = null;
 		}
 
 		this.clear();
@@ -158,8 +153,8 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.createLayer("tracks", 1);
 		this.createLayer("clips", 2);
 		this.createLayer("selection", 3);
-		this.createLayer("playhead", 4);
-		this.createLayer("overlay", 5);
+		this.createLayer("overlay", 4);  // Ruler goes here
+		this.createLayer("playhead", 5);  // Playhead above ruler
 		this.createLayer("features", 6);
 	}
 

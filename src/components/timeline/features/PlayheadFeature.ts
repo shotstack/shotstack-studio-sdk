@@ -19,6 +19,10 @@ export class PlayheadFeature extends TimelineFeature {
 	private isDragging: boolean = false;
 	private dragStartX: number = 0;
 	private dragStartTime: number = 0;
+	
+	// Event handler references for cleanup
+	private boundPointerMove: ((event: PIXI.FederatedPointerEvent) => void) | null = null;
+	private boundPointerUp: ((event: PIXI.FederatedPointerEvent) => void) | null = null;
 
 	// Timeline dimensions
 	private timelineHeight: number = 150;
@@ -27,7 +31,7 @@ export class PlayheadFeature extends TimelineFeature {
 	// Visual properties
 	private readonly playheadColor = 0xff0000;
 	private readonly playheadWidth = 2;
-	private readonly handleSize = 10;
+	private readonly handleSize = 16;
 
 	// Cached state values for performance
 	private currentTime: number = 0;
@@ -60,6 +64,13 @@ export class PlayheadFeature extends TimelineFeature {
 	 * Handle pointer down events for ruler clicks and playhead dragging
 	 */
 	public handlePointerDown?(event: TimelinePointerEvent): void {
+		// Check if click is on playhead handle FIRST
+		if (this.isOnPlayheadHandle(event)) {
+			// Start dragging playhead handle
+			this.startDragging(event);
+			return; // Consume the event
+		}
+		
 		// Get local coordinates from the event
 		const localX = event.global.x;
 		const localY = event.global.y;
@@ -68,13 +79,6 @@ export class PlayheadFeature extends TimelineFeature {
 		if (localY < this.rulerHeight) {
 			// Ruler click - seek to position
 			this.handleRulerClick(event);
-			return; // Consume the event
-		}
-		
-		// Check if click is on playhead handle
-		if (this.isOnPlayheadHandle(event)) {
-			// Start dragging playhead handle
-			this.startDragging(event);
 			return; // Consume the event
 		}
 	}
@@ -151,6 +155,37 @@ export class PlayheadFeature extends TimelineFeature {
 		this.playheadHandle.eventMode = "static";
 		this.playheadHandle.cursor = "ew-resize";
 		
+		// Set up PIXI event handlers directly on the handle
+		this.playheadHandle.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+			console.log("Handle pointerdown event");
+			this.startDragging(event);
+			event.stopPropagation();
+		});
+		
+		// Set up global move and up handlers on the stage
+		const stage = renderer.getStage();
+		
+		// Create bound event handlers for cleanup
+		this.boundPointerMove = (event: PIXI.FederatedPointerEvent) => {
+			if (this.isDragging) {
+				this.updateDragging(event);
+			}
+		};
+		
+		this.boundPointerUp = (event: PIXI.FederatedPointerEvent) => {
+			if (this.isDragging) {
+				this.endDragging(event);
+			}
+		};
+		
+		stage.on('pointermove', this.boundPointerMove);
+		stage.on('pointerup', this.boundPointerUp);
+		stage.on('pointerupoutside', this.boundPointerUp);
+		
+		// Ensure visibility
+		this.playheadLine.visible = true;
+		this.playheadHandle.visible = true;
+		
 		// Add components to container
 		this.playheadContainer.addChild(this.playheadLine);
 		this.playheadContainer.addChild(this.playheadHandle);
@@ -168,6 +203,21 @@ export class PlayheadFeature extends TimelineFeature {
 	 */
 	private destroyPlayheadVisuals(): void {
 		if (this.playheadContainer) {
+			// Remove event handlers from stage
+			const renderer = this.getRenderer();
+			const stage = renderer.getStage();
+			
+			if (this.boundPointerMove) {
+				stage.off('pointermove', this.boundPointerMove);
+				this.boundPointerMove = null;
+			}
+			
+			if (this.boundPointerUp) {
+				stage.off('pointerup', this.boundPointerUp);
+				stage.off('pointerupoutside', this.boundPointerUp);
+				this.boundPointerUp = null;
+			}
+			
 			// Remove from parent
 			this.playheadContainer.parent?.removeChild(this.playheadContainer);
 			
@@ -205,6 +255,8 @@ export class PlayheadFeature extends TimelineFeature {
 		// Hide playhead if it's outside the visible area
 		const isVisible = x >= -10 && x <= this.viewportWidth + 10;
 		this.playheadContainer.visible = isVisible;
+		
+		console.log(`Playhead position: x=${x}, visible=${isVisible}, container exists=${!!this.playheadContainer}, handle exists=${!!this.playheadHandle}`);
 	}
 
 	/**
@@ -230,34 +282,104 @@ export class PlayheadFeature extends TimelineFeature {
 	 * Check if pointer is over playhead handle
 	 */
 	private isOnPlayheadHandle(event: TimelinePointerEvent): boolean {
-		// TODO: Implement hit detection
-		return false;
+		if (!this.playheadHandle || !this.playheadContainer) return false;
+		
+		// Get the handle's global bounds
+		const handleBounds = this.playheadHandle.getBounds();
+		
+		// Get the playhead container's world transform to account for its position
+		const containerTransform = this.playheadContainer.worldTransform;
+		
+		// Transform the bounds to global coordinates
+		const globalBounds = {
+			x: handleBounds.x * containerTransform.a + containerTransform.tx,
+			y: handleBounds.y * containerTransform.d + containerTransform.ty,
+			width: handleBounds.width * containerTransform.a,
+			height: handleBounds.height * containerTransform.d
+		};
+		
+		// Check if the click is within the handle bounds
+		const clickX = event.global.x;
+		const clickY = event.global.y;
+		
+		const isHit = clickX >= globalBounds.x && 
+		              clickX <= globalBounds.x + globalBounds.width &&
+		              clickY >= globalBounds.y && 
+		              clickY <= globalBounds.y + globalBounds.height;
+		
+		console.log(`Hit test: click(${clickX}, ${clickY}), bounds(${globalBounds.x}, ${globalBounds.y}, ${globalBounds.width}, ${globalBounds.height}), hit=${isHit}`);
+		
+		return isHit;
 	}
 
 	/**
 	 * Start dragging the playhead
 	 */
 	private startDragging(event: TimelinePointerEvent): void {
-		// TODO: Implement drag start
 		this.isDragging = true;
-		console.log("Started dragging playhead");
+		
+		// Store the initial drag position and time
+		this.dragStartX = event.global.x;
+		this.dragStartTime = this.currentTime;
+		
+		// Change cursor to indicate dragging
+		if (this.playheadHandle) {
+			this.playheadHandle.cursor = "grabbing";
+		}
+		
+		// Prevent event propagation to avoid conflicts with other tools
+		event.stopPropagation?.();
+		
+		console.log(`Started dragging playhead from time ${this.dragStartTime.toFixed(2)}s, startX: ${this.dragStartX}`);
 	}
 
 	/**
 	 * Update playhead position while dragging
 	 */
 	private updateDragging(event: TimelinePointerEvent): void {
-		// TODO: Implement drag update
-		console.log("Dragging playhead to", event.x);
+		if (!this.isDragging) return;
+		
+		// Calculate the drag delta
+		const currentX = event.global.x;
+		const deltaX = currentX - this.dragStartX;
+		
+		// Convert delta to time difference
+		const timeDelta = deltaX / this.pixelsPerSecond;
+		const newTime = this.dragStartTime + timeDelta;
+		
+		// Clamp to valid range
+		const duration = this.context.edit.getTotalDuration();
+		const clampedTime = Math.max(0, Math.min(newTime, duration));
+		
+		console.log(`Dragging: currentX=${currentX}, deltaX=${deltaX}, newTime=${newTime}, clampedTime=${clampedTime}`);
+		
+		// Seek to the new time
+		this.seekToTime(clampedTime);
+		
+		// Prevent event propagation
+		event.stopPropagation?.();
 	}
 
 	/**
 	 * End playhead dragging
 	 */
 	private endDragging(event: TimelinePointerEvent): void {
-		// TODO: Implement drag end
+		if (!this.isDragging) return;
+		
 		this.isDragging = false;
-		console.log("Ended dragging playhead");
+		
+		// Restore cursor
+		if (this.playheadHandle) {
+			this.playheadHandle.cursor = "ew-resize";
+		}
+		
+		// Final position update
+		this.updateDragging(event);
+		
+		// Prevent event propagation
+		event.stopPropagation?.();
+		
+		console.log(`Ended dragging playhead at time ${this.currentTime.toFixed(2)}s`);
 	}
 
 	/**
@@ -311,22 +433,26 @@ export class PlayheadFeature extends TimelineFeature {
 			.lineTo(0, this.timelineHeight)
 			.stroke({ width: this.playheadWidth, color: this.playheadColor });
 		
-		// Draw the playhead handle (triangle at top)
+		// Draw the playhead handle
 		const handleHalfSize = this.handleSize / 2;
+		
+		// Draw a diamond shape at the top of the playhead
 		this.playheadHandle
 			.poly([
-				0, 0,                    // Top point
-				-handleHalfSize, -this.handleSize,  // Bottom left
-				handleHalfSize, -this.handleSize    // Bottom right
+				0, 5,                           // Bottom point
+				-handleHalfSize, -5,            // Left point
+				0, -15,                         // Top point
+				handleHalfSize, -5              // Right point
 			])
-			.fill({ color: this.playheadColor });
+			.fill({ color: this.playheadColor })
+			.stroke({ width: 1, color: 0xffffff, alpha: 0.5 }); // Add white outline for visibility
 		
 		// Set a larger hit area for easier dragging
 		this.playheadHandle.hitArea = new PIXI.Rectangle(
 			-this.handleSize,
-			-this.handleSize * 1.5,
+			-20,
 			this.handleSize * 2,
-			this.handleSize * 2
+			30
 		);
 	}
 }
