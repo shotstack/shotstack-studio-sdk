@@ -21,17 +21,17 @@ export class PlayheadFeature extends TimelineFeature {
 	private dragStartX: number = 0;
 	private dragStartTime: number = 0;
 
-	// Visual configuration
+	// Visual configuration with relative sizing
 	private readonly visualConfig = {
 		playheadColor: 0xff0000,
 		playheadWidth: 2,
-		handleSize: 16,
+		handleSizeRatio: 0.8, // Handle size as ratio of ruler height
 		handleOutlineColor: 0xffffff,
 		handleOutlineAlpha: 0.5,
-		handleHitAreaPadding: 4,
-		// Hit area bounds
-		handleHitAreaTop: -20,
-		handleHitAreaBottom: 10,
+		handleHitAreaPaddingRatio: 0.2, // Padding as ratio of handle size
+		// Hit area bounds as ratios of handle size
+		handleHitAreaTopRatio: -1.7, // Top boundary ratio
+		handleHitAreaBottomRatio: 0.7, // Bottom boundary ratio
 		// Default dimensions (overridden by state)
 		defaultTimelineHeight: 150,
 		defaultRulerHeight: 30
@@ -44,6 +44,9 @@ export class PlayheadFeature extends TimelineFeature {
 	private viewportWidth: number = 0;
 	private timelineHeight: number = 0;
 	private rulerHeight: number = 0;
+	
+	// Cached handle size (updated when ruler height changes)
+	private handleSize: number = 0;
 
 	public onEnable(): void {
 		// Initialize state values from current state
@@ -54,6 +57,9 @@ export class PlayheadFeature extends TimelineFeature {
 		this.viewportWidth = state.viewport.width;
 		this.timelineHeight = state.viewport.height || this.visualConfig.defaultTimelineHeight;
 		this.rulerHeight = this.visualConfig.defaultRulerHeight; // Could come from state.layout?.rulerHeight
+		
+		// Calculate handle size based on ruler height
+		this.handleSize = this.rulerHeight * this.visualConfig.handleSizeRatio;
 
 		// Create playhead visuals when feature is enabled
 		this.createPlayheadVisuals();
@@ -126,11 +132,23 @@ export class PlayheadFeature extends TimelineFeature {
 			this.currentTime = state.playback.currentTime;
 		}
 
+		let needsRedraw = false;
 		if (changes.viewport) {
 			this.pixelsPerSecond = state.viewport.zoom;
 			this.scrollX = state.viewport.scrollX;
 			this.viewportWidth = state.viewport.width;
-			this.timelineHeight = state.viewport.height;
+			
+			// Check if height changed
+			if (this.timelineHeight !== state.viewport.height) {
+				this.timelineHeight = state.viewport.height;
+				needsRedraw = true;
+			}
+		}
+
+		// Recalculate handle size if dimensions changed
+		if (needsRedraw) {
+			this.handleSize = this.rulerHeight * this.visualConfig.handleSizeRatio;
+			this.drawPlayheadVisuals();
 		}
 
 		// Update position if playback time or viewport changed
@@ -260,13 +278,13 @@ export class PlayheadFeature extends TimelineFeature {
 		const localX = event.global.x - playheadX;
 		const localY = event.global.y;
 
-		// Handle is centered at x=0, extends from -handleSize to +handleSize
-		// Y extends from handleHitAreaTop to handleHitAreaBottom
-		const halfSize = this.visualConfig.handleSize;
-		const isWithinBounds =
-			localX >= -halfSize && localX <= halfSize && localY >= this.visualConfig.handleHitAreaTop && localY <= this.visualConfig.handleHitAreaBottom;
-
-		return isWithinBounds;
+		// Simple inline calculations
+		const halfSize = this.handleSize / 2;
+		const hitAreaTop = this.handleSize * this.visualConfig.handleHitAreaTopRatio;
+		const hitAreaBottom = this.handleSize * this.visualConfig.handleHitAreaBottomRatio;
+		
+		return localX >= -halfSize && localX <= halfSize && 
+		       localY >= hitAreaTop && localY <= hitAreaBottom;
 	}
 
 	/**
@@ -375,34 +393,35 @@ export class PlayheadFeature extends TimelineFeature {
 			.lineTo(0, this.timelineHeight)
 			.stroke({ width: this.visualConfig.playheadWidth, color: this.visualConfig.playheadColor });
 
-		// Draw the playhead handle
-		const handleHalfSize = this.visualConfig.handleSize / 2;
-
+		// Calculate dimensions inline
+		const halfSize = this.handleSize / 2;
+		const strokeWidth = Math.max(2, this.handleSize / 12);
+		
 		// Draw a diamond shape at the top of the playhead
 		this.playheadHandle
 			.poly([
-				0,
-				5, // Bottom point
-				-handleHalfSize,
-				-5, // Left point
-				0,
-				-15, // Top point
-				handleHalfSize,
-				-5 // Right point
+				0, this.handleSize * 0.5,      // Bottom point
+				-halfSize, -this.handleSize * 0.5,  // Left point
+				0, -this.handleSize * 1.5,     // Top point
+				halfSize, -this.handleSize * 0.5   // Right point
 			])
 			.fill({ color: this.visualConfig.playheadColor })
 			.stroke({
-				width: 1,
+				width: strokeWidth,
 				color: this.visualConfig.handleOutlineColor,
 				alpha: this.visualConfig.handleOutlineAlpha
 			});
 
-		// Set a larger hit area for easier dragging
+		// Set hit area for easier dragging
+		const hitAreaPadding = this.handleSize * this.visualConfig.handleHitAreaPaddingRatio;
+		const hitAreaTop = this.handleSize * this.visualConfig.handleHitAreaTopRatio;
+		const hitAreaBottom = this.handleSize * this.visualConfig.handleHitAreaBottomRatio;
+		
 		this.playheadHandle.hitArea = new PIXI.Rectangle(
-			-this.visualConfig.handleSize,
-			this.visualConfig.handleHitAreaTop,
-			this.visualConfig.handleSize * 2,
-			this.visualConfig.handleHitAreaBottom - this.visualConfig.handleHitAreaTop
+			-this.handleSize - hitAreaPadding,
+			hitAreaTop,
+			(this.handleSize + hitAreaPadding) * 2,
+			hitAreaBottom - hitAreaTop
 		);
 	}
 }
