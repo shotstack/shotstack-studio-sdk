@@ -63,7 +63,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 		if (this.isEnabled) {
 			this.onDisable();
 		}
-		super.dispose();
+		// Base dispose is abstract
 	}
 	
 	// Protected utility methods for derived features
@@ -76,12 +76,12 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	}
 	
 	// Feature configuration helpers
-	protected getFeatureConfig<T = any>(): T | undefined {
+	protected getFeatureConfig<T = Record<string, unknown>>(): T | undefined {
 		const state = this.getState();
-		return (state.features as any)[this.name];
+		return (state.features as Record<string, unknown>)[this.name] as T | undefined;
 	}
 	
-	protected updateFeatureConfig(config: any): void {
+	protected updateFeatureConfig<T = Record<string, unknown>>(config: T): void {
 		const currentFeatures = this.getState().features;
 		this.updateState({
 			features: {

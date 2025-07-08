@@ -1,5 +1,7 @@
+import { EditCommand } from "@core/commands/types";
 import { Edit } from "@core/edit";
 import { Size } from "@core/layouts/geometry";
+import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
@@ -306,10 +308,13 @@ export class Timeline extends Entity implements ITimeline {
 		const toolContext: ITimelineToolContext = {
 			timeline: this,
 			edit: this.edit,
-			executeCommand: (command: any) => {
-				// Handle selection commands
-				if (command.type === "CLEAR_SELECTION") {
+			executeCommand: (command: EditCommand | { type: string }) => {
+				// Handle simple command objects
+				if ('type' in command && command.type === "CLEAR_SELECTION") {
 					this.edit.clearSelection();
+				} else if ('execute' in command) {
+					// Handle proper EditCommand objects
+					command.execute();
 				} else {
 					console.log("Timeline command:", command);
 				}
@@ -333,13 +338,13 @@ export class Timeline extends Entity implements ITimeline {
 	private handleStateChange(state: TimelineState, changes: StateChanges): void {
 		// Emit relevant changes to external listeners via Edit.events
 		if (changes.selection) {
-			(this.edit.events as any).emit("timeline:selectionChanged", { selection: state.selection });
+			this.edit.events.emit("timeline:selectionChanged", { selection: state.selection });
 		}
 		if (changes.viewport) {
-			(this.edit.events as any).emit("timeline:viewportChanged", { viewport: state.viewport });
+			this.edit.events.emit("timeline:viewportChanged", { viewport: state.viewport });
 		}
 		if (changes.activeTool) {
-			(this.edit.events as any).emit("timeline:toolChanged", {
+			this.edit.events.emit("timeline:toolChanged", {
 				previousTool: null, // TODO: Track previous tool
 				currentTool: state.activeTool
 			});
@@ -365,12 +370,12 @@ export class Timeline extends Entity implements ITimeline {
 		this.edit.events.off("selection:cleared", this.updateSelectionVisuals.bind(this));
 	}
 
-	private handleClipUpdated(__data: any): void {
+	private handleClipUpdated(__data: { clipId: string; clip: Clip }): void {
 		// Reload edit data to reflect changes
 		this.loadEditData();
 	}
 
-	private handleClipDeleted(data: any): void {
+	private handleClipDeleted(data: { clipId: string; trackIndex: number; clipIndex: number }): void {
 		// Remove clip from selection if it was selected
 		const state = this.state.getState();
 		if (state.selection.selectedClipIds.has(data.clipId)) {
@@ -389,7 +394,7 @@ export class Timeline extends Entity implements ITimeline {
 		this.loadEditData();
 	}
 
-	private handleTrackDeleted(__data: any): void {
+	private handleTrackDeleted(__data: { trackId: string; trackIndex: number }): void {
 		// Reload edit data to reflect track deletion
 		this.loadEditData();
 	}

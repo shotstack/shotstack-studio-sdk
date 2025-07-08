@@ -1,3 +1,4 @@
+import { Clip } from "@core/schemas/clip";
 import * as PIXI from "pixi.js";
 
 // Core Timeline State
@@ -39,7 +40,7 @@ export type TimelineState = {
 
 	// Tool state
 	activeTool: string;
-	toolStates: Map<string, any>;
+	toolStates: Map<string, unknown>;
 };
 
 // State change tracking
@@ -75,7 +76,7 @@ export type TimelineWheelEvent = {
 // External events via Edit.events
 export type TimelineExternalEvents = {
 	// Emitted by timeline for external consumption
-	"timeline:stateChanged": { property: keyof TimelineState; value: any };
+	"timeline:stateChanged": { property: keyof TimelineState; value: unknown };
 	"timeline:viewportChanged": { viewport: TimelineState["viewport"] };
 	"timeline:selectionChanged": { selection: TimelineState["selection"] };
 	"timeline:toolChanged": { previousTool: string | null; currentTool: string };
@@ -99,8 +100,8 @@ export type ClipOperation = {
 	type: "move" | "resize" | "create" | "delete";
 	clipId: string;
 	trackId: string;
-	previousState?: any; // Will be defined when we have clip data types
-	newState?: any;
+	previousState?: Partial<Clip>;
+	newState?: Partial<Clip>;
 };
 
 export type TrackOperation = {

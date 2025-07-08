@@ -1,3 +1,4 @@
+import { EditCommand } from "@core/commands/types";
 import { Entity } from "@core/shared/entity";
 
 import { ITimelineTool, ITimelineState, ITimelineToolContext } from "../interfaces";
@@ -37,7 +38,7 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 		this.state.update(updates);
 	}
 	
-	public executeCommand(command: any): void {
+	public executeCommand(command: EditCommand | { type: string }): void {
 		this.context.executeCommand(command);
 	}
 	
@@ -55,7 +56,7 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 	}
 	
 	public dispose(): void {
-		super.dispose();
+		// Base dispose is abstract
 	}
 	
 	// Protected utility methods for derived tools
@@ -63,21 +64,16 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 		return this.state.getState();
 	}
 	
-	protected setCursor(cursor: string): void {
-		// This would typically update the cursor through the renderer
-		// For now, just store it as the cursor property
-		(this as any).cursor = cursor;
-	}
 	
 	// Tool state persistence
-	protected saveToolState(state: any): void {
+	protected saveToolState<T = Record<string, unknown>>(state: T): void {
 		const currentState = this.state.getState();
 		const toolStates = new Map(currentState.toolStates);
 		toolStates.set(this.name, state);
 		this.state.update({ toolStates });
 	}
 	
-	protected loadToolState(): any {
+	protected loadToolState<T = Record<string, unknown>>(): T | undefined {
 		const currentState = this.state.getState();
 		return currentState.toolStates.get(this.name);
 	}

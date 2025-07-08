@@ -10,7 +10,7 @@ import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, 
 export interface ITimelineToolContext {
 	timeline: ITimeline;
 	edit: Edit;
-	executeCommand: (command: EditCommand) => void;
+	executeCommand: (command: EditCommand | { type: string }) => void;
 }
 
 // Core Timeline interface

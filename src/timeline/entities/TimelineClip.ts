@@ -1,3 +1,4 @@
+import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
@@ -16,16 +17,16 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	private label: PIXI.Text;
 	private pixelsPerSecond: number = 100;
 	private clipColor: number = 0x4444ff;
-	private clipData: any; // Will be replaced with proper type
+	private clipData: Clip | undefined;
 
-	constructor(clipId: string, trackId: string, startTime: number, duration: number, clipData?: any) {
+	constructor(clipId: string, trackId: string, startTime: number, duration: number, clipData?: Clip) {
 		super();
 		this.clipId = clipId;
 		this.trackId = trackId;
 		this.startTime = startTime;
 		this.duration = duration;
 		this.clipData = clipData;
-		
+
 		// Set container label for identification by event delegation
 		this.getContainer().label = clipId;
 
@@ -55,10 +56,10 @@ export class TimelineClip extends Entity implements ITimelineClip {
 			this.clipColor = this.getColorForAssetType(this.clipData.asset.type);
 		}
 
-		// Set label text
-		if (this.clipData?.asset?.text) {
+		// Set label text based on asset type
+		if (this.clipData?.asset?.type === "text" && "text" in this.clipData.asset) {
 			this.label.text = this.clipData.asset.text;
-		} else if (this.clipData?.asset?.src) {
+		} else if (this.clipData?.asset && "src" in this.clipData.asset) {
 			// Extract filename from src
 			const filename = this.clipData.asset.src.split("/").pop() || "";
 			this.label.text = filename;
@@ -133,15 +134,11 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		const cornerRadius = 4;
 
 		// Draw clip background using PIXI v8 API
-		this.graphics
-			.roundRect(0, 5, width, height, cornerRadius)
-			.fill({ color: this.clipColor, alpha: 0.8 });
+		this.graphics.roundRect(0, 5, width, height, cornerRadius).fill({ color: this.clipColor, alpha: 0.8 });
 
 		// Draw selection border if selected
 		if (this.selected) {
-			this.graphics
-				.roundRect(-1, 4, width + 2, height + 2, cornerRadius)
-				.stroke({ width: 2, color: 0xffff00 });
+			this.graphics.roundRect(-1, 4, width + 2, height + 2, cornerRadius).stroke({ width: 2, color: 0xffff00 });
 		}
 
 		// Update label position and truncate if needed
@@ -155,7 +152,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 			let truncated = originalText;
 			while (this.label.width > maxWidth && truncated.length > 0) {
 				truncated = truncated.slice(0, -1);
-				this.label.text = `${truncated  }...`;
+				this.label.text = `${truncated}...`;
 			}
 		}
 

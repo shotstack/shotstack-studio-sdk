@@ -1,5 +1,5 @@
 import { IFeatureManager, ITimelineFeature, ITimelineState, ITimelineRenderer } from "../interfaces";
-import { StateChanges } from "../types";
+import { StateChanges, TimelineState } from "../types";
 
 /**
  * Manages timeline features and coordinates their lifecycle
@@ -99,7 +99,7 @@ export class FeatureManager implements IFeatureManager {
 		});
 	}
 
-	private handleStateChange(state: any, changes: StateChanges): void {
+	private handleStateChange(state: TimelineState, changes: StateChanges): void {
 		// Forward state changes to features
 		this.onStateChanged(changes);
 	}
