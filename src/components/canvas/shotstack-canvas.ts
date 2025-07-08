@@ -196,6 +196,10 @@ export class Canvas {
 		this.application.stage.eventMode = "static";
 		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.size.width, this.size.height);
 
+		// Set up background click handling for selection
+		this.background.eventMode = "static";
+		this.background.on("pointerdown", this.onBackgroundClick.bind(this));
+		
 		this.application.stage.on("click", this.onClick.bind(this));
 
 		this.edit.getContainer().position = {
@@ -207,6 +211,14 @@ export class Canvas {
 	private onClick(): void {
 		this.edit.pause();
 	}
+	
+	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
+		// Check if the click was on the background (not on a clip)
+		if (event.target === this.background) {
+			// Emit canvas background clicked event
+			this.edit.events.emit("canvas:background:clicked", {});
+		}
+	}
 
 	public dispose(): void {
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
@@ -216,6 +228,7 @@ export class Canvas {
 
 		this.application.ticker.remove(this.onTick, this);
 		this.application.stage.off("click", this.onClick, this);
+		this.background?.off("pointerdown", this.onBackgroundClick, this);
 
 		this.background?.destroy();
 		this.container?.destroy();

@@ -77,6 +77,9 @@ export class Edit extends Entity {
 		this.selectedClip = null;
 		this.updatedClip = null;
 		this.backgroundColor = backgroundColor;
+		
+		// Set up event-driven architecture
+		this.setupIntentListeners();
 	}
 
 	public override async load(): Promise<void> {
@@ -498,5 +501,38 @@ export class Edit extends Entity {
 			return this.tracks[trackIndex][clipIndex];
 		}
 		return null;
+	}
+
+	// Clean encapsulation APIs for selection
+	public selectPlayer(player: Player): void {
+		const indices = this.findClipIndices(player);
+		if (indices) {
+			this.selectClip(indices.trackIndex, indices.clipIndex);
+		}
+	}
+
+	public isPlayerSelected(player: Player): boolean {
+		return this.selectedClip === player;
+	}
+
+	// Event-driven architecture setup
+	private setupIntentListeners(): void {
+		// Handle Timeline intent events
+		this.events.on("timeline:clip:clicked", (data: { trackIndex: number; clipIndex: number }) => {
+			this.selectClip(data.trackIndex, data.clipIndex);
+		});
+
+		this.events.on("timeline:background:clicked", () => {
+			this.clearSelection();
+		});
+
+		// Handle Canvas intent events
+		this.events.on("canvas:clip:clicked", (data: { player: Player }) => {
+			this.selectPlayer(data.player);
+		});
+
+		this.events.on("canvas:background:clicked", () => {
+			this.clearSelection();
+		});
 	}
 }

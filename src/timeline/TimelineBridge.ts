@@ -39,9 +39,8 @@ export class TimelineBridge {
 
 		// Set up input event handlers
 		if (this.canvas) {
-			this.canvas.addEventListener("pointerdown", this.handlePointerDown.bind(this));
-			this.canvas.addEventListener("pointermove", this.handlePointerMove.bind(this));
-			this.canvas.addEventListener("pointerup", this.handlePointerUp.bind(this));
+			// Pointer events are now handled internally by Timeline via PIXI
+			// Only wheel events need to be forwarded
 			this.canvas.addEventListener("wheel", this.handleWheel.bind(this));
 		}
 
@@ -64,9 +63,7 @@ export class TimelineBridge {
 	public dispose(): void {
 		// Remove event listeners
 		if (this.canvas) {
-			this.canvas.removeEventListener("pointerdown", this.handlePointerDown.bind(this));
-			this.canvas.removeEventListener("pointermove", this.handlePointerMove.bind(this));
-			this.canvas.removeEventListener("pointerup", this.handlePointerUp.bind(this));
+			// Only wheel events need to be removed
 			this.canvas.removeEventListener("wheel", this.handleWheel.bind(this));
 		}
 
@@ -119,17 +116,7 @@ export class TimelineBridge {
 	}
 
 	// Event handlers
-	private handlePointerDown(event: PointerEvent): void {
-		this.timeline.handlePointerDown(event);
-	}
-
-	private handlePointerMove(event: PointerEvent): void {
-		this.timeline.handlePointerMove(event);
-	}
-
-	private handlePointerUp(event: PointerEvent): void {
-		this.timeline.handlePointerUp(event);
-	}
+	// Pointer events are now handled internally by Timeline via PIXI events
 
 	private handleWheel(event: WheelEvent): void {
 		this.timeline.handleWheel(event);

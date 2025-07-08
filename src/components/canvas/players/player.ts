@@ -215,9 +215,8 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		// Check if this clip is selected
-		const indices = this.edit.findClipIndices(this);
-		const isSelected = indices && this.edit.isClipSelected(indices.trackIndex, indices.clipIndex);
+		// Check if this clip is selected using clean API
+		const isSelected = this.edit.isPlayerSelected(this);
 		
 		if ((!this.isActive() || !isSelected) && !this.isHovering) {
 			this.outline.clear();
@@ -385,11 +384,8 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		// Get indices using proper API and use selectClip
-		const indices = this.edit.findClipIndices(this);
-		if (indices) {
-			this.edit.selectClip(indices.trackIndex, indices.clipIndex);
-		}
+		// Emit intent event for canvas click
+		this.edit.events.emit("canvas:clip:clicked", { player: this });
 
 		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
 

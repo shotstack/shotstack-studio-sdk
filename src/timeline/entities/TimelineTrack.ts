@@ -26,7 +26,13 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 
 		// Create container for clips
 		this.clipsContainer = new PIXI.Container();
+		this.clipsContainer.eventMode = 'static';
+		this.clipsContainer.interactiveChildren = true;
 		this.getContainer().addChild(this.clipsContainer);
+		
+		// Enable events on track container too
+		this.getContainer().eventMode = 'static';
+		this.getContainer().interactiveChildren = true;
 	}
 
 	public async load(): Promise<void> {

@@ -17,7 +17,7 @@ import { ToolManager } from "./ToolManager";
  */
 export class Timeline extends Entity implements ITimeline {
 	public static readonly TimelineSelector = "[data-shotstack-timeline]";
-	
+
 	private state: ITimelineState;
 	private renderer: ITimelineRenderer;
 	private toolManager: IToolManager;
@@ -29,6 +29,7 @@ export class Timeline extends Entity implements ITimeline {
 	private snapEnabled: boolean = true;
 	private snapGridSize: number = 0.033333; // 1/30 second
 	private animationFrameId: number | null = null;
+	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();
 
 	constructor(edit: Edit, size?: Size) {
 		super();
@@ -66,12 +67,12 @@ export class Timeline extends Entity implements ITimeline {
 
 		// Add renderer canvas to container
 		this.getContainer().addChild(this.renderer.getStage());
-		
-		// Enable PIXI event system on the stage
-		this.renderer.getStage().eventMode = 'static';
-		
+
+		// Enable PIXI event system on the stage and make it interactive
+		this.renderer.getStage().eventMode = "static";
+
 		// Set up PIXI event listeners for selection
-		this.renderer.getStage().on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+		this.renderer.getStage().on("pointerdown", (event: PIXI.FederatedPointerEvent) => {
 			this.handlePixiPointerDown(event);
 		});
 
@@ -81,18 +82,22 @@ export class Timeline extends Entity implements ITimeline {
 
 		// Set up cursor element
 		this.toolManager.setCursorElement(canvas);
-		
-		// Set up event listeners on canvas for tool handling
-		canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
-		canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
-		canvas.addEventListener('pointerup', this.handlePointerUp.bind(this));
-		canvas.addEventListener('wheel', this.handleWheel.bind(this));
-		
+
+		// Use PIXI events for pointer handling (unified event system)
+		this.renderer.getStage().on("pointermove", (event: PIXI.FederatedPointerEvent) => {
+			this.handlePixiPointerMove(event);
+		});
+		this.renderer.getStage().on("pointerup", (event: PIXI.FederatedPointerEvent) => {
+			this.handlePixiPointerUp(event);
+		});
+
+		// Keep DOM events for wheel and keyboard (better support)
+		canvas.addEventListener("wheel", this.handleWheel.bind(this));
+
 		// Set up keyboard events on document (when canvas has focus)
 		canvas.tabIndex = 0; // Make canvas focusable
-		canvas.addEventListener('keydown', this.handleKeyDown.bind(this));
-		canvas.addEventListener('keyup', this.handleKeyUp.bind(this));
-		
+		canvas.addEventListener("keydown", this.handleKeyDown.bind(this));
+		canvas.addEventListener("keyup", this.handleKeyUp.bind(this));
 
 		// Load default tools and features
 		await this.loadDefaultTools();
@@ -100,10 +105,10 @@ export class Timeline extends Entity implements ITimeline {
 
 		// Set default tool
 		this.toolManager.activate("selection");
-		
+
 		// Load tracks and clips from Edit
 		await this.loadEditData();
-		
+
 		// Start animation loop
 		this.startAnimationLoop();
 	}
@@ -168,22 +173,21 @@ export class Timeline extends Entity implements ITimeline {
 		this.featureManager.getAllFeatures().forEach(feature => feature.dispose());
 
 		// Remove PIXI event listeners
-		this.renderer.getStage().off('pointerdown');
+		this.renderer.getStage().off("pointerdown");
+		this.renderer.getStage().off("pointermove");
+		this.renderer.getStage().off("pointerup");
 
 		// Dispose renderer
 		this.renderer.dispose();
 
 		// Remove event listeners
 		this.removeEditEventListeners();
-		
-		// Remove canvas event listeners
+
+		// Remove remaining DOM event listeners
 		const { canvas } = this.renderer.getApplication();
-		canvas.removeEventListener('pointerdown', this.handlePointerDown.bind(this));
-		canvas.removeEventListener('pointermove', this.handlePointerMove.bind(this));
-		canvas.removeEventListener('pointerup', this.handlePointerUp.bind(this));
-		canvas.removeEventListener('wheel', this.handleWheel.bind(this));
-		canvas.removeEventListener('keydown', this.handleKeyDown.bind(this));
-		canvas.removeEventListener('keyup', this.handleKeyUp.bind(this));
+		canvas.removeEventListener("wheel", this.handleWheel.bind(this));
+		canvas.removeEventListener("keydown", this.handleKeyDown.bind(this));
+		canvas.removeEventListener("keyup", this.handleKeyUp.bind(this));
 	}
 
 	public getState(): TimelineState {
@@ -244,7 +248,7 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		});
 	}
-	
+
 	public getRenderer(): ITimelineRenderer {
 		return this.renderer;
 	}
@@ -288,14 +292,14 @@ export class Timeline extends Entity implements ITimeline {
 		const { SelectionTool } = await import("../tools/SelectionTool");
 		const selectionTool = new SelectionTool(this.state, (command: any) => {
 			// Handle selection commands
-			if (command.type === 'CLEAR_SELECTION') {
+			if (command.type === "CLEAR_SELECTION") {
 				this.edit.clearSelection();
 			} else {
 				console.log("Timeline command:", command);
 			}
 		});
 		this.toolManager.register(selectionTool);
-		
+
 		// Note: Clip selection is now handled via PIXI events on the clips themselves
 	}
 
@@ -326,7 +330,7 @@ export class Timeline extends Entity implements ITimeline {
 		this.edit.events.on("clip:updated", this.handleClipUpdated.bind(this));
 		this.edit.events.on("clip:deleted", this.handleClipDeleted.bind(this));
 		this.edit.events.on("track:deleted", this.handleTrackDeleted.bind(this));
-		
+
 		// Listen to selection changes for visual feedback
 		this.edit.events.on("clip:selected", this.updateSelectionVisuals.bind(this));
 		this.edit.events.on("selection:cleared", this.updateSelectionVisuals.bind(this));
@@ -359,7 +363,7 @@ export class Timeline extends Entity implements ITimeline {
 				}
 			});
 		}
-		
+
 		// Reload edit data to reflect deletion
 		this.loadEditData();
 	}
@@ -369,47 +373,67 @@ export class Timeline extends Entity implements ITimeline {
 		this.loadEditData();
 	}
 
-	// Handle PIXI pointer events for selection
+	// Handle PIXI pointer events for selection and tools
 	private handlePixiPointerDown(event: PIXI.FederatedPointerEvent): void {
 		const target = event.target;
-		let foundClip = false;
-		
+
+		// First, let the tool manager handle the event
+		const pointerEvent = this.createPointerEventFromPixi(event);
+		this.toolManager.handlePointerDown(pointerEvent);
+
+		// Then handle selection
 		// Walk up the display list to find a clip container
 		let currentTarget = target;
-		while (currentTarget && !foundClip) {
-			if (currentTarget.label && typeof currentTarget.label === 'string') {
-				const match = currentTarget.label.match(/clip-(\d+)-(\d+)/);
-				if (match) {
-					const trackIndex = parseInt(match[1], 10);
-					const clipIndex = parseInt(match[2], 10);
-					// Single selection only - no multi-selection support
-					this.edit.selectClip(trackIndex, clipIndex);
-					foundClip = true;
-					event.stopPropagation();
-					return;
-				}
+		while (currentTarget) {
+			const indices = this.clipIndices.get(currentTarget);
+			if (indices) {
+				// Found a clip - emit intent event
+				this.edit.events.emit("timeline:clip:clicked", {
+					trackIndex: indices.trackIndex,
+					clipIndex: indices.clipIndex
+				});
+				event.stopPropagation();
+				return;
 			}
 			currentTarget = currentTarget.parent;
 		}
-		
-		// If we didn't find a clip, clear selection (clicked empty space)
-		if (!foundClip) {
-			this.edit.clearSelection();
-		}
+
+		// No clip found - emit background click event
+		this.edit.events.emit("timeline:background:clicked", {});
 	}
 
-	// Public methods for input handling (delegated to tool manager)
-	public handlePointerDown(event: PointerEvent): void {
-		// Tool handling only - selection is handled by PIXI events
-		this.toolManager.handlePointerDown(event);
+	// Handle PIXI pointer move events
+	private handlePixiPointerMove(event: PIXI.FederatedPointerEvent): void {
+		const pointerEvent = this.createPointerEventFromPixi(event);
+		this.toolManager.handlePointerMove(pointerEvent);
 	}
 
-	public handlePointerMove(event: PointerEvent): void {
-		this.toolManager.handlePointerMove(event);
+	// Handle PIXI pointer up events
+	private handlePixiPointerUp(event: PIXI.FederatedPointerEvent): void {
+		const pointerEvent = this.createPointerEventFromPixi(event);
+		this.toolManager.handlePointerUp(pointerEvent);
 	}
 
-	public handlePointerUp(event: PointerEvent): void {
-		this.toolManager.handlePointerUp(event);
+	// Convert PIXI event to DOM-like PointerEvent for tool compatibility
+	private createPointerEventFromPixi(pixiEvent: PIXI.FederatedPointerEvent): PointerEvent {
+		// Create a synthetic PointerEvent that matches the tool manager's expectations
+		const canvas = this.renderer.getApplication().canvas;
+		const rect = canvas.getBoundingClientRect();
+
+		return new PointerEvent(pixiEvent.type, {
+			clientX: pixiEvent.global.x + rect.left,
+			clientY: pixiEvent.global.y + rect.top,
+			screenX: pixiEvent.screen.x,
+			screenY: pixiEvent.screen.y,
+			button: pixiEvent.button,
+			buttons: pixiEvent.buttons,
+			ctrlKey: pixiEvent.ctrlKey,
+			shiftKey: pixiEvent.shiftKey,
+			altKey: pixiEvent.altKey,
+			metaKey: pixiEvent.metaKey,
+			pointerId: pixiEvent.pointerId,
+			pointerType: pixiEvent.pointerType
+		});
 	}
 
 	public handleWheel(event: WheelEvent): void {
@@ -418,7 +442,7 @@ export class Timeline extends Entity implements ITimeline {
 
 	public handleKeyDown(event: KeyboardEvent): void {
 		// Handle delete key for clip deletion
-		if (event.key === 'Delete' || event.key === 'Backspace') {
+		if (event.key === "Delete" || event.key === "Backspace") {
 			const selected = this.edit.getSelectedClipInfo();
 			if (selected) {
 				event.preventDefault();
@@ -426,90 +450,84 @@ export class Timeline extends Entity implements ITimeline {
 				return;
 			}
 		}
-		
+
 		// Pass other keys to tool manager
 		this.toolManager.handleKeyDown(event);
 	}
-	
+
 	public handleKeyUp(event: KeyboardEvent): void {
 		this.toolManager.handleKeyUp(event);
 	}
-	
 
 	private async loadEditData(): Promise<void> {
 		// Get the current edit data
 		const editData = this.edit.getEdit();
-		
+
 		// Clear existing tracks
 		this.renderer.getTracks().forEach(track => {
 			this.renderer.removeTrack(track.getTrackId());
 		});
-		
+
 		// Import TimelineClip entity
 		const { TimelineClip } = await import("../entities/TimelineClip");
-		
+
 		// Load tracks and clips
 		for (const [index, track] of editData.timeline.tracks.entries()) {
 			// Create track in renderer
 			const trackId = `track-${index}`;
 			const timelineTrack = this.renderer.addTrack(trackId, index);
-			
+
 			// Create and add clips to the track
 			for (const [clipIndex, clip] of track.clips.entries()) {
 				const clipId = `clip-${index}-${clipIndex}`;
-				const timelineClip = new TimelineClip(
-					clipId,
-					trackId,
-					clip.start || 0,
-					clip.length || 1,
-					clip
-				);
-				
+				const timelineClip = new TimelineClip(clipId, trackId, clip.start || 0, clip.length || 1, clip);
+
 				// Load the clip
 				await timelineClip.load();
-				
+
 				// Set the zoom level
 				timelineClip.setPixelsPerSecond(this.pixelsPerSecond);
-				
+
 				// Add clip to track
 				timelineTrack.addClip(timelineClip);
-				
-				// No per-clip event handlers - using event delegation instead
+
+				// Store clip indices in WeakMap for type-safe lookup
+				const container = timelineClip.getContainer();
+				this.clipIndices.set(container, { trackIndex: index, clipIndex });
 			}
 		}
-		
+
 		// Trigger a render to show the loaded data
 		this.draw();
 	}
 
 	private updateSelectionVisuals(): void {
 		const selectedInfo = this.edit.getSelectedClipInfo();
-		
+
 		// Update visual state of all clips
 		this.renderer.getTracks().forEach(track => {
 			track.getClips().forEach(clip => {
-				// Parse clip ID to check if selected
-				const match = clip.getClipId().match(/clip-(\d+)-(\d+)/);
-				if (match) {
-					const isSelected = selectedInfo && 
-						selectedInfo.trackIndex === parseInt(match[1], 10) &&
-						selectedInfo.clipIndex === parseInt(match[2], 10);
+				// Get indices from WeakMap instead of parsing strings
+				const container = clip.getContainer();
+				const indices = this.clipIndices.get(container);
+				if (indices) {
+					const isSelected = selectedInfo && selectedInfo.trackIndex === indices.trackIndex && selectedInfo.clipIndex === indices.clipIndex;
 					clip.setSelected(isSelected || false);
 				}
 			});
 		});
-		
+
 		// Re-render to show selection changes
 		this.draw();
 	}
 
 	private startAnimationLoop(): void {
 		let lastTime = performance.now();
-		
+
 		const animate = (currentTime: number) => {
 			const deltaMS = currentTime - lastTime;
 			lastTime = currentTime;
-			
+
 			// Convert to PIXI-style deltaTime (frame-based)
 			const deltaTime = deltaMS / 16.667;
 
@@ -518,7 +536,7 @@ export class Timeline extends Entity implements ITimeline {
 
 			this.animationFrameId = requestAnimationFrame(animate);
 		};
-		
+
 		this.animationFrameId = requestAnimationFrame(animate);
 	}
 }

@@ -156,14 +156,10 @@ export class TimelineRenderer implements ITimelineRenderer {
 		layer.removeChildren();
 
 		// Draw background with PIXI v8 chaining syntax
-		const bg = new PIXI.Graphics()
-			.rect(0, 0, this.size.width, this.size.height)
-			.fill({ color: 0x1a1a1a })
-			.stroke({ width: 1, color: 0x2a2a2a });
-		
+		const bg = new PIXI.Graphics().rect(0, 0, this.size.width, this.size.height).fill({ color: 0x1a1a1a }).stroke({ width: 1, color: 0x2a2a2a });
+
 		layer.addChild(bg);
 	}
-
 
 	private renderSelection(_state: TimelineState): void {
 		const layer = this.getLayer("selection");
