@@ -1,8 +1,7 @@
-import * as PIXI from "pixi.js";
-
 import { TimelineFeature } from "../core/TimelineFeature";
 import { ITimelineRenderer } from "../interfaces";
 import { TimelinePointerEvent, TimelineWheelEvent, StateChanges } from "../types";
+import * as PIXI from "pixi.js";
 
 /**
  * Handles playhead visualization and interaction for timeline seeking
@@ -22,10 +21,6 @@ export class PlayheadFeature extends TimelineFeature {
 	private dragStartTime: number = 0;
 
 
-	// Timeline dimensions
-	private timelineHeight: number = 150;
-	private rulerHeight: number = 30;
-
 	// Visual configuration
 	private readonly visualConfig = {
 		playheadColor: 0xff0000,
@@ -33,7 +28,13 @@ export class PlayheadFeature extends TimelineFeature {
 		handleSize: 16,
 		handleOutlineColor: 0xffffff,
 		handleOutlineAlpha: 0.5,
-		handleHitAreaPadding: 4
+		handleHitAreaPadding: 4,
+		// Hit area bounds
+		handleHitAreaTop: -20,
+		handleHitAreaBottom: 10,
+		// Default dimensions (overridden by state)
+		defaultTimelineHeight: 150,
+		defaultRulerHeight: 30
 	};
 
 	// Cached state values for performance
@@ -41,6 +42,8 @@ export class PlayheadFeature extends TimelineFeature {
 	private pixelsPerSecond: number = 100;
 	private scrollX: number = 0;
 	private viewportWidth: number = 0;
+	private timelineHeight: number = 0;
+	private rulerHeight: number = 0;
 
 	public onEnable(): void {
 		// Initialize state values from current state
@@ -49,7 +52,8 @@ export class PlayheadFeature extends TimelineFeature {
 		this.pixelsPerSecond = state.viewport.zoom;
 		this.scrollX = state.viewport.scrollX;
 		this.viewportWidth = state.viewport.width;
-		this.timelineHeight = state.viewport.height;
+		this.timelineHeight = state.viewport.height || this.visualConfig.defaultTimelineHeight;
+		this.rulerHeight = this.visualConfig.defaultRulerHeight; // Could come from state.layout?.rulerHeight
 
 		// Create playhead visuals when feature is enabled
 		this.createPlayheadVisuals();
@@ -258,13 +262,13 @@ export class PlayheadFeature extends TimelineFeature {
 		const localY = event.global.y;
 		
 		// Handle is centered at x=0, extends from -handleSize to +handleSize
-		// Y extends from -20 to 10 (based on our hit area)
+		// Y extends from handleHitAreaTop to handleHitAreaBottom
 		const halfSize = this.visualConfig.handleSize;
 		const isWithinBounds = 
 			localX >= -halfSize && 
 			localX <= halfSize && 
-			localY >= -20 && 
-			localY <= 10;
+			localY >= this.visualConfig.handleHitAreaTop && 
+			localY <= this.visualConfig.handleHitAreaBottom;
 		
 		
 		return isWithinBounds;
@@ -400,9 +404,9 @@ export class PlayheadFeature extends TimelineFeature {
 		// Set a larger hit area for easier dragging
 		this.playheadHandle.hitArea = new PIXI.Rectangle(
 			-this.visualConfig.handleSize, 
-			-20, 
+			this.visualConfig.handleHitAreaTop, 
 			this.visualConfig.handleSize * 2, 
-			30
+			this.visualConfig.handleHitAreaBottom - this.visualConfig.handleHitAreaTop
 		);
 	}
 }
