@@ -478,8 +478,8 @@ export class Timeline extends Entity implements ITimeline {
 				// Load the clip
 				await timelineClip.load();
 
-				// Set the zoom level
-				timelineClip.setPixelsPerSecond(this.pixelsPerSecond);
+				// Set the zoom level from state
+				timelineClip.setPixelsPerSecond(this.state.getState().viewport.zoom);
 
 				// Add clip to track
 				timelineTrack.addClip(timelineClip);

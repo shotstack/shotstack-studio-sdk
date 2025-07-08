@@ -15,6 +15,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 	private tracks: Map<string, ITimelineTrack> = new Map();
 	private ruler: ITimelineRuler | null = null;
 	private playhead: ITimelinePlayhead | null = null;
+	private lastZoom: number = 100;
 
 	constructor(size: Size) {
 		this.size = size;
@@ -64,12 +65,18 @@ export class TimelineRenderer implements ITimelineRenderer {
 			this.playhead.draw();
 		}
 
-		// Update tracks
-		this.tracks.forEach(track => {
-			// Update zoom for all clips in the track
-			track.getClips().forEach(clip => {
-				clip.setPixelsPerSecond(state.viewport.zoom);
+		// Update clips zoom only when it changes
+		if (state.viewport.zoom !== this.lastZoom) {
+			this.lastZoom = state.viewport.zoom;
+			this.tracks.forEach(track => {
+				track.getClips().forEach(clip => {
+					clip.setPixelsPerSecond(state.viewport.zoom);
+				});
 			});
+		}
+		
+		// Draw tracks
+		this.tracks.forEach(track => {
 			track.draw();
 		});
 

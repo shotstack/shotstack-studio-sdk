@@ -47,13 +47,14 @@ export class ZoomFeature extends TimelineFeature {
 			// Calculate new scroll to maintain focus point
 			const newScrollX = (timeAtMouse * newPixelsPerSecond) - focusX;
 			
-			// Apply changes
+			// Apply changes - this will update the state with the new zoom
 			this.context.timeline.setPixelsPerSecond(newPixelsPerSecond);
 			
-			// Update scroll position
+			// Update scroll position along with the latest viewport state
+			const updatedViewport = this.state.getState().viewport;
 			this.state.update({
 				viewport: {
-					...viewport,
+					...updatedViewport,
 					scrollX: Math.max(0, newScrollX)
 				}
 			});
