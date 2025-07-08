@@ -54,12 +54,10 @@ export class TimelineRuler extends Entity implements ITimelineRuler {
 
 	public setZoom(pixelsPerSecond: number): void {
 		this.pixelsPerSecond = pixelsPerSecond;
-		this.updateRuler();
 	}
 
 	public setScrollX(scrollX: number): void {
 		this.scrollX = scrollX;
-		this.updateRuler();
 	}
 
 	public getTimeAtPosition(x: number): number {

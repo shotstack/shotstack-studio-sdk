@@ -7,6 +7,7 @@ import { StateChanges } from "../types/timeline.types";
  */
 export class SnappingFeature extends TimelineFeature {
 	public readonly name = "snapping";
+	
 
 	public override async load(): Promise<void> {
 		// Stub implementation

@@ -1,6 +1,6 @@
 import { Entity } from "@core/shared/entity";
 
-import { ITimelineFeature, ITimelineRenderer, ITimelineState } from "../interfaces";
+import { ITimelineFeature, ITimelineRenderer, ITimelineState, ITimelineFeatureContext } from "../interfaces";
 import { StateChanges } from "../types";
 
 /**
@@ -12,10 +12,12 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	protected isEnabled: boolean = true;
 	
 	protected state: ITimelineState;
+	protected context: ITimelineFeatureContext;
 	
-	constructor(state: ITimelineState) {
+	constructor(state: ITimelineState, context: ITimelineFeatureContext) {
 		super();
 		this.state = state;
+		this.context = context;
 	}
 	
 	public get enabled(): boolean {

@@ -5,7 +5,7 @@ import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager, ITimelineToolContext } from "../interfaces";
+import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager, ITimelineToolContext, ITimelineFeatureContext } from "../interfaces";
 import { TimelineState, StateChanges } from "../types";
 
 import { FeatureManager } from "./FeatureManager";
@@ -255,6 +255,43 @@ export class Timeline extends Entity implements ITimeline {
 		return this.renderer;
 	}
 
+	// Zoom and navigation methods
+	public getPixelsPerSecond(): number {
+		return this.pixelsPerSecond;
+	}
+
+	public getScrollX(): number {
+		return this.state.getState().viewport.scrollX;
+	}
+
+	public setScrollX(scrollX: number): void {
+		const { viewport } = this.state.getState();
+		this.state.update({
+			viewport: {
+				...viewport,
+				scrollX
+			}
+		});
+	}
+
+	public getViewportWidth(): number {
+		return this.state.getState().viewport.width;
+	}
+
+	public getTimelineDuration(): number {
+		// Get duration from edit
+		return this.edit.duration;
+	}
+
+	public setCursor(cursor: string): void {
+		const { canvas } = this.renderer.getApplication();
+		canvas.style.cursor = cursor;
+	}
+
+	public getFeature(name: string): ITimelineFeature | null {
+		return this.featureManager.getFeature(name);
+	}
+
 	// Query method for tools to find clip at a given PIXI display object
 	public findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null {
 		// Walk up the display list to find a clip container
@@ -330,9 +367,24 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	private async loadDefaultFeatures(): Promise<void> {
-		// Default features will be loaded here
-		// Example: this.featureManager.register(new SnappingFeature(this.state));
-		// For now, we'll add them in a later task
+		// Create feature context
+		const featureContext: ITimelineFeatureContext = {
+			timeline: this,
+			edit: this.edit
+		};
+
+		// Register the zoom feature
+		const { ZoomFeature } = await import("../features/ZoomFeature");
+		const zoomFeature = new ZoomFeature(this.state, featureContext);
+		this.featureManager.register(zoomFeature);
+		
+		// Enable zoom by default
+		this.featureManager.enable("zoom");
+
+		// Register snapping feature (stub for now)
+		const { SnappingFeature } = await import("../features/SnappingFeature");
+		const snappingFeature = new SnappingFeature(this.state, featureContext);
+		this.featureManager.register(snappingFeature);
 	}
 
 	private handleStateChange(state: TimelineState, changes: StateChanges): void {
@@ -418,6 +470,24 @@ export class Timeline extends Entity implements ITimeline {
 
 
 	public handleWheel(event: WheelEvent): void {
+		// Check if zoom feature should handle it first
+		const zoomFeature = this.featureManager.getFeature("zoom");
+		if (zoomFeature && zoomFeature.enabled && 'handleWheel' in zoomFeature) {
+			const timelineEvent = {
+				deltaX: event.deltaX,
+				deltaY: event.deltaY,
+				deltaMode: event.deltaMode,
+				ctrlKey: event.ctrlKey,
+				shiftKey: event.shiftKey,
+				altKey: event.altKey,
+				metaKey: event.metaKey,
+				x: event.offsetX,
+				preventDefault: () => event.preventDefault()
+			};
+			(zoomFeature as any).handleWheel(timelineEvent);
+		}
+		
+		// Also pass to tool manager
 		this.toolManager.handleWheel(event);
 	}
 

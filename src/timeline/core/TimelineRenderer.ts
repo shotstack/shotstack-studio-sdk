@@ -66,6 +66,10 @@ export class TimelineRenderer implements ITimelineRenderer {
 
 		// Update tracks
 		this.tracks.forEach(track => {
+			// Update zoom for all clips in the track
+			track.getClips().forEach(clip => {
+				clip.setPixelsPerSecond(state.viewport.zoom);
+			});
 			track.draw();
 		});
 

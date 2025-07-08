@@ -13,6 +13,12 @@ export interface ITimelineToolContext {
 	executeCommand: (command: EditCommand | { type: string }) => void;
 }
 
+// Feature context interface for dependency injection
+export interface ITimelineFeatureContext {
+	timeline: ITimeline;
+	edit: Edit;
+}
+
 // Core Timeline interface
 export interface ITimeline extends Entity {
 	getState(): TimelineState;
@@ -24,6 +30,18 @@ export interface ITimeline extends Entity {
 	
 	// Query methods for tools
 	findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null;
+	
+	// Zoom and navigation
+	getPixelsPerSecond(): number;
+	setPixelsPerSecond(pixelsPerSecond: number): void;
+	getScrollX(): number;
+	setScrollX(scrollX: number): void;
+	getViewportWidth(): number;
+	getTimelineDuration(): number;
+	setCursor(cursor: string): void;
+	
+	// Feature access
+	getFeature(name: string): ITimelineFeature | null;
 }
 
 // State management interface
