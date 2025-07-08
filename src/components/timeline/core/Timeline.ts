@@ -319,8 +319,14 @@ export class Timeline extends Entity implements ITimeline {
 		const zoomFeature = new ZoomFeature(this.state, featureContext);
 		this.featureManager.register(zoomFeature);
 		
-		// Enable zoom by default
+		// Register the playhead feature (temporary for testing)
+		const { PlayheadFeature } = await import("../features/PlayheadFeature");
+		const playheadFeature = new PlayheadFeature(this.state, featureContext);
+		this.featureManager.register(playheadFeature);
+		
+		// Enable features by default
 		this.featureManager.enable("zoom");
+		this.featureManager.enable("playhead");
 	}
 
 	private handleStateChange(state: TimelineState, changes: StateChanges): void {
@@ -387,20 +393,36 @@ export class Timeline extends Entity implements ITimeline {
 		this.loadEditData();
 	}
 
-	// Handle PIXI pointer events - forward to tools only
+	// Handle PIXI pointer events - forward to features and tools
 	private handlePixiPointerDown(event: PIXI.FederatedPointerEvent): void {
-		// Forward the PIXI event directly to the tool manager
-		// The active tool (e.g., SelectionTool) will handle all selection logic
+		// Let features handle it first
+		if (this.featureManager.handlePointerDown(event)) {
+			return;
+		}
+		
+		// Then forward to tool manager
 		this.toolManager.handlePointerDown(event);
 	}
 
 	// Handle PIXI pointer move events
 	private handlePixiPointerMove(event: PIXI.FederatedPointerEvent): void {
+		// Let features handle it first
+		if (this.featureManager.handlePointerMove(event)) {
+			return;
+		}
+		
+		// Then forward to tool manager
 		this.toolManager.handlePointerMove(event);
 	}
 
 	// Handle PIXI pointer up events
 	private handlePixiPointerUp(event: PIXI.FederatedPointerEvent): void {
+		// Let features handle it first
+		if (this.featureManager.handlePointerUp(event)) {
+			return;
+		}
+		
+		// Then forward to tool manager
 		this.toolManager.handlePointerUp(event);
 	}
 

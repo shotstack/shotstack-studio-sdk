@@ -1,5 +1,5 @@
 import { IFeatureManager, ITimelineFeature, ITimelineState, ITimelineRenderer } from "../interfaces";
-import { StateChanges, TimelineState, TimelineWheelEvent } from "../types";
+import { StateChanges, TimelineState, TimelineWheelEvent, TimelinePointerEvent } from "../types";
 
 /**
  * Manages timeline features and coordinates their lifecycle
@@ -136,6 +136,45 @@ export class FeatureManager implements IFeatureManager {
 		for (const feature of this.features.values()) {
 			if (feature.enabled && 'handleKeyUp' in feature) {
 				const handled = (feature as any).handleKeyUp(event);
+				if (handled !== false) {
+					return true; // Event was handled
+				}
+			}
+		}
+		return false;
+	}
+
+	public handlePointerDown(event: TimelinePointerEvent): boolean {
+		// Check each enabled feature for pointer down handling
+		for (const feature of this.features.values()) {
+			if (feature.enabled && 'handlePointerDown' in feature) {
+				const handled = (feature as any).handlePointerDown(event);
+				if (handled !== false) {
+					return true; // Event was handled
+				}
+			}
+		}
+		return false;
+	}
+
+	public handlePointerMove(event: TimelinePointerEvent): boolean {
+		// Check each enabled feature for pointer move handling
+		for (const feature of this.features.values()) {
+			if (feature.enabled && 'handlePointerMove' in feature) {
+				const handled = (feature as any).handlePointerMove(event);
+				if (handled !== false) {
+					return true; // Event was handled
+				}
+			}
+		}
+		return false;
+	}
+
+	public handlePointerUp(event: TimelinePointerEvent): boolean {
+		// Check each enabled feature for pointer up handling
+		for (const feature of this.features.values()) {
+			if (feature.enabled && 'handlePointerUp' in feature) {
+				const handled = (feature as any).handlePointerUp(event);
 				if (handled !== false) {
 					return true; // Event was handled
 				}

@@ -152,6 +152,9 @@ export interface IFeatureManager {
 	handleWheel(event: TimelineWheelEvent): boolean;
 	handleKeyDown(event: KeyboardEvent): boolean;
 	handleKeyUp(event: KeyboardEvent): boolean;
+	handlePointerDown(event: TimelinePointerEvent): boolean;
+	handlePointerMove(event: TimelinePointerEvent): boolean;
+	handlePointerUp(event: TimelinePointerEvent): boolean;
 }
 
 // Timeline Entity interfaces
