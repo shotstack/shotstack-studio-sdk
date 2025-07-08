@@ -226,7 +226,7 @@ export class Timeline extends Entity implements ITimeline {
 
 	public getTimelineDuration(): number {
 		// Get duration from edit
-		return this.edit.duration;
+		return this.edit.getTotalDuration();
 	}
 
 	public getFeature(name: string): ITimelineFeature | null {
@@ -321,11 +321,6 @@ export class Timeline extends Entity implements ITimeline {
 		
 		// Enable zoom by default
 		this.featureManager.enable("zoom");
-
-		// Register snapping feature (stub for now)
-		const { SnappingFeature } = await import("../features/SnappingFeature");
-		const snappingFeature = new SnappingFeature(this.state, featureContext);
-		this.featureManager.register(snappingFeature);
 	}
 
 	private handleStateChange(state: TimelineState, changes: StateChanges): void {

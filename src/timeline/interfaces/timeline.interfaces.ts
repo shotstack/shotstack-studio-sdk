@@ -175,6 +175,7 @@ export interface ITimelineClip extends Entity {
 	setDuration(duration: number): void;
 	getSelected(): boolean;
 	setSelected(selected: boolean): void;
+	setPixelsPerSecond(pixelsPerSecond: number): void;
 }
 
 export interface ITimelineRuler extends Entity {
