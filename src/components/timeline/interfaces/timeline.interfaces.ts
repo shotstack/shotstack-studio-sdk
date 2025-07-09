@@ -70,6 +70,21 @@ export interface ITimelineTool extends Entity {
 	executeCommand(command: EditCommand): void;
 }
 
+// Tool interceptor interface for passive tools that intercept events
+export interface IToolInterceptor {
+	readonly name: string;
+	readonly priority: number; // Higher priority interceptors run first
+	
+	// Attempt to intercept and handle the event
+	// Returns true if handled (prevents further processing)
+	interceptPointerDown?(event: TimelinePointerEvent): boolean;
+	interceptPointerMove?(event: TimelinePointerEvent): boolean;
+	interceptPointerUp?(event: TimelinePointerEvent): boolean;
+	
+	// Get cursor for current context (returns null if no specific cursor)
+	getCursor?(event: TimelinePointerEvent): string | null;
+}
+
 // Feature system interface
 export interface ITimelineFeature extends Entity {
 	readonly name: string;
@@ -124,6 +139,10 @@ export interface IToolManager {
 	getAllTools(): Map<string, ITimelineTool>;
 	setFeatureManager(featureManager: IFeatureManager): void;
 	setCursorElement(element: HTMLElement): void;
+	
+	// Interceptor management
+	registerInterceptor(interceptor: IToolInterceptor): void;
+	unregisterInterceptor(name: string): void;
 
 	// Input delegation
 	handlePointerDown(event: PIXI.FederatedPointerEvent): void;

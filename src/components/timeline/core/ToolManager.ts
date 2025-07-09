@@ -1,14 +1,16 @@
 import { Edit } from "@core/edit";
 import * as PIXI from "pixi.js";
 
-import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager } from "../interfaces";
-import { TimelineWheelEvent } from "../types";
+import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager, IToolInterceptor } from "../interfaces";
+import { TimelineWheelEvent, TimelinePointerEvent } from "../types";
 
 /**
  * Manages timeline tools and delegates input events to the active tool
  */
 export class ToolManager implements IToolManager {
 	private tools: Map<string, ITimelineTool> = new Map();
+	private interceptors: Map<string, IToolInterceptor> = new Map();
+	private sortedInterceptors: IToolInterceptor[] = [];
 	private activeTool: ITimelineTool | null = null;
 	private state: ITimelineState;
 	private edit: Edit;
@@ -86,22 +88,101 @@ export class ToolManager implements IToolManager {
 		this.featureManager = featureManager;
 	}
 
+	public setCursorElement(element: HTMLElement): void {
+		this.cursorElement = element;
+		// Apply current tool cursor if active
+		if (this.activeTool) {
+			this.updateCursor(this.activeTool.cursor);
+		}
+	}
+
+	// Interceptor management
+	public registerInterceptor(interceptor: IToolInterceptor): void {
+		if (this.interceptors.has(interceptor.name)) {
+			console.warn(`Interceptor "${interceptor.name}" is already registered`);
+			return;
+		}
+
+		this.interceptors.set(interceptor.name, interceptor);
+		this.updateSortedInterceptors();
+	}
+
+	public unregisterInterceptor(name: string): void {
+		if (this.interceptors.delete(name)) {
+			this.updateSortedInterceptors();
+		}
+	}
+
+	private updateSortedInterceptors(): void {
+		// Sort interceptors by priority (higher priority first)
+		this.sortedInterceptors = Array.from(this.interceptors.values())
+			.sort((a, b) => b.priority - a.priority);
+	}
+
 	// Input event delegation
 	public handlePointerDown(event: PIXI.FederatedPointerEvent): void {
+		const timelineEvent: TimelinePointerEvent = event;
+
+		// Check interceptors first (in priority order)
+		for (const interceptor of this.sortedInterceptors) {
+			if (interceptor.interceptPointerDown?.(timelineEvent)) {
+				// Event was handled by interceptor
+				return;
+			}
+		}
+
+		// If no interceptor handled it, pass to active tool
 		if (this.activeTool?.onPointerDown) {
-			this.activeTool.onPointerDown(event);
+			this.activeTool.onPointerDown(timelineEvent);
 		}
 	}
 
 	public handlePointerMove(event: PIXI.FederatedPointerEvent): void {
+		const timelineEvent: TimelinePointerEvent = event;
+
+		// Update cursor based on interceptors
+		let cursor: string | null = null;
+		for (const interceptor of this.sortedInterceptors) {
+			cursor = interceptor.getCursor?.(timelineEvent) || null;
+			if (cursor) {
+				this.updateCursor(cursor);
+				break;
+			}
+		}
+
+		// If no interceptor provided cursor, use active tool's cursor
+		if (!cursor && this.activeTool) {
+			this.updateCursor(this.activeTool.cursor);
+		}
+
+		// Check interceptors for handling
+		for (const interceptor of this.sortedInterceptors) {
+			if (interceptor.interceptPointerMove?.(timelineEvent)) {
+				// Event was handled by interceptor
+				return;
+			}
+		}
+
+		// If no interceptor handled it, pass to active tool
 		if (this.activeTool?.onPointerMove) {
-			this.activeTool.onPointerMove(event);
+			this.activeTool.onPointerMove(timelineEvent);
 		}
 	}
 
 	public handlePointerUp(event: PIXI.FederatedPointerEvent): void {
+		const timelineEvent: TimelinePointerEvent = event;
+
+		// Check interceptors first (in priority order)
+		for (const interceptor of this.sortedInterceptors) {
+			if (interceptor.interceptPointerUp?.(timelineEvent)) {
+				// Event was handled by interceptor
+				return;
+			}
+		}
+
+		// If no interceptor handled it, pass to active tool
 		if (this.activeTool?.onPointerUp) {
-			this.activeTool.onPointerUp(event);
+			this.activeTool.onPointerUp(timelineEvent);
 		}
 	}
 
@@ -133,14 +214,6 @@ export class ToolManager implements IToolManager {
 		}
 	}
 
-
-	public setCursorElement(element: HTMLElement): void {
-		this.cursorElement = element;
-		// Apply current tool cursor if active
-		if (this.activeTool) {
-			this.updateCursor(this.activeTool.cursor);
-		}
-	}
 
 	private updateCursor(cursor: string): void {
 		if (this.cursorElement) {

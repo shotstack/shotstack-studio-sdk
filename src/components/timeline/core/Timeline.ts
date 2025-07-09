@@ -299,16 +299,15 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		};
 
-		// Register tools
-		const { ResizeTool } = await import("../tools/ResizeTool");
-		const resizeTool = new ResizeTool(this.state, toolContext);
-		this.toolManager.register(resizeTool);
-
+		// Register selection tool
 		const { SelectionTool } = await import("../tools/SelectionTool");
 		const selectionTool = new SelectionTool(this.state, toolContext);
 		this.toolManager.register(selectionTool);
 
-		// Selection is now handled by SelectionTool
+		// Register resize interceptor (runs before tools)
+		const { ResizeInterceptor } = await import("../tools/ResizeInterceptor");
+		const resizeInterceptor = new ResizeInterceptor(this.state, toolContext);
+		this.toolManager.registerInterceptor(resizeInterceptor);
 	}
 
 	private async loadDefaultFeatures(): Promise<void> {
