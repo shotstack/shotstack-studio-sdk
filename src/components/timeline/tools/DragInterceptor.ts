@@ -44,25 +44,28 @@ export class DragInterceptor implements IToolInterceptor {
 	public interceptPointerDown(event: TimelinePointerEvent): boolean {
 		// Check if click is on clip body (not edges)
 		if (this.isOnClipBody(event)) {
-			// Find the clip by checking the actual visual position
-			const clipPlayer = this.findClipAtVisualPosition(event);
-			if (clipPlayer) {
-				// Prepare for potential drag (but don't start yet)
-				this.isPotentialDrag = true;
-				this.draggedPlayer = clipPlayer.player; // Store the player reference
-				this.dragTarget = { trackIndex: clipPlayer.trackIndex, clipIndex: clipPlayer.clipIndex }; // Store for compatibility
-				this.dragStartX = event.global.x;
-				this.dragStartY = event.global.y;
-				this.originalStart = clipPlayer.player.clipConfiguration.start || 0;
-				this.originalTrackIndex = clipPlayer.trackIndex;
-				this.previewPosition = {
-					trackIndex: clipPlayer.trackIndex,
-					start: this.originalStart
-				};
+			// Find the clip using Timeline's existing method
+			const clipInfo = this.context.timeline.findClipAtPoint(event.target as PIXI.Container);
+			if (clipInfo) {
+				const player = this.context.edit.getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
+				if (player && player.clipConfiguration) {
+					// Prepare for potential drag (but don't start yet)
+					this.isPotentialDrag = true;
+					this.draggedPlayer = player; // Store the player reference
+					this.dragTarget = clipInfo; // Store for compatibility
+					this.dragStartX = event.global.x;
+					this.dragStartY = event.global.y;
+					this.originalStart = player.clipConfiguration.start || 0;
+					this.originalTrackIndex = clipInfo.trackIndex;
+					this.previewPosition = {
+						trackIndex: clipInfo.trackIndex,
+						start: this.originalStart
+					};
 
-				// Don't stop propagation yet - allow selection to work
-				// We'll handle it in pointer move if drag starts
-				return false; // Let other handlers process this too
+					// Don't stop propagation yet - allow selection to work
+					// We'll handle it in pointer move if drag starts
+					return false; // Let other handlers process this too
+				}
 			}
 		}
 		return false; // Not handled
@@ -227,13 +230,19 @@ export class DragInterceptor implements IToolInterceptor {
 				return false;
 			}
 
-			// Find clip at visual position
-			const clipInfo = this.findClipAtVisualPosition(event);
+			// Find clip using Timeline's method
+			const clipInfo = this.context.timeline.findClipAtPoint(target);
 			if (!clipInfo) {
 				return false;
 			}
 
-			const clipConfig = clipInfo.player.clipConfiguration;
+			// Get the actual clip object to check its dimensions
+			const player = this.context.edit.getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
+			if (!player || !player.clipConfiguration) {
+				return false;
+			}
+
+			const clipConfig = player.clipConfiguration;
 			const state = this.state.getState();
 
 			// Validate clip has valid dimensions
@@ -718,76 +727,6 @@ export class DragInterceptor implements IToolInterceptor {
 		}
 	}
 
-	/**
-	 * Find clip at visual position by checking actual timeline coordinates
-	 */
-	private findClipAtVisualPosition(event: TimelinePointerEvent): { player: Player; trackIndex: number; clipIndex: number } | null {
-		const state = this.state.getState();
-		const renderer = this.context.timeline.getRenderer();
-		const tracks = renderer.getTracks();
-
-		// Convert mouse position to local timeline coordinates
-		// Use the tracks layer as our reference
-		const tracksLayer = renderer.getLayer("tracks");
-		const localPos = tracksLayer.toLocal(event.global);
-		const mouseX = localPos.x;
-		const mouseY = localPos.y;
-
-		// Find which track the mouse is over
-		let targetTrackIndex = -1;
-		for (let i = 0; i < tracks.length; i++) {
-			const trackContainer = tracks[i].getContainer();
-			const bounds = trackContainer.getBounds();
-			if (mouseY >= bounds.y && mouseY <= bounds.y + bounds.height) {
-				targetTrackIndex = i;
-				break;
-			}
-		}
-
-		if (targetTrackIndex === -1) return null;
-
-		// Convert mouse X to timeline time
-		const timelineTime = this.screenToTime(mouseX, state.viewport.zoom, state.viewport.scrollX);
-
-		// Find which clip in this track contains this time
-		const editData = this.context.edit.getEdit();
-		const track = editData.timeline.tracks[targetTrackIndex];
-		if (!track || !track.clips) return null;
-
-		// Sort clips by start time to ensure we're checking them in order
-		const sortedClips = track.clips
-			.map((clip, index) => ({ clip, index }))
-			.filter(item => item.clip && item.clip.start !== undefined && item.clip.length)
-			.sort((a, b) => (a.clip.start || 0) - (b.clip.start || 0));
-
-		for (const item of sortedClips) {
-			const clip = item.clip;
-			const clipIndex = item.index;
-			const clipStart = clip.start || 0;
-			const clipEnd = clipStart + (clip.length || 0);
-
-			if (timelineTime >= clipStart && timelineTime <= clipEnd) {
-				const player = this.context.edit.getPlayerClip(targetTrackIndex, clipIndex);
-				if (player) {
-					return { player, trackIndex: targetTrackIndex, clipIndex };
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Check if child is a descendant of parent
-	 */
-	private isChildOf(child: PIXI.Container, parent: PIXI.Container): boolean {
-		let current: PIXI.Container | null = child;
-		while (current) {
-			if (current === parent) return true;
-			current = current.parent;
-		}
-		return false;
-	}
 
 	/**
 	 * Reset all drag state
