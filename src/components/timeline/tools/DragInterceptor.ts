@@ -18,19 +18,25 @@ export class DragInterceptor implements IToolInterceptor {
 	private state: ITimelineState;
 	private context: ITimelineToolContext;
 
-	// Drag state tracking
+	// Core drag state
 	private isDragging: boolean = false;
-	private isPotentialDrag: boolean = false; // Track if we might start dragging
-	private dragTarget: { trackIndex: number; clipIndex: number } | null = null;
-	private draggedPlayer: Player | null = null; // Store the actual player reference
-	private dragStartX: number = 0;
-	private dragStartY: number = 0;
-	private dragOffsetX: number = 0; // Offset from clip origin to mouse
-	private dragOffsetY: number = 0;
-	private originalStart: number = 0;
-	private originalTrackIndex: number = 0;
+	private isPotentialDrag: boolean = false;
+	private draggedPlayer: Player | null = null;
+	private dragGhost: PIXI.Container | null = null;
+	
+	// Initial state snapshot (captured at drag start)
+	private dragStartState: {
+		mouseX: number;
+		mouseY: number;
+		clipStart: number;
+		trackIndex: number;
+		clipIndex: number;
+		offsetX: number;  // Offset from clip origin to mouse
+		offsetY: number;
+	} | null = null;
+	
+	// Current preview position
 	private previewPosition: { trackIndex: number; start: number } | null = null;
-	private dragGhost: PIXI.Container | null = null; // Ghost preview container
 
 	// Configuration
 	private readonly EDGE_THRESHOLD = 8; // Pixels from edge to exclude (for resize tool)
@@ -51,15 +57,22 @@ export class DragInterceptor implements IToolInterceptor {
 				if (player && player.clipConfiguration) {
 					// Prepare for potential drag (but don't start yet)
 					this.isPotentialDrag = true;
-					this.draggedPlayer = player; // Store the player reference
-					this.dragTarget = clipInfo; // Store for compatibility
-					this.dragStartX = event.global.x;
-					this.dragStartY = event.global.y;
-					this.originalStart = player.clipConfiguration.start || 0;
-					this.originalTrackIndex = clipInfo.trackIndex;
+					this.draggedPlayer = player;
+					
+					// Capture initial state
+					this.dragStartState = {
+						mouseX: event.global.x,
+						mouseY: event.global.y,
+						clipStart: player.clipConfiguration.start || 0,
+						trackIndex: clipInfo.trackIndex,
+						clipIndex: clipInfo.clipIndex,
+						offsetX: 0, // Will be calculated when drag starts
+						offsetY: 0
+					};
+					
 					this.previewPosition = {
 						trackIndex: clipInfo.trackIndex,
-						start: this.originalStart
+						start: player.clipConfiguration.start || 0
 					};
 
 					// Don't stop propagation yet - allow selection to work
@@ -73,10 +86,10 @@ export class DragInterceptor implements IToolInterceptor {
 
 	public interceptPointerMove(event: TimelinePointerEvent): boolean {
 		// Check if we should start dragging
-		if (this.isPotentialDrag && !this.isDragging) {
+		if (this.isPotentialDrag && !this.isDragging && this.dragStartState) {
 			// Calculate distance moved
-			const deltaX = Math.abs(event.global.x - this.dragStartX);
-			const deltaY = Math.abs(event.global.y - this.dragStartY);
+			const deltaX = Math.abs(event.global.x - this.dragStartState.mouseX);
+			const deltaY = Math.abs(event.global.y - this.dragStartState.mouseY);
 			const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
 			// Start drag if threshold exceeded
@@ -100,13 +113,7 @@ export class DragInterceptor implements IToolInterceptor {
 		}
 
 		// Handle ongoing drag
-		if (this.isDragging) {
-			// Ensure we still have valid target clip
-			if (!this.dragTarget || !this.previewPosition) {
-				this.resetState();
-				return false;
-			}
-
+		if (this.isDragging && this.draggedPlayer && this.previewPosition) {
 			// Calculate new position
 			const newPosition = this.calculateNewPosition(event);
 
@@ -159,7 +166,9 @@ export class DragInterceptor implements IToolInterceptor {
 			}
 
 			// Only execute command if position actually changed
-			const positionChanged = finalPosition.start !== this.originalStart || finalPosition.trackIndex !== this.originalTrackIndex;
+			const positionChanged = this.dragStartState && 
+				(finalPosition.start !== this.dragStartState.clipStart || 
+				 finalPosition.trackIndex !== this.dragStartState.trackIndex);
 
 			if (positionChanged) {
 				let command;
@@ -338,7 +347,7 @@ export class DragInterceptor implements IToolInterceptor {
 		const localPos = overlayLayer.toLocal(event.global);
 
 		// Calculate the clip's left edge position (accounting for the drag offset)
-		const clipLeftX = localPos.x - this.dragOffsetX;
+		const clipLeftX = localPos.x - (this.dragStartState?.offsetX || 0);
 
 		// Convert the left edge position to timeline time
 		const newStart = this.screenToTime(clipLeftX, state.viewport.zoom, state.viewport.scrollX);
@@ -530,20 +539,24 @@ export class DragInterceptor implements IToolInterceptor {
 	 * Create visual drag preview
 	 */
 	private createDragPreview(): void {
-		if (!this.dragTarget || this.dragGhost) return;
+		if (!this.draggedPlayer || !this.dragStartState || this.dragGhost) return;
 
-		// Get the clip being dragged
+		// Get the current indices of the dragged player
+		const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
+		if (!currentIndices) return;
+
+		// Get the clip's visual representation
 		const renderer = this.context.timeline.getRenderer();
 		const tracks = renderer.getTracks();
 
-		if (this.dragTarget.trackIndex >= tracks.length) return;
+		if (currentIndices.trackIndex >= tracks.length) return;
 
-		const track = tracks[this.dragTarget.trackIndex];
+		const track = tracks[currentIndices.trackIndex];
 		const clips = track.getClips();
 
-		if (this.dragTarget.clipIndex >= clips.length) return;
+		if (currentIndices.clipIndex >= clips.length) return;
 
-		const clip = clips[this.dragTarget.clipIndex];
+		const clip = clips[currentIndices.clipIndex];
 		const clipContainer = clip.getContainer();
 
 		// Use the stored player reference
@@ -581,19 +594,23 @@ export class DragInterceptor implements IToolInterceptor {
 		// Make the original clip slightly transparent
 		clipContainer.alpha = 0.5;
 
-		// Store the offset from the clip's top-left to where the mouse grabbed it
+		// Calculate and store the offset from the clip's top-left to where the mouse grabbed it
 		const clipStartTime = this.draggedPlayer.clipConfiguration.start || 0;
 		const clipX = this.timeToScreen(clipStartTime, state.viewport.zoom, state.viewport.scrollX);
 		const trackContainer = track.getContainer();
-		this.dragOffsetX = this.dragStartX - clipX;
-		this.dragOffsetY = this.dragStartY - trackContainer.y;
+		
+		// Update the drag start state with the calculated offsets
+		if (this.dragStartState) {
+			this.dragStartState.offsetX = this.dragStartState.mouseX - clipX;
+			this.dragStartState.offsetY = this.dragStartState.mouseY - trackContainer.y;
+		}
 	}
 
 	/**
 	 * Update the position of the drag preview
 	 */
 	private updateDragPreview(event?: TimelinePointerEvent): void {
-		if (!this.dragTarget || !this.previewPosition || !this.dragGhost) return;
+		if (!this.draggedPlayer || !this.previewPosition || !this.dragGhost) return;
 
 		// If we have a current event, update ghost to follow mouse
 		if (event) {
@@ -683,16 +700,16 @@ export class DragInterceptor implements IToolInterceptor {
 		}
 
 		// Restore the original clip's opacity
-		if (this.dragTarget) {
+		if (this.draggedPlayer && this.dragStartState) {
 			const renderer = this.context.timeline.getRenderer();
 			const tracks = renderer.getTracks();
 
-			if (this.dragTarget.trackIndex < tracks.length) {
-				const track = tracks[this.dragTarget.trackIndex];
+			if (this.dragStartState.trackIndex < tracks.length) {
+				const track = tracks[this.dragStartState.trackIndex];
 				const clips = track.getClips();
 
-				if (this.dragTarget.clipIndex < clips.length) {
-					const clip = clips[this.dragTarget.clipIndex];
+				if (this.dragStartState.clipIndex < clips.length) {
+					const clip = clips[this.dragStartState.clipIndex];
 					const clipContainer = clip.getContainer();
 
 					// Restore full opacity
@@ -734,14 +751,8 @@ export class DragInterceptor implements IToolInterceptor {
 	private resetState(): void {
 		this.isDragging = false;
 		this.isPotentialDrag = false;
-		this.dragTarget = null;
 		this.draggedPlayer = null;
-		this.dragStartX = 0;
-		this.dragStartY = 0;
-		this.dragOffsetX = 0;
-		this.dragOffsetY = 0;
-		this.originalStart = 0;
-		this.originalTrackIndex = 0;
+		this.dragStartState = null;
 		this.previewPosition = null;
 
 		// Clean up ghost if it exists
