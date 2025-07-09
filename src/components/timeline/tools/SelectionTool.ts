@@ -33,6 +33,11 @@ export class SelectionTool extends TimelineTool {
 	}
 	
 	public override onPointerDown(event: TimelinePointerEvent): void {
+		// Skip if another tool already handled this event
+		if (event.propagationStopped) {
+			return;
+		}
+		
 		this.isDragging = true;
 		this.dragStartX = event.global.x;
 		this.dragStartY = event.global.y;

@@ -291,13 +291,18 @@ export class Timeline extends Entity implements ITimeline {
 				if ('type' in command && command.type === "CLEAR_SELECTION") {
 					this.edit.clearSelection();
 				} else if ('execute' in command) {
-					// Handle proper EditCommand objects
-					command.execute();
+					// Handle proper EditCommand objects - use Edit's executeCommand which provides context
+					this.edit.executeEditCommand(command);
 				} else {
 					console.log("Timeline command:", command);
 				}
 			}
 		};
+
+		// Register the resize tool first (for edge detection priority)
+		const { ResizeTool } = await import("../tools/ResizeTool");
+		const resizeTool = new ResizeTool(this.state, toolContext);
+		this.toolManager.register(resizeTool);
 
 		// Register the selection tool
 		const { SelectionTool } = await import("../tools/SelectionTool");

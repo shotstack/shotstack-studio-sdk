@@ -88,20 +88,29 @@ export class ToolManager implements IToolManager {
 
 	// Input event delegation
 	public handlePointerDown(event: PIXI.FederatedPointerEvent): void {
-		if (this.activeTool?.onPointerDown) {
-			this.activeTool.onPointerDown(event);
+		// Give all tools a chance to handle the event
+		for (const tool of this.tools.values()) {
+			if (tool.onPointerDown && !event.propagationStopped) {
+				tool.onPointerDown(event as any);
+			}
 		}
 	}
 
 	public handlePointerMove(event: PIXI.FederatedPointerEvent): void {
-		if (this.activeTool?.onPointerMove) {
-			this.activeTool.onPointerMove(event);
+		// Give all tools a chance to handle the event
+		for (const tool of this.tools.values()) {
+			if (tool.onPointerMove && !event.propagationStopped) {
+				tool.onPointerMove(event as any);
+			}
 		}
 	}
 
 	public handlePointerUp(event: PIXI.FederatedPointerEvent): void {
-		if (this.activeTool?.onPointerUp) {
-			this.activeTool.onPointerUp(event);
+		// Give all tools a chance to handle the event
+		for (const tool of this.tools.values()) {
+			if (tool.onPointerUp && !event.propagationStopped) {
+				tool.onPointerUp(event as any);
+			}
 		}
 	}
 
