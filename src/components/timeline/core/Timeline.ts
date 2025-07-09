@@ -299,12 +299,11 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		};
 
-		// Register the resize tool first (for edge detection priority)
+		// Register tools
 		const { ResizeTool } = await import("../tools/ResizeTool");
 		const resizeTool = new ResizeTool(this.state, toolContext);
 		this.toolManager.register(resizeTool);
 
-		// Register the selection tool
 		const { SelectionTool } = await import("../tools/SelectionTool");
 		const selectionTool = new SelectionTool(this.state, toolContext);
 		this.toolManager.register(selectionTool);

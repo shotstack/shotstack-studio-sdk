@@ -43,12 +43,6 @@ async function main() {
 			console.log("Clip updated:", data);
 		});
 
-		// Expose instances globally for debugging
-		(window as any).edit = edit;
-		(window as any).canvas = canvas;
-		(window as any).timeline = timeline;
-		(window as any).controls = controls;
-
 		// Additional helpful information for the demo
 		console.log("Demo loaded successfully! Try the following keyboard controls:");
 		console.log("- Space: Play/Pause");
@@ -58,7 +52,6 @@ async function main() {
 		console.log("- Left/Right Arrow: Seek");
 		console.log("- Shift+Left/Right: Seek faster");
 		console.log("- Comma/Period: Step frame by frame");
-		console.log("\n🔧 Debug: edit, canvas, timeline, and controls are available in the console");
 	} catch (error) {
 		console.error("Error in Shotstack Studio demo:", error);
 	}

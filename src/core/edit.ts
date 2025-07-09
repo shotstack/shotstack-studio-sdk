@@ -197,9 +197,6 @@ export class Edit extends Entity {
 	}
 	public getClip(trackIdx: number, clipIdx: number): ClipType | null {
 		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
-		// Sort clips by start time to ensure consistent ordering
-		clipsByTrack.sort((a, b) => (a.clipConfiguration.start || 0) - (b.clipConfiguration.start || 0));
-		
 		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
 
 		return clipsByTrack[clipIdx].clipConfiguration;
@@ -207,9 +204,6 @@ export class Edit extends Entity {
 
 	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
 		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
-		// Sort clips by start time to ensure consistent ordering
-		clipsByTrack.sort((a, b) => (a.clipConfiguration.start || 0) - (b.clipConfiguration.start || 0));
-		
 		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
 
 		return clipsByTrack[clipIdx];

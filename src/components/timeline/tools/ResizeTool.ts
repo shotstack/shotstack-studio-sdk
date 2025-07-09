@@ -119,6 +119,12 @@ export class ResizeTool extends TimelineTool {
 		// Reset cursor
 		this.updateCursor("default");
 		
+		// Switch back to selection tool
+		const toolManager = (this.context.timeline as any).toolManager;
+		if (toolManager) {
+			toolManager.activate("selection");
+		}
+		
 		// Force a re-render to ensure clip state is synchronized
 		if (this.context.timeline) {
 			this.context.timeline.draw();
