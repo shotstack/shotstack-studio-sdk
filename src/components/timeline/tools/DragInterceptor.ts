@@ -196,11 +196,8 @@ export class DragInterceptor implements IToolInterceptor {
 			this.removeDragPreview();
 			this.resetState();
 
-			// Force a re-render to ensure state is synchronized
-			if (this.context.timeline) {
-				this.context.timeline.draw();
-			}
-
+			// The command execution will emit clip:updated event,
+			// which Timeline listens to and triggers a redraw
 			return true; // Event handled
 		}
 
@@ -738,10 +735,9 @@ export class DragInterceptor implements IToolInterceptor {
 		// Reset tool state
 		this.resetState();
 
-		// Force redraw to ensure visual consistency
-		if (this.context.timeline) {
-			this.context.timeline.draw();
-		}
+		// No need to force redraw - the error state should be handled
+		// by the command system and any necessary UI updates will happen
+		// through the event system
 	}
 
 
