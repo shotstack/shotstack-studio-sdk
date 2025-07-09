@@ -1,5 +1,6 @@
 import { EditCommand } from "@core/commands/types";
 import { Edit } from "@core/edit";
+import { Player } from "@canvas/players/player";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
@@ -9,7 +10,11 @@ import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, 
 // Tool context interface for dependency injection
 export interface ITimelineToolContext {
 	timeline: ITimeline;
-	edit: Edit;
+	edit: Edit & {
+		// Expose the methods that DragInterceptor needs
+		findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null;
+		getPlayerClip(trackIndex: number, clipIndex: number): Player | null;
+	};
 	executeCommand: (command: EditCommand | { type: string }) => void;
 }
 

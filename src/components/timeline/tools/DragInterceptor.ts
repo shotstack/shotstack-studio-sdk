@@ -129,7 +129,7 @@ export class DragInterceptor implements IToolInterceptor {
 		// Handle actual drag completion
 		if (this.isDragging && this.draggedPlayer && this.previewPosition) {
 			// Find the current indices of the dragged player using Edit's method
-			const currentIndices = (this.context.edit as any).findClipIndices(this.draggedPlayer);
+			const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
 			if (!currentIndices) {
 				console.error("Could not find dragged player in tracks");
 				this.removeDragPreview();
@@ -353,7 +353,7 @@ export class DragInterceptor implements IToolInterceptor {
 		if (!this.draggedPlayer) return false;
 
 		// Get the current indices of the dragged player using Edit's method
-		const currentIndices = (this.context.edit as any).findClipIndices(this.draggedPlayer);
+		const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
 		if (!currentIndices) return false;
 
 		const clipDuration = this.draggedPlayer.clipConfiguration.length || 0;
@@ -409,7 +409,7 @@ export class DragInterceptor implements IToolInterceptor {
 		if (!this.draggedPlayer) return null;
 
 		// Get the current indices of the dragged player using Edit's method
-		const currentIndices = (this.context.edit as any).findClipIndices(this.draggedPlayer);
+		const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
 		if (!currentIndices) return null;
 
 		const clipDuration = this.draggedPlayer.clipConfiguration.length || 0;
@@ -767,7 +767,7 @@ export class DragInterceptor implements IToolInterceptor {
 			const clipEnd = clipStart + (clip.length || 0);
 
 			if (timelineTime >= clipStart && timelineTime <= clipEnd) {
-				const player = (this.context.edit as any).getPlayerClip(targetTrackIndex, clipIndex);
+				const player = this.context.edit.getPlayerClip(targetTrackIndex, clipIndex);
 				if (player) {
 					return { player, trackIndex: targetTrackIndex, clipIndex };
 				}
