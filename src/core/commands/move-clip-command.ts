@@ -37,6 +37,9 @@ export class MoveClipCommand implements EditCommand {
 		// Get the clip to move
 		this.player = fromTrack[this.fromClipIndex];
 		this.originalStart = this.player.clipConfiguration.start;
+		
+		console.log(`MoveClipCommand: Moving clip from track ${this.fromTrackIndex} index ${this.fromClipIndex}`);
+		console.log(`  Clip start time: ${this.originalStart}`);
 
 		// If moving to a different track
 		if (this.fromTrackIndex !== this.toTrackIndex) {
