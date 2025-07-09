@@ -308,6 +308,11 @@ export class Timeline extends Entity implements ITimeline {
 		const { ResizeInterceptor } = await import("../tools/ResizeInterceptor");
 		const resizeInterceptor = new ResizeInterceptor(this.state, toolContext);
 		this.toolManager.registerInterceptor(resizeInterceptor);
+
+		// Register drag interceptor (runs after resize but before selection)
+		const { DragInterceptor } = await import("../tools/DragInterceptor");
+		const dragInterceptor = new DragInterceptor(this.state, toolContext);
+		this.toolManager.registerInterceptor(dragInterceptor);
 	}
 
 	private async loadDefaultFeatures(): Promise<void> {
