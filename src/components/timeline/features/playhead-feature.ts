@@ -3,7 +3,7 @@ import * as PIXI from "pixi.js";
 import { TimelinePointerEvent, StateChanges } from "../types";
 import { ITimelineRenderer } from "../types/timeline.interfaces";
 
-import { TimelineFeature } from "./timeline-feature";
+import { TimelineFeature } from "./feature";
 
 /**
  * Handles playhead visualization and interaction for timeline seeking
