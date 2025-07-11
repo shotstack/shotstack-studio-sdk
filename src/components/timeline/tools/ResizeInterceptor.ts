@@ -1,5 +1,5 @@
-import * as PIXI from "pixi.js";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import * as PIXI from "pixi.js";
 
 import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../interfaces";
 import { TimelinePointerEvent } from "../types";
@@ -248,7 +248,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 				return null;
 			}
 
-			const clips = track.clips;
+			const {clips} = track;
 
 			// Find the next clip in the track
 			let nextClipStart: number | null = null;

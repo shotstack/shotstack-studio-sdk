@@ -1,11 +1,11 @@
+import { Player } from "@canvas/players/player";
 import { EditCommand } from "@core/commands/types";
 import { Edit } from "@core/edit";
-import { Player } from "@canvas/players/player";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer, RegisteredClip } from "../types/timeline.types";
 import { TimelineClip } from "../entities/TimelineClip";
+import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer, RegisteredClip } from "../types/timeline.types";
 
 
 // Tool context interface for dependency injection

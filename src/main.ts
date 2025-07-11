@@ -9,10 +9,8 @@ import { Edit, Canvas, Controls } from "./index";
  */
 async function main() {
 	try {
-		// 1. Retrieve an edit from a template
-		const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
-		const response = await fetch(templateUrl);
-		const template = await response.json();
+		// 1. Load the hello.json template from local file
+		const template = await import("./templates/hello.json");
 
 		// 2. Initialize the edit with dimensions and background color
 		const edit = new Edit(template.output.size, template.timeline.background);

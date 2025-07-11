@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+
 import type { EditCommand, CommandContext } from "./types";
 
 export class MoveClipCommand implements EditCommand {

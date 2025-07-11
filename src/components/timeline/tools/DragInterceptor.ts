@@ -1,10 +1,11 @@
-import * as PIXI from "pixi.js";
-import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
+import type { Player } from "@canvas/players/player";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
+import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
+import * as PIXI from "pixi.js";
 
 import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../interfaces";
 import { TimelinePointerEvent } from "../types";
-import type { Player } from "@canvas/players/player";
+
 
 /**
  * Drag interceptor for moving clips within and between tracks
@@ -398,7 +399,7 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// Check track bounds
 		const editData = this.context.edit.getEdit();
-		const tracks = editData.timeline.tracks;
+		const {tracks} = editData.timeline;
 		if (position.trackIndex < 0 || position.trackIndex >= tracks.length) {
 			return false;
 		}
@@ -446,7 +447,7 @@ export class DragInterceptor implements IToolInterceptor {
 
 		const clipDuration = this.draggedPlayer.clipConfiguration.length || 0;
 		const editData = this.context.edit.getEdit();
-		const tracks = editData.timeline.tracks;
+		const {tracks} = editData.timeline;
 
 		// First, try to find a valid position in the target track
 		const targetTrack = tracks[position.trackIndex];

@@ -5,9 +5,9 @@ import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
+import { TimelineClip } from "../entities/TimelineClip";
 import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager, ITimelineToolContext, ITimelineFeatureContext } from "../interfaces";
 import { TimelineState, StateChanges, RegisteredClip } from "../types";
-import { TimelineClip } from "../entities/TimelineClip";
 
 import { ClipRegistryManager } from "./ClipRegistryManager";
 import { FeatureManager } from "./FeatureManager";

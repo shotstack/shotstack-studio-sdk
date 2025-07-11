@@ -1,11 +1,12 @@
-import * as PIXI from "pixi.js";
-import { Edit } from "@core/edit";
 import { Player } from "@canvas/players/player";
-import { ITimelineState } from "../interfaces";
-import { RegisteredClip, ClipRegistryState } from "../types";
-import { ClipIdentityService } from "../services/ClipIdentityService";
+import { Edit } from "@core/edit";
+import * as PIXI from "pixi.js";
+
 import { TimelineClip } from "../entities/TimelineClip";
 import { TimelineTrack } from "../entities/TimelineTrack";
+import { ITimelineState } from "../interfaces";
+import { ClipIdentityService } from "../services/ClipIdentityService";
+import { RegisteredClip, ClipRegistryState } from "../types";
 
 /**
  * Sync delta types for tracking changes between Edit and Timeline state
@@ -325,7 +326,7 @@ export class ClipRegistryManager {
 
 		const registryState = this.state.getState().clipRegistry;
 		const editData = this.edit.getEdit();
-		const tracks = editData.timeline.tracks;
+		const {tracks} = editData.timeline;
 
 		// Track seen clips to identify removed ones
 		const seenClipIds = new Set<string>();
@@ -475,7 +476,7 @@ export class ClipRegistryManager {
 			await visual.load();
 
 			// Set zoom level
-			const zoom = this.state.getState().viewport.zoom;
+			const {zoom} = this.state.getState().viewport;
 			visual.setPixelsPerSecond(zoom);
 
 			// Add to track

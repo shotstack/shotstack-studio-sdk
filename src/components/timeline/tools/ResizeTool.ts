@@ -1,5 +1,5 @@
-import * as PIXI from "pixi.js";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import * as PIXI from "pixi.js";
 
 import { TimelineTool } from "../core/TimelineTool";
 import { TimelinePointerEvent } from "../types";
@@ -120,7 +120,7 @@ export class ResizeTool extends TimelineTool {
 		this.updateCursor("default");
 		
 		// Switch back to selection tool
-		const toolManager = (this.context.timeline as any).toolManager;
+		const {toolManager} = (this.context.timeline as any);
 		if (toolManager) {
 			toolManager.activate("selection");
 		}
@@ -261,7 +261,7 @@ export class ResizeTool extends TimelineTool {
 				return null;
 			}
 			
-			const clips = track.clips;
+			const {clips} = track;
 			
 			// Find the next clip in the track
 			let nextClipStart: number | null = null;

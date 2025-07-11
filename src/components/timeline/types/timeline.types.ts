@@ -1,5 +1,5 @@
-import { Clip } from "@core/schemas/clip";
 import { Player } from "@canvas/players/player";
+import { Clip } from "@core/schemas/clip";
 import * as PIXI from "pixi.js";
 
 // Import TimelineClip type (will be needed for RegisteredClip)

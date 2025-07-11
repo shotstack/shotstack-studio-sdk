@@ -53,10 +53,10 @@ export class ClipIdentityService {
 		// Handle different asset types
 		if (asset.src) {
 			return asset.src;
-		} else if (asset.text) {
+		} if (asset.text) {
 			// For text assets, use the text content as identifier
 			return asset.text;
-		} else if (asset.html) {
+		} if (asset.html) {
 			// For HTML assets, use the HTML content
 			return asset.html;
 		}
@@ -78,7 +78,7 @@ export class ClipIdentityService {
 		for (let i = 0; i < str.length; i++) {
 			const char = str.charCodeAt(i);
 			hash = ((hash << 5) - hash) + char;
-			hash = hash & hash; // Convert to 32-bit integer
+			hash &= hash; // Convert to 32-bit integer
 		}
 		
 		return Math.abs(hash).toString(36);
