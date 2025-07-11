@@ -10,9 +10,7 @@ export class FeatureManager implements IFeatureManager {
 
 	constructor(state: ITimelineState) {
 		this.state = state;
-
-		// Subscribe to state changes
-		this.state.subscribe(this.handleStateChange.bind(this));
+		this.state.subscribe((_state, changes) => this.onStateChanged(changes));
 	}
 
 	public register(feature: ITimelineFeature): void {
@@ -38,148 +36,74 @@ export class FeatureManager implements IFeatureManager {
 		}
 	}
 
-	public enable(name: string): void {
-		const feature = this.features.get(name);
-		if (feature) {
-			feature.setEnabled(true);
-		}
-	}
+	public enable = (name: string): void => this.features.get(name)?.setEnabled(true);
+	public disable = (name: string): void => this.features.get(name)?.setEnabled(false);
+	public getFeature = (name: string): ITimelineFeature | null => this.features.get(name) || null;
+	public getAllFeatures = (): Map<string, ITimelineFeature> => new Map(this.features);
 
-	public disable(name: string): void {
-		const feature = this.features.get(name);
-		if (feature) {
-			feature.setEnabled(false);
-		}
-	}
-
-	public getFeature(name: string): ITimelineFeature | null {
-		return this.features.get(name) || null;
-	}
-
-	public getAllFeatures(): Map<string, ITimelineFeature> {
-		return new Map(this.features);
-	}
-
-	public onToolChanged(toolName: string, previousTool: string | null): void {
-		// Notify all features about tool change
-		this.features.forEach(feature => {
-			if (feature.enabled && feature.onToolChanged) {
-				try {
-					feature.onToolChanged(toolName, previousTool);
-				} catch (error) {
-					console.error(`Error in feature "${feature.name}" onToolChanged:`, error);
-				}
-			}
-		});
-	}
-
-	public onStateChanged(changes: StateChanges): void {
-		// Notify all features about state changes
-		this.features.forEach(feature => {
-			if (feature.enabled && feature.onStateChanged) {
-				try {
-					feature.onStateChanged(changes);
-				} catch (error) {
-					console.error(`Error in feature "${feature.name}" onStateChanged:`, error);
-				}
-			}
-		});
-	}
-
-	public renderOverlays(renderer: ITimelineRenderer): void {
-		// Let each enabled feature render its overlay
+	private forEachEnabledFeature(
+		callback: (feature: ITimelineFeature) => void,
+		errorContext: string
+	): void {
 		this.features.forEach(feature => {
 			if (feature.enabled) {
 				try {
-					feature.renderOverlay(renderer);
+					callback(feature);
 				} catch (error) {
-					console.error(`Error rendering overlay for feature "${feature.name}":`, error);
+					console.error(`Error in feature "${feature.name}" ${errorContext}:`, error);
 				}
 			}
 		});
 	}
 
-	private handleStateChange(_state: TimelineState, changes: StateChanges): void {
-		// Forward state changes to features
-		this.onStateChanged(changes);
+	public onToolChanged(toolName: string, previousTool: string | null): void {
+		this.forEachEnabledFeature(
+			feature => feature.onToolChanged?.(toolName, previousTool),
+			'onToolChanged'
+		);
 	}
 
-	// Event handling methods
-	public handleWheel(event: TimelineWheelEvent): boolean {
-		// Check each enabled feature for wheel handling
+	public onStateChanged(changes: StateChanges): void {
+		this.forEachEnabledFeature(
+			feature => feature.onStateChanged?.(changes),
+			'onStateChanged'
+		);
+	}
+
+	public renderOverlays(renderer: ITimelineRenderer): void {
+		this.forEachEnabledFeature(
+			feature => feature.renderOverlay(renderer),
+			'renderOverlay'
+		);
+	}
+
+	private handleEvent<T>(event: T, handlerName: string): boolean {
 		for (const feature of this.features.values()) {
-			if (feature.enabled && "handleWheel" in feature) {
-				const handled = (feature as any).handleWheel(event);
+			if (feature.enabled && handlerName in feature) {
+				const handled = (feature as any)[handlerName](event);
 				if (handled !== false) {
-					return true; // Event was handled
+					return true;
 				}
 			}
 		}
 		return false;
 	}
 
-	public handleKeyDown(event: KeyboardEvent): boolean {
-		// Check each enabled feature for key down handling
-		for (const feature of this.features.values()) {
-			if (feature.enabled && "handleKeyDown" in feature) {
-				const handled = (feature as any).handleKeyDown(event);
-				if (handled !== false) {
-					return true; // Event was handled
-				}
-			}
-		}
-		return false;
-	}
+	public handleWheel = (event: TimelineWheelEvent): boolean => 
+		this.handleEvent(event, 'handleWheel');
 
-	public handleKeyUp(event: KeyboardEvent): boolean {
-		// Check each enabled feature for key up handling
-		for (const feature of this.features.values()) {
-			if (feature.enabled && "handleKeyUp" in feature) {
-				const handled = (feature as any).handleKeyUp(event);
-				if (handled !== false) {
-					return true; // Event was handled
-				}
-			}
-		}
-		return false;
-	}
+	public handleKeyDown = (event: KeyboardEvent): boolean => 
+		this.handleEvent(event, 'handleKeyDown');
 
-	public handlePointerDown(event: TimelinePointerEvent): boolean {
-		// Check each enabled feature for pointer down handling
-		for (const feature of this.features.values()) {
-			if (feature.enabled && "handlePointerDown" in feature) {
-				const handled = (feature as any).handlePointerDown(event);
-				if (handled !== false) {
-					return true; // Event was handled
-				}
-			}
-		}
-		return false;
-	}
+	public handleKeyUp = (event: KeyboardEvent): boolean => 
+		this.handleEvent(event, 'handleKeyUp');
 
-	public handlePointerMove(event: TimelinePointerEvent): boolean {
-		// Check each enabled feature for pointer move handling
-		for (const feature of this.features.values()) {
-			if (feature.enabled && "handlePointerMove" in feature) {
-				const handled = (feature as any).handlePointerMove(event);
-				if (handled !== false) {
-					return true; // Event was handled
-				}
-			}
-		}
-		return false;
-	}
+	public handlePointerDown = (event: TimelinePointerEvent): boolean => 
+		this.handleEvent(event, 'handlePointerDown');
 
-	public handlePointerUp(event: TimelinePointerEvent): boolean {
-		// Check each enabled feature for pointer up handling
-		for (const feature of this.features.values()) {
-			if (feature.enabled && "handlePointerUp" in feature) {
-				const handled = (feature as any).handlePointerUp(event);
-				if (handled !== false) {
-					return true; // Event was handled
-				}
-			}
-		}
-		return false;
-	}
+	public handlePointerMove = (event: TimelinePointerEvent): boolean => 
+		this.handleEvent(event, 'handlePointerMove');
+
+	public handlePointerUp = (event: TimelinePointerEvent): boolean => 
+		this.handleEvent(event, 'handlePointerUp');
 }
