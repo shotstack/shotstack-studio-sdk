@@ -500,10 +500,7 @@ export class ClipRegistryManager {
 			}
 		}
 
-		// Trigger a render to show changes
-		if (this.timeline.draw) {
-			this.timeline.draw();
-		}
+		// Animation loop will handle rendering
 	}
 
 	/**

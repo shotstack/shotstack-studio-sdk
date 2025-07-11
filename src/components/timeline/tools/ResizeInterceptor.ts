@@ -97,10 +97,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 			// Reset state
 			this.resetState();
 
-			// Force a re-render to ensure clip state is synchronized
-			if (this.context.timeline) {
-				this.context.timeline.draw();
-			}
+			// Animation loop will handle rendering
 
 			return true; // Event handled
 		}
@@ -313,10 +310,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 		// Reset tool state
 		this.resetState();
 
-		// Force redraw to ensure visual consistency
-		if (this.context.timeline) {
-			this.context.timeline.draw();
-		}
+		// Animation loop will handle rendering
 
 		// Could emit an event here for UI to show error message
 		// this.context.edit.events.emit("error", { message: "Failed to resize clip" });

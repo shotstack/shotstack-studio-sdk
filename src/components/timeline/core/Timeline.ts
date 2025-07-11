@@ -504,8 +504,7 @@ export class Timeline extends Entity implements ITimeline {
 		// This is important for drag operations that may happen right after load
 		await this.clipRegistryManager.syncWithEdit();
 
-		// Trigger a render to show the loaded data
-		this.draw();
+		// Animation loop will handle the rendering
 	}
 
 	private updateSelectionVisuals(): void {
@@ -521,8 +520,7 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		}
 
-		// Re-render to show selection changes
-		this.draw();
+		// Animation loop will handle the rendering
 	}
 
 	private startAnimationLoop(): void {

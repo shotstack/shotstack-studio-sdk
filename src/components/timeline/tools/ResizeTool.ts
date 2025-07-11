@@ -122,11 +122,6 @@ export class ResizeTool extends TimelineTool {
 		if (toolManager) {
 			toolManager.activate("selection");
 		}
-
-		// Force a re-render to ensure clip state is synchronized
-		if (this.context.timeline) {
-			this.context.timeline.draw();
-		}
 	}
 
 	/**
@@ -335,10 +330,7 @@ export class ResizeTool extends TimelineTool {
 		// Reset cursor
 		this.updateCursor("default");
 
-		// Force redraw to ensure visual consistency
-		if (this.context.timeline) {
-			this.context.timeline.draw();
-		}
+		// Animation loop will handle rendering
 
 		// Could emit an event here for UI to show error message
 		// this.context.edit.events.emit("error", { message: "Failed to resize clip" });
