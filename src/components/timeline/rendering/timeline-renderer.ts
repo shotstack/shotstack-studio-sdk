@@ -11,22 +11,25 @@ import { TimelineTrack } from "./timeline-track";
  * Handles all rendering for the timeline using PIXI.js
  */
 export class TimelineRenderer implements ITimelineRenderer {
-	private application: PIXI.Application;
-	private layers: Map<string, PIXI.Container> = new Map();
-	private size: Size;
-	private tracks: Map<string, ITimelineTrack> = new Map();
+	private application = new PIXI.Application();
+	private layers = new Map<string, PIXI.Container>();
+	private tracks = new Map<string, ITimelineTrack>();
 	private ruler: ITimelineRuler | null = null;
-	private lastZoom: number = 100;
+	private lastZoom = 100;
 
-	constructor(size: Size) {
-		this.size = size;
+	private readonly LAYER_CONFIG = [
+		{ name: "background", zIndex: 0 },
+		{ name: "tracks", zIndex: 1 },
+		{ name: "clips", zIndex: 2 },
+		{ name: "selection", zIndex: 3 },
+		{ name: "overlay", zIndex: 4 },
+		{ name: "playhead", zIndex: 5 },
+		{ name: "features", zIndex: 6 }
+	];
 
-		// Create PIXI application instance (will be initialized in load)
-		this.application = new PIXI.Application();
-	}
+	constructor(private size: Size) {}
 
 	public async load(): Promise<void> {
-		// Initialize PIXI application with options
 		await this.application.init({
 			width: this.size.width,
 			height: this.size.height,
@@ -36,60 +39,19 @@ export class TimelineRenderer implements ITimelineRenderer {
 			autoDensity: true
 		});
 
-		// Initialize default layers after application is ready
 		this.initializeLayers();
-		// Initialize ruler
-		this.ruler = new TimelineRuler(this.size.width);
-		await this.ruler.load();
-		this.getLayer("overlay").addChild(this.ruler.getContainer());
-
-		// Initialize playhead - now handled by PlayheadFeature
-		// this.playhead = new TimelinePlayhead(this.size.height);
-		// await this.playhead.load();
-		// this.getLayer("playhead").addChild(this.playhead.getContainer());
+		await this.initializeRuler();
 	}
 
-	public render(__state: TimelineState): void {
-		const state = __state;
-		// Update ruler
-		if (this.ruler) {
-			this.ruler.setZoom(state.viewport.zoom);
-			this.ruler.setScrollX(state.viewport.scrollX);
-			this.ruler.draw();
-		}
-
-		// Update playhead - now handled by PlayheadFeature
-		// if (this.playhead) {
-		// 	this.playhead.setTime(state.playback.currentTime);
-		// 	this.playhead.setPixelsPerSecond(state.viewport.zoom);
-		// 	this.playhead.setScrollX(state.viewport.scrollX);
-		// 	this.playhead.draw();
-		// }
-
-		// Update clips zoom only when it changes
-		if (state.viewport.zoom !== this.lastZoom) {
-			this.lastZoom = state.viewport.zoom;
-			this.tracks.forEach(track => {
-				track.getClips().forEach(clip => {
-					clip.setPixelsPerSecond(state.viewport.zoom);
-				});
-			});
-		}
-
-		// Draw tracks
-		this.tracks.forEach(track => {
-			track.draw();
-		});
-
-		// Render other elements
-		this.renderBackground(state);
-		this.renderSelection(state);
+	public render(state: TimelineState): void {
+		this.updateRuler(state);
+		this.updateClipsZoom(state);
+		this.tracks.forEach(track => track.draw());
+		this.renderBackground();
 	}
 
 	public clear(): void {
-		this.layers.forEach(layer => {
-			layer.removeChildren();
-		});
+		this.layers.forEach(layer => layer.removeChildren());
 	}
 
 	public resize(width: number, height: number): void {
@@ -98,10 +60,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 	}
 
 	public createLayer(name: string, zIndex: number): void {
-		if (this.layers.has(name)) {
-			console.warn(`Layer "${name}" already exists`);
-			return;
-		}
+		if (this.layers.has(name)) return;
 
 		const layer = new PIXI.Container();
 		layer.zIndex = zIndex;
@@ -112,72 +71,66 @@ export class TimelineRenderer implements ITimelineRenderer {
 
 	public getLayer(name: RenderLayer | string): PIXI.Container {
 		const layer = this.layers.get(name);
-		if (!layer) {
-			throw new Error(`Layer "${name}" not found`);
-		}
+		if (!layer) throw new Error(`Layer "${name}" not found`);
 		return layer;
 	}
 
 	public removeLayer(name: string): void {
 		const layer = this.layers.get(name);
-		if (layer) {
-			this.application.stage.removeChild(layer);
-			this.layers.delete(name);
-		}
+		if (!layer) return;
+		this.application.stage.removeChild(layer);
+		this.layers.delete(name);
 	}
 
-	public getApplication(): PIXI.Application {
-		return this.application;
-	}
-
-	public getStage(): PIXI.Container {
-		return this.application.stage;
-	}
+	public getApplication = (): PIXI.Application => this.application;
+	public getStage = (): PIXI.Container => this.application.stage;
 
 	public dispose(): void {
-		// Dispose tracks
 		this.tracks.forEach(track => track.dispose());
 		this.tracks.clear();
-
-		// Dispose ruler
-		if (this.ruler) {
-			this.ruler.dispose();
-			this.ruler = null;
-		}
-
+		this.ruler?.dispose();
+		this.ruler = null;
 		this.clear();
 		this.application.destroy(true);
 	}
 
 	private initializeLayers(): void {
-		// Create default layers in order
-		this.createLayer("background", 0);
-		this.createLayer("tracks", 1);
-		this.createLayer("clips", 2);
-		this.createLayer("selection", 3);
-		this.createLayer("overlay", 4); // Ruler goes here
-		this.createLayer("playhead", 5); // Playhead above ruler
-		this.createLayer("features", 6);
+		this.LAYER_CONFIG.forEach(({ name, zIndex }) => this.createLayer(name, zIndex));
 	}
 
-	private renderBackground(__state: TimelineState): void {
+	private async initializeRuler(): Promise<void> {
+		this.ruler = new TimelineRuler(this.size.width);
+		await this.ruler.load();
+		this.getLayer("overlay").addChild(this.ruler.getContainer());
+	}
+
+	private renderBackground(): void {
 		const layer = this.getLayer("background");
 		layer.removeChildren();
-
-		// Draw background with PIXI v8 chaining syntax
-		const bg = new PIXI.Graphics().rect(0, 0, this.size.width, this.size.height).fill({ color: 0x1a1a1a }).stroke({ width: 1, color: 0x2a2a2a });
-
-		layer.addChild(bg);
+		layer.addChild(
+			new PIXI.Graphics()
+				.rect(0, 0, this.size.width, this.size.height)
+				.fill({ color: 0x1a1a1a })
+				.stroke({ width: 1, color: 0x2a2a2a })
+		);
 	}
 
-	private renderSelection(__state: TimelineState): void {
-		const layer = this.getLayer("selection");
-		layer.removeChildren();
-
-		// Selection rendering will be implemented with selection tool
+	private updateRuler(state: TimelineState): void {
+		if (!this.ruler) return;
+		this.ruler.setZoom(state.viewport.zoom);
+		this.ruler.setScrollX(state.viewport.scrollX);
+		this.ruler.draw();
 	}
 
-	// Track management methods
+	private updateClipsZoom(state: TimelineState): void {
+		if (state.viewport.zoom === this.lastZoom) return;
+		this.lastZoom = state.viewport.zoom;
+		this.tracks.forEach(track =>
+			track.getClips().forEach(clip => clip.setPixelsPerSecond(state.viewport.zoom))
+		);
+	}
+
+	// Track management
 	public addTrack(trackId: string, index: number): ITimelineTrack {
 		const track = new TimelineTrack(trackId, index);
 		this.tracks.set(trackId, track);
@@ -188,26 +141,13 @@ export class TimelineRenderer implements ITimelineRenderer {
 
 	public removeTrack(trackId: string): void {
 		const track = this.tracks.get(trackId);
-		if (track) {
-			this.getLayer("tracks").removeChild(track.getContainer());
-			track.dispose();
-			this.tracks.delete(trackId);
-		}
+		if (!track) return;
+		this.getLayer("tracks").removeChild(track.getContainer());
+		track.dispose();
+		this.tracks.delete(trackId);
 	}
 
-	public getTrack(trackId: string): ITimelineTrack | undefined {
-		return this.tracks.get(trackId);
-	}
-
-	public getTracks(): ITimelineTrack[] {
-		return Array.from(this.tracks.values());
-	}
-
-	/**
-	 * Get track by its index (helper for registry sync)
-	 */
-	public getTrackByIndex(index: number): ITimelineTrack | undefined {
-		const trackId = `track-${index}`;
-		return this.tracks.get(trackId);
-	}
+	public getTrack = (trackId: string): ITimelineTrack | undefined => this.tracks.get(trackId);
+	public getTracks = (): ITimelineTrack[] => Array.from(this.tracks.values());
+	public getTrackByIndex = (index: number): ITimelineTrack | undefined => this.tracks.get(`track-${index}`);
 }

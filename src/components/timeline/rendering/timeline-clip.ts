@@ -190,7 +190,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	private updateLabelFromAsset(): void {
 		if (!this.clipData?.asset) return;
 
-		const asset = this.clipData.asset;
+		const {asset} = this.clipData;
 		if (asset.type === "text" && "text" in asset) {
 			this.label.text = asset.text;
 		} else if ("src" in asset) {
