@@ -7,87 +7,60 @@ import { ITimelineTrack, ITimelineClip } from "../types/timeline.interfaces";
  * Represents a track in the timeline that can contain multiple clips
  */
 export class TimelineTrack extends Entity implements ITimelineTrack {
-	private trackId: string;
-	private index: number;
-	private height: number;
 	private clips: Map<string, ITimelineClip> = new Map();
 	private graphics: PIXI.Graphics;
 	private clipsContainer: PIXI.Container;
+	
+	private static readonly VISUAL = {
+		rulerHeight: 30,
+		trackGap: 2,
+		backgroundWidth: 5000,
+		borderColor: 0x404040,
+		borderWidth: 1,
+		backgroundAlpha: 0.5,
+		evenTrackColor: 0x2a2a2a,
+		oddTrackColor: 0x252525
+	} as const;
 
-	constructor(trackId: string, index: number, height: number = 60) {
+	constructor(
+		private trackId: string,
+		private index: number,
+		private height: number = 60
+	) {
 		super();
-		this.trackId = trackId;
-		this.index = index;
-		this.height = height;
-
-		// Create graphics for track background
-		this.graphics = new PIXI.Graphics();
-		this.getContainer().addChild(this.graphics);
-
-		// Create container for clips
-		this.clipsContainer = new PIXI.Container();
-		this.clipsContainer.eventMode = "static";
-		this.clipsContainer.interactiveChildren = true;
-		this.getContainer().addChild(this.clipsContainer);
-
-		// Enable events on track container too
-		this.getContainer().eventMode = "static";
-		this.getContainer().interactiveChildren = true;
+		this.setupContainers();
 	}
 
 	public async load(): Promise<void> {
-		// Initialize track
 		this.updateLayout();
 	}
 
+	private forEachClip(callback: (clip: ITimelineClip) => void): void {
+		this.clips.forEach(callback);
+	}
+
 	public update(deltaTime: number, elapsed: number): void {
-		// Update all clips
-		this.clips.forEach(clip => {
-			clip.update(deltaTime, elapsed);
-		});
+		this.forEachClip(clip => clip.update(deltaTime, elapsed));
 	}
 
 	public draw(): void {
-		// Draw track background
 		this.drawBackground();
-
-		// Draw all clips
-		this.clips.forEach(clip => {
-			clip.draw();
-		});
+		this.forEachClip(clip => clip.draw());
 	}
 
 	public dispose(): void {
-		// Dispose all clips
-		this.clips.forEach(clip => {
-			clip.dispose();
-		});
+		this.forEachClip(clip => clip.dispose());
 		this.clips.clear();
-
-		// Clear graphics
-		this.graphics.clear();
+		
 		this.graphics.destroy();
-
-		// Clear containers
-		this.clipsContainer.removeChildren();
-		this.clipsContainer.destroy();
+		this.clipsContainer.destroy({ children: true });
 	}
 
-	public getTrackId(): string {
-		return this.trackId;
-	}
-
-	public getIndex(): number {
-		return this.index;
-	}
-
-	public getHeight(): number {
-		return this.height;
-	}
-
-	public getClips(): ITimelineClip[] {
-		return Array.from(this.clips.values());
-	}
+	// Simple getters
+	public getTrackId = () => this.trackId;
+	public getIndex = () => this.index;
+	public getHeight = () => this.height;
+	public getClips = () => Array.from(this.clips.values());
 
 	public addClip(clip: ITimelineClip): void {
 		const clipId = clip.getClipId();
@@ -101,38 +74,24 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 		this.updateLayout();
 	}
 
-	public removeClip(clipId: string): void {
+	public removeClip(clipId: string, dispose = true): void {
 		const clip = this.clips.get(clipId);
-		if (clip) {
-			this.clipsContainer.removeChild(clip.getContainer());
-			clip.dispose();
-			this.clips.delete(clipId);
-			this.updateLayout();
-		}
+		if (!clip) return;
+		
+		this.clipsContainer.removeChild(clip.getContainer());
+		if (dispose) clip.dispose();
+		this.clips.delete(clipId);
+		this.updateLayout();
 	}
 
 	public detachClip(clipId: string): void {
-		const clip = this.clips.get(clipId);
-		if (clip) {
-			this.clipsContainer.removeChild(clip.getContainer());
-			this.clips.delete(clipId);
-			this.updateLayout();
-		}
+		this.removeClip(clipId, false);
 	}
 
 	public updateLayout(): void {
-		// Position track at correct vertical position with offset for ruler
-		const rulerHeight = 30;
-		const trackGap = 2;
+		const { rulerHeight, trackGap } = TimelineTrack.VISUAL;
 		this.getContainer().y = this.index * (this.height + trackGap) + rulerHeight;
-
-		// Sort clips by start time
-		const sortedClips = Array.from(this.clips.values()).sort((a, b) => a.getStartTime() - b.getStartTime());
-
-		// Position clips within track
-		sortedClips.forEach(clip => {
-			// Clips will position themselves based on their start time
-			// This is just to ensure they're in the correct container
+		this.forEachClip(clip => {
 			const clipContainer = clip.getContainer();
 			clipContainer.y = 0;
 		});
@@ -149,16 +108,32 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 		this.drawBackground();
 	}
 
+	private setupContainers(): void {
+		this.graphics = new PIXI.Graphics();
+		this.clipsContainer = new PIXI.Container();
+		
+		const container = this.getContainer();
+		container.addChild(this.graphics, this.clipsContainer);
+		
+		container.eventMode = "static";
+		container.interactiveChildren = true;
+		this.clipsContainer.eventMode = "static";
+		this.clipsContainer.interactiveChildren = true;
+	}
+
 	private drawBackground(): void {
+		const { backgroundWidth, borderColor, borderWidth, backgroundAlpha, evenTrackColor, oddTrackColor } = TimelineTrack.VISUAL;
+		
 		this.graphics.clear();
-
-		// Draw track background with alternating colors using PIXI v8 API
-		const backgroundColor = this.index % 2 === 0 ? 0x2a2a2a : 0x252525;
+		
+		const backgroundColor = this.index % 2 === 0 ? evenTrackColor : oddTrackColor;
 		this.graphics
-			.rect(0, 0, 5000, this.height) // Wide enough for scrolling
-			.fill({ color: backgroundColor, alpha: 0.5 });
+			.rect(0, 0, backgroundWidth, this.height)
+			.fill({ color: backgroundColor, alpha: backgroundAlpha });
 
-		// Draw bottom border
-		this.graphics.moveTo(0, this.height).lineTo(5000, this.height).stroke({ width: 1, color: 0x404040 });
+		this.graphics
+			.moveTo(0, this.height)
+			.lineTo(backgroundWidth, this.height)
+			.stroke({ width: borderWidth, color: borderColor });
 	}
 }
