@@ -197,7 +197,7 @@ export class ClipRegistryManager {
 
 		if (!clipId) {
 			// Generate new ID if we don't have one
-			clipId = this.identityService.generateClipId(player, trackIndex, clipIndex);
+			clipId = this.identityService.generateClipId(player);
 			// Store it for future lookups
 			this.playerToClipId.set(player, clipId);
 		}
@@ -348,7 +348,7 @@ export class ClipRegistryManager {
 
 							if (!existingClip) {
 								// New clip - generate ID and mark as added
-								clipId = this.identityService.generateClipId(player, trackIndex, clipIndex);
+								clipId = this.identityService.generateClipId(player);
 								delta.added.push({
 									id: clipId,
 									player,
