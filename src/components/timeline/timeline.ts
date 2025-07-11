@@ -5,10 +5,10 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { FeatureManager } from "./features/feature-manager";
-import { ToolManager } from "./features/tool-manager";
 import { TimelineRenderer } from "./rendering/timeline-renderer";
 import { ClipRegistryManager } from "./state/clip-registry";
 import { TimelineStateManager } from "./state/timeline-state";
+import { ToolManager } from "./tools/tool-manager";
 import {
 	ITimeline,
 	ITimelineState,
