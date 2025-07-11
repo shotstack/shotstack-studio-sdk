@@ -39,7 +39,7 @@ export class ClipRegistryManager {
 	private syncFrameId: number | null = null;
 	private timeline: any = null; // Timeline reference will be set after construction
 	private playerToClipId = new WeakMap<Player, string>(); // Moved from state for serializability
-	
+
 	// Event handler references for cleanup
 	private handleClipUpdatedBound: (data: any) => void;
 	private handleClipDeletedBound: (data: any) => void;
@@ -140,8 +140,7 @@ export class ClipRegistryManager {
 			const delta = this.computeDelta();
 
 			// Apply delta if there are any changes
-			if (delta.added.length > 0 || delta.moved.length > 0 || 
-			    delta.removed.length > 0 || delta.updated.length > 0) {
+			if (delta.added.length > 0 || delta.moved.length > 0 || delta.removed.length > 0 || delta.updated.length > 0) {
 				await this.applyDelta(delta);
 
 				// Update generation counter
@@ -179,30 +178,30 @@ export class ClipRegistryManager {
 	public getClipIdAtPosition(trackIndex: number, clipIndex: number): string | null {
 		// First check if we have this clip in the registry
 		const registryState = this.state.getState().clipRegistry;
-		
+
 		// Look through registered clips to find one at this position
 		for (const [clipId, registeredClip] of registryState.clips) {
 			if (registeredClip.trackIndex === trackIndex && registeredClip.clipIndex === clipIndex) {
 				return clipId;
 			}
 		}
-		
+
 		// If not in registry, check if the clip exists and get its player
 		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
 		if (!player) {
 			return null;
 		}
-		
+
 		// Check if we have this player in our WeakMap
 		let clipId = this.playerToClipId.get(player);
-		
+
 		if (!clipId) {
 			// Generate new ID if we don't have one
 			clipId = this.identityService.generateClipId(player, trackIndex, clipIndex);
 			// Store it for future lookups
 			this.playerToClipId.set(player, clipId);
 		}
-		
+
 		return clipId;
 	}
 
@@ -220,7 +219,7 @@ export class ClipRegistryManager {
 	 */
 	public findClipByContainer(container: PIXI.Container): RegisteredClip | null {
 		const registryState = this.state.getState().clipRegistry;
-		
+
 		// Walk up the display hierarchy to find a clip container
 		let current: PIXI.Container | null = container;
 		while (current) {
@@ -231,7 +230,7 @@ export class ClipRegistryManager {
 			}
 			current = current.parent;
 		}
-		
+
 		return null;
 	}
 
@@ -243,7 +242,7 @@ export class ClipRegistryManager {
 		const registryState = this.state.getState().clipRegistry;
 		const newClips = new Map(registryState.clips);
 		const newTrackIndex = new Map(registryState.trackIndex);
-		
+
 		// Create registered clip entry
 		const registeredClip: RegisteredClip = {
 			id: clipId,
@@ -253,18 +252,18 @@ export class ClipRegistryManager {
 			playerSignature: this.identityService.getPlayerSignature(player),
 			lastSeen: Date.now()
 		};
-		
+
 		// Update clips map
 		newClips.set(clipId, registeredClip);
-		
+
 		// Update track index
 		const trackClips = newTrackIndex.get(trackIndex) || new Set<string>();
 		trackClips.add(clipId);
 		newTrackIndex.set(trackIndex, trackClips);
-		
+
 		// Update player to ID mapping
 		this.playerToClipId.set(player, clipId);
-		
+
 		// Update state
 		this.state.update({
 			clipRegistry: {
@@ -282,17 +281,17 @@ export class ClipRegistryManager {
 	public unregisterClip(clipId: string): void {
 		const registryState = this.state.getState().clipRegistry;
 		const clip = registryState.clips.get(clipId);
-		
+
 		if (!clip) {
 			return; // Clip not found
 		}
-		
+
 		const newClips = new Map(registryState.clips);
 		const newTrackIndex = new Map(registryState.trackIndex);
-		
+
 		// Remove from clips map
 		newClips.delete(clipId);
-		
+
 		// Remove from track index
 		const trackClips = newTrackIndex.get(clip.trackIndex);
 		if (trackClips) {
@@ -301,7 +300,7 @@ export class ClipRegistryManager {
 				newTrackIndex.delete(clip.trackIndex);
 			}
 		}
-		
+
 		// Update state
 		this.state.update({
 			clipRegistry: {
@@ -326,7 +325,7 @@ export class ClipRegistryManager {
 
 		const registryState = this.state.getState().clipRegistry;
 		const editData = this.edit.getEdit();
-		const {tracks} = editData.timeline;
+		const { tracks } = editData.timeline;
 
 		// Track seen clips to identify removed ones
 		const seenClipIds = new Set<string>();
@@ -364,7 +363,7 @@ export class ClipRegistryManager {
 					if (existingClip.trackIndex !== trackIndex || existingClip.clipIndex !== clipIndex) {
 						// Clip moved to different position
 						delta.moved.push({
-							id: clipId!,  // We know clipId exists here since we found existingClip
+							id: clipId!, // We know clipId exists here since we found existingClip
 							player,
 							trackIndex,
 							clipIndex,
@@ -374,7 +373,7 @@ export class ClipRegistryManager {
 						// Check if clip needs updating
 						if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
 							delta.updated.push({
-								id: clipId!,  // We know clipId exists here since we found existingClip
+								id: clipId!, // We know clipId exists here since we found existingClip
 								player,
 								trackIndex,
 								clipIndex,
@@ -434,23 +433,23 @@ export class ClipRegistryManager {
 		// Process moved clips (reuse visuals)
 		for (const moved of delta.moved) {
 			if (!moved.visual) continue;
-			
+
 			// Get current registration before updating
 			const currentReg = this.findClipById(moved.id);
 			if (!currentReg) continue;
-			
+
 			// Handle cross-track moves
 			if (currentReg.trackIndex !== moved.trackIndex) {
 				this.moveClipBetweenTracks(moved.id, currentReg.trackIndex, moved.trackIndex);
 			}
-			
+
 			// Update clip properties from Edit state
 			const editClip = this.edit.getClip(moved.trackIndex, moved.clipIndex);
 			if (editClip) {
 				moved.visual.setStart(editClip.start || 0);
 				moved.visual.setDuration(editClip.length || 1);
 			}
-			
+
 			// Update registry with new position
 			this.updateClipPosition(moved.id, moved.trackIndex, moved.clipIndex);
 		}
@@ -464,19 +463,13 @@ export class ClipRegistryManager {
 			// Create visual clip
 			const { TimelineClip } = await import("../entities/TimelineClip");
 			const trackId = `track-${added.trackIndex}`;
-			const visual = new TimelineClip(
-				added.id, 
-				trackId, 
-				editClip.start || 0, 
-				editClip.length || 1, 
-				editClip
-			);
+			const visual = new TimelineClip(added.id, trackId, editClip.start || 0, editClip.length || 1, editClip);
 
 			// Load the visual
 			await visual.load();
 
 			// Set zoom level
-			const {zoom} = this.state.getState().viewport;
+			const { zoom } = this.state.getState().viewport;
 			visual.setPixelsPerSecond(zoom);
 
 			// Add to track
@@ -506,7 +499,7 @@ export class ClipRegistryManager {
 				this.updateClipSignature(updated.id, newSignature);
 			}
 		}
-		
+
 		// Trigger a render to show changes
 		if (this.timeline.draw) {
 			this.timeline.draw();
@@ -550,13 +543,13 @@ export class ClipRegistryManager {
 	private moveClipBetweenTracks(clipId: string, fromTrackIndex: number, toTrackIndex: number): void {
 		const clip = this.findClipById(clipId);
 		if (!clip?.visual) return;
-		
+
 		// Detach from old track
 		const oldTrack = this.timeline.getRenderer().getTrackByIndex(fromTrackIndex);
 		if (oldTrack) {
 			oldTrack.detachClip(clipId);
 		}
-		
+
 		// Attach to new track
 		const newTrack = this.timeline.getRenderer().getTrackByIndex(toTrackIndex);
 		if (newTrack) {

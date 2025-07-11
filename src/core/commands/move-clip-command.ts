@@ -38,7 +38,7 @@ export class MoveClipCommand implements EditCommand {
 		// Get the clip to move
 		this.player = fromTrack[this.fromClipIndex];
 		this.originalStart = this.player.clipConfiguration.start;
-		
+
 		console.log(`MoveClipCommand: Moving clip from track ${this.fromTrackIndex} index ${this.fromClipIndex}`);
 		console.log(`  Clip start time: ${this.originalStart}`);
 
@@ -52,13 +52,13 @@ export class MoveClipCommand implements EditCommand {
 
 			// Remove from current track
 			fromTrack.splice(this.fromClipIndex, 1);
-			
+
 			// Update the player's layer
 			this.player.layer = this.toTrackIndex + 1;
-			
+
 			// Add to new track at the correct position (sorted by start time)
 			const toTrack = tracks[this.toTrackIndex];
-			
+
 			// Find the correct insertion point based on start time
 			let insertIndex = 0;
 			for (let i = 0; i < toTrack.length; i++) {
@@ -70,52 +70,52 @@ export class MoveClipCommand implements EditCommand {
 				}
 				insertIndex++;
 			}
-			
+
 			// Insert at the correct position
 			toTrack.splice(insertIndex, 0, this.player);
-			
+
 			// Store the new clip index for undo
 			this.originalClipIndex = insertIndex;
 		}
 
 		// Update the clip position
 		this.player.clipConfiguration.start = this.newStart;
-		
+
 		// Update the container's z-index if we changed tracks
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			const container = this.player.getContainer();
 			container.zIndex = 100000 - this.player.layer * 100;
 		}
-		
+
 		this.player.reconfigureAfterRestore();
 		this.player.draw();
 
 		// Update total duration and emit event
 		context.updateDuration();
-		
+
 		// If we moved tracks, we need to update all clips in both tracks
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			// Force all clips in the affected tracks to redraw
 			const fromTrack = tracks[this.fromTrackIndex];
 			const toTrack = tracks[this.toTrackIndex];
-			
+
 			[...fromTrack, ...toTrack].forEach(clip => {
 				if (clip && clip !== this.player) {
 					clip.draw();
 				}
 			});
 		}
-		
+
 		context.emitEvent("clip:updated", {
-			previous: { 
-				clip: { ...this.player.clipConfiguration, start: this.originalStart }, 
-				trackIndex: this.fromTrackIndex, 
-				clipIndex: this.fromClipIndex 
+			previous: {
+				clip: { ...this.player.clipConfiguration, start: this.originalStart },
+				trackIndex: this.fromTrackIndex,
+				clipIndex: this.fromClipIndex
 			},
-			current: { 
-				clip: this.player.clipConfiguration, 
-				trackIndex: this.toTrackIndex, 
-				clipIndex: this.originalClipIndex 
+			current: {
+				clip: this.player.clipConfiguration,
+				trackIndex: this.toTrackIndex,
+				clipIndex: this.originalClipIndex
 			}
 		});
 	}
@@ -144,27 +144,27 @@ export class MoveClipCommand implements EditCommand {
 
 		// Restore original position
 		this.player.clipConfiguration.start = this.originalStart;
-		
+
 		// Restore z-index if we moved tracks
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			const container = this.player.getContainer();
 			container.zIndex = 100000 - this.player.layer * 100;
 		}
-		
+
 		this.player.reconfigureAfterRestore();
 		this.player.draw();
 
 		context.updateDuration();
 		context.emitEvent("clip:updated", {
-			previous: { 
-				clip: { ...this.player.clipConfiguration, start: this.newStart }, 
-				trackIndex: this.toTrackIndex, 
-				clipIndex: this.originalClipIndex 
+			previous: {
+				clip: { ...this.player.clipConfiguration, start: this.newStart },
+				trackIndex: this.toTrackIndex,
+				clipIndex: this.originalClipIndex
 			},
-			current: { 
-				clip: this.player.clipConfiguration, 
-				trackIndex: this.fromTrackIndex, 
-				clipIndex: this.fromClipIndex 
+			current: {
+				clip: this.player.clipConfiguration,
+				trackIndex: this.fromTrackIndex,
+				clipIndex: this.fromClipIndex
 			}
 		});
 	}

@@ -200,7 +200,7 @@ export class Canvas {
 		// Set up background click handling for selection
 		this.background.eventMode = "static";
 		this.background.on("pointerdown", this.onBackgroundClick.bind(this));
-		
+
 		this.application.stage.on("click", this.onClick.bind(this));
 
 		this.edit.getContainer().position = {
@@ -212,7 +212,7 @@ export class Canvas {
 	private onClick(): void {
 		this.edit.pause();
 	}
-	
+
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
 		// Check if the click was on the background (not on a clip)
 		if (event.target === this.background) {

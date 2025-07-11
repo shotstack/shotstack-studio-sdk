@@ -7,12 +7,12 @@ import type { TimelineClip } from "../entities/TimelineClip";
 
 // Clip Registry Types
 export interface RegisteredClip {
-	id: string;                    // Stable, generated ID
-	visual: TimelineClip;          // Visual entity
-	trackIndex: number;            // Current position
+	id: string; // Stable, generated ID
+	visual: TimelineClip; // Visual entity
+	trackIndex: number; // Current position
 	clipIndex: number;
-	playerSignature: string;       // Hash of player properties
-	lastSeen: number;             // Timestamp for lifecycle
+	playerSignature: string; // Hash of player properties
+	lastSeen: number; // Timestamp for lifecycle
 }
 
 export interface ClipRegistryState {

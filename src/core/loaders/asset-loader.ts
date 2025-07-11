@@ -82,7 +82,7 @@ export class AssetLoader {
 
 	private async loadVideoForSafari<TResolvedAsset>(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<TResolvedAsset> {
 		const url = this.extractUrl(loadOptions)!;
-		const data = typeof loadOptions === "object" ? loadOptions.data ?? {} : {};
+		const data = typeof loadOptions === "object" ? (loadOptions.data ?? {}) : {};
 
 		const texture = await new Promise<pixi.Texture>((resolve, reject) => {
 			const video = document.createElement("video");

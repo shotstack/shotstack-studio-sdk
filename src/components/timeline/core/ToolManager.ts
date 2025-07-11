@@ -115,8 +115,7 @@ export class ToolManager implements IToolManager {
 
 	private updateSortedInterceptors(): void {
 		// Sort interceptors by priority (higher priority first)
-		this.sortedInterceptors = Array.from(this.interceptors.values())
-			.sort((a, b) => b.priority - a.priority);
+		this.sortedInterceptors = Array.from(this.interceptors.values()).sort((a, b) => b.priority - a.priority);
 	}
 
 	// Input event delegation
@@ -213,7 +212,6 @@ export class ToolManager implements IToolManager {
 			this.activeTool.onKeyUp(event);
 		}
 	}
-
 
 	private updateCursor(cursor: string): void {
 		if (this.cursorElement) {

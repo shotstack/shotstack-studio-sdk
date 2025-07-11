@@ -121,7 +121,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		if (clipData.asset?.type) {
 			this.clipColor = this.getColorForAssetType(clipData.asset.type);
 		}
-		
+
 		// Update label based on asset type
 		if (clipData.asset?.type === "text" && "text" in clipData.asset) {
 			this.label.text = clipData.asset.text;
@@ -130,7 +130,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 			const filename = clipData.asset.src.split("/").pop() || "";
 			this.label.text = filename;
 		}
-		
+
 		this.updateVisuals();
 	}
 

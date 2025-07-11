@@ -6,7 +6,6 @@ import * as PIXI from "pixi.js";
 import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../interfaces";
 import { TimelinePointerEvent } from "../types";
 
-
 /**
  * Drag interceptor for moving clips within and between tracks
  * This runs with medium priority to allow resize operations to take precedence
@@ -371,7 +370,7 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// Check track bounds
 		const editData = this.context.edit.getEdit();
-		const {tracks} = editData.timeline;
+		const { tracks } = editData.timeline;
 		if (position.trackIndex < 0 || position.trackIndex >= tracks.length) {
 			return false;
 		}
@@ -419,7 +418,7 @@ export class DragInterceptor implements IToolInterceptor {
 
 		const clipDuration = this.draggedPlayer.clipConfiguration.length || 0;
 		const editData = this.context.edit.getEdit();
-		const {tracks} = editData.timeline;
+		const { tracks } = editData.timeline;
 
 		// First, try to find a valid position in the target track
 		const targetTrack = tracks[position.trackIndex];

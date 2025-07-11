@@ -84,11 +84,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 			const finalDuration = Math.max(0.1, this.previewDuration);
 
 			// Create and execute resize command
-			const command = new ResizeClipCommand(
-				this.targetClip.trackIndex,
-				this.targetClip.clipIndex,
-				finalDuration
-			);
+			const command = new ResizeClipCommand(this.targetClip.trackIndex, this.targetClip.clipIndex, finalDuration);
 
 			try {
 				this.context.executeCommand(command);
@@ -240,7 +236,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 				return null;
 			}
 
-			const {clips} = track;
+			const { clips } = track;
 
 			// Find the next clip in the track
 			let nextClipStart: number | null = null;

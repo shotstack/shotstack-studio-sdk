@@ -34,7 +34,7 @@ export class ClipIdentityService {
 		const props = {
 			assetType: config.asset?.type,
 			assetSrc: this.extractAssetIdentifier(config.asset),
-			duration: config.length,
+			duration: config.length
 			// Add other identifying properties but NOT position (start time)
 			// as position changes should not affect identity
 		};
@@ -53,10 +53,12 @@ export class ClipIdentityService {
 		// Handle different asset types
 		if (asset.src) {
 			return asset.src;
-		} if (asset.text) {
+		}
+		if (asset.text) {
 			// For text assets, use the text content as identifier
 			return asset.text;
-		} if (asset.html) {
+		}
+		if (asset.html) {
 			// For HTML assets, use the HTML content
 			return asset.html;
 		}
@@ -72,15 +74,15 @@ export class ClipIdentityService {
 	private hashObject(obj: any): string {
 		// Sort keys to ensure consistent hashing
 		const str = JSON.stringify(obj, Object.keys(obj).sort());
-		
+
 		// Simple hash function - can be replaced with crypto.subtle.digest for production
 		let hash = 0;
 		for (let i = 0; i < str.length; i++) {
 			const char = str.charCodeAt(i);
-			hash = ((hash << 5) - hash) + char;
+			hash = (hash << 5) - hash + char;
 			hash &= hash; // Convert to 32-bit integer
 		}
-		
+
 		return Math.abs(hash).toString(36);
 	}
 
@@ -90,17 +92,17 @@ export class ClipIdentityService {
 	 */
 	private async hashObjectSecure(obj: any): Promise<string> {
 		const str = JSON.stringify(obj, Object.keys(obj).sort());
-		
+
 		// Check if crypto.subtle is available
-		if (typeof crypto !== 'undefined' && crypto.subtle) {
+		if (typeof crypto !== "undefined" && crypto.subtle) {
 			const encoder = new TextEncoder();
 			const data = encoder.encode(str);
-			const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+			const hashBuffer = await crypto.subtle.digest("SHA-256", data);
 			const hashArray = Array.from(new Uint8Array(hashBuffer));
-			const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+			const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 			return hashHex.substring(0, 16); // Use first 16 chars for brevity
 		}
-		
+
 		// Fallback to simple hash
 		return this.hashObject(obj);
 	}

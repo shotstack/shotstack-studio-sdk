@@ -24,7 +24,7 @@ export type CommandContext = {
 	restoreClipConfiguration(clip: Player, previousConfig: ClipType): void;
 	updateDuration(): void;
 	emitEvent(name: string, data: unknown): void;
-	findClipIndices(player: Player): {trackIndex: number; clipIndex: number} | null;
+	findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null;
 	getClipAt(trackIndex: number, clipIndex: number): Player | null;
 	getSelectedClip(): Player | null;
 	setSelectedClip(clip: Player | null): void;

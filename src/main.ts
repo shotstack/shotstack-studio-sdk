@@ -2,7 +2,6 @@ import { Timeline } from "./components/timeline/core/Timeline";
 
 import { Edit, Canvas, Controls } from "./index";
 
-
 /**
  * This is a simple example that implements the README quick start guide
  * Run with `make dev` to see it in action

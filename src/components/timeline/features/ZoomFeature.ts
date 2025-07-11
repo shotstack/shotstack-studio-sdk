@@ -27,16 +27,16 @@ export class ZoomFeature extends TimelineFeature {
 		}
 
 		event.preventDefault();
-		
+
 		// Calculate zoom change
 		const delta = -event.deltaY * 0.01;
 		const newZoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoomLevel + delta));
-		
+
 		if (newZoomLevel !== this.zoomLevel) {
 			// Update zoom
 			this.zoomLevel = newZoomLevel;
 			const newPixelsPerSecond = this.basePixelsPerSecond * this.zoomLevel;
-			
+
 			// Apply changes - this will update the state with the new zoom
 			this.context.timeline.setPixelsPerSecond(newPixelsPerSecond);
 		}

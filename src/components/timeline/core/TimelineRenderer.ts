@@ -73,7 +73,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 				});
 			});
 		}
-		
+
 		// Draw tracks
 		this.tracks.forEach(track => {
 			track.draw();
@@ -153,8 +153,8 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.createLayer("tracks", 1);
 		this.createLayer("clips", 2);
 		this.createLayer("selection", 3);
-		this.createLayer("overlay", 4);  // Ruler goes here
-		this.createLayer("playhead", 5);  // Playhead above ruler
+		this.createLayer("overlay", 4); // Ruler goes here
+		this.createLayer("playhead", 5); // Playhead above ruler
 		this.createLayer("features", 6);
 	}
 

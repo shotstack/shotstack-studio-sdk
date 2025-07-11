@@ -108,7 +108,7 @@ export class FeatureManager implements IFeatureManager {
 	public handleWheel(event: TimelineWheelEvent): boolean {
 		// Check each enabled feature for wheel handling
 		for (const feature of this.features.values()) {
-			if (feature.enabled && 'handleWheel' in feature) {
+			if (feature.enabled && "handleWheel" in feature) {
 				const handled = (feature as any).handleWheel(event);
 				if (handled !== false) {
 					return true; // Event was handled
@@ -121,7 +121,7 @@ export class FeatureManager implements IFeatureManager {
 	public handleKeyDown(event: KeyboardEvent): boolean {
 		// Check each enabled feature for key down handling
 		for (const feature of this.features.values()) {
-			if (feature.enabled && 'handleKeyDown' in feature) {
+			if (feature.enabled && "handleKeyDown" in feature) {
 				const handled = (feature as any).handleKeyDown(event);
 				if (handled !== false) {
 					return true; // Event was handled
@@ -134,7 +134,7 @@ export class FeatureManager implements IFeatureManager {
 	public handleKeyUp(event: KeyboardEvent): boolean {
 		// Check each enabled feature for key up handling
 		for (const feature of this.features.values()) {
-			if (feature.enabled && 'handleKeyUp' in feature) {
+			if (feature.enabled && "handleKeyUp" in feature) {
 				const handled = (feature as any).handleKeyUp(event);
 				if (handled !== false) {
 					return true; // Event was handled
@@ -147,7 +147,7 @@ export class FeatureManager implements IFeatureManager {
 	public handlePointerDown(event: TimelinePointerEvent): boolean {
 		// Check each enabled feature for pointer down handling
 		for (const feature of this.features.values()) {
-			if (feature.enabled && 'handlePointerDown' in feature) {
+			if (feature.enabled && "handlePointerDown" in feature) {
 				const handled = (feature as any).handlePointerDown(event);
 				if (handled !== false) {
 					return true; // Event was handled
@@ -160,7 +160,7 @@ export class FeatureManager implements IFeatureManager {
 	public handlePointerMove(event: TimelinePointerEvent): boolean {
 		// Check each enabled feature for pointer move handling
 		for (const feature of this.features.values()) {
-			if (feature.enabled && 'handlePointerMove' in feature) {
+			if (feature.enabled && "handlePointerMove" in feature) {
 				const handled = (feature as any).handlePointerMove(event);
 				if (handled !== false) {
 					return true; // Event was handled
@@ -173,7 +173,7 @@ export class FeatureManager implements IFeatureManager {
 	public handlePointerUp(event: TimelinePointerEvent): boolean {
 		// Check each enabled feature for pointer up handling
 		for (const feature of this.features.values()) {
-			if (feature.enabled && 'handlePointerUp' in feature) {
+			if (feature.enabled && "handlePointerUp" in feature) {
 				const handled = (feature as any).handlePointerUp(event);
 				if (handled !== false) {
 					return true; // Event was handled

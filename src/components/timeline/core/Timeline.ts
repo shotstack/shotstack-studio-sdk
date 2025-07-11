@@ -6,7 +6,17 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { TimelineClip } from "../entities/TimelineClip";
-import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager, ITimelineToolContext, ITimelineFeatureContext } from "../interfaces";
+import {
+	ITimeline,
+	ITimelineState,
+	ITimelineRenderer,
+	ITimelineTool,
+	ITimelineFeature,
+	IToolManager,
+	IFeatureManager,
+	ITimelineToolContext,
+	ITimelineFeatureContext
+} from "../interfaces";
 import { TimelineState, StateChanges, RegisteredClip } from "../types";
 
 import { ClipRegistryManager } from "./ClipRegistryManager";
@@ -44,7 +54,7 @@ export class Timeline extends Entity implements ITimeline {
 
 		// Initialize clip registry manager as core infrastructure
 		this.clipRegistryManager = new ClipRegistryManager(this.state, this.edit);
-		
+
 		// Set Timeline reference on ClipRegistryManager
 		this.clipRegistryManager.setTimeline(this);
 
@@ -230,7 +240,6 @@ export class Timeline extends Entity implements ITimeline {
 		});
 	}
 
-
 	public getRenderer(): ITimelineRenderer {
 		return this.renderer;
 	}
@@ -298,9 +307,9 @@ export class Timeline extends Entity implements ITimeline {
 			clipRegistry: this.clipRegistryManager,
 			executeCommand: (command: EditCommand | { type: string }) => {
 				// Handle simple command objects
-				if ('type' in command && command.type === "CLEAR_SELECTION") {
+				if ("type" in command && command.type === "CLEAR_SELECTION") {
 					this.edit.clearSelection();
-				} else if ('execute' in command) {
+				} else if ("execute" in command) {
 					// Handle proper EditCommand objects - use Edit's executeCommand which provides context
 					this.edit.executeEditCommand(command);
 				} else {
@@ -336,12 +345,12 @@ export class Timeline extends Entity implements ITimeline {
 		const { ZoomFeature } = await import("../features/ZoomFeature");
 		const zoomFeature = new ZoomFeature(this.state, featureContext);
 		this.featureManager.register(zoomFeature);
-		
+
 		// Register the playhead feature (temporary for testing)
 		const { PlayheadFeature } = await import("../features/PlayheadFeature");
 		const playheadFeature = new PlayheadFeature(this.state, featureContext);
 		this.featureManager.register(playheadFeature);
-		
+
 		// Enable features by default
 		this.featureManager.enable("zoom");
 		this.featureManager.enable("playhead");
@@ -367,7 +376,7 @@ export class Timeline extends Entity implements ITimeline {
 		// Listen to selection changes for visual feedback
 		this.edit.events.on("clip:selected", this.updateSelectionVisuals.bind(this));
 		this.edit.events.on("selection:cleared", this.updateSelectionVisuals.bind(this));
-		
+
 		// Listen to clip deletion to update selection state
 		this.edit.events.on("clip:deleted", this.handleClipDeleted.bind(this));
 	}
@@ -401,7 +410,7 @@ export class Timeline extends Entity implements ITimeline {
 		if (this.featureManager.handlePointerDown(event)) {
 			return;
 		}
-		
+
 		// Then forward to tool manager
 		this.toolManager.handlePointerDown(event);
 	}
@@ -412,7 +421,7 @@ export class Timeline extends Entity implements ITimeline {
 		if (this.featureManager.handlePointerMove(event)) {
 			return;
 		}
-		
+
 		// Then forward to tool manager
 		this.toolManager.handlePointerMove(event);
 	}
@@ -423,11 +432,10 @@ export class Timeline extends Entity implements ITimeline {
 		if (this.featureManager.handlePointerUp(event)) {
 			return;
 		}
-		
+
 		// Then forward to tool manager
 		this.toolManager.handlePointerUp(event);
 	}
-
 
 	public handleWheel(event: WheelEvent): void {
 		// Create timeline wheel event
@@ -447,7 +455,7 @@ export class Timeline extends Entity implements ITimeline {
 		if (this.featureManager.handleWheel(timelineEvent)) {
 			return;
 		}
-		
+
 		// Then pass to tool manager
 		this.toolManager.handleWheel(event);
 	}
@@ -486,7 +494,7 @@ export class Timeline extends Entity implements ITimeline {
 		// Remove tracks that no longer exist
 		const trackCount = editData.timeline.tracks.length;
 		this.renderer.getTracks().forEach(track => {
-			const trackIndex = parseInt(track.getTrackId().replace('track-', ''));
+			const trackIndex = parseInt(track.getTrackId().replace("track-", ""));
 			if (trackIndex >= trackCount) {
 				this.renderer.removeTrack(track.getTrackId());
 			}
@@ -507,9 +515,8 @@ export class Timeline extends Entity implements ITimeline {
 		// Update visual state of all clips using registry
 		for (const [clipId, registeredClip] of registryState.clips) {
 			if (registeredClip.visual) {
-				const isSelected = selectedInfo && 
-					selectedInfo.trackIndex === registeredClip.trackIndex && 
-					selectedInfo.clipIndex === registeredClip.clipIndex;
+				const isSelected =
+					selectedInfo && selectedInfo.trackIndex === registeredClip.trackIndex && selectedInfo.clipIndex === registeredClip.clipIndex;
 				registeredClip.visual.setSelected(isSelected || false);
 			}
 		}

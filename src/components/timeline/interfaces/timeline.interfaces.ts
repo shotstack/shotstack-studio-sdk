@@ -7,7 +7,6 @@ import * as PIXI from "pixi.js";
 import { TimelineClip } from "../entities/TimelineClip";
 import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer, RegisteredClip } from "../types/timeline.types";
 
-
 // Tool context interface for dependency injection
 export interface ITimelineToolContext {
 	timeline: ITimeline;
@@ -34,14 +33,14 @@ export interface ITimeline extends Entity {
 	registerFeature(feature: ITimelineFeature): void;
 	activateTool(name: string): void;
 	getRenderer(): ITimelineRenderer;
-	
+
 	// Get the clip registry - the single source of truth for all clip operations
 	getClipRegistry(): import("../core/ClipRegistryManager").ClipRegistryManager;
-	
+
 	// Core timeline properties
 	setPixelsPerSecond(pixelsPerSecond: number): void;
 	getTimelineDuration(): number;
-	
+
 	// Feature access
 	getFeature(name: string): ITimelineFeature | null;
 }
@@ -81,13 +80,13 @@ export interface ITimelineTool extends Entity {
 export interface IToolInterceptor {
 	readonly name: string;
 	readonly priority: number; // Higher priority interceptors run first
-	
+
 	// Attempt to intercept and handle the event
 	// Returns true if handled (prevents further processing)
 	interceptPointerDown?(event: TimelinePointerEvent): boolean;
 	interceptPointerMove?(event: TimelinePointerEvent): boolean;
 	interceptPointerUp?(event: TimelinePointerEvent): boolean;
-	
+
 	// Get cursor for current context (returns null if no specific cursor)
 	getCursor?(event: TimelinePointerEvent): string | null;
 }
@@ -147,7 +146,7 @@ export interface IToolManager {
 	getAllTools(): Map<string, ITimelineTool>;
 	setFeatureManager(featureManager: IFeatureManager): void;
 	setCursorElement(element: HTMLElement): void;
-	
+
 	// Interceptor management
 	registerInterceptor(interceptor: IToolInterceptor): void;
 	unregisterInterceptor(name: string): void;
