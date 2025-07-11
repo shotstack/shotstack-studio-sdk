@@ -1,5 +1,28 @@
 import { Clip } from "@core/schemas/clip";
+import { Player } from "@canvas/players/player";
 import * as PIXI from "pixi.js";
+
+// Import TimelineClip type (will be needed for RegisteredClip)
+import type { TimelineClip } from "../entities/TimelineClip";
+
+// Clip Registry Types
+export interface RegisteredClip {
+	id: string;                    // Stable, generated ID
+	visual: TimelineClip;          // Visual entity
+	trackIndex: number;            // Current position
+	clipIndex: number;
+	playerSignature: string;       // Hash of player properties
+	lastSeen: number;             // Timestamp for lifecycle
+}
+
+export interface ClipRegistryState {
+	// Stable ID -> Clip metadata
+	clips: Map<string, RegisteredClip>;
+	// Track index -> Set of clip IDs
+	trackIndex: Map<number, Set<string>>;
+	// Generation counter for debugging
+	generation: number;
+}
 
 // Core Timeline State
 export type TimelineState = {
@@ -41,6 +64,9 @@ export type TimelineState = {
 	// Tool state
 	activeTool: string;
 	toolStates: Map<string, unknown>;
+
+	// Clip registry state
+	clipRegistry: ClipRegistryState;
 };
 
 // State change tracking
@@ -50,6 +76,7 @@ export type StateChanges = {
 	features?: boolean;
 	activeTool?: boolean;
 	playback?: boolean;
+	clipRegistry?: boolean;
 };
 
 // State listener function type

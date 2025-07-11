@@ -6,8 +6,10 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { ITimeline, ITimelineState, ITimelineRenderer, ITimelineTool, ITimelineFeature, IToolManager, IFeatureManager, ITimelineToolContext, ITimelineFeatureContext } from "../interfaces";
-import { TimelineState, StateChanges } from "../types";
+import { TimelineState, StateChanges, RegisteredClip } from "../types";
+import { TimelineClip } from "../entities/TimelineClip";
 
+import { ClipRegistryManager } from "./ClipRegistryManager";
 import { FeatureManager } from "./FeatureManager";
 import { TimelineRenderer } from "./TimelineRenderer";
 import { TimelineStateManager } from "./TimelineState";
@@ -24,11 +26,12 @@ export class Timeline extends Entity implements ITimeline {
 	private renderer: ITimelineRenderer;
 	private toolManager: IToolManager;
 	private featureManager: IFeatureManager;
+	private clipRegistryManager: ClipRegistryManager;
 	private edit: Edit;
 	private size: Size;
 	private pixelsPerSecond: number = 100;
 	private animationFrameId: number | null = null;
-	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();
+	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();  // Kept for backward compatibility
 
 	constructor(edit: Edit, size?: Size) {
 		super();
@@ -39,6 +42,12 @@ export class Timeline extends Entity implements ITimeline {
 		// Initialize core systems
 		this.state = new TimelineStateManager(this.createInitialState());
 		this.renderer = new TimelineRenderer(this.size);
+
+		// Initialize clip registry manager as core infrastructure
+		this.clipRegistryManager = new ClipRegistryManager(this.state, this.edit);
+		
+		// Set Timeline reference on ClipRegistryManager
+		this.clipRegistryManager.setTimeline(this);
 
 		// Initialize managers with state reference
 		this.toolManager = new ToolManager(this.state, this.edit);
@@ -187,6 +196,9 @@ export class Timeline extends Entity implements ITimeline {
 		canvas.removeEventListener("wheel", this.handleWheel.bind(this));
 		canvas.removeEventListener("keydown", this.handleKeyDown.bind(this));
 		canvas.removeEventListener("keyup", this.handleKeyUp.bind(this));
+
+		// Dispose clip registry manager
+		this.clipRegistryManager.dispose();
 	}
 
 	public getState(): TimelineState {
@@ -233,10 +245,60 @@ export class Timeline extends Entity implements ITimeline {
 		return this.featureManager.getFeature(name);
 	}
 
+	// Core registry API methods
+	/**
+	 * Get stable ID for a clip at the given position
+	 */
+	public getClipIdAtPosition(trackIndex: number, clipIndex: number): string | null {
+		return this.clipRegistryManager.getClipIdAtPosition(trackIndex, clipIndex);
+	}
+
+	/**
+	 * Find a clip by its stable ID
+	 */
+	public findClipById(clipId: string): RegisteredClip | null {
+		return this.clipRegistryManager.findClipById(clipId);
+	}
+
+	/**
+	 * Get the visual entity for a clip ID
+	 */
+	public getClipVisual(clipId: string): TimelineClip | null {
+		const registeredClip = this.clipRegistryManager.findClipById(clipId);
+		return registeredClip ? registeredClip.visual : null;
+	}
+
+	/**
+	 * Get the clip registry manager (for internal use by Timeline components)
+	 * @internal
+	 */
+	public getClipRegistryManager(): ClipRegistryManager {
+		return this.clipRegistryManager;
+	}
+
 	// Query method for tools to find clip at a given PIXI display object
 	public findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null {
+		// Try registry-based lookup first
+		const registryState = this.state.getState().clipRegistry;
+		
 		// Walk up the display list to find a clip container
 		let currentTarget: PIXI.Container | null = target;
+		while (currentTarget) {
+			// Check if this container belongs to a registered clip
+			for (const [clipId, registeredClip] of registryState.clips) {
+				if (registeredClip.visual && registeredClip.visual.getContainer() === currentTarget) {
+					return {
+						trackIndex: registeredClip.trackIndex,
+						clipIndex: registeredClip.clipIndex
+					};
+				}
+			}
+			currentTarget = currentTarget.parent;
+		}
+		
+		// Fall back to WeakMap approach if registry lookup fails
+		// This ensures backward compatibility during transition
+		currentTarget = target;
 		while (currentTarget) {
 			const indices = this.clipIndices.get(currentTarget);
 			if (indices) {
@@ -244,6 +306,7 @@ export class Timeline extends Entity implements ITimeline {
 			}
 			currentTarget = currentTarget.parent;
 		}
+		
 		return null;
 	}
 
@@ -277,7 +340,12 @@ export class Timeline extends Entity implements ITimeline {
 				}
 			},
 			activeTool: "selection",
-			toolStates: new Map()
+			toolStates: new Map(),
+			clipRegistry: {
+				clips: new Map(),
+				trackIndex: new Map(),
+				generation: 0
+			}
 		};
 	}
 
@@ -362,6 +430,9 @@ export class Timeline extends Entity implements ITimeline {
 		// Listen to selection changes for visual feedback
 		this.edit.events.on("clip:selected", this.updateSelectionVisuals.bind(this));
 		this.edit.events.on("selection:cleared", this.updateSelectionVisuals.bind(this));
+		
+		// Listen to registry sync events to update container mappings
+		this.edit.events.on("timeline:registrySynced", this.handleRegistrySynced.bind(this));
 	}
 
 	private removeEditEventListeners(): void {
@@ -370,11 +441,12 @@ export class Timeline extends Entity implements ITimeline {
 		this.edit.events.off("track:deleted", this.handleTrackDeleted.bind(this));
 		this.edit.events.off("clip:selected", this.updateSelectionVisuals.bind(this));
 		this.edit.events.off("selection:cleared", this.updateSelectionVisuals.bind(this));
+		this.edit.events.off("timeline:registrySynced", this.handleRegistrySynced.bind(this));
 	}
 
 	private handleClipUpdated(__data: { clipId: string; clip: Clip }): void {
-		// Reload edit data to reflect changes
-		this.loadEditData();
+		// Use registry sync instead of full reload
+		this.clipRegistryManager.scheduleSync();
 	}
 
 	private handleClipDeleted(data: { clipId: string; trackIndex: number; clipIndex: number }): void {
@@ -392,13 +464,32 @@ export class Timeline extends Entity implements ITimeline {
 			});
 		}
 
-		// Reload edit data to reflect deletion
-		this.loadEditData();
+		// Use registry sync instead of full reload
+		this.clipRegistryManager.scheduleSync();
 	}
 
 	private handleTrackDeleted(__data: { trackId: string; trackIndex: number }): void {
-		// Reload edit data to reflect track deletion
-		this.loadEditData();
+		// Use registry sync instead of full reload
+		this.clipRegistryManager.scheduleSync();
+	}
+
+	private handleRegistrySynced(__data: any): void {
+		// Update WeakMap with current registry state for backward compatibility
+		const registryState = this.state.getState().clipRegistry;
+		
+		// Clear old mappings
+		this.clipIndices = new WeakMap();
+		
+		// Add current mappings from registry
+		for (const [clipId, registeredClip] of registryState.clips) {
+			if (registeredClip.visual) {
+				const container = registeredClip.visual.getContainer();
+				this.clipIndices.set(container, {
+					trackIndex: registeredClip.trackIndex,
+					clipIndex: registeredClip.clipIndex
+				});
+			}
+		}
 	}
 
 	// Handle PIXI pointer events - forward to features and tools
@@ -481,39 +572,26 @@ export class Timeline extends Entity implements ITimeline {
 		// Get the current edit data
 		const editData = this.edit.getEdit();
 
-		// Clear existing tracks
-		this.renderer.getTracks().forEach(track => {
-			this.renderer.removeTrack(track.getTrackId());
-		});
-
-		// Import TimelineClip entity
-		const { TimelineClip } = await import("../entities/TimelineClip");
-
-		// Load tracks and clips
+		// Ensure we have tracks in the renderer
 		for (const [index, track] of editData.timeline.tracks.entries()) {
-			// Create track in renderer
 			const trackId = `track-${index}`;
-			const timelineTrack = this.renderer.addTrack(trackId, index);
-
-			// Create and add clips to the track
-			for (const [clipIndex, clip] of track.clips.entries()) {
-				const clipId = `clip-${index}-${clipIndex}`;
-				const timelineClip = new TimelineClip(clipId, trackId, clip.start || 0, clip.length || 1, clip);
-
-				// Load the clip
-				await timelineClip.load();
-
-				// Set the zoom level from state
-				timelineClip.setPixelsPerSecond(this.state.getState().viewport.zoom);
-
-				// Add clip to track
-				timelineTrack.addClip(timelineClip);
-
-				// Store clip indices in WeakMap for type-safe lookup
-				const container = timelineClip.getContainer();
-				this.clipIndices.set(container, { trackIndex: index, clipIndex });
+			if (!this.renderer.getTrack(trackId)) {
+				this.renderer.addTrack(trackId, index);
 			}
 		}
+
+		// Remove tracks that no longer exist
+		const trackCount = editData.timeline.tracks.length;
+		this.renderer.getTracks().forEach(track => {
+			const trackIndex = parseInt(track.getTrackId().replace('track-', ''));
+			if (trackIndex >= trackCount) {
+				this.renderer.removeTrack(track.getTrackId());
+			}
+		});
+
+		// For initial load, sync immediately to ensure clips are registered
+		// This is important for drag operations that may happen right after load
+		await this.clipRegistryManager.syncWithEdit();
 
 		// Trigger a render to show the loaded data
 		this.draw();
@@ -521,19 +599,17 @@ export class Timeline extends Entity implements ITimeline {
 
 	private updateSelectionVisuals(): void {
 		const selectedInfo = this.edit.getSelectedClipInfo();
+		const registryState = this.state.getState().clipRegistry;
 
-		// Update visual state of all clips
-		this.renderer.getTracks().forEach(track => {
-			track.getClips().forEach(clip => {
-				// Get indices from WeakMap instead of parsing strings
-				const container = clip.getContainer();
-				const indices = this.clipIndices.get(container);
-				if (indices) {
-					const isSelected = selectedInfo && selectedInfo.trackIndex === indices.trackIndex && selectedInfo.clipIndex === indices.clipIndex;
-					clip.setSelected(isSelected || false);
-				}
-			});
-		});
+		// Update visual state of all clips using registry
+		for (const [clipId, registeredClip] of registryState.clips) {
+			if (registeredClip.visual) {
+				const isSelected = selectedInfo && 
+					selectedInfo.trackIndex === registeredClip.trackIndex && 
+					selectedInfo.clipIndex === registeredClip.clipIndex;
+				registeredClip.visual.setSelected(isSelected || false);
+			}
+		}
 
 		// Re-render to show selection changes
 		this.draw();

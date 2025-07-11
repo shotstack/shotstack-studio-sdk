@@ -200,4 +200,12 @@ export class TimelineRenderer implements ITimelineRenderer {
 	public getTracks(): ITimelineTrack[] {
 		return Array.from(this.tracks.values());
 	}
+
+	/**
+	 * Get track by its index (helper for registry sync)
+	 */
+	public getTrackByIndex(index: number): ITimelineTrack | undefined {
+		const trackId = `track-${index}`;
+		return this.tracks.get(trackId);
+	}
 }

@@ -4,7 +4,8 @@ import { Player } from "@canvas/players/player";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer } from "../types/timeline.types";
+import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer, RegisteredClip } from "../types/timeline.types";
+import { TimelineClip } from "../entities/TimelineClip";
 
 
 // Tool context interface for dependency injection
@@ -35,6 +36,11 @@ export interface ITimeline extends Entity {
 	
 	// Query methods for tools
 	findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null;
+	
+	// Registry-based clip access methods
+	getClipIdAtPosition(trackIndex: number, clipIndex: number): string | null;
+	findClipById(clipId: string): RegisteredClip | null;
+	getClipVisual(clipId: string): TimelineClip | null;
 	
 	// Core timeline properties
 	setPixelsPerSecond(pixelsPerSecond: number): void;
@@ -133,6 +139,7 @@ export interface ITimelineRenderer {
 	removeTrack(trackId: string): void;
 	getTrack(trackId: string): ITimelineTrack | undefined;
 	getTracks(): ITimelineTrack[];
+	getTrackByIndex(index: number): ITimelineTrack | undefined;
 }
 
 // Tool Manager interface
@@ -189,6 +196,7 @@ export interface ITimelineTrack extends Entity {
 	getClips(): ITimelineClip[];
 	addClip(clip: ITimelineClip): void;
 	removeClip(clipId: string): void;
+	detachClip(clipId: string): void;
 	updateLayout(): void;
 }
 

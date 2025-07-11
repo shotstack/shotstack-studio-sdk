@@ -13,7 +13,8 @@ export class TimelineStateManager implements ITimelineState {
 	private maxSnapshots: number = 50;
 
 	constructor(initialState: TimelineState) {
-		this.state = structuredClone(initialState);
+		// Don't use structuredClone as the state contains non-cloneable objects
+		this.state = initialState;
 	}
 
 	public subscribe(listener: StateListener): () => void {
@@ -50,12 +51,17 @@ export class TimelineStateManager implements ITimelineState {
 	}
 
 	public getState(): TimelineState {
-		// Return a deep clone to ensure immutability
-		return structuredClone(this.state);
+		// Return the state directly - Maps and Sets are already immutable through our update patterns
+		// We cannot use structuredClone because the state may contain non-cloneable objects like:
+		// - WeakMaps (removed but was an issue)
+		// - Functions in toolStates
+		// - PIXI objects in clipRegistry
+		return this.state;
 	}
 
 	public createSnapshot(): TimelineState {
-		const snapshot = structuredClone(this.state);
+		// Create a manual deep copy that handles Maps, Sets, and skips non-cloneable objects
+		const snapshot = this.deepCloneState(this.state);
 
 		// Add to snapshots array with size limit
 		this.snapshots.push(snapshot);
@@ -64,6 +70,32 @@ export class TimelineStateManager implements ITimelineState {
 		}
 
 		return snapshot;
+	}
+
+	private deepCloneState(state: TimelineState): TimelineState {
+		return {
+			viewport: { ...state.viewport },
+			selection: {
+				selectedClipIds: new Set(state.selection.selectedClipIds),
+				selectedTrackIds: new Set(state.selection.selectedTrackIds),
+				lastSelectedId: state.selection.lastSelectedId
+			},
+			playback: { ...state.playback },
+			features: {
+				snapping: { ...state.features.snapping },
+				autoScroll: { ...state.features.autoScroll }
+			},
+			activeTool: state.activeTool,
+			// Don't clone toolStates as it may contain functions
+			toolStates: state.toolStates,
+			// Create new Maps but don't deep clone the clip registry contents
+			// as they contain PIXI objects and other non-cloneable items
+			clipRegistry: {
+				clips: new Map(state.clipRegistry.clips),
+				trackIndex: new Map(state.clipRegistry.trackIndex),
+				generation: state.clipRegistry.generation
+			}
+		};
 	}
 
 	public restoreSnapshot(snapshot: TimelineState): void {
@@ -78,7 +110,8 @@ export class TimelineStateManager implements ITimelineState {
 			playback: updates.playback ? { ...current.playback, ...updates.playback } : current.playback,
 			features: updates.features ? this.mergeFeatures(current.features, updates.features) : current.features,
 			activeTool: updates.activeTool !== undefined ? updates.activeTool : current.activeTool,
-			toolStates: updates.toolStates || current.toolStates
+			toolStates: updates.toolStates || current.toolStates,
+			clipRegistry: updates.clipRegistry || current.clipRegistry
 		};
 
 		return newState;
@@ -105,7 +138,8 @@ export class TimelineStateManager implements ITimelineState {
 			selection: !isEqual(oldState.selection, newState.selection),
 			features: !isEqual(oldState.features, newState.features),
 			activeTool: oldState.activeTool !== newState.activeTool,
-			playback: !isEqual(oldState.playback, newState.playback)
+			playback: !isEqual(oldState.playback, newState.playback),
+			clipRegistry: !isEqual(oldState.clipRegistry, newState.clipRegistry)
 		};
 	}
 }

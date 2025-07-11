@@ -111,6 +111,15 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 		}
 	}
 
+	public detachClip(clipId: string): void {
+		const clip = this.clips.get(clipId);
+		if (clip) {
+			this.clipsContainer.removeChild(clip.getContainer());
+			this.clips.delete(clipId);
+			this.updateLayout();
+		}
+	}
+
 	public updateLayout(): void {
 		// Position track at correct vertical position with offset for ruler
 		const rulerHeight = 30;

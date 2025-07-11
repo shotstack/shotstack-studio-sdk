@@ -22,6 +22,7 @@ export class DragInterceptor implements IToolInterceptor {
 	private isDragging: boolean = false;
 	private isPotentialDrag: boolean = false;
 	private draggedPlayer: Player | null = null;
+	private draggedClipId: string | null = null;  // Stable clip ID
 	private dragGhost: PIXI.Container | null = null;
 	
 	// Initial state snapshot (captured at drag start)
@@ -53,11 +54,18 @@ export class DragInterceptor implements IToolInterceptor {
 			// Find the clip using Timeline's existing method
 			const clipInfo = this.context.timeline.findClipAtPoint(event.target as PIXI.Container);
 			if (clipInfo) {
+				// Get stable clip ID
+				const clipId = this.context.timeline.getClipIdAtPosition(clipInfo.trackIndex, clipInfo.clipIndex);
+				if (!clipId) {
+					return false;
+				}
+				
 				const player = this.context.edit.getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
 				if (player && player.clipConfiguration) {
 					// Prepare for potential drag (but don't start yet)
 					this.isPotentialDrag = true;
 					this.draggedPlayer = player;
+					this.draggedClipId = clipId;  // Store stable ID
 					
 					// Capture initial state
 					this.dragStartState = {
@@ -137,15 +145,20 @@ export class DragInterceptor implements IToolInterceptor {
 		}
 
 		// Handle actual drag completion
-		if (this.isDragging && this.draggedPlayer && this.previewPosition) {
-			// Find the current indices of the dragged player using Edit's method
-			const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
-			if (!currentIndices) {
-				console.error("Could not find dragged player in tracks");
+		if (this.isDragging && this.draggedPlayer && this.draggedClipId && this.previewPosition) {
+			// Find the current indices using the stable clip ID
+			const registeredClip = this.context.timeline.findClipById(this.draggedClipId);
+			if (!registeredClip) {
+				console.error("Could not find dragged clip in registry");
 				this.removeDragPreview();
 				this.resetState();
 				return true;
 			}
+			
+			const currentIndices = {
+				trackIndex: registeredClip.trackIndex,
+				clipIndex: registeredClip.clipIndex
+			};
 
 			// Validate final position
 			let finalPosition = this.previewPosition;
@@ -536,24 +549,13 @@ export class DragInterceptor implements IToolInterceptor {
 	 * Create visual drag preview
 	 */
 	private createDragPreview(): void {
-		if (!this.draggedPlayer || !this.dragStartState || this.dragGhost) return;
+		if (!this.draggedPlayer || !this.draggedClipId || !this.dragStartState || this.dragGhost) return;
 
-		// Get the current indices of the dragged player
-		const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
-		if (!currentIndices) return;
+		// Get the clip's visual representation using stable ID
+		const registeredClip = this.context.timeline.findClipById(this.draggedClipId);
+		if (!registeredClip || !registeredClip.visual) return;
 
-		// Get the clip's visual representation
-		const renderer = this.context.timeline.getRenderer();
-		const tracks = renderer.getTracks();
-
-		if (currentIndices.trackIndex >= tracks.length) return;
-
-		const track = tracks[currentIndices.trackIndex];
-		const clips = track.getClips();
-
-		if (currentIndices.clipIndex >= clips.length) return;
-
-		const clip = clips[currentIndices.clipIndex];
+		const clip = registeredClip.visual;
 		const clipContainer = clip.getContainer();
 
 		// Use the stored player reference
@@ -585,6 +587,7 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// Add ghost to the overlay layer
 		// We'll position it in updateDragPreview based on mouse position
+		const renderer = this.context.timeline.getRenderer();
 		const overlayLayer = renderer.getLayer("overlay");
 		overlayLayer.addChild(this.dragGhost);
 
@@ -594,10 +597,14 @@ export class DragInterceptor implements IToolInterceptor {
 		// Calculate and store the offset from the clip's top-left to where the mouse grabbed it
 		const clipStartTime = this.draggedPlayer.clipConfiguration.start || 0;
 		const clipX = this.timeToScreen(clipStartTime, state.viewport.zoom, state.viewport.scrollX);
-		const trackContainer = track.getContainer();
+		
+		// Get track container for Y position
+		const tracks = renderer.getTracks();
+		const track = tracks[registeredClip.trackIndex];
+		const trackContainer = track ? track.getContainer() : null;
 		
 		// Update the drag start state with the calculated offsets
-		if (this.dragStartState) {
+		if (this.dragStartState && trackContainer) {
 			this.dragStartState.offsetX = this.dragStartState.mouseX - clipX;
 			this.dragStartState.offsetY = this.dragStartState.mouseY - trackContainer.y;
 		}
@@ -697,21 +704,12 @@ export class DragInterceptor implements IToolInterceptor {
 		}
 
 		// Restore the original clip's opacity
-		if (this.draggedPlayer && this.dragStartState) {
-			const renderer = this.context.timeline.getRenderer();
-			const tracks = renderer.getTracks();
-
-			if (this.dragStartState.trackIndex < tracks.length) {
-				const track = tracks[this.dragStartState.trackIndex];
-				const clips = track.getClips();
-
-				if (this.dragStartState.clipIndex < clips.length) {
-					const clip = clips[this.dragStartState.clipIndex];
-					const clipContainer = clip.getContainer();
-
-					// Restore full opacity
-					clipContainer.alpha = 1.0;
-				}
+		if (this.draggedClipId) {
+			const registeredClip = this.context.timeline.findClipById(this.draggedClipId);
+			if (registeredClip && registeredClip.visual) {
+				const clipContainer = registeredClip.visual.getContainer();
+				// Restore full opacity
+				clipContainer.alpha = 1.0;
 			}
 		}
 	}
@@ -748,6 +746,7 @@ export class DragInterceptor implements IToolInterceptor {
 		this.isDragging = false;
 		this.isPotentialDrag = false;
 		this.draggedPlayer = null;
+		this.draggedClipId = null;  // Clear stable ID
 		this.dragStartState = null;
 		this.previewPosition = null;
 
