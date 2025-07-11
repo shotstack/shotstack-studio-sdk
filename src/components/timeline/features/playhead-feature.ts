@@ -91,7 +91,7 @@ export class PlayheadFeature extends TimelineFeature {
 		return false;
 	}
 
-	public onStateChanged(changes: StateChanges): void {
+	public override onStateChanged(changes: StateChanges): void {
 		if (changes.viewport?.height) {
 			this.drawPlayheadVisuals();
 		}

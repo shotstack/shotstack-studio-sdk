@@ -7,8 +7,8 @@ import { ITimelinePlayhead } from "../types/timeline.interfaces";
  * Timeline playhead indicator showing current time position
  */
 export class TimelinePlayhead extends Entity implements ITimelinePlayhead {
-	private graphics: PIXI.Graphics;
-	private handle: PIXI.Graphics;
+	private graphics!: PIXI.Graphics;
+	private handle!: PIXI.Graphics;
 	private time = 0;
 	private pixelsPerSecond = 100;
 	private scrollX = 0;

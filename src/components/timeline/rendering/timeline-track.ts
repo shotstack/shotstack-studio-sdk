@@ -8,8 +8,8 @@ import { ITimelineTrack, ITimelineClip } from "../types/timeline.interfaces";
  */
 export class TimelineTrack extends Entity implements ITimelineTrack {
 	private clips: Map<string, ITimelineClip> = new Map();
-	private graphics: PIXI.Graphics;
-	private clipsContainer: PIXI.Container;
+	private graphics!: PIXI.Graphics;
+	private clipsContainer!: PIXI.Container;
 	
 	private static readonly VISUAL = {
 		rulerHeight: 30,

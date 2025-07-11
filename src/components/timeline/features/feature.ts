@@ -63,7 +63,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	// Feature configuration helper - combines get/set operations
 	protected featureConfig<T = Record<string, unknown>>(update?: Partial<T>): T | undefined {
 		const state = this.getState();
-		const currentConfig = state.features[this.name] as T | undefined;
+		const currentConfig = (state.features as Record<string, unknown>)[this.name] as T | undefined;
 
 		if (update) {
 			this.updateState({

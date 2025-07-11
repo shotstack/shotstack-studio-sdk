@@ -3,7 +3,7 @@ import { Edit } from "@core/edit";
 import * as PIXI from "pixi.js";
 
 import { TimelineClip } from "../rendering/timeline-clip";
-import { ITimelineState } from "../types/timeline.interfaces";
+import { ITimelineState, ITimeline } from "../types/timeline.interfaces";
 import { RegisteredClip } from "../types/timeline.types";
 
 import { ClipIdentityService } from "./identity-service";
@@ -32,33 +32,37 @@ export interface SyncDelta {
  * between Edit state and Timeline visual state.
  */
 export class ClipRegistryManager {
-	private state: ITimelineState;
-	private edit: Edit;
 	private identityService: ClipIdentityService;
 	private syncScheduled = false;
 	private syncFrameId: number | null = null;
-	private timeline: any = null; // Timeline reference will be set after construction
+	private timeline: ITimeline | null = null; // Timeline reference will be set after construction
 	private playerToClipId = new WeakMap<Player, string>(); // Moved from state for serializability
 
-	// Event handler references for cleanup
-	private handleClipUpdatedBound: (data: any) => void;
-	private handleClipDeletedBound: (data: any) => void;
-	private handleTrackDeletedBound: (data: any) => void;
+	private static readonly SYNC_EVENT_NAMES = {
+		SYNCED: 'timeline:registrySynced',
+		ERROR: 'timeline:registrySyncError'
+	} as const;
 
-	constructor(state: ITimelineState, edit: Edit) {
-		this.state = state;
-		this.edit = edit;
+	// Event handlers
+	private readonly eventHandlers = {
+		'clip:updated': () => this.scheduleSync(),
+		'clip:deleted': () => this.scheduleSync(),
+		'track:deleted': () => this.scheduleSync()
+	};
+
+	constructor(
+		private state: ITimelineState,
+		private edit: Edit
+	) {
 		this.identityService = new ClipIdentityService();
+		this.initializeRegistry();
+		this.setupEventListeners();
+	}
 
-		// Bind event handlers for proper cleanup later
-		this.handleClipUpdatedBound = this.handleClipUpdated.bind(this);
-		this.handleClipDeletedBound = this.handleClipDeleted.bind(this);
-		this.handleTrackDeletedBound = this.handleTrackDeleted.bind(this);
-
-		// Initialize registry state if not present
-		const currentState = state.getState();
+	private initializeRegistry(): void {
+		const currentState = this.state.getState();
 		if (!currentState.clipRegistry) {
-			state.update({
+			this.state.update({
 				clipRegistry: {
 					clips: new Map(),
 					trackIndex: new Map(),
@@ -66,59 +70,26 @@ export class ClipRegistryManager {
 				}
 			});
 		}
-
-		// Set up event listeners
-		this.setupEventListeners();
 	}
 
 	/**
 	 * Set the Timeline reference (called after Timeline construction)
 	 */
-	public setTimeline(timeline: any): void {
+	public setTimeline(timeline: ITimeline): void {
 		this.timeline = timeline;
 	}
 
-	/**
-	 * Set up event listeners for Edit events
-	 */
 	private setupEventListeners(): void {
-		// Subscribe to Edit events for synchronization
-		this.edit.events.on("clip:updated", this.handleClipUpdatedBound);
-		this.edit.events.on("clip:deleted", this.handleClipDeletedBound);
-		this.edit.events.on("track:deleted", this.handleTrackDeletedBound);
-	}
-
-	/**
-	 * Handle clip update events from Edit
-	 */
-	private handleClipUpdated(_data: any): void {
-		// Schedule sync to batch multiple updates
-		this.scheduleSync();
-	}
-
-	/**
-	 * Handle clip deletion events from Edit
-	 */
-	private handleClipDeleted(_data: any): void {
-		// Schedule sync to handle deletion
-		this.scheduleSync();
-	}
-
-	/**
-	 * Handle track deletion events from Edit
-	 */
-	private handleTrackDeleted(_data: any): void {
-		// Schedule sync to handle track removal
-		this.scheduleSync();
+		Object.entries(this.eventHandlers).forEach(([event, handler]) => {
+			this.edit.events.on(event, handler);
+		});
 	}
 
 	/**
 	 * Schedule a sync operation using requestAnimationFrame to batch updates
 	 */
 	public scheduleSync(): void {
-		if (this.syncScheduled) {
-			return; // Already scheduled
-		}
+		if (this.syncScheduled) return;
 
 		this.syncScheduled = true;
 		this.syncFrameId = requestAnimationFrame(async () => {
@@ -153,7 +124,7 @@ export class ClipRegistryManager {
 			}
 
 			// Emit sync event
-			this.edit.events.emit("timeline:registrySynced", {
+			this.edit.events.emit(ClipRegistryManager.SYNC_EVENT_NAMES.SYNCED, {
 				generation: currentGeneration + 1,
 				delta: {
 					added: delta.added.length,
@@ -164,8 +135,7 @@ export class ClipRegistryManager {
 			});
 		} catch (error) {
 			console.error("Error during registry sync:", error);
-			// Emit error event for debugging
-			this.edit.events.emit("timeline:registrySyncError", {
+			this.edit.events.emit(ClipRegistryManager.SYNC_EVENT_NAMES.ERROR, {
 				generation: currentGeneration,
 				error: error instanceof Error ? error.message : String(error)
 			});
@@ -176,32 +146,25 @@ export class ClipRegistryManager {
 	 * Get stable ID for a clip at given position
 	 */
 	public getClipIdAtPosition(trackIndex: number, clipIndex: number): string | null {
-		// First check if we have this clip in the registry
 		const registryState = this.state.getState().clipRegistry;
 
-		// Look through registered clips to find one at this position
-		for (const [clipId, registeredClip] of registryState.clips) {
-			if (registeredClip.trackIndex === trackIndex && registeredClip.clipIndex === clipIndex) {
+		// First check registry
+		for (const [clipId, clip] of registryState.clips) {
+			if (clip.trackIndex === trackIndex && clip.clipIndex === clipIndex) {
 				return clipId;
 			}
 		}
 
-		// If not in registry, check if the clip exists and get its player
+		// Check player
 		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-		if (!player) {
-			return null;
-		}
+		if (!player) return null;
 
-		// Check if we have this player in our WeakMap
-		let clipId = this.playerToClipId.get(player);
+		return this.playerToClipId.get(player) ?? this.generateAndStoreClipId(player);
+	}
 
-		if (!clipId) {
-			// Generate new ID if we don't have one
-			clipId = this.identityService.generateClipId(player);
-			// Store it for future lookups
-			this.playerToClipId.set(player, clipId);
-		}
-
+	private generateAndStoreClipId(player: Player): string {
+		const clipId = this.identityService.generateClipId(player);
+		this.playerToClipId.set(player, clipId);
 		return clipId;
 	}
 
@@ -239,11 +202,6 @@ export class ClipRegistryManager {
 	 * This will be used during sync operations
 	 */
 	public registerClip(clipId: string, visual: TimelineClip, player: Player, trackIndex: number, clipIndex: number): void {
-		const registryState = this.state.getState().clipRegistry;
-		const newClips = new Map(registryState.clips);
-		const newTrackIndex = new Map(registryState.trackIndex);
-
-		// Create registered clip entry
 		const registeredClip: RegisteredClip = {
 			id: clipId,
 			visual,
@@ -253,61 +211,55 @@ export class ClipRegistryManager {
 			lastSeen: Date.now()
 		};
 
-		// Update clips map
-		newClips.set(clipId, registeredClip);
-
-		// Update track index
-		const trackClips = newTrackIndex.get(trackIndex) || new Set<string>();
-		trackClips.add(clipId);
-		newTrackIndex.set(trackIndex, trackClips);
-
-		// Update player to ID mapping
 		this.playerToClipId.set(player, clipId);
-
-		// Update state
-		this.state.update({
-			clipRegistry: {
-				...registryState,
-				clips: newClips,
-				trackIndex: newTrackIndex,
-				generation: registryState.generation + 1
-			}
-		});
+		this.modifyClipInRegistry(clipId, 'add', registeredClip);
 	}
 
 	/**
 	 * Unregister a clip from the registry
 	 */
 	public unregisterClip(clipId: string): void {
+		this.modifyClipInRegistry(clipId, 'remove');
+	}
+
+	private modifyClipInRegistry(
+		clipId: string,
+		action: 'add' | 'remove',
+		registeredClip?: RegisteredClip
+	): void {
 		const registryState = this.state.getState().clipRegistry;
-		const clip = registryState.clips.get(clipId);
-
-		if (!clip) {
-			return; // Clip not found
-		}
-
 		const newClips = new Map(registryState.clips);
 		const newTrackIndex = new Map(registryState.trackIndex);
 
-		// Remove from clips map
-		newClips.delete(clipId);
-
-		// Remove from track index
-		const trackClips = newTrackIndex.get(clip.trackIndex);
-		if (trackClips) {
-			trackClips.delete(clipId);
-			if (trackClips.size === 0) {
-				newTrackIndex.delete(clip.trackIndex);
+		if (action === 'remove') {
+			const clip = newClips.get(clipId);
+			if (!clip) return;
+			
+			newClips.delete(clipId);
+			const trackClips = newTrackIndex.get(clip.trackIndex);
+			if (trackClips) {
+				trackClips.delete(clipId);
+				if (trackClips.size === 0) {
+					newTrackIndex.delete(clip.trackIndex);
+				}
 			}
+		} else if (registeredClip) {
+			newClips.set(clipId, registeredClip);
+			const trackClips = newTrackIndex.get(registeredClip.trackIndex) || new Set<string>();
+			trackClips.add(clipId);
+			newTrackIndex.set(registeredClip.trackIndex, trackClips);
 		}
 
-		// Update state
+		this.updateRegistryState({ clips: newClips, trackIndex: newTrackIndex });
+	}
+
+	private updateRegistryState(updates: Partial<ReturnType<typeof this.state.getState>['clipRegistry']>): void {
+		const current = this.state.getState().clipRegistry;
 		this.state.update({
 			clipRegistry: {
-				...registryState,
-				clips: newClips,
-				trackIndex: newTrackIndex,
-				generation: registryState.generation + 1
+				...current,
+				...updates,
+				generation: current.generation + 1
 			}
 		});
 	}
@@ -317,87 +269,83 @@ export class ClipRegistryManager {
 	 */
 	private computeDelta(): SyncDelta {
 		const delta: SyncDelta = {
-			added: [],
-			moved: [],
-			removed: [],
-			updated: []
+			added: [], moved: [], removed: [], updated: []
 		};
 
 		const registryState = this.state.getState().clipRegistry;
-		const editData = this.edit.getEdit();
-		const { tracks } = editData.timeline;
-
-		// Track seen clips to identify removed ones
 		const seenClipIds = new Set<string>();
 
-		// Iterate through all clips in Edit state
-		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex += 1) {
-			const track = tracks[trackIndex];
-			if (track && track.clips) {
-				for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex += 1) {
-					const clip = track.clips[clipIndex];
-					if (clip) {
-						// Get the player instance for this clip
-						// For now, we'll use a placeholder approach - in a real implementation,
-						// we'd need access to the actual Player instances
-						const player = this.getPlayerForClip(trackIndex, clipIndex);
-						if (player) {
-							// Check if we have this player registered
-							let clipId = this.playerToClipId.get(player);
-							const existingClip = clipId ? registryState.clips.get(clipId) : null;
-
-							if (!existingClip) {
-								// New clip - generate ID and mark as added
-								clipId = this.identityService.generateClipId(player);
-								delta.added.push({
-									id: clipId,
-									player,
-									trackIndex,
-									clipIndex
-								});
-							} else if (existingClip.trackIndex !== trackIndex || existingClip.clipIndex !== clipIndex) {
-								// Clip moved to different position
-								delta.moved.push({
-									id: clipId!, // We know clipId exists here since we found existingClip
-									player,
-									trackIndex,
-									clipIndex,
-									visual: existingClip.visual
-								});
-							} else if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
-								// Check if clip needs updating
-								delta.updated.push({
-									id: clipId!, // We know clipId exists here since we found existingClip
-									player,
-									trackIndex,
-									clipIndex,
-									visual: existingClip.visual
-								});
-							}
-
-							if (clipId) {
-								seenClipIds.add(clipId);
-							}
-						}
-					}
+		// Process all tracks
+		this.edit.getEdit().timeline.tracks.forEach((track, trackIndex) => {
+			track?.clips?.forEach((clip, clipIndex) => {
+				if (clip) {
+					this.processClipForDelta(trackIndex, clipIndex, registryState, delta, seenClipIds);
 				}
-			}
-		}
+			});
+		});
 
 		// Find removed clips
+		this.findRemovedClips(registryState, seenClipIds, delta);
+
+		return delta;
+	}
+
+	private processClipForDelta(
+		trackIndex: number,
+		clipIndex: number,
+		registryState: ReturnType<typeof this.state.getState>['clipRegistry'],
+		delta: SyncDelta,
+		seenClipIds: Set<string>
+	): void {
+		const player = this.getPlayerForClip(trackIndex, clipIndex);
+		if (!player) return;
+
+		let clipId = this.playerToClipId.get(player);
+		const existingClip = clipId ? registryState.clips.get(clipId) : null;
+
+		if (!existingClip) {
+			clipId = this.identityService.generateClipId(player);
+			delta.added.push({ id: clipId, player, trackIndex, clipIndex });
+		} else if (existingClip.trackIndex !== trackIndex || existingClip.clipIndex !== clipIndex) {
+			delta.moved.push({
+				id: clipId!,
+				player,
+				trackIndex,
+				clipIndex,
+				visual: existingClip.visual
+			});
+		} else if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
+			delta.updated.push({
+				id: clipId!,
+				player,
+				trackIndex,
+				clipIndex,
+				visual: existingClip.visual
+			});
+		}
+
+
+		if (clipId) {
+			seenClipIds.add(clipId);
+		}
+	}
+
+	private findRemovedClips(
+		registryState: ReturnType<typeof this.state.getState>['clipRegistry'],
+		seenClipIds: Set<string>,
+		delta: SyncDelta
+	): void {
 		for (const [clipId, registeredClip] of registryState.clips) {
 			if (!seenClipIds.has(clipId)) {
 				delta.removed.push({
 					id: clipId,
-					player: null as any, // Player no longer exists
+					player: null as unknown as Player,
 					trackIndex: registeredClip.trackIndex,
 					clipIndex: registeredClip.clipIndex,
 					visual: registeredClip.visual
 				});
 			}
 		}
-
-		return delta;
 	}
 
 	/**
@@ -416,7 +364,7 @@ export class ClipRegistryManager {
 				// Remove from parent track
 				const track = this.timeline.getRenderer().getTrackByIndex(removed.trackIndex);
 				if (track) {
-					track.removeClip(removed.visual);
+					track.removeClip(removed.id);
 				}
 				// Dispose the visual
 				removed.visual.dispose();
@@ -537,13 +485,13 @@ export class ClipRegistryManager {
 		if (!clip?.visual) return;
 
 		// Detach from old track
-		const oldTrack = this.timeline.getRenderer().getTrackByIndex(fromTrackIndex);
+		const oldTrack = this.timeline?.getRenderer().getTrackByIndex(fromTrackIndex);
 		if (oldTrack) {
 			oldTrack.detachClip(clipId);
 		}
 
 		// Attach to new track
-		const newTrack = this.timeline.getRenderer().getTrackByIndex(toTrackIndex);
+		const newTrack = this.timeline?.getRenderer().getTrackByIndex(toTrackIndex);
 		if (newTrack) {
 			newTrack.addClip(clip.visual);
 		}
@@ -627,9 +575,9 @@ export class ClipRegistryManager {
 		}
 
 		// Remove event listeners
-		this.edit.events.off("clip:updated", this.handleClipUpdatedBound);
-		this.edit.events.off("clip:deleted", this.handleClipDeletedBound);
-		this.edit.events.off("track:deleted", this.handleTrackDeletedBound);
+		Object.entries(this.eventHandlers).forEach(([event, handler]) => {
+			this.edit.events.off(event, handler);
+		});
 
 		// Clear identity service cache
 		this.identityService.clearAllCache();
