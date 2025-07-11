@@ -9,93 +9,105 @@ import { ITimelinePlayhead } from "../types/timeline.interfaces";
 export class TimelinePlayhead extends Entity implements ITimelinePlayhead {
 	private graphics: PIXI.Graphics;
 	private handle: PIXI.Graphics;
-	private time: number = 0;
-	private pixelsPerSecond: number = 100;
-	private scrollX: number = 0;
+	private time = 0;
+	private pixelsPerSecond = 100;
+	private scrollX = 0;
 	private height: number;
-	private visible: boolean = true;
+	private visible = true;
+
+	private readonly config = {
+		color: 0xff0000,
+		lineWidth: 2,
+		handle: { width: 12, height: 10 },
+		hitAreaPadding: 4,
+		visibilityBounds: { min: -10, max: 5000 }
+	};
 
 	constructor(height: number) {
 		super();
 		this.height = height;
+		this.setupGraphics();
+	}
 
-		// Create playhead line
+	private setupGraphics(): void {
 		this.graphics = new PIXI.Graphics();
-		this.getContainer().addChild(this.graphics);
-
-		// Create playhead handle
 		this.handle = new PIXI.Graphics();
-		this.getContainer().addChild(this.handle);
-
-		// Make handle interactive
 		this.handle.eventMode = "static";
 		this.handle.cursor = "pointer";
+		this.getContainer().addChild(this.graphics, this.handle);
 	}
 
 	public async load(): Promise<void> {
-		this.updatePlayhead();
+		this.draw();
 	}
 
-	public update(__deltaTime: number, __elapsed: number): void {
-		// Update position based on current time
-		this.updatePosition();
-	}
+	public update(): void {} // Position updates happen via setters
 
 	public draw(): void {
 		this.updatePlayhead();
 	}
 
 	public dispose(): void {
-		this.graphics.clear();
-		this.graphics.destroy();
-		this.handle.clear();
-		this.handle.destroy();
+		[this.graphics, this.handle].forEach(g => {
+			g?.clear();
+			g?.destroy();
+		});
 	}
 
-	public setTime(time: number): void {
+	public setTime(time: number): this {
 		this.time = Math.max(0, time);
 		this.updatePosition();
+		return this;
 	}
 
 	public getTime(): number {
 		return this.time;
 	}
 
-	public setVisible(visible: boolean): void {
+	public setVisible(visible: boolean): this {
 		this.visible = visible;
 		this.getContainer().visible = visible;
+		return this;
 	}
 
-	public setPixelsPerSecond(pixelsPerSecond: number): void {
+	public setPixelsPerSecond(pixelsPerSecond: number): this {
 		this.pixelsPerSecond = pixelsPerSecond;
 		this.updatePosition();
+		return this;
 	}
 
-	public setScrollX(scrollX: number): void {
+	public setScrollX(scrollX: number): this {
 		this.scrollX = scrollX;
 		this.updatePosition();
+		return this;
 	}
 
-	public setHeight(height: number): void {
+	public setHeight(height: number): this {
 		this.height = height;
 		this.updatePlayhead();
+		return this;
 	}
 
 	private updatePlayhead(): void {
-		// Clear previous graphics
 		this.graphics.clear();
 		this.handle.clear();
 
-		if (!this.visible) return;
+		const { color, lineWidth, handle, hitAreaPadding } = this.config;
 
-		// Draw playhead line with PIXI v8 chaining syntax
-		this.graphics.moveTo(0, 0).lineTo(0, this.height).stroke({ width: 2, color: 0xff0000 });
+		// Draw playhead line
+		this.graphics.moveTo(0, 0).lineTo(0, this.height).stroke({ width: lineWidth, color });
 
-		// Draw playhead handle (triangle at top) with PIXI v8 chaining syntax
-		this.handle.poly([0, 0, -6, -10, 6, -10]).fill({ color: 0xff0000 });
+		// Draw handle (triangle)
+		const halfWidth = handle.width / 2;
+		this.handle.poly([0, 0, -halfWidth, -handle.height, halfWidth, -handle.height]).fill({ color });
 
-		// Make handle draggable area larger
-		this.handle.hitArea = new PIXI.Rectangle(-10, -15, 20, 20);
+		// Set hit area
+		this.handle.hitArea = new PIXI.Rectangle(
+			-halfWidth - hitAreaPadding,
+			-handle.height - hitAreaPadding,
+			handle.width + hitAreaPadding * 2,
+			handle.height + hitAreaPadding * 2
+		);
 
 		this.updatePosition();
 	}
@@ -103,8 +115,6 @@ export class TimelinePlayhead extends Entity implements ITimelinePlayhead {
 	private updatePosition(): void {
 		const x = this.time * this.pixelsPerSecond - this.scrollX;
 		this.getContainer().x = x;
-
-		// Hide if outside visible area
-		this.getContainer().visible = this.visible && x >= -10 && x <= 5000; // Assuming max width
+		this.getContainer().visible = this.visible && x >= this.config.visibilityBounds.min && x <= this.config.visibilityBounds.max;
 	}
 }
