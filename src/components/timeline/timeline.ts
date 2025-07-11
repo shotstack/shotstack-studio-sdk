@@ -34,16 +34,16 @@ export class Timeline extends Entity implements ITimeline {
 	private toolManager: IToolManager;
 	private featureManager: IFeatureManager;
 	private clipRegistryManager: ClipRegistryManager;
-	private edit: Edit;
 	private size: Size;
 	private pixelsPerSecond: number = 100;
 	private animationFrameId: number | null = null;
 	private lastSelectedClipId: string | null = null;
 
-	constructor(edit: Edit, size?: Size) {
+	constructor(
+		private edit: Edit,
+		size?: Size
+	) {
 		super();
-		this.edit = edit;
-		// Default size: use edit width, height 150
 		this.size = size || { width: edit.size.width, height: 150 };
 
 		// Initialize core systems
@@ -83,34 +83,23 @@ export class Timeline extends Entity implements ITimeline {
 		// Add renderer canvas to container
 		this.getContainer().addChild(this.renderer.getStage());
 
-		// Enable PIXI event system on the stage and make it interactive
-		this.renderer.getStage().eventMode = "static";
+		// Set up event system
+		const stage = this.renderer.getStage();
+		stage.eventMode = "static";
 
-		// Set up PIXI event listeners for tool handling
-		this.renderer.getStage().on("pointerdown", (event: PIXI.FederatedPointerEvent) => {
-			this.handlePixiPointerDown(event);
-		});
+		// Set up PIXI event listeners
+		stage.on("pointerdown", (event: PIXI.FederatedPointerEvent) => this.handlePixiPointerDown(event));
+		stage.on("pointermove", (event: PIXI.FederatedPointerEvent) => this.handlePixiPointerMove(event));
+		stage.on("pointerup", (event: PIXI.FederatedPointerEvent) => this.handlePixiPointerUp(event));
 
-		// Append the timeline canvas to the DOM
+		// Append canvas and set up DOM events
 		const { canvas } = this.renderer.getApplication();
 		container.appendChild(canvas);
-
-		// Set up cursor element
 		this.toolManager.setCursorElement(canvas);
 
-		// Use PIXI events for pointer handling (unified event system)
-		this.renderer.getStage().on("pointermove", (event: PIXI.FederatedPointerEvent) => {
-			this.handlePixiPointerMove(event);
-		});
-		this.renderer.getStage().on("pointerup", (event: PIXI.FederatedPointerEvent) => {
-			this.handlePixiPointerUp(event);
-		});
-
-		// Keep DOM events for wheel and keyboard (better support)
+		// Set up DOM event listeners
+		canvas.tabIndex = 0;
 		canvas.addEventListener("wheel", this.handleWheel.bind(this));
-
-		// Set up keyboard events on document (when canvas has focus)
-		canvas.tabIndex = 0; // Make canvas focusable
 		canvas.addEventListener("keydown", this.handleKeyDown.bind(this));
 		canvas.addEventListener("keyup", this.handleKeyUp.bind(this));
 
@@ -130,7 +119,6 @@ export class Timeline extends Entity implements ITimeline {
 
 	public update(deltaTime: number, elapsed: number): void {
 		// Update playback state from Edit
-		// Edit stores time in milliseconds, convert to seconds for Timeline
 		const currentPlayback = this.state.getState().playback;
 		const newPlayback = {
 			currentTime: this.edit.playbackTime / 1000,
@@ -146,13 +134,9 @@ export class Timeline extends Entity implements ITimeline {
 			this.state.update({ playback: newPlayback });
 		}
 
-		// Update active tool
-		const activeTool = this.toolManager.getActiveTool();
-		if (activeTool) {
-			activeTool.update(deltaTime, elapsed);
-		}
-
-		// Update all enabled features
+		// Update active tool and enabled features
+		this.toolManager.getActiveTool()?.update(deltaTime, elapsed);
+		
 		this.featureManager.getAllFeatures().forEach(feature => {
 			if (feature.enabled) {
 				feature.update(deltaTime, elapsed);
@@ -161,17 +145,9 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	public draw(): void {
-		// Render the timeline
 		this.renderer.render(this.state.getState());
-
-		// Let features render their overlays
 		this.featureManager.renderOverlays(this.renderer);
-
-		// Draw active tool overlays if any
-		const activeTool = this.toolManager.getActiveTool();
-		if (activeTool) {
-			activeTool.draw();
-		}
+		this.toolManager.getActiveTool()?.draw();
 	}
 
 	public dispose(): void {
@@ -181,52 +157,31 @@ export class Timeline extends Entity implements ITimeline {
 			this.animationFrameId = null;
 		}
 
-		// Dispose all tools
+		// Dispose managers
 		this.toolManager.getAllTools().forEach(tool => tool.dispose());
-
-		// Dispose all features
 		this.featureManager.getAllFeatures().forEach(feature => feature.dispose());
 
-		// Remove PIXI event listeners
-		this.renderer.getStage().off("pointerdown");
-		this.renderer.getStage().off("pointermove");
-		this.renderer.getStage().off("pointerup");
-
-		// Dispose renderer
-		this.renderer.dispose();
-
 		// Remove event listeners
-		this.removeEditEventListeners();
+		const stage = this.renderer.getStage();
+		stage.off("pointerdown");
+		stage.off("pointermove");
+		stage.off("pointerup");
 
-		// Remove remaining DOM event listeners
 		const { canvas } = this.renderer.getApplication();
 		canvas.removeEventListener("wheel", this.handleWheel.bind(this));
 		canvas.removeEventListener("keydown", this.handleKeyDown.bind(this));
 		canvas.removeEventListener("keyup", this.handleKeyUp.bind(this));
 
-		// Dispose clip registry manager
+		this.removeEditEventListeners();
+		this.renderer.dispose();
 		this.clipRegistryManager.dispose();
 	}
 
-	public getState(): TimelineState {
-		return this.state.getState();
-	}
-
-	public setState(updates: Partial<TimelineState>): void {
-		this.state.update(updates);
-	}
-
-	public registerTool(tool: ITimelineTool): void {
-		this.toolManager.register(tool);
-	}
-
-	public registerFeature(feature: ITimelineFeature): void {
-		this.featureManager.register(feature);
-	}
-
-	public activateTool(name: string): void {
-		this.toolManager.activate(name);
-	}
+	public getState = (): TimelineState => this.state.getState();
+	public setState = (updates: Partial<TimelineState>): void => this.state.update(updates);
+	public registerTool = (tool: ITimelineTool): void => this.toolManager.register(tool);
+	public registerFeature = (feature: ITimelineFeature): void => this.featureManager.register(feature);
+	public activateTool = (name: string): void => this.toolManager.activate(name);
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
 		this.pixelsPerSecond = pixelsPerSecond;
@@ -238,25 +193,10 @@ export class Timeline extends Entity implements ITimeline {
 		});
 	}
 
-	public getRenderer(): ITimelineRenderer {
-		return this.renderer;
-	}
-
-	public getTimelineDuration(): number {
-		// Get duration from edit
-		return this.edit.getTotalDuration();
-	}
-
-	public getFeature(name: string): ITimelineFeature | null {
-		return this.featureManager.getFeature(name);
-	}
-
-	/**
-	 * Get the clip registry manager - the single source of truth for all clip operations
-	 */
-	public getClipRegistry(): ClipRegistryManager {
-		return this.clipRegistryManager;
-	}
+	public getRenderer = (): ITimelineRenderer => this.renderer;
+	public getTimelineDuration = (): number => this.edit.getTotalDuration();
+	public getFeature = (name: string): ITimelineFeature | null => this.featureManager.getFeature(name);
+	public getClipRegistry = (): ClipRegistryManager => this.clipRegistryManager;
 
 	private createInitialState(): TimelineState {
 		return {
@@ -278,14 +218,8 @@ export class Timeline extends Entity implements ITimeline {
 				duration: 0
 			},
 			features: {
-				snapping: {
-					enabled: true,
-					gridSize: 0.033333 // 1/30 second
-				},
-				autoScroll: {
-					enabled: true,
-					threshold: 0.8 // 80% of viewport
-				}
+				snapping: { enabled: true, gridSize: 0.033333 },
+				autoScroll: { enabled: true, threshold: 0.8 }
 			},
 			activeTool: "selection",
 			toolStates: new Map(),
@@ -404,58 +338,33 @@ export class Timeline extends Entity implements ITimeline {
 
 	// Handle PIXI pointer events - forward to features and tools
 	private handlePixiPointerDown(event: PIXI.FederatedPointerEvent): void {
-		// Let features handle it first
-		if (this.featureManager.handlePointerDown(event)) {
-			return;
+		if (!this.featureManager.handlePointerDown(event)) {
+			this.toolManager.handlePointerDown(event);
 		}
-
-		// Then forward to tool manager
-		this.toolManager.handlePointerDown(event);
 	}
 
-	// Handle PIXI pointer move events
 	private handlePixiPointerMove(event: PIXI.FederatedPointerEvent): void {
-		// Let features handle it first
-		if (this.featureManager.handlePointerMove(event)) {
-			return;
+		if (!this.featureManager.handlePointerMove(event)) {
+			this.toolManager.handlePointerMove(event);
 		}
-
-		// Then forward to tool manager
-		this.toolManager.handlePointerMove(event);
 	}
 
-	// Handle PIXI pointer up events
 	private handlePixiPointerUp(event: PIXI.FederatedPointerEvent): void {
-		// Let features handle it first
-		if (this.featureManager.handlePointerUp(event)) {
-			return;
+		if (!this.featureManager.handlePointerUp(event)) {
+			this.toolManager.handlePointerUp(event);
 		}
-
-		// Then forward to tool manager
-		this.toolManager.handlePointerUp(event);
 	}
 
 	public handleWheel(event: WheelEvent): void {
-		// Create timeline wheel event
+		const { deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey, offsetX: x } = event;
 		const timelineEvent = {
-			deltaX: event.deltaX,
-			deltaY: event.deltaY,
-			deltaMode: event.deltaMode,
-			ctrlKey: event.ctrlKey,
-			shiftKey: event.shiftKey,
-			altKey: event.altKey,
-			metaKey: event.metaKey,
-			x: event.offsetX,
+			deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey, x,
 			preventDefault: () => event.preventDefault()
 		};
 
-		// Let features handle it first
-		if (this.featureManager.handleWheel(timelineEvent)) {
-			return;
+		if (!this.featureManager.handleWheel(timelineEvent)) {
+			this.toolManager.handleWheel(event);
 		}
-
-		// Then pass to tool manager
-		this.toolManager.handleWheel(event);
 	}
 
 	public handleKeyDown(event: KeyboardEvent): void {
@@ -473,21 +382,18 @@ export class Timeline extends Entity implements ITimeline {
 		this.toolManager.handleKeyDown(event);
 	}
 
-	public handleKeyUp(event: KeyboardEvent): void {
-		this.toolManager.handleKeyUp(event);
-	}
+	public handleKeyUp = (event: KeyboardEvent): void => this.toolManager.handleKeyUp(event);
 
 	private async loadEditData(): Promise<void> {
-		// Get the current edit data
 		const editData = this.edit.getEdit();
 
 		// Ensure we have tracks in the renderer
-		for (const [index] of editData.timeline.tracks.entries()) {
+		editData.timeline.tracks.forEach((_, index) => {
 			const trackId = `track-${index}`;
 			if (!this.renderer.getTrack(trackId)) {
 				this.renderer.addTrack(trackId, index);
 			}
-		}
+		});
 
 		// Remove tracks that no longer exist
 		const trackCount = editData.timeline.tracks.length;
@@ -498,11 +404,7 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		});
 
-		// For initial load, sync immediately to ensure clips are registered
-		// This is important for drag operations that may happen right after load
 		await this.clipRegistryManager.syncWithEdit();
-
-		// Animation loop will handle the rendering
 	}
 
 	private updateSelectionVisuals(): void {
@@ -513,34 +415,24 @@ export class Timeline extends Entity implements ITimeline {
 		let currentSelectedClipId: string | null = null;
 		if (selectedInfo) {
 			for (const [clipId, registeredClip] of registryState.clips) {
-				if (registeredClip.trackIndex === selectedInfo.trackIndex && registeredClip.clipIndex === selectedInfo.clipIndex) {
+				if (registeredClip.trackIndex === selectedInfo.trackIndex && 
+					registeredClip.clipIndex === selectedInfo.clipIndex) {
 					currentSelectedClipId = clipId;
 					break;
 				}
 			}
 		}
 
-		// Only update the clips that changed selection state
-		if (this.lastSelectedClipId && this.lastSelectedClipId !== currentSelectedClipId) {
-			// Deselect the previously selected clip
-			const previousClip = registryState.clips.get(this.lastSelectedClipId);
-			if (previousClip?.visual) {
-				previousClip.visual.setSelected(false);
+		// Update selection state if changed
+		if (this.lastSelectedClipId !== currentSelectedClipId) {
+			if (this.lastSelectedClipId) {
+				registryState.clips.get(this.lastSelectedClipId)?.visual?.setSelected(false);
 			}
-		}
-
-		if (currentSelectedClipId && currentSelectedClipId !== this.lastSelectedClipId) {
-			// Select the new clip
-			const currentClip = registryState.clips.get(currentSelectedClipId);
-			if (currentClip?.visual) {
-				currentClip.visual.setSelected(true);
+			if (currentSelectedClipId) {
+				registryState.clips.get(currentSelectedClipId)?.visual?.setSelected(true);
 			}
+			this.lastSelectedClipId = currentSelectedClipId;
 		}
-
-		// Update the last selected clip ID
-		this.lastSelectedClipId = currentSelectedClipId;
-
-		// Animation loop will handle the rendering
 	}
 
 	private startAnimationLoop(): void {
