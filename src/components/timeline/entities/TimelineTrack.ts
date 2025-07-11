@@ -26,12 +26,12 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 
 		// Create container for clips
 		this.clipsContainer = new PIXI.Container();
-		this.clipsContainer.eventMode = 'static';
+		this.clipsContainer.eventMode = "static";
 		this.clipsContainer.interactiveChildren = true;
 		this.getContainer().addChild(this.clipsContainer);
-		
+
 		// Enable events on track container too
-		this.getContainer().eventMode = 'static';
+		this.getContainer().eventMode = "static";
 		this.getContainer().interactiveChildren = true;
 	}
 
@@ -159,9 +159,6 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 			.fill({ color: backgroundColor, alpha: 0.5 });
 
 		// Draw bottom border
-		this.graphics
-			.moveTo(0, this.height)
-			.lineTo(5000, this.height)
-			.stroke({ width: 1, color: 0x404040 });
+		this.graphics.moveTo(0, this.height).lineTo(5000, this.height).stroke({ width: 1, color: 0x404040 });
 	}
 }
