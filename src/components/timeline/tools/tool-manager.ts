@@ -1,7 +1,7 @@
 import { Edit } from "@core/edit";
 import * as PIXI from "pixi.js";
 
-import { TimelineWheelEvent, TimelinePointerEvent } from "../types";
+import { TimelinePointerEvent } from "../types";
 import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager, IToolInterceptor } from "../types/timeline.interfaces";
 
 /**
