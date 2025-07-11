@@ -1,7 +1,8 @@
 import * as PIXI from "pixi.js";
 
-import { TimelineTool } from "../core/TimelineTool";
-import { TimelinePointerEvent } from "../types";
+import { TimelinePointerEvent } from "../types/timeline.types";
+
+import { TimelineTool } from "./timeline-tool";
 
 /**
  * Selection tool for selecting and manipulating timeline clips

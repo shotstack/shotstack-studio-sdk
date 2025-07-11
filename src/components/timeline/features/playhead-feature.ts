@@ -1,8 +1,9 @@
 import * as PIXI from "pixi.js";
 
-import { TimelineFeature } from "../core/TimelineFeature";
-import { ITimelineRenderer } from "../interfaces";
 import { TimelinePointerEvent, StateChanges } from "../types";
+import { ITimelineRenderer } from "../types/timeline.interfaces";
+
+import { TimelineFeature } from "./timeline-feature";
 
 /**
  * Handles playhead visualization and interaction for timeline seeking

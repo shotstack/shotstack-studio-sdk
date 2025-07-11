@@ -1,4 +1,4 @@
-import { Timeline } from "./components/timeline/core/Timeline";
+import { Timeline } from "./components/timeline/timeline";
 
 import { Edit, Canvas, Controls } from "./index";
 

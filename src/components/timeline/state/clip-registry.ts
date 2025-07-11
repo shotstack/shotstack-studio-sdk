@@ -2,10 +2,11 @@ import { Player } from "@canvas/players/player";
 import { Edit } from "@core/edit";
 import * as PIXI from "pixi.js";
 
-import { TimelineClip } from "../entities/TimelineClip";
-import { ITimelineState } from "../interfaces";
-import { ClipIdentityService } from "../services/ClipIdentityService";
-import { RegisteredClip } from "../types";
+import { TimelineClip } from "../rendering/timeline-clip";
+import { ITimelineState } from "../types/timeline.interfaces";
+import { RegisteredClip } from "../types/timeline.types";
+
+import { ClipIdentityService } from "./identity-service";
 
 /**
  * Sync delta types for tracking changes between Edit and Timeline state
@@ -454,7 +455,7 @@ export class ClipRegistryManager {
 			const editClip = this.edit.getClip(added.trackIndex, added.clipIndex);
 			if (editClip) {
 				// Create visual clip
-				const { TimelineClip: TimelineClipClass } = await import("../entities/TimelineClip");
+				const { TimelineClip: TimelineClipClass } = await import("../rendering/timeline-clip");
 				const trackId = `track-${added.trackIndex}`;
 				const visual = new TimelineClipClass(added.id, trackId, editClip.start || 0, editClip.length || 1, editClip);
 

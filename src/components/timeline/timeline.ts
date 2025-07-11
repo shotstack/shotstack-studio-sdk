@@ -4,6 +4,11 @@ import { Size } from "@core/layouts/geometry";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
+import { FeatureManager } from "./features/feature-manager";
+import { ToolManager } from "./features/tool-manager";
+import { TimelineRenderer } from "./rendering/timeline-renderer";
+import { ClipRegistryManager } from "./state/clip-registry";
+import { TimelineStateManager } from "./state/timeline-state";
 import {
 	ITimeline,
 	ITimelineState,
@@ -14,14 +19,8 @@ import {
 	IFeatureManager,
 	ITimelineToolContext,
 	ITimelineFeatureContext
-} from "../interfaces";
-import { TimelineState, StateChanges } from "../types";
-
-import { ClipRegistryManager } from "./ClipRegistryManager";
-import { FeatureManager } from "./FeatureManager";
-import { TimelineRenderer } from "./TimelineRenderer";
-import { TimelineStateManager } from "./TimelineState";
-import { ToolManager } from "./ToolManager";
+} from "./types/timeline.interfaces";
+import { TimelineState, StateChanges } from "./types/timeline.types";
 
 /**
  * Main Timeline orchestrator class that manages the timeline state,
@@ -318,17 +317,17 @@ export class Timeline extends Entity implements ITimeline {
 		};
 
 		// Register selection tool
-		const { SelectionTool } = await import("../tools/SelectionTool");
+		const { SelectionTool } = await import("./tools/selection-tool");
 		const selectionTool = new SelectionTool(this.state, toolContext);
 		this.toolManager.register(selectionTool);
 
 		// Register resize interceptor (runs before tools)
-		const { ResizeInterceptor } = await import("../tools/ResizeInterceptor");
+		const { ResizeInterceptor } = await import("./tools/resize-interceptor");
 		const resizeInterceptor = new ResizeInterceptor(this.state, toolContext);
 		this.toolManager.registerInterceptor(resizeInterceptor);
 
 		// Register drag interceptor (runs after resize but before selection)
-		const { DragInterceptor } = await import("../tools/DragInterceptor");
+		const { DragInterceptor } = await import("./tools/drag-tool");
 		const dragInterceptor = new DragInterceptor(this.state, toolContext);
 		this.toolManager.registerInterceptor(dragInterceptor);
 	}
@@ -341,12 +340,12 @@ export class Timeline extends Entity implements ITimeline {
 		};
 
 		// Register the zoom feature
-		const { ZoomFeature } = await import("../features/ZoomFeature");
+		const { ZoomFeature } = await import("./features/zoom-feature");
 		const zoomFeature = new ZoomFeature(this.state, featureContext);
 		this.featureManager.register(zoomFeature);
 
 		// Register the playhead feature (temporary for testing)
-		const { PlayheadFeature } = await import("../features/PlayheadFeature");
+		const { PlayheadFeature } = await import("./features/playhead-feature");
 		const playheadFeature = new PlayheadFeature(this.state, featureContext);
 		this.featureManager.register(playheadFeature);
 

@@ -1,9 +1,11 @@
 import { Size } from "@core/layouts/geometry";
 import * as PIXI from "pixi.js";
 
-import { TimelineTrack, TimelineRuler } from "../entities";
-import { ITimelineRenderer, ITimelineTrack, ITimelineRuler } from "../interfaces";
-import { TimelineState, RenderLayer } from "../types";
+import { ITimelineRenderer, ITimelineTrack, ITimelineRuler } from "../types/timeline.interfaces";
+import { TimelineState, RenderLayer } from "../types/timeline.types";
+
+import { TimelineRuler } from "./timeline-ruler";
+import { TimelineTrack } from "./timeline-track";
 
 /**
  * Handles all rendering for the timeline using PIXI.js

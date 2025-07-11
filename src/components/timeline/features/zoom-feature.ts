@@ -1,6 +1,7 @@
-import { TimelineFeature } from "../core/TimelineFeature";
-import { ITimelineRenderer } from "../interfaces";
+import { ITimelineRenderer } from "../types/timeline.interfaces";
 import { TimelineWheelEvent } from "../types/timeline.types";
+
+import { TimelineFeature } from "./timeline-feature";
 
 /**
  * Handles zoom functionality for the timeline
