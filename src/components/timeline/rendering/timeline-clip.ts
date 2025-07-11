@@ -19,6 +19,26 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	private clipColor: number = 0x4444ff;
 	private clipData: Clip | undefined;
 
+	private static readonly ASSET_COLORS: Record<string, number> = {
+		video: 0x4444ff,
+		audio: 0x44ff44,
+		image: 0xff44ff,
+		text: 0xffaa44,
+		html: 0x44ffff,
+		luma: 0xff4444,
+		shape: 0xaaaa44
+	};
+
+	private readonly VISUAL = {
+		height: 50,
+		cornerRadius: 4,
+		alpha: 0.8,
+		selectionColor: 0xffff00,
+		labelPaddingX: 5,
+		labelY: 30,
+		clipY: 5
+	} as const;
+
 	constructor(clipId: string, trackId: string, startTime: number, duration: number, clipData?: Clip) {
 		super();
 		this.clipId = clipId;
@@ -51,20 +71,8 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	}
 
 	public async load(): Promise<void> {
-		// Set clip color based on type if available
-		if (this.clipData?.asset?.type) {
-			this.clipColor = this.getColorForAssetType(this.clipData.asset.type);
-		}
-
-		// Set label text based on asset type
-		if (this.clipData?.asset?.type === "text" && "text" in this.clipData.asset) {
-			this.label.text = this.clipData.asset.text;
-		} else if (this.clipData?.asset && "src" in this.clipData.asset) {
-			// Extract filename from src
-			const filename = this.clipData.asset.src.split("/").pop() || "";
-			this.label.text = filename;
-		}
-
+		this.updateColorFromAsset();
+		this.updateLabelFromAsset();
 		this.updateVisuals();
 	}
 
@@ -118,19 +126,8 @@ export class TimelineClip extends Entity implements ITimelineClip {
 
 	public setClipData(clipData: Clip): void {
 		this.clipData = clipData;
-		if (clipData.asset?.type) {
-			this.clipColor = this.getColorForAssetType(clipData.asset.type);
-		}
-
-		// Update label based on asset type
-		if (clipData.asset?.type === "text" && "text" in clipData.asset) {
-			this.label.text = clipData.asset.text;
-		} else if (clipData.asset && "src" in clipData.asset) {
-			// Extract filename from src
-			const filename = clipData.asset.src.split("/").pop() || "";
-			this.label.text = filename;
-		}
-
+		this.updateColorFromAsset();
+		this.updateLabelFromAsset();
 		this.updateVisuals();
 	}
 
@@ -152,23 +149,22 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.graphics.clear();
 
 		const width = this.duration * this.pixelsPerSecond;
-		const height = 50; // Fixed height for clips
-		const cornerRadius = 4;
+		const { height, cornerRadius, alpha, selectionColor, labelPaddingX, labelY, clipY } = this.VISUAL;
 
 		// Draw clip background using PIXI v8 API
-		this.graphics.roundRect(0, 5, width, height, cornerRadius).fill({ color: this.clipColor, alpha: 0.8 });
+		this.graphics.roundRect(0, clipY, width, height, cornerRadius).fill({ color: this.clipColor, alpha });
 
 		// Draw selection border if selected
 		if (this.selected) {
-			this.graphics.roundRect(-1, 4, width + 2, height + 2, cornerRadius).stroke({ width: 2, color: 0xffff00 });
+			this.graphics.roundRect(-1, clipY - 1, width + 2, height + 2, cornerRadius).stroke({ width: 2, color: selectionColor });
 		}
 
 		// Update label position and truncate if needed
-		this.label.x = 5;
-		this.label.y = 30;
+		this.label.x = labelPaddingX;
+		this.label.y = labelY;
 
 		// Truncate label if it's too wide
-		const maxWidth = width - 10;
+		const maxWidth = width - labelPaddingX * 2;
 		if (this.label.width > maxWidth && maxWidth > 0) {
 			const originalText = this.label.text;
 			let truncated = originalText;
@@ -185,17 +181,20 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.getContainer().x = this.startTime * this.pixelsPerSecond;
 	}
 
-	private getColorForAssetType(type: string): number {
-		const colors: Record<string, number> = {
-			video: 0x4444ff,
-			audio: 0x44ff44,
-			image: 0xff44ff,
-			text: 0xffaa44,
-			html: 0x44ffff,
-			luma: 0xff4444,
-			shape: 0xaaaa44
-		};
+	private updateColorFromAsset(): void {
+		if (this.clipData?.asset?.type) {
+			this.clipColor = TimelineClip.ASSET_COLORS[this.clipData.asset.type] || 0x888888;
+		}
+	}
 
-		return colors[type] || 0x888888;
+	private updateLabelFromAsset(): void {
+		if (!this.clipData?.asset) return;
+
+		const asset = this.clipData.asset;
+		if (asset.type === "text" && "text" in asset) {
+			this.label.text = asset.text;
+		} else if ("src" in asset) {
+			this.label.text = asset.src.split("/").pop() || "";
+		}
 	}
 }
