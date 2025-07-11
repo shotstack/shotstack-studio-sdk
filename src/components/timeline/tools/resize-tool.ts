@@ -12,117 +12,87 @@ export class ResizeInterceptor implements IToolInterceptor {
 	public readonly name = "resize-interceptor";
 	public readonly priority = 100; // High priority to intercept before selection tool
 
-	// Dependencies
-	private state: ITimelineState;
-	private context: ITimelineToolContext;
+	// Configuration
+	private static readonly CONFIG = {
+		EDGE_THRESHOLD: 8,
+		MIN_DURATION: 0.1,
+		OVERLAP_BUFFER: 0.001
+	} as const;
 
-	// Resize state tracking
-	private isResizing: boolean = false;
-	private targetClip: { trackIndex: number; clipIndex: number } | null = null;
-	private dragStartX: number = 0;
-	private originalDuration: number = 0;
-	private previewDuration: number = 0;
+	// Resize state
+	private resizeState = {
+		isResizing: false,
+		targetClip: null as { trackIndex: number; clipIndex: number } | null,
+		dragStartX: 0,
+		originalDuration: 0,
+		previewDuration: 0
+	};
 
-	// Edge detection configuration
-	private readonly EDGE_THRESHOLD = 8; // Pixels from edge to trigger resize cursor
-
-	constructor(state: ITimelineState, context: ITimelineToolContext) {
-		this.state = state;
-		this.context = context;
-	}
+	constructor(
+		private state: ITimelineState,
+		private context: ITimelineToolContext
+	) {}
 
 	public interceptPointerDown(event: TimelinePointerEvent): boolean {
-		// Check if click is on clip edge
-		if (this.isOnClipRightEdge(event)) {
-			// Get clip info for the resize operation
-			const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
-			if (registeredClip) {
-				const player = this.context.edit.getPlayerClip(registeredClip.trackIndex, registeredClip.clipIndex);
-				if (player && player.clipConfiguration) {
-					// Start resize operation
-					this.isResizing = true;
-					this.targetClip = {
-						trackIndex: registeredClip.trackIndex,
-						clipIndex: registeredClip.clipIndex
-					};
-					this.dragStartX = event.global.x;
-					// Use the current clip duration, not the original
-					this.originalDuration = player.clipConfiguration.length || 1;
-					this.previewDuration = this.originalDuration;
+		if (!this.isOnClipRightEdge(event)) return false;
 
-					// Stop propagation - we're handling this event
-					event.stopPropagation();
-					return true; // Event handled
-				}
-			}
-		}
-		return false; // Not handled
+		const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
+		if (!registeredClip) return false;
+
+		const player = this.context.edit.getPlayerClip(registeredClip.trackIndex, registeredClip.clipIndex);
+		if (!player?.clipConfiguration) return false;
+
+		// Start resize operation
+		this.resizeState = {
+			isResizing: true,
+			targetClip: {
+				trackIndex: registeredClip.trackIndex,
+				clipIndex: registeredClip.clipIndex
+			},
+			dragStartX: event.global.x,
+			originalDuration: player.clipConfiguration.length || 1,
+			previewDuration: player.clipConfiguration.length || 1
+		};
+
+		event.stopPropagation();
+		return true;
 	}
 
 	public interceptPointerMove(event: TimelinePointerEvent): boolean {
-		if (this.isResizing) {
-			// Ensure we still have valid target clip
-			if (!this.targetClip) {
-				this.resetState();
-				return false;
-			}
+		if (!this.resizeState.isResizing) return false;
 
-			// Calculate new duration during drag
-			this.previewDuration = this.calculateNewDuration(event.global.x);
-
-			// Update clip visual in real-time
-			this.updateClipVisual();
-
-			return true; // Event handled
+		if (!this.resizeState.targetClip) {
+			this.resetState();
+			return false;
 		}
-		return false; // Not handled
+
+		this.resizeState.previewDuration = this.calculateNewDuration(event.global.x);
+		this.updateClipVisual();
+		return true;
 	}
 
 	public interceptPointerUp(_event: TimelinePointerEvent): boolean {
-		if (this.isResizing && this.targetClip && this.previewDuration > 0) {
-			// Ensure duration is valid before executing command
-			const finalDuration = Math.max(0.1, this.previewDuration);
+		if (!this.resizeState.isResizing) return false;
 
-			// Create and execute resize command
-			const command = new ResizeClipCommand(this.targetClip.trackIndex, this.targetClip.clipIndex, finalDuration);
+		const { targetClip, previewDuration } = this.resizeState;
+		if (targetClip && previewDuration > 0) {
+			const finalDuration = Math.max(ResizeInterceptor.CONFIG.MIN_DURATION, previewDuration);
+			const command = new ResizeClipCommand(targetClip.trackIndex, targetClip.clipIndex, finalDuration);
 
 			try {
 				this.context.executeCommand(command);
 			} catch (error) {
 				console.error("Failed to execute resize command:", error);
-				// Show error feedback to user
 				this.handleResizeError(error);
 			}
-
-			// Reset state
-			this.resetState();
-
-			// Animation loop will handle rendering
-
-			return true; // Event handled
 		}
 
-		// Always reset state on pointer up if we were resizing
-		if (this.isResizing) {
-			this.resetState();
-			return true;
-		}
-
-		return false; // Not handled
+		this.resetState();
+		return true;
 	}
 
 	public getCursor(event: TimelinePointerEvent): string | null {
-		// If we're actively resizing, always show resize cursor
-		if (this.isResizing) {
-			return "ew-resize";
-		}
-
-		// Check if we're over a resize edge
-		if (this.isOnClipRightEdge(event)) {
-			return "ew-resize";
-		}
-
-		return null; // No specific cursor
+		return (this.resizeState.isResizing || this.isOnClipRightEdge(event)) ? "ew-resize" : null;
 	}
 
 	/**
@@ -159,7 +129,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 
 			// Check if pointer is near the right edge
 			const distance = Math.abs(event.global.x - clipRightEdgeX);
-			return distance <= this.EDGE_THRESHOLD;
+			return distance <= ResizeInterceptor.CONFIG.EDGE_THRESHOLD;
 		} catch (_error) {
 			// Fail gracefully on any error
 			return false;
@@ -178,20 +148,9 @@ export class ResizeInterceptor implements IToolInterceptor {
 	 * Calculate new duration based on drag distance
 	 */
 	private calculateNewDuration(currentX: number): number {
-		// Get current viewport state for zoom
-		const state = this.state.getState();
-		const pixelsPerSecond = state.viewport.zoom;
-
-		// Calculate the pixel delta from drag start
-		const deltaX = currentX - this.dragStartX;
-
-		// Convert pixel delta to time delta
-		const deltaTime = deltaX / pixelsPerSecond;
-
-		// Calculate new duration
-		const newDuration = this.originalDuration + deltaTime;
-
-		// Apply constraints
+		const { zoom } = this.state.getState().viewport;
+		const deltaTime = (currentX - this.resizeState.dragStartX) / zoom;
+		const newDuration = this.resizeState.originalDuration + deltaTime;
 		return this.applyDurationConstraints(newDuration);
 	}
 
@@ -199,13 +158,10 @@ export class ResizeInterceptor implements IToolInterceptor {
 	 * Apply duration constraints and validation
 	 */
 	private applyDurationConstraints(duration: number): number {
-		// Minimum duration constraint
-		const MIN_DURATION = 0.1;
-		let constrainedDuration = Math.max(MIN_DURATION, duration);
+		let constrainedDuration = Math.max(ResizeInterceptor.CONFIG.MIN_DURATION, duration);
 
-		// Check for adjacent clip constraints
-		if (this.targetClip) {
-			const maxDuration = this.getMaxDurationForClip(this.targetClip);
+		if (this.resizeState.targetClip) {
+			const maxDuration = this.getMaxDurationForClip(this.resizeState.targetClip);
 			if (maxDuration !== null) {
 				constrainedDuration = Math.min(constrainedDuration, maxDuration);
 			}
@@ -220,7 +176,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 	private getMaxDurationForClip(clipInfo: { trackIndex: number; clipIndex: number }): number | null {
 		try {
 			// Get the clip player to check its start time
-			const player = (this.context.edit as any).getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
+			const player = this.context.edit.getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
 			if (!player || !player.clipConfiguration) {
 				return null;
 			}
@@ -228,7 +184,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 			const clipStart = player.clipConfiguration.start || 0;
 
 			// Get track data
-			const track = (this.context.edit as any).getTrack(clipInfo.trackIndex);
+			const track = this.context.edit.getTrack(clipInfo.trackIndex);
 			if (!track || !track.clips) {
 				return null;
 			}
@@ -256,7 +212,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 			if (nextClipStart !== null) {
 				const maxDuration = nextClipStart - clipStart;
 				// Add a small buffer to prevent exact overlap
-				return Math.max(0.1, maxDuration - 0.001);
+				return Math.max(ResizeInterceptor.CONFIG.MIN_DURATION, maxDuration - ResizeInterceptor.CONFIG.OVERLAP_BUFFER);
 			}
 
 			// No constraint from adjacent clips
@@ -271,32 +227,29 @@ export class ResizeInterceptor implements IToolInterceptor {
 	 * Reset all resize state
 	 */
 	private resetState(): void {
-		this.isResizing = false;
-		this.targetClip = null;
-		this.dragStartX = 0;
-		this.originalDuration = 0;
-		this.previewDuration = 0;
+		this.resizeState = {
+			isResizing: false,
+			targetClip: null,
+			dragStartX: 0,
+			originalDuration: 0,
+			previewDuration: 0
+		};
 	}
 
 	/**
 	 * Update clip visual during drag
 	 */
 	private updateClipVisual(): void {
-		if (!this.targetClip) return;
+		const { targetClip, previewDuration } = this.resizeState;
+		if (!targetClip) return;
 
-		// Get the clip from the timeline renderer
 		const renderer = this.context.timeline.getRenderer();
-		const tracks = renderer.getTracks();
-
-		if (this.targetClip.trackIndex < tracks.length) {
-			const track = tracks[this.targetClip.trackIndex];
-			const clips = track.getClips();
-
-			if (this.targetClip.clipIndex < clips.length) {
-				const clip = clips[this.targetClip.clipIndex];
-				// Update the clip's duration for visual feedback
-				clip.setDuration(this.previewDuration);
-			}
+		const track = renderer.getTrackByIndex(targetClip.trackIndex);
+		const clips = track?.getClips() || [];
+		const clip = clips[targetClip.clipIndex];
+		
+		if (clip) {
+			clip.setDuration(previewDuration);
 		}
 	}
 
