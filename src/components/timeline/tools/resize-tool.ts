@@ -1,15 +1,20 @@
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import * as PIXI from "pixi.js";
 
-import { TimelineTool } from "../core/TimelineTool";
+import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../interfaces";
 import { TimelinePointerEvent } from "../types";
 
 /**
- * Resize tool for adjusting clip duration by dragging right edge
+ * Resize interceptor for adjusting clip duration by dragging right edge
+ * This runs with higher priority than regular tools and intercepts resize operations
  */
-export class ResizeTool extends TimelineTool {
-	public readonly name = "resize";
-	public readonly cursor = "default";
+export class ResizeInterceptor implements IToolInterceptor {
+	public readonly name = "resize-interceptor";
+	public readonly priority = 100; // High priority to intercept before selection tool
+
+	// Dependencies
+	private state: ITimelineState;
+	private context: ITimelineToolContext;
 
 	// Resize state tracking
 	private isResizing: boolean = false;
@@ -21,28 +26,12 @@ export class ResizeTool extends TimelineTool {
 	// Edge detection configuration
 	private readonly EDGE_THRESHOLD = 8; // Pixels from edge to trigger resize cursor
 
-	public onActivate(): void {
-		// Load any saved state
-		const savedState = this.loadToolState();
-		if (savedState) {
-			// Restore tool-specific state if needed
-		}
+	constructor(state: ITimelineState, context: ITimelineToolContext) {
+		this.state = state;
+		this.context = context;
 	}
 
-	public onDeactivate(): void {
-		// Clean up any active operations
-		this.resetState();
-
-		// Reset cursor
-		this.updateCursor("default");
-
-		// Save tool state
-		this.saveToolState({
-			// Add any tool-specific state to persist
-		});
-	}
-
-	public override onPointerDown(event: TimelinePointerEvent): void {
+	public interceptPointerDown(event: TimelinePointerEvent): boolean {
 		// Check if click is on clip edge
 		if (this.isOnClipRightEdge(event)) {
 			// Get clip info for the resize operation
@@ -61,22 +50,21 @@ export class ResizeTool extends TimelineTool {
 					this.originalDuration = player.clipConfiguration.length || 1;
 					this.previewDuration = this.originalDuration;
 
-					// Ensure resize cursor persists during drag
-					this.updateCursor("ew-resize");
-
-					// Stop propagation to prevent other tools from handling
+					// Stop propagation - we're handling this event
 					event.stopPropagation();
+					return true; // Event handled
 				}
 			}
 		}
+		return false; // Not handled
 	}
 
-	public override onPointerMove(event: TimelinePointerEvent): void {
+	public interceptPointerMove(event: TimelinePointerEvent): boolean {
 		if (this.isResizing) {
 			// Ensure we still have valid target clip
 			if (!this.targetClip) {
 				this.resetState();
-				return;
+				return false;
 			}
 
 			// Calculate new duration during drag
@@ -85,16 +73,12 @@ export class ResizeTool extends TimelineTool {
 			// Update clip visual in real-time
 			this.updateClipVisual();
 
-			// Keep resize cursor during drag
-			this.updateCursor("ew-resize");
-		} else {
-			// Update cursor based on edge detection
-			const isOnEdge = this.isOnClipRightEdge(event);
-			this.updateCursor(isOnEdge ? "ew-resize" : "default");
+			return true; // Event handled
 		}
+		return false; // Not handled
 	}
 
-	public override onPointerUp(_event: TimelinePointerEvent): void {
+	public interceptPointerUp(_event: TimelinePointerEvent): boolean {
 		if (this.isResizing && this.targetClip && this.previewDuration > 0) {
 			// Ensure duration is valid before executing command
 			const finalDuration = Math.max(0.1, this.previewDuration);
@@ -109,19 +93,36 @@ export class ResizeTool extends TimelineTool {
 				// Show error feedback to user
 				this.handleResizeError(error);
 			}
+
+			// Reset state
+			this.resetState();
+
+			// Animation loop will handle rendering
+
+			return true; // Event handled
 		}
 
-		// Always reset state on pointer up
-		this.resetState();
-
-		// Reset cursor
-		this.updateCursor("default");
-
-		// Switch back to selection tool
-		const { toolManager } = this.context.timeline as any;
-		if (toolManager) {
-			toolManager.activate("selection");
+		// Always reset state on pointer up if we were resizing
+		if (this.isResizing) {
+			this.resetState();
+			return true;
 		}
+
+		return false; // Not handled
+	}
+
+	public getCursor(event: TimelinePointerEvent): string | null {
+		// If we're actively resizing, always show resize cursor
+		if (this.isResizing) {
+			return "ew-resize";
+		}
+
+		// Check if we're over a resize edge
+		if (this.isOnClipRightEdge(event)) {
+			return "ew-resize";
+		}
+
+		return null; // No specific cursor
 	}
 
 	/**
@@ -129,7 +130,7 @@ export class ResizeTool extends TimelineTool {
 	 */
 	private isOnClipRightEdge(event: TimelinePointerEvent): boolean {
 		try {
-			// Find clip at pointer position using clip registry
+			// Find clip at pointer position
 			const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
 			if (!registeredClip || !registeredClip.visual) {
 				return false;
@@ -171,17 +172,6 @@ export class ResizeTool extends TimelineTool {
 	private timeToScreen(time: number, zoom: number, scrollX: number): number {
 		const timelineX = time * zoom;
 		return timelineX - scrollX;
-	}
-
-	/**
-	 * Update the cursor style
-	 */
-	private updateCursor(cursor: string): void {
-		// Get the timeline container element to update cursor
-		const container = this.context.timeline.getRenderer().getApplication().canvas;
-		if (container && container.style) {
-			container.style.cursor = cursor;
-		}
 	}
 
 	/**
@@ -306,13 +296,6 @@ export class ResizeTool extends TimelineTool {
 				const clip = clips[this.targetClip.clipIndex];
 				// Update the clip's duration for visual feedback
 				clip.setDuration(this.previewDuration);
-
-				// Check if we're at a constraint boundary
-				const maxDuration = this.getMaxDurationForClip(this.targetClip);
-				if (maxDuration !== null && Math.abs(this.previewDuration - maxDuration) < 0.01) {
-					// Visual feedback for constraint (could be enhanced with color change)
-					this.updateCursor("not-allowed");
-				}
 			}
 		}
 	}
@@ -326,9 +309,6 @@ export class ResizeTool extends TimelineTool {
 
 		// Reset tool state
 		this.resetState();
-
-		// Reset cursor
-		this.updateCursor("default");
 
 		// Animation loop will handle rendering
 

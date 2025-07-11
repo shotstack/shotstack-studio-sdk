@@ -322,7 +322,7 @@ export class Timeline extends Entity implements ITimeline {
 		this.toolManager.register(selectionTool);
 
 		// Register resize interceptor (runs before tools)
-		const { ResizeInterceptor } = await import("./tools/resize-interceptor");
+		const { ResizeInterceptor } = await import("./tools/resize-tool");
 		const resizeInterceptor = new ResizeInterceptor(this.state, toolContext);
 		this.toolManager.registerInterceptor(resizeInterceptor);
 
