@@ -16,6 +16,7 @@ export interface ITimelineToolContext {
 		findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null;
 		getPlayerClip(trackIndex: number, clipIndex: number): Player | null;
 	};
+	clipRegistry: import("../core/ClipRegistryManager").ClipRegistryManager;
 	executeCommand: (command: EditCommand | { type: string }) => void;
 }
 
@@ -34,13 +35,8 @@ export interface ITimeline extends Entity {
 	activateTool(name: string): void;
 	getRenderer(): ITimelineRenderer;
 	
-	// Query methods for tools
-	findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null;
-	
-	// Registry-based clip access methods
-	getClipIdAtPosition(trackIndex: number, clipIndex: number): string | null;
-	findClipById(clipId: string): RegisteredClip | null;
-	getClipVisual(clipId: string): TimelineClip | null;
+	// Get the clip registry - the single source of truth for all clip operations
+	getClipRegistry(): import("../core/ClipRegistryManager").ClipRegistryManager;
 	
 	// Core timeline properties
 	setPixelsPerSecond(pixelsPerSecond: number): void;

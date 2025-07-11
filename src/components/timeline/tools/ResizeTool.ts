@@ -46,13 +46,16 @@ export class ResizeTool extends TimelineTool {
 		// Check if click is on clip edge
 		if (this.isOnClipRightEdge(event)) {
 			// Get clip info for the resize operation
-			const clipInfo = this.context.timeline.findClipAtPoint(event.target as PIXI.Container);
-			if (clipInfo) {
-				const player = (this.context.edit as any).getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
+			const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
+			if (registeredClip) {
+				const player = this.context.edit.getPlayerClip(registeredClip.trackIndex, registeredClip.clipIndex);
 				if (player && player.clipConfiguration) {
 					// Start resize operation
 					this.isResizing = true;
-					this.targetClip = clipInfo;
+					this.targetClip = {
+						trackIndex: registeredClip.trackIndex,
+						clipIndex: registeredClip.clipIndex
+					};
 					this.dragStartX = event.global.x;
 					// Use the current clip duration, not the original
 					this.originalDuration = player.clipConfiguration.length || 1;
@@ -136,14 +139,14 @@ export class ResizeTool extends TimelineTool {
 	 */
 	private isOnClipRightEdge(event: TimelinePointerEvent): boolean {
 		try {
-			// Find clip at pointer position
-			const clipInfo = this.context.timeline.findClipAtPoint(event.target as PIXI.Container);
-			if (!clipInfo) {
+			// Find clip at pointer position using clip registry
+			const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
+			if (!registeredClip || !registeredClip.visual) {
 				return false;
 			}
 			
 			// Get the actual clip object
-			const player = (this.context.edit as any).getPlayerClip(clipInfo.trackIndex, clipInfo.clipIndex);
+			const player = this.context.edit.getPlayerClip(registeredClip.trackIndex, registeredClip.clipIndex);
 			if (!player || !player.clipConfiguration) {
 				return false;
 			}
@@ -156,19 +159,8 @@ export class ResizeTool extends TimelineTool {
 				return false;
 			}
 			
-			// Get the visual clip to check its current duration (may differ from clipConfig after resize)
-			const renderer = this.context.timeline.getRenderer();
-			const tracks = renderer.getTracks();
-			let visualDuration = clipConfig.length; // Default to config length
-			
-			if (clipInfo.trackIndex < tracks.length) {
-				const track = tracks[clipInfo.trackIndex];
-				const clips = track.getClips();
-				if (clipInfo.clipIndex < clips.length) {
-					const visualClip = clips[clipInfo.clipIndex];
-					visualDuration = visualClip.getDuration(); // Use actual visual duration
-				}
-			}
+			// Get the visual duration directly from the registered clip
+			const visualDuration = registeredClip.visual.getDuration();
 			
 			// Calculate clip's right edge position in screen coordinates
 			const clipEndTime = clipConfig.start + visualDuration;

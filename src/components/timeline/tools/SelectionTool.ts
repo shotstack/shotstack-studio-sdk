@@ -37,12 +37,15 @@ export class SelectionTool extends TimelineTool {
 		this.dragStartX = event.global.x;
 		this.dragStartY = event.global.y;
 		
-		// Check what was clicked using Timeline's query method via context
-		const clipInfo = this.context.timeline.findClipAtPoint(event.target as PIXI.Container);
+		// Check what was clicked using registry
+		const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
 		
-		if (clipInfo) {
+		if (registeredClip) {
 			// Clicked on a clip - emit the event
-			this.context.edit.events.emit("timeline:clip:clicked", clipInfo);
+			this.context.edit.events.emit("timeline:clip:clicked", {
+				trackIndex: registeredClip.trackIndex,
+				clipIndex: registeredClip.clipIndex
+			});
 			event.stopPropagation();
 		} else if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
 			// Clear selection when clicking empty space (unless modifier held)

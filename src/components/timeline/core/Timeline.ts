@@ -31,9 +31,6 @@ export class Timeline extends Entity implements ITimeline {
 	private size: Size;
 	private pixelsPerSecond: number = 100;
 	private animationFrameId: number | null = null;
-	// WeakMap for backward compatibility - will be removed in future version
-	// @deprecated Use ClipRegistryManager methods instead
-	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();
 
 	constructor(edit: Edit, size?: Size) {
 		super();
@@ -247,47 +244,11 @@ export class Timeline extends Entity implements ITimeline {
 		return this.featureManager.getFeature(name);
 	}
 
-	// Core registry API methods
 	/**
-	 * Get stable ID for a clip at the given position
+	 * Get the clip registry manager - the single source of truth for all clip operations
 	 */
-	public getClipIdAtPosition(trackIndex: number, clipIndex: number): string | null {
-		return this.clipRegistryManager.getClipIdAtPosition(trackIndex, clipIndex);
-	}
-
-	/**
-	 * Find a clip by its stable ID
-	 */
-	public findClipById(clipId: string): RegisteredClip | null {
-		return this.clipRegistryManager.findClipById(clipId);
-	}
-
-	/**
-	 * Get the visual entity for a clip ID
-	 */
-	public getClipVisual(clipId: string): TimelineClip | null {
-		const registeredClip = this.clipRegistryManager.findClipById(clipId);
-		return registeredClip ? registeredClip.visual : null;
-	}
-
-	/**
-	 * Get the clip registry manager (for internal use by Timeline components)
-	 * @internal
-	 */
-	public getClipRegistryManager(): ClipRegistryManager {
+	public getClipRegistry(): ClipRegistryManager {
 		return this.clipRegistryManager;
-	}
-
-	// Query method for tools to find clip at a given PIXI display object
-	public findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null {
-		const clip = this.clipRegistryManager.findClipByContainer(target);
-		if (clip) {
-			return {
-				trackIndex: clip.trackIndex,
-				clipIndex: clip.clipIndex
-			};
-		}
-		return null;
 	}
 
 	private createInitialState(): TimelineState {
@@ -334,6 +295,7 @@ export class Timeline extends Entity implements ITimeline {
 		const toolContext: ITimelineToolContext = {
 			timeline: this,
 			edit: this.edit,
+			clipRegistry: this.clipRegistryManager,
 			executeCommand: (command: EditCommand | { type: string }) => {
 				// Handle simple command objects
 				if ('type' in command && command.type === "CLEAR_SELECTION") {
@@ -402,31 +364,18 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	private setupEditEventListeners(): void {
-		// Listen to clip updates from Edit
-		this.edit.events.on("clip:updated", this.handleClipUpdated.bind(this));
-		this.edit.events.on("clip:deleted", this.handleClipDeleted.bind(this));
-		this.edit.events.on("track:deleted", this.handleTrackDeleted.bind(this));
-
 		// Listen to selection changes for visual feedback
 		this.edit.events.on("clip:selected", this.updateSelectionVisuals.bind(this));
 		this.edit.events.on("selection:cleared", this.updateSelectionVisuals.bind(this));
 		
-		// Listen to registry sync events to update container mappings
-		this.edit.events.on("timeline:registrySynced", this.handleRegistrySynced.bind(this));
+		// Listen to clip deletion to update selection state
+		this.edit.events.on("clip:deleted", this.handleClipDeleted.bind(this));
 	}
 
 	private removeEditEventListeners(): void {
-		this.edit.events.off("clip:updated", this.handleClipUpdated.bind(this));
-		this.edit.events.off("clip:deleted", this.handleClipDeleted.bind(this));
-		this.edit.events.off("track:deleted", this.handleTrackDeleted.bind(this));
 		this.edit.events.off("clip:selected", this.updateSelectionVisuals.bind(this));
 		this.edit.events.off("selection:cleared", this.updateSelectionVisuals.bind(this));
-		this.edit.events.off("timeline:registrySynced", this.handleRegistrySynced.bind(this));
-	}
-
-	private handleClipUpdated(__data: { clipId: string; clip: Clip }): void {
-		// Use registry sync instead of full reload
-		this.clipRegistryManager.scheduleSync();
+		this.edit.events.off("clip:deleted", this.handleClipDeleted.bind(this));
 	}
 
 	private handleClipDeleted(data: { clipId: string; trackIndex: number; clipIndex: number }): void {
@@ -443,19 +392,7 @@ export class Timeline extends Entity implements ITimeline {
 				}
 			});
 		}
-
-		// Use registry sync instead of full reload
-		this.clipRegistryManager.scheduleSync();
-	}
-
-	private handleTrackDeleted(__data: { trackId: string; trackIndex: number }): void {
-		// Use registry sync instead of full reload
-		this.clipRegistryManager.scheduleSync();
-	}
-
-	private handleRegistrySynced(__data: any): void {
-		// Registry sync completed - no action needed
-		// The registry is now the single source of truth for clip positions
+		// ClipRegistryManager handles its own sync for clip deletions
 	}
 
 	// Handle PIXI pointer events - forward to features and tools
