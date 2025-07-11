@@ -61,7 +61,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	protected featureConfig<T = Record<string, unknown>>(update?: Partial<T>): T | undefined {
 		const state = this.getState();
 		const currentConfig = state.features[this.name] as T | undefined;
-		
+
 		if (update) {
 			this.updateState({
 				features: {
@@ -71,7 +71,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 			});
 			return { ...currentConfig, ...update } as T;
 		}
-		
+
 		return currentConfig;
 	}
 }

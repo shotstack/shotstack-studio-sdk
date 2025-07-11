@@ -9,7 +9,12 @@ export class MoveClipCommand implements EditCommand {
 	private originalClipIndex: number;
 	private originalStart?: number;
 
-	constructor(private fromTrackIndex: number, private fromClipIndex: number, private toTrackIndex: number, private newStart: number) {
+	constructor(
+		private fromTrackIndex: number,
+		private fromClipIndex: number,
+		private toTrackIndex: number,
+		private newStart: number
+	) {
 		this.originalTrackIndex = fromTrackIndex;
 		this.originalClipIndex = fromClipIndex;
 	}

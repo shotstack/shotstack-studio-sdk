@@ -41,10 +41,7 @@ export class FeatureManager implements IFeatureManager {
 	public getFeature = (name: string): ITimelineFeature | null => this.features.get(name) || null;
 	public getAllFeatures = (): Map<string, ITimelineFeature> => new Map(this.features);
 
-	private forEachEnabledFeature(
-		callback: (feature: ITimelineFeature) => void,
-		errorContext: string
-	): void {
+	private forEachEnabledFeature(callback: (feature: ITimelineFeature) => void, errorContext: string): void {
 		this.features.forEach(feature => {
 			if (feature.enabled) {
 				try {
@@ -57,24 +54,15 @@ export class FeatureManager implements IFeatureManager {
 	}
 
 	public onToolChanged(toolName: string, previousTool: string | null): void {
-		this.forEachEnabledFeature(
-			feature => feature.onToolChanged?.(toolName, previousTool),
-			'onToolChanged'
-		);
+		this.forEachEnabledFeature(feature => feature.onToolChanged?.(toolName, previousTool), "onToolChanged");
 	}
 
 	public onStateChanged(changes: StateChanges): void {
-		this.forEachEnabledFeature(
-			feature => feature.onStateChanged?.(changes),
-			'onStateChanged'
-		);
+		this.forEachEnabledFeature(feature => feature.onStateChanged?.(changes), "onStateChanged");
 	}
 
 	public renderOverlays(renderer: ITimelineRenderer): void {
-		this.forEachEnabledFeature(
-			feature => feature.renderOverlay(renderer),
-			'renderOverlay'
-		);
+		this.forEachEnabledFeature(feature => feature.renderOverlay(renderer), "renderOverlay");
 	}
 
 	private handleEvent<T>(event: T, handlerName: string): boolean {
@@ -89,21 +77,15 @@ export class FeatureManager implements IFeatureManager {
 		return false;
 	}
 
-	public handleWheel = (event: TimelineWheelEvent): boolean => 
-		this.handleEvent(event, 'handleWheel');
+	public handleWheel = (event: TimelineWheelEvent): boolean => this.handleEvent(event, "handleWheel");
 
-	public handleKeyDown = (event: KeyboardEvent): boolean => 
-		this.handleEvent(event, 'handleKeyDown');
+	public handleKeyDown = (event: KeyboardEvent): boolean => this.handleEvent(event, "handleKeyDown");
 
-	public handleKeyUp = (event: KeyboardEvent): boolean => 
-		this.handleEvent(event, 'handleKeyUp');
+	public handleKeyUp = (event: KeyboardEvent): boolean => this.handleEvent(event, "handleKeyUp");
 
-	public handlePointerDown = (event: TimelinePointerEvent): boolean => 
-		this.handleEvent(event, 'handlePointerDown');
+	public handlePointerDown = (event: TimelinePointerEvent): boolean => this.handleEvent(event, "handlePointerDown");
 
-	public handlePointerMove = (event: TimelinePointerEvent): boolean => 
-		this.handleEvent(event, 'handlePointerMove');
+	public handlePointerMove = (event: TimelinePointerEvent): boolean => this.handleEvent(event, "handlePointerMove");
 
-	public handlePointerUp = (event: TimelinePointerEvent): boolean => 
-		this.handleEvent(event, 'handlePointerUp');
+	public handlePointerUp = (event: TimelinePointerEvent): boolean => this.handleEvent(event, "handlePointerUp");
 }

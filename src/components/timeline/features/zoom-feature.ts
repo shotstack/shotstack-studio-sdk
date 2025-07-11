@@ -8,7 +8,7 @@ import { TimelineFeature } from "./feature";
  */
 export class ZoomFeature extends TimelineFeature {
 	public readonly name = "zoom";
-	
+
 	private zoomLevel = 1.0;
 	private readonly zoom = {
 		min: 0.1,
@@ -23,12 +23,11 @@ export class ZoomFeature extends TimelineFeature {
 
 	public handleWheel(event: TimelineWheelEvent): void {
 		if (!event.ctrlKey && !event.metaKey) return;
-		
+
 		event.preventDefault();
-		
-		const newZoom = Math.max(this.zoom.min, 
-			Math.min(this.zoom.max, this.zoomLevel - event.deltaY * this.zoom.sensitivity));
-		
+
+		const newZoom = Math.max(this.zoom.min, Math.min(this.zoom.max, this.zoomLevel - event.deltaY * this.zoom.sensitivity));
+
 		if (newZoom !== this.zoomLevel) {
 			this.zoomLevel = newZoom;
 			this.context.timeline.setPixelsPerSecond(this.zoom.basePixelsPerSecond * newZoom);
