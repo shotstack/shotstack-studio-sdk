@@ -11,70 +11,57 @@ export class SelectionTool extends TimelineTool {
 	public readonly name = "selection";
 	public readonly cursor = "default";
 
-	private isDragging = false;
-	private dragStartX = 0;
-	private dragStartY = 0;
+	private dragState = {
+		isDragging: false,
+		startX: 0,
+		startY: 0
+	};
 
-	public onActivate(): void {
-		// Load any saved state
-		const savedState = this.loadToolState();
-		if (savedState) {
-			// Restore tool-specific state if needed
-		}
-	}
+	public onActivate(): void {}
 
 	public onDeactivate(): void {
-		// Clean up any active operations
-		this.isDragging = false;
-
-		// Save tool state
-		this.saveToolState({
-			// Add any tool-specific state to persist
-		});
+		this.dragState.isDragging = false;
 	}
 
 	public override onPointerDown(event: TimelinePointerEvent): void {
-		this.isDragging = true;
-		this.dragStartX = event.global.x;
-		this.dragStartY = event.global.y;
+		this.dragState = {
+			isDragging: true,
+			startX: event.global.x,
+			startY: event.global.y
+		};
 
-		// Check what was clicked using registry
-		const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
-
-		if (registeredClip) {
-			// Clicked on a clip - emit the event
-			this.context.edit.events.emit("timeline:clip:clicked", {
-				trackIndex: registeredClip.trackIndex,
-				clipIndex: registeredClip.clipIndex
-			});
-			event.stopPropagation();
-		} else if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
-			// Clear selection when clicking empty space (unless modifier held)
+		const clip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
+		
+		if (clip) {
+			this.emitClipClick(clip, event);
+		} else if (!this.hasModifierKey(event)) {
 			this.context.edit.events.emit("timeline:background:clicked", {});
 		}
-		// TODO: Start box selection for multi-select when modifier keys are held
 	}
 
 	public override onPointerMove(_event: TimelinePointerEvent): void {
-		if (this.isDragging) {
-			// Calculate drag delta for future use
-			// const dx = event.global.x - this.dragStartX;
-			// const dy = event.global.y - this.dragStartY;
-			// TODO: Implement drag selection or clip moving
+		// Future: Implement drag selection
+	}
+
+	public override onPointerUp(): void {
+		this.dragState.isDragging = false;
+	}
+
+	public override onKeyDown(event: KeyboardEvent): void {
+		if (event.key === "Delete" || event.key === "Backspace") {
+			event.preventDefault();
+			// Future: Delete selected clips
 		}
 	}
 
-	public override onPointerUp(__event: TimelinePointerEvent): void {
-		this.isDragging = false;
-
-		// TODO: Finalize selection or movement
+	private emitClipClick(clip: any, event: TimelinePointerEvent): void {
+		this.context.edit.events.emit("timeline:clip:clicked", {
+			trackIndex: clip.trackIndex,
+			clipIndex: clip.clipIndex
+		});
+		event.stopPropagation();
 	}
 
-	public override onKeyDown(__event: KeyboardEvent): void {
-		// Handle keyboard shortcuts
-		if (__event.key === "Delete" || __event.key === "Backspace") {
-			// TODO: Delete selected clips
-			__event.preventDefault();
-		}
-	}
+	private hasModifierKey = (event: TimelinePointerEvent): boolean => 
+		event.shiftKey || event.ctrlKey || event.metaKey;
 }
