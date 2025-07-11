@@ -79,7 +79,7 @@ export class ClipIdentityService {
 		let hash = 0;
 		for (let i = 0; i < str.length; i += 1) {
 			const char = str.charCodeAt(i);
-			hash = ((hash * 32) - hash) + char;
+			hash = hash * 32 - hash + char;
 			hash = Math.floor(hash); // Convert to 32-bit integer
 		}
 

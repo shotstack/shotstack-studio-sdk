@@ -498,7 +498,8 @@ export class DragInterceptor implements IToolInterceptor {
 		// If no valid position found in target track, try other tracks
 		// This is a fallback - in practice, we might want to limit this to nearby tracks
 		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex += 1) {
-			if (trackIndex !== position.trackIndex) { // Skip if already tried this track
+			if (trackIndex !== position.trackIndex) {
+				// Skip if already tried this track
 				const testPosition = { trackIndex, start: position.start };
 				if (this.isValidPosition(testPosition)) {
 					return testPosition;

@@ -514,8 +514,7 @@ export class Timeline extends Entity implements ITimeline {
 		let currentSelectedClipId: string | null = null;
 		if (selectedInfo) {
 			for (const [clipId, registeredClip] of registryState.clips) {
-				if (registeredClip.trackIndex === selectedInfo.trackIndex && 
-				    registeredClip.clipIndex === selectedInfo.clipIndex) {
+				if (registeredClip.trackIndex === selectedInfo.trackIndex && registeredClip.clipIndex === selectedInfo.clipIndex) {
 					currentSelectedClipId = clipId;
 					break;
 				}
