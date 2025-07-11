@@ -8,38 +8,30 @@ import { TimelineFeature } from "./feature";
  */
 export class ZoomFeature extends TimelineFeature {
 	public readonly name = "zoom";
-
-	private zoomLevel: number = 1.0;
-	private readonly minZoom: number = 0.1;
-	private readonly maxZoom: number = 10.0;
-	private readonly basePixelsPerSecond: number = 100;
+	
+	private zoomLevel = 1.0;
+	private readonly zoom = {
+		min: 0.1,
+		max: 10.0,
+		basePixelsPerSecond: 100,
+		sensitivity: 0.01
+	};
 
 	public onEnable(): void {}
 	public onDisable(): void {}
-	public renderOverlay(__renderer: ITimelineRenderer): void {}
+	public renderOverlay(_: ITimelineRenderer): void {}
 
-	/**
-	 * Handle wheel events for zoom
-	 */
 	public handleWheel(event: TimelineWheelEvent): void {
-		// Only handle Ctrl/Cmd + wheel for zoom
-		if (!event.ctrlKey && !event.metaKey) {
-			return;
-		}
-
+		if (!event.ctrlKey && !event.metaKey) return;
+		
 		event.preventDefault();
-
-		// Calculate zoom change
-		const delta = -event.deltaY * 0.01;
-		const newZoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoomLevel + delta));
-
-		if (newZoomLevel !== this.zoomLevel) {
-			// Update zoom
-			this.zoomLevel = newZoomLevel;
-			const newPixelsPerSecond = this.basePixelsPerSecond * this.zoomLevel;
-
-			// Apply changes - this will update the state with the new zoom
-			this.context.timeline.setPixelsPerSecond(newPixelsPerSecond);
+		
+		const newZoom = Math.max(this.zoom.min, 
+			Math.min(this.zoom.max, this.zoomLevel - event.deltaY * this.zoom.sensitivity));
+		
+		if (newZoom !== this.zoomLevel) {
+			this.zoomLevel = newZoom;
+			this.context.timeline.setPixelsPerSecond(this.zoom.basePixelsPerSecond * newZoom);
 		}
 	}
 }
