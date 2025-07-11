@@ -11,7 +11,7 @@ export class ClipIdentityService {
 	 * Generate a stable ID based on clip content, not position.
 	 * Uses player signature and timestamp to ensure uniqueness.
 	 */
-	public generateClipId(player: Player, trackIndex: number, clipIndex: number): string {
+	public generateClipId(player: Player, _trackIndex: number, _clipIndex: number): string {
 		const signature = this.getPlayerSignature(player);
 		// Use signature + timestamp for uniqueness
 		// Including indices in the ID helps with debugging but they're not used for identity
@@ -77,10 +77,10 @@ export class ClipIdentityService {
 
 		// Simple hash function - can be replaced with crypto.subtle.digest for production
 		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
+		for (let i = 0; i < str.length; i += 1) {
 			const char = str.charCodeAt(i);
-			hash = (hash << 5) - hash + char;
-			hash &= hash; // Convert to 32-bit integer
+			hash = ((hash * 32) - hash) + char;
+			hash = Math.floor(hash); // Convert to 32-bit integer
 		}
 
 		return Math.abs(hash).toString(36);

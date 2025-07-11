@@ -61,14 +61,14 @@ export class MoveClipCommand implements EditCommand {
 
 			// Find the correct insertion point based on start time
 			let insertIndex = 0;
-			for (let i = 0; i < toTrack.length; i++) {
+			for (let i = 0; i < toTrack.length; i += 1) {
 				const clip = toTrack[i];
 				if (clip.clipConfiguration && clip.clipConfiguration.start !== undefined) {
 					if (this.newStart < clip.clipConfiguration.start) {
 						break;
 					}
 				}
-				insertIndex++;
+				insertIndex += 1;
 			}
 
 			// Insert at the correct position
@@ -96,10 +96,10 @@ export class MoveClipCommand implements EditCommand {
 		// If we moved tracks, we need to update all clips in both tracks
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			// Force all clips in the affected tracks to redraw
-			const fromTrack = tracks[this.fromTrackIndex];
-			const toTrack = tracks[this.toTrackIndex];
+			const sourceTrack = tracks[this.fromTrackIndex];
+			const destTrack = tracks[this.toTrackIndex];
 
-			[...fromTrack, ...toTrack].forEach(clip => {
+			[...sourceTrack, ...destTrack].forEach(clip => {
 				if (clip && clip !== this.player) {
 					clip.draw();
 				}

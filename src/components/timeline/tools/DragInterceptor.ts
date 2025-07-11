@@ -131,7 +131,7 @@ export class DragInterceptor implements IToolInterceptor {
 		return false; // Not handled
 	}
 
-	public interceptPointerUp(event: TimelinePointerEvent): boolean {
+	public interceptPointerUp(_event: TimelinePointerEvent): boolean {
 		// If we were just preparing to drag but didn't move enough, cancel
 		if (this.isPotentialDrag && !this.isDragging) {
 			this.resetState();
@@ -382,24 +382,20 @@ export class DragInterceptor implements IToolInterceptor {
 		}
 
 		// Check for overlaps with other clips
-		for (let i = 0; i < targetTrack.clips.length; i++) {
+		for (let i = 0; i < targetTrack.clips.length; i += 1) {
 			// Skip the clip being dragged if it's in the same track
-			if (position.trackIndex === currentIndices.trackIndex && i === currentIndices.clipIndex) {
-				continue;
-			}
+			if (!(position.trackIndex === currentIndices.trackIndex && i === currentIndices.clipIndex)) {
+				const otherClip = targetTrack.clips[i];
+				if (otherClip && otherClip.start !== undefined && otherClip.length) {
+					const otherStart = otherClip.start || 0;
+					const otherEnd = otherStart + (otherClip.length || 0);
 
-			const otherClip = targetTrack.clips[i];
-			if (!otherClip || otherClip.start === undefined || !otherClip.length) {
-				continue;
-			}
-
-			const otherStart = otherClip.start || 0;
-			const otherEnd = otherStart + (otherClip.length || 0);
-
-			// Check for overlap
-			// Two clips overlap if one starts before the other ends
-			if (position.start < otherEnd && clipEnd > otherStart) {
-				return false; // Overlap detected
+					// Check for overlap
+					// Two clips overlap if one starts before the other ends
+					if (position.start < otherEnd && clipEnd > otherStart) {
+						return false; // Overlap detected
+					}
+				}
 			}
 		}
 
@@ -426,18 +422,16 @@ export class DragInterceptor implements IToolInterceptor {
 			// Collect all occupied time ranges in the track
 			const occupiedRanges: Array<{ start: number; end: number }> = [];
 
-			for (let i = 0; i < targetTrack.clips.length; i++) {
+			for (let i = 0; i < targetTrack.clips.length; i += 1) {
 				// Skip the clip being dragged if it's in the same track
-				if (position.trackIndex === currentIndices.trackIndex && i === currentIndices.clipIndex) {
-					continue;
-				}
-
-				const otherClip = targetTrack.clips[i];
-				if (otherClip && otherClip.start !== undefined && otherClip.length) {
-					occupiedRanges.push({
-						start: otherClip.start,
-						end: otherClip.start + otherClip.length
-					});
+				if (!(position.trackIndex === currentIndices.trackIndex && i === currentIndices.clipIndex)) {
+					const otherClip = targetTrack.clips[i];
+					if (otherClip && otherClip.start !== undefined && otherClip.length) {
+						occupiedRanges.push({
+							start: otherClip.start,
+							end: otherClip.start + otherClip.length
+						});
+					}
 				}
 			}
 
@@ -458,7 +452,7 @@ export class DragInterceptor implements IToolInterceptor {
 			}
 
 			// Check gaps between clips
-			for (let i = 0; i < occupiedRanges.length - 1; i++) {
+			for (let i = 0; i < occupiedRanges.length - 1; i += 1) {
 				const gapStart = occupiedRanges[i].end;
 				const gapEnd = occupiedRanges[i + 1].start;
 				const gapSize = gapEnd - gapStart;
@@ -503,18 +497,18 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// If no valid position found in target track, try other tracks
 		// This is a fallback - in practice, we might want to limit this to nearby tracks
-		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex++) {
-			if (trackIndex === position.trackIndex) continue; // Already tried this track
+		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex += 1) {
+			if (trackIndex !== position.trackIndex) { // Skip if already tried this track
+				const testPosition = { trackIndex, start: position.start };
+				if (this.isValidPosition(testPosition)) {
+					return testPosition;
+				}
 
-			const testPosition = { trackIndex, start: position.start };
-			if (this.isValidPosition(testPosition)) {
-				return testPosition;
-			}
-
-			// Also try start of track
-			const startPosition = { trackIndex, start: 0 };
-			if (this.isValidPosition(startPosition)) {
-				return startPosition;
+				// Also try start of track
+				const startPosition = { trackIndex, start: 0 };
+				if (this.isValidPosition(startPosition)) {
+					return startPosition;
+				}
 			}
 		}
 

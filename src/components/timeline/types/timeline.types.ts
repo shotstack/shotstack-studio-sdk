@@ -1,4 +1,3 @@
-import { Player } from "@canvas/players/player";
 import { Clip } from "@core/schemas/clip";
 import * as PIXI from "pixi.js";
 

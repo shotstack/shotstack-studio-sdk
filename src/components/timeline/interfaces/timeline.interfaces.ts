@@ -4,8 +4,7 @@ import { Edit } from "@core/edit";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { TimelineClip } from "../entities/TimelineClip";
-import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer, RegisteredClip } from "../types/timeline.types";
+import { TimelineState, StateChanges, TimelinePointerEvent, TimelineWheelEvent, RenderLayer } from "../types/timeline.types";
 
 // Tool context interface for dependency injection
 export interface ITimelineToolContext {

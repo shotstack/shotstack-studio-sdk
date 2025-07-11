@@ -3,10 +3,9 @@ import { Edit } from "@core/edit";
 import * as PIXI from "pixi.js";
 
 import { TimelineClip } from "../entities/TimelineClip";
-import { TimelineTrack } from "../entities/TimelineTrack";
 import { ITimelineState } from "../interfaces";
 import { ClipIdentityService } from "../services/ClipIdentityService";
-import { RegisteredClip, ClipRegistryState } from "../types";
+import { RegisteredClip } from "../types";
 
 /**
  * Sync delta types for tracking changes between Edit and Timeline state
@@ -91,7 +90,7 @@ export class ClipRegistryManager {
 	/**
 	 * Handle clip update events from Edit
 	 */
-	private handleClipUpdated(data: any): void {
+	private handleClipUpdated(_data: any): void {
 		// Schedule sync to batch multiple updates
 		this.scheduleSync();
 	}
@@ -99,7 +98,7 @@ export class ClipRegistryManager {
 	/**
 	 * Handle clip deletion events from Edit
 	 */
-	private handleClipDeleted(data: any): void {
+	private handleClipDeleted(_data: any): void {
 		// Schedule sync to handle deletion
 		this.scheduleSync();
 	}
@@ -107,7 +106,7 @@ export class ClipRegistryManager {
 	/**
 	 * Handle track deletion events from Edit
 	 */
-	private handleTrackDeleted(data: any): void {
+	private handleTrackDeleted(_data: any): void {
 		// Schedule sync to handle track removal
 		this.scheduleSync();
 	}
@@ -223,7 +222,7 @@ export class ClipRegistryManager {
 		// Walk up the display hierarchy to find a clip container
 		let current: PIXI.Container | null = container;
 		while (current) {
-			for (const [_, clip] of registryState.clips) {
+			for (const [, clip] of registryState.clips) {
 				if (clip.visual?.getContainer() === current) {
 					return clip;
 				}
@@ -331,60 +330,55 @@ export class ClipRegistryManager {
 		const seenClipIds = new Set<string>();
 
 		// Iterate through all clips in Edit state
-		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex++) {
+		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex += 1) {
 			const track = tracks[trackIndex];
-			if (!track || !track.clips) continue;
+			if (track && track.clips) {
+				for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex += 1) {
+					const clip = track.clips[clipIndex];
+					if (clip) {
+						// Get the player instance for this clip
+						// For now, we'll use a placeholder approach - in a real implementation,
+						// we'd need access to the actual Player instances
+						const player = this.getPlayerForClip(trackIndex, clipIndex);
+						if (player) {
+							// Check if we have this player registered
+							let clipId = this.playerToClipId.get(player);
+							const existingClip = clipId ? registryState.clips.get(clipId) : null;
 
-			for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex++) {
-				const clip = track.clips[clipIndex];
-				if (!clip) continue;
+							if (!existingClip) {
+								// New clip - generate ID and mark as added
+								clipId = this.identityService.generateClipId(player, trackIndex, clipIndex);
+								delta.added.push({
+									id: clipId,
+									player,
+									trackIndex,
+									clipIndex
+								});
+							} else if (existingClip.trackIndex !== trackIndex || existingClip.clipIndex !== clipIndex) {
+								// Clip moved to different position
+								delta.moved.push({
+									id: clipId!, // We know clipId exists here since we found existingClip
+									player,
+									trackIndex,
+									clipIndex,
+									visual: existingClip.visual
+								});
+							} else if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
+								// Check if clip needs updating
+								delta.updated.push({
+									id: clipId!, // We know clipId exists here since we found existingClip
+									player,
+									trackIndex,
+									clipIndex,
+									visual: existingClip.visual
+								});
+							}
 
-				// Get the player instance for this clip
-				// For now, we'll use a placeholder approach - in a real implementation,
-				// we'd need access to the actual Player instances
-				const player = this.getPlayerForClip(trackIndex, clipIndex);
-				if (!player) continue;
-
-				// Check if we have this player registered
-				let clipId = this.playerToClipId.get(player);
-				const existingClip = clipId ? registryState.clips.get(clipId) : null;
-
-				if (!existingClip) {
-					// New clip - generate ID and mark as added
-					clipId = this.identityService.generateClipId(player, trackIndex, clipIndex);
-					delta.added.push({
-						id: clipId,
-						player,
-						trackIndex,
-						clipIndex
-					});
-				} else {
-					// Existing clip - check if it moved or was updated
-					if (existingClip.trackIndex !== trackIndex || existingClip.clipIndex !== clipIndex) {
-						// Clip moved to different position
-						delta.moved.push({
-							id: clipId!, // We know clipId exists here since we found existingClip
-							player,
-							trackIndex,
-							clipIndex,
-							visual: existingClip.visual
-						});
-					} else {
-						// Check if clip needs updating
-						if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
-							delta.updated.push({
-								id: clipId!, // We know clipId exists here since we found existingClip
-								player,
-								trackIndex,
-								clipIndex,
-								visual: existingClip.visual
-							});
+							if (clipId) {
+								seenClipIds.add(clipId);
+							}
 						}
 					}
-				}
-
-				if (clipId) {
-					seenClipIds.add(clipId);
 				}
 			}
 		}
@@ -432,54 +426,54 @@ export class ClipRegistryManager {
 
 		// Process moved clips (reuse visuals)
 		for (const moved of delta.moved) {
-			if (!moved.visual) continue;
+			if (moved.visual) {
+				// Get current registration before updating
+				const currentReg = this.findClipById(moved.id);
+				if (currentReg) {
+					// Handle cross-track moves
+					if (currentReg.trackIndex !== moved.trackIndex) {
+						this.moveClipBetweenTracks(moved.id, currentReg.trackIndex, moved.trackIndex);
+					}
 
-			// Get current registration before updating
-			const currentReg = this.findClipById(moved.id);
-			if (!currentReg) continue;
+					// Update clip properties from Edit state
+					const editClip = this.edit.getClip(moved.trackIndex, moved.clipIndex);
+					if (editClip) {
+						moved.visual.setStart(editClip.start || 0);
+						moved.visual.setDuration(editClip.length || 1);
+					}
 
-			// Handle cross-track moves
-			if (currentReg.trackIndex !== moved.trackIndex) {
-				this.moveClipBetweenTracks(moved.id, currentReg.trackIndex, moved.trackIndex);
+					// Update registry with new position
+					this.updateClipPosition(moved.id, moved.trackIndex, moved.clipIndex);
+				}
 			}
-
-			// Update clip properties from Edit state
-			const editClip = this.edit.getClip(moved.trackIndex, moved.clipIndex);
-			if (editClip) {
-				moved.visual.setStart(editClip.start || 0);
-				moved.visual.setDuration(editClip.length || 1);
-			}
-
-			// Update registry with new position
-			this.updateClipPosition(moved.id, moved.trackIndex, moved.clipIndex);
 		}
 
 		// Process added clips (create new visuals)
 		for (const added of delta.added) {
 			// Get the edit clip data
 			const editClip = this.edit.getClip(added.trackIndex, added.clipIndex);
-			if (!editClip) continue;
+			if (editClip) {
+				// Create visual clip
+				const { TimelineClip: TimelineClipClass } = await import("../entities/TimelineClip");
+				const trackId = `track-${added.trackIndex}`;
+				const visual = new TimelineClipClass(added.id, trackId, editClip.start || 0, editClip.length || 1, editClip);
 
-			// Create visual clip
-			const { TimelineClip } = await import("../entities/TimelineClip");
-			const trackId = `track-${added.trackIndex}`;
-			const visual = new TimelineClip(added.id, trackId, editClip.start || 0, editClip.length || 1, editClip);
+				// Load the visual
+				await visual.load();
 
-			// Load the visual
-			await visual.load();
+				// Set zoom level
+				const { zoom } = this.state.getState().viewport;
+				visual.setPixelsPerSecond(zoom);
 
-			// Set zoom level
-			const { zoom } = this.state.getState().viewport;
-			visual.setPixelsPerSecond(zoom);
+				// Add to track
+				const track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
+				if (track) {
+					track.addClip(visual);
+				}
 
-			// Add to track
-			const track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
-			if (track) {
-				track.addClip(visual);
+				// Register with visual
+				this.registerClip(added.id, visual, added.player, added.trackIndex, added.clipIndex);
 			}
-
-			// Register with visual
-			this.registerClip(added.id, visual, added.player, added.trackIndex, added.clipIndex);
 		}
 
 		// Process updated clips (refresh visuals)

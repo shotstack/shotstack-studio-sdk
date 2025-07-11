@@ -1,11 +1,9 @@
 import { EditCommand } from "@core/commands/types";
 import { Edit } from "@core/edit";
 import { Size } from "@core/layouts/geometry";
-import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { TimelineClip } from "../entities/TimelineClip";
 import {
 	ITimeline,
 	ITimelineState,
@@ -17,7 +15,7 @@ import {
 	ITimelineToolContext,
 	ITimelineFeatureContext
 } from "../interfaces";
-import { TimelineState, StateChanges, RegisteredClip } from "../types";
+import { TimelineState, StateChanges } from "../types";
 
 import { ClipRegistryManager } from "./ClipRegistryManager";
 import { FeatureManager } from "./FeatureManager";
@@ -485,7 +483,7 @@ export class Timeline extends Entity implements ITimeline {
 		const editData = this.edit.getEdit();
 
 		// Ensure we have tracks in the renderer
-		for (const [index, track] of editData.timeline.tracks.entries()) {
+		for (const [index] of editData.timeline.tracks.entries()) {
 			const trackId = `track-${index}`;
 			if (!this.renderer.getTrack(trackId)) {
 				this.renderer.addTrack(trackId, index);
@@ -495,7 +493,7 @@ export class Timeline extends Entity implements ITimeline {
 		// Remove tracks that no longer exist
 		const trackCount = editData.timeline.tracks.length;
 		this.renderer.getTracks().forEach(track => {
-			const trackIndex = parseInt(track.getTrackId().replace("track-", ""));
+			const trackIndex = parseInt(track.getTrackId().replace("track-", ""), 10);
 			if (trackIndex >= trackCount) {
 				this.renderer.removeTrack(track.getTrackId());
 			}

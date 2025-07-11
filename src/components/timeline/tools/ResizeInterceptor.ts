@@ -78,7 +78,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 		return false; // Not handled
 	}
 
-	public interceptPointerUp(event: TimelinePointerEvent): boolean {
+	public interceptPointerUp(_event: TimelinePointerEvent): boolean {
 		if (this.isResizing && this.targetClip && this.previewDuration > 0) {
 			// Ensure duration is valid before executing command
 			const finalDuration = Math.max(0.1, this.previewDuration);
@@ -160,7 +160,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 			// Check if pointer is near the right edge
 			const distance = Math.abs(event.global.x - clipRightEdgeX);
 			return distance <= this.EDGE_THRESHOLD;
-		} catch (error) {
+		} catch (_error) {
 			// Fail gracefully on any error
 			return false;
 		}
@@ -201,17 +201,17 @@ export class ResizeInterceptor implements IToolInterceptor {
 	private applyDurationConstraints(duration: number): number {
 		// Minimum duration constraint
 		const MIN_DURATION = 0.1;
-		duration = Math.max(MIN_DURATION, duration);
+		let constrainedDuration = Math.max(MIN_DURATION, duration);
 
 		// Check for adjacent clip constraints
 		if (this.targetClip) {
 			const maxDuration = this.getMaxDurationForClip(this.targetClip);
 			if (maxDuration !== null) {
-				duration = Math.min(duration, maxDuration);
+				constrainedDuration = Math.min(constrainedDuration, maxDuration);
 			}
 		}
 
-		return duration;
+		return constrainedDuration;
 	}
 
 	/**
@@ -238,16 +238,16 @@ export class ResizeInterceptor implements IToolInterceptor {
 			// Find the next clip in the track
 			let nextClipStart: number | null = null;
 
-			for (let i = 0; i < clips.length; i++) {
-				if (i === clipInfo.clipIndex) continue;
+			for (let i = 0; i < clips.length; i += 1) {
+				if (i !== clipInfo.clipIndex) {
+					const otherClip = clips[i];
+					const otherStart = otherClip.start || 0;
 
-				const otherClip = clips[i];
-				const otherStart = otherClip.start || 0;
-
-				// Check if this clip is after our clip
-				if (otherStart > clipStart) {
-					if (nextClipStart === null || otherStart < nextClipStart) {
-						nextClipStart = otherStart;
+					// Check if this clip is after our clip
+					if (otherStart > clipStart) {
+						if (nextClipStart === null || otherStart < nextClipStart) {
+							nextClipStart = otherStart;
+						}
 					}
 				}
 			}

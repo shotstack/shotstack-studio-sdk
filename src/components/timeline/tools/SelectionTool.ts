@@ -54,7 +54,7 @@ export class SelectionTool extends TimelineTool {
 		// TODO: Start box selection for multi-select when modifier keys are held
 	}
 
-	public override onPointerMove(event: TimelinePointerEvent): void {
+	public override onPointerMove(_event: TimelinePointerEvent): void {
 		if (this.isDragging) {
 			// Calculate drag delta for future use
 			// const dx = event.global.x - this.dragStartX;
