@@ -1,5 +1,5 @@
-import { IFeatureManager, ITimelineFeature, ITimelineState, ITimelineRenderer } from "../interfaces";
-import { StateChanges, TimelineState, TimelineWheelEvent, TimelinePointerEvent } from "../types";
+import { IFeatureManager, ITimelineFeature, ITimelineState, ITimelineRenderer } from "../types/timeline.interfaces";
+import { StateChanges, TimelineWheelEvent, TimelinePointerEvent } from "../types/timeline.types";
 
 /**
  * Manages timeline features and coordinates their lifecycle

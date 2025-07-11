@@ -1,8 +1,8 @@
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import * as PIXI from "pixi.js";
 
-import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../interfaces";
 import { TimelinePointerEvent } from "../types";
+import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../types/timeline.interfaces";
 
 /**
  * Resize interceptor for adjusting clip duration by dragging right edge

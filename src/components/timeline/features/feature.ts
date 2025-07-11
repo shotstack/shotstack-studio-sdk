@@ -1,7 +1,7 @@
 import { Entity } from "@core/shared/entity";
 
-import { ITimelineFeature, ITimelineRenderer, ITimelineState, ITimelineFeatureContext } from "../interfaces";
-import { StateChanges } from "../types";
+import { ITimelineFeature, ITimelineRenderer, ITimelineState, ITimelineFeatureContext } from "../types/timeline.interfaces";
+import { StateChanges } from "../types/timeline.types";
 
 /**
  * Abstract base class for timeline features
@@ -11,10 +11,7 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	public abstract readonly name: string;
 	protected isEnabled = false;
 
-	constructor(
-		protected state: ITimelineState,
-		protected context: ITimelineFeatureContext
-	) {
+	constructor(protected state: ITimelineState, protected context: ITimelineFeatureContext) {
 		super();
 	}
 
@@ -25,7 +22,11 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	public setEnabled(enabled: boolean): void {
 		if (this.isEnabled === enabled) return;
 		this.isEnabled = enabled;
-		enabled ? this.onEnable() : this.onDisable();
+		if (enabled) {
+			this.onEnable();
+		} else {
+			this.onDisable();
+		}
 	}
 
 	// Lifecycle methods
@@ -40,7 +41,9 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	public onStateChanged?(changes: StateChanges): void;
 
 	// Entity lifecycle - keep empty implementations for Entity interface
-	public async load(): Promise<void> {}
+	public async load(): Promise<void> {
+		// Base implementation - features can override if needed
+	}
 	public update(__deltaTime: number, __elapsed: number): void {}
 	public draw(): void {}
 

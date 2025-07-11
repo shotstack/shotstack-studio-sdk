@@ -1,1 +1,1 @@
-export { SelectionTool } from "./SelectionTool";
+export { SelectionTool } from "./selection-tool";

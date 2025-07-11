@@ -2,7 +2,7 @@ import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ITimelineClip } from "../interfaces";
+import { ITimelineClip } from "../types/timeline.interfaces";
 
 /**
  * Represents a clip in the timeline

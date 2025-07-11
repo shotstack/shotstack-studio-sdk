@@ -1,8 +1,5 @@
-// Core exports
-export * from "./core";
+// Timeline exports
+export { Timeline } from "./timeline";
 
 // Type exports
 export * from "./types";
-
-// Interface exports
-export * from "./interfaces";

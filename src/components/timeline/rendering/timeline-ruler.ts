@@ -1,7 +1,7 @@
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ITimelineRuler } from "../interfaces";
+import { ITimelineRuler } from "../types/timeline.interfaces";
 
 /**
  * Timeline ruler showing time markers and scale

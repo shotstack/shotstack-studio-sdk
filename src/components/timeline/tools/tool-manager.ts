@@ -1,8 +1,8 @@
 import { Edit } from "@core/edit";
 import * as PIXI from "pixi.js";
 
-import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager, IToolInterceptor } from "../interfaces";
 import { TimelineWheelEvent, TimelinePointerEvent } from "../types";
+import { IToolManager, ITimelineTool, ITimelineState, IFeatureManager, IToolInterceptor } from "../types/timeline.interfaces";
 
 /**
  * Manages timeline tools and delegates input events to the active tool

@@ -125,7 +125,9 @@ export class PlayheadFeature extends TimelineFeature {
 	private destroyPlayheadVisuals(): void {
 		this.playheadContainer?.parent?.removeChild(this.playheadContainer);
 		this.playheadContainer?.destroy({ children: true });
-		this.playheadContainer = this.playheadLine = this.playheadHandle = null;
+		this.playheadContainer = null;
+		this.playheadLine = null;
+		this.playheadHandle = null;
 	}
 
 	private updatePlayheadPosition(): void {

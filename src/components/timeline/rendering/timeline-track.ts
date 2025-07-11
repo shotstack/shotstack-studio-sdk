@@ -1,7 +1,7 @@
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ITimelineTrack, ITimelineClip } from "../interfaces";
+import { ITimelineTrack, ITimelineClip } from "../types/timeline.interfaces";
 
 /**
  * Represents a track in the timeline that can contain multiple clips

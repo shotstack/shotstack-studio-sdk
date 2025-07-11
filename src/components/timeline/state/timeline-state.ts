@@ -1,7 +1,7 @@
 import isEqual from "fast-deep-equal/es6";
 
-import { ITimelineState } from "../interfaces";
 import { TimelineState, StateChanges, StateListener } from "../types";
+import { ITimelineState } from "../types/timeline.interfaces";
 
 /**
  * Manages timeline state with immutable updates and subscription pattern

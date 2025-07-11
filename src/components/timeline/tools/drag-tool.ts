@@ -3,8 +3,8 @@ import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
 import * as PIXI from "pixi.js";
 
-import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../interfaces";
 import { TimelinePointerEvent } from "../types";
+import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../types/timeline.interfaces";
 
 /**
  * Drag interceptor for moving clips within and between tracks

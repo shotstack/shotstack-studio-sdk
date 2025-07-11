@@ -1,8 +1,8 @@
 import { EditCommand } from "@core/commands/types";
 import { Entity } from "@core/shared/entity";
 
-import { ITimelineTool, ITimelineState, ITimelineToolContext } from "../interfaces";
 import { TimelineState, TimelinePointerEvent, TimelineWheelEvent } from "../types";
+import { ITimelineTool, ITimelineState, ITimelineToolContext } from "../types/timeline.interfaces";
 
 /**
  * Abstract base class for timeline tools

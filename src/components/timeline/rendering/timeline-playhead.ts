@@ -1,7 +1,7 @@
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ITimelinePlayhead } from "../interfaces";
+import { ITimelinePlayhead } from "../types/timeline.interfaces";
 
 /**
  * Timeline playhead indicator showing current time position
