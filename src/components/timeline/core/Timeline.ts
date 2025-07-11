@@ -41,6 +41,7 @@ export class Timeline extends Entity implements ITimeline {
 	private size: Size;
 	private pixelsPerSecond: number = 100;
 	private animationFrameId: number | null = null;
+	private lastSelectedClipId: string | null = null;
 
 	constructor(edit: Edit, size?: Size) {
 		super();
@@ -511,14 +512,37 @@ export class Timeline extends Entity implements ITimeline {
 		const selectedInfo = this.edit.getSelectedClipInfo();
 		const registryState = this.state.getState().clipRegistry;
 
-		// Update visual state of all clips using registry
-		for (const [clipId, registeredClip] of registryState.clips) {
-			if (registeredClip.visual) {
-				const isSelected =
-					selectedInfo && selectedInfo.trackIndex === registeredClip.trackIndex && selectedInfo.clipIndex === registeredClip.clipIndex;
-				registeredClip.visual.setSelected(isSelected || false);
+		// Find the currently selected clip ID
+		let currentSelectedClipId: string | null = null;
+		if (selectedInfo) {
+			for (const [clipId, registeredClip] of registryState.clips) {
+				if (registeredClip.trackIndex === selectedInfo.trackIndex && 
+				    registeredClip.clipIndex === selectedInfo.clipIndex) {
+					currentSelectedClipId = clipId;
+					break;
+				}
 			}
 		}
+
+		// Only update the clips that changed selection state
+		if (this.lastSelectedClipId && this.lastSelectedClipId !== currentSelectedClipId) {
+			// Deselect the previously selected clip
+			const previousClip = registryState.clips.get(this.lastSelectedClipId);
+			if (previousClip?.visual) {
+				previousClip.visual.setSelected(false);
+			}
+		}
+
+		if (currentSelectedClipId && currentSelectedClipId !== this.lastSelectedClipId) {
+			// Select the new clip
+			const currentClip = registryState.clips.get(currentSelectedClipId);
+			if (currentClip?.visual) {
+				currentClip.visual.setSelected(true);
+			}
+		}
+
+		// Update the last selected clip ID
+		this.lastSelectedClipId = currentSelectedClipId;
 
 		// Animation loop will handle the rendering
 	}
