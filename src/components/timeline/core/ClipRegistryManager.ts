@@ -1,3 +1,4 @@
+import * as PIXI from "pixi.js";
 import { Edit } from "@core/edit";
 import { Player } from "@canvas/players/player";
 import { ITimelineState } from "../interfaces";
@@ -213,6 +214,27 @@ export class ClipRegistryManager {
 	}
 
 	/**
+	 * Find a clip by its PIXI container
+	 * More efficient container-based lookup
+	 */
+	public findClipByContainer(container: PIXI.Container): RegisteredClip | null {
+		const registryState = this.state.getState().clipRegistry;
+		
+		// Walk up the display hierarchy to find a clip container
+		let current: PIXI.Container | null = container;
+		while (current) {
+			for (const [_, clip] of registryState.clips) {
+				if (clip.visual?.getContainer() === current) {
+					return clip;
+				}
+			}
+			current = current.parent;
+		}
+		
+		return null;
+	}
+
+	/**
 	 * Register a clip in the registry
 	 * This will be used during sync operations
 	 */
@@ -348,13 +370,8 @@ export class ClipRegistryManager {
 							visual: existingClip.visual
 						});
 					} else {
-						// Check if clip content was updated or position changed
-						const newSignature = this.identityService.getPlayerSignature(player);
-						const editClip = this.edit.getClip(trackIndex, clipIndex);
-						const positionChanged = editClip && existingClip.visual && 
-							existingClip.visual.getStartTime() !== (editClip.start || 0);
-						
-						if (existingClip.playerSignature !== newSignature || positionChanged) {
+						// Check if clip needs updating
+						if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
 							delta.updated.push({
 								id: clipId!,  // We know clipId exists here since we found existingClip
 								player,
@@ -415,34 +432,26 @@ export class ClipRegistryManager {
 
 		// Process moved clips (reuse visuals)
 		for (const moved of delta.moved) {
-			if (moved.visual) {
-				// Get the old position from registry BEFORE updating it
-				const registeredClip = this.findClipById(moved.id);
-				const oldTrackIndex = registeredClip ? registeredClip.trackIndex : -1;
-				
-				// Remove from old track if needed
-				if (registeredClip && oldTrackIndex !== moved.trackIndex) {
-					const oldTrack = this.timeline.getRenderer().getTrackByIndex(oldTrackIndex);
-					if (oldTrack) {
-						oldTrack.detachClip(moved.id);
-					}
-				}
-
-				// Update registry position BEFORE adding to new track
-				this.updateClipPosition(moved.id, moved.trackIndex, moved.clipIndex);
-
-				// Add to new track
-				const newTrack = this.timeline.getRenderer().getTrackByIndex(moved.trackIndex);
-				if (newTrack) {
-					// Update clip position data
-					const editClip = this.edit.getClip(moved.trackIndex, moved.clipIndex);
-					if (editClip) {
-						moved.visual.setStart(editClip.start || 0);
-						moved.visual.setDuration(editClip.length || 1);
-					}
-					newTrack.addClip(moved.visual);
-				}
+			if (!moved.visual) continue;
+			
+			// Get current registration before updating
+			const currentReg = this.findClipById(moved.id);
+			if (!currentReg) continue;
+			
+			// Handle cross-track moves
+			if (currentReg.trackIndex !== moved.trackIndex) {
+				this.moveClipBetweenTracks(moved.id, currentReg.trackIndex, moved.trackIndex);
 			}
+			
+			// Update clip properties from Edit state
+			const editClip = this.edit.getClip(moved.trackIndex, moved.clipIndex);
+			if (editClip) {
+				moved.visual.setStart(editClip.start || 0);
+				moved.visual.setDuration(editClip.length || 1);
+			}
+			
+			// Update registry with new position
+			this.updateClipPosition(moved.id, moved.trackIndex, moved.clipIndex);
 		}
 
 		// Process added clips (create new visuals)
@@ -509,6 +518,49 @@ export class ClipRegistryManager {
 	private getPlayerForClip(trackIndex: number, clipIndex: number): Player | null {
 		// Use Edit's getPlayerClip method to access the Player instance
 		return this.edit.getPlayerClip(trackIndex, clipIndex);
+	}
+
+	/**
+	 * Check if a clip needs updating based on signature or position changes
+	 */
+	private isClipUpdated(existingClip: RegisteredClip, player: Player, trackIndex: number, clipIndex: number): boolean {
+		// Check signature change
+		const newSignature = this.identityService.getPlayerSignature(player);
+		if (existingClip.playerSignature !== newSignature) {
+			return true;
+		}
+
+		// Check position change
+		const editClip = this.edit.getClip(trackIndex, clipIndex);
+		if (editClip && existingClip.visual) {
+			const currentStart = existingClip.visual.getStartTime();
+			const newStart = editClip.start || 0;
+			if (currentStart !== newStart) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Move a clip's visual between tracks
+	 */
+	private moveClipBetweenTracks(clipId: string, fromTrackIndex: number, toTrackIndex: number): void {
+		const clip = this.findClipById(clipId);
+		if (!clip?.visual) return;
+		
+		// Detach from old track
+		const oldTrack = this.timeline.getRenderer().getTrackByIndex(fromTrackIndex);
+		if (oldTrack) {
+			oldTrack.detachClip(clipId);
+		}
+		
+		// Attach to new track
+		const newTrack = this.timeline.getRenderer().getTrackByIndex(toTrackIndex);
+		if (newTrack) {
+			newTrack.addClip(clip.visual);
+		}
 	}
 
 	/**

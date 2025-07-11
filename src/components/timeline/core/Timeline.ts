@@ -31,7 +31,9 @@ export class Timeline extends Entity implements ITimeline {
 	private size: Size;
 	private pixelsPerSecond: number = 100;
 	private animationFrameId: number | null = null;
-	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();  // Kept for backward compatibility
+	// WeakMap for backward compatibility - will be removed in future version
+	// @deprecated Use ClipRegistryManager methods instead
+	private clipIndices = new WeakMap<PIXI.Container, { trackIndex: number; clipIndex: number }>();
 
 	constructor(edit: Edit, size?: Size) {
 		super();
@@ -278,35 +280,13 @@ export class Timeline extends Entity implements ITimeline {
 
 	// Query method for tools to find clip at a given PIXI display object
 	public findClipAtPoint(target: PIXI.Container): { trackIndex: number; clipIndex: number } | null {
-		// Try registry-based lookup first
-		const registryState = this.state.getState().clipRegistry;
-		
-		// Walk up the display list to find a clip container
-		let currentTarget: PIXI.Container | null = target;
-		while (currentTarget) {
-			// Check if this container belongs to a registered clip
-			for (const [clipId, registeredClip] of registryState.clips) {
-				if (registeredClip.visual && registeredClip.visual.getContainer() === currentTarget) {
-					return {
-						trackIndex: registeredClip.trackIndex,
-						clipIndex: registeredClip.clipIndex
-					};
-				}
-			}
-			currentTarget = currentTarget.parent;
+		const clip = this.clipRegistryManager.findClipByContainer(target);
+		if (clip) {
+			return {
+				trackIndex: clip.trackIndex,
+				clipIndex: clip.clipIndex
+			};
 		}
-		
-		// Fall back to WeakMap approach if registry lookup fails
-		// This ensures backward compatibility during transition
-		currentTarget = target;
-		while (currentTarget) {
-			const indices = this.clipIndices.get(currentTarget);
-			if (indices) {
-				return indices;
-			}
-			currentTarget = currentTarget.parent;
-		}
-		
 		return null;
 	}
 
@@ -474,22 +454,8 @@ export class Timeline extends Entity implements ITimeline {
 	}
 
 	private handleRegistrySynced(__data: any): void {
-		// Update WeakMap with current registry state for backward compatibility
-		const registryState = this.state.getState().clipRegistry;
-		
-		// Clear old mappings
-		this.clipIndices = new WeakMap();
-		
-		// Add current mappings from registry
-		for (const [clipId, registeredClip] of registryState.clips) {
-			if (registeredClip.visual) {
-				const container = registeredClip.visual.getContainer();
-				this.clipIndices.set(container, {
-					trackIndex: registeredClip.trackIndex,
-					clipIndex: registeredClip.clipIndex
-				});
-			}
-		}
+		// Registry sync completed - no action needed
+		// The registry is now the single source of truth for clip positions
 	}
 
 	// Handle PIXI pointer events - forward to features and tools
