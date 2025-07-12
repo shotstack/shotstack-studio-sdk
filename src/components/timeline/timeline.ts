@@ -8,12 +8,10 @@ import * as PIXI from "pixi.js";
 
 import { FeatureManager } from "./features/feature-manager";
 import { TimelineRenderer } from "./rendering/timeline-renderer";
-import { ClipRegistryManager } from "./state/clip-registry";
 import { TimelineStateManager } from "./state/timeline-state";
 import { ToolManager } from "./tools/tool-manager";
 import {
 	ITimeline,
-	ITimelineState,
 	ITimelineRenderer,
 	ITimelineTool,
 	ITimelineFeature,
@@ -41,11 +39,10 @@ export interface TimelineOptions {
 export class Timeline extends Entity implements ITimeline {
 	public static readonly TimelineSelector = "[data-shotstack-timeline]";
 
-	private state: ITimelineState;
+	private state: TimelineStateManager;
 	private renderer: ITimelineRenderer;
 	private toolManager: IToolManager;
 	private featureManager: IFeatureManager;
-	private clipRegistryManager: ClipRegistryManager;
 	private size: Size;
 	private pixelsPerSecond: number = 100;
 	private animationFrameId: number | null = null;
@@ -75,14 +72,11 @@ export class Timeline extends Entity implements ITimeline {
 		}
 
 		// Initialize core systems
-		this.state = new TimelineStateManager(this.createInitialState());
+		this.state = new TimelineStateManager(this.createInitialState(), this.edit);
 		this.renderer = new TimelineRenderer(this.size);
 
-		// Initialize clip registry manager as core infrastructure
-		this.clipRegistryManager = new ClipRegistryManager(this.state, this.edit);
-
-		// Set Timeline reference on ClipRegistryManager
-		this.clipRegistryManager.setTimeline(this);
+		// Set Timeline reference on state manager for clip sync
+		this.state.setTimeline(this);
 
 		// Initialize managers with state reference
 		this.toolManager = new ToolManager(this.state, this.edit);
@@ -202,7 +196,7 @@ export class Timeline extends Entity implements ITimeline {
 
 		this.removeEditEventListeners();
 		this.renderer.dispose();
-		this.clipRegistryManager.dispose();
+		this.state.dispose();
 	}
 
 	public getState = (): TimelineState => this.state.getState();
@@ -224,7 +218,7 @@ export class Timeline extends Entity implements ITimeline {
 	public getRenderer = (): ITimelineRenderer => this.renderer;
 	public getTimelineDuration = (): number => this.edit.getTotalDuration();
 	public getFeature = (name: string): ITimelineFeature | null => this.featureManager.getFeature(name);
-	public getClipRegistry = (): ClipRegistryManager => this.clipRegistryManager;
+	public getClipRegistry = (): TimelineStateManager => this.state;
 
 	private createInitialState(): TimelineState {
 		return {
@@ -264,7 +258,7 @@ export class Timeline extends Entity implements ITimeline {
 		const toolContext: ITimelineToolContext = {
 			timeline: this,
 			edit: this.edit,
-			clipRegistry: this.clipRegistryManager,
+			clipRegistry: this.state,
 			executeCommand: (command: EditCommand | { type: string }) => {
 				// Handle simple command objects
 				if ("type" in command && command.type === "CLEAR_SELECTION") {
@@ -361,7 +355,7 @@ export class Timeline extends Entity implements ITimeline {
 				}
 			});
 		}
-		// ClipRegistryManager handles its own sync for clip deletions
+		// State manager handles its own sync for clip deletions
 	}
 
 	// Handle PIXI pointer events - forward to features and tools
@@ -439,7 +433,7 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		});
 
-		await this.clipRegistryManager.syncWithEdit();
+		await this.state.syncClipsWithEdit();
 	}
 
 	private updateSelectionVisuals(): void {
@@ -449,8 +443,8 @@ export class Timeline extends Entity implements ITimeline {
 		// Find the currently selected clip ID using the player object
 		let currentSelectedClipId: string | null = null;
 		if (selectedInfo && selectedInfo.player) {
-			// Use the clip registry to get the clip ID from the player
-			currentSelectedClipId = this.clipRegistryManager.getClipIdForPlayer(selectedInfo.player);
+			// Use the state manager to get the clip ID from the player
+			currentSelectedClipId = this.state.getClipIdForPlayer(selectedInfo.player);
 		}
 
 		// Update selection state if changed

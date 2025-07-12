@@ -9,7 +9,8 @@ import { Edit, Canvas, Controls } from "./index";
 async function main() {
 	try {
 		// 1. Load the hello.json template from local file
-		const template = await import("./templates/hello.json");
+		const templateModule = await import("./templates/hello.json");
+		const template = templateModule.default as any;
 
 		// 2. Initialize the edit with dimensions and background color
 		const edit = new Edit(template.output.size, template.timeline.background);

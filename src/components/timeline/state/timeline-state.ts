@@ -1,10 +1,17 @@
+import { Player } from "@canvas/players/player";
+import { Edit } from "@core/edit";
 import isEqual from "fast-deep-equal/es6";
+import * as PIXI from "pixi.js";
 
-import { TimelineState, StateChanges, StateListener } from "../types";
-import { ITimelineState } from "../types/timeline.interfaces";
+import { TimelineClip } from "../rendering/timeline-clip";
+import { TimelineState, StateChanges, StateListener, RegisteredClip } from "../types";
+import { ITimelineState, ITimeline } from "../types/timeline.interfaces";
+
+import { ClipIdentityService } from "./identity-service";
 
 /**
  * Manages timeline state with immutable updates and subscription pattern
+ * Includes clip registry synchronization with Edit state
  */
 export class TimelineStateManager implements ITimelineState {
 	private state: TimelineState;
@@ -12,9 +19,23 @@ export class TimelineStateManager implements ITimelineState {
 	private snapshots: TimelineState[] = [];
 	private maxSnapshots: number = 50;
 
-	constructor(initialState: TimelineState) {
+	// Clip sync related
+	private identityService: ClipIdentityService;
+	private syncScheduled = false;
+	private syncFrameId: number | null = null;
+	private playerToClipId = new WeakMap<Player, string>();
+	private timeline: ITimeline | null = null;
+	private edit: Edit;
+	
+	// Event handlers for cleanup
+	private eventHandlers: { [key: string]: (data?: any) => void } = {};
+
+	constructor(initialState: TimelineState, edit: Edit) {
 		// Don't use structuredClone as the state contains non-cloneable objects
 		this.state = initialState;
+		this.edit = edit;
+		this.identityService = new ClipIdentityService();
+		this.setupEditEventListeners();
 	}
 
 	public subscribe(listener: StateListener): () => void {
@@ -141,5 +162,382 @@ export class TimelineStateManager implements ITimelineState {
 			playback: !isEqual(oldState.playback, newState.playback),
 			clipRegistry: !isEqual(oldState.clipRegistry, newState.clipRegistry)
 		};
+	}
+
+	// ===== Clip Registry Methods =====
+
+	/**
+	 * Set the Timeline reference (called after Timeline construction)
+	 */
+	public setTimeline(timeline: ITimeline): void {
+		this.timeline = timeline;
+	}
+
+	private setupEditEventListeners(): void {
+		// Store event handlers for cleanup
+		this.eventHandlers["clip:updated"] = (data?: any) => {
+			// For move operations, sync immediately to avoid stale indices
+			if (data?.previous?.trackIndex !== data?.current?.trackIndex || data?.previous?.clipIndex !== data?.current?.clipIndex) {
+				this.syncClipsImmediately();
+			} else {
+				this.scheduleClipSync();
+			}
+		};
+		this.eventHandlers["clip:deleted"] = () => this.scheduleClipSync();
+		this.eventHandlers["track:deleted"] = () => this.scheduleClipSync();
+		this.eventHandlers["edit:undo"] = () => this.syncClipsImmediately();
+		this.eventHandlers["edit:redo"] = () => this.syncClipsImmediately();
+		
+		// Register all event handlers
+		Object.entries(this.eventHandlers).forEach(([event, handler]) => {
+			this.edit.events.on(event, handler);
+		});
+	}
+
+	/**
+	 * Schedule a sync operation using requestAnimationFrame
+	 */
+	public scheduleClipSync(): void {
+		if (this.syncScheduled) return;
+
+		this.syncScheduled = true;
+		this.syncFrameId = requestAnimationFrame(async () => {
+			this.syncScheduled = false;
+			this.syncFrameId = null;
+			await this.syncClipsWithEdit();
+		});
+	}
+
+	/**
+	 * Sync immediately (synchronously) - use for critical operations
+	 */
+	public syncClipsImmediately(): void {
+		if (this.syncFrameId !== null) {
+			cancelAnimationFrame(this.syncFrameId);
+			this.syncFrameId = null;
+			this.syncScheduled = false;
+		}
+		this.syncClipsWithEdit();
+	}
+
+	/**
+	 * Find a clip by its PIXI container
+	 */
+	public findClipByContainer(container: PIXI.Container): RegisteredClip | null {
+		const { clipRegistry } = this.state;
+
+		let current: PIXI.Container | null = container;
+		while (current) {
+			// Check if container has a label that matches a clip ID
+			if (current.label) {
+				const clipId = current.label.toString();
+				const clip = clipRegistry.clips.get(clipId);
+				if (clip && clip.visual?.getContainer() === current) {
+					return clip;
+				}
+			}
+
+			// Check all clips
+			for (const [, clip] of clipRegistry.clips) {
+				if (clip.visual?.getContainer() === current) {
+					return clip;
+				}
+			}
+			current = current.parent;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get clip ID for a player object
+	 */
+	public getClipIdForPlayer(player: Player): string | null {
+		return this.playerToClipId.get(player) ?? null;
+	}
+
+	/**
+	 * Find clip by ID
+	 */
+	public findClipById(clipId: string): RegisteredClip | null {
+		return this.state.clipRegistry.clips.get(clipId) || null;
+	}
+
+	/**
+	 * Core sync logic - sync clips between Edit and Timeline state
+	 */
+	public async syncClipsWithEdit(): Promise<void> {
+		const delta = this.computeClipDelta();
+
+		if (delta.added.length > 0 || delta.moved.length > 0 || delta.removed.length > 0 || delta.updated.length > 0) {
+			await this.applyClipDelta(delta);
+
+			// Update state with new generation
+			this.update({
+				clipRegistry: {
+					...this.state.clipRegistry,
+					generation: this.state.clipRegistry.generation + 1
+				}
+			});
+		}
+	}
+
+	/**
+	 * Compute delta between Edit state and registry
+	 */
+	private computeClipDelta(): any {
+		const delta = {
+			added: [] as any[],
+			moved: [] as any[],
+			removed: [] as any[],
+			updated: [] as any[]
+		};
+
+		const seenClipIds = new Set<string>();
+
+		// Process all tracks
+		this.edit.getEdit().timeline.tracks.forEach((track, trackIndex) => {
+			track?.clips?.forEach((clip, clipIndex) => {
+				if (clip) {
+					const player = this.edit.getPlayerClip(trackIndex, clipIndex);
+					if (player) {
+						this.processClipForDelta(player, trackIndex, clipIndex, delta, seenClipIds);
+					}
+				}
+			});
+		});
+
+		// Find removed clips
+		for (const [clipId, registeredClip] of this.state.clipRegistry.clips) {
+			if (!seenClipIds.has(clipId)) {
+				delta.removed.push({
+					id: clipId,
+					player: null,
+					trackIndex: registeredClip.trackIndex,
+					clipIndex: registeredClip.clipIndex,
+					visual: registeredClip.visual
+				});
+			}
+		}
+
+		return delta;
+	}
+
+	private processClipForDelta(player: Player, trackIndex: number, clipIndex: number, delta: any, seenClipIds: Set<string>): void {
+		let clipId = this.playerToClipId.get(player);
+		const existingClip = clipId ? this.state.clipRegistry.clips.get(clipId) : null;
+
+		if (!existingClip) {
+			clipId = this.identityService.generateClipId(player);
+			delta.added.push({ id: clipId, player, trackIndex, clipIndex });
+		} else if (existingClip.trackIndex !== trackIndex || existingClip.clipIndex !== clipIndex) {
+			delta.moved.push({
+				id: clipId!,
+				player,
+				trackIndex,
+				clipIndex,
+				visual: existingClip.visual
+			});
+		} else if (this.isClipUpdated(existingClip, player, trackIndex, clipIndex)) {
+			delta.updated.push({
+				id: clipId!,
+				player,
+				trackIndex,
+				clipIndex,
+				visual: existingClip.visual
+			});
+		}
+
+		if (clipId) {
+			seenClipIds.add(clipId);
+		}
+	}
+
+	private isClipUpdated(existingClip: RegisteredClip, player: Player, trackIndex: number, clipIndex: number): boolean {
+		// Check signature change
+		const newSignature = this.identityService.getPlayerSignature(player);
+		if (existingClip.playerSignature !== newSignature) {
+			return true;
+		}
+
+		// Check position/duration changes
+		const editClip = this.edit.getClip(trackIndex, clipIndex);
+		if (editClip && existingClip.visual) {
+			if (existingClip.visual.getStartTime() !== (editClip.start || 0)) {
+				return true;
+			}
+			if (existingClip.visual.getDuration() !== (editClip.length || 1)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Apply delta to update visual state
+	 */
+	private async applyClipDelta(delta: any): Promise<void> {
+		if (!this.timeline) return;
+
+		// Remove clips
+		for (const removed of delta.removed) {
+			if (removed.visual) {
+				const track = this.timeline.getRenderer().getTrackByIndex(removed.trackIndex);
+				if (track) {
+					track.removeClip(removed.id);
+				}
+				removed.visual.dispose();
+			}
+			this.unregisterClip(removed.id);
+		}
+
+		// Move clips
+		for (const moved of delta.moved) {
+			if (moved.visual) {
+				const oldTrack = this.timeline.getRenderer().getTrackByIndex(this.state.clipRegistry.clips.get(moved.id)?.trackIndex ?? -1);
+				const newTrack = this.timeline.getRenderer().getTrackByIndex(moved.trackIndex);
+
+				if (oldTrack && newTrack && oldTrack !== newTrack) {
+					oldTrack.detachClip(moved.id);
+					newTrack.addClip(moved.visual);
+				}
+
+				// Update position
+				const editClip = this.edit.getClip(moved.trackIndex, moved.clipIndex);
+				if (editClip) {
+					moved.visual.setStart(editClip.start || 0);
+					moved.visual.setDuration(editClip.length || 1);
+				}
+
+				this.updateClipPosition(moved.id, moved.trackIndex, moved.clipIndex);
+			}
+		}
+
+		// Add new clips
+		for (const added of delta.added) {
+			const editClip = this.edit.getClip(added.trackIndex, added.clipIndex);
+			if (editClip) {
+				const trackId = `track-${added.trackIndex}`;
+				const visual = new TimelineClip(added.id, trackId, editClip.start || 0, editClip.length || 1, editClip);
+				await visual.load();
+
+				const { zoom } = this.state.viewport;
+				visual.setPixelsPerSecond(zoom);
+
+				const track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
+				if (track) {
+					track.addClip(visual);
+				}
+
+				this.registerClip(added.id, visual, added.player, added.trackIndex, added.clipIndex);
+			}
+		}
+
+		// Update existing clips
+		for (const updated of delta.updated) {
+			if (updated.visual) {
+				const editClip = this.edit.getClip(updated.trackIndex, updated.clipIndex);
+				if (editClip) {
+					updated.visual.setClipData(editClip);
+					updated.visual.setStart(editClip.start || 0);
+					updated.visual.setDuration(editClip.length || 1);
+					updated.visual.draw();
+				}
+
+				const newSignature = this.identityService.getPlayerSignature(updated.player);
+				this.updateClipSignature(updated.id, newSignature);
+			}
+		}
+	}
+
+	private registerClip(clipId: string, visual: TimelineClip, player: Player, trackIndex: number, clipIndex: number): void {
+		const registeredClip: RegisteredClip = {
+			id: clipId,
+			visual,
+			trackIndex,
+			clipIndex,
+			playerSignature: this.identityService.getPlayerSignature(player),
+			lastSeen: Date.now()
+		};
+
+		this.playerToClipId.set(player, clipId);
+
+		const newClips = new Map(this.state.clipRegistry.clips);
+		newClips.set(clipId, registeredClip);
+
+		this.update({
+			clipRegistry: {
+				...this.state.clipRegistry,
+				clips: newClips
+			}
+		});
+	}
+
+	private unregisterClip(clipId: string): void {
+		const newClips = new Map(this.state.clipRegistry.clips);
+		newClips.delete(clipId);
+
+		this.update({
+			clipRegistry: {
+				...this.state.clipRegistry,
+				clips: newClips
+			}
+		});
+	}
+
+	private updateClipPosition(clipId: string, newTrackIndex: number, newClipIndex: number): void {
+		const clip = this.state.clipRegistry.clips.get(clipId);
+		if (!clip) return;
+
+		const newClips = new Map(this.state.clipRegistry.clips);
+		newClips.set(clipId, {
+			...clip,
+			trackIndex: newTrackIndex,
+			clipIndex: newClipIndex,
+			lastSeen: Date.now()
+		});
+
+		this.update({
+			clipRegistry: {
+				...this.state.clipRegistry,
+				clips: newClips
+			}
+		});
+	}
+
+	private updateClipSignature(clipId: string, newSignature: string): void {
+		const clip = this.state.clipRegistry.clips.get(clipId);
+		if (!clip) return;
+
+		const newClips = new Map(this.state.clipRegistry.clips);
+		newClips.set(clipId, {
+			...clip,
+			playerSignature: newSignature,
+			lastSeen: Date.now()
+		});
+
+		this.update({
+			clipRegistry: {
+				...this.state.clipRegistry,
+				clips: newClips
+			}
+		});
+	}
+
+	public dispose(): void {
+		// Cancel any pending sync
+		if (this.syncFrameId !== null) {
+			cancelAnimationFrame(this.syncFrameId);
+			this.syncFrameId = null;
+		}
+
+		// Remove event listeners
+		Object.entries(this.eventHandlers).forEach(([event, handler]) => {
+			this.edit.events.off(event, handler);
+		});
+
+		// Clear caches
+		this.identityService.clearAllCache();
 	}
 }
