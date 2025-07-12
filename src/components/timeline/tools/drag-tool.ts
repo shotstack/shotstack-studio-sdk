@@ -309,16 +309,16 @@ export class DragInterceptor implements IToolInterceptor {
 	 * Find target track based on Y coordinate
 	 */
 	private findTargetTrack(screenY: number): number {
-		const renderer = this.context.timeline.getRenderer();
-		const tracks = renderer.getTracks();
+		const tracks = this.context.timeline.getRenderer().getTracks();
+		if (!tracks.length) return 0;
 
-		// Simple implementation: assume fixed track height
-		// TODO: Get actual track heights from renderer
-		const TRACK_HEIGHT = 50; // Default track height
-		const trackIndex = Math.floor(screenY / TRACK_HEIGHT);
-
-		// Clamp to valid track range
-		return Math.max(0, Math.min(trackIndex, tracks.length - 1));
+		// Find closest track by comparing distances to track centers
+		return tracks.reduce((closest, track, index) => {
+			const trackY = track.getContainer().y + track.getHeight() / 2;
+			const distance = Math.abs(screenY - trackY);
+			const minDistance = Math.abs(screenY - (tracks[closest].getContainer().y + tracks[closest].getHeight() / 2));
+			return distance < minDistance ? index : closest;
+		}, 0);
 	}
 
 	/**
