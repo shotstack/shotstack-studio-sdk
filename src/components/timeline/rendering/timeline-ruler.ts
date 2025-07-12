@@ -1,4 +1,5 @@
 import { Entity } from "@core/shared/entity";
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { ITimelineRuler } from "../types/timeline.interfaces";
@@ -12,25 +13,28 @@ export class TimelineRuler extends Entity implements ITimelineRuler {
 	private labels: PIXI.Text[] = [];
 	private pixelsPerSecond = 100;
 	private scrollX = 0;
-	private height = 30;
-
-	private readonly config = {
-		backgroundColor: 0x1a1a1a,
-		borderColor: 0x404040,
-		majorTickColor: 0x808080,
-		minorTickColor: 0x606060,
-		labelColor: 0xcccccc,
-		labelSize: 10,
-		majorTickHeight: 10,
-		minorTickHeight: 5,
-		labelOffset: 2,
-		minPixelsBetweenLabels: 60,
-		intervals: [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
-	};
+	private height!: number;
 
 	constructor(private width: number) {
 		super();
+		this.height = Theme.dimensions.ruler.height;
 		this.getContainer().addChild(this.graphics, this.labelsContainer);
+	}
+
+	private get config() {
+		return {
+			backgroundColor: Theme.colors.ui.ruler.background,
+			borderColor: Theme.colors.borders.primary,
+			majorTickColor: Theme.colors.ui.ruler.majorTick,
+			minorTickColor: Theme.colors.ui.ruler.minorTick,
+			labelColor: Theme.colors.ui.ruler.label,
+			labelSize: Theme.typography.ruler.fontSize,
+			majorTickHeight: Theme.dimensions.ruler.majorTickHeight,
+			minorTickHeight: Theme.dimensions.ruler.minorTickHeight,
+			labelOffset: Theme.dimensions.ruler.labelOffset,
+			minPixelsBetweenLabels: Theme.dimensions.ruler.minPixelsBetweenLabels,
+			intervals: [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
+		};
 	}
 
 	public async load(): Promise<void> {

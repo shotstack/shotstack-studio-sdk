@@ -1,3 +1,4 @@
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { TimelinePointerEvent, StateChanges } from "../types";
@@ -68,7 +69,7 @@ export class PlayheadFeature extends TimelineFeature {
 			return true;
 		}
 
-		if (event.global.y < this.visual.rulerHeight) {
+		if (event.global.y < Theme.dimensions.ruler.height) {
 			const time = this.xToTime(event.global.x);
 			const duration = this.context.edit.getTotalDuration();
 			this.seekToTime(Math.max(0, Math.min(time, duration)));
@@ -92,7 +93,7 @@ export class PlayheadFeature extends TimelineFeature {
 	}
 
 	public override onStateChanged(changes: StateChanges): void {
-		if (changes.viewport?.height) {
+		if (changes.viewport) {
 			this.drawPlayheadVisuals();
 		}
 
@@ -143,9 +144,9 @@ export class PlayheadFeature extends TimelineFeature {
 
 		const localX = event.global.x - this.playheadContainer.x;
 		const localY = event.global.y;
-		const handleSize = this.visual.rulerHeight * this.visual.handle.scale;
+		const { handleWidth, handleHeight } = Theme.dimensions.playhead;
 
-		return Math.abs(localX) <= handleSize / 2 && localY >= -handleSize * 1.7 && localY <= handleSize * 0.7;
+		return Math.abs(localX) <= handleWidth / 2 && localY >= -handleHeight * 1.7 && localY <= handleHeight * 0.7;
 	}
 
 	private startDragging(event: TimelinePointerEvent): void {
@@ -174,22 +175,23 @@ export class PlayheadFeature extends TimelineFeature {
 	private drawPlayheadVisuals(): void {
 		if (!this.playheadLine || !this.playheadHandle) return;
 
-		const { color, lineWidth, handle } = this.visual;
-		const size = this.visual.rulerHeight * handle.scale;
+		const { playhead: color, playheadOutline: outlineColor } = Theme.colors.ui;
+		const { lineWidth, handleWidth, handleHeight } = Theme.dimensions.playhead;
+		const { playheadOutline: outlineAlpha } = Theme.opacity;
 
 		// Draw line
 		this.playheadLine.clear().moveTo(0, 0).lineTo(0, this.timelineHeight).stroke({ width: lineWidth, color });
 
 		// Draw handle (diamond)
-		const points = [0, size / 2, -size / 2, -size / 2, 0, -size * 1.5, size / 2, -size / 2];
+		const points = [0, handleHeight / 2, -handleWidth / 2, -handleHeight / 2, 0, -handleHeight * 1.5, handleWidth / 2, -handleHeight / 2];
 		this.playheadHandle
 			.clear()
 			.poly(points)
 			.fill({ color })
-			.stroke({ ...handle.outline, width: Math.max(2, size / 12) });
+			.stroke({ color: outlineColor, alpha: outlineAlpha, width: Math.max(2, handleWidth / 12) });
 
 		// Set hit area
-		const pad = size * 0.2;
-		this.playheadHandle.hitArea = new PIXI.Rectangle(-size / 2 - pad, -size * 1.7, size + pad * 2, size * 2.4);
+		const pad = Theme.dimensions.playhead.hitAreaPadding;
+		this.playheadHandle.hitArea = new PIXI.Rectangle(-handleWidth / 2 - pad, -handleHeight * 1.7, handleWidth + pad * 2, handleHeight * 2.4);
 	}
 }

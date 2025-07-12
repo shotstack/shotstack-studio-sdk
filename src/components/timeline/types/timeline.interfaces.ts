@@ -14,7 +14,7 @@ export interface ITimelineToolContext {
 		findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null;
 		getPlayerClip(trackIndex: number, clipIndex: number): Player | null;
 	};
-	clipRegistry: import("../core/ClipRegistryManager").ClipRegistryManager;
+	clipRegistry: import("../state/clip-registry").ClipRegistryManager;
 	executeCommand: (command: EditCommand | { type: string }) => void;
 }
 
@@ -34,7 +34,7 @@ export interface ITimeline extends Entity {
 	getRenderer(): ITimelineRenderer;
 
 	// Get the clip registry - the single source of truth for all clip operations
-	getClipRegistry(): import("../core/ClipRegistryManager").ClipRegistryManager;
+	getClipRegistry(): import("../state/clip-registry").ClipRegistryManager;
 
 	// Core timeline properties
 	setPixelsPerSecond(pixelsPerSecond: number): void;

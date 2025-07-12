@@ -1,4 +1,5 @@
 import { Entity } from "@core/shared/entity";
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { ITimelineTrack, ITimelineClip } from "../types/timeline.interfaces";
@@ -10,24 +11,14 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	private clips: Map<string, ITimelineClip> = new Map();
 	private graphics!: PIXI.Graphics;
 	private clipsContainer!: PIXI.Container;
-	
-	private static readonly VISUAL = {
-		rulerHeight: 30,
-		trackGap: 2,
-		backgroundWidth: 5000,
-		borderColor: 0x404040,
-		borderWidth: 1,
-		backgroundAlpha: 0.5,
-		evenTrackColor: 0x2a2a2a,
-		oddTrackColor: 0x252525
-	} as const;
+	private height: number;
 
 	constructor(
 		private trackId: string,
-		private index: number,
-		private height: number = 60
+		private index: number
 	) {
 		super();
+		this.height = Theme.dimensions.track.height;
 		this.setupContainers();
 	}
 
@@ -51,7 +42,7 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	public dispose(): void {
 		this.forEachClip(clip => clip.dispose());
 		this.clips.clear();
-		
+
 		this.graphics.destroy();
 		this.clipsContainer.destroy({ children: true });
 	}
@@ -77,7 +68,7 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	public removeClip(clipId: string, dispose = true): void {
 		const clip = this.clips.get(clipId);
 		if (!clip) return;
-		
+
 		this.clipsContainer.removeChild(clip.getContainer());
 		if (dispose) clip.dispose();
 		this.clips.delete(clipId);
@@ -89,8 +80,8 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	}
 
 	public updateLayout(): void {
-		const { rulerHeight, trackGap } = TimelineTrack.VISUAL;
-		this.getContainer().y = this.index * (this.height + trackGap) + rulerHeight;
+		const yPosition = this.index * (this.height + Theme.dimensions.track.gap) + Theme.dimensions.ruler.height;
+		this.getContainer().y = yPosition;
 		this.forEachClip(clip => {
 			const clipContainer = clip.getContainer();
 			clipContainer.y = 0;
@@ -111,10 +102,10 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	private setupContainers(): void {
 		this.graphics = new PIXI.Graphics();
 		this.clipsContainer = new PIXI.Container();
-		
+
 		const container = this.getContainer();
 		container.addChild(this.graphics, this.clipsContainer);
-		
+
 		container.eventMode = "static";
 		container.interactiveChildren = true;
 		this.clipsContainer.eventMode = "static";
@@ -122,18 +113,17 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 	}
 
 	private drawBackground(): void {
-		const { backgroundWidth, borderColor, borderWidth, backgroundAlpha, evenTrackColor, oddTrackColor } = TimelineTrack.VISUAL;
-		
 		this.graphics.clear();
-		
-		const backgroundColor = this.index % 2 === 0 ? evenTrackColor : oddTrackColor;
+
+		const backgroundColor = this.index % 2 === 0 ? Theme.colors.background.tracks.even : Theme.colors.background.tracks.odd;
+
 		this.graphics
-			.rect(0, 0, backgroundWidth, this.height)
-			.fill({ color: backgroundColor, alpha: backgroundAlpha });
+			.rect(0, 0, Theme.dimensions.track.backgroundWidth, this.height)
+			.fill({ color: backgroundColor, alpha: Theme.opacity.trackBackground });
 
 		this.graphics
 			.moveTo(0, this.height)
-			.lineTo(backgroundWidth, this.height)
-			.stroke({ width: borderWidth, color: borderColor });
+			.lineTo(Theme.dimensions.track.backgroundWidth, this.height)
+			.stroke({ width: Theme.borders.track, color: Theme.colors.borders.primary });
 	}
 }

@@ -11,7 +11,10 @@ export abstract class TimelineFeature extends Entity implements ITimelineFeature
 	public abstract readonly name: string;
 	protected isEnabled = false;
 
-	constructor(protected state: ITimelineState, protected context: ITimelineFeatureContext) {
+	constructor(
+		protected state: ITimelineState,
+		protected context: ITimelineFeatureContext
+	) {
 		super();
 	}
 

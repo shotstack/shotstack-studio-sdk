@@ -2,7 +2,7 @@ import { Clip } from "@core/schemas/clip";
 import * as PIXI from "pixi.js";
 
 // Import TimelineClip type (will be needed for RegisteredClip)
-import type { TimelineClip } from "../entities/TimelineClip";
+import type { TimelineClip } from "../rendering/timeline-clip";
 
 // Clip Registry Types
 export interface RegisteredClip {

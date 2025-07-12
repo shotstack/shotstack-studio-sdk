@@ -31,7 +31,7 @@ export class SelectionTool extends TimelineTool {
 		};
 
 		const clip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
-		
+
 		if (clip) {
 			this.emitClipClick(clip, event);
 		} else if (!this.hasModifierKey(event)) {
@@ -62,6 +62,5 @@ export class SelectionTool extends TimelineTool {
 		event.stopPropagation();
 	}
 
-	private hasModifierKey = (event: TimelinePointerEvent): boolean => 
-		event.shiftKey || event.ctrlKey || event.metaKey;
+	private hasModifierKey = (event: TimelinePointerEvent): boolean => event.shiftKey || event.ctrlKey || event.metaKey;
 }

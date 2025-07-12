@@ -92,7 +92,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 	}
 
 	public getCursor(event: TimelinePointerEvent): string | null {
-		return (this.resizeState.isResizing || this.isOnClipRightEdge(event)) ? "ew-resize" : null;
+		return this.resizeState.isResizing || this.isOnClipRightEdge(event) ? "ew-resize" : null;
 	}
 
 	/**
@@ -247,7 +247,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 		const track = renderer.getTrackByIndex(targetClip.trackIndex);
 		const clips = track?.getClips() || [];
 		const clip = clips[targetClip.clipIndex];
-		
+
 		if (clip) {
 			clip.setDuration(previewDuration);
 		}

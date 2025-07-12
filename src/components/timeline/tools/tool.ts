@@ -39,20 +39,17 @@ export abstract class TimelineTool extends Entity implements ITimelineTool {
 	public dispose(): void {}
 
 	// State management
-	public updateState = (updates: Partial<TimelineState>): void => 
-		this.state.update(updates);
+	public updateState = (updates: Partial<TimelineState>): void => this.state.update(updates);
 
-	public executeCommand = (command: EditCommand | { type: string }): void => 
-		this.context.executeCommand(command);
+	public executeCommand = (command: EditCommand | { type: string }): void => this.context.executeCommand(command);
 
-	protected getState = (): TimelineState => 
-		this.state.getState();
+	protected getState = (): TimelineState => this.state.getState();
 
 	// Tool state persistence
 	protected saveToolState<T = Record<string, unknown>>(state: T): void {
 		const { toolStates } = this.getState();
-		this.updateState({ 
-			toolStates: new Map(toolStates).set(this.name, state) 
+		this.updateState({
+			toolStates: new Map(toolStates).set(this.name, state)
 		});
 	}
 

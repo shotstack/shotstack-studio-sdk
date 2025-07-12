@@ -2,6 +2,8 @@ import { EditCommand } from "@core/commands/types";
 import { Edit } from "@core/edit";
 import { Size } from "@core/layouts/geometry";
 import { Entity } from "@core/shared/entity";
+import { Theme } from "@core/theme/theme-context";
+import { TimelineThemeOverride, TimelineThemePreset } from "@core/theme/theme.types";
 import * as PIXI from "pixi.js";
 
 import { FeatureManager } from "./features/feature-manager";
@@ -23,6 +25,16 @@ import {
 import { TimelineState, StateChanges } from "./types/timeline.types";
 
 /**
+ * Timeline configuration options
+ */
+export interface TimelineOptions {
+	width?: number;
+	height?: number;
+	theme?: TimelineThemePreset; // Base theme preset name
+	themeOverrides?: TimelineThemeOverride; // Optional customizations
+}
+
+/**
  * Main Timeline orchestrator class that manages the timeline state,
  * tools, features, and rendering.
  */
@@ -41,10 +53,26 @@ export class Timeline extends Entity implements ITimeline {
 
 	constructor(
 		private edit: Edit,
-		size?: Size
+		options?: TimelineOptions
 	) {
 		super();
-		this.size = size || { width: edit.size.width, height: 150 };
+
+		// Set timeline dimensions
+		const opts = options || {};
+		this.size = {
+			width: opts.width || edit.size.width,
+			height: opts.height || 150
+		};
+
+		// Initialize theme
+		if (opts.theme) {
+			Theme.setPreset(opts.theme);
+		}
+
+		// Apply theme overrides if provided
+		if (opts.themeOverrides) {
+			Theme.applyOverrides(opts.themeOverrides);
+		}
 
 		// Initialize core systems
 		this.state = new TimelineStateManager(this.createInitialState());
@@ -136,7 +164,7 @@ export class Timeline extends Entity implements ITimeline {
 
 		// Update active tool and enabled features
 		this.toolManager.getActiveTool()?.update(deltaTime, elapsed);
-		
+
 		this.featureManager.getAllFeatures().forEach(feature => {
 			if (feature.enabled) {
 				feature.update(deltaTime, elapsed);
@@ -358,7 +386,14 @@ export class Timeline extends Entity implements ITimeline {
 	public handleWheel(event: WheelEvent): void {
 		const { deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey, offsetX: x } = event;
 		const timelineEvent = {
-			deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey, x,
+			deltaX,
+			deltaY,
+			deltaMode,
+			ctrlKey,
+			shiftKey,
+			altKey,
+			metaKey,
+			x,
 			preventDefault: () => event.preventDefault()
 		};
 
@@ -415,8 +450,7 @@ export class Timeline extends Entity implements ITimeline {
 		let currentSelectedClipId: string | null = null;
 		if (selectedInfo) {
 			for (const [clipId, registeredClip] of registryState.clips) {
-				if (registeredClip.trackIndex === selectedInfo.trackIndex && 
-					registeredClip.clipIndex === selectedInfo.clipIndex) {
+				if (registeredClip.trackIndex === selectedInfo.trackIndex && registeredClip.clipIndex === selectedInfo.clipIndex) {
 					currentSelectedClipId = clipId;
 					break;
 				}

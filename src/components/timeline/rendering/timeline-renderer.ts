@@ -1,4 +1,5 @@
 import { Size } from "@core/layouts/geometry";
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { ITimelineRenderer, ITimelineTrack, ITimelineRuler } from "../types/timeline.interfaces";
@@ -33,7 +34,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 		await this.application.init({
 			width: this.size.width,
 			height: this.size.height,
-			backgroundColor: 0x1a1a1a,
+			backgroundColor: Theme.colors.background.primary,
 			antialias: true,
 			resolution: window.devicePixelRatio || 1,
 			autoDensity: true
@@ -110,8 +111,8 @@ export class TimelineRenderer implements ITimelineRenderer {
 		layer.addChild(
 			new PIXI.Graphics()
 				.rect(0, 0, this.size.width, this.size.height)
-				.fill({ color: 0x1a1a1a })
-				.stroke({ width: 1, color: 0x2a2a2a })
+				.fill({ color: Theme.colors.background.primary })
+				.stroke({ width: Theme.borders.track, color: Theme.colors.borders.secondary })
 		);
 	}
 
@@ -125,9 +126,7 @@ export class TimelineRenderer implements ITimelineRenderer {
 	private updateClipsZoom(state: TimelineState): void {
 		if (state.viewport.zoom === this.lastZoom) return;
 		this.lastZoom = state.viewport.zoom;
-		this.tracks.forEach(track =>
-			track.getClips().forEach(clip => clip.setPixelsPerSecond(state.viewport.zoom))
-		);
+		this.tracks.forEach(track => track.getClips().forEach(clip => clip.setPixelsPerSecond(state.viewport.zoom)));
 	}
 
 	// Track management

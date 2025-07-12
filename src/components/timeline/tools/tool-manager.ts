@@ -32,7 +32,7 @@ export class ToolManager implements IToolManager {
 	public unregister(name: string): void {
 		const tool = this.tools.get(name);
 		if (!tool) return;
-		
+
 		if (this.activeTool === tool) {
 			this.activeTool.onDeactivate();
 			this.activeTool = null;
@@ -86,55 +86,55 @@ export class ToolManager implements IToolManager {
 	}
 
 	private updateSortedInterceptors(): void {
-		this.sortedInterceptors = Array.from(this.interceptors.values())
-			.sort((a, b) => b.priority - a.priority);
+		this.sortedInterceptors = Array.from(this.interceptors.values()).sort((a, b) => b.priority - a.priority);
 	}
 
-	private checkInterceptors<T extends TimelinePointerEvent>(
-		event: T,
-		method: keyof IToolInterceptor
-	): boolean {
+	private checkInterceptors<T extends TimelinePointerEvent>(event: T, method: keyof IToolInterceptor): boolean {
 		for (const interceptor of this.sortedInterceptors) {
-			if ((interceptor[method] as ((event: T) => boolean))?.(event)) return true;
+			if ((interceptor[method] as (event: T) => boolean)?.(event)) return true;
 		}
 		return false;
 	}
 
 	public handlePointerDown(event: PIXI.FederatedPointerEvent): void {
 		const timelineEvent: TimelinePointerEvent = event;
-		if (!this.checkInterceptors(timelineEvent, 'interceptPointerDown')) {
+		if (!this.checkInterceptors(timelineEvent, "interceptPointerDown")) {
 			this.activeTool?.onPointerDown?.(timelineEvent);
 		}
 	}
 
 	public handlePointerMove(event: PIXI.FederatedPointerEvent): void {
 		const timelineEvent: TimelinePointerEvent = event;
-		
+
 		// Update cursor from first interceptor or active tool
-		const cursor = this.sortedInterceptors
-			.map(i => i.getCursor?.(timelineEvent))
-			.find(c => c) || this.activeTool?.cursor;
-		
+		const cursor = this.sortedInterceptors.map(i => i.getCursor?.(timelineEvent)).find(c => c) || this.activeTool?.cursor;
+
 		if (cursor) this.updateCursor(cursor);
-		
-		if (!this.checkInterceptors(timelineEvent, 'interceptPointerMove')) {
+
+		if (!this.checkInterceptors(timelineEvent, "interceptPointerMove")) {
 			this.activeTool?.onPointerMove?.(timelineEvent);
 		}
 	}
 
 	public handlePointerUp(event: PIXI.FederatedPointerEvent): void {
 		const timelineEvent: TimelinePointerEvent = event;
-		if (!this.checkInterceptors(timelineEvent, 'interceptPointerUp')) {
+		if (!this.checkInterceptors(timelineEvent, "interceptPointerUp")) {
 			this.activeTool?.onPointerUp?.(timelineEvent);
 		}
 	}
 
 	public handleWheel(event: WheelEvent): void {
 		if (!this.activeTool?.onWheel) return;
-		
+
 		const { deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey } = event;
 		this.activeTool.onWheel({
-			deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey,
+			deltaX,
+			deltaY,
+			deltaMode,
+			ctrlKey,
+			shiftKey,
+			altKey,
+			metaKey,
 			preventDefault: () => event.preventDefault()
 		});
 	}
@@ -142,5 +142,5 @@ export class ToolManager implements IToolManager {
 	public handleKeyDown = (event: KeyboardEvent): void => this.activeTool?.onKeyDown?.(event);
 	public handleKeyUp = (event: KeyboardEvent): void => this.activeTool?.onKeyUp?.(event);
 
-	private updateCursor = (cursor: string): void => this.cursorElement?.style.setProperty('cursor', cursor);
+	private updateCursor = (cursor: string): void => this.cursorElement?.style.setProperty("cursor", cursor);
 }

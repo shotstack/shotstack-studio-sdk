@@ -39,15 +39,15 @@ export class ClipRegistryManager {
 	private playerToClipId = new WeakMap<Player, string>(); // Moved from state for serializability
 
 	private static readonly SYNC_EVENT_NAMES = {
-		SYNCED: 'timeline:registrySynced',
-		ERROR: 'timeline:registrySyncError'
+		SYNCED: "timeline:registrySynced",
+		ERROR: "timeline:registrySyncError"
 	} as const;
 
 	// Event handlers
 	private readonly eventHandlers = {
-		'clip:updated': () => this.scheduleSync(),
-		'clip:deleted': () => this.scheduleSync(),
-		'track:deleted': () => this.scheduleSync()
+		"clip:updated": () => this.scheduleSync(),
+		"clip:deleted": () => this.scheduleSync(),
+		"track:deleted": () => this.scheduleSync()
 	};
 
 	constructor(
@@ -212,29 +212,25 @@ export class ClipRegistryManager {
 		};
 
 		this.playerToClipId.set(player, clipId);
-		this.modifyClipInRegistry(clipId, 'add', registeredClip);
+		this.modifyClipInRegistry(clipId, "add", registeredClip);
 	}
 
 	/**
 	 * Unregister a clip from the registry
 	 */
 	public unregisterClip(clipId: string): void {
-		this.modifyClipInRegistry(clipId, 'remove');
+		this.modifyClipInRegistry(clipId, "remove");
 	}
 
-	private modifyClipInRegistry(
-		clipId: string,
-		action: 'add' | 'remove',
-		registeredClip?: RegisteredClip
-	): void {
+	private modifyClipInRegistry(clipId: string, action: "add" | "remove", registeredClip?: RegisteredClip): void {
 		const registryState = this.state.getState().clipRegistry;
 		const newClips = new Map(registryState.clips);
 		const newTrackIndex = new Map(registryState.trackIndex);
 
-		if (action === 'remove') {
+		if (action === "remove") {
 			const clip = newClips.get(clipId);
 			if (!clip) return;
-			
+
 			newClips.delete(clipId);
 			const trackClips = newTrackIndex.get(clip.trackIndex);
 			if (trackClips) {
@@ -253,7 +249,7 @@ export class ClipRegistryManager {
 		this.updateRegistryState({ clips: newClips, trackIndex: newTrackIndex });
 	}
 
-	private updateRegistryState(updates: Partial<ReturnType<typeof this.state.getState>['clipRegistry']>): void {
+	private updateRegistryState(updates: Partial<ReturnType<typeof this.state.getState>["clipRegistry"]>): void {
 		const current = this.state.getState().clipRegistry;
 		this.state.update({
 			clipRegistry: {
@@ -269,7 +265,10 @@ export class ClipRegistryManager {
 	 */
 	private computeDelta(): SyncDelta {
 		const delta: SyncDelta = {
-			added: [], moved: [], removed: [], updated: []
+			added: [],
+			moved: [],
+			removed: [],
+			updated: []
 		};
 
 		const registryState = this.state.getState().clipRegistry;
@@ -293,7 +292,7 @@ export class ClipRegistryManager {
 	private processClipForDelta(
 		trackIndex: number,
 		clipIndex: number,
-		registryState: ReturnType<typeof this.state.getState>['clipRegistry'],
+		registryState: ReturnType<typeof this.state.getState>["clipRegistry"],
 		delta: SyncDelta,
 		seenClipIds: Set<string>
 	): void {
@@ -324,17 +323,12 @@ export class ClipRegistryManager {
 			});
 		}
 
-
 		if (clipId) {
 			seenClipIds.add(clipId);
 		}
 	}
 
-	private findRemovedClips(
-		registryState: ReturnType<typeof this.state.getState>['clipRegistry'],
-		seenClipIds: Set<string>,
-		delta: SyncDelta
-	): void {
+	private findRemovedClips(registryState: ReturnType<typeof this.state.getState>["clipRegistry"], seenClipIds: Set<string>, delta: SyncDelta): void {
 		for (const [clipId, registeredClip] of registryState.clips) {
 			if (!seenClipIds.has(clipId)) {
 				delta.removed.push({

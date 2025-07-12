@@ -5,7 +5,7 @@ import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";
 import * as pixi from "pixi.js";
 
-import type { Timeline } from "../timeline/core/Timeline";
+import type { Timeline } from "../timeline/timeline";
 
 export class Canvas {
 	/** @internal */

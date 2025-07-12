@@ -22,8 +22,18 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Initialize the Timeline
-		const timeline = new Timeline(edit);
+		// 5. Initialize the Timeline with light theme
+		const timeline = new Timeline(edit, {
+			theme: "light"
+			// Optional: customize specific aspects
+			// themeOverrides: {
+			//     colors: {
+			//         clips: {
+			//             video: 0xff0000  // Make video clips red
+			//         }
+			//     }
+			// }
+		});
 		await timeline.load(); // Automatically renders to [data-shotstack-timeline]
 
 		// 6. Add keyboard controls

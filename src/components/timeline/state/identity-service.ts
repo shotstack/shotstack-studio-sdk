@@ -15,7 +15,9 @@ export class ClipIdentityService {
 	public generateClipId(player: Player): string {
 		const signature = this.getPlayerSignature(player);
 		const timestamp = Date.now();
-		const random = Math.random().toString(36).slice(2, 2 + this.ID_LENGTH);
+		const random = Math.random()
+			.toString(36)
+			.slice(2, 2 + this.ID_LENGTH);
 		return `${this.ID_PREFIX}_${signature}_${timestamp}_${random}`;
 	}
 
@@ -54,6 +56,10 @@ export class ClipIdentityService {
 		return Math.abs(hash).toString(36);
 	}
 
-	public clearCache = (player: Player): void => this.signatureCache.delete(player);
-	public clearAllCache = (): void => { this.signatureCache = new WeakMap(); };
+	public clearCache = (player: Player): void => {
+		this.signatureCache.delete(player);
+	};
+	public clearAllCache = (): void => {
+		this.signatureCache = new WeakMap();
+	};
 }

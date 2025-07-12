@@ -1,5 +1,6 @@
 import { Clip } from "@core/schemas/clip";
 import { Entity } from "@core/shared/entity";
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { ITimelineClip } from "../types/timeline.interfaces";
@@ -183,14 +184,17 @@ export class TimelineClip extends Entity implements ITimelineClip {
 
 	private updateColorFromAsset(): void {
 		if (this.clipData?.asset?.type) {
-			this.clipColor = TimelineClip.ASSET_COLORS[this.clipData.asset.type] || 0x888888;
+			const assetType = this.clipData.asset.type as keyof typeof Theme.colors.clips;
+			this.clipColor = Theme.colors.clips[assetType] || Theme.colors.clips.default;
+		} else {
+			this.clipColor = Theme.colors.clips.default;
 		}
 	}
 
 	private updateLabelFromAsset(): void {
 		if (!this.clipData?.asset) return;
 
-		const {asset} = this.clipData;
+		const { asset } = this.clipData;
 		if (asset.type === "text" && "text" in asset) {
 			this.label.text = asset.text;
 		} else if ("src" in asset) {
