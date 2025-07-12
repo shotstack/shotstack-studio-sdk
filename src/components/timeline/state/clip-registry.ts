@@ -54,13 +54,12 @@ export class ClipRegistryManager {
 			}
 		},
 		"clip:deleted": () => this.scheduleSync(),
-		"track:deleted": () => this.scheduleSync()
+		"track:deleted": () => this.scheduleSync(),
+		"edit:undo": () => this.syncImmediately(),
+		"edit:redo": () => this.syncImmediately()
 	};
 
-	constructor(
-		private state: ITimelineState,
-		private edit: Edit
-	) {
+	constructor(private state: ITimelineState, private edit: Edit) {
 		this.identityService = new ClipIdentityService();
 		this.initializeRegistry();
 		this.setupEventListeners();
@@ -118,7 +117,7 @@ export class ClipRegistryManager {
 		}
 
 		// Run sync synchronously
-		const asyncSync = this.syncWithEdit();
+		this.syncWithEdit();
 		// Note: This will complete synchronously for registry updates
 		// Only visual updates might be async, but indices will be correct immediately
 	}
@@ -505,6 +504,13 @@ export class ClipRegistryManager {
 			const currentStart = existingClip.visual.getStartTime();
 			const newStart = editClip.start || 0;
 			if (currentStart !== newStart) {
+				return true;
+			}
+
+			// Check duration change
+			const currentDuration = existingClip.visual.getDuration();
+			const newDuration = editClip.length || 1;
+			if (currentDuration !== newDuration) {
 				return true;
 			}
 		}
