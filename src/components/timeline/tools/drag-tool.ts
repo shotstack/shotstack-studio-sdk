@@ -379,22 +379,27 @@ export class DragInterceptor implements IToolInterceptor {
 			return false;
 		}
 
-		// Check for overlaps with other clips
-		for (let i = 0; i < targetTrack.clips.length; i += 1) {
-			// Skip the clip being dragged if it's in the same track
-			if (!(position.trackIndex === currentIndices.trackIndex && i === currentIndices.clipIndex)) {
-				const otherClip = targetTrack.clips[i];
-				if (otherClip && otherClip.start !== undefined && otherClip.length) {
-					const otherStart = otherClip.start || 0;
-					const otherEnd = otherStart + (otherClip.length || 0);
-
-					// Check for overlap
-					// Two clips overlap if one starts before the other ends
-					if (position.start < otherEnd && clipEnd > otherStart) {
-						return false; // Overlap detected
-					}
-				}
+		// Check for overlaps with other clips in the target track
+		const hasOverlap = targetTrack.clips.some((otherClip, i) => {
+			// Skip if this is the dragged clip in its original position
+			const isOriginalPosition = position.trackIndex === currentIndices.trackIndex && i === currentIndices.clipIndex;
+			if (isOriginalPosition) {
+				return false;
 			}
+
+			// Skip invalid clips
+			if (!otherClip?.length || otherClip.start === undefined) {
+				return false;
+			}
+
+			// Check if clips would overlap
+			const otherStart = otherClip.start || 0;
+			const otherEnd = otherStart + otherClip.length;
+			return position.start < otherEnd && clipEnd > otherStart;
+		});
+
+		if (hasOverlap) {
+			return false;
 		}
 
 		return true; // No overlaps, position is valid
