@@ -55,10 +55,15 @@ export class SelectionTool extends TimelineTool {
 	}
 
 	private emitClipClick(clip: any, event: TimelinePointerEvent): void {
-		this.context.edit.events.emit("timeline:clip:clicked", {
-			trackIndex: clip.trackIndex,
-			clipIndex: clip.clipIndex
-		});
+		// Get the player object for this clip
+		const player = this.context.edit.getPlayerClip(clip.trackIndex, clip.clipIndex);
+		if (player) {
+			this.context.edit.events.emit("timeline:clip:clicked", {
+				player,
+				trackIndex: clip.trackIndex,
+				clipIndex: clip.clipIndex
+			});
+		}
 		event.stopPropagation();
 	}
 

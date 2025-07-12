@@ -446,15 +446,11 @@ export class Timeline extends Entity implements ITimeline {
 		const selectedInfo = this.edit.getSelectedClipInfo();
 		const registryState = this.state.getState().clipRegistry;
 
-		// Find the currently selected clip ID
+		// Find the currently selected clip ID using the player object
 		let currentSelectedClipId: string | null = null;
-		if (selectedInfo) {
-			for (const [clipId, registeredClip] of registryState.clips) {
-				if (registeredClip.trackIndex === selectedInfo.trackIndex && registeredClip.clipIndex === selectedInfo.clipIndex) {
-					currentSelectedClipId = clipId;
-					break;
-				}
-			}
+		if (selectedInfo && selectedInfo.player) {
+			// Use the clip registry to get the clip ID from the player
+			currentSelectedClipId = this.clipRegistryManager.getClipIdForPlayer(selectedInfo.player);
 		}
 
 		// Update selection state if changed

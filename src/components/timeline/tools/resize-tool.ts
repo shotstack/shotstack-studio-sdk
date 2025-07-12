@@ -106,7 +106,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 				return false;
 			}
 
-			// Get the actual clip object
+			// Now we can trust the registry indices since we sync immediately on moves
 			const player = this.context.edit.getPlayerClip(registeredClip.trackIndex, registeredClip.clipIndex);
 			if (!player || !player.clipConfiguration) {
 				return false;
@@ -243,13 +243,17 @@ export class ResizeInterceptor implements IToolInterceptor {
 		const { targetClip, previewDuration } = this.resizeState;
 		if (!targetClip) return;
 
-		const renderer = this.context.timeline.getRenderer();
-		const track = renderer.getTrackByIndex(targetClip.trackIndex);
-		const clips = track?.getClips() || [];
-		const clip = clips[targetClip.clipIndex];
+		// Get the player from Edit to find the correct clip ID
+		const player = this.context.edit.getPlayerClip(targetClip.trackIndex, targetClip.clipIndex);
+		if (!player) return;
 
-		if (clip) {
-			clip.setDuration(previewDuration);
+		const clipId = this.context.clipRegistry.getClipIdForPlayer(player);
+		if (!clipId) return;
+
+		// Find the visual clip by ID
+		const registeredClip = this.context.clipRegistry.findClipById(clipId);
+		if (registeredClip && registeredClip.visual) {
+			registeredClip.visual.setDuration(previewDuration);
 		}
 	}
 

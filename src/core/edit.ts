@@ -518,8 +518,14 @@ export class Edit extends Entity {
 	// Event-driven architecture setup
 	private setupIntentListeners(): void {
 		// Handle Timeline intent events
-		this.events.on("timeline:clip:clicked", (data: { trackIndex: number; clipIndex: number }) => {
-			this.selectClip(data.trackIndex, data.clipIndex);
+		this.events.on("timeline:clip:clicked", (data: { player: Player; trackIndex: number; clipIndex: number }) => {
+			// Use the player object directly to ensure correct selection
+			if (data.player) {
+				this.selectPlayer(data.player);
+			} else {
+				// Fallback to indices if player not provided
+				this.selectClip(data.trackIndex, data.clipIndex);
+			}
 		});
 
 		this.events.on("timeline:background:clicked", () => {

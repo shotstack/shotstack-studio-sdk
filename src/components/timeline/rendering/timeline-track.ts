@@ -62,7 +62,20 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 
 		this.clips.set(clipId, clip);
 		this.clipsContainer.addChild(clip.getContainer());
+
+		// Sort children by start time to ensure proper layering
+		this.sortClipsByStartTime();
 		this.updateLayout();
+	}
+
+	private sortClipsByStartTime(): void {
+		// Get all clips and sort them by start time
+		const sortedClips = Array.from(this.clips.values()).sort((a, b) => a.getStartTime() - b.getStartTime());
+
+		// Reorder children in the container
+		sortedClips.forEach((clip, index) => {
+			this.clipsContainer.setChildIndex(clip.getContainer(), index);
+		});
 	}
 
 	public removeClip(clipId: string, dispose = true): void {

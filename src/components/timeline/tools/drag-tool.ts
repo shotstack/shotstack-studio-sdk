@@ -54,7 +54,9 @@ export class DragInterceptor implements IToolInterceptor {
 			// Find the clip using registry
 			const registeredClip = this.context.clipRegistry.findClipByContainer(event.target as PIXI.Container);
 			if (registeredClip) {
+				// Now we can trust the registry indices since we sync immediately on moves
 				const player = this.context.edit.getPlayerClip(registeredClip.trackIndex, registeredClip.clipIndex);
+
 				if (player && player.clipConfiguration) {
 					// Prepare for potential drag (but don't start yet)
 					this.isPotentialDrag = true;
@@ -140,19 +142,15 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// Handle actual drag completion
 		if (this.isDragging && this.draggedPlayer && this.draggedClipId && this.previewPosition) {
-			// Find the current indices using the stable clip ID
-			const registeredClip = this.context.clipRegistry.findClipById(this.draggedClipId);
-			if (!registeredClip) {
-				console.error("Could not find dragged clip in registry");
+			// IMPORTANT: We need to find the current indices from the Edit, not the registry
+			// The registry might have stale indices until the next sync
+			const currentIndices = this.context.edit.findClipIndices(this.draggedPlayer);
+			if (!currentIndices) {
+				console.error("Could not find dragged clip in Edit");
 				this.removeDragPreview();
 				this.resetState();
 				return true;
 			}
-
-			const currentIndices = {
-				trackIndex: registeredClip.trackIndex,
-				clipIndex: registeredClip.clipIndex
-			};
 
 			// Validate final position
 			let finalPosition = this.previewPosition;
@@ -544,13 +542,13 @@ export class DragInterceptor implements IToolInterceptor {
 		// Create a semi-transparent rectangle to represent the clip
 		const graphics = new PIXI.Graphics();
 
-		// Draw the ghost rectangle
-		graphics.beginFill(0x4caf50, 0.3); // Green with 30% opacity
+		// Draw the ghost rectangle with fill
+		graphics.fillStyle = { color: 0x4caf50, alpha: 0.3 };
 		graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
 		graphics.fill();
 
 		// Add a border
-		graphics.lineStyle(2, 0x4caf50, 0.8);
+		graphics.strokeStyle = { width: 2, color: 0x4caf50, alpha: 0.8 };
 		graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
 		graphics.stroke();
 
@@ -643,19 +641,19 @@ export class DragInterceptor implements IToolInterceptor {
 		if (isValid) {
 			// Valid position - green
 			graphics.clear();
-			graphics.beginFill(0x4caf50, 0.3);
+			graphics.fillStyle = { color: 0x4caf50, alpha: 0.3 };
 			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
 			graphics.fill();
-			graphics.lineStyle(2, 0x4caf50, 0.8);
+			graphics.strokeStyle = { width: 2, color: 0x4caf50, alpha: 0.8 };
 			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
 			graphics.stroke();
 		} else {
 			// Invalid position - red
 			graphics.clear();
-			graphics.beginFill(0xff5252, 0.3);
+			graphics.fillStyle = { color: 0xff5252, alpha: 0.3 };
 			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
 			graphics.fill();
-			graphics.lineStyle(2, 0xff5252, 0.8);
+			graphics.strokeStyle = { width: 2, color: 0xff5252, alpha: 0.8 };
 			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
 			graphics.stroke();
 		}

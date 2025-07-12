@@ -45,7 +45,14 @@ export class ClipRegistryManager {
 
 	// Event handlers
 	private readonly eventHandlers = {
-		"clip:updated": () => this.scheduleSync(),
+		"clip:updated": (data?: any) => {
+			// For move operations, sync immediately to avoid stale indices
+			if (data?.previous?.trackIndex !== data?.current?.trackIndex || data?.previous?.clipIndex !== data?.current?.clipIndex) {
+				this.syncImmediately();
+			} else {
+				this.scheduleSync();
+			}
+		},
 		"clip:deleted": () => this.scheduleSync(),
 		"track:deleted": () => this.scheduleSync()
 	};
@@ -97,6 +104,23 @@ export class ClipRegistryManager {
 			this.syncFrameId = null;
 			await this.syncWithEdit();
 		});
+	}
+
+	/**
+	 * Sync immediately (synchronously) - use for critical operations like moves
+	 */
+	public syncImmediately(): void {
+		// Cancel any pending async sync
+		if (this.syncFrameId !== null) {
+			cancelAnimationFrame(this.syncFrameId);
+			this.syncFrameId = null;
+			this.syncScheduled = false;
+		}
+
+		// Run sync synchronously
+		const asyncSync = this.syncWithEdit();
+		// Note: This will complete synchronously for registry updates
+		// Only visual updates might be async, but indices will be correct immediately
 	}
 
 	/**
@@ -177,6 +201,13 @@ export class ClipRegistryManager {
 	}
 
 	/**
+	 * Get clip ID for a player object
+	 */
+	public getClipIdForPlayer(player: Player): string | null {
+		return this.playerToClipId.get(player) ?? null;
+	}
+
+	/**
 	 * Find a clip by its PIXI container
 	 * More efficient container-based lookup
 	 */
@@ -186,6 +217,16 @@ export class ClipRegistryManager {
 		// Walk up the display hierarchy to find a clip container
 		let current: PIXI.Container | null = container;
 		while (current) {
+			// First check if the container has a label that matches a clip ID
+			if (current.label) {
+				const clipId = current.label.toString();
+				const clip = registryState.clips.get(clipId);
+				if (clip && clip.visual?.getContainer() === current) {
+					return clip;
+				}
+			}
+
+			// Fallback to checking all clips
 			for (const [, clip] of registryState.clips) {
 				if (clip.visual?.getContainer() === current) {
 					return clip;

@@ -31,51 +31,11 @@
 				"clips": [
 					{
 						"asset": {
-							"type": "video",
-							"src": "https://templates.shotstack.io/hello-world-title-video/aa5d068a-c2c2-4cff-800a-15cacf9a8809/earth.mp4",
-							"trim": 5,
-							"volume": 1
+							"type": "text",
+							"text": "Hello World"
 						},
 						"start": 0,
-						"length": 2,
-						"transition": {
-							"in": "fade",
-							"out": "fade"
-						},
-						"position": "center",
-						"scale": 1
-					},
-					{
-						"asset": {
-							"type": "video",
-							"src": "https://templates.shotstack.io/hello-world-title-video/aa5d068a-c2c2-4cff-800a-15cacf9a8809/earth.mp4",
-							"trim": 5,
-							"volume": 1
-						},
-						"start": 3,
-						"length": 2,
-						"transition": {
-							"in": "fade",
-							"out": "fade"
-						},
-						"position": "center",
-						"scale": 1
-					},
-					{
-						"asset": {
-							"type": "video",
-							"src": "https://templates.shotstack.io/hello-world-title-video/aa5d068a-c2c2-4cff-800a-15cacf9a8809/earth.mp4",
-							"trim": 5,
-							"volume": 1
-						},
-						"start": 6,
-						"length": 2,
-						"transition": {
-							"in": "fade",
-							"out": "fade"
-						},
-						"position": "center",
-						"scale": 1
+						"length": 2
 					}
 				]
 			}
