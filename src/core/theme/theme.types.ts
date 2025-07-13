@@ -65,13 +65,13 @@ export interface TimelineTheme {
 			backgroundWidth: number; // Background width (default: 5000)
 		};
 
-		// Clip dimensions
-		clip: {
-			height: number; // Clip height (default: 50)
-			cornerRadius: number; // Corner radius (default: 4)
-			labelPaddingX: number; // Label padding (default: 5)
-			labelOffsetY: number; // Label Y offset (default: 30)
-			offsetY: number; // Clip Y offset in track (default: 5)
+		// Clip dimensions (optional - computed from track height if not provided)
+		clip?: {
+			height?: number; // Clip height (computed as 80% of track height)
+			cornerRadius?: number; // Corner radius (default: 4)
+			labelPaddingX?: number; // Label padding (default: 5)
+			labelOffsetY?: number; // Label Y offset (computed as 50% of track height)
+			offsetY?: number; // Clip Y offset in track (computed as 10% of track height)
 		};
 
 		// Ruler dimensions
@@ -176,7 +176,6 @@ export function validateTheme(theme: TimelineTheme): void {
 		"colors.clips.video",
 		"colors.ui.selection",
 		"dimensions.track.height",
-		"dimensions.clip.height",
 		"typography.clip.fontSize",
 		"opacity.clip"
 	];

@@ -52,11 +52,8 @@ export const minimalLightTheme: TimelineTheme = {
 			backgroundWidth: 5000
 		},
 		clip: {
-			height: 50,
 			cornerRadius: 2, // Sharper corners for minimal look
-			labelPaddingX: 5,
-			labelOffsetY: 30,
-			offsetY: 5
+			labelPaddingX: 5
 		},
 		ruler: {
 			height: 25, // Slimmer ruler

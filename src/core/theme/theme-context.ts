@@ -64,7 +64,26 @@ export const Theme = {
 		return currentTheme.colors;
 	},
 	get dimensions() {
-		return currentTheme.dimensions;
+		// Return dimensions with computed clip values
+		const dims = currentTheme.dimensions;
+		
+		// Calculate clip dimensions as ratios of track height
+		const clipHeightRatio = 0.8; // Clip is 80% of track height
+		const clipOffsetRatio = 0.1; // Clip starts at 10% from top
+		
+		return {
+			...dims,
+			clip: {
+				// Compute height from track height
+				height: dims.track.height * clipHeightRatio,
+				// Keep corner radius and padding as fixed values
+				cornerRadius: dims.clip?.cornerRadius ?? 4,
+				labelPaddingX: dims.clip?.labelPaddingX ?? 5,
+				// Compute vertical offsets from track height
+				labelOffsetY: dims.track.height * 0.5, // Center label vertically
+				offsetY: dims.track.height * clipOffsetRatio
+			}
+		};
 	},
 	get typography() {
 		return currentTheme.typography;

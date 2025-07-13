@@ -47,16 +47,13 @@ export const lightTheme: TimelineTheme = {
 	},
 	dimensions: {
 		track: {
-			height: 60,
+			height: 30,
 			gap: 2,
 			backgroundWidth: 5000
 		},
 		clip: {
-			height: 50,
 			cornerRadius: 4,
-			labelPaddingX: 5,
-			labelOffsetY: 30,
-			offsetY: 5
+			labelPaddingX: 5
 		},
 		ruler: {
 			height: 30,
