@@ -21,6 +21,12 @@ export class PlayheadFeature extends TimelineFeature {
 	// Drag state
 	private drag = { active: false, startX: 0, startTime: 0 };
 
+	// Auto-scroll configuration
+	private readonly autoScroll = {
+		enabled: true,
+		margin: 100 // Keep this many pixels from edge
+	};
+
 	// Visual configuration
 	private readonly visual = {
 		color: 0xff0000,
@@ -103,6 +109,41 @@ export class PlayheadFeature extends TimelineFeature {
 	}
 
 	public renderOverlay(_: ITimelineRenderer): void {}
+
+	/**
+	 * Update method called every frame - handles auto-scroll during playback
+	 */
+	public override update(_deltaTime: number, _elapsed: number): void {
+		if (!this.playback.isPlaying || !this.autoScroll.enabled) return;
+
+		// Where is the playhead on screen?
+		const playheadX = this.currentTime * this.pixelsPerSecond - this.scrollX;
+		
+		// Keep playhead visible with some margin
+		const margin = this.autoScroll.margin;
+		const { width, scrollX } = this.viewport;
+		
+		let newScrollX = scrollX;
+		
+		// Scroll right if playhead is too close to right edge
+		if (playheadX > width - margin) {
+			newScrollX = this.currentTime * this.pixelsPerSecond - (width - margin);
+		}
+		// Scroll left if playhead is too close to left edge
+		else if (playheadX < margin) {
+			newScrollX = this.currentTime * this.pixelsPerSecond - margin;
+		}
+		
+		// Apply change if needed
+		if (newScrollX !== scrollX) {
+			this.updateState({
+				viewport: {
+					...this.viewport,
+					scrollX: Math.max(0, newScrollX)
+				}
+			});
+		}
+	}
 
 	private createPlayheadVisuals(): void {
 		this.playheadContainer = new PIXI.Container();
