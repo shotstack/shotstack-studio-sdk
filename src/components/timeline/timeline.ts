@@ -295,6 +295,11 @@ export class Timeline extends Entity implements ITimeline {
 			edit: this.edit
 		};
 
+		// Register the scroll feature
+		const { ScrollFeature } = await import("./features/scroll-feature");
+		const scrollFeature = new ScrollFeature(this.state, featureContext);
+		this.featureManager.register(scrollFeature);
+
 		// Register the zoom feature
 		const { ZoomFeature } = await import("./features/zoom-feature");
 		const zoomFeature = new ZoomFeature(this.state, featureContext);
@@ -306,6 +311,7 @@ export class Timeline extends Entity implements ITimeline {
 		this.featureManager.register(playheadFeature);
 
 		// Enable features by default
+		this.featureManager.enable("scroll");
 		this.featureManager.enable("zoom");
 		this.featureManager.enable("playhead");
 	}
