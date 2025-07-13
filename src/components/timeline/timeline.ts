@@ -416,7 +416,7 @@ export class Timeline extends Entity implements ITimeline {
 	private async loadEditData(): Promise<void> {
 		const editData = this.edit.getEdit();
 
-		// Ensure we have tracks in the renderer
+		// Ensure we have tracks in the renderer matching the Edit state
 		editData.timeline.tracks.forEach((_, index) => {
 			const trackId = `track-${index}`;
 			if (!this.renderer.getTrack(trackId)) {
@@ -424,7 +424,7 @@ export class Timeline extends Entity implements ITimeline {
 			}
 		});
 
-		// Remove tracks that no longer exist
+		// Remove tracks that no longer exist in the Edit state
 		const trackCount = editData.timeline.tracks.length;
 		this.renderer.getTracks().forEach(track => {
 			const trackIndex = parseInt(track.getTrackId().replace("track-", ""), 10);

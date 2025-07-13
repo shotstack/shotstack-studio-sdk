@@ -17,7 +17,7 @@
 							"volume": 1
 						},
 						"start": 0,
-						"length": 2,
+						"length": 10,
 						"transition": {
 							"in": "fade",
 							"out": "fade"
@@ -35,7 +35,7 @@
 							"text": "Hello World"
 						},
 						"start": 0,
-						"length": 2
+						"length": 10
 					}
 				]
 			}

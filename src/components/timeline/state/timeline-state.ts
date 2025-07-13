@@ -425,9 +425,12 @@ export class TimelineStateManager implements ITimelineState {
 				const { zoom } = this.state.viewport;
 				visual.setPixelsPerSecond(zoom);
 
+				// The track should exist since the Edit state maintains empty tracks
 				const track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
 				if (track) {
 					track.addClip(visual);
+				} else {
+					console.warn(`Track ${added.trackIndex} not found when adding clip ${added.id}`);
 				}
 
 				this.registerClip(added.id, visual, added.player, added.trackIndex, added.clipIndex);

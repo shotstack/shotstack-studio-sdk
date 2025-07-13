@@ -166,20 +166,13 @@ export class Edit extends Entity {
 		this.updateTotalDuration();
 	}
 	public getEdit(): EditType {
-		const tracks: TrackType[] = [];
-		const trackMap = new Map<number, TrackType>();
-
-		for (const clip of this.clips) {
-			if (!trackMap.has(clip.layer)) {
-				trackMap.set(clip.layer, { clips: [] });
-			}
-			trackMap.get(clip.layer)!.clips.push(clip.clipConfiguration);
-		}
-
-		const maxTrack = Math.max(...trackMap.keys(), 0);
-		for (let i = 1; i <= maxTrack; i += 1) {
-			tracks[i - 1] = trackMap.get(i) || { clips: [] };
-		}
+		// Use the actual tracks array to preserve empty tracks
+		const tracks: TrackType[] = this.tracks.map((track, trackIndex) => {
+			const clipsOnTrack = track
+				.filter(player => player && !this.clipsToDispose.includes(player))
+				.map(player => player.clipConfiguration);
+			return { clips: clipsOnTrack };
+		});
 
 		return {
 			timeline: {
