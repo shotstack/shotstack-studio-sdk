@@ -31,13 +31,13 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	};
 
 	private readonly VISUAL = {
-		height: 50,
-		cornerRadius: 4,
-		alpha: 0.8,
-		selectionColor: 0xffff00,
-		labelPaddingX: 5,
-		labelY: 30,
-		clipY: 5
+		height: Theme.dimensions.clip.height,
+		cornerRadius: Theme.dimensions.clip.cornerRadius,
+		alpha: Theme.opacity.clip,
+		selectionColor: Theme.colors.ui.selection,
+		labelPaddingX: Theme.dimensions.clip.labelPaddingX,
+		labelY: Theme.dimensions.clip.labelOffsetY,
+		clipY: Theme.dimensions.clip.offsetY
 	} as const;
 
 	constructor(clipId: string, trackId: string, startTime: number, duration: number, clipData?: Clip) {

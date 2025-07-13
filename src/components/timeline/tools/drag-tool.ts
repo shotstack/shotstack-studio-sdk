@@ -1,6 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { TimelinePointerEvent } from "../types";
@@ -120,9 +121,18 @@ export class DragInterceptor implements IToolInterceptor {
 		if (this.isDragging && this.draggedPlayer && this.previewPosition) {
 			// Calculate new position
 			const newPosition = this.calculateNewPosition(event);
+			
+			// Check if position is valid, and if not, find nearest valid position
+			let finalPosition = newPosition;
+			if (!this.isValidPosition(newPosition)) {
+				const nearestValid = this.findNearestValidPosition(newPosition);
+				if (nearestValid) {
+					finalPosition = nearestValid;
+				}
+			}
 
-			// Update preview position
-			this.previewPosition = newPosition;
+			// Update preview position to where the clip will actually land
+			this.previewPosition = finalPosition;
 
 			// Update visual preview
 			this.updateDragPreview(event);
@@ -558,23 +568,27 @@ export class DragInterceptor implements IToolInterceptor {
 		// Create a ghost container
 		this.dragGhost = new PIXI.Container();
 
-		// Calculate clip width based on duration and zoom
+		// Calculate clip dimensions using theme values
 		const state = this.state.getState();
 		const clipDuration = this.draggedPlayer.clipConfiguration.length || 1;
 		const clipWidth = clipDuration * state.viewport.zoom;
-		const clipHeight = 40; // Standard clip height
+		const clipHeight = Theme.dimensions.clip.height;
+		const clipY = Theme.dimensions.clip.offsetY;
 
 		// Create a semi-transparent rectangle to represent the clip
 		const graphics = new PIXI.Graphics();
 
+		// Position the graphics to match the clip's position within the track
+		graphics.y = clipY;
+
 		// Draw the ghost rectangle with fill
 		graphics.fillStyle = { color: 0x4caf50, alpha: 0.3 };
-		graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
+		graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
 		graphics.fill();
 
 		// Add a border
 		graphics.strokeStyle = { width: 2, color: 0x4caf50, alpha: 0.8 };
-		graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
+		graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
 		graphics.stroke();
 
 		this.dragGhost.addChild(graphics);
@@ -661,25 +675,25 @@ export class DragInterceptor implements IToolInterceptor {
 		const state = this.state.getState();
 		const clipDuration = this.draggedPlayer.clipConfiguration.length || 1;
 		const clipWidth = clipDuration * state.viewport.zoom;
-		const clipHeight = 40;
+		const clipHeight = Theme.dimensions.clip.height;
 
 		if (isValid) {
 			// Valid position - green
 			graphics.clear();
-			graphics.fillStyle = { color: 0x4caf50, alpha: 0.3 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
+			graphics.fillStyle = { color: Theme.colors.states.valid, alpha: 0.3 };
+			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
 			graphics.fill();
-			graphics.strokeStyle = { width: 2, color: 0x4caf50, alpha: 0.8 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
+			graphics.strokeStyle = { width: 2, color: Theme.colors.states.valid, alpha: 0.8 };
+			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
 			graphics.stroke();
 		} else {
 			// Invalid position - red
 			graphics.clear();
-			graphics.fillStyle = { color: 0xff5252, alpha: 0.3 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
+			graphics.fillStyle = { color: Theme.colors.states.invalid, alpha: 0.3 };
+			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
 			graphics.fill();
-			graphics.strokeStyle = { width: 2, color: 0xff5252, alpha: 0.8 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, 4);
+			graphics.strokeStyle = { width: 2, color: Theme.colors.states.invalid, alpha: 0.8 };
+			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
 			graphics.stroke();
 		}
 	}
