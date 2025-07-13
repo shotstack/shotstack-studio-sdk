@@ -11,6 +11,18 @@
 				"clips": [
 					{
 						"asset": {
+							"type": "text",
+							"text": "Hello World"
+						},
+						"start": 0,
+						"length": 10
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
 							"type": "video",
 							"src": "https://templates.shotstack.io/hello-world-title-video/aa5d068a-c2c2-4cff-800a-15cacf9a8809/earth.mp4",
 							"trim": 5,
@@ -24,18 +36,6 @@
 						},
 						"position": "center",
 						"scale": 1
-					}
-				]
-			},
-			{
-				"clips": [
-					{
-						"asset": {
-							"type": "text",
-							"text": "Hello World"
-						},
-						"start": 0,
-						"length": 10
 					}
 				]
 			}

@@ -78,12 +78,10 @@ export class MoveClipCommand implements EditCommand {
 		// Update the clip position
 		this.player.clipConfiguration.start = this.newStart;
 
-		// Update the container's z-index if we changed tracks
-		if (this.fromTrackIndex !== this.toTrackIndex) {
-			const container = this.player.getContainer();
-			container.zIndex = 100000 - this.player.layer * 100;
-		}
+		// Move the player container to the new track container if needed
+		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
 
+		// Reconfigure and redraw the player
 		this.player.reconfigureAfterRestore();
 		this.player.draw();
 
@@ -142,12 +140,10 @@ export class MoveClipCommand implements EditCommand {
 		// Restore original position
 		this.player.clipConfiguration.start = this.originalStart;
 
-		// Restore z-index if we moved tracks
-		if (this.fromTrackIndex !== this.toTrackIndex) {
-			const container = this.player.getContainer();
-			container.zIndex = 100000 - this.player.layer * 100;
-		}
+		// Move the player container back to the original track container if needed
+		context.movePlayerToTrackContainer(this.player, this.toTrackIndex, this.fromTrackIndex);
 
+		// Reconfigure and redraw the player
 		this.player.reconfigureAfterRestore();
 		this.player.draw();
 

@@ -187,7 +187,7 @@ export abstract class Player extends Entity {
 
 	public override update(_: number, __: number): void {
 		this.getContainer().visible = this.isActive();
-		this.getContainer().zIndex = this.layer;
+		this.getContainer().zIndex = 100000 - this.layer * 100;
 		if (!this.isActive()) {
 			return;
 		}

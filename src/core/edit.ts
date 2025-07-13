@@ -301,7 +301,8 @@ export class Edit extends Entity {
 			getSelectedClip: () => this.selectedClip,
 			setSelectedClip: clip => {
 				this.selectedClip = clip;
-			}
+			},
+			movePlayerToTrackContainer: (player, fromTrackIdx, toTrackIdx) => this.movePlayerToTrackContainer(player, fromTrackIdx, toTrackIdx)
 		};
 	}
 
@@ -374,6 +375,34 @@ export class Edit extends Entity {
 		}
 
 		this.totalDuration = maxDuration;
+	}
+
+	// Move a player's container to the appropriate track container
+	private movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void {
+		if (fromTrackIdx === toTrackIdx) return;
+
+		// Calculate z-indices for track containers
+		const fromZIndex = 100000 - (fromTrackIdx + 1) * Edit.ZIndexPadding;
+		const toZIndex = 100000 - (toTrackIdx + 1) * Edit.ZIndexPadding;
+
+		// Get track containers
+		const fromTrackContainerKey = `shotstack-track-${fromZIndex}`;
+		const toTrackContainerKey = `shotstack-track-${toZIndex}`;
+		
+		const fromTrackContainer = this.getContainer().getChildByLabel(fromTrackContainerKey, false);
+		let toTrackContainer = this.getContainer().getChildByLabel(toTrackContainerKey, false);
+
+		// Create new track container if it doesn't exist
+		if (!toTrackContainer) {
+			toTrackContainer = new pixi.Container({ label: toTrackContainerKey, zIndex: toZIndex });
+			this.getContainer().addChild(toTrackContainer);
+		}
+
+		// Move player container from old track container to new one
+		if (fromTrackContainer) {
+			fromTrackContainer.removeChild(player.getContainer());
+		}
+		toTrackContainer.addChild(player.getContainer());
 	}
 	private createPlayerFromAssetType(clipConfiguration: ClipType): Player {
 		if (!clipConfiguration.asset?.type) {

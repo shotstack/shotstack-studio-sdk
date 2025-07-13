@@ -28,4 +28,5 @@ export type CommandContext = {
 	getClipAt(trackIndex: number, clipIndex: number): Player | null;
 	getSelectedClip(): Player | null;
 	setSelectedClip(clip: Player | null): void;
+	movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void;
 };
