@@ -136,22 +136,16 @@ export class TimelineRenderer implements ITimelineRenderer {
 	private applyScroll(state: TimelineState): void {
 		const { scrollX, scrollY } = state.viewport;
 
-		// Apply horizontal scroll to tracks and clips layers
+		// Apply horizontal scroll to content layers
 		const tracksLayer = this.getLayer("tracks");
 		const clipsLayer = this.getLayer("clips");
 		
-		// Apply simple translation transforms
 		tracksLayer.x = -scrollX;
 		clipsLayer.x = -scrollX;
-
-		// Apply vertical scroll to track positioning
-		// Tracks start below the ruler, so we add the ruler height offset
-		const rulerHeight = Theme.dimensions.ruler.height;
-		this.tracks.forEach((track, trackId) => {
-			const trackIndex = parseInt(trackId.replace("track-", ""), 10);
-			const trackY = rulerHeight + (trackIndex * Theme.dimensions.track.height) - scrollY;
-			track.getContainer().y = trackY;
-		});
+		
+		// Apply vertical scroll to content layers
+		tracksLayer.y = -scrollY;
+		clipsLayer.y = -scrollY;
 	}
 
 	// Track management
@@ -160,9 +154,6 @@ export class TimelineRenderer implements ITimelineRenderer {
 		this.tracks.set(trackId, track);
 		this.getLayer("tracks").addChild(track.getContainer());
 		track.load();
-		// Override the position set by track's updateLayout to ensure scroll works correctly
-		const rulerHeight = Theme.dimensions.ruler.height;
-		track.getContainer().y = rulerHeight + (index * Theme.dimensions.track.height);
 		return track;
 	}
 
