@@ -392,6 +392,13 @@ export class DragInterceptor implements IToolInterceptor {
 				return false;
 			}
 
+			// Get the player for this clip to double-check it's not our dragged clip
+			const otherPlayer = this.context.edit.getPlayerClip(position.trackIndex, i);
+			if (otherPlayer === this.draggedPlayer) {
+				// This is our dragged clip, skip it
+				return false;
+			}
+
 			// Check if clips would overlap
 			const otherStart = otherClip.start || 0;
 			const otherEnd = otherStart + otherClip.length;
@@ -445,12 +452,25 @@ export class DragInterceptor implements IToolInterceptor {
 			let nearestPosition = position.start;
 			let minDistance = Infinity;
 
-			// Check position at the beginning (time 0)
-			if (occupiedRanges.length === 0 || occupiedRanges[0].start >= clipDuration) {
-				const distance = Math.abs(0 - position.start);
-				if (distance < minDistance) {
-					nearestPosition = 0;
-					minDistance = distance;
+			// Check positions before the first clip
+			if (occupiedRanges.length === 0 || occupiedRanges[0].start > 0) {
+				// Check position at time 0
+				if (occupiedRanges.length === 0 || occupiedRanges[0].start >= clipDuration) {
+					const distance = Math.abs(0 - position.start);
+					if (distance < minDistance) {
+						nearestPosition = 0;
+						minDistance = distance;
+					}
+				}
+				
+				// If there's a gap before the first clip, check right-aligned position
+				if (occupiedRanges.length > 0 && occupiedRanges[0].start >= clipDuration) {
+					const rightAlignedPos = occupiedRanges[0].start - clipDuration;
+					const distance = Math.abs(rightAlignedPos - position.start);
+					if (distance < minDistance) {
+						nearestPosition = rightAlignedPos;
+						minDistance = distance;
+					}
 				}
 			}
 
