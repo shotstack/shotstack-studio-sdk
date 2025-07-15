@@ -36,9 +36,17 @@ export class ScrollFeature extends TimelineFeature {
 		const { width, height, zoom } = state.viewport;
 
 		// Horizontal bounds based on timeline duration
-		const duration = this.context.edit.getTotalDuration();
-		const timelineWidth = duration * 1000 * zoom; // Convert to ms and apply zoom
-		const maxScrollX = Math.max(0, timelineWidth - width);
+		const duration = this.context.edit.getTotalDuration(); // Already in milliseconds
+		const timelineWidth = (duration / 1000) * zoom; // Convert to seconds and apply zoom
+		
+		// Dynamic buffer based on zoom level
+		// At minimum zoom (10), buffer is 100% of viewport (2x total)
+		// At maximum zoom (1000), buffer is minimal (10% of viewport)
+		const zoomFactor = (zoom - 10) / (1000 - 10); // Normalize zoom to 0-1 range
+		const bufferPercentage = 1.0 - (zoomFactor * 0.9); // 100% at min zoom, 10% at max zoom
+		const editingBuffer = width * bufferPercentage;
+		
+		const maxScrollX = Math.max(0, timelineWidth + editingBuffer - width);
 
 		// Vertical bounds based on track count
 		const editData = this.context.edit.getEdit();
