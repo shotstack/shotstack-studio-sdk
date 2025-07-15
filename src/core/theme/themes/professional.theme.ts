@@ -30,7 +30,6 @@ export const professionalTheme: TimelineTheme = {
 			selection: 0x88c0d0,
 			playhead: 0xbf616a,
 			playheadOutline: 0xd8dee9,
-			text: 0xeceff4,
 			ruler: {
 				background: 0x1e2329,
 				majorTick: 0x88c0d0,
@@ -40,9 +39,7 @@ export const professionalTheme: TimelineTheme = {
 		},
 		states: {
 			valid: 0xa3be8c,
-			invalid: 0xbf616a,
-			hover: 0x88c0d0,
-			active: 0x5e81ac
+			invalid: 0xbf616a
 		}
 	},
 	dimensions: {
@@ -66,44 +63,20 @@ export const professionalTheme: TimelineTheme = {
 			handleWidth: 12,
 			handleHeight: 10,
 			hitAreaPadding: 4
-		},
-		interaction: {
-			edgeThreshold: 8,
-			dragThreshold: 5,
-			scrollThreshold: 0.8
 		}
 	},
 	typography: {
-		clip: {
-			fontSize: 12,
-			fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
-			fontWeight: "500"
-		},
 		ruler: {
-			fontSize: 10,
-			fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
-			fontWeight: "400"
+			fontSize: 10
 		}
 	},
 	opacity: {
 		trackBackground: 0.5,
 		clip: 0.8,
-		playheadOutline: 0.5,
-		dragPreview: {
-			fill: 0.3,
-			border: 0.8
-		},
-		clipWhileDragging: 0.5
+		playheadOutline: 0.5
 	},
 	borders: {
-		track: 1,
-		ruler: 1,
-		clip: 2,
-		dragPreview: 2
-	},
-	animation: {},
-	grid: {
-		snapInterval: 0.033333
+		track: 1
 	}
 };
 

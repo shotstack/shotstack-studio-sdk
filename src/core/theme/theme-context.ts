@@ -93,11 +93,5 @@ export const Theme = {
 	},
 	get borders() {
 		return currentTheme.borders;
-	},
-	get animation() {
-		return currentTheme.animation;
-	},
-	get grid() {
-		return currentTheme.grid;
 	}
 };

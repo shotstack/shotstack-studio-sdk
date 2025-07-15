@@ -38,7 +38,6 @@ export interface TimelineTheme {
 			selection: number; // Selection highlight (default: 0xffff00)
 			playhead: number; // Playhead color (default: 0xff0000)
 			playheadOutline: number; // Playhead outline (default: 0xffffff)
-			text: number; // Text labels (default: 0xffffff)
 			ruler: {
 				background: number; // Ruler background (default: 0x1a1a1a)
 				majorTick: number; // Major tick marks (default: 0x808080)
@@ -51,8 +50,6 @@ export interface TimelineTheme {
 		states: {
 			valid: number; // Valid drop zones (default: 0x4caf50)
 			invalid: number; // Invalid drop zones (default: 0xff5252)
-			hover: number; // Hover state
-			active: number; // Active/pressed state
 		};
 	};
 
@@ -89,26 +86,12 @@ export interface TimelineTheme {
 			handleHeight: number; // Handle height (default: 10)
 			hitAreaPadding: number; // Hit area padding (default: 4)
 		};
-
-		// Interaction zones
-		interaction: {
-			edgeThreshold: number; // Resize edge threshold (default: 8)
-			dragThreshold: number; // Drag start threshold (default: 5)
-			scrollThreshold: number; // Auto-scroll threshold (default: 0.8)
-		};
 	};
 
 	// Typography
 	typography: {
-		clip: {
-			fontSize: number; // Clip label font size (default: 12)
-			fontFamily?: string; // Font family
-			fontWeight?: string; // Font weight
-		};
 		ruler: {
 			fontSize: number; // Ruler label font size (default: 10)
-			fontFamily?: string; // Font family
-			fontWeight?: string; // Font weight
 		};
 	};
 
@@ -117,34 +100,11 @@ export interface TimelineTheme {
 		trackBackground: number; // Track background (default: 0.5)
 		clip: number; // Clip opacity (default: 0.8)
 		playheadOutline: number; // Playhead outline (default: 0.5)
-		dragPreview: {
-			fill: number; // Drag preview fill (default: 0.3)
-			border: number; // Drag preview border (default: 0.8)
-		};
-		clipWhileDragging: number; // Original clip while dragging (default: 0.5)
 	};
 
 	// Border widths
 	borders: {
 		track: number; // Track border (default: 1)
-		ruler: number; // Ruler border (default: 1)
-		clip: number; // Clip selection border (default: 2)
-		dragPreview: number; // Drag preview border (default: 2)
-	};
-
-	// Animation and timing
-	animation: {
-		// Future: animation durations, easing functions
-		snapDuration?: number; // Snap animation duration
-		scrollDuration?: number; // Smooth scroll duration
-	};
-
-	// Grid and snapping
-	grid: {
-		snapInterval: number; // Grid snap interval (default: 0.033333)
-		showGrid?: boolean; // Show visual grid
-		gridColor?: number; // Grid line color
-		gridOpacity?: number; // Grid line opacity
 	};
 }
 
@@ -175,7 +135,6 @@ export function validateTheme(theme: TimelineTheme): void {
 		"colors.clips.video",
 		"colors.ui.selection",
 		"dimensions.track.height",
-		"typography.clip.fontSize",
 		"opacity.clip"
 	];
 

@@ -31,7 +31,6 @@ export const darkTheme: TimelineTheme = {
 			selection: 0xffff00,
 			playhead: 0xff0000,
 			playheadOutline: 0xffffff,
-			text: 0xffffff,
 			ruler: {
 				background: 0x1a1a1a,
 				majorTick: 0x808080,
@@ -41,9 +40,7 @@ export const darkTheme: TimelineTheme = {
 		},
 		states: {
 			valid: 0x4caf50,
-			invalid: 0xff5252,
-			hover: 0x2196f3,
-			active: 0x1565c0
+			invalid: 0xff5252
 		}
 	},
 	dimensions: {
@@ -67,17 +64,9 @@ export const darkTheme: TimelineTheme = {
 			handleWidth: 12,
 			handleHeight: 10,
 			hitAreaPadding: 4
-		},
-		interaction: {
-			edgeThreshold: 8,
-			dragThreshold: 5,
-			scrollThreshold: 0.8
 		}
 	},
 	typography: {
-		clip: {
-			fontSize: 12
-		},
 		ruler: {
 			fontSize: 10
 		}
@@ -85,22 +74,10 @@ export const darkTheme: TimelineTheme = {
 	opacity: {
 		trackBackground: 0.5,
 		clip: 0.8,
-		playheadOutline: 0.5,
-		dragPreview: {
-			fill: 0.3,
-			border: 0.8
-		},
-		clipWhileDragging: 0.5
+		playheadOutline: 0.5
 	},
 	borders: {
-		track: 1,
-		ruler: 1,
-		clip: 2,
-		dragPreview: 2
-	},
-	animation: {},
-	grid: {
-		snapInterval: 0.033333
+		track: 1
 	}
 };
 
