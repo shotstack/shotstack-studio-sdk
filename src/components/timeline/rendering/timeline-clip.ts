@@ -14,6 +14,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	private startTime: number;
 	private duration: number;
 	private selected: boolean = false;
+	private hovered: boolean = false;
 	private graphics: PIXI.Graphics;
 	private label: PIXI.Text;
 	private pixelsPerSecond: number = 100;
@@ -69,6 +70,10 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		// Make interactive
 		this.getContainer().eventMode = "static";
 		this.getContainer().cursor = "pointer";
+
+		// Add hover event listeners
+		this.getContainer().on("pointerover", this.onPointerOver, this);
+		this.getContainer().on("pointerout", this.onPointerOut, this);
 	}
 
 	public async load(): Promise<void> {
@@ -86,6 +91,10 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	}
 
 	public dispose(): void {
+		// Remove event listeners
+		this.getContainer().off("pointerover", this.onPointerOver, this);
+		this.getContainer().off("pointerout", this.onPointerOut, this);
+		
 		this.graphics.clear();
 		this.graphics.destroy();
 		this.label.destroy();
@@ -146,6 +155,18 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.updateVisuals();
 	}
 
+	private onPointerOver(): void {
+		if (!this.selected) {
+			this.hovered = true;
+			this.updateVisuals();
+		}
+	}
+
+	private onPointerOut(): void {
+		this.hovered = false;
+		this.updateVisuals();
+	}
+
 	private updateVisuals(): void {
 		this.graphics.clear();
 
@@ -155,8 +176,8 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		// Draw clip background using PIXI v8 API
 		this.graphics.roundRect(0, clipY, width, height, cornerRadius).fill({ color: this.clipColor, alpha });
 
-		// Draw selection border if selected
-		if (this.selected) {
+		// Draw selection/hover border
+		if (this.selected || this.hovered) {
 			const strokeWidth = 2;
 			const strokeOffset = 1;
 			const selectionRadius = cornerRadius + strokeOffset + strokeWidth / 2;
