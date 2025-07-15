@@ -26,7 +26,7 @@ export class ResizeInterceptor implements IToolInterceptor {
 		dragStartX: 0,
 		originalDuration: 0,
 		previewDuration: 0,
-		guidelines: [] as { x: number; maxTrack: number }[] // X positions and max track for alignment guides
+		guidelines: [] as number[] // X positions for alignment guides
 	};
 
 	// Graphics for rendering guidelines
@@ -255,21 +255,21 @@ export class ResizeInterceptor implements IToolInterceptor {
 		
 		const { zoom, scrollX } = this.state.getState().viewport;
 		const viewportWidth = this.state.getState().viewport.width;
-		const guidelineMap = new Map<number, number>(); // x position -> max track index
+		const guidelines = new Set<number>();
 		
 		// Calculate visible time range for optimization
 		const startTime = scrollX / zoom;
 		const endTime = (scrollX + viewportWidth) / zoom;
 		
 		// Get all tracks by iterating until we get null
-		for (let trackIndex = 0; trackIndex < 100; trackIndex++) { // Reasonable max track limit
-			const track = this.context.edit.getTrack(trackIndex);
+		for (let i = 0; i < 100; i++) { // Reasonable max track limit
+			const track = this.context.edit.getTrack(i);
 			if (track === null) break;
 			if (!track.clips) continue;
 			
 			track.clips.forEach((clip, clipIndex) => {
 				// Skip the clip being resized
-				if (trackIndex === this.resizeState.targetClip!.trackIndex && 
+				if (i === this.resizeState.targetClip!.trackIndex && 
 					clipIndex === this.resizeState.targetClip!.clipIndex) {
 					return;
 				}
@@ -287,19 +287,18 @@ export class ResizeInterceptor implements IToolInterceptor {
 				if (Math.abs(resizedClipEndTime - clipStart) < threshold) {
 					const x = this.timeToScreen(clipStart, zoom, scrollX);
 					if (x >= 0 && x <= viewportWidth) {
-						guidelineMap.set(x, Math.max(guidelineMap.get(x) || 0, trackIndex));
+						guidelines.add(x);
 					}
 				} else if (Math.abs(resizedClipEndTime - clipEnd) < threshold) {
 					const x = this.timeToScreen(clipEnd, zoom, scrollX);
 					if (x >= 0 && x <= viewportWidth) {
-						guidelineMap.set(x, Math.max(guidelineMap.get(x) || 0, trackIndex));
+						guidelines.add(x);
 					}
 				}
 			});
 		}
 		
-		// Convert map to array
-		this.resizeState.guidelines = Array.from(guidelineMap.entries()).map(([x, maxTrack]) => ({ x, maxTrack }));
+		this.resizeState.guidelines = Array.from(guidelines);
 	}
 
 	/**
@@ -324,22 +323,52 @@ export class ResizeInterceptor implements IToolInterceptor {
 		
 		const guidelineColor = Theme.colors.ui.selection;
 		const alpha = 0.3;
+		const { zoom } = this.state.getState().viewport;
 		
-		// Get track dimensions from theme
+		// Get track height to calculate approximate bounds
 		const trackHeight = Theme.dimensions.track.height;
 		const trackGap = Theme.dimensions.track.gap;
 		const rulerHeight = Theme.dimensions.ruler.height;
 		
-		// Draw alignment guidelines to the specific track height
-		this.resizeState.guidelines.forEach(({ x, maxTrack }) => {
-			const startY = rulerHeight;
-			const endY = rulerHeight + ((maxTrack + 1) * (trackHeight + trackGap));
+		// For each guideline, determine the lowest track that has an alignment
+		this.resizeState.guidelines.forEach(x => {
+			let lowestTrack = -1;
 			
-			this.guidelinesGraphics!.moveTo(x, startY);
-			this.guidelinesGraphics!.lineTo(x, endY);
+			// Check each track for clips that align at this x position
+			for (let trackIndex = 0; trackIndex < 20; trackIndex++) {
+				const track = this.context.edit.getTrack(trackIndex);
+				if (!track || !track.clips) continue;
+				
+				// Check if any clip in this track aligns at this x position
+				const hasAlignment = track.clips.some(clip => {
+					const clipStart = clip.start || 0;
+					const clipEnd = clipStart + (clip.length || 0);
+					
+					// Convert clip times to screen positions and check alignment
+					const startX = this.timeToScreen(clipStart, zoom, this.state.getState().viewport.scrollX);
+					const endX = this.timeToScreen(clipEnd, zoom, this.state.getState().viewport.scrollX);
+					
+					return Math.abs(x - startX) < 1 || Math.abs(x - endX) < 1;
+				});
+				
+				if (hasAlignment) {
+					lowestTrack = trackIndex;
+				}
+			}
+			
+			// Draw guideline to the bottom of the lowest track with alignment
+			if (lowestTrack >= 0) {
+				const startY = rulerHeight;
+				const endY = rulerHeight + ((lowestTrack + 1) * (trackHeight + trackGap));
+				
+				this.guidelinesGraphics!.moveTo(x, startY);
+				this.guidelinesGraphics!.lineTo(x, endY);
+			}
 		});
 		
-		this.guidelinesGraphics.stroke({ width: 1, color: guidelineColor, alpha });
+		if (this.resizeState.guidelines.length > 0) {
+			this.guidelinesGraphics.stroke({ width: 1, color: guidelineColor, alpha });
+		}
 	}
 
 	/**
