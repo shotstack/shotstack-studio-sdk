@@ -1,4 +1,5 @@
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import { Theme } from "@core/theme/theme-context";
 import * as PIXI from "pixi.js";
 
 import { TimelinePointerEvent } from "../types";
@@ -24,8 +25,12 @@ export class ResizeInterceptor implements IToolInterceptor {
 		targetClip: null as { trackIndex: number; clipIndex: number } | null,
 		dragStartX: 0,
 		originalDuration: 0,
-		previewDuration: 0
+		previewDuration: 0,
+		guidelines: [] as { x: number; maxTrack: number }[] // X positions and max track for alignment guides
 	};
+
+	// Graphics for rendering guidelines
+	private guidelinesGraphics: PIXI.Graphics | null = null;
 
 	constructor(
 		private state: ITimelineState,
@@ -50,8 +55,12 @@ export class ResizeInterceptor implements IToolInterceptor {
 			},
 			dragStartX: event.global.x,
 			originalDuration: player.clipConfiguration.length || 1,
-			previewDuration: player.clipConfiguration.length || 1
+			previewDuration: player.clipConfiguration.length || 1,
+			guidelines: []
 		};
+
+		// Create graphics for guidelines
+		this.createGuidelinesGraphics();
 
 		event.stopPropagation();
 		return true;
@@ -66,7 +75,20 @@ export class ResizeInterceptor implements IToolInterceptor {
 		}
 
 		this.resizeState.previewDuration = this.calculateNewDuration(event.global.x);
+		
+		// Calculate the new end time for alignment detection
+		const player = this.context.edit.getPlayerClip(
+			this.resizeState.targetClip.trackIndex, 
+			this.resizeState.targetClip.clipIndex
+		);
+		if (player?.clipConfiguration) {
+			const clipStart = player.clipConfiguration.start || 0;
+			const newEndTime = clipStart + this.resizeState.previewDuration;
+			this.detectAlignments(newEndTime);
+		}
+		
 		this.updateClipVisual();
+		this.updateGuidelinesGraphics();
 		return true;
 	}
 
@@ -166,6 +188,9 @@ export class ResizeInterceptor implements IToolInterceptor {
 			}
 		}
 
+		// Apply grid snapping to 0.1s intervals
+		constrainedDuration = Math.round(constrainedDuration * 10) / 10;
+
 		return constrainedDuration;
 	}
 
@@ -223,6 +248,114 @@ export class ResizeInterceptor implements IToolInterceptor {
 	}
 
 	/**
+	 * Detect clip alignments at the current resize position
+	 */
+	private detectAlignments(resizedClipEndTime: number): void {
+		if (!this.resizeState.targetClip) return;
+		
+		const { zoom, scrollX } = this.state.getState().viewport;
+		const viewportWidth = this.state.getState().viewport.width;
+		const guidelineMap = new Map<number, number>(); // x position -> max track index
+		
+		// Calculate visible time range for optimization
+		const startTime = scrollX / zoom;
+		const endTime = (scrollX + viewportWidth) / zoom;
+		
+		// Get all tracks by iterating until we get null
+		for (let trackIndex = 0; trackIndex < 100; trackIndex++) { // Reasonable max track limit
+			const track = this.context.edit.getTrack(trackIndex);
+			if (track === null) break;
+			if (!track.clips) continue;
+			
+			track.clips.forEach((clip, clipIndex) => {
+				// Skip the clip being resized
+				if (trackIndex === this.resizeState.targetClip!.trackIndex && 
+					clipIndex === this.resizeState.targetClip!.clipIndex) {
+					return;
+				}
+				
+				const clipStart = clip.start || 0;
+				const clipEnd = clipStart + (clip.length || 0);
+				
+				// Skip clips outside visible range for performance
+				if (clipEnd < startTime || clipStart > endTime) {
+					return;
+				}
+				
+				// Check if resized edge aligns with clip start or end
+				const threshold = 0.05; // Within 0.05s counts as aligned
+				if (Math.abs(resizedClipEndTime - clipStart) < threshold) {
+					const x = this.timeToScreen(clipStart, zoom, scrollX);
+					if (x >= 0 && x <= viewportWidth) {
+						guidelineMap.set(x, Math.max(guidelineMap.get(x) || 0, trackIndex));
+					}
+				} else if (Math.abs(resizedClipEndTime - clipEnd) < threshold) {
+					const x = this.timeToScreen(clipEnd, zoom, scrollX);
+					if (x >= 0 && x <= viewportWidth) {
+						guidelineMap.set(x, Math.max(guidelineMap.get(x) || 0, trackIndex));
+					}
+				}
+			});
+		}
+		
+		// Convert map to array
+		this.resizeState.guidelines = Array.from(guidelineMap.entries()).map(([x, maxTrack]) => ({ x, maxTrack }));
+	}
+
+	/**
+	 * Create graphics object for rendering guidelines
+	 */
+	private createGuidelinesGraphics(): void {
+		if (!this.guidelinesGraphics) {
+			this.guidelinesGraphics = new PIXI.Graphics();
+			const overlayLayer = this.context.timeline.getRenderer().getLayer("overlay");
+			overlayLayer.addChild(this.guidelinesGraphics);
+		}
+	}
+
+	/**
+	 * Update guidelines graphics
+	 */
+	private updateGuidelinesGraphics(): void {
+		if (!this.guidelinesGraphics) return;
+		
+		this.guidelinesGraphics.clear();
+		if (this.resizeState.guidelines.length === 0) return;
+		
+		const guidelineColor = Theme.colors.ui.selection;
+		const alpha = 0.3;
+		
+		// Get track dimensions from theme
+		const trackHeight = Theme.dimensions.track.height;
+		const trackGap = Theme.dimensions.track.gap;
+		const rulerHeight = Theme.dimensions.ruler.height;
+		
+		// Draw alignment guidelines to the specific track height
+		this.resizeState.guidelines.forEach(({ x, maxTrack }) => {
+			const startY = rulerHeight;
+			const endY = rulerHeight + ((maxTrack + 1) * (trackHeight + trackGap));
+			
+			this.guidelinesGraphics!.moveTo(x, startY);
+			this.guidelinesGraphics!.lineTo(x, endY);
+		});
+		
+		this.guidelinesGraphics.stroke({ width: 1, color: guidelineColor, alpha });
+	}
+
+	/**
+	 * Clear guidelines graphics
+	 */
+	private clearGuidelinesGraphics(): void {
+		if (this.guidelinesGraphics) {
+			this.guidelinesGraphics.clear();
+			const overlayLayer = this.context.timeline.getRenderer().getLayer("overlay");
+			overlayLayer.removeChild(this.guidelinesGraphics);
+			this.guidelinesGraphics.destroy();
+			this.guidelinesGraphics = null;
+		}
+	}
+
+	/**
 	 * Reset all resize state
 	 */
 	private resetState(): void {
@@ -231,8 +364,10 @@ export class ResizeInterceptor implements IToolInterceptor {
 			targetClip: null,
 			dragStartX: 0,
 			originalDuration: 0,
-			previewDuration: 0
+			previewDuration: 0,
+			guidelines: []
 		};
+		this.clearGuidelinesGraphics();
 	}
 
 	/**
