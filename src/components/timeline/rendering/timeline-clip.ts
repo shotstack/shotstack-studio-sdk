@@ -157,7 +157,10 @@ export class TimelineClip extends Entity implements ITimelineClip {
 
 		// Draw selection border if selected
 		if (this.selected) {
-			this.graphics.roundRect(-1, clipY - 1, width + 2, height + 2, cornerRadius).stroke({ width: 2, color: selectionColor });
+			const strokeWidth = 2;
+			const strokeOffset = 1;
+			const selectionRadius = cornerRadius + strokeOffset + strokeWidth / 2;
+			this.graphics.roundRect(-strokeOffset, clipY - strokeOffset, width + strokeOffset * 2, height + strokeOffset * 2, selectionRadius).stroke({ width: strokeWidth, color: selectionColor });
 		}
 
 		// Update label position and truncate if needed
