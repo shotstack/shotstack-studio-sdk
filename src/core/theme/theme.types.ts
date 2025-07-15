@@ -62,7 +62,6 @@ export interface TimelineTheme {
 		track: {
 			height: number; // Track height (default: 60)
 			gap: number; // Gap between tracks (default: 2)
-			backgroundWidth: number; // Background width (default: 5000)
 		};
 
 		// Clip dimensions (optional - computed from track height if not provided)

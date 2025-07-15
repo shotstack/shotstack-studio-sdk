@@ -48,8 +48,7 @@ export const minimalLightTheme: TimelineTheme = {
 	dimensions: {
 		track: {
 			height: 60,
-			gap: 2,
-			backgroundWidth: 5000
+			gap: 2
 		},
 		clip: {
 			cornerRadius: 2, // Sharper corners for minimal look

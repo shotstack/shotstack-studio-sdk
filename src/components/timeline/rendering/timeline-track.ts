@@ -130,13 +130,16 @@ export class TimelineTrack extends Entity implements ITimelineTrack {
 
 		const backgroundColor = this.index % 2 === 0 ? Theme.colors.background.tracks.even : Theme.colors.background.tracks.odd;
 
+		// Use a large fixed width for track backgrounds
+		const trackBackgroundWidth = 10000;
+		
 		this.graphics
-			.rect(0, 0, Theme.dimensions.track.backgroundWidth, this.height)
+			.rect(0, 0, trackBackgroundWidth, this.height)
 			.fill({ color: backgroundColor, alpha: Theme.opacity.trackBackground });
 
 		this.graphics
 			.moveTo(0, this.height)
-			.lineTo(Theme.dimensions.track.backgroundWidth, this.height)
+			.lineTo(trackBackgroundWidth, this.height)
 			.stroke({ width: Theme.borders.track, color: Theme.colors.borders.primary });
 	}
 }

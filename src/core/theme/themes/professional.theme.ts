@@ -48,8 +48,7 @@ export const professionalTheme: TimelineTheme = {
 	dimensions: {
 		track: {
 			height: 60,
-			gap: 2,
-			backgroundWidth: 5000
+			gap: 2
 		},
 		clip: {
 			cornerRadius: 4,
