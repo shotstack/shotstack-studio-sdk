@@ -12,9 +12,8 @@ export class ResizeInterceptor implements IToolInterceptor {
 	public readonly name = "resize-interceptor";
 	public readonly priority = 100; // High priority to intercept before selection tool
 
-	// Configuration
 	private static readonly CONFIG = {
-		EDGE_THRESHOLD: 8,
+		EDGE_THRESHOLD: 15, // Increased to cover resize handle bars
 		MIN_DURATION: 0.1,
 		OVERLAP_BUFFER: 0.001
 	} as const;

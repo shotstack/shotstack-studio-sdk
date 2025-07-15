@@ -16,6 +16,7 @@ export class TimelineClip extends Entity implements ITimelineClip {
 	private selected: boolean = false;
 	private hovered: boolean = false;
 	private graphics: PIXI.Graphics;
+	private resizeHandle: PIXI.Graphics;
 	private label: PIXI.Text;
 	private pixelsPerSecond: number = 100;
 	private clipColor: number = 0x4444ff;
@@ -67,6 +68,11 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		this.label.anchor.set(0, 0.5);
 		this.getContainer().addChild(this.label);
 
+		// Create resize handle graphics
+		this.resizeHandle = new PIXI.Graphics();
+		this.resizeHandle.visible = false; // Hidden by default
+		this.getContainer().addChild(this.resizeHandle);
+
 		// Make interactive
 		this.getContainer().eventMode = "static";
 		this.getContainer().cursor = "pointer";
@@ -97,6 +103,8 @@ export class TimelineClip extends Entity implements ITimelineClip {
 		
 		this.graphics.clear();
 		this.graphics.destroy();
+		this.resizeHandle.clear();
+		this.resizeHandle.destroy();
 		this.label.destroy();
 	}
 
@@ -199,11 +207,35 @@ export class TimelineClip extends Entity implements ITimelineClip {
 			}
 		}
 
+		// Update resize handle visibility and position
+		this.updateResizeHandle(width, height, clipY);
+
 		this.updatePosition();
 	}
 
 	private updatePosition(): void {
 		this.getContainer().x = this.startTime * this.pixelsPerSecond;
+	}
+
+	private updateResizeHandle(width: number, height: number, clipY: number): void {
+		this.resizeHandle.clear();
+		
+		if (this.selected) {
+			this.resizeHandle.visible = true;
+			
+			const handleOffset = 12;
+			const lineWidth = 1.5;
+			const lineHeight = height * 0.5;
+			const lineSpacing = 2;
+			
+			const x = width - handleOffset;
+			const y = clipY + (height - lineHeight) / 2;
+			
+			this.resizeHandle.rect(x - lineSpacing / 2 - lineWidth, y, lineWidth, lineHeight).fill({ color: 0xffffff, alpha: 1 });
+			this.resizeHandle.rect(x + lineSpacing / 2, y, lineWidth, lineHeight).fill({ color: 0xffffff, alpha: 1 });
+		} else {
+			this.resizeHandle.visible = false;
+		}
 	}
 
 	private updateColorFromAsset(): void {
