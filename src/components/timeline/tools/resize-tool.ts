@@ -356,7 +356,12 @@ export class ResizeInterceptor implements IToolInterceptor {
 				}
 			}
 			
-			// Draw guideline to the bottom of the lowest track with alignment
+			// Include the track being resized
+			if (this.resizeState.targetClip) {
+				lowestTrack = Math.max(lowestTrack, this.resizeState.targetClip.trackIndex);
+			}
+			
+			// Draw guideline to the bottom of the lowest track
 			if (lowestTrack >= 0) {
 				const startY = rulerHeight;
 				const endY = rulerHeight + ((lowestTrack + 1) * (trackHeight + trackGap));
