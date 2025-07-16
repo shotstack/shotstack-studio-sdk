@@ -302,7 +302,8 @@ export class Edit extends Entity {
 			setSelectedClip: clip => {
 				this.selectedClip = clip;
 			},
-			movePlayerToTrackContainer: (player, fromTrackIdx, toTrackIdx) => this.movePlayerToTrackContainer(player, fromTrackIdx, toTrackIdx)
+			movePlayerToTrackContainer: (player, fromTrackIdx, toTrackIdx) => this.movePlayerToTrackContainer(player, fromTrackIdx, toTrackIdx),
+			getEditState: () => this.getEdit()
 		};
 	}
 

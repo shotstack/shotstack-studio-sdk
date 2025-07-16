@@ -1,9 +1,16 @@
 import type { Player } from "@canvas/players/player";
 import type { ClipSchema } from "@schemas/clip";
+import type { EditSchema } from "@schemas/edit";
 import type { Container } from "pixi.js";
 import type { z } from "zod";
 
 type ClipType = z.infer<typeof ClipSchema>;
+type EditType = z.infer<typeof EditSchema>;
+
+export interface TimelineUpdatedEvent {
+	previous: { timeline: EditType };
+	current: { timeline: EditType };
+}
 
 export type EditCommand = {
 	execute(context?: CommandContext): void | Promise<void>;
@@ -29,4 +36,5 @@ export type CommandContext = {
 	getSelectedClip(): Player | null;
 	setSelectedClip(clip: Player | null): void;
 	movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void;
+	getEditState(): EditType;
 };

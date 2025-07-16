@@ -1,4 +1,4 @@
-import { Timeline } from "./components/timeline/timeline";
+import { TimelineV2 } from "./components/timeline-v2";
 
 import { Edit, Canvas, Controls } from "./index";
 
@@ -23,25 +23,21 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Initialize the Timeline with light theme
-		const timeline = new Timeline(edit, {
-			theme: "light"
-			// Optional: customize specific aspects
-			// themeOverrides: {
-			//     colors: {
-			//         clips: {
-			//             video: 0xff0000  // Make video clips red
-			//         }
-			//     }
-			// }
+		// 5. Initialize the TimelineV2 with options
+		const timeline = new TimelineV2(edit, {
+			theme: "light",
+			width: template.output.size.width,
+			height: 300,
+			pixelsPerSecond: 50,
+			trackHeight: 80
 		});
-		await timeline.load(); // Automatically renders to [data-shotstack-timeline]
+		await timeline.load(); // Renders to [data-shotstack-timeline] element
 
 		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
 
-		// Timeline has its own animation loop, no need to register with canvas
+		// TimelineV2 has its own animation loop, no need to register with canvas
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);
