@@ -15,9 +15,10 @@ export class VisualClip extends Entity {
 	private graphics: PIXI.Graphics;
 	private background: PIXI.Graphics;
 	private text: PIXI.Text;
-	private isSelected: boolean = false;
-	private isDragging: boolean = false;
-	private isDisabled: boolean = false;
+	private visualState: {
+		mode: 'normal' | 'selected' | 'dragging' | 'resizing' | 'disabled';
+		previewWidth?: number;
+	} = { mode: 'normal' };
 
 	// Visual constants
 	private readonly CLIP_PADDING = 4;
@@ -93,12 +94,22 @@ export class VisualClip extends Entity {
 	}
 
 	private updateSize(): void {
-		const duration = this.clipConfig.length || 0;
-		const width = Math.max(50, duration * this.options.pixelsPerSecond); // Minimum width
+		const width = this.getEffectiveWidth();
 		const height = this.options.trackHeight;
 
 		this.drawClipBackground(width, height);
 		this.drawClipBorder(width, height);
+	}
+
+	private getEffectiveWidth(): number {
+		// Use preview width if available, otherwise calculate from duration
+		if (this.visualState.previewWidth !== undefined) {
+			return this.visualState.previewWidth;
+		}
+		
+		const duration = this.clipConfig.length || 0;
+		const calculatedWidth = duration * this.options.pixelsPerSecond;
+		return Math.max(50, calculatedWidth); // Minimum width of 50px
 	}
 
 	private drawClipBackground(width: number, height: number): void {
@@ -106,12 +117,25 @@ export class VisualClip extends Entity {
 		let alpha = 0.8;
 		
 		// Modify appearance based on state
-		if (this.isDisabled) {
-			alpha = 0.5;
-		} else if (this.isDragging) {
-			// Darken the color slightly during drag and make it more transparent
-			color = this.darkenColor(color, 0.2);
-			alpha = 0.7;
+		switch (this.visualState.mode) {
+			case 'disabled':
+				alpha = 0.5;
+				break;
+			case 'dragging':
+				// Darken the color slightly during drag and make it more transparent
+				color = this.darkenColor(color, 0.2);
+				alpha = 0.7;
+				break;
+			case 'resizing':
+				// Slightly lighten the color during resize to show preview
+				color = this.lightenColor(color, 0.1);
+				alpha = 0.9;
+				break;
+			case 'selected':
+			case 'normal':
+			default:
+				// Keep default alpha and color
+				break;
 		}
 		
 		this.background.clear();
@@ -121,14 +145,15 @@ export class VisualClip extends Entity {
 
 	private drawClipBorder(width: number, height: number): void {
 		const borderColor = this.getBorderColor();
-		const borderWidth = this.isSelected ? this.BORDER_WIDTH * 2 : this.BORDER_WIDTH;
+		const isSelected = this.visualState.mode === 'selected';
+		const borderWidth = isSelected ? this.BORDER_WIDTH * 2 : this.BORDER_WIDTH;
 		
 		this.graphics.clear();
 		this.graphics.roundRect(0, 0, width, height, this.CORNER_RADIUS);
 		this.graphics.stroke({ width: borderWidth, color: borderColor });
 		
 		// Add selection highlight
-		if (this.isSelected) {
+		if (isSelected) {
 			this.graphics.roundRect(
 				-this.BORDER_WIDTH, 
 				-this.BORDER_WIDTH, 
@@ -164,28 +189,35 @@ export class VisualClip extends Entity {
 	}
 
 	private getBorderColor(): number {
-		if (this.isSelected) {
-			return 0x007acc;
+		switch (this.visualState.mode) {
+			case 'selected':
+				return 0x007acc;
+			case 'dragging':
+				return 0x00ff00;
+			case 'disabled':
+				return 0x666666;
+			case 'resizing':
+				return 0x00ff00; // Green border for resize
+			case 'normal':
+			default:
+				return 0x333333;
 		}
-		if (this.isDragging) {
-			return 0x00ff00;
-		}
-		if (this.isDisabled) {
-			return 0x666666;
-		}
-		return 0x333333;
 	}
 
 	private updateAppearance(): void {
 		const container = this.getContainer();
 		
 		// Update opacity based on state
-		if (this.isDisabled) {
-			container.alpha = 0.5;
-		} else if (this.isDragging) {
-			container.alpha = 0.6; // Make it more noticeably transparent during drag
-		} else {
-			container.alpha = 1.0;
+		switch (this.visualState.mode) {
+			case 'disabled':
+				container.alpha = 0.5;
+				break;
+			case 'dragging':
+				container.alpha = 0.6; // Make it more noticeably transparent during drag
+				break;
+			default:
+				container.alpha = 1.0;
+				break;
 		}
 		
 		// Also update the border color to show drag state
@@ -261,20 +293,62 @@ export class VisualClip extends Entity {
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
+	private lightenColor(color: number, factor: number): number {
+		// Extract RGB components
+		const r = (color >> 16) & 0xFF;
+		const g = (color >> 8) & 0xFF;
+		const b = color & 0xFF;
+		
+		// Lighten each component
+		const newR = Math.min(255, Math.floor(r + (255 - r) * factor));
+		const newG = Math.min(255, Math.floor(g + (255 - g) * factor));
+		const newB = Math.min(255, Math.floor(b + (255 - b) * factor));
+		
+		// Combine back to hex
+		return (newR << 16) | (newG << 8) | newB;
+	}
+
 
 	// Public state management methods
 	public setSelected(selected: boolean): void {
-		this.isSelected = selected;
+		if (selected) {
+			this.visualState.mode = 'selected';
+		} else if (this.visualState.mode === 'selected') {
+			this.visualState.mode = 'normal';
+		}
 		this.updateVisualState();
 	}
 
 	public setDragging(dragging: boolean): void {
-		this.isDragging = dragging;
+		if (dragging) {
+			this.visualState.mode = 'dragging';
+		} else if (this.visualState.mode === 'dragging') {
+			this.visualState.mode = 'normal';
+		}
 		this.updateVisualState();
 	}
 
 	public setDisabled(disabled: boolean): void {
-		this.isDisabled = disabled;
+		if (disabled) {
+			this.visualState.mode = 'disabled';
+		} else if (this.visualState.mode === 'disabled') {
+			this.visualState.mode = 'normal';
+		}
+		this.updateVisualState();
+	}
+
+	public setResizing(resizing: boolean): void {
+		if (resizing) {
+			this.visualState.mode = 'resizing';
+		} else if (this.visualState.mode === 'resizing') {
+			this.visualState.mode = 'normal';
+			this.visualState.previewWidth = undefined;
+		}
+		this.updateVisualState();
+	}
+
+	public setPreviewWidth(width: number | null): void {
+		this.visualState.previewWidth = width || undefined;
 		this.updateVisualState();
 	}
 
@@ -293,15 +367,29 @@ export class VisualClip extends Entity {
 	}
 
 	public getSelected(): boolean {
-		return this.isSelected;
+		return this.visualState.mode === 'selected';
 	}
 
 	public getDragging(): boolean {
-		return this.isDragging;
+		return this.visualState.mode === 'dragging';
 	}
 
 	public getDisabled(): boolean {
-		return this.isDisabled;
+		return this.visualState.mode === 'disabled';
+	}
+
+	public getResizing(): boolean {
+		return this.visualState.mode === 'resizing';
+	}
+
+	public getPreviewWidth(): number | null {
+		return this.visualState.previewWidth || null;
+	}
+
+	public getRightEdgeX(): number {
+		const width = this.getEffectiveWidth();
+		const startTime = this.clipConfig.start || 0;
+		return (startTime * this.options.pixelsPerSecond) + width;
 	}
 
 	// Required Entity methods

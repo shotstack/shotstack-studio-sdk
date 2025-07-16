@@ -1,5 +1,6 @@
 import { TimelineV2 } from "./timeline-v2";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
+import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import * as PIXI from "pixi.js";
 
 interface DragInfo {
@@ -10,10 +11,18 @@ interface DragInfo {
 	offsetY: number;
 }
 
+interface ResizeInfo {
+	trackIndex: number;
+	clipIndex: number;
+	originalLength: number;
+	startX: number;
+}
+
 enum InteractionState {
 	IDLE = "idle",
 	SELECTING = "selecting", 
-	DRAGGING = "dragging"
+	DRAGGING = "dragging",
+	RESIZING = "resizing"
 }
 
 export class TimelineInteraction {
@@ -25,9 +34,12 @@ export class TimelineInteraction {
 	private startPointerPos: { x: number; y: number } | null = null;
 	private currentClipInfo: { trackIndex: number; clipIndex: number } | null = null;
 	private dragInfo: DragInfo | null = null;
+	private resizeInfo: ResizeInfo | null = null;
 	
 	// Distance threshold for drag detection (3px)
 	private static readonly DRAG_THRESHOLD = 3;
+	// Distance threshold for resize edge detection (15px)
+	private static readonly RESIZE_EDGE_THRESHOLD = 15;
 
 	constructor(timeline: TimelineV2) {
 		this.timeline = timeline;
@@ -72,6 +84,12 @@ export class TimelineInteraction {
 		if (target.label) {
 			const clipInfo = this.parseClipLabel(target.label);
 			if (clipInfo) {
+				// Check if clicking on resize edge
+				if (this.isOnClipRightEdge(clipInfo, event)) {
+					this.startResize(clipInfo, event);
+					return;
+				}
+				
 				this.startInteraction(clipInfo, event);
 				return;
 			}
@@ -95,6 +113,11 @@ export class TimelineInteraction {
 			}
 		} else if (this.state === InteractionState.DRAGGING) {
 			this.updateDragPreview(event);
+		} else if (this.state === InteractionState.RESIZING) {
+			this.updateResizePreview(event);
+		} else if (this.state === InteractionState.IDLE) {
+			// Update cursor based on hover position
+			this.updateCursorForPosition(event);
 		}
 	}
 
@@ -104,6 +127,8 @@ export class TimelineInteraction {
 			this.timeline.getEdit().selectClip(this.currentClipInfo.trackIndex, this.currentClipInfo.clipIndex);
 		} else if (this.state === InteractionState.DRAGGING) {
 			this.completeDrag(event);
+		} else if (this.state === InteractionState.RESIZING) {
+			this.completeResize(event);
 		}
 		
 		this.resetState();
@@ -221,6 +246,7 @@ export class TimelineInteraction {
 		this.startPointerPos = null;
 		this.currentClipInfo = null;
 		this.dragInfo = null;
+		this.resizeInfo = null;
 		
 		// Reset cursor
 		this.timeline.getPixiApp().canvas.style.cursor = 'default';
@@ -248,5 +274,114 @@ export class TimelineInteraction {
 
 	public dispose(): void {
 		this.deactivate();
+	}
+
+	// Resize-related methods
+	private isOnClipRightEdge(clipInfo: { trackIndex: number; clipIndex: number }, event: PIXI.FederatedPointerEvent): boolean {
+		const track = this.timeline.getVisualTracks()[clipInfo.trackIndex];
+		if (!track) return false;
+		
+		const clip = track.getClip(clipInfo.clipIndex);
+		if (!clip) return false;
+		
+		// Get the clip's right edge position in global coordinates
+		const clipContainer = clip.getContainer();
+		const clipBounds = clipContainer.getBounds();
+		const rightEdgeX = clipBounds.x + clipBounds.width;
+		
+		// Check if mouse is within threshold of right edge
+		const distance = Math.abs(event.global.x - rightEdgeX);
+		return distance <= TimelineInteraction.RESIZE_EDGE_THRESHOLD;
+	}
+
+	private startResize(clipInfo: { trackIndex: number; clipIndex: number }, event: PIXI.FederatedPointerEvent): void {
+		const clipData = this.timeline.getClipData(clipInfo.trackIndex, clipInfo.clipIndex);
+		if (!clipData) return;
+
+		this.resizeInfo = {
+			trackIndex: clipInfo.trackIndex,
+			clipIndex: clipInfo.clipIndex,
+			originalLength: clipData.length || 0,
+			startX: event.global.x
+		};
+
+		this.state = InteractionState.RESIZING;
+		
+		// Set cursor to indicate resizing
+		this.timeline.getPixiApp().canvas.style.cursor = 'ew-resize';
+		
+		// Set visual feedback on the clip
+		const track = this.timeline.getVisualTracks()[clipInfo.trackIndex];
+		if (track) {
+			const clip = track.getClip(clipInfo.clipIndex);
+			if (clip) {
+				clip.setResizing(true);
+			}
+		}
+	}
+
+	private updateResizePreview(event: PIXI.FederatedPointerEvent): void {
+		if (!this.resizeInfo) return;
+
+		// Calculate new duration based on mouse movement
+		const deltaX = event.global.x - this.resizeInfo.startX;
+		const pixelsPerSecond = this.timeline.getOptions().pixelsPerSecond || 50;
+		const deltaTime = deltaX / pixelsPerSecond;
+		const newLength = Math.max(0.1, this.resizeInfo.originalLength + deltaTime);
+
+		// Update visual preview
+		const track = this.timeline.getVisualTracks()[this.resizeInfo.trackIndex];
+		if (track) {
+			const clip = track.getClip(this.resizeInfo.clipIndex);
+			if (clip) {
+				const newWidth = newLength * pixelsPerSecond;
+				clip.setPreviewWidth(newWidth);
+			}
+		}
+	}
+
+	private completeResize(event: PIXI.FederatedPointerEvent): void {
+		if (!this.resizeInfo) return;
+
+		// Calculate final duration
+		const deltaX = event.global.x - this.resizeInfo.startX;
+		const pixelsPerSecond = this.timeline.getOptions().pixelsPerSecond || 50;
+		const deltaTime = deltaX / pixelsPerSecond;
+		const newLength = Math.max(0.1, this.resizeInfo.originalLength + deltaTime);
+
+		// Clear visual preview first
+		const track = this.timeline.getVisualTracks()[this.resizeInfo.trackIndex];
+		if (track) {
+			const clip = track.getClip(this.resizeInfo.clipIndex);
+			if (clip) {
+				clip.setResizing(false);
+				clip.setPreviewWidth(null);
+			}
+		}
+
+		// Execute resize command if length changed significantly
+		if (Math.abs(newLength - this.resizeInfo.originalLength) > 0.01) {
+			const command = new ResizeClipCommand(
+				this.resizeInfo.trackIndex,
+				this.resizeInfo.clipIndex,
+				newLength
+			);
+			this.timeline.getEdit().executeEditCommand(command);
+		}
+	}
+
+	private updateCursorForPosition(event: PIXI.FederatedPointerEvent): void {
+		const target = event.target as PIXI.Container;
+		
+		if (target.label) {
+			const clipInfo = this.parseClipLabel(target.label);
+			if (clipInfo && this.isOnClipRightEdge(clipInfo, event)) {
+				this.timeline.getPixiApp().canvas.style.cursor = 'ew-resize';
+				return;
+			}
+		}
+		
+		// Default cursor
+		this.timeline.getPixiApp().canvas.style.cursor = 'default';
 	}
 }
