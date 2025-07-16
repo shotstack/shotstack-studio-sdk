@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { UpdateClipPositionCommand } from "@core/commands/update-clip-position-command";
 import { Theme } from "@core/theme/theme-context";
@@ -6,6 +7,16 @@ import * as PIXI from "pixi.js";
 
 import { TimelinePointerEvent } from "../types";
 import { IToolInterceptor, ITimelineToolContext, ITimelineState } from "../types/timeline.interfaces";
+
+// Drop zone detection types
+type DropZoneType = "existing" | "between" | "below" | "above";
+
+interface DropZoneResult {
+	type: DropZoneType;
+	trackIndex: number;
+	insertionIndex?: number; // Only for between/below/above zones
+	needsTrackCreation: boolean;
+}
 
 /**
  * Drag interceptor for moving clips within and between tracks
@@ -25,6 +36,8 @@ export class DragInterceptor implements IToolInterceptor {
 	private draggedPlayer: Player | null = null;
 	private draggedClipId: string | null = null; // Stable clip ID
 	private dragGhost: PIXI.Container | null = null;
+	private dropIndicator: PIXI.Graphics | null = null;
+	private isExecutingCommand: boolean = false; // Prevent concurrent command execution
 
 	// Initial state snapshot (captured at drag start)
 	private dragStartState: {
@@ -38,11 +51,26 @@ export class DragInterceptor implements IToolInterceptor {
 	} | null = null;
 
 	// Current preview position
-	private previewPosition: { trackIndex: number; start: number } | null = null;
+	private previewPosition: { trackIndex: number; start: number; dropZone?: DropZoneResult } | null = null;
 
 	// Configuration
 	private readonly EDGE_THRESHOLD = 8; // Pixels from edge to exclude (for resize tool)
 	private readonly DRAG_THRESHOLD = 5; // Pixels of movement before drag starts
+	private readonly MAX_TRACKS = 50; // Maximum number of tracks allowed
+	private readonly MIN_TIMELINE_Y = -100; // Minimum Y position for valid drag
+	private readonly MAX_TIMELINE_Y_OFFSET = 200; // Maximum Y offset below last track
+	
+	// Performance optimization - cache values during drag
+	private cachedDragValues: {
+		trackHeight: number;
+		trackGap: number;
+		rulerHeight: number;
+		dropZoneThreshold: number;
+	} | null = null;
+
+	// Throttle expensive updates for performance
+	private lastUpdateTime = 0;
+	private readonly UPDATE_THROTTLE_MS = 16; // ~60fps (1000/60 ≈ 16.67ms)
 
 	constructor(state: ITimelineState, context: ITimelineToolContext) {
 		this.state = state;
@@ -50,6 +78,11 @@ export class DragInterceptor implements IToolInterceptor {
 	}
 
 	public interceptPointerDown(event: TimelinePointerEvent): boolean {
+		// Prevent new drag operations while executing commands
+		if (this.isExecutingCommand) {
+			return false;
+		}
+
 		// Check if click is on clip body (not edges)
 		if (this.isOnClipBody(event)) {
 			// Find the clip using registry
@@ -102,12 +135,28 @@ export class DragInterceptor implements IToolInterceptor {
 				this.isDragging = true;
 				this.isPotentialDrag = false;
 
+				// Cache values for performance during drag
+				this.cachedDragValues = {
+					trackHeight: Theme.dimensions.track.height,
+					trackGap: Theme.dimensions.track.gap,
+					rulerHeight: Theme.dimensions.ruler.height,
+					dropZoneThreshold: Math.max(20, Theme.dimensions.track.gap * 2)
+				};
+
 				// Create drag preview now
 				this.createDragPreview();
 
-				// Update visual immediately
+				// Update visual immediately - let the logic decide which to show
 				if (this.dragGhost) {
-					this.updateDragPreview(event);
+					// Initial update to determine which visual feedback to show
+					const newPositionResult = this.calculateNewPosition(event);
+					if (newPositionResult.dropZone?.needsTrackCreation) {
+						this.updateDropIndicator(newPositionResult.dropZone);
+						this.hideDragPreview();
+					} else {
+						this.updateDragPreview(event);
+						this.hideDropIndicator();
+					}
 				} else {
 					console.error("Failed to create drag ghost");
 				}
@@ -119,28 +168,72 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// Handle ongoing drag
 		if (this.isDragging && this.draggedPlayer && this.previewPosition) {
-			// Calculate new position
-			const newPosition = this.calculateNewPosition(event);
+			// Throttle expensive updates for performance
+			const now = performance.now();
+			const shouldUpdate = now - this.lastUpdateTime >= this.UPDATE_THROTTLE_MS;
+
+			// Always calculate new position (this is lightweight)
+			const newPositionResult = this.calculateNewPosition(event);
+			const newPosition = { trackIndex: newPositionResult.trackIndex, start: newPositionResult.start };
 			
-			// Check if position is valid, and if not, find nearest valid position
+			// Handle track creation vs existing track validation differently
 			let finalPosition = newPosition;
-			if (!this.isValidPosition(newPosition)) {
-				const nearestValid = this.findNearestValidPosition(newPosition);
-				if (nearestValid) {
-					finalPosition = nearestValid;
+			if (newPositionResult.dropZone?.needsTrackCreation) {
+				// For track creation, the position is always valid - we're creating a new track
+				// Use the insertion index as the final track index
+				finalPosition = {
+					trackIndex: newPositionResult.dropZone.insertionIndex || newPositionResult.trackIndex,
+					start: Math.max(0, newPosition.start)
+				};
+				
+				// Debug log to verify track creation logic
+				console.log('Track creation zone detected:', {
+					dropZoneType: newPositionResult.dropZone.type,
+					insertionIndex: newPositionResult.dropZone.insertionIndex,
+					finalTrackIndex: finalPosition.trackIndex,
+					originalTrackIndex: newPosition.trackIndex
+				});
+			} else {
+				// For existing tracks, use normal validation
+				if (!this.isValidPosition(newPosition)) {
+					const nearestValid = this.findNearestValidPosition(newPosition);
+					if (nearestValid) {
+						finalPosition = nearestValid;
+					}
 				}
 			}
 
 			// Update preview position to where the clip will actually land
-			this.previewPosition = finalPosition;
+			this.previewPosition = { ...finalPosition, dropZone: newPositionResult.dropZone };
 
-			// Update visual preview
-			this.updateDragPreview(event);
+			// Only update visuals if enough time has passed (throttling)
+			if (shouldUpdate) {
+				// Update visuals based on drop zone type (mutually exclusive)
+				if (newPositionResult.dropZone?.needsTrackCreation) {
+					// Show only drop indicator for track creation
+					this.updateDropIndicator(newPositionResult.dropZone);
+					this.hideDragPreview();
+				} else {
+					// Show only drag preview for existing track drops
+					this.updateDragPreview(event);
+					this.hideDropIndicator();
+				}
+				this.lastUpdateTime = now;
+			}
 
 			return true; // Event handled
 		}
 
 		return false; // Not handled
+	}
+
+	public interceptKeyDown?(event: { key: string }): boolean {
+		// Handle ESC key to cancel drag operation
+		if (event.key === "Escape" && this.isDragging) {
+			this.cancelDrag();
+			return true;
+		}
+		return false;
 	}
 
 	public interceptPointerUp(_event: TimelinePointerEvent): boolean {
@@ -175,39 +268,78 @@ export class DragInterceptor implements IToolInterceptor {
 					// No valid position found, animate back to original
 					this.animateBackToOriginal();
 					this.removeDragPreview();
+					this.removeDropIndicator();
 					this.resetState();
 					return true;
 				}
 			}
 
 			// Only execute command if position actually changed
-			const positionChanged =
-				this.dragStartState && (finalPosition.start !== this.dragStartState.clipStart || finalPosition.trackIndex !== this.dragStartState.trackIndex);
+			const dropZone = this.previewPosition?.dropZone;
+			const positionChanged = this.dragStartState && (
+				finalPosition.start !== this.dragStartState.clipStart || 
+				finalPosition.trackIndex !== this.dragStartState.trackIndex ||
+				dropZone?.needsTrackCreation // Always execute for track creation
+			);
 
-			if (positionChanged) {
-				let command;
-
-				// Use different commands based on whether we're changing tracks
-				if (finalPosition.trackIndex !== currentIndices.trackIndex) {
-					// Use MoveClipCommand for cross-track moves
-
-					command = new MoveClipCommand(currentIndices.trackIndex, currentIndices.clipIndex, finalPosition.trackIndex, finalPosition.start);
-				} else {
-					// Use UpdateClipPositionCommand for same-track moves
-
-					command = new UpdateClipPositionCommand(currentIndices.trackIndex, currentIndices.clipIndex, finalPosition.start);
-				}
-
+			if (positionChanged && !this.isExecutingCommand) {
+				this.isExecutingCommand = true;
+				
 				try {
+					let command;
+
+					// Check if we need to create a new track (dropZone already extracted above)
+					if (dropZone?.needsTrackCreation && dropZone.insertionIndex !== undefined) {
+						// Use compound command for track creation and clip move
+						console.log('Executing track creation command:', {
+							insertionIndex: dropZone.insertionIndex,
+							fromTrack: currentIndices.trackIndex,
+							fromClip: currentIndices.clipIndex,
+							newStart: finalPosition.start
+						});
+						
+						command = new CreateTrackAndMoveClipCommand(
+							dropZone.insertionIndex,
+							currentIndices.trackIndex,
+							currentIndices.clipIndex,
+							finalPosition.start
+						);
+					} else if (finalPosition.trackIndex !== currentIndices.trackIndex) {
+						// Use MoveClipCommand for cross-track moves to existing tracks
+						command = new MoveClipCommand(
+							currentIndices.trackIndex,
+							currentIndices.clipIndex,
+							finalPosition.trackIndex,
+							finalPosition.start
+						);
+					} else {
+						// Use UpdateClipPositionCommand for same-track moves
+						command = new UpdateClipPositionCommand(
+							currentIndices.trackIndex,
+							currentIndices.clipIndex,
+							finalPosition.start
+						);
+					}
+
+					// Validate command before execution
+					if (!this.validateDragCommand(command, dropZone)) {
+						console.warn("Drag command validation failed, cancelling operation");
+						this.cancelDrag();
+						return true;
+					}
+
 					this.context.executeCommand(command);
 				} catch (error) {
 					console.error("Failed to execute drag command:", error);
 					this.handleDragError(error);
+				} finally {
+					this.isExecutingCommand = false;
 				}
 			}
 
 			// Clean up
 			this.removeDragPreview();
+			this.removeDropIndicator();
 			this.resetState();
 
 			// The command execution will emit clip:updated event,
@@ -218,6 +350,7 @@ export class DragInterceptor implements IToolInterceptor {
 		// Always reset state on pointer up if we were dragging
 		if (this.isDragging) {
 			this.removeDragPreview();
+			this.removeDropIndicator();
 			this.resetState();
 			return true;
 		}
@@ -313,26 +446,220 @@ export class DragInterceptor implements IToolInterceptor {
 		return timelineX / zoom;
 	}
 
-	/**
-	 * Find target track based on Y coordinate
-	 */
-	private findTargetTrack(screenY: number): number {
-		const tracks = this.context.timeline.getRenderer().getTracks();
-		if (!tracks.length) return 0;
 
-		// Find closest track by comparing distances to track centers
-		return tracks.reduce((closest, track, index) => {
-			const trackY = track.getContainer().y + track.getHeight() / 2;
-			const distance = Math.abs(screenY - trackY);
-			const minDistance = Math.abs(screenY - (tracks[closest].getContainer().y + tracks[closest].getHeight() / 2));
-			return distance < minDistance ? index : closest;
-		}, 0);
+	/**
+	 * Enhanced drop zone detection that supports track creation with bounds checking
+	 */
+	private findDropZone(screenY: number): DropZoneResult {
+		try {
+			const tracks = this.context.timeline.getRenderer().getTracks();
+			
+			// Use cached values for performance, fall back to theme if not cached
+			const { trackHeight, rulerHeight, dropZoneThreshold } = this.cachedDragValues || {
+				trackHeight: Theme.dimensions.track.height,
+				trackGap: Theme.dimensions.track.gap,
+				rulerHeight: Theme.dimensions.ruler.height,
+				dropZoneThreshold: Math.max(20, Theme.dimensions.track.gap * 2)
+			};
+
+			// Bounds checking - reject positions that are too far outside timeline
+			if (screenY < this.MIN_TIMELINE_Y) {
+				console.warn(`Drag position too far above timeline: ${screenY}`);
+				return this.getFallbackDropZone(tracks);
+			}
+
+			const maxY = tracks.length > 0 
+				? tracks[tracks.length - 1].getContainer().y + trackHeight + this.MAX_TIMELINE_Y_OFFSET
+				: rulerHeight + this.MAX_TIMELINE_Y_OFFSET;
+			
+			if (screenY > maxY) {
+				console.warn(`Drag position too far below timeline: ${screenY}`);
+				return this.getFallbackDropZone(tracks);
+			}
+
+			// Check track limit before allowing new track creation
+			if (tracks.length >= this.MAX_TRACKS) {
+				console.warn(`Maximum track limit reached: ${this.MAX_TRACKS}`);
+				return this.getFallbackDropZone(tracks, false); // Force existing track
+			}
+
+		// If no tracks exist, create the first one
+		if (!tracks.length) {
+			return {
+				type: "below",
+				trackIndex: 0,
+				insertionIndex: 0,
+				needsTrackCreation: true
+			};
+		}
+
+		// Handle extreme positions - if way above timeline, treat as above first track
+		if (screenY < rulerHeight - 50) {
+			return {
+				type: "above",
+				trackIndex: 0,
+				insertionIndex: 0,
+				needsTrackCreation: true
+			};
+		}
+
+		// Handle extreme positions - if way below timeline, treat as below last track
+		const lastTrack = tracks[tracks.length - 1];
+		const lastTrackBottom = lastTrack.getContainer().y + trackHeight;
+		if (screenY > lastTrackBottom + 100) {
+			return {
+				type: "below",
+				trackIndex: tracks.length,
+				insertionIndex: tracks.length,
+				needsTrackCreation: true
+			};
+		}
+
+		// Check for above first track
+		const firstTrack = tracks[0];
+		const firstTrackTop = firstTrack.getContainer().y;
+		const aboveZoneTop = rulerHeight;
+		const aboveZoneBottom = firstTrackTop - (dropZoneThreshold / 2);
+
+		if (screenY >= aboveZoneTop && screenY <= aboveZoneBottom) {
+			return {
+				type: "above",
+				trackIndex: 0,
+				insertionIndex: 0,
+				needsTrackCreation: true
+			};
+		}
+
+		// Check each track and the spaces between them
+		for (let i = 0; i < tracks.length; i++) {
+			const track = tracks[i];
+			const trackContainer = track.getContainer();
+			const trackTop = trackContainer.y;
+			const trackBottom = trackTop + trackHeight;
+
+			// Define insertion zones (smaller, more precise)
+			const insertionZoneSize = Math.min(dropZoneThreshold, 12); // Max 12px insertion zones
+			const trackBodyMargin = 8; // 8px margin from track edges for insertion zones
+
+			// Top insertion zone (above this track)
+			const topInsertionZoneTop = trackTop - insertionZoneSize;
+			const topInsertionZoneBottom = trackTop;
+
+			// Bottom insertion zone (below this track) 
+			const bottomInsertionZoneTop = trackBottom;
+			const bottomInsertionZoneBottom = trackBottom + insertionZoneSize;
+
+			// Track body zone (middle area for dropping into existing track)
+			const trackBodyTop = trackTop + trackBodyMargin;
+			const trackBodyBottom = trackBottom - trackBodyMargin;
+
+			if (screenY >= topInsertionZoneTop && screenY <= topInsertionZoneBottom) {
+				// In the insertion zone above this track
+				return {
+					type: "between",
+					trackIndex: i,
+					insertionIndex: i,
+					needsTrackCreation: true
+				};
+			} else if (screenY >= trackBodyTop && screenY <= trackBodyBottom) {
+				// In the main track body (for dropping into existing track)
+				return {
+					type: "existing",
+					trackIndex: i,
+					needsTrackCreation: false
+				};
+			} else if (screenY >= bottomInsertionZoneTop && screenY <= bottomInsertionZoneBottom) {
+				// In the insertion zone below this track
+				if (i === tracks.length - 1) {
+					// This is the last track, so it's a "below" zone
+					return {
+						type: "below",
+						trackIndex: i + 1,
+						insertionIndex: i + 1,
+						needsTrackCreation: true
+					};
+				} else {
+					// There's another track below, so it's a "between" zone
+					return {
+						type: "between",
+						trackIndex: i + 1,
+						insertionIndex: i + 1,
+						needsTrackCreation: true
+					};
+				}
+			} else if (screenY > trackTop && screenY < trackBottom && 
+					   (screenY <= trackBodyTop || screenY >= trackBodyBottom)) {
+				// In the edge areas of the track (near top or bottom edges)
+				// Prefer dropping into the track rather than creating new ones
+				return {
+					type: "existing",
+					trackIndex: i,
+					needsTrackCreation: false
+				};
+			}
+		}
+
+			// Fallback: find closest existing track by distance to center
+			return tracks.reduce((closest, track, index) => {
+				const trackY = track.getContainer().y + track.getHeight() / 2;
+				const distance = Math.abs(screenY - trackY);
+				const closestTrackY = tracks[closest.trackIndex].getContainer().y + tracks[closest.trackIndex].getHeight() / 2;
+				const minDistance = Math.abs(screenY - closestTrackY);
+				
+				if (distance < minDistance) {
+					return {
+						type: "existing" as DropZoneType,
+						trackIndex: index,
+						needsTrackCreation: false
+					};
+				}
+				return closest;
+			}, {
+				type: "existing" as DropZoneType,
+				trackIndex: 0,
+				needsTrackCreation: false
+			});
+		} catch (error) {
+			console.error("Error in drop zone detection:", error);
+			return this.getFallbackDropZone(this.context.timeline.getRenderer().getTracks());
+		}
+	}
+
+	/**
+	 * Get a safe fallback drop zone when detection fails or conditions are invalid
+	 */
+	private getFallbackDropZone(tracks: any[], allowTrackCreation = true): DropZoneResult {
+		if (tracks.length === 0) {
+			return {
+				type: "below",
+				trackIndex: 0,
+				insertionIndex: 0,
+				needsTrackCreation: true
+			};
+		}
+
+		if (allowTrackCreation && tracks.length < this.MAX_TRACKS) {
+			// Fallback to creating track below last track
+			return {
+				type: "below",
+				trackIndex: tracks.length,
+				insertionIndex: tracks.length,
+				needsTrackCreation: true
+			};
+		}
+
+		// Fallback to last existing track
+		return {
+			type: "existing",
+			trackIndex: tracks.length - 1,
+			needsTrackCreation: false
+		};
 	}
 
 	/**
 	 * Calculate new position based on current drag coordinates
 	 */
-	private calculateNewPosition(event: TimelinePointerEvent): { trackIndex: number; start: number } {
+	private calculateNewPosition(event: TimelinePointerEvent): { trackIndex: number; start: number; dropZone?: DropZoneResult } {
 		const state = this.state.getState();
 
 		// Get the ghost's position in the overlay layer
@@ -349,12 +676,13 @@ export class DragInterceptor implements IToolInterceptor {
 		// Apply minimum time constraint (can't go before 0)
 		const constrainedStart = Math.max(0, newStart);
 
-		// Find target track based on Y position
-		const targetTrack = this.findTargetTrack(event.global.y);
+		// Find drop zone based on Y position
+		const dropZone = this.findDropZone(event.global.y);
 
 		return {
-			trackIndex: targetTrack,
-			start: constrainedStart
+			trackIndex: dropZone.trackIndex,
+			start: constrainedStart,
+			dropZone
 		};
 	}
 
@@ -665,8 +993,9 @@ export class DragInterceptor implements IToolInterceptor {
 			this.dragGhost.y = newY;
 		}
 
-		// Update visual feedback based on validity
+		// Update visual feedback based on validity and drop zone
 		const isValid = this.isValidPosition(this.previewPosition);
+		const dropZone = this.previewPosition?.dropZone;
 		const graphics = this.dragGhost.children[0] as PIXI.Graphics;
 
 		// Get clip dimensions
@@ -677,24 +1006,159 @@ export class DragInterceptor implements IToolInterceptor {
 		const clipWidth = clipDuration * state.viewport.zoom;
 		const clipHeight = Theme.dimensions.clip.height;
 
-		if (isValid) {
-			// Valid position - green
-			graphics.clear();
-			graphics.fillStyle = { color: Theme.colors.states.valid, alpha: 0.3 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
-			graphics.fill();
-			graphics.strokeStyle = { width: 2, color: Theme.colors.states.valid, alpha: 0.8 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
-			graphics.stroke();
+		// Determine color based on drop zone and validity
+		let fillColor: number;
+		let strokeColor: number;
+
+		if (dropZone?.needsTrackCreation) {
+			// Drop zone that will create a new track - blue (info state)
+			// TODO: Use Theme.colors.states.info when it's added to the theme system
+			fillColor = 0x2196f3; // Material Design Blue 500
+			strokeColor = 0x2196f3;
+		} else if (isValid) {
+			// Valid position in existing track - green
+			fillColor = Theme.colors.states.valid;
+			strokeColor = Theme.colors.states.valid;
 		} else {
 			// Invalid position - red
-			graphics.clear();
-			graphics.fillStyle = { color: Theme.colors.states.invalid, alpha: 0.3 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
-			graphics.fill();
-			graphics.strokeStyle = { width: 2, color: Theme.colors.states.invalid, alpha: 0.8 };
-			graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
-			graphics.stroke();
+			fillColor = Theme.colors.states.invalid;
+			strokeColor = Theme.colors.states.invalid;
+		}
+
+		// Apply the color
+		graphics.clear();
+		graphics.fillStyle = { color: fillColor, alpha: 0.3 };
+		graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
+		graphics.fill();
+		graphics.strokeStyle = { width: 2, color: strokeColor, alpha: 0.8 };
+		graphics.roundRect(0, 0, clipWidth, clipHeight, Theme.dimensions.clip.cornerRadius);
+		graphics.stroke();
+
+		// Make sure ghost is visible when updating
+		this.dragGhost.visible = true;
+	}
+
+	/**
+	 * Create and update drop zone indicator
+	 */
+	private updateDropIndicator(dropZone?: DropZoneResult): void {
+		// Only show indicator for track creation zones
+		if (!dropZone || !dropZone.needsTrackCreation) {
+			this.hideDropIndicator();
+			return;
+		}
+
+		const renderer = this.context.timeline.getRenderer();
+		const overlayLayer = renderer.getLayer("overlay");
+		const state = this.state.getState();
+		const tracks = renderer.getTracks();
+
+		// Create indicator if it doesn't exist
+		if (!this.dropIndicator) {
+			this.dropIndicator = new PIXI.Graphics();
+			overlayLayer.addChild(this.dropIndicator);
+		}
+
+		// Calculate indicator position
+		let indicatorY = 0;
+		const trackHeight = Theme.dimensions.track.height;
+		const trackGap = Theme.dimensions.track.gap;
+		const rulerHeight = Theme.dimensions.ruler.height;
+
+		switch (dropZone.type) {
+			case "above":
+				// Above first track
+				indicatorY = rulerHeight + (trackGap / 2);
+				break;
+			case "between":
+				// Between tracks
+				if (dropZone.insertionIndex !== undefined && dropZone.insertionIndex > 0) {
+					const prevTrack = tracks[dropZone.insertionIndex - 1];
+					if (prevTrack) {
+						const prevTrackBottom = prevTrack.getContainer().y + trackHeight;
+						indicatorY = prevTrackBottom + (trackGap / 2);
+					}
+				} else {
+					// Above first track (same as "above")
+					indicatorY = rulerHeight + (trackGap / 2);
+				}
+				break;
+			case "below":
+				// Below last track
+				if (tracks.length > 0) {
+					const lastTrack = tracks[tracks.length - 1];
+					const lastTrackBottom = lastTrack.getContainer().y + trackHeight;
+					indicatorY = lastTrackBottom + (trackGap / 2);
+				} else {
+					indicatorY = rulerHeight + (trackGap / 2);
+				}
+				break;
+		}
+
+		// Clear previous graphics and redraw
+		this.dropIndicator.clear();
+
+		// Get timeline width (visible area + some buffer)
+		const timelineWidth = state.viewport.width + Math.abs(state.viewport.scrollX);
+
+		// Draw the main indicator line
+		const indicatorColor = Theme.colors.states.valid;
+		const lineWidth = 2;
+		const glowWidth = 6;
+
+		// Draw glow effect first (wider, more transparent)
+		this.dropIndicator.strokeStyle = {
+			width: glowWidth,
+			color: indicatorColor,
+			alpha: 0.3
+		};
+		this.dropIndicator.moveTo(0, indicatorY);
+		this.dropIndicator.lineTo(timelineWidth, indicatorY);
+		this.dropIndicator.stroke();
+
+		// Draw main line (sharper, more opaque)
+		this.dropIndicator.strokeStyle = {
+			width: lineWidth,
+			color: indicatorColor,
+			alpha: 0.8
+		};
+		this.dropIndicator.moveTo(0, indicatorY);
+		this.dropIndicator.lineTo(timelineWidth, indicatorY);
+		this.dropIndicator.stroke();
+
+		// Make sure it's visible
+		this.dropIndicator.visible = true;
+	}
+
+	/**
+	 * Hide drop zone indicator (but keep it for reuse)
+	 */
+	private hideDropIndicator(): void {
+		if (this.dropIndicator) {
+			this.dropIndicator.visible = false;
+			this.dropIndicator.clear();
+		}
+	}
+
+	/**
+	 * Remove drop zone indicator (destroy it completely)
+	 */
+	private removeDropIndicator(): void {
+		if (this.dropIndicator) {
+			if (this.dropIndicator.parent) {
+				this.dropIndicator.parent.removeChild(this.dropIndicator);
+			}
+			this.dropIndicator.destroy();
+			this.dropIndicator = null;
+		}
+	}
+
+	/**
+	 * Hide the drag preview (but keep it for reuse)
+	 */
+	private hideDragPreview(): void {
+		if (this.dragGhost) {
+			this.dragGhost.visible = false;
 		}
 	}
 
@@ -732,18 +1196,92 @@ export class DragInterceptor implements IToolInterceptor {
 	}
 
 	/**
+	 * Validate drag command before execution
+	 */
+	private validateDragCommand(command: any, dropZone?: DropZoneResult): boolean {
+		try {
+			// Check if we have required dependencies
+			if (!this.draggedPlayer || !this.context || !command) {
+				console.warn("Missing required dependencies for drag command");
+				return false;
+			}
+
+			// Validate track creation limits
+			if (dropZone?.needsTrackCreation) {
+				const tracks = this.context.timeline.getRenderer().getTracks();
+				if (tracks.length >= this.MAX_TRACKS) {
+					console.warn(`Cannot create track: maximum limit of ${this.MAX_TRACKS} reached`);
+					return false;
+				}
+
+				// Validate insertion index
+				if (dropZone.insertionIndex !== undefined && 
+					(dropZone.insertionIndex < 0 || dropZone.insertionIndex > tracks.length)) {
+					console.warn(`Invalid insertion index: ${dropZone.insertionIndex}`);
+					return false;
+				}
+			}
+
+			// Validate clip compatibility (basic check)
+			if (!this.draggedPlayer.clipConfiguration) {
+				console.warn("Dragged clip has no configuration");
+				return false;
+			}
+
+			return true;
+		} catch (error) {
+			console.error("Error validating drag command:", error);
+			return false;
+		}
+	}
+
+	/**
 	 * Handle errors during drag operation
 	 */
 	private handleDragError(error: unknown): void {
 		// Log detailed error for debugging
 		console.error("Drag operation failed:", error);
 
+		// Attempt graceful recovery
+		try {
+			// Animate back to original position
+			this.animateBackToOriginal();
+			
+			// Clean up visual elements
+			this.removeDragPreview();
+			this.removeDropIndicator();
+		} catch (cleanupError) {
+			console.error("Error during drag error cleanup:", cleanupError);
+		}
+
 		// Reset tool state
 		this.resetState();
 
-		// No need to force redraw - the error state should be handled
-		// by the command system and any necessary UI updates will happen
-		// through the event system
+		// Emit error event for UI feedback (if the context supports custom events)
+		try {
+			// We could emit a custom event here, but for now just log the error
+			// since the executeCommand interface only accepts EditCommand types
+			console.warn("Drag error occurred:", error instanceof Error ? error.message : "Unknown drag error");
+		} catch (eventError) {
+			console.error("Failed to handle drag error event:", eventError);
+		}
+	}
+
+	/**
+	 * Cancel the current drag operation
+	 */
+	private cancelDrag(): void {
+		if (this.isDragging) {
+			// Animate back to original position if desired
+			this.animateBackToOriginal();
+			
+			// Clean up visual elements
+			this.removeDragPreview();
+			this.removeDropIndicator();
+			
+			// Reset state
+			this.resetState();
+		}
 	}
 
 	/**
@@ -756,10 +1294,16 @@ export class DragInterceptor implements IToolInterceptor {
 		this.draggedClipId = null; // Clear stable ID
 		this.dragStartState = null;
 		this.previewPosition = null;
+		this.cachedDragValues = null; // Clear cached values
+		this.lastUpdateTime = 0; // Reset throttle timer
+		this.isExecutingCommand = false; // Reset command execution flag
 
-		// Clean up ghost if it exists
+		// Clean up ghost and drop indicator if they exist
 		if (this.dragGhost) {
 			this.removeDragPreview();
+		}
+		if (this.dropIndicator) {
+			this.removeDropIndicator();
 		}
 	}
 }

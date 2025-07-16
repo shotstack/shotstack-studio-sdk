@@ -11,7 +11,19 @@ export class AddTrackCommand implements EditCommand {
 		if (!context) return;
 		const tracks = context.getTracks();
 		const clips = context.getClips();
+		
+		console.log('AddTrackCommand: Before track creation', {
+			insertionIndex: this.trackIdx,
+			currentTrackCount: tracks.length,
+			tracks: tracks.map((track, i) => ({ index: i, clipCount: track.length }))
+		});
+		
 		tracks.splice(this.trackIdx, 0, []);
+		
+		console.log('AddTrackCommand: After track creation', {
+			newTrackCount: tracks.length,
+			tracks: tracks.map((track, i) => ({ index: i, clipCount: track.length }))
+		});
 
 		const affectedClips = clips.filter(clip => clip.layer >= this.trackIdx + 1);
 		const container = context.getContainer();
@@ -34,6 +46,12 @@ export class AddTrackCommand implements EditCommand {
 			trackContainer.addChild(clip.getContainer());
 		});
 		context.updateDuration();
+		
+		// Emit track creation event to trigger timeline visual updates
+		context.emitEvent("track:added", {
+			trackIndex: this.trackIdx,
+			totalTracks: tracks.length
+		});
 	}
 
 	undo(context?: CommandContext): void {

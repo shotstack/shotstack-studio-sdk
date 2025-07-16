@@ -185,6 +185,7 @@ export class TimelineStateManager implements ITimelineState {
 		};
 		this.eventHandlers["clip:deleted"] = () => this.scheduleClipSync();
 		this.eventHandlers["track:deleted"] = () => this.scheduleClipSync();
+		this.eventHandlers["track:added"] = () => this.syncClipsImmediately();
 		this.eventHandlers["edit:undo"] = () => this.syncClipsImmediately();
 		this.eventHandlers["edit:redo"] = () => this.syncClipsImmediately();
 		
@@ -267,6 +268,9 @@ export class TimelineStateManager implements ITimelineState {
 	 * Core sync logic - sync clips between Edit and Timeline state
 	 */
 	public async syncClipsWithEdit(): Promise<void> {
+		// First, ensure all tracks from edit data have visual representations
+		this.ensureAllTracksExist();
+		
 		const delta = this.computeClipDelta();
 
 		if (delta.added.length > 0 || delta.moved.length > 0 || delta.removed.length > 0 || delta.updated.length > 0) {
@@ -279,6 +283,45 @@ export class TimelineStateManager implements ITimelineState {
 					generation: this.state.clipRegistry.generation + 1
 				}
 			});
+		}
+	}
+
+	/**
+	 * Ensure all tracks from edit data have visual representations
+	 */
+	private ensureAllTracksExist(): void {
+		if (!this.timeline) {
+			console.warn("Timeline not available, cannot sync tracks");
+			return;
+		}
+		
+		const renderer = this.timeline.getRenderer();
+		if (!renderer) {
+			console.warn("Timeline renderer not available, cannot sync tracks");
+			return;
+		}
+
+		const editData = this.edit.getEdit();
+		const trackCount = editData.timeline.tracks.length;
+		
+		console.log(`Ensuring ${trackCount} visual tracks exist`);
+		
+		for (let i = 0; i < trackCount; i++) {
+			const trackId = `track-${i}`;
+			if (!renderer.getTrackByIndex(i)) {
+				console.log(`Creating missing visual track at index ${i}`);
+				renderer.addTrack(trackId, i);
+			}
+		}
+		
+		// Also remove any excess visual tracks
+		const currentVisualTracks = renderer.getTracks();
+		for (const visualTrack of currentVisualTracks) {
+			const trackIndex = parseInt(visualTrack.getTrackId().replace("track-", ""), 10);
+			if (trackIndex >= trackCount) {
+				console.log(`Removing excess visual track at index ${trackIndex}`);
+				renderer.removeTrack(visualTrack.getTrackId());
+			}
 		}
 	}
 
@@ -396,7 +439,14 @@ export class TimelineStateManager implements ITimelineState {
 		for (const moved of delta.moved) {
 			if (moved.visual) {
 				const oldTrack = this.timeline.getRenderer().getTrackByIndex(this.state.clipRegistry.clips.get(moved.id)?.trackIndex ?? -1);
-				const newTrack = this.timeline.getRenderer().getTrackByIndex(moved.trackIndex);
+				
+				// Ensure new track exists, create if necessary
+				let newTrack = this.timeline.getRenderer().getTrackByIndex(moved.trackIndex);
+				if (!newTrack) {
+					console.log(`Creating missing visual track at index ${moved.trackIndex} for moved clip`);
+					const trackId = `track-${moved.trackIndex}`;
+					newTrack = this.timeline.getRenderer().addTrack(trackId, moved.trackIndex);
+				}
 
 				if (oldTrack && newTrack && oldTrack !== newTrack) {
 					oldTrack.detachClip(moved.id);
@@ -426,12 +476,15 @@ export class TimelineStateManager implements ITimelineState {
 				visual.setPixelsPerSecond(zoom);
 
 				// The track should exist since the Edit state maintains empty tracks
-				const track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
-				if (track) {
-					track.addClip(visual);
-				} else {
-					console.warn(`Track ${added.trackIndex} not found when adding clip ${added.id}`);
+				// Ensure track exists, create if necessary
+				let track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
+				if (!track) {
+					console.log(`Creating missing visual track at index ${added.trackIndex}`);
+					const trackId = `track-${added.trackIndex}`;
+					track = this.timeline.getRenderer().addTrack(trackId, added.trackIndex);
 				}
+				
+				track.addClip(visual);
 
 				this.registerClip(added.id, visual, added.player, added.trackIndex, added.clipIndex);
 			}
