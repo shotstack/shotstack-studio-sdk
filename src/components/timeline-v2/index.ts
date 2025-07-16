@@ -12,16 +12,15 @@ export type {
 	TimelineV2Options, 
 	ClipConfig,
 	ClipInfo, 
-	DropPosition, 
-	TimelineV2Tool 
+	DropPosition
 } from './types';
 
 // Timeline v2 Features and Layout
 export { RulerFeature, PlayheadFeature, GridFeature } from './timeline-features';
 export { TimelineLayout } from './timeline-layout';
 
-// Timeline v2 Tools
-export { ToolManager, BaseTool, SelectionTool } from './tools';
+// Timeline v2 Interaction
+export { TimelineInteraction } from './timeline-interaction';
 
 // Note: Additional components will be exported as they are implemented
 // export { DragTool } from './drag-tool';

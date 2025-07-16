@@ -4,7 +4,7 @@ import { VisualTrack, VisualTrackOptions } from "./visual-track";
 import { RulerFeature, PlayheadFeature, GridFeature } from "./timeline-features";
 import { TimelineLayout } from "./timeline-layout";
 import { EditType, TimelineOptions, TimelineV2Options, ClipInfo, DropPosition, ClipConfig } from "./types";
-import { ToolManager, SelectionTool, DragTool } from "./tools";
+import { TimelineInteraction } from "./timeline-interaction";
 import * as PIXI from "pixi.js";
 
 export class TimelineV2 extends Entity {
@@ -33,8 +33,8 @@ export class TimelineV2 extends Entity {
 	private scrollY = 0;
 	private zoomLevel = 1;
 
-	// Tool management
-	private toolManager!: ToolManager;
+	// Interaction management
+	private interaction!: TimelineInteraction;
 	
 	// Animation loop
 	private animationFrameId: number | null = null;
@@ -45,7 +45,7 @@ export class TimelineV2 extends Entity {
 		this.resolvedOptions = this.resolveOptions(this.options);
 		this.layout = new TimelineLayout(this.resolvedOptions);
 		this.setupEventListener();
-		this.setupTools();
+		this.setupInteraction();
 	}
 
 	private mergeWithDefaults(options: TimelineOptions): TimelineOptions {
@@ -79,8 +79,8 @@ export class TimelineV2 extends Entity {
 		await this.setupViewport();
 		await this.setupTimelineFeatures();
 		
-		// Activate default tool after PIXI is ready
-		this.toolManager.activateTool('drag');
+		// Activate interaction system after PIXI is ready
+		this.interaction.activate();
 		
 		// Try to render initial state from Edit
 		console.log('TimelineV2: Getting initial edit state');
@@ -243,7 +243,7 @@ export class TimelineV2 extends Entity {
 		return this.app;
 	}
 
-	// Tool integration methods
+	// Interaction integration methods
 	public getClipData(trackIndex: number, clipIndex: number): ClipConfig | null {
 		if (!this.currentEditType?.timeline?.tracks) return null;
 		const track = this.currentEditType.timeline.tracks[trackIndex];
@@ -263,30 +263,22 @@ export class TimelineV2 extends Entity {
 		};
 	}
 
-	// Layout access for tools
+	// Layout access for interactions
 	public getLayout(): TimelineLayout {
 		return this.layout;
 	}
 
-	// Visual tracks access for tools
+	// Visual tracks access for interactions
 	public getVisualTracks(): VisualTrack[] {
 		return this.visualTracks;
 	}
 
-	// Tool management methods
-	public switchTool(toolName: string): boolean {
-		return this.toolManager.activateTool(toolName);
+	// Interaction management methods - simplified API
+	public isInteractionActive(): boolean {
+		return this.interaction !== undefined;
 	}
 
-	public getActiveTool(): string | undefined {
-		return this.toolManager.getActiveToolName();
-	}
-
-	public getAvailableTools(): string[] {
-		return this.toolManager.getAvailableToolNames();
-	}
-
-	// Edit access for tools
+	// Edit access for interactions
 	public getEdit(): Edit {
 		return this.edit;
 	}
@@ -301,15 +293,10 @@ export class TimelineV2 extends Entity {
 		this.edit.events.on('drag:ended', this.handleDragEnded.bind(this));
 	}
 
-	private setupTools(): void {
-		this.toolManager = new ToolManager();
+	private setupInteraction(): void {
+		this.interaction = new TimelineInteraction(this);
 		
-		// Register available tools
-		this.toolManager.registerTool(new SelectionTool(this));
-		this.toolManager.registerTool(new DragTool(this));
-		
-		// Activate default tool (selection) - but only after PIXI is initialized
-		// This will be done in the load() method
+		// Interaction will be activated in the load() method after PIXI is ready
 	}
 
 	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
@@ -666,9 +653,9 @@ export class TimelineV2 extends Entity {
 		this.edit.events.off('drag:moved', this.handleDragMoved.bind(this));
 		this.edit.events.off('drag:ended', this.handleDragEnded.bind(this));
 		
-		// Clean up tools
-		if (this.toolManager) {
-			this.toolManager.dispose();
+		// Clean up interaction system
+		if (this.interaction) {
+			this.interaction.dispose();
 		}
 		
 		// Clean up visual tracks

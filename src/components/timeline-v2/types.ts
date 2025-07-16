@@ -42,14 +42,3 @@ export interface DropPosition {
 	y: number;
 }
 
-export interface TimelineV2Tool {
-	readonly name: string;
-	
-	// Lifecycle methods for event listener management
-	onActivate(): void;
-	onDeactivate(): void;
-	
-	// Tools use PIXI's native event system - no coordinate-based hit testing
-	// event.target.label contains "clip-trackIndex-clipIndex" or "track-trackIndex"
-	// Use event.global coordinates for positioning
-}
