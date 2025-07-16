@@ -117,7 +117,7 @@ export class RulerFeature extends Entity {
 		this.draw();
 	}
 	
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Ruler is static unless parameters change
 	}
 	
@@ -192,13 +192,13 @@ export class PlayheadFeature extends Entity {
 		this.playheadHandle.fill(0xff4444);
 	}
 	
-	private onPlayheadPointerDown(event: PIXI.PointerEvent): void {
+	private onPlayheadPointerDown(event: PIXI.FederatedPointerEvent): void {
 		this.isDragging = true;
 		this.playheadContainer.cursor = 'grabbing';
 		this.updateTimeFromPointer(event);
 	}
 	
-	private onPlayheadPointerMove(event: PIXI.PointerEvent): void {
+	private onPlayheadPointerMove(event: PIXI.FederatedPointerEvent): void {
 		if (this.isDragging) {
 			this.updateTimeFromPointer(event);
 		}
@@ -209,7 +209,7 @@ export class PlayheadFeature extends Entity {
 		this.playheadContainer.cursor = 'pointer';
 	}
 	
-	private updateTimeFromPointer(event: PIXI.PointerEvent): void {
+	private updateTimeFromPointer(event: PIXI.FederatedPointerEvent): void {
 		const localX = event.global.x - this.playheadContainer.parent.x;
 		const newTime = Math.max(0, localX / this.pixelsPerSecond);
 		this.setTime(newTime);
@@ -231,7 +231,7 @@ export class PlayheadFeature extends Entity {
 		this.draw();
 	}
 	
-	public update(deltaTime: number, elapsed: number): void {
+	public update(_deltaTime: number, _elapsed: number): void {
 		// Playhead updates are event-driven
 	}
 	

@@ -1,61 +1,31 @@
 import { Entity } from "@core/shared/entity";
 import { Edit } from "@core/edit";
-import { EditSchema } from "@schemas/edit";
-import { TimelineUpdatedEvent } from "@core/commands/types";
-import { VisualClip, VisualClipOptions } from "./visual-clip";
 import { VisualTrack, VisualTrackOptions } from "./visual-track";
 import { RulerFeature, PlayheadFeature, GridFeature } from "./timeline-features";
-import { z } from "zod";
+import { TimelineLayout } from "./timeline-layout";
+import { EditType, TimelineOptions, TimelineV2Options, ClipInfo, DropPosition, ClipConfig } from "./types";
 import * as PIXI from "pixi.js";
-
-type EditType = z.infer<typeof EditSchema>;
-
-export interface TimelineOptions {
-	width?: number;
-	height?: number;
-	pixelsPerSecond?: number;
-	trackHeight?: number;
-	theme?: "light" | "dark";
-	backgroundColor?: number;
-	antialias?: boolean;
-	resolution?: number;
-}
-
-export interface ClipInfo {
-	trackIndex: number;
-	clipIndex: number;
-	clipConfig: any;
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
-
-export interface DropPosition {
-	track: number;
-	time: number;
-	x: number;
-	y: number;
-}
 
 export class TimelineV2 extends Entity {
 	private currentEditType: EditType | null = null;
 	private options: TimelineOptions;
 	private visualTracks: VisualTrack[] = [];
+	private layout: TimelineLayout;
+	private resolvedOptions: TimelineV2Options;
 	
 	// PIXI app and rendering
-	private app: PIXI.Application;
-	private backgroundLayer: PIXI.Container;
-	private trackLayer: PIXI.Container;
-	private clipLayer: PIXI.Container;
-	private selectionLayer: PIXI.Container;
-	private overlayLayer: PIXI.Container;
-	private viewport: PIXI.Container;
+	private app!: PIXI.Application;
+	private backgroundLayer!: PIXI.Container;
+	private trackLayer!: PIXI.Container;
+	private clipLayer!: PIXI.Container;
+	private selectionLayer!: PIXI.Container;
+	private overlayLayer!: PIXI.Container;
+	private viewport!: PIXI.Container;
 	
 	// Timeline features
-	private ruler: RulerFeature;
-	private playhead: PlayheadFeature;
-	private grid: GridFeature;
+	private ruler!: RulerFeature;
+	private playhead!: PlayheadFeature;
+	private grid!: GridFeature;
 	
 	// Viewport state
 	private scrollX = 0;
@@ -64,18 +34,35 @@ export class TimelineV2 extends Entity {
 
 	constructor(private edit: Edit, options: TimelineOptions) {
 		super();
-		this.options = {
+		this.options = this.mergeWithDefaults(options);
+		this.resolvedOptions = this.resolveOptions(this.options);
+		this.layout = new TimelineLayout(this.resolvedOptions);
+		this.setupEventListener();
+	}
+
+	private mergeWithDefaults(options: TimelineOptions): TimelineOptions {
+		return {
 			width: 1200,
 			height: 600,
 			pixelsPerSecond: 50,
-			trackHeight: 80,
-			theme: "light",
+			trackHeight: TimelineLayout.TRACK_HEIGHT_DEFAULT,
 			backgroundColor: 0x2c2c2c,
 			antialias: true,
 			resolution: window.devicePixelRatio || 1,
 			...options
 		};
-		this.setupEventListener();
+	}
+
+	private resolveOptions(options: TimelineOptions): TimelineV2Options {
+		return {
+			width: options.width ?? 1200,
+			height: options.height ?? 600,
+			pixelsPerSecond: options.pixelsPerSecond ?? 50,
+			trackHeight: options.trackHeight ?? TimelineLayout.TRACK_HEIGHT_DEFAULT,
+			backgroundColor: options.backgroundColor,
+			antialias: options.antialias ?? true,
+			resolution: options.resolution ?? (window.devicePixelRatio || 1)
+		};
 	}
 
 	public async load(): Promise<void> {
@@ -83,17 +70,31 @@ export class TimelineV2 extends Entity {
 		await this.setupRenderLayers();
 		await this.setupViewport();
 		await this.setupTimelineFeatures();
+		
+		// Try to render initial state from Edit
+		console.log('TimelineV2: Getting initial edit state');
+		try {
+			const currentEdit = this.edit.getEdit();
+			if (currentEdit) {
+				console.log('TimelineV2: Initial edit state found', currentEdit);
+				await this.rebuildFromEdit(currentEdit);
+			} else {
+				console.log('TimelineV2: No initial edit state found');
+			}
+		} catch (error) {
+			console.error('TimelineV2: Error getting initial edit state', error);
+		}
 	}
 
 	private async initializePixiApp(): Promise<void> {
 		this.app = new PIXI.Application();
 		
 		await this.app.init({
-			width: this.options.width!,
-			height: this.options.height!,
-			backgroundColor: this.options.backgroundColor,
-			antialias: this.options.antialias,
-			resolution: this.options.resolution,
+			width: this.resolvedOptions.width,
+			height: this.resolvedOptions.height,
+			backgroundColor: this.resolvedOptions.backgroundColor,
+			antialias: this.resolvedOptions.antialias,
+			resolution: this.resolvedOptions.resolution,
 			autoDensity: true,
 			preference: "webgl"
 		});
@@ -140,33 +141,42 @@ export class TimelineV2 extends Entity {
 		// Add our Entity container to viewport (this is where visual tracks will go)
 		this.viewport.addChild(this.getContainer());
 		
-		this.updateViewportTransform();
+		// Initial viewport positioning will be done in setupTimelineFeatures
+		// after ruler height is known
 	}
 
 	private async setupTimelineFeatures(): Promise<void> {
 		// Create ruler feature
-		this.ruler = new RulerFeature(this.options.pixelsPerSecond!, 60, 40);
+		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, 60, this.layout.rulerHeight);
 		await this.ruler.load();
+		this.ruler.getContainer().y = this.layout.rulerY;
 		this.backgroundLayer.addChild(this.ruler.getContainer());
 		
-		// Create playhead feature
-		this.playhead = new PlayheadFeature(this.options.pixelsPerSecond!, this.options.height!);
+		// Create playhead feature (should span full height including ruler)
+		this.playhead = new PlayheadFeature(this.resolvedOptions.pixelsPerSecond, this.resolvedOptions.height);
 		await this.playhead.load();
+		this.playhead.getContainer().y = this.layout.playheadY;
 		this.overlayLayer.addChild(this.playhead.getContainer());
 		
-		// Create grid feature
+		// Create grid feature (should start below ruler)
 		this.grid = new GridFeature(
-			this.options.pixelsPerSecond!,
-			this.options.width!,
-			this.options.height!,
-			this.options.trackHeight!
+			this.resolvedOptions.pixelsPerSecond,
+			this.layout.getGridWidth(),
+			this.layout.getGridHeight(),
+			this.layout.trackHeight
 		);
 		await this.grid.load();
+		this.grid.getContainer().y = this.layout.gridY;
 		this.backgroundLayer.addChild(this.grid.getContainer());
+		
+		// Position viewport and apply initial transform
+		this.updateViewportTransform();
 	}
 
 	private updateViewportTransform(): void {
-		this.viewport.position.set(-this.scrollX, -this.scrollY);
+		// Apply scroll transform using layout calculations
+		const position = this.layout.calculateViewportPosition(this.scrollX, this.scrollY);
+		this.viewport.position.set(position.x, position.y);
 		this.viewport.scale.set(this.zoomLevel, this.zoomLevel);
 	}
 
@@ -217,11 +227,38 @@ export class TimelineV2 extends Entity {
 		return this.app;
 	}
 
+	// Tool integration methods
+	public getClipData(trackIndex: number, clipIndex: number): ClipConfig | null {
+		if (!this.currentEditType?.timeline?.tracks) return null;
+		const track = this.currentEditType.timeline.tracks[trackIndex];
+		return track?.clips?.[clipIndex] || null;
+	}
+
+	public calculateDropPosition(globalX: number, globalY: number): DropPosition {
+		// Convert global PIXI coordinates to timeline position using layout
+		const localPos = this.getContainer().toLocal({ x: globalX, y: globalY });
+		const dropInfo = this.layout.calculateDropPosition(localPos.x, localPos.y);
+		
+		return {
+			track: dropInfo.track,
+			time: dropInfo.time,
+			x: dropInfo.x,
+			y: dropInfo.y
+		};
+	}
+
+	// Layout access for tools
+	public getLayout(): TimelineLayout {
+		return this.layout;
+	}
+
 	private setupEventListener(): void {
 		this.edit.events.on('timeline:updated', this.handleTimelineUpdated.bind(this));
 	}
 
-	private async handleTimelineUpdated(event: TimelineUpdatedEvent): Promise<void> {
+	private async handleTimelineUpdated(event: { current: { timeline: EditType } }): Promise<void> {
+		console.log('TimelineV2: Timeline updated event received', event);
+		
 		// Cache current state from event
 		this.currentEditType = event.current.timeline;
 		
@@ -246,31 +283,41 @@ export class TimelineV2 extends Entity {
 
 	private async rebuildFromEdit(editType: EditType): Promise<void> {
 		// Create visual representation directly from event payload
-		if (!editType?.timeline?.tracks) return;
+		if (!editType?.timeline?.tracks) {
+			console.log('TimelineV2: No tracks found in editType', editType);
+			return;
+		}
 
+		console.log('TimelineV2: Rebuilding from edit with', editType.timeline.tracks.length, 'tracks');
 		const container = this.getContainer();
 
 		// Create visual tracks
 		for (let trackIndex = 0; trackIndex < editType.timeline.tracks.length; trackIndex++) {
 			const trackData = editType.timeline.tracks[trackIndex];
+			console.log('TimelineV2: Creating track', trackIndex, 'with', trackData.clips?.length || 0, 'clips');
 			
 			const visualTrackOptions: VisualTrackOptions = {
-				pixelsPerSecond: this.options.pixelsPerSecond!,
-				trackHeight: this.options.trackHeight || 60,
+				pixelsPerSecond: this.resolvedOptions.pixelsPerSecond,
+				trackHeight: this.layout.trackHeight,
 				trackIndex,
-				width: this.options.width!
+				width: this.resolvedOptions.width
 			};
 			
 			const visualTrack = new VisualTrack(visualTrackOptions);
 			await visualTrack.load();
 			
 			// Rebuild track with track data
-			visualTrack.rebuildFromTrackData(trackData, this.options.pixelsPerSecond!);
+			visualTrack.rebuildFromTrackData(trackData, this.resolvedOptions.pixelsPerSecond);
 			
 			// Add to container and track array
 			container.addChild(visualTrack.getContainer());
 			this.visualTracks.push(visualTrack);
+			console.log('TimelineV2: Track', trackIndex, 'added to container');
 		}
+		
+		// Force a render
+		this.app.render();
+		console.log('TimelineV2: Forced render after rebuild');
 	}
 
 
@@ -285,22 +332,17 @@ export class TimelineV2 extends Entity {
 		return this.hitTestEditType(this.currentEditType, x, y);
 	}
 
-	public calculateDropPosition(x: number, y: number): DropPosition | null {
-		if (!this.currentEditType) return null;
-		return this.calculateDropFromEditType(this.currentEditType, x, y);
-	}
 
 	private hitTestEditType(_editType: EditType, x: number, y: number): ClipInfo | null {
 		// Hit test using visual tracks for accurate positioning
-		const trackHeight = 60; // Default track height
-		const trackIndex = Math.floor(y / trackHeight);
+		const trackIndex = Math.floor(y / this.layout.trackHeight);
 		
 		if (trackIndex < 0 || trackIndex >= this.visualTracks.length) {
 			return null;
 		}
 
 		const visualTrack = this.visualTracks[trackIndex];
-		const relativeY = y - (trackIndex * trackHeight);
+		const relativeY = y - (trackIndex * this.layout.trackHeight);
 		
 		const result = visualTrack.findClipAtPosition(x, relativeY);
 		if (result) {
@@ -308,37 +350,16 @@ export class TimelineV2 extends Entity {
 				trackIndex,
 				clipIndex: result.clipIndex,
 				clipConfig: result.clip.getClipConfig(),
-				x: result.clip.getClipConfig().start * this.options.pixelsPerSecond!,
-				y: trackIndex * trackHeight,
-				width: result.clip.getClipConfig().length * this.options.pixelsPerSecond!,
-				height: trackHeight
+				x: result.clip.getClipConfig().start * this.resolvedOptions.pixelsPerSecond,
+				y: trackIndex * this.layout.trackHeight,
+				width: result.clip.getClipConfig().length * this.resolvedOptions.pixelsPerSecond,
+				height: this.layout.trackHeight
 			};
 		}
 
 		return null;
 	}
 
-	private calculateDropFromEditType(editType: EditType, x: number, y: number): DropPosition | null {
-		// Calculate where a clip would be dropped based on position
-		if (!editType?.timeline?.tracks) return null;
-
-		const trackHeight = 60; // Default track height
-		const trackIndex = Math.floor(y / trackHeight);
-		
-		if (trackIndex < 0 || trackIndex >= editType.timeline.tracks.length) {
-			return null;
-		}
-
-		// Convert x position to time
-		const timeAtX = x / this.options.pixelsPerSecond!;
-
-		return {
-			track: trackIndex,
-			time: Math.max(0, timeAtX), // Ensure time is not negative
-			x,
-			y: trackIndex * trackHeight
-		};
-	}
 
 	// Getters for current state
 	public getCurrentEditType(): EditType | null {

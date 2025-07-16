@@ -8,14 +8,17 @@ export { VisualTrack } from './visual-track';
 // Timeline v2 Types
 export type { 
 	EditType, 
+	TimelineOptions,
 	TimelineV2Options, 
+	ClipConfig,
 	ClipInfo, 
 	DropPosition, 
 	TimelineV2Tool 
 } from './types';
 
-// Timeline v2 Features
+// Timeline v2 Features and Layout
 export { RulerFeature, PlayheadFeature, GridFeature } from './timeline-features';
+export { TimelineLayout } from './timeline-layout';
 
 // Note: Additional components will be exported as they are implemented
 // export { DragTool } from './drag-tool';

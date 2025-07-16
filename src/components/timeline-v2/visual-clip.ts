@@ -1,9 +1,6 @@
 import { Entity } from "@core/shared/entity";
-import { ClipSchema } from "@core/schemas/clip";
+import { ClipConfig } from "./types";
 import * as PIXI from "pixi.js";
-import { z } from "zod";
-
-type ClipConfig = z.infer<typeof ClipSchema>;
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
@@ -86,7 +83,9 @@ export class VisualClip extends Entity {
 		const container = this.getContainer();
 		const startTime = this.clipConfig.start || 0;
 		container.x = startTime * this.options.pixelsPerSecond;
-		container.y = this.options.trackIndex * this.options.trackHeight;
+		// Clip should be positioned at y=0 relative to its parent track
+		// The track itself handles the trackIndex positioning
+		container.y = 0;
 	}
 
 	private updateSize(): void {
