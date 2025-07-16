@@ -14,6 +14,9 @@ export class TimelineV2 extends Entity {
 	private layout: TimelineLayout;
 	private resolvedOptions: TimelineV2Options;
 	
+	// Timeline constants
+	private static readonly TIMELINE_BUFFER_MULTIPLIER = 1.5; // 50% buffer for scrolling
+	
 	// PIXI app and rendering
 	private app!: PIXI.Application;
 	private backgroundLayer!: PIXI.Container;
@@ -22,6 +25,7 @@ export class TimelineV2 extends Entity {
 	private selectionLayer!: PIXI.Container;
 	private overlayLayer!: PIXI.Container;
 	private viewport!: PIXI.Container;
+	private rulerViewport!: PIXI.Container;
 	
 	// Timeline features
 	private ruler!: RulerFeature;
@@ -150,6 +154,12 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async setupViewport(): Promise<void> {
+		// Create ruler viewport for horizontal scrolling
+		this.rulerViewport = new PIXI.Container();
+		this.rulerViewport.label = "ruler-viewport";
+		this.overlayLayer.addChild(this.rulerViewport);
+		
+		// Create main viewport for tracks
 		this.viewport = new PIXI.Container();
 		this.viewport.label = "viewport";
 		
@@ -164,12 +174,15 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async setupTimelineFeatures(): Promise<void> {
-		// Create ruler feature (use edit's total duration or default to 60s)
-		const timelineDuration = this.msToSeconds(this.edit.totalDuration) || 60;
-		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, timelineDuration, this.layout.rulerHeight);
+		// Get actual and extended durations
+		const actualDuration = this.msToSeconds(this.edit.totalDuration) || 60;
+		const extendedDuration = this.getExtendedTimelineDuration();
+		
+		// Create ruler feature with extended duration for display
+		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.rulerHeight);
 		await this.ruler.load();
 		this.ruler.getContainer().y = this.layout.rulerY;
-		this.overlayLayer.addChild(this.ruler.getContainer());
+		this.rulerViewport.addChild(this.ruler.getContainer());
 		
 		// Connect ruler seek events
 		this.ruler.events.on('ruler:seeked', this.handleSeek.bind(this));
@@ -183,10 +196,10 @@ export class TimelineV2 extends Entity {
 		// Connect playhead seek events
 		this.playhead.events.on('playhead:seeked', this.handleSeek.bind(this));
 		
-		// Create grid feature (should start below ruler)
+		// Create grid feature with extended duration
 		this.grid = new GridFeature(
 			this.resolvedOptions.pixelsPerSecond,
-			this.layout.getGridWidth(),
+			extendedDuration,
 			this.layout.getGridHeight(),
 			this.layout.trackHeight
 		);
@@ -208,6 +221,10 @@ export class TimelineV2 extends Entity {
 		const position = this.layout.calculateViewportPosition(this.scrollX, this.scrollY);
 		this.viewport.position.set(position.x, position.y);
 		this.viewport.scale.set(this.zoomLevel, this.zoomLevel);
+		
+		// Sync ruler horizontal scroll (no vertical scroll for ruler)
+		this.rulerViewport.position.x = position.x;
+		this.rulerViewport.scale.x = this.zoomLevel;
 	}
 
 	// Viewport management methods for tools
@@ -296,6 +313,11 @@ export class TimelineV2 extends Entity {
 	public getEdit(): Edit {
 		return this.edit;
 	}
+	
+	// Extended timeline dimensions
+	public getExtendedTimelineWidth(): number {
+		return this.getExtendedTimelineDuration() * this.resolvedOptions.pixelsPerSecond;
+	}
 
 	// Playhead control methods
 	public setPlayheadTime(time: number): void {
@@ -326,6 +348,9 @@ export class TimelineV2 extends Entity {
 		// Cache current state from event
 		this.currentEditType = event.current;
 		
+		// Update ruler with new timeline duration
+		this.updateRulerDuration();
+		
 		// Rebuild visuals from event data
 		this.clearAllVisualState();
 		await this.rebuildFromEdit(event.current);
@@ -339,7 +364,11 @@ export class TimelineV2 extends Entity {
 		try {
 			const currentEdit = this.edit.getEdit();
 			if (currentEdit) {
-						this.currentEditType = currentEdit;
+				this.currentEditType = currentEdit;
+				
+				// Update ruler in case timeline duration changed
+				this.updateRulerDuration();
+				
 				this.clearAllVisualState();
 				await this.rebuildFromEdit(currentEdit);
 				this.restoreUIState();
@@ -477,6 +506,29 @@ export class TimelineV2 extends Entity {
 	private msToSeconds(ms: number): number {
 		return ms / 1000;
 	}
+	
+	private getExtendedTimelineDuration(): number {
+		const duration = this.msToSeconds(this.edit.totalDuration) || 60;
+		return Math.max(60, duration * TimelineV2.TIMELINE_BUFFER_MULTIPLIER);
+	}
+	
+	private getExtendedTimelineWidth(): number {
+		return this.getExtendedTimelineDuration() * this.resolvedOptions.pixelsPerSecond;
+	}
+
+	private updateRulerDuration(): void {
+		const extendedDuration = this.getExtendedTimelineDuration();
+		const extendedWidth = this.getExtendedTimelineWidth();
+		
+		// Update ruler and grid with extended duration
+		this.ruler.updateRuler(this.resolvedOptions.pixelsPerSecond, extendedDuration);
+		this.grid.updateGrid(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
+		
+		// Update track widths
+		this.visualTracks.forEach(track => {
+			track.setWidth(extendedWidth);
+		});
+	}
 
 	private hideDragPreview(): void {
 		// Remove overlay container
@@ -530,7 +582,7 @@ export class TimelineV2 extends Entity {
 				pixelsPerSecond: this.resolvedOptions.pixelsPerSecond,
 				trackHeight: this.layout.trackHeight,
 				trackIndex,
-				width: this.resolvedOptions.width
+				width: this.getExtendedTimelineWidth()
 			};
 			
 			const visualTrack = new VisualTrack(visualTrackOptions);

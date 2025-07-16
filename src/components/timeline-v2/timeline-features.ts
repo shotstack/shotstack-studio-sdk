@@ -55,9 +55,10 @@ export class RulerFeature extends Entity {
 	
 	private drawRulerBackground(): void {
 		this.rulerBackground.clear();
-		this.rulerBackground.rect(0, 0, this.timelineDuration * this.pixelsPerSecond, this.rulerHeight);
+		const rulerWidth = this.timelineDuration * this.pixelsPerSecond;
+		this.rulerBackground.rect(0, 0, rulerWidth, this.rulerHeight);
 		this.rulerBackground.fill(0x404040);
-		this.rulerBackground.rect(0, this.rulerHeight - 1, this.timelineDuration * this.pixelsPerSecond, 1);
+		this.rulerBackground.rect(0, this.rulerHeight - 1, rulerWidth, 1);
 		this.rulerBackground.fill(0x606060);
 	}
 	
@@ -119,8 +120,9 @@ export class RulerFeature extends Entity {
 	}
 	
 	private onRulerPointerDown(event: PIXI.FederatedPointerEvent): void {
-		const localX = event.global.x - this.rulerContainer.parent.x;
-		const time = Math.max(0, localX / this.pixelsPerSecond);
+		// Convert global to local coordinates within the ruler
+		const localPos = this.rulerContainer.toLocal(event.global);
+		const time = Math.max(0, localPos.x / this.pixelsPerSecond);
 		this.events.emit("ruler:seeked", { time });
 	}
 	
@@ -223,8 +225,9 @@ export class PlayheadFeature extends Entity {
 	}
 	
 	private updateTimeFromPointer(event: PIXI.FederatedPointerEvent): void {
-		const localX = event.global.x - this.playheadContainer.parent.x;
-		const newTime = Math.max(0, localX / this.pixelsPerSecond);
+		// Convert global to local coordinates within the playhead container's parent
+		const localPos = this.playheadContainer.parent.toLocal(event.global);
+		const newTime = Math.max(0, localPos.x / this.pixelsPerSecond);
 		this.setTime(newTime);
 		// Emit seek event so Edit can update its playback time
 		this.events.emit("playhead:seeked", { time: newTime });
@@ -267,16 +270,16 @@ export class GridFeature extends Entity {
 	private gridLines: PIXI.Graphics;
 	
 	private pixelsPerSecond: number;
-	private timelineWidth: number;
+	private timelineDuration: number; // Duration in seconds
 	private timelineHeight: number;
 	private trackHeight: number;
 	private isVisible = true;
 	
-	constructor(pixelsPerSecond: number, timelineWidth: number, timelineHeight: number, trackHeight: number) {
+	constructor(pixelsPerSecond: number, timelineDuration: number, timelineHeight: number, trackHeight: number) {
 		super();
 		this.events = new EventEmitter();
 		this.pixelsPerSecond = pixelsPerSecond;
-		this.timelineWidth = timelineWidth;
+		this.timelineDuration = timelineDuration;
 		this.timelineHeight = timelineHeight;
 		this.trackHeight = trackHeight;
 		
@@ -303,11 +306,13 @@ export class GridFeature extends Entity {
 		
 		this.gridLines.clear();
 		
+		// Calculate width based on duration
+		const extendedWidth = this.timelineDuration * this.pixelsPerSecond;
+		
 		// Vertical grid lines (time markers)
 		const gridInterval = this.pixelsPerSecond > 50 ? 1 : 5; // Every second or every 5 seconds
-		const maxTime = this.timelineWidth / this.pixelsPerSecond;
 		
-		for (let time = 0; time <= maxTime; time += gridInterval) {
+		for (let time = 0; time <= this.timelineDuration; time += gridInterval) {
 			const x = time * this.pixelsPerSecond;
 			this.gridLines.rect(x, 0, 1, this.timelineHeight);
 			this.gridLines.fill(0x333333);
@@ -318,14 +323,14 @@ export class GridFeature extends Entity {
 		
 		for (let track = 0; track <= trackCount; track++) {
 			const y = track * this.trackHeight;
-			this.gridLines.rect(0, y, this.timelineWidth, 1);
+			this.gridLines.rect(0, y, extendedWidth, 1);
 			this.gridLines.fill(0x333333);
 		}
 	}
 	
-	public updateGrid(pixelsPerSecond: number, timelineWidth: number, timelineHeight: number, trackHeight: number): void {
+	public updateGrid(pixelsPerSecond: number, timelineDuration: number, timelineHeight: number, trackHeight: number): void {
 		this.pixelsPerSecond = pixelsPerSecond;
-		this.timelineWidth = timelineWidth;
+		this.timelineDuration = timelineDuration;
 		this.timelineHeight = timelineHeight;
 		this.trackHeight = trackHeight;
 		this.draw();
@@ -413,7 +418,7 @@ export class ScrollManager extends Entity {
 		this.scrollY += deltaY * verticalScrollSpeed;
 		
 		// Apply bounds (prevent negative scrolling and limit based on content)
-		this.scrollX = Math.max(0, this.scrollX);
+		this.scrollX = this.clampScrollX(this.scrollX);
 		this.scrollY = this.clampScrollY(this.scrollY);
 		
 		// Update timeline viewport
@@ -425,12 +430,21 @@ export class ScrollManager extends Entity {
 	
 	
 	public setScroll(x: number, y: number): void {
-		this.scrollX = Math.max(0, x);
+		this.scrollX = this.clampScrollX(x);
 		this.scrollY = this.clampScrollY(y);
 		this.timeline.setScroll(this.scrollX, this.scrollY);
 		this.events.emit('scroll', { x: this.scrollX, y: this.scrollY });
 	}
 
+	private clampScrollX(x: number): number {
+		// Calculate max scroll based on extended content width
+		const contentWidth = this.timeline.getExtendedTimelineWidth();
+		const viewportWidth = this.timeline.getOptions().width;
+		const maxScroll = Math.max(0, contentWidth - viewportWidth);
+		
+		return Math.max(0, Math.min(x, maxScroll));
+	}
+	
 	private clampScrollY(y: number): number {
 		const layout = this.timeline.getLayout();
 		const trackCount = this.timeline.getVisualTracks().length;
