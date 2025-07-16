@@ -6,6 +6,7 @@ export interface TimelineFeatures {
 	ruler: RulerFeature;
 	playhead: PlayheadFeature;
 	grid: GridFeature;
+	scroll: ScrollManager;
 }
 
 export class RulerFeature extends Entity {
@@ -335,6 +336,111 @@ export class GridFeature extends Entity {
 	
 	public dispose(): void {
 		this.gridContainer.removeChildren();
+		this.events.clear("*");
+	}
+}
+
+export class ScrollManager extends Entity {
+	public events: EventEmitter;
+	private timeline: any; // Reference to Timeline v2
+	private abortController?: AbortController;
+	
+	// Scroll state
+	private scrollX = 0;
+	private scrollY = 0;
+	
+	constructor(timeline: any) {
+		super();
+		this.events = new EventEmitter();
+		this.timeline = timeline;
+	}
+
+	async load(): Promise<void> {
+		this.setupEventListeners();
+	}
+	
+	private setupEventListeners(): void {
+		this.abortController = new AbortController();
+		
+		// Get the PIXI canvas element
+		const canvas = this.timeline.getPixiApp().canvas;
+		
+		// Add wheel event listener for scrolling
+		canvas.addEventListener('wheel', this.handleWheel.bind(this), {
+			passive: false,
+			signal: this.abortController.signal
+		});
+		
+		// Keyboard navigation disabled for now
+		// document.addEventListener('keydown', this.handleKeydown.bind(this), {
+		// 	signal: this.abortController.signal
+		// });
+	}
+	
+	private handleWheel(event: WheelEvent): void {
+		event.preventDefault();
+		
+		// Determine scroll direction based on wheel delta and modifier keys
+		let deltaX = event.deltaX;
+		let deltaY = event.deltaY;
+		
+		// Shift key converts vertical scroll to horizontal scroll
+		if (event.shiftKey) {
+			deltaX = deltaY;
+			deltaY = 0;
+		}
+		
+		// Different scroll speeds for horizontal vs vertical
+		const horizontalScrollSpeed = 2;
+		const verticalScrollSpeed = 0.5;
+		
+		// Update scroll position
+		this.scrollX += deltaX * horizontalScrollSpeed;
+		this.scrollY += deltaY * verticalScrollSpeed;
+		
+		// Apply bounds (prevent negative scrolling and limit based on content)
+		this.scrollX = Math.max(0, this.scrollX);
+		this.scrollY = this.clampScrollY(this.scrollY);
+		
+		// Update timeline viewport
+		this.timeline.setScroll(this.scrollX, this.scrollY);
+		
+		// Emit scroll event
+		this.events.emit('scroll', { x: this.scrollX, y: this.scrollY });
+	}
+	
+	
+	public setScroll(x: number, y: number): void {
+		this.scrollX = Math.max(0, x);
+		this.scrollY = this.clampScrollY(y);
+		this.timeline.setScroll(this.scrollX, this.scrollY);
+		this.events.emit('scroll', { x: this.scrollX, y: this.scrollY });
+	}
+
+	private clampScrollY(y: number): number {
+		const layout = this.timeline.getLayout();
+		const trackCount = this.timeline.getVisualTracks().length;
+		const maxScroll = Math.max(0, trackCount * layout.trackHeight - (this.timeline.getOptions().height - layout.rulerHeight));
+		return Math.max(0, Math.min(y, maxScroll));
+	}
+	
+	public getScroll(): { x: number; y: number } {
+		return { x: this.scrollX, y: this.scrollY };
+	}
+	
+	public update(_deltaTime: number, _elapsed: number): void {
+		// ScrollManager doesn't need frame-based updates
+	}
+	
+	public draw(): void {
+		// ScrollManager doesn't render anything itself
+	}
+	
+	public dispose(): void {
+		if (this.abortController) {
+			this.abortController.abort();
+			this.abortController = undefined;
+		}
 		this.events.clear("*");
 	}
 }

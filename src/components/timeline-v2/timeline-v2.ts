@@ -1,7 +1,7 @@
 import { Entity } from "@core/shared/entity";
 import { Edit } from "@core/edit";
 import { VisualTrack, VisualTrackOptions } from "./visual-track";
-import { RulerFeature, PlayheadFeature, GridFeature } from "./timeline-features";
+import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./timeline-features";
 import { TimelineLayout } from "./timeline-layout";
 import { EditType, TimelineOptions, TimelineV2Options, ClipInfo, DropPosition, ClipConfig } from "./types";
 import { TimelineInteraction } from "./timeline-interaction";
@@ -27,6 +27,7 @@ export class TimelineV2 extends Entity {
 	private ruler!: RulerFeature;
 	private playhead!: PlayheadFeature;
 	private grid!: GridFeature;
+	private scroll!: ScrollManager;
 	
 	// Viewport state
 	private scrollX = 0;
@@ -166,7 +167,7 @@ export class TimelineV2 extends Entity {
 		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, 60, this.layout.rulerHeight);
 		await this.ruler.load();
 		this.ruler.getContainer().y = this.layout.rulerY;
-		this.backgroundLayer.addChild(this.ruler.getContainer());
+		this.overlayLayer.addChild(this.ruler.getContainer());
 		
 		// Create playhead feature (should span full height including ruler)
 		this.playhead = new PlayheadFeature(this.resolvedOptions.pixelsPerSecond, this.resolvedOptions.height);
@@ -185,9 +186,14 @@ export class TimelineV2 extends Entity {
 		this.grid.getContainer().y = this.layout.gridY;
 		this.backgroundLayer.addChild(this.grid.getContainer());
 		
+		// Create scroll manager for handling scroll events
+		this.scroll = new ScrollManager(this);
+		await this.scroll.load();
+		
 		// Position viewport and apply initial transform
 		this.updateViewportTransform();
 	}
+
 
 	private updateViewportTransform(): void {
 		// Apply scroll transform using layout calculations
@@ -309,7 +315,7 @@ export class TimelineV2 extends Entity {
 		this.restoreUIState(); // Selection, scroll position, etc.
 	}
 
-	private async handleClipUpdated(event: { current: any; previous: any }): Promise<void> {
+	private async handleClipUpdated(_event: { current: any; previous: any }): Promise<void> {
 		
 		// For clip updates, we need to rebuild the timeline from the current Edit state
 		// since the MoveClipCommand has already updated the underlying data
@@ -670,6 +676,9 @@ export class TimelineV2 extends Entity {
 		}
 		if (this.grid) {
 			this.grid.dispose();
+		}
+		if (this.scroll) {
+			this.scroll.dispose();
 		}
 		
 		// Destroy PIXI application

@@ -16,7 +16,7 @@ export type {
 } from './types';
 
 // Timeline v2 Features and Layout
-export { RulerFeature, PlayheadFeature, GridFeature } from './timeline-features';
+export { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from './timeline-features';
 export { TimelineLayout } from './timeline-layout';
 
 // Timeline v2 Interaction
