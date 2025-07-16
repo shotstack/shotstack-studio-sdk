@@ -1,6 +1,7 @@
 import { TimelineV2 } from "./timeline-v2";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import * as PIXI from "pixi.js";
 
 interface DragInfo {
@@ -36,10 +37,16 @@ export class TimelineInteraction {
 	private dragInfo: DragInfo | null = null;
 	private resizeInfo: ResizeInfo | null = null;
 	
+	// Drop zone visualization
+	private dropZoneIndicator: PIXI.Graphics | null = null;
+	private currentDropZone: { type: 'above' | 'between' | 'below'; position: number } | null = null;
+	
 	// Distance threshold for drag detection (3px)
 	private static readonly DRAG_THRESHOLD = 3;
 	// Distance threshold for resize edge detection (15px)
 	private static readonly RESIZE_EDGE_THRESHOLD = 15;
+	// Distance threshold for drop zone detection (20px from track boundaries)
+	private static readonly DROP_ZONE_THRESHOLD = 20;
 
 	constructor(timeline: TimelineV2) {
 		this.timeline = timeline;
@@ -181,14 +188,42 @@ export class TimelineInteraction {
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const dragTime = Math.max(0, layout.getTimeAtX(localPos.x - this.dragInfo.offsetX));
-		const dragTrack = Math.max(0, Math.floor((localPos.y - this.dragInfo.offsetY) / layout.trackHeight));
-
-		// Emit drag moved event for visual feedback
-		this.timeline.getEdit().events.emit('drag:moved', {
-		    ...this.dragInfo,
-		    currentTime: dragTime,
-		    currentTrack: dragTrack
-		});
+		const dragY = localPos.y - this.dragInfo.offsetY;
+		
+		// Check if we're in a drop zone
+		const dropZone = this.getDropZone(dragY);
+		
+		if (dropZone) {
+			// Show drop zone indicator
+			if (!this.currentDropZone || 
+			    this.currentDropZone.type !== dropZone.type || 
+			    this.currentDropZone.position !== dropZone.position) {
+				this.currentDropZone = dropZone;
+				this.showDropZoneIndicator(dropZone.position);
+			}
+			
+			// Emit drag moved event with drop zone info
+			this.timeline.getEdit().events.emit('drag:moved', {
+			    ...this.dragInfo,
+			    currentTime: dragTime,
+			    currentTrack: -1, // Indicate no specific track
+			    inDropZone: true
+			});
+		} else {
+			// Hide drop zone indicator if we were showing one
+			if (this.currentDropZone) {
+				this.hideDropZoneIndicator();
+			}
+			
+			// Normal drag on existing track
+			const dragTrack = Math.max(0, Math.floor(dragY / layout.trackHeight));
+			this.timeline.getEdit().events.emit('drag:moved', {
+			    ...this.dragInfo,
+			    currentTime: dragTime,
+			    currentTrack: dragTrack,
+			    inDropZone: false
+			});
+		}
 	}
 
 	private completeDrag(event: PIXI.FederatedPointerEvent): void {
@@ -197,42 +232,62 @@ export class TimelineInteraction {
 		// Store drag info before ending drag
 		const dragInfo = { ...this.dragInfo };
 
-		// End drag BEFORE executing command to ensure visual cleanup happens first
-		this.endDrag();
-
-		// Calculate drop position using the same logic as drag preview (with offset)
+		// Calculate drop position
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const dropTime = Math.max(0, layout.getTimeAtX(localPos.x - dragInfo.offsetX));
-		const dropTrack = Math.max(0, Math.floor((localPos.y - dragInfo.offsetY) / layout.trackHeight));
+		const dropY = localPos.y - dragInfo.offsetY;
 		
-		const dropPosition = {
-			track: dropTrack,
-			time: dropTime,
-			x: layout.getXAtTime(dropTime),
-			y: layout.getYAtTrack(dropTrack)
-		};
+		// Check if dropping in a drop zone
+		const dropZone = this.getDropZone(dropY);
 		
-		// Only execute move if position actually changed
-		const hasChanged = 
-			dropPosition.track !== dragInfo.trackIndex ||
-			Math.abs(dropPosition.time - dragInfo.startTime) > 0.01; // Small tolerance for floating point
-
-		if (hasChanged) {
-			// Use existing MoveClipCommand
-			const command = new MoveClipCommand(
-				dragInfo.trackIndex,    // from track
-				dragInfo.clipIndex,     // from clip index  
-				dropPosition.track,     // to track
-				dropPosition.time       // new start time
+		// End drag to ensure visual cleanup happens first
+		this.endDrag();
+		
+		if (dropZone) {
+			// Use the CreateTrackAndMoveClipCommand for atomic operation
+			const command = new CreateTrackAndMoveClipCommand(
+				dropZone.position,      // Insert track at this position
+				dragInfo.trackIndex,    // Source track
+				dragInfo.clipIndex,     // Source clip
+				dropTime               // New start time
 			);
-			
 			this.timeline.getEdit().executeEditCommand(command);
+		} else {
+			// Normal drop on existing track
+			const dropTrack = Math.max(0, Math.floor(dropY / layout.trackHeight));
+			
+			const dropPosition = {
+				track: dropTrack,
+				time: dropTime,
+				x: layout.getXAtTime(dropTime),
+				y: layout.getYAtTrack(dropTrack)
+			};
+			
+			// Only execute move if position actually changed
+			const hasChanged = 
+				dropPosition.track !== dragInfo.trackIndex ||
+				Math.abs(dropPosition.time - dragInfo.startTime) > 0.01; // Small tolerance for floating point
+
+			if (hasChanged) {
+				// Use existing MoveClipCommand
+				const command = new MoveClipCommand(
+					dragInfo.trackIndex,    // from track
+					dragInfo.clipIndex,     // from clip index  
+					dropPosition.track,     // to track
+					dropPosition.time       // new start time
+				);
+				
+				this.timeline.getEdit().executeEditCommand(command);
+			}
 		}
 	}
 
 	private endDrag(): void {
 		this.dragInfo = null;
+		
+		// Hide drop zone indicator if showing
+		this.hideDropZoneIndicator();
 		
 		// Reset cursor
 		this.timeline.getPixiApp().canvas.style.cursor = 'default';
@@ -247,6 +302,9 @@ export class TimelineInteraction {
 		this.currentClipInfo = null;
 		this.dragInfo = null;
 		this.resizeInfo = null;
+		
+		// Hide drop zone indicator if showing
+		this.hideDropZoneIndicator();
 		
 		// Reset cursor
 		this.timeline.getPixiApp().canvas.style.cursor = 'default';
@@ -383,5 +441,77 @@ export class TimelineInteraction {
 		
 		// Default cursor
 		this.timeline.getPixiApp().canvas.style.cursor = 'default';
+	}
+
+	private getDropZone(y: number): { type: 'above' | 'between' | 'below'; position: number } | null {
+		const layout = this.timeline.getLayout();
+		const trackHeight = layout.trackHeight;
+		const tracks = this.timeline.getVisualTracks();
+		
+		// Adjust y to be relative to tracks area (accounting for ruler)
+		const relativeY = y;
+		
+		// Check if above first track
+		if (relativeY < -TimelineInteraction.DROP_ZONE_THRESHOLD) {
+			return { type: 'above', position: 0 };
+		}
+		
+		// Check between tracks (within threshold of track boundaries)
+		for (let i = 0; i < tracks.length; i++) {
+			const trackBottom = (i + 1) * trackHeight;
+			const distanceFromBoundary = Math.abs(relativeY - trackBottom);
+			
+			if (distanceFromBoundary < TimelineInteraction.DROP_ZONE_THRESHOLD) {
+				return { type: 'between', position: i + 1 };
+			}
+		}
+		
+		// Check if below last track
+		const lastTrackBottom = tracks.length * trackHeight;
+		if (relativeY > lastTrackBottom + TimelineInteraction.DROP_ZONE_THRESHOLD) {
+			return { type: 'below', position: tracks.length };
+		}
+		
+		return null;
+	}
+
+	private showDropZoneIndicator(position: number): void {
+		// Remove existing indicator if any
+		this.hideDropZoneIndicator();
+		
+		// Create new indicator
+		this.dropZoneIndicator = new PIXI.Graphics();
+		
+		const layout = this.timeline.getLayout();
+		const width = this.timeline.getExtendedTimelineWidth();
+		// Position at the border between tracks (position 0 = top of first track)
+		const y = position * layout.trackHeight;
+		
+		// Draw a highlighted line with some thickness
+		this.dropZoneIndicator.setStrokeStyle({ width: 4, color: 0x00ff00, alpha: 0.8 });
+		this.dropZoneIndicator.moveTo(0, y);
+		this.dropZoneIndicator.lineTo(width, y);
+		this.dropZoneIndicator.stroke();
+		
+		// Add a subtle glow effect
+		this.dropZoneIndicator.setStrokeStyle({ width: 8, color: 0x00ff00, alpha: 0.3 });
+		this.dropZoneIndicator.moveTo(0, y);
+		this.dropZoneIndicator.lineTo(width, y);
+		this.dropZoneIndicator.stroke();
+		
+		// Add to viewport (not overlay) so it scrolls with content
+		this.timeline.getContainer().addChild(this.dropZoneIndicator);
+	}
+
+	private hideDropZoneIndicator(): void {
+		if (this.dropZoneIndicator) {
+			// Ensure it's actually removed from parent
+			if (this.dropZoneIndicator.parent) {
+				this.dropZoneIndicator.parent.removeChild(this.dropZoneIndicator);
+			}
+			this.dropZoneIndicator.destroy();
+			this.dropZoneIndicator = null;
+		}
+		this.currentDropZone = null;
 	}
 }

@@ -336,6 +336,7 @@ export class TimelineV2 extends Entity {
 		this.edit.events.on('drag:started', this.handleDragStarted.bind(this));
 		this.edit.events.on('drag:moved', this.handleDragMoved.bind(this));
 		this.edit.events.on('drag:ended', this.handleDragEnded.bind(this));
+		this.edit.events.on('track:created-and-clip:moved', this.handleTrackCreatedAndClipMoved.bind(this));
 	}
 
 	private setupInteraction(): void {
@@ -358,6 +359,8 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async handleClipUpdated(_event: { current: any; previous: any }): Promise<void> {
+		// Clean up drag preview before rebuilding
+		this.hideDragPreview();
 		
 		// For clip updates, we need to rebuild the timeline from the current Edit state
 		// since the MoveClipCommand has already updated the underlying data
@@ -389,12 +392,38 @@ export class TimelineV2 extends Entity {
 		this.showDragPreview(event.trackIndex, event.clipIndex);
 	}
 
-	private handleDragMoved(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number; currentTime: number; currentTrack: number }): void {
-		this.updateDragPreview(event.trackIndex, event.clipIndex, event.currentTrack, event.currentTime);
+	private handleDragMoved(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number; currentTime: number; currentTrack: number; inDropZone?: boolean }): void {
+		if (event.inDropZone) {
+			// Hide drag preview when in drop zone
+			if (this.dragPreviewContainer) {
+				this.dragPreviewContainer.visible = false;
+			}
+		} else {
+			// Show and update drag preview
+			if (this.dragPreviewContainer) {
+				this.dragPreviewContainer.visible = true;
+			}
+			this.updateDragPreview(event.trackIndex, event.clipIndex, event.currentTrack, event.currentTime);
+		}
 	}
 
 	private handleDragEnded(): void {
 		this.hideDragPreview();
+	}
+
+	private async handleTrackCreatedAndClipMoved(event: { trackInsertionIndex: number; clipMove: { from: { trackIndex: number; clipIndex: number }; to: { trackIndex: number; start: number } } }): Promise<void> {
+		// Clean up drag preview before rebuilding
+		this.hideDragPreview();
+		
+		// Rebuild timeline visuals after track creation and clip move
+		const currentEdit = this.edit.getEdit();
+		if (currentEdit) {
+			this.currentEditType = currentEdit;
+			this.updateRulerDuration();
+			this.clearAllVisualState();
+			await this.rebuildFromEdit(currentEdit);
+			this.restoreUIState();
+		}
 	}
 
 
@@ -444,7 +473,8 @@ export class TimelineV2 extends Entity {
 
 		// Add graphics to container
 		this.dragPreviewContainer.addChild(this.dragPreviewGraphics);
-		this.overlayLayer.addChild(this.dragPreviewContainer);
+		// Add to the main container so it scrolls with content
+		this.getContainer().addChild(this.dragPreviewContainer);
 
 		// Set the original clip to semi-transparent
 		const track = this.visualTracks[trackIndex];
@@ -474,7 +504,8 @@ export class TimelineV2 extends Entity {
 		
 		// Calculate position and size
 		const x = layout.getXAtTime(time);
-		const y = layout.getYAtTrack(trackIndex);
+		// Use same positioning as visual tracks (relative to container, not including ruler)
+		const y = trackIndex * layout.trackHeight;
 		const width = (clipConfig.length || 0) * this.resolvedOptions.pixelsPerSecond;
 		const height = this.resolvedOptions.trackHeight;
 
@@ -533,14 +564,22 @@ export class TimelineV2 extends Entity {
 	private hideDragPreview(): void {
 		// Remove overlay container
 		if (this.dragPreviewContainer) {
-			this.overlayLayer.removeChild(this.dragPreviewContainer);
-			this.dragPreviewContainer.destroy();
+			// Make sure to destroy the graphics first
+			if (this.dragPreviewGraphics) {
+				this.dragPreviewGraphics.destroy();
+				this.dragPreviewGraphics = null;
+			}
+			
+			// Remove from parent and destroy container
+			if (this.dragPreviewContainer.parent) {
+				this.dragPreviewContainer.parent.removeChild(this.dragPreviewContainer);
+			}
+			this.dragPreviewContainer.destroy({ children: true });
 			this.dragPreviewContainer = null;
-			this.dragPreviewGraphics = null;
 		}
 
-		// Reset original clip appearance
-		if (this.draggedClipInfo) {
+		// Reset original clip appearance if it still exists
+		if (this.draggedClipInfo && this.visualTracks.length > this.draggedClipInfo.trackIndex) {
 			const track = this.visualTracks[this.draggedClipInfo.trackIndex];
 			if (track) {
 				const clip = track.getClip(this.draggedClipInfo.clipIndex);
@@ -554,6 +593,9 @@ export class TimelineV2 extends Entity {
 	}
 
 	private clearAllVisualState(): void {
+		// Make sure drag preview is cleaned up
+		this.hideDragPreview();
+		
 		// Clear all visual timeline components
 		const container = this.getContainer();
 		
@@ -743,6 +785,7 @@ export class TimelineV2 extends Entity {
 		this.edit.events.off('drag:started', this.handleDragStarted.bind(this));
 		this.edit.events.off('drag:moved', this.handleDragMoved.bind(this));
 		this.edit.events.off('drag:ended', this.handleDragEnded.bind(this));
+		this.edit.events.off('track:created-and-clip:moved', this.handleTrackCreatedAndClipMoved.bind(this));
 		
 		// Clean up interaction system
 		if (this.interaction) {
