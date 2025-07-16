@@ -114,43 +114,28 @@ export class VisualClip extends Entity {
 
 	private drawClipBackground(width: number, height: number): void {
 		let color = this.getClipColor();
-		let alpha = 0.8;
+		const styles = this.getStateStyles();
 		
-		// Modify appearance based on state
-		switch (this.visualState.mode) {
-			case 'disabled':
-				alpha = 0.5;
-				break;
-			case 'dragging':
-				// Darken the color slightly during drag and make it more transparent
-				color = this.darkenColor(color, 0.2);
-				alpha = 0.7;
-				break;
-			case 'resizing':
-				// Slightly lighten the color during resize to show preview
-				color = this.lightenColor(color, 0.1);
-				alpha = 0.9;
-				break;
-			case 'selected':
-			case 'normal':
-			default:
-				// Keep default alpha and color
-				break;
+		// Apply color modifications based on state
+		if (styles.colorFactor > 0) {
+			color = this.lightenColor(color, styles.colorFactor);
+		} else if (styles.colorFactor < 0) {
+			color = this.darkenColor(color, Math.abs(styles.colorFactor));
 		}
 		
 		this.background.clear();
 		this.background.roundRect(0, 0, width, height, this.CORNER_RADIUS);
-		this.background.fill({ color, alpha });
+		this.background.fill({ color, alpha: styles.alpha });
 	}
 
 	private drawClipBorder(width: number, height: number): void {
-		const borderColor = this.getBorderColor();
+		const styles = this.getStateStyles();
 		const isSelected = this.visualState.mode === 'selected';
 		const borderWidth = isSelected ? this.BORDER_WIDTH * 2 : this.BORDER_WIDTH;
 		
 		this.graphics.clear();
 		this.graphics.roundRect(0, 0, width, height, this.CORNER_RADIUS);
-		this.graphics.stroke({ width: borderWidth, color: borderColor });
+		this.graphics.stroke({ width: borderWidth, color: styles.borderColor });
 		
 		// Add selection highlight
 		if (isSelected) {
@@ -188,40 +173,15 @@ export class VisualClip extends Entity {
 		}
 	}
 
-	private getBorderColor(): number {
-		switch (this.visualState.mode) {
-			case 'selected':
-				return 0x007acc;
-			case 'dragging':
-				return 0x00ff00;
-			case 'disabled':
-				return 0x666666;
-			case 'resizing':
-				return 0x00ff00; // Green border for resize
-			case 'normal':
-			default:
-				return 0x333333;
-		}
-	}
 
 	private updateAppearance(): void {
 		const container = this.getContainer();
 		
-		// Update opacity based on state
-		switch (this.visualState.mode) {
-			case 'disabled':
-				container.alpha = 0.5;
-				break;
-			case 'dragging':
-				container.alpha = 0.6; // Make it more noticeably transparent during drag
-				break;
-			default:
-				container.alpha = 1.0;
-				break;
-		}
+		// Apply container-level opacity (different from fill alpha)
+		container.alpha = this.visualState.mode === 'dragging' ? 0.6 : 1.0;
 		
-		// Also update the border color to show drag state
-		this.updateSize(); // This will redraw with the new border color
+		// Redraw with new styles
+		this.updateSize();
 	}
 
 	private updateText(): void {
@@ -308,42 +268,40 @@ export class VisualClip extends Entity {
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
+	private getStateStyles() {
+		switch (this.visualState.mode) {
+			case 'disabled': 
+				return { alpha: 0.5, colorFactor: 0, borderColor: 0x666666 };
+			case 'dragging': 
+				return { alpha: 0.7, colorFactor: -0.2, borderColor: 0x00ff00 };
+			case 'resizing': 
+				return { alpha: 0.9, colorFactor: 0.1, borderColor: 0x00ff00 };
+			case 'selected': 
+				return { alpha: 1.0, colorFactor: 0, borderColor: 0x007acc };
+			default: 
+				return { alpha: 1.0, colorFactor: 0, borderColor: 0x333333 };
+		}
+	}
 
 	// Public state management methods
 	public setSelected(selected: boolean): void {
-		if (selected) {
-			this.visualState.mode = 'selected';
-		} else if (this.visualState.mode === 'selected') {
-			this.visualState.mode = 'normal';
-		}
+		this.visualState.mode = selected ? 'selected' : 'normal';
 		this.updateVisualState();
 	}
 
 	public setDragging(dragging: boolean): void {
-		if (dragging) {
-			this.visualState.mode = 'dragging';
-		} else if (this.visualState.mode === 'dragging') {
-			this.visualState.mode = 'normal';
-		}
+		this.visualState.mode = dragging ? 'dragging' : 'normal';
 		this.updateVisualState();
 	}
 
 	public setDisabled(disabled: boolean): void {
-		if (disabled) {
-			this.visualState.mode = 'disabled';
-		} else if (this.visualState.mode === 'disabled') {
-			this.visualState.mode = 'normal';
-		}
+		this.visualState.mode = disabled ? 'disabled' : 'normal';
 		this.updateVisualState();
 	}
 
 	public setResizing(resizing: boolean): void {
-		if (resizing) {
-			this.visualState.mode = 'resizing';
-		} else if (this.visualState.mode === 'resizing') {
-			this.visualState.mode = 'normal';
-			this.visualState.previewWidth = undefined;
-		}
+		this.visualState.mode = resizing ? 'resizing' : 'normal';
+		if (!resizing) this.visualState.previewWidth = undefined;
 		this.updateVisualState();
 	}
 
@@ -366,24 +324,16 @@ export class VisualClip extends Entity {
 		return this.options;
 	}
 
+	public getVisualState() {
+		return this.visualState;
+	}
+
 	public getSelected(): boolean {
 		return this.visualState.mode === 'selected';
 	}
 
 	public getDragging(): boolean {
 		return this.visualState.mode === 'dragging';
-	}
-
-	public getDisabled(): boolean {
-		return this.visualState.mode === 'disabled';
-	}
-
-	public getResizing(): boolean {
-		return this.visualState.mode === 'resizing';
-	}
-
-	public getPreviewWidth(): number | null {
-		return this.visualState.previewWidth || null;
 	}
 
 	public getRightEdgeX(): number {
