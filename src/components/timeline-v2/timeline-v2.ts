@@ -302,8 +302,6 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
-		console.log('TimelineV2: Timeline updated event received', event);
-		
 		// Cache current state from event
 		this.currentEditType = event.current;
 		
@@ -314,12 +312,10 @@ export class TimelineV2 extends Entity {
 	}
 
 	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
-		console.log('TimelineV2: Clip selected event received', event);
 		this.updateVisualSelection(event.trackIndex, event.clipIndex);
 	}
 
 	private handleSelectionCleared(): void {
-		console.log('TimelineV2: Selection cleared event received');
 		this.clearVisualSelection();
 	}
 
@@ -364,17 +360,14 @@ export class TimelineV2 extends Entity {
 	private async rebuildFromEdit(editType: EditType): Promise<void> {
 		// Create visual representation directly from event payload
 		if (!editType?.timeline?.tracks) {
-			console.log('TimelineV2: No tracks found in editType', editType);
 			return;
 		}
 
-		console.log('TimelineV2: Rebuilding from edit with', editType.timeline.tracks.length, 'tracks');
 		const container = this.getContainer();
 
 		// Create visual tracks
 		for (let trackIndex = 0; trackIndex < editType.timeline.tracks.length; trackIndex++) {
 			const trackData = editType.timeline.tracks[trackIndex];
-			console.log('TimelineV2: Creating track', trackIndex, 'with', trackData.clips?.length || 0, 'clips');
 			
 			const visualTrackOptions: VisualTrackOptions = {
 				pixelsPerSecond: this.resolvedOptions.pixelsPerSecond,
@@ -392,12 +385,10 @@ export class TimelineV2 extends Entity {
 			// Add to container and track array
 			container.addChild(visualTrack.getContainer());
 			this.visualTracks.push(visualTrack);
-			console.log('TimelineV2: Track', trackIndex, 'added to container');
 		}
 		
 		// Force a render
 		this.app.render();
-		console.log('TimelineV2: Forced render after rebuild');
 	}
 
 
@@ -467,8 +458,6 @@ export class TimelineV2 extends Entity {
 
 	public dispose(): void {
 		this.edit.events.off('timeline:updated', this.handleTimelineUpdated.bind(this));
-		this.edit.events.off('clip:selected', this.handleClipSelected.bind(this));
-		this.edit.events.off('selection:cleared', this.handleSelectionCleared.bind(this));
 		
 		// Clean up tools
 		if (this.toolManager) {
