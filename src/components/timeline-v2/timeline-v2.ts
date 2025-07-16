@@ -287,6 +287,8 @@ export class TimelineV2 extends Entity {
 
 	private setupEventListener(): void {
 		this.edit.events.on('timeline:updated', this.handleTimelineUpdated.bind(this));
+		this.edit.events.on('clip:selected', this.handleClipSelected.bind(this));
+		this.edit.events.on('selection:cleared', this.handleSelectionCleared.bind(this));
 	}
 
 	private setupTools(): void {
@@ -311,6 +313,40 @@ export class TimelineV2 extends Entity {
 		this.restoreUIState(); // Selection, scroll position, etc.
 	}
 
+	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
+		console.log('TimelineV2: Clip selected event received', event);
+		this.updateVisualSelection(event.trackIndex, event.clipIndex);
+	}
+
+	private handleSelectionCleared(): void {
+		console.log('TimelineV2: Selection cleared event received');
+		this.clearVisualSelection();
+	}
+
+
+	private updateVisualSelection(trackIndex: number, clipIndex: number): void {
+		// Clear all existing selections first
+		this.clearVisualSelection();
+		
+		// Set the specified clip as selected
+		const track = this.visualTracks[trackIndex];
+		if (track) {
+			const clip = track.getClip(clipIndex);
+			if (clip) {
+				clip.setSelected(true);
+			}
+		}
+	}
+
+	private clearVisualSelection(): void {
+		// Clear selection from all clips
+		this.visualTracks.forEach(track => {
+			const clips = track.getClips();
+			clips.forEach(clip => {
+				clip.setSelected(false);
+			});
+		});
+	}
 
 	private clearAllVisualState(): void {
 		// Clear all visual timeline components
@@ -431,6 +467,8 @@ export class TimelineV2 extends Entity {
 
 	public dispose(): void {
 		this.edit.events.off('timeline:updated', this.handleTimelineUpdated.bind(this));
+		this.edit.events.off('clip:selected', this.handleClipSelected.bind(this));
+		this.edit.events.off('selection:cleared', this.handleSelectionCleared.bind(this));
 		
 		// Clean up tools
 		if (this.toolManager) {
