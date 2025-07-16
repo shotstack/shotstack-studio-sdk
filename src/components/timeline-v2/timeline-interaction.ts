@@ -211,8 +211,9 @@ export class TimelineInteraction {
 			});
 		} else {
 			// Hide drop zone indicator if we were showing one
-			if (this.currentDropZone) {
+			if (this.currentDropZone || this.dropZoneIndicator) {
 				this.hideDropZoneIndicator();
+				this.currentDropZone = null;
 			}
 			
 			// Normal drag on existing track
@@ -456,6 +457,18 @@ export class TimelineInteraction {
 			return { type: 'above', position: 0 };
 		}
 		
+		// Check if we're inside any track bounds (not near boundaries)
+		for (let i = 0; i < tracks.length; i++) {
+			const trackTop = i * trackHeight;
+			const trackBottom = (i + 1) * trackHeight;
+			
+			// If we're well inside a track (not near its boundaries), we're not in a drop zone
+			if (relativeY > trackTop + TimelineInteraction.DROP_ZONE_THRESHOLD &&
+			    relativeY < trackBottom - TimelineInteraction.DROP_ZONE_THRESHOLD) {
+				return null; // Inside a track, not in a drop zone
+			}
+		}
+		
 		// Check between tracks (within threshold of track boundaries)
 		for (let i = 0; i < tracks.length; i++) {
 			const trackBottom = (i + 1) * trackHeight;
@@ -505,10 +518,15 @@ export class TimelineInteraction {
 
 	private hideDropZoneIndicator(): void {
 		if (this.dropZoneIndicator) {
+			// Clear the graphics first
+			this.dropZoneIndicator.clear();
+			
 			// Ensure it's actually removed from parent
 			if (this.dropZoneIndicator.parent) {
 				this.dropZoneIndicator.parent.removeChild(this.dropZoneIndicator);
 			}
+			
+			// Destroy the graphics object
 			this.dropZoneIndicator.destroy();
 			this.dropZoneIndicator = null;
 		}
