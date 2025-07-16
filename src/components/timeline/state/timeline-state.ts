@@ -304,12 +304,10 @@ export class TimelineStateManager implements ITimelineState {
 		const editData = this.edit.getEdit();
 		const trackCount = editData.timeline.tracks.length;
 		
-		console.log(`Ensuring ${trackCount} visual tracks exist`);
 		
 		for (let i = 0; i < trackCount; i++) {
 			const trackId = `track-${i}`;
 			if (!renderer.getTrackByIndex(i)) {
-				console.log(`Creating missing visual track at index ${i}`);
 				renderer.addTrack(trackId, i);
 			}
 		}
@@ -319,7 +317,6 @@ export class TimelineStateManager implements ITimelineState {
 		for (const visualTrack of currentVisualTracks) {
 			const trackIndex = parseInt(visualTrack.getTrackId().replace("track-", ""), 10);
 			if (trackIndex >= trackCount) {
-				console.log(`Removing excess visual track at index ${trackIndex}`);
 				renderer.removeTrack(visualTrack.getTrackId());
 			}
 		}
@@ -443,7 +440,6 @@ export class TimelineStateManager implements ITimelineState {
 				// Ensure new track exists, create if necessary
 				let newTrack = this.timeline.getRenderer().getTrackByIndex(moved.trackIndex);
 				if (!newTrack) {
-					console.log(`Creating missing visual track at index ${moved.trackIndex} for moved clip`);
 					const trackId = `track-${moved.trackIndex}`;
 					newTrack = this.timeline.getRenderer().addTrack(trackId, moved.trackIndex);
 				}
@@ -479,7 +475,6 @@ export class TimelineStateManager implements ITimelineState {
 				// Ensure track exists, create if necessary
 				let track = this.timeline.getRenderer().getTrackByIndex(added.trackIndex);
 				if (!track) {
-					console.log(`Creating missing visual track at index ${added.trackIndex}`);
 					const trackId = `track-${added.trackIndex}`;
 					track = this.timeline.getRenderer().addTrack(trackId, added.trackIndex);
 				}

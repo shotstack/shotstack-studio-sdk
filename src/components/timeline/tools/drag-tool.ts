@@ -56,21 +56,7 @@ export class DragInterceptor implements IToolInterceptor {
 	// Configuration
 	private readonly EDGE_THRESHOLD = 8; // Pixels from edge to exclude (for resize tool)
 	private readonly DRAG_THRESHOLD = 5; // Pixels of movement before drag starts
-	private readonly MAX_TRACKS = 50; // Maximum number of tracks allowed
-	private readonly MIN_TIMELINE_Y = -100; // Minimum Y position for valid drag
-	private readonly MAX_TIMELINE_Y_OFFSET = 200; // Maximum Y offset below last track
-	
-	// Performance optimization - cache values during drag
-	private cachedDragValues: {
-		trackHeight: number;
-		trackGap: number;
-		rulerHeight: number;
-		dropZoneThreshold: number;
-	} | null = null;
 
-	// Throttle expensive updates for performance
-	private lastUpdateTime = 0;
-	private readonly UPDATE_THROTTLE_MS = 16; // ~60fps (1000/60 ≈ 16.67ms)
 
 	constructor(state: ITimelineState, context: ITimelineToolContext) {
 		this.state = state;
@@ -135,13 +121,6 @@ export class DragInterceptor implements IToolInterceptor {
 				this.isDragging = true;
 				this.isPotentialDrag = false;
 
-				// Cache values for performance during drag
-				this.cachedDragValues = {
-					trackHeight: Theme.dimensions.track.height,
-					trackGap: Theme.dimensions.track.gap,
-					rulerHeight: Theme.dimensions.ruler.height,
-					dropZoneThreshold: Math.max(20, Theme.dimensions.track.gap * 2)
-				};
 
 				// Create drag preview now
 				this.createDragPreview();
@@ -168,11 +147,7 @@ export class DragInterceptor implements IToolInterceptor {
 
 		// Handle ongoing drag
 		if (this.isDragging && this.draggedPlayer && this.previewPosition) {
-			// Throttle expensive updates for performance
-			const now = performance.now();
-			const shouldUpdate = now - this.lastUpdateTime >= this.UPDATE_THROTTLE_MS;
-
-			// Always calculate new position (this is lightweight)
+			// Calculate new position
 			const newPositionResult = this.calculateNewPosition(event);
 			const newPosition = { trackIndex: newPositionResult.trackIndex, start: newPositionResult.start };
 			
@@ -186,13 +161,6 @@ export class DragInterceptor implements IToolInterceptor {
 					start: Math.max(0, newPosition.start)
 				};
 				
-				// Debug log to verify track creation logic
-				console.log('Track creation zone detected:', {
-					dropZoneType: newPositionResult.dropZone.type,
-					insertionIndex: newPositionResult.dropZone.insertionIndex,
-					finalTrackIndex: finalPosition.trackIndex,
-					originalTrackIndex: newPosition.trackIndex
-				});
 			} else {
 				// For existing tracks, use normal validation
 				if (!this.isValidPosition(newPosition)) {
@@ -206,19 +174,15 @@ export class DragInterceptor implements IToolInterceptor {
 			// Update preview position to where the clip will actually land
 			this.previewPosition = { ...finalPosition, dropZone: newPositionResult.dropZone };
 
-			// Only update visuals if enough time has passed (throttling)
-			if (shouldUpdate) {
-				// Update visuals based on drop zone type (mutually exclusive)
-				if (newPositionResult.dropZone?.needsTrackCreation) {
-					// Show only drop indicator for track creation
-					this.updateDropIndicator(newPositionResult.dropZone);
-					this.hideDragPreview();
-				} else {
-					// Show only drag preview for existing track drops
-					this.updateDragPreview(event);
-					this.hideDropIndicator();
-				}
-				this.lastUpdateTime = now;
+			// Update visuals based on drop zone type (mutually exclusive)
+			if (newPositionResult.dropZone?.needsTrackCreation) {
+				// Show only drop indicator for track creation
+				this.updateDropIndicator(newPositionResult.dropZone);
+				this.hideDragPreview();
+			} else {
+				// Show only drag preview for existing track drops
+				this.updateDragPreview(event);
+				this.hideDropIndicator();
 			}
 
 			return true; // Event handled
@@ -291,12 +255,6 @@ export class DragInterceptor implements IToolInterceptor {
 					// Check if we need to create a new track (dropZone already extracted above)
 					if (dropZone?.needsTrackCreation && dropZone.insertionIndex !== undefined) {
 						// Use compound command for track creation and clip move
-						console.log('Executing track creation command:', {
-							insertionIndex: dropZone.insertionIndex,
-							fromTrack: currentIndices.trackIndex,
-							fromClip: currentIndices.clipIndex,
-							newStart: finalPosition.start
-						});
 						
 						command = new CreateTrackAndMoveClipCommand(
 							dropZone.insertionIndex,
@@ -448,42 +406,15 @@ export class DragInterceptor implements IToolInterceptor {
 
 
 	/**
-	 * Enhanced drop zone detection that supports track creation with bounds checking
+	 * Simplified drop zone detection
 	 */
 	private findDropZone(screenY: number): DropZoneResult {
-		try {
-			const tracks = this.context.timeline.getRenderer().getTracks();
-			
-			// Use cached values for performance, fall back to theme if not cached
-			const { trackHeight, rulerHeight, dropZoneThreshold } = this.cachedDragValues || {
-				trackHeight: Theme.dimensions.track.height,
-				trackGap: Theme.dimensions.track.gap,
-				rulerHeight: Theme.dimensions.ruler.height,
-				dropZoneThreshold: Math.max(20, Theme.dimensions.track.gap * 2)
-			};
+		const tracks = this.context.timeline.getRenderer().getTracks();
+		const trackHeight = Theme.dimensions.track.height;
+		const rulerHeight = Theme.dimensions.ruler.height;
+		const dropZoneSize = 16; // 16px insertion zones
 
-			// Bounds checking - reject positions that are too far outside timeline
-			if (screenY < this.MIN_TIMELINE_Y) {
-				console.warn(`Drag position too far above timeline: ${screenY}`);
-				return this.getFallbackDropZone(tracks);
-			}
-
-			const maxY = tracks.length > 0 
-				? tracks[tracks.length - 1].getContainer().y + trackHeight + this.MAX_TIMELINE_Y_OFFSET
-				: rulerHeight + this.MAX_TIMELINE_Y_OFFSET;
-			
-			if (screenY > maxY) {
-				console.warn(`Drag position too far below timeline: ${screenY}`);
-				return this.getFallbackDropZone(tracks);
-			}
-
-			// Check track limit before allowing new track creation
-			if (tracks.length >= this.MAX_TRACKS) {
-				console.warn(`Maximum track limit reached: ${this.MAX_TRACKS}`);
-				return this.getFallbackDropZone(tracks, false); // Force existing track
-			}
-
-		// If no tracks exist, create the first one
+		// No tracks exist
 		if (!tracks.length) {
 			return {
 				type: "below",
@@ -493,168 +424,62 @@ export class DragInterceptor implements IToolInterceptor {
 			};
 		}
 
-		// Handle extreme positions - if way above timeline, treat as above first track
-		if (screenY < rulerHeight - 50) {
-			return {
-				type: "above",
-				trackIndex: 0,
-				insertionIndex: 0,
-				needsTrackCreation: true
-			};
-		}
-
-		// Handle extreme positions - if way below timeline, treat as below last track
-		const lastTrack = tracks[tracks.length - 1];
-		const lastTrackBottom = lastTrack.getContainer().y + trackHeight;
-		if (screenY > lastTrackBottom + 100) {
-			return {
-				type: "below",
-				trackIndex: tracks.length,
-				insertionIndex: tracks.length,
-				needsTrackCreation: true
-			};
-		}
-
-		// Check for above first track
-		const firstTrack = tracks[0];
-		const firstTrackTop = firstTrack.getContainer().y;
-		const aboveZoneTop = rulerHeight;
-		const aboveZoneBottom = firstTrackTop - (dropZoneThreshold / 2);
-
-		if (screenY >= aboveZoneTop && screenY <= aboveZoneBottom) {
-			return {
-				type: "above",
-				trackIndex: 0,
-				insertionIndex: 0,
-				needsTrackCreation: true
-			};
-		}
-
-		// Check each track and the spaces between them
+		// Check each track
 		for (let i = 0; i < tracks.length; i++) {
 			const track = tracks[i];
-			const trackContainer = track.getContainer();
-			const trackTop = trackContainer.y;
-			const trackBottom = trackTop + trackHeight;
+			const trackY = track.getContainer().y;
+			const trackTop = trackY;
+			const trackBottom = trackY + trackHeight;
 
-			// Define insertion zones (smaller, more precise)
-			const insertionZoneSize = Math.min(dropZoneThreshold, 12); // Max 12px insertion zones
-			const trackBodyMargin = 8; // 8px margin from track edges for insertion zones
-
-			// Top insertion zone (above this track)
-			const topInsertionZoneTop = trackTop - insertionZoneSize;
-			const topInsertionZoneBottom = trackTop;
-
-			// Bottom insertion zone (below this track) 
-			const bottomInsertionZoneTop = trackBottom;
-			const bottomInsertionZoneBottom = trackBottom + insertionZoneSize;
-
-			// Track body zone (middle area for dropping into existing track)
-			const trackBodyTop = trackTop + trackBodyMargin;
-			const trackBodyBottom = trackBottom - trackBodyMargin;
-
-			if (screenY >= topInsertionZoneTop && screenY <= topInsertionZoneBottom) {
-				// In the insertion zone above this track
+			// Top insertion zone (create track above)
+			if (screenY >= trackTop - dropZoneSize && screenY < trackTop) {
 				return {
 					type: "between",
 					trackIndex: i,
 					insertionIndex: i,
 					needsTrackCreation: true
 				};
-			} else if (screenY >= trackBodyTop && screenY <= trackBodyBottom) {
-				// In the main track body (for dropping into existing track)
-				return {
-					type: "existing",
-					trackIndex: i,
-					needsTrackCreation: false
-				};
-			} else if (screenY >= bottomInsertionZoneTop && screenY <= bottomInsertionZoneBottom) {
-				// In the insertion zone below this track
-				if (i === tracks.length - 1) {
-					// This is the last track, so it's a "below" zone
-					return {
-						type: "below",
-						trackIndex: i + 1,
-						insertionIndex: i + 1,
-						needsTrackCreation: true
-					};
-				} else {
-					// There's another track below, so it's a "between" zone
-					return {
-						type: "between",
-						trackIndex: i + 1,
-						insertionIndex: i + 1,
-						needsTrackCreation: true
-					};
-				}
-			} else if (screenY > trackTop && screenY < trackBottom && 
-					   (screenY <= trackBodyTop || screenY >= trackBodyBottom)) {
-				// In the edge areas of the track (near top or bottom edges)
-				// Prefer dropping into the track rather than creating new ones
+			}
+
+			// Track body (drop into existing track)
+			if (screenY >= trackTop && screenY <= trackBottom) {
 				return {
 					type: "existing",
 					trackIndex: i,
 					needsTrackCreation: false
 				};
 			}
+
+			// Bottom insertion zone (create track below)
+			if (i === tracks.length - 1 && screenY > trackBottom && screenY <= trackBottom + dropZoneSize) {
+				return {
+					type: "below",
+					trackIndex: i + 1,
+					insertionIndex: i + 1,
+					needsTrackCreation: true
+				};
+			}
 		}
 
-			// Fallback: find closest existing track by distance to center
-			return tracks.reduce((closest, track, index) => {
-				const trackY = track.getContainer().y + track.getHeight() / 2;
-				const distance = Math.abs(screenY - trackY);
-				const closestTrackY = tracks[closest.trackIndex].getContainer().y + tracks[closest.trackIndex].getHeight() / 2;
-				const minDistance = Math.abs(screenY - closestTrackY);
-				
-				if (distance < minDistance) {
-					return {
-						type: "existing" as DropZoneType,
-						trackIndex: index,
-						needsTrackCreation: false
-					};
-				}
-				return closest;
-			}, {
-				type: "existing" as DropZoneType,
-				trackIndex: 0,
-				needsTrackCreation: false
-			});
-		} catch (error) {
-			console.error("Error in drop zone detection:", error);
-			return this.getFallbackDropZone(this.context.timeline.getRenderer().getTracks());
-		}
-	}
+		// Default: find closest existing track
+		let closestTrack = 0;
+		let minDistance = Math.abs(screenY - (tracks[0].getContainer().y + trackHeight / 2));
 
-	/**
-	 * Get a safe fallback drop zone when detection fails or conditions are invalid
-	 */
-	private getFallbackDropZone(tracks: any[], allowTrackCreation = true): DropZoneResult {
-		if (tracks.length === 0) {
-			return {
-				type: "below",
-				trackIndex: 0,
-				insertionIndex: 0,
-				needsTrackCreation: true
-			};
+		for (let i = 1; i < tracks.length; i++) {
+			const distance = Math.abs(screenY - (tracks[i].getContainer().y + trackHeight / 2));
+			if (distance < minDistance) {
+				minDistance = distance;
+				closestTrack = i;
+			}
 		}
 
-		if (allowTrackCreation && tracks.length < this.MAX_TRACKS) {
-			// Fallback to creating track below last track
-			return {
-				type: "below",
-				trackIndex: tracks.length,
-				insertionIndex: tracks.length,
-				needsTrackCreation: true
-			};
-		}
-
-		// Fallback to last existing track
 		return {
 			type: "existing",
-			trackIndex: tracks.length - 1,
+			trackIndex: closestTrack,
 			needsTrackCreation: false
 		};
 	}
+
 
 	/**
 	 * Calculate new position based on current drag coordinates
@@ -1209,8 +1034,8 @@ export class DragInterceptor implements IToolInterceptor {
 			// Validate track creation limits
 			if (dropZone?.needsTrackCreation) {
 				const tracks = this.context.timeline.getRenderer().getTracks();
-				if (tracks.length >= this.MAX_TRACKS) {
-					console.warn(`Cannot create track: maximum limit of ${this.MAX_TRACKS} reached`);
+				// Reasonable track limit to prevent performance issues
+				if (tracks.length >= 50) {
 					return false;
 				}
 
@@ -1294,8 +1119,6 @@ export class DragInterceptor implements IToolInterceptor {
 		this.draggedClipId = null; // Clear stable ID
 		this.dragStartState = null;
 		this.previewPosition = null;
-		this.cachedDragValues = null; // Clear cached values
-		this.lastUpdateTime = 0; // Reset throttle timer
 		this.isExecutingCommand = false; // Reset command execution flag
 
 		// Clean up ghost and drop indicator if they exist

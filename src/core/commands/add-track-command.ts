@@ -12,18 +12,9 @@ export class AddTrackCommand implements EditCommand {
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 		
-		console.log('AddTrackCommand: Before track creation', {
-			insertionIndex: this.trackIdx,
-			currentTrackCount: tracks.length,
-			tracks: tracks.map((track, i) => ({ index: i, clipCount: track.length }))
-		});
 		
 		tracks.splice(this.trackIdx, 0, []);
 		
-		console.log('AddTrackCommand: After track creation', {
-			newTrackCount: tracks.length,
-			tracks: tracks.map((track, i) => ({ index: i, clipCount: track.length }))
-		});
 
 		const affectedClips = clips.filter(clip => clip.layer >= this.trackIdx + 1);
 		const container = context.getContainer();

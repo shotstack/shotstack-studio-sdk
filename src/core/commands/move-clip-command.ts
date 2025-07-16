@@ -24,14 +24,6 @@ export class MoveClipCommand implements EditCommand {
 
 		// Get the player by indices
 		const tracks = context.getTracks();
-		console.log('MoveClipCommand: Starting execution', {
-			fromTrackIndex: this.fromTrackIndex,
-			fromClipIndex: this.fromClipIndex,
-			toTrackIndex: this.toTrackIndex,
-			newStart: this.newStart,
-			totalTracks: tracks.length,
-			tracks: tracks.map((track, i) => ({ index: i, clipCount: track.length }))
-		});
 
 		if (this.fromTrackIndex < 0 || this.fromTrackIndex >= tracks.length) {
 			console.warn(`Invalid source track index: ${this.fromTrackIndex}`);
@@ -48,10 +40,6 @@ export class MoveClipCommand implements EditCommand {
 		this.player = fromTrack[this.fromClipIndex];
 		this.originalStart = this.player.clipConfiguration.start;
 		
-		console.log('MoveClipCommand: Found clip to move', {
-			currentStart: this.originalStart,
-			currentLayer: this.player.layer
-		});
 
 		// If moving to a different track
 		if (this.fromTrackIndex !== this.toTrackIndex) {
@@ -61,31 +49,15 @@ export class MoveClipCommand implements EditCommand {
 				return;
 			}
 
-			console.log('MoveClipCommand: Cross-track move detected', {
-				fromTrack: this.fromTrackIndex,
-				toTrack: this.toTrackIndex
-			});
 
 			// Remove from current track
-			console.log('MoveClipCommand: Before removing from source track', {
-				sourceTrackClipCount: fromTrack.length
-			});
 			fromTrack.splice(this.fromClipIndex, 1);
-			console.log('MoveClipCommand: After removing from source track', {
-				sourceTrackClipCount: fromTrack.length
-			});
 
 			// Update the player's layer
 			this.player.layer = this.toTrackIndex + 1;
-			console.log('MoveClipCommand: Updated player layer to', this.player.layer);
 
 			// Add to new track at the correct position (sorted by start time)
 			const toTrack = tracks[this.toTrackIndex];
-			console.log('MoveClipCommand: Target track info', {
-				targetTrackIndex: this.toTrackIndex,
-				targetTrackClipCount: toTrack.length,
-				targetTrackClips: toTrack.map(clip => ({ start: clip.clipConfiguration?.start }))
-			});
 
 			// Find the correct insertion point based on start time
 			let insertIndex = 0;
@@ -100,12 +72,7 @@ export class MoveClipCommand implements EditCommand {
 			}
 
 			// Insert at the correct position
-			console.log('MoveClipCommand: Inserting clip at index', insertIndex);
 			toTrack.splice(insertIndex, 0, this.player);
-			console.log('MoveClipCommand: After insertion', {
-				targetTrackClipCount: toTrack.length,
-				insertedAtIndex: insertIndex
-			});
 
 			// Store the new clip index for undo
 			this.originalClipIndex = insertIndex;
