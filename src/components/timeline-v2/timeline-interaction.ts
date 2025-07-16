@@ -78,7 +78,7 @@ export class TimelineInteraction {
 		}
 		
 		// Clicked on empty space - clear selection
-		this.timeline.getEdit().events.emit('selection:cleared', {});
+		this.timeline.getEdit().clearSelection();
 	}
 
 	private handlePointerMove(event: PIXI.FederatedPointerEvent): void {
@@ -100,12 +100,8 @@ export class TimelineInteraction {
 
 	private handlePointerUp(event: PIXI.FederatedPointerEvent): void {
 		if (this.state === InteractionState.SELECTING && this.currentClipInfo) {
-			// Complete selection
-			this.timeline.getEdit().events.emit('clip:selected', {
-				clip: this.timeline.getClipData(this.currentClipInfo.trackIndex, this.currentClipInfo.clipIndex),
-				trackIndex: this.currentClipInfo.trackIndex,
-				clipIndex: this.currentClipInfo.clipIndex
-			});
+			// Complete selection using proper command system
+			this.timeline.getEdit().selectClip(this.currentClipInfo.trackIndex, this.currentClipInfo.clipIndex);
 		} else if (this.state === InteractionState.DRAGGING) {
 			this.completeDrag(event);
 		}
