@@ -25,7 +25,6 @@ async function main() {
 
 		// 5. Initialize the TimelineV2 with options
 		const timeline = new TimelineV2(edit, {
-			theme: "light",
 			width: template.output.size.width,
 			height: 300,
 			pixelsPerSecond: 50,

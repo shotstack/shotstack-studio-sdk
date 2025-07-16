@@ -4,6 +4,7 @@ import { VisualTrack, VisualTrackOptions } from "./visual-track";
 import { RulerFeature, PlayheadFeature, GridFeature } from "./timeline-features";
 import { TimelineLayout } from "./timeline-layout";
 import { EditType, TimelineOptions, TimelineV2Options, ClipInfo, DropPosition, ClipConfig } from "./types";
+import { ToolManager, SelectionTool } from "./tools";
 import * as PIXI from "pixi.js";
 
 export class TimelineV2 extends Entity {
@@ -32,12 +33,16 @@ export class TimelineV2 extends Entity {
 	private scrollY = 0;
 	private zoomLevel = 1;
 
+	// Tool management
+	private toolManager!: ToolManager;
+
 	constructor(private edit: Edit, options: TimelineOptions) {
 		super();
 		this.options = this.mergeWithDefaults(options);
 		this.resolvedOptions = this.resolveOptions(this.options);
 		this.layout = new TimelineLayout(this.resolvedOptions);
 		this.setupEventListener();
+		this.setupTools();
 	}
 
 	private mergeWithDefaults(options: TimelineOptions): TimelineOptions {
@@ -71,12 +76,17 @@ export class TimelineV2 extends Entity {
 		await this.setupViewport();
 		await this.setupTimelineFeatures();
 		
+		// Activate default tool after PIXI is ready
+		this.toolManager.activateTool('selection');
+		
 		// Try to render initial state from Edit
 		console.log('TimelineV2: Getting initial edit state');
 		try {
 			const currentEdit = this.edit.getEdit();
 			if (currentEdit) {
 				console.log('TimelineV2: Initial edit state found', currentEdit);
+				// Cache the initial state for tools to query
+				this.currentEditType = currentEdit;
 				await this.rebuildFromEdit(currentEdit);
 			} else {
 				console.log('TimelineV2: No initial edit state found');
@@ -252,21 +262,55 @@ export class TimelineV2 extends Entity {
 		return this.layout;
 	}
 
+	// Visual tracks access for tools
+	public getVisualTracks(): VisualTrack[] {
+		return this.visualTracks;
+	}
+
+	// Tool management methods
+	public switchTool(toolName: string): boolean {
+		return this.toolManager.activateTool(toolName);
+	}
+
+	public getActiveTool(): string | undefined {
+		return this.toolManager.getActiveToolName();
+	}
+
+	public getAvailableTools(): string[] {
+		return this.toolManager.getAvailableToolNames();
+	}
+
+	// Edit access for tools
+	public getEdit(): Edit {
+		return this.edit;
+	}
+
 	private setupEventListener(): void {
 		this.edit.events.on('timeline:updated', this.handleTimelineUpdated.bind(this));
 	}
 
-	private async handleTimelineUpdated(event: { current: { timeline: EditType } }): Promise<void> {
+	private setupTools(): void {
+		this.toolManager = new ToolManager();
+		
+		// Register available tools
+		this.toolManager.registerTool(new SelectionTool(this));
+		
+		// Activate default tool (selection) - but only after PIXI is initialized
+		// This will be done in the load() method
+	}
+
+	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
 		console.log('TimelineV2: Timeline updated event received', event);
 		
 		// Cache current state from event
-		this.currentEditType = event.current.timeline;
+		this.currentEditType = event.current;
 		
 		// Rebuild visuals from event data
 		this.clearAllVisualState();
-		await this.rebuildFromEdit(event.current.timeline);
+		await this.rebuildFromEdit(event.current);
 		this.restoreUIState(); // Selection, scroll position, etc.
 	}
+
 
 	private clearAllVisualState(): void {
 		// Clear all visual timeline components
@@ -387,6 +431,11 @@ export class TimelineV2 extends Entity {
 
 	public dispose(): void {
 		this.edit.events.off('timeline:updated', this.handleTimelineUpdated.bind(this));
+		
+		// Clean up tools
+		if (this.toolManager) {
+			this.toolManager.dispose();
+		}
 		
 		// Clean up visual tracks
 		this.clearAllVisualState();

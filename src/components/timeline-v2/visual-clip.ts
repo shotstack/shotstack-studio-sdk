@@ -46,6 +46,10 @@ export class VisualClip extends Entity {
 		// Set up container with label for later tool integration
 		container.label = `clip-${this.options.trackIndex}-${this.options.clipIndex}`;
 		
+		// Make container interactive for click events
+		container.interactive = true;
+		container.cursor = 'pointer';
+		
 		container.addChild(this.background);
 		container.addChild(this.graphics);
 		container.addChild(this.text);

@@ -20,6 +20,9 @@ export type {
 export { RulerFeature, PlayheadFeature, GridFeature } from './timeline-features';
 export { TimelineLayout } from './timeline-layout';
 
+// Timeline v2 Tools
+export { ToolManager, BaseTool, SelectionTool } from './tools';
+
 // Note: Additional components will be exported as they are implemented
 // export { DragTool } from './drag-tool';
 // export { SelectionTool } from './selection-tool';
