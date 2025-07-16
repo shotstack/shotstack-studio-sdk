@@ -102,11 +102,21 @@ export class VisualClip extends Entity {
 	}
 
 	private drawClipBackground(width: number, height: number): void {
-		const color = this.getClipColor();
+		let color = this.getClipColor();
+		let alpha = 0.8;
+		
+		// Modify appearance based on state
+		if (this.isDisabled) {
+			alpha = 0.5;
+		} else if (this.isDragging) {
+			// Darken the color slightly during drag and make it more transparent
+			color = this.darkenColor(color, 0.2);
+			alpha = 0.7;
+		}
 		
 		this.background.clear();
 		this.background.roundRect(0, 0, width, height, this.CORNER_RADIUS);
-		this.background.fill({ color, alpha: this.isDisabled ? 0.5 : 0.8 });
+		this.background.fill({ color, alpha });
 	}
 
 	private drawClipBorder(width: number, height: number): void {
@@ -173,10 +183,13 @@ export class VisualClip extends Entity {
 		if (this.isDisabled) {
 			container.alpha = 0.5;
 		} else if (this.isDragging) {
-			container.alpha = 0.8;
+			container.alpha = 0.6; // Make it more noticeably transparent during drag
 		} else {
 			container.alpha = 1.0;
 		}
+		
+		// Also update the border color to show drag state
+		this.updateSize(); // This will redraw with the new border color
 	}
 
 	private updateText(): void {
@@ -231,6 +244,21 @@ export class VisualClip extends Entity {
 		// Extract filename from URL or path
 		const parts = src.split('/');
 		return parts[parts.length - 1] || src;
+	}
+
+	private darkenColor(color: number, factor: number): number {
+		// Extract RGB components
+		const r = (color >> 16) & 0xFF;
+		const g = (color >> 8) & 0xFF;
+		const b = color & 0xFF;
+		
+		// Darken each component
+		const newR = Math.floor(r * (1 - factor));
+		const newG = Math.floor(g * (1 - factor));
+		const newB = Math.floor(b * (1 - factor));
+		
+		// Combine back to hex
+		return (newR << 16) | (newG << 8) | newB;
 	}
 
 

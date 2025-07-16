@@ -4,7 +4,7 @@ import { VisualTrack, VisualTrackOptions } from "./visual-track";
 import { RulerFeature, PlayheadFeature, GridFeature } from "./timeline-features";
 import { TimelineLayout } from "./timeline-layout";
 import { EditType, TimelineOptions, TimelineV2Options, ClipInfo, DropPosition, ClipConfig } from "./types";
-import { ToolManager, SelectionTool } from "./tools";
+import { ToolManager, SelectionTool, DragTool } from "./tools";
 import * as PIXI from "pixi.js";
 
 export class TimelineV2 extends Entity {
@@ -35,6 +35,10 @@ export class TimelineV2 extends Entity {
 
 	// Tool management
 	private toolManager!: ToolManager;
+	
+	// Animation loop
+	private animationFrameId: number | null = null;
+	private testAnimationCounter: number = 0;
 
 	constructor(private edit: Edit, options: TimelineOptions) {
 		super();
@@ -77,7 +81,7 @@ export class TimelineV2 extends Entity {
 		await this.setupTimelineFeatures();
 		
 		// Activate default tool after PIXI is ready
-		this.toolManager.activateTool('selection');
+		this.toolManager.activateTool('drag');
 		
 		// Try to render initial state from Edit
 		console.log('TimelineV2: Getting initial edit state');
@@ -94,6 +98,9 @@ export class TimelineV2 extends Entity {
 		} catch (error) {
 			console.error('TimelineV2: Error getting initial edit state', error);
 		}
+		
+		// Start animation loop for continuous rendering
+		this.startAnimationLoop();
 	}
 
 	private async initializePixiApp(): Promise<void> {
@@ -287,8 +294,12 @@ export class TimelineV2 extends Entity {
 
 	private setupEventListener(): void {
 		this.edit.events.on('timeline:updated', this.handleTimelineUpdated.bind(this));
+		this.edit.events.on('clip:updated', this.handleClipUpdated.bind(this));
 		this.edit.events.on('clip:selected', this.handleClipSelected.bind(this));
 		this.edit.events.on('selection:cleared', this.handleSelectionCleared.bind(this));
+		this.edit.events.on('drag:started', this.handleDragStarted.bind(this));
+		this.edit.events.on('drag:moved', this.handleDragMoved.bind(this));
+		this.edit.events.on('drag:ended', this.handleDragEnded.bind(this));
 	}
 
 	private setupTools(): void {
@@ -296,6 +307,7 @@ export class TimelineV2 extends Entity {
 		
 		// Register available tools
 		this.toolManager.registerTool(new SelectionTool(this));
+		this.toolManager.registerTool(new DragTool(this));
 		
 		// Activate default tool (selection) - but only after PIXI is initialized
 		// This will be done in the load() method
@@ -311,12 +323,45 @@ export class TimelineV2 extends Entity {
 		this.restoreUIState(); // Selection, scroll position, etc.
 	}
 
+	private async handleClipUpdated(event: { current: any; previous: any }): Promise<void> {
+		console.log('TimelineV2: Clip updated event received', event);
+		
+		// For clip updates, we need to rebuild the timeline from the current Edit state
+		// since the MoveClipCommand has already updated the underlying data
+		try {
+			const currentEdit = this.edit.getEdit();
+			if (currentEdit) {
+				console.log('TimelineV2: Rebuilding timeline after clip update');
+				this.currentEditType = currentEdit;
+				this.clearAllVisualState();
+				await this.rebuildFromEdit(currentEdit);
+				this.restoreUIState();
+			}
+		} catch (error) {
+			console.error('TimelineV2: Error handling clip update', error);
+		}
+	}
+
 	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
 		this.updateVisualSelection(event.trackIndex, event.clipIndex);
 	}
 
 	private handleSelectionCleared(): void {
 		this.clearVisualSelection();
+	}
+
+	private handleDragStarted(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number }): void {
+		console.log('TimelineV2: Drag started event received', event);
+		this.showDragPreview(event.trackIndex, event.clipIndex);
+	}
+
+	private handleDragMoved(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number; currentTime: number; currentTrack: number }): void {
+		this.updateDragPreview(event.trackIndex, event.clipIndex, event.currentTrack, event.currentTime);
+	}
+
+	private handleDragEnded(): void {
+		console.log('TimelineV2: Drag ended event received');
+		this.hideDragPreview();
 	}
 
 
@@ -342,6 +387,112 @@ export class TimelineV2 extends Entity {
 				clip.setSelected(false);
 			});
 		});
+	}
+
+	// Drag preview overlay system
+	private dragPreviewContainer: PIXI.Container | null = null;
+	private draggedClipInfo: { trackIndex: number; clipIndex: number; clipConfig: any } | null = null;
+
+	private showDragPreview(trackIndex: number, clipIndex: number): void {
+		// Get the clip data for creating the preview
+		const clipData = this.getClipData(trackIndex, clipIndex);
+		if (!clipData) {
+			console.warn('Clip data not found for drag preview:', trackIndex, clipIndex);
+			return;
+		}
+
+		// Store dragged clip info
+		this.draggedClipInfo = { trackIndex, clipIndex, clipConfig: clipData };
+
+		// Create drag preview container on overlay layer
+		this.dragPreviewContainer = new PIXI.Container();
+		this.overlayLayer.addChild(this.dragPreviewContainer);
+
+		// Set the original clip to semi-transparent
+		const track = this.visualTracks[trackIndex];
+		if (track) {
+			const clip = track.getClip(clipIndex);
+			if (clip) {
+				clip.setDragging(true);
+			}
+		}
+
+		// Draw initial preview at original position
+		this.drawDragPreview(trackIndex, clipData.start || 0);
+	}
+
+	private updateDragPreview(_originalTrackIndex: number, _originalClipIndex: number, currentTrack: number, currentTime: number): void {
+		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
+
+		// Clear and redraw preview at new position
+		this.drawDragPreview(currentTrack, currentTime);
+	}
+
+	private drawDragPreview(trackIndex: number, time: number): void {
+		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
+
+		const clipConfig = this.draggedClipInfo.clipConfig;
+		const layout = this.getLayout();
+		
+		// Calculate position and size
+		const x = layout.getXAtTime(time);
+		const y = layout.getYAtTrack(trackIndex);
+		const width = (clipConfig.length || 0) * this.resolvedOptions.pixelsPerSecond;
+		const height = this.resolvedOptions.trackHeight;
+
+		// Clear previous drawing
+		this.dragPreviewContainer.removeChildren();
+
+		// Create graphics for the preview rectangle
+		const graphics = new PIXI.Graphics();
+		graphics.roundRect(0, 0, width, height, 4);
+		graphics.fill({ color: 0x007acc, alpha: 0.5 });
+		graphics.stroke({ width: 2, color: 0x00ff00 });
+
+		// Create text label
+		const text = new PIXI.Text({
+			text: 'DRAGGING',
+			style: {
+				fontSize: 12,
+				fill: 0xffffff,
+				fontWeight: 'bold'
+			}
+		});
+		text.x = 4;
+		text.y = 4;
+
+		// Add graphics and text to container
+		this.dragPreviewContainer.addChild(graphics);
+		this.dragPreviewContainer.addChild(text);
+
+		// Position the container
+		this.dragPreviewContainer.x = x;
+		this.dragPreviewContainer.y = y;
+
+		console.log('Drag preview drawn at:', { track: trackIndex, time, x, y, width, height });
+	}
+
+	private hideDragPreview(): void {
+		// Remove overlay container
+		if (this.dragPreviewContainer) {
+			this.overlayLayer.removeChild(this.dragPreviewContainer);
+			this.dragPreviewContainer.destroy();
+			this.dragPreviewContainer = null;
+		}
+
+		// Reset original clip appearance
+		if (this.draggedClipInfo) {
+			const track = this.visualTracks[this.draggedClipInfo.trackIndex];
+			if (track) {
+				const clip = track.getClip(this.draggedClipInfo.clipIndex);
+				if (clip) {
+					clip.setDragging(false);
+				}
+			}
+		}
+
+		this.draggedClipInfo = null;
+		console.log('Drag preview hidden and overlay cleaned up');
 	}
 
 	private clearAllVisualState(): void {
@@ -452,12 +603,57 @@ export class TimelineV2 extends Entity {
 	}
 
 	public draw(): void {
-		// Timeline v2 doesn't need frame-based drawing
-		// All drawing is event-driven through rebuilds
+		// Render the PIXI application
+		this.app.render();
+		
+		// Test: Add a simple animation counter to verify the loop is working
+		if (!this.testAnimationCounter) {
+			this.testAnimationCounter = 0;
+		}
+		this.testAnimationCounter++;
+		
+		// Log every 60 frames (roughly 1 second) to verify animation loop
+		if (this.testAnimationCounter % 60 === 0) {
+			console.log(`Animation loop working: frame ${this.testAnimationCounter}`);
+		}
+	}
+
+	private startAnimationLoop(): void {
+		let lastTime = performance.now();
+
+		const animate = (currentTime: number) => {
+			const deltaMS = currentTime - lastTime;
+			lastTime = currentTime;
+
+			// Convert to PIXI-style deltaTime (frame-based)
+			const deltaTime = deltaMS / 16.667;
+
+			this.update(deltaTime, deltaMS);
+			this.draw();
+
+			this.animationFrameId = requestAnimationFrame(animate);
+		};
+
+		this.animationFrameId = requestAnimationFrame(animate);
 	}
 
 	public dispose(): void {
+		// Stop animation loop
+		if (this.animationFrameId !== null) {
+			cancelAnimationFrame(this.animationFrameId);
+			this.animationFrameId = null;
+		}
+		
+		// Clean up drag preview if still active
+		this.hideDragPreview();
+		
 		this.edit.events.off('timeline:updated', this.handleTimelineUpdated.bind(this));
+		this.edit.events.off('clip:updated', this.handleClipUpdated.bind(this));
+		this.edit.events.off('clip:selected', this.handleClipSelected.bind(this));
+		this.edit.events.off('selection:cleared', this.handleSelectionCleared.bind(this));
+		this.edit.events.off('drag:started', this.handleDragStarted.bind(this));
+		this.edit.events.off('drag:moved', this.handleDragMoved.bind(this));
+		this.edit.events.off('drag:ended', this.handleDragEnded.bind(this));
 		
 		// Clean up tools
 		if (this.toolManager) {
