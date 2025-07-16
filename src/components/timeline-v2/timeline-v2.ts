@@ -38,7 +38,6 @@ export class TimelineV2 extends Entity {
 	
 	// Animation loop
 	private animationFrameId: number | null = null;
-	private testAnimationCounter: number = 0;
 
 	constructor(private edit: Edit, options: TimelineOptions) {
 		super();
@@ -324,21 +323,18 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async handleClipUpdated(event: { current: any; previous: any }): Promise<void> {
-		console.log('TimelineV2: Clip updated event received', event);
 		
 		// For clip updates, we need to rebuild the timeline from the current Edit state
 		// since the MoveClipCommand has already updated the underlying data
 		try {
 			const currentEdit = this.edit.getEdit();
 			if (currentEdit) {
-				console.log('TimelineV2: Rebuilding timeline after clip update');
-				this.currentEditType = currentEdit;
+						this.currentEditType = currentEdit;
 				this.clearAllVisualState();
 				await this.rebuildFromEdit(currentEdit);
 				this.restoreUIState();
 			}
 		} catch (error) {
-			console.error('TimelineV2: Error handling clip update', error);
 		}
 	}
 
@@ -351,7 +347,6 @@ export class TimelineV2 extends Entity {
 	}
 
 	private handleDragStarted(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number }): void {
-		console.log('TimelineV2: Drag started event received', event);
 		this.showDragPreview(event.trackIndex, event.clipIndex);
 	}
 
@@ -360,7 +355,6 @@ export class TimelineV2 extends Entity {
 	}
 
 	private handleDragEnded(): void {
-		console.log('TimelineV2: Drag ended event received');
 		this.hideDragPreview();
 	}
 
@@ -391,6 +385,7 @@ export class TimelineV2 extends Entity {
 
 	// Drag preview overlay system
 	private dragPreviewContainer: PIXI.Container | null = null;
+	private dragPreviewGraphics: PIXI.Graphics | null = null;
 	private draggedClipInfo: { trackIndex: number; clipIndex: number; clipConfig: any } | null = null;
 
 	private showDragPreview(trackIndex: number, clipIndex: number): void {
@@ -404,8 +399,12 @@ export class TimelineV2 extends Entity {
 		// Store dragged clip info
 		this.draggedClipInfo = { trackIndex, clipIndex, clipConfig: clipData };
 
-		// Create drag preview container on overlay layer
+		// Create drag preview container and graphics
 		this.dragPreviewContainer = new PIXI.Container();
+		this.dragPreviewGraphics = new PIXI.Graphics();
+
+		// Add graphics to container
+		this.dragPreviewContainer.addChild(this.dragPreviewGraphics);
 		this.overlayLayer.addChild(this.dragPreviewContainer);
 
 		// Set the original clip to semi-transparent
@@ -429,7 +428,7 @@ export class TimelineV2 extends Entity {
 	}
 
 	private drawDragPreview(trackIndex: number, time: number): void {
-		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
+		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
 
 		const clipConfig = this.draggedClipInfo.clipConfig;
 		const layout = this.getLayout();
@@ -440,36 +439,20 @@ export class TimelineV2 extends Entity {
 		const width = (clipConfig.length || 0) * this.resolvedOptions.pixelsPerSecond;
 		const height = this.resolvedOptions.trackHeight;
 
-		// Clear previous drawing
-		this.dragPreviewContainer.removeChildren();
-
-		// Create graphics for the preview rectangle
-		const graphics = new PIXI.Graphics();
-		graphics.roundRect(0, 0, width, height, 4);
-		graphics.fill({ color: 0x007acc, alpha: 0.5 });
-		graphics.stroke({ width: 2, color: 0x00ff00 });
-
-		// Create text label
-		const text = new PIXI.Text({
-			text: 'DRAGGING',
-			style: {
-				fontSize: 12,
-				fill: 0xffffff,
-				fontWeight: 'bold'
-			}
-		});
-		text.x = 4;
-		text.y = 4;
-
-		// Add graphics and text to container
-		this.dragPreviewContainer.addChild(graphics);
-		this.dragPreviewContainer.addChild(text);
+		// Clear and redraw existing graphics (much faster than recreating)
+		this.dragPreviewGraphics.clear();
+		this.dragPreviewGraphics.roundRect(0, 0, width, height, 4);
+		
+		// Use original clip color, darkened for drag appearance
+		const baseColor = this.getClipColor(clipConfig.asset?.type);
+		const dragColor = this.darkenColor(baseColor, 0.3);
+		
+		this.dragPreviewGraphics.fill({ color: dragColor, alpha: 0.7 });
+		this.dragPreviewGraphics.stroke({ width: 2, color: 0x00ff00 });
 
 		// Position the container
 		this.dragPreviewContainer.x = x;
 		this.dragPreviewContainer.y = y;
-
-		console.log('Drag preview drawn at:', { track: trackIndex, time, x, y, width, height });
 	}
 
 	private hideDragPreview(): void {
@@ -478,6 +461,7 @@ export class TimelineV2 extends Entity {
 			this.overlayLayer.removeChild(this.dragPreviewContainer);
 			this.dragPreviewContainer.destroy();
 			this.dragPreviewContainer = null;
+			this.dragPreviewGraphics = null;
 		}
 
 		// Reset original clip appearance
@@ -492,7 +476,6 @@ export class TimelineV2 extends Entity {
 		}
 
 		this.draggedClipInfo = null;
-		console.log('Drag preview hidden and overlay cleaned up');
 	}
 
 	private clearAllVisualState(): void {
@@ -606,16 +589,6 @@ export class TimelineV2 extends Entity {
 		// Render the PIXI application
 		this.app.render();
 		
-		// Test: Add a simple animation counter to verify the loop is working
-		if (!this.testAnimationCounter) {
-			this.testAnimationCounter = 0;
-		}
-		this.testAnimationCounter++;
-		
-		// Log every 60 frames (roughly 1 second) to verify animation loop
-		if (this.testAnimationCounter % 60 === 0) {
-			console.log(`Animation loop working: frame ${this.testAnimationCounter}`);
-		}
 	}
 
 	private startAnimationLoop(): void {
@@ -635,6 +608,44 @@ export class TimelineV2 extends Entity {
 		};
 
 		this.animationFrameId = requestAnimationFrame(animate);
+	}
+
+	// Helper methods for drag preview styling
+	private getClipColor(assetType?: string): number {
+		// Match VisualClip color logic
+		switch (assetType) {
+			case 'video':
+				return 0x4A90E2;
+			case 'audio':
+				return 0x7ED321;
+			case 'image':
+				return 0xF5A623;
+			case 'text':
+				return 0xD0021B;
+			case 'shape':
+				return 0x9013FE;
+			case 'html':
+				return 0x50E3C2;
+			case 'luma':
+				return 0xB8E986;
+			default:
+				return 0x8E8E93;
+		}
+	}
+
+	private darkenColor(color: number, factor: number): number {
+		// Extract RGB components
+		const r = (color >> 16) & 0xFF;
+		const g = (color >> 8) & 0xFF;
+		const b = color & 0xFF;
+		
+		// Darken each component
+		const newR = Math.floor(r * (1 - factor));
+		const newG = Math.floor(g * (1 - factor));
+		const newB = Math.floor(b * (1 - factor));
+		
+		// Combine back to hex
+		return (newR << 16) | (newG << 8) | newB;
 	}
 
 	public dispose(): void {

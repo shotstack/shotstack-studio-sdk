@@ -89,7 +89,6 @@ export class DragTool extends BaseTool {
 		};
 
 		this.isDragging = true;
-		console.log('Drag started:', this.dragStartInfo);
 		
 		// Emit drag started event for visual feedback
 		this.timeline.getEdit().events.emit('drag:started', this.dragStartInfo);
@@ -140,11 +139,6 @@ export class DragTool extends BaseTool {
 			Math.abs(dropPosition.time - dragInfo.startTime) > 0.01; // Small tolerance for floating point
 
 		if (hasChanged) {
-			console.log('Executing move command:', {
-				from: { track: dragInfo.trackIndex, clip: dragInfo.clipIndex },
-				to: { track: dropPosition.track, time: dropPosition.time }
-			});
-
 			// Use existing MoveClipCommand - it handles all the complexity
 			const command = new MoveClipCommand(
 				dragInfo.trackIndex,    // from track
