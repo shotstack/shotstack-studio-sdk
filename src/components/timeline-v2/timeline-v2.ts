@@ -174,8 +174,7 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async setupTimelineFeatures(): Promise<void> {
-		// Get actual and extended durations
-		const actualDuration = this.msToSeconds(this.edit.totalDuration) || 60;
+		// Get extended duration for timeline display
 		const extendedDuration = this.getExtendedTimelineDuration();
 		
 		// Create ruler feature with extended duration for display
@@ -318,6 +317,21 @@ export class TimelineV2 extends Entity {
 	public getExtendedTimelineWidth(): number {
 		return this.getExtendedTimelineDuration() * this.resolvedOptions.pixelsPerSecond;
 	}
+	
+	// Drag ghost control methods for TimelineInteraction
+	public hideDragGhost(): void {
+		if (this.dragPreviewContainer) {
+			this.dragPreviewContainer.visible = false;
+		}
+	}
+	
+	public showDragGhost(trackIndex: number, time: number): void {
+		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
+		
+		// Make visible and update position
+		this.dragPreviewContainer.visible = true;
+		this.drawDragPreview(trackIndex, time);
+	}
 
 	// Playhead control methods
 	public setPlayheadTime(time: number): void {
@@ -392,26 +406,16 @@ export class TimelineV2 extends Entity {
 		this.showDragPreview(event.trackIndex, event.clipIndex);
 	}
 
-	private handleDragMoved(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number; currentTime: number; currentTrack: number; inDropZone?: boolean }): void {
-		if (event.inDropZone) {
-			// Hide drag preview when in drop zone
-			if (this.dragPreviewContainer) {
-				this.dragPreviewContainer.visible = false;
-			}
-		} else {
-			// Show and update drag preview
-			if (this.dragPreviewContainer) {
-				this.dragPreviewContainer.visible = true;
-			}
-			this.updateDragPreview(event.trackIndex, event.clipIndex, event.currentTrack, event.currentTime);
-		}
+	private handleDragMoved(_event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number; currentTime: number; currentTrack: number }): void {
+		// Visual state is now handled by TimelineInteraction
+		// This handler is kept for potential future use
 	}
 
 	private handleDragEnded(): void {
 		this.hideDragPreview();
 	}
 
-	private async handleTrackCreatedAndClipMoved(event: { trackInsertionIndex: number; clipMove: { from: { trackIndex: number; clipIndex: number }; to: { trackIndex: number; start: number } } }): Promise<void> {
+	private async handleTrackCreatedAndClipMoved(_event: { trackInsertionIndex: number; clipMove: { from: { trackIndex: number; clipIndex: number }; to: { trackIndex: number; start: number } } }): Promise<void> {
 		// Clean up drag preview before rebuilding
 		this.hideDragPreview();
 		
@@ -489,12 +493,6 @@ export class TimelineV2 extends Entity {
 		this.drawDragPreview(trackIndex, clipData.start || 0);
 	}
 
-	private updateDragPreview(_originalTrackIndex: number, _originalClipIndex: number, currentTrack: number, currentTime: number): void {
-		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
-
-		// Clear and redraw preview at new position
-		this.drawDragPreview(currentTrack, currentTime);
-	}
 
 	private drawDragPreview(trackIndex: number, time: number): void {
 		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
@@ -541,10 +539,6 @@ export class TimelineV2 extends Entity {
 	private getExtendedTimelineDuration(): number {
 		const duration = this.msToSeconds(this.edit.totalDuration) || 60;
 		return Math.max(60, duration * TimelineV2.TIMELINE_BUFFER_MULTIPLIER);
-	}
-	
-	private getExtendedTimelineWidth(): number {
-		return this.getExtendedTimelineDuration() * this.resolvedOptions.pixelsPerSecond;
 	}
 
 	private updateRulerDuration(): void {

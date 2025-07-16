@@ -192,39 +192,33 @@ export class TimelineInteraction {
 		
 		// Check if we're in a drop zone
 		const dropZone = this.getDropZone(dragY);
+		const dragTrack = Math.max(0, Math.floor(dragY / layout.trackHeight));
 		
+		// Handle all visual state in one place
 		if (dropZone) {
-			// Show drop zone indicator
+			// Show drop zone indicator and hide drag preview
 			if (!this.currentDropZone || 
 			    this.currentDropZone.type !== dropZone.type || 
 			    this.currentDropZone.position !== dropZone.position) {
 				this.currentDropZone = dropZone;
 				this.showDropZoneIndicator(dropZone.position);
 			}
-			
-			// Emit drag moved event with drop zone info
-			this.timeline.getEdit().events.emit('drag:moved', {
-			    ...this.dragInfo,
-			    currentTime: dragTime,
-			    currentTrack: -1, // Indicate no specific track
-			    inDropZone: true
-			});
+			this.timeline.hideDragGhost(); // Direct call to hide preview
 		} else {
-			// Hide drop zone indicator if we were showing one
+			// Hide drop zone indicator and show drag preview
 			if (this.currentDropZone || this.dropZoneIndicator) {
 				this.hideDropZoneIndicator();
 				this.currentDropZone = null;
 			}
-			
-			// Normal drag on existing track
-			const dragTrack = Math.max(0, Math.floor(dragY / layout.trackHeight));
-			this.timeline.getEdit().events.emit('drag:moved', {
-			    ...this.dragInfo,
-			    currentTime: dragTime,
-			    currentTrack: dragTrack,
-			    inDropZone: false
-			});
+			this.timeline.showDragGhost(dragTrack, dragTime); // Direct call to show/update preview
 		}
+		
+		// Emit simplified event without visual state flags
+		this.timeline.getEdit().events.emit('drag:moved', {
+		    ...this.dragInfo,
+		    currentTime: dragTime,
+		    currentTrack: dropZone ? -1 : dragTrack
+		});
 	}
 
 	private completeDrag(event: PIXI.FederatedPointerEvent): void {
@@ -445,47 +439,24 @@ export class TimelineInteraction {
 	}
 
 	private getDropZone(y: number): { type: 'above' | 'between' | 'below'; position: number } | null {
-		const layout = this.timeline.getLayout();
-		const trackHeight = layout.trackHeight;
+		const trackHeight = this.timeline.getLayout().trackHeight;
 		const tracks = this.timeline.getVisualTracks();
+		const threshold = TimelineInteraction.DROP_ZONE_THRESHOLD;
 		
-		// Adjust y to be relative to tracks area (accounting for ruler)
-		const relativeY = y;
-		
-		// Check if above first track
-		if (relativeY < -TimelineInteraction.DROP_ZONE_THRESHOLD) {
-			return { type: 'above', position: 0 };
-		}
-		
-		// Check if we're inside any track bounds (not near boundaries)
-		for (let i = 0; i < tracks.length; i++) {
-			const trackTop = i * trackHeight;
-			const trackBottom = (i + 1) * trackHeight;
-			
-			// If we're well inside a track (not near its boundaries), we're not in a drop zone
-			if (relativeY > trackTop + TimelineInteraction.DROP_ZONE_THRESHOLD &&
-			    relativeY < trackBottom - TimelineInteraction.DROP_ZONE_THRESHOLD) {
-				return null; // Inside a track, not in a drop zone
+		// Check each potential insertion point (0 to tracks.length)
+		for (let i = 0; i <= tracks.length; i++) {
+			const boundaryY = i * trackHeight;
+			if (Math.abs(y - boundaryY) < threshold) {
+				return { 
+					type: i === 0 ? 'above' : 
+					      i === tracks.length ? 'below' : 
+					      'between',
+					position: i 
+				};
 			}
 		}
 		
-		// Check between tracks (within threshold of track boundaries)
-		for (let i = 0; i < tracks.length; i++) {
-			const trackBottom = (i + 1) * trackHeight;
-			const distanceFromBoundary = Math.abs(relativeY - trackBottom);
-			
-			if (distanceFromBoundary < TimelineInteraction.DROP_ZONE_THRESHOLD) {
-				return { type: 'between', position: i + 1 };
-			}
-		}
-		
-		// Check if below last track
-		const lastTrackBottom = tracks.length * trackHeight;
-		if (relativeY > lastTrackBottom + TimelineInteraction.DROP_ZONE_THRESHOLD) {
-			return { type: 'below', position: tracks.length };
-		}
-		
-		return null;
+		return null; // Not near any boundary
 	}
 
 	private showDropZoneIndicator(position: number): void {
