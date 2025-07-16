@@ -39,6 +39,7 @@ export class TimelineV2 extends Entity {
 	
 	// Animation loop
 	private animationFrameId: number | null = null;
+	private lastPlaybackTime = 0;
 
 	constructor(private edit: Edit, options: TimelineOptions) {
 		super();
@@ -163,17 +164,24 @@ export class TimelineV2 extends Entity {
 	}
 
 	private async setupTimelineFeatures(): Promise<void> {
-		// Create ruler feature
-		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, 60, this.layout.rulerHeight);
+		// Create ruler feature (use edit's total duration or default to 60s)
+		const timelineDuration = this.msToSeconds(this.edit.totalDuration) || 60;
+		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, timelineDuration, this.layout.rulerHeight);
 		await this.ruler.load();
 		this.ruler.getContainer().y = this.layout.rulerY;
 		this.overlayLayer.addChild(this.ruler.getContainer());
+		
+		// Connect ruler seek events
+		this.ruler.events.on('ruler:seeked', this.handleSeek.bind(this));
 		
 		// Create playhead feature (should span full height including ruler)
 		this.playhead = new PlayheadFeature(this.resolvedOptions.pixelsPerSecond, this.resolvedOptions.height);
 		await this.playhead.load();
 		this.playhead.getContainer().y = this.layout.playheadY;
 		this.overlayLayer.addChild(this.playhead.getContainer());
+		
+		// Connect playhead seek events
+		this.playhead.events.on('playhead:seeked', this.handleSeek.bind(this));
 		
 		// Create grid feature (should start below ruler)
 		this.grid = new GridFeature(
@@ -287,6 +295,15 @@ export class TimelineV2 extends Entity {
 	// Edit access for interactions
 	public getEdit(): Edit {
 		return this.edit;
+	}
+
+	// Playhead control methods
+	public setPlayheadTime(time: number): void {
+		this.playhead.setTime(time);
+	}
+
+	public getPlayheadTime(): number {
+		return this.playhead.getTime();
 	}
 
 	private setupEventListener(): void {
@@ -448,6 +465,19 @@ export class TimelineV2 extends Entity {
 		this.dragPreviewContainer.y = y;
 	}
 
+	private handleSeek(event: { time: number }): void {
+		// Convert timeline seconds to edit milliseconds
+		this.edit.seek(this.secondsToMs(event.time));
+	}
+
+	private secondsToMs(seconds: number): number {
+		return seconds * 1000;
+	}
+
+	private msToSeconds(ms: number): number {
+		return ms / 1000;
+	}
+
 	private hideDragPreview(): void {
 		// Remove overlay container
 		if (this.dragPreviewContainer) {
@@ -574,8 +604,11 @@ export class TimelineV2 extends Entity {
 
 	// Required Entity methods
 	public update(_deltaTime: number, _elapsed: number): void {
-		// Timeline v2 doesn't need frame-based updates
-		// All updates are event-driven
+		// Sync playhead with Edit playback time
+		if (this.edit.isPlaying || this.lastPlaybackTime !== this.edit.playbackTime) {
+			this.playhead.setTime(this.msToSeconds(this.edit.playbackTime));
+			this.lastPlaybackTime = this.edit.playbackTime;
+		}
 	}
 
 	public draw(): void {

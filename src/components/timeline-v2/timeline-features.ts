@@ -44,6 +44,12 @@ export class RulerFeature extends Entity {
 		this.rulerContainer.addChild(this.timeMarkers);
 		this.rulerContainer.addChild(this.timeLabels);
 		
+		// Make ruler interactive for click-to-seek
+		this.rulerContainer.eventMode = 'static';
+		this.rulerContainer.cursor = 'pointer';
+		
+		this.rulerContainer.on('pointerdown', this.onRulerPointerDown.bind(this));
+		
 		this.getContainer().addChild(this.rulerContainer);
 	}
 	
@@ -110,6 +116,12 @@ export class RulerFeature extends Entity {
 		const minutes = Math.floor(seconds / 60);
 		const remainingSeconds = seconds % 60;
 		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+	}
+	
+	private onRulerPointerDown(event: PIXI.FederatedPointerEvent): void {
+		const localX = event.global.x - this.rulerContainer.parent.x;
+		const time = Math.max(0, localX / this.pixelsPerSecond);
+		this.events.emit("ruler:seeked", { time });
 	}
 	
 	public updateRuler(pixelsPerSecond: number, timelineDuration: number): void {
@@ -214,6 +226,8 @@ export class PlayheadFeature extends Entity {
 		const localX = event.global.x - this.playheadContainer.parent.x;
 		const newTime = Math.max(0, localX / this.pixelsPerSecond);
 		this.setTime(newTime);
+		// Emit seek event so Edit can update its playback time
+		this.events.emit("playhead:seeked", { time: newTime });
 	}
 	
 	public setTime(time: number): void {
