@@ -41,6 +41,9 @@ export class TimelineInteraction {
 	private dropZoneIndicator: PIXI.Graphics | null = null;
 	private currentDropZone: { type: 'above' | 'between' | 'below'; position: number } | null = null;
 	
+	// Snap guidelines visualization
+	private snapGuidelines: PIXI.Graphics | null = null;
+	
 	// Distance threshold for drag detection (3px)
 	private static readonly DRAG_THRESHOLD = 3;
 	// Distance threshold for resize edge detection (15px)
@@ -211,6 +214,7 @@ export class TimelineInteraction {
 				this.showDropZoneIndicator(dropZone.position);
 			}
 			this.timeline.hideDragGhost();
+			this.hideSnapGuidelines(); // Hide guidelines in drop zones
 		} else {
 			// Hide drop zone indicator
 			if (this.currentDropZone || this.dropZoneIndicator) {
@@ -221,6 +225,9 @@ export class TimelineInteraction {
 			// Calculate final position with snapping and collision prevention
 			const excludeIndex = dragTrack === this.dragInfo.trackIndex ? this.dragInfo.clipIndex : undefined;
 			const finalTime = this.calculateDragPosition(rawDragTime, dragTrack, clipDuration, excludeIndex);
+			
+			// Check if we're snapped to show guidelines
+			this.updateSnapGuidelines(finalTime, dragTrack, clipDuration, excludeIndex);
 			
 			// Show drag preview at final position
 			this.timeline.showDragGhost(dragTrack, finalTime);
@@ -313,6 +320,9 @@ export class TimelineInteraction {
 		// Hide drop zone indicator if showing
 		this.hideDropZoneIndicator();
 		
+		// Hide snap guidelines
+		this.hideSnapGuidelines();
+		
 		// Reset cursor
 		this.timeline.getPixiApp().canvas.style.cursor = 'default';
 		
@@ -329,6 +339,9 @@ export class TimelineInteraction {
 		
 		// Hide drop zone indicator if showing
 		this.hideDropZoneIndicator();
+		
+		// Hide snap guidelines
+		this.hideSnapGuidelines();
 		
 		// Reset cursor
 		this.timeline.getPixiApp().canvas.style.cursor = 'default';
@@ -533,6 +546,128 @@ export class TimelineInteraction {
 		this.currentDropZone = null;
 	}
 
+	// Snap guidelines visualization
+	private updateSnapGuidelines(time: number, dragTrack: number, clipDuration: number, excludeClipIndex?: number): void {
+		const alignedTimes = this.findAlignedTimes(time, clipDuration, dragTrack, excludeClipIndex);
+		
+		if (alignedTimes.length > 0) {
+			this.showSnapGuidelines(alignedTimes);
+		} else {
+			this.hideSnapGuidelines();
+		}
+	}
+	
+	private findAlignedTimes(clipStart: number, clipDuration: number, currentTrack: number, excludeClipIndex?: number): Array<{
+		time: number;
+		tracks: number[];
+		isPlayhead: boolean;
+	}> {
+		const SNAP_THRESHOLD = 0.1;
+		const clipEnd = clipStart + clipDuration;
+		const alignments = new Map<number, { tracks: Set<number>; isPlayhead: boolean }>();
+		
+		// Check all tracks for alignments
+		this.timeline.getVisualTracks().forEach((track, trackIdx) => {
+			track.getClips().forEach((clip, clipIdx) => {
+				if (trackIdx === currentTrack && clipIdx === excludeClipIndex) return;
+				
+				const config = clip.getClipConfig();
+				if (!config) return;
+				
+				const otherStart = config.start || 0;
+				const otherEnd = otherStart + (config.length || 0);
+				
+				// Check alignments
+				[
+					{ time: otherStart, aligns: [clipStart, clipEnd] },
+					{ time: otherEnd, aligns: [clipStart, clipEnd] }
+				].forEach(({ time, aligns }) => {
+					if (aligns.some(t => Math.abs(t - time) < SNAP_THRESHOLD)) {
+						if (!alignments.has(time)) {
+							alignments.set(time, { tracks: new Set(), isPlayhead: false });
+						}
+						alignments.get(time)!.tracks.add(trackIdx);
+					}
+				});
+			});
+		});
+		
+		// Check playhead alignment
+		const playheadTime = this.timeline.getPlayheadTime();
+		if (Math.abs(clipStart - playheadTime) < SNAP_THRESHOLD || 
+		    Math.abs(clipEnd - playheadTime) < SNAP_THRESHOLD) {
+			if (!alignments.has(playheadTime)) {
+				alignments.set(playheadTime, { tracks: new Set(), isPlayhead: true });
+			}
+			alignments.get(playheadTime)!.isPlayhead = true;
+		}
+		
+		// Convert to array format
+		return Array.from(alignments.entries()).map(([time, data]) => ({
+			time,
+			tracks: Array.from(data.tracks).concat(currentTrack),
+			isPlayhead: data.isPlayhead
+		}));
+	}
+	
+	private showSnapGuidelines(alignedTimes: Array<{
+		time: number;
+		tracks: number[];
+		isPlayhead: boolean;
+	}>): void {
+		this.hideSnapGuidelines();
+		
+		this.snapGuidelines = new PIXI.Graphics();
+		const layout = this.timeline.getLayout();
+		const trackHeight = layout.trackHeight;
+		
+		// Draw each guideline
+		alignedTimes.forEach(({ time, tracks, isPlayhead }) => {
+			const x = layout.getXAtTime(time);
+			const minTrack = Math.min(...tracks);
+			const maxTrack = Math.max(...tracks);
+			
+			// Calculate guideline bounds
+			const startY = minTrack * trackHeight;
+			const endY = (maxTrack + 1) * trackHeight;
+			
+			// Choose color based on type
+			const color = isPlayhead ? 0xff0000 : 0x00ff00;
+			
+			// Draw with glow effect
+			this.drawGuideline(x, startY, endY, color);
+		});
+		
+		// Add to container
+		this.timeline.getContainer().addChild(this.snapGuidelines);
+	}
+	
+	private drawGuideline(x: number, startY: number, endY: number, color: number): void {
+		if (!this.snapGuidelines) return;
+		
+		// Glow effect
+		this.snapGuidelines.setStrokeStyle({ width: 3, color, alpha: 0.3 });
+		this.snapGuidelines.moveTo(x, startY);
+		this.snapGuidelines.lineTo(x, endY);
+		this.snapGuidelines.stroke();
+		
+		// Core line
+		this.snapGuidelines.setStrokeStyle({ width: 1, color, alpha: 0.8 });
+		this.snapGuidelines.moveTo(x, startY);
+		this.snapGuidelines.lineTo(x, endY);
+		this.snapGuidelines.stroke();
+	}
+	
+	private hideSnapGuidelines(): void {
+		if (this.snapGuidelines) {
+			if (this.snapGuidelines.parent) {
+				this.snapGuidelines.parent.removeChild(this.snapGuidelines);
+			}
+			this.snapGuidelines.destroy();
+			this.snapGuidelines = null;
+		}
+	}
+
 	// Unified method for calculating drag position with snapping and collision prevention
 	private calculateDragPosition(time: number, trackIndex: number, clipDuration: number, excludeClipIndex?: number): number {
 		// First apply snapping
@@ -545,30 +680,57 @@ export class TimelineInteraction {
 	}
 
 	// Snap-related methods
-	private getSnapPoints(trackIndex: number, excludeClipIndex?: number): Array<{ time: number; type: 'clip-start' | 'clip-end' | 'playhead' }> {
-		const snapPoints: Array<{ time: number; type: 'clip-start' | 'clip-end' | 'playhead' }> = [];
+	private getAllSnapPoints(currentTrackIndex: number, excludeClipIndex?: number): Array<{ 
+		time: number; 
+		type: 'clip-start' | 'clip-end' | 'playhead';
+		trackIndex?: number;
+		clipIndex?: number;
+	}> {
+		const snapPoints: Array<{ 
+			time: number; 
+			type: 'clip-start' | 'clip-end' | 'playhead';
+			trackIndex?: number;
+			clipIndex?: number;
+		}> = [];
 		
-		// Get clips from the target track
-		const track = this.timeline.getVisualTracks()[trackIndex];
-		if (track) {
+		// Get clips from ALL tracks for cross-track alignment
+		const tracks = this.timeline.getVisualTracks();
+		tracks.forEach((track, trackIdx) => {
 			const clips = track.getClips();
-			clips.forEach((clip, index) => {
+			clips.forEach((clip, clipIdx) => {
 				// Skip the clip being dragged
-				if (index === excludeClipIndex) return;
+				if (trackIdx === currentTrackIndex && clipIdx === excludeClipIndex) return;
 				
 				const clipConfig = clip.getClipConfig();
 				if (clipConfig) {
-					snapPoints.push({ time: clipConfig.start || 0, type: 'clip-start' });
-					snapPoints.push({ time: (clipConfig.start || 0) + (clipConfig.length || 0), type: 'clip-end' });
+					snapPoints.push({ 
+						time: clipConfig.start || 0, 
+						type: 'clip-start',
+						trackIndex: trackIdx,
+						clipIndex: clipIdx
+					});
+					snapPoints.push({ 
+						time: (clipConfig.start || 0) + (clipConfig.length || 0), 
+						type: 'clip-end',
+						trackIndex: trackIdx,
+						clipIndex: clipIdx
+					});
 				}
 			});
-		}
+		});
 		
 		// Add playhead position
 		const playheadTime = this.timeline.getPlayheadTime();
 		snapPoints.push({ time: playheadTime, type: 'playhead' });
 		
 		return snapPoints;
+	}
+	
+	// Get snap points only from the target track (for same-track operations)
+	private getSnapPoints(trackIndex: number, excludeClipIndex?: number): Array<{ time: number; type: 'clip-start' | 'clip-end' | 'playhead' }> {
+		return this.getAllSnapPoints(trackIndex, excludeClipIndex)
+			.filter(point => point.trackIndex === undefined || point.trackIndex === trackIndex)
+			.map(({ time, type }) => ({ time, type }));
 	}
 
 	private getSnapPosition(dragTime: number, dragTrack: number, draggedClipDuration: number): {
