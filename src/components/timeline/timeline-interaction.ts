@@ -226,7 +226,8 @@ export class TimelineInteraction {
 
 		// Check if we're in a drop zone using raw Y
 		const dropZone = this.getDropZone(dropZoneY);
-		const dragTrack = Math.max(0, Math.floor(dragY / layout.trackHeight));
+		// Calculate drag track by accounting for tracks offset
+		const dragTrack = Math.max(0, Math.floor((dragY - layout.tracksY) / layout.trackHeight));
 
 		// Ensure drag track is within valid bounds
 		const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
@@ -316,7 +317,7 @@ export class TimelineInteraction {
 		} else {
 			// Normal drop on existing track - ensure within valid bounds
 			const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
-			const dropTrack = Math.max(0, Math.min(maxTrackIndex, Math.floor(dropY / layout.trackHeight)));
+			const dropTrack = Math.max(0, Math.min(maxTrackIndex, Math.floor((dropY - layout.tracksY) / layout.trackHeight)));
 
 			// Calculate final position with snapping and collision prevention
 			const excludeIndex = dropTrack === dragInfo.trackIndex ? dragInfo.clipIndex : undefined;
