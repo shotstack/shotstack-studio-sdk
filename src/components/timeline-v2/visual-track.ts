@@ -44,27 +44,27 @@ export class VisualTrack extends Entity {
 		container.label = `track-${this.options.trackIndex}`;
 		
 		container.addChild(this.background);
-		container.addChild(this.trackLabel);
+		// Track labels removed - container.addChild(this.trackLabel);
 		
 		// Position track at correct vertical position
 		container.y = this.options.trackIndex * this.options.trackHeight;
 	}
 
 	private setupGraphics(): void {
-		// Set up track label style
-		this.trackLabel.style = new PIXI.TextStyle({
-			fontSize: 11,
-			fill: 0x666666,
-			fontWeight: 'normal',
-			wordWrap: false,
-			fontFamily: 'Arial, sans-serif'
-		});
-		
-		// Position label
-		this.trackLabel.anchor.set(0, 0.5);
-		this.trackLabel.x = this.LABEL_PADDING;
-		this.trackLabel.y = this.options.trackHeight / 2;
-		this.trackLabel.text = `Track ${this.options.trackIndex + 1}`;
+		// Track labels removed
+		// this.trackLabel.style = new PIXI.TextStyle({
+		// 	fontSize: 11,
+		// 	fill: 0x666666,
+		// 	fontWeight: 'normal',
+		// 	wordWrap: false,
+		// 	fontFamily: 'Arial, sans-serif'
+		// });
+		// 
+		// // Position label
+		// this.trackLabel.anchor.set(0, 0.5);
+		// this.trackLabel.x = this.LABEL_PADDING;
+		// this.trackLabel.y = this.options.trackHeight / 2;
+		// this.trackLabel.text = `Track ${this.options.trackIndex + 1}`;
 	}
 
 	private updateTrackAppearance(): void {
@@ -178,8 +178,8 @@ export class VisualTrack extends Entity {
 		const container = this.getContainer();
 		container.y = trackIndex * this.options.trackHeight;
 		
-		// Update track label
-		this.trackLabel.text = `Track ${trackIndex + 1}`;
+		// Track labels removed
+		// this.trackLabel.text = `Track ${trackIndex + 1}`;
 		
 		// Update all clips with new track index
 		this.clips.forEach((clip, clipIndex) => {
