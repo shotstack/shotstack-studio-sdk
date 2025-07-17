@@ -49,15 +49,21 @@ export class SplitClipCommand implements EditCommand {
 		};
 
 		// Adjust trim values for video/audio assets
-		if ('trim' in clipConfig && clipConfig.trim) {
-			const trimEnd = clipConfig.trim;
-			leftClip.trim = trimEnd;
-			rightClip.trim = trimEnd - splitPoint;
+		if ('trim' in clipConfig && typeof clipConfig.trim === 'number') {
+			// The trim value indicates how much was trimmed from the start of the original asset
+			const originalTrim = clipConfig.trim || 0;
+			
+			// Left clip keeps the same trim
+			leftClip.trim = originalTrim;
+			
+			// Right clip needs to trim the original trim plus the split point
+			rightClip.trim = originalTrim + splitPoint;
 		}
 
 		// Update the existing clip to be the left portion
 		Object.assign(player.clipConfiguration, leftClip);
 		player.reconfigureAfterRestore();
+		player.draw();
 
 		// Create the right clip player
 		this.rightClipPlayer = context.createPlayerFromAssetType(rightClip);
@@ -83,15 +89,25 @@ export class SplitClipCommand implements EditCommand {
 		const globalIndex = clips.indexOf(player);
 		if (globalIndex !== -1) {
 			clips.splice(globalIndex + 1, 0, this.rightClipPlayer);
+		} else {
+			// If original player not found in global array, add new player at end
+			clips.push(this.rightClipPlayer);
 		}
 
 		// Add to PIXI container
 		context.addPlayerToContainer(this.trackIndex, this.rightClipPlayer);
 
+		// Configure and position the new player before loading
+		this.rightClipPlayer.reconfigureAfterRestore();
+
 		// Load the new player
 		this.rightClipPlayer.load()
 			.then(() => {
 				this.splitSuccessful = true;
+				// Draw the new player after loading
+				if (this.rightClipPlayer) {
+					this.rightClipPlayer.draw();
+				}
 				context.updateDuration();
 				context.emitEvent("timeline:updated", {
 					current: context.getEditState()

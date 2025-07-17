@@ -281,7 +281,7 @@ export class Edit extends Entity {
 
 	private createCommandContext(): CommandContext {
 		return {
-			getClips: () => [...this.clips],
+			getClips: () => this.clips,
 			getTracks: () => this.tracks,
 			getTrack: (trackIndex) => {
 				if (trackIndex >= 0 && trackIndex < this.tracks.length) {
