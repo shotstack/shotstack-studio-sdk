@@ -544,14 +544,14 @@ export class TimelineInteraction {
 		const y = position * layout.trackHeight;
 
 		// Draw a highlighted line with some thickness using theme color
-		const dropZoneColor = this.theme.colors.interaction.dropZone;
-		this.dropZoneIndicator.setStrokeStyle({ width: 4, color: dropZoneColor, alpha: 0.8 });
+		const trackInsertionColor = this.theme.colors.interaction.trackInsertion;
+		this.dropZoneIndicator.setStrokeStyle({ width: 4, color: trackInsertionColor, alpha: 0.8 });
 		this.dropZoneIndicator.moveTo(0, y);
 		this.dropZoneIndicator.lineTo(width, y);
 		this.dropZoneIndicator.stroke();
 
 		// Add a subtle glow effect
-		this.dropZoneIndicator.setStrokeStyle({ width: 8, color: dropZoneColor, alpha: 0.3 });
+		this.dropZoneIndicator.setStrokeStyle({ width: 8, color: trackInsertionColor, alpha: 0.3 });
 		this.dropZoneIndicator.moveTo(0, y);
 		this.dropZoneIndicator.lineTo(width, y);
 		this.dropZoneIndicator.stroke();

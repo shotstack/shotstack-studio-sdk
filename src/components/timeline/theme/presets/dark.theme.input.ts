@@ -29,6 +29,7 @@ export const DARK_THEME_INPUT: TimelineThemeInput = {
       snapGuide: '#5c7cfa',       // Blue snap guides
       playhead: '#ff6b6b',        // Red playhead
       drag: '#51cf66',            // Green drag
+      trackInsertion: '#20c997',  // Teal track insertion
     },
     ui: {
       text: '#e9ecef',            // Slightly softer white

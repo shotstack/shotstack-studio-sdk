@@ -33,6 +33,7 @@ export interface TimelineThemeInput {
       snapGuide: string;
       playhead: string;
       drag: string;            // Drag preview
+      trackInsertion: string;  // Track insertion indicator
     };
     
     // Text and UI elements
@@ -96,6 +97,7 @@ export interface TimelineTheme {
       snapGuide: number;
       playhead: number;
       drag: number;            // Drag preview
+      trackInsertion: number;  // Track insertion indicator
     };
     
     // Text and UI elements

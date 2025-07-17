@@ -29,6 +29,7 @@ export const LIGHT_THEME_INPUT: TimelineThemeInput = {
       snapGuide: '#cccccc',
       playhead: '#ff4444',
       drag: '#00aa00',
+      trackInsertion: '#00cc00',  // Bright green for visibility
     },
     ui: {
       text: '#333333',

@@ -28,7 +28,7 @@ async function main() {
 			width: template.output.size.width,
 			height: 300
 		}, {
-			preset: 'dark'		});
+			preset: 'minimal'		});
 		await timeline.load(); // Renders to [data-shotstack-timeline] element
 
 		// 6. Add keyboard controls

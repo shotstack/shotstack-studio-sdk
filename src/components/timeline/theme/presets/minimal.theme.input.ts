@@ -29,6 +29,7 @@ export const MINIMAL_THEME_INPUT: TimelineThemeInput = {
       snapGuide: '#cccccc',
       playhead: '#ff4444',
       drag: '#00aa00',
+      trackInsertion: '#007acc',  // Blue to match selection
     },
     ui: {
       text: '#444444',

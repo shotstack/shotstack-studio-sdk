@@ -29,6 +29,7 @@ export const DEFAULT_THEME_INPUT: TimelineThemeInput = {
       snapGuide: '#888888',
       playhead: '#ff4444',
       drag: '#00ff00',
+      trackInsertion: '#00ff00',  // Same as dropZone for consistency
     },
     ui: {
       text: '#ffffff',
