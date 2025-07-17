@@ -1,4 +1,5 @@
 import { TimelineOptions } from "./types";
+import { TimelineTheme } from "../../core/theme";
 
 export interface TimelineLayoutConfig {
 	toolbarHeight: number;
@@ -13,10 +14,16 @@ export interface TimelineLayoutConfig {
 }
 
 export class TimelineLayout {
-	// Constants
-	public static readonly TOOLBAR_HEIGHT = 36;
-	public static readonly RULER_HEIGHT = 40;
+	// Default proportions relative to timeline height
+	public static readonly TOOLBAR_HEIGHT_RATIO = 0.12; // 12% of timeline height
+	public static readonly RULER_HEIGHT_RATIO = 0.133; // 13.3% of timeline height
+	
+	// Absolute defaults (used as fallbacks and minimums)
+	public static readonly TOOLBAR_HEIGHT_DEFAULT = 36;
+	public static readonly RULER_HEIGHT_DEFAULT = 40;
 	public static readonly TRACK_HEIGHT_DEFAULT = 80;
+	
+	// Other constants
 	public static readonly CLIP_PADDING = 4;
 	public static readonly BORDER_WIDTH = 2;
 	public static readonly CORNER_RADIUS = 4;
@@ -25,13 +32,26 @@ export class TimelineLayout {
 
 	private config: TimelineLayoutConfig;
 
-	constructor(private options: Required<TimelineOptions>) {
+	constructor(private options: Required<TimelineOptions>, private theme?: TimelineTheme) {
 		this.config = this.calculateLayout();
 	}
 
 	private calculateLayout(): TimelineLayoutConfig {
-		const toolbarHeight = TimelineLayout.TOOLBAR_HEIGHT;
-		const rulerHeight = TimelineLayout.RULER_HEIGHT;
+		// Calculate proportional heights based on timeline height
+		const timelineHeight = this.options.height;
+		
+		// Calculate toolbar and ruler heights proportionally
+		// Use theme values if available, otherwise calculate from timeline height
+		let toolbarHeight = this.theme?.dimensions?.toolbarHeight || 
+			Math.round(timelineHeight * TimelineLayout.TOOLBAR_HEIGHT_RATIO);
+		let rulerHeight = this.theme?.dimensions?.rulerHeight || 
+			Math.round(timelineHeight * TimelineLayout.RULER_HEIGHT_RATIO);
+		
+		// Apply minimum heights to ensure usability
+		toolbarHeight = Math.max(toolbarHeight, TimelineLayout.TOOLBAR_HEIGHT_DEFAULT);
+		rulerHeight = Math.max(rulerHeight, TimelineLayout.RULER_HEIGHT_DEFAULT);
+		
+		// Track height from options (already validated in Timeline)
 		const { trackHeight } = this.options;
 
 		return {
@@ -152,9 +172,10 @@ export class TimelineLayout {
 		};
 	}
 
-	// Update layout when options change
-	public updateOptions(options: Required<TimelineOptions>): void {
+	// Update layout when options or theme change
+	public updateOptions(options: Required<TimelineOptions>, theme?: TimelineTheme): void {
 		this.options = options;
+		this.theme = theme;
 		this.config = this.calculateLayout();
 	}
 

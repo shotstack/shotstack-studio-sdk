@@ -79,7 +79,7 @@ export class Timeline extends Entity {
 		this.antialias = true;
 		this.resolution = window.devicePixelRatio || 1;
 		
-		// Create layout with all required options (using theme trackHeight)
+		// Create layout with all required options and theme
 		this.layout = new TimelineLayout({
 			width: this.width,
 			height: this.height,
@@ -88,7 +88,7 @@ export class Timeline extends Entity {
 			backgroundColor: this.backgroundColor,
 			antialias: this.antialias,
 			resolution: this.resolution
-		});
+		}, this.theme);
 		
 		this.setupEventListener();
 		this.setupInteraction();
@@ -710,8 +710,8 @@ export class Timeline extends Entity {
 		const themeTrackHeight = this.theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT;
 		this.trackHeight = Math.max(40, themeTrackHeight);
 		
-		// Update layout with new options (including trackHeight)
-		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
+		// Update layout with new options and theme
+		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>, this.theme);
 		
 		// Update toolbar theme
 		if (this.toolbar) {
