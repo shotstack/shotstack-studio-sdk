@@ -1,8 +1,10 @@
 import { TimelineOptions } from "./types";
 
 export interface TimelineLayoutConfig {
+	toolbarHeight: number;
 	rulerHeight: number;
 	trackHeight: number;
+	toolbarY: number;
 	rulerY: number;
 	tracksY: number;
 	gridY: number;
@@ -12,6 +14,7 @@ export interface TimelineLayoutConfig {
 
 export class TimelineLayout {
 	// Constants
+	public static readonly TOOLBAR_HEIGHT = 36;
 	public static readonly RULER_HEIGHT = 40;
 	public static readonly TRACK_HEIGHT_DEFAULT = 80;
 	public static readonly CLIP_PADDING = 4;
@@ -27,21 +30,32 @@ export class TimelineLayout {
 	}
 
 	private calculateLayout(): TimelineLayoutConfig {
+		const toolbarHeight = TimelineLayout.TOOLBAR_HEIGHT;
 		const rulerHeight = TimelineLayout.RULER_HEIGHT;
 		const { trackHeight } = this.options;
 
 		return {
+			toolbarHeight,
 			rulerHeight,
 			trackHeight,
-			rulerY: 0,
-			tracksY: rulerHeight,
-			gridY: rulerHeight,
-			playheadY: 0,
-			viewportY: rulerHeight
+			toolbarY: 0,
+			rulerY: toolbarHeight,
+			tracksY: toolbarHeight + rulerHeight,
+			gridY: toolbarHeight + rulerHeight,
+			playheadY: toolbarHeight,
+			viewportY: toolbarHeight + rulerHeight
 		};
 	}
 
 	// Layout getters
+	get toolbarHeight(): number {
+		return this.config.toolbarHeight;
+	}
+
+	get toolbarY(): number {
+		return this.config.toolbarY;
+	}
+
 	get rulerHeight(): number {
 		return this.config.rulerHeight;
 	}
@@ -119,7 +133,7 @@ export class TimelineLayout {
 
 	// Grid and ruler dimensions
 	public getGridHeight(): number {
-		return this.options.height - this.rulerHeight;
+		return this.options.height - this.toolbarHeight - this.rulerHeight;
 	}
 
 	public getRulerWidth(): number {
@@ -145,6 +159,10 @@ export class TimelineLayout {
 	}
 
 	// Utility methods
+	public isPointInToolbar(_x: number, y: number): boolean {
+		return y >= this.toolbarY && y <= this.toolbarY + this.toolbarHeight;
+	}
+
 	public isPointInRuler(_x: number, y: number): boolean {
 		return y >= this.rulerY && y <= this.rulerY + this.rulerHeight;
 	}

@@ -7,6 +7,7 @@ import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./tim
 import { TimelineInteraction } from "./timeline-interaction";
 import { TimelineLayout } from "./timeline-layout";
 import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "./theme";
+import { TimelineToolbar } from "./timeline-toolbar";
 import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
 import { VisualTrack, VisualTrackOptions } from "./visual-track";
 
@@ -38,6 +39,7 @@ export class Timeline extends Entity {
 	private rulerViewport!: PIXI.Container;
 
 	// Timeline features
+	private toolbar!: TimelineToolbar;
 	private ruler!: RulerFeature;
 	private playhead!: PlayheadFeature;
 	private grid!: GridFeature;
@@ -190,6 +192,10 @@ export class Timeline extends Entity {
 	private async setupTimelineFeatures(): Promise<void> {
 		// Get extended duration for timeline display
 		const extendedDuration = this.getExtendedTimelineDuration();
+
+		// Create toolbar
+		this.toolbar = new TimelineToolbar(this.edit, this.theme, this.layout, this.width);
+		this.app.stage.addChild(this.toolbar);
 
 		// Create ruler feature with extended duration for display
 		this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, this.layout.rulerHeight, this.theme);
@@ -707,6 +713,11 @@ export class Timeline extends Entity {
 		// Update layout with new options (including trackHeight)
 		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
 		
+		// Update toolbar theme
+		if (this.toolbar) {
+			this.toolbar.updateTheme(this.theme);
+		}
+		
 		// Recreate timeline features with new theme and dimensions
 		if (this.ruler) {
 			this.ruler.dispose();
@@ -773,7 +784,13 @@ export class Timeline extends Entity {
 	}
 
 	public setOptions(options: Partial<TimelineOptions>): void {
-		if (options.width !== undefined) this.width = options.width;
+		if (options.width !== undefined) {
+			this.width = options.width;
+			// Update toolbar width
+			if (this.toolbar) {
+				this.toolbar.resize(this.width);
+			}
+		}
 		if (options.height !== undefined) this.height = options.height;
 		if (options.pixelsPerSecond !== undefined) this.pixelsPerSecond = options.pixelsPerSecond;
 		if (options.trackHeight !== undefined) this.trackHeight = options.trackHeight;
@@ -791,6 +808,11 @@ export class Timeline extends Entity {
 		if (this.edit.isPlaying || this.lastPlaybackTime !== this.edit.playbackTime) {
 			this.playhead.setTime(this.msToSeconds(this.edit.playbackTime));
 			this.lastPlaybackTime = this.edit.playbackTime;
+			
+			// Update toolbar time display
+			if (this.toolbar) {
+				this.toolbar.updateTimeDisplay();
+			}
 		}
 	}
 
@@ -888,6 +910,9 @@ export class Timeline extends Entity {
 		this.clearAllVisualState();
 
 		// Dispose timeline features
+		if (this.toolbar) {
+			this.toolbar.destroy();
+		}
 		if (this.ruler) {
 			this.ruler.dispose();
 		}

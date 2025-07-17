@@ -37,8 +37,16 @@ export const MINIMAL_THEME_INPUT: TimelineThemeInput = {
       icon: '#aaaaaa',
       iconMuted: '#cccccc',
     },
+    toolbar: {
+      background: '#ffffff',      // Clean white
+      surface: '#f8f8f8',         // Light gray surface
+      hover: '#eeeeee',           // Subtle hover
+      active: '#007acc',          // Blue active
+      divider: '#e5e5e5',         // Light divider
+    },
   },
   dimensions: {
+    toolbarHeight: 36,
     trackHeight: 10,
     rulerHeight: 40,
     clipRadius: 4,

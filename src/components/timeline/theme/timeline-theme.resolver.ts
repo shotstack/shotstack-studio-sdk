@@ -1,16 +1,12 @@
 import { TimelineTheme, TimelineThemeInput, TimelineThemeOptions, DeepPartial } from './timeline-theme.types';
 import { DEFAULT_THEME } from './timeline-theme.defaults';
-import { DARK_THEME } from './presets/dark.theme';
-import { LIGHT_THEME } from './presets/light.theme';
 import { MINIMAL_THEME } from './presets/minimal.theme';
 import { convertThemeColorsGeneric } from './theme-utils';
 
-type PresetTheme = 'dark' | 'light' | 'minimal';
+type PresetTheme = 'minimal';
 
 export class TimelineThemeResolver {
   private static presetThemes: Record<PresetTheme, TimelineTheme> = {
-    dark: DARK_THEME,
-    light: LIGHT_THEME,
     minimal: MINIMAL_THEME,
   };
 

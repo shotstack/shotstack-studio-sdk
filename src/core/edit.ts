@@ -127,9 +127,11 @@ export class Edit extends Entity {
 
 	public play(): void {
 		this.isPlaying = true;
+		this.events.emit('playback:play');
 	}
 	public pause(): void {
 		this.isPlaying = false;
+		this.events.emit('playback:pause');
 	}
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
@@ -373,7 +375,13 @@ export class Edit extends Entity {
 			}
 		}
 
+		const previousDuration = this.totalDuration;
 		this.totalDuration = maxDuration;
+		
+		// Emit event if duration changed
+		if (previousDuration !== this.totalDuration) {
+			this.events.emit('duration:changed', { duration: this.totalDuration });
+		}
 	}
 
 	// Move a player's container to the appropriate track container

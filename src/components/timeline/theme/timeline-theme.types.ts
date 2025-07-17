@@ -43,10 +43,20 @@ export interface TimelineThemeInput {
       icon: string;            // Icons and markers
       iconMuted: string;       // Subtle icons
     };
+    
+    // Toolbar colors
+    toolbar: {
+      background: string;      // Toolbar background
+      surface: string;         // Button background
+      hover: string;           // Button hover state
+      active: string;          // Button active/pressed state
+      divider: string;         // Separator lines
+    };
   };
   
   // Optional dimension overrides
   dimensions?: {
+    toolbarHeight?: number;
     trackHeight?: number;
     rulerHeight?: number;
     clipRadius?: number;
@@ -107,10 +117,20 @@ export interface TimelineTheme {
       icon: number;            // Icons and markers
       iconMuted: number;       // Subtle icons
     };
+    
+    // Toolbar colors
+    toolbar: {
+      background: number;      // Toolbar background
+      surface: number;         // Button background
+      hover: number;           // Button hover state
+      active: number;          // Button active/pressed state
+      divider: number;         // Separator lines
+    };
   };
   
   // Optional dimension overrides
   dimensions?: {
+    toolbarHeight?: number;
     trackHeight?: number;
     rulerHeight?: number;
     clipRadius?: number;

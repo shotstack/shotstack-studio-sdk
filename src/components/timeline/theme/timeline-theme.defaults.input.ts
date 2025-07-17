@@ -37,8 +37,16 @@ export const DEFAULT_THEME_INPUT: TimelineThemeInput = {
       icon: '#888888',
       iconMuted: '#666666',
     },
+    toolbar: {
+      background: '#1a1a1a',
+      surface: '#2a2a2a',
+      hover: '#3a3a3a',
+      active: '#007acc',
+      divider: '#3a3a3a',
+    },
   },
   dimensions: {
+    toolbarHeight: 36,
     trackHeight: 60,
     rulerHeight: 40,
     clipRadius: 4,
