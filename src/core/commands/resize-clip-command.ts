@@ -16,16 +16,19 @@ export class ResizeClipCommand implements EditCommand {
 	execute(context?: CommandContext): void {
 		if (!context) return;
 
-		// Get all clips and filter by track
-		const clips = context.getClips();
-		const trackClips = clips.filter((c: Player) => c.layer === this.trackIndex + 1);
+		// Get the specific track
+		const track = context.getTrack(this.trackIndex);
+		if (!track) {
+			console.warn(`Invalid track index: ${this.trackIndex}`);
+			return;
+		}
 
-		if (this.clipIndex < 0 || this.clipIndex >= trackClips.length) {
+		if (this.clipIndex < 0 || this.clipIndex >= track.length) {
 			console.warn(`Invalid clip index: ${this.clipIndex} for track ${this.trackIndex}`);
 			return;
 		}
 
-		this.player = trackClips[this.clipIndex];
+		this.player = track[this.clipIndex];
 		this.originalLength = this.player.clipConfiguration.length;
 
 		this.player.clipConfiguration.length = this.newLength;
