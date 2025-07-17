@@ -145,8 +145,12 @@ export class TimelineInteraction {
 				this.startDrag(this.currentClipInfo, event);
 			}
 		} else if (this.state === InteractionState.DRAGGING) {
+			// Maintain grabbing cursor during drag
+			this.timeline.getPixiApp().canvas.style.cursor = "grabbing";
 			this.updateDragPreview(event);
 		} else if (this.state === InteractionState.RESIZING) {
+			// Maintain resize cursor during resize
+			this.timeline.getPixiApp().canvas.style.cursor = "ew-resize";
 			this.updateResizePreview(event);
 		} else if (this.state === InteractionState.IDLE) {
 			// Update cursor based on hover position
@@ -501,13 +505,19 @@ export class TimelineInteraction {
 
 		if (target.label) {
 			const clipInfo = this.parseClipLabel(target.label);
-			if (clipInfo && this.isOnClipRightEdge(clipInfo, event)) {
-				this.timeline.getPixiApp().canvas.style.cursor = "ew-resize";
+			if (clipInfo) {
+				// Check if on resize edge first
+				if (this.isOnClipRightEdge(clipInfo, event)) {
+					this.timeline.getPixiApp().canvas.style.cursor = "ew-resize";
+					return;
+				}
+				// Otherwise show grab cursor to indicate draggable
+				this.timeline.getPixiApp().canvas.style.cursor = "grab";
 				return;
 			}
 		}
 
-		// Default cursor
+		// Default cursor when not over a clip
 		this.timeline.getPixiApp().canvas.style.cursor = "default";
 	}
 
