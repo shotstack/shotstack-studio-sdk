@@ -5,6 +5,7 @@ import * as PIXI from "pixi.js";
 
 // eslint-disable-next-line import/no-cycle
 import { Timeline } from "./timeline";
+import { TimelineTheme } from "./theme";
 
 interface DragInfo {
 	trackIndex: number;
@@ -48,15 +49,36 @@ export class TimelineInteraction {
 
 	// Distance threshold for drag detection (3px)
 	private static readonly DRAG_THRESHOLD = 3;
-	// Distance threshold for resize edge detection (15px)
-	private static readonly RESIZE_EDGE_THRESHOLD = 15;
-	// Distance threshold for drop zone detection (20px from track boundaries)
-	private static readonly DROP_ZONE_THRESHOLD = 20;
 	// Distance threshold for snap detection (10px)
 	private static readonly SNAP_THRESHOLD = 10;
+	
+	// Dynamic thresholds based on track height
+	private get RESIZE_EDGE_THRESHOLD(): number {
+		const trackHeight = this.timeline.getLayout().trackHeight;
+		// More generous scaling for smaller tracks (min 12px, max 20px)
+		return Math.max(12, Math.min(20, trackHeight * 0.4));
+	}
+	
+	private get DROP_ZONE_THRESHOLD(): number {
+		const trackHeight = this.timeline.getLayout().trackHeight;
+		// Make drop zones proportional to track height (25% of track height)
+		// This ensures drop zones scale properly with track size
+		return trackHeight * 0.25;
+	}
+	
+	// Also make the drag detection more sensitive for small tracks
+	private get EFFECTIVE_DRAG_THRESHOLD(): number {
+		const trackHeight = this.timeline.getLayout().trackHeight;
+		// Smaller threshold for smaller tracks to make dragging easier
+		return trackHeight < 20 ? 2 : TimelineInteraction.DRAG_THRESHOLD;
+	}
 
 	constructor(timeline: Timeline) {
 		this.timeline = timeline;
+	}
+
+	private get theme(): TimelineTheme {
+		return this.timeline.getTheme();
 	}
 
 	public activate(): void {
@@ -119,7 +141,7 @@ export class TimelineInteraction {
 			const currentPos = { x: event.global.x, y: event.global.y };
 			const distance = Math.sqrt((currentPos.x - this.startPointerPos.x)**2 + (currentPos.y - this.startPointerPos.y)**2);
 
-			if (distance > TimelineInteraction.DRAG_THRESHOLD) {
+			if (distance > this.EFFECTIVE_DRAG_THRESHOLD) {
 				this.startDrag(this.currentClipInfo, event);
 			}
 		} else if (this.state === InteractionState.DRAGGING) {
@@ -197,11 +219,18 @@ export class TimelineInteraction {
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const rawDragTime = Math.max(0, layout.getTimeAtX(localPos.x - this.dragInfo.offsetX));
+		// For drop zone detection, use raw Y position without offset
+		// The offset is only needed for X positioning
+		const dropZoneY = localPos.y;
 		const dragY = localPos.y - this.dragInfo.offsetY;
 
-		// Check if we're in a drop zone
-		const dropZone = this.getDropZone(dragY);
+		// Check if we're in a drop zone using raw Y
+		const dropZone = this.getDropZone(dropZoneY);
 		const dragTrack = Math.max(0, Math.floor(dragY / layout.trackHeight));
+
+		// Ensure drag track is within valid bounds
+		const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
+		const boundedDragTrack = Math.max(0, Math.min(maxTrackIndex, dragTrack));
 
 		// Handle all visual state in one place
 		if (dropZone) {
@@ -220,14 +249,14 @@ export class TimelineInteraction {
 			}
 
 			// Calculate final position with snapping and collision prevention
-			const excludeIndex = dragTrack === this.dragInfo.trackIndex ? this.dragInfo.clipIndex : undefined;
-			const finalTime = this.calculateDragPosition(rawDragTime, dragTrack, clipDuration, excludeIndex);
+			const excludeIndex = boundedDragTrack === this.dragInfo.trackIndex ? this.dragInfo.clipIndex : undefined;
+			const finalTime = this.calculateDragPosition(rawDragTime, boundedDragTrack, clipDuration, excludeIndex);
 
 			// Check if we're snapped to show guidelines
-			this.updateSnapGuidelines(finalTime, dragTrack, clipDuration, excludeIndex);
+			this.updateSnapGuidelines(finalTime, boundedDragTrack, clipDuration, excludeIndex);
 
 			// Show drag preview at final position
-			this.timeline.showDragGhost(dragTrack, finalTime);
+			this.timeline.showDragGhost(boundedDragTrack, finalTime);
 		}
 
 		// Emit drag event with calculated position
@@ -235,15 +264,15 @@ export class TimelineInteraction {
 			? rawDragTime
 			: this.calculateDragPosition(
 					rawDragTime,
-					dragTrack,
+					boundedDragTrack,
 					clipDuration,
-					dragTrack === this.dragInfo.trackIndex ? this.dragInfo.clipIndex : undefined
+					boundedDragTrack === this.dragInfo.trackIndex ? this.dragInfo.clipIndex : undefined
 				);
 
 		this.timeline.getEdit().events.emit("drag:moved", {
 			...this.dragInfo,
 			currentTime: finalTime,
-			currentTrack: dropZone ? -1 : dragTrack
+			currentTrack: dropZone ? -1 : boundedDragTrack
 		});
 	}
 
@@ -265,10 +294,12 @@ export class TimelineInteraction {
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const rawDropTime = Math.max(0, layout.getTimeAtX(localPos.x - dragInfo.offsetX));
+		// For drop zone detection, use raw Y position
+		const dropZoneY = localPos.y;
 		const dropY = localPos.y - dragInfo.offsetY;
 
-		// Check if dropping in a drop zone
-		const dropZone = this.getDropZone(dropY);
+		// Check if dropping in a drop zone using raw Y
+		const dropZone = this.getDropZone(dropZoneY);
 
 		// End drag to ensure visual cleanup happens first
 		this.endDrag();
@@ -283,8 +314,9 @@ export class TimelineInteraction {
 			);
 			this.timeline.getEdit().executeEditCommand(command);
 		} else {
-			// Normal drop on existing track
-			const dropTrack = Math.max(0, Math.floor(dropY / layout.trackHeight));
+			// Normal drop on existing track - ensure within valid bounds
+			const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
+			const dropTrack = Math.max(0, Math.min(maxTrackIndex, Math.floor(dropY / layout.trackHeight)));
 
 			// Calculate final position with snapping and collision prevention
 			const excludeIndex = dropTrack === dragInfo.trackIndex ? dragInfo.clipIndex : undefined;
@@ -386,7 +418,7 @@ export class TimelineInteraction {
 
 		// Check if mouse is within threshold of right edge
 		const distance = Math.abs(event.global.x - rightEdgeX);
-		return distance <= TimelineInteraction.RESIZE_EDGE_THRESHOLD;
+		return distance <= this.RESIZE_EDGE_THRESHOLD;
 	}
 
 	private startResize(clipInfo: { trackIndex: number; clipIndex: number }, event: PIXI.FederatedPointerEvent): void {
@@ -479,7 +511,7 @@ export class TimelineInteraction {
 	private getDropZone(y: number): { type: "above" | "between" | "below"; position: number } | null {
 		const {trackHeight} = this.timeline.getLayout();
 		const tracks = this.timeline.getVisualTracks();
-		const threshold = TimelineInteraction.DROP_ZONE_THRESHOLD;
+		const threshold = this.DROP_ZONE_THRESHOLD;
 
 		// Check each potential insertion point (0 to tracks.length)
 		for (let i = 0; i <= tracks.length; i += 1) {
@@ -511,14 +543,15 @@ export class TimelineInteraction {
 		// Position at the border between tracks (position 0 = top of first track)
 		const y = position * layout.trackHeight;
 
-		// Draw a highlighted line with some thickness
-		this.dropZoneIndicator.setStrokeStyle({ width: 4, color: 0x00ff00, alpha: 0.8 });
+		// Draw a highlighted line with some thickness using theme color
+		const dropZoneColor = this.theme.colors.interaction.dropZone;
+		this.dropZoneIndicator.setStrokeStyle({ width: 4, color: dropZoneColor, alpha: 0.8 });
 		this.dropZoneIndicator.moveTo(0, y);
 		this.dropZoneIndicator.lineTo(width, y);
 		this.dropZoneIndicator.stroke();
 
 		// Add a subtle glow effect
-		this.dropZoneIndicator.setStrokeStyle({ width: 8, color: 0x00ff00, alpha: 0.3 });
+		this.dropZoneIndicator.setStrokeStyle({ width: 8, color: dropZoneColor, alpha: 0.3 });
 		this.dropZoneIndicator.moveTo(0, y);
 		this.dropZoneIndicator.lineTo(width, y);
 		this.dropZoneIndicator.stroke();
@@ -635,8 +668,10 @@ export class TimelineInteraction {
 			const startY = minTrack * trackHeight;
 			const endY = (maxTrack + 1) * trackHeight;
 
-			// Choose color based on type
-			const color = isPlayhead ? 0xff0000 : 0x00ff00;
+			// Choose color based on type using theme
+			const color = isPlayhead ? 
+				this.theme.colors.interaction.playhead : 
+				this.theme.colors.interaction.snapGuide;
 
 			// Draw with glow effect
 			this.drawGuideline(x, startY, endY, color);

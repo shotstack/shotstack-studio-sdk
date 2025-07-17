@@ -2,12 +2,14 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { ClipConfig } from "./types";
+import { TimelineTheme } from "./theme";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
 	trackHeight: number;
 	trackIndex: number;
 	clipIndex: number;
+	theme: TimelineTheme;
 }
 
 export class VisualClip extends Entity {
@@ -21,10 +23,10 @@ export class VisualClip extends Entity {
 		previewWidth?: number;
 	} = { mode: "normal" };
 
-	// Visual constants
+	// Visual constants (some from theme)
 	private readonly CLIP_PADDING = 4;
-	private readonly BORDER_WIDTH = 2;
-	private readonly CORNER_RADIUS = 4;
+	private get BORDER_WIDTH() { return this.options.theme.dimensions?.borderWidth || 2; }
+	private get CORNER_RADIUS() { return this.options.theme.dimensions?.clipRadius || 4; }
 
 	constructor(clipConfig: ClipConfig, options: VisualClipOptions) {
 		super();
@@ -58,10 +60,10 @@ export class VisualClip extends Entity {
 	}
 
 	private setupGraphics(): void {
-		// Set up text style
+		// Set up text style using theme colors
 		this.text.style = new PIXI.TextStyle({
 			fontSize: 12,
-			fill: 0xffffff,
+			fill: this.options.theme.colors.ui.text,
 			fontWeight: "bold",
 			wordWrap: false,
 			fontFamily: "Arial, sans-serif"
@@ -147,38 +149,45 @@ export class VisualClip extends Entity {
 				height + this.BORDER_WIDTH * 2,
 				this.CORNER_RADIUS
 			);
-			this.graphics.stroke({ width: 1, color: 0x007acc });
+			this.graphics.stroke({ width: 1, color: this.options.theme.colors.interaction.focus });
 		}
 	}
 
 	private getClipColor(): number {
-		// Color based on asset type
+		// Color based on asset type using theme
 		const assetType = this.clipConfig.asset?.type;
+		const themeAssets = this.options.theme.colors.assets;
+		
 		switch (assetType) {
 			case "video":
-				return 0x4a90e2;
+				return themeAssets.video;
 			case "audio":
-				return 0x7ed321;
+				return themeAssets.audio;
 			case "image":
-				return 0xf5a623;
+				return themeAssets.image;
 			case "text":
-				return 0xd0021b;
+				return themeAssets.text;
 			case "shape":
-				return 0x9013fe;
+				return themeAssets.shape;
 			case "html":
-				return 0x50e3c2;
+				return themeAssets.html;
 			case "luma":
-				return 0xb8e986;
+				return themeAssets.luma;
 			default:
-				return 0x8e8e93;
+				// Handle transition and other unknown types
+				if (assetType === "transition") {
+					return themeAssets.transition;
+				}
+				return themeAssets.default;
 		}
 	}
 
 	private updateAppearance(): void {
 		const container = this.getContainer();
 
-		// Apply container-level opacity (different from fill alpha)
-		container.alpha = this.visualState.mode === "dragging" ? 0.6 : 1.0;
+		// Apply container-level opacity using theme values
+		const dragOpacity = this.options.theme.opacity?.drag || 0.6;
+		container.alpha = this.visualState.mode === "dragging" ? dragOpacity : 1.0;
 
 		// Redraw with new styles
 		this.updateSize();
@@ -274,17 +283,21 @@ export class VisualClip extends Entity {
 	}
 
 	private getStateStyles() {
+		const theme = this.options.theme;
+		const disabledOpacity = theme.opacity?.disabled || 0.5;
+		const hoverOpacity = theme.opacity?.hover || 0.7;
+		
 		switch (this.visualState.mode) {
 			case "disabled":
-				return { alpha: 0.5, colorFactor: 0, borderColor: 0x666666 };
+				return { alpha: disabledOpacity, colorFactor: 0, borderColor: theme.colors.interaction.hover };
 			case "dragging":
-				return { alpha: 0.7, colorFactor: -0.2, borderColor: 0x00ff00 };
+				return { alpha: hoverOpacity, colorFactor: -0.2, borderColor: theme.colors.interaction.drag };
 			case "resizing":
-				return { alpha: 0.9, colorFactor: 0.1, borderColor: 0x00ff00 };
+				return { alpha: 0.9, colorFactor: 0.1, borderColor: theme.colors.interaction.dropZone };
 			case "selected":
-				return { alpha: 1.0, colorFactor: 0, borderColor: 0x007acc };
+				return { alpha: 1.0, colorFactor: 0, borderColor: theme.colors.interaction.selected };
 			default:
-				return { alpha: 1.0, colorFactor: 0, borderColor: 0x333333 };
+				return { alpha: 1.0, colorFactor: 0, borderColor: theme.colors.structure.border };
 		}
 	}
 

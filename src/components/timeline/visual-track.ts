@@ -4,6 +4,7 @@ import * as PIXI from "pixi.js";
 import { z } from "zod";
 
 import { VisualClip, VisualClipOptions } from "./visual-clip";
+import { TimelineTheme } from "./theme";
 
 type TrackType = z.infer<typeof TrackSchema>;
 
@@ -12,6 +13,7 @@ export interface VisualTrackOptions {
 	trackHeight: number;
 	trackIndex: number;
 	width: number;
+	theme: TimelineTheme;
 }
 
 export class VisualTrack extends Entity {
@@ -71,23 +73,28 @@ export class VisualTrack extends Entity {
 	private updateTrackAppearance(): void {
 		const {width} = this.options;
 		const height = this.options.trackHeight;
+		const theme = this.options.theme;
 
 		// Draw track background
 		this.background.clear();
 
-		// Alternating track colors for better visual separation
-		const bgColor = this.options.trackIndex % 2 === 0 ? 0x2a2a2a : 0x242424;
+		// Alternating track colors using theme
+		const bgColor = this.options.trackIndex % 2 === 0 ? 
+			theme.colors.structure.surface : 
+			theme.colors.structure.surfaceAlt;
+		const trackOpacity = theme.opacity?.track || 0.8;
+		
 		this.background.rect(0, 0, width, height);
-		this.background.fill({ color: bgColor, alpha: 0.8 });
+		this.background.fill({ color: bgColor, alpha: trackOpacity });
 
-		// Draw track border
+		// Draw track border using theme
 		this.background.rect(0, 0, width, height);
-		this.background.stroke({ width: 1, color: 0x3a3a3a });
+		this.background.stroke({ width: 1, color: theme.colors.structure.border });
 
-		// Draw track separator line at bottom
+		// Draw track separator line at bottom using theme
 		this.background.moveTo(0, height - 1);
 		this.background.lineTo(width, height - 1);
-		this.background.stroke({ width: 1, color: 0x1a1a1a });
+		this.background.stroke({ width: 1, color: theme.colors.structure.divider });
 	}
 
 	public rebuildFromTrackData(trackData: TrackType, pixelsPerSecond: number): void {
@@ -104,7 +111,8 @@ export class VisualTrack extends Entity {
 					pixelsPerSecond: this.options.pixelsPerSecond,
 					trackHeight: this.options.trackHeight,
 					trackIndex: this.options.trackIndex,
-					clipIndex
+					clipIndex,
+					theme: this.options.theme
 				};
 
 				const visualClip = new VisualClip(clipConfig, visualClipOptions);

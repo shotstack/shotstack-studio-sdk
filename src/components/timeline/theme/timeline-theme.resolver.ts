@@ -1,0 +1,166 @@
+import { TimelineTheme, TimelineThemeInput, TimelineThemeOptions, DeepPartial } from './timeline-theme.types';
+import { DEFAULT_THEME } from './timeline-theme.defaults';
+import { DARK_THEME } from './presets/dark.theme';
+import { LIGHT_THEME } from './presets/light.theme';
+import { MINIMAL_THEME } from './presets/minimal.theme';
+import { convertThemeColorsGeneric } from './theme-utils';
+
+type PresetTheme = 'dark' | 'light' | 'minimal';
+
+export class TimelineThemeResolver {
+  private static presetThemes: Record<PresetTheme, TimelineTheme> = {
+    dark: DARK_THEME,
+    light: LIGHT_THEME,
+    minimal: MINIMAL_THEME,
+  };
+
+  public static resolveTheme(options?: TimelineThemeOptions): TimelineTheme {
+    if (!options) {
+      return this.deepClone(DEFAULT_THEME);
+    }
+
+    // Start with the base theme (preset or default)
+    let baseTheme: TimelineTheme;
+    if (options.preset) {
+      baseTheme = this.presetThemes[options.preset];
+      if (!baseTheme) {
+        console.warn(`Unknown preset theme: ${options.preset}. Using default theme.`);
+        baseTheme = DEFAULT_THEME;
+      }
+    } else {
+      baseTheme = DEFAULT_THEME;
+    }
+
+    // Deep clone the base theme to avoid mutations
+    let resolvedTheme = this.deepClone(baseTheme);
+
+    // Apply theme overrides if provided
+    if (options.theme) {
+      // Convert hex colors to PIXI numbers
+      const convertedOverrides = convertThemeColorsGeneric(options.theme) as DeepPartial<TimelineTheme>;
+      resolvedTheme = this.deepMerge(resolvedTheme, convertedOverrides);
+    }
+
+    return resolvedTheme;
+  }
+
+  public static validateTheme(theme: TimelineTheme): boolean {
+    try {
+      // Basic structure validation
+      if (!theme.colors) return false;
+      if (!theme.colors.structure) return false;
+      if (!theme.colors.assets) return false;
+      if (!theme.colors.interaction) return false;
+      if (!theme.colors.ui) return false;
+
+      // Validate required color properties
+      const requiredStructureColors = ['background', 'surface', 'surfaceAlt', 'border', 'divider', 'ruler'];
+      const requiredAssetColors = ['video', 'audio', 'image', 'text', 'shape', 'html', 'luma', 'transition', 'default'];
+      const requiredInteractionColors = ['hover', 'selected', 'focus', 'dropZone', 'snapGuide', 'playhead', 'drag'];
+      const requiredUIColors = ['text', 'textMuted', 'icon', 'iconMuted'];
+
+      for (const color of requiredStructureColors) {
+        if (typeof theme.colors.structure[color as keyof typeof theme.colors.structure] !== 'number') {
+          return false;
+        }
+      }
+
+      for (const color of requiredAssetColors) {
+        if (typeof theme.colors.assets[color as keyof typeof theme.colors.assets] !== 'number') {
+          return false;
+        }
+      }
+
+      for (const color of requiredInteractionColors) {
+        if (typeof theme.colors.interaction[color as keyof typeof theme.colors.interaction] !== 'number') {
+          return false;
+        }
+      }
+
+      for (const color of requiredUIColors) {
+        if (typeof theme.colors.ui[color as keyof typeof theme.colors.ui] !== 'number') {
+          return false;
+        }
+      }
+
+      // Validate optional sections
+      if (theme.dimensions) {
+        const dimensions = theme.dimensions;
+        if (dimensions.trackHeight !== undefined && (typeof dimensions.trackHeight !== 'number' || dimensions.trackHeight <= 0)) {
+          return false;
+        }
+        if (dimensions.rulerHeight !== undefined && (typeof dimensions.rulerHeight !== 'number' || dimensions.rulerHeight <= 0)) {
+          return false;
+        }
+        if (dimensions.clipRadius !== undefined && (typeof dimensions.clipRadius !== 'number' || dimensions.clipRadius < 0)) {
+          return false;
+        }
+        if (dimensions.borderWidth !== undefined && (typeof dimensions.borderWidth !== 'number' || dimensions.borderWidth < 0)) {
+          return false;
+        }
+      }
+
+      if (theme.opacity) {
+        const opacity = theme.opacity;
+        if (opacity.track !== undefined && (typeof opacity.track !== 'number' || opacity.track < 0 || opacity.track > 1)) {
+          return false;
+        }
+        if (opacity.hover !== undefined && (typeof opacity.hover !== 'number' || opacity.hover < 0 || opacity.hover > 1)) {
+          return false;
+        }
+        if (opacity.drag !== undefined && (typeof opacity.drag !== 'number' || opacity.drag < 0 || opacity.drag > 1)) {
+          return false;
+        }
+        if (opacity.disabled !== undefined && (typeof opacity.disabled !== 'number' || opacity.disabled < 0 || opacity.disabled > 1)) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Theme validation error:', error);
+      return false;
+    }
+  }
+
+  private static deepClone<T>(obj: T): T {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+
+    if (obj instanceof Array) {
+      return obj.map(item => this.deepClone(item)) as unknown as T;
+    }
+
+    const cloned = {} as T;
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        cloned[key] = this.deepClone(obj[key]);
+      }
+    }
+
+    return cloned;
+  }
+
+  private static deepMerge<T>(target: T, source: DeepPartial<T>): T {
+    const result = { ...target };
+
+    for (const key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        const sourceValue = source[key];
+        const targetValue = result[key];
+
+        if (sourceValue !== undefined) {
+          if (typeof sourceValue === 'object' && sourceValue !== null && !Array.isArray(sourceValue) &&
+              typeof targetValue === 'object' && targetValue !== null && !Array.isArray(targetValue)) {
+            result[key] = this.deepMerge(targetValue, sourceValue);
+          } else {
+            result[key] = sourceValue as T[Extract<keyof T, string>];
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+}

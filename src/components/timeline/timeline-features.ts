@@ -3,6 +3,8 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
+import { TimelineTheme } from "./theme";
+
 export interface TimelineFeatures {
 	ruler: RulerFeature;
 	playhead: PlayheadFeature;
@@ -21,7 +23,7 @@ export class RulerFeature extends Entity {
 	private timelineDuration: number;
 	private rulerHeight: number;
 
-	constructor(pixelsPerSecond: number, timelineDuration: number, rulerHeight = 40) {
+	constructor(pixelsPerSecond: number, timelineDuration: number, rulerHeight = 40, private theme?: TimelineTheme) {
 		super();
 		this.events = new EventEmitter();
 		this.pixelsPerSecond = pixelsPerSecond;
@@ -57,14 +59,20 @@ export class RulerFeature extends Entity {
 	private drawRulerBackground(): void {
 		this.rulerBackground.clear();
 		const rulerWidth = this.timelineDuration * this.pixelsPerSecond;
+		const rulerColor = this.theme?.colors.structure.ruler || 0x404040;
+		const borderColor = this.theme?.colors.structure.border || 0x606060;
+		
 		this.rulerBackground.rect(0, 0, rulerWidth, this.rulerHeight);
-		this.rulerBackground.fill(0x404040);
+		this.rulerBackground.fill(rulerColor);
 		this.rulerBackground.rect(0, this.rulerHeight - 1, rulerWidth, 1);
-		this.rulerBackground.fill(0x606060);
+		this.rulerBackground.fill(borderColor);
 	}
 
 	private drawTimeMarkers(): void {
 		this.timeMarkers.clear();
+		
+		const majorMarkerColor = this.theme?.colors.ui.icon || 0x888888;
+		const minorMarkerColor = this.theme?.colors.ui.iconMuted || 0x666666;
 
 		// Major markers every second
 		for (let second = 0; second <= this.timelineDuration; second += 1) {
@@ -72,7 +80,7 @@ export class RulerFeature extends Entity {
 			const height = second % 5 === 0 ? this.rulerHeight * 0.8 : this.rulerHeight * 0.6;
 
 			this.timeMarkers.rect(x, this.rulerHeight - height, 1, height);
-			this.timeMarkers.fill(0x888888);
+			this.timeMarkers.fill(majorMarkerColor);
 		}
 
 		// Minor markers every 0.1 seconds if zoomed in enough
@@ -84,7 +92,7 @@ export class RulerFeature extends Entity {
 					const height = this.rulerHeight * 0.3;
 
 					this.timeMarkers.rect(x, this.rulerHeight - height, 1, height);
-					this.timeMarkers.fill(0x666666);
+					this.timeMarkers.fill(minorMarkerColor);
 				}
 			}
 		}
@@ -100,11 +108,12 @@ export class RulerFeature extends Entity {
 			const x = second * this.pixelsPerSecond;
 			const timeText = this.formatTime(second);
 
+			const textColor = this.theme?.colors.ui.textMuted || 0xcccccc;
 			const label = new PIXI.Text({
 				text: timeText,
 				style: {
 					fontSize: 10,
-					fill: 0xcccccc,
+					fill: textColor,
 					fontFamily: "Arial"
 				}
 			});
@@ -162,7 +171,7 @@ export class PlayheadFeature extends Entity {
 	private currentTime = 0;
 	private isDragging = false;
 
-	constructor(pixelsPerSecond: number, timelineHeight: number) {
+	constructor(pixelsPerSecond: number, timelineHeight: number, private theme?: TimelineTheme) {
 		super();
 		this.events = new EventEmitter();
 		this.pixelsPerSecond = pixelsPerSecond;
@@ -197,16 +206,17 @@ export class PlayheadFeature extends Entity {
 
 	private drawPlayhead(): void {
 		const x = this.currentTime * this.pixelsPerSecond;
+		const playheadColor = this.theme?.colors.interaction.playhead || 0xff4444;
 
 		// Draw playhead line
 		this.playheadLine.clear();
 		this.playheadLine.rect(x, 0, 2, this.timelineHeight);
-		this.playheadLine.fill(0xff4444);
+		this.playheadLine.fill(playheadColor);
 
 		// Draw playhead handle
 		this.playheadHandle.clear();
 		this.playheadHandle.rect(x - 5, -10, 10, 10);
-		this.playheadHandle.fill(0xff4444);
+		this.playheadHandle.fill(playheadColor);
 	}
 
 	private onPlayheadPointerDown(event: PIXI.FederatedPointerEvent): void {
@@ -277,7 +287,7 @@ export class GridFeature extends Entity {
 	private trackHeight: number;
 	private isVisible = true;
 
-	constructor(pixelsPerSecond: number, timelineDuration: number, timelineHeight: number, trackHeight: number) {
+	constructor(pixelsPerSecond: number, timelineDuration: number, timelineHeight: number, trackHeight: number, private theme?: TimelineTheme) {
 		super();
 		this.events = new EventEmitter();
 		this.pixelsPerSecond = pixelsPerSecond;
@@ -313,11 +323,12 @@ export class GridFeature extends Entity {
 
 		// Vertical grid lines (time markers)
 		const gridInterval = this.pixelsPerSecond > 50 ? 1 : 5; // Every second or every 5 seconds
+		const gridColor = this.theme?.colors.interaction.snapGuide || 0x333333;
 
 		for (let time = 0; time <= this.timelineDuration; time += gridInterval) {
 			const x = time * this.pixelsPerSecond;
 			this.gridLines.rect(x, 0, 1, this.timelineHeight);
-			this.gridLines.fill(0x333333);
+			this.gridLines.fill(gridColor);
 		}
 
 		// Horizontal grid lines (track separators)
@@ -326,7 +337,7 @@ export class GridFeature extends Entity {
 		for (let track = 0; track <= trackCount; track += 1) {
 			const y = track * this.trackHeight;
 			this.gridLines.rect(0, y, extendedWidth, 1);
-			this.gridLines.fill(0x333333);
+			this.gridLines.fill(gridColor);
 		}
 	}
 

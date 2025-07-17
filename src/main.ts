@@ -23,11 +23,12 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Initialize the TimelineV2 with size
+		// 5. Initialize the TimelineV2 with size and custom theme using hex colors
 		const timeline = new Timeline(edit, {
 			width: template.output.size.width,
 			height: 300
-		});
+		}, {
+			preset: 'dark'		});
 		await timeline.load(); // Renders to [data-shotstack-timeline] element
 
 		// 6. Add keyboard controls

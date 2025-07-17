@@ -6,6 +6,7 @@ import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./tim
 // eslint-disable-next-line import/no-cycle
 import { TimelineInteraction } from "./timeline-interaction";
 import { TimelineLayout } from "./timeline-layout";
+import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "./theme";
 import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
 import { VisualTrack, VisualTrackOptions } from "./visual-track";
 
@@ -21,6 +22,7 @@ export class Timeline extends Entity {
 	private resolution: number;
 	private width: number;
 	private height: number;
+	private theme: TimelineTheme;
 
 	// Timeline constants
 	private static readonly TIMELINE_BUFFER_MULTIPLIER = 1.5; // 50% buffer for scrolling
@@ -55,26 +57,32 @@ export class Timeline extends Entity {
 
 	constructor(
 		private edit: Edit,
-		size: { width: number; height: number }
+		size: { width: number; height: number },
+		themeOptions?: TimelineThemeOptions
 	) {
 		super();
 		// Set dimensions from size parameter
 		this.width = size.width;
 		this.height = size.height;
 		
-		// Set default values for other properties
+		// Resolve theme from options
+		this.theme = TimelineThemeResolver.resolveTheme(themeOptions);
+		
+		// Set default values for other properties (some from theme)
 		this.pixelsPerSecond = 50;
-		this.trackHeight = TimelineLayout.TRACK_HEIGHT_DEFAULT;
-		this.backgroundColor = 0x2c2c2c;
+		// Enforce minimum track height of 40px for usability
+		const themeTrackHeight = this.theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT;
+		this.trackHeight = Math.max(40, themeTrackHeight);
+		this.backgroundColor = this.theme.colors.structure.background;
 		this.antialias = true;
 		this.resolution = window.devicePixelRatio || 1;
 		
-		// Create layout with all required options
+		// Create layout with all required options (using theme trackHeight)
 		this.layout = new TimelineLayout({
 			width: this.width,
 			height: this.height,
 			pixelsPerSecond: this.pixelsPerSecond,
-			trackHeight: this.trackHeight,
+			trackHeight: this.trackHeight, // This should use the theme value
 			backgroundColor: this.backgroundColor,
 			antialias: this.antialias,
 			resolution: this.resolution
@@ -184,7 +192,7 @@ export class Timeline extends Entity {
 		const extendedDuration = this.getExtendedTimelineDuration();
 
 		// Create ruler feature with extended duration for display
-		this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, this.layout.rulerHeight);
+		this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, this.layout.rulerHeight, this.theme);
 		await this.ruler.load();
 		this.ruler.getContainer().y = this.layout.rulerY;
 		this.rulerViewport.addChild(this.ruler.getContainer());
@@ -193,7 +201,7 @@ export class Timeline extends Entity {
 		this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
 
 		// Create playhead feature (should span full height including ruler)
-		this.playhead = new PlayheadFeature(this.pixelsPerSecond, this.height);
+		this.playhead = new PlayheadFeature(this.pixelsPerSecond, this.height, this.theme);
 		await this.playhead.load();
 		this.playhead.getContainer().y = this.layout.playheadY;
 		this.overlayLayer.addChild(this.playhead.getContainer());
@@ -202,7 +210,7 @@ export class Timeline extends Entity {
 		this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
 
 		// Create grid feature with extended duration
-		this.grid = new GridFeature(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
+		this.grid = new GridFeature(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight, this.theme);
 		await this.grid.load();
 		this.grid.getContainer().y = this.layout.gridY;
 		this.backgroundLayer.addChild(this.grid.getContainer());
@@ -628,7 +636,8 @@ export class Timeline extends Entity {
 				pixelsPerSecond: this.pixelsPerSecond,
 				trackHeight: this.layout.trackHeight,
 				trackIndex,
-				width: this.getExtendedTimelineWidth()
+				width: this.getExtendedTimelineWidth(),
+				theme: this.theme
 			};
 
 			const visualTrack = new VisualTrack(visualTrackOptions);
@@ -682,6 +691,68 @@ export class Timeline extends Entity {
 		}
 
 		return null;
+	}
+
+	// Theme management methods
+	public setTheme(themeOptions: TimelineThemeOptions): void {
+		this.theme = TimelineThemeResolver.resolveTheme(themeOptions);
+		
+		// Update backgroundColor from theme
+		this.backgroundColor = this.theme.colors.structure.background;
+		
+		// Update trackHeight from theme (with minimum of 40px)
+		const themeTrackHeight = this.theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT;
+		this.trackHeight = Math.max(40, themeTrackHeight);
+		
+		// Update layout with new options (including trackHeight)
+		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
+		
+		// Recreate timeline features with new theme and dimensions
+		if (this.ruler) {
+			this.ruler.dispose();
+			const extendedDuration = this.getExtendedTimelineDuration();
+			const rulerHeight = this.theme.dimensions?.rulerHeight || this.layout.rulerHeight;
+			this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, rulerHeight, this.theme);
+			this.ruler.load();
+			this.ruler.getContainer().y = this.layout.rulerY;
+			this.rulerViewport.addChild(this.ruler.getContainer());
+			this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
+		}
+		
+		if (this.playhead) {
+			this.playhead.dispose();
+			this.playhead = new PlayheadFeature(this.pixelsPerSecond, this.height, this.theme);
+			this.playhead.load();
+			this.playhead.getContainer().y = this.layout.playheadY;
+			this.overlayLayer.addChild(this.playhead.getContainer());
+			this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
+		}
+		
+		if (this.grid) {
+			this.grid.dispose();
+			const extendedDuration = this.getExtendedTimelineDuration();
+			this.grid = new GridFeature(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight, this.theme);
+			this.grid.load();
+			this.grid.getContainer().y = this.layout.gridY;
+			this.backgroundLayer.addChild(this.grid.getContainer());
+		}
+		
+		// Rebuild visuals with new theme
+		if (this.currentEditType) {
+			this.clearAllVisualState();
+			this.rebuildFromEdit(this.currentEditType);
+		}
+		
+		// Update PIXI app background
+		if (this.app) {
+			this.app.renderer.background.color = this.backgroundColor;
+		}
+		
+		this.app.render();
+	}
+
+	public getTheme(): TimelineTheme {
+		return this.theme;
 	}
 
 	// Getters for current state
