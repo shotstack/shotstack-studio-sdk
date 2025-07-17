@@ -11,10 +11,8 @@ export class AddTrackCommand implements EditCommand {
 		if (!context) return;
 		const tracks = context.getTracks();
 		const clips = context.getClips();
-		
-		
+
 		tracks.splice(this.trackIdx, 0, []);
-		
 
 		// Update layers for all clips that are on tracks at or after the insertion point
 		// Since we're inserting a track, all tracks at or after trackIdx shift down
@@ -26,10 +24,10 @@ export class AddTrackCommand implements EditCommand {
 				if (oldContainer) {
 					oldContainer.removeChild(clip.getContainer());
 				}
-				
+
 				// Update layer (track index + 1)
 				clip.layer += 1;
-				
+
 				// Add to new container
 				const newZIndex = 100000 - clip.layer * 100;
 				let newContainer = context.getContainer().getChildByLabel(`shotstack-track-${newZIndex}`, false);
@@ -41,7 +39,7 @@ export class AddTrackCommand implements EditCommand {
 			}
 		});
 		context.updateDuration();
-		
+
 		// Emit track creation event to trigger timeline visual updates
 		context.emitEvent("track:added", {
 			trackIndex: this.trackIdx,

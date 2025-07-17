@@ -1,468 +1,709 @@
-import { EditCommand } from "@core/commands/types";
-import { Edit } from "@core/edit";
-import { Size } from "@core/layouts/geometry";
 import { Entity } from "@core/shared/entity";
-import { Theme } from "@core/theme/theme-context";
-import { TimelineThemeOverride, TimelineThemePreset } from "@core/theme/theme.types";
+import { Edit } from "@core/edit";
+import { VisualTrack, VisualTrackOptions } from "./visual-track";
+import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./timeline-features";
+import { TimelineLayout } from "./timeline-layout";
+import { EditType, TimelineOptions, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
+import { TimelineInteraction } from "./timeline-interaction";
 import * as PIXI from "pixi.js";
 
-import { FeatureManager } from "./features/feature-manager";
-import { TimelineRenderer } from "./rendering/timeline-renderer";
-import { TimelineStateManager } from "./state/timeline-state";
-import { ToolManager } from "./tools/tool-manager";
-import {
-	ITimeline,
-	ITimelineRenderer,
-	ITimelineTool,
-	ITimelineFeature,
-	IToolManager,
-	IFeatureManager,
-	ITimelineToolContext,
-	ITimelineFeatureContext
-} from "./types/timeline.interfaces";
-import { TimelineState, StateChanges } from "./types/timeline.types";
+export class Timeline extends Entity {
+	private currentEditType: EditType | null = null;
+	private options: TimelineOptions;
+	private visualTracks: VisualTrack[] = [];
+	private layout: TimelineLayout;
+	private resolvedOptions: TimelineOptions;
 
-/**
- * Timeline configuration options
- */
-export interface TimelineOptions {
-	width?: number;
-	height?: number;
-	theme?: TimelineThemePreset; // Base theme preset name
-	themeOverrides?: TimelineThemeOverride; // Optional customizations
-}
+	// Timeline constants
+	private static readonly TIMELINE_BUFFER_MULTIPLIER = 1.5; // 50% buffer for scrolling
 
-/**
- * Main Timeline orchestrator class that manages the timeline state,
- * tools, features, and rendering.
- */
-export class Timeline extends Entity implements ITimeline {
-	public static readonly TimelineSelector = "[data-shotstack-timeline]";
+	// PIXI app and rendering
+	private app!: PIXI.Application;
+	private backgroundLayer!: PIXI.Container;
+	private trackLayer!: PIXI.Container;
+	private clipLayer!: PIXI.Container;
+	private selectionLayer!: PIXI.Container;
+	private overlayLayer!: PIXI.Container;
+	private viewport!: PIXI.Container;
+	private rulerViewport!: PIXI.Container;
 
-	private state: TimelineStateManager;
-	private renderer: ITimelineRenderer;
-	private toolManager: IToolManager;
-	private featureManager: IFeatureManager;
-	private size: Size;
-	private pixelsPerSecond: number = 100;
+	// Timeline features
+	private ruler!: RulerFeature;
+	private playhead!: PlayheadFeature;
+	private grid!: GridFeature;
+	private scroll!: ScrollManager;
+
+	// Viewport state
+	private scrollX = 0;
+	private scrollY = 0;
+	private zoomLevel = 1;
+
+	// Interaction management
+	private interaction!: TimelineInteraction;
+
+	// Animation loop
 	private animationFrameId: number | null = null;
-	private lastSelectedClipId: string | null = null;
+	private lastPlaybackTime = 0;
 
 	constructor(
 		private edit: Edit,
-		options?: TimelineOptions
+		options: TimelineOptions
 	) {
 		super();
+		this.options = this.mergeWithDefaults(options);
+		this.resolvedOptions = this.resolveOptions(this.options);
+		this.layout = new TimelineLayout(this.resolvedOptions);
+		this.setupEventListener();
+		this.setupInteraction();
+	}
 
-		// Set timeline dimensions
-		const opts = options || {};
-		this.size = {
-			width: opts.width || edit.size.width,
-			height: opts.height || 150
+	private mergeWithDefaults(options: TimelineOptions): TimelineOptions {
+		return {
+			width: 1200,
+			height: 600,
+			pixelsPerSecond: 50,
+			trackHeight: TimelineLayout.TRACK_HEIGHT_DEFAULT,
+			backgroundColor: 0x2c2c2c,
+			antialias: true,
+			resolution: window.devicePixelRatio || 1,
+			...options
 		};
+	}
 
-		// Initialize theme
-		if (opts.theme) {
-			Theme.setPreset(opts.theme);
-		}
-
-		// Apply theme overrides if provided
-		if (opts.themeOverrides) {
-			Theme.applyOverrides(opts.themeOverrides);
-		}
-
-		// Initialize core systems
-		this.state = new TimelineStateManager(this.createInitialState(), this.edit);
-		this.renderer = new TimelineRenderer(this.size);
-
-		// Set Timeline reference on state manager for clip sync
-		this.state.setTimeline(this);
-
-		// Initialize managers with state reference
-		this.toolManager = new ToolManager(this.state, this.edit);
-		this.featureManager = new FeatureManager(this.state);
-
-		// Set up cross-manager communication
-		this.toolManager.setFeatureManager(this.featureManager);
-
-		// Subscribe to state changes for external communication
-		this.state.subscribe(this.handleStateChange.bind(this));
-
-		// Subscribe to external events from Edit
-		this.setupEditEventListeners();
+	private resolveOptions(options: TimelineOptions): TimelineOptions {
+		return {
+			width: options.width ?? 1200,
+			height: options.height ?? 600,
+			pixelsPerSecond: options.pixelsPerSecond ?? 50,
+			trackHeight: options.trackHeight ?? TimelineLayout.TRACK_HEIGHT_DEFAULT,
+			backgroundColor: options.backgroundColor,
+			antialias: options.antialias ?? true,
+			resolution: options.resolution ?? (window.devicePixelRatio || 1)
+		};
 	}
 
 	public async load(): Promise<void> {
-		// Find the timeline container
-		const container = document.querySelector<HTMLDivElement>(Timeline.TimelineSelector);
-		if (!container) {
-			throw new Error(`Timeline container element '${Timeline.TimelineSelector}' not found.`);
+		await this.initializePixiApp();
+		await this.setupRenderLayers();
+		await this.setupViewport();
+		await this.setupTimelineFeatures();
+
+		// Activate interaction system after PIXI is ready
+		this.interaction.activate();
+
+		// Try to render initial state from Edit
+		console.log("TimelineV2: Getting initial edit state");
+		try {
+			const currentEdit = this.edit.getEdit();
+			if (currentEdit) {
+				console.log("TimelineV2: Initial edit state found", currentEdit);
+				// Cache the initial state for tools to query
+				this.currentEditType = currentEdit;
+				await this.rebuildFromEdit(currentEdit);
+			} else {
+				console.log("TimelineV2: No initial edit state found");
+			}
+		} catch (error) {
+			console.error("TimelineV2: Error getting initial edit state", error);
 		}
 
-		// Initialize renderer
-		await this.renderer.load();
-
-		// Add renderer canvas to container
-		this.getContainer().addChild(this.renderer.getStage());
-
-		// Set up event system
-		const stage = this.renderer.getStage();
-		stage.eventMode = "static";
-
-		// Set up PIXI event listeners
-		stage.on("pointerdown", (event: PIXI.FederatedPointerEvent) => this.handlePixiPointerDown(event));
-		stage.on("pointermove", (event: PIXI.FederatedPointerEvent) => this.handlePixiPointerMove(event));
-		stage.on("pointerup", (event: PIXI.FederatedPointerEvent) => this.handlePixiPointerUp(event));
-
-		// Append canvas and set up DOM events
-		const { canvas } = this.renderer.getApplication();
-		container.appendChild(canvas);
-		this.toolManager.setCursorElement(canvas);
-
-		// Set up DOM event listeners
-		canvas.tabIndex = 0;
-		canvas.addEventListener("wheel", this.handleWheel.bind(this));
-		canvas.addEventListener("keydown", this.handleKeyDown.bind(this));
-		canvas.addEventListener("keyup", this.handleKeyUp.bind(this));
-
-		// Load default tools and features
-		await this.loadDefaultTools();
-		await this.loadDefaultFeatures();
-
-		// Set default tool
-		this.toolManager.activate("selection");
-
-		// Load tracks and clips from Edit
-		await this.loadEditData();
-
-		// Start animation loop
+		// Start animation loop for continuous rendering
 		this.startAnimationLoop();
 	}
 
-	public update(deltaTime: number, elapsed: number): void {
-		// Update playback state from Edit
-		const currentPlayback = this.state.getState().playback;
-		const newPlayback = {
-			currentTime: this.edit.playbackTime / 1000,
-			isPlaying: this.edit.isPlaying,
-			duration: this.edit.getTotalDuration()
-		};
+	private async initializePixiApp(): Promise<void> {
+		this.app = new PIXI.Application();
 
-		if (
-			currentPlayback.currentTime !== newPlayback.currentTime ||
-			currentPlayback.isPlaying !== newPlayback.isPlaying ||
-			currentPlayback.duration !== newPlayback.duration
-		) {
-			this.state.update({ playback: newPlayback });
+		await this.app.init({
+			width: this.resolvedOptions.width,
+			height: this.resolvedOptions.height,
+			backgroundColor: this.resolvedOptions.backgroundColor,
+			antialias: this.resolvedOptions.antialias,
+			resolution: this.resolvedOptions.resolution,
+			autoDensity: true,
+			preference: "webgl"
+		});
+
+		// Find timeline container element and attach canvas
+		const timelineElement = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
+		if (!timelineElement) {
+			throw new Error("Timeline container element [data-shotstack-timeline] not found");
 		}
 
-		// Update active tool and enabled features
-		this.toolManager.getActiveTool()?.update(deltaTime, elapsed);
+		timelineElement.appendChild(this.app.canvas);
+	}
 
-		this.featureManager.getAllFeatures().forEach(feature => {
-			if (feature.enabled) {
-				feature.update(deltaTime, elapsed);
+	private async setupRenderLayers(): Promise<void> {
+		// Create ordered layers for proper z-ordering
+		this.backgroundLayer = new PIXI.Container();
+		this.trackLayer = new PIXI.Container();
+		this.clipLayer = new PIXI.Container();
+		this.selectionLayer = new PIXI.Container();
+		this.overlayLayer = new PIXI.Container();
+
+		// Set up layer properties
+		this.backgroundLayer.label = "background-layer";
+		this.trackLayer.label = "track-layer";
+		this.clipLayer.label = "clip-layer";
+		this.selectionLayer.label = "selection-layer";
+		this.overlayLayer.label = "overlay-layer";
+
+		// Add layers to stage in correct order
+		this.app.stage.addChild(this.backgroundLayer);
+		this.app.stage.addChild(this.trackLayer);
+		this.app.stage.addChild(this.clipLayer);
+		this.app.stage.addChild(this.selectionLayer);
+		this.app.stage.addChild(this.overlayLayer);
+	}
+
+	private async setupViewport(): Promise<void> {
+		// Create ruler viewport for horizontal scrolling
+		this.rulerViewport = new PIXI.Container();
+		this.rulerViewport.label = "ruler-viewport";
+		this.overlayLayer.addChild(this.rulerViewport);
+
+		// Create main viewport for tracks
+		this.viewport = new PIXI.Container();
+		this.viewport.label = "viewport";
+
+		// Add viewport to track layer for scrolling
+		this.trackLayer.addChild(this.viewport);
+
+		// Add our Entity container to viewport (this is where visual tracks will go)
+		this.viewport.addChild(this.getContainer());
+
+		// Initial viewport positioning will be done in setupTimelineFeatures
+		// after ruler height is known
+	}
+
+	private async setupTimelineFeatures(): Promise<void> {
+		// Get extended duration for timeline display
+		const extendedDuration = this.getExtendedTimelineDuration();
+
+		// Create ruler feature with extended duration for display
+		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.rulerHeight);
+		await this.ruler.load();
+		this.ruler.getContainer().y = this.layout.rulerY;
+		this.rulerViewport.addChild(this.ruler.getContainer());
+
+		// Connect ruler seek events
+		this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
+
+		// Create playhead feature (should span full height including ruler)
+		this.playhead = new PlayheadFeature(this.resolvedOptions.pixelsPerSecond, this.resolvedOptions.height);
+		await this.playhead.load();
+		this.playhead.getContainer().y = this.layout.playheadY;
+		this.overlayLayer.addChild(this.playhead.getContainer());
+
+		// Connect playhead seek events
+		this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
+
+		// Create grid feature with extended duration
+		this.grid = new GridFeature(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
+		await this.grid.load();
+		this.grid.getContainer().y = this.layout.gridY;
+		this.backgroundLayer.addChild(this.grid.getContainer());
+
+		// Create scroll manager for handling scroll events
+		this.scroll = new ScrollManager(this);
+		await this.scroll.load();
+
+		// Position viewport and apply initial transform
+		this.updateViewportTransform();
+	}
+
+	private updateViewportTransform(): void {
+		// Apply scroll transform using layout calculations
+		const position = this.layout.calculateViewportPosition(this.scrollX, this.scrollY);
+		this.viewport.position.set(position.x, position.y);
+		this.viewport.scale.set(this.zoomLevel, this.zoomLevel);
+
+		// Sync ruler horizontal scroll (no vertical scroll for ruler)
+		this.rulerViewport.position.x = position.x;
+		this.rulerViewport.scale.x = this.zoomLevel;
+	}
+
+	// Viewport management methods for tools
+	public setScroll(x: number, y: number): void {
+		this.scrollX = x;
+		this.scrollY = y;
+		this.updateViewportTransform();
+		this.app.render();
+	}
+
+	public setZoom(zoom: number): void {
+		this.zoomLevel = Math.max(0.1, Math.min(10, zoom));
+		this.updateViewportTransform();
+		this.app.render();
+	}
+
+	public getViewport(): { x: number; y: number; zoom: number } {
+		return {
+			x: this.scrollX,
+			y: this.scrollY,
+			zoom: this.zoomLevel
+		};
+	}
+
+	// Layer access for tools
+	public getBackgroundLayer(): PIXI.Container {
+		return this.backgroundLayer;
+	}
+
+	public getTrackLayer(): PIXI.Container {
+		return this.trackLayer;
+	}
+
+	public getClipLayer(): PIXI.Container {
+		return this.clipLayer;
+	}
+
+	public getSelectionLayer(): PIXI.Container {
+		return this.selectionLayer;
+	}
+
+	public getOverlayLayer(): PIXI.Container {
+		return this.overlayLayer;
+	}
+
+	public getPixiApp(): PIXI.Application {
+		return this.app;
+	}
+
+	// Interaction integration methods
+	public getClipData(trackIndex: number, clipIndex: number): ClipConfig | null {
+		if (!this.currentEditType?.timeline?.tracks) return null;
+		const track = this.currentEditType.timeline.tracks[trackIndex];
+		return track?.clips?.[clipIndex] || null;
+	}
+
+	public calculateDropPosition(globalX: number, globalY: number): DropPosition {
+		// Convert global PIXI coordinates to timeline position using layout
+		const localPos = this.getContainer().toLocal({ x: globalX, y: globalY });
+		const dropInfo = this.layout.calculateDropPosition(localPos.x, localPos.y);
+
+		return {
+			track: dropInfo.track,
+			time: dropInfo.time,
+			x: dropInfo.x,
+			y: dropInfo.y
+		};
+	}
+
+	// Layout access for interactions
+	public getLayout(): TimelineLayout {
+		return this.layout;
+	}
+
+	// Visual tracks access for interactions
+	public getVisualTracks(): VisualTrack[] {
+		return this.visualTracks;
+	}
+
+	// Interaction management methods - simplified API
+	public isInteractionActive(): boolean {
+		return this.interaction !== undefined;
+	}
+
+	// Edit access for interactions
+	public getEdit(): Edit {
+		return this.edit;
+	}
+
+	// Extended timeline dimensions
+	public getExtendedTimelineWidth(): number {
+		return this.getExtendedTimelineDuration() * this.resolvedOptions.pixelsPerSecond;
+	}
+
+	// Drag ghost control methods for TimelineInteraction
+	public hideDragGhost(): void {
+		if (this.dragPreviewContainer) {
+			this.dragPreviewContainer.visible = false;
+		}
+	}
+
+	public showDragGhost(trackIndex: number, time: number): void {
+		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
+
+		// Make visible and update position
+		this.dragPreviewContainer.visible = true;
+		this.drawDragPreview(trackIndex, time);
+	}
+
+	// Playhead control methods
+	public setPlayheadTime(time: number): void {
+		this.playhead.setTime(time);
+	}
+
+	public getPlayheadTime(): number {
+		return this.playhead.getTime();
+	}
+
+	private setupEventListener(): void {
+		this.edit.events.on("timeline:updated", this.handleTimelineUpdated.bind(this));
+		this.edit.events.on("clip:updated", this.handleClipUpdated.bind(this));
+		this.edit.events.on("clip:selected", this.handleClipSelected.bind(this));
+		this.edit.events.on("selection:cleared", this.handleSelectionCleared.bind(this));
+		this.edit.events.on("drag:started", this.handleDragStarted.bind(this));
+		this.edit.events.on("drag:moved", this.handleDragMoved.bind(this));
+		this.edit.events.on("drag:ended", this.handleDragEnded.bind(this));
+		this.edit.events.on("track:created-and-clip:moved", this.handleTrackCreatedAndClipMoved.bind(this));
+	}
+
+	private setupInteraction(): void {
+		this.interaction = new TimelineInteraction(this);
+
+		// Interaction will be activated in the load() method after PIXI is ready
+	}
+
+	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
+		// Cache current state from event
+		this.currentEditType = event.current;
+
+		// Update ruler with new timeline duration
+		this.updateRulerDuration();
+
+		// Rebuild visuals from event data
+		this.clearAllVisualState();
+		await this.rebuildFromEdit(event.current);
+		this.restoreUIState(); // Selection, scroll position, etc.
+	}
+
+	private async handleClipUpdated(_event: { current: any; previous: any }): Promise<void> {
+		// Clean up drag preview before rebuilding
+		this.hideDragPreview();
+
+		// For clip updates, we need to rebuild the timeline from the current Edit state
+		// since the MoveClipCommand has already updated the underlying data
+		try {
+			const currentEdit = this.edit.getEdit();
+			if (currentEdit) {
+				this.currentEditType = currentEdit;
+
+				// Update ruler in case timeline duration changed
+				this.updateRulerDuration();
+
+				this.clearAllVisualState();
+				await this.rebuildFromEdit(currentEdit);
+				this.restoreUIState();
 			}
+		} catch (error) {}
+	}
+
+	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
+		this.updateVisualSelection(event.trackIndex, event.clipIndex);
+	}
+
+	private handleSelectionCleared(): void {
+		this.clearVisualSelection();
+	}
+
+	private handleDragStarted(event: { trackIndex: number; clipIndex: number; startTime: number; offsetX: number; offsetY: number }): void {
+		this.showDragPreview(event.trackIndex, event.clipIndex);
+	}
+
+	private handleDragMoved(_event: {
+		trackIndex: number;
+		clipIndex: number;
+		startTime: number;
+		offsetX: number;
+		offsetY: number;
+		currentTime: number;
+		currentTrack: number;
+	}): void {
+		// Visual state is now handled by TimelineInteraction
+		// This handler is kept for potential future use
+	}
+
+	private handleDragEnded(): void {
+		this.hideDragPreview();
+	}
+
+	private async handleTrackCreatedAndClipMoved(_event: {
+		trackInsertionIndex: number;
+		clipMove: { from: { trackIndex: number; clipIndex: number }; to: { trackIndex: number; start: number } };
+	}): Promise<void> {
+		// Clean up drag preview before rebuilding
+		this.hideDragPreview();
+
+		// Rebuild timeline visuals after track creation and clip move
+		const currentEdit = this.edit.getEdit();
+		if (currentEdit) {
+			this.currentEditType = currentEdit;
+			this.updateRulerDuration();
+			this.clearAllVisualState();
+			await this.rebuildFromEdit(currentEdit);
+			this.restoreUIState();
+		}
+	}
+
+	private updateVisualSelection(trackIndex: number, clipIndex: number): void {
+		// Clear all existing selections first
+		this.clearVisualSelection();
+
+		// Set the specified clip as selected
+		const track = this.visualTracks[trackIndex];
+		if (track) {
+			const clip = track.getClip(clipIndex);
+			if (clip) {
+				clip.setSelected(true);
+			}
+		}
+	}
+
+	private clearVisualSelection(): void {
+		// Clear selection from all clips
+		this.visualTracks.forEach(track => {
+			const clips = track.getClips();
+			clips.forEach(clip => {
+				clip.setSelected(false);
+			});
 		});
+	}
+
+	// Drag preview overlay system
+	private dragPreviewContainer: PIXI.Container | null = null;
+	private dragPreviewGraphics: PIXI.Graphics | null = null;
+	private draggedClipInfo: { trackIndex: number; clipIndex: number; clipConfig: any } | null = null;
+
+	private showDragPreview(trackIndex: number, clipIndex: number): void {
+		// Get the clip data for creating the preview
+		const clipData = this.getClipData(trackIndex, clipIndex);
+		if (!clipData) {
+			console.warn("Clip data not found for drag preview:", trackIndex, clipIndex);
+			return;
+		}
+
+		// Store dragged clip info
+		this.draggedClipInfo = { trackIndex, clipIndex, clipConfig: clipData };
+
+		// Create drag preview container and graphics
+		this.dragPreviewContainer = new PIXI.Container();
+		this.dragPreviewGraphics = new PIXI.Graphics();
+
+		// Add graphics to container
+		this.dragPreviewContainer.addChild(this.dragPreviewGraphics);
+		// Add to the main container so it scrolls with content
+		this.getContainer().addChild(this.dragPreviewContainer);
+
+		// Set the original clip to semi-transparent
+		const track = this.visualTracks[trackIndex];
+		if (track) {
+			const clip = track.getClip(clipIndex);
+			if (clip) {
+				clip.setDragging(true);
+			}
+		}
+
+		// Draw initial preview at original position
+		this.drawDragPreview(trackIndex, clipData.start || 0);
+	}
+
+	private drawDragPreview(trackIndex: number, time: number): void {
+		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
+
+		const clipConfig = this.draggedClipInfo.clipConfig;
+		const layout = this.getLayout();
+
+		// Calculate position and size
+		const x = layout.getXAtTime(time);
+		// Use same positioning as visual tracks (relative to container, not including ruler)
+		const y = trackIndex * layout.trackHeight;
+		const width = (clipConfig.length || 0) * this.resolvedOptions.pixelsPerSecond;
+		const height = this.resolvedOptions.trackHeight;
+
+		// Clear and redraw existing graphics (much faster than recreating)
+		this.dragPreviewGraphics.clear();
+		this.dragPreviewGraphics.roundRect(0, 0, width, height, 4);
+
+		// Use original clip color, darkened for drag appearance
+		const baseColor = this.getClipColor(clipConfig.asset?.type);
+		const dragColor = this.darkenColor(baseColor, 0.3);
+
+		this.dragPreviewGraphics.fill({ color: dragColor, alpha: 0.7 });
+		this.dragPreviewGraphics.stroke({ width: 2, color: 0x00ff00 });
+
+		// Position the container
+		this.dragPreviewContainer.x = x;
+		this.dragPreviewContainer.y = y;
+	}
+
+	private handleSeek(event: { time: number }): void {
+		// Convert timeline seconds to edit milliseconds
+		this.edit.seek(this.secondsToMs(event.time));
+	}
+
+	private secondsToMs(seconds: number): number {
+		return seconds * 1000;
+	}
+
+	private msToSeconds(ms: number): number {
+		return ms / 1000;
+	}
+
+	private getExtendedTimelineDuration(): number {
+		const duration = this.msToSeconds(this.edit.totalDuration) || 60;
+		return Math.max(60, duration * Timeline.TIMELINE_BUFFER_MULTIPLIER);
+	}
+
+	private updateRulerDuration(): void {
+		const extendedDuration = this.getExtendedTimelineDuration();
+		const extendedWidth = this.getExtendedTimelineWidth();
+
+		// Update ruler and grid with extended duration
+		this.ruler.updateRuler(this.resolvedOptions.pixelsPerSecond, extendedDuration);
+		this.grid.updateGrid(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
+
+		// Update track widths
+		this.visualTracks.forEach(track => {
+			track.setWidth(extendedWidth);
+		});
+	}
+
+	private hideDragPreview(): void {
+		// Remove overlay container
+		if (this.dragPreviewContainer) {
+			// Make sure to destroy the graphics first
+			if (this.dragPreviewGraphics) {
+				this.dragPreviewGraphics.destroy();
+				this.dragPreviewGraphics = null;
+			}
+
+			// Remove from parent and destroy container
+			if (this.dragPreviewContainer.parent) {
+				this.dragPreviewContainer.parent.removeChild(this.dragPreviewContainer);
+			}
+			this.dragPreviewContainer.destroy({ children: true });
+			this.dragPreviewContainer = null;
+		}
+
+		// Reset original clip appearance if it still exists
+		if (this.draggedClipInfo && this.visualTracks.length > this.draggedClipInfo.trackIndex) {
+			const track = this.visualTracks[this.draggedClipInfo.trackIndex];
+			if (track) {
+				const clip = track.getClip(this.draggedClipInfo.clipIndex);
+				if (clip) {
+					clip.setDragging(false);
+				}
+			}
+		}
+
+		this.draggedClipInfo = null;
+	}
+
+	private clearAllVisualState(): void {
+		// Make sure drag preview is cleaned up
+		this.hideDragPreview();
+
+		// Clear all visual timeline components
+		const container = this.getContainer();
+
+		// Dispose all visual tracks
+		this.visualTracks.forEach(track => {
+			container.removeChild(track.getContainer());
+			track.dispose();
+		});
+
+		this.visualTracks = [];
+	}
+
+	private async rebuildFromEdit(editType: EditType): Promise<void> {
+		// Create visual representation directly from event payload
+		if (!editType?.timeline?.tracks) {
+			return;
+		}
+
+		const container = this.getContainer();
+
+		// Create visual tracks
+		for (let trackIndex = 0; trackIndex < editType.timeline.tracks.length; trackIndex++) {
+			const trackData = editType.timeline.tracks[trackIndex];
+
+			const visualTrackOptions: VisualTrackOptions = {
+				pixelsPerSecond: this.resolvedOptions.pixelsPerSecond,
+				trackHeight: this.layout.trackHeight,
+				trackIndex,
+				width: this.getExtendedTimelineWidth()
+			};
+
+			const visualTrack = new VisualTrack(visualTrackOptions);
+			await visualTrack.load();
+
+			// Rebuild track with track data
+			visualTrack.rebuildFromTrackData(trackData, this.resolvedOptions.pixelsPerSecond);
+
+			// Add to container and track array
+			container.addChild(visualTrack.getContainer());
+			this.visualTracks.push(visualTrack);
+		}
+
+		// Force a render
+		this.app.render();
+	}
+
+	private restoreUIState(): void {
+		// Restore UI state like selection, scroll position, etc.
+		// This will be implemented as features are added
+	}
+
+	// Public API for tools to query cached state
+	public findClipAtPosition(x: number, y: number): ClipInfo | null {
+		if (!this.currentEditType) return null;
+		return this.hitTestEditType(this.currentEditType, x, y);
+	}
+
+	private hitTestEditType(_editType: EditType, x: number, y: number): ClipInfo | null {
+		// Hit test using visual tracks for accurate positioning
+		const trackIndex = Math.floor(y / this.layout.trackHeight);
+
+		if (trackIndex < 0 || trackIndex >= this.visualTracks.length) {
+			return null;
+		}
+
+		const visualTrack = this.visualTracks[trackIndex];
+		const relativeY = y - trackIndex * this.layout.trackHeight;
+
+		const result = visualTrack.findClipAtPosition(x, relativeY);
+		if (result) {
+			return {
+				trackIndex,
+				clipIndex: result.clipIndex,
+				clipConfig: result.clip.getClipConfig(),
+				x: result.clip.getClipConfig().start * this.resolvedOptions.pixelsPerSecond,
+				y: trackIndex * this.layout.trackHeight,
+				width: result.clip.getClipConfig().length * this.resolvedOptions.pixelsPerSecond,
+				height: this.layout.trackHeight
+			};
+		}
+
+		return null;
+	}
+
+	// Getters for current state
+	public getCurrentEditType(): EditType | null {
+		return this.currentEditType;
+	}
+
+	public getOptions(): TimelineOptions {
+		return this.options;
+	}
+
+	public setOptions(options: Partial<TimelineOptions>): void {
+		this.options = { ...this.options, ...options };
+	}
+
+	// Required Entity methods
+	public update(_deltaTime: number, _elapsed: number): void {
+		// Sync playhead with Edit playback time
+		if (this.edit.isPlaying || this.lastPlaybackTime !== this.edit.playbackTime) {
+			this.playhead.setTime(this.msToSeconds(this.edit.playbackTime));
+			this.lastPlaybackTime = this.edit.playbackTime;
+		}
 	}
 
 	public draw(): void {
-		this.renderer.render(this.state.getState());
-		this.featureManager.renderOverlays(this.renderer);
-		this.toolManager.getActiveTool()?.draw();
-	}
-
-	public dispose(): void {
-		// Stop animation loop
-		if (this.animationFrameId !== null) {
-			cancelAnimationFrame(this.animationFrameId);
-			this.animationFrameId = null;
-		}
-
-		// Dispose managers
-		this.toolManager.getAllTools().forEach(tool => tool.dispose());
-		this.featureManager.getAllFeatures().forEach(feature => feature.dispose());
-
-		// Remove event listeners
-		const stage = this.renderer.getStage();
-		stage.off("pointerdown");
-		stage.off("pointermove");
-		stage.off("pointerup");
-
-		const { canvas } = this.renderer.getApplication();
-		canvas.removeEventListener("wheel", this.handleWheel.bind(this));
-		canvas.removeEventListener("keydown", this.handleKeyDown.bind(this));
-		canvas.removeEventListener("keyup", this.handleKeyUp.bind(this));
-
-		this.removeEditEventListeners();
-		this.renderer.dispose();
-		this.state.dispose();
-	}
-
-	public getState = (): TimelineState => this.state.getState();
-	public setState = (updates: Partial<TimelineState>): void => this.state.update(updates);
-	public registerTool = (tool: ITimelineTool): void => this.toolManager.register(tool);
-	public registerFeature = (feature: ITimelineFeature): void => this.featureManager.register(feature);
-	public activateTool = (name: string): void => this.toolManager.activate(name);
-
-	public setPixelsPerSecond(pixelsPerSecond: number): void {
-		this.pixelsPerSecond = pixelsPerSecond;
-		this.state.update({
-			viewport: {
-				...this.state.getState().viewport,
-				zoom: pixelsPerSecond
-			}
-		});
-	}
-
-	public getRenderer = (): ITimelineRenderer => this.renderer;
-	public getTimelineDuration = (): number => this.edit.getTotalDuration();
-	public getFeature = (name: string): ITimelineFeature | null => this.featureManager.getFeature(name);
-	public getClipRegistry = (): TimelineStateManager => this.state;
-
-	private createInitialState(): TimelineState {
-		return {
-			viewport: {
-				scrollX: 0,
-				scrollY: 0,
-				zoom: this.pixelsPerSecond,
-				width: this.size.width,
-				height: this.size.height
-			},
-			selection: {
-				selectedClipIds: new Set<string>(),
-				selectedTrackIds: new Set<string>(),
-				lastSelectedId: null
-			},
-			playback: {
-				currentTime: 0,
-				isPlaying: false,
-				duration: 0
-			},
-			features: {
-				snapping: { enabled: true, gridSize: 0.033333 },
-				autoScroll: { enabled: true, threshold: 0.8 }
-			},
-			activeTool: "selection",
-			toolStates: new Map(),
-			clipRegistry: {
-				clips: new Map(),
-				trackIndex: new Map(),
-				generation: 0
-			}
-		};
-	}
-
-	private async loadDefaultTools(): Promise<void> {
-		// Create tool context
-		const toolContext: ITimelineToolContext = {
-			timeline: this,
-			edit: this.edit,
-			clipRegistry: this.state,
-			executeCommand: (command: EditCommand | { type: string }) => {
-				// Handle simple command objects
-				if ("type" in command && command.type === "CLEAR_SELECTION") {
-					this.edit.clearSelection();
-				} else if ("execute" in command) {
-					// Handle proper EditCommand objects - use Edit's executeCommand which provides context
-					this.edit.executeEditCommand(command);
-				} else {
-					console.log("Timeline command:", command);
-				}
-			}
-		};
-
-		// Register selection tool
-		const { SelectionTool } = await import("./tools/selection-tool");
-		const selectionTool = new SelectionTool(this.state, toolContext);
-		this.toolManager.register(selectionTool);
-
-		// Register resize interceptor (runs before tools)
-		const { ResizeInterceptor } = await import("./tools/resize-tool");
-		const resizeInterceptor = new ResizeInterceptor(this.state, toolContext);
-		this.toolManager.registerInterceptor(resizeInterceptor);
-
-		// Register drag interceptor (runs after resize but before selection)
-		const { DragInterceptor } = await import("./tools/drag-tool");
-		const dragInterceptor = new DragInterceptor(this.state, toolContext);
-		this.toolManager.registerInterceptor(dragInterceptor);
-	}
-
-	private async loadDefaultFeatures(): Promise<void> {
-		// Create feature context
-		const featureContext: ITimelineFeatureContext = {
-			timeline: this,
-			edit: this.edit
-		};
-
-		// Register the scroll feature
-		const { ScrollFeature } = await import("./features/scroll-feature");
-		const scrollFeature = new ScrollFeature(this.state, featureContext);
-		this.featureManager.register(scrollFeature);
-
-		// Register the zoom feature
-		const { ZoomFeature } = await import("./features/zoom-feature");
-		const zoomFeature = new ZoomFeature(this.state, featureContext);
-		this.featureManager.register(zoomFeature);
-
-		// Register the playhead feature (temporary for testing)
-		const { PlayheadFeature } = await import("./features/playhead-feature");
-		const playheadFeature = new PlayheadFeature(this.state, featureContext);
-		this.featureManager.register(playheadFeature);
-
-		// Enable features by default
-		this.featureManager.enable("scroll");
-		this.featureManager.enable("zoom");
-		this.featureManager.enable("playhead");
-	}
-
-	private handleStateChange(state: TimelineState, changes: StateChanges): void {
-		// Emit relevant changes to external listeners via Edit.events
-		if (changes.selection) {
-			this.edit.events.emit("timeline:selectionChanged", { selection: state.selection });
-		}
-		if (changes.viewport) {
-			this.edit.events.emit("timeline:viewportChanged", { viewport: state.viewport });
-		}
-		if (changes.activeTool) {
-			this.edit.events.emit("timeline:toolChanged", {
-				previousTool: null, // TODO: Track previous tool
-				currentTool: state.activeTool
-			});
-		}
-	}
-
-	private setupEditEventListeners(): void {
-		// Listen to selection changes for visual feedback
-		this.edit.events.on("clip:selected", this.updateSelectionVisuals.bind(this));
-		this.edit.events.on("selection:cleared", this.updateSelectionVisuals.bind(this));
-
-		// Listen to clip deletion to update selection state
-		this.edit.events.on("clip:deleted", this.handleClipDeleted.bind(this));
-	}
-
-	private removeEditEventListeners(): void {
-		this.edit.events.off("clip:selected", this.updateSelectionVisuals.bind(this));
-		this.edit.events.off("selection:cleared", this.updateSelectionVisuals.bind(this));
-		this.edit.events.off("clip:deleted", this.handleClipDeleted.bind(this));
-	}
-
-	private handleClipDeleted(data: { clipId: string; trackIndex: number; clipIndex: number }): void {
-		// Remove clip from selection if it was selected
-		const state = this.state.getState();
-		if (state.selection.selectedClipIds.has(data.clipId)) {
-			const newSelection = new Set(state.selection.selectedClipIds);
-			newSelection.delete(data.clipId);
-			this.state.update({
-				selection: {
-					...state.selection,
-					selectedClipIds: newSelection,
-					lastSelectedId: state.selection.lastSelectedId === data.clipId ? null : state.selection.lastSelectedId
-				}
-			});
-		}
-		// State manager handles its own sync for clip deletions
-	}
-
-	// Handle PIXI pointer events - forward to features and tools
-	private handlePixiPointerDown(event: PIXI.FederatedPointerEvent): void {
-		if (!this.featureManager.handlePointerDown(event)) {
-			this.toolManager.handlePointerDown(event);
-		}
-	}
-
-	private handlePixiPointerMove(event: PIXI.FederatedPointerEvent): void {
-		if (!this.featureManager.handlePointerMove(event)) {
-			this.toolManager.handlePointerMove(event);
-		}
-	}
-
-	private handlePixiPointerUp(event: PIXI.FederatedPointerEvent): void {
-		if (!this.featureManager.handlePointerUp(event)) {
-			this.toolManager.handlePointerUp(event);
-		}
-	}
-
-	public handleWheel(event: WheelEvent): void {
-		const { deltaX, deltaY, deltaMode, ctrlKey, shiftKey, altKey, metaKey, offsetX: x } = event;
-		const timelineEvent = {
-			deltaX,
-			deltaY,
-			deltaMode,
-			ctrlKey,
-			shiftKey,
-			altKey,
-			metaKey,
-			x,
-			preventDefault: () => event.preventDefault()
-		};
-
-		if (!this.featureManager.handleWheel(timelineEvent)) {
-			this.toolManager.handleWheel(event);
-		}
-	}
-
-	public handleKeyDown(event: KeyboardEvent): void {
-		// Handle delete key for clip deletion
-		if (event.key === "Delete" || event.key === "Backspace") {
-			const selected = this.edit.getSelectedClipInfo();
-			if (selected) {
-				event.preventDefault();
-				this.edit.deleteClip(selected.trackIndex, selected.clipIndex);
-				return;
-			}
-		}
-
-		// Pass other keys to tool manager
-		this.toolManager.handleKeyDown(event);
-	}
-
-	public handleKeyUp = (event: KeyboardEvent): void => this.toolManager.handleKeyUp(event);
-
-	private async loadEditData(): Promise<void> {
-		const editData = this.edit.getEdit();
-
-		// Ensure we have tracks in the renderer matching the Edit state
-		editData.timeline.tracks.forEach((_, index) => {
-			const trackId = `track-${index}`;
-			if (!this.renderer.getTrack(trackId)) {
-				this.renderer.addTrack(trackId, index);
-			}
-		});
-
-		// Remove tracks that no longer exist in the Edit state
-		const trackCount = editData.timeline.tracks.length;
-		this.renderer.getTracks().forEach(track => {
-			const trackIndex = parseInt(track.getTrackId().replace("track-", ""), 10);
-			if (trackIndex >= trackCount) {
-				this.renderer.removeTrack(track.getTrackId());
-			}
-		});
-
-		await this.state.syncClipsWithEdit();
-	}
-
-	private updateSelectionVisuals(): void {
-		const selectedInfo = this.edit.getSelectedClipInfo();
-		const registryState = this.state.getState().clipRegistry;
-
-		// Find the currently selected clip ID using the player object
-		let currentSelectedClipId: string | null = null;
-		if (selectedInfo && selectedInfo.player) {
-			// Use the state manager to get the clip ID from the player
-			currentSelectedClipId = this.state.getClipIdForPlayer(selectedInfo.player);
-		}
-
-		// Update selection state if changed
-		if (this.lastSelectedClipId !== currentSelectedClipId) {
-			if (this.lastSelectedClipId) {
-				registryState.clips.get(this.lastSelectedClipId)?.visual?.setSelected(false);
-			}
-			if (currentSelectedClipId) {
-				registryState.clips.get(currentSelectedClipId)?.visual?.setSelected(true);
-			}
-			this.lastSelectedClipId = currentSelectedClipId;
-		}
+		// Render the PIXI application
+		this.app.render();
 	}
 
 	private startAnimationLoop(): void {
@@ -482,5 +723,90 @@ export class Timeline extends Entity implements ITimeline {
 		};
 
 		this.animationFrameId = requestAnimationFrame(animate);
+	}
+
+	// Helper methods for drag preview styling
+	private getClipColor(assetType?: string): number {
+		// Match VisualClip color logic
+		switch (assetType) {
+			case "video":
+				return 0x4a90e2;
+			case "audio":
+				return 0x7ed321;
+			case "image":
+				return 0xf5a623;
+			case "text":
+				return 0xd0021b;
+			case "shape":
+				return 0x9013fe;
+			case "html":
+				return 0x50e3c2;
+			case "luma":
+				return 0xb8e986;
+			default:
+				return 0x8e8e93;
+		}
+	}
+
+	private darkenColor(color: number, factor: number): number {
+		// Extract RGB components
+		const r = (color >> 16) & 0xff;
+		const g = (color >> 8) & 0xff;
+		const b = color & 0xff;
+
+		// Darken each component
+		const newR = Math.floor(r * (1 - factor));
+		const newG = Math.floor(g * (1 - factor));
+		const newB = Math.floor(b * (1 - factor));
+
+		// Combine back to hex
+		return (newR << 16) | (newG << 8) | newB;
+	}
+
+	public dispose(): void {
+		// Stop animation loop
+		if (this.animationFrameId !== null) {
+			cancelAnimationFrame(this.animationFrameId);
+			this.animationFrameId = null;
+		}
+
+		// Clean up drag preview if still active
+		this.hideDragPreview();
+
+		this.edit.events.off("timeline:updated", this.handleTimelineUpdated.bind(this));
+		this.edit.events.off("clip:updated", this.handleClipUpdated.bind(this));
+		this.edit.events.off("clip:selected", this.handleClipSelected.bind(this));
+		this.edit.events.off("selection:cleared", this.handleSelectionCleared.bind(this));
+		this.edit.events.off("drag:started", this.handleDragStarted.bind(this));
+		this.edit.events.off("drag:moved", this.handleDragMoved.bind(this));
+		this.edit.events.off("drag:ended", this.handleDragEnded.bind(this));
+		this.edit.events.off("track:created-and-clip:moved", this.handleTrackCreatedAndClipMoved.bind(this));
+
+		// Clean up interaction system
+		if (this.interaction) {
+			this.interaction.dispose();
+		}
+
+		// Clean up visual tracks
+		this.clearAllVisualState();
+
+		// Dispose timeline features
+		if (this.ruler) {
+			this.ruler.dispose();
+		}
+		if (this.playhead) {
+			this.playhead.dispose();
+		}
+		if (this.grid) {
+			this.grid.dispose();
+		}
+		if (this.scroll) {
+			this.scroll.dispose();
+		}
+
+		// Destroy PIXI application
+		if (this.app) {
+			this.app.destroy(true);
+		}
 	}
 }

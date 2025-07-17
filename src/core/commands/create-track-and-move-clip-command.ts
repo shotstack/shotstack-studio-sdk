@@ -21,18 +21,13 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 	) {
 		// Create the track at the insertion index
 		this.addTrackCommand = new AddTrackCommand(insertionIndex);
-		
+
 		// Pre-calculate adjusted source track index
 		// After adding a track at insertionIndex, all tracks at or above that index shift down
 		const adjustedFromTrackIndex = fromTrackIndex >= insertionIndex ? fromTrackIndex + 1 : fromTrackIndex;
-		
+
 		// Move the clip to the newly created track
-		this.moveClipCommand = new MoveClipCommand(
-			adjustedFromTrackIndex,
-			fromClipIndex,
-			insertionIndex,
-			newStart
-		);
+		this.moveClipCommand = new MoveClipCommand(adjustedFromTrackIndex, fromClipIndex, insertionIndex, newStart);
 	}
 
 	async execute(context?: CommandContext): Promise<void> {

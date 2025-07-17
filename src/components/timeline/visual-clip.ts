@@ -16,9 +16,9 @@ export class VisualClip extends Entity {
 	private background: PIXI.Graphics;
 	private text: PIXI.Text;
 	private visualState: {
-		mode: 'normal' | 'selected' | 'dragging' | 'resizing' | 'disabled';
+		mode: "normal" | "selected" | "dragging" | "resizing" | "disabled";
 		previewWidth?: number;
-	} = { mode: 'normal' };
+	} = { mode: "normal" };
 
 	// Visual constants
 	private readonly CLIP_PADDING = 4;
@@ -32,7 +32,7 @@ export class VisualClip extends Entity {
 		this.graphics = new PIXI.Graphics();
 		this.background = new PIXI.Graphics();
 		this.text = new PIXI.Text();
-		
+
 		this.setupContainer();
 	}
 
@@ -43,14 +43,14 @@ export class VisualClip extends Entity {
 
 	private setupContainer(): void {
 		const container = this.getContainer();
-		
+
 		// Set up container with label for later tool integration
 		container.label = `clip-${this.options.trackIndex}-${this.options.clipIndex}`;
-		
+
 		// Make container interactive for click events
 		container.interactive = true;
-		container.cursor = 'pointer';
-		
+		container.cursor = "pointer";
+
 		container.addChild(this.background);
 		container.addChild(this.graphics);
 		container.addChild(this.text);
@@ -61,11 +61,11 @@ export class VisualClip extends Entity {
 		this.text.style = new PIXI.TextStyle({
 			fontSize: 12,
 			fill: 0xffffff,
-			fontWeight: 'bold',
+			fontWeight: "bold",
 			wordWrap: false,
-			fontFamily: 'Arial, sans-serif'
+			fontFamily: "Arial, sans-serif"
 		});
-		
+
 		// Position text
 		this.text.anchor.set(0, 0);
 		this.text.x = this.CLIP_PADDING;
@@ -106,7 +106,7 @@ export class VisualClip extends Entity {
 		if (this.visualState.previewWidth !== undefined) {
 			return this.visualState.previewWidth;
 		}
-		
+
 		const duration = this.clipConfig.length || 0;
 		const calculatedWidth = duration * this.options.pixelsPerSecond;
 		return Math.max(50, calculatedWidth); // Minimum width of 50px
@@ -115,14 +115,14 @@ export class VisualClip extends Entity {
 	private drawClipBackground(width: number, height: number): void {
 		let color = this.getClipColor();
 		const styles = this.getStateStyles();
-		
+
 		// Apply color modifications based on state
 		if (styles.colorFactor > 0) {
 			color = this.lightenColor(color, styles.colorFactor);
 		} else if (styles.colorFactor < 0) {
 			color = this.darkenColor(color, Math.abs(styles.colorFactor));
 		}
-		
+
 		this.background.clear();
 		this.background.roundRect(0, 0, width, height, this.CORNER_RADIUS);
 		this.background.fill({ color, alpha: styles.alpha });
@@ -130,20 +130,20 @@ export class VisualClip extends Entity {
 
 	private drawClipBorder(width: number, height: number): void {
 		const styles = this.getStateStyles();
-		const isSelected = this.visualState.mode === 'selected';
+		const isSelected = this.visualState.mode === "selected";
 		const borderWidth = isSelected ? this.BORDER_WIDTH * 2 : this.BORDER_WIDTH;
-		
+
 		this.graphics.clear();
 		this.graphics.roundRect(0, 0, width, height, this.CORNER_RADIUS);
 		this.graphics.stroke({ width: borderWidth, color: styles.borderColor });
-		
+
 		// Add selection highlight
 		if (isSelected) {
 			this.graphics.roundRect(
-				-this.BORDER_WIDTH, 
-				-this.BORDER_WIDTH, 
-				width + this.BORDER_WIDTH * 2, 
-				height + this.BORDER_WIDTH * 2, 
+				-this.BORDER_WIDTH,
+				-this.BORDER_WIDTH,
+				width + this.BORDER_WIDTH * 2,
+				height + this.BORDER_WIDTH * 2,
 				this.CORNER_RADIUS
 			);
 			this.graphics.stroke({ width: 1, color: 0x007acc });
@@ -154,32 +154,31 @@ export class VisualClip extends Entity {
 		// Color based on asset type
 		const assetType = this.clipConfig.asset?.type;
 		switch (assetType) {
-			case 'video':
-				return 0x4A90E2;
-			case 'audio':
-				return 0x7ED321;
-			case 'image':
-				return 0xF5A623;
-			case 'text':
-				return 0xD0021B;
-			case 'shape':
-				return 0x9013FE;
-			case 'html':
-				return 0x50E3C2;
-			case 'luma':
-				return 0xB8E986;
+			case "video":
+				return 0x4a90e2;
+			case "audio":
+				return 0x7ed321;
+			case "image":
+				return 0xf5a623;
+			case "text":
+				return 0xd0021b;
+			case "shape":
+				return 0x9013fe;
+			case "html":
+				return 0x50e3c2;
+			case "luma":
+				return 0xb8e986;
 			default:
-				return 0x8E8E93;
+				return 0x8e8e93;
 		}
 	}
 
-
 	private updateAppearance(): void {
 		const container = this.getContainer();
-		
+
 		// Apply container-level opacity (different from fill alpha)
-		container.alpha = this.visualState.mode === 'dragging' ? 0.6 : 1.0;
-		
+		container.alpha = this.visualState.mode === "dragging" ? 0.6 : 1.0;
+
 		// Redraw with new styles
 		this.updateSize();
 	}
@@ -187,120 +186,117 @@ export class VisualClip extends Entity {
 	private updateText(): void {
 		// Get text content based on asset type
 		const assetType = this.clipConfig.asset?.type;
-		let displayText = '';
-		
+		let displayText = "";
+
 		switch (assetType) {
-			case 'text':
-				displayText = (this.clipConfig.asset as any).text || 'Text';
+			case "text":
+				displayText = (this.clipConfig.asset as any).text || "Text";
 				break;
-			case 'video':
-				displayText = (this.clipConfig.asset as any).src ? 
-					this.getFilenameFromSrc((this.clipConfig.asset as any).src) : 'Video';
+			case "video":
+				displayText = (this.clipConfig.asset as any).src ? this.getFilenameFromSrc((this.clipConfig.asset as any).src) : "Video";
 				break;
-			case 'audio':
-				displayText = (this.clipConfig.asset as any).src ? 
-					this.getFilenameFromSrc((this.clipConfig.asset as any).src) : 'Audio';
+			case "audio":
+				displayText = (this.clipConfig.asset as any).src ? this.getFilenameFromSrc((this.clipConfig.asset as any).src) : "Audio";
 				break;
-			case 'image':
-				displayText = (this.clipConfig.asset as any).src ? 
-					this.getFilenameFromSrc((this.clipConfig.asset as any).src) : 'Image';
+			case "image":
+				displayText = (this.clipConfig.asset as any).src ? this.getFilenameFromSrc((this.clipConfig.asset as any).src) : "Image";
 				break;
-			case 'shape':
-				displayText = (this.clipConfig.asset as any).shape || 'Shape';
+			case "shape":
+				displayText = (this.clipConfig.asset as any).shape || "Shape";
 				break;
-			case 'html':
-				displayText = 'HTML';
+			case "html":
+				displayText = "HTML";
 				break;
-			case 'luma':
-				displayText = 'Luma';
+			case "luma":
+				displayText = "Luma";
 				break;
 			default:
-				displayText = 'Clip';
+				displayText = "Clip";
 		}
-		
+
 		this.text.text = displayText;
-		
+
 		// Ensure text fits within clip bounds
 		const clipWidth = (this.clipConfig.length || 0) * this.options.pixelsPerSecond;
-		const maxTextWidth = clipWidth - (this.CLIP_PADDING * 2);
-		
+		const maxTextWidth = clipWidth - this.CLIP_PADDING * 2;
+
 		if (this.text.width > maxTextWidth) {
 			// Truncate text if too long
 			const ratio = maxTextWidth / this.text.width;
 			const truncatedLength = Math.floor(displayText.length * ratio) - 3;
-			this.text.text = displayText.substring(0, Math.max(1, truncatedLength)) + '...';
+			this.text.text = displayText.substring(0, Math.max(1, truncatedLength)) + "...";
 		}
 	}
 
 	private getFilenameFromSrc(src: string): string {
 		// Extract filename from URL or path
-		const parts = src.split('/');
+		const parts = src.split("/");
 		return parts[parts.length - 1] || src;
 	}
 
 	private darkenColor(color: number, factor: number): number {
 		// Extract RGB components
-		const r = (color >> 16) & 0xFF;
-		const g = (color >> 8) & 0xFF;
-		const b = color & 0xFF;
-		
+		const r = (color >> 16) & 0xff;
+		const g = (color >> 8) & 0xff;
+		const b = color & 0xff;
+
 		// Darken each component
 		const newR = Math.floor(r * (1 - factor));
 		const newG = Math.floor(g * (1 - factor));
 		const newB = Math.floor(b * (1 - factor));
-		
+
 		// Combine back to hex
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
 	private lightenColor(color: number, factor: number): number {
 		// Extract RGB components
-		const r = (color >> 16) & 0xFF;
-		const g = (color >> 8) & 0xFF;
-		const b = color & 0xFF;
-		
+		const r = (color >> 16) & 0xff;
+		const g = (color >> 8) & 0xff;
+		const b = color & 0xff;
+
 		// Lighten each component
 		const newR = Math.min(255, Math.floor(r + (255 - r) * factor));
 		const newG = Math.min(255, Math.floor(g + (255 - g) * factor));
 		const newB = Math.min(255, Math.floor(b + (255 - b) * factor));
-		
+
 		// Combine back to hex
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
 	private getStateStyles() {
 		switch (this.visualState.mode) {
-			case 'disabled': 
+			case "disabled":
 				return { alpha: 0.5, colorFactor: 0, borderColor: 0x666666 };
-			case 'dragging': 
+			case "dragging":
 				return { alpha: 0.7, colorFactor: -0.2, borderColor: 0x00ff00 };
-			case 'resizing': 
+			case "resizing":
 				return { alpha: 0.9, colorFactor: 0.1, borderColor: 0x00ff00 };
-			case 'selected': 
+			case "selected":
 				return { alpha: 1.0, colorFactor: 0, borderColor: 0x007acc };
-			default: 
+			default:
 				return { alpha: 1.0, colorFactor: 0, borderColor: 0x333333 };
 		}
 	}
 
 	// Public state management methods
 	public setSelected(selected: boolean): void {
-		this.visualState.mode = selected ? 'selected' : 'normal';
+		this.visualState.mode = selected ? "selected" : "normal";
 		this.updateVisualState();
 	}
 
 	public setDragging(dragging: boolean): void {
-		this.visualState.mode = dragging ? 'dragging' : 'normal';
+		this.visualState.mode = dragging ? "dragging" : "normal";
 		this.updateVisualState();
 	}
 
 	public setDisabled(disabled: boolean): void {
-		this.visualState.mode = disabled ? 'disabled' : 'normal';
+		this.visualState.mode = disabled ? "disabled" : "normal";
 		this.updateVisualState();
 	}
 
 	public setResizing(resizing: boolean): void {
-		this.visualState.mode = resizing ? 'resizing' : 'normal';
+		this.visualState.mode = resizing ? "resizing" : "normal";
 		if (!resizing) this.visualState.previewWidth = undefined;
 		this.updateVisualState();
 	}
@@ -329,17 +325,17 @@ export class VisualClip extends Entity {
 	}
 
 	public getSelected(): boolean {
-		return this.visualState.mode === 'selected';
+		return this.visualState.mode === "selected";
 	}
 
 	public getDragging(): boolean {
-		return this.visualState.mode === 'dragging';
+		return this.visualState.mode === "dragging";
 	}
 
 	public getRightEdgeX(): number {
 		const width = this.getEffectiveWidth();
 		const startTime = this.clipConfig.start || 0;
-		return (startTime * this.options.pixelsPerSecond) + width;
+		return startTime * this.options.pixelsPerSecond + width;
 	}
 
 	// Required Entity methods

@@ -39,7 +39,6 @@ export class MoveClipCommand implements EditCommand {
 		// Get the clip to move
 		this.player = fromTrack[this.fromClipIndex];
 		this.originalStart = this.player.clipConfiguration.start;
-		
 
 		// If moving to a different track
 		if (this.fromTrackIndex !== this.toTrackIndex) {
@@ -48,7 +47,6 @@ export class MoveClipCommand implements EditCommand {
 				console.warn(`Invalid destination track index: ${this.toTrackIndex}`);
 				return;
 			}
-
 
 			// Remove from current track
 			fromTrack.splice(this.fromClipIndex, 1);

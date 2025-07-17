@@ -15,7 +15,7 @@ export interface TimelineOptions {
 	resolution?: number;
 }
 
-export interface TimelineV2Options {
+export interface TimelineOptions {
 	width: number;
 	height: number;
 	pixelsPerSecond: number;
@@ -41,4 +41,3 @@ export interface DropPosition {
 	x: number;
 	y: number;
 }
-

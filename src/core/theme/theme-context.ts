@@ -66,11 +66,11 @@ export const Theme = {
 	get dimensions() {
 		// Return dimensions with computed clip values
 		const dims = currentTheme.dimensions;
-		
+
 		// Calculate clip dimensions as ratios of track height
 		const clipHeightRatio = 0.8; // Clip is 80% of track height
 		const clipOffsetRatio = 0.1; // Clip starts at 10% from top
-		
+
 		return {
 			...dims,
 			clip: {

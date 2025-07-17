@@ -28,7 +28,7 @@ export class VisualTrack extends Entity {
 		this.options = options;
 		this.background = new PIXI.Graphics();
 		this.trackLabel = new PIXI.Text();
-		
+
 		this.setupContainer();
 	}
 
@@ -39,13 +39,13 @@ export class VisualTrack extends Entity {
 
 	private setupContainer(): void {
 		const container = this.getContainer();
-		
+
 		// Set up container with label for later tool integration
 		container.label = `track-${this.options.trackIndex}`;
-		
+
 		container.addChild(this.background);
 		// Track labels removed - container.addChild(this.trackLabel);
-		
+
 		// Position track at correct vertical position
 		container.y = this.options.trackIndex * this.options.trackHeight;
 	}
@@ -59,7 +59,7 @@ export class VisualTrack extends Entity {
 		// 	wordWrap: false,
 		// 	fontFamily: 'Arial, sans-serif'
 		// });
-		// 
+		//
 		// // Position label
 		// this.trackLabel.anchor.set(0, 0.5);
 		// this.trackLabel.x = this.LABEL_PADDING;
@@ -70,19 +70,19 @@ export class VisualTrack extends Entity {
 	private updateTrackAppearance(): void {
 		const width = this.options.width;
 		const height = this.options.trackHeight;
-		
+
 		// Draw track background
 		this.background.clear();
-		
+
 		// Alternating track colors for better visual separation
 		const bgColor = this.options.trackIndex % 2 === 0 ? 0x2a2a2a : 0x242424;
 		this.background.rect(0, 0, width, height);
 		this.background.fill({ color: bgColor, alpha: 0.8 });
-		
+
 		// Draw track border
 		this.background.rect(0, 0, width, height);
 		this.background.stroke({ width: 1, color: 0x3a3a3a });
-		
+
 		// Draw track separator line at bottom
 		this.background.moveTo(0, height - 1);
 		this.background.lineTo(width, height - 1);
@@ -92,10 +92,10 @@ export class VisualTrack extends Entity {
 	public rebuildFromTrackData(trackData: TrackType, pixelsPerSecond: number): void {
 		// Update options with new pixels per second
 		this.options.pixelsPerSecond = pixelsPerSecond;
-		
+
 		// Clear existing clips
 		this.clearAllClips();
-		
+
 		// Create new clips from track data
 		if (trackData.clips) {
 			trackData.clips.forEach((clipConfig, clipIndex) => {
@@ -105,12 +105,12 @@ export class VisualTrack extends Entity {
 					trackIndex: this.options.trackIndex,
 					clipIndex
 				};
-				
+
 				const visualClip = new VisualClip(clipConfig, visualClipOptions);
 				this.addClip(visualClip);
 			});
 		}
-		
+
 		// Update track appearance
 		this.updateTrackAppearance();
 	}
@@ -118,7 +118,7 @@ export class VisualTrack extends Entity {
 	private async addClip(visualClip: VisualClip): Promise<void> {
 		this.clips.push(visualClip);
 		await visualClip.load();
-		
+
 		// Add clip to container
 		const container = this.getContainer();
 		container.addChild(visualClip.getContainer());
@@ -127,12 +127,12 @@ export class VisualTrack extends Entity {
 	private clearAllClips(): void {
 		// Remove all clips from container and dispose them
 		const container = this.getContainer();
-		
+
 		for (const clip of this.clips) {
 			container.removeChild(clip.getContainer());
 			clip.dispose();
 		}
-		
+
 		this.clips = [];
 	}
 
@@ -140,10 +140,10 @@ export class VisualTrack extends Entity {
 		if (clipIndex >= 0 && clipIndex < this.clips.length) {
 			const clip = this.clips[clipIndex];
 			const container = this.getContainer();
-			
+
 			container.removeChild(clip.getContainer());
 			clip.dispose();
-			
+
 			this.clips.splice(clipIndex, 1);
 		}
 	}
@@ -157,12 +157,12 @@ export class VisualTrack extends Entity {
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
 		this.options.pixelsPerSecond = pixelsPerSecond;
-		
+
 		// Update all clips with new pixels per second
 		this.clips.forEach(clip => {
 			clip.setPixelsPerSecond(pixelsPerSecond);
 		});
-		
+
 		this.updateTrackAppearance();
 	}
 
@@ -173,14 +173,14 @@ export class VisualTrack extends Entity {
 
 	public setTrackIndex(trackIndex: number): void {
 		this.options.trackIndex = trackIndex;
-		
+
 		// Update container position
 		const container = this.getContainer();
 		container.y = trackIndex * this.options.trackHeight;
-		
+
 		// Track labels removed
 		// this.trackLabel.text = `Track ${trackIndex + 1}`;
-		
+
 		// Update all clips with new track index
 		this.clips.forEach((clip, clipIndex) => {
 			const clipOptions = clip.getOptions();
@@ -193,7 +193,7 @@ export class VisualTrack extends Entity {
 	public selectClip(clipIndex: number): void {
 		// Clear all selections first
 		this.clearAllSelections();
-		
+
 		// Select the specified clip
 		if (clipIndex >= 0 && clipIndex < this.clips.length) {
 			this.clips[clipIndex].setSelected(true);
@@ -245,22 +245,22 @@ export class VisualTrack extends Entity {
 		if (y < 0 || y > this.options.trackHeight) {
 			return null;
 		}
-		
+
 		// Convert x to time
 		const time = x / this.options.pixelsPerSecond;
-		
+
 		// Find clip at this time
 		for (let i = 0; i < this.clips.length; i++) {
 			const clip = this.clips[i];
 			const clipConfig = clip.getClipConfig();
 			const clipStart = clipConfig.start || 0;
 			const clipEnd = clipStart + (clipConfig.length || 0);
-			
+
 			if (time >= clipStart && time <= clipEnd) {
 				return { clip, clipIndex: i };
 			}
 		}
-		
+
 		return null;
 	}
 
@@ -268,7 +268,7 @@ export class VisualTrack extends Entity {
 	public update(_deltaTime: number, _elapsed: number): void {
 		// VisualTrack doesn't need frame-based updates
 		// All updates are driven by state changes
-		
+
 		// Update all clips
 		this.clips.forEach(clip => {
 			clip.update(_deltaTime, _elapsed);
@@ -278,7 +278,7 @@ export class VisualTrack extends Entity {
 	public draw(): void {
 		// Drawing happens in updateTrackAppearance()
 		this.updateTrackAppearance();
-		
+
 		// Draw all clips
 		this.clips.forEach(clip => {
 			clip.draw();
@@ -288,7 +288,7 @@ export class VisualTrack extends Entity {
 	public dispose(): void {
 		// Clean up all clips
 		this.clearAllClips();
-		
+
 		// Clean up graphics resources
 		this.background.destroy();
 		this.trackLabel.destroy();

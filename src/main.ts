@@ -1,4 +1,4 @@
-import { TimelineV2 } from "./components/timeline-v2";
+import { Timeline } from "./components/timeline";
 
 import { Edit, Canvas, Controls } from "./index";
 
@@ -24,7 +24,7 @@ async function main() {
 		await edit.loadEdit(template);
 
 		// 5. Initialize the TimelineV2 with options
-		const timeline = new TimelineV2(edit, {
+		const timeline = new Timeline(edit, {
 			width: template.output.size.width,
 			height: 300,
 			pixelsPerSecond: 50,

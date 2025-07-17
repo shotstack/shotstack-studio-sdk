@@ -168,9 +168,7 @@ export class Edit extends Entity {
 	public getEdit(): EditType {
 		// Use the actual tracks array to preserve empty tracks
 		const tracks: TrackType[] = this.tracks.map((track, trackIndex) => {
-			const clipsOnTrack = track
-				.filter(player => player && !this.clipsToDispose.includes(player))
-				.map(player => player.clipConfiguration);
+			const clipsOnTrack = track.filter(player => player && !this.clipsToDispose.includes(player)).map(player => player.clipConfiguration);
 			return { clips: clipsOnTrack };
 		});
 
@@ -389,7 +387,7 @@ export class Edit extends Entity {
 		// Get track containers
 		const fromTrackContainerKey = `shotstack-track-${fromZIndex}`;
 		const toTrackContainerKey = `shotstack-track-${toZIndex}`;
-		
+
 		const fromTrackContainer = this.getContainer().getChildByLabel(fromTrackContainerKey, false);
 		let toTrackContainer = this.getContainer().getChildByLabel(toTrackContainerKey, false);
 

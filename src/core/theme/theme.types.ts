@@ -130,13 +130,7 @@ export type TimelineThemePreset = "default" | "dark" | "light" | "professional" 
  * @throws Error if validation fails
  */
 export function validateTheme(theme: TimelineTheme): void {
-	const requiredPaths = [
-		"colors.background.primary",
-		"colors.clips.video",
-		"colors.ui.selection",
-		"dimensions.track.height",
-		"opacity.clip"
-	];
+	const requiredPaths = ["colors.background.primary", "colors.clips.video", "colors.ui.selection", "dimensions.track.height", "opacity.clip"];
 
 	for (const path of requiredPaths) {
 		const value = path.split(".").reduce((obj: any, key) => obj?.[key], theme);
