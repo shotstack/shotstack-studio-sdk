@@ -1,8 +1,9 @@
-import { Entity } from "@core/shared/entity";
 import { TrackSchema } from "@core/schemas/track";
-import { VisualClip, VisualClipOptions } from "./visual-clip";
+import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 import { z } from "zod";
+
+import { VisualClip, VisualClipOptions } from "./visual-clip";
 
 type TrackType = z.infer<typeof TrackSchema>;
 
@@ -68,7 +69,7 @@ export class VisualTrack extends Entity {
 	}
 
 	private updateTrackAppearance(): void {
-		const width = this.options.width;
+		const {width} = this.options;
 		const height = this.options.trackHeight;
 
 		// Draw track background
@@ -182,7 +183,7 @@ export class VisualTrack extends Entity {
 		// this.trackLabel.text = `Track ${trackIndex + 1}`;
 
 		// Update all clips with new track index
-		this.clips.forEach((clip, clipIndex) => {
+		this.clips.forEach((clip, _clipIndex) => {
 			const clipOptions = clip.getOptions();
 			clipOptions.trackIndex = trackIndex;
 			clip.updateFromConfig(clip.getClipConfig());
@@ -250,7 +251,7 @@ export class VisualTrack extends Entity {
 		const time = x / this.options.pixelsPerSecond;
 
 		// Find clip at this time
-		for (let i = 0; i < this.clips.length; i++) {
+		for (let i = 0; i < this.clips.length; i += 1) {
 			const clip = this.clips[i];
 			const clipConfig = clip.getClipConfig();
 			const clipStart = clipConfig.start || 0;

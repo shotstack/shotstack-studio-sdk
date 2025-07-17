@@ -63,17 +63,13 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 	undo(context?: CommandContext): void {
 		if (!context || !this.wasExecuted) return;
 
-		try {
-			// Undo in reverse order
-			this.moveClipCommand.undo(context);
-			this.addTrackCommand.undo(context);
-			this.wasExecuted = false;
+		// Undo in reverse order
+		this.moveClipCommand.undo(context);
+		this.addTrackCommand.undo(context);
+		this.wasExecuted = false;
 
-			context.emitEvent("track:created-and-clip:moved:undone", {
-				trackInsertionIndex: this.insertionIndex
-			});
-		} catch (error) {
-			throw error;
-		}
+		context.emitEvent("track:created-and-clip:moved:undone", {
+			trackInsertionIndex: this.insertionIndex
+		});
 	}
 }

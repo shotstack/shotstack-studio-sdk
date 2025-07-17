@@ -167,7 +167,7 @@ export class Edit extends Entity {
 	}
 	public getEdit(): EditType {
 		// Use the actual tracks array to preserve empty tracks
-		const tracks: TrackType[] = this.tracks.map((track, trackIndex) => {
+		const tracks: TrackType[] = this.tracks.map((track, _trackIndex) => {
 			const clipsOnTrack = track.filter(player => player && !this.clipsToDispose.includes(player)).map(player => player.clipConfiguration);
 			return { clips: clipsOnTrack };
 		});

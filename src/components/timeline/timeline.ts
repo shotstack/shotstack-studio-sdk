@@ -1,11 +1,14 @@
-import { Entity } from "@core/shared/entity";
 import { Edit } from "@core/edit";
-import { VisualTrack, VisualTrackOptions } from "./visual-track";
-import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./timeline-features";
-import { TimelineLayout } from "./timeline-layout";
-import { EditType, TimelineOptions, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
-import { TimelineInteraction } from "./timeline-interaction";
+import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
+
+import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./timeline-features";
+// eslint-disable-next-line import/no-cycle
+import { TimelineInteraction } from "./timeline-interaction";
+import { TimelineLayout } from "./timeline-layout";
+import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
+import { VisualTrack, VisualTrackOptions } from "./visual-track";
+
 
 export class Timeline extends Entity {
 	private currentEditType: EditType | null = null;
@@ -387,7 +390,9 @@ export class Timeline extends Entity {
 				await this.rebuildFromEdit(currentEdit);
 				this.restoreUIState();
 			}
-		} catch (error) {}
+		} catch (_error) {
+			// Ignore error silently
+		}
 	}
 
 	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
@@ -502,7 +507,7 @@ export class Timeline extends Entity {
 	private drawDragPreview(trackIndex: number, time: number): void {
 		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
 
-		const clipConfig = this.draggedClipInfo.clipConfig;
+		const {clipConfig} = this.draggedClipInfo;
 		const layout = this.getLayout();
 
 		// Calculate position and size
@@ -616,7 +621,7 @@ export class Timeline extends Entity {
 		const container = this.getContainer();
 
 		// Create visual tracks
-		for (let trackIndex = 0; trackIndex < editType.timeline.tracks.length; trackIndex++) {
+		for (let trackIndex = 0; trackIndex < editType.timeline.tracks.length; trackIndex += 1) {
 			const trackData = editType.timeline.tracks[trackIndex];
 
 			const visualTrackOptions: VisualTrackOptions = {
@@ -750,8 +755,11 @@ export class Timeline extends Entity {
 
 	private darkenColor(color: number, factor: number): number {
 		// Extract RGB components
+		// eslint-disable-next-line no-bitwise
 		const r = (color >> 16) & 0xff;
+		// eslint-disable-next-line no-bitwise
 		const g = (color >> 8) & 0xff;
+		// eslint-disable-next-line no-bitwise
 		const b = color & 0xff;
 
 		// Darken each component
@@ -760,6 +768,7 @@ export class Timeline extends Entity {
 		const newB = Math.floor(b * (1 - factor));
 
 		// Combine back to hex
+		// eslint-disable-next-line no-bitwise
 		return (newR << 16) | (newG << 8) | newB;
 	}
 

@@ -1,8 +1,10 @@
-import { Timeline } from "./timeline";
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
-import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import * as PIXI from "pixi.js";
+
+// eslint-disable-next-line import/no-cycle
+import { Timeline } from "./timeline";
 
 interface DragInfo {
 	trackIndex: number;
@@ -115,7 +117,7 @@ export class TimelineInteraction {
 		if (this.state === InteractionState.SELECTING && this.startPointerPos && this.currentClipInfo) {
 			// Check if we've moved far enough to start dragging
 			const currentPos = { x: event.global.x, y: event.global.y };
-			const distance = Math.sqrt(Math.pow(currentPos.x - this.startPointerPos.x, 2) + Math.pow(currentPos.y - this.startPointerPos.y, 2));
+			const distance = Math.sqrt((currentPos.x - this.startPointerPos.x)**2 + (currentPos.y - this.startPointerPos.y)**2);
 
 			if (distance > TimelineInteraction.DRAG_THRESHOLD) {
 				this.startDrag(this.currentClipInfo, event);
@@ -358,7 +360,7 @@ export class TimelineInteraction {
 		const trackIndex = parseInt(parts[1], 10);
 		const clipIndex = parseInt(parts[2], 10);
 
-		if (isNaN(trackIndex) || isNaN(clipIndex)) {
+		if (Number.isNaN(trackIndex) || Number.isNaN(clipIndex)) {
 			return null;
 		}
 
@@ -475,16 +477,20 @@ export class TimelineInteraction {
 	}
 
 	private getDropZone(y: number): { type: "above" | "between" | "below"; position: number } | null {
-		const trackHeight = this.timeline.getLayout().trackHeight;
+		const {trackHeight} = this.timeline.getLayout();
 		const tracks = this.timeline.getVisualTracks();
 		const threshold = TimelineInteraction.DROP_ZONE_THRESHOLD;
 
 		// Check each potential insertion point (0 to tracks.length)
-		for (let i = 0; i <= tracks.length; i++) {
+		for (let i = 0; i <= tracks.length; i += 1) {
 			const boundaryY = i * trackHeight;
 			if (Math.abs(y - boundaryY) < threshold) {
 				return {
-					type: i === 0 ? "above" : i === tracks.length ? "below" : "between",
+					type: (() => {
+						if (i === 0) return "above";
+						if (i === tracks.length) return "below";
+						return "between";
+					})(),
 					position: i
 				};
 			}
@@ -617,7 +623,7 @@ export class TimelineInteraction {
 
 		this.snapGuidelines = new PIXI.Graphics();
 		const layout = this.timeline.getLayout();
-		const trackHeight = layout.trackHeight;
+		const {trackHeight} = layout;
 
 		// Draw each guideline
 		alignedTimes.forEach(({ time, tracks, isPlayhead }) => {
@@ -743,7 +749,6 @@ export class TimelineInteraction {
 		snapped: boolean;
 		snapType?: "clip-start" | "clip-end" | "playhead";
 	} {
-		const layout = this.timeline.getLayout();
 		const pixelsPerSecond = this.timeline.getOptions().pixelsPerSecond || 50;
 		const snapThresholdTime = TimelineInteraction.SNAP_THRESHOLD / pixelsPerSecond;
 

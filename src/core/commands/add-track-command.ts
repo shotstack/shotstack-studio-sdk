@@ -26,6 +26,7 @@ export class AddTrackCommand implements EditCommand {
 				}
 
 				// Update layer (track index + 1)
+				// eslint-disable-next-line no-param-reassign
 				clip.layer += 1;
 
 				// Add to new container
@@ -52,9 +53,10 @@ export class AddTrackCommand implements EditCommand {
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 		tracks.splice(this.trackIdx, 1);
-		clips.forEach((clip, index) => {
+		clips.forEach((clip) => {
 			if (clip.layer > this.trackIdx + 1) {
-				clips[index].layer -= 1;
+				// eslint-disable-next-line no-param-reassign
+				clip.layer -= 1;
 			}
 		});
 		context.updateDuration();

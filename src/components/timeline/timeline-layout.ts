@@ -145,11 +145,11 @@ export class TimelineLayout {
 	}
 
 	// Utility methods
-	public isPointInRuler(x: number, y: number): boolean {
+	public isPointInRuler(_x: number, y: number): boolean {
 		return y >= this.rulerY && y <= this.rulerY + this.rulerHeight;
 	}
 
-	public isPointInTracks(x: number, y: number): boolean {
+	public isPointInTracks(_x: number, y: number): boolean {
 		return y >= this.tracksY && y <= this.options.height!;
 	}
 

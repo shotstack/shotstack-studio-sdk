@@ -1,5 +1,6 @@
-import { Entity } from "@core/shared/entity";
+/* eslint-disable max-classes-per-file */
 import { EventEmitter } from "@core/events/event-emitter";
+import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 export interface TimelineFeatures {
@@ -66,7 +67,7 @@ export class RulerFeature extends Entity {
 		this.timeMarkers.clear();
 
 		// Major markers every second
-		for (let second = 0; second <= this.timelineDuration; second++) {
+		for (let second = 0; second <= this.timelineDuration; second += 1) {
 			const x = second * this.pixelsPerSecond;
 			const height = second % 5 === 0 ? this.rulerHeight * 0.8 : this.rulerHeight * 0.6;
 
@@ -76,7 +77,7 @@ export class RulerFeature extends Entity {
 
 		// Minor markers every 0.1 seconds if zoomed in enough
 		if (this.pixelsPerSecond > 20) {
-			for (let tenth = 0; tenth <= this.timelineDuration * 10; tenth++) {
+			for (let tenth = 0; tenth <= this.timelineDuration * 10; tenth += 1) {
 				if (tenth % 10 !== 0) {
 					// Skip major markers
 					const x = (tenth / 10) * this.pixelsPerSecond;
@@ -322,7 +323,7 @@ export class GridFeature extends Entity {
 		// Horizontal grid lines (track separators)
 		const trackCount = Math.ceil(this.timelineHeight / this.trackHeight);
 
-		for (let track = 0; track <= trackCount; track++) {
+		for (let track = 0; track <= trackCount; track += 1) {
 			const y = track * this.trackHeight;
 			this.gridLines.rect(0, y, extendedWidth, 1);
 			this.gridLines.fill(0x333333);
@@ -383,7 +384,7 @@ export class ScrollManager extends Entity {
 		this.abortController = new AbortController();
 
 		// Get the PIXI canvas element
-		const canvas = this.timeline.getPixiApp().canvas;
+		const {canvas} = this.timeline.getPixiApp();
 
 		// Add wheel event listener for scrolling
 		canvas.addEventListener("wheel", this.handleWheel.bind(this), {
@@ -401,8 +402,8 @@ export class ScrollManager extends Entity {
 		event.preventDefault();
 
 		// Determine scroll direction based on wheel delta and modifier keys
-		let deltaX = event.deltaX;
-		let deltaY = event.deltaY;
+		let {deltaX} = event;
+		let {deltaY} = event;
 
 		// Shift key converts vertical scroll to horizontal scroll
 		if (event.shiftKey) {

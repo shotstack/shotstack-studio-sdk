@@ -1,6 +1,7 @@
 import { Entity } from "@core/shared/entity";
-import { ClipConfig } from "./types";
 import * as PIXI from "pixi.js";
+
+import { ClipConfig } from "./types";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
@@ -224,7 +225,7 @@ export class VisualClip extends Entity {
 			// Truncate text if too long
 			const ratio = maxTextWidth / this.text.width;
 			const truncatedLength = Math.floor(displayText.length * ratio) - 3;
-			this.text.text = displayText.substring(0, Math.max(1, truncatedLength)) + "...";
+			this.text.text = `${displayText.substring(0, Math.max(1, truncatedLength))  }...`;
 		}
 	}
 
@@ -236,8 +237,11 @@ export class VisualClip extends Entity {
 
 	private darkenColor(color: number, factor: number): number {
 		// Extract RGB components
+		// eslint-disable-next-line no-bitwise
 		const r = (color >> 16) & 0xff;
+		// eslint-disable-next-line no-bitwise
 		const g = (color >> 8) & 0xff;
+		// eslint-disable-next-line no-bitwise
 		const b = color & 0xff;
 
 		// Darken each component
@@ -246,13 +250,17 @@ export class VisualClip extends Entity {
 		const newB = Math.floor(b * (1 - factor));
 
 		// Combine back to hex
+		// eslint-disable-next-line no-bitwise
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
 	private lightenColor(color: number, factor: number): number {
 		// Extract RGB components
+		// eslint-disable-next-line no-bitwise
 		const r = (color >> 16) & 0xff;
+		// eslint-disable-next-line no-bitwise
 		const g = (color >> 8) & 0xff;
+		// eslint-disable-next-line no-bitwise
 		const b = color & 0xff;
 
 		// Lighten each component
@@ -261,6 +269,7 @@ export class VisualClip extends Entity {
 		const newB = Math.min(255, Math.floor(b + (255 - b) * factor));
 
 		// Combine back to hex
+		// eslint-disable-next-line no-bitwise
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
