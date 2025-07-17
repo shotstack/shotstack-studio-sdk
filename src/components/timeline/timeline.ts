@@ -12,10 +12,15 @@ import { VisualTrack, VisualTrackOptions } from "./visual-track";
 
 export class Timeline extends Entity {
 	private currentEditType: EditType | null = null;
-	private options: TimelineOptions;
 	private visualTracks: VisualTrack[] = [];
 	private layout: TimelineLayout;
-	private resolvedOptions: TimelineOptions;
+	private pixelsPerSecond: number;
+	private trackHeight: number;
+	private backgroundColor: number;
+	private antialias: boolean;
+	private resolution: number;
+	private width: number;
+	private height: number;
 
 	// Timeline constants
 	private static readonly TIMELINE_BUFFER_MULTIPLIER = 1.5; // 50% buffer for scrolling
@@ -50,40 +55,35 @@ export class Timeline extends Entity {
 
 	constructor(
 		private edit: Edit,
-		options: TimelineOptions
+		size: { width: number; height: number }
 	) {
 		super();
-		this.options = this.mergeWithDefaults(options);
-		this.resolvedOptions = this.resolveOptions(this.options);
-		this.layout = new TimelineLayout(this.resolvedOptions);
+		// Set dimensions from size parameter
+		this.width = size.width;
+		this.height = size.height;
+		
+		// Set default values for other properties
+		this.pixelsPerSecond = 50;
+		this.trackHeight = TimelineLayout.TRACK_HEIGHT_DEFAULT;
+		this.backgroundColor = 0x2c2c2c;
+		this.antialias = true;
+		this.resolution = window.devicePixelRatio || 1;
+		
+		// Create layout with all required options
+		this.layout = new TimelineLayout({
+			width: this.width,
+			height: this.height,
+			pixelsPerSecond: this.pixelsPerSecond,
+			trackHeight: this.trackHeight,
+			backgroundColor: this.backgroundColor,
+			antialias: this.antialias,
+			resolution: this.resolution
+		});
+		
 		this.setupEventListener();
 		this.setupInteraction();
 	}
 
-	private mergeWithDefaults(options: TimelineOptions): TimelineOptions {
-		return {
-			width: 1200,
-			height: 600,
-			pixelsPerSecond: 50,
-			trackHeight: TimelineLayout.TRACK_HEIGHT_DEFAULT,
-			backgroundColor: 0x2c2c2c,
-			antialias: true,
-			resolution: window.devicePixelRatio || 1,
-			...options
-		};
-	}
-
-	private resolveOptions(options: TimelineOptions): TimelineOptions {
-		return {
-			width: options.width ?? 1200,
-			height: options.height ?? 600,
-			pixelsPerSecond: options.pixelsPerSecond ?? 50,
-			trackHeight: options.trackHeight ?? TimelineLayout.TRACK_HEIGHT_DEFAULT,
-			backgroundColor: options.backgroundColor,
-			antialias: options.antialias ?? true,
-			resolution: options.resolution ?? (window.devicePixelRatio || 1)
-		};
-	}
 
 	public async load(): Promise<void> {
 		await this.initializePixiApp();
@@ -118,11 +118,11 @@ export class Timeline extends Entity {
 		this.app = new PIXI.Application();
 
 		await this.app.init({
-			width: this.resolvedOptions.width,
-			height: this.resolvedOptions.height,
-			backgroundColor: this.resolvedOptions.backgroundColor,
-			antialias: this.resolvedOptions.antialias,
-			resolution: this.resolvedOptions.resolution,
+			width: this.width,
+			height: this.height,
+			backgroundColor: this.backgroundColor,
+			antialias: this.antialias,
+			resolution: this.resolution,
 			autoDensity: true,
 			preference: "webgl"
 		});
@@ -184,7 +184,7 @@ export class Timeline extends Entity {
 		const extendedDuration = this.getExtendedTimelineDuration();
 
 		// Create ruler feature with extended duration for display
-		this.ruler = new RulerFeature(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.rulerHeight);
+		this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, this.layout.rulerHeight);
 		await this.ruler.load();
 		this.ruler.getContainer().y = this.layout.rulerY;
 		this.rulerViewport.addChild(this.ruler.getContainer());
@@ -193,7 +193,7 @@ export class Timeline extends Entity {
 		this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
 
 		// Create playhead feature (should span full height including ruler)
-		this.playhead = new PlayheadFeature(this.resolvedOptions.pixelsPerSecond, this.resolvedOptions.height);
+		this.playhead = new PlayheadFeature(this.pixelsPerSecond, this.height);
 		await this.playhead.load();
 		this.playhead.getContainer().y = this.layout.playheadY;
 		this.overlayLayer.addChild(this.playhead.getContainer());
@@ -202,7 +202,7 @@ export class Timeline extends Entity {
 		this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
 
 		// Create grid feature with extended duration
-		this.grid = new GridFeature(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
+		this.grid = new GridFeature(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
 		await this.grid.load();
 		this.grid.getContainer().y = this.layout.gridY;
 		this.backgroundLayer.addChild(this.grid.getContainer());
@@ -315,7 +315,7 @@ export class Timeline extends Entity {
 
 	// Extended timeline dimensions
 	public getExtendedTimelineWidth(): number {
-		return this.getExtendedTimelineDuration() * this.resolvedOptions.pixelsPerSecond;
+		return this.getExtendedTimelineDuration() * this.pixelsPerSecond;
 	}
 
 	// Drag ghost control methods for TimelineInteraction
@@ -514,8 +514,8 @@ export class Timeline extends Entity {
 		const x = layout.getXAtTime(time);
 		// Use same positioning as visual tracks (relative to container, not including ruler)
 		const y = trackIndex * layout.trackHeight;
-		const width = (clipConfig.length || 0) * this.resolvedOptions.pixelsPerSecond;
-		const height = this.resolvedOptions.trackHeight;
+		const width = (clipConfig.length || 0) * this.pixelsPerSecond;
+		const height = this.trackHeight;
 
 		// Clear and redraw existing graphics (much faster than recreating)
 		this.dragPreviewGraphics.clear();
@@ -556,8 +556,8 @@ export class Timeline extends Entity {
 		const extendedWidth = this.getExtendedTimelineWidth();
 
 		// Update ruler and grid with extended duration
-		this.ruler.updateRuler(this.resolvedOptions.pixelsPerSecond, extendedDuration);
-		this.grid.updateGrid(this.resolvedOptions.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
+		this.ruler.updateRuler(this.pixelsPerSecond, extendedDuration);
+		this.grid.updateGrid(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
 
 		// Update track widths
 		this.visualTracks.forEach(track => {
@@ -625,7 +625,7 @@ export class Timeline extends Entity {
 			const trackData = editType.timeline.tracks[trackIndex];
 
 			const visualTrackOptions: VisualTrackOptions = {
-				pixelsPerSecond: this.resolvedOptions.pixelsPerSecond,
+				pixelsPerSecond: this.pixelsPerSecond,
 				trackHeight: this.layout.trackHeight,
 				trackIndex,
 				width: this.getExtendedTimelineWidth()
@@ -635,7 +635,7 @@ export class Timeline extends Entity {
 			await visualTrack.load();
 
 			// Rebuild track with track data
-			visualTrack.rebuildFromTrackData(trackData, this.resolvedOptions.pixelsPerSecond);
+			visualTrack.rebuildFromTrackData(trackData, this.pixelsPerSecond);
 
 			// Add to container and track array
 			container.addChild(visualTrack.getContainer());
@@ -674,9 +674,9 @@ export class Timeline extends Entity {
 				trackIndex,
 				clipIndex: result.clipIndex,
 				clipConfig: result.clip.getClipConfig(),
-				x: result.clip.getClipConfig().start * this.resolvedOptions.pixelsPerSecond,
+				x: (result.clip.getClipConfig().start || 0) * this.pixelsPerSecond,
 				y: trackIndex * this.layout.trackHeight,
-				width: result.clip.getClipConfig().length * this.resolvedOptions.pixelsPerSecond,
+				width: (result.clip.getClipConfig().length || 0) * this.pixelsPerSecond,
 				height: this.layout.trackHeight
 			};
 		}
@@ -690,11 +690,28 @@ export class Timeline extends Entity {
 	}
 
 	public getOptions(): TimelineOptions {
-		return this.options;
+		return {
+			width: this.width,
+			height: this.height,
+			pixelsPerSecond: this.pixelsPerSecond,
+			trackHeight: this.trackHeight,
+			backgroundColor: this.backgroundColor,
+			antialias: this.antialias,
+			resolution: this.resolution
+		};
 	}
 
 	public setOptions(options: Partial<TimelineOptions>): void {
-		this.options = { ...this.options, ...options };
+		if (options.width !== undefined) this.width = options.width;
+		if (options.height !== undefined) this.height = options.height;
+		if (options.pixelsPerSecond !== undefined) this.pixelsPerSecond = options.pixelsPerSecond;
+		if (options.trackHeight !== undefined) this.trackHeight = options.trackHeight;
+		if (options.backgroundColor !== undefined) this.backgroundColor = options.backgroundColor;
+		if (options.antialias !== undefined) this.antialias = options.antialias;
+		if (options.resolution !== undefined) this.resolution = options.resolution;
+		
+		// Update layout with new options
+		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
 	}
 
 	// Required Entity methods

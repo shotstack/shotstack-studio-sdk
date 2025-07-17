@@ -23,12 +23,10 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Initialize the TimelineV2 with options
+		// 5. Initialize the TimelineV2 with size
 		const timeline = new Timeline(edit, {
 			width: template.output.size.width,
-			height: 300,
-			pixelsPerSecond: 50,
-			trackHeight: 80
+			height: 300
 		});
 		await timeline.load(); // Renders to [data-shotstack-timeline] element
 

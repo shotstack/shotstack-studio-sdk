@@ -22,13 +22,13 @@ export class TimelineLayout {
 
 	private config: TimelineLayoutConfig;
 
-	constructor(private options: TimelineOptions) {
+	constructor(private options: Required<TimelineOptions>) {
 		this.config = this.calculateLayout();
 	}
 
 	private calculateLayout(): TimelineLayoutConfig {
 		const rulerHeight = TimelineLayout.RULER_HEIGHT;
-		const trackHeight = this.options.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT;
+		const { trackHeight } = this.options;
 
 		return {
 			rulerHeight,
@@ -76,12 +76,12 @@ export class TimelineLayout {
 	}
 
 	public positionClip(startTime: number): number {
-		return startTime * this.options.pixelsPerSecond!;
+		return startTime * this.options.pixelsPerSecond;
 	}
 
 	public calculateClipWidth(duration: number): number {
 		const minWidth = 50;
-		return Math.max(minWidth, duration * this.options.pixelsPerSecond!);
+		return Math.max(minWidth, duration * this.options.pixelsPerSecond);
 	}
 
 	public calculateDropPosition(globalX: number, globalY: number): { track: number; time: number; x: number; y: number } {
@@ -89,7 +89,7 @@ export class TimelineLayout {
 		const adjustedY = globalY - this.tracksY;
 
 		const trackIndex = Math.floor(adjustedY / this.trackHeight);
-		const time = Math.max(0, globalX / this.options.pixelsPerSecond!);
+		const time = Math.max(0, globalX / this.options.pixelsPerSecond);
 
 		return {
 			track: Math.max(0, trackIndex),
@@ -106,11 +106,11 @@ export class TimelineLayout {
 	}
 
 	public getTimeAtX(x: number): number {
-		return x / this.options.pixelsPerSecond!;
+		return x / this.options.pixelsPerSecond;
 	}
 
 	public getXAtTime(time: number): number {
-		return time * this.options.pixelsPerSecond!;
+		return time * this.options.pixelsPerSecond;
 	}
 
 	public getYAtTrack(trackIndex: number): number {
@@ -119,15 +119,15 @@ export class TimelineLayout {
 
 	// Grid and ruler dimensions
 	public getGridHeight(): number {
-		return this.options.height! - this.rulerHeight;
+		return this.options.height - this.rulerHeight;
 	}
 
 	public getRulerWidth(): number {
-		return this.options.width!;
+		return this.options.width;
 	}
 
 	public getGridWidth(): number {
-		return this.options.width!;
+		return this.options.width;
 	}
 
 	// Viewport scroll calculations
@@ -139,8 +139,8 @@ export class TimelineLayout {
 	}
 
 	// Update layout when options change
-	public updateOptions(options: TimelineOptions): void {
-		this.options = { ...this.options, ...options };
+	public updateOptions(options: Required<TimelineOptions>): void {
+		this.options = options;
 		this.config = this.calculateLayout();
 	}
 
@@ -150,7 +150,7 @@ export class TimelineLayout {
 	}
 
 	public isPointInTracks(_x: number, y: number): boolean {
-		return y >= this.tracksY && y <= this.options.height!;
+		return y >= this.tracksY && y <= this.options.height;
 	}
 
 	public getVisibleTrackRange(scrollY: number, viewportHeight: number): { start: number; end: number } {
