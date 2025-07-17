@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { TimelineTheme } from './theme';
 import { TimelineLayout } from './timeline-layout';
-import { Edit } from '../../core';
+import { Edit } from '../../core/edit';
 
 export class TimelineToolbar extends PIXI.Container {
 	private background: PIXI.Graphics;
@@ -16,6 +16,7 @@ export class TimelineToolbar extends PIXI.Container {
 	private frameForwardIcon: PIXI.Graphics;
 	private frameForwardHoverBackground: PIXI.Graphics;
 	private timeDisplay: PIXI.Text;
+	private cutButton: PIXI.Container;
 	
 	private isHovering = false;
 	private isPressed = false;
@@ -43,6 +44,7 @@ export class TimelineToolbar extends PIXI.Container {
 		this.createPlayPauseButton();
 		this.createFrameForwardButton();
 		this.createTimeDisplay();
+		this.createCutButton();
 		
 		// Subscribe to edit events
 		this.subscribeToEditEvents();
@@ -239,6 +241,57 @@ export class TimelineToolbar extends PIXI.Container {
 		this.timeDisplay.position.set(timeX, this.height / 2);
 		
 		this.addChild(this.timeDisplay);
+	}
+
+	private createCutButton(): void {
+		this.cutButton = new PIXI.Container();
+		this.cutButton.eventMode = 'static';
+		this.cutButton.cursor = 'pointer';
+		
+		const buttonWidth = 60;
+		const buttonHeight = 24;
+		const cutX = this.width - buttonWidth - 10;
+		const centerY = (this.height - buttonHeight) / 2;
+		this.cutButton.position.set(cutX, centerY);
+		
+		const background = new PIXI.Graphics();
+		background.roundRect(0, 0, buttonWidth, buttonHeight, 4);
+		background.fill({ color: 0x444444 });
+		background.stroke({ color: 0x666666, width: 1 });
+		this.cutButton.addChild(background);
+		
+		const textStyle = new PIXI.TextStyle({
+			fontFamily: 'Arial',
+			fontSize: 12,
+			fill: 0xffffff,
+		});
+		const buttonText = new PIXI.Text('CUT', textStyle);
+		buttonText.anchor.set(0.5);
+		buttonText.position.set(buttonWidth / 2, buttonHeight / 2);
+		this.cutButton.addChild(buttonText);
+		
+		this.cutButton.on('click', (event) => {
+			event.stopPropagation();
+			this.performCutClip();
+		});
+		
+		this.cutButton.on('pointerdown', (event) => {
+			event.stopPropagation();
+		});
+		
+		this.addChild(this.cutButton);
+	}
+
+	private performCutClip(): void {
+		const selectedInfo = this.edit.getSelectedClipInfo();
+		if (!selectedInfo) {
+			return;
+		}
+
+		const { trackIndex, clipIndex } = selectedInfo;
+		const playheadTime = this.edit.playbackTime / 1000;
+		
+		this.edit.splitClip(trackIndex, clipIndex, playheadTime);
 	}
 
 	private handleButtonDown(): void {

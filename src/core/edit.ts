@@ -13,6 +13,7 @@ import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
+import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
 import { Entity } from "@core/shared/entity";
@@ -205,6 +206,11 @@ export class Edit extends Entity {
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
 		this.executeCommand(command);
 	}
+	
+	public splitClip(trackIndex: number, clipIndex: number, splitTime: number): void {
+		const command = new SplitClipCommand(trackIndex, clipIndex, splitTime);
+		this.executeCommand(command);
+	}
 
 	public addTrack(trackIdx: number, track: TrackType): void {
 		const command = new AddTrackCommand(trackIdx);
@@ -277,8 +283,17 @@ export class Edit extends Entity {
 		return {
 			getClips: () => [...this.clips],
 			getTracks: () => this.tracks,
+			getTrack: (trackIndex) => {
+				if (trackIndex >= 0 && trackIndex < this.tracks.length) {
+					return this.tracks[trackIndex];
+				}
+				return null;
+			},
 			getContainer: () => this.getContainer(),
 			addPlayer: (trackIdx, player) => this.addPlayer(trackIdx, player),
+			addPlayerToContainer: (trackIdx, player) => {
+				this.addPlayerToContainer(trackIdx, player);
+			},
 			createPlayerFromAssetType: clipConfiguration => this.createPlayerFromAssetType(clipConfiguration),
 			queueDisposeClip: player => this.queueDisposeClip(player),
 			disposeClips: () => this.disposeClips(),
@@ -382,6 +397,19 @@ export class Edit extends Entity {
 		if (previousDuration !== this.totalDuration) {
 			this.events.emit('duration:changed', { duration: this.totalDuration });
 		}
+	}
+
+	private addPlayerToContainer(trackIndex: number, player: Player): void {
+		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
+		const trackContainerKey = `shotstack-track-${zIndex}`;
+		let trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
+		
+		if (!trackContainer) {
+			trackContainer = new pixi.Container({ label: trackContainerKey, zIndex });
+			this.getContainer().addChild(trackContainer);
+		}
+		
+		trackContainer.addChild(player.getContainer());
 	}
 
 	// Move a player's container to the appropriate track container

@@ -21,8 +21,10 @@ export type EditCommand = {
 export type CommandContext = {
 	getClips(): Player[];
 	getTracks(): Player[][];
+	getTrack(trackIndex: number): Player[] | null;
 	getContainer(): Container;
 	addPlayer(trackIdx: number, player: Player): Promise<void>;
+	addPlayerToContainer(trackIdx: number, player: Player): void;
 	createPlayerFromAssetType(clipConfiguration: ClipType): Player;
 	queueDisposeClip(player: Player): void;
 	disposeClips(): void;
