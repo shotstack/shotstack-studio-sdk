@@ -2,7 +2,7 @@ import { Edit } from "@core/edit";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./timeline-features";
+import { RulerFeature, PlayheadFeature, ScrollManager } from "./timeline-features";
 // eslint-disable-next-line import/no-cycle
 import { TimelineInteraction } from "./timeline-interaction";
 import { TimelineLayout } from "./timeline-layout";
@@ -42,7 +42,6 @@ export class Timeline extends Entity {
 	private toolbar!: TimelineToolbar;
 	private ruler!: RulerFeature;
 	private playhead!: PlayheadFeature;
-	private grid!: GridFeature;
 	private scroll!: ScrollManager;
 
 	// Viewport state
@@ -214,12 +213,6 @@ export class Timeline extends Entity {
 
 		// Connect playhead seek events
 		this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
-
-		// Create grid feature with extended duration
-		this.grid = new GridFeature(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight, this.theme);
-		await this.grid.load();
-		this.grid.getContainer().y = this.layout.gridY;
-		this.backgroundLayer.addChild(this.grid.getContainer());
 
 		// Create scroll manager for handling scroll events
 		this.scroll = new ScrollManager(this);
@@ -569,9 +562,8 @@ export class Timeline extends Entity {
 		const extendedDuration = this.getExtendedTimelineDuration();
 		const extendedWidth = this.getExtendedTimelineWidth();
 
-		// Update ruler and grid with extended duration
+		// Update ruler with extended duration
 		this.ruler.updateRuler(this.pixelsPerSecond, extendedDuration);
-		this.grid.updateGrid(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight);
 
 		// Update track widths
 		this.visualTracks.forEach(track => {
@@ -737,15 +729,6 @@ export class Timeline extends Entity {
 			this.playhead.getContainer().y = this.layout.playheadY;
 			this.overlayLayer.addChild(this.playhead.getContainer());
 			this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
-		}
-		
-		if (this.grid) {
-			this.grid.dispose();
-			const extendedDuration = this.getExtendedTimelineDuration();
-			this.grid = new GridFeature(this.pixelsPerSecond, extendedDuration, this.layout.getGridHeight(), this.layout.trackHeight, this.theme);
-			this.grid.load();
-			this.grid.getContainer().y = this.layout.gridY;
-			this.backgroundLayer.addChild(this.grid.getContainer());
 		}
 		
 		// Rebuild visuals with new theme
@@ -918,9 +901,6 @@ export class Timeline extends Entity {
 		}
 		if (this.playhead) {
 			this.playhead.dispose();
-		}
-		if (this.grid) {
-			this.grid.dispose();
 		}
 		if (this.scroll) {
 			this.scroll.dispose();
