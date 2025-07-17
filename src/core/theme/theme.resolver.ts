@@ -1,6 +1,6 @@
-import { TimelineTheme, TimelineThemeInput, TimelineThemeOptions, DeepPartial } from './timeline-theme.types';
+import { TimelineTheme, TimelineThemeInput, TimelineThemeOptions, DeepPartial } from './theme.types';
 import { convertThemeColors, convertThemeColorsGeneric } from './theme-utils';
-import defaultThemeData from '../../../themes/default.json';
+import defaultThemeData from '../../themes/default.json';
 
 // Default theme converted once at module load
 const DEFAULT_THEME: TimelineTheme = convertThemeColors(defaultThemeData);

@@ -3,7 +3,7 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { TimelineTheme } from "./theme";
+import { TimelineTheme } from "../../core/theme";
 
 export interface TimelineFeatures {
 	ruler: RulerFeature;

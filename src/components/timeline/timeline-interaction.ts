@@ -5,7 +5,7 @@ import * as PIXI from "pixi.js";
 
 // eslint-disable-next-line import/no-cycle
 import { Timeline } from "./timeline";
-import { TimelineTheme } from "./theme";
+import { TimelineTheme } from "../../core/theme";
 
 interface DragInfo {
 	trackIndex: number;

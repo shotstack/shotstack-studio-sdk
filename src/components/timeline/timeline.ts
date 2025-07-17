@@ -6,7 +6,7 @@ import { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./tim
 // eslint-disable-next-line import/no-cycle
 import { TimelineInteraction } from "./timeline-interaction";
 import { TimelineLayout } from "./timeline-layout";
-import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "./theme";
+import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
 import { TimelineToolbar } from "./timeline-toolbar";
 import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
 import { VisualTrack, VisualTrackOptions } from "./visual-track";

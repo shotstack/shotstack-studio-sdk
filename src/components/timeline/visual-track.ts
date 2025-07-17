@@ -4,7 +4,7 @@ import * as PIXI from "pixi.js";
 import { z } from "zod";
 
 import { VisualClip, VisualClipOptions } from "./visual-clip";
-import { TimelineTheme } from "./theme";
+import { TimelineTheme } from "../../core/theme";
 
 type TrackType = z.infer<typeof TrackSchema>;
 

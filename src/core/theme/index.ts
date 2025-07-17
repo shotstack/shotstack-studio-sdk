@@ -1,6 +1,6 @@
-export { Theme } from "./theme-context";
-export type { TimelineTheme, TimelineThemeOverride, TimelineThemePreset, DeepPartial } from "./theme.types";
-export { validateTheme } from "./theme.types";
+// Type definitions for themes
+export * from './theme.types';
 
-// Export individual themes and theme map
-export * from "./themes";
+// Internal utilities (not for external use)
+export * from './theme.resolver';
+export * from './theme-utils';
