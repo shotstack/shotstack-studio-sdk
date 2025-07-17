@@ -27,6 +27,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		const adjustedFromTrackIndex = fromTrackIndex >= insertionIndex ? fromTrackIndex + 1 : fromTrackIndex;
 
 		// Move the clip to the newly created track
+		// The new track will be at insertionIndex after insertion
 		this.moveClipCommand = new MoveClipCommand(adjustedFromTrackIndex, fromClipIndex, insertionIndex, newStart);
 	}
 

@@ -17,7 +17,7 @@ export class AddTrackCommand implements EditCommand {
 		// Update layers for all clips that are on tracks at or after the insertion point
 		// Since we're inserting a track, all tracks at or after trackIdx shift down
 		clips.forEach(clip => {
-			if (clip.layer > this.trackIdx) {
+			if (clip.layer >= this.trackIdx) {
 				// Remove from old container
 				const oldZIndex = 100000 - clip.layer * 100;
 				const oldContainer = context.getContainer().getChildByLabel(`shotstack-track-${oldZIndex}`, false);
@@ -54,7 +54,7 @@ export class AddTrackCommand implements EditCommand {
 		const clips = context.getClips();
 		tracks.splice(this.trackIdx, 1);
 		clips.forEach((clip) => {
-			if (clip.layer > this.trackIdx + 1) {
+			if (clip.layer > this.trackIdx) {
 				// eslint-disable-next-line no-param-reassign
 				clip.layer -= 1;
 			}

@@ -219,14 +219,15 @@ export class TimelineInteraction {
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const rawDragTime = Math.max(0, layout.getTimeAtX(localPos.x - this.dragInfo.offsetX));
-		// For drop zone detection, use raw Y position without offset
+		// For drop zone detection, we need to add viewport offset since localPos is relative to container inside viewport
 		// The offset is only needed for X positioning
-		const dropZoneY = localPos.y;
+		const dropZoneY = localPos.y + layout.viewportY;
 		const dragY = localPos.y - this.dragInfo.offsetY;
 
 		// Check if we're in a drop zone using raw Y
 		const dropZone = this.getDropZone(dropZoneY);
-		const dragTrack = Math.max(0, Math.floor(dragY / layout.trackHeight));
+		// Account for tracks starting position (after toolbar and ruler)
+		const dragTrack = Math.max(0, Math.floor((dragY - layout.tracksY) / layout.trackHeight));
 
 		// Ensure drag track is within valid bounds
 		const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
@@ -294,9 +295,10 @@ export class TimelineInteraction {
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const rawDropTime = Math.max(0, layout.getTimeAtX(localPos.x - dragInfo.offsetX));
-		// For drop zone detection, use raw Y position
-		const dropZoneY = localPos.y;
+		// For drop zone detection, we need to add viewport offset since localPos is relative to container inside viewport
+		const dropZoneY = localPos.y + layout.viewportY;
 		const dropY = localPos.y - dragInfo.offsetY;
+		
 
 		// Check if dropping in a drop zone using raw Y
 		const dropZone = this.getDropZone(dropZoneY);
@@ -316,7 +318,8 @@ export class TimelineInteraction {
 		} else {
 			// Normal drop on existing track - ensure within valid bounds
 			const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
-			const dropTrack = Math.max(0, Math.min(maxTrackIndex, Math.floor(dropY / layout.trackHeight)));
+			// Account for tracks starting position (after toolbar and ruler)
+			const dropTrack = Math.max(0, Math.min(maxTrackIndex, Math.floor((dropY - layout.tracksY) / layout.trackHeight)));
 
 			// Calculate final position with snapping and collision prevention
 			const excludeIndex = dropTrack === dragInfo.trackIndex ? dragInfo.clipIndex : undefined;
@@ -509,13 +512,14 @@ export class TimelineInteraction {
 	}
 
 	private getDropZone(y: number): { type: "above" | "between" | "below"; position: number } | null {
-		const {trackHeight} = this.timeline.getLayout();
+		const layout = this.timeline.getLayout();
 		const tracks = this.timeline.getVisualTracks();
 		const threshold = this.DROP_ZONE_THRESHOLD;
 
 		// Check each potential insertion point (0 to tracks.length)
 		for (let i = 0; i <= tracks.length; i += 1) {
-			const boundaryY = i * trackHeight;
+			// Account for tracks starting position
+			const boundaryY = layout.tracksY + (i * layout.trackHeight);
 			if (Math.abs(y - boundaryY) < threshold) {
 				return {
 					type: (() => {
@@ -541,6 +545,7 @@ export class TimelineInteraction {
 		const layout = this.timeline.getLayout();
 		const width = this.timeline.getExtendedTimelineWidth();
 		// Position at the border between tracks (position 0 = top of first track)
+		// Since we're adding to the timeline container which is already offset, don't include tracksY
 		const y = position * layout.trackHeight;
 
 		// Draw a highlighted line with some thickness using theme color
