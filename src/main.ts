@@ -1,6 +1,6 @@
 import { Timeline } from "./components/timeline";
-
 import { Edit, Canvas, Controls } from "./index";
+import theme from "./themes/minimal.json";
 
 /**
  * This is a simple example that implements the README quick start guide
@@ -23,12 +23,13 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Initialize the TimelineV2 with size and custom theme using hex colors
+		// 5. Initialize the Timeline with size and theme
 		const timeline = new Timeline(edit, {
 			width: template.output.size.width,
 			height: 300
 		}, {
-			preset: 'minimal'		});
+			theme  // Uses imported theme from JSON
+		});
 		await timeline.load(); // Renders to [data-shotstack-timeline] element
 
 		// 6. Add keyboard controls

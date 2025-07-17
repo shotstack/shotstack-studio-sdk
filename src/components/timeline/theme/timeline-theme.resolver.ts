@@ -1,41 +1,23 @@
 import { TimelineTheme, TimelineThemeInput, TimelineThemeOptions, DeepPartial } from './timeline-theme.types';
-import { DEFAULT_THEME } from './timeline-theme.defaults';
-import { MINIMAL_THEME } from './presets/minimal.theme';
-import { convertThemeColorsGeneric } from './theme-utils';
+import { convertThemeColors, convertThemeColorsGeneric } from './theme-utils';
+import defaultThemeData from '../../../themes/default.json';
 
-type PresetTheme = 'minimal';
+// Default theme converted once at module load
+const DEFAULT_THEME: TimelineTheme = convertThemeColors(defaultThemeData);
 
 export class TimelineThemeResolver {
-  private static presetThemes: Record<PresetTheme, TimelineTheme> = {
-    minimal: MINIMAL_THEME,
-  };
 
   public static resolveTheme(options?: TimelineThemeOptions): TimelineTheme {
-    if (!options) {
+    if (!options || !options.theme) {
       return this.deepClone(DEFAULT_THEME);
     }
 
-    // Start with the base theme (preset or default)
-    let baseTheme: TimelineTheme;
-    if (options.preset) {
-      baseTheme = this.presetThemes[options.preset];
-      if (!baseTheme) {
-        console.warn(`Unknown preset theme: ${options.preset}. Using default theme.`);
-        baseTheme = DEFAULT_THEME;
-      }
-    } else {
-      baseTheme = DEFAULT_THEME;
-    }
-
-    // Deep clone the base theme to avoid mutations
-    let resolvedTheme = this.deepClone(baseTheme);
-
-    // Apply theme overrides if provided
-    if (options.theme) {
-      // Convert hex colors to PIXI numbers
-      const convertedOverrides = convertThemeColorsGeneric(options.theme) as DeepPartial<TimelineTheme>;
-      resolvedTheme = this.deepMerge(resolvedTheme, convertedOverrides);
-    }
+    // Convert hex colors to PIXI numbers
+    const convertedTheme = convertThemeColorsGeneric(options.theme) as DeepPartial<TimelineTheme>;
+    
+    // Start with default theme and merge with provided theme
+    const baseTheme = this.deepClone(DEFAULT_THEME);
+    const resolvedTheme = this.deepMerge(baseTheme, convertedTheme);
 
     return resolvedTheme;
   }

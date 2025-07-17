@@ -151,6 +151,5 @@ export type DeepPartial<T> = {
 };
 
 export interface TimelineThemeOptions {
-  preset?: 'dark' | 'light' | 'minimal';  // Optional preset
-  theme?: DeepPartial<TimelineThemeInput>; // Optional overrides (using hex strings)
+  theme?: TimelineThemeInput | DeepPartial<TimelineThemeInput>; // Theme data (using hex strings)
 }
