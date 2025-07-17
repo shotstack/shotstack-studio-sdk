@@ -89,9 +89,6 @@ export class SplitClipCommand implements EditCommand {
 		const globalIndex = clips.indexOf(player);
 		if (globalIndex !== -1) {
 			clips.splice(globalIndex + 1, 0, this.rightClipPlayer);
-		} else {
-			// If original player not found in global array, add new player at end
-			clips.push(this.rightClipPlayer);
 		}
 
 		// Add to PIXI container
