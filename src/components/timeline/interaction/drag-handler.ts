@@ -1,6 +1,9 @@
-import * as PIXI from "pixi.js";
 import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
+import * as PIXI from "pixi.js";
+
+import { CollisionDetector } from "./collision-detector";
+import { SnapManager } from "./snap-manager";
 import { 
 	TimelineInterface, 
 	DragInfo, 
@@ -10,8 +13,6 @@ import {
 	InteractionThresholds,
 	InteractionHandler 
 } from "./types";
-import { SnapManager } from "./snap-manager";
-import { CollisionDetector } from "./collision-detector";
 import { VisualFeedbackManager } from "./visual-feedback-manager";
 
 export class DragHandler implements InteractionHandler {
@@ -48,11 +49,11 @@ export class DragHandler implements InteractionHandler {
 	
 	public canStartDrag(startPos: Point, currentPos: Point): boolean {
 		const distance = Math.sqrt(
-			Math.pow(currentPos.x - startPos.x, 2) + 
-			Math.pow(currentPos.y - startPos.y, 2)
+			(currentPos.x - startPos.x)**2 + 
+			(currentPos.y - startPos.y)**2
 		);
 		
-		const trackHeight = this.timeline.getLayout().trackHeight;
+		const {trackHeight} = this.timeline.getLayout();
 		const threshold = trackHeight < 20 ? 2 : this.thresholds.drag.base;
 		
 		return distance > threshold;
@@ -148,11 +149,19 @@ export class DragHandler implements InteractionHandler {
 		const threshold = layout.trackHeight * this.thresholds.dropZone.ratio;
 		
 		// Check each potential insertion point
-		for (let i = 0; i <= tracks.length; i++) {
+		for (let i = 0; i <= tracks.length; i += 1) {
 			const boundaryY = layout.tracksY + (i * layout.trackHeight);
 			if (Math.abs(y - boundaryY) < threshold) {
+				let type: "above" | "below" | "between";
+				if (i === 0) {
+					type = "above";
+				} else if (i === tracks.length) {
+					type = "below";
+				} else {
+					type = "between";
+				}
 				return {
-					type: i === 0 ? "above" : i === tracks.length ? "below" : "between",
+					type,
 					position: i
 				};
 			}

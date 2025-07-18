@@ -1,6 +1,7 @@
 import { Timeline } from "./components/timeline";
-import { Edit, Canvas, Controls } from "./index";
 import theme from "./themes/minimal.json";
+
+import { Edit, Canvas, Controls } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide

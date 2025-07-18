@@ -1,5 +1,6 @@
-import * as PIXI from "pixi.js";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import * as PIXI from "pixi.js";
+
 import { 
 	TimelineInterface, 
 	ResizeInfo, 
@@ -136,7 +137,7 @@ export class ResizeHandler implements InteractionHandler {
 	}
 	
 	private getResizeThreshold(): number {
-		const trackHeight = this.timeline.getLayout().trackHeight;
+		const {trackHeight} = this.timeline.getLayout();
 		// More generous scaling for smaller tracks
 		return Math.max(
 			this.thresholds.resize.min, 

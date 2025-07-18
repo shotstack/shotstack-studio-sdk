@@ -1,5 +1,6 @@
-import { TimelineOptions } from "./types";
 import { TimelineTheme } from "../../core/theme";
+
+import { TimelineOptions } from "./types";
 
 export interface TimelineLayoutConfig {
 	toolbarHeight: number;

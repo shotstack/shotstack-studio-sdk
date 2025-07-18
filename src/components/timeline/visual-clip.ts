@@ -1,8 +1,9 @@
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { ClipConfig } from "./types";
 import { TimelineTheme } from "../../core/theme";
+
+import { ClipConfig } from "./types";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
@@ -283,7 +284,7 @@ export class VisualClip extends Entity {
 	}
 
 	private getStateStyles() {
-		const theme = this.options.theme;
+		const {theme} = this.options;
 		const disabledOpacity = theme.opacity?.disabled || 0.5;
 		const hoverOpacity = theme.opacity?.hover || 0.7;
 		

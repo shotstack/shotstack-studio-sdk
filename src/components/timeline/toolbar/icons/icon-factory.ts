@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+
 import { TimelineTheme } from '../../../../core/theme';
 import { TOOLBAR_CONSTANTS } from '../constants';
 import { IconType } from '../types';
@@ -91,7 +92,7 @@ export class IconFactory {
 		return icon;
 	}
 
-	static updateIconColor(icon: PIXI.Graphics, theme: TimelineTheme): void {
+	static updateIconColor(icon: PIXI.Graphics, _theme: TimelineTheme): void {
 		// Clear and redraw with new color
 		const bounds = icon.getBounds();
 		icon.clear();

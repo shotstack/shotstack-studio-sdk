@@ -1,7 +1,9 @@
 import * as PIXI from 'pixi.js';
-import { TimelineTheme } from '../../core/theme';
-import { TimelineLayout } from './timeline-layout';
+
 import { Edit } from '../../core/edit';
+import { TimelineTheme } from '../../core/theme';
+
+import { TimelineLayout } from './timeline-layout';
 import { 
 	TOOLBAR_CONSTANTS,
 	PlaybackControls,

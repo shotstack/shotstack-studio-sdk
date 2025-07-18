@@ -1,6 +1,6 @@
-import * as PIXI from "pixi.js";
 import { EventEmitter } from "@core/events/event-emitter";
-import { Timeline } from "../timeline";
+import * as PIXI from "pixi.js";
+
 import { TimelineTheme } from "../../../core/theme";
 import { TimelineLayout } from "../timeline-layout";
 

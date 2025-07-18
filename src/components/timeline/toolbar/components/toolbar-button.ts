@@ -1,8 +1,9 @@
 import * as PIXI from 'pixi.js';
+
 import { TimelineTheme } from '../../../../core/theme';
 import { TOOLBAR_CONSTANTS } from '../constants';
-import { ButtonState, IconType } from '../types';
 import { IconFactory } from '../icons/icon-factory';
+import { ButtonState, IconType } from '../types';
 
 export interface ToolbarButtonOptions {
 	size?: number;
@@ -165,7 +166,7 @@ export class ToolbarButton extends PIXI.Container {
 		this.updateVisuals();
 	}
 	
-	private getIconType(icon: PIXI.Graphics): IconType | null {
+	private getIconType(_icon: PIXI.Graphics): IconType | null {
 		// This is a simplified approach - in a real implementation,
 		// we'd store the icon type as metadata on the Graphics object
 		return null;

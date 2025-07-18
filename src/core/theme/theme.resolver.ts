@@ -1,6 +1,7 @@
-import { TimelineTheme, TimelineThemeInput, TimelineThemeOptions, DeepPartial } from './theme.types';
-import { convertThemeColors, convertThemeColorsGeneric } from './theme-utils';
 import defaultThemeData from '../../themes/default.json';
+
+import { convertThemeColors, convertThemeColorsGeneric } from './theme-utils';
+import { TimelineTheme, TimelineThemeOptions, DeepPartial } from './theme.types';
 
 // Default theme converted once at module load
 const DEFAULT_THEME: TimelineTheme = convertThemeColors(defaultThemeData);
@@ -63,7 +64,7 @@ export class TimelineThemeResolver {
 
       // Validate optional sections
       if (theme.dimensions) {
-        const dimensions = theme.dimensions;
+        const {dimensions} = theme;
         if (dimensions.trackHeight !== undefined && (typeof dimensions.trackHeight !== 'number' || dimensions.trackHeight <= 0)) {
           return false;
         }
@@ -79,7 +80,7 @@ export class TimelineThemeResolver {
       }
 
       if (theme.opacity) {
-        const opacity = theme.opacity;
+        const {opacity} = theme;
         if (opacity.track !== undefined && (typeof opacity.track !== 'number' || opacity.track < 0 || opacity.track > 1)) {
           return false;
         }

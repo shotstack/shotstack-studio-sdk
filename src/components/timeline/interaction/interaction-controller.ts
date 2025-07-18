@@ -1,14 +1,15 @@
 import * as PIXI from "pixi.js";
+
+import { CollisionDetector } from "./collision-detector";
+import { DragHandler } from "./drag-handler";
+import { ResizeHandler } from "./resize-handler";
+import { SnapManager } from "./snap-manager";
 import { 
 	TimelineInterface, 
 	InteractionState, 
 	ClipInfo,
 	InteractionThresholds 
 } from "./types";
-import { DragHandler } from "./drag-handler";
-import { ResizeHandler } from "./resize-handler";
-import { SnapManager } from "./snap-manager";
-import { CollisionDetector } from "./collision-detector";
 import { VisualFeedbackManager } from "./visual-feedback-manager";
 
 export class InteractionController {
@@ -171,6 +172,9 @@ export class InteractionController {
 			case 'idle':
 				this.updateCursorForPosition(event);
 				break;
+			default:
+				// No action needed for other states
+				break;
 		}
 	}
 	
@@ -188,6 +192,9 @@ export class InteractionController {
 				break;
 			case 'resizing':
 				this.resizeHandler.completeResize(event);
+				break;
+			default:
+				// No action needed for other states
 				break;
 		}
 		

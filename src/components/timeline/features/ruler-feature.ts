@@ -3,6 +3,7 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../../core/theme";
+
 import { TIMELINE_CONSTANTS, TimelineFeatureEvents, RulerFeatureOptions } from "./types";
 
 export class RulerFeature extends Entity {

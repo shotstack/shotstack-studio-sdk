@@ -13,7 +13,7 @@ export function hexToPixiColor(hex: string): number {
   const color = parseInt(cleanHex, 16);
   
   // Validate the result
-  if (isNaN(color)) {
+  if (Number.isNaN(color)) {
     console.warn(`Invalid hex color: ${hex}, defaulting to black`);
     return 0x000000;
   }
@@ -34,7 +34,7 @@ export function convertThemeColors(themeInput: TimelineThemeInput): TimelineThem
       const converted: any = Array.isArray(obj) ? [] : {};
       
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           converted[key] = convertColors(obj[key]);
         }
       }
@@ -60,7 +60,7 @@ export function convertThemeColorsGeneric<T>(theme: T): T {
     const converted: any = Array.isArray(theme) ? [] : {};
     
     for (const key in theme) {
-      if (theme.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(theme, key)) {
         converted[key] = convertThemeColorsGeneric(theme[key]);
       }
     }

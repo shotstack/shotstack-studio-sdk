@@ -105,7 +105,7 @@ export class CollisionDetector {
 		}
 		
 		// Check gaps between clips
-		for (let i = 0; i < clips.length - 1; i++) {
+		for (let i = 0; i < clips.length - 1; i += 1) {
 			const gap = clips[i + 1].start - clips[i].end;
 			if (gap >= minDuration) {
 				gaps.push({ start: clips[i].end, end: clips[i + 1].start });

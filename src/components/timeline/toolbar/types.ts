@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
-import { TimelineTheme } from '../../../core/theme';
+
 import { Edit } from '../../../core/edit';
+import { TimelineTheme } from '../../../core/theme';
 import { TimelineLayout } from '../timeline-layout';
 
 // Button types

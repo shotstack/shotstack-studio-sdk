@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+
 import { TimelineInterface, DropZone, AlignmentInfo } from "./types";
 
 export class VisualFeedbackManager {

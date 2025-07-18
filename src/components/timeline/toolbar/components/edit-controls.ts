@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+
 import { Edit } from '../../../../core/edit';
 import { TimelineTheme } from '../../../../core/theme';
 import { TOOLBAR_CONSTANTS } from '../constants';
@@ -85,7 +86,7 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 		);
 		
 		let fillColor = this.theme.colors.toolbar.buttonBackground || 0x444444;
-		let alpha = 1;
+		const alpha = 1;
 		
 		if (pressed) {
 			fillColor = this.theme.colors.toolbar.buttonActive || 0x333333;
@@ -120,7 +121,7 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 		this.cutButton.cursor = hasSelection ? 'pointer' : 'default';
 	}
 	
-	public resize(width: number): void {
+	public resize(_width: number): void {
 		// Edit controls maintain their size
 	}
 	

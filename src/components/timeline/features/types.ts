@@ -1,5 +1,4 @@
 import { TimelineTheme } from "../../../core/theme";
-import { Timeline } from "../timeline";
 
 // Constants for timeline features
 export const TIMELINE_CONSTANTS = {
@@ -65,6 +64,21 @@ export interface GridFeatureOptions {
 	theme?: TimelineTheme;
 }
 
+// Interface to avoid circular dependency
+export interface TimelineReference {
+	getTimeDisplay(): { updateTimeDisplay(): void };
+	updateTime(time: number, emit?: boolean): void;
+	timeRange: { startTime: number; endTime: number };
+	viewportHeight: number;
+	zoomLevelIndex: number;
+	getPixiApp(): { canvas: HTMLCanvasElement };
+	setScroll(x: number, y: number): void;
+	getExtendedTimelineWidth(): number;
+	getOptions(): { width?: number; height?: number };
+	getLayout(): { trackHeight: number; rulerHeight: number };
+	getVisualTracks(): Array<any>;
+}
+
 export interface ScrollManagerOptions {
-	timeline: Timeline;
+	timeline: TimelineReference;
 }

@@ -1,8 +1,10 @@
 import * as PIXI from 'pixi.js';
+
 import { Edit } from '../../../../core/edit';
 import { TimelineTheme } from '../../../../core/theme';
 import { TOOLBAR_CONSTANTS } from '../constants';
 import { ToolbarComponent } from '../types';
+
 import { ToolbarButton } from './toolbar-button';
 
 export class PlaybackControls extends PIXI.Container implements ToolbarComponent {
@@ -89,7 +91,7 @@ export class PlaybackControls extends PIXI.Container implements ToolbarComponent
 		// Update any dynamic state if needed
 	}
 	
-	public resize(width: number): void {
+	public resize(_width: number): void {
 		// Controls maintain fixed size, no resize needed
 	}
 	

@@ -2,6 +2,8 @@ import { Edit } from "@core/edit";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
+import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
+
 import { 
 	RulerFeature, 
 	PlayheadFeature, 
@@ -12,7 +14,6 @@ import {
 } from "./features";
 import { InteractionController } from "./interaction";
 import { TimelineLayout } from "./timeline-layout";
-import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
 import { TimelineToolbar } from "./timeline-toolbar";
 import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
 import { VisualTrack, VisualTrackOptions } from "./visual-track";
@@ -738,7 +739,7 @@ export class Timeline extends Entity {
 			const rulerOptions: RulerFeatureOptions = {
 				pixelsPerSecond: this.pixelsPerSecond,
 				timelineDuration: extendedDuration,
-				rulerHeight: rulerHeight,
+				rulerHeight,
 				theme: this.theme
 			};
 			this.ruler = new RulerFeature(rulerOptions);

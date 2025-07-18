@@ -1,5 +1,7 @@
 import type { Player } from "@canvas/players/player";
+
 import type { ClipType } from "../schemas/clip";
+
 import type { EditCommand, CommandContext } from "./types";
 
 export class SplitClipCommand implements EditCommand {

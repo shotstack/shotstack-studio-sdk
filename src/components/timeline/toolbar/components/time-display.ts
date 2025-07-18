@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+
 import { Edit } from '../../../../core/edit';
 import { TimelineTheme } from '../../../../core/theme';
 import { TOOLBAR_CONSTANTS } from '../constants';
@@ -83,7 +84,7 @@ export class TimeDisplay extends PIXI.Container implements ToolbarComponent {
 		this.updateTimeDisplay();
 	}
 	
-	public resize(width: number): void {
+	public resize(_width: number): void {
 		// Time display maintains its size
 	}
 	

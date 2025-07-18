@@ -1,11 +1,10 @@
 import { EventEmitter } from "@core/events/event-emitter";
 
-import { Timeline } from "../timeline";
-import { TIMELINE_CONSTANTS, TimelineFeatureEvents, ScrollManagerOptions } from "./types";
+import { TIMELINE_CONSTANTS, TimelineFeatureEvents, ScrollManagerOptions, TimelineReference } from "./types";
 
 export class ScrollManager {
 	public events: EventEmitter;
-	private timeline: Timeline;
+	private timeline: TimelineReference;
 	private abortController?: AbortController;
 
 	// Scroll state
