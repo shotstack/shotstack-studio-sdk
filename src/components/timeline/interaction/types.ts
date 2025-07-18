@@ -1,8 +1,10 @@
+import { EditCommand } from "@core/commands/types";
 import { EventEmitter } from "@core/events/event-emitter";
 import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../../core/theme";
 import { TimelineLayout } from "../timeline-layout";
+import { ClipConfig, TimelineOptions } from "../types/timeline";
 
 // Visual component interfaces
 export interface VisualClip {
@@ -21,23 +23,18 @@ export interface VisualTrack {
 export interface EditInterface {
 	clearSelection(): void;
 	selectClip(trackIndex: number, clipIndex: number): void;
-	executeEditCommand(command: any): void;
+	executeEditCommand(command: EditCommand): void;
 	events: EventEmitter;
 }
 
-// Clip configuration
-export interface ClipConfig {
-	start?: number;
-	length?: number;
-	[key: string]: any; // Allow other properties
-}
+// ClipConfig is imported from ../types/timeline which uses Zod schema
 
 // Core interfaces for dependency injection
 export interface TimelineInterface {
 	getPixiApp(): PIXI.Application;
 	getLayout(): TimelineLayout;
 	getTheme(): TimelineTheme;
-	getOptions(): { pixelsPerSecond?: number; trackHeight?: number; width?: number; height?: number };
+	getOptions(): TimelineOptions;
 	getVisualTracks(): VisualTrack[];
 	getClipData(trackIndex: number, clipIndex: number): ClipConfig | null;
 	getPlayheadTime(): number;

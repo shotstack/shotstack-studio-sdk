@@ -73,9 +73,15 @@ export class Timeline extends Entity {
 	private initializeManagers(): void {
 		const options = this.optionsManager.getOptions();
 		
-		// Initialize renderer
+		// Initialize renderer with required properties
 		this.renderer = new TimelineRenderer(
-			options as any,
+			{
+				width: options.width || 800,
+				height: options.height || 600,
+				backgroundColor: options.backgroundColor || 0x000000,
+				antialias: options.antialias ?? true,
+				resolution: options.resolution || window.devicePixelRatio || 1
+			},
 			(deltaTime, elapsed) => this.update(deltaTime, elapsed)
 		);
 

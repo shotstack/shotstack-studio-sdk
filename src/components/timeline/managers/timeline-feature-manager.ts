@@ -1,5 +1,3 @@
-import * as PIXI from "pixi.js";
-
 import { Edit } from "@core/edit";
 import { TimelineTheme } from "../../../core/theme";
 import { 
@@ -8,7 +6,8 @@ import {
 	ScrollManager, 
 	RulerFeatureOptions, 
 	PlayheadFeatureOptions, 
-	ScrollManagerOptions 
+	ScrollManagerOptions,
+	TimelineReference
 } from "../features";
 import { TimelineLayout } from "../timeline-layout";
 import { TimelineToolbar } from "../timeline-toolbar";
@@ -35,7 +34,7 @@ export class TimelineFeatureManager {
 		private renderer: TimelineRenderer,
 		private viewportManager: ViewportManager,
 		private eventHandler: TimelineEventHandler,
-		private getTimelineContext: () => any // Reference back to timeline for scroll
+		private getTimelineContext: () => TimelineReference // Reference back to timeline for scroll
 	) {}
 
 	public async setupTimelineFeatures(

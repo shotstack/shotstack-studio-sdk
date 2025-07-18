@@ -1,5 +1,7 @@
 import { TimelineTheme } from "../../../core/theme";
 
+import { VisualTrack } from "../visual/visual-track";
+
 // Constants for timeline features
 export const TIMELINE_CONSTANTS = {
 	RULER: {
@@ -63,7 +65,7 @@ export interface TimelineReference {
 	getExtendedTimelineWidth(): number;
 	getOptions(): { width?: number; height?: number };
 	getLayout(): { trackHeight: number; rulerHeight: number };
-	getVisualTracks(): Array<any>;
+	getVisualTracks(): VisualTrack[];
 }
 
 export interface ScrollManagerOptions {

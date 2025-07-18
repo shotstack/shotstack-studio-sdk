@@ -1,6 +1,6 @@
 import { Edit } from "@core/edit";
 
-import { EditType } from "../types/timeline";
+import { EditType, ClipConfig } from "../types/timeline";
 
 export interface TimelineEventCallbacks {
 	onEditChange: (editType?: EditType) => Promise<void>;
@@ -35,7 +35,7 @@ export class TimelineEventHandler {
 		await this.callbacks.onEditChange();
 	}
 
-	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
+	private handleClipSelected(event: { clip: ClipConfig; trackIndex: number; clipIndex: number }): void {
 		this.callbacks.onClipSelected(event.trackIndex, event.clipIndex);
 	}
 

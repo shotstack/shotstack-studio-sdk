@@ -11,7 +11,8 @@ export type {
 	TimelineFeatureEvents,
 	RulerFeatureOptions,
 	PlayheadFeatureOptions,
-	ScrollManagerOptions
+	ScrollManagerOptions,
+	TimelineReference
 } from "./types";
 
 export { TIMELINE_CONSTANTS } from "./types";
