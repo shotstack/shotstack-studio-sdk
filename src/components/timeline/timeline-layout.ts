@@ -1,5 +1,6 @@
 import { TimelineTheme } from "../../core/theme";
 
+import { LAYOUT_CONSTANTS } from "./constants";
 import { TimelineOptions } from "./types";
 
 export interface TimelineLayoutConfig {
@@ -15,21 +16,17 @@ export interface TimelineLayoutConfig {
 }
 
 export class TimelineLayout {
-	// Default proportions relative to timeline height
-	public static readonly TOOLBAR_HEIGHT_RATIO = 0.12; // 12% of timeline height
-	public static readonly RULER_HEIGHT_RATIO = 0.133; // 13.3% of timeline height
-	
-	// Absolute defaults (used as fallbacks and minimums)
-	public static readonly TOOLBAR_HEIGHT_DEFAULT = 36;
-	public static readonly RULER_HEIGHT_DEFAULT = 40;
-	public static readonly TRACK_HEIGHT_DEFAULT = 80;
-	
-	// Other constants
-	public static readonly CLIP_PADDING = 4;
-	public static readonly BORDER_WIDTH = 2;
-	public static readonly CORNER_RADIUS = 4;
-	public static readonly LABEL_PADDING = 8;
-	public static readonly TRACK_PADDING = 2;
+	// Use constants from centralized location
+	public static readonly TOOLBAR_HEIGHT_RATIO = LAYOUT_CONSTANTS.TOOLBAR_HEIGHT_RATIO;
+	public static readonly RULER_HEIGHT_RATIO = LAYOUT_CONSTANTS.RULER_HEIGHT_RATIO;
+	public static readonly TOOLBAR_HEIGHT_DEFAULT = LAYOUT_CONSTANTS.TOOLBAR_HEIGHT_DEFAULT;
+	public static readonly RULER_HEIGHT_DEFAULT = LAYOUT_CONSTANTS.RULER_HEIGHT_DEFAULT;
+	public static readonly TRACK_HEIGHT_DEFAULT = LAYOUT_CONSTANTS.TRACK_HEIGHT_DEFAULT;
+	public static readonly CLIP_PADDING = LAYOUT_CONSTANTS.CLIP_PADDING;
+	public static readonly BORDER_WIDTH = LAYOUT_CONSTANTS.BORDER_WIDTH;
+	public static readonly CORNER_RADIUS = LAYOUT_CONSTANTS.CORNER_RADIUS;
+	public static readonly LABEL_PADDING = LAYOUT_CONSTANTS.LABEL_PADDING;
+	public static readonly TRACK_PADDING = LAYOUT_CONSTANTS.TRACK_PADDING;
 
 	private config: TimelineLayoutConfig;
 
@@ -115,8 +112,7 @@ export class TimelineLayout {
 	}
 
 	public calculateClipWidth(duration: number): number {
-		const minWidth = 50;
-		return Math.max(minWidth, duration * this.options.pixelsPerSecond);
+		return Math.max(LAYOUT_CONSTANTS.MIN_CLIP_WIDTH, duration * this.options.pixelsPerSecond);
 	}
 
 	public calculateDropPosition(globalX: number, globalY: number): { track: number; time: number; x: number; y: number } {

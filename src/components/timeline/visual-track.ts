@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { TimelineTheme } from "../../core/theme";
 
+import { TRACK_CONSTANTS } from "./constants";
+import { ClipConfig } from "./types";
 import { VisualClip, VisualClipOptions } from "./visual-clip";
 
 type TrackType = z.infer<typeof TrackSchema>;
@@ -21,23 +23,20 @@ export class VisualTrack extends Entity {
 	private clips: VisualClip[] = [];
 	private options: VisualTrackOptions;
 	private background: PIXI.Graphics;
-	private trackLabel: PIXI.Text;
 
 	// Visual constants
-	private readonly TRACK_PADDING = 2;
-	private readonly LABEL_PADDING = 8;
+	private readonly TRACK_PADDING = TRACK_CONSTANTS.PADDING;
+	private readonly LABEL_PADDING = TRACK_CONSTANTS.LABEL_PADDING;
 
 	constructor(options: VisualTrackOptions) {
 		super();
 		this.options = options;
 		this.background = new PIXI.Graphics();
-		this.trackLabel = new PIXI.Text();
 
 		this.setupContainer();
 	}
 
 	public async load(): Promise<void> {
-		this.setupGraphics();
 		this.updateTrackAppearance();
 	}
 
@@ -54,22 +53,6 @@ export class VisualTrack extends Entity {
 		container.y = this.options.trackIndex * this.options.trackHeight;
 	}
 
-	private setupGraphics(): void {
-		// Track labels removed
-		// this.trackLabel.style = new PIXI.TextStyle({
-		// 	fontSize: 11,
-		// 	fill: 0x666666,
-		// 	fontWeight: 'normal',
-		// 	wordWrap: false,
-		// 	fontFamily: 'Arial, sans-serif'
-		// });
-		//
-		// // Position label
-		// this.trackLabel.anchor.set(0, 0.5);
-		// this.trackLabel.x = this.LABEL_PADDING;
-		// this.trackLabel.y = this.options.trackHeight / 2;
-		// this.trackLabel.text = `Track ${this.options.trackIndex + 1}`;
-	}
 
 	private updateTrackAppearance(): void {
 		const {width} = this.options;
@@ -83,19 +66,19 @@ export class VisualTrack extends Entity {
 		const bgColor = this.options.trackIndex % 2 === 0 ? 
 			theme.colors.structure.surface : 
 			theme.colors.structure.surfaceAlt;
-		const trackOpacity = theme.opacity?.track || 0.8;
+		const trackOpacity = theme.opacity?.track || TRACK_CONSTANTS.DEFAULT_OPACITY;
 		
 		this.background.rect(0, 0, width, height);
 		this.background.fill({ color: bgColor, alpha: trackOpacity });
 
 		// Draw track border using theme
 		this.background.rect(0, 0, width, height);
-		this.background.stroke({ width: 1, color: theme.colors.structure.border });
+		this.background.stroke({ width: TRACK_CONSTANTS.BORDER_WIDTH, color: theme.colors.structure.border });
 
 		// Draw track separator line at bottom using theme
 		this.background.moveTo(0, height - 1);
 		this.background.lineTo(width, height - 1);
-		this.background.stroke({ width: 1, color: theme.colors.structure.divider });
+		this.background.stroke({ width: TRACK_CONSTANTS.BORDER_WIDTH, color: theme.colors.structure.divider });
 	}
 
 	public rebuildFromTrackData(trackData: TrackType, pixelsPerSecond: number): void {
@@ -158,7 +141,7 @@ export class VisualTrack extends Entity {
 		}
 	}
 
-	public updateClip(clipIndex: number, newClipConfig: any): void {
+	public updateClip(clipIndex: number, newClipConfig: ClipConfig): void {
 		if (clipIndex >= 0 && clipIndex < this.clips.length) {
 			const clip = this.clips[clipIndex];
 			clip.updateFromConfig(newClipConfig);
@@ -301,6 +284,5 @@ export class VisualTrack extends Entity {
 
 		// Clean up graphics resources
 		this.background.destroy();
-		this.trackLabel.destroy();
 	}
 }

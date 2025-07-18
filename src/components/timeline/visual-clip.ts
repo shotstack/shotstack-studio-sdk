@@ -3,7 +3,9 @@ import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../core/theme";
 
+import { CLIP_CONSTANTS, COLOR_FACTORS } from "./constants";
 import { ClipConfig } from "./types";
+import { getAssetDisplayName, TimelineAsset } from "./types/assets";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
@@ -25,9 +27,9 @@ export class VisualClip extends Entity {
 	} = { mode: "normal" };
 
 	// Visual constants (some from theme)
-	private readonly CLIP_PADDING = 4;
-	private get BORDER_WIDTH() { return this.options.theme.dimensions?.borderWidth || 2; }
-	private get CORNER_RADIUS() { return this.options.theme.dimensions?.clipRadius || 4; }
+	private readonly CLIP_PADDING = CLIP_CONSTANTS.PADDING;
+	private get BORDER_WIDTH() { return this.options.theme.dimensions?.borderWidth || CLIP_CONSTANTS.BORDER_WIDTH; }
+	private get CORNER_RADIUS() { return this.options.theme.dimensions?.clipRadius || CLIP_CONSTANTS.CORNER_RADIUS; }
 
 	constructor(clipConfig: ClipConfig, options: VisualClipOptions) {
 		super();
@@ -63,7 +65,7 @@ export class VisualClip extends Entity {
 	private setupGraphics(): void {
 		// Set up text style using theme colors
 		this.text.style = new PIXI.TextStyle({
-			fontSize: 12,
+			fontSize: CLIP_CONSTANTS.TEXT_FONT_SIZE,
 			fill: this.options.theme.colors.ui.text,
 			fontWeight: "bold",
 			wordWrap: false,
@@ -113,7 +115,7 @@ export class VisualClip extends Entity {
 
 		const duration = this.clipConfig.length || 0;
 		const calculatedWidth = duration * this.options.pixelsPerSecond;
-		return Math.max(50, calculatedWidth); // Minimum width of 50px
+		return Math.max(CLIP_CONSTANTS.MIN_WIDTH, calculatedWidth);
 	}
 
 	private drawClipBackground(width: number, height: number): void {
@@ -135,7 +137,7 @@ export class VisualClip extends Entity {
 	private drawClipBorder(width: number, height: number): void {
 		const styles = this.getStateStyles();
 		const isSelected = this.visualState.mode === "selected";
-		const borderWidth = isSelected ? this.BORDER_WIDTH * 2 : this.BORDER_WIDTH;
+		const borderWidth = isSelected ? this.BORDER_WIDTH * CLIP_CONSTANTS.SELECTED_BORDER_MULTIPLIER : this.BORDER_WIDTH;
 
 		this.graphics.clear();
 		this.graphics.roundRect(0, 0, width, height, this.CORNER_RADIUS);
@@ -187,43 +189,18 @@ export class VisualClip extends Entity {
 		const container = this.getContainer();
 
 		// Apply container-level opacity using theme values
-		const dragOpacity = this.options.theme.opacity?.drag || 0.6;
-		container.alpha = this.visualState.mode === "dragging" ? dragOpacity : 1.0;
+		const dragOpacity = this.options.theme.opacity?.drag || CLIP_CONSTANTS.DRAG_OPACITY;
+		container.alpha = this.visualState.mode === "dragging" ? dragOpacity : CLIP_CONSTANTS.DEFAULT_ALPHA;
 
 		// Redraw with new styles
 		this.updateSize();
 	}
 
 	private updateText(): void {
-		// Get text content based on asset type
-		const assetType = this.clipConfig.asset?.type;
-		let displayText = "";
-
-		switch (assetType) {
-			case "text":
-				displayText = (this.clipConfig.asset as any).text || "Text";
-				break;
-			case "video":
-				displayText = (this.clipConfig.asset as any).src ? this.getFilenameFromSrc((this.clipConfig.asset as any).src) : "Video";
-				break;
-			case "audio":
-				displayText = (this.clipConfig.asset as any).src ? this.getFilenameFromSrc((this.clipConfig.asset as any).src) : "Audio";
-				break;
-			case "image":
-				displayText = (this.clipConfig.asset as any).src ? this.getFilenameFromSrc((this.clipConfig.asset as any).src) : "Image";
-				break;
-			case "shape":
-				displayText = (this.clipConfig.asset as any).shape || "Shape";
-				break;
-			case "html":
-				displayText = "HTML";
-				break;
-			case "luma":
-				displayText = "Luma";
-				break;
-			default:
-				displayText = "Clip";
-		}
+		// Get text content using type-safe helper
+		const displayText = this.clipConfig.asset ? 
+			getAssetDisplayName(this.clipConfig.asset as TimelineAsset) : 
+			"Clip";
 
 		this.text.text = displayText;
 
@@ -234,16 +211,11 @@ export class VisualClip extends Entity {
 		if (this.text.width > maxTextWidth) {
 			// Truncate text if too long
 			const ratio = maxTextWidth / this.text.width;
-			const truncatedLength = Math.floor(displayText.length * ratio) - 3;
-			this.text.text = `${displayText.substring(0, Math.max(1, truncatedLength))  }...`;
+			const truncatedLength = Math.floor(displayText.length * ratio) - CLIP_CONSTANTS.TEXT_TRUNCATE_SUFFIX_LENGTH;
+			this.text.text = `${displayText.substring(0, Math.max(1, truncatedLength))}...`;
 		}
 	}
 
-	private getFilenameFromSrc(src: string): string {
-		// Extract filename from URL or path
-		const parts = src.split("/");
-		return parts[parts.length - 1] || src;
-	}
 
 	private darkenColor(color: number, factor: number): number {
 		// Extract RGB components
@@ -285,20 +257,20 @@ export class VisualClip extends Entity {
 
 	private getStateStyles() {
 		const {theme} = this.options;
-		const disabledOpacity = theme.opacity?.disabled || 0.5;
-		const hoverOpacity = theme.opacity?.hover || 0.7;
+		const disabledOpacity = theme.opacity?.disabled || CLIP_CONSTANTS.DISABLED_OPACITY;
+		const hoverOpacity = theme.opacity?.hover || CLIP_CONSTANTS.HOVER_OPACITY;
 		
 		switch (this.visualState.mode) {
 			case "disabled":
 				return { alpha: disabledOpacity, colorFactor: 0, borderColor: theme.colors.interaction.hover };
 			case "dragging":
-				return { alpha: hoverOpacity, colorFactor: -0.2, borderColor: theme.colors.interaction.drag };
+				return { alpha: hoverOpacity, colorFactor: COLOR_FACTORS.DARKEN_DRAG, borderColor: theme.colors.interaction.drag };
 			case "resizing":
-				return { alpha: 0.9, colorFactor: 0.1, borderColor: theme.colors.interaction.dropZone };
+				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, colorFactor: COLOR_FACTORS.LIGHTEN_RESIZE, borderColor: theme.colors.interaction.dropZone };
 			case "selected":
-				return { alpha: 1.0, colorFactor: 0, borderColor: theme.colors.interaction.selected };
+				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, colorFactor: 0, borderColor: theme.colors.interaction.selected };
 			default:
-				return { alpha: 1.0, colorFactor: 0, borderColor: theme.colors.structure.border };
+				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, colorFactor: 0, borderColor: theme.colors.structure.border };
 		}
 	}
 
@@ -343,7 +315,7 @@ export class VisualClip extends Entity {
 		return this.options;
 	}
 
-	public getVisualState() {
+	public getVisualState(): { mode: "normal" | "selected" | "dragging" | "resizing" | "disabled"; previewWidth?: number } {
 		return this.visualState;
 	}
 
