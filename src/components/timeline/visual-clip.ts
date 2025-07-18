@@ -90,6 +90,15 @@ export class VisualClip extends Entity {
 		this.updateText();
 	}
 
+	private setVisualState(updates: Partial<typeof this.visualState>): void {
+		// Create new state object instead of mutating
+		this.visualState = {
+			...this.visualState,
+			...updates
+		};
+		this.updateVisualState();
+	}
+
 	private updatePosition(): void {
 		const container = this.getContainer();
 		const startTime = this.clipConfig.start || 0;
@@ -276,29 +285,26 @@ export class VisualClip extends Entity {
 
 	// Public state management methods
 	public setSelected(selected: boolean): void {
-		this.visualState.mode = selected ? "selected" : "normal";
-		this.updateVisualState();
+		this.setVisualState({ mode: selected ? "selected" : "normal" });
 	}
 
 	public setDragging(dragging: boolean): void {
-		this.visualState.mode = dragging ? "dragging" : "normal";
-		this.updateVisualState();
+		this.setVisualState({ mode: dragging ? "dragging" : "normal" });
 	}
 
 	public setDisabled(disabled: boolean): void {
-		this.visualState.mode = disabled ? "disabled" : "normal";
-		this.updateVisualState();
+		this.setVisualState({ mode: disabled ? "disabled" : "normal" });
 	}
 
 	public setResizing(resizing: boolean): void {
-		this.visualState.mode = resizing ? "resizing" : "normal";
-		if (!resizing) this.visualState.previewWidth = undefined;
-		this.updateVisualState();
+		this.setVisualState({
+			mode: resizing ? "resizing" : "normal",
+			...(resizing ? {} : { previewWidth: undefined })
+		});
 	}
 
 	public setPreviewWidth(width: number | null): void {
-		this.visualState.previewWidth = width || undefined;
-		this.updateVisualState();
+		this.setVisualState({ previewWidth: width || undefined });
 	}
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
@@ -316,7 +322,8 @@ export class VisualClip extends Entity {
 	}
 
 	public getVisualState(): { mode: "normal" | "selected" | "dragging" | "resizing" | "disabled"; previewWidth?: number } {
-		return this.visualState;
+		// Return a defensive copy to prevent external mutations
+		return { ...this.visualState };
 	}
 
 	public getSelected(): boolean {
