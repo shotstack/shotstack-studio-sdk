@@ -2,14 +2,14 @@
 export { Timeline } from "./timeline";
 
 // Timeline v2 Visual Components
-export { VisualClip } from "./visual-clip";
-export { VisualTrack } from "./visual-track";
+export { VisualClip } from "./visual/visual-clip";
+export { VisualTrack } from "./visual/visual-track";
 
 // Timeline v2 Types
 export type { EditType, TimelineOptions, ClipConfig, ClipInfo, DropPosition } from "./types";
 
 // Timeline v2 Features and Layout
-export { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./features";
+export { RulerFeature, PlayheadFeature, ScrollManager } from "./features";
 export { TimelineLayout } from "./timeline-layout";
 
 // Timeline v2 Interaction

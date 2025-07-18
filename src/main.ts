@@ -1,5 +1,5 @@
 import { Timeline } from "./components/timeline";
-import theme from "./themes/minimal.json";
+import theme from "./themes/dark.json";
 
 import { Edit, Canvas, Controls } from "./index";
 

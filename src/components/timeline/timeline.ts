@@ -16,7 +16,7 @@ import { InteractionController } from "./interaction";
 import { TimelineLayout } from "./timeline-layout";
 import { TimelineToolbar } from "./timeline-toolbar";
 import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
-import { VisualTrack, VisualTrackOptions } from "./visual-track";
+import { VisualTrack, VisualTrackOptions } from "./visual/visual-track";
 
 
 export class Timeline extends Entity {

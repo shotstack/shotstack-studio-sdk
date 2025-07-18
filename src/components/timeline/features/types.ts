@@ -22,12 +22,6 @@ export const TIMELINE_CONSTANTS = {
 		HANDLE_OFFSET_Y: -10,
 		HANDLE_OFFSET_X: 5
 	},
-	GRID: {
-		LINE_WIDTH: 1,
-		INTERVAL_ZOOMED: 1,
-		INTERVAL_DEFAULT: 5,
-		ZOOM_THRESHOLD: 50
-	},
 	SCROLL: {
 		HORIZONTAL_SPEED: 2,
 		VERTICAL_SPEED: 0.5
@@ -56,13 +50,6 @@ export interface PlayheadFeatureOptions {
 	theme?: TimelineTheme;
 }
 
-export interface GridFeatureOptions {
-	pixelsPerSecond: number;
-	timelineDuration: number;
-	timelineHeight: number;
-	trackHeight: number;
-	theme?: TimelineTheme;
-}
 
 // Interface to avoid circular dependency
 export interface TimelineReference {
