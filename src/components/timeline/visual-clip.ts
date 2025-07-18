@@ -308,7 +308,15 @@ export class VisualClip extends Entity {
 	}
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
-		this.options.pixelsPerSecond = pixelsPerSecond;
+		this.updateOptions({ pixelsPerSecond });
+	}
+
+	public updateOptions(updates: Partial<VisualClipOptions>): void {
+		// Create new options object with updates
+		this.options = {
+			...this.options,
+			...updates
+		};
 		this.updateVisualState();
 	}
 
@@ -318,7 +326,8 @@ export class VisualClip extends Entity {
 	}
 
 	public getOptions(): VisualClipOptions {
-		return this.options;
+		// Return a defensive copy to prevent external mutations
+		return { ...this.options };
 	}
 
 	public getVisualState(): { mode: "normal" | "selected" | "dragging" | "resizing" | "disabled"; previewWidth?: number } {

@@ -83,7 +83,10 @@ export class VisualTrack extends Entity {
 
 	public rebuildFromTrackData(trackData: TrackType, pixelsPerSecond: number): void {
 		// Update options with new pixels per second
-		this.options.pixelsPerSecond = pixelsPerSecond;
+		this.options = {
+			...this.options,
+			pixelsPerSecond
+		};
 
 		// Clear existing clips
 		this.clearAllClips();
@@ -149,7 +152,11 @@ export class VisualTrack extends Entity {
 	}
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
-		this.options.pixelsPerSecond = pixelsPerSecond;
+		// Create new options object instead of mutating
+		this.options = {
+			...this.options,
+			pixelsPerSecond
+		};
 
 		// Update all clips with new pixels per second
 		this.clips.forEach(clip => {
@@ -160,12 +167,20 @@ export class VisualTrack extends Entity {
 	}
 
 	public setWidth(width: number): void {
-		this.options.width = width;
+		// Create new options object instead of mutating
+		this.options = {
+			...this.options,
+			width
+		};
 		this.updateTrackAppearance();
 	}
 
 	public setTrackIndex(trackIndex: number): void {
-		this.options.trackIndex = trackIndex;
+		// Create new options object instead of mutating
+		this.options = {
+			...this.options,
+			trackIndex
+		};
 
 		// Update container position
 		const container = this.getContainer();
@@ -176,9 +191,7 @@ export class VisualTrack extends Entity {
 
 		// Update all clips with new track index
 		this.clips.forEach((clip, _clipIndex) => {
-			const clipOptions = clip.getOptions();
-			clipOptions.trackIndex = trackIndex;
-			clip.updateFromConfig(clip.getClipConfig());
+			clip.updateOptions({ trackIndex });
 		});
 	}
 
@@ -229,7 +242,8 @@ export class VisualTrack extends Entity {
 	}
 
 	public getOptions(): VisualTrackOptions {
-		return this.options;
+		// Return a defensive copy to prevent external mutations
+		return { ...this.options };
 	}
 
 	// Hit testing
