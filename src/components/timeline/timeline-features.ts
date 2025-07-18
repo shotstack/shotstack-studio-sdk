@@ -4,12 +4,81 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../core/theme";
+import { Timeline } from "./timeline";
+
+// Constants for timeline features
+export const TIMELINE_CONSTANTS = {
+	RULER: {
+		DEFAULT_HEIGHT: 40,
+		MAJOR_MARKER_HEIGHT_RATIO: 0.8,
+		MINOR_MARKER_HEIGHT_RATIO: 0.6,
+		MINOR_MARKER_TENTH_HEIGHT_RATIO: 0.3,
+		LABEL_FONT_SIZE: 10,
+		LABEL_PADDING_X: 2,
+		LABEL_PADDING_Y: 2,
+		MINOR_MARKER_ZOOM_THRESHOLD: 20,
+		LABEL_INTERVAL_ZOOMED: 1,
+		LABEL_INTERVAL_DEFAULT: 5,
+		LABEL_ZOOM_THRESHOLD: 50
+	},
+	PLAYHEAD: {
+		LINE_WIDTH: 2,
+		HANDLE_WIDTH: 10,
+		HANDLE_HEIGHT: 10,
+		HANDLE_OFFSET_Y: -10,
+		HANDLE_OFFSET_X: 5
+	},
+	GRID: {
+		LINE_WIDTH: 1,
+		INTERVAL_ZOOMED: 1,
+		INTERVAL_DEFAULT: 5,
+		ZOOM_THRESHOLD: 50
+	},
+	SCROLL: {
+		HORIZONTAL_SPEED: 2,
+		VERTICAL_SPEED: 0.5
+	}
+} as const;
+
+// Type-safe event definitions
+export interface TimelineFeatureEvents {
+	'ruler:seeked': { time: number };
+	'playhead:seeked': { time: number };
+	'playhead:timeChanged': { time: number };
+	'scroll': { x: number; y: number };
+}
 
 export interface TimelineFeatures {
 	ruler: RulerFeature;
 	playhead: PlayheadFeature;
 	grid: GridFeature;
 	scroll: ScrollManager;
+}
+
+// Parameter object interfaces
+export interface RulerFeatureOptions {
+	pixelsPerSecond: number;
+	timelineDuration: number;
+	rulerHeight?: number;
+	theme?: TimelineTheme;
+}
+
+export interface PlayheadFeatureOptions {
+	pixelsPerSecond: number;
+	timelineHeight: number;
+	theme?: TimelineTheme;
+}
+
+export interface GridFeatureOptions {
+	pixelsPerSecond: number;
+	timelineDuration: number;
+	timelineHeight: number;
+	trackHeight: number;
+	theme?: TimelineTheme;
+}
+
+export interface ScrollManagerOptions {
+	timeline: Timeline;
 }
 
 export class RulerFeature extends Entity {
@@ -22,13 +91,15 @@ export class RulerFeature extends Entity {
 	private pixelsPerSecond: number;
 	private timelineDuration: number;
 	private rulerHeight: number;
+	private theme?: TimelineTheme;
 
-	constructor(pixelsPerSecond: number, timelineDuration: number, rulerHeight = 40, private theme?: TimelineTheme) {
+	constructor(options: RulerFeatureOptions) {
 		super();
 		this.events = new EventEmitter();
-		this.pixelsPerSecond = pixelsPerSecond;
-		this.timelineDuration = timelineDuration;
-		this.rulerHeight = rulerHeight;
+		this.pixelsPerSecond = options.pixelsPerSecond;
+		this.timelineDuration = options.timelineDuration;
+		this.rulerHeight = options.rulerHeight ?? TIMELINE_CONSTANTS.RULER.DEFAULT_HEIGHT;
+		this.theme = options.theme;
 
 		this.rulerContainer = new PIXI.Container();
 		this.rulerBackground = new PIXI.Graphics();
@@ -77,19 +148,21 @@ export class RulerFeature extends Entity {
 		// Major markers every second
 		for (let second = 0; second <= this.timelineDuration; second += 1) {
 			const x = second * this.pixelsPerSecond;
-			const height = second % 5 === 0 ? this.rulerHeight * 0.8 : this.rulerHeight * 0.6;
+			const height = second % 5 === 0 
+				? this.rulerHeight * TIMELINE_CONSTANTS.RULER.MAJOR_MARKER_HEIGHT_RATIO 
+				: this.rulerHeight * TIMELINE_CONSTANTS.RULER.MINOR_MARKER_HEIGHT_RATIO;
 
 			this.timeMarkers.rect(x, this.rulerHeight - height, 1, height);
 			this.timeMarkers.fill(majorMarkerColor);
 		}
 
 		// Minor markers every 0.1 seconds if zoomed in enough
-		if (this.pixelsPerSecond > 20) {
+		if (this.pixelsPerSecond > TIMELINE_CONSTANTS.RULER.MINOR_MARKER_ZOOM_THRESHOLD) {
 			for (let tenth = 0; tenth <= this.timelineDuration * 10; tenth += 1) {
 				if (tenth % 10 !== 0) {
 					// Skip major markers
 					const x = (tenth / 10) * this.pixelsPerSecond;
-					const height = this.rulerHeight * 0.3;
+					const height = this.rulerHeight * TIMELINE_CONSTANTS.RULER.MINOR_MARKER_TENTH_HEIGHT_RATIO;
 
 					this.timeMarkers.rect(x, this.rulerHeight - height, 1, height);
 					this.timeMarkers.fill(minorMarkerColor);
@@ -102,7 +175,9 @@ export class RulerFeature extends Entity {
 		this.timeLabels.removeChildren();
 
 		// Labels every 5 seconds or every second if zoomed in
-		const labelInterval = this.pixelsPerSecond > 50 ? 1 : 5;
+		const labelInterval = this.pixelsPerSecond > TIMELINE_CONSTANTS.RULER.LABEL_ZOOM_THRESHOLD 
+			? TIMELINE_CONSTANTS.RULER.LABEL_INTERVAL_ZOOMED 
+			: TIMELINE_CONSTANTS.RULER.LABEL_INTERVAL_DEFAULT;
 
 		for (let second = 0; second <= this.timelineDuration; second += labelInterval) {
 			const x = second * this.pixelsPerSecond;
@@ -112,14 +187,14 @@ export class RulerFeature extends Entity {
 			const label = new PIXI.Text({
 				text: timeText,
 				style: {
-					fontSize: 10,
+					fontSize: TIMELINE_CONSTANTS.RULER.LABEL_FONT_SIZE,
 					fill: textColor,
 					fontFamily: "Arial"
 				}
 			});
 
-			label.x = x + 2;
-			label.y = 2;
+			label.x = x + TIMELINE_CONSTANTS.RULER.LABEL_PADDING_X;
+			label.y = TIMELINE_CONSTANTS.RULER.LABEL_PADDING_Y;
 			this.timeLabels.addChild(label);
 		}
 	}
@@ -134,7 +209,7 @@ export class RulerFeature extends Entity {
 		// Convert global to local coordinates within the ruler
 		const localPos = this.rulerContainer.toLocal(event.global);
 		const time = Math.max(0, localPos.x / this.pixelsPerSecond);
-		this.events.emit("ruler:seeked", { time });
+		this.events.emit("ruler:seeked" as keyof TimelineFeatureEvents, { time });
 	}
 
 	public updateRuler(pixelsPerSecond: number, timelineDuration: number): void {
@@ -170,12 +245,14 @@ export class PlayheadFeature extends Entity {
 	private timelineHeight: number;
 	private currentTime = 0;
 	private isDragging = false;
+	private theme?: TimelineTheme;
 
-	constructor(pixelsPerSecond: number, timelineHeight: number, private theme?: TimelineTheme) {
+	constructor(options: PlayheadFeatureOptions) {
 		super();
 		this.events = new EventEmitter();
-		this.pixelsPerSecond = pixelsPerSecond;
-		this.timelineHeight = timelineHeight;
+		this.pixelsPerSecond = options.pixelsPerSecond;
+		this.timelineHeight = options.timelineHeight;
+		this.theme = options.theme;
 
 		this.playheadContainer = new PIXI.Container();
 		this.playheadLine = new PIXI.Graphics();
@@ -210,12 +287,17 @@ export class PlayheadFeature extends Entity {
 
 		// Draw playhead line
 		this.playheadLine.clear();
-		this.playheadLine.rect(x, 0, 2, this.timelineHeight);
+		this.playheadLine.rect(x, 0, TIMELINE_CONSTANTS.PLAYHEAD.LINE_WIDTH, this.timelineHeight);
 		this.playheadLine.fill(playheadColor);
 
 		// Draw playhead handle
 		this.playheadHandle.clear();
-		this.playheadHandle.rect(x - 5, -10, 10, 10);
+		this.playheadHandle.rect(
+			x - TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_OFFSET_X, 
+			TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_OFFSET_Y, 
+			TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_WIDTH, 
+			TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_HEIGHT
+		);
 		this.playheadHandle.fill(playheadColor);
 	}
 
@@ -242,13 +324,13 @@ export class PlayheadFeature extends Entity {
 		const newTime = Math.max(0, localPos.x / this.pixelsPerSecond);
 		this.setTime(newTime);
 		// Emit seek event so Edit can update its playback time
-		this.events.emit("playhead:seeked", { time: newTime });
+		this.events.emit("playhead:seeked" as keyof TimelineFeatureEvents, { time: newTime });
 	}
 
 	public setTime(time: number): void {
 		this.currentTime = time;
 		this.draw();
-		this.events.emit("playhead:timeChanged", { time });
+		this.events.emit("playhead:timeChanged" as keyof TimelineFeatureEvents, { time });
 	}
 
 	public getTime(): number {
@@ -286,14 +368,16 @@ export class GridFeature extends Entity {
 	private timelineHeight: number;
 	private trackHeight: number;
 	private isVisible = true;
+	private theme?: TimelineTheme;
 
-	constructor(pixelsPerSecond: number, timelineDuration: number, timelineHeight: number, trackHeight: number, private theme?: TimelineTheme) {
+	constructor(options: GridFeatureOptions) {
 		super();
 		this.events = new EventEmitter();
-		this.pixelsPerSecond = pixelsPerSecond;
-		this.timelineDuration = timelineDuration;
-		this.timelineHeight = timelineHeight;
-		this.trackHeight = trackHeight;
+		this.pixelsPerSecond = options.pixelsPerSecond;
+		this.timelineDuration = options.timelineDuration;
+		this.timelineHeight = options.timelineHeight;
+		this.trackHeight = options.trackHeight;
+		this.theme = options.theme;
 
 		this.gridContainer = new PIXI.Container();
 		this.gridLines = new PIXI.Graphics();
@@ -322,12 +406,14 @@ export class GridFeature extends Entity {
 		const extendedWidth = this.timelineDuration * this.pixelsPerSecond;
 
 		// Vertical grid lines (time markers)
-		const gridInterval = this.pixelsPerSecond > 50 ? 1 : 5; // Every second or every 5 seconds
+		const gridInterval = this.pixelsPerSecond > TIMELINE_CONSTANTS.GRID.ZOOM_THRESHOLD 
+			? TIMELINE_CONSTANTS.GRID.INTERVAL_ZOOMED 
+			: TIMELINE_CONSTANTS.GRID.INTERVAL_DEFAULT;
 		const gridColor = this.theme?.colors.interaction.snapGuide || 0x333333;
 
 		for (let time = 0; time <= this.timelineDuration; time += gridInterval) {
 			const x = time * this.pixelsPerSecond;
-			this.gridLines.rect(x, 0, 1, this.timelineHeight);
+			this.gridLines.rect(x, 0, TIMELINE_CONSTANTS.GRID.LINE_WIDTH, this.timelineHeight);
 			this.gridLines.fill(gridColor);
 		}
 
@@ -336,7 +422,7 @@ export class GridFeature extends Entity {
 
 		for (let track = 0; track <= trackCount; track += 1) {
 			const y = track * this.trackHeight;
-			this.gridLines.rect(0, y, extendedWidth, 1);
+			this.gridLines.rect(0, y, extendedWidth, TIMELINE_CONSTANTS.GRID.LINE_WIDTH);
 			this.gridLines.fill(gridColor);
 		}
 	}
@@ -374,17 +460,17 @@ export class GridFeature extends Entity {
 
 export class ScrollManager extends Entity {
 	public events: EventEmitter;
-	private timeline: any; // Reference to Timeline v2
+	private timeline: Timeline;
 	private abortController?: AbortController;
 
 	// Scroll state
 	private scrollX = 0;
 	private scrollY = 0;
 
-	constructor(timeline: any) {
+	constructor(options: ScrollManagerOptions) {
 		super();
 		this.events = new EventEmitter();
-		this.timeline = timeline;
+		this.timeline = options.timeline;
 	}
 
 	async load(): Promise<void> {
@@ -423,8 +509,8 @@ export class ScrollManager extends Entity {
 		}
 
 		// Different scroll speeds for horizontal vs vertical
-		const horizontalScrollSpeed = 2;
-		const verticalScrollSpeed = 0.5;
+		const horizontalScrollSpeed = TIMELINE_CONSTANTS.SCROLL.HORIZONTAL_SPEED;
+		const verticalScrollSpeed = TIMELINE_CONSTANTS.SCROLL.VERTICAL_SPEED;
 
 		// Update scroll position
 		this.scrollX += deltaX * horizontalScrollSpeed;
@@ -438,20 +524,20 @@ export class ScrollManager extends Entity {
 		this.timeline.setScroll(this.scrollX, this.scrollY);
 
 		// Emit scroll event
-		this.events.emit("scroll", { x: this.scrollX, y: this.scrollY });
+		this.events.emit("scroll" as keyof TimelineFeatureEvents, { x: this.scrollX, y: this.scrollY });
 	}
 
 	public setScroll(x: number, y: number): void {
 		this.scrollX = this.clampScrollX(x);
 		this.scrollY = this.clampScrollY(y);
 		this.timeline.setScroll(this.scrollX, this.scrollY);
-		this.events.emit("scroll", { x: this.scrollX, y: this.scrollY });
+		this.events.emit("scroll" as keyof TimelineFeatureEvents, { x: this.scrollX, y: this.scrollY });
 	}
 
 	private clampScrollX(x: number): number {
 		// Calculate max scroll based on extended content width
 		const contentWidth = this.timeline.getExtendedTimelineWidth();
-		const viewportWidth = this.timeline.getOptions().width;
+		const viewportWidth = this.timeline.getOptions().width || 0;
 		const maxScroll = Math.max(0, contentWidth - viewportWidth);
 
 		return Math.max(0, Math.min(x, maxScroll));
@@ -460,7 +546,8 @@ export class ScrollManager extends Entity {
 	private clampScrollY(y: number): number {
 		const layout = this.timeline.getLayout();
 		const trackCount = this.timeline.getVisualTracks().length;
-		const maxScroll = Math.max(0, trackCount * layout.trackHeight - (this.timeline.getOptions().height - layout.rulerHeight));
+		const height = this.timeline.getOptions().height || 0;
+		const maxScroll = Math.max(0, trackCount * layout.trackHeight - (height - layout.rulerHeight));
 		return Math.max(0, Math.min(y, maxScroll));
 	}
 

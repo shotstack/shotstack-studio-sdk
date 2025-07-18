@@ -2,7 +2,7 @@ import { Edit } from "@core/edit";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { RulerFeature, PlayheadFeature, ScrollManager } from "./timeline-features";
+import { RulerFeature, PlayheadFeature, ScrollManager, RulerFeatureOptions, PlayheadFeatureOptions, ScrollManagerOptions } from "./timeline-features";
 // eslint-disable-next-line import/no-cycle
 import { TimelineInteraction } from "./timeline-interaction";
 import { TimelineLayout } from "./timeline-layout";
@@ -197,7 +197,13 @@ export class Timeline extends Entity {
 		this.app.stage.addChild(this.toolbar);
 
 		// Create ruler feature with extended duration for display
-		this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, this.layout.rulerHeight, this.theme);
+		const rulerOptions: RulerFeatureOptions = {
+			pixelsPerSecond: this.pixelsPerSecond,
+			timelineDuration: extendedDuration,
+			rulerHeight: this.layout.rulerHeight,
+			theme: this.theme
+		};
+		this.ruler = new RulerFeature(rulerOptions);
 		await this.ruler.load();
 		this.ruler.getContainer().y = this.layout.rulerY;
 		this.rulerViewport.addChild(this.ruler.getContainer());
@@ -206,7 +212,12 @@ export class Timeline extends Entity {
 		this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
 
 		// Create playhead feature (should span full height including ruler)
-		this.playhead = new PlayheadFeature(this.pixelsPerSecond, this.height, this.theme);
+		const playheadOptions: PlayheadFeatureOptions = {
+			pixelsPerSecond: this.pixelsPerSecond,
+			timelineHeight: this.height,
+			theme: this.theme
+		};
+		this.playhead = new PlayheadFeature(playheadOptions);
 		await this.playhead.load();
 		this.playhead.getContainer().y = this.layout.playheadY;
 		this.overlayLayer.addChild(this.playhead.getContainer());
@@ -215,7 +226,10 @@ export class Timeline extends Entity {
 		this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
 
 		// Create scroll manager for handling scroll events
-		this.scroll = new ScrollManager(this);
+		const scrollOptions: ScrollManagerOptions = {
+			timeline: this
+		};
+		this.scroll = new ScrollManager(scrollOptions);
 		await this.scroll.load();
 
 		// Position viewport and apply initial transform
@@ -715,7 +729,13 @@ export class Timeline extends Entity {
 			this.ruler.dispose();
 			const extendedDuration = this.getExtendedTimelineDuration();
 			const rulerHeight = this.theme.dimensions?.rulerHeight || this.layout.rulerHeight;
-			this.ruler = new RulerFeature(this.pixelsPerSecond, extendedDuration, rulerHeight, this.theme);
+			const rulerOptions: RulerFeatureOptions = {
+				pixelsPerSecond: this.pixelsPerSecond,
+				timelineDuration: extendedDuration,
+				rulerHeight: rulerHeight,
+				theme: this.theme
+			};
+			this.ruler = new RulerFeature(rulerOptions);
 			this.ruler.load();
 			this.ruler.getContainer().y = this.layout.rulerY;
 			this.rulerViewport.addChild(this.ruler.getContainer());
@@ -724,7 +744,12 @@ export class Timeline extends Entity {
 		
 		if (this.playhead) {
 			this.playhead.dispose();
-			this.playhead = new PlayheadFeature(this.pixelsPerSecond, this.height, this.theme);
+			const playheadOptions: PlayheadFeatureOptions = {
+				pixelsPerSecond: this.pixelsPerSecond,
+				timelineHeight: this.height,
+				theme: this.theme
+			};
+			this.playhead = new PlayheadFeature(playheadOptions);
 			this.playhead.load();
 			this.playhead.getContainer().y = this.layout.playheadY;
 			this.overlayLayer.addChild(this.playhead.getContainer());
