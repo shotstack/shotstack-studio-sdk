@@ -37,10 +37,7 @@ export class Timeline extends Entity {
 
 	// PIXI app and rendering
 	private app!: PIXI.Application;
-	private backgroundLayer!: PIXI.Container;
 	private trackLayer!: PIXI.Container;
-	private clipLayer!: PIXI.Container;
-	private selectionLayer!: PIXI.Container;
 	private overlayLayer!: PIXI.Container;
 	private viewport!: PIXI.Container;
 	private rulerViewport!: PIXI.Container;
@@ -154,24 +151,15 @@ export class Timeline extends Entity {
 
 	private async setupRenderLayers(): Promise<void> {
 		// Create ordered layers for proper z-ordering
-		this.backgroundLayer = new PIXI.Container();
 		this.trackLayer = new PIXI.Container();
-		this.clipLayer = new PIXI.Container();
-		this.selectionLayer = new PIXI.Container();
 		this.overlayLayer = new PIXI.Container();
 
 		// Set up layer properties
-		this.backgroundLayer.label = "background-layer";
 		this.trackLayer.label = "track-layer";
-		this.clipLayer.label = "clip-layer";
-		this.selectionLayer.label = "selection-layer";
 		this.overlayLayer.label = "overlay-layer";
 
 		// Add layers to stage in correct order
-		this.app.stage.addChild(this.backgroundLayer);
 		this.app.stage.addChild(this.trackLayer);
-		this.app.stage.addChild(this.clipLayer);
-		this.app.stage.addChild(this.selectionLayer);
 		this.app.stage.addChild(this.overlayLayer);
 	}
 
@@ -276,29 +264,17 @@ export class Timeline extends Entity {
 		};
 	}
 
-	// Layer access for tools
-	public getBackgroundLayer(): PIXI.Container {
-		return this.backgroundLayer;
+	// Combined getter for PIXI resources
+	public getPixiApp(): PIXI.Application {
+		return this.app;
 	}
 
 	public getTrackLayer(): PIXI.Container {
 		return this.trackLayer;
 	}
 
-	public getClipLayer(): PIXI.Container {
-		return this.clipLayer;
-	}
-
-	public getSelectionLayer(): PIXI.Container {
-		return this.selectionLayer;
-	}
-
 	public getOverlayLayer(): PIXI.Container {
 		return this.overlayLayer;
-	}
-
-	public getPixiApp(): PIXI.Application {
-		return this.app;
 	}
 
 	// Interaction integration methods
@@ -308,18 +284,6 @@ export class Timeline extends Entity {
 		return track?.clips?.[clipIndex] || null;
 	}
 
-	public calculateDropPosition(globalX: number, globalY: number): DropPosition {
-		// Convert global PIXI coordinates to timeline position using layout
-		const localPos = this.getContainer().toLocal({ x: globalX, y: globalY });
-		const dropInfo = this.layout.calculateDropPosition(localPos.x, localPos.y);
-
-		return {
-			track: dropInfo.track,
-			time: dropInfo.time,
-			x: dropInfo.x,
-			y: dropInfo.y
-		};
-	}
 
 	// Layout access for interactions
 	public getLayout(): TimelineLayout {
@@ -331,10 +295,6 @@ export class Timeline extends Entity {
 		return this.visualTracks;
 	}
 
-	// Interaction management methods - simplified API
-	public isInteractionActive(): boolean {
-		return this.interaction !== undefined;
-	}
 
 	// Edit access for interactions
 	public getEdit(): Edit {
@@ -376,7 +336,6 @@ export class Timeline extends Entity {
 		this.edit.events.on("clip:selected", this.handleClipSelected.bind(this));
 		this.edit.events.on("selection:cleared", this.handleSelectionCleared.bind(this));
 		this.edit.events.on("drag:started", this.handleDragStarted.bind(this));
-		this.edit.events.on("drag:moved", this.handleDragMoved.bind(this));
 		this.edit.events.on("drag:ended", this.handleDragEnded.bind(this));
 		this.edit.events.on("track:created-and-clip:moved", this.handleTrackCreatedAndClipMoved.bind(this));
 	}
@@ -387,40 +346,31 @@ export class Timeline extends Entity {
 		// Interaction will be activated in the load() method after PIXI is ready
 	}
 
-	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
-		// Cache current state from event
-		this.currentEditType = event.current;
+	private async handleEditChange(editType?: EditType): Promise<void> {
+		// Clean up drag preview before rebuilding
+		this.hideDragPreview();
+
+		// Get current edit state
+		const currentEdit = editType || this.edit.getEdit();
+		if (!currentEdit) return;
+
+		// Cache current state
+		this.currentEditType = currentEdit;
 
 		// Update ruler with new timeline duration
 		this.updateRulerDuration();
 
 		// Rebuild visuals from event data
 		this.clearAllVisualState();
-		await this.rebuildFromEdit(event.current);
-		this.restoreUIState(); // Selection, scroll position, etc.
+		await this.rebuildFromEdit(currentEdit);
+	}
+
+	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
+		await this.handleEditChange(event.current);
 	}
 
 	private async handleClipUpdated(_event: { current: any; previous: any }): Promise<void> {
-		// Clean up drag preview before rebuilding
-		this.hideDragPreview();
-
-		// For clip updates, we need to rebuild the timeline from the current Edit state
-		// since the MoveClipCommand has already updated the underlying data
-		try {
-			const currentEdit = this.edit.getEdit();
-			if (currentEdit) {
-				this.currentEditType = currentEdit;
-
-				// Update ruler in case timeline duration changed
-				this.updateRulerDuration();
-
-				this.clearAllVisualState();
-				await this.rebuildFromEdit(currentEdit);
-				this.restoreUIState();
-			}
-		} catch (_error) {
-			// Ignore error silently
-		}
+		await this.handleEditChange();
 	}
 
 	private handleClipSelected(event: { clip: any; trackIndex: number; clipIndex: number }): void {
@@ -435,18 +385,6 @@ export class Timeline extends Entity {
 		this.showDragPreview(event.trackIndex, event.clipIndex);
 	}
 
-	private handleDragMoved(_event: {
-		trackIndex: number;
-		clipIndex: number;
-		startTime: number;
-		offsetX: number;
-		offsetY: number;
-		currentTime: number;
-		currentTrack: number;
-	}): void {
-		// Visual state is now handled by TimelineInteraction
-		// This handler is kept for potential future use
-	}
 
 	private handleDragEnded(): void {
 		this.hideDragPreview();
@@ -456,18 +394,7 @@ export class Timeline extends Entity {
 		trackInsertionIndex: number;
 		clipMove: { from: { trackIndex: number; clipIndex: number }; to: { trackIndex: number; start: number } };
 	}): Promise<void> {
-		// Clean up drag preview before rebuilding
-		this.hideDragPreview();
-
-		// Rebuild timeline visuals after track creation and clip move
-		const currentEdit = this.edit.getEdit();
-		if (currentEdit) {
-			this.currentEditType = currentEdit;
-			this.updateRulerDuration();
-			this.clearAllVisualState();
-			await this.rebuildFromEdit(currentEdit);
-			this.restoreUIState();
-		}
+		await this.handleEditChange();
 	}
 
 	private updateVisualSelection(trackIndex: number, clipIndex: number): void {
@@ -549,8 +476,8 @@ export class Timeline extends Entity {
 		this.dragPreviewGraphics.clear();
 		this.dragPreviewGraphics.roundRect(0, 0, width, height, 4);
 
-		// Use original clip color with reduced opacity for drag appearance
-		const baseColor = this.getClipColor(clipConfig.asset?.type);
+		// Use default color with reduced opacity for drag appearance
+		const baseColor = 0x8e8e93;
 
 		this.dragPreviewGraphics.fill({ color: baseColor, alpha: 0.6 });
 		this.dragPreviewGraphics.stroke({ width: 2, color: 0x00ff00 });
@@ -673,10 +600,6 @@ export class Timeline extends Entity {
 		this.app.render();
 	}
 
-	private restoreUIState(): void {
-		// Restore UI state like selection, scroll position, etc.
-		// This will be implemented as features are added
-	}
 
 	// Public API for tools to query cached state
 	public findClipAtPosition(x: number, y: number): ClipInfo | null {
@@ -854,28 +777,6 @@ export class Timeline extends Entity {
 		this.animationFrameId = requestAnimationFrame(animate);
 	}
 
-	// Helper methods for drag preview styling
-	private getClipColor(assetType?: string): number {
-		// Match VisualClip color logic
-		switch (assetType) {
-			case "video":
-				return 0x4a90e2;
-			case "audio":
-				return 0x7ed321;
-			case "image":
-				return 0xf5a623;
-			case "text":
-				return 0xd0021b;
-			case "shape":
-				return 0x9013fe;
-			case "html":
-				return 0x50e3c2;
-			case "luma":
-				return 0xb8e986;
-			default:
-				return 0x8e8e93;
-		}
-	}
 
 
 	// Methods for TimelineReference interface
@@ -921,7 +822,6 @@ export class Timeline extends Entity {
 		this.edit.events.off("clip:selected", this.handleClipSelected.bind(this));
 		this.edit.events.off("selection:cleared", this.handleSelectionCleared.bind(this));
 		this.edit.events.off("drag:started", this.handleDragStarted.bind(this));
-		this.edit.events.off("drag:moved", this.handleDragMoved.bind(this));
 		this.edit.events.off("drag:ended", this.handleDragEnded.bind(this));
 		this.edit.events.off("track:created-and-clip:moved", this.handleTrackCreatedAndClipMoved.bind(this));
 
