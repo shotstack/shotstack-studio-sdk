@@ -10,7 +10,7 @@ import {
 	PlayheadFeatureOptions, 
 	ScrollManagerOptions 
 } from "./features";
-import { TimelineInteraction } from "./timeline-interaction";
+import { InteractionController } from "./interaction";
 import { TimelineLayout } from "./timeline-layout";
 import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
 import { TimelineToolbar } from "./timeline-toolbar";
@@ -56,7 +56,7 @@ export class Timeline extends Entity {
 	private zoomLevel = 1;
 
 	// Interaction management
-	private interaction!: TimelineInteraction;
+	private interaction!: InteractionController;
 
 	// Animation loop
 	private animationFrameId: number | null = null;
@@ -381,7 +381,7 @@ export class Timeline extends Entity {
 	}
 
 	private setupInteraction(): void {
-		this.interaction = new TimelineInteraction(this);
+		this.interaction = new InteractionController(this);
 
 		// Interaction will be activated in the load() method after PIXI is ready
 	}

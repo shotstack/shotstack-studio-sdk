@@ -13,7 +13,7 @@ export { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./fea
 export { TimelineLayout } from "./timeline-layout";
 
 // Timeline v2 Interaction
-export { TimelineInteraction } from "./timeline-interaction";
+export { InteractionController } from "./interaction";
 
 // Note: Additional components will be exported as they are implemented
 // export { DragTool } from './drag-tool';
