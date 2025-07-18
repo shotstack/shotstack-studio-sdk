@@ -15,7 +15,7 @@ import {
 import { InteractionController } from "./interaction";
 import { TimelineLayout } from "./timeline-layout";
 import { TimelineToolbar } from "./timeline-toolbar";
-import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types/timeline";
+import { EditType, TimelineOptions, ClipInfo, ClipConfig } from "./types/timeline";
 import { VisualTrack, VisualTrackOptions } from "./visual/visual-track";
 
 
@@ -108,19 +108,15 @@ export class Timeline extends Entity {
 		this.interaction.activate();
 
 		// Try to render initial state from Edit
-		console.log("TimelineV2: Getting initial edit state");
 		try {
 			const currentEdit = this.edit.getEdit();
 			if (currentEdit) {
-				console.log("TimelineV2: Initial edit state found", currentEdit);
 				// Cache the initial state for tools to query
 				this.currentEditType = currentEdit;
 				await this.rebuildFromEdit(currentEdit);
-			} else {
-				console.log("TimelineV2: No initial edit state found");
 			}
-		} catch (error) {
-			console.error("TimelineV2: Error getting initial edit state", error);
+		} catch {
+			// Silently handle error - timeline will show empty state
 		}
 
 		// Start animation loop for continuous rendering
@@ -242,6 +238,40 @@ export class Timeline extends Entity {
 		this.rulerViewport.scale.x = this.zoomLevel;
 	}
 
+	private recreateTimelineFeatures(): void {
+		const extendedDuration = this.getExtendedTimelineDuration();
+		
+		if (this.ruler) {
+			this.ruler.dispose();
+			const rulerHeight = this.theme.dimensions?.rulerHeight || this.layout.rulerHeight;
+			const rulerOptions: RulerFeatureOptions = {
+				pixelsPerSecond: this.pixelsPerSecond,
+				timelineDuration: extendedDuration,
+				rulerHeight,
+				theme: this.theme
+			};
+			this.ruler = new RulerFeature(rulerOptions);
+			this.ruler.load();
+			this.ruler.getContainer().y = this.layout.rulerY;
+			this.rulerViewport.addChild(this.ruler.getContainer());
+			this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
+		}
+		
+		if (this.playhead) {
+			this.playhead.dispose();
+			const playheadOptions: PlayheadFeatureOptions = {
+				pixelsPerSecond: this.pixelsPerSecond,
+				timelineHeight: this.height,
+				theme: this.theme
+			};
+			this.playhead = new PlayheadFeature(playheadOptions);
+			this.playhead.load();
+			this.playhead.getContainer().y = this.layout.playheadY;
+			this.overlayLayer.addChild(this.playhead.getContainer());
+			this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
+		}
+	}
+
 	// Viewport management methods for tools
 	public setScroll(x: number, y: number): void {
 		this.scrollX = x;
@@ -315,8 +345,6 @@ export class Timeline extends Entity {
 
 	public showDragGhost(trackIndex: number, time: number): void {
 		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
-
-		// Make visible and update position
 		this.dragPreviewContainer.visible = true;
 		this.drawDragPreview(trackIndex, time);
 	}
@@ -369,7 +397,7 @@ export class Timeline extends Entity {
 		await this.handleEditChange(event.current);
 	}
 
-	private async handleClipUpdated(_event: { current: any; previous: any }): Promise<void> {
+	private async handleClipUpdated(): Promise<void> {
 		await this.handleEditChange();
 	}
 
@@ -390,10 +418,7 @@ export class Timeline extends Entity {
 		this.hideDragPreview();
 	}
 
-	private async handleTrackCreatedAndClipMoved(_event: {
-		trackInsertionIndex: number;
-		clipMove: { from: { trackIndex: number; clipIndex: number }; to: { trackIndex: number; start: number } };
-	}): Promise<void> {
+	private async handleTrackCreatedAndClipMoved(): Promise<void> {
 		await this.handleEditChange();
 	}
 
@@ -427,35 +452,21 @@ export class Timeline extends Entity {
 	private draggedClipInfo: { trackIndex: number; clipIndex: number; clipConfig: any } | null = null;
 
 	private showDragPreview(trackIndex: number, clipIndex: number): void {
-		// Get the clip data for creating the preview
 		const clipData = this.getClipData(trackIndex, clipIndex);
-		if (!clipData) {
-			console.warn("Clip data not found for drag preview:", trackIndex, clipIndex);
-			return;
-		}
+		if (!clipData) return;
 
-		// Store dragged clip info
 		this.draggedClipInfo = { trackIndex, clipIndex, clipConfig: clipData };
 
-		// Create drag preview container and graphics
+		// Create drag preview
 		this.dragPreviewContainer = new PIXI.Container();
 		this.dragPreviewGraphics = new PIXI.Graphics();
-
-		// Add graphics to container
 		this.dragPreviewContainer.addChild(this.dragPreviewGraphics);
-		// Add to the main container so it scrolls with content
 		this.getContainer().addChild(this.dragPreviewContainer);
 
-		// Set the original clip to semi-transparent
-		const track = this.visualTracks[trackIndex];
-		if (track) {
-			const clip = track.getClip(clipIndex);
-			if (clip) {
-				clip.setDragging(true);
-			}
-		}
+		// Set original clip to dragging state
+		this.visualTracks[trackIndex]?.getClip(clipIndex)?.setDragging(true);
 
-		// Draw initial preview at original position
+		// Draw initial preview
 		this.drawDragPreview(trackIndex, clipData.start || 0);
 	}
 
@@ -463,45 +474,27 @@ export class Timeline extends Entity {
 		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
 
 		const {clipConfig} = this.draggedClipInfo;
-		const layout = this.getLayout();
-
-		// Calculate position and size
-		const x = layout.getXAtTime(time);
-		// Use same positioning as visual tracks (relative to container, not including ruler)
-		const y = trackIndex * layout.trackHeight;
+		const x = this.layout.getXAtTime(time);
+		const y = trackIndex * this.layout.trackHeight;
 		const width = (clipConfig.length || 0) * this.pixelsPerSecond;
-		const height = this.trackHeight;
 
-		// Clear and redraw existing graphics (much faster than recreating)
+		// Clear and redraw
 		this.dragPreviewGraphics.clear();
-		this.dragPreviewGraphics.roundRect(0, 0, width, height, 4);
-
-		// Use default color with reduced opacity for drag appearance
-		const baseColor = 0x8e8e93;
-
-		this.dragPreviewGraphics.fill({ color: baseColor, alpha: 0.6 });
+		this.dragPreviewGraphics.roundRect(0, 0, width, this.trackHeight, 4);
+		this.dragPreviewGraphics.fill({ color: 0x8e8e93, alpha: 0.6 });
 		this.dragPreviewGraphics.stroke({ width: 2, color: 0x00ff00 });
 
-		// Position the container
-		this.dragPreviewContainer.x = x;
-		this.dragPreviewContainer.y = y;
+		// Position
+		this.dragPreviewContainer.position.set(x, y);
 	}
 
 	private handleSeek(event: { time: number }): void {
 		// Convert timeline seconds to edit milliseconds
-		this.edit.seek(this.secondsToMs(event.time));
-	}
-
-	private secondsToMs(seconds: number): number {
-		return seconds * 1000;
-	}
-
-	private msToSeconds(ms: number): number {
-		return ms / 1000;
+		this.edit.seek(event.time * 1000);
 	}
 
 	private getExtendedTimelineDuration(): number {
-		const duration = this.msToSeconds(this.edit.totalDuration) || 60;
+		const duration = (this.edit.totalDuration / 1000) || 60;
 		return Math.max(60, duration * Timeline.TIMELINE_BUFFER_MULTIPLIER);
 	}
 
@@ -519,34 +512,19 @@ export class Timeline extends Entity {
 	}
 
 	private hideDragPreview(): void {
-		// Remove overlay container
 		if (this.dragPreviewContainer) {
-			// Make sure to destroy the graphics first
-			if (this.dragPreviewGraphics) {
-				this.dragPreviewGraphics.destroy();
-				this.dragPreviewGraphics = null;
-			}
-
-			// Remove from parent and destroy container
-			if (this.dragPreviewContainer.parent) {
-				this.dragPreviewContainer.parent.removeChild(this.dragPreviewContainer);
-			}
 			this.dragPreviewContainer.destroy({ children: true });
 			this.dragPreviewContainer = null;
+			this.dragPreviewGraphics = null;
 		}
 
-		// Reset original clip appearance if it still exists
-		if (this.draggedClipInfo && this.visualTracks.length > this.draggedClipInfo.trackIndex) {
-			const track = this.visualTracks[this.draggedClipInfo.trackIndex];
-			if (track) {
-				const clip = track.getClip(this.draggedClipInfo.clipIndex);
-				if (clip) {
-					clip.setDragging(false);
-				}
-			}
+		// Reset original clip appearance
+		if (this.draggedClipInfo) {
+			this.visualTracks[this.draggedClipInfo.trackIndex]
+				?.getClip(this.draggedClipInfo.clipIndex)
+				?.setDragging(false);
+			this.draggedClipInfo = null;
 		}
-
-		this.draggedClipInfo = null;
 	}
 
 	private clearAllVisualState(): void {
@@ -604,10 +582,10 @@ export class Timeline extends Entity {
 	// Public API for tools to query cached state
 	public findClipAtPosition(x: number, y: number): ClipInfo | null {
 		if (!this.currentEditType) return null;
-		return this.hitTestEditType(this.currentEditType, x, y);
+		return this.hitTestEditType(x, y);
 	}
 
-	private hitTestEditType(_editType: EditType, x: number, y: number): ClipInfo | null {
+	private hitTestEditType(x: number, y: number): ClipInfo | null {
 		// Hit test using visual tracks for accurate positioning
 		const trackIndex = Math.floor(y / this.layout.trackHeight);
 
@@ -654,36 +632,7 @@ export class Timeline extends Entity {
 		}
 		
 		// Recreate timeline features with new theme and dimensions
-		if (this.ruler) {
-			this.ruler.dispose();
-			const extendedDuration = this.getExtendedTimelineDuration();
-			const rulerHeight = this.theme.dimensions?.rulerHeight || this.layout.rulerHeight;
-			const rulerOptions: RulerFeatureOptions = {
-				pixelsPerSecond: this.pixelsPerSecond,
-				timelineDuration: extendedDuration,
-				rulerHeight,
-				theme: this.theme
-			};
-			this.ruler = new RulerFeature(rulerOptions);
-			this.ruler.load();
-			this.ruler.getContainer().y = this.layout.rulerY;
-			this.rulerViewport.addChild(this.ruler.getContainer());
-			this.ruler.events.on("ruler:seeked", this.handleSeek.bind(this));
-		}
-		
-		if (this.playhead) {
-			this.playhead.dispose();
-			const playheadOptions: PlayheadFeatureOptions = {
-				pixelsPerSecond: this.pixelsPerSecond,
-				timelineHeight: this.height,
-				theme: this.theme
-			};
-			this.playhead = new PlayheadFeature(playheadOptions);
-			this.playhead.load();
-			this.playhead.getContainer().y = this.layout.playheadY;
-			this.overlayLayer.addChild(this.playhead.getContainer());
-			this.playhead.events.on("playhead:seeked", this.handleSeek.bind(this));
-		}
+		this.recreateTimelineFeatures();
 		
 		// Rebuild visuals with new theme
 		if (this.currentEditType) {
@@ -743,7 +692,7 @@ export class Timeline extends Entity {
 	public update(_deltaTime: number, _elapsed: number): void {
 		// Sync playhead with Edit playback time
 		if (this.edit.isPlaying || this.lastPlaybackTime !== this.edit.playbackTime) {
-			this.playhead.setTime(this.msToSeconds(this.edit.playbackTime));
+			this.playhead.setTime(this.edit.playbackTime / 1000);
 			this.lastPlaybackTime = this.edit.playbackTime;
 			
 			// Update toolbar time display
