@@ -2,10 +2,9 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../../core/theme";
-
 import { CLIP_CONSTANTS } from "../constants";
-import { ClipConfig } from "../types/timeline";
 import { getAssetDisplayName, TimelineAsset } from "../types/assets";
+import { ClipConfig } from "../types/timeline";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;

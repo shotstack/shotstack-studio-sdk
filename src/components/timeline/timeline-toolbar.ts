@@ -19,15 +19,15 @@ export class TimelineToolbar extends PIXI.Container {
 	private editControls!: EditControls;
 	private toolbarLayout!: ToolbarLayout;
 	
-	private _width: number;
-	private _height: number;
+	private toolbarWidth: number;
+	private toolbarHeight: number;
 	
 	public override get width(): number {
-		return this._width;
+		return this.toolbarWidth;
 	}
 	
 	public override get height(): number {
-		return this._height;
+		return this.toolbarHeight;
 	}
 
 	constructor(
@@ -37,14 +37,14 @@ export class TimelineToolbar extends PIXI.Container {
 		width: number
 	) {
 		super();
-		this._width = width;
-		this._height = layout.toolbarHeight;
+		this.toolbarWidth = width;
+		this.toolbarHeight = layout.toolbarHeight;
 		
 		// Position at top of timeline
 		this.position.set(0, layout.toolbarY);
 		
 		// Initialize layout manager
-		this.toolbarLayout = new ToolbarLayout(width, this._height);
+		this.toolbarLayout = new ToolbarLayout(width, this.toolbarHeight);
 		
 		// Create components
 		this.createBackground();
@@ -63,7 +63,7 @@ export class TimelineToolbar extends PIXI.Container {
 	
 	private drawBackground(): void {
 		this.background.clear();
-		this.background.rect(0, 0, this._width, this._height);
+		this.background.rect(0, 0, this.toolbarWidth, this.toolbarHeight);
 		this.background.fill({ color: this.theme.colors.toolbar.background });
 		
 		// Add subtle bottom border to separate from ruler
@@ -72,8 +72,8 @@ export class TimelineToolbar extends PIXI.Container {
 			color: this.theme.colors.toolbar.divider, 
 			alpha: TOOLBAR_CONSTANTS.DIVIDER_ALPHA 
 		});
-		this.background.moveTo(0, this._height - 0.5);
-		this.background.lineTo(this._width, this._height - 0.5);
+		this.background.moveTo(0, this.toolbarHeight - 0.5);
+		this.background.lineTo(this.toolbarWidth, this.toolbarHeight - 0.5);
 		this.background.stroke();
 	}
 
@@ -118,7 +118,7 @@ export class TimelineToolbar extends PIXI.Container {
 	};
 	
 	public resize(width: number): void {
-		this._width = width;
+		this.toolbarWidth = width;
 		
 		// Update layout
 		this.toolbarLayout.updateWidth(width);

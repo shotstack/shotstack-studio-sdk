@@ -125,6 +125,12 @@ export function isTransitionAsset(asset: TimelineAsset): asset is TransitionAsse
 	return asset.type === 'transition';
 }
 
+// Helper to extract filename from path
+function getFilenameFromPath(path: string): string {
+	const parts = path.split('/');
+	return parts[parts.length - 1] || path;
+}
+
 // Helper to get display name for asset
 export function getAssetDisplayName(asset: TimelineAsset): string {
 	switch (asset.type) {
@@ -147,10 +153,4 @@ export function getAssetDisplayName(asset: TimelineAsset): string {
 		default:
 			return 'Unknown Asset';
 	}
-}
-
-// Helper to extract filename from path
-function getFilenameFromPath(path: string): string {
-	const parts = path.split('/');
-	return parts[parts.length - 1] || path;
 }
