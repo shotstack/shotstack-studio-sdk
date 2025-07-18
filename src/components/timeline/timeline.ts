@@ -15,7 +15,7 @@ import {
 import { InteractionController } from "./interaction";
 import { TimelineLayout } from "./timeline-layout";
 import { TimelineToolbar } from "./timeline-toolbar";
-import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types";
+import { EditType, TimelineOptions, ClipInfo, DropPosition, ClipConfig } from "./types/timeline";
 import { VisualTrack, VisualTrackOptions } from "./visual/visual-track";
 
 

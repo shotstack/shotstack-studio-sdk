@@ -6,7 +6,7 @@ import { z } from "zod";
 import { TimelineTheme } from "../../../core/theme";
 
 import { TRACK_CONSTANTS } from "../constants";
-import { ClipConfig } from "../types";
+import { ClipConfig } from "../types/timeline";
 import { VisualClip, VisualClipOptions } from "./visual-clip";
 
 type TrackType = z.infer<typeof TrackSchema>;

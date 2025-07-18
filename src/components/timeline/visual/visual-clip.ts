@@ -4,7 +4,7 @@ import * as PIXI from "pixi.js";
 import { TimelineTheme } from "../../../core/theme";
 
 import { CLIP_CONSTANTS } from "../constants";
-import { ClipConfig } from "../types";
+import { ClipConfig } from "../types/timeline";
 import { getAssetDisplayName, TimelineAsset } from "../types/assets";
 
 export interface VisualClipOptions {
