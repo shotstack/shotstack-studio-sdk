@@ -9,7 +9,7 @@ export { VisualTrack } from "./visual-track";
 export type { EditType, TimelineOptions, ClipConfig, ClipInfo, DropPosition } from "./types";
 
 // Timeline v2 Features and Layout
-export { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./timeline-features";
+export { RulerFeature, PlayheadFeature, GridFeature, ScrollManager } from "./features";
 export { TimelineLayout } from "./timeline-layout";
 
 // Timeline v2 Interaction

@@ -2,8 +2,14 @@ import { Edit } from "@core/edit";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { RulerFeature, PlayheadFeature, ScrollManager, RulerFeatureOptions, PlayheadFeatureOptions, ScrollManagerOptions } from "./timeline-features";
-// eslint-disable-next-line import/no-cycle
+import { 
+	RulerFeature, 
+	PlayheadFeature, 
+	ScrollManager, 
+	RulerFeatureOptions, 
+	PlayheadFeatureOptions, 
+	ScrollManagerOptions 
+} from "./features";
 import { TimelineInteraction } from "./timeline-interaction";
 import { TimelineLayout } from "./timeline-layout";
 import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
@@ -230,7 +236,7 @@ export class Timeline extends Entity {
 			timeline: this
 		};
 		this.scroll = new ScrollManager(scrollOptions);
-		await this.scroll.load();
+		await this.scroll.initialize();
 
 		// Position viewport and apply initial transform
 		this.updateViewportTransform();
