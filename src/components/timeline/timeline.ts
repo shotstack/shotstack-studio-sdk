@@ -549,11 +549,10 @@ export class Timeline extends Entity {
 		this.dragPreviewGraphics.clear();
 		this.dragPreviewGraphics.roundRect(0, 0, width, height, 4);
 
-		// Use original clip color, darkened for drag appearance
+		// Use original clip color with reduced opacity for drag appearance
 		const baseColor = this.getClipColor(clipConfig.asset?.type);
-		const dragColor = this.darkenColor(baseColor, 0.3);
 
-		this.dragPreviewGraphics.fill({ color: dragColor, alpha: 0.7 });
+		this.dragPreviewGraphics.fill({ color: baseColor, alpha: 0.6 });
 		this.dragPreviewGraphics.stroke({ width: 2, color: 0x00ff00 });
 
 		// Position the container
@@ -878,24 +877,6 @@ export class Timeline extends Entity {
 		}
 	}
 
-	private darkenColor(color: number, factor: number): number {
-		// Extract RGB components
-		// eslint-disable-next-line no-bitwise
-		const r = (color >> 16) & 0xff;
-		// eslint-disable-next-line no-bitwise
-		const g = (color >> 8) & 0xff;
-		// eslint-disable-next-line no-bitwise
-		const b = color & 0xff;
-
-		// Darken each component
-		const newR = Math.floor(r * (1 - factor));
-		const newG = Math.floor(g * (1 - factor));
-		const newB = Math.floor(b * (1 - factor));
-
-		// Combine back to hex
-		// eslint-disable-next-line no-bitwise
-		return (newR << 16) | (newG << 8) | newB;
-	}
 
 	// Methods for TimelineReference interface
 	public getTimeDisplay(): { updateTimeDisplay(): void } {

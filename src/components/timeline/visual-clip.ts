@@ -3,7 +3,7 @@ import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../core/theme";
 
-import { CLIP_CONSTANTS, COLOR_FACTORS } from "./constants";
+import { CLIP_CONSTANTS } from "./constants";
 import { ClipConfig } from "./types";
 import { getAssetDisplayName, TimelineAsset } from "./types/assets";
 
@@ -128,15 +128,8 @@ export class VisualClip extends Entity {
 	}
 
 	private drawClipBackground(width: number, height: number): void {
-		let color = this.getClipColor();
+		const color = this.getClipColor();
 		const styles = this.getStateStyles();
-
-		// Apply color modifications based on state
-		if (styles.colorFactor > 0) {
-			color = this.lightenColor(color, styles.colorFactor);
-		} else if (styles.colorFactor < 0) {
-			color = this.darkenColor(color, Math.abs(styles.colorFactor));
-		}
 
 		this.background.clear();
 		this.background.roundRect(0, 0, width, height, this.CORNER_RADIUS);
@@ -226,60 +219,22 @@ export class VisualClip extends Entity {
 	}
 
 
-	private darkenColor(color: number, factor: number): number {
-		// Extract RGB components
-		// eslint-disable-next-line no-bitwise
-		const r = (color >> 16) & 0xff;
-		// eslint-disable-next-line no-bitwise
-		const g = (color >> 8) & 0xff;
-		// eslint-disable-next-line no-bitwise
-		const b = color & 0xff;
-
-		// Darken each component
-		const newR = Math.floor(r * (1 - factor));
-		const newG = Math.floor(g * (1 - factor));
-		const newB = Math.floor(b * (1 - factor));
-
-		// Combine back to hex
-		// eslint-disable-next-line no-bitwise
-		return (newR << 16) | (newG << 8) | newB;
-	}
-
-	private lightenColor(color: number, factor: number): number {
-		// Extract RGB components
-		// eslint-disable-next-line no-bitwise
-		const r = (color >> 16) & 0xff;
-		// eslint-disable-next-line no-bitwise
-		const g = (color >> 8) & 0xff;
-		// eslint-disable-next-line no-bitwise
-		const b = color & 0xff;
-
-		// Lighten each component
-		const newR = Math.min(255, Math.floor(r + (255 - r) * factor));
-		const newG = Math.min(255, Math.floor(g + (255 - g) * factor));
-		const newB = Math.min(255, Math.floor(b + (255 - b) * factor));
-
-		// Combine back to hex
-		// eslint-disable-next-line no-bitwise
-		return (newR << 16) | (newG << 8) | newB;
-	}
-
 	private getStateStyles() {
 		const {theme} = this.options;
 		const disabledOpacity = theme.opacity?.disabled || CLIP_CONSTANTS.DISABLED_OPACITY;
-		const hoverOpacity = theme.opacity?.hover || CLIP_CONSTANTS.HOVER_OPACITY;
+		const dragOpacity = theme.opacity?.drag || CLIP_CONSTANTS.DRAG_OPACITY;
 		
 		switch (this.visualState.mode) {
 			case "disabled":
-				return { alpha: disabledOpacity, colorFactor: 0, borderColor: theme.colors.interaction.hover };
+				return { alpha: disabledOpacity, borderColor: theme.colors.interaction.hover };
 			case "dragging":
-				return { alpha: hoverOpacity, colorFactor: COLOR_FACTORS.DARKEN_DRAG, borderColor: theme.colors.interaction.drag };
+				return { alpha: dragOpacity, borderColor: theme.colors.interaction.drag };
 			case "resizing":
-				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, colorFactor: COLOR_FACTORS.LIGHTEN_RESIZE, borderColor: theme.colors.interaction.dropZone };
+				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, borderColor: theme.colors.interaction.dropZone };
 			case "selected":
-				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, colorFactor: 0, borderColor: theme.colors.interaction.selected };
+				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, borderColor: theme.colors.interaction.selected };
 			default:
-				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, colorFactor: 0, borderColor: theme.colors.structure.border };
+				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, borderColor: theme.colors.structure.border };
 		}
 	}
 

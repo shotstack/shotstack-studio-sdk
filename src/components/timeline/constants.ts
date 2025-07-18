@@ -41,15 +41,7 @@ export const LAYOUT_CONSTANTS = {
 	MIN_CLIP_WIDTH: 50
 } as const;
 
-// Color modification factors
-export const COLOR_FACTORS = {
-	DARKEN_DRAG: -0.2,
-	LIGHTEN_RESIZE: 0.1,
-	LIGHTEN_HOVER: 0.05
-} as const;
-
 // Type for constants
 export type ClipConstants = typeof CLIP_CONSTANTS;
 export type TrackConstants = typeof TRACK_CONSTANTS;
 export type LayoutConstants = typeof LAYOUT_CONSTANTS;
-export type ColorFactors = typeof COLOR_FACTORS;
