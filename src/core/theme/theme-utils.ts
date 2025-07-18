@@ -1,4 +1,4 @@
-import { TimelineTheme, TimelineThemeInput } from './timeline-theme.types';
+import { TimelineTheme, TimelineThemeInput } from './theme.types';
 
 /**
  * Convert hex color string to PIXI number format

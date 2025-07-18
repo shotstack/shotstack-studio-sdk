@@ -897,6 +897,34 @@ export class Timeline extends Entity {
 		return (newR << 16) | (newG << 8) | newB;
 	}
 
+	// Methods for TimelineReference interface
+	public getTimeDisplay(): { updateTimeDisplay(): void } {
+		return this.toolbar;
+	}
+
+	public updateTime(time: number, emit?: boolean): void {
+		this.setPlayheadTime(time);
+		if (emit) {
+			this.edit.seek(time * 1000); // Convert to milliseconds
+		}
+	}
+
+	public get timeRange(): { startTime: number; endTime: number } {
+		return {
+			startTime: 0,
+			endTime: this.getExtendedTimelineDuration()
+		};
+	}
+
+	public get viewportHeight(): number {
+		return this.height;
+	}
+
+	public get zoomLevelIndex(): number {
+		// Convert zoom level to index (simplified - you may want to map this to actual zoom levels)
+		return Math.round(Math.log2(this.zoomLevel) + 5);
+	}
+
 	public dispose(): void {
 		// Stop animation loop
 		if (this.animationFrameId !== null) {

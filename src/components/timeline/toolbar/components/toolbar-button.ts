@@ -172,7 +172,7 @@ export class ToolbarButton extends PIXI.Container {
 		return null;
 	}
 	
-	public destroy(): void {
+	public override destroy(): void {
 		this.removeAllListeners();
 		super.destroy();
 	}

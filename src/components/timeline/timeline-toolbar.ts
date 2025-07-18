@@ -13,14 +13,22 @@ import {
 } from './toolbar';
 
 export class TimelineToolbar extends PIXI.Container {
-	private background: PIXI.Graphics;
-	private playbackControls: PlaybackControls;
-	private timeDisplay: TimeDisplay;
-	private editControls: EditControls;
-	private toolbarLayout: ToolbarLayout;
+	private background!: PIXI.Graphics;
+	private playbackControls!: PlaybackControls;
+	private timeDisplay!: TimeDisplay;
+	private editControls!: EditControls;
+	private toolbarLayout!: ToolbarLayout;
 	
-	private width: number;
-	private height: number;
+	private _width: number;
+	private _height: number;
+	
+	public override get width(): number {
+		return this._width;
+	}
+	
+	public override get height(): number {
+		return this._height;
+	}
 
 	constructor(
 		private edit: Edit,
@@ -29,14 +37,14 @@ export class TimelineToolbar extends PIXI.Container {
 		width: number
 	) {
 		super();
-		this.width = width;
-		this.height = layout.toolbarHeight;
+		this._width = width;
+		this._height = layout.toolbarHeight;
 		
 		// Position at top of timeline
 		this.position.set(0, layout.toolbarY);
 		
 		// Initialize layout manager
-		this.toolbarLayout = new ToolbarLayout(width, this.height);
+		this.toolbarLayout = new ToolbarLayout(width, this._height);
 		
 		// Create components
 		this.createBackground();
@@ -55,7 +63,7 @@ export class TimelineToolbar extends PIXI.Container {
 	
 	private drawBackground(): void {
 		this.background.clear();
-		this.background.rect(0, 0, this.width, this.height);
+		this.background.rect(0, 0, this._width, this._height);
 		this.background.fill({ color: this.theme.colors.toolbar.background });
 		
 		// Add subtle bottom border to separate from ruler
@@ -64,8 +72,8 @@ export class TimelineToolbar extends PIXI.Container {
 			color: this.theme.colors.toolbar.divider, 
 			alpha: TOOLBAR_CONSTANTS.DIVIDER_ALPHA 
 		});
-		this.background.moveTo(0, this.height - 0.5);
-		this.background.lineTo(this.width, this.height - 0.5);
+		this.background.moveTo(0, this._height - 0.5);
+		this.background.lineTo(this._width, this._height - 0.5);
 		this.background.stroke();
 	}
 
@@ -101,8 +109,8 @@ export class TimelineToolbar extends PIXI.Container {
 	
 	private subscribeToEditEvents(): void {
 		// Listen for selection changes to update edit controls
-		this.edit.events.on('clip:selected', this.updateEditControls, this);
-		this.edit.events.on('selection:cleared', this.updateEditControls, this);
+		this.edit.events.on('clip:selected', this.updateEditControls);
+		this.edit.events.on('selection:cleared', this.updateEditControls);
 	}
 	
 	private updateEditControls = (): void => {
@@ -110,7 +118,7 @@ export class TimelineToolbar extends PIXI.Container {
 	};
 	
 	public resize(width: number): void {
-		this.width = width;
+		this._width = width;
 		
 		// Update layout
 		this.toolbarLayout.updateWidth(width);
@@ -143,7 +151,7 @@ export class TimelineToolbar extends PIXI.Container {
 		this.timeDisplay.update();
 	};
 	
-	public destroy(): void {
+	public override destroy(): void {
 		// Unsubscribe from events
 		this.edit.events.off('clip:selected', this.updateEditControls);
 		this.edit.events.off('selection:cleared', this.updateEditControls);

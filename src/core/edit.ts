@@ -128,11 +128,11 @@ export class Edit extends Entity {
 
 	public play(): void {
 		this.isPlaying = true;
-		this.events.emit('playback:play');
+		this.events.emit('playback:play', {});
 	}
 	public pause(): void {
 		this.isPlaying = false;
-		this.events.emit('playback:pause');
+		this.events.emit('playback:pause', {});
 	}
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));

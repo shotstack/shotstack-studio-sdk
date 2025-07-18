@@ -1,12 +1,12 @@
 import type { Player } from "@canvas/players/player";
 
-import type { ClipType } from "../schemas/clip";
+import type { Clip } from "../schemas/clip";
 
 import type { EditCommand, CommandContext } from "./types";
 
 export class SplitClipCommand implements EditCommand {
 	public readonly name = "SplitClip";
-	private originalClipConfig: ClipType | null = null;
+	private originalClipConfig: Clip | null = null;
 	private rightClipPlayer: Player | null = null;
 	private splitSuccessful = false;
 
@@ -39,27 +39,31 @@ export class SplitClipCommand implements EditCommand {
 		this.originalClipConfig = { ...clipConfig };
 
 		// Calculate left and right clip configurations
-		const leftClip: ClipType = {
+		const leftClip: Clip = {
 			...clipConfig,
 			length: splitPoint
 		};
 
-		const rightClip: ClipType = {
+		const rightClip: Clip = {
 			...clipConfig,
 			start: clipStart + splitPoint,
 			length: clipLength - splitPoint
 		};
 
 		// Adjust trim values for video/audio assets
-		if ('trim' in clipConfig && typeof clipConfig.trim === 'number') {
+		if (clipConfig.asset && 'trim' in clipConfig.asset && typeof clipConfig.asset.trim === 'number') {
 			// The trim value indicates how much was trimmed from the start of the original asset
-			const originalTrim = clipConfig.trim || 0;
+			const originalTrim = clipConfig.asset.trim || 0;
 			
 			// Left clip keeps the same trim
-			leftClip.trim = originalTrim;
+			if (leftClip.asset && 'trim' in leftClip.asset) {
+				leftClip.asset.trim = originalTrim;
+			}
 			
 			// Right clip needs to trim the original trim plus the split point
-			rightClip.trim = originalTrim + splitPoint;
+			if (rightClip.asset && 'trim' in rightClip.asset) {
+				rightClip.asset.trim = originalTrim + splitPoint;
+			}
 		}
 
 		// Update the existing clip to be the left portion

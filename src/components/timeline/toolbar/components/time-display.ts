@@ -8,7 +8,7 @@ import { ToolbarComponent, TimeFormatOptions } from '../types';
 export class TimeDisplay extends PIXI.Container implements ToolbarComponent {
 	private edit: Edit;
 	private theme: TimelineTheme;
-	private timeText: PIXI.Text;
+	private timeText!: PIXI.Text;
 	private formatOptions: TimeFormatOptions;
 	
 	constructor(
@@ -44,8 +44,8 @@ export class TimeDisplay extends PIXI.Container implements ToolbarComponent {
 	}
 	
 	private subscribeToEditEvents(): void {
-		this.edit.events.on('playback:time', this.updateTimeDisplay, this);
-		this.edit.events.on('duration:changed', this.updateTimeDisplay, this);
+		this.edit.events.on('playback:time', this.updateTimeDisplay);
+		this.edit.events.on('duration:changed', this.updateTimeDisplay);
 	}
 	
 	private updateTimeDisplay = (): void => {
@@ -93,7 +93,7 @@ export class TimeDisplay extends PIXI.Container implements ToolbarComponent {
 		this.timeText.style.fill = theme.colors.ui.text;
 	}
 	
-	public destroy(): void {
+	public override destroy(): void {
 		this.edit.events.off('playback:time', this.updateTimeDisplay);
 		this.edit.events.off('duration:changed', this.updateTimeDisplay);
 		

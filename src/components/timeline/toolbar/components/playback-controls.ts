@@ -11,9 +11,9 @@ export class PlaybackControls extends PIXI.Container implements ToolbarComponent
 	private edit: Edit;
 	private theme: TimelineTheme;
 	
-	private frameBackButton: ToolbarButton;
-	private playPauseButton: ToolbarButton;
-	private frameForwardButton: ToolbarButton;
+	private frameBackButton!: ToolbarButton;
+	private playPauseButton!: ToolbarButton;
+	private frameForwardButton!: ToolbarButton;
 	
 	constructor(edit: Edit, theme: TimelineTheme) {
 		super();
@@ -79,8 +79,8 @@ export class PlaybackControls extends PIXI.Container implements ToolbarComponent
 	}
 	
 	private subscribeToEditEvents(): void {
-		this.edit.events.on('playback:play', this.updatePlayPauseState, this);
-		this.edit.events.on('playback:pause', this.updatePlayPauseState, this);
+		this.edit.events.on('playback:play', this.updatePlayPauseState);
+		this.edit.events.on('playback:pause', this.updatePlayPauseState);
 	}
 	
 	private updatePlayPauseState = (): void => {
@@ -102,7 +102,7 @@ export class PlaybackControls extends PIXI.Container implements ToolbarComponent
 		this.frameForwardButton.updateTheme(theme);
 	}
 	
-	public destroy(): void {
+	public override destroy(): void {
 		this.edit.events.off('playback:play', this.updatePlayPauseState);
 		this.edit.events.off('playback:pause', this.updatePlayPauseState);
 		
