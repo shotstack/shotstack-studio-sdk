@@ -283,10 +283,9 @@ export class VisualTrack extends Entity {
 	}
 
 	public draw(): void {
-		// Drawing happens in updateTrackAppearance()
-		this.updateTrackAppearance();
-
-		// Draw all clips
+		// Draw is called by the Entity system
+		// Track appearance is updated when properties change
+		// Only propagate draw to clips
 		this.clips.forEach(clip => {
 			clip.draw();
 		});

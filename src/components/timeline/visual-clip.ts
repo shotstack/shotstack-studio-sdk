@@ -85,8 +85,8 @@ export class VisualClip extends Entity {
 
 	private updateVisualState(): void {
 		this.updatePosition();
-		this.updateSize();
 		this.updateAppearance();
+		this.updateSize();
 		this.updateText();
 	}
 
@@ -193,9 +193,6 @@ export class VisualClip extends Entity {
 		// Apply container-level opacity using theme values
 		const dragOpacity = this.options.theme.opacity?.drag || CLIP_CONSTANTS.DRAG_OPACITY;
 		container.alpha = this.visualState.mode === "dragging" ? dragOpacity : CLIP_CONSTANTS.DEFAULT_ALPHA;
-
-		// Redraw with new styles
-		this.updateSize();
 	}
 
 	private updateText(): void {
@@ -311,9 +308,9 @@ export class VisualClip extends Entity {
 	}
 
 	public draw(): void {
-		// Drawing happens in updateVisualState()
-		// This is called when the clip needs to be redrawn
-		this.updateVisualState();
+		// Draw is called by the Entity system
+		// Currently empty as updates happen immediately via state changes
+		// This prevents redundant drawing when draw() is called repeatedly
 	}
 
 	public dispose(): void {
