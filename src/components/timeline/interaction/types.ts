@@ -1,7 +1,36 @@
 import * as PIXI from "pixi.js";
+import { EventEmitter } from "@core/events/event-emitter";
 import { Timeline } from "../timeline";
 import { TimelineTheme } from "../../../core/theme";
 import { TimelineLayout } from "../timeline-layout";
+
+// Visual component interfaces
+export interface VisualClip {
+	getContainer(): PIXI.Container;
+	getClipConfig(): ClipConfig | null;
+	setResizing(resizing: boolean): void;
+	setPreviewWidth(width: number | null): void;
+}
+
+export interface VisualTrack {
+	getClips(): VisualClip[];
+	getClip(index: number): VisualClip | null;
+}
+
+// Edit interface
+export interface EditInterface {
+	clearSelection(): void;
+	selectClip(trackIndex: number, clipIndex: number): void;
+	executeEditCommand(command: any): void;
+	events: EventEmitter;
+}
+
+// Clip configuration
+export interface ClipConfig {
+	start?: number;
+	length?: number;
+	[key: string]: any; // Allow other properties
+}
 
 // Core interfaces for dependency injection
 export interface TimelineInterface {
@@ -9,12 +38,12 @@ export interface TimelineInterface {
 	getLayout(): TimelineLayout;
 	getTheme(): TimelineTheme;
 	getOptions(): { pixelsPerSecond?: number; trackHeight?: number; width?: number; height?: number };
-	getVisualTracks(): any[]; // TODO: Type this properly
-	getClipData(trackIndex: number, clipIndex: number): any; // TODO: Type this properly
+	getVisualTracks(): VisualTrack[];
+	getClipData(trackIndex: number, clipIndex: number): ClipConfig | null;
 	getPlayheadTime(): number;
 	getExtendedTimelineWidth(): number;
 	getContainer(): PIXI.Container;
-	getEdit(): any; // TODO: Type this properly
+	getEdit(): EditInterface;
 	showDragGhost(track: number, time: number): void;
 	hideDragGhost(): void;
 }

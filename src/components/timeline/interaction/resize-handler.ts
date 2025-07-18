@@ -149,6 +149,10 @@ export class ResizeHandler implements InteractionHandler {
 		this.timeline.getPixiApp().canvas.style.cursor = "default";
 	}
 	
+	public getResizeInfo(): ResizeInfo | null {
+		return this.resizeInfo;
+	}
+	
 	public dispose(): void {
 		this.endResize();
 	}

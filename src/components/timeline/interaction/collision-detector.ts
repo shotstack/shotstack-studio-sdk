@@ -74,12 +74,12 @@ export class CollisionDetector {
 		);
 	}
 	
-	private getOtherClipBounds(track: any, excludeClipIndex?: number): ClipBounds[] {
+	private getOtherClipBounds(track: import("./types").VisualTrack, excludeClipIndex?: number): ClipBounds[] {
 		return track
 			.getClips()
-			.map((clip: any, index: number) => ({ clip, index }))
+			.map((clip, index) => ({ clip, index }))
 			.filter(({ index }: { index: number }) => index !== excludeClipIndex)
-			.map(({ clip }: { clip: any }) => {
+			.map(({ clip }) => {
 				const config = clip.getClipConfig();
 				return config
 					? {

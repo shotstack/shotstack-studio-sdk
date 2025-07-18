@@ -282,6 +282,10 @@ export class DragHandler implements InteractionHandler {
 		this.timeline.getEdit().events.emit("drag:ended", {});
 	}
 	
+	public getDragInfo(): DragInfo | null {
+		return this.dragInfo;
+	}
+	
 	public dispose(): void {
 		this.endDrag();
 	}

@@ -19,7 +19,7 @@ export class SnapManager {
 		const tracks = this.timeline.getVisualTracks();
 		tracks.forEach((track, trackIdx) => {
 			const clips = track.getClips();
-			clips.forEach((clip: any, clipIdx: number) => {
+			clips.forEach((clip, clipIdx) => {
 				// Skip the clip being dragged
 				if (trackIdx === currentTrackIndex && clipIdx === excludeClipIndex) return;
 				
@@ -110,7 +110,7 @@ export class SnapManager {
 		
 		// Check all tracks for alignments
 		this.timeline.getVisualTracks().forEach((track, trackIdx) => {
-			track.getClips().forEach((clip: any, clipIdx: number) => {
+			track.getClips().forEach((clip, clipIdx) => {
 				if (trackIdx === currentTrack && clipIdx === excludeClipIndex) return;
 				
 				const config = clip.getClipConfig();

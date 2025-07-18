@@ -35,7 +35,7 @@ export class InteractionController {
 			ratio: 0.4
 		},
 		dropZone: {
-			ratio: 0.25
+			ratio: 0.15
 		},
 		snap: {
 			pixels: 10,
@@ -46,12 +46,25 @@ export class InteractionController {
 	constructor(timeline: TimelineInterface, thresholds?: Partial<InteractionThresholds>) {
 		this.timeline = timeline;
 		
-		// Merge custom thresholds
+		// Deep merge custom thresholds using structuredClone
 		if (thresholds) {
-			this.thresholds = {
-				...this.thresholds,
-				...thresholds
-			};
+			const merged = structuredClone(this.thresholds);
+			
+			// Manually merge each nested object
+			if (thresholds.drag) {
+				Object.assign(merged.drag, thresholds.drag);
+			}
+			if (thresholds.resize) {
+				Object.assign(merged.resize, thresholds.resize);
+			}
+			if (thresholds.dropZone) {
+				Object.assign(merged.dropZone, thresholds.dropZone);
+			}
+			if (thresholds.snap) {
+				Object.assign(merged.snap, thresholds.snap);
+			}
+			
+			this.thresholds = merged;
 		}
 		
 		// Initialize managers
@@ -117,7 +130,10 @@ export class InteractionController {
 				// Check if clicking on resize edge
 				if (this.resizeHandler.isOnClipRightEdge(clipInfo, event)) {
 					if (this.resizeHandler.startResize(clipInfo, event)) {
-						this.state = { type: 'resizing', resizeInfo: this.resizeHandler['resizeInfo']! };
+						const resizeInfo = this.resizeHandler.getResizeInfo();
+						if (resizeInfo) {
+							this.state = { type: 'resizing', resizeInfo };
+						}
 					}
 					return;
 				}
@@ -185,10 +201,13 @@ export class InteractionController {
 		
 		if (this.dragHandler.canStartDrag(this.state.startPos, currentPos)) {
 			if (this.dragHandler.startDrag(this.state.clipInfo, event)) {
-				this.state = { 
-					type: 'dragging', 
-					dragInfo: this.dragHandler['dragInfo']! 
-				};
+				const dragInfo = this.dragHandler.getDragInfo();
+				if (dragInfo) {
+					this.state = { 
+						type: 'dragging', 
+						dragInfo
+					};
+				}
 			}
 		}
 	}
