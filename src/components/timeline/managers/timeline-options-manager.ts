@@ -11,6 +11,11 @@ export class TimelineOptionsManager {
 	private width: number;
 	private height: number;
 
+	// Zoom constraints
+	private static readonly MIN_PIXELS_PER_SECOND = 10;
+	private static readonly MAX_PIXELS_PER_SECOND = 500;
+	private static readonly ZOOM_FACTOR = 1.1; // 10% zoom per step
+
 	constructor(
 		size: { width: number; height: number },
 		theme: TimelineTheme,
@@ -82,4 +87,40 @@ export class TimelineOptionsManager {
 	public getBackgroundColor(): number { return this.backgroundColor; }
 	public getAntialias(): boolean { return this.antialias; }
 	public getResolution(): number { return this.resolution; }
+
+	// Zoom methods
+	public zoomIn(): void {
+		const newPixelsPerSecond = Math.min(
+			this.pixelsPerSecond * TimelineOptionsManager.ZOOM_FACTOR,
+			TimelineOptionsManager.MAX_PIXELS_PER_SECOND
+		);
+		this.setPixelsPerSecond(newPixelsPerSecond);
+	}
+
+	public zoomOut(): void {
+		const newPixelsPerSecond = Math.max(
+			this.pixelsPerSecond / TimelineOptionsManager.ZOOM_FACTOR,
+			TimelineOptionsManager.MIN_PIXELS_PER_SECOND
+		);
+		this.setPixelsPerSecond(newPixelsPerSecond);
+	}
+
+	public setPixelsPerSecond(pixelsPerSecond: number): void {
+		// Clamp to valid range
+		this.pixelsPerSecond = Math.max(
+			TimelineOptionsManager.MIN_PIXELS_PER_SECOND,
+			Math.min(TimelineOptionsManager.MAX_PIXELS_PER_SECOND, pixelsPerSecond)
+		);
+		
+		// Update layout with new options
+		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
+	}
+
+	public canZoomIn(): boolean {
+		return this.pixelsPerSecond < TimelineOptionsManager.MAX_PIXELS_PER_SECOND;
+	}
+
+	public canZoomOut(): boolean {
+		return this.pixelsPerSecond > TimelineOptionsManager.MIN_PIXELS_PER_SECOND;
+	}
 }

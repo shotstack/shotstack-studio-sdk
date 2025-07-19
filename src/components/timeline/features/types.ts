@@ -36,6 +36,7 @@ export interface TimelineFeatureEvents {
 	'playhead:seeked': { time: number };
 	'playhead:timeChanged': { time: number };
 	'scroll': { x: number; y: number };
+	'zoom': { pixelsPerSecond: number; focusX: number; focusTime: number };
 }
 
 // Parameter object interfaces
@@ -63,9 +64,13 @@ export interface TimelineReference {
 	getPixiApp(): { canvas: HTMLCanvasElement };
 	setScroll(x: number, y: number): void;
 	getExtendedTimelineWidth(): number;
-	getOptions(): { width?: number; height?: number };
+	getOptions(): { width?: number; height?: number; pixelsPerSecond?: number };
 	getLayout(): { trackHeight: number; rulerHeight: number };
 	getVisualTracks(): VisualTrack[];
+	zoomIn(): void;
+	zoomOut(): void;
+	getPlayheadTime(): number;
+	getActualEditDuration(): number;
 }
 
 export interface ScrollManagerOptions {

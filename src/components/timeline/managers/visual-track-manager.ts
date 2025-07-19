@@ -22,6 +22,9 @@ export class VisualTrackManager {
 			return;
 		}
 
+		// Clear all existing visual tracks first to avoid stale event handlers
+		this.clearAllVisualState();
+
 		// Create visual tracks
 		for (let trackIndex = 0; trackIndex < editType.timeline.tracks.length; trackIndex += 1) {
 			const trackData = editType.timeline.tracks[trackIndex];
@@ -115,6 +118,13 @@ export class VisualTrackManager {
 
 	public getVisualTracks(): VisualTrack[] {
 		return this.visualTracks;
+	}
+
+	public updatePixelsPerSecond(pixelsPerSecond: number): void {
+		// Update pixels per second for all existing tracks without rebuilding
+		this.visualTracks.forEach(track => {
+			track.setPixelsPerSecond(pixelsPerSecond);
+		});
 	}
 
 	public dispose(): void {

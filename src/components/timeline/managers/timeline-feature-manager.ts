@@ -71,8 +71,11 @@ export class TimelineFeatureManager {
 		};
 		this.playhead = new PlayheadFeature(playheadOptions);
 		await this.playhead.load();
-		this.playhead.getContainer().y = this.layout.playheadY;
-		this.renderer.getOverlayLayer().addChild(this.playhead.getContainer());
+		// Since playhead is now in the viewport, adjust Y position relative to viewport
+		// The viewport starts at (toolbarHeight + rulerHeight), so we need to compensate
+		this.playhead.getContainer().y = -this.layout.rulerHeight;
+		// Add playhead to the viewport so it scrolls with the timeline content
+		this.viewportManager.getMainViewport().addChild(this.playhead.getContainer());
 
 		// Connect playhead seek events
 		this.playhead.events.on("playhead:seeked", this.eventHandler.handleSeek.bind(this.eventHandler));
@@ -119,14 +122,23 @@ export class TimelineFeatureManager {
 			};
 			this.playhead = new PlayheadFeature(playheadOptions);
 			this.playhead.load();
-			this.playhead.getContainer().y = this.layout.playheadY;
-			this.renderer.getOverlayLayer().addChild(this.playhead.getContainer());
+			// Since playhead is now in the viewport, adjust Y position relative to viewport
+			// The viewport starts at (toolbarHeight + rulerHeight), so we need to compensate
+			this.playhead.getContainer().y = -this.layout.rulerHeight;
+			// Add playhead to the viewport so it scrolls with the timeline content
+			this.viewportManager.getMainViewport().addChild(this.playhead.getContainer());
 			this.playhead.events.on("playhead:seeked", this.eventHandler.handleSeek.bind(this.eventHandler));
 		}
 	}
 
 	public updateRuler(pixelsPerSecond: number, extendedDuration: number): void {
 		this.ruler.updateRuler(pixelsPerSecond, extendedDuration);
+	}
+
+	public updatePlayhead(pixelsPerSecond: number, timelineHeight: number): void {
+		if (this.playhead) {
+			this.playhead.updatePlayhead(pixelsPerSecond, timelineHeight);
+		}
 	}
 
 	public getFeatures(): TimelineFeatures {

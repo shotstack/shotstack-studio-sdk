@@ -162,8 +162,8 @@ export class VisualTrack extends Entity {
 		this.clips.forEach(clip => {
 			clip.setPixelsPerSecond(pixelsPerSecond);
 		});
-
-		this.updateTrackAppearance();
+		
+		// Don't update appearance here - it will be updated when setWidth is called
 	}
 
 	public setWidth(width: number): void {

@@ -249,7 +249,10 @@ export class Timeline extends Entity {
 
 	// Extended timeline dimensions
 	public getExtendedTimelineWidth(): number {
-		return this.getExtendedTimelineDuration() * this.optionsManager.getPixelsPerSecond();
+		const calculatedWidth = this.getExtendedTimelineDuration() * this.optionsManager.getPixelsPerSecond();
+		const viewportWidth = this.optionsManager.getWidth();
+		// Ensure width is at least as wide as the viewport
+		return Math.max(calculatedWidth, viewportWidth);
 	}
 
 	// Drag ghost control methods for TimelineInteraction
@@ -268,6 +271,11 @@ export class Timeline extends Entity {
 
 	public getPlayheadTime(): number {
 		return this.featureManager.getPlayhead().getTime();
+	}
+
+	public getActualEditDuration(): number {
+		// Return the actual edit duration in seconds (without the 1.5x buffer)
+		return (this.edit.totalDuration / 1000) || 60;
 	}
 
 
@@ -431,6 +439,34 @@ export class Timeline extends Entity {
 		// Convert zoom level to index (simplified - you may want to map this to actual zoom levels)
 		const viewport = this.viewportManager.getViewport();
 		return Math.round(Math.log2(viewport.zoom) + 5);
+	}
+
+	public zoomIn(): void {
+		this.optionsManager.zoomIn();
+		this.onZoomChanged();
+	}
+
+	public zoomOut(): void {
+		this.optionsManager.zoomOut();
+		this.onZoomChanged();
+	}
+
+	private onZoomChanged(): void {
+		const pixelsPerSecond = this.optionsManager.getPixelsPerSecond();
+		
+		// Update visual tracks without rebuilding to preserve event handlers
+		this.visualTrackManager.updatePixelsPerSecond(pixelsPerSecond);
+		
+		// Update track widths to match new zoom level
+		const extendedWidth = this.getExtendedTimelineWidth();
+		this.visualTrackManager.updateTrackWidths(extendedWidth);
+		
+		// Update timeline features
+		this.featureManager.updateRuler(pixelsPerSecond, this.getExtendedTimelineDuration());
+		this.featureManager.updatePlayhead(pixelsPerSecond, this.optionsManager.getHeight());
+		
+		// Force a render
+		this.renderer.render();
 	}
 
 	public dispose(): void {
