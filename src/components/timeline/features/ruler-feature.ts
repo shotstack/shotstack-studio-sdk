@@ -54,11 +54,7 @@ export class RulerFeature extends Entity {
 
 	private drawRulerBackground(): void {
 		this.rulerBackground.clear();
-		// Calculate ruler width - ensure it covers at least the viewport width when zoomed out
-		const calculatedWidth = this.timelineDuration * this.pixelsPerSecond;
-		// Get viewport width from parent container (timeline width)
-		const viewportWidth = this.getContainer().parent?.width || 800;
-		const rulerWidth = Math.max(calculatedWidth, viewportWidth);
+		const rulerWidth = this.calculateRulerWidth();
 		
 		const rulerColor = this.theme?.colors.structure.ruler || 0x404040;
 		const borderColor = this.theme?.colors.structure.border || 0x606060;
@@ -75,9 +71,7 @@ export class RulerFeature extends Entity {
 		const majorMarkerColor = this.theme?.colors.ui.icon || 0x888888;
 		const minorMarkerColor = this.theme?.colors.ui.iconMuted || 0x666666;
 		
-		// Calculate the actual duration to render (might be longer than timeline duration when zoomed out)
-		const viewportWidth = this.getContainer().parent?.width || 800;
-		const visibleDuration = Math.max(this.timelineDuration, viewportWidth / this.pixelsPerSecond);
+		const visibleDuration = this.getVisibleDuration();
 
 		// Major markers every second
 		for (let second = 0; second <= visibleDuration; second += 1) {
@@ -108,9 +102,7 @@ export class RulerFeature extends Entity {
 	private drawTimeLabels(): void {
 		this.timeLabels.removeChildren();
 
-		// Calculate the actual duration to render (might be longer than timeline duration when zoomed out)
-		const viewportWidth = this.getContainer().parent?.width || 800;
-		const visibleDuration = Math.max(this.timelineDuration, viewportWidth / this.pixelsPerSecond);
+		const visibleDuration = this.getVisibleDuration();
 
 		// Labels every 5 seconds or every second if zoomed in
 		const labelInterval = this.pixelsPerSecond > TIMELINE_CONSTANTS.RULER.LABEL_ZOOM_THRESHOLD 
@@ -170,5 +162,18 @@ export class RulerFeature extends Entity {
 		this.timeLabels.removeChildren();
 		this.rulerContainer.removeChildren();
 		this.events.clear("*");
+	}
+
+	private getViewportWidth(): number {
+		return this.getContainer().parent?.width || 800;
+	}
+
+	private calculateRulerWidth(): number {
+		const calculatedWidth = this.timelineDuration * this.pixelsPerSecond;
+		return Math.max(calculatedWidth, this.getViewportWidth());
+	}
+
+	private getVisibleDuration(): number {
+		return Math.max(this.timelineDuration, this.getViewportWidth() / this.pixelsPerSecond);
 	}
 }

@@ -43,6 +43,14 @@ export class ScrollManager {
 
 		// Check for Ctrl/Cmd key for zoom
 		if (event.ctrlKey || event.metaKey) {
+			this.handleZoom(event);
+			return;
+		}
+
+		this.handleScroll(event);
+	}
+
+	private handleZoom(event: WheelEvent): void {
 			// Handle zoom
 			const zoomDirection = event.deltaY > 0 ? 'out' : 'in';
 			
@@ -82,51 +90,15 @@ export class ScrollManager {
 			// But ensure playhead doesn't go beyond actual edit duration
 			const maxPlayheadX = actualEditDuration * newPixelsPerSecond;
 			
-			// Calculate ideal scroll to center playhead
-			const idealScrollX = playheadXAfterZoom - (viewportWidth / 2);
-			
-			// Calculate scroll bounds
-			const maxScroll = Math.max(0, contentWidth - viewportWidth);
-			
-			// Determine the best scroll position
-			let newScrollX: number;
-			
-			// First, check if we're trying to show beyond the actual edit duration
-			const rightEdgeOfViewport = idealScrollX + viewportWidth;
-			const maxAllowedScroll = Math.max(0, maxPlayheadX - viewportWidth);
-			
-			if (contentWidth <= viewportWidth) {
-				// Content fits in viewport, no scroll needed
-				newScrollX = 0;
-			} else if (idealScrollX < 0) {
-				// Would scroll past start, align to start
-				newScrollX = 0;
-			} else if (rightEdgeOfViewport > maxPlayheadX && playheadTime <= actualEditDuration) {
-				// Would show beyond actual edit duration, limit scroll
-				// Position viewport so its right edge aligns with the actual edit end
-				newScrollX = Math.min(maxAllowedScroll, maxScroll);
-			} else if (idealScrollX > maxScroll) {
-				// Would scroll past end of extended timeline
-				newScrollX = maxScroll;
-			} else {
-				// Can center playhead normally
-				newScrollX = idealScrollX;
-			}
-			
-			// Double-check that playhead remains visible
-			const playheadInViewport = playheadXAfterZoom - newScrollX;
-			if (playheadInViewport < 0 || playheadInViewport > viewportWidth) {
-				// This shouldn't happen, but if it does, adjust to keep playhead visible
-				if (playheadXAfterZoom > contentWidth - viewportWidth) {
-					// Playhead near end, show it at right edge of viewport
-					newScrollX = Math.max(0, playheadXAfterZoom - viewportWidth + 50); // 50px padding from edge
-				} else {
-					// Show playhead with some padding from left edge
-					newScrollX = Math.max(0, playheadXAfterZoom - 50);
-				}
-				// Re-clamp to valid bounds
-				newScrollX = Math.max(0, Math.min(newScrollX, maxScroll));
-			}
+			// Calculate the new scroll position to keep playhead in view
+			const newScrollX = this.calculateZoomScrollPosition({
+				playheadXAfterZoom,
+				viewportWidth,
+				contentWidth,
+				maxPlayheadX,
+				actualEditDuration,
+				playheadTime
+			});
 			
 			// Update scroll position
 			this.scrollX = newScrollX;
@@ -139,11 +111,9 @@ export class ScrollManager {
 				focusX: actualFocusX,
 				focusTime: playheadTime
 			});
-			
-			return;
-		}
+	}
 
-		// Normal scroll handling
+	private handleScroll(event: WheelEvent): void {
 		let {deltaX} = event;
 		let {deltaY} = event;
 
@@ -198,6 +168,72 @@ export class ScrollManager {
 
 	public getScroll(): { x: number; y: number } {
 		return { x: this.scrollX, y: this.scrollY };
+	}
+
+	private calculateZoomScrollPosition(params: {
+		playheadXAfterZoom: number;
+		viewportWidth: number;
+		contentWidth: number;
+		maxPlayheadX: number;
+		actualEditDuration: number;
+		playheadTime: number;
+	}): number {
+		const {
+			playheadXAfterZoom,
+			viewportWidth,
+			contentWidth,
+			maxPlayheadX,
+			actualEditDuration,
+			playheadTime
+		} = params;
+
+		// Calculate ideal scroll to center playhead
+		const idealScrollX = playheadXAfterZoom - (viewportWidth / 2);
+		
+		// Calculate scroll bounds
+		const maxScroll = Math.max(0, contentWidth - viewportWidth);
+		
+		// Determine the best scroll position
+		let newScrollX: number;
+		
+		// First, check if we're trying to show beyond the actual edit duration
+		const rightEdgeOfViewport = idealScrollX + viewportWidth;
+		const maxAllowedScroll = Math.max(0, maxPlayheadX - viewportWidth);
+		
+		if (contentWidth <= viewportWidth) {
+			// Content fits in viewport, no scroll needed
+			newScrollX = 0;
+		} else if (idealScrollX < 0) {
+			// Would scroll past start, align to start
+			newScrollX = 0;
+		} else if (rightEdgeOfViewport > maxPlayheadX && playheadTime <= actualEditDuration) {
+			// Would show beyond actual edit duration, limit scroll
+			// Position viewport so its right edge aligns with the actual edit end
+			newScrollX = Math.min(maxAllowedScroll, maxScroll);
+		} else if (idealScrollX > maxScroll) {
+			// Would scroll past end of extended timeline
+			newScrollX = maxScroll;
+		} else {
+			// Can center playhead normally
+			newScrollX = idealScrollX;
+		}
+		
+		// Double-check that playhead remains visible
+		const playheadInViewport = playheadXAfterZoom - newScrollX;
+		if (playheadInViewport < 0 || playheadInViewport > viewportWidth) {
+			// This shouldn't happen, but if it does, adjust to keep playhead visible
+			if (playheadXAfterZoom > contentWidth - viewportWidth) {
+				// Playhead near end, show it at right edge of viewport
+				newScrollX = Math.max(0, playheadXAfterZoom - viewportWidth + 50); // 50px padding from edge
+			} else {
+				// Show playhead with some padding from left edge
+				newScrollX = Math.max(0, playheadXAfterZoom - 50);
+			}
+			// Re-clamp to valid bounds
+			newScrollX = Math.max(0, Math.min(newScrollX, maxScroll));
+		}
+
+		return newScrollX;
 	}
 
 	public dispose(): void {
