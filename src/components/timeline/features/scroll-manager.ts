@@ -61,12 +61,6 @@ export class ScrollManager {
 			// The timeline.timeRange.endTime includes the 1.5x buffer, we need the actual duration
 			const actualEditDuration = this.timeline.getActualEditDuration();
 			
-			// Store current pixels per second before zoom
-			const currentPixelsPerSecond = this.timeline.getOptions().pixelsPerSecond || 50;
-			
-			// Calculate playhead position in pixels before zoom
-			const playheadXBeforeZoom = playheadTime * currentPixelsPerSecond;
-			
 			// Perform zoom
 			if (zoomDirection === 'in') {
 				this.timeline.zoomIn();
