@@ -7,27 +7,14 @@ import { TimelineTheme } from "../../../core/theme";
 import { TIMELINE_CONSTANTS, TimelineFeatureEvents, PlayheadFeatureOptions } from "./types";
 
 export class PlayheadFeature extends Entity {
-	public events: EventEmitter;
-	private playheadContainer: PIXI.Container;
-	private playheadLine: PIXI.Graphics;
-	private playheadHandle: PIXI.Graphics;
-
-	private pixelsPerSecond: number;
-	private timelineHeight: number;
+	public events = new EventEmitter();
+	private graphics: PIXI.Graphics;
 	private currentTime = 0;
 	private isDragging = false;
-	private theme?: TimelineTheme;
 
-	constructor(options: PlayheadFeatureOptions) {
+	constructor(private options: PlayheadFeatureOptions) {
 		super();
-		this.events = new EventEmitter();
-		this.pixelsPerSecond = options.pixelsPerSecond;
-		this.timelineHeight = options.timelineHeight;
-		this.theme = options.theme;
-
-		this.playheadContainer = new PIXI.Container();
-		this.playheadLine = new PIXI.Graphics();
-		this.playheadHandle = new PIXI.Graphics();
+		this.graphics = new PIXI.Graphics();
 	}
 
 	async load(): Promise<void> {
@@ -36,65 +23,64 @@ export class PlayheadFeature extends Entity {
 	}
 
 	private setupPlayhead(): void {
-		this.playheadContainer.label = "playhead";
-		this.playheadContainer.addChild(this.playheadLine);
-		this.playheadContainer.addChild(this.playheadHandle);
+		this.graphics.label = "playhead";
+		this.graphics.eventMode = "static";
+		this.graphics.cursor = "pointer";
 
-		// Make playhead interactive
-		this.playheadContainer.eventMode = "static";
-		this.playheadContainer.cursor = "pointer";
+		// Single set of event listeners
+		this.graphics
+			.on("pointerdown", this.onPointerDown.bind(this))
+			.on("pointermove", this.onPointerMove.bind(this))
+			.on("pointerup", this.onPointerUp.bind(this))
+			.on("pointerupoutside", this.onPointerUp.bind(this));
 
-		this.playheadContainer.on("pointerdown", this.onPlayheadPointerDown.bind(this));
-		this.playheadContainer.on("pointermove", this.onPlayheadPointerMove.bind(this));
-		this.playheadContainer.on("pointerup", this.onPlayheadPointerUp.bind(this));
-		this.playheadContainer.on("pointerupoutside", this.onPlayheadPointerUp.bind(this));
-
-		this.getContainer().addChild(this.playheadContainer);
+		this.getContainer().addChild(this.graphics);
 	}
 
 	private drawPlayhead(): void {
-		const x = this.currentTime * this.pixelsPerSecond;
-		const playheadColor = this.theme?.colors.interaction.playhead || 0xff4444;
+		const x = this.currentTime * this.options.pixelsPerSecond;
+		const playheadColor = this.options.theme?.colors.interaction.playhead || 0xff4444;
+		const lineWidth = TIMELINE_CONSTANTS.PLAYHEAD.LINE_WIDTH;
+		const centerX = x + lineWidth / 2;
 
-		// Draw playhead line
-		this.playheadLine.clear();
-		this.playheadLine.rect(x, 0, TIMELINE_CONSTANTS.PLAYHEAD.LINE_WIDTH, this.timelineHeight);
-		this.playheadLine.fill(playheadColor);
+		this.graphics.clear();
+		this.graphics.fill(playheadColor);
 
-		// Draw playhead handle
-		this.playheadHandle.clear();
-		this.playheadHandle.rect(
-			x - TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_OFFSET_X, 
-			TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_OFFSET_Y, 
-			TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_WIDTH, 
-			TIMELINE_CONSTANTS.PLAYHEAD.HANDLE_HEIGHT
-		);
-		this.playheadHandle.fill(playheadColor);
+		// Draw line
+		this.graphics.rect(x, 0, lineWidth, this.options.timelineHeight);
+		
+		// Draw triangle (centered on line)
+		const triangleSize = 8;
+		const triangleHeight = 10;
+		this.graphics.moveTo(centerX, triangleHeight);
+		this.graphics.lineTo(centerX - triangleSize, 0);
+		this.graphics.lineTo(centerX + triangleSize, 0);
+		this.graphics.closePath();
+		
+		this.graphics.fill();
 	}
 
-	private onPlayheadPointerDown(event: PIXI.FederatedPointerEvent): void {
+	private onPointerDown(event: PIXI.FederatedPointerEvent): void {
 		this.isDragging = true;
-		this.playheadContainer.cursor = "grabbing";
+		this.graphics.cursor = "grabbing";
 		this.updateTimeFromPointer(event);
 	}
 
-	private onPlayheadPointerMove(event: PIXI.FederatedPointerEvent): void {
+	private onPointerMove(event: PIXI.FederatedPointerEvent): void {
 		if (this.isDragging) {
 			this.updateTimeFromPointer(event);
 		}
 	}
 
-	private onPlayheadPointerUp(): void {
+	private onPointerUp(): void {
 		this.isDragging = false;
-		this.playheadContainer.cursor = "pointer";
+		this.graphics.cursor = "pointer";
 	}
 
 	private updateTimeFromPointer(event: PIXI.FederatedPointerEvent): void {
-		// Convert global to local coordinates within the playhead container's parent
-		const localPos = this.playheadContainer.parent.toLocal(event.global);
-		const newTime = Math.max(0, localPos.x / this.pixelsPerSecond);
+		const localPos = this.graphics.parent.toLocal(event.global);
+		const newTime = Math.max(0, localPos.x / this.options.pixelsPerSecond);
 		this.setTime(newTime);
-		// Emit seek event so Edit can update its playback time
 		this.events.emit("playhead:seeked" as keyof TimelineFeatureEvents, { time: newTime });
 	}
 
@@ -109,22 +95,19 @@ export class PlayheadFeature extends Entity {
 	}
 
 	public updatePlayhead(pixelsPerSecond: number, timelineHeight: number): void {
-		this.pixelsPerSecond = pixelsPerSecond;
-		this.timelineHeight = timelineHeight;
+		this.options.pixelsPerSecond = pixelsPerSecond;
+		this.options.timelineHeight = timelineHeight;
 		this.draw();
 	}
 
-	public update(_deltaTime: number, _elapsed: number): void {
-		// Playhead updates are event-driven
-	}
+	public update(): void {} // Event-driven, no frame updates needed
 
 	public draw(): void {
 		this.drawPlayhead();
 	}
 
 	public dispose(): void {
-		this.playheadContainer.removeAllListeners();
-		this.playheadContainer.removeChildren();
+		this.graphics.removeAllListeners();
 		this.events.clear("*");
 	}
 }

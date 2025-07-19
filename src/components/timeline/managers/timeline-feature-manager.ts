@@ -71,11 +71,10 @@ export class TimelineFeatureManager {
 		};
 		this.playhead = new PlayheadFeature(playheadOptions);
 		await this.playhead.load();
-		// Since playhead is now in the viewport, adjust Y position relative to viewport
-		// The viewport starts at (toolbarHeight + rulerHeight), so we need to compensate
-		this.playhead.getContainer().y = -this.layout.rulerHeight;
-		// Add playhead to the viewport so it scrolls with the timeline content
-		this.viewportManager.getMainViewport().addChild(this.playhead.getContainer());
+		// Position playhead to start from top of ruler
+		this.playhead.getContainer().y = this.layout.rulerY;
+		// Add playhead to dedicated container that renders above ruler
+		this.viewportManager.getPlayheadContainer().addChild(this.playhead.getContainer());
 
 		// Connect playhead seek events
 		this.playhead.events.on("playhead:seeked", this.eventHandler.handleSeek.bind(this.eventHandler));
@@ -122,11 +121,10 @@ export class TimelineFeatureManager {
 			};
 			this.playhead = new PlayheadFeature(playheadOptions);
 			this.playhead.load();
-			// Since playhead is now in the viewport, adjust Y position relative to viewport
-			// The viewport starts at (toolbarHeight + rulerHeight), so we need to compensate
-			this.playhead.getContainer().y = -this.layout.rulerHeight;
-			// Add playhead to the viewport so it scrolls with the timeline content
-			this.viewportManager.getMainViewport().addChild(this.playhead.getContainer());
+			// Position playhead to start from top of ruler
+			this.playhead.getContainer().y = this.layout.rulerY;
+			// Add playhead to dedicated container that renders above ruler
+			this.viewportManager.getPlayheadContainer().addChild(this.playhead.getContainer());
 			this.playhead.events.on("playhead:seeked", this.eventHandler.handleSeek.bind(this.eventHandler));
 		}
 	}

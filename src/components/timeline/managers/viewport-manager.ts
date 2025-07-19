@@ -15,6 +15,7 @@ export class ViewportManager {
 
 	private viewport!: PIXI.Container;
 	private rulerViewport!: PIXI.Container;
+	private playheadContainer!: PIXI.Container;
 
 	constructor(
 		private layout: TimelineLayout,
@@ -29,6 +30,11 @@ export class ViewportManager {
 		this.rulerViewport = new PIXI.Container();
 		this.rulerViewport.label = "ruler-viewport";
 		this.overlayLayer.addChild(this.rulerViewport);
+
+		// Create playhead container in overlay layer (above ruler)
+		this.playheadContainer = new PIXI.Container();
+		this.playheadContainer.label = "playhead-container";
+		this.overlayLayer.addChild(this.playheadContainer);
 
 		// Create main viewport for tracks
 		this.viewport = new PIXI.Container();
@@ -50,6 +56,10 @@ export class ViewportManager {
 		// Sync ruler horizontal scroll (no vertical scroll for ruler)
 		this.rulerViewport.position.x = position.x;
 		this.rulerViewport.scale.x = this.zoomLevel;
+
+		// Sync playhead horizontal scroll
+		this.playheadContainer.position.x = position.x;
+		this.playheadContainer.scale.x = this.zoomLevel;
 	}
 
 	public setScroll(x: number, y: number): void {
@@ -79,5 +89,9 @@ export class ViewportManager {
 
 	public getRulerViewport(): PIXI.Container {
 		return this.rulerViewport;
+	}
+
+	public getPlayheadContainer(): PIXI.Container {
+		return this.playheadContainer;
 	}
 }
