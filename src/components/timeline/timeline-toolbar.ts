@@ -79,7 +79,7 @@ export class TimelineToolbar extends PIXI.Container {
 
 	private createComponents(): void {
 		// Create playback controls
-		this.playbackControls = new PlaybackControls(this.edit, this.theme);
+		this.playbackControls = new PlaybackControls(this.edit, this.theme, this.toolbarHeight);
 		this.addChild(this.playbackControls);
 		
 		// Create time display

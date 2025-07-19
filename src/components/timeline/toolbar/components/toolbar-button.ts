@@ -49,12 +49,12 @@ export class ToolbarButton extends PIXI.Container {
 		
 		// Create icon(s)
 		if (options.iconType) {
-			this.icon = IconFactory.createIcon(options.iconType, this.theme);
+			this.icon = IconFactory.createIcon(options.iconType, this.theme, this.size);
 			this.addChild(this.icon);
 		}
 		
 		if (options.alternateIconType) {
-			this.alternateIcon = IconFactory.createIcon(options.alternateIconType, this.theme);
+			this.alternateIcon = IconFactory.createIcon(options.alternateIconType, this.theme, this.size);
 			this.alternateIcon.visible = false;
 			this.addChild(this.alternateIcon);
 		}
@@ -148,7 +148,7 @@ export class ToolbarButton extends PIXI.Container {
 			const iconType = this.getIconType(this.icon);
 			if (iconType) {
 				this.removeChild(this.icon);
-				this.icon = IconFactory.createIcon(iconType, theme);
+				this.icon = IconFactory.createIcon(iconType, theme, this.size);
 				this.addChild(this.icon);
 			}
 		}
@@ -157,7 +157,7 @@ export class ToolbarButton extends PIXI.Container {
 			const iconType = this.getIconType(this.alternateIcon);
 			if (iconType) {
 				this.removeChild(this.alternateIcon);
-				this.alternateIcon = IconFactory.createIcon(iconType, theme);
+				this.alternateIcon = IconFactory.createIcon(iconType, theme, this.size);
 				this.alternateIcon.visible = this.state.isActive;
 				this.addChild(this.alternateIcon);
 			}

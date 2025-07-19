@@ -8,19 +8,27 @@ export class ToolbarLayout {
 		this.config = {
 			width,
 			height,
-			buttonSize: TOOLBAR_CONSTANTS.BUTTON_SIZE,
-			buttonSpacing: TOOLBAR_CONSTANTS.BUTTON_SPACING,
+			buttonSize: Math.round(height * 0.5),
+			buttonSpacing: Math.round(height * 0.15),
 			edgeMargin: TOOLBAR_CONSTANTS.EDGE_MARGIN
 		};
 	}
 	
 	public getPlaybackControlsPosition(): ComponentPosition {
-		// Center playback controls horizontally
+		// Center playback controls horizontally and vertically
 		const controlsWidth = this.calculatePlaybackControlsWidth();
 		const x = (this.config.width - controlsWidth) / 2;
-		const y = (this.config.height - this.config.buttonSize) / 2;
+		// Center the entire control group vertically
+		const y = (this.config.height - this.getMaxButtonHeight()) / 2;
 		
 		return { x, y };
+	}
+	
+	private getMaxButtonHeight(): number {
+		// The play button is the tallest
+		const regularButtonSize = this.config.buttonSize;
+		const playButtonSize = Math.round(regularButtonSize * 1.5);
+		return playButtonSize;
 	}
 	
 	public getTimeDisplayPosition(playbackControlsWidth: number): ComponentPosition {
@@ -41,8 +49,10 @@ export class ToolbarLayout {
 	}
 	
 	public calculatePlaybackControlsWidth(): number {
-		// 3 buttons with 2 spaces between them
-		return this.config.buttonSize * 3 + this.config.buttonSpacing * 2;
+		// 2 regular buttons + 1 play button (50% larger) with 2 spaces between them
+		const regularButtonSize = this.config.buttonSize;
+		const playButtonSize = Math.round(regularButtonSize * 1.5);
+		return regularButtonSize * 2 + playButtonSize + this.config.buttonSpacing * 2;
 	}
 	
 	public updateWidth(width: number): void {

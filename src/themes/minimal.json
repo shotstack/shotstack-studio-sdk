@@ -44,9 +44,9 @@
     }
   },
   "dimensions": {
-    "toolbarHeight": 36,
+    "toolbarHeight": 80,
     "trackHeight": 10,
-    "rulerHeight": 40,
+    "rulerHeight": 20,
     "clipRadius": 4,
     "borderWidth": 2
   },
