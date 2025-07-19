@@ -260,8 +260,8 @@ export class Timeline extends Entity {
 		this.dragPreviewManager.hideDragGhost();
 	}
 
-	public showDragGhost(trackIndex: number, time: number): void {
-		this.dragPreviewManager.showDragGhost(trackIndex, time);
+	public showDragGhost(trackIndex: number, time: number, freeY?: number): void {
+		this.dragPreviewManager.showDragGhost(trackIndex, time, freeY);
 	}
 
 	// Playhead control methods

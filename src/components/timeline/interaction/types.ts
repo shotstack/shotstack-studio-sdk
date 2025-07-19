@@ -41,7 +41,7 @@ export interface TimelineInterface {
 	getExtendedTimelineWidth(): number;
 	getContainer(): PIXI.Container;
 	getEdit(): EditInterface;
-	showDragGhost(track: number, time: number): void;
+	showDragGhost(track: number, time: number, freeY?: number): void;
 	hideDragGhost(): void;
 }
 

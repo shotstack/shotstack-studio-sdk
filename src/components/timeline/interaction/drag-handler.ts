@@ -70,7 +70,8 @@ export class DragHandler implements InteractionHandler {
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
 		const clipStartX = layout.getXAtTime(clipData.start || 0);
-		const clipStartY = layout.getYAtTrack(clipInfo.trackIndex);
+		// Use relative position within tracks area, not absolute position
+		const clipStartY = clipInfo.trackIndex * layout.trackHeight;
 		
 		this.dragInfo = {
 			trackIndex: clipInfo.trackIndex,
@@ -121,7 +122,7 @@ export class DragHandler implements InteractionHandler {
 		}
 	}
 	
-	private calculateDragPosition(event: PIXI.FederatedPointerEvent): { x: number; y: number; time: number; track: number } {
+	private calculateDragPosition(event: PIXI.FederatedPointerEvent): { x: number; y: number; time: number; track: number; ghostY: number } {
 		if (!this.dragInfo) throw new Error("No drag info available");
 		
 		const localPos = this.timeline.getContainer().toLocal(event.global);
@@ -129,7 +130,10 @@ export class DragHandler implements InteractionHandler {
 		
 		const rawTime = Math.max(0, layout.getTimeAtX(localPos.x - this.dragInfo.offsetX));
 		const dragY = localPos.y - this.dragInfo.offsetY;
-		const dragTrack = Math.max(0, Math.floor((dragY - layout.tracksY) / layout.trackHeight));
+		
+		// Calculate which track the clip center is over
+		const clipCenterY = dragY + (layout.trackHeight / 2);
+		const dragTrack = Math.max(0, Math.floor(clipCenterY / layout.trackHeight));
 		
 		// Ensure within bounds
 		const maxTrackIndex = this.timeline.getVisualTracks().length - 1;
@@ -139,7 +143,8 @@ export class DragHandler implements InteractionHandler {
 			x: localPos.x,
 			y: localPos.y + layout.viewportY, // For drop zone detection
 			time: rawTime,
-			track: boundedTrack
+			track: boundedTrack,
+			ghostY: dragY // Free Y position for ghost
 		};
 	}
 	
@@ -179,9 +184,10 @@ export class DragHandler implements InteractionHandler {
 		}
 		this.timeline.hideDragGhost();
 		this.visualFeedback.hideSnapGuidelines();
+		this.visualFeedback.hideTargetTrack();
 	}
 	
-	private handleNormalDragPreview(position: { time: number; track: number }): void {
+	private handleNormalDragPreview(position: { time: number; track: number; ghostY?: number }): void {
 		if (!this.dragInfo) return;
 		
 		// Hide drop zone if showing
@@ -207,8 +213,11 @@ export class DragHandler implements InteractionHandler {
 			this.visualFeedback.hideSnapGuidelines();
 		}
 		
-		// Show drag preview
-		this.timeline.showDragGhost(position.track, finalTime);
+		// Show visual indicator for target track
+		this.visualFeedback.showTargetTrack(position.track);
+		
+		// Show drag preview with free Y position
+		this.timeline.showDragGhost(position.track, finalTime, position.ghostY);
 	}
 	
 	private calculateFinalPosition(time: number, track: number, clipDuration: number, excludeIndex?: number): number {

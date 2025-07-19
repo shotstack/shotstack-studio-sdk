@@ -81,6 +81,35 @@ export class VisualFeedbackManager {
 		this.hideGraphics('snapGuidelines');
 	}
 	
+	public showTargetTrack(trackIndex: number): void {
+		this.hideTargetTrack(); // Clear existing
+		
+		const graphics = new PIXI.Graphics();
+		const layout = this.timeline.getLayout();
+		const width = this.timeline.getExtendedTimelineWidth();
+		const y = trackIndex * layout.trackHeight;
+		const height = layout.trackHeight;
+		
+		const theme = this.timeline.getTheme();
+		const color = theme.colors.interaction.hover;
+		
+		// Draw subtle highlight for target track
+		graphics.rect(0, y, width, height);
+		graphics.fill({ color, alpha: 0.1 });
+		
+		// Add subtle border
+		graphics.setStrokeStyle({ width: 1, color, alpha: 0.3 });
+		graphics.rect(0, y, width, height);
+		graphics.stroke();
+		
+		this.timeline.getContainer().addChild(graphics);
+		this.graphics.set('targetTrack', graphics);
+	}
+	
+	public hideTargetTrack(): void {
+		this.hideGraphics('targetTrack');
+	}
+	
 	public hideAll(): void {
 		this.graphics.forEach((_, key) => this.hideGraphics(key));
 	}
