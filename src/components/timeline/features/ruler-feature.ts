@@ -6,12 +6,6 @@ import { TimelineTheme } from "../../../core/theme";
 
 import { TIMELINE_CONSTANTS, TimelineFeatureEvents, RulerFeatureOptions } from "./types";
 
-interface IntervalConfig {
-	seconds: number;
-	minPixelSpacing: number;
-	dotCount: number;
-}
-
 export class RulerFeature extends Entity {
 	public events: EventEmitter;
 	private rulerContainer: PIXI.Container;
@@ -23,20 +17,6 @@ export class RulerFeature extends Entity {
 	private timelineDuration: number;
 	private rulerHeight: number;
 	private theme?: TimelineTheme;
-
-	// Configuration for different zoom levels
-	private static readonly INTERVAL_CONFIGS: IntervalConfig[] = [
-		{ seconds: 1, minPixelSpacing: 80, dotCount: 4 },
-		{ seconds: 5, minPixelSpacing: 80, dotCount: 4 },
-		{ seconds: 10, minPixelSpacing: 80, dotCount: 9 },
-		{ seconds: 30, minPixelSpacing: 80, dotCount: 5 },
-		{ seconds: 60, minPixelSpacing: 80, dotCount: 5 }
-	];
-
-	private static readonly DOT_STYLE = {
-		radius: 1.5,
-		yPosition: 0.5 // Percentage of ruler height
-	};
 
 	constructor(options: RulerFeatureOptions) {
 		super();
@@ -88,24 +68,26 @@ export class RulerFeature extends Entity {
 	private drawTimeMarkers(): void {
 		this.timeMarkers.clear();
 		
-		const config = this.getCurrentIntervalConfig();
+		const interval = this.getTimeInterval();
 		const visibleDuration = this.getVisibleDuration();
 		const dotColor = this.theme?.colors.ui.iconMuted || 0x666666;
-		const dotY = this.rulerHeight * RulerFeature.DOT_STYLE.yPosition;
+		const dotY = this.rulerHeight * 0.5;
 		
-		// Calculate dot spacing
-		const dotSpacing = config.seconds / (config.dotCount + 1);
+		// Determine number of dots between labels based on interval
+		let dotsPerInterval = 4; // Default for most intervals
+		if (interval === 10) dotsPerInterval = 9;
+		else if (interval === 30 || interval === 60) dotsPerInterval = 5;
+		
+		const dotSpacing = interval / (dotsPerInterval + 1);
 
-		// Draw dots between labels
-		for (let labelIndex = 0; labelIndex * config.seconds <= visibleDuration; labelIndex++) {
-			const labelTime = labelIndex * config.seconds;
-			
-			// Draw dots after this label (except for label at 0)
-			for (let dotIndex = 1; dotIndex <= config.dotCount; dotIndex++) {
-				const dotTime = labelTime + (dotIndex * dotSpacing);
+		// Draw dots between time labels
+		for (let time = 0; time <= visibleDuration; time += interval) {
+			// Draw dots after this time marker
+			for (let i = 1; i <= dotsPerInterval; i++) {
+				const dotTime = time + (i * dotSpacing);
 				if (dotTime <= visibleDuration) {
 					const x = dotTime * this.pixelsPerSecond;
-					this.timeMarkers.circle(x, dotY, RulerFeature.DOT_STYLE.radius);
+					this.timeMarkers.circle(x, dotY, 1.5);
 					this.timeMarkers.fill(dotColor);
 				}
 			}
@@ -115,18 +97,19 @@ export class RulerFeature extends Entity {
 	private drawTimeLabels(): void {
 		this.timeLabels.removeChildren();
 
-		const config = this.getCurrentIntervalConfig();
+		const interval = this.getTimeInterval();
 		const visibleDuration = this.getVisibleDuration();
 		const textColor = this.theme?.colors.ui.text || 0xffffff;
 
-		// Create label style once
+		// Create label style
 		const labelStyle = {
 			fontSize: TIMELINE_CONSTANTS.RULER.LABEL_FONT_SIZE,
 			fill: textColor,
 			fontFamily: "Arial"
 		};
 
-		for (let seconds = 0; seconds <= visibleDuration; seconds += config.seconds) {
+		// Draw time labels at intervals
+		for (let seconds = 0; seconds <= visibleDuration; seconds += interval) {
 			const label = new PIXI.Text({
 				text: `${seconds}s`,
 				style: labelStyle
@@ -141,7 +124,7 @@ export class RulerFeature extends Entity {
 				label.anchor.set(0.5, 0.5);
 				label.x = x;
 			}
-			label.y = this.rulerHeight * RulerFeature.DOT_STYLE.yPosition;
+			label.y = this.rulerHeight * 0.5;
 
 			this.timeLabels.addChild(label);
 		}
@@ -190,19 +173,19 @@ export class RulerFeature extends Entity {
 		return Math.max(this.timelineDuration, this.getViewportWidth() / this.pixelsPerSecond);
 	}
 
-	private getCurrentIntervalConfig(): IntervalConfig {
-		// Find the appropriate interval config based on current zoom level
-		// Work backwards through configs to find the first one that provides adequate spacing
-		for (let i = RulerFeature.INTERVAL_CONFIGS.length - 1; i >= 0; i--) {
-			const config = RulerFeature.INTERVAL_CONFIGS[i];
-			const pixelSpacing = config.seconds * this.pixelsPerSecond;
-			
-			if (pixelSpacing >= config.minPixelSpacing) {
-				return config;
+	private getTimeInterval(): number {
+		// Choose appropriate time interval based on zoom level
+		const intervals = [1, 5, 10, 30, 60, 120, 300, 600];
+		const minPixelSpacing = 80;
+		
+		for (const interval of intervals) {
+			const pixelSpacing = interval * this.pixelsPerSecond;
+			if (pixelSpacing >= minPixelSpacing) {
+				return interval;
 			}
 		}
 		
-		// Default to the smallest interval if none match (shouldn't happen with proper configs)
-		return RulerFeature.INTERVAL_CONFIGS[0];
+		// If extremely zoomed out, use larger intervals
+		return Math.ceil(this.getVisibleDuration() / 10);
 	}
 }
