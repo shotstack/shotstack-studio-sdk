@@ -47,14 +47,20 @@ export class ToolbarButton extends PIXI.Container {
 		this.hoverBackground = new PIXI.Graphics();
 		this.addChild(this.hoverBackground);
 		
-		// Create icon(s)
+		// Create icon(s) - scaled to 60% of button size
+		const iconScale = 0.6;
+		const iconSize = this.size * iconScale;
+		const iconOffset = (this.size - iconSize) / 2;
+		
 		if (options.iconType) {
-			this.icon = IconFactory.createIcon(options.iconType, this.theme, this.size);
+			this.icon = IconFactory.createIcon(options.iconType, this.theme, iconSize);
+			this.icon.position.set(iconOffset, iconOffset);
 			this.addChild(this.icon);
 		}
 		
 		if (options.alternateIconType) {
-			this.alternateIcon = IconFactory.createIcon(options.alternateIconType, this.theme, this.size);
+			this.alternateIcon = IconFactory.createIcon(options.alternateIconType, this.theme, iconSize);
+			this.alternateIcon.position.set(iconOffset, iconOffset);
 			this.alternateIcon.visible = false;
 			this.addChild(this.alternateIcon);
 		}
@@ -100,17 +106,19 @@ export class ToolbarButton extends PIXI.Container {
 	
 	private updateVisuals(): void {
 		const padding = TOOLBAR_CONSTANTS.BUTTON_HOVER_PADDING;
-		const totalSize = this.size + padding * 2;
+		const radius = this.size / 2;
 		
-		// Update hover background
+		// Clear and redraw circular button background
+		this.background.clear();
+		this.background.circle(radius, radius, radius);
+		this.background.fill({ 
+			color: this.theme.colors.toolbar.surface,
+			alpha: 0.8 
+		});
+		
+		// Update hover background as a larger circle
 		this.hoverBackground.clear();
-		this.hoverBackground.roundRect(
-			-padding, 
-			-padding, 
-			totalSize, 
-			totalSize, 
-			TOOLBAR_CONSTANTS.BORDER_RADIUS
-		);
+		this.hoverBackground.circle(radius, radius, radius + padding);
 		
 		if (this.state.isPressed) {
 			this.hoverBackground.fill({ 
@@ -144,11 +152,16 @@ export class ToolbarButton extends PIXI.Container {
 		this.theme = theme;
 		
 		// Recreate icons with new theme
+		const iconScale = 0.6;
+		const iconSize = this.size * iconScale;
+		const iconOffset = (this.size - iconSize) / 2;
+		
 		if (this.icon) {
 			const iconType = this.getIconType(this.icon);
 			if (iconType) {
 				this.removeChild(this.icon);
-				this.icon = IconFactory.createIcon(iconType, theme, this.size);
+				this.icon = IconFactory.createIcon(iconType, theme, iconSize);
+				this.icon.position.set(iconOffset, iconOffset);
 				this.addChild(this.icon);
 			}
 		}
@@ -157,7 +170,8 @@ export class ToolbarButton extends PIXI.Container {
 			const iconType = this.getIconType(this.alternateIcon);
 			if (iconType) {
 				this.removeChild(this.alternateIcon);
-				this.alternateIcon = IconFactory.createIcon(iconType, theme, this.size);
+				this.alternateIcon = IconFactory.createIcon(iconType, theme, iconSize);
+				this.alternateIcon.position.set(iconOffset, iconOffset);
 				this.alternateIcon.visible = this.state.isActive;
 				this.addChild(this.alternateIcon);
 			}
