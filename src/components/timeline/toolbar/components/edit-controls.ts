@@ -44,7 +44,7 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 			fontSize: FONT_SIZE,
 			fill: this.theme.colors.ui.text || 0xffffff,
 		});
-		this.cutButtonText = new PIXI.Text('CUT', textStyle);
+		this.cutButtonText = new PIXI.Text('SPLIT', textStyle);
 		this.cutButtonText.anchor.set(0.5);
 		this.cutButtonText.position.set(WIDTH / 2, HEIGHT / 2);
 		this.cutButton.addChild(this.cutButtonText);
