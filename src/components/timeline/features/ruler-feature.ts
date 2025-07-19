@@ -111,7 +111,7 @@ export class RulerFeature extends Entity {
 		// Draw time labels at intervals
 		for (let seconds = 0; seconds <= visibleDuration; seconds += interval) {
 			const label = new PIXI.Text({
-				text: `${seconds}s`,
+				text: this.formatTime(seconds),
 				style: labelStyle
 			});
 
@@ -187,5 +187,22 @@ export class RulerFeature extends Entity {
 		
 		// If extremely zoomed out, use larger intervals
 		return Math.ceil(this.getVisibleDuration() / 10);
+	}
+
+	private formatTime(seconds: number): string {
+		if (seconds === 0) return "0s";
+		
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		
+		if (seconds < 60) {
+			return `${seconds}s`;
+		} else if (remainingSeconds === 0) {
+			return `${minutes}m`;
+		} else {
+			// Format as M:SS for times with seconds
+			const formattedSeconds = remainingSeconds.toString().padStart(2, '0');
+			return `${minutes}:${formattedSeconds}`;
+		}
 	}
 }
