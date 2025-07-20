@@ -24,7 +24,7 @@ export class TimelineEventHandler {
 		this.edit.events.on("selection:cleared", this.handleSelectionCleared.bind(this));
 		this.edit.events.on("drag:started", this.handleDragStarted.bind(this));
 		this.edit.events.on("drag:ended", this.handleDragEnded.bind(this));
-		this.edit.events.on("track:created-and-clip:moved", this.handleTrackCreatedAndClipMoved.bind(this));
+		this.edit.events.on("track:created", this.handleTrackCreated.bind(this));
 	}
 
 	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
@@ -51,7 +51,7 @@ export class TimelineEventHandler {
 		this.callbacks.onDragEnded();
 	}
 
-	private async handleTrackCreatedAndClipMoved(): Promise<void> {
+	private async handleTrackCreated(): Promise<void> {
 		await this.callbacks.onEditChange();
 	}
 
@@ -67,6 +67,6 @@ export class TimelineEventHandler {
 		this.edit.events.off("selection:cleared", this.handleSelectionCleared.bind(this));
 		this.edit.events.off("drag:started", this.handleDragStarted.bind(this));
 		this.edit.events.off("drag:ended", this.handleDragEnded.bind(this));
-		this.edit.events.off("track:created-and-clip:moved", this.handleTrackCreatedAndClipMoved.bind(this));
+		this.edit.events.off("track:created", this.handleTrackCreated.bind(this));
 	}
 }

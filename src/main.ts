@@ -47,6 +47,10 @@ async function main() {
 			console.log("Clip updated:", data);
 		});
 
+		edit.events.on("track:created", data => {
+			console.log("Track created:", data);
+		})
+
 		// Additional helpful information for the demo
 		console.log("Demo loaded successfully! Try the following keyboard controls:");
 		console.log("- Space: Play/Pause");

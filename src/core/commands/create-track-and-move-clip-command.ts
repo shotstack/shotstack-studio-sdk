@@ -41,7 +41,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 			this.wasExecuted = true;
 
 			// Emit compound event
-			context.emitEvent("track:created-and-clip:moved", {
+			context.emitEvent("track:created", {
 				trackInsertionIndex: this.insertionIndex,
 				clipMove: {
 					from: { trackIndex: this.fromTrackIndex, clipIndex: this.fromClipIndex },
@@ -69,7 +69,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		this.addTrackCommand.undo(context);
 		this.wasExecuted = false;
 
-		context.emitEvent("track:created-and-clip:moved:undone", {
+		context.emitEvent("track:created:undone", {
 			trackInsertionIndex: this.insertionIndex
 		});
 	}
