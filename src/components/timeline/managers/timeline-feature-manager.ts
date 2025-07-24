@@ -1,4 +1,5 @@
 import { Edit } from "@core/edit";
+
 import { TimelineTheme } from "../../../core/theme";
 import { 
 	RulerFeature, 
@@ -11,6 +12,7 @@ import {
 } from "../features";
 import { TimelineLayout } from "../timeline-layout";
 import { TimelineToolbar } from "../timeline-toolbar";
+
 import { TimelineEventHandler } from "./timeline-event-handler";
 import { TimelineRenderer } from "./timeline-renderer";
 import { ViewportManager } from "./viewport-manager";

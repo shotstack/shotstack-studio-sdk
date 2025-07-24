@@ -83,7 +83,7 @@ export class RulerFeature extends Entity {
 		// Draw dots between time labels
 		for (let time = 0; time <= visibleDuration; time += interval) {
 			// Draw dots after this time marker
-			for (let i = 1; i <= dotsPerInterval; i++) {
+			for (let i = 1; i <= dotsPerInterval; i += 1) {
 				const dotTime = time + (i * dotSpacing);
 				if (dotTime <= visibleDuration) {
 					const x = dotTime * this.pixelsPerSecond;
@@ -197,12 +197,12 @@ export class RulerFeature extends Entity {
 		
 		if (seconds < 60) {
 			return `${seconds}s`;
-		} else if (remainingSeconds === 0) {
+		} if (remainingSeconds === 0) {
 			return `${minutes}m`;
-		} else {
+		} 
 			// Format as M:SS for times with seconds
 			const formattedSeconds = remainingSeconds.toString().padStart(2, '0');
 			return `${minutes}:${formattedSeconds}`;
-		}
+		
 	}
 }

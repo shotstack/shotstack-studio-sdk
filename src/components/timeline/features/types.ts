@@ -1,5 +1,4 @@
 import { TimelineTheme } from "../../../core/theme";
-
 import { VisualTrack } from "../visual/visual-track";
 
 // Constants for timeline features
