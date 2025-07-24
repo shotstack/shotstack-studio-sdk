@@ -47,8 +47,8 @@ export class TextPlayer extends Player {
 		}
 
 		// Add elements to container
-		this.getContainer().addChild(this.background);
-		this.getContainer().addChild(this.text);
+		this.contentContainer.addChild(this.background);
+		this.contentContainer.addChild(this.text);
 		this.configureKeyframes();
 
 		// Initialize text editor
