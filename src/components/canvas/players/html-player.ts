@@ -125,8 +125,8 @@ export class HtmlPlayer extends Player {
 		this.background = background;
 		this.text = text;
 
-		this.getContainer().addChild(background);
-		this.getContainer().addChild(text);
+		this.contentContainer.addChild(background);
+		this.contentContainer.addChild(text);
 		this.configureKeyframes();
 	}
 

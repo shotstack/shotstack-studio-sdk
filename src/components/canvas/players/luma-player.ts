@@ -38,7 +38,7 @@ export class LumaPlayer extends Player {
 		this.texture = texture;
 		this.sprite = new pixi.Sprite(this.texture);
 
-		this.getContainer().addChild(this.sprite);
+		this.contentContainer.addChild(this.sprite);
 		this.configureKeyframes();
 	}
 

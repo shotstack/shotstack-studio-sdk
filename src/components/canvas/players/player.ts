@@ -66,6 +66,7 @@ export abstract class Player extends Entity {
 	private rotationOffset: Vector;
 
 	private initialClipConfiguration: Clip | null;
+	protected contentContainer: pixi.Container;
 
 	constructor(edit: Edit, clipConfiguration: Clip) {
 		super();
@@ -98,6 +99,10 @@ export abstract class Player extends Entity {
 		this.rotationOffset = { x: 0, y: 0 };
 
 		this.initialClipConfiguration = null;
+		
+		// Create content container for actual player content
+		this.contentContainer = new pixi.Container();
+		this.getContainer().addChild(this.contentContainer);
 	}
 
 	public reconfigureAfterRestore(): void {
@@ -164,13 +169,23 @@ export abstract class Player extends Entity {
 		this.topRightScaleHandle = new pixi.Graphics();
 		this.bottomRightScaleHandle = new pixi.Graphics();
 		this.bottomLeftScaleHandle = new pixi.Graphics();
+		this.rotationHandle = new pixi.Graphics();
+
+		// Set high zIndex on handles so they appear above other content
+		this.topLeftScaleHandle.zIndex = 1000;
+		this.topRightScaleHandle.zIndex = 1000;
+		this.bottomRightScaleHandle.zIndex = 1000;
+		this.bottomLeftScaleHandle.zIndex = 1000;
+		this.rotationHandle.zIndex = 1000;
 
 		this.getContainer().addChild(this.topLeftScaleHandle);
 		this.getContainer().addChild(this.topRightScaleHandle);
 		this.getContainer().addChild(this.bottomRightScaleHandle);
 		this.getContainer().addChild(this.bottomLeftScaleHandle);
-		this.rotationHandle = new pixi.Graphics();
 		this.getContainer().addChild(this.rotationHandle);
+
+		// Enable sortable children to respect zIndex
+		this.getContainer().sortableChildren = true;
 
 		this.getContainer().cursor = "pointer";
 		this.getContainer().eventMode = "static";
@@ -202,11 +217,12 @@ export abstract class Player extends Entity {
 
 		const angle = this.getRotation();
 
-		this.getContainer().alpha = this.getOpacity();
+		// Apply opacity only to content, not to selection UI
+		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
 
 		if (this.shouldDiscardFrame()) {
-			this.getContainer().alpha = 0;
+			this.contentContainer.alpha = 0;
 		}
 	}
 
@@ -306,6 +322,8 @@ export abstract class Player extends Entity {
 
 		this.rotationHandle?.destroy();
 		this.rotationHandle = null;
+
+		this.contentContainer?.destroy();
 	}
 
 	public getStart(): number {

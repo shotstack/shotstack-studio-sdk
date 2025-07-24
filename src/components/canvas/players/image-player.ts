@@ -38,7 +38,7 @@ export class ImagePlayer extends Player {
 		this.texture = this.createCroppedTexture(texture);
 		this.sprite = new pixi.Sprite(this.texture);
 
-		this.getContainer().addChild(this.sprite);
+		this.contentContainer.addChild(this.sprite);
 		this.configureKeyframes();
 	}
 

@@ -84,7 +84,7 @@ export class ShapePlayer extends Player {
 		this.shapeBackground = shapeBackground;
 		this.shape = shape;
 
-		this.getContainer().addChild(shapeBackground);
+		this.contentContainer.addChild(shapeBackground);
 		shapeBackground.addChild(shape);
 		this.configureKeyframes();
 	}
