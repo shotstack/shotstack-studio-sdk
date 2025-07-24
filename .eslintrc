@@ -11,9 +11,20 @@
 		{
 			"files": ["src/**/*.ts"],
 			"rules": {
+				"@typescript-eslint/no-unused-vars": [
+					"error",
+					{
+						"args": "all",
+						"argsIgnorePattern": "^_",
+						"caughtErrors": "all",
+						"caughtErrorsIgnorePattern": "^_",
+						"destructuredArrayIgnorePattern": "^_",
+						"varsIgnorePattern": "^_",
+						"ignoreRestSiblings": true
+					}
+				],
 				"@typescript-eslint/no-shadow": "error",
 				"@typescript-eslint/lines-between-class-members": "off",
-				"@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_+$" }],
 				"@typescript-eslint/no-implied-eval": ["off"],
 
 				"no-console": "off",

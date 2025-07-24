@@ -11,29 +11,41 @@ export class AddTrackCommand implements EditCommand {
 		if (!context) return;
 		const tracks = context.getTracks();
 		const clips = context.getClips();
+
 		tracks.splice(this.trackIdx, 0, []);
 
-		const affectedClips = clips.filter(clip => clip.layer >= this.trackIdx + 1);
-		const container = context.getContainer();
+		// Update layers for all clips that are on tracks at or after the insertion point
+		// Since we're inserting a track, all tracks at or after trackIdx shift down
+		clips.forEach(clip => {
+			if (clip.layer >= this.trackIdx) {
+				// Remove from old container
+				const oldZIndex = 100000 - clip.layer * 100;
+				const oldContainer = context.getContainer().getChildByLabel(`shotstack-track-${oldZIndex}`, false);
+				if (oldContainer) {
+					oldContainer.removeChild(clip.getContainer());
+				}
 
-		clips.forEach((clip, index) => {
-			if (clip.layer >= this.trackIdx + 1) {
-				const oldContainer = container.getChildByLabel(`shotstack-track-${100000 - clip.layer * 100}`, false);
-				oldContainer?.removeChild(clip.getContainer());
-				clips[index].layer += 1;
-			}
-		});
+				// Update layer (track index + 1)
+				// eslint-disable-next-line no-param-reassign
+				clip.layer += 1;
 
-		affectedClips.forEach(clip => {
-			const zIndex = 100000 - clip.layer * 100;
-			let trackContainer = container.getChildByLabel(`shotstack-track-${zIndex}`, false);
-			if (!trackContainer) {
-				trackContainer = new pixi.Container({ label: `shotstack-track-${zIndex}`, zIndex });
-				container.addChild(trackContainer);
+				// Add to new container
+				const newZIndex = 100000 - clip.layer * 100;
+				let newContainer = context.getContainer().getChildByLabel(`shotstack-track-${newZIndex}`, false);
+				if (!newContainer) {
+					newContainer = new pixi.Container({ label: `shotstack-track-${newZIndex}`, zIndex: newZIndex });
+					context.getContainer().addChild(newContainer);
+				}
+				newContainer.addChild(clip.getContainer());
 			}
-			trackContainer.addChild(clip.getContainer());
 		});
 		context.updateDuration();
+
+		// Emit track creation event to trigger timeline visual updates
+		context.emitEvent("track:added", {
+			trackIndex: this.trackIdx,
+			totalTracks: tracks.length
+		});
 	}
 
 	undo(context?: CommandContext): void {
@@ -41,9 +53,10 @@ export class AddTrackCommand implements EditCommand {
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 		tracks.splice(this.trackIdx, 1);
-		clips.forEach((clip, index) => {
-			if (clip.layer > this.trackIdx + 1) {
-				clips[index].layer -= 1;
+		clips.forEach((clip) => {
+			if (clip.layer > this.trackIdx) {
+				// eslint-disable-next-line no-param-reassign
+				clip.layer -= 1;
 			}
 		});
 		context.updateDuration();

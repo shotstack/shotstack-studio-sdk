@@ -26,7 +26,7 @@ export class AssetLoader {
 			});
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return resolvedAsset;
-		} catch (error) {
+		} catch (_error) {
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			return null;
 		}

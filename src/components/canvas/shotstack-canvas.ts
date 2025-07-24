@@ -5,6 +5,8 @@ import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";
 import * as pixi from "pixi.js";
 
+import type { Timeline } from "../timeline/timeline";
+
 export class Canvas {
 	/** @internal */
 	public static readonly CanvasSelector = "[data-shotstack-studio]";
@@ -20,6 +22,7 @@ export class Canvas {
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
+	private timeline?: Timeline;
 
 	private minZoom = 0.1;
 	private maxZoom = 4;
@@ -135,6 +138,10 @@ export class Canvas {
 		edit.scale.y = this.currentZoom;
 	}
 
+	public registerTimeline(timeline: Timeline): void {
+		this.timeline = timeline;
+	}
+
 	private registerExtensions(): void {
 		if (!Canvas.extensionsRegistered) {
 			pixi.extensions.add(new AudioLoadParser());
@@ -169,6 +176,11 @@ export class Canvas {
 
 		this.inspector.update(ticker.deltaTime, ticker.deltaMS);
 		this.inspector.draw();
+
+		if (this.timeline) {
+			this.timeline.update(ticker.deltaTime, ticker.deltaMS);
+			this.timeline.draw();
+		}
 	}
 
 	private configureStage(): void {
@@ -185,6 +197,10 @@ export class Canvas {
 		this.application.stage.eventMode = "static";
 		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.size.width, this.size.height);
 
+		// Set up background click handling for selection
+		this.background.eventMode = "static";
+		this.background.on("pointerdown", this.onBackgroundClick.bind(this));
+
 		this.application.stage.on("click", this.onClick.bind(this));
 
 		this.edit.getContainer().position = {
@@ -197,6 +213,14 @@ export class Canvas {
 		this.edit.pause();
 	}
 
+	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
+		// Check if the click was on the background (not on a clip)
+		if (event.target === this.background) {
+			// Emit canvas background clicked event
+			this.edit.events.emit("canvas:background:clicked", {});
+		}
+	}
+
 	public dispose(): void {
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
 		if (root && root.contains(this.application.canvas)) {
@@ -205,6 +229,7 @@ export class Canvas {
 
 		this.application.ticker.remove(this.onTick, this);
 		this.application.stage.off("click", this.onClick, this);
+		this.background?.off("pointerdown", this.onBackgroundClick, this);
 
 		this.background?.destroy();
 		this.container?.destroy();

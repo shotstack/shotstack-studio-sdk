@@ -8,9 +8,12 @@ import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
+import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
+import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
+import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
 import { Entity } from "@core/shared/entity";
@@ -75,6 +78,9 @@ export class Edit extends Entity {
 		this.selectedClip = null;
 		this.updatedClip = null;
 		this.backgroundColor = backgroundColor;
+
+		// Set up event-driven architecture
+		this.setupIntentListeners();
 	}
 
 	public override async load(): Promise<void> {
@@ -122,9 +128,11 @@ export class Edit extends Entity {
 
 	public play(): void {
 		this.isPlaying = true;
+		this.events.emit('playback:play', {});
 	}
 	public pause(): void {
 		this.isPlaying = false;
+		this.events.emit('playback:pause', {});
 	}
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
@@ -161,20 +169,11 @@ export class Edit extends Entity {
 		this.updateTotalDuration();
 	}
 	public getEdit(): EditType {
-		const tracks: TrackType[] = [];
-		const trackMap = new Map<number, TrackType>();
-
-		for (const clip of this.clips) {
-			if (!trackMap.has(clip.layer)) {
-				trackMap.set(clip.layer, { clips: [] });
-			}
-			trackMap.get(clip.layer)!.clips.push(clip.clipConfiguration);
-		}
-
-		const maxTrack = Math.max(...trackMap.keys(), 0);
-		for (let i = 1; i <= maxTrack; i += 1) {
-			tracks[i - 1] = trackMap.get(i) || { clips: [] };
-		}
+		// Use the actual tracks array to preserve empty tracks
+		const tracks: TrackType[] = this.tracks.map((track, _trackIndex) => {
+			const clipsOnTrack = track.filter(player => player && !this.clipsToDispose.includes(player)).map(player => player.clipConfiguration);
+			return { clips: clipsOnTrack };
+		});
 
 		return {
 			timeline: {
@@ -196,8 +195,20 @@ export class Edit extends Entity {
 
 		return clipsByTrack[clipIdx].clipConfiguration;
 	}
+
+	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
+		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
+		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
+
+		return clipsByTrack[clipIdx];
+	}
 	public deleteClip(trackIdx: number, clipIdx: number): void {
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
+		this.executeCommand(command);
+	}
+	
+	public splitClip(trackIndex: number, clipIndex: number, splitTime: number): void {
+		const command = new SplitClipCommand(trackIndex, clipIndex, splitTime);
 		this.executeCommand(command);
 	}
 
@@ -245,26 +256,6 @@ export class Edit extends Entity {
 		}
 	}
 	/** @internal */
-	public getSelectedClip(): Player | null {
-		return this.selectedClip;
-	}
-	/** @internal */
-	public setSelectedClip(clip: Player): void {
-		this.selectedClip = clip;
-
-		const trackIndex = clip.layer - 1;
-		const clipsByTrack = this.clips.filter((clipItem: Player) => clipItem.layer === clip.layer);
-		const clipIndex = clipsByTrack.indexOf(clip);
-
-		const eventData = {
-			clip: clip.clipConfiguration,
-			trackIndex,
-			clipIndex
-		};
-
-		this.events.emit("clip:selected", eventData);
-	}
-	/** @internal */
 	public setUpdatedClip(clip: Player, initialClipConfig: ClipType | null = null, finalClipConfig: ClipType | null = null): void {
 		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig);
 		this.executeCommand(command);
@@ -273,6 +264,10 @@ export class Edit extends Entity {
 	public updateTextContent(clip: Player, newText: string, initialConfig: ClipType): void {
 		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
 		this.executeCommand(command);
+	}
+
+	public executeEditCommand(command: EditCommand): void | Promise<void> {
+		return this.executeCommand(command);
 	}
 
 	private executeCommand(command: EditCommand): void | Promise<void> {
@@ -286,10 +281,19 @@ export class Edit extends Entity {
 
 	private createCommandContext(): CommandContext {
 		return {
-			getClips: () => [...this.clips],
+			getClips: () => this.clips,
 			getTracks: () => this.tracks,
+			getTrack: (trackIndex) => {
+				if (trackIndex >= 0 && trackIndex < this.tracks.length) {
+					return this.tracks[trackIndex];
+				}
+				return null;
+			},
 			getContainer: () => this.getContainer(),
 			addPlayer: (trackIdx, player) => this.addPlayer(trackIdx, player),
+			addPlayerToContainer: (trackIdx, player) => {
+				this.addPlayerToContainer(trackIdx, player);
+			},
 			createPlayerFromAssetType: clipConfiguration => this.createPlayerFromAssetType(clipConfiguration),
 			queueDisposeClip: player => this.queueDisposeClip(player),
 			disposeClips: () => this.disposeClips(),
@@ -306,7 +310,15 @@ export class Edit extends Entity {
 				clip.draw();
 			},
 			updateDuration: () => this.updateTotalDuration(),
-			emitEvent: (name, data) => this.events.emit(name, data)
+			emitEvent: (name, data) => this.events.emit(name, data),
+			findClipIndices: player => this.findClipIndices(player),
+			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
+			getSelectedClip: () => this.selectedClip,
+			setSelectedClip: clip => {
+				this.selectedClip = clip;
+			},
+			movePlayerToTrackContainer: (player, fromTrackIdx, toTrackIdx) => this.movePlayerToTrackContainer(player, fromTrackIdx, toTrackIdx),
+			getEditState: () => this.getEdit()
 		};
 	}
 
@@ -342,7 +354,7 @@ export class Edit extends Entity {
 				}
 			}
 		} catch (error) {
-			console.warn("Attempting to unmount an unmounted clip.");
+			console.warn(`Attempting to unmount an unmounted clip: ${error}`);
 		}
 
 		this.unloadClipAssets(clip);
@@ -378,7 +390,54 @@ export class Edit extends Entity {
 			}
 		}
 
+		const previousDuration = this.totalDuration;
 		this.totalDuration = maxDuration;
+		
+		// Emit event if duration changed
+		if (previousDuration !== this.totalDuration) {
+			this.events.emit('duration:changed', { duration: this.totalDuration });
+		}
+	}
+
+	private addPlayerToContainer(trackIndex: number, player: Player): void {
+		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
+		const trackContainerKey = `shotstack-track-${zIndex}`;
+		let trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
+		
+		if (!trackContainer) {
+			trackContainer = new pixi.Container({ label: trackContainerKey, zIndex });
+			this.getContainer().addChild(trackContainer);
+		}
+		
+		trackContainer.addChild(player.getContainer());
+	}
+
+	// Move a player's container to the appropriate track container
+	private movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void {
+		if (fromTrackIdx === toTrackIdx) return;
+
+		// Calculate z-indices for track containers
+		const fromZIndex = 100000 - (fromTrackIdx + 1) * Edit.ZIndexPadding;
+		const toZIndex = 100000 - (toTrackIdx + 1) * Edit.ZIndexPadding;
+
+		// Get track containers
+		const fromTrackContainerKey = `shotstack-track-${fromZIndex}`;
+		const toTrackContainerKey = `shotstack-track-${toZIndex}`;
+
+		const fromTrackContainer = this.getContainer().getChildByLabel(fromTrackContainerKey, false);
+		let toTrackContainer = this.getContainer().getChildByLabel(toTrackContainerKey, false);
+
+		// Create new track container if it doesn't exist
+		if (!toTrackContainer) {
+			toTrackContainer = new pixi.Container({ label: toTrackContainerKey, zIndex: toZIndex });
+			this.getContainer().addChild(toTrackContainer);
+		}
+
+		// Move player container from old track container to new one
+		if (fromTrackContainer) {
+			fromTrackContainer.removeChild(player.getContainer());
+		}
+		toTrackContainer.addChild(player.getContainer());
 	}
 	private createPlayerFromAssetType(clipConfiguration: ClipType): Player {
 		if (!clipConfiguration.asset?.type) {
@@ -452,5 +511,91 @@ export class Edit extends Entity {
 		}
 
 		this.updateTotalDuration();
+	}
+
+	// Selection management methods
+	public selectClip(trackIndex: number, clipIndex: number): void {
+		const command = new SelectClipCommand(trackIndex, clipIndex);
+		this.executeCommand(command);
+	}
+
+	public clearSelection(): void {
+		const command = new ClearSelectionCommand();
+		this.executeCommand(command);
+	}
+
+	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
+		if (!this.selectedClip) return false;
+
+		const selectedTrackIndex = this.selectedClip.layer - 1;
+		const selectedClipIndex = this.tracks[selectedTrackIndex].indexOf(this.selectedClip);
+
+		return trackIndex === selectedTrackIndex && clipIndex === selectedClipIndex;
+	}
+
+	public getSelectedClipInfo(): { trackIndex: number; clipIndex: number; player: Player } | null {
+		if (!this.selectedClip) return null;
+
+		const trackIndex = this.selectedClip.layer - 1;
+		const clipIndex = this.tracks[trackIndex].indexOf(this.selectedClip);
+
+		return { trackIndex, clipIndex, player: this.selectedClip };
+	}
+
+	// Clip lookup methods
+	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
+		for (let trackIndex = 0; trackIndex < this.tracks.length; trackIndex += 1) {
+			const clipIndex = this.tracks[trackIndex].indexOf(player);
+			if (clipIndex !== -1) {
+				return { trackIndex, clipIndex };
+			}
+		}
+		return null;
+	}
+
+	public getClipAt(trackIndex: number, clipIndex: number): Player | null {
+		if (trackIndex >= 0 && trackIndex < this.tracks.length && clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
+			return this.tracks[trackIndex][clipIndex];
+		}
+		return null;
+	}
+
+	// Clean encapsulation APIs for selection
+	public selectPlayer(player: Player): void {
+		const indices = this.findClipIndices(player);
+		if (indices) {
+			this.selectClip(indices.trackIndex, indices.clipIndex);
+		}
+	}
+
+	public isPlayerSelected(player: Player): boolean {
+		return this.selectedClip === player;
+	}
+
+	// Event-driven architecture setup
+	private setupIntentListeners(): void {
+		// Handle Timeline intent events
+		this.events.on("timeline:clip:clicked", (data: { player: Player; trackIndex: number; clipIndex: number }) => {
+			// Use the player object directly to ensure correct selection
+			if (data.player) {
+				this.selectPlayer(data.player);
+			} else {
+				// Fallback to indices if player not provided
+				this.selectClip(data.trackIndex, data.clipIndex);
+			}
+		});
+
+		this.events.on("timeline:background:clicked", () => {
+			this.clearSelection();
+		});
+
+		// Handle Canvas intent events
+		this.events.on("canvas:clip:clicked", (data: { player: Player }) => {
+			this.selectPlayer(data.player);
+		});
+
+		this.events.on("canvas:background:clicked", () => {
+			this.clearSelection();
+		});
 	}
 }

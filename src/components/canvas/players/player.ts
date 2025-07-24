@@ -187,7 +187,7 @@ export abstract class Player extends Entity {
 
 	public override update(_: number, __: number): void {
 		this.getContainer().visible = this.isActive();
-		this.getContainer().zIndex = this.layer;
+		this.getContainer().zIndex = 100000 - this.layer * 100;
 		if (!this.isActive()) {
 			return;
 		}
@@ -215,7 +215,10 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		if ((!this.isActive() || this.edit.getSelectedClip() !== this) && !this.isHovering) {
+		// Check if this clip is selected using clean API
+		const isSelected = this.edit.isPlayerSelected(this);
+
+		if ((!this.isActive() || !isSelected) && !this.isHovering) {
 			this.outline.clear();
 			this.topLeftScaleHandle?.clear();
 			this.topRightScaleHandle?.clear();
@@ -241,7 +244,7 @@ export abstract class Player extends Entity {
 			!this.bottomRightScaleHandle ||
 			!this.bottomLeftScaleHandle ||
 			!this.isActive() ||
-			this.edit.getSelectedClip() !== this
+			!isSelected
 		) {
 			return;
 		}
@@ -381,7 +384,8 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		this.edit.setSelectedClip(this);
+		// Emit intent event for canvas click
+		this.edit.events.emit("canvas:clip:clicked", { player: this });
 
 		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
 

@@ -1,3 +1,6 @@
+import { Timeline } from "./components/timeline";
+import theme from "./themes/minimal.json";
+
 import { Edit, Canvas, Controls } from "./index";
 
 /**
@@ -6,10 +9,9 @@ import { Edit, Canvas, Controls } from "./index";
  */
 async function main() {
 	try {
-		// 1. Retrieve an edit from a template
-		const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
-		const response = await fetch(templateUrl);
-		const template = await response.json();
+		// 1. Load the hello.json template from local file
+		const templateModule = await import("./templates/hello.json");
+		const template = templateModule.default as any;
 
 		// 2. Initialize the edit with dimensions and background color
 		const edit = new Edit(template.output.size, template.timeline.background);
@@ -22,9 +24,20 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5. Add keyboard controls
+		// 5. Initialize the Timeline with size and theme
+		const timeline = new Timeline(edit, {
+			width: template.output.size.width,
+			height: 300
+		}, {
+			theme  // Uses imported theme from JSON
+		});
+		await timeline.load(); // Renders to [data-shotstack-timeline] element
+
+		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
+
+		// TimelineV2 has its own animation loop, no need to register with canvas
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);
@@ -33,6 +46,10 @@ async function main() {
 		edit.events.on("clip:updated", data => {
 			console.log("Clip updated:", data);
 		});
+
+		edit.events.on("track:created", data => {
+			console.log("Track created:", data);
+		})
 
 		// Additional helpful information for the demo
 		console.log("Demo loaded successfully! Try the following keyboard controls:");
