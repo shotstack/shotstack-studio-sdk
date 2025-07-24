@@ -1,6 +1,8 @@
 import type { Player } from "@canvas/players/player";
 
 import type { Clip } from "../schemas/clip";
+import type { VideoAsset } from "../schemas/video-asset";
+import type { AudioAsset } from "../schemas/audio-asset";
 
 import type { EditCommand, CommandContext } from "./types";
 
@@ -49,20 +51,26 @@ export class SplitClipCommand implements EditCommand {
 			start: clipStart + splitPoint,
 			length: clipLength - splitPoint
 		};
+		
+		// Deep clone assets to avoid shared references
+		if (clipConfig.asset) {
+			leftClip.asset = { ...clipConfig.asset };
+			rightClip.asset = { ...clipConfig.asset };
+		}
 
 		// Adjust trim values for video/audio assets
-		if (clipConfig.asset && 'trim' in clipConfig.asset && typeof clipConfig.asset.trim === 'number') {
+		if (clipConfig.asset && (clipConfig.asset.type === 'video' || clipConfig.asset.type === 'audio')) {
 			// The trim value indicates how much was trimmed from the start of the original asset
-			const originalTrim = clipConfig.asset.trim || 0;
+			const originalTrim = (clipConfig.asset as VideoAsset | AudioAsset).trim || 0;
 			
-			// Left clip keeps the same trim
-			if (leftClip.asset && 'trim' in leftClip.asset) {
-				leftClip.asset.trim = originalTrim;
+			// Left clip keeps the original trim
+			if (leftClip.asset && (leftClip.asset.type === 'video' || leftClip.asset.type === 'audio')) {
+				(leftClip.asset as VideoAsset | AudioAsset).trim = originalTrim;
 			}
 			
-			// Right clip needs to trim the original trim plus the split point
-			if (rightClip.asset && 'trim' in rightClip.asset) {
-				rightClip.asset.trim = originalTrim + splitPoint;
+			// Right clip needs trim = original trim + split point
+			if (rightClip.asset && (rightClip.asset.type === 'video' || rightClip.asset.type === 'audio')) {
+				(rightClip.asset as VideoAsset | AudioAsset).trim = originalTrim + splitPoint;
 			}
 		}
 

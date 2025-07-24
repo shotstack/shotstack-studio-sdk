@@ -2,8 +2,6 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
-import { TimelineTheme } from "../../../core/theme";
-
 import { TIMELINE_CONSTANTS, TimelineFeatureEvents, PlayheadFeatureOptions } from "./types";
 
 export class PlayheadFeature extends Entity {

@@ -3,6 +3,7 @@ import { Entity } from "@core/shared/entity";
 import * as PIXI from "pixi.js";
 
 import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
+
 import { InteractionController } from "./interaction";
 import { 
 	DragPreviewManager, 
