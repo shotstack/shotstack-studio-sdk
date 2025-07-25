@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { TimelineTheme } from "../../../core/theme";
 import { TRACK_CONSTANTS } from "../constants";
+import { SelectionOverlayRenderer } from "../managers/selection-overlay-renderer";
 import { ClipConfig } from "../types/timeline";
 
 import { VisualClip, VisualClipOptions } from "./visual-clip";
@@ -17,6 +18,7 @@ export interface VisualTrackOptions {
 	trackIndex: number;
 	width: number;
 	theme: TimelineTheme;
+	selectionRenderer?: SelectionOverlayRenderer;
 }
 
 export class VisualTrack extends Entity {
@@ -99,7 +101,8 @@ export class VisualTrack extends Entity {
 					trackHeight: this.options.trackHeight,
 					trackIndex: this.options.trackIndex,
 					clipIndex,
-					theme: this.options.theme
+					theme: this.options.theme,
+					selectionRenderer: this.options.selectionRenderer
 				};
 
 				const visualClip = new VisualClip(clipConfig, visualClipOptions);

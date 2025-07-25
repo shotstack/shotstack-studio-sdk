@@ -5,8 +5,12 @@ import { TimelineLayout } from "../timeline-layout";
 import { EditType, ClipInfo } from "../types/timeline";
 import { VisualTrack, VisualTrackOptions } from "../visual/visual-track";
 
+import { SelectionOverlayRenderer } from "./selection-overlay-renderer";
+
 export class VisualTrackManager {
 	private visualTracks: VisualTrack[] = [];
+	private selectionOverlay: PIXI.Container;
+	private selectionRenderer: SelectionOverlayRenderer;
 
 	constructor(
 		private container: PIXI.Container,
@@ -14,7 +18,17 @@ export class VisualTrackManager {
 		private theme: TimelineTheme,
 		private getPixelsPerSecond: () => number,
 		private getExtendedTimelineWidth: () => number
-	) {}
+	) {
+		// Create selection overlay container
+		this.selectionOverlay = new PIXI.Container();
+		this.selectionOverlay.label = "selectionOverlay";
+
+		// Add as last child to ensure it renders on top
+		this.container.addChild(this.selectionOverlay);
+		
+		// Create selection renderer
+		this.selectionRenderer = new SelectionOverlayRenderer(this.selectionOverlay, this.theme);
+	}
 
 	public async rebuildFromEdit(editType: EditType, pixelsPerSecond: number): Promise<void> {
 		// Create visual representation directly from event payload
@@ -34,7 +48,8 @@ export class VisualTrackManager {
 				trackHeight: this.layout.trackHeight,
 				trackIndex,
 				width: this.getExtendedTimelineWidth(),
-				theme: this.theme
+				theme: this.theme,
+				selectionRenderer: this.selectionRenderer
 			};
 
 			const visualTrack = new VisualTrack(visualTrackOptions);
@@ -47,6 +62,9 @@ export class VisualTrackManager {
 			this.container.addChild(visualTrack.getContainer());
 			this.visualTracks.push(visualTrack);
 		}
+
+		// Ensure selection overlay stays on top
+		this.container.setChildIndex(this.selectionOverlay, this.container.children.length - 1);
 	}
 
 	public clearAllVisualState(): void {
@@ -57,6 +75,9 @@ export class VisualTrackManager {
 		});
 
 		this.visualTracks = [];
+
+		// Clear all selections
+		this.selectionRenderer.clearAllSelections();
 	}
 
 	public updateVisualSelection(trackIndex: number, clipIndex: number): void {
@@ -127,7 +148,25 @@ export class VisualTrackManager {
 		});
 	}
 
+	public getSelectionOverlay(): PIXI.Container {
+		return this.selectionOverlay;
+	}
+	
+	public getSelectionRenderer(): SelectionOverlayRenderer {
+		return this.selectionRenderer;
+	}
+
 	public dispose(): void {
 		this.clearAllVisualState();
+
+		// Clean up selection renderer and overlay
+		if (this.selectionRenderer) {
+			this.selectionRenderer.dispose();
+		}
+		
+		if (this.selectionOverlay && this.container) {
+			this.container.removeChild(this.selectionOverlay);
+			this.selectionOverlay.destroy();
+		}
 	}
 }

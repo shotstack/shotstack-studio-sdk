@@ -3,6 +3,7 @@ import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../../core/theme";
 import { CLIP_CONSTANTS } from "../constants";
+import { SelectionOverlayRenderer } from "../managers/selection-overlay-renderer";
 import { getAssetDisplayName, TimelineAsset } from "../types/assets";
 import { ClipConfig } from "../types/timeline";
 
@@ -12,6 +13,7 @@ export interface VisualClipOptions {
 	trackIndex: number;
 	clipIndex: number;
 	theme: TimelineTheme;
+	selectionRenderer?: SelectionOverlayRenderer;
 }
 
 export class VisualClip extends Entity {
@@ -20,6 +22,9 @@ export class VisualClip extends Entity {
 	private graphics: PIXI.Graphics;
 	private background: PIXI.Graphics;
 	private text: PIXI.Text;
+	private selectionRenderer: SelectionOverlayRenderer | undefined;
+	private lastGlobalX: number = -1;
+	private lastGlobalY: number = -1;
 	private visualState: {
 		mode: "normal" | "selected" | "dragging" | "resizing" | "disabled";
 		previewWidth?: number;
@@ -34,6 +39,7 @@ export class VisualClip extends Entity {
 		super();
 		this.clipConfig = clipConfig;
 		this.options = options;
+		this.selectionRenderer = options.selectionRenderer;
 		this.graphics = new PIXI.Graphics();
 		this.background = new PIXI.Graphics();
 		this.text = new PIXI.Text();
@@ -137,24 +143,45 @@ export class VisualClip extends Entity {
 
 	private drawClipBorder(width: number, height: number): void {
 		const styles = this.getStateStyles();
-		const isSelected = this.visualState.mode === "selected";
-		const borderWidth = isSelected ? this.BORDER_WIDTH * CLIP_CONSTANTS.SELECTED_BORDER_MULTIPLIER : this.BORDER_WIDTH;
-
+		
+		// Always draw the basic border in the clip container
+		const borderWidth = this.BORDER_WIDTH;
 		this.graphics.clear();
 		this.graphics.roundRect(0, 0, width, height, this.CORNER_RADIUS);
 		this.graphics.stroke({ width: borderWidth, color: styles.borderColor });
 
-		// Add selection highlight
-		if (isSelected) {
-			this.graphics.roundRect(
-				-this.BORDER_WIDTH,
-				-this.BORDER_WIDTH,
-				width + this.BORDER_WIDTH * 2,
-				height + this.BORDER_WIDTH * 2,
-				this.CORNER_RADIUS
-			);
-			this.graphics.stroke({ width: 1, color: this.options.theme.colors.interaction.focus });
+		// Handle selection highlight via renderer
+		this.updateSelectionState(width, height);
+	}
+
+	private updateSelectionState(width: number, height: number): void {
+		if (!this.selectionRenderer) return;
+
+		const isSelected = this.visualState.mode === "selected";
+		const clipId = this.getClipId();
+		
+		if (!isSelected) {
+			this.selectionRenderer.clearSelection(clipId);
+			return;
 		}
+
+		// Calculate global position only if position has changed
+		const container = this.getContainer();
+		const globalPos = container.toGlobal(new PIXI.Point(0, 0));
+		
+		// Convert to overlay coordinates
+		const overlayContainer = this.selectionRenderer.getOverlay();
+		const overlayPos = overlayContainer.toLocal(globalPos);
+		
+		// Update selection via renderer
+		this.selectionRenderer.renderSelection(clipId, {
+			x: overlayPos.x,
+			y: overlayPos.y,
+			width,
+			height,
+			cornerRadius: this.CORNER_RADIUS,
+			borderWidth: this.BORDER_WIDTH
+		}, isSelected);
 	}
 
 	private getClipColor(): number {
@@ -260,6 +287,13 @@ export class VisualClip extends Entity {
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
 		this.updateOptions({ pixelsPerSecond });
+		
+		// Update selection state with new dimensions
+		if (this.visualState.mode === "selected") {
+			const width = this.getEffectiveWidth();
+			const height = this.options.trackHeight;
+			this.updateSelectionState(width, height);
+		}
 	}
 
 	public updateOptions(updates: Partial<VisualClipOptions>): void {
@@ -289,6 +323,10 @@ export class VisualClip extends Entity {
 	public getSelected(): boolean {
 		return this.visualState.mode === "selected";
 	}
+	
+	public getClipId(): string {
+		return `${this.options.trackIndex}-${this.options.clipIndex}`;
+	}
 
 	public getDragging(): boolean {
 		return this.visualState.mode === "dragging";
@@ -302,9 +340,23 @@ export class VisualClip extends Entity {
 
 	// Required Entity methods
 	public update(_deltaTime: number, _elapsed: number): void {
-		// VisualClip doesn't need frame-based updates
-		// All updates are driven by state changes
+		// Update selection position if selected and position has changed
+		if (this.visualState.mode === "selected" && this.selectionRenderer) {
+			const container = this.getContainer();
+			const globalPos = container.toGlobal(new PIXI.Point(0, 0));
+			
+			// Check if position has actually changed to avoid unnecessary updates
+			if (globalPos.x !== this.lastGlobalX || globalPos.y !== this.lastGlobalY) {
+				this.lastGlobalX = globalPos.x;
+				this.lastGlobalY = globalPos.y;
+				
+				const width = this.getEffectiveWidth();
+				const height = this.options.trackHeight;
+				this.updateSelectionState(width, height);
+			}
+		}
 	}
+
 
 	public draw(): void {
 		// Draw is called by the Entity system
@@ -313,6 +365,11 @@ export class VisualClip extends Entity {
 	}
 
 	public dispose(): void {
+		// Clean up selection via renderer
+		if (this.selectionRenderer) {
+			this.selectionRenderer.clearSelection(this.getClipId());
+		}
+		
 		// Clean up graphics resources
 		this.background.destroy();
 		this.graphics.destroy();
