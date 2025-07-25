@@ -1,8 +1,8 @@
 import type { Player } from "@canvas/players/player";
 
+import type { AudioAsset } from "../schemas/audio-asset";
 import type { Clip } from "../schemas/clip";
 import type { VideoAsset } from "../schemas/video-asset";
-import type { AudioAsset } from "../schemas/audio-asset";
 
 import type { EditCommand, CommandContext } from "./types";
 
