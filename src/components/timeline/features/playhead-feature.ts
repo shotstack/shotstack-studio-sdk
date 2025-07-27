@@ -38,7 +38,7 @@ export class PlayheadFeature extends Entity {
 	/** @internal */
 	private drawPlayhead(): void {
 		const x = this.currentTime * this.options.pixelsPerSecond;
-		const playheadColor = this.options.theme?.colors.interaction.playhead ?? 0xff4444;
+		const playheadColor = this.options.theme?.timeline.playhead ?? 0xff4444;
 		const lineWidth = TIMELINE_CONSTANTS.PLAYHEAD.LINE_WIDTH;
 		const centerX = x + lineWidth / 2;
 

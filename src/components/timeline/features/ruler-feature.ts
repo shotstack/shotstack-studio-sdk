@@ -56,8 +56,8 @@ export class RulerFeature extends Entity {
 		this.rulerBackground.clear();
 		const rulerWidth = this.calculateRulerWidth();
 
-		const rulerColor = this.theme?.colors.structure.ruler || 0x404040;
-		const borderColor = this.theme?.colors.structure.border || 0x606060;
+		const rulerColor = this.theme?.timeline.ruler.background || 0x404040;
+		const borderColor = this.theme?.timeline.tracks.border || 0x606060;
 
 		this.rulerBackground.rect(0, 0, rulerWidth, this.rulerHeight);
 		this.rulerBackground.fill(rulerColor);
@@ -70,7 +70,7 @@ export class RulerFeature extends Entity {
 
 		const interval = this.getTimeInterval();
 		const visibleDuration = this.getVisibleDuration();
-		const dotColor = this.theme?.colors.structure.rulerMarkers || 0x666666;
+		const dotColor = this.theme?.timeline.ruler.markers || 0x666666;
 		const dotY = this.rulerHeight * 0.5;
 
 		// Determine number of dots between labels based on interval
@@ -99,7 +99,7 @@ export class RulerFeature extends Entity {
 
 		const interval = this.getTimeInterval();
 		const visibleDuration = this.getVisibleDuration();
-		const textColor = this.theme?.colors.ui.text || 0xffffff;
+		const textColor = this.theme?.timeline.ruler.text || 0xffffff;
 
 		// Create label style
 		const labelStyle = {

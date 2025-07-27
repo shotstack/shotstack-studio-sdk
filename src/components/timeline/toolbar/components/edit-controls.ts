@@ -31,9 +31,9 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 		// Create background
 		this.cutButtonBackground = new PIXI.Graphics();
 		this.cutButtonBackground.roundRect(0, 0, WIDTH, HEIGHT, TOOLBAR_CONSTANTS.BORDER_RADIUS);
-		this.cutButtonBackground.fill({ color: this.theme.colors.toolbar.surface || 0x444444 });
+		this.cutButtonBackground.fill({ color: this.theme.timeline.toolbar.surface || 0x444444 });
 		this.cutButtonBackground.stroke({
-			color: this.theme.colors.structure.border || 0x666666,
+			color: this.theme.timeline.tracks.border || 0x666666,
 			width: 1
 		});
 		this.cutButton.addChild(this.cutButtonBackground);
@@ -42,7 +42,7 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 		const textStyle = new PIXI.TextStyle({
 			fontFamily: "Arial",
 			fontSize: FONT_SIZE,
-			fill: this.theme.colors.ui.text || 0xffffff
+			fill: this.theme.timeline.toolbar.text || 0xffffff
 		});
 		this.cutButtonText = new PIXI.Text("SPLIT", textStyle);
 		this.cutButtonText.anchor.set(0.5);
@@ -86,18 +86,18 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 			TOOLBAR_CONSTANTS.BORDER_RADIUS
 		);
 
-		let fillColor = this.theme.colors.toolbar.surface || 0x444444;
+		let fillColor = this.theme.timeline.toolbar.surface || 0x444444;
 		const alpha = 1;
 
 		if (pressed) {
-			fillColor = this.theme.colors.toolbar.active || 0x333333;
+			fillColor = this.theme.timeline.toolbar.active || 0x333333;
 		} else if (hovering) {
-			fillColor = this.theme.colors.toolbar.hover || 0x555555;
+			fillColor = this.theme.timeline.toolbar.hover || 0x555555;
 		}
 
 		this.cutButtonBackground.fill({ color: fillColor, alpha });
 		this.cutButtonBackground.stroke({
-			color: this.theme.colors.structure.border || 0x666666,
+			color: this.theme.timeline.tracks.border || 0x666666,
 			width: 1
 		});
 	}
@@ -129,7 +129,7 @@ export class EditControls extends PIXI.Container implements ToolbarComponent {
 	public updateTheme(theme: TimelineTheme): void {
 		this.theme = theme;
 		this.updateButtonVisual(false, false);
-		this.cutButtonText.style.fill = theme.colors.ui.text || 0xffffff;
+		this.cutButtonText.style.fill = theme.timeline.toolbar.text || 0xffffff;
 	}
 
 	public override destroy(): void {

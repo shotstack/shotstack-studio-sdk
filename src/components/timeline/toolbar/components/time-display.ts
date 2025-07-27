@@ -31,7 +31,7 @@ export class TimeDisplay extends PIXI.Container implements ToolbarComponent {
 		const textStyle = new PIXI.TextStyle({
 			fontFamily: TOOLBAR_CONSTANTS.TIME_DISPLAY.FONT_FAMILY,
 			fontSize: TOOLBAR_CONSTANTS.TIME_DISPLAY.FONT_SIZE,
-			fill: this.theme.colors.ui.text
+			fill: this.theme.timeline.toolbar.text
 		});
 
 		this.timeText = new PIXI.Text("0:00 / 0:00", textStyle);
@@ -86,7 +86,7 @@ export class TimeDisplay extends PIXI.Container implements ToolbarComponent {
 
 	public updateTheme(theme: TimelineTheme): void {
 		this.theme = theme;
-		this.timeText.style.fill = theme.colors.ui.text;
+		this.timeText.style.fill = theme.timeline.toolbar.text;
 	}
 
 	public override destroy(): void {

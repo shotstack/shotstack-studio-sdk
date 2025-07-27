@@ -65,19 +65,19 @@ export class VisualTrack extends Entity {
 		this.background.clear();
 
 		// Alternating track colors using theme
-		const bgColor = this.options.trackIndex % 2 === 0 ? theme.colors.structure.surface : theme.colors.structure.surfaceAlt;
+		const bgColor = this.options.trackIndex % 2 === 0 ? theme.timeline.tracks.surface : theme.timeline.tracks.surfaceAlt;
 
 		this.background.rect(0, 0, width, height);
 		this.background.fill({ color: bgColor, alpha: TRACK_CONSTANTS.DEFAULT_OPACITY });
 
 		// Draw track border using theme
 		this.background.rect(0, 0, width, height);
-		this.background.stroke({ width: TRACK_CONSTANTS.BORDER_WIDTH, color: theme.colors.structure.border });
+		this.background.stroke({ width: TRACK_CONSTANTS.BORDER_WIDTH, color: theme.timeline.tracks.border });
 
 		// Draw track separator line at bottom using theme
 		this.background.moveTo(0, height - 1);
 		this.background.lineTo(width, height - 1);
-		this.background.stroke({ width: TRACK_CONSTANTS.BORDER_WIDTH, color: theme.colors.structure.divider });
+		this.background.stroke({ width: TRACK_CONSTANTS.BORDER_WIDTH, color: theme.timeline.divider });
 	}
 
 	public rebuildFromTrackData(trackData: TrackType, pixelsPerSecond: number): void {

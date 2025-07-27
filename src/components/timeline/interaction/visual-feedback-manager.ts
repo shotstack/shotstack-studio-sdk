@@ -19,7 +19,7 @@ export class VisualFeedbackManager {
 		const y = dropZone.position * layout.trackHeight;
 
 		const theme = this.timeline.getTheme();
-		const color = theme.colors.interaction.trackInsertion;
+		const color = theme.timeline.trackInsertion;
 
 		// Draw highlighted line with thickness
 		graphics.setStrokeStyle({ width: 4, color, alpha: 0.8 });
@@ -56,7 +56,7 @@ export class VisualFeedbackManager {
 			const startY = minTrack * layout.trackHeight;
 			const endY = (maxTrack + 1) * layout.trackHeight;
 
-			const color = isPlayhead ? theme.colors.interaction.playhead : theme.colors.interaction.snapGuide;
+			const color = isPlayhead ? theme.timeline.playhead : theme.timeline.snapGuide;
 
 			// Glow effect
 			graphics.setStrokeStyle({ width: 3, color, alpha: 0.3 });
@@ -89,7 +89,7 @@ export class VisualFeedbackManager {
 		const height = layout.trackHeight;
 
 		const theme = this.timeline.getTheme();
-		const color = theme.colors.interaction.dropZone;
+		const color = theme.timeline.dropZone;
 
 		// Draw subtle highlight for target track
 		graphics.rect(0, y, width, height);

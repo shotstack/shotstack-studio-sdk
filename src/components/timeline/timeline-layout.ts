@@ -43,8 +43,8 @@ export class TimelineLayout {
 
 		// Calculate toolbar and ruler heights proportionally
 		// Use theme values if available, otherwise calculate from timeline height
-		let toolbarHeight = this.theme?.dimensions?.toolbarHeight || Math.round(timelineHeight * TimelineLayout.TOOLBAR_HEIGHT_RATIO);
-		let rulerHeight = this.theme?.dimensions?.rulerHeight || Math.round(timelineHeight * TimelineLayout.RULER_HEIGHT_RATIO);
+		let toolbarHeight = this.theme?.timeline.toolbar.height || Math.round(timelineHeight * TimelineLayout.TOOLBAR_HEIGHT_RATIO);
+		let rulerHeight = this.theme?.timeline.ruler.height || Math.round(timelineHeight * TimelineLayout.RULER_HEIGHT_RATIO);
 
 		// Apply minimum heights to ensure usability
 		toolbarHeight = Math.max(toolbarHeight, TimelineLayout.TOOLBAR_HEIGHT_DEFAULT);

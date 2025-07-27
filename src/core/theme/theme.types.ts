@@ -1,19 +1,31 @@
 // Input theme uses hex strings for developer convenience
 export interface TimelineThemeInput {
-	colors: {
-		// Structural colors (the "canvas")
-		structure: {
-			background: string; // Main timeline background
-			surface: string; // Track backgrounds
-			surfaceAlt: string; // Alternating track backgrounds
-			border: string; // Primary borders
-			divider: string; // Subtle separators
-			ruler: string; // Ruler background
-			rulerMarkers: string; // Ruler time marker dots
+	timeline: {
+		background: string;
+		divider: string;
+		toolbar: {
+			background: string;
+			surface: string;
+			hover: string;
+			active: string;
+			divider: string;
+			icon: string;
+			text: string;
+			height?: number;
 		};
-
-		// Asset colors (the "content")
-		assets: {
+		ruler: {
+			background: string;
+			text: string;
+			markers: string;
+			height?: number;
+		};
+		tracks: {
+			surface: string;
+			surfaceAlt: string;
+			border: string;
+			height?: number;
+		};
+		clips: {
 			video: string;
 			audio: string;
 			image: string;
@@ -21,59 +33,45 @@ export interface TimelineThemeInput {
 			shape: string;
 			html: string;
 			luma: string;
-			default: string; // Unknown asset types
-		};
-
-		// Interaction colors (the "feedback")
-		interaction: {
+			default: string;
 			selected: string;
-			dropZone: string;
-			snapGuide: string;
-			playhead: string;
-			trackInsertion: string; // Track insertion indicator
+			radius?: number;
 		};
-
-		// Text and UI elements
-		ui: {
-			text: string; // Primary text
-		};
-
-		// Toolbar colors
-		toolbar: {
-			background: string; // Toolbar background
-			surface: string; // Button background
-			hover: string; // Button hover state
-			active: string; // Button active/pressed state
-			divider: string; // Separator lines
-			icon: string; // Toolbar button icons
-		};
-	};
-
-	// Optional dimension overrides
-	dimensions?: {
-		toolbarHeight?: number;
-		trackHeight?: number;
-		rulerHeight?: number;
-		clipRadius?: number;
+		playhead: string;
+		snapGuide: string;
+		dropZone: string;
+		trackInsertion: string;
 	};
 }
 
 // Internal theme uses PIXI number format
 export interface TimelineTheme {
-	colors: {
-		// Structural colors (the "canvas")
-		structure: {
-			background: number; // Main timeline background
-			surface: number; // Track backgrounds
-			surfaceAlt: number; // Alternating track backgrounds
-			border: number; // Primary borders
-			divider: number; // Subtle separators
-			ruler: number; // Ruler background
-			rulerMarkers: number; // Ruler time marker dots
+	timeline: {
+		background: number;
+		divider: number;
+		toolbar: {
+			background: number;
+			surface: number;
+			hover: number;
+			active: number;
+			divider: number;
+			icon: number;
+			text: number;
+			height: number;
 		};
-
-		// Asset colors (the "content")
-		assets: {
+		ruler: {
+			background: number;
+			text: number;
+			markers: number;
+			height: number;
+		};
+		tracks: {
+			surface: number;
+			surfaceAlt: number;
+			border: number;
+			height: number;
+		};
+		clips: {
 			video: number;
 			audio: number;
 			image: number;
@@ -81,40 +79,14 @@ export interface TimelineTheme {
 			shape: number;
 			html: number;
 			luma: number;
-			default: number; // Unknown asset types
-		};
-
-		// Interaction colors (the "feedback")
-		interaction: {
+			default: number;
 			selected: number;
-			dropZone: number;
-			snapGuide: number;
-			playhead: number;
-			trackInsertion: number; // Track insertion indicator
+			radius: number;
 		};
-
-		// Text and UI elements
-		ui: {
-			text: number; // Primary text
-		};
-
-		// Toolbar colors
-		toolbar: {
-			background: number; // Toolbar background
-			surface: number; // Button background
-			hover: number; // Button hover state
-			active: number; // Button active/pressed state
-			divider: number; // Separator lines
-			icon: number; // Toolbar button icons
-		};
-	};
-
-	// Optional dimension overrides
-	dimensions?: {
-		toolbarHeight?: number;
-		trackHeight?: number;
-		rulerHeight?: number;
-		clipRadius?: number;
+		playhead: number;
+		snapGuide: number;
+		dropZone: number;
+		trackInsertion: number;
 	};
 }
 

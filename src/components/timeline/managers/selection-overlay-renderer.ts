@@ -43,7 +43,7 @@ export class SelectionOverlayRenderer {
 		// Draw selection border
 		graphics.setStrokeStyle({
 			width: bounds.borderWidth * CLIP_CONSTANTS.SELECTED_BORDER_MULTIPLIER,
-			color: this.theme.colors.interaction.selected
+			color: this.theme.timeline.clips.selected
 		});
 		graphics.roundRect(0, 0, bounds.width, bounds.height, bounds.cornerRadius);
 		graphics.stroke();

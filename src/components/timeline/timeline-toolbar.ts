@@ -58,12 +58,12 @@ export class TimelineToolbar extends PIXI.Container {
 	private drawBackground(): void {
 		this.background.clear();
 		this.background.rect(0, 0, this.toolbarWidth, this.toolbarHeight);
-		this.background.fill({ color: this.theme.colors.toolbar.background });
+		this.background.fill({ color: this.theme.timeline.toolbar.background });
 
 		// Add subtle bottom border to separate from ruler
 		this.background.setStrokeStyle({
 			width: 1,
-			color: this.theme.colors.toolbar.divider,
+			color: this.theme.timeline.toolbar.divider,
 			alpha: TOOLBAR_CONSTANTS.DIVIDER_ALPHA
 		});
 		this.background.moveTo(0, this.toolbarHeight - 0.5);

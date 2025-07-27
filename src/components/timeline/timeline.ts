@@ -53,8 +53,8 @@ export class Timeline extends Entity {
 				width: size.width,
 				height: size.height,
 				pixelsPerSecond: 50,
-				trackHeight: Math.max(40, this.theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT),
-				backgroundColor: this.theme.colors.structure.background,
+				trackHeight: Math.max(40, this.theme.timeline.tracks.height || TimelineLayout.TRACK_HEIGHT_DEFAULT),
+				backgroundColor: this.theme.timeline.background,
 				antialias: true,
 				resolution: window.devicePixelRatio || 1
 			},

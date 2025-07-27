@@ -1,15 +1,30 @@
 {
-	"colors": {
-		"structure": {
-			"background": "#f8f8f8",
+	"timeline": {
+		"background": "#f8f8f8",
+		"divider": "#d5d5d5",
+		"toolbar": {
+			"background": "#ffffff",
+			"surface": "#f8f8f8",
+			"hover": "#eeeeee",
+			"active": "#007acc",
+			"divider": "#e5e5e5",
+			"icon": "#666666",
+			"text": "#444444",
+			"height": 80
+		},
+		"ruler": {
+			"background": "#f0f0f0",
+			"text": "#444444",
+			"markers": "#cccccc",
+			"height": 20
+		},
+		"tracks": {
 			"surface": "#ffffff",
 			"surfaceAlt": "#fafafa",
 			"border": "#e5e5e5",
-			"divider": "#d5d5d5",
-			"ruler": "#f0f0f0",
-			"rulerMarkers": "#cccccc"
+			"height": 10
 		},
-		"assets": {
+		"clips": {
 			"video": "#888888",
 			"audio": "#999999",
 			"image": "#aaaaaa",
@@ -17,31 +32,13 @@
 			"shape": "#666666",
 			"html": "#555555",
 			"luma": "#444444",
-			"default": "#999999"
-		},
-		"interaction": {
+			"default": "#999999",
 			"selected": "#007acc",
-			"dropZone": "#00aa00",
-			"snapGuide": "#cccccc",
-			"playhead": "#ff4444",
-			"trackInsertion": "#007acc"
+			"radius": 4
 		},
-		"ui": {
-			"text": "#444444"
-		},
-		"toolbar": {
-			"background": "#ffffff",
-			"surface": "#f8f8f8",
-			"hover": "#eeeeee",
-			"active": "#007acc",
-			"divider": "#e5e5e5",
-			"icon": "#666666"
-		}
-	},
-	"dimensions": {
-		"toolbarHeight": 80,
-		"trackHeight": 10,
-		"rulerHeight": 20,
-		"clipRadius": 4
+		"playhead": "#ff4444",
+		"snapGuide": "#cccccc",
+		"dropZone": "#00aa00",
+		"trackInsertion": "#007acc"
 	}
 }

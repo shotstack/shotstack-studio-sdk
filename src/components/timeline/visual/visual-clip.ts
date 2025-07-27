@@ -35,7 +35,7 @@ export class VisualClip extends Entity {
 	private readonly CLIP_PADDING = CLIP_CONSTANTS.PADDING;
 	private readonly BORDER_WIDTH = CLIP_CONSTANTS.BORDER_WIDTH;
 	private get CORNER_RADIUS() {
-		return this.options.theme.dimensions?.clipRadius || CLIP_CONSTANTS.CORNER_RADIUS;
+		return this.options.theme.timeline.clips.radius || CLIP_CONSTANTS.CORNER_RADIUS;
 	}
 
 	constructor(clipConfig: ClipConfig, options: VisualClipOptions) {
@@ -74,7 +74,7 @@ export class VisualClip extends Entity {
 		// Set up text style using theme colors
 		this.text.style = new PIXI.TextStyle({
 			fontSize: CLIP_CONSTANTS.TEXT_FONT_SIZE,
-			fill: this.options.theme.colors.ui.text,
+			fill: this.options.theme.timeline.toolbar.text,
 			fontWeight: "bold",
 			wordWrap: false,
 			fontFamily: "Arial, sans-serif"
@@ -197,25 +197,25 @@ export class VisualClip extends Entity {
 	private getClipColor(): number {
 		// Color based on asset type using theme
 		const assetType = this.clipConfig.asset?.type;
-		const themeAssets = this.options.theme.colors.assets;
+		const themeClips = this.options.theme.timeline.clips;
 
 		switch (assetType) {
 			case "video":
-				return themeAssets.video;
+				return themeClips.video;
 			case "audio":
-				return themeAssets.audio;
+				return themeClips.audio;
 			case "image":
-				return themeAssets.image;
+				return themeClips.image;
 			case "text":
-				return themeAssets.text;
+				return themeClips.text;
 			case "shape":
-				return themeAssets.shape;
+				return themeClips.shape;
 			case "html":
-				return themeAssets.html;
+				return themeClips.html;
 			case "luma":
-				return themeAssets.luma;
+				return themeClips.luma;
 			default:
-				return themeAssets.default;
+				return themeClips.default;
 		}
 	}
 
@@ -251,13 +251,13 @@ export class VisualClip extends Entity {
 
 		switch (this.visualState.mode) {
 			case "dragging":
-				return { alpha: CLIP_CONSTANTS.DRAG_OPACITY, borderColor: theme.colors.structure.border };
+				return { alpha: CLIP_CONSTANTS.DRAG_OPACITY, borderColor: theme.timeline.tracks.border };
 			case "resizing":
-				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, borderColor: theme.colors.interaction.dropZone };
+				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, borderColor: theme.timeline.dropZone };
 			case "selected":
-				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, borderColor: theme.colors.interaction.selected };
+				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, borderColor: theme.timeline.clips.selected };
 			default:
-				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, borderColor: theme.colors.structure.border };
+				return { alpha: CLIP_CONSTANTS.DEFAULT_ALPHA, borderColor: theme.timeline.tracks.border };
 		}
 	}
 

@@ -26,7 +26,7 @@ export class IconFactory {
 		const icon = new PIXI.Graphics();
 		const { PLAY } = TOOLBAR_CONSTANTS.ICON;
 
-		icon.fill({ color: theme.colors.toolbar.icon });
+		icon.fill({ color: theme.timeline.toolbar.icon });
 		icon.moveTo(PLAY.LEFT * scale, PLAY.TOP * scale);
 		icon.lineTo(PLAY.RIGHT * scale, PLAY.MIDDLE * scale);
 		icon.lineTo(PLAY.LEFT * scale, PLAY.BOTTOM * scale);
@@ -40,7 +40,7 @@ export class IconFactory {
 		const icon = new PIXI.Graphics();
 		const { PAUSE } = TOOLBAR_CONSTANTS.ICON;
 
-		icon.fill({ color: theme.colors.toolbar.icon });
+		icon.fill({ color: theme.timeline.toolbar.icon });
 		icon.rect(PAUSE.RECT1_X * scale, PAUSE.TOP * scale, PAUSE.WIDTH * scale, PAUSE.HEIGHT * scale);
 		icon.rect(PAUSE.RECT2_X * scale, PAUSE.TOP * scale, PAUSE.WIDTH * scale, PAUSE.HEIGHT * scale);
 		icon.fill();
@@ -52,7 +52,7 @@ export class IconFactory {
 		const icon = new PIXI.Graphics();
 		const { FRAME_STEP } = TOOLBAR_CONSTANTS.ICON;
 
-		icon.fill({ color: theme.colors.toolbar.icon });
+		icon.fill({ color: theme.timeline.toolbar.icon });
 
 		// First triangle
 		icon.moveTo(FRAME_STEP.TRIANGLE1.BACK.LEFT * scale, FRAME_STEP.TOP * scale);
@@ -75,7 +75,7 @@ export class IconFactory {
 		const icon = new PIXI.Graphics();
 		const { FRAME_STEP } = TOOLBAR_CONSTANTS.ICON;
 
-		icon.fill({ color: theme.colors.toolbar.icon });
+		icon.fill({ color: theme.timeline.toolbar.icon });
 
 		// First triangle
 		icon.moveTo(FRAME_STEP.TRIANGLE1.FORWARD.LEFT * scale, FRAME_STEP.TOP * scale);

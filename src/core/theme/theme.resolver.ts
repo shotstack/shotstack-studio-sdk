@@ -3,17 +3,32 @@ import { TimelineTheme, TimelineThemeOptions, DeepPartial, TimelineThemeInput } 
 
 // Default theme embedded directly in code
 const DEFAULT_THEME_DATA: TimelineThemeInput = {
-	colors: {
-		structure: {
+	timeline: {
+		background: "#1a1a1a",
+		divider: "#1a1a1a",
+		toolbar: {
 			background: "#1a1a1a",
+			surface: "#2a2a2a",
+			hover: "#3a3a3a",
+			active: "#007acc",
+			divider: "#3a3a3a",
+			icon: "#888888",
+			text: "#ffffff",
+			height: 36
+		},
+		ruler: {
+			background: "#404040",
+			text: "#ffffff",
+			markers: "#666666",
+			height: 40
+		},
+		tracks: {
 			surface: "#2a2a2a",
 			surfaceAlt: "#242424",
 			border: "#3a3a3a",
-			divider: "#1a1a1a",
-			ruler: "#404040",
-			rulerMarkers: "#666666"
+			height: 60
 		},
-		assets: {
+		clips: {
 			video: "#4a90e2",
 			audio: "#7ed321",
 			image: "#f5a623",
@@ -21,32 +36,14 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 			shape: "#9013fe",
 			html: "#50e3c2",
 			luma: "#b8e986",
-			default: "#8e8e93"
-		},
-		interaction: {
+			default: "#8e8e93",
 			selected: "#007acc",
-			dropZone: "#00ff00",
-			snapGuide: "#888888",
-			playhead: "#ff4444",
-			trackInsertion: "#00ff00"
+			radius: 4
 		},
-		ui: {
-			text: "#ffffff"
-		},
-		toolbar: {
-			background: "#1a1a1a",
-			surface: "#2a2a2a",
-			hover: "#3a3a3a",
-			active: "#007acc",
-			divider: "#3a3a3a",
-			icon: "#888888"
-		}
-	},
-	dimensions: {
-		toolbarHeight: 36,
-		trackHeight: 60,
-		rulerHeight: 40,
-		clipRadius: 4
+		playhead: "#ff4444",
+		snapGuide: "#888888",
+		dropZone: "#00ff00",
+		trackInsertion: "#00ff00"
 	}
 };
 
@@ -72,64 +69,54 @@ export class TimelineThemeResolver {
 	public static validateTheme(theme: TimelineTheme): boolean {
 		try {
 			// Basic structure validation
-			if (!theme.colors) return false;
-			if (!theme.colors.structure) return false;
-			if (!theme.colors.assets) return false;
-			if (!theme.colors.interaction) return false;
-			if (!theme.colors.ui) return false;
+			if (!theme.timeline) return false;
 
-			// Validate required color properties
-			const requiredStructureColors = ["background", "surface", "surfaceAlt", "border", "divider", "ruler", "rulerMarkers"];
-			const requiredAssetColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default"];
-			const requiredInteractionColors = ["selected", "dropZone", "snapGuide", "playhead", "trackInsertion"];
-			const requiredUIColors = ["text"];
+			const { timeline } = theme;
 
-			for (const color of requiredStructureColors) {
-				if (typeof theme.colors.structure[color as keyof typeof theme.colors.structure] !== "number") {
-					return false;
-				}
+			// Validate timeline root properties
+			if (typeof timeline.background !== "number") return false;
+			if (typeof timeline.divider !== "number") return false;
+			if (typeof timeline.playhead !== "number") return false;
+			if (typeof timeline.snapGuide !== "number") return false;
+			if (typeof timeline.dropZone !== "number") return false;
+			if (typeof timeline.trackInsertion !== "number") return false;
+
+			// Validate toolbar
+			if (!timeline.toolbar) return false;
+			const toolbar = timeline.toolbar;
+			if (typeof toolbar.background !== "number") return false;
+			if (typeof toolbar.surface !== "number") return false;
+			if (typeof toolbar.hover !== "number") return false;
+			if (typeof toolbar.active !== "number") return false;
+			if (typeof toolbar.divider !== "number") return false;
+			if (typeof toolbar.icon !== "number") return false;
+			if (typeof toolbar.text !== "number") return false;
+			if (typeof toolbar.height !== "number" || toolbar.height <= 0) return false;
+
+			// Validate ruler
+			if (!timeline.ruler) return false;
+			const ruler = timeline.ruler;
+			if (typeof ruler.background !== "number") return false;
+			if (typeof ruler.text !== "number") return false;
+			if (typeof ruler.markers !== "number") return false;
+			if (typeof ruler.height !== "number" || ruler.height <= 0) return false;
+
+			// Validate tracks
+			if (!timeline.tracks) return false;
+			const tracks = timeline.tracks;
+			if (typeof tracks.surface !== "number") return false;
+			if (typeof tracks.surfaceAlt !== "number") return false;
+			if (typeof tracks.border !== "number") return false;
+			if (typeof tracks.height !== "number" || tracks.height <= 0) return false;
+
+			// Validate clips
+			if (!timeline.clips) return false;
+			const clips = timeline.clips;
+			const clipColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default", "selected"];
+			for (const color of clipColors) {
+				if (typeof clips[color as keyof typeof clips] !== "number") return false;
 			}
-
-			for (const color of requiredAssetColors) {
-				if (typeof theme.colors.assets[color as keyof typeof theme.colors.assets] !== "number") {
-					return false;
-				}
-			}
-
-			for (const color of requiredInteractionColors) {
-				if (typeof theme.colors.interaction[color as keyof typeof theme.colors.interaction] !== "number") {
-					return false;
-				}
-			}
-
-			for (const color of requiredUIColors) {
-				if (typeof theme.colors.ui[color as keyof typeof theme.colors.ui] !== "number") {
-					return false;
-				}
-			}
-
-			// Validate toolbar colors
-			if (!theme.colors.toolbar) return false;
-			const requiredToolbarColors = ["background", "surface", "hover", "active", "divider", "icon"];
-			for (const color of requiredToolbarColors) {
-				if (typeof theme.colors.toolbar[color as keyof typeof theme.colors.toolbar] !== "number") {
-					return false;
-				}
-			}
-
-			// Validate optional sections
-			if (theme.dimensions) {
-				const { dimensions } = theme;
-				if (dimensions.trackHeight !== undefined && (typeof dimensions.trackHeight !== "number" || dimensions.trackHeight <= 0)) {
-					return false;
-				}
-				if (dimensions.rulerHeight !== undefined && (typeof dimensions.rulerHeight !== "number" || dimensions.rulerHeight <= 0)) {
-					return false;
-				}
-				if (dimensions.clipRadius !== undefined && (typeof dimensions.clipRadius !== "number" || dimensions.clipRadius < 0)) {
-					return false;
-				}
-			}
+			if (typeof clips.radius !== "number" || clips.radius < 0) return false;
 
 			return true;
 		} catch (error) {

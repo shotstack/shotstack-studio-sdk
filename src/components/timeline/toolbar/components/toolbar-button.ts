@@ -112,7 +112,7 @@ export class ToolbarButton extends PIXI.Container {
 		this.background.clear();
 		this.background.circle(radius, radius, radius);
 		this.background.fill({
-			color: this.theme.colors.toolbar.surface,
+			color: this.theme.timeline.toolbar.surface,
 			alpha: 0.8
 		});
 
@@ -122,17 +122,17 @@ export class ToolbarButton extends PIXI.Container {
 
 		if (this.state.isPressed) {
 			this.hoverBackground.fill({
-				color: this.theme.colors.toolbar.active,
+				color: this.theme.timeline.toolbar.active,
 				alpha: TOOLBAR_CONSTANTS.ACTIVE_ANIMATION_ALPHA
 			});
 		} else if (this.state.isHovering) {
 			this.hoverBackground.fill({
-				color: this.theme.colors.toolbar.hover,
+				color: this.theme.timeline.toolbar.hover,
 				alpha: TOOLBAR_CONSTANTS.HOVER_ANIMATION_ALPHA
 			});
 		} else {
 			this.hoverBackground.fill({
-				color: this.theme.colors.toolbar.hover,
+				color: this.theme.timeline.toolbar.hover,
 				alpha: 0
 			});
 		}
