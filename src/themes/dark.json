@@ -1,15 +1,30 @@
 {
-	"colors": {
-		"structure": {
+	"timeline": {
+		"background": "#0d0d0d",
+		"divider": "#0d0d0d",
+		"toolbar": {
 			"background": "#0d0d0d",
+			"surface": "#1a1a1a",
+			"hover": "#2a2a2a",
+			"active": "#0066bb",
+			"divider": "#2a2a2a",
+			"icon": "#ffffff",
+			"text": "#e0e0e0",
+			"height": 60
+		},
+		"ruler": {
+			"background": "#303030",
+			"text": "#e0e0e0",
+			"markers": "#555555",
+			"height": 10
+		},
+		"tracks": {
 			"surface": "#1a1a1a",
 			"surfaceAlt": "#161616",
 			"border": "#2a2a2a",
-			"divider": "#0d0d0d",
-			"ruler": "#303030",
-			"rulerMarkers": "#555555"
+			"height": 60
 		},
-		"assets": {
+		"clips": {
 			"video": "#3a7bc8",
 			"audio": "#5fb611",
 			"image": "#e59400",
@@ -17,31 +32,13 @@
 			"shape": "#7a0de6",
 			"html": "#40d3b2",
 			"luma": "#a8d976",
-			"default": "#6e6e73"
-		},
-		"interaction": {
+			"default": "#6e6e73",
 			"selected": "#0066bb",
-			"dropZone": "#00dd00",
-			"snapGuide": "#777777",
-			"playhead": "#000000",
-			"trackInsertion": "#ffffff"
+			"radius": 4
 		},
-		"ui": {
-			"text": "#e0e0e0"
-		},
-		"toolbar": {
-			"background": "#0d0d0d",
-			"surface": "#1a1a1a",
-			"hover": "#2a2a2a",
-			"active": "#0066bb",
-			"divider": "#2a2a2a",
-			"icon": "#ffffff"
-		}
-	},
-	"dimensions": {
-		"toolbarHeight": 60,
-		"trackHeight": 60,
-		"rulerHeight": 10,
-		"clipRadius": 4
+		"playhead": "#000000",
+		"snapGuide": "#777777",
+		"dropZone": "#00dd00",
+		"trackInsertion": "#ffffff"
 	}
 }
