@@ -20,7 +20,6 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 			shape: "#9013fe",
 			html: "#50e3c2",
 			luma: "#b8e986",
-			transition: "#8e8e93",
 			default: "#8e8e93"
 		},
 		interaction: {
@@ -86,7 +85,7 @@ export class TimelineThemeResolver {
 
 			// Validate required color properties
 			const requiredStructureColors = ["background", "surface", "surfaceAlt", "border", "divider", "ruler"];
-			const requiredAssetColors = ["video", "audio", "image", "text", "shape", "html", "luma", "transition", "default"];
+			const requiredAssetColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default"];
 			const requiredInteractionColors = ["hover", "selected", "focus", "dropZone", "snapGuide", "playhead", "drag"];
 			const requiredUIColors = ["text", "textMuted", "icon", "iconMuted"];
 

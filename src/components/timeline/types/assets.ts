@@ -74,15 +74,8 @@ export interface LumaAsset {
 	trim?: number;
 }
 
-// Transition asset
-export interface TransitionAsset {
-	type: "transition";
-	transition: string;
-	duration?: number;
-}
-
 // Union type for all assets
-export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | ShapeAsset | HtmlAsset | LumaAsset | TransitionAsset;
+export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | ShapeAsset | HtmlAsset | LumaAsset;
 
 // Type guards
 export function isVideoAsset(asset: TimelineAsset): asset is VideoAsset {
@@ -113,10 +106,6 @@ export function isLumaAsset(asset: TimelineAsset): asset is LumaAsset {
 	return asset.type === "luma";
 }
 
-export function isTransitionAsset(asset: TimelineAsset): asset is TransitionAsset {
-	return asset.type === "transition";
-}
-
 // Helper to extract filename from path
 function getFilenameFromPath(path: string): string {
 	const parts = path.split("/");
@@ -140,8 +129,6 @@ export function getAssetDisplayName(asset: TimelineAsset): string {
 			return "HTML";
 		case "luma":
 			return asset.src ? getFilenameFromPath(asset.src) : "Luma";
-		case "transition":
-			return asset.transition || "Transition";
 		default:
 			return "Unknown Asset";
 	}

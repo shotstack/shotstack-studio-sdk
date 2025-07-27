@@ -217,10 +217,6 @@ export class VisualClip extends Entity {
 			case "luma":
 				return themeAssets.luma;
 			default:
-				// Handle transition and other unknown types
-				if (assetType === "transition") {
-					return themeAssets.transition;
-				}
 				return themeAssets.default;
 		}
 	}

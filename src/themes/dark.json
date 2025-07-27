@@ -16,7 +16,6 @@
 			"shape": "#7a0de6",
 			"html": "#40d3b2",
 			"luma": "#a8d976",
-			"transition": "#6e6e73",
 			"default": "#6e6e73"
 		},
 		"interaction": {
@@ -26,7 +25,7 @@
 			"dropZone": "#00dd00",
 			"snapGuide": "#777777",
 			"playhead": "#ff3333",
-			"drag": "#00dd00",
+			"drag": "#ffffff",
 			"trackInsertion": "#00dd00"
 		},
 		"ui": {

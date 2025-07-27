@@ -20,7 +20,6 @@ export interface TimelineThemeInput {
 			shape: string;
 			html: string;
 			luma: string;
-			transition: string;
 			default: string; // Unknown asset types
 		};
 
@@ -86,7 +85,6 @@ export interface TimelineTheme {
 			shape: number;
 			html: number;
 			luma: number;
-			transition: number;
 			default: number; // Unknown asset types
 		};
 

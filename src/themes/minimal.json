@@ -16,7 +16,6 @@
 			"shape": "#666666",
 			"html": "#555555",
 			"luma": "#444444",
-			"transition": "#333333",
 			"default": "#999999"
 		},
 		"interaction": {
