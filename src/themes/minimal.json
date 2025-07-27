@@ -19,7 +19,6 @@
 			"default": "#999999"
 		},
 		"interaction": {
-			"hover": "#dddddd",
 			"selected": "#007acc",
 			"focus": "#007acc",
 			"dropZone": "#00aa00",

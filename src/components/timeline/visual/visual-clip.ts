@@ -27,7 +27,7 @@ export class VisualClip extends Entity {
 	private lastGlobalY: number = -1;
 	/** @internal */
 	private visualState: {
-		mode: "normal" | "selected" | "dragging" | "resizing" | "disabled";
+		mode: "normal" | "selected" | "dragging" | "resizing";
 		previewWidth?: number;
 	} = { mode: "normal" };
 
@@ -252,8 +252,6 @@ export class VisualClip extends Entity {
 		const { theme } = this.options;
 
 		switch (this.visualState.mode) {
-			case "disabled":
-				return { alpha: CLIP_CONSTANTS.DISABLED_OPACITY, borderColor: theme.colors.interaction.hover };
 			case "dragging":
 				return { alpha: CLIP_CONSTANTS.DRAG_OPACITY, borderColor: theme.colors.interaction.drag };
 			case "resizing":
@@ -272,10 +270,6 @@ export class VisualClip extends Entity {
 
 	public setDragging(dragging: boolean): void {
 		this.setVisualState({ mode: dragging ? "dragging" : "normal" });
-	}
-
-	public setDisabled(disabled: boolean): void {
-		this.setVisualState({ mode: disabled ? "disabled" : "normal" });
 	}
 
 	public setResizing(resizing: boolean): void {
@@ -319,7 +313,7 @@ export class VisualClip extends Entity {
 		return { ...this.options };
 	}
 
-	public getVisualState(): { mode: "normal" | "selected" | "dragging" | "resizing" | "disabled"; previewWidth?: number } {
+	public getVisualState(): { mode: "normal" | "selected" | "dragging" | "resizing"; previewWidth?: number } {
 		// Return a defensive copy to prevent external mutations
 		return { ...this.visualState };
 	}

@@ -25,7 +25,6 @@ export interface TimelineThemeInput {
 
 		// Interaction colors (the "feedback")
 		interaction: {
-			hover: string;
 			selected: string;
 			focus: string;
 			dropZone: string;
@@ -90,7 +89,6 @@ export interface TimelineTheme {
 
 		// Interaction colors (the "feedback")
 		interaction: {
-			hover: number;
 			selected: number;
 			focus: number;
 			dropZone: number;

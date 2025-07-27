@@ -89,7 +89,7 @@ export class VisualFeedbackManager {
 		const height = layout.trackHeight;
 
 		const theme = this.timeline.getTheme();
-		const color = theme.colors.interaction.hover;
+		const color = theme.colors.interaction.dropZone;
 
 		// Draw subtle highlight for target track
 		graphics.rect(0, y, width, height);
