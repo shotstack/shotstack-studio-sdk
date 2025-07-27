@@ -62,14 +62,6 @@ export interface TimelineThemeInput {
 		clipRadius?: number;
 		borderWidth?: number;
 	};
-
-	// Optional opacity overrides
-	opacity?: {
-		track?: number;
-		hover?: number;
-		drag?: number;
-		disabled?: number;
-	};
 }
 
 // Internal theme uses PIXI number format
@@ -135,14 +127,6 @@ export interface TimelineTheme {
 		rulerHeight?: number;
 		clipRadius?: number;
 		borderWidth?: number;
-	};
-
-	// Optional opacity overrides
-	opacity?: {
-		track?: number;
-		hover?: number;
-		drag?: number;
-		disabled?: number;
 	};
 }
 

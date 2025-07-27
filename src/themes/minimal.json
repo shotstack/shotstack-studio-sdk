@@ -49,11 +49,5 @@
 		"rulerHeight": 20,
 		"clipRadius": 4,
 		"borderWidth": 2
-	},
-	"opacity": {
-		"track": 0.8,
-		"hover": 0.7,
-		"drag": 0.6,
-		"disabled": 0.5
 	}
 }

@@ -66,10 +66,9 @@ export class VisualTrack extends Entity {
 
 		// Alternating track colors using theme
 		const bgColor = this.options.trackIndex % 2 === 0 ? theme.colors.structure.surface : theme.colors.structure.surfaceAlt;
-		const trackOpacity = theme.opacity?.track || TRACK_CONSTANTS.DEFAULT_OPACITY;
 
 		this.background.rect(0, 0, width, height);
-		this.background.fill({ color: bgColor, alpha: trackOpacity });
+		this.background.fill({ color: bgColor, alpha: TRACK_CONSTANTS.DEFAULT_OPACITY });
 
 		// Draw track border using theme
 		this.background.rect(0, 0, width, height);

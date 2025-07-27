@@ -229,9 +229,8 @@ export class VisualClip extends Entity {
 	private updateAppearance(): void {
 		const container = this.getContainer();
 
-		// Apply container-level opacity using theme values
-		const dragOpacity = this.options.theme.opacity?.drag || CLIP_CONSTANTS.DRAG_OPACITY;
-		container.alpha = this.visualState.mode === "dragging" ? dragOpacity : CLIP_CONSTANTS.DEFAULT_ALPHA;
+		// Apply container-level opacity
+		container.alpha = this.visualState.mode === "dragging" ? CLIP_CONSTANTS.DRAG_OPACITY : CLIP_CONSTANTS.DEFAULT_ALPHA;
 	}
 
 	/** @internal */
@@ -255,14 +254,12 @@ export class VisualClip extends Entity {
 
 	private getStateStyles() {
 		const { theme } = this.options;
-		const disabledOpacity = theme.opacity?.disabled || CLIP_CONSTANTS.DISABLED_OPACITY;
-		const dragOpacity = theme.opacity?.drag || CLIP_CONSTANTS.DRAG_OPACITY;
 
 		switch (this.visualState.mode) {
 			case "disabled":
-				return { alpha: disabledOpacity, borderColor: theme.colors.interaction.hover };
+				return { alpha: CLIP_CONSTANTS.DISABLED_OPACITY, borderColor: theme.colors.interaction.hover };
 			case "dragging":
-				return { alpha: dragOpacity, borderColor: theme.colors.interaction.drag };
+				return { alpha: CLIP_CONSTANTS.DRAG_OPACITY, borderColor: theme.colors.interaction.drag };
 			case "resizing":
 				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, borderColor: theme.colors.interaction.dropZone };
 			case "selected":
