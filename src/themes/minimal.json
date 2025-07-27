@@ -42,7 +42,6 @@
 		"toolbarHeight": 80,
 		"trackHeight": 10,
 		"rulerHeight": 20,
-		"clipRadius": 4,
-		"borderWidth": 2
+		"clipRadius": 4
 	}
 }

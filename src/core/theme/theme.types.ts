@@ -55,7 +55,6 @@ export interface TimelineThemeInput {
 		trackHeight?: number;
 		rulerHeight?: number;
 		clipRadius?: number;
-		borderWidth?: number;
 	};
 }
 
@@ -116,7 +115,6 @@ export interface TimelineTheme {
 		trackHeight?: number;
 		rulerHeight?: number;
 		clipRadius?: number;
-		borderWidth?: number;
 	};
 }
 

@@ -46,8 +46,7 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 		toolbarHeight: 36,
 		trackHeight: 60,
 		rulerHeight: 40,
-		clipRadius: 4,
-		borderWidth: 2
+		clipRadius: 4
 	}
 };
 
@@ -128,9 +127,6 @@ export class TimelineThemeResolver {
 					return false;
 				}
 				if (dimensions.clipRadius !== undefined && (typeof dimensions.clipRadius !== "number" || dimensions.clipRadius < 0)) {
-					return false;
-				}
-				if (dimensions.borderWidth !== undefined && (typeof dimensions.borderWidth !== "number" || dimensions.borderWidth < 0)) {
 					return false;
 				}
 			}

@@ -33,9 +33,7 @@ export class VisualClip extends Entity {
 
 	// Visual constants (some from theme)
 	private readonly CLIP_PADDING = CLIP_CONSTANTS.PADDING;
-	private get BORDER_WIDTH() {
-		return this.options.theme.dimensions?.borderWidth || CLIP_CONSTANTS.BORDER_WIDTH;
-	}
+	private readonly BORDER_WIDTH = CLIP_CONSTANTS.BORDER_WIDTH;
 	private get CORNER_RADIUS() {
 		return this.options.theme.dimensions?.clipRadius || CLIP_CONSTANTS.CORNER_RADIUS;
 	}
