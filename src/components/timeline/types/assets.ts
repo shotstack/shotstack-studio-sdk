@@ -8,13 +8,13 @@ export interface VolumeKeyframe {
 	to: number;
 	start: number;
 	length: number;
-	interpolation?: 'linear' | 'bezier' | 'constant';
+	interpolation?: "linear" | "bezier" | "constant";
 	easing?: string;
 }
 
 // Video asset
 export interface VideoAsset {
-	type: 'video';
+	type: "video";
 	src: string;
 	trim?: number;
 	volume?: number | VolumeKeyframe[];
@@ -22,7 +22,7 @@ export interface VideoAsset {
 
 // Audio asset
 export interface AudioAsset {
-	type: 'audio';
+	type: "audio";
 	src: string;
 	trim?: number;
 	volume?: number | VolumeKeyframe[];
@@ -30,13 +30,13 @@ export interface AudioAsset {
 
 // Image asset
 export interface ImageAsset {
-	type: 'image';
+	type: "image";
 	src: string;
 }
 
 // Text asset
 export interface TextAsset {
-	type: 'text';
+	type: "text";
 	text: string;
 	font?: {
 		color?: string;
@@ -46,15 +46,15 @@ export interface TextAsset {
 		lineHeight?: number;
 	};
 	alignment?: {
-		horizontal?: 'left' | 'center' | 'right';
-		vertical?: 'top' | 'center' | 'bottom';
+		horizontal?: "left" | "center" | "right";
+		vertical?: "top" | "center" | "bottom";
 	};
 }
 
 // Shape asset
 export interface ShapeAsset {
-	type: 'shape';
-	shape: 'rectangle' | 'ellipse' | 'polygon' | 'star';
+	type: "shape";
+	shape: "rectangle" | "ellipse" | "polygon" | "star";
 	color?: string;
 	borderColor?: string;
 	borderWidth?: number;
@@ -62,95 +62,87 @@ export interface ShapeAsset {
 
 // HTML asset
 export interface HtmlAsset {
-	type: 'html';
+	type: "html";
 	html: string;
 	css?: string;
 }
 
 // Luma asset
 export interface LumaAsset {
-	type: 'luma';
+	type: "luma";
 	src: string;
 	trim?: number;
 }
 
 // Transition asset
 export interface TransitionAsset {
-	type: 'transition';
+	type: "transition";
 	transition: string;
 	duration?: number;
 }
 
 // Union type for all assets
-export type TimelineAsset = 
-	| VideoAsset 
-	| AudioAsset 
-	| ImageAsset 
-	| TextAsset 
-	| ShapeAsset 
-	| HtmlAsset 
-	| LumaAsset 
-	| TransitionAsset;
+export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | ShapeAsset | HtmlAsset | LumaAsset | TransitionAsset;
 
 // Type guards
 export function isVideoAsset(asset: TimelineAsset): asset is VideoAsset {
-	return asset.type === 'video';
+	return asset.type === "video";
 }
 
 export function isAudioAsset(asset: TimelineAsset): asset is AudioAsset {
-	return asset.type === 'audio';
+	return asset.type === "audio";
 }
 
 export function isImageAsset(asset: TimelineAsset): asset is ImageAsset {
-	return asset.type === 'image';
+	return asset.type === "image";
 }
 
 export function isTextAsset(asset: TimelineAsset): asset is TextAsset {
-	return asset.type === 'text';
+	return asset.type === "text";
 }
 
 export function isShapeAsset(asset: TimelineAsset): asset is ShapeAsset {
-	return asset.type === 'shape';
+	return asset.type === "shape";
 }
 
 export function isHtmlAsset(asset: TimelineAsset): asset is HtmlAsset {
-	return asset.type === 'html';
+	return asset.type === "html";
 }
 
 export function isLumaAsset(asset: TimelineAsset): asset is LumaAsset {
-	return asset.type === 'luma';
+	return asset.type === "luma";
 }
 
 export function isTransitionAsset(asset: TimelineAsset): asset is TransitionAsset {
-	return asset.type === 'transition';
+	return asset.type === "transition";
 }
 
 // Helper to extract filename from path
 function getFilenameFromPath(path: string): string {
-	const parts = path.split('/');
+	const parts = path.split("/");
 	return parts[parts.length - 1] || path;
 }
 
 // Helper to get display name for asset
 export function getAssetDisplayName(asset: TimelineAsset): string {
 	switch (asset.type) {
-		case 'video':
-			return asset.src ? getFilenameFromPath(asset.src) : 'Video';
-		case 'audio':
-			return asset.src ? getFilenameFromPath(asset.src) : 'Audio';
-		case 'image':
-			return asset.src ? getFilenameFromPath(asset.src) : 'Image';
-		case 'text':
-			return asset.text || 'Text';
-		case 'shape':
-			return asset.shape || 'Shape';
-		case 'html':
-			return 'HTML';
-		case 'luma':
-			return asset.src ? getFilenameFromPath(asset.src) : 'Luma';
-		case 'transition':
-			return asset.transition || 'Transition';
+		case "video":
+			return asset.src ? getFilenameFromPath(asset.src) : "Video";
+		case "audio":
+			return asset.src ? getFilenameFromPath(asset.src) : "Audio";
+		case "image":
+			return asset.src ? getFilenameFromPath(asset.src) : "Image";
+		case "text":
+			return asset.text || "Text";
+		case "shape":
+			return asset.shape || "Shape";
+		case "html":
+			return "HTML";
+		case "luma":
+			return asset.src ? getFilenameFromPath(asset.src) : "Luma";
+		case "transition":
+			return asset.transition || "Transition";
 		default:
-			return 'Unknown Asset';
+			return "Unknown Asset";
 	}
 }

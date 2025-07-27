@@ -70,16 +70,16 @@ export class DragPreviewManager {
 
 		// Clear and redraw
 		this.dragPreviewGraphics.clear();
-		
+
 		// Draw the ghost preview with free positioning
 		this.dragPreviewGraphics.roundRect(0, 0, width, height, 4);
 		this.dragPreviewGraphics.fill({ color: 0x8e8e93, alpha: 0.6 });
-		
+
 		// Different border color to indicate target track
 		const targetY = targetTrack * this.layout.trackHeight;
 		const isAligned = Math.abs(freeY - targetY) < 5; // Within 5 pixels of target
 		const borderColor = isAligned ? 0x00ff00 : 0xffaa00; // Green if aligned, orange if not
-		
+
 		this.dragPreviewGraphics.stroke({ width: 2, color: borderColor });
 
 		// Position at free Y
@@ -96,9 +96,7 @@ export class DragPreviewManager {
 		// Reset original clip appearance
 		if (this.draggedClipInfo) {
 			const visualTracks = this.getVisualTracks();
-			visualTracks[this.draggedClipInfo.trackIndex]
-				?.getClip(this.draggedClipInfo.clipIndex)
-				?.setDragging(false);
+			visualTracks[this.draggedClipInfo.trackIndex]?.getClip(this.draggedClipInfo.clipIndex)?.setDragging(false);
 			this.draggedClipInfo = null;
 		}
 	}
@@ -112,7 +110,7 @@ export class DragPreviewManager {
 	public showDragGhost(trackIndex: number, time: number, freeY?: number): void {
 		if (!this.dragPreviewContainer || !this.draggedClipInfo) return;
 		this.dragPreviewContainer.visible = true;
-		
+
 		if (freeY !== undefined) {
 			// Use free Y position for ghost
 			this.drawDragPreviewAtPosition(time, freeY, trackIndex);

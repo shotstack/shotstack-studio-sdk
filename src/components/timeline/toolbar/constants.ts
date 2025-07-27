@@ -6,10 +6,10 @@ export const TOOLBAR_CONSTANTS = {
 	BORDER_RADIUS: 4,
 	TEXT_SPACING: 16,
 	EDGE_MARGIN: 10,
-	
+
 	// Playback
 	FRAME_TIME_MS: 16.67, // milliseconds per frame
-	
+
 	// Icon dimensions
 	ICON: {
 		// Play icon (triangle)
@@ -42,20 +42,20 @@ export const TOOLBAR_CONSTANTS = {
 			BOTTOM: 20
 		}
 	},
-	
+
 	// Cut button
 	CUT_BUTTON: {
 		WIDTH: 60,
 		HEIGHT: 24,
 		FONT_SIZE: 12
 	},
-	
+
 	// Time display
 	TIME_DISPLAY: {
 		FONT_SIZE: 14,
-		FONT_FAMILY: 'monospace'
+		FONT_FAMILY: "monospace"
 	},
-	
+
 	// Animation
 	HOVER_ANIMATION_ALPHA: 1,
 	ACTIVE_ANIMATION_ALPHA: 0.3,

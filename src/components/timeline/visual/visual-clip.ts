@@ -32,8 +32,12 @@ export class VisualClip extends Entity {
 
 	// Visual constants (some from theme)
 	private readonly CLIP_PADDING = CLIP_CONSTANTS.PADDING;
-	private get BORDER_WIDTH() { return this.options.theme.dimensions?.borderWidth || CLIP_CONSTANTS.BORDER_WIDTH; }
-	private get CORNER_RADIUS() { return this.options.theme.dimensions?.clipRadius || CLIP_CONSTANTS.CORNER_RADIUS; }
+	private get BORDER_WIDTH() {
+		return this.options.theme.dimensions?.borderWidth || CLIP_CONSTANTS.BORDER_WIDTH;
+	}
+	private get CORNER_RADIUS() {
+		return this.options.theme.dimensions?.clipRadius || CLIP_CONSTANTS.CORNER_RADIUS;
+	}
 
 	constructor(clipConfig: ClipConfig, options: VisualClipOptions) {
 		super();
@@ -143,7 +147,7 @@ export class VisualClip extends Entity {
 
 	private drawClipBorder(width: number, height: number): void {
 		const styles = this.getStateStyles();
-		
+
 		// Always draw the basic border in the clip container
 		const borderWidth = this.BORDER_WIDTH;
 		this.graphics.clear();
@@ -159,7 +163,7 @@ export class VisualClip extends Entity {
 
 		const isSelected = this.visualState.mode === "selected";
 		const clipId = this.getClipId();
-		
+
 		if (!isSelected) {
 			this.selectionRenderer.clearSelection(clipId);
 			return;
@@ -168,27 +172,31 @@ export class VisualClip extends Entity {
 		// Calculate global position only if position has changed
 		const container = this.getContainer();
 		const globalPos = container.toGlobal(new PIXI.Point(0, 0));
-		
+
 		// Convert to overlay coordinates
 		const overlayContainer = this.selectionRenderer.getOverlay();
 		const overlayPos = overlayContainer.toLocal(globalPos);
-		
+
 		// Update selection via renderer
-		this.selectionRenderer.renderSelection(clipId, {
-			x: overlayPos.x,
-			y: overlayPos.y,
-			width,
-			height,
-			cornerRadius: this.CORNER_RADIUS,
-			borderWidth: this.BORDER_WIDTH
-		}, isSelected);
+		this.selectionRenderer.renderSelection(
+			clipId,
+			{
+				x: overlayPos.x,
+				y: overlayPos.y,
+				width,
+				height,
+				cornerRadius: this.CORNER_RADIUS,
+				borderWidth: this.BORDER_WIDTH
+			},
+			isSelected
+		);
 	}
 
 	private getClipColor(): number {
 		// Color based on asset type using theme
 		const assetType = this.clipConfig.asset?.type;
 		const themeAssets = this.options.theme.colors.assets;
-		
+
 		switch (assetType) {
 			case "video":
 				return themeAssets.video;
@@ -223,9 +231,7 @@ export class VisualClip extends Entity {
 
 	private updateText(): void {
 		// Get text content using type-safe helper
-		const displayText = this.clipConfig.asset ? 
-			getAssetDisplayName(this.clipConfig.asset as TimelineAsset) : 
-			"Clip";
+		const displayText = this.clipConfig.asset ? getAssetDisplayName(this.clipConfig.asset as TimelineAsset) : "Clip";
 
 		this.text.text = displayText;
 
@@ -241,12 +247,11 @@ export class VisualClip extends Entity {
 		}
 	}
 
-
 	private getStateStyles() {
-		const {theme} = this.options;
+		const { theme } = this.options;
 		const disabledOpacity = theme.opacity?.disabled || CLIP_CONSTANTS.DISABLED_OPACITY;
 		const dragOpacity = theme.opacity?.drag || CLIP_CONSTANTS.DRAG_OPACITY;
-		
+
 		switch (this.visualState.mode) {
 			case "disabled":
 				return { alpha: disabledOpacity, borderColor: theme.colors.interaction.hover };
@@ -287,7 +292,7 @@ export class VisualClip extends Entity {
 
 	public setPixelsPerSecond(pixelsPerSecond: number): void {
 		this.updateOptions({ pixelsPerSecond });
-		
+
 		// Update selection state with new dimensions
 		if (this.visualState.mode === "selected") {
 			const width = this.getEffectiveWidth();
@@ -323,7 +328,7 @@ export class VisualClip extends Entity {
 	public getSelected(): boolean {
 		return this.visualState.mode === "selected";
 	}
-	
+
 	public getClipId(): string {
 		return `${this.options.trackIndex}-${this.options.clipIndex}`;
 	}
@@ -344,19 +349,18 @@ export class VisualClip extends Entity {
 		if (this.visualState.mode === "selected" && this.selectionRenderer) {
 			const container = this.getContainer();
 			const globalPos = container.toGlobal(new PIXI.Point(0, 0));
-			
+
 			// Check if position has actually changed to avoid unnecessary updates
 			if (globalPos.x !== this.lastGlobalX || globalPos.y !== this.lastGlobalY) {
 				this.lastGlobalX = globalPos.x;
 				this.lastGlobalY = globalPos.y;
-				
+
 				const width = this.getEffectiveWidth();
 				const height = this.options.trackHeight;
 				this.updateSelectionState(width, height);
 			}
 		}
 	}
-
 
 	public draw(): void {
 		// Draw is called by the Entity system
@@ -369,7 +373,7 @@ export class VisualClip extends Entity {
 		if (this.selectionRenderer) {
 			this.selectionRenderer.clearSelection(this.getClipId());
 		}
-		
+
 		// Clean up graphics resources
 		this.background.destroy();
 		this.graphics.destroy();

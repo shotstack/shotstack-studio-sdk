@@ -53,7 +53,7 @@ export class AddTrackCommand implements EditCommand {
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 		tracks.splice(this.trackIdx, 1);
-		clips.forEach((clip) => {
+		clips.forEach(clip => {
 			if (clip.layer > this.trackIdx) {
 				// eslint-disable-next-line no-param-reassign
 				clip.layer -= 1;

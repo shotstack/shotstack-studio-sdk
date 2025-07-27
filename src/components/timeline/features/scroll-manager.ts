@@ -24,7 +24,7 @@ export class ScrollManager {
 		this.abortController = new AbortController();
 
 		// Get the PIXI canvas element
-		const {canvas} = this.timeline.getPixiApp();
+		const { canvas } = this.timeline.getPixiApp();
 
 		// Add wheel event listener for scrolling
 		canvas.addEventListener("wheel", this.handleWheel.bind(this), {
@@ -51,65 +51,65 @@ export class ScrollManager {
 	}
 
 	private handleZoom(event: WheelEvent): void {
-			// Handle zoom
-			const zoomDirection = event.deltaY > 0 ? 'out' : 'in';
-			
-			// Get playhead time position
-			const playheadTime = this.timeline.getPlayheadTime();
-			
-			// Get actual edit duration (not extended duration)
-			// The timeline.timeRange.endTime includes the 1.5x buffer, we need the actual duration
-			const actualEditDuration = this.timeline.getActualEditDuration();
-			
-			// Perform zoom
-			if (zoomDirection === 'in') {
-				this.timeline.zoomIn();
-			} else {
-				this.timeline.zoomOut();
-			}
-			
-			// Get new pixels per second after zoom
-			const newPixelsPerSecond = this.timeline.getOptions().pixelsPerSecond || 50;
-			
-			// Calculate playhead position in pixels after zoom
-			const playheadXAfterZoom = playheadTime * newPixelsPerSecond;
-			
-			// Calculate viewport dimensions
-			const viewportWidth = this.timeline.getOptions().width || 800;
-			
-			// Use the extended duration for content width (includes buffer space)
-			const extendedDuration = this.timeline.timeRange.endTime;
-			const contentWidth = extendedDuration * newPixelsPerSecond;
-			
-			// But ensure playhead doesn't go beyond actual edit duration
-			const maxPlayheadX = actualEditDuration * newPixelsPerSecond;
-			
-			// Calculate the new scroll position to keep playhead in view
-			const newScrollX = this.calculateZoomScrollPosition({
-				playheadXAfterZoom,
-				viewportWidth,
-				contentWidth,
-				maxPlayheadX,
-				actualEditDuration,
-				playheadTime
-			});
-			
-			// Update scroll position
-			this.scrollX = newScrollX;
-			this.timeline.setScroll(this.scrollX, this.scrollY);
-			
-			// Emit zoom event with actual focus position
-			const actualFocusX = playheadXAfterZoom - newScrollX;
-			this.events.emit("zoom" as keyof TimelineFeatureEvents, { 
-				pixelsPerSecond: newPixelsPerSecond,
-				focusX: actualFocusX,
-				focusTime: playheadTime
-			});
+		// Handle zoom
+		const zoomDirection = event.deltaY > 0 ? "out" : "in";
+
+		// Get playhead time position
+		const playheadTime = this.timeline.getPlayheadTime();
+
+		// Get actual edit duration (not extended duration)
+		// The timeline.timeRange.endTime includes the 1.5x buffer, we need the actual duration
+		const actualEditDuration = this.timeline.getActualEditDuration();
+
+		// Perform zoom
+		if (zoomDirection === "in") {
+			this.timeline.zoomIn();
+		} else {
+			this.timeline.zoomOut();
+		}
+
+		// Get new pixels per second after zoom
+		const newPixelsPerSecond = this.timeline.getOptions().pixelsPerSecond || 50;
+
+		// Calculate playhead position in pixels after zoom
+		const playheadXAfterZoom = playheadTime * newPixelsPerSecond;
+
+		// Calculate viewport dimensions
+		const viewportWidth = this.timeline.getOptions().width || 800;
+
+		// Use the extended duration for content width (includes buffer space)
+		const extendedDuration = this.timeline.timeRange.endTime;
+		const contentWidth = extendedDuration * newPixelsPerSecond;
+
+		// But ensure playhead doesn't go beyond actual edit duration
+		const maxPlayheadX = actualEditDuration * newPixelsPerSecond;
+
+		// Calculate the new scroll position to keep playhead in view
+		const newScrollX = this.calculateZoomScrollPosition({
+			playheadXAfterZoom,
+			viewportWidth,
+			contentWidth,
+			maxPlayheadX,
+			actualEditDuration,
+			playheadTime
+		});
+
+		// Update scroll position
+		this.scrollX = newScrollX;
+		this.timeline.setScroll(this.scrollX, this.scrollY);
+
+		// Emit zoom event with actual focus position
+		const actualFocusX = playheadXAfterZoom - newScrollX;
+		this.events.emit("zoom" as keyof TimelineFeatureEvents, {
+			pixelsPerSecond: newPixelsPerSecond,
+			focusX: actualFocusX,
+			focusTime: playheadTime
+		});
 	}
 
 	private handleScroll(event: WheelEvent): void {
-		let {deltaX} = event;
-		let {deltaY} = event;
+		let { deltaX } = event;
+		let { deltaY } = event;
 
 		// Shift key converts vertical scroll to horizontal scroll
 		if (event.shiftKey) {
@@ -172,28 +172,21 @@ export class ScrollManager {
 		actualEditDuration: number;
 		playheadTime: number;
 	}): number {
-		const {
-			playheadXAfterZoom,
-			viewportWidth,
-			contentWidth,
-			maxPlayheadX,
-			actualEditDuration,
-			playheadTime
-		} = params;
+		const { playheadXAfterZoom, viewportWidth, contentWidth, maxPlayheadX, actualEditDuration, playheadTime } = params;
 
 		// Calculate ideal scroll to center playhead
-		const idealScrollX = playheadXAfterZoom - (viewportWidth / 2);
-		
+		const idealScrollX = playheadXAfterZoom - viewportWidth / 2;
+
 		// Calculate scroll bounds
 		const maxScroll = Math.max(0, contentWidth - viewportWidth);
-		
+
 		// Determine the best scroll position
 		let newScrollX: number;
-		
+
 		// First, check if we're trying to show beyond the actual edit duration
 		const rightEdgeOfViewport = idealScrollX + viewportWidth;
 		const maxAllowedScroll = Math.max(0, maxPlayheadX - viewportWidth);
-		
+
 		if (contentWidth <= viewportWidth) {
 			// Content fits in viewport, no scroll needed
 			newScrollX = 0;
@@ -211,7 +204,7 @@ export class ScrollManager {
 			// Can center playhead normally
 			newScrollX = idealScrollX;
 		}
-		
+
 		// Double-check that playhead remains visible
 		const playheadInViewport = playheadXAfterZoom - newScrollX;
 		if (playheadInViewport < 0 || playheadInViewport > viewportWidth) {

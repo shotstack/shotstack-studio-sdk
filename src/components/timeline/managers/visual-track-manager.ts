@@ -25,7 +25,7 @@ export class VisualTrackManager {
 
 		// Add as last child to ensure it renders on top
 		this.container.addChild(this.selectionOverlay);
-		
+
 		// Create selection renderer
 		this.selectionRenderer = new SelectionOverlayRenderer(this.selectionOverlay, this.theme);
 	}
@@ -151,7 +151,7 @@ export class VisualTrackManager {
 	public getSelectionOverlay(): PIXI.Container {
 		return this.selectionOverlay;
 	}
-	
+
 	public getSelectionRenderer(): SelectionOverlayRenderer {
 		return this.selectionRenderer;
 	}
@@ -163,7 +163,7 @@ export class VisualTrackManager {
 		if (this.selectionRenderer) {
 			this.selectionRenderer.dispose();
 		}
-		
+
 		if (this.selectionOverlay && this.container) {
 			this.container.removeChild(this.selectionOverlay);
 			this.selectionOverlay.destroy();

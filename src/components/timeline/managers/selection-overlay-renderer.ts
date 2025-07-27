@@ -14,18 +14,18 @@ export interface SelectionBounds {
 
 export class SelectionOverlayRenderer {
 	private selectionGraphics: Map<string, PIXI.Graphics> = new Map();
-	
+
 	constructor(
 		private overlay: PIXI.Container,
 		private theme: TimelineTheme
 	) {}
-	
+
 	public renderSelection(clipId: string, bounds: SelectionBounds, isSelected: boolean): void {
 		if (!isSelected) {
 			this.clearSelection(clipId);
 			return;
 		}
-		
+
 		let graphics = this.selectionGraphics.get(clipId);
 		if (!graphics) {
 			graphics = new PIXI.Graphics();
@@ -33,17 +33,17 @@ export class SelectionOverlayRenderer {
 			this.selectionGraphics.set(clipId, graphics);
 			this.overlay.addChild(graphics);
 		}
-		
+
 		// Update position
 		graphics.position.set(bounds.x, bounds.y);
-		
+
 		// Clear and redraw
 		graphics.clear();
-		
+
 		// Draw selection highlight
-		graphics.setStrokeStyle({ 
-			width: 1, 
-			color: this.theme.colors.interaction.focus 
+		graphics.setStrokeStyle({
+			width: 1,
+			color: this.theme.colors.interaction.focus
 		});
 		graphics.roundRect(
 			-bounds.borderWidth,
@@ -53,16 +53,16 @@ export class SelectionOverlayRenderer {
 			bounds.cornerRadius
 		);
 		graphics.stroke();
-		
+
 		// Draw enhanced selection border
-		graphics.setStrokeStyle({ 
+		graphics.setStrokeStyle({
 			width: bounds.borderWidth * CLIP_CONSTANTS.SELECTED_BORDER_MULTIPLIER,
 			color: this.theme.colors.interaction.selected
 		});
 		graphics.roundRect(0, 0, bounds.width, bounds.height, bounds.cornerRadius);
 		graphics.stroke();
 	}
-	
+
 	public clearSelection(clipId: string): void {
 		const graphics = this.selectionGraphics.get(clipId);
 		if (graphics) {
@@ -71,25 +71,25 @@ export class SelectionOverlayRenderer {
 			this.selectionGraphics.delete(clipId);
 		}
 	}
-	
+
 	public clearAllSelections(): void {
 		this.selectionGraphics.forEach((_graphics, clipId) => {
 			this.clearSelection(clipId);
 		});
 	}
-	
+
 	public updateTheme(theme: TimelineTheme): void {
 		this.theme = theme;
 		// Force redraw of all selections with new theme
-		this.selectionGraphics.forEach((graphics) => {
+		this.selectionGraphics.forEach(graphics => {
 			graphics.clear(); // Will be redrawn on next render
 		});
 	}
-	
+
 	public getOverlay(): PIXI.Container {
 		return this.overlay;
 	}
-	
+
 	public dispose(): void {
 		this.clearAllSelections();
 	}

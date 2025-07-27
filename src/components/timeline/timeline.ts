@@ -5,11 +5,11 @@ import * as PIXI from "pixi.js";
 import { TimelineTheme, TimelineThemeOptions, TimelineThemeResolver } from "../../core/theme";
 
 import { InteractionController } from "./interaction";
-import { 
-	DragPreviewManager, 
-	ViewportManager, 
-	VisualTrackManager, 
-	TimelineEventHandler, 
+import {
+	DragPreviewManager,
+	ViewportManager,
+	VisualTrackManager,
+	TimelineEventHandler,
 	TimelineRenderer,
 	TimelineFeatureManager,
 	TimelineOptionsManager
@@ -17,7 +17,6 @@ import {
 import { TimelineLayout } from "./timeline-layout";
 import { EditType, TimelineOptions, ClipInfo, ClipConfig } from "./types/timeline";
 import { VisualTrack } from "./visual/visual-track";
-
 
 export class Timeline extends Entity {
 	private currentEditType: EditType | null = null;
@@ -44,36 +43,34 @@ export class Timeline extends Entity {
 		themeOptions?: TimelineThemeOptions
 	) {
 		super();
-		
+
 		// Resolve theme from options
 		this.theme = TimelineThemeResolver.resolveTheme(themeOptions);
-		
+
 		// Create layout first as it's needed by options manager
-		this.layout = new TimelineLayout({
-			width: size.width,
-			height: size.height,
-			pixelsPerSecond: 50,
-			trackHeight: Math.max(40, this.theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT),
-			backgroundColor: this.theme.colors.structure.background,
-			antialias: true,
-			resolution: window.devicePixelRatio || 1
-		}, this.theme);
-		
-		// Initialize options manager
-		this.optionsManager = new TimelineOptionsManager(
-			size,
-			this.theme,
-			this.layout,
-			(width) => this.featureManager?.getToolbar()?.resize(width)
+		this.layout = new TimelineLayout(
+			{
+				width: size.width,
+				height: size.height,
+				pixelsPerSecond: 50,
+				trackHeight: Math.max(40, this.theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT),
+				backgroundColor: this.theme.colors.structure.background,
+				antialias: true,
+				resolution: window.devicePixelRatio || 1
+			},
+			this.theme
 		);
-		
+
+		// Initialize options manager
+		this.optionsManager = new TimelineOptionsManager(size, this.theme, this.layout, width => this.featureManager?.getToolbar()?.resize(width));
+
 		this.initializeManagers();
 		this.setupInteraction();
 	}
 
 	private initializeManagers(): void {
 		const options = this.optionsManager.getOptions();
-		
+
 		// Initialize renderer with required properties
 		this.renderer = new TimelineRenderer(
 			{
@@ -89,7 +86,7 @@ export class Timeline extends Entity {
 		// Initialize event handler
 		this.eventHandler = new TimelineEventHandler(this.edit, {
 			onEditChange: this.handleEditChange.bind(this),
-			onSeek: (time) => this.edit.seek(time),
+			onSeek: time => this.edit.seek(time),
 			onClipSelected: (trackIndex, clipIndex) => this.visualTrackManager.updateVisualSelection(trackIndex, clipIndex),
 			onSelectionCleared: () => this.visualTrackManager.clearVisualSelection(),
 			onDragStarted: (trackIndex, clipIndex) => {
@@ -129,17 +126,12 @@ export class Timeline extends Entity {
 		this.renderer.startAnimationLoop();
 	}
 
-
 	private async setupViewport(): Promise<void> {
 		// Initialize viewport manager
-		this.viewportManager = new ViewportManager(
-			this.layout,
-			this.renderer.getTrackLayer(),
-			this.renderer.getOverlayLayer(),
-			this.getContainer(),
-			() => this.renderer.render()
+		this.viewportManager = new ViewportManager(this.layout, this.renderer.getTrackLayer(), this.renderer.getOverlayLayer(), this.getContainer(), () =>
+			this.renderer.render()
 		);
-		
+
 		await this.viewportManager.setupViewport();
 
 		// Initialize visual track manager
@@ -159,16 +151,9 @@ export class Timeline extends Entity {
 			() => this.optionsManager.getTrackHeight(),
 			() => this.visualTrackManager.getVisualTracks()
 		);
-		
+
 		// Initialize feature manager
-		this.featureManager = new TimelineFeatureManager(
-			this.edit,
-			this.layout,
-			this.renderer,
-			this.viewportManager,
-			this.eventHandler,
-			() => this
-		);
+		this.featureManager = new TimelineFeatureManager(this.edit, this.layout, this.renderer, this.viewportManager, this.eventHandler, () => this);
 
 		// Initial viewport positioning will be done in setupTimelineFeatures
 		// after ruler height is known
@@ -176,7 +161,7 @@ export class Timeline extends Entity {
 
 	private async setupTimelineFeatures(): Promise<void> {
 		const extendedDuration = this.getExtendedTimelineDuration();
-		
+
 		await this.featureManager.setupTimelineFeatures(
 			this.theme,
 			this.optionsManager.getPixelsPerSecond(),
@@ -186,10 +171,9 @@ export class Timeline extends Entity {
 		);
 	}
 
-
 	private recreateTimelineFeatures(): void {
 		const extendedDuration = this.getExtendedTimelineDuration();
-		
+
 		this.featureManager.recreateTimelineFeatures(
 			this.theme,
 			this.optionsManager.getPixelsPerSecond(),
@@ -231,7 +215,6 @@ export class Timeline extends Entity {
 		return track?.clips?.[clipIndex] || null;
 	}
 
-
 	// Layout access for interactions
 	public getLayout(): TimelineLayout {
 		return this.layout;
@@ -241,7 +224,6 @@ export class Timeline extends Entity {
 	public getVisualTracks(): VisualTrack[] {
 		return this.visualTrackManager.getVisualTracks();
 	}
-
 
 	// Edit access for interactions
 	public getEdit(): Edit {
@@ -276,9 +258,8 @@ export class Timeline extends Entity {
 
 	public getActualEditDuration(): number {
 		// Return the actual edit duration in seconds (without the 1.5x buffer)
-		return (this.edit.totalDuration / 1000) || 60;
+		return this.edit.totalDuration / 1000 || 60;
 	}
-
 
 	private setupInteraction(): void {
 		this.interaction = new InteractionController(this);
@@ -305,13 +286,8 @@ export class Timeline extends Entity {
 		await this.rebuildFromEdit(currentEdit);
 	}
 
-
-
-
-
-
 	private getExtendedTimelineDuration(): number {
-		const duration = (this.edit.totalDuration / 1000) || 60;
+		const duration = this.edit.totalDuration / 1000 || 60;
 		return Math.max(60, duration * Timeline.TIMELINE_BUFFER_MULTIPLIER);
 	}
 
@@ -325,7 +301,6 @@ export class Timeline extends Entity {
 		// Update track widths
 		this.visualTrackManager.updateTrackWidths(extendedWidth);
 	}
-
 
 	private clearAllVisualState(): void {
 		// Make sure drag preview is cleaned up
@@ -341,7 +316,6 @@ export class Timeline extends Entity {
 		this.renderer.render();
 	}
 
-
 	// Public API for tools to query cached state
 	public findClipAtPosition(x: number, y: number): ClipInfo | null {
 		if (!this.currentEditType) return null;
@@ -351,24 +325,24 @@ export class Timeline extends Entity {
 	// Theme management methods
 	public setTheme(themeOptions: TimelineThemeOptions): void {
 		this.theme = TimelineThemeResolver.resolveTheme(themeOptions);
-		
+
 		// Update options manager with new theme
 		this.optionsManager.updateFromTheme(this.theme);
-		
+
 		// Update toolbar theme
 		if (this.featureManager.getToolbar()) {
 			this.featureManager.getToolbar().updateTheme(this.theme);
 		}
-		
+
 		// Recreate timeline features with new theme and dimensions
 		this.recreateTimelineFeatures();
-		
+
 		// Rebuild visuals with new theme
 		if (this.currentEditType) {
 			this.clearAllVisualState();
 			this.rebuildFromEdit(this.currentEditType);
 		}
-		
+
 		// Update PIXI app background
 		this.renderer.updateBackgroundColor(this.optionsManager.getBackgroundColor());
 		this.renderer.render();
@@ -397,7 +371,7 @@ export class Timeline extends Entity {
 		if (this.edit.isPlaying || this.lastPlaybackTime !== this.edit.playbackTime) {
 			this.featureManager.getPlayhead().setTime(this.edit.playbackTime / 1000);
 			this.lastPlaybackTime = this.edit.playbackTime;
-			
+
 			// Update toolbar time display
 			if (this.featureManager.getToolbar()) {
 				this.featureManager.getToolbar().updateTimeDisplay();
@@ -409,9 +383,6 @@ export class Timeline extends Entity {
 		// Render the PIXI application
 		this.renderer.draw();
 	}
-
-
-
 
 	// Methods for TimelineReference interface
 	public getTimeDisplay(): { updateTimeDisplay(): void } {
@@ -454,18 +425,18 @@ export class Timeline extends Entity {
 
 	private onZoomChanged(): void {
 		const pixelsPerSecond = this.optionsManager.getPixelsPerSecond();
-		
+
 		// Update visual tracks without rebuilding to preserve event handlers
 		this.visualTrackManager.updatePixelsPerSecond(pixelsPerSecond);
-		
+
 		// Update track widths to match new zoom level
 		const extendedWidth = this.getExtendedTimelineWidth();
 		this.visualTrackManager.updateTrackWidths(extendedWidth);
-		
+
 		// Update timeline features
 		this.featureManager.updateRuler(pixelsPerSecond, this.getExtendedTimelineDuration());
 		this.featureManager.updatePlayhead(pixelsPerSecond, this.optionsManager.getHeight());
-		
+
 		// Force a render
 		this.renderer.render();
 	}

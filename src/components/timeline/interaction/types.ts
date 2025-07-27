@@ -46,11 +46,11 @@ export interface TimelineInterface {
 }
 
 // State types using discriminated unions
-export type InteractionState = 
-	| { type: 'idle' }
-	| { type: 'selecting'; startPos: Point; clipInfo: ClipInfo }
-	| { type: 'dragging'; dragInfo: DragInfo }
-	| { type: 'resizing'; resizeInfo: ResizeInfo };
+export type InteractionState =
+	| { type: "idle" }
+	| { type: "selecting"; startPos: Point; clipInfo: ClipInfo }
+	| { type: "dragging"; dragInfo: DragInfo }
+	| { type: "resizing"; resizeInfo: ResizeInfo };
 
 export interface Point {
 	x: number;
@@ -124,8 +124,8 @@ export interface InteractionThresholds {
 
 // Event types
 export interface InteractionEvents {
-	'drag:started': DragInfo;
-	'drag:moved': { 
+	"drag:started": DragInfo;
+	"drag:moved": {
 		trackIndex: number;
 		clipIndex: number;
 		startTime: number;
@@ -134,10 +134,10 @@ export interface InteractionEvents {
 		currentTime: number;
 		currentTrack: number;
 	};
-	'drag:ended': void;
-	'resize:started': ResizeInfo;
-	'resize:updated': { width: number };
-	'resize:ended': { newLength: number };
+	"drag:ended": void;
+	"resize:started": ResizeInfo;
+	"resize:updated": { width: number };
+	"resize:ended": { newLength: number };
 }
 
 // Handler interfaces

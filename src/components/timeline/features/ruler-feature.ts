@@ -55,10 +55,10 @@ export class RulerFeature extends Entity {
 	private drawRulerBackground(): void {
 		this.rulerBackground.clear();
 		const rulerWidth = this.calculateRulerWidth();
-		
+
 		const rulerColor = this.theme?.colors.structure.ruler || 0x404040;
 		const borderColor = this.theme?.colors.structure.border || 0x606060;
-		
+
 		this.rulerBackground.rect(0, 0, rulerWidth, this.rulerHeight);
 		this.rulerBackground.fill(rulerColor);
 		this.rulerBackground.rect(0, this.rulerHeight - 1, rulerWidth, 1);
@@ -67,24 +67,24 @@ export class RulerFeature extends Entity {
 
 	private drawTimeMarkers(): void {
 		this.timeMarkers.clear();
-		
+
 		const interval = this.getTimeInterval();
 		const visibleDuration = this.getVisibleDuration();
 		const dotColor = this.theme?.colors.ui.iconMuted || 0x666666;
 		const dotY = this.rulerHeight * 0.5;
-		
+
 		// Determine number of dots between labels based on interval
 		let dotsPerInterval = 4; // Default for most intervals
 		if (interval === 10) dotsPerInterval = 9;
 		else if (interval === 30 || interval === 60) dotsPerInterval = 5;
-		
+
 		const dotSpacing = interval / (dotsPerInterval + 1);
 
 		// Draw dots between time labels
 		for (let time = 0; time <= visibleDuration; time += interval) {
 			// Draw dots after this time marker
 			for (let i = 1; i <= dotsPerInterval; i += 1) {
-				const dotTime = time + (i * dotSpacing);
+				const dotTime = time + i * dotSpacing;
 				if (dotTime <= visibleDuration) {
 					const x = dotTime * this.pixelsPerSecond;
 					this.timeMarkers.circle(x, dotY, 1.5);
@@ -129,7 +129,6 @@ export class RulerFeature extends Entity {
 			this.timeLabels.addChild(label);
 		}
 	}
-
 
 	private onRulerPointerDown(event: PIXI.FederatedPointerEvent): void {
 		// Convert global to local coordinates within the ruler
@@ -177,32 +176,32 @@ export class RulerFeature extends Entity {
 		// Choose appropriate time interval based on zoom level
 		const intervals = [1, 5, 10, 30, 60, 120, 300, 600];
 		const minPixelSpacing = 80;
-		
+
 		for (const interval of intervals) {
 			const pixelSpacing = interval * this.pixelsPerSecond;
 			if (pixelSpacing >= minPixelSpacing) {
 				return interval;
 			}
 		}
-		
+
 		// If extremely zoomed out, use larger intervals
 		return Math.ceil(this.getVisibleDuration() / 10);
 	}
 
 	private formatTime(seconds: number): string {
 		if (seconds === 0) return "0s";
-		
+
 		const minutes = Math.floor(seconds / 60);
 		const remainingSeconds = seconds % 60;
-		
+
 		if (seconds < 60) {
 			return `${seconds}s`;
-		} if (remainingSeconds === 0) {
+		}
+		if (remainingSeconds === 0) {
 			return `${minutes}m`;
-		} 
-			// Format as M:SS for times with seconds
-			const formattedSeconds = remainingSeconds.toString().padStart(2, '0');
-			return `${minutes}:${formattedSeconds}`;
-		
+		}
+		// Format as M:SS for times with seconds
+		const formattedSeconds = remainingSeconds.toString().padStart(2, "0");
+		return `${minutes}:${formattedSeconds}`;
 	}
 }

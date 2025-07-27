@@ -1,12 +1,12 @@
 import { Edit } from "@core/edit";
 
 import { TimelineTheme } from "../../../core/theme";
-import { 
-	RulerFeature, 
-	PlayheadFeature, 
-	ScrollManager, 
-	RulerFeatureOptions, 
-	PlayheadFeatureOptions, 
+import {
+	RulerFeature,
+	PlayheadFeature,
+	ScrollManager,
+	RulerFeatureOptions,
+	PlayheadFeatureOptions,
 	ScrollManagerOptions,
 	TimelineReference
 } from "../features";
@@ -92,12 +92,7 @@ export class TimelineFeatureManager {
 		this.viewportManager.updateViewportTransform();
 	}
 
-	public recreateTimelineFeatures(
-		theme: TimelineTheme,
-		pixelsPerSecond: number,
-		height: number,
-		extendedDuration: number
-	): void {
+	public recreateTimelineFeatures(theme: TimelineTheme, pixelsPerSecond: number, height: number, extendedDuration: number): void {
 		if (this.ruler) {
 			this.ruler.dispose();
 			const rulerHeight = theme.dimensions?.rulerHeight || this.layout.rulerHeight;
@@ -113,7 +108,7 @@ export class TimelineFeatureManager {
 			this.viewportManager.getRulerViewport().addChild(this.ruler.getContainer());
 			this.ruler.events.on("ruler:seeked", this.eventHandler.handleSeek.bind(this.eventHandler));
 		}
-		
+
 		if (this.playhead) {
 			this.playhead.dispose();
 			const playheadOptions: PlayheadFeatureOptions = {

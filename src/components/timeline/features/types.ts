@@ -31,11 +31,11 @@ export const TIMELINE_CONSTANTS = {
 
 // Type-safe event definitions
 export interface TimelineFeatureEvents {
-	'ruler:seeked': { time: number };
-	'playhead:seeked': { time: number };
-	'playhead:timeChanged': { time: number };
-	'scroll': { x: number; y: number };
-	'zoom': { pixelsPerSecond: number; focusX: number; focusTime: number };
+	"ruler:seeked": { time: number };
+	"playhead:seeked": { time: number };
+	"playhead:timeChanged": { time: number };
+	scroll: { x: number; y: number };
+	zoom: { pixelsPerSecond: number; focusX: number; focusTime: number };
 }
 
 // Parameter object interfaces
@@ -51,7 +51,6 @@ export interface PlayheadFeatureOptions {
 	timelineHeight: number;
 	theme?: TimelineTheme;
 }
-
 
 // Interface to avoid circular dependency
 export interface TimelineReference {

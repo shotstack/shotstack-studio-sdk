@@ -55,21 +55,18 @@ export class VisualTrack extends Entity {
 		container.y = this.options.trackIndex * this.options.trackHeight;
 	}
 
-
 	private updateTrackAppearance(): void {
-		const {width} = this.options;
+		const { width } = this.options;
 		const height = this.options.trackHeight;
-		const {theme} = this.options;
+		const { theme } = this.options;
 
 		// Draw track background
 		this.background.clear();
 
 		// Alternating track colors using theme
-		const bgColor = this.options.trackIndex % 2 === 0 ? 
-			theme.colors.structure.surface : 
-			theme.colors.structure.surfaceAlt;
+		const bgColor = this.options.trackIndex % 2 === 0 ? theme.colors.structure.surface : theme.colors.structure.surfaceAlt;
 		const trackOpacity = theme.opacity?.track || TRACK_CONSTANTS.DEFAULT_OPACITY;
-		
+
 		this.background.rect(0, 0, width, height);
 		this.background.fill({ color: bgColor, alpha: trackOpacity });
 
@@ -165,7 +162,7 @@ export class VisualTrack extends Entity {
 		this.clips.forEach(clip => {
 			clip.setPixelsPerSecond(pixelsPerSecond);
 		});
-		
+
 		// Don't update appearance here - it will be updated when setWidth is called
 	}
 

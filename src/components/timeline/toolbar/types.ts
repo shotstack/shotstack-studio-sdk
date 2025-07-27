@@ -1,11 +1,11 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from "pixi.js";
 
-import { Edit } from '../../../core/edit';
-import { TimelineTheme } from '../../../core/theme';
-import { TimelineLayout } from '../timeline-layout';
+import { Edit } from "../../../core/edit";
+import { TimelineTheme } from "../../../core/theme";
+import { TimelineLayout } from "../timeline-layout";
 
 // Button types
-export type ButtonType = 'play-pause' | 'frame-back' | 'frame-forward' | 'cut';
+export type ButtonType = "play-pause" | "frame-back" | "frame-forward" | "cut";
 
 export interface ButtonConfig {
 	type: ButtonType;
@@ -26,10 +26,7 @@ export interface TextButtonConfig extends ButtonConfig {
 }
 
 // State types
-export type ToolbarState = 
-	| { type: 'idle' }
-	| { type: 'playing' }
-	| { type: 'paused' };
+export type ToolbarState = { type: "idle" } | { type: "playing" } | { type: "paused" };
 
 export interface ButtonState {
 	isHovering: boolean;
@@ -70,13 +67,13 @@ export interface ComponentPosition {
 
 // Event types
 export interface ToolbarEventMap {
-	'button:click': { button: ButtonType };
-	'button:hover': { button: ButtonType; hovering: boolean };
-	'state:change': { state: ToolbarState };
+	"button:click": { button: ButtonType };
+	"button:hover": { button: ButtonType; hovering: boolean };
+	"state:change": { state: ToolbarState };
 }
 
 // Icon types
-export type IconType = 'play' | 'pause' | 'frame-back' | 'frame-forward' | 'cut';
+export type IconType = "play" | "pause" | "frame-back" | "frame-forward" | "cut";
 
 export interface IconConfig {
 	type: IconType;

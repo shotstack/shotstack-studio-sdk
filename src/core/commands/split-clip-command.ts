@@ -51,7 +51,7 @@ export class SplitClipCommand implements EditCommand {
 			start: clipStart + splitPoint,
 			length: clipLength - splitPoint
 		};
-		
+
 		// Deep clone assets to avoid shared references
 		if (clipConfig.asset) {
 			leftClip.asset = { ...clipConfig.asset };
@@ -59,17 +59,17 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		// Adjust trim values for video/audio assets
-		if (clipConfig.asset && (clipConfig.asset.type === 'video' || clipConfig.asset.type === 'audio')) {
+		if (clipConfig.asset && (clipConfig.asset.type === "video" || clipConfig.asset.type === "audio")) {
 			// The trim value indicates how much was trimmed from the start of the original asset
 			const originalTrim = (clipConfig.asset as VideoAsset | AudioAsset).trim || 0;
-			
+
 			// Left clip keeps the original trim
-			if (leftClip.asset && (leftClip.asset.type === 'video' || leftClip.asset.type === 'audio')) {
+			if (leftClip.asset && (leftClip.asset.type === "video" || leftClip.asset.type === "audio")) {
 				(leftClip.asset as VideoAsset | AudioAsset).trim = originalTrim;
 			}
-			
+
 			// Right clip needs trim = original trim + split point
-			if (rightClip.asset && (rightClip.asset.type === 'video' || rightClip.asset.type === 'audio')) {
+			if (rightClip.asset && (rightClip.asset.type === "video" || rightClip.asset.type === "audio")) {
 				(rightClip.asset as VideoAsset | AudioAsset).trim = originalTrim + splitPoint;
 			}
 		}
@@ -112,7 +112,8 @@ export class SplitClipCommand implements EditCommand {
 		this.rightClipPlayer.reconfigureAfterRestore();
 
 		// Load the new player
-		this.rightClipPlayer.load()
+		this.rightClipPlayer
+			.load()
 			.then(() => {
 				this.splitSuccessful = true;
 				// Draw the new player after loading
@@ -124,7 +125,7 @@ export class SplitClipCommand implements EditCommand {
 					current: context.getEditState()
 				});
 			})
-			.catch((error) => {
+			.catch(error => {
 				console.error("Failed to load split clip:", error);
 				// Clean up will happen in undo if needed
 			});

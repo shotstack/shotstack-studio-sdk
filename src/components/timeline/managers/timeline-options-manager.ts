@@ -25,7 +25,7 @@ export class TimelineOptionsManager {
 		// Set dimensions from size parameter
 		this.width = size.width;
 		this.height = size.height;
-		
+
 		// Set default values for other properties (some from theme)
 		this.pixelsPerSecond = 50;
 		// Enforce minimum track height of 40px for usability
@@ -62,7 +62,7 @@ export class TimelineOptionsManager {
 		if (options.backgroundColor !== undefined) this.backgroundColor = options.backgroundColor;
 		if (options.antialias !== undefined) this.antialias = options.antialias;
 		if (options.resolution !== undefined) this.resolution = options.resolution;
-		
+
 		// Update layout with new options
 		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
 	}
@@ -70,38 +70,46 @@ export class TimelineOptionsManager {
 	public updateFromTheme(theme: TimelineTheme): void {
 		// Update backgroundColor from theme
 		this.backgroundColor = theme.colors.structure.background;
-		
+
 		// Update trackHeight from theme (with minimum of 40px)
 		const themeTrackHeight = theme.dimensions?.trackHeight || TimelineLayout.TRACK_HEIGHT_DEFAULT;
 		this.trackHeight = Math.max(40, themeTrackHeight);
-		
+
 		// Update layout with new options and theme
 		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>, theme);
 	}
 
 	// Individual getters
-	public getWidth(): number { return this.width; }
-	public getHeight(): number { return this.height; }
-	public getPixelsPerSecond(): number { return this.pixelsPerSecond; }
-	public getTrackHeight(): number { return this.trackHeight; }
-	public getBackgroundColor(): number { return this.backgroundColor; }
-	public getAntialias(): boolean { return this.antialias; }
-	public getResolution(): number { return this.resolution; }
+	public getWidth(): number {
+		return this.width;
+	}
+	public getHeight(): number {
+		return this.height;
+	}
+	public getPixelsPerSecond(): number {
+		return this.pixelsPerSecond;
+	}
+	public getTrackHeight(): number {
+		return this.trackHeight;
+	}
+	public getBackgroundColor(): number {
+		return this.backgroundColor;
+	}
+	public getAntialias(): boolean {
+		return this.antialias;
+	}
+	public getResolution(): number {
+		return this.resolution;
+	}
 
 	// Zoom methods
 	public zoomIn(): void {
-		const newPixelsPerSecond = Math.min(
-			this.pixelsPerSecond * TimelineOptionsManager.ZOOM_FACTOR,
-			TimelineOptionsManager.MAX_PIXELS_PER_SECOND
-		);
+		const newPixelsPerSecond = Math.min(this.pixelsPerSecond * TimelineOptionsManager.ZOOM_FACTOR, TimelineOptionsManager.MAX_PIXELS_PER_SECOND);
 		this.setPixelsPerSecond(newPixelsPerSecond);
 	}
 
 	public zoomOut(): void {
-		const newPixelsPerSecond = Math.max(
-			this.pixelsPerSecond / TimelineOptionsManager.ZOOM_FACTOR,
-			TimelineOptionsManager.MIN_PIXELS_PER_SECOND
-		);
+		const newPixelsPerSecond = Math.max(this.pixelsPerSecond / TimelineOptionsManager.ZOOM_FACTOR, TimelineOptionsManager.MIN_PIXELS_PER_SECOND);
 		this.setPixelsPerSecond(newPixelsPerSecond);
 	}
 
@@ -111,7 +119,7 @@ export class TimelineOptionsManager {
 			TimelineOptionsManager.MIN_PIXELS_PER_SECOND,
 			Math.min(TimelineOptionsManager.MAX_PIXELS_PER_SECOND, pixelsPerSecond)
 		);
-		
+
 		// Update layout with new options
 		this.layout.updateOptions(this.getOptions() as Required<TimelineOptions>);
 	}

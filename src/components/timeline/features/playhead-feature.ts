@@ -46,7 +46,7 @@ export class PlayheadFeature extends Entity {
 
 		// Draw line
 		this.graphics.rect(x, 0, lineWidth, this.options.timelineHeight);
-		
+
 		// Draw triangle (centered on line)
 		const triangleSize = 8;
 		const triangleHeight = 10;
@@ -54,7 +54,7 @@ export class PlayheadFeature extends Entity {
 		this.graphics.lineTo(centerX - triangleSize, 0);
 		this.graphics.lineTo(centerX + triangleSize, 0);
 		this.graphics.closePath();
-		
+
 		this.graphics.fill();
 	}
 

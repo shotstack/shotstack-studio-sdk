@@ -25,19 +25,23 @@ async function main() {
 		await edit.loadEdit(template);
 
 		// 5. Initialize the Timeline with size and theme
-		const timeline = new Timeline(edit, {
-			width: template.output.size.width,
-			height: 300
-		}, {
-			theme  // Uses imported theme from JSON
-		});
+		const timeline = new Timeline(
+			edit,
+			{
+				width: template.output.size.width,
+				height: 300
+			},
+			{
+				theme // Uses imported theme from JSON
+			}
+		);
 		await timeline.load(); // Renders to [data-shotstack-timeline] element
 
 		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
 
-		// TimelineV2 has its own animation loop, no need to register with canvas
+		// 7. Add event handlers
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);
@@ -46,10 +50,6 @@ async function main() {
 		edit.events.on("clip:updated", data => {
 			console.log("Clip updated:", data);
 		});
-
-		edit.events.on("track:created", data => {
-			console.log("Track created:", data);
-		})
 
 		// Additional helpful information for the demo
 		console.log("Demo loaded successfully! Try the following keyboard controls:");

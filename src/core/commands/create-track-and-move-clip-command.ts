@@ -39,15 +39,6 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 			this.addTrackCommand.execute(context);
 			this.moveClipCommand.execute(context);
 			this.wasExecuted = true;
-
-			// Emit compound event
-			context.emitEvent("track:created", {
-				trackInsertionIndex: this.insertionIndex,
-				clipMove: {
-					from: { trackIndex: this.fromTrackIndex, clipIndex: this.fromClipIndex },
-					to: { trackIndex: this.insertionIndex, start: this.newStart }
-				}
-			});
 		} catch (error) {
 			// Clean up on error
 			if (this.wasExecuted) {
@@ -70,7 +61,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		this.wasExecuted = false;
 
 		context.emitEvent("track:created:undone", {
-			trackInsertionIndex: this.insertionIndex
+			trackIndex: this.insertionIndex
 		});
 	}
 }

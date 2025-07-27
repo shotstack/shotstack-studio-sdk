@@ -7,13 +7,7 @@ export { RulerFeature } from "./ruler-feature";
 export { PlayheadFeature } from "./playhead-feature";
 export { ScrollManager } from "./scroll-manager";
 
-export type {
-	TimelineFeatureEvents,
-	RulerFeatureOptions,
-	PlayheadFeatureOptions,
-	ScrollManagerOptions,
-	TimelineReference
-} from "./types";
+export type { TimelineFeatureEvents, RulerFeatureOptions, PlayheadFeatureOptions, ScrollManagerOptions, TimelineReference } from "./types";
 
 export { TIMELINE_CONSTANTS } from "./types";
 

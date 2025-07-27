@@ -4,26 +4,21 @@ import { CollisionDetector } from "./collision-detector";
 import { DragHandler } from "./drag-handler";
 import { ResizeHandler } from "./resize-handler";
 import { SnapManager } from "./snap-manager";
-import { 
-	TimelineInterface, 
-	InteractionState, 
-	ClipInfo,
-	InteractionThresholds 
-} from "./types";
+import { TimelineInterface, InteractionState, ClipInfo, InteractionThresholds } from "./types";
 import { VisualFeedbackManager } from "./visual-feedback-manager";
 
 export class InteractionController {
 	private timeline: TimelineInterface;
-	private state: InteractionState = { type: 'idle' };
+	private state: InteractionState = { type: "idle" };
 	private abortController?: AbortController;
-	
+
 	// Handlers
 	private dragHandler: DragHandler;
 	private resizeHandler: ResizeHandler;
 	private snapManager: SnapManager;
 	private collisionDetector: CollisionDetector;
 	private visualFeedback: VisualFeedbackManager;
-	
+
 	// Default thresholds
 	private thresholds: InteractionThresholds = {
 		drag: {
@@ -43,14 +38,14 @@ export class InteractionController {
 			time: 0.1
 		}
 	};
-	
+
 	constructor(timeline: TimelineInterface, thresholds?: Partial<InteractionThresholds>) {
 		this.timeline = timeline;
-		
+
 		// Deep merge custom thresholds using structuredClone
 		if (thresholds) {
 			const merged = structuredClone(this.thresholds);
-			
+
 			// Manually merge each nested object
 			if (thresholds.drag) {
 				Object.assign(merged.drag, thresholds.drag);
@@ -64,34 +59,28 @@ export class InteractionController {
 			if (thresholds.snap) {
 				Object.assign(merged.snap, thresholds.snap);
 			}
-			
+
 			this.thresholds = merged;
 		}
-		
+
 		// Initialize managers
 		this.snapManager = new SnapManager(timeline, this.thresholds);
 		this.collisionDetector = new CollisionDetector(timeline);
 		this.visualFeedback = new VisualFeedbackManager(timeline);
-		
+
 		// Initialize handlers
-		this.dragHandler = new DragHandler(
-			timeline,
-			this.thresholds,
-			this.snapManager,
-			this.collisionDetector,
-			this.visualFeedback
-		);
-		
+		this.dragHandler = new DragHandler(timeline, this.thresholds, this.snapManager, this.collisionDetector, this.visualFeedback);
+
 		this.resizeHandler = new ResizeHandler(timeline, this.thresholds);
 	}
-	
+
 	public activate(): void {
 		this.abortController = new AbortController();
 		this.setupEventListeners();
 		this.dragHandler.activate();
 		this.resizeHandler.activate();
 	}
-	
+
 	public deactivate(): void {
 		if (this.abortController) {
 			this.abortController.abort();
@@ -101,12 +90,12 @@ export class InteractionController {
 		this.dragHandler.deactivate();
 		this.resizeHandler.deactivate();
 	}
-	
+
 	private setupEventListeners(): void {
 		const pixiApp = this.timeline.getPixiApp();
-		
+
 		pixiApp.stage.interactive = true;
-		
+
 		pixiApp.stage.on("pointerdown", this.handlePointerDown.bind(this), {
 			signal: this.abortController?.signal
 		});
@@ -120,10 +109,10 @@ export class InteractionController {
 			signal: this.abortController?.signal
 		});
 	}
-	
+
 	private handlePointerDown(event: PIXI.FederatedPointerEvent): void {
 		const target = event.target as PIXI.Container;
-		
+
 		// Check if clicked on a clip
 		if (target.label) {
 			const clipInfo = this.parseClipLabel(target.label);
@@ -133,43 +122,43 @@ export class InteractionController {
 					if (this.resizeHandler.startResize(clipInfo, event)) {
 						const resizeInfo = this.resizeHandler.getResizeInfo();
 						if (resizeInfo) {
-							this.state = { type: 'resizing', resizeInfo };
+							this.state = { type: "resizing", resizeInfo };
 						}
 					}
 					return;
 				}
-				
+
 				// Start selection (potential drag)
 				this.state = {
-					type: 'selecting',
+					type: "selecting",
 					startPos: { x: event.global.x, y: event.global.y },
 					clipInfo
 				};
-				
+
 				// Set cursor to indicate draggable
 				this.timeline.getPixiApp().canvas.style.cursor = "grab";
 				return;
 			}
 		}
-		
+
 		// Clicked on empty space - clear selection
 		this.timeline.getEdit().clearSelection();
 	}
-	
+
 	private handlePointerMove(event: PIXI.FederatedPointerEvent): void {
 		switch (this.state.type) {
-			case 'selecting':
+			case "selecting":
 				this.handleSelectingMove(event);
 				break;
-			case 'dragging':
+			case "dragging":
 				this.timeline.getPixiApp().canvas.style.cursor = "grabbing";
 				this.dragHandler.updateDrag(event);
 				break;
-			case 'resizing':
+			case "resizing":
 				this.timeline.getPixiApp().canvas.style.cursor = "ew-resize";
 				this.resizeHandler.updateResize(event);
 				break;
-			case 'idle':
+			case "idle":
 				this.updateCursorForPosition(event);
 				break;
 			default:
@@ -177,51 +166,48 @@ export class InteractionController {
 				break;
 		}
 	}
-	
+
 	private handlePointerUp(event: PIXI.FederatedPointerEvent): void {
 		switch (this.state.type) {
-			case 'selecting':
+			case "selecting":
 				// Complete selection
-				this.timeline.getEdit().selectClip(
-					this.state.clipInfo.trackIndex, 
-					this.state.clipInfo.clipIndex
-				);
+				this.timeline.getEdit().selectClip(this.state.clipInfo.trackIndex, this.state.clipInfo.clipIndex);
 				break;
-			case 'dragging':
+			case "dragging":
 				this.dragHandler.completeDrag(event);
 				break;
-			case 'resizing':
+			case "resizing":
 				this.resizeHandler.completeResize(event);
 				break;
 			default:
 				// No action needed for other states
 				break;
 		}
-		
+
 		this.resetState();
 	}
-	
+
 	private handleSelectingMove(event: PIXI.FederatedPointerEvent): void {
-		if (this.state.type !== 'selecting') return;
-		
+		if (this.state.type !== "selecting") return;
+
 		const currentPos = { x: event.global.x, y: event.global.y };
-		
+
 		if (this.dragHandler.canStartDrag(this.state.startPos, currentPos)) {
 			if (this.dragHandler.startDrag(this.state.clipInfo, event)) {
 				const dragInfo = this.dragHandler.getDragInfo();
 				if (dragInfo) {
-					this.state = { 
-						type: 'dragging', 
+					this.state = {
+						type: "dragging",
 						dragInfo
 					};
 				}
 			}
 		}
 	}
-	
+
 	private updateCursorForPosition(event: PIXI.FederatedPointerEvent): void {
 		const target = event.target as PIXI.Container;
-		
+
 		if (target.label) {
 			const clipInfo = this.parseClipLabel(target.label);
 			if (clipInfo) {
@@ -235,37 +221,37 @@ export class InteractionController {
 				return;
 			}
 		}
-		
+
 		// Default cursor
 		this.timeline.getPixiApp().canvas.style.cursor = "default";
 	}
-	
+
 	private parseClipLabel(label: string): ClipInfo | null {
 		if (!label?.startsWith("clip-")) {
 			return null;
 		}
-		
+
 		const parts = label.split("-");
 		if (parts.length !== 3) {
 			return null;
 		}
-		
+
 		const trackIndex = parseInt(parts[1], 10);
 		const clipIndex = parseInt(parts[2], 10);
-		
+
 		if (Number.isNaN(trackIndex) || Number.isNaN(clipIndex)) {
 			return null;
 		}
-		
+
 		return { trackIndex, clipIndex };
 	}
-	
+
 	private resetState(): void {
-		this.state = { type: 'idle' };
+		this.state = { type: "idle" };
 		this.visualFeedback.hideAll();
 		this.timeline.getPixiApp().canvas.style.cursor = "default";
 	}
-	
+
 	public dispose(): void {
 		this.deactivate();
 		this.dragHandler.dispose();

@@ -1,59 +1,59 @@
 {
-  "colors": {
-    "structure": {
-      "background": "#1a1a1a",
-      "surface": "#2a2a2a",
-      "surfaceAlt": "#252525",
-      "border": "#3a3a3a",
-      "divider": "#404040",
-      "ruler": "#1f1f1f"
-    },
-    "assets": {
-      "video": "#ff6b6b",
-      "audio": "#4ecdc4",
-      "image": "#95e1d3",
-      "text": "#f9ca24",
-      "shape": "#f0932b",
-      "html": "#eb4d4b",
-      "luma": "#c44569",
-      "transition": "#786fa6",
-      "default": "#808080"
-    },
-    "interaction": {
-      "hover": "#4a4a4a",
-      "selected": "#00d2d3",
-      "focus": "#00d2d3",
-      "dropZone": "#6ab04c",
-      "snapGuide": "#535c68",
-      "playhead": "#ff4757",
-      "drag": "#6ab04c",
-      "trackInsertion": "#00d2d3"
-    },
-    "ui": {
-      "text": "#ffffff",
-      "textMuted": "#a0a0a0",
-      "icon": "#d0d0d0",
-      "iconMuted": "#606060"
-    },
-    "toolbar": {
-      "background": "#2a2a2a",
-      "surface": "#3a3a3a",
-      "hover": "#4a4a4a",
-      "active": "#00d2d3",
-      "divider": "#404040"
-    }
-  },
-  "dimensions": {
-    "toolbarHeight": 36,
-    "trackHeight": 60,
-    "rulerHeight": 40,
-    "clipRadius": 4,
-    "borderWidth": 2
-  },
-  "opacity": {
-    "track": 0.9,
-    "hover": 0.8,
-    "drag": 0.7,
-    "disabled": 0.4
-  }
+	"colors": {
+		"structure": {
+			"background": "#1a1a1a",
+			"surface": "#2a2a2a",
+			"surfaceAlt": "#252525",
+			"border": "#3a3a3a",
+			"divider": "#404040",
+			"ruler": "#1f1f1f"
+		},
+		"assets": {
+			"video": "#ff6b6b",
+			"audio": "#4ecdc4",
+			"image": "#95e1d3",
+			"text": "#f9ca24",
+			"shape": "#f0932b",
+			"html": "#eb4d4b",
+			"luma": "#c44569",
+			"transition": "#786fa6",
+			"default": "#808080"
+		},
+		"interaction": {
+			"hover": "#4a4a4a",
+			"selected": "#00d2d3",
+			"focus": "#00d2d3",
+			"dropZone": "#6ab04c",
+			"snapGuide": "#535c68",
+			"playhead": "#ff4757",
+			"drag": "#6ab04c",
+			"trackInsertion": "#00d2d3"
+		},
+		"ui": {
+			"text": "#ffffff",
+			"textMuted": "#a0a0a0",
+			"icon": "#d0d0d0",
+			"iconMuted": "#606060"
+		},
+		"toolbar": {
+			"background": "#2a2a2a",
+			"surface": "#3a3a3a",
+			"hover": "#4a4a4a",
+			"active": "#00d2d3",
+			"divider": "#404040"
+		}
+	},
+	"dimensions": {
+		"toolbarHeight": 36,
+		"trackHeight": 60,
+		"rulerHeight": 40,
+		"clipRadius": 4,
+		"borderWidth": 2
+	},
+	"opacity": {
+		"track": 0.9,
+		"hover": 0.8,
+		"drag": 0.7,
+		"disabled": 0.4
+	}
 }

@@ -128,11 +128,11 @@ export class Edit extends Entity {
 
 	public play(): void {
 		this.isPlaying = true;
-		this.events.emit('playback:play', {});
+		this.events.emit("playback:play", {});
 	}
 	public pause(): void {
 		this.isPlaying = false;
-		this.events.emit('playback:pause', {});
+		this.events.emit("playback:pause", {});
 	}
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
@@ -206,7 +206,7 @@ export class Edit extends Entity {
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
 		this.executeCommand(command);
 	}
-	
+
 	public splitClip(trackIndex: number, clipIndex: number, splitTime: number): void {
 		const command = new SplitClipCommand(trackIndex, clipIndex, splitTime);
 		this.executeCommand(command);
@@ -283,7 +283,7 @@ export class Edit extends Entity {
 		return {
 			getClips: () => this.clips,
 			getTracks: () => this.tracks,
-			getTrack: (trackIndex) => {
+			getTrack: trackIndex => {
 				if (trackIndex >= 0 && trackIndex < this.tracks.length) {
 					return this.tracks[trackIndex];
 				}
@@ -392,10 +392,10 @@ export class Edit extends Entity {
 
 		const previousDuration = this.totalDuration;
 		this.totalDuration = maxDuration;
-		
+
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {
-			this.events.emit('duration:changed', { duration: this.totalDuration });
+			this.events.emit("duration:changed", { duration: this.totalDuration });
 		}
 	}
 
@@ -403,12 +403,12 @@ export class Edit extends Entity {
 		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
 		const trackContainerKey = `shotstack-track-${zIndex}`;
 		let trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
-		
+
 		if (!trackContainer) {
 			trackContainer = new pixi.Container({ label: trackContainerKey, zIndex });
 			this.getContainer().addChild(trackContainer);
 		}
-		
+
 		trackContainer.addChild(player.getContainer());
 	}
 

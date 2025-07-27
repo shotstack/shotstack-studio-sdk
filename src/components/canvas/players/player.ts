@@ -99,7 +99,7 @@ export abstract class Player extends Entity {
 		this.rotationOffset = { x: 0, y: 0 };
 
 		this.initialClipConfiguration = null;
-		
+
 		// Create content container for actual player content
 		this.contentContainer = new pixi.Container();
 		this.getContainer().addChild(this.contentContainer);

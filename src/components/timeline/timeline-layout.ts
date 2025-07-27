@@ -30,25 +30,26 @@ export class TimelineLayout {
 
 	private config: TimelineLayoutConfig;
 
-	constructor(private options: Required<TimelineOptions>, private theme?: TimelineTheme) {
+	constructor(
+		private options: Required<TimelineOptions>,
+		private theme?: TimelineTheme
+	) {
 		this.config = this.calculateLayout();
 	}
 
 	private calculateLayout(): TimelineLayoutConfig {
 		// Calculate proportional heights based on timeline height
 		const timelineHeight = this.options.height;
-		
+
 		// Calculate toolbar and ruler heights proportionally
 		// Use theme values if available, otherwise calculate from timeline height
-		let toolbarHeight = this.theme?.dimensions?.toolbarHeight || 
-			Math.round(timelineHeight * TimelineLayout.TOOLBAR_HEIGHT_RATIO);
-		let rulerHeight = this.theme?.dimensions?.rulerHeight || 
-			Math.round(timelineHeight * TimelineLayout.RULER_HEIGHT_RATIO);
-		
+		let toolbarHeight = this.theme?.dimensions?.toolbarHeight || Math.round(timelineHeight * TimelineLayout.TOOLBAR_HEIGHT_RATIO);
+		let rulerHeight = this.theme?.dimensions?.rulerHeight || Math.round(timelineHeight * TimelineLayout.RULER_HEIGHT_RATIO);
+
 		// Apply minimum heights to ensure usability
 		toolbarHeight = Math.max(toolbarHeight, TimelineLayout.TOOLBAR_HEIGHT_DEFAULT);
 		rulerHeight = Math.max(rulerHeight, TimelineLayout.RULER_HEIGHT_DEFAULT);
-		
+
 		// Track height from options (already validated in Timeline)
 		const { trackHeight } = this.options;
 
