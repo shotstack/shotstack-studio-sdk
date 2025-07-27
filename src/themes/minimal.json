@@ -27,7 +27,6 @@
 		},
 		"ui": {
 			"text": "#444444",
-			"textMuted": "#888888",
 			"icon": "#aaaaaa",
 			"iconMuted": "#cccccc"
 		},

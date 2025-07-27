@@ -35,7 +35,6 @@ export interface TimelineThemeInput {
 		// Text and UI elements
 		ui: {
 			text: string; // Primary text
-			textMuted: string; // Secondary text
 			icon: string; // Icons and markers
 			iconMuted: string; // Subtle icons
 		};
@@ -97,7 +96,6 @@ export interface TimelineTheme {
 		// Text and UI elements
 		ui: {
 			text: number; // Primary text
-			textMuted: number; // Secondary text
 			icon: number; // Icons and markers
 			iconMuted: number; // Subtle icons
 		};

@@ -31,7 +31,6 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 		},
 		ui: {
 			text: "#ffffff",
-			textMuted: "#cccccc",
 			icon: "#888888",
 			iconMuted: "#666666"
 		},
@@ -84,7 +83,7 @@ export class TimelineThemeResolver {
 			const requiredStructureColors = ["background", "surface", "surfaceAlt", "border", "divider", "ruler"];
 			const requiredAssetColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default"];
 			const requiredInteractionColors = ["selected", "dropZone", "snapGuide", "playhead", "trackInsertion"];
-			const requiredUIColors = ["text", "textMuted", "icon", "iconMuted"];
+			const requiredUIColors = ["text", "icon", "iconMuted"];
 
 			for (const color of requiredStructureColors) {
 				if (typeof theme.colors.structure[color as keyof typeof theme.colors.structure] !== "number") {

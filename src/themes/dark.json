@@ -23,11 +23,10 @@
 			"dropZone": "#00dd00",
 			"snapGuide": "#777777",
 			"playhead": "#000000",
-			"trackInsertion": "#00dd00"
+			"trackInsertion": "#ffffff"
 		},
 		"ui": {
-			"text": "#e0e0e0",
-			"textMuted": "#999999",
+			"text": "#000000",
 			"icon": "#777777",
 			"iconMuted": "#555555"
 		},
