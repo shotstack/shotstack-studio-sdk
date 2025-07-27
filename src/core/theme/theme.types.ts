@@ -9,6 +9,7 @@ export interface TimelineThemeInput {
 			border: string; // Primary borders
 			divider: string; // Subtle separators
 			ruler: string; // Ruler background
+			rulerMarkers: string; // Ruler time marker dots
 		};
 
 		// Asset colors (the "content")
@@ -35,8 +36,6 @@ export interface TimelineThemeInput {
 		// Text and UI elements
 		ui: {
 			text: string; // Primary text
-			icon: string; // Icons and markers
-			iconMuted: string; // Subtle icons
 		};
 
 		// Toolbar colors
@@ -46,6 +45,7 @@ export interface TimelineThemeInput {
 			hover: string; // Button hover state
 			active: string; // Button active/pressed state
 			divider: string; // Separator lines
+			icon: string; // Toolbar button icons
 		};
 	};
 
@@ -70,6 +70,7 @@ export interface TimelineTheme {
 			border: number; // Primary borders
 			divider: number; // Subtle separators
 			ruler: number; // Ruler background
+			rulerMarkers: number; // Ruler time marker dots
 		};
 
 		// Asset colors (the "content")
@@ -96,8 +97,6 @@ export interface TimelineTheme {
 		// Text and UI elements
 		ui: {
 			text: number; // Primary text
-			icon: number; // Icons and markers
-			iconMuted: number; // Subtle icons
 		};
 
 		// Toolbar colors
@@ -107,6 +106,7 @@ export interface TimelineTheme {
 			hover: number; // Button hover state
 			active: number; // Button active/pressed state
 			divider: number; // Separator lines
+			icon: number; // Toolbar button icons
 		};
 	};
 

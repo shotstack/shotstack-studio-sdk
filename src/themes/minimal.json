@@ -6,7 +6,8 @@
 			"surfaceAlt": "#fafafa",
 			"border": "#e5e5e5",
 			"divider": "#d5d5d5",
-			"ruler": "#f0f0f0"
+			"ruler": "#f0f0f0",
+			"rulerMarkers": "#cccccc"
 		},
 		"assets": {
 			"video": "#888888",
@@ -26,16 +27,15 @@
 			"trackInsertion": "#007acc"
 		},
 		"ui": {
-			"text": "#444444",
-			"icon": "#aaaaaa",
-			"iconMuted": "#cccccc"
+			"text": "#444444"
 		},
 		"toolbar": {
 			"background": "#ffffff",
 			"surface": "#f8f8f8",
 			"hover": "#eeeeee",
 			"active": "#007acc",
-			"divider": "#e5e5e5"
+			"divider": "#e5e5e5",
+			"icon": "#666666"
 		}
 	},
 	"dimensions": {

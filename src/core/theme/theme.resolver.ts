@@ -10,7 +10,8 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 			surfaceAlt: "#242424",
 			border: "#3a3a3a",
 			divider: "#1a1a1a",
-			ruler: "#404040"
+			ruler: "#404040",
+			rulerMarkers: "#666666"
 		},
 		assets: {
 			video: "#4a90e2",
@@ -30,16 +31,15 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 			trackInsertion: "#00ff00"
 		},
 		ui: {
-			text: "#ffffff",
-			icon: "#888888",
-			iconMuted: "#666666"
+			text: "#ffffff"
 		},
 		toolbar: {
 			background: "#1a1a1a",
 			surface: "#2a2a2a",
 			hover: "#3a3a3a",
 			active: "#007acc",
-			divider: "#3a3a3a"
+			divider: "#3a3a3a",
+			icon: "#888888"
 		}
 	},
 	dimensions: {
@@ -80,10 +80,10 @@ export class TimelineThemeResolver {
 			if (!theme.colors.ui) return false;
 
 			// Validate required color properties
-			const requiredStructureColors = ["background", "surface", "surfaceAlt", "border", "divider", "ruler"];
+			const requiredStructureColors = ["background", "surface", "surfaceAlt", "border", "divider", "ruler", "rulerMarkers"];
 			const requiredAssetColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default"];
 			const requiredInteractionColors = ["selected", "dropZone", "snapGuide", "playhead", "trackInsertion"];
-			const requiredUIColors = ["text", "icon", "iconMuted"];
+			const requiredUIColors = ["text"];
 
 			for (const color of requiredStructureColors) {
 				if (typeof theme.colors.structure[color as keyof typeof theme.colors.structure] !== "number") {
@@ -105,6 +105,15 @@ export class TimelineThemeResolver {
 
 			for (const color of requiredUIColors) {
 				if (typeof theme.colors.ui[color as keyof typeof theme.colors.ui] !== "number") {
+					return false;
+				}
+			}
+
+			// Validate toolbar colors
+			if (!theme.colors.toolbar) return false;
+			const requiredToolbarColors = ["background", "surface", "hover", "active", "divider", "icon"];
+			for (const color of requiredToolbarColors) {
+				if (typeof theme.colors.toolbar[color as keyof typeof theme.colors.toolbar] !== "number") {
 					return false;
 				}
 			}

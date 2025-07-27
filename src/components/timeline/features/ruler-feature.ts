@@ -70,7 +70,7 @@ export class RulerFeature extends Entity {
 
 		const interval = this.getTimeInterval();
 		const visibleDuration = this.getVisibleDuration();
-		const dotColor = this.theme?.colors.ui.iconMuted || 0x666666;
+		const dotColor = this.theme?.colors.structure.rulerMarkers || 0x666666;
 		const dotY = this.rulerHeight * 0.5;
 
 		// Determine number of dots between labels based on interval
