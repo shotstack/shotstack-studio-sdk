@@ -253,7 +253,7 @@ export class VisualClip extends Entity {
 
 		switch (this.visualState.mode) {
 			case "dragging":
-				return { alpha: CLIP_CONSTANTS.DRAG_OPACITY, borderColor: theme.colors.interaction.drag };
+				return { alpha: CLIP_CONSTANTS.DRAG_OPACITY, borderColor: theme.colors.structure.border };
 			case "resizing":
 				return { alpha: CLIP_CONSTANTS.RESIZE_OPACITY, borderColor: theme.colors.interaction.dropZone };
 			case "selected":

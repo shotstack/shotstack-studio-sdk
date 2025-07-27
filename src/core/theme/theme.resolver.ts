@@ -27,7 +27,6 @@ const DEFAULT_THEME_DATA: TimelineThemeInput = {
 			dropZone: "#00ff00",
 			snapGuide: "#888888",
 			playhead: "#ff4444",
-			drag: "#00ff00",
 			trackInsertion: "#00ff00"
 		},
 		ui: {
@@ -84,7 +83,7 @@ export class TimelineThemeResolver {
 			// Validate required color properties
 			const requiredStructureColors = ["background", "surface", "surfaceAlt", "border", "divider", "ruler"];
 			const requiredAssetColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default"];
-			const requiredInteractionColors = ["selected", "dropZone", "snapGuide", "playhead", "drag", "trackInsertion"];
+			const requiredInteractionColors = ["selected", "dropZone", "snapGuide", "playhead", "trackInsertion"];
 			const requiredUIColors = ["text", "textMuted", "icon", "iconMuted"];
 
 			for (const color of requiredStructureColors) {

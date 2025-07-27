@@ -29,7 +29,6 @@ export interface TimelineThemeInput {
 			dropZone: string;
 			snapGuide: string;
 			playhead: string;
-			drag: string; // Drag preview
 			trackInsertion: string; // Track insertion indicator
 		};
 
@@ -92,7 +91,6 @@ export interface TimelineTheme {
 			dropZone: number;
 			snapGuide: number;
 			playhead: number;
-			drag: number; // Drag preview
 			trackInsertion: number; // Track insertion indicator
 		};
 

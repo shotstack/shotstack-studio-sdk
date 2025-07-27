@@ -23,7 +23,6 @@
 			"dropZone": "#00aa00",
 			"snapGuide": "#cccccc",
 			"playhead": "#ff4444",
-			"drag": "#00aa00",
 			"trackInsertion": "#007acc"
 		},
 		"ui": {
