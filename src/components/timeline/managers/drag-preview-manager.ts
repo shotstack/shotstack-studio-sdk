@@ -42,6 +42,7 @@ export class DragPreviewManager {
 		this.drawDragPreview(trackIndex, clipData.start || 0);
 	}
 
+	/** @internal */
 	public drawDragPreview(trackIndex: number, time: number): void {
 		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
 
@@ -60,6 +61,7 @@ export class DragPreviewManager {
 		this.dragPreviewContainer.position.set(x, y);
 	}
 
+	/** @internal */
 	private drawDragPreviewAtPosition(time: number, freeY: number, targetTrack: number): void {
 		if (!this.dragPreviewContainer || !this.dragPreviewGraphics || !this.draggedClipInfo) return;
 

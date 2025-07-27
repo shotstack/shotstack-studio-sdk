@@ -9,6 +9,7 @@ import { VisualFeedbackManager } from "./visual-feedback-manager";
 
 export class InteractionController {
 	private timeline: TimelineInterface;
+	/** @internal */
 	private state: InteractionState = { type: "idle" };
 	private abortController?: AbortController;
 
@@ -91,6 +92,7 @@ export class InteractionController {
 		this.resizeHandler.deactivate();
 	}
 
+	/** @internal */
 	private setupEventListeners(): void {
 		const pixiApp = this.timeline.getPixiApp();
 
@@ -110,6 +112,7 @@ export class InteractionController {
 		});
 	}
 
+	/** @internal */
 	private handlePointerDown(event: PIXI.FederatedPointerEvent): void {
 		const target = event.target as PIXI.Container;
 
@@ -145,6 +148,7 @@ export class InteractionController {
 		this.timeline.getEdit().clearSelection();
 	}
 
+	/** @internal */
 	private handlePointerMove(event: PIXI.FederatedPointerEvent): void {
 		switch (this.state.type) {
 			case "selecting":
@@ -167,6 +171,7 @@ export class InteractionController {
 		}
 	}
 
+	/** @internal */
 	private handlePointerUp(event: PIXI.FederatedPointerEvent): void {
 		switch (this.state.type) {
 			case "selecting":
@@ -187,6 +192,7 @@ export class InteractionController {
 		this.resetState();
 	}
 
+	/** @internal */
 	private handleSelectingMove(event: PIXI.FederatedPointerEvent): void {
 		if (this.state.type !== "selecting") return;
 
@@ -205,6 +211,7 @@ export class InteractionController {
 		}
 	}
 
+	/** @internal */
 	private updateCursorForPosition(event: PIXI.FederatedPointerEvent): void {
 		const target = event.target as PIXI.Container;
 
@@ -226,6 +233,7 @@ export class InteractionController {
 		this.timeline.getPixiApp().canvas.style.cursor = "default";
 	}
 
+	/** @internal */
 	private parseClipLabel(label: string): ClipInfo | null {
 		if (!label?.startsWith("clip-")) {
 			return null;
@@ -246,6 +254,7 @@ export class InteractionController {
 		return { trackIndex, clipIndex };
 	}
 
+	/** @internal */
 	private resetState(): void {
 		this.state = { type: "idle" };
 		this.visualFeedback.hideAll();

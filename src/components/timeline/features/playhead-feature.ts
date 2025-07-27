@@ -35,6 +35,7 @@ export class PlayheadFeature extends Entity {
 		this.getContainer().addChild(this.graphics);
 	}
 
+	/** @internal */
 	private drawPlayhead(): void {
 		const x = this.currentTime * this.options.pixelsPerSecond;
 		const playheadColor = this.options.theme?.colors.interaction.playhead || 0xff4444;
@@ -58,23 +59,27 @@ export class PlayheadFeature extends Entity {
 		this.graphics.fill();
 	}
 
+	/** @internal */
 	private onPointerDown(event: PIXI.FederatedPointerEvent): void {
 		this.isDragging = true;
 		this.graphics.cursor = "grabbing";
 		this.updateTimeFromPointer(event);
 	}
 
+	/** @internal */
 	private onPointerMove(event: PIXI.FederatedPointerEvent): void {
 		if (this.isDragging) {
 			this.updateTimeFromPointer(event);
 		}
 	}
 
+	/** @internal */
 	private onPointerUp(): void {
 		this.isDragging = false;
 		this.graphics.cursor = "pointer";
 	}
 
+	/** @internal */
 	private updateTimeFromPointer(event: PIXI.FederatedPointerEvent): void {
 		const localPos = this.graphics.parent.toLocal(event.global);
 		const newTime = Math.max(0, localPos.x / this.options.pixelsPerSecond);
@@ -92,6 +97,7 @@ export class PlayheadFeature extends Entity {
 		return this.currentTime;
 	}
 
+	/** @internal */
 	public updatePlayhead(pixelsPerSecond: number, timelineHeight: number): void {
 		this.options.pixelsPerSecond = pixelsPerSecond;
 		this.options.timelineHeight = timelineHeight;
@@ -100,6 +106,7 @@ export class PlayheadFeature extends Entity {
 
 	public update(): void {} // Event-driven, no frame updates needed
 
+	/** @internal */
 	public draw(): void {
 		this.drawPlayhead();
 	}

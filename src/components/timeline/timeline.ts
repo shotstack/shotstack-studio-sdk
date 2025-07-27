@@ -196,14 +196,17 @@ export class Timeline extends Entity {
 	}
 
 	// Combined getter for PIXI resources
+	/** @internal */
 	public getPixiApp(): PIXI.Application {
 		return this.renderer.getApp();
 	}
 
+	/** @internal */
 	public getTrackLayer(): PIXI.Container {
 		return this.renderer.getTrackLayer();
 	}
 
+	/** @internal */
 	public getOverlayLayer(): PIXI.Container {
 		return this.renderer.getOverlayLayer();
 	}
@@ -261,12 +264,14 @@ export class Timeline extends Entity {
 		return this.edit.totalDuration / 1000 || 60;
 	}
 
+	/** @internal */
 	private setupInteraction(): void {
 		this.interaction = new InteractionController(this);
 
 		// Interaction will be activated in the load() method after PIXI is ready
 	}
 
+	/** @internal */
 	private async handleEditChange(editType?: EditType): Promise<void> {
 		// Clean up drag preview before rebuilding
 		this.dragPreviewManager.hideDragPreview();
@@ -286,11 +291,13 @@ export class Timeline extends Entity {
 		await this.rebuildFromEdit(currentEdit);
 	}
 
+	/** @internal */
 	private getExtendedTimelineDuration(): number {
 		const duration = this.edit.totalDuration / 1000 || 60;
 		return Math.max(60, duration * Timeline.TIMELINE_BUFFER_MULTIPLIER);
 	}
 
+	/** @internal */
 	private updateRulerDuration(): void {
 		const extendedDuration = this.getExtendedTimelineDuration();
 		const extendedWidth = this.getExtendedTimelineWidth();
@@ -302,6 +309,7 @@ export class Timeline extends Entity {
 		this.visualTrackManager.updateTrackWidths(extendedWidth);
 	}
 
+	/** @internal */
 	private clearAllVisualState(): void {
 		// Make sure drag preview is cleaned up
 		this.dragPreviewManager.hideDragPreview();
@@ -310,6 +318,7 @@ export class Timeline extends Entity {
 		this.visualTrackManager.clearAllVisualState();
 	}
 
+	/** @internal */
 	private async rebuildFromEdit(editType: EditType): Promise<void> {
 		await this.visualTrackManager.rebuildFromEdit(editType, this.optionsManager.getPixelsPerSecond());
 		// Force a render
@@ -366,6 +375,7 @@ export class Timeline extends Entity {
 	}
 
 	// Required Entity methods
+	/** @internal */
 	public update(_deltaTime: number, _elapsed: number): void {
 		// Sync playhead with Edit playback time
 		if (this.edit.isPlaying || this.lastPlaybackTime !== this.edit.playbackTime) {
@@ -379,6 +389,7 @@ export class Timeline extends Entity {
 		}
 	}
 
+	/** @internal */
 	public draw(): void {
 		// Render the PIXI application
 		this.renderer.draw();
@@ -441,6 +452,7 @@ export class Timeline extends Entity {
 		this.renderer.render();
 	}
 
+	/** @internal */
 	public dispose(): void {
 		// Clean up managers
 		this.dragPreviewManager.dispose();

@@ -55,6 +55,7 @@ export class VisualTrack extends Entity {
 		container.y = this.options.trackIndex * this.options.trackHeight;
 	}
 
+	/** @internal */
 	private updateTrackAppearance(): void {
 		const { width } = this.options;
 		const height = this.options.trackHeight;
@@ -272,6 +273,7 @@ export class VisualTrack extends Entity {
 	}
 
 	// Required Entity methods
+	/** @internal */
 	public update(_deltaTime: number, _elapsed: number): void {
 		// VisualTrack doesn't need frame-based updates
 		// All updates are driven by state changes
@@ -282,6 +284,7 @@ export class VisualTrack extends Entity {
 		});
 	}
 
+	/** @internal */
 	public draw(): void {
 		// Draw is called by the Entity system
 		// Track appearance is updated when properties change
@@ -291,6 +294,7 @@ export class VisualTrack extends Entity {
 		});
 	}
 
+	/** @internal */
 	public dispose(): void {
 		// Clean up all clips
 		this.clearAllClips();

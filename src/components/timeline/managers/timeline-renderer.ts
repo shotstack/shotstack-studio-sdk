@@ -55,6 +55,7 @@ export class TimelineRenderer {
 		this.app.stage.addChild(this.overlayLayer);
 	}
 
+	/** @internal */
 	public startAnimationLoop(): void {
 		let lastTime = performance.now();
 
@@ -74,6 +75,7 @@ export class TimelineRenderer {
 		this.animationFrameId = requestAnimationFrame(animate);
 	}
 
+	/** @internal */
 	public draw(): void {
 		// Render the PIXI application
 		this.app.render();
@@ -97,10 +99,12 @@ export class TimelineRenderer {
 		return this.app.stage;
 	}
 
+	/** @internal */
 	public getTrackLayer(): PIXI.Container {
 		return this.trackLayer;
 	}
 
+	/** @internal */
 	public getOverlayLayer(): PIXI.Container {
 		return this.overlayLayer;
 	}

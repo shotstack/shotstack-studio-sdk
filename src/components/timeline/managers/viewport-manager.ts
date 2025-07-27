@@ -47,6 +47,7 @@ export class ViewportManager {
 		this.viewport.addChild(this.entityContainer);
 	}
 
+	/** @internal */
 	public updateViewportTransform(): void {
 		// Apply scroll transform using layout calculations
 		const position = this.layout.calculateViewportPosition(this.scrollX, this.scrollY);
@@ -83,14 +84,17 @@ export class ViewportManager {
 		};
 	}
 
+	/** @internal */
 	public getMainViewport(): PIXI.Container {
 		return this.viewport;
 	}
 
+	/** @internal */
 	public getRulerViewport(): PIXI.Container {
 		return this.rulerViewport;
 	}
 
+	/** @internal */
 	public getPlayheadContainer(): PIXI.Container {
 		return this.playheadContainer;
 	}

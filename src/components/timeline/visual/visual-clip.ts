@@ -25,6 +25,7 @@ export class VisualClip extends Entity {
 	private selectionRenderer: SelectionOverlayRenderer | undefined;
 	private lastGlobalX: number = -1;
 	private lastGlobalY: number = -1;
+	/** @internal */
 	private visualState: {
 		mode: "normal" | "selected" | "dragging" | "resizing" | "disabled";
 		previewWidth?: number;
@@ -92,6 +93,7 @@ export class VisualClip extends Entity {
 		this.updateVisualState();
 	}
 
+	/** @internal */
 	private updateVisualState(): void {
 		this.updatePosition();
 		this.updateAppearance();
@@ -108,6 +110,7 @@ export class VisualClip extends Entity {
 		this.updateVisualState();
 	}
 
+	/** @internal */
 	private updatePosition(): void {
 		const container = this.getContainer();
 		const startTime = this.clipConfig.start || 0;
@@ -117,6 +120,7 @@ export class VisualClip extends Entity {
 		container.y = 0;
 	}
 
+	/** @internal */
 	private updateSize(): void {
 		const width = this.getEffectiveWidth();
 		const height = this.options.trackHeight;
@@ -221,6 +225,7 @@ export class VisualClip extends Entity {
 		}
 	}
 
+	/** @internal */
 	private updateAppearance(): void {
 		const container = this.getContainer();
 
@@ -229,6 +234,7 @@ export class VisualClip extends Entity {
 		container.alpha = this.visualState.mode === "dragging" ? dragOpacity : CLIP_CONSTANTS.DEFAULT_ALPHA;
 	}
 
+	/** @internal */
 	private updateText(): void {
 		// Get text content using type-safe helper
 		const displayText = this.clipConfig.asset ? getAssetDisplayName(this.clipConfig.asset as TimelineAsset) : "Clip";
@@ -344,6 +350,7 @@ export class VisualClip extends Entity {
 	}
 
 	// Required Entity methods
+	/** @internal */
 	public update(_deltaTime: number, _elapsed: number): void {
 		// Update selection position if selected and position has changed
 		if (this.visualState.mode === "selected" && this.selectionRenderer) {
@@ -362,12 +369,14 @@ export class VisualClip extends Entity {
 		}
 	}
 
+	/** @internal */
 	public draw(): void {
 		// Draw is called by the Entity system
 		// Currently empty as updates happen immediately via state changes
 		// This prevents redundant drawing when draw() is called repeatedly
 	}
 
+	/** @internal */
 	public dispose(): void {
 		// Clean up selection via renderer
 		if (this.selectionRenderer) {
