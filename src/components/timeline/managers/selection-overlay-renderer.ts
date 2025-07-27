@@ -40,21 +40,7 @@ export class SelectionOverlayRenderer {
 		// Clear and redraw
 		graphics.clear();
 
-		// Draw selection highlight
-		graphics.setStrokeStyle({
-			width: 1,
-			color: this.theme.colors.interaction.focus
-		});
-		graphics.roundRect(
-			-bounds.borderWidth,
-			-bounds.borderWidth,
-			bounds.width + bounds.borderWidth * 2,
-			bounds.height + bounds.borderWidth * 2,
-			bounds.cornerRadius
-		);
-		graphics.stroke();
-
-		// Draw enhanced selection border
+		// Draw selection border
 		graphics.setStrokeStyle({
 			width: bounds.borderWidth * CLIP_CONSTANTS.SELECTED_BORDER_MULTIPLIER,
 			color: this.theme.colors.interaction.selected

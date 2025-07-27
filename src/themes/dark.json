@@ -20,10 +20,9 @@
 		},
 		"interaction": {
 			"selected": "#0066bb",
-			"focus": "#0066bb",
 			"dropZone": "#00dd00",
 			"snapGuide": "#777777",
-			"playhead": "#ff3333",
+			"playhead": "#000000",
 			"drag": "#ffffff",
 			"trackInsertion": "#00dd00"
 		},

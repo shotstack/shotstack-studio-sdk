@@ -20,7 +20,6 @@
 		},
 		"interaction": {
 			"selected": "#007acc",
-			"focus": "#007acc",
 			"dropZone": "#00aa00",
 			"snapGuide": "#cccccc",
 			"playhead": "#ff4444",
