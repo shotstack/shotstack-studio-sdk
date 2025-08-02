@@ -10,11 +10,11 @@ A JavaScript library for creating and editing videos in the browser.
 
 Try Shotstack Studio in your preferred framework:
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-StackBlitz-blue?style=for-the-badge&logo=typescript)](https://stackblitz.com/edit/studio-sdk-typescript?file=src%2Fmain.ts)
-[![React](https://img.shields.io/badge/React-StackBlitz-blue?style=for-the-badge&logo=react)](https://stackblitz.com/edit/studio-sdk-typescript?file=src%2Fmain.ts)
-[![Vue](https://img.shields.io/badge/Vue-StackBlitz-blue?style=for-the-badge&logo=vue.js)](https://stackblitz.com/edit/shotstack-studio-vue?file=src%2FApp.vue)
-[![Angular](https://img.shields.io/badge/Angular-StackBlitz-blue?style=for-the-badge&logo=angular)](https://stackblitz.com/edit/shotstack-studio-angular?file=src%2Fmain.ts)
-[![Next.js](https://img.shields.io/badge/Next.js-StackBlitz-blue?style=for-the-badge&logo=next.js)](https://stackblitz.com/edit/shotstack-studio-nextjs?file=app%2Fpage.tsx)
+[![TypeScript](https://img.shields.io/badge/TypeScript-StackBlitz-blue?style=for-the-badge&logo=typescript)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/typescript)
+[![React](https://img.shields.io/badge/React-StackBlitz-blue?style=for-the-badge&logo=react)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/react)
+[![Vue](https://img.shields.io/badge/Vue-StackBlitz-blue?style=for-the-badge&logo=vue.js)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/vue)
+[![Angular](https://img.shields.io/badge/Angular-StackBlitz-blue?style=for-the-badge&logo=angular)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/angular)
+[![Next.js](https://img.shields.io/badge/Next.js-StackBlitz-blue?style=for-the-badge&logo=next.js)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/nextjs)
 
 ## Features
 
