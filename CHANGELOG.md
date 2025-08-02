@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2025-07-27
+
+### Added
+
+- **Timeline Component**: A comprehensive visual timeline interface for editing video projects
+  - Visual track and clip representation with drag-and-drop support
+  - Clip resizing with edge detection and visual feedback
+  - Playhead control for timeline navigation
+  - Ruler with time markers and zoom support
+  - Toolbar with playback controls, edit actions, and time display
+  - Snap-to-grid functionality for precise clip alignment
+  - Multi-track support with visual track management
+  - Theme support with dark, light, and minimal themes
+  - Selection system with visual feedback
+  - Collision detection for clip placement
+  - Viewport management with scroll and zoom controls
+  - Real-time preview updates during clip manipulation
+
+### Fixed
+
+- Improved clip selection logic for better user interaction
+- Fixed resize handles to always appear on top with full opacity
+
 ## [1.4.1] - 2025-07-06
 
 ### Fixed

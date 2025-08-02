@@ -19,7 +19,9 @@ Try Shotstack Studio in your preferred framework:
 ## Features
 
 - Create video compositions with multiple tracks and clips
+- Visual timeline interface
 - WYSIWYG text editing
+- Multi-track, drag-and-drop clip manipulation with snap-to-grid
 - Use in conjunction with the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) to render video
 - Export to video using browser-based FFmpeg
 
@@ -46,14 +48,13 @@ You can skip this if you're using the [Shotstack Edit API](https://shotstack.io/
 ## Quick Start
 
 ```typescript
-import { Edit, Canvas, Controls } from "@shotstack/shotstack-studio";
+import { Edit, Canvas, Controls, Timeline } from "@shotstack/shotstack-studio";
 
-// 1. Retrieve an edit from a template
-const templateUrl = "https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json";
-const response = await fetch(templateUrl);
+// 1. Load a template
+const response = await fetch("https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json");
 const template = await response.json();
 
-// 2. Initialize the edit with dimensions and background color
+// 2. Initialize the edit
 const edit = new Edit(template.output.size, template.timeline.background);
 await edit.load();
 
@@ -64,15 +65,20 @@ await canvas.load(); // Renders to [data-shotstack-studio] element
 // 4. Load the template
 await edit.loadEdit(template);
 
-// 5. Add keyboard controls
+// 5. Initialize the Timeline
+const timeline = new Timeline(edit, { width: 1280, height: 300 });
+await timeline.load(); // Renders to [data-shotstack-timeline] element
+
+// 6. Add keyboard controls
 const controls = new Controls(edit);
 await controls.load();
 ```
 
-Your HTML should include a container with the `data-shotstack-studio` attribute:
+Your HTML should include containers for both the canvas and timeline:
 
 ```html
 <div data-shotstack-studio></div>
+<div data-shotstack-timeline></div>
 ```
 
 ## Main Components
@@ -182,6 +188,25 @@ await controls.load();
 // Cmd/Ctrl + Shift + Z - Redo
 ```
 
+### Timeline
+
+The Timeline class provides a visual timeline interface for editing.
+
+```typescript
+import { Timeline } from "@shotstack/shotstack-studio";
+
+const timeline = new Timeline(edit, { width: 1280, height: 300 });
+await timeline.load();
+
+// Timeline features:
+// - Visual track and clip representation
+// - Drag-and-drop clip manipulation
+// - Clip resizing with edge detection
+// - Playhead control for navigation
+// - Snap-to-grid functionality
+// - Zoom and scroll controls
+```
+
 ### VideoExporter
 
 The VideoExporter class exports the edit to a video file.
@@ -190,6 +215,101 @@ The VideoExporter class exports the edit to a video file.
 const exporter = new VideoExporter(edit, canvas);
 await exporter.export("my-video.mp4", 25); // filename, fps
 ```
+
+## Theming
+
+Shotstack Studio supports theming for visual components. Currently, theming is available for the Timeline component, with Canvas theming coming in a future releases.
+
+### Built-in Themes
+
+The library includes pre-designed themes that you can use immediately:
+
+```typescript
+import { Timeline } from "@shotstack/shotstack-studio";
+import darkTheme from "@shotstack/shotstack-studio/themes/dark.json";
+import minimalTheme from "@shotstack/shotstack-studio/themes/minimal.json";
+
+// Apply a theme when creating the timeline
+const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: darkTheme });
+```
+
+### Custom Themes
+
+Create your own theme by defining colors and dimensions for each component:
+
+```typescript
+const customTheme = {
+	timeline: {
+		// Main timeline colors
+		background: "#1e1e1e",
+		divider: "#1a1a1a",
+		playhead: "#ff4444",
+		snapGuide: "#888888",
+		dropZone: "#00ff00",
+		trackInsertion: "#00ff00",
+
+		// Toolbar styling
+		toolbar: {
+			background: "#1a1a1a",
+			surface: "#2a2a2a", // Button backgrounds
+			hover: "#3a3a3a", // Button hover state
+			active: "#007acc", // Button active state
+			divider: "#3a3a3a", // Separator lines
+			icon: "#888888", // Icon colors
+			text: "#ffffff", // Text color
+			height: 36 // Toolbar height in pixels
+		},
+
+		// Ruler styling
+		ruler: {
+			background: "#404040",
+			text: "#ffffff", // Time labels
+			markers: "#666666", // Time marker dots
+			height: 40 // Ruler height in pixels
+		},
+
+		// Track styling
+		tracks: {
+			surface: "#2d2d2d", // Primary track color
+			surfaceAlt: "#252525", // Alternating track color
+			border: "#3a3a3a", // Track borders
+			height: 60 // Track height in pixels
+		},
+
+		// Clip colors by asset type
+		clips: {
+			video: "#4a9eff",
+			audio: "#00d4aa",
+			image: "#f5a623",
+			text: "#d0021b",
+			shape: "#9013fe",
+			html: "#50e3c2",
+			luma: "#b8e986",
+			default: "#8e8e93", // Unknown asset types
+			selected: "#007acc", // Selection border
+			radius: 4 // Corner radius in pixels
+		}
+	}
+	// Canvas theming will be available in future releases
+	// canvas: { ... }
+};
+
+const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: customTheme });
+```
+
+### Theme Structure
+
+Themes are organized by component, making it intuitive to customize specific parts of the interface:
+
+- **Timeline**: Controls the appearance of the timeline interface
+
+  - `toolbar`: Playback controls and buttons
+  - `ruler`: Time markers and labels
+  - `tracks`: Track backgrounds and borders
+  - `clips`: Asset-specific colors and selection states
+  - Global timeline properties (background, playhead, etc.)
+
+- **Canvas** (coming soon): Will control the appearance of the video preview area
 
 ## Template Format
 
@@ -337,6 +457,29 @@ Creates a new controls instance for the provided Edit.
 #### Methods
 
 - `async load()` - Set up event listeners for keyboard controls
+
+### Timeline
+
+The `Timeline` class provides a visual timeline interface for video editing.
+
+```typescript
+import { Timeline } from "@shotstack/shotstack-studio";
+```
+
+#### Constructor
+
+```typescript
+constructor(edit: Edit, size: { width: number, height: number }, themeOptions?: TimelineThemeOptions)
+```
+
+Creates a new timeline interface for the provided Edit.
+
+#### Methods
+
+- `async load()` - Initialize the timeline and add it to the DOM
+- `setTheme(themeOptions: TimelineThemeOptions)` - Change the timeline theme
+- `setOptions(options: Partial<TimelineOptions>)` - Update timeline options
+- `dispose()` - Clean up resources and remove from DOM
 
 ### VideoExporter
 
