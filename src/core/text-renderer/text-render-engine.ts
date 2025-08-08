@@ -1,12 +1,18 @@
 import { CanvasKitManager } from "./canvas-kit-manager";
 import { FontManager } from "./font-manager";
+import { TextLayoutEngine } from "./text-layout-engine";
+import { TextStyleManager } from "./text-style-manager";
 import { CANVAS_CONFIG } from "./config";
-import type { CanvasConfig, TextMetrics, RenderResult } from "./types";
-import type { CanvasKit, Surface, Canvas } from "canvaskit-wasm";
+import type { CanvasConfig, RenderResult } from "./types";
+import type { CanvasKit, Surface, Canvas, Paint, Font } from "canvaskit-wasm";
+import { TextMeasurement } from "./text-measurement";
 
 export class TextRenderEngine {
 	private canvasKitManager: CanvasKitManager;
+	private textMeasurement: TextMeasurement | null = null;
 	private fontManager: FontManager;
+	private layoutEngine: TextLayoutEngine | null = null;
+	private styleManager: TextStyleManager | null = null;
 	private canvasKit: CanvasKit | null = null;
 	private surface: Surface | null = null;
 	private canvas: Canvas | null = null;
@@ -31,6 +37,10 @@ export class TextRenderEngine {
 		this.canvasKit = await this.canvasKitManager.initialize();
 
 		await this.fontManager.initialize();
+
+		this.layoutEngine = new TextLayoutEngine(this.canvasKit, this.config);
+		this.styleManager = new TextStyleManager(this.canvasKit, this.config);
+		this.textMeasurement = new TextMeasurement(this.canvasKit);
 
 		if (this.config.customFonts && this.config.customFonts.length > 0) {
 			await this.fontManager.loadCustomFonts(this.config.customFonts);
@@ -57,52 +67,30 @@ export class TextRenderEngine {
 	}
 
 	async renderText(text?: string): Promise<RenderResult> {
-		if (!this.canvasKit || !this.canvas || !this.config) {
+		if (!this.canvasKit || !this.canvas || !this.config || !this.layoutEngine || !this.styleManager) {
 			throw new Error("Engine not initialized");
 		}
 
-		const textToRender = text || this.config.text;
+		const textToRender = this.styleManager.applyTextTransform(text || this.config.text);
 
 		this.clearCanvas();
 
-		const paint = new this.canvasKit.Paint();
-		paint.setColor(this.parseColor(this.config.color));
-		paint.setAntiAlias(true);
+		const font = this.styleManager.createStyledFont();
 
-		const font = new this.canvasKit.Font();
-		font.setSize(this.config.fontSize);
+		const padding = this.config.fontSize * 0.5;
+		const maxWidth = this.config.width - padding * 2;
 
-		if (this.config.fontWeight && parseInt(this.config.fontWeight.toString()) > 500) {
-			font.setEmbolden(true);
+		const shouldWrap = this.layoutEngine.shouldWrapText(textToRender, font, maxWidth);
+
+		if (shouldWrap || textToRender.includes("\n")) {
+			await this.renderMultilineText(textToRender, font, maxWidth);
+		} else {
+			await this.renderSingleLineText(textToRender, font);
 		}
 
-		if (this.config.fontStyle === "italic") {
-			font.setSkewX(-0.25);
-		}
-
-		const textMetrics = this.measureText(textToRender, font);
-		const position = this.calculateTextPosition(textMetrics);
-
-		const transformedText = this.applyTextTransform(textToRender);
-
-		if (this.config.shadow) {
-			this.renderShadow(transformedText, position, font);
-		}
-
-		this.canvas.drawText(transformedText, position.x, position.y, paint, font);
-
-		if (this.config.stroke && this.config.stroke.width > 0) {
-			this.renderStroke(transformedText, position, font);
-		}
-
-		if (this.config.textDecoration && this.config.textDecoration !== "none") {
-			this.applyTextDecoration(transformedText, position, textMetrics);
-		}
+		font.delete();
 
 		const imageData = this.getImageData();
-
-		paint.delete();
-		font.delete();
 
 		return {
 			type: "image",
@@ -114,144 +102,116 @@ export class TextRenderEngine {
 		};
 	}
 
-	private clearCanvas(): void {
-		if (!this.canvas || !this.canvasKit || !this.config) return;
-
-		const paint = new this.canvasKit.Paint();
-
-		if (this.config.backgroundColor && this.config.backgroundColor !== "transparent") {
-			paint.setColor(this.parseColor(this.config.backgroundColor));
-			this.canvas.drawRect(this.canvasKit.XYWHRect(0, 0, this.config.width, this.config.height), paint);
-		} else {
-			this.canvas.clear(this.canvasKit.TRANSPARENT);
+	private async renderSingleLineText(text: string, font: Font): Promise<void> {
+		if (!this.canvas || !this.canvasKit || !this.config || !this.styleManager || !this.layoutEngine) {
+			return;
 		}
 
-		paint.delete();
-	}
-
-	private measureText(text: string, font: any): TextMetrics {
-		if (!this.canvasKit) {
-			throw new Error("CanvasKit not initialized");
-		}
-
-		const metrics = font.measureText(text);
-		const fontMetrics = this.fontManager.getFontMetrics(this.config!.fontFamily, this.config!.fontSize);
-
-		return {
-			width: metrics.width,
-			height: fontMetrics.ascent + fontMetrics.descent,
-			ascent: fontMetrics.ascent,
-			descent: fontMetrics.descent,
-			lineHeight: fontMetrics.lineHeight
-		};
-	}
-
-	private calculateTextPosition(metrics: TextMetrics): { x: number; y: number } {
-		if (!this.config) throw new Error("Config not initialized");
+		const textWidth = this.layoutEngine.measureTextWithLetterSpacing(text, font);
+		const fontMetrics = this.fontManager.getFontMetrics(this.config.fontFamily, this.config.fontSize);
 
 		let x = 0;
 		let y = 0;
 
 		switch (this.config.textAlign) {
 			case "left":
-				x = 0;
+				x = this.config.fontSize * 0.5;
 				break;
 			case "center":
-				x = (this.config.width - metrics.width) / 2;
+				x = (this.config.width - textWidth) / 2;
 				break;
 			case "right":
-				x = this.config.width - metrics.width;
+				x = this.config.width - textWidth - this.config.fontSize * 0.5;
 				break;
 		}
 
 		switch (this.config.textBaseline) {
 			case "top":
-				y = metrics.ascent;
+				y = fontMetrics.ascent;
 				break;
 			case "middle":
-				y = this.config.height / 2 + metrics.ascent / 2;
+				y = this.config.height / 2 + fontMetrics.ascent / 2;
 				break;
 			case "bottom":
-				y = this.config.height - metrics.descent;
+				y = this.config.height - fontMetrics.descent;
 				break;
 			default:
 				y = this.config.height / 2;
 		}
 
-		return { x, y };
+		const bounds = {
+			x: x,
+			y: y - fontMetrics.ascent,
+			width: textWidth,
+			height: fontMetrics.ascent + fontMetrics.descent
+		};
+
+		this.renderStyledText(text, x, y, font, bounds);
 	}
 
-	private applyTextTransform(text: string): string {
-		if (!this.config) return text;
-
-		switch (this.config.textTransform) {
-			case "uppercase":
-				return text.toUpperCase();
-			case "lowercase":
-				return text.toLowerCase();
-			case "capitalize":
-				return text
-					.split(" ")
-					.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-					.join(" ");
-			default:
-				return text;
-		}
-	}
-
-	private renderShadow(text: string, position: { x: number; y: number }, font: any): void {
-		if (!this.canvas || !this.canvasKit || !this.config?.shadow) return;
-
-		const paint = new this.canvasKit.Paint();
-		const shadowColor = this.parseColor(this.config.shadow.color);
-		shadowColor[3] = this.config.shadow.opacity;
-		paint.setColor(shadowColor);
-
-		paint.setMaskFilter(this.canvasKit.MaskFilter.MakeBlur(this.canvasKit.BlurStyle.Normal, this.config.shadow.blur, false));
-
-		this.canvas.drawText(text, position.x + this.config.shadow.offsetX, position.y + this.config.shadow.offsetY, paint, font);
-
-		paint.delete();
-	}
-
-	private renderStroke(text: string, position: { x: number; y: number }, font: any): void {
-		if (!this.canvas || !this.canvasKit || !this.config?.stroke) return;
-
-		const paint = new this.canvasKit.Paint();
-		const strokeColor = this.parseColor(this.config.stroke.color);
-		strokeColor[3] = this.config.stroke.opacity;
-		paint.setColor(strokeColor);
-		paint.setStyle(this.canvasKit.PaintStyle.Stroke);
-		paint.setStrokeWidth(this.config.stroke.width);
-
-		this.canvas.drawText(text, position.x, position.y, paint, font);
-
-		paint.delete();
-	}
-
-	private applyTextDecoration(text: string, position: { x: number; y: number }, metrics: TextMetrics): void {
-		if (!this.canvas || !this.canvasKit || !this.config) return;
-
-		const paint = new this.canvasKit.Paint();
-		paint.setColor(this.parseColor(this.config.color));
-		paint.setStrokeWidth(Math.max(2, this.config.fontSize / 20));
-
-		let y = position.y;
-
-		if (this.config.textDecoration === "underline") {
-			y += metrics.descent;
-		} else if (this.config.textDecoration === "line-through") {
-			y -= metrics.ascent / 2;
+	private async renderMultilineText(text: string, font: Font, maxWidth: number): Promise<void> {
+		if (!this.canvas || !this.canvasKit || !this.config || !this.layoutEngine || !this.styleManager) {
+			return;
 		}
 
-		const path = new this.canvasKit.Path();
-		path.moveTo(position.x, y);
-		path.lineTo(position.x + metrics.width, y);
+		const lines = this.layoutEngine.processTextContent(text, maxWidth, font);
 
-		this.canvas.drawPath(path, paint);
+		const textLines = this.layoutEngine.calculateMultilineLayout(lines, font, this.config.width, this.config.height);
 
-		path.delete();
+		const bounds = this.layoutEngine.getTextBounds(textLines);
+
+		textLines.forEach(line => {
+			this.renderStyledText(line.text, line.x, line.y, font, bounds);
+		});
+	}
+
+	private renderStyledText(text: string, x: number, y: number, font: Font, bounds: { x: number; y: number; width: number; height: number }): void {
+		if (!this.canvas || !this.canvasKit || !this.styleManager) {
+			return;
+		}
+
+		const renderTextFn = (canvas: Canvas, text: string, x: number, y: number, paint: Paint, font: Font) => {
+			this.styleManager!.renderTextWithLetterSpacing(canvas, text, x, y, paint, font);
+		};
+
+		if (this.config?.shadow) {
+			this.styleManager.renderTextShadow(this.canvas, text, x, y, font, renderTextFn);
+		}
+
+		if (this.config?.stroke) {
+			this.styleManager.renderTextStroke(this.canvas, text, x, y, font, renderTextFn);
+		}
+
+		const paint = new this.canvasKit.Paint();
+		this.styleManager.applyTextStyles(paint, bounds);
+
+		renderTextFn(this.canvas, text, x, y, paint, font);
+
+		const textWidth = this.layoutEngine?.measureTextWithLetterSpacing(text, font) || 0;
+		this.styleManager.applyTextDecoration(this.canvas, text, x, y, textWidth, font);
+
 		paint.delete();
+	}
+
+	private clearCanvas(): void {
+		if (!this.canvas || !this.canvasKit || !this.config || !this.styleManager) return;
+
+		if (this.config.backgroundColor && this.config.backgroundColor !== "transparent") {
+			const paint = new this.canvasKit.Paint();
+			paint.setColor(this.parseColor(this.config.backgroundColor));
+
+			if (this.config.borderRadius && this.config.borderRadius > 0) {
+				const path = this.styleManager.createRoundedRectPath(0, 0, this.config.width, this.config.height, this.config.borderRadius);
+				this.canvas.drawPath(path, paint);
+				path.delete();
+			} else {
+				this.canvas.drawRect(this.canvasKit.XYWHRect(0, 0, this.config.width, this.config.height), paint);
+			}
+
+			paint.delete();
+		} else {
+			this.canvas.clear(this.canvasKit.TRANSPARENT);
+		}
 	}
 
 	private parseColor(color: string): Float32Array {
@@ -329,9 +289,15 @@ export class TextRenderEngine {
 			this.surface.delete();
 			this.surface = null;
 		}
+		if (this.textMeasurement) {
+			this.textMeasurement.cleanup();
+			this.textMeasurement = null;
+		}
 		this.canvas = null;
 		this.canvasKit = null;
 		this.config = null;
+		this.layoutEngine = null;
+		this.styleManager = null;
 
 		console.log("🧹 Text Render Engine cleaned up");
 	}
