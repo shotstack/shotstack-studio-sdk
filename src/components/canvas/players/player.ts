@@ -33,6 +33,12 @@ export abstract class Player extends Entity {
 	private static readonly MinScale = 0.1;
 	private static readonly MaxScale = 5;
 
+	// Constants for edge handles
+	private static readonly EdgeHandleRadius = 8;
+	private static readonly EdgeHandleColor = 0x00ffff;
+	private static readonly MinContainerWidth = 100;
+	private static readonly MinContainerHeight = 50;
+
 	public layer: number;
 	public shouldDispose: boolean;
 
@@ -52,6 +58,15 @@ export abstract class Player extends Entity {
 	private bottomLeftScaleHandle: pixi.Graphics | null;
 	private bottomRightScaleHandle: pixi.Graphics | null;
 	private rotationHandle: pixi.Graphics | null;
+
+	// NEW: Edge handle properties
+	private topEdgeHandle: pixi.Graphics | null = null;
+	private rightEdgeHandle: pixi.Graphics | null = null;
+	private bottomEdgeHandle: pixi.Graphics | null = null;
+	private leftEdgeHandle: pixi.Graphics | null = null;
+	// NEW: Edge resize state
+	private edgeResizeMode: "top" | "right" | "bottom" | "left" | null = null;
+	private edgeResizeStart: { width: number; height: number; pointerX: number; pointerY: number } | null = null;
 
 	private isHovering: boolean;
 	private isDragging: boolean;
@@ -171,12 +186,30 @@ export abstract class Player extends Entity {
 		this.bottomLeftScaleHandle = new pixi.Graphics();
 		this.rotationHandle = new pixi.Graphics();
 
+		// NEW: Create edge handles (only for text clips)
+		this.topEdgeHandle = new pixi.Graphics();
+		this.rightEdgeHandle = new pixi.Graphics();
+		this.bottomEdgeHandle = new pixi.Graphics();
+		this.leftEdgeHandle = new pixi.Graphics();
+
 		// Set high zIndex on handles so they appear above other content
 		this.topLeftScaleHandle.zIndex = 1000;
 		this.topRightScaleHandle.zIndex = 1000;
 		this.bottomRightScaleHandle.zIndex = 1000;
 		this.bottomLeftScaleHandle.zIndex = 1000;
 		this.rotationHandle.zIndex = 1000;
+
+		// Set high zIndex on edge handles
+		this.topEdgeHandle.zIndex = 1001; // Higher than corner handles to prioritize edge interaction
+		this.rightEdgeHandle.zIndex = 1001;
+		this.bottomEdgeHandle.zIndex = 1001;
+		this.leftEdgeHandle.zIndex = 1001;
+
+		// Add edge handles to container
+		this.getContainer().addChild(this.topEdgeHandle);
+		this.getContainer().addChild(this.rightEdgeHandle);
+		this.getContainer().addChild(this.bottomEdgeHandle);
+		this.getContainer().addChild(this.leftEdgeHandle);
 
 		this.getContainer().addChild(this.topLeftScaleHandle);
 		this.getContainer().addChild(this.topRightScaleHandle);
@@ -253,6 +286,12 @@ export abstract class Player extends Entity {
 		this.outline.strokeStyle = { width: Player.OutlineWidth / scale, color };
 		this.outline.rect(0, 0, size.width, size.height);
 		this.outline.stroke();
+		// NEW: Draw edge handles (only for text clips and when selected)
+		if (this.edit.isPlayerSelected(this) && this.isTextClip()) {
+			this.drawEdgeHandles();
+		} else {
+			this.hideEdgeHandles();
+		}
 
 		if (
 			!this.topLeftScaleHandle ||
@@ -307,6 +346,15 @@ export abstract class Player extends Entity {
 	public override dispose(): void {
 		this.outline?.destroy();
 		this.outline = null;
+
+		this.topEdgeHandle?.destroy();
+		this.topEdgeHandle = null;
+		this.rightEdgeHandle?.destroy();
+		this.rightEdgeHandle = null;
+		this.bottomEdgeHandle?.destroy();
+		this.bottomEdgeHandle = null;
+		this.leftEdgeHandle?.destroy();
+		this.leftEdgeHandle = null;
 
 		this.topLeftScaleHandle?.destroy();
 		this.topLeftScaleHandle = null;
@@ -410,6 +458,19 @@ export abstract class Player extends Entity {
 		if (this.clipHasKeyframes()) {
 			return;
 		}
+		// IMPORTANT: Check edge handles FIRST (before corner handles)
+		// This prevents conflicts when handles are close together
+		if (this.isTextClip()) {
+			this.edgeResizeMode = this.getEdgeResizeMode(event);
+
+			if (this.edgeResizeMode !== null) {
+				this.startEdgeResize(event);
+				return;
+			}
+		}
+
+		// Reset edge resize mode if not edge resizing
+		this.edgeResizeMode = null;
 
 		this.scaleDirection = null;
 
@@ -518,6 +579,11 @@ export abstract class Player extends Entity {
 
 			return;
 		}
+		// NEW: Handle edge resizing
+		if (this.edgeResizeMode !== null && this.edgeResizeStart !== null) {
+			this.handleEdgeResize(event);
+			return;
+		}
 
 		if (this.isDragging) {
 			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
@@ -591,6 +657,34 @@ export abstract class Player extends Entity {
 			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
 		}
 	}
+	private handleEdgeResize(event: pixi.FederatedPointerEvent): void {
+		if (!this.edgeResizeStart || !this.edgeResizeMode) return;
+
+		const globalPos = event.getLocalPosition(this.edit.getContainer());
+		const deltaX = globalPos.x - this.edgeResizeStart.pointerX;
+		const deltaY = globalPos.y - this.edgeResizeStart.pointerY;
+
+		let newWidth = this.edgeResizeStart.width;
+		let newHeight = this.edgeResizeStart.height;
+
+		// Calculate new dimensions based on resize direction
+		switch (this.edgeResizeMode) {
+			case "top":
+				newHeight = Math.max(Player.MinContainerHeight, this.edgeResizeStart.height - deltaY);
+				break;
+			case "right":
+				newWidth = Math.max(Player.MinContainerWidth, this.edgeResizeStart.width + deltaX);
+				break;
+			case "bottom":
+				newHeight = Math.max(Player.MinContainerHeight, this.edgeResizeStart.height + deltaY);
+				break;
+			case "left":
+				newWidth = Math.max(Player.MinContainerWidth, this.edgeResizeStart.width - deltaX);
+				break;
+		}
+
+		this.updateTextContainerSize(newWidth, newHeight);
+	}
 
 	private onPointerUp(): void {
 		if ((this.isDragging || this.scaleDirection !== null || this.isRotating) && this.hasStateChanged()) {
@@ -599,6 +693,9 @@ export abstract class Player extends Entity {
 
 		this.isDragging = false;
 		this.dragOffset = { x: 0, y: 0 };
+
+		this.edgeResizeMode = null;
+		this.edgeResizeStart = null;
 
 		this.scaleDirection = null;
 		this.scaleStart = null;
@@ -647,11 +744,124 @@ export abstract class Player extends Entity {
 		const initialScale = this.initialClipConfiguration.scale as number;
 		const initialRotation = Number(this.initialClipConfiguration.transform?.rotate?.angle ?? 0);
 
+		let dimensionsChanged = false;
+		// Since edge resize is only for text clips, check the type first:
+		if (this.isTextClip()) {
+			const initialAsset = this.initialClipConfiguration.asset as any;
+			const currentAsset = this.clipConfiguration.asset as any;
+			const initialHeight = initialAsset?.height as number;
+			const initialWidth = initialAsset?.width as number;
+			const currentHeight = currentAsset?.height as number;
+			const currentWidth = currentAsset?.width as number;
+			dimensionsChanged = (initialHeight !== currentHeight) || (initialWidth !== currentWidth);
+		}
+
 		return (
 			(initialOffsetX !== undefined && currentOffsetX !== initialOffsetX) ||
 			(initialOffsetY !== undefined && currentOffsetY !== initialOffsetY) ||
 			(initialScale !== undefined && currentScale !== initialScale) ||
-			currentRotation !== initialRotation
+			currentRotation !== initialRotation || dimensionsChanged
 		);
+	}
+
+	// Helper method to check if this is a text clip
+	private isTextClip(): boolean {
+		return this.clipConfiguration.asset.type === "text";
+	}
+	// Hide edge handles when not needed
+	private hideEdgeHandles(): void {
+		this.topEdgeHandle?.clear();
+		this.rightEdgeHandle?.clear();
+		this.bottomEdgeHandle?.clear();
+		this.leftEdgeHandle?.clear();
+	}
+
+	// Draw all four edge handles
+	private drawEdgeHandles(): void {
+		const size = this.getSize();
+		const radius = Player.EdgeHandleRadius;
+
+		// Top edge handle (center-top)
+		this.drawEdgeHandle(this.topEdgeHandle!, size.width / 2, 0, radius);
+
+		// Right edge handle (center-right)
+		this.drawEdgeHandle(this.rightEdgeHandle!, size.width, size.height / 2, radius);
+
+		// Bottom edge handle (center-bottom)
+		this.drawEdgeHandle(this.bottomEdgeHandle!, size.width / 2, size.height, radius);
+
+		// Left edge handle (center-left)
+		this.drawEdgeHandle(this.leftEdgeHandle!, 0, size.height / 2, radius);
+	}
+
+	// Helper to draw individual edge handle
+	private drawEdgeHandle(handle: pixi.Graphics, x: number, y: number, radius: number): void {
+		handle.clear();
+		handle.circle(x, y, radius);
+		handle.fill({ color: Player.EdgeHandleColor, alpha: 0.8 });
+		handle.stroke({ color: 0xffffff, width: 2, alpha: 0.9 });
+
+		// Set cursor for better UX feedback
+		handle.cursor = this.getCursorForEdgeHandle(handle);
+		handle.eventMode = "static";
+	}
+	// Helper method to get appropriate cursor for edge handle
+	private getCursorForEdgeHandle(handle: pixi.Graphics): string {
+		if (handle === this.topEdgeHandle || handle === this.bottomEdgeHandle) {
+			return "ns-resize"; // North-south resize cursor
+		}
+		if (handle === this.leftEdgeHandle || handle === this.rightEdgeHandle) {
+			return "ew-resize"; // East-west resize cursor
+		}
+		return "pointer";
+	}
+
+	// Helper to determine which edge handle was clicked
+	private getEdgeResizeMode(event: pixi.FederatedPointerEvent): "top" | "right" | "bottom" | "left" | null {
+		if (this.topEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
+			return "top";
+		}
+		if (this.rightEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
+			return "right";
+		}
+		if (this.bottomEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
+			return "bottom";
+		}
+		if (this.leftEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
+			return "left";
+		}
+		return null;
+	}
+
+	private startEdgeResize(event: pixi.FederatedPointerEvent): void {
+		const size = this.getSize();
+		const globalPos = event.getLocalPosition(this.edit.getContainer());
+
+		this.edgeResizeStart = {
+			width: size.width,
+			height: size.height,
+			pointerX: globalPos.x,
+			pointerY: globalPos.y
+		};
+	}
+
+	private updateTextContainerSize(newWidth: number, newHeight: number): void {
+		// Update the clip configuration with new dimensions
+		const textAsset = this.clipConfiguration.asset as any; // Cast to avoid type issues for now
+
+		textAsset.width = newWidth;
+		textAsset.height = newHeight;
+
+		// Delegate text recreation to TextPlayer if this is a text clip
+		if (this.isTextClip() && this instanceof Object) {
+			// We need to call a method on TextPlayer to recreate the text with new container size
+			// This will be implemented in Step 6
+			this.recreateTextWithNewContainer();
+		}
+	}
+	// Placeholder method - will be overridden in TextPlayer
+	protected recreateTextWithNewContainer(): void {
+		// Base implementation does nothing
+		// TextPlayer will override this to handle text-specific recreation
 	}
 }
