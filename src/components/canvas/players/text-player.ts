@@ -127,4 +127,74 @@ export class TextPlayer extends Player {
 	public updateTextContent(newText: string, initialConfig: Clip): void {
 		this.edit.updateTextContent(this, newText, initialConfig);
 	}
+
+	// Override the placeholder method from Player
+	protected override recreateTextWithNewContainer(): void {
+		const textAsset = this.clipConfiguration.asset as TextAsset;
+		const originalFontSize = textAsset.font?.size ?? 32;
+		this.recreateBackground(textAsset);
+		this.recreateTextWithPreservedFont(textAsset, originalFontSize);
+		this.positionText(textAsset);
+	}
+
+	private recreateBackground(textAsset: TextAsset): void {
+		if (!this.background) return;
+
+		// Clear existing background
+		this.background.clear();
+
+		// Recreate background with new dimensions if it exists
+		if (textAsset.background) {
+			this.background.fillStyle = {
+				color: textAsset.background.color,
+				alpha: textAsset.background.opacity
+			};
+
+			this.background.rect(0, 0, textAsset.width ?? this.edit.size.width, textAsset.height ?? this.edit.size.height);
+			this.background.fill();
+		}
+	}
+
+	private recreateTextWithPreservedFont(textAsset: TextAsset, originalFontSize: number): void {
+		if (!this.text) return;
+
+		// Store current text content
+		const textContent = this.text.text;
+
+		// Create new text style with updated wordWrapWidth but preserved font size
+		const newStyle = new pixi.TextStyle({
+			fontFamily: textAsset.font?.family ?? "Open Sans",
+			fontSize: originalFontSize,
+			fill: textAsset.font?.color ?? "#ffffff",
+			fontWeight: (textAsset.font?.weight ?? "400").toString() as pixi.TextStyleFontWeight,
+			wordWrap: true,
+			wordWrapWidth: textAsset.width ?? this.edit.size.width, // 📏 Update wrap width
+			lineHeight: (textAsset.font?.lineHeight ?? 1) * originalFontSize,
+			align: textAsset.alignment?.horizontal ?? "center"
+		});
+
+		// Destroy old text object
+		this.text.destroy();
+
+		// Create new text object with updated style
+		this.text = new pixi.Text(textContent, newStyle);
+
+		// Reapply stroke filter if it exists
+		if (textAsset.stroke) {
+			const textStrokeFilter = new pixiFilters.OutlineFilter({
+				thickness: textAsset.stroke.width,
+				color: textAsset.stroke.color
+			});
+			this.text.filters = [textStrokeFilter];
+		}
+
+		// Add back to container
+		this.contentContainer.addChild(this.text);
+
+		// Update text editor reference if it exists
+		if (this.textEditor) {
+			this.textEditor.dispose();
+			this.textEditor = new TextEditor(this, this.text, this.clipConfiguration);
+		}
+	}
 }
