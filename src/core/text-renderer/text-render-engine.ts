@@ -4,8 +4,10 @@ import { TextLayoutEngine } from "./text-layout-engine";
 import { TextStyleManager } from "./text-style-manager";
 import { CANVAS_CONFIG } from "./config";
 import type { CanvasConfig, RenderResult } from "./types";
+import type { AnimationType } from "./config";
 import type { CanvasKit, Surface, Canvas, Paint, Font } from "canvaskit-wasm";
 import { TextMeasurement } from "./text-measurement";
+import { AnimationEngine } from "./animations";
 
 export class TextRenderEngine {
 	private canvasKitManager: CanvasKitManager;
@@ -18,6 +20,7 @@ export class TextRenderEngine {
 	private canvas: Canvas | null = null;
 	private config: CanvasConfig | null = null;
 	private pixelRatio: number = 2;
+	private animationEngine: AnimationEngine | null = null;
 
 	constructor() {
 		this.canvasKitManager = CanvasKitManager.getInstance();
@@ -55,6 +58,11 @@ export class TextRenderEngine {
 			}
 		}
 
+		if (config.animation?.preset) {
+			this.animationEngine = new AnimationEngine(this.canvasKit, this.config);
+			console.log(`🎬 Animation engine initialized for ${config.animation.preset}`);
+		}
+
 		const width = this.config.width * this.pixelRatio;
 		const height = this.config.height * this.pixelRatio;
 
@@ -64,6 +72,14 @@ export class TextRenderEngine {
 		this.canvas.scale(this.pixelRatio, this.pixelRatio);
 
 		console.log(`📐 Canvas initialized: ${this.config.width}x${this.config.height} @ ${this.pixelRatio}x DPI`);
+	}
+
+	async render(text?: string): Promise<RenderResult> {
+		if (this.config?.animation?.preset) {
+			return this.renderAnimation(text);
+		}
+
+		return this.renderText(text);
 	}
 
 	async renderText(text?: string): Promise<RenderResult> {
@@ -100,6 +116,19 @@ export class TextRenderEngine {
 				height: this.config.height
 			}
 		};
+	}
+
+	async renderAnimation(text?: string): Promise<RenderResult> {
+		if (!this.animationEngine || !this.config?.animation?.preset) {
+			throw new Error("Animation not configured");
+		}
+
+		const textToRender = text || this.config.text;
+		const animationType = this.config.animation.preset as AnimationType;
+
+		console.log(`🎬 Rendering ${animationType} animation for: "${textToRender}"`);
+
+		return this.animationEngine.generateAnimation(textToRender, animationType);
 	}
 
 	private async renderSingleLineText(text: string, font: Font): Promise<void> {
@@ -289,15 +318,30 @@ export class TextRenderEngine {
 			this.surface.delete();
 			this.surface = null;
 		}
+
 		if (this.textMeasurement) {
 			this.textMeasurement.cleanup();
 			this.textMeasurement = null;
 		}
+
+		if (this.layoutEngine) {
+			this.layoutEngine.cleanup();
+			this.layoutEngine = null;
+		}
+
+		if (this.styleManager) {
+			this.styleManager.cleanup();
+			this.styleManager = null;
+		}
+
+		if (this.animationEngine) {
+			this.animationEngine.cleanup();
+			this.animationEngine = null;
+		}
+
 		this.canvas = null;
 		this.canvasKit = null;
 		this.config = null;
-		this.layoutEngine = null;
-		this.styleManager = null;
 
 		console.log("🧹 Text Render Engine cleaned up");
 	}
@@ -308,5 +352,24 @@ export class TextRenderEngine {
 
 	isInitialized(): boolean {
 		return this.canvasKit !== null && this.surface !== null;
+	}
+
+	getAnimationEngine(): AnimationEngine | null {
+		return this.animationEngine;
+	}
+
+	updateConfig(config: Partial<CanvasConfig>): void {
+		if (!this.config) {
+			throw new Error("Engine not initialized");
+		}
+
+		this.config = {
+			...this.config,
+			...config
+		};
+
+		if (config.animation?.preset && this.canvasKit) {
+			this.animationEngine = new AnimationEngine(this.canvasKit, this.config);
+		}
 	}
 }

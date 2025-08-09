@@ -25,6 +25,15 @@ export interface CanvasConfig {
 	direction?: "left" | "right" | "up" | "down";
 	customFonts?: CustomFont[];
 	pixelRatio: number;
+	animation?: {
+		preset: string;
+		speed?: number;
+		duration?: number;
+		style?: "character" | "word";
+		direction?: "left" | "right" | "up" | "down" | "top" | "bottom";
+	};
+	animationStyle?: "character" | "word";
+	speed?: number;
 }
 
 export interface GradientConfig {
@@ -85,5 +94,6 @@ export interface RenderResult {
 		duration?: number;
 		frameCount?: number;
 		fps?: number;
+		generationTime?: number;
 	};
 }
