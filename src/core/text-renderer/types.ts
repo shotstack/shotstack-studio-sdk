@@ -1,3 +1,5 @@
+export type RendererMode = "auto" | "canvas2d" | "canvaskit";
+
 export interface CanvasConfig {
 	text: string;
 	width: number;
@@ -25,9 +27,12 @@ export interface CanvasConfig {
 	direction?: "left" | "right" | "up" | "down";
 	customFonts?: CustomFont[];
 	pixelRatio: number;
+	renderer?: RendererMode;
 	animation?: {
 		preset: string;
 		speed?: number;
+		fps?: number;
+		stagger: boolean;
 		duration?: number;
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down" | "top" | "bottom";

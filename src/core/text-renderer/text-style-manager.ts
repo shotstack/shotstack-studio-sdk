@@ -2,6 +2,7 @@ import type { CanvasKit, Paint, Font, Canvas } from "canvaskit-wasm";
 import type { CanvasConfig } from "./types";
 import { GradientBuilder } from "./gradient-builder";
 import { TextMeasurement } from "./text-measurement";
+import { CanvasKitManager } from "./canvas-kit-manager";
 
 export class TextStyleManager {
 	private canvasKit: CanvasKit;
@@ -16,6 +17,10 @@ export class TextStyleManager {
 		this.textMeasurement = new TextMeasurement(canvasKit);
 	}
 
+	setConfig(config: CanvasConfig) {
+		this.config = config;
+	}
+
 	applyTextStyles(paint: Paint, bounds?: { x: number; y: number; width: number; height: number }): void {
 		if (this.config.gradient && bounds) {
 			const shader = this.gradientBuilder.createGradient(this.config.gradient, bounds);
@@ -23,31 +28,81 @@ export class TextStyleManager {
 		} else {
 			paint.setColor(this.parseColor(this.config.color));
 		}
-
 		if (this.config.opacity !== undefined && this.config.opacity < 1) {
 			paint.setAlphaf(this.config.opacity);
 		}
-
 		paint.setAntiAlias(true);
 	}
 
-	createStyledFont(typeface?: any): Font {
-		const font = new this.canvasKit.Font(typeface);
-		font.setSize(this.config.fontSize);
+	async createStyledFont(typeface?: any): Promise<Font> {
+		const ck = this.canvasKit;
+		const ckManager = CanvasKitManager.getInstance();
 
-		if (this.config.fontWeight) {
-			const weight = typeof this.config.fontWeight === "string" ? parseInt(this.config.fontWeight) : this.config.fontWeight;
+		let tf = await ckManager.getTypefaceForFont(this.config.fontFamily, this.config.fontWeight, this.config.fontStyle);
 
-			if (weight > 500) {
-				font.setEmbolden(true);
+		if (!tf) {
+			try {
+				const fontMgr = ckManager.getFontManager();
+				if (fontMgr && fontMgr.countFamilies() > 0) {
+					const weightEnum = this.getWeightEnum(this.config.fontWeight);
+					const style = {
+						weight: weightEnum,
+						width: ck.FontWidth.Normal,
+						slant: this.getSlantEnum(this.config.fontStyle)
+					} as any;
+					tf = fontMgr.matchFamilyStyle(this.config.fontFamily, style) ?? null;
+				}
+			} catch (e) {
+				console.warn("Font matching fallback failed:", e);
 			}
 		}
 
+		if (!tf && typeface) tf = typeface;
+
+		const font = new ck.Font(tf ?? null);
+		font.setSize(this.config.fontSize);
+		this.applyFontStyles(font);
+		return font;
+	}
+
+	private applyFontStyles(font: Font): void {
+		if (this.config.fontWeight) {
+			const w = typeof this.config.fontWeight === "string" ? parseInt(this.config.fontWeight, 10) : this.config.fontWeight;
+			if (!Number.isNaN(w) && w > 500) font.setEmbolden(true);
+		}
 		if (this.config.fontStyle === "italic" || this.config.fontStyle === "oblique") {
 			font.setSkewX(-0.25);
 		}
+	}
 
-		return font;
+	private getWeightEnum(weight?: string | number) {
+		const ck = this.canvasKit;
+		if (typeof weight === "string") {
+			const s = weight.toLowerCase();
+			if (s === "normal") return ck.FontWeight.Normal;
+			if (s === "bold") return ck.FontWeight.Bold;
+			const n = parseInt(weight, 10);
+			if (!Number.isNaN(n)) weight = n;
+			else return ck.FontWeight.Normal;
+		}
+		const n = Math.max(1, Math.min(1000, (weight as number) ?? 400));
+		if (n <= 100) return ck.FontWeight.Thin;
+		if (n <= 200) return ck.FontWeight.ExtraLight;
+		if (n <= 300) return ck.FontWeight.Light;
+		if (n <= 400) return ck.FontWeight.Normal;
+		if (n <= 500) return ck.FontWeight.Medium;
+		if (n <= 600) return ck.FontWeight.SemiBold;
+		if (n <= 700) return ck.FontWeight.Bold;
+		if (n <= 800) return ck.FontWeight.ExtraBold;
+		if (n <= 900) return ck.FontWeight.Black;
+		return ck.FontWeight.ExtraBlack;
+	}
+
+	private getSlantEnum(style?: string) {
+		const ck = this.canvasKit;
+		if (style === "italic") return ck.FontSlant.Italic;
+		if (style === "oblique") return ck.FontSlant.Oblique;
+		return ck.FontSlant.Upright;
 	}
 
 	renderTextWithLetterSpacing(canvas: Canvas, text: string, x: number, y: number, paint: Paint, font: Font): void {
@@ -55,41 +110,33 @@ export class TextStyleManager {
 			canvas.drawText(text, x, y, paint, font);
 			return;
 		}
-
 		const letterSpacing = this.config.letterSpacing * this.config.fontSize;
 		let currentX = x;
-
 		for (const char of text) {
 			canvas.drawText(char, currentX, y, paint, font);
-
 			const charMetrics = this.textMeasurement.measureText(char, font);
 			currentX += charMetrics.width + letterSpacing;
 		}
 	}
 
 	applyTextDecoration(canvas: Canvas, text: string, x: number, y: number, width: number, font: Font): void {
-		if (!this.config.textDecoration || this.config.textDecoration === "none") {
-			return;
-		}
+		if (!this.config.textDecoration || this.config.textDecoration === "none") return;
 
 		const paint = new this.canvasKit.Paint();
-		paint.setColor(this.parseColor(this.config.color));
+		const color = this.parseColor(this.config.color);
+		color[3] = (this.config.opacity ?? 1) * color[3];
+		paint.setColor(color);
 		paint.setStyle(this.canvasKit.PaintStyle.Stroke);
 		paint.setStrokeWidth(Math.max(1, this.config.fontSize / 20));
 		paint.setAntiAlias(true);
 
 		let decorationY = y;
-
-		if (this.config.textDecoration === "underline") {
-			decorationY += this.config.fontSize * 0.15;
-		} else if (this.config.textDecoration === "line-through") {
-			decorationY -= this.config.fontSize * 0.3;
-		}
+		if (this.config.textDecoration === "underline") decorationY += this.config.fontSize * 0.15;
+		else if (this.config.textDecoration === "line-through") decorationY -= this.config.fontSize * 0.3;
 
 		const path = new this.canvasKit.Path();
 		path.moveTo(x, decorationY);
 		path.lineTo(x + width, decorationY);
-
 		canvas.drawPath(path, paint);
 
 		path.delete();
@@ -104,24 +151,22 @@ export class TextStyleManager {
 		font: Font,
 		renderTextFn: (canvas: Canvas, text: string, x: number, y: number, paint: Paint, font: Font) => void
 	): void {
-		if (!this.config.shadow) {
-			return;
+		const sh = this.config.shadow;
+		if (!sh) return;
+
+		const paint = new this.canvasKit.Paint();
+		const color = this.parseColor(sh.color);
+		color[3] = (sh.opacity ?? 1) * (this.config.opacity ?? 1);
+		paint.setColor(color);
+		paint.setAntiAlias(true);
+
+		if (sh.blur > 0) {
+			const blur = this.canvasKit.MaskFilter.MakeBlur(this.canvasKit.BlurStyle.Normal, sh.blur / 2, false);
+			paint.setMaskFilter(blur);
 		}
 
-		const shadowPaint = new this.canvasKit.Paint();
-		const shadowColor = this.parseColor(this.config.shadow.color);
-		shadowColor[3] = this.config.shadow.opacity;
-		shadowPaint.setColor(shadowColor);
-		shadowPaint.setAntiAlias(true);
-
-		if (this.config.shadow.blur > 0) {
-			const blurFilter = this.canvasKit.MaskFilter.MakeBlur(this.canvasKit.BlurStyle.Normal, this.config.shadow.blur / 2, false);
-			shadowPaint.setMaskFilter(blurFilter);
-		}
-
-		renderTextFn(canvas, text, x + this.config.shadow.offsetX, y + this.config.shadow.offsetY, shadowPaint, font);
-
-		shadowPaint.delete();
+		renderTextFn(canvas, text, x + (sh.offsetX ?? 0), y + (sh.offsetY ?? 0), paint, font);
+		paint.delete();
 	}
 
 	renderTextStroke(
@@ -132,51 +177,36 @@ export class TextStyleManager {
 		font: Font,
 		renderTextFn: (canvas: Canvas, text: string, x: number, y: number, paint: Paint, font: Font) => void
 	): void {
-		if (!this.config.stroke || this.config.stroke.width <= 0) {
-			return;
-		}
+		const st = this.config.stroke;
+		if (!st || st.width <= 0) return;
 
-		const strokePaint = new this.canvasKit.Paint();
-		const strokeColor = this.parseColor(this.config.stroke.color);
-		strokeColor[3] = this.config.stroke.opacity;
-		strokePaint.setColor(strokeColor);
-		strokePaint.setStyle(this.canvasKit.PaintStyle.Stroke);
-		strokePaint.setStrokeWidth(this.config.stroke.width);
-		strokePaint.setAntiAlias(true);
+		const paint = new this.canvasKit.Paint();
+		const color = this.parseColor(st.color);
+		color[3] = (st.opacity ?? 1) * (this.config.opacity ?? 1);
+		paint.setColor(color);
+		paint.setStyle(this.canvasKit.PaintStyle.Stroke);
+		paint.setStrokeWidth(st.width);
+		paint.setAntiAlias(true);
+		paint.setStrokeJoin(this.canvasKit.StrokeJoin.Round);
+		paint.setStrokeCap(this.canvasKit.StrokeCap.Round);
 
-		strokePaint.setStrokeJoin(this.canvasKit.StrokeJoin.Round);
-		strokePaint.setStrokeCap(this.canvasKit.StrokeCap.Round);
-
-		renderTextFn(canvas, text, x, y, strokePaint, font);
-
-		strokePaint.delete();
+		renderTextFn(canvas, text, x, y, paint, font);
+		paint.delete();
 	}
 
-	private parseColor(color: string): Float32Array {
+	parseColor(color: string): Float32Array {
 		if (color.startsWith("#")) {
 			const hex = color.replace("#", "");
 			const r = parseInt(hex.slice(0, 2), 16) / 255;
 			const g = parseInt(hex.slice(2, 4), 16) / 255;
 			const b = parseInt(hex.slice(4, 6), 16) / 255;
 			const a = hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1;
-
 			return this.canvasKit.Color4f(r, g, b, a);
 		}
-
-		if (color.startsWith("rgba")) {
-			const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*(\d*\.?\d+)?\)/);
-			if (match) {
-				return this.canvasKit.Color4f(parseInt(match[1]) / 255, parseInt(match[2]) / 255, parseInt(match[3]) / 255, parseFloat(match[4] || "1"));
-			}
+		const rgba = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*(\d*\.?\d+)?\)/);
+		if (rgba) {
+			return this.canvasKit.Color4f(parseInt(rgba[1]) / 255, parseInt(rgba[2]) / 255, parseInt(rgba[3]) / 255, parseFloat(rgba[4] || "1"));
 		}
-
-		if (color.startsWith("rgb")) {
-			const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-			if (match) {
-				return this.canvasKit.Color4f(parseInt(match[1]) / 255, parseInt(match[2]) / 255, parseInt(match[3]) / 255, 1);
-			}
-		}
-
 		return this.canvasKit.Color4f(1, 1, 1, 1);
 	}
 
@@ -189,7 +219,7 @@ export class TextStyleManager {
 			case "capitalize":
 				return text
 					.split(" ")
-					.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+					.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
 					.join(" ");
 			default:
 				return text;
@@ -198,7 +228,6 @@ export class TextStyleManager {
 
 	createRoundedRectPath(x: number, y: number, width: number, height: number, radius: number): any {
 		const path = new this.canvasKit.Path();
-
 		if (radius <= 0) {
 			path.addRect([x, y, x + width, y + height]);
 		} else {
@@ -214,13 +243,10 @@ export class TextStyleManager {
 			path.arcToTangent(x, y, x + r, y, r);
 			path.close();
 		}
-
 		return path;
 	}
 
 	cleanup(): void {
-		if (this.textMeasurement) {
-			this.textMeasurement.cleanup();
-		}
+		this.textMeasurement.cleanup();
 	}
 }

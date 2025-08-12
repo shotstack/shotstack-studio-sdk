@@ -5,13 +5,13 @@ import { BaseAnimation, type AnimationUnit } from "./base-animation";
 export class AscendAnimation extends BaseAnimation {
 	async generateFrames(text: string): Promise<AnimationFrame[]> {
 		await this.initializeSurface();
-
-		if (!this.canvas || !this.font) {
-			throw new Error("Canvas or font not initialized");
-		}
+		if (!this.canvas || !this.font) throw new Error("Canvas or font not initialized");
 
 		const processedText = this.applyTextTransform(text);
-		const duration = this.config.duration || 3;
+		const baseDuration = this.config.duration || 3;
+		const speed = this.config.speed || 1;
+		const duration = Math.max(0.1, baseDuration / speed);
+
 		const fps = this.config.fps || 30;
 		const totalFrames = Math.ceil(duration * fps);
 		const frames: AnimationFrame[] = [];
@@ -19,26 +19,27 @@ export class AscendAnimation extends BaseAnimation {
 
 		const padding = this.config.fontSize * 0.5;
 		const maxWidth = this.config.width - padding * 2;
-		const lines = this.layoutEngine.processTextContent(processedText, maxWidth, this.font);
 
+		const lines = this.layoutEngine.processTextContent(processedText, maxWidth, this.font);
+		this.layoutEngine.calculateMultilineLayout(lines, this.font, this.config.width, this.config.height);
 		const wordLayout = this.layoutEngine.calculateWordLayout(processedText, this.font, lines);
 
 		const yOffset = direction === "up" ? 50 : -50;
 
-		const wordStates: AnimationUnit[] = wordLayout.map(layout => ({
-			text: layout.word,
-			x: layout.x,
-			y: layout.y + yOffset,
+		const wordStates: AnimationUnit[] = wordLayout.map(w => ({
+			text: w.word,
+			x: w.x,
+			y: w.y + yOffset,
 			opacity: 0,
 			scale: 1,
 			rotation: 0,
-			finalX: layout.x,
-			finalY: layout.y
+			finalX: w.x,
+			finalY: w.y
 		}));
 
 		const tl = gsap.timeline();
 		const totalAnimationDuration = duration * 0.8;
-		const staggerDelay = totalAnimationDuration / wordStates.length;
+		const staggerDelay = totalAnimationDuration / Math.max(wordStates.length, 1);
 
 		wordStates.forEach((state, index) => {
 			tl.to(
@@ -58,13 +59,9 @@ export class AscendAnimation extends BaseAnimation {
 			tl.progress(progress);
 
 			this.clearCanvas();
-
-			wordStates.forEach(state => {
-				if (state.opacity > 0.01) {
-					this.renderStyledText(state.text, state.x, state.y, state.opacity);
-				}
-			});
-
+			for (const s of wordStates) {
+				if (s.opacity > 0.01) this.renderStyledText(s.text, s.x, s.y, s.opacity);
+			}
 			frames.push(this.captureFrame(frame, progress * duration));
 		}
 

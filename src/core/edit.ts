@@ -6,6 +6,7 @@ import type { Player } from "@canvas/players/player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
+import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
@@ -473,6 +474,10 @@ export class Edit extends Entity {
 			}
 			case "luma": {
 				player = new LumaPlayer(this, clipConfiguration);
+				break;
+			}
+			case "rich-text": {
+				player = new RichTextPlayer(this, clipConfiguration);
 				break;
 			}
 			default:

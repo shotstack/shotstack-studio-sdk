@@ -10,6 +10,7 @@ export { LumaPlayer } from "./players/luma-player";
 export { ShapePlayer } from "./players/shape-player";
 export { TextPlayer } from "./players/text-player";
 export { VideoPlayer } from "./players/video-player";
+export { RichTextPlayer } from "./players/rich-text-player";
 
 // Text system
 export { TextCursor } from "./text/text-cursor";

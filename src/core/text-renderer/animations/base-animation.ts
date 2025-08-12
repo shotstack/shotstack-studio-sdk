@@ -11,7 +11,6 @@ export interface AnimationState {
 	totalFrames: number;
 	isComplete: boolean;
 }
-
 export interface AnimationUnit {
 	text: string;
 	x: number;
@@ -26,8 +25,10 @@ export interface AnimationUnit {
 export abstract class BaseAnimation {
 	protected canvasKit: CanvasKit;
 	protected config: CanvasConfig;
+
 	protected surface: Surface | null = null;
 	protected canvas: Canvas | null = null;
+
 	protected layoutEngine: TextLayoutEngine;
 	protected styleManager: TextStyleManager;
 	protected timeline: gsap.core.Timeline;
@@ -53,26 +54,30 @@ export abstract class BaseAnimation {
 		this.canvas = this.surface.getCanvas();
 		this.canvas.scale(this.pixelRatio, this.pixelRatio);
 
-		this.font = this.styleManager.createStyledFont();
+		this.font = await this.styleManager.createStyledFont();
 	}
 
 	abstract generateFrames(text: string): Promise<AnimationFrame[]>;
 
 	protected clearCanvas(): void {
 		if (!this.canvas || !this.canvasKit) return;
+		const bg = (this.config as any).backgroundColor as string | undefined;
+		const bgOpacity = (this.config as any).backgroundOpacity as number | undefined;
 
-		if (this.config.backgroundColor && this.config.backgroundColor !== "transparent") {
+		if (bg && bg !== "transparent") {
 			const paint = new this.canvasKit.Paint();
-			paint.setColor(this.parseColor(this.config.backgroundColor));
+			const color = this.styleManager.parseColor(bg);
+			if (bgOpacity !== undefined) color[3] = Math.max(0, Math.min(1, bgOpacity)) * color[3];
+			paint.setColor(color);
 
-			if (this.config.borderRadius && this.config.borderRadius > 0) {
-				const path = this.styleManager.createRoundedRectPath(0, 0, this.config.width, this.config.height, this.config.borderRadius);
+			const radius = (this.config as any).borderRadius ?? 0;
+			if (radius > 0) {
+				const path = this.styleManager.createRoundedRectPath(0, 0, this.config.width, this.config.height, radius);
 				this.canvas.drawPath(path, paint);
 				path.delete();
 			} else {
 				this.canvas.drawRect(this.canvasKit.XYWHRect(0, 0, this.config.width, this.config.height), paint);
 			}
-
 			paint.delete();
 		} else {
 			this.canvas.clear(this.canvasKit.TRANSPARENT);
@@ -80,26 +85,21 @@ export abstract class BaseAnimation {
 	}
 
 	protected captureFrame(frameNumber: number, timestamp: number): AnimationFrame {
-		if (!this.surface || !this.canvasKit) {
-			throw new Error("Surface not initialized");
-		}
+		if (!this.surface || !this.canvasKit) throw new Error("Surface not initialized");
 
 		this.surface.flush();
 		const snapshot = this.surface.makeImageSnapshot();
-
-		if (!snapshot) {
-			throw new Error("Failed to create snapshot");
-		}
+		if (!snapshot) throw new Error("Failed to create snapshot");
 
 		try {
 			const width = this.config.width * this.pixelRatio;
 			const height = this.config.height * this.pixelRatio;
 
 			const imageInfo = {
-				width: width,
-				height: height,
+				width,
+				height,
 				colorType: this.canvasKit.ColorType.RGBA_8888,
-				alphaType: this.canvasKit.AlphaType.Unpremul,
+				alphaType: this.canvasKit.AlphaType.Premul,
 				colorSpace: this.canvasKit.ColorSpace.SRGB
 			};
 
@@ -107,23 +107,12 @@ export abstract class BaseAnimation {
 			const totalBytes = bytesPerRow * height;
 
 			const mallocObj = this.canvasKit.Malloc(Uint8Array, totalBytes);
-
 			try {
 				const result = snapshot.readPixels(0, 0, imageInfo, mallocObj, bytesPerRow);
-
-				if (!result) {
-					throw new Error("Failed to read pixels from image");
-				}
-
+				if (!result) throw new Error("Failed to read pixels from image");
 				const bytes = mallocObj.toTypedArray();
-
 				const imageData = new ImageData(new Uint8ClampedArray(bytes), width, height);
-
-				return {
-					frameNumber,
-					timestamp,
-					imageData
-				};
+				return { frameNumber, timestamp, imageData };
 			} finally {
 				this.canvasKit.Free(mallocObj);
 			}
@@ -133,24 +122,7 @@ export abstract class BaseAnimation {
 	}
 
 	protected parseColor(color: string): Float32Array {
-		if (color.startsWith("#")) {
-			const hex = color.replace("#", "");
-			const r = parseInt(hex.slice(0, 2), 16) / 255;
-			const g = parseInt(hex.slice(2, 4), 16) / 255;
-			const b = parseInt(hex.slice(4, 6), 16) / 255;
-			const a = hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1;
-
-			return this.canvasKit.Color4f(r, g, b, a);
-		}
-
-		if (color.startsWith("rgba")) {
-			const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*(\d*\.?\d+)?\)/);
-			if (match) {
-				return this.canvasKit.Color4f(parseInt(match[1]) / 255, parseInt(match[2]) / 255, parseInt(match[3]) / 255, parseFloat(match[4] || "1"));
-			}
-		}
-
-		return this.canvasKit.Color4f(1, 1, 1, 1);
+		return this.styleManager.parseColor(color);
 	}
 
 	protected applyTextTransform(text: string): string {
@@ -159,7 +131,6 @@ export abstract class BaseAnimation {
 
 	protected getStartPosition(finalX: number, finalY: number, direction?: string): { x: number; y: number } {
 		const offset = 50;
-
 		switch (direction) {
 			case "left":
 				return { x: -offset, y: finalY };
@@ -183,57 +154,42 @@ export abstract class BaseAnimation {
 
 		if (scale !== 1 || rotation !== 0) {
 			this.canvas.translate(x, y);
-			if (scale !== 1) {
-				this.canvas.scale(scale, scale);
-			}
-			if (rotation !== 0) {
-				const angleInDegrees = rotation * (180 / Math.PI);
-				this.canvas.rotate(angleInDegrees, 0, 0);
-			}
+			if (scale !== 1) this.canvas.scale(scale, scale);
+			if (rotation !== 0) this.canvas.rotate((rotation * 180) / Math.PI, 0, 0);
 			this.canvas.translate(-x, -y);
 		}
 
-		const paint = new this.canvasKit.Paint();
-		paint.setColor(this.parseColor(this.config.color));
-		paint.setAntiAlias(true);
+		const bounds = { x, y: y - this.config.fontSize, width: this.config.width, height: this.config.fontSize };
+		const combinedAlpha = (this.config.opacity ?? 1) * opacity;
 
-		if (opacity < 1) {
-			paint.setAlphaf(opacity);
+		const renderLetters = (canvas: Canvas, t: string, lx: number, ly: number, paint: Paint, font: Font) => {
+			if (combinedAlpha < 1) paint.setAlphaf(combinedAlpha);
+			this.styleManager.renderTextWithLetterSpacing(canvas, t, lx, ly, paint, font);
+		};
+
+		if (this.config.shadow && combinedAlpha > 0.01) {
+			this.styleManager.renderTextShadow(this.canvas, text, x, y, this.font, (c, t, lx, ly, p, f) => {
+				if (combinedAlpha < 1) p.setAlphaf((this.config.shadow?.opacity ?? 1) * combinedAlpha);
+				this.styleManager.renderTextWithLetterSpacing(c, t, lx, ly, p, f);
+			});
 		}
 
-		if (this.config.shadow && opacity > 0.01) {
-			const shadowPaint = new this.canvasKit.Paint();
-			const shadowColor = this.parseColor(this.config.shadow.color);
-			shadowColor[3] = this.config.shadow.opacity * opacity;
-			shadowPaint.setColor(shadowColor);
-			shadowPaint.setAntiAlias(true);
-
-			if (this.config.shadow.blur > 0) {
-				const blurFilter = this.canvasKit.MaskFilter.MakeBlur(this.canvasKit.BlurStyle.Normal, this.config.shadow.blur / 2, false);
-				shadowPaint.setMaskFilter(blurFilter);
-			}
-
-			this.canvas.drawText(text, x + this.config.shadow.offsetX, y + this.config.shadow.offsetY, shadowPaint, this.font);
-
-			shadowPaint.delete();
+		if (this.config.stroke && this.config.stroke.width > 0 && combinedAlpha > 0.01) {
+			this.styleManager.renderTextStroke(this.canvas, text, x, y, this.font, (c, t, lx, ly, p, f) => {
+				if (combinedAlpha < 1) p.setAlphaf((this.config.stroke?.opacity ?? 1) * combinedAlpha);
+				this.styleManager.renderTextWithLetterSpacing(c, t, lx, ly, p, f);
+			});
 		}
 
-		if (this.config.stroke && this.config.stroke.width > 0 && opacity > 0.01) {
-			const strokePaint = new this.canvasKit.Paint();
-			const strokeColor = this.parseColor(this.config.stroke.color);
-			strokeColor[3] = this.config.stroke.opacity * opacity;
-			strokePaint.setColor(strokeColor);
-			strokePaint.setStyle(this.canvasKit.PaintStyle.Stroke);
-			strokePaint.setStrokeWidth(this.config.stroke.width);
-			strokePaint.setAntiAlias(true);
+		const fillPaint = new this.canvasKit.Paint();
+		this.styleManager.applyTextStyles(fillPaint, bounds);
+		if (combinedAlpha < 1) fillPaint.setAlphaf(combinedAlpha);
+		this.styleManager.renderTextWithLetterSpacing(this.canvas, text, x, y, fillPaint, this.font);
 
-			this.canvas.drawText(text, x, y, strokePaint, this.font);
-			strokePaint.delete();
-		}
+		const textWidth = this.layoutEngine.measureTextWithLetterSpacing(text, this.font);
+		this.styleManager.applyTextDecoration(this.canvas, text, x, y, textWidth, this.font);
 
-		this.styleManager.renderTextWithLetterSpacing(this.canvas, text, x, y, paint, this.font);
-
-		paint.delete();
+		fillPaint.delete();
 		this.canvas.restore();
 	}
 
@@ -242,12 +198,10 @@ export abstract class BaseAnimation {
 			this.font.delete();
 			this.font = null;
 		}
-
 		if (this.surface) {
 			this.surface.delete();
 			this.surface = null;
 		}
-
 		this.canvas = null;
 		this.layoutEngine.cleanup();
 		this.styleManager.cleanup();

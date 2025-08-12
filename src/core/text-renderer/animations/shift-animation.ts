@@ -5,59 +5,66 @@ import { BaseAnimation, type AnimationUnit } from "./base-animation";
 export class ShiftAnimation extends BaseAnimation {
 	async generateFrames(text: string): Promise<AnimationFrame[]> {
 		await this.initializeSurface();
-
-		if (!this.canvas || !this.font) {
-			throw new Error("Canvas or font not initialized");
-		}
+		if (!this.canvas || !this.font) throw new Error("Canvas or font not initialized");
 
 		const processedText = this.applyTextTransform(text);
-		const duration = this.config.duration || 3;
+		const baseDuration = this.config.duration || 3;
+		const speed = this.config.speed || 1;
+		const duration = Math.max(0.1, baseDuration / speed);
+
 		const fps = this.config.fps || 30;
 		const totalFrames = Math.ceil(duration * fps);
 		const frames: AnimationFrame[] = [];
 		const direction = this.config.direction || "left";
-		const animationStyle = this.config.animationStyle || "character";
+		const animationStyle = (this.config.animationStyle as "character" | "word") || "character";
 
 		const padding = this.config.fontSize * 0.5;
 		const maxWidth = this.config.width - padding * 2;
+
 		const lines = this.layoutEngine.processTextContent(processedText, maxWidth, this.font);
+		const textLines = this.layoutEngine.calculateMultilineLayout(lines, this.font, this.config.width, this.config.height);
 
 		let units: AnimationUnit[] = [];
 
 		if (animationStyle === "character") {
-			const centerX = this.config.width / 2;
-			const centerY = this.config.height / 2;
-			const textWidth = this.layoutEngine.measureTextWithLetterSpacing(processedText, this.font);
-			const startX = centerX - textWidth / 2;
+			const letterSpacingPx = (this.config.letterSpacing ?? 0) * this.config.fontSize;
+			const chars: { text: string; x: number; y: number }[] = [];
 
-			const charLayout = this.layoutEngine.calculateCharacterLayout(processedText, this.font, startX, centerY);
+			for (const ln of textLines) {
+				let cx = ln.x;
+				for (const ch of ln.text) {
+					chars.push({ text: ch, x: cx, y: ln.y });
+					const w = this.layoutEngine.measureTextWithLetterSpacing(ch, this.font);
+					cx += w + letterSpacingPx;
+				}
+			}
 
-			units = charLayout.map(layout => {
+			units = chars.map(c => {
 				const offset = this.getOffset(direction);
 				return {
-					text: layout.char,
-					x: layout.x + offset.x,
-					y: layout.y + offset.y,
+					text: c.text,
+					x: c.x + offset.x,
+					y: c.y + offset.y,
 					opacity: 0,
 					scale: 1,
 					rotation: 0,
-					finalX: layout.x,
-					finalY: layout.y
+					finalX: c.x,
+					finalY: c.y
 				};
 			});
 		} else {
-			const wordLayout = this.layoutEngine.calculateWordLayout(processedText, this.font, lines);
-			units = wordLayout.map(layout => {
+			const words = this.layoutEngine.calculateWordLayout(processedText, this.font, lines);
+			units = words.map(w => {
 				const offset = this.getOffset(direction);
 				return {
-					text: layout.word,
-					x: layout.x + offset.x,
-					y: layout.y + offset.y,
+					text: w.word,
+					x: w.x + offset.x,
+					y: w.y + offset.y,
 					opacity: 0,
 					scale: 1,
 					rotation: 0,
-					finalX: layout.x,
-					finalY: layout.y
+					finalX: w.x,
+					finalY: w.y
 				};
 			});
 		}
@@ -85,17 +92,10 @@ export class ShiftAnimation extends BaseAnimation {
 
 		for (let frame = 0; frame < totalFrames; frame++) {
 			const progress = frame / (totalFrames - 1);
-			const currentTime = progress * duration;
-			tl.time(currentTime);
+			tl.time(progress * duration);
 
 			this.clearCanvas();
-
-			units.forEach(state => {
-				if (state.opacity > 0.01) {
-					this.renderStyledText(state.text, state.x, state.y, state.opacity);
-				}
-			});
-
+			for (const s of units) if (s.opacity > 0.01) this.renderStyledText(s.text, s.x, s.y, s.opacity);
 			frames.push(this.captureFrame(frame, progress * duration));
 		}
 
@@ -111,7 +111,6 @@ export class ShiftAnimation extends BaseAnimation {
 			top: { x: 0, y: 30 },
 			bottom: { x: 0, y: -30 }
 		};
-
 		return transforms[direction as keyof typeof transforms] || transforms.left;
 	}
 }

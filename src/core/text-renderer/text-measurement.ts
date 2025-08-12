@@ -14,21 +14,32 @@ export class TextMeasurement {
 			return { width: 0, height: 0 };
 		}
 
-		const glyphIDs = font.getGlyphIDs(text);
-		const glyphWidths = font.getGlyphWidths(glyphIDs, this.paint);
+		try {
+			const glyphIDs = font.getGlyphIDs(text);
+			const glyphWidths = font.getGlyphWidths(glyphIDs, this.paint);
 
-		let totalWidth = 0;
-		for (let i = 0; i < glyphWidths.length; i++) {
-			totalWidth += glyphWidths[i];
+			let totalWidth = 0;
+			for (let i = 0; i < glyphWidths.length; i++) totalWidth += glyphWidths[i];
+
+			if (totalWidth === 0) {
+				const metrics = font.getMetrics?.();
+				const safeHeight = metrics ? metrics.descent - metrics.ascent : 12;
+
+				const size = typeof (font as any).getSize === "function" ? (font as any).getSize() : safeHeight > 0 ? safeHeight : 12;
+
+				totalWidth = this.canvasKit ? text.length * 0.6 * size : 0;
+			}
+
+			const metrics = font.getMetrics?.();
+			const height = metrics ? metrics.descent - metrics.ascent : font.getSize?.() ?? 12;
+			return { width: totalWidth, height };
+		} catch (error) {
+			console.error("TextMeasurement failed:", error);
+			return {
+				width: text.length * font.getSize() * 0.6,
+				height: font.getSize() * 1.2
+			};
 		}
-
-		const metrics = font.getMetrics();
-		const height = metrics.descent - metrics.ascent;
-
-		return {
-			width: totalWidth,
-			height: height
-		};
 	}
 
 	measureTextWithSpacing(text: string, font: Font, letterSpacing: number): number {

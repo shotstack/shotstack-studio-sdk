@@ -1,4 +1,4 @@
-import type { CanvasKit, Font, Canvas, Paint } from "canvaskit-wasm";
+import type { CanvasKit, Font, Paint } from "canvaskit-wasm";
 import type { CanvasConfig, TextMetrics } from "./types";
 import { FontManager } from "./font-manager";
 
@@ -8,14 +8,12 @@ export interface TextLine {
 	x: number;
 	y: number;
 }
-
 export interface CharacterLayout {
 	char: string;
 	x: number;
 	y: number;
 	width: number;
 }
-
 export interface WordLayout {
 	word: string;
 	x: number;
@@ -33,24 +31,15 @@ export class TextLayoutEngine {
 		this.canvasKit = canvasKit;
 		this.config = config;
 		this.fontManager = FontManager.getInstance();
-
 		this.paint = new canvasKit.Paint();
 	}
 
 	private measureText(text: string, font: Font): { width: number } {
-		if (!this.paint) {
-			this.paint = new this.canvasKit.Paint();
-		}
-
+		if (!this.paint) this.paint = new this.canvasKit.Paint();
 		const glyphIDs = font.getGlyphIDs(text);
-
 		const glyphWidths = font.getGlyphWidths(glyphIDs, this.paint);
-
 		let totalWidth = 0;
-		for (let i = 0; i < glyphWidths.length; i++) {
-			totalWidth += glyphWidths[i];
-		}
-
+		for (let i = 0; i < glyphWidths.length; i++) totalWidth += glyphWidths[i];
 		return { width: totalWidth };
 	}
 
@@ -62,7 +51,6 @@ export class TextLayoutEngine {
 		for (const word of words) {
 			const testLine = currentLine ? `${currentLine} ${word}` : word;
 			const metrics = this.measureText(testLine, font);
-
 			if (metrics.width > maxWidth && currentLine) {
 				lines.push(currentLine);
 				currentLine = word;
@@ -70,11 +58,7 @@ export class TextLayoutEngine {
 				currentLine = testLine;
 			}
 		}
-
-		if (currentLine) {
-			lines.push(currentLine);
-		}
-
+		if (currentLine) lines.push(currentLine);
 		return lines.length > 0 ? lines : [text];
 	}
 
@@ -97,11 +81,9 @@ export class TextLayoutEngine {
 		}
 
 		const textLines: TextLine[] = [];
-
 		lines.forEach((line, index) => {
 			const metrics = this.measureText(line, font);
 			let x: number;
-
 			switch (this.config.textAlign) {
 				case "left":
 					x = 0;
@@ -114,37 +96,21 @@ export class TextLayoutEngine {
 					x = (containerWidth - metrics.width) / 2;
 					break;
 			}
-
-			textLines.push({
-				text: line,
-				width: metrics.width,
-				x: x,
-				y: startY + index * lineHeight
-			});
+			textLines.push({ text: line, width: metrics.width, x, y: startY + index * lineHeight });
 		});
-
 		return textLines;
 	}
 
 	calculateCharacterLayout(text: string, font: Font, startX: number, startY: number): CharacterLayout[] {
 		const characters: CharacterLayout[] = [];
 		let currentX = startX;
-
 		const letterSpacing = (this.config.letterSpacing || 0) * this.config.fontSize;
 
 		for (const char of text) {
 			const charWidth = this.measureText(char, font).width;
-
-			characters.push({
-				char: char,
-				x: currentX,
-				y: startY,
-				width: charWidth
-			});
-
+			characters.push({ char, x: currentX, y: startY, width: charWidth });
 			currentX += charWidth + letterSpacing;
 		}
-
 		return characters;
 	}
 
@@ -156,7 +122,6 @@ export class TextLayoutEngine {
 
 		const totalHeight = lines.length * lineHeight;
 		let startY: number;
-
 		switch (this.config.textBaseline) {
 			case "top":
 				startY = this.config.fontSize;
@@ -174,7 +139,6 @@ export class TextLayoutEngine {
 			const lineWords = line.split(" ");
 			const lineMetrics = this.measureText(line, font);
 			let lineStartX: number;
-
 			switch (this.config.textAlign) {
 				case "left":
 					lineStartX = 0;
@@ -191,17 +155,10 @@ export class TextLayoutEngine {
 			let currentX = lineStartX;
 			const y = startY + lineIndex * lineHeight;
 
-			lineWords.forEach((word, wordIndex) => {
+			lineWords.forEach((word, wi) => {
 				const wordWidth = this.measureText(word, font).width;
-
-				words.push({
-					word: word,
-					x: currentX,
-					y: y,
-					width: wordWidth
-				});
-
-				if (wordIndex < lineWords.length - 1) {
+				words.push({ word, x: currentX, y, width: wordWidth });
+				if (wi < lineWords.length - 1) {
 					const spaceWidth = this.measureText(" ", font).width;
 					currentX += wordWidth + spaceWidth;
 				} else {
@@ -217,17 +174,12 @@ export class TextLayoutEngine {
 		if (!this.config.letterSpacing || this.config.letterSpacing === 0) {
 			return this.measureText(text, font).width;
 		}
-
 		const letterSpacing = this.config.letterSpacing * this.config.fontSize;
 		let totalWidth = 0;
-
 		for (let i = 0; i < text.length; i++) {
 			totalWidth += this.measureText(text[i], font).width;
-			if (i < text.length - 1) {
-				totalWidth += letterSpacing;
-			}
+			if (i < text.length - 1) totalWidth += letterSpacing;
 		}
-
 		return totalWidth;
 	}
 
@@ -239,61 +191,41 @@ export class TextLayoutEngine {
 	getMultilineMetrics(lines: string[], font: Font): TextMetrics {
 		const lineHeight = this.config.fontSize * (this.config.lineHeight || 1.2);
 		const fontMetrics = this.fontManager.getFontMetrics(this.config.fontFamily, this.config.fontSize);
-
 		let maxWidth = 0;
 		lines.forEach(line => {
 			const width = this.measureTextWithLetterSpacing(line, font);
 			maxWidth = Math.max(maxWidth, width);
 		});
-
-		return {
-			width: maxWidth,
-			height: lines.length * lineHeight,
-			ascent: fontMetrics.ascent,
-			descent: fontMetrics.descent,
-			lineHeight: lineHeight
-		};
+		return { width: maxWidth, height: lines.length * lineHeight, ascent: fontMetrics.ascent, descent: fontMetrics.descent, lineHeight };
 	}
 
 	processTextContent(text: string, maxWidth: number, font: Font): string[] {
 		const paragraphs = text.split("\n");
 		const allLines: string[] = [];
-
 		paragraphs.forEach(paragraph => {
 			if (paragraph.trim()) {
-				const wrappedLines = this.wrapText(paragraph, maxWidth, font);
-				allLines.push(...wrappedLines);
+				const wrapped = this.wrapText(paragraph, maxWidth, font);
+				allLines.push(...wrapped);
 			} else {
 				allLines.push("");
 			}
 		});
-
 		return allLines;
 	}
 
 	getTextBounds(lines: TextLine[]): { x: number; y: number; width: number; height: number } {
-		if (lines.length === 0) {
-			return { x: 0, y: 0, width: 0, height: 0 };
-		}
-
-		let minX = Infinity;
-		let maxX = -Infinity;
-		let minY = Infinity;
-		let maxY = -Infinity;
-
+		if (lines.length === 0) return { x: 0, y: 0, width: 0, height: 0 };
+		let minX = Infinity,
+			maxX = -Infinity,
+			minY = Infinity,
+			maxY = -Infinity;
 		lines.forEach(line => {
 			minX = Math.min(minX, line.x);
 			maxX = Math.max(maxX, line.x + line.width);
 			minY = Math.min(minY, line.y - this.config.fontSize);
 			maxY = Math.max(maxY, line.y);
 		});
-
-		return {
-			x: minX,
-			y: minY,
-			width: maxX - minX,
-			height: maxY - minY
-		};
+		return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 	}
 
 	cleanup(): void {

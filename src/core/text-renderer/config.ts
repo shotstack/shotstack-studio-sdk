@@ -7,10 +7,16 @@ export const CANVAS_CONFIG = {
 		fontSize: 48,
 		fontFamily: "Roboto",
 		fontWeight: "normal" as const,
+		fontStyle: "normal" as const,
 		color: "#ffffff",
+		opacity: 1,
 		backgroundColor: "transparent",
 		textAlign: "center" as CanvasTextAlign,
 		textBaseline: "middle" as CanvasTextBaseline,
+		lineHeight: 1.2,
+		letterSpacing: 0,
+		textTransform: "none" as const,
+		textDecoration: "none" as const,
 		fps: 30,
 		duration: 3,
 		pixelRatio: 2
@@ -21,10 +27,10 @@ export const CANVAS_CONFIG = {
 		maxHeight: 1080,
 		minWidth: 100,
 		minHeight: 50,
-		maxFontSize: 200,
-		minFontSize: 12,
-		maxDuration: 10,
-		minDuration: 0.5
+		maxFontSize: 512,
+		minFontSize: 1,
+		maxDuration: 30,
+		minDuration: 0.1
 	},
 
 	FILE_LIMITS: {

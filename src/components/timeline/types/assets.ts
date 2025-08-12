@@ -2,6 +2,8 @@
  * Type definitions for timeline assets
  */
 
+import { RichTextAsset } from "@core/schemas/rich-text-asset";
+
 // Volume keyframe for audio/video assets
 export interface VolumeKeyframe {
 	from: number;
@@ -75,7 +77,7 @@ export interface LumaAsset {
 }
 
 // Union type for all assets
-export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | ShapeAsset | HtmlAsset | LumaAsset;
+export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | ShapeAsset | HtmlAsset | LumaAsset | RichTextAsset;
 
 // Type guards
 export function isVideoAsset(asset: TimelineAsset): asset is VideoAsset {
@@ -106,6 +108,10 @@ export function isLumaAsset(asset: TimelineAsset): asset is LumaAsset {
 	return asset.type === "luma";
 }
 
+export function isRichTextAsset(asset: TimelineAsset): asset is RichTextAsset {
+	return asset.type === "rich-text";
+}
+
 // Helper to extract filename from path
 function getFilenameFromPath(path: string): string {
 	const parts = path.split("/");
@@ -123,6 +129,8 @@ export function getAssetDisplayName(asset: TimelineAsset): string {
 			return asset.src ? getFilenameFromPath(asset.src) : "Image";
 		case "text":
 			return asset.text || "Text";
+		case "rich-text":
+			return "Rich Text";
 		case "shape":
 			return asset.shape || "Shape";
 		case "html":

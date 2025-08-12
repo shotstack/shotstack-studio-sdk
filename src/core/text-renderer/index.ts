@@ -20,7 +20,6 @@ export {
 } from "./animations";
 
 export type { CanvasConfig, GradientConfig, ShadowConfig, StrokeConfig, CustomFont, TextMetrics, AnimationFrame, RenderResult } from "./types";
-
 export type { AnimationType } from "./config";
 export type { TextLine, CharacterLayout, WordLayout } from "./text-layout-engine";
 export type { AnimationState, AnimationUnit } from "./animations";
