@@ -183,6 +183,9 @@ export class CanvasKitManager {
 		const hit = (mgr as any).matchFamilyStyle?.(fontFamily, style);
 		if (hit) return hit as Typeface;
 
+		const roboto = (mgr as any).matchFamilyStyle?.("Roboto", style);
+		if (roboto) return roboto as Typeface;
+
 		const cached = this.typefaces.get(fontFamily);
 		if (cached) return cached;
 

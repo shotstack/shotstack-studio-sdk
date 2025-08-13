@@ -39,6 +39,12 @@ export interface CanvasConfig {
 	};
 	animationStyle?: "character" | "word";
 	speed?: number;
+	timelineFonts?: Array<{
+		src: string;
+		family?: string;
+		weight?: string | number;
+		style?: "normal" | "italic" | "oblique";
+	}>;
 }
 
 export interface GradientConfig {

@@ -134,6 +134,11 @@ export class RichTextPlayer extends Player {
 
 		if (asset.customFonts) config.customFonts = asset.customFonts;
 
+		const tlFonts = (this.edit as any)?.timeline?.fonts as Array<{ src: string }> | undefined;
+		if (tlFonts?.length) {
+			config.timelineFonts = tlFonts.map(f => ({ src: f.src }));
+		}
+
 		return config;
 	}
 

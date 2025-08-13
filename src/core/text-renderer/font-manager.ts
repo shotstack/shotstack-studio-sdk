@@ -2,6 +2,7 @@ import * as opentype from "opentype.js";
 import { CANVAS_CONFIG } from "./config";
 import { CanvasKitManager } from "./canvas-kit-manager";
 import type { CustomFont } from "./types";
+import { LOCAL_FONT_INDEX } from "./local-fonts";
 import robotoRegularUrl from "../../assets/fonts/Roboto-Regular.ttf";
 import robotoBoldUrl from "../../assets/fonts/Roboto-Bold.ttf";
 
@@ -33,26 +34,118 @@ export class FontManager {
 
 		await this.registerBundledFallbacks();
 
-		this.markSystemNames();
-
 		console.log(`📚 Registered ${this.registeredNames.size} system fonts`);
+	}
+
+	private findLocalFont(family: string, weight?: string | number, style?: "normal" | "italic" | "oblique") {
+		const famNorm = family.replace(/\s+/g, "").toLowerCase();
+
+		const candidates = LOCAL_FONT_INDEX.filter(f => f.familyGuess.replace(/\s+/g, "").toLowerCase() === famNorm);
+
+		if (!candidates.length) {
+			const byFile = LOCAL_FONT_INDEX.find(
+				f => f.fileBase.toLowerCase() === family.toLowerCase() || f.fileBase.replace(/\s+/g, "").toLowerCase() === famNorm
+			);
+			return byFile || null;
+		}
+
+		const wantStyle = style ?? "normal";
+		const wantWeight = typeof weight === "number" ? String(weight) : weight ?? "400";
+		const byStyle = candidates.filter(c => c.styleGuess === wantStyle);
+		const pool = byStyle.length ? byStyle : candidates;
+
+		const wToN = (w: string) => Math.min(900, Math.max(100, parseInt(w, 10) || 400));
+		const target = wToN(wantWeight);
+
+		let best = pool[0];
+		let bestDiff = Math.abs(wToN(best.weightGuess) - target);
+
+		for (const c of pool.slice(1)) {
+			const diff = Math.abs(wToN(c.weightGuess) - target);
+			if (diff < bestDiff) {
+				best = c;
+				bestDiff = diff;
+			}
+		}
+		return best || null;
+	}
+
+	private async registerBufferAsFamily(urlOrBuf: string | ArrayBuffer, family: string) {
+		const buf = typeof urlOrBuf === "string" ? await this.fetchArrayBuffer(urlOrBuf) : urlOrBuf;
+		await this.canvasKitManager.registerFont(buf, family);
+		this.fontUrlCache.set(family, buf);
+		this.registeredNames.add(family);
+		return buf;
+	}
+
+	private deriveFamilyFromUrl(url: string): string {
+		try {
+			const base = url
+				.split("/")
+				.pop()!
+				.replace(/\.(ttf|otf|woff2?|TTF|OTF|WOFF2?)$/, "");
+			return base.replace(
+				/-?(thin|extralight|ultralight|light|regular|normal|book|medium|semibold|demibold|bold|extrabold|ultrabold|heavy|black|italic|oblique)$/i,
+				""
+			);
+		} catch {
+			return "CustomFont";
+		}
+	}
+
+	async loadTimelineFonts(
+		fonts: Array<{ src: string; family?: string; weight?: string | number; style?: "normal" | "italic" | "oblique" }>
+	): Promise<void> {
+		await Promise.all(
+			fonts.map(async f => {
+				const fam = f.family || this.deriveFamilyFromUrl(f.src);
+				if (this.registeredNames.has(fam)) return;
+
+				const buf = await this.fetchArrayBuffer(f.src);
+				await this.canvasKitManager.registerFont(buf, fam);
+				this.fontUrlCache.set(fam, buf);
+				this.registeredNames.add(fam);
+
+				try {
+					const face = new FontFace(fam, buf, {
+						weight: f.weight ? String(f.weight) : "normal",
+						style: f.style || "normal"
+					});
+					await face.load();
+					(document as any).fonts.add(face);
+				} catch {}
+			})
+		);
+	}
+
+	async ensureFamilyAvailable(family: string, weight: string = "400", style?: "normal" | "italic" | "oblique"): Promise<void> {
+		const fontKey = `${family}-${weight}-${style}`;
+		if (this.registeredNames.has(fontKey) || this.registeredNames.has(family)) return;
+
+		const local = this.findLocalFont(family, weight, style);
+		if (local) {
+			await this.registerBufferAsFamily(local.url, family);
+			this.registeredNames.add(fontKey);
+			return;
+		}
+
+		if (!/^(helvetica|arial|times new roman|courier new|georgia|verdana)$/i.test(family)) {
+			try {
+				await this.loadGoogleFont(family, weight, style);
+				this.registeredNames.add(fontKey);
+				return;
+			} catch (e) {
+				console.warn(`Google font load failed for ${family} ${weight} ${style}`, e);
+			}
+		}
 	}
 
 	private async registerBundledFallbacks(): Promise<void> {
 		try {
 			const buf = await this.fetchArrayBuffer(robotoRegularUrl);
 			await this.canvasKitManager.registerFont(buf, "Roboto");
-
-			await this.canvasKitManager.registerFont(buf, "Arial");
-			await this.canvasKitManager.registerFont(buf, "Helvetica");
-			await this.canvasKitManager.registerFont(buf, "Verdana");
-			await this.canvasKitManager.registerFont(buf, "Georgia");
-			await this.canvasKitManager.registerFont(buf, "Times New Roman");
-			await this.canvasKitManager.registerFont(buf, "Courier New");
-
 			this.fontUrlCache.set("Roboto", buf);
 			this.registeredNames.add("Roboto");
-			["Arial", "Helvetica", "Verdana", "Georgia", "Times New Roman", "Courier New"].forEach(n => this.registeredNames.add(n));
 		} catch (e) {
 			console.warn("⚠️ Failed to register bundled Roboto Regular:", e);
 		}
@@ -68,17 +161,13 @@ export class FontManager {
 		}
 	}
 
-	private markSystemNames(): void {
-		["Arial", "Helvetica", "Times New Roman", "Courier New", "Georgia", "Verdana", "Roboto"].forEach(name => this.registeredNames.add(name));
-	}
-
 	private async fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
 		const res = await fetch(url);
 		if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
 		return res.arrayBuffer();
 	}
 
-	async loadGoogleFont(family: string, weight: string = "400", style: "normal" | "italic" = "normal"): Promise<void> {
+	async loadGoogleFont(family: string, weight: string = "400", style: "normal" | "italic" | "oblique" = "normal"): Promise<void> {
 		const fontKey = `${family}-${weight}-${style}`;
 		if (this.registeredNames.has(fontKey)) return;
 		if (this.loadingPromises.has(fontKey)) return this.loadingPromises.get(fontKey)!;
@@ -88,14 +177,14 @@ export class FontManager {
 
 		try {
 			await p;
-			this.registeredNames.add(fontKey);
 			this.registeredNames.add(family);
+			this.registeredNames.add(fontKey);
 		} finally {
 			this.loadingPromises.delete(fontKey);
 		}
 	}
 
-	private async fetchGoogleFont(family: string, weight: string, style: "normal" | "italic"): Promise<void> {
+	private async fetchGoogleFont(family: string, weight: string, style: "normal" | "italic" | "oblique"): Promise<void> {
 		const familyQuery = family.trim().replace(/\s+/g, "+");
 		const ital = style === "italic" ? 1 : 0;
 		const cssUrl = `https://fonts.googleapis.com/css2?family=${familyQuery}:ital,wght@${ital},${weight}&display=swap`;
@@ -136,10 +225,11 @@ export class FontManager {
 			link.href = cssUrl;
 			link.rel = "stylesheet";
 			document.head.appendChild(link);
-			await (document as any).fonts.load(`${weight} 16px "${family}"`);
+			await (document as any).fonts.load(`${style === "italic" ? "italic " : ""}${weight} 16px "${family}"`);
 		} catch {}
 
 		this.registeredNames.add(family);
+		this.registeredNames.add(`${family}-${weight}-${style}`);
 		this.fontUrlCache.set(family, woff2Buffer);
 	}
 
@@ -212,11 +302,10 @@ export class FontManager {
 	isFontAvailable(family: string, weight?: string): boolean {
 		if (this.registeredNames.has(family)) return true;
 		if (weight && this.registeredNames.has(`${family}-${weight}`)) return true;
-
 		try {
-			return (document as any).fonts?.check?.(`12px "${family}"`) ?? true;
+			return !!(document as any).fonts?.check?.(`12px "${family}"`);
 		} catch {
-			return true;
+			return false;
 		}
 	}
 

@@ -40,6 +40,9 @@ export class TextRenderEngine {
 		this.canvasKit = await this.canvasKitManager.initialize();
 
 		await this.fontManager.initialize();
+		if (this.config.timelineFonts?.length) {
+			await this.fontManager.loadTimelineFonts(this.config.timelineFonts);
+		}
 
 		this.textMeasurement = new TextMeasurement(this.canvasKit!);
 		console.log("✅ TextMeasurement initialized");
@@ -51,18 +54,11 @@ export class TextRenderEngine {
 			await this.fontManager.loadCustomFonts(this.config.customFonts);
 		}
 
-		const systemFonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Georgia", "Verdana"];
-		if (!systemFonts.includes(this.config.fontFamily)) {
-			try {
-				await this.fontManager.loadGoogleFont(
-					this.config.fontFamily,
-					this.config.fontWeight?.toString() || "400",
-					this.config.fontStyle === "italic" ? "italic" : "normal"
-				);
-			} catch (error) {
-				console.warn(`Could not load Google Font ${this.config.fontFamily}, using fallback`, error);
-			}
-		}
+		await this.fontManager.ensureFamilyAvailable(
+			this.config.fontFamily,
+			this.config.fontWeight?.toString() || "400",
+			this.config.fontStyle === "italic" ? "italic" : this.config.fontStyle === "oblique" ? "oblique" : "normal"
+		);
 
 		if (config.animation?.preset) {
 			this.animationEngine = new AnimationEngine(this.canvasKit!, this.config);
