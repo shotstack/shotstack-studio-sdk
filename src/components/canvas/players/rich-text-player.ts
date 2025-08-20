@@ -46,8 +46,6 @@ export class RichTextPlayer extends Player {
 
 		this.getContainer().visible = true;
 		this.getContainer().alpha = 1;
-		this.getContainer().interactive = false;
-		this.getContainer().interactiveChildren = false;
 
 		this.textRenderEngine = new TextRenderEngine();
 
@@ -75,7 +73,7 @@ export class RichTextPlayer extends Player {
 	private buildRenderConfig(asset: RichTextAsset): any {
 		const font = asset.font ?? ({} as NonNullable<RichTextAsset["font"]>);
 		const style = asset.style ?? ({} as NonNullable<RichTextAsset["style"]>);
-		const align = asset.alignment ?? { horizontal: "center", vertical: "center" };
+		const align = asset.align ?? { horizontal: "center", vertical: "center" };
 		const bg = asset.background ?? ({} as NonNullable<RichTextAsset["background"]>);
 		const anim = asset.animation;
 

@@ -94,7 +94,7 @@ export const RichTextAssetSchema = zod.object({
 	stroke: StrokeSchema.optional(),
 	shadow: ShadowSchema.optional(),
 	background: BackgroundSchema.optional(),
-	alignment: AlignmentSchema.optional(),
+	align: AlignmentSchema.optional(),
 	animation: AnimationSchema.optional(),
 	customFonts: zod.array(CustomFontSchema).optional(),
 	cacheEnabled: zod.boolean().default(true),
