@@ -73,19 +73,21 @@ export class RichTextPlayer extends Player {
 	private buildRenderConfig(asset: RichTextAsset): any {
 		const font = asset.font ?? ({} as NonNullable<RichTextAsset["font"]>);
 		const style = asset.style ?? ({} as NonNullable<RichTextAsset["style"]>);
-		const align = asset.align ?? { horizontal: "center", vertical: "center" };
+		const align = asset.align ?? { horizontal: "center", vertical: "middle" }; // <-- changed default
 		const bg = asset.background ?? ({} as NonNullable<RichTextAsset["background"]>);
 		const anim = asset.animation;
 
-		const lineHeight = style.lineHeight ?? font.lineHeight ?? 1.2;
+		const lineHeight = style.lineHeight ?? 1.2;
 		const letterSpacing = style.letterSpacing ?? 0;
+
+		const verticalRaw = (align.vertical ?? "middle") as string;
+		const verticalNorm = verticalRaw === "center" ? "middle" : ["top", "middle", "bottom"].includes(verticalRaw) ? verticalRaw : "middle";
 
 		const config: any = {
 			text: asset.text || "",
 			width: asset.width || this.edit.size.width,
 			height: asset.height || this.edit.size.height,
 			pixelRatio: asset.pixelRatio || 2,
-			renderer: "canvas2d",
 
 			fontFamily: font.family ?? "Roboto",
 			fontSize: font.size ?? 48,
@@ -101,7 +103,7 @@ export class RichTextPlayer extends Player {
 			gradient: style.gradient,
 
 			textAlign: (align.horizontal as "left" | "center" | "right") ?? "center",
-			textBaseline: align.vertical === "center" ? "middle" : (align.vertical as any)
+			textBaseline: verticalNorm as "top" | "middle" | "bottom"
 		};
 
 		if (asset.stroke) config.stroke = asset.stroke;

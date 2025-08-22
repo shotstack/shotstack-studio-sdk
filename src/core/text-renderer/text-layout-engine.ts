@@ -64,19 +64,20 @@ export class TextLayoutEngine {
 
 	calculateMultilineLayout(lines: string[], font: Font, containerWidth: number, containerHeight: number): TextLine[] {
 		const lineHeight = this.config.fontSize * (this.config.lineHeight || 1.2);
-		const totalHeight = lines.length * lineHeight;
+		const fm = this.fontManager.getFontMetrics(this.config.fontFamily, this.config.fontSize);
 
 		let startY: number;
 		switch (this.config.textBaseline) {
 			case "top":
-				startY = this.config.fontSize;
+				startY = fm.ascent;
 				break;
 			case "bottom":
-				startY = containerHeight - totalHeight + this.config.fontSize;
+				startY = containerHeight - (lines.length - 1) * lineHeight - fm.descent;
 				break;
 			case "middle":
 			default:
-				startY = (containerHeight - totalHeight) / 2 + this.config.fontSize;
+				const block = lines.length * lineHeight;
+				startY = containerHeight / 2 - block / 2 + fm.ascent;
 				break;
 		}
 

@@ -1,5 +1,7 @@
 import * as zod from "zod";
 
+const HEX6 = /^#[A-Fa-f0-9]{6}$/;
+
 const GradientSchema = zod.object({
 	type: zod.enum(["linear", "radial"]).default("linear"),
 	angle: zod.number().min(0).max(360).default(0),
@@ -7,7 +9,7 @@ const GradientSchema = zod.object({
 		.array(
 			zod.object({
 				offset: zod.number().min(0).max(1),
-				color: zod.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/, "Invalid hex color")
+				color: zod.string().regex(HEX6, "Invalid hex color")
 			})
 		)
 		.min(2)
@@ -17,19 +19,13 @@ const ShadowSchema = zod.object({
 	offsetX: zod.number().default(0),
 	offsetY: zod.number().default(0),
 	blur: zod.number().min(0).default(0),
-	color: zod
-		.string()
-		.regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/)
-		.default("#000000"),
+	color: zod.string().regex(HEX6).default("#000000"),
 	opacity: zod.number().min(0).max(1).default(0.5)
 });
 
 const StrokeSchema = zod.object({
 	width: zod.number().min(0).default(0),
-	color: zod
-		.string()
-		.regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/)
-		.default("#000000"),
+	color: zod.string().regex(HEX6).default("#000000"),
 	opacity: zod.number().min(0).max(1).default(1)
 });
 
@@ -38,16 +34,12 @@ const FontSchema = zod.object({
 	size: zod.number().min(1).max(512).default(48),
 	weight: zod.union([zod.string(), zod.number()]).default("400"),
 	style: zod.enum(["normal", "italic", "oblique"]).default("normal"),
-	color: zod
-		.string()
-		.regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/)
-		.default("#ffffff"),
-	opacity: zod.number().min(0).max(1).default(1),
-	lineHeight: zod.number().min(0).max(10).default(1.2)
+	color: zod.string().regex(HEX6, "Invalid hex color (use #RRGGBB)").default("#ffffff"),
+	opacity: zod.number().min(0).max(1).default(1)
 });
 
 const StyleSchema = zod.object({
-	letterSpacing: zod.number().default(0),
+	letterSpacing: zod.number().default(0.1),
 	lineHeight: zod.number().min(0).max(10).default(1.2),
 	textTransform: zod.enum(["none", "uppercase", "lowercase", "capitalize"]).default("none"),
 	textDecoration: zod.enum(["none", "underline", "line-through"]).default("none"),
@@ -56,22 +48,56 @@ const StyleSchema = zod.object({
 
 const AlignmentSchema = zod.object({
 	horizontal: zod.enum(["left", "center", "right"]).default("center"),
-	vertical: zod.enum(["top", "center", "bottom"]).default("center")
+	vertical: zod.enum(["top", "middle", "bottom"]).default("middle")
 });
 
-const AnimationSchema = zod.object({
+const AnimationSchemaBase = zod.object({
 	preset: zod.enum(["typewriter", "movingLetters", "fadeIn", "slideIn", "ascend", "shift"]),
 	speed: zod.number().min(0.1).max(10).default(1),
 	duration: zod.number().min(0.1).max(30).optional(),
 	style: zod.enum(["character", "word"]).optional(),
-	direction: zod.enum(["left", "right", "up", "down", "top", "bottom"]).optional()
+	direction: zod.enum(["left", "right", "up", "down"]).optional()
+});
+
+const AnimationSchema = AnimationSchemaBase.superRefine((val, ctx) => {
+	const { preset, style, direction } = val;
+
+	if (style && !(preset === "typewriter" || preset === "shift")) {
+		ctx.addIssue({
+			code: zod.ZodIssueCode.custom,
+			path: ["style"],
+			message: 'Animation style is only valid for "typewriter" or "shift" presets'
+		});
+	}
+
+	const validDirections: Record<string, string[] | undefined> = {
+		ascend: ["up", "down"],
+		shift: ["left", "right", "up", "down"],
+		slideIn: ["left", "right", "up", "down"],
+		movingLetters: ["left", "right", "up", "down"]
+	};
+
+	if (direction) {
+		const allowed = validDirections[preset];
+		if (allowed && !allowed.includes(direction)) {
+			ctx.addIssue({
+				code: zod.ZodIssueCode.custom,
+				path: ["direction"],
+				message: `Invalid direction "${direction}" for ${preset}. Must be one of: ${allowed.join(", ")}`
+			});
+		}
+		if (!allowed) {
+			ctx.addIssue({
+				code: zod.ZodIssueCode.custom,
+				path: ["direction"],
+				message: `Direction is not applicable for the "${preset}" preset`
+			});
+		}
+	}
 });
 
 const BackgroundSchema = zod.object({
-	color: zod
-		.string()
-		.regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/)
-		.optional(),
+	color: zod.string().regex(HEX6).optional(),
 	opacity: zod.number().min(0).max(1).default(1),
 	borderRadius: zod.number().min(0).default(0)
 });

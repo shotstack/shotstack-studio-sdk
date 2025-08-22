@@ -37,6 +37,25 @@ export class TextRenderEngine {
 
 		this.pixelRatio = this.config.pixelRatio || 2;
 
+		if ((this.config as any).background && (this.config as any).background.color) {
+			const bg = (this.config as any).background;
+			const hex = bg.color as string;
+			const op = typeof bg.opacity === "number" ? Math.max(0, Math.min(1, bg.opacity)) : 1;
+
+			const r = parseInt(hex.slice(1, 3), 16);
+			const g = parseInt(hex.slice(3, 5), 16);
+			const b = parseInt(hex.slice(5, 7), 16);
+			(this.config as any).backgroundColor = `rgba(${r}, ${g}, ${b}, ${op})`;
+
+			if (typeof bg.borderRadius === "number") {
+				(this.config as any).borderRadius = bg.borderRadius;
+			}
+		}
+
+		if ((this.config as any).style && (this.config as any).style.gradient) {
+			(this.config as any).gradient = (this.config as any).style.gradient;
+		}
+
 		this.canvasKit = await this.canvasKitManager.initialize();
 
 		await this.fontManager.initialize();
@@ -59,6 +78,16 @@ export class TextRenderEngine {
 			this.config.fontWeight?.toString() || "400",
 			this.config.fontStyle === "italic" ? "italic" : this.config.fontStyle === "oblique" ? "oblique" : "normal"
 		);
+
+		try {
+			const weight = this.config.fontWeight?.toString() || "400";
+			const style = this.config.fontStyle === "italic" ? "italic " : this.config.fontStyle === "oblique" ? "oblique " : "";
+			if ((document as any).fonts?.load) {
+				await (document as any).fonts.load(`${style}${weight} ${this.config.fontSize}px "${this.config.fontFamily}"`);
+			}
+		} catch {
+			/* ignore */
+		}
 
 		if (config.animation?.preset) {
 			this.animationEngine = new AnimationEngine(this.canvasKit!, this.config);
@@ -256,7 +285,7 @@ export class TextRenderEngine {
 				y = this.config.height - fontMetrics.descent;
 				break;
 			default:
-				y = this.config.height / 2;
+				y = this.config.height / 2 + fontMetrics.ascent / 2;
 		}
 
 		console.log(`Text position: x=${x}, y=${y}, width=${textWidth}`);
