@@ -49,8 +49,8 @@ export class TextStyleManager {
 						weight: weightEnum,
 						width: ck.FontWidth.Normal,
 						slant: this.getSlantEnum(this.config.fontStyle)
-					} as any;
-					tf = fontMgr.matchFamilyStyle(this.config.fontFamily, style) ?? null;
+					};
+					tf = fontMgr.matchFamilyStyle?.(this.config.fontFamily, style) ?? null;
 				}
 			} catch (e) {
 				console.warn("Font matching fallback failed:", e);
@@ -226,7 +226,7 @@ export class TextStyleManager {
 		}
 	}
 
-	createRoundedRectPath(x: number, y: number, width: number, height: number, radius: number): any {
+	createRoundedRectPath(x: number, y: number, width: number, height: number, radius: number): import("canvaskit-wasm").Path {
 		const path = new this.canvasKit.Path();
 		if (radius <= 0) {
 			path.addRect([x, y, x + width, y + height]);

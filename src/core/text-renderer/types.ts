@@ -4,41 +4,56 @@ export interface CanvasConfig {
 	text: string;
 	width: number;
 	height: number;
+
 	fontSize: number;
 	fontFamily: string;
 	fontWeight: string | number;
 	fontStyle: "normal" | "italic" | "oblique";
+
 	color: string;
 	opacity: number;
-	backgroundColor: string;
-	borderRadius: number;
+
+	backgroundColor?: string;
+	borderRadius?: number;
+
 	textAlign: "left" | "center" | "right";
 	textBaseline: "top" | "middle" | "bottom" | "alphabetic" | "hanging";
 	letterSpacing: number;
 	lineHeight: number;
 	textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
 	textDecoration: "none" | "underline" | "line-through";
+
 	gradient?: GradientConfig;
 	shadow?: ShadowConfig;
 	stroke?: StrokeConfig;
 	overflow?: OverflowConfig;
+
+	background?: {
+		color: string;
+		opacity?: number;
+		borderRadius?: number;
+	};
+
 	duration: number;
 	fps: number;
 	direction?: "left" | "right" | "up" | "down";
 	customFonts?: CustomFont[];
 	pixelRatio: number;
 	renderer?: RendererMode;
+
 	animation?: {
 		preset: string;
 		speed?: number;
 		fps?: number;
-		stagger: boolean;
+		stagger?: boolean;
 		duration?: number;
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down" | "top" | "bottom";
 	};
+
 	animationStyle?: "character" | "word";
 	speed?: number;
+
 	timelineFonts?: Array<{
 		src: string;
 		family?: string;

@@ -50,7 +50,7 @@ export class FontManager {
 		}
 
 		const wantStyle = style ?? "normal";
-		const wantWeight = typeof weight === "number" ? String(weight) : weight ?? "400";
+		const wantWeight = typeof weight === "number" ? String(weight) : (weight ?? "400");
 		const byStyle = candidates.filter(c => c.styleGuess === wantStyle);
 		const pool = byStyle.length ? byStyle : candidates;
 
@@ -112,7 +112,7 @@ export class FontManager {
 						style: f.style || "normal"
 					});
 					await face.load();
-					(document as any).fonts.add(face);
+					document.fonts?.add(face);
 				} catch {}
 			})
 		);
@@ -303,7 +303,7 @@ export class FontManager {
 		if (this.registeredNames.has(family)) return true;
 		if (weight && this.registeredNames.has(`${family}-${weight}`)) return true;
 		try {
-			return !!(document as any).fonts?.check?.(`12px "${family}"`);
+			return !!document.fonts?.check?.(`12px "${family}"`);
 		} catch {
 			return false;
 		}

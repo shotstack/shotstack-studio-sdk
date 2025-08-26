@@ -39,7 +39,7 @@ const FontSchema = zod.object({
 });
 
 const StyleSchema = zod.object({
-	letterSpacing: zod.number().default(0.1),
+	letterSpacing: zod.number().default(0),
 	lineHeight: zod.number().min(0).max(10).default(1.2),
 	textTransform: zod.enum(["none", "uppercase", "lowercase", "capitalize"]).default("none"),
 	textDecoration: zod.enum(["none", "underline", "line-through"]).default("none"),
@@ -56,7 +56,7 @@ const AnimationSchemaBase = zod.object({
 	speed: zod.number().min(0.1).max(10).default(1),
 	duration: zod.number().min(0.1).max(30).optional(),
 	style: zod.enum(["character", "word"]).optional(),
-	direction: zod.enum(["left", "right", "up", "down"]).optional()
+	direction: zod.enum(["left", "right", "up", "down", "top", "bottom"]).optional()
 });
 
 const AnimationSchema = AnimationSchemaBase.superRefine((val, ctx) => {
@@ -70,6 +70,8 @@ const AnimationSchema = AnimationSchemaBase.superRefine((val, ctx) => {
 		});
 	}
 
+	const norm = (d: string | undefined) => (d === "top" ? "up" : d === "bottom" ? "down" : d);
+
 	const validDirections: Record<string, string[] | undefined> = {
 		ascend: ["up", "down"],
 		shift: ["left", "right", "up", "down"],
@@ -78,15 +80,18 @@ const AnimationSchema = AnimationSchemaBase.superRefine((val, ctx) => {
 	};
 
 	if (direction) {
+		const d = norm(direction);
 		const allowed = validDirections[preset];
-		if (allowed && !allowed.includes(direction)) {
+		if (allowed && !allowed.includes(d!)) {
 			ctx.addIssue({
 				code: zod.ZodIssueCode.custom,
 				path: ["direction"],
-				message: `Invalid direction "${direction}" for ${preset}. Must be one of: ${allowed.join(", ")}`
+				message: `Invalid direction "${direction}" for ${preset}. Must be one of: ${allowed
+					.map(s => (s === "up" ? "up/top" : s === "down" ? "down/bottom" : s))
+					.join(", ")}`
 			});
 		}
-		if (!allowed) {
+		if (!allowed && (preset === "fadeIn" || preset === "typewriter")) {
 			ctx.addIssue({
 				code: zod.ZodIssueCode.custom,
 				path: ["direction"],

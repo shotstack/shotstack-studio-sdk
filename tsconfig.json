@@ -23,6 +23,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"esModuleInterop": true,
 		"baseUrl": "./src",
+		"typeRoots": ["./node_modules/@types", "./src/types"],
 		"paths": {
 			"@core/*": ["core/*"],
 			"@canvas/*": ["components/canvas/*"],

@@ -10,9 +10,7 @@ export class TextMeasurement {
 	}
 
 	measureText(text: string, font: Font): { width: number; height: number } {
-		if (!text) {
-			return { width: 0, height: 0 };
-		}
+		if (!text) return { width: 0, height: 0 };
 
 		try {
 			const glyphIDs = font.getGlyphIDs(text);
@@ -24,21 +22,24 @@ export class TextMeasurement {
 			if (totalWidth === 0) {
 				const metrics = font.getMetrics?.();
 				const safeHeight = metrics ? metrics.descent - metrics.ascent : 12;
+				const size =
+					typeof (font as unknown as { getSize?: () => number }).getSize === "function"
+						? (font as unknown as { getSize: () => number }).getSize()
+						: safeHeight > 0
+							? safeHeight
+							: 12;
 
-				const size = typeof (font as any).getSize === "function" ? (font as any).getSize() : safeHeight > 0 ? safeHeight : 12;
-
-				totalWidth = this.canvasKit ? text.length * 0.6 * size : 0;
+				totalWidth = text.length * 0.6 * size;
 			}
 
 			const metrics = font.getMetrics?.();
-			const height = metrics ? metrics.descent - metrics.ascent : font.getSize?.() ?? 12;
+			const height = metrics ? metrics.descent - metrics.ascent : ((font as unknown as { getSize?: () => number }).getSize?.() ?? 12);
+
 			return { width: totalWidth, height };
 		} catch (error) {
 			console.error("TextMeasurement failed:", error);
-			return {
-				width: text.length * font.getSize() * 0.6,
-				height: font.getSize() * 1.2
-			};
+			const size = (font as unknown as { getSize?: () => number }).getSize?.() ?? 12;
+			return { width: text.length * size * 0.6, height: size * 1.2 };
 		}
 	}
 

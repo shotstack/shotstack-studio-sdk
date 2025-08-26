@@ -61,7 +61,7 @@ export class CanvasKitManager {
 				}
 			}
 
-			const count = (this.fontMgr as any)?.countFamilies?.() ?? 0;
+			const count = this.fontMgr?.countFamilies?.() ?? 0;
 			console.log(count > 0 ? `✅ Font provider initialized with ${count} families` : "ℹ️ Font provider ready (no fonts registered yet)");
 		} catch (error) {
 			console.warn("⚠️ Could not initialize TypefaceFontProvider:", error);
@@ -130,11 +130,11 @@ export class CanvasKitManager {
 
 		try {
 			const face =
-				(this.canvasKit as any).MakeTypefaceFromData?.(new Uint8Array(fontData)) || this.canvasKit!.Typeface.MakeFreeTypeFaceFromData(fontData);
+				(this.canvasKit as any)?.MakeTypefaceFromData?.(new Uint8Array(fontData)) ?? this.canvasKit!.Typeface.MakeFreeTypeFaceFromData(fontData);
 			if (face) this.typefaces.set(familyName, face);
 		} catch {}
 
-		const count = (this.fontMgr as any)?.countFamilies?.() ?? 0;
+		const count = this.fontMgr?.countFamilies?.() ?? 0;
 		console.log(`✅ Registered font: ${familyName} (total families: ${count})`);
 	}
 
@@ -149,7 +149,7 @@ export class CanvasKitManager {
 
 	async getTypefaceForFont(fontFamily: string, fontWeight?: string | number, fontStyle?: string): Promise<Typeface | null> {
 		const ck = await this.initialize();
-		const mgr = (this.fontMgr ?? this.provider) || ck.FontMgr.FromData();
+		const mgr: FontMgr | null = this.fontMgr ?? this.provider;
 		if (!mgr) return null;
 
 		const toWeightEnum = (w?: string | number) => {
@@ -178,18 +178,16 @@ export class CanvasKitManager {
 			weight: toWeightEnum(fontWeight),
 			width: ck.FontWidth.Normal,
 			slant: fontStyle === "italic" ? ck.FontSlant.Italic : fontStyle === "oblique" ? ck.FontSlant.Oblique : ck.FontSlant.Upright
-		} as any;
+		} as const;
 
-		const hit = (mgr as any).matchFamilyStyle?.(fontFamily, style);
-		if (hit) return hit as Typeface;
+		const hit = mgr.matchFamilyStyle?.(fontFamily, style) ?? null;
+		if (hit) return hit;
 
-		const roboto = (mgr as any).matchFamilyStyle?.("Roboto", style);
-		if (roboto) return roboto as Typeface;
+		const roboto = mgr.matchFamilyStyle?.("Roboto", style) ?? null;
+		if (roboto) return roboto;
 
 		const cached = this.typefaces.get(fontFamily);
-		if (cached) return cached;
-
-		return null;
+		return cached ?? null;
 	}
 
 	getTypeface(familyName: string): Typeface | undefined {

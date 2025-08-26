@@ -2,26 +2,30 @@ import * as pixi from "pixi.js";
 import { Player } from "./player";
 import { TextRenderEngine } from "../../../core/text-renderer";
 import type { RichTextAsset } from "../../../core/schemas/rich-text-asset";
-import type { RenderResult, AnimationFrame } from "../../../core/text-renderer/types";
+import type { RenderResult, AnimationFrame, CanvasConfig } from "../../../core/text-renderer/types";
 import type { Size } from "../../../core/layouts/geometry";
 import type { Clip } from "../../../core/schemas/clip";
 import type { Edit } from "../../../core/edit";
 import { Texture, Sprite } from "pixi.js";
+import type { Texture as PixiTexture, Sprite as PixiSprite } from "pixi.js";
 
+type CanvasConfigInput = Partial<CanvasConfig> & {
+	background?: { color: string; opacity?: number; borderRadius?: number };
+};
 export class RichTextPlayer extends Player {
 	private textRenderEngine: TextRenderEngine | null = null;
-	private sprite: pixi.Sprite | null = null;
-	private animationSprites: pixi.Sprite[] = [];
 	private currentFrameIndex: number = -1;
 	private animationResult: RenderResult | null = null;
 	private isAnimated: boolean = false;
 	private animationDuration: number = 0;
 	private textContent: string = "";
 	private renderPromise: Promise<void> | null = null;
-	private textures: pixi.Texture[] = [];
 	private hasInitialized: boolean = false;
 	private debugMode: boolean = true;
 	private animationDurationMs: number = 0;
+	private sprite: PixiSprite | null = null;
+	private animationSprites: PixiSprite[] = [];
+	private textures: PixiTexture[] = [];
 
 	constructor(edit: Edit, clipConfiguration: Clip) {
 		super(edit, clipConfiguration);
@@ -66,53 +70,64 @@ export class RichTextPlayer extends Player {
 		}
 	}
 
-	private isRichTextAsset(asset: any): asset is RichTextAsset {
-		return asset && asset.type === "rich-text";
+	private isRichTextAsset(asset: unknown): asset is RichTextAsset {
+		return !!asset && typeof (asset as { type?: string }).type === "string" && (asset as { type: string }).type === "rich-text";
 	}
 
-	private buildRenderConfig(asset: RichTextAsset): any {
+	private buildRenderConfig(asset: RichTextAsset): CanvasConfigInput {
 		const font = asset.font ?? ({} as NonNullable<RichTextAsset["font"]>);
 		const style = asset.style ?? ({} as NonNullable<RichTextAsset["style"]>);
-		const align = asset.align ?? { horizontal: "center", vertical: "middle" }; // <-- changed default
-		const bg = asset.background ?? ({} as NonNullable<RichTextAsset["background"]>);
+		const align = asset.align ?? { horizontal: "center", vertical: "middle" };
+		const bg = asset.background;
 		const anim = asset.animation;
 
 		const lineHeight = style.lineHeight ?? 1.2;
 		const letterSpacing = style.letterSpacing ?? 0;
 
 		const verticalRaw = (align.vertical ?? "middle") as string;
-		const verticalNorm = verticalRaw === "center" ? "middle" : ["top", "middle", "bottom"].includes(verticalRaw) ? verticalRaw : "middle";
+		const verticalNorm =
+			verticalRaw === "center"
+				? "middle"
+				: (["top", "middle", "bottom"] as const).includes(verticalRaw as any)
+					? (verticalRaw as "top" | "middle" | "bottom")
+					: "middle";
 
-		const config: any = {
+		const width = asset.width ?? this.edit.size.width;
+		const height = asset.height ?? this.edit.size.height;
+		const pixelRatio = asset.pixelRatio ?? 2;
+
+		const config: CanvasConfigInput = {
 			text: asset.text || "",
-			width: asset.width || this.edit.size.width,
-			height: asset.height || this.edit.size.height,
-			pixelRatio: asset.pixelRatio || 2,
+			width,
+			height,
+			pixelRatio,
 
 			fontFamily: font.family ?? "Roboto",
 			fontSize: font.size ?? 48,
 			fontWeight: font.weight ?? "400",
-			fontStyle: font.style ?? "normal",
+			fontStyle: (font.style ?? "normal") as CanvasConfig["fontStyle"],
 			color: font.color ?? "#ffffff",
 			opacity: font.opacity ?? 1,
 
 			lineHeight,
 			letterSpacing,
-			textTransform: style.textTransform ?? "none",
-			textDecoration: style.textDecoration ?? "none",
+			textTransform: (style.textTransform ?? "none") as CanvasConfig["textTransform"],
+			textDecoration: (style.textDecoration ?? "none") as CanvasConfig["textDecoration"],
 			gradient: style.gradient,
 
 			textAlign: (align.horizontal as "left" | "center" | "right") ?? "center",
-			textBaseline: verticalNorm as "top" | "middle" | "bottom"
+			textBaseline: verticalNorm as CanvasConfig["textBaseline"]
 		};
 
 		if (asset.stroke) config.stroke = asset.stroke;
 		if (asset.shadow) config.shadow = asset.shadow;
 
-		if (bg) {
-			config.backgroundColor = bg.color;
-			config.backgroundOpacity = bg.opacity ?? 1;
-			config.borderRadius = bg.borderRadius ?? 0;
+		if (bg?.color) {
+			config.background = {
+				color: bg.color,
+				opacity: bg.opacity,
+				borderRadius: bg.borderRadius
+			};
 		}
 
 		if (anim?.preset) {
@@ -125,7 +140,7 @@ export class RichTextPlayer extends Player {
 				speed: anim.speed ?? 1,
 				duration: clampedSec,
 				style: anim.style,
-				direction: anim.direction
+				direction: anim.direction as CanvasConfig["animation"] extends infer A ? (A extends { direction?: infer D } ? D : never) : never
 			};
 
 			this.animationDurationMs = clampedSec * 1000;
@@ -134,9 +149,26 @@ export class RichTextPlayer extends Player {
 
 		if (asset.customFonts) config.customFonts = asset.customFonts;
 
-		const tlFonts = (this.edit as any)?.timeline?.fonts as Array<{ src: string }> | undefined;
+		const tlFonts = (
+			this.edit as {
+				timeline?: {
+					fonts?: Array<{
+						src: string;
+						family?: string;
+						weight?: string | number;
+						style?: "normal" | "italic" | "oblique";
+					}>;
+				};
+			}
+		).timeline?.fonts;
+
 		if (tlFonts?.length) {
-			config.timelineFonts = tlFonts.map(f => ({ src: f.src }));
+			config.timelineFonts = tlFonts.map(f => ({
+				src: f.src,
+				family: f.family,
+				weight: f.weight,
+				style: f.style
+			}));
 		}
 
 		return config;
@@ -179,7 +211,9 @@ export class RichTextPlayer extends Player {
 	private async setupStaticText(imageData: ImageData): Promise<void> {
 		this.clearSprites();
 
-		const pixelRatio = (this.clipConfiguration.asset as any)?.pixelRatio || 1;
+		const asset = this.clipConfiguration.asset;
+		const pixelRatio = this.isRichTextAsset(asset) ? (asset.pixelRatio ?? 1) : 1;
+		const scale = 1 / pixelRatio;
 
 		const texture = this.createTextureFromImageData(imageData);
 		if (!texture) {
@@ -190,7 +224,6 @@ export class RichTextPlayer extends Player {
 		this.textures.push(texture);
 
 		const sprite = new Sprite(texture);
-		const scale = 1 / pixelRatio;
 		sprite.scale.set(scale, scale);
 		sprite.x = 0;
 		sprite.y = 0;
@@ -212,7 +245,8 @@ export class RichTextPlayer extends Player {
 
 		this.clearSprites();
 
-		const pixelRatio = (this.clipConfiguration.asset as any)?.pixelRatio || 1;
+		const asset = this.clipConfiguration.asset;
+		const pixelRatio = this.isRichTextAsset(asset) ? (asset.pixelRatio ?? 1) : 1;
 		const scale = 1 / pixelRatio;
 
 		for (let i = 0; i < frames.length; i++) {
@@ -251,7 +285,7 @@ export class RichTextPlayer extends Player {
 		}
 	}
 
-	private createTextureFromImageData(imageData: ImageData): pixi.Texture | null {
+	private createTextureFromImageData(imageData: ImageData): Texture | null {
 		try {
 			const canvas = document.createElement("canvas");
 			canvas.width = imageData.width;
@@ -354,12 +388,12 @@ export class RichTextPlayer extends Player {
 			ctx.fillText("Text Render Error", canvas.width / 2, canvas.height / 2);
 		}
 
-		const texture = pixi.Texture.from(canvas);
+		const texture = Texture.from(canvas);
 		this.textures.push(texture);
 
 		this.clearSprites();
 
-		this.sprite = new pixi.Sprite(texture);
+		this.sprite = new Sprite(texture);
 		this.sprite.width = size.width;
 		this.sprite.height = size.height;
 		this.contentContainer.addChild(this.sprite);
@@ -426,13 +460,24 @@ export class RichTextPlayer extends Player {
 	}
 
 	private getCurrentOpacity(): number {
-		const opacity = this.clipConfiguration.opacity;
+		const { opacity } = this.clipConfiguration;
+
 		if (typeof opacity === "number") return opacity;
+
 		if (Array.isArray(opacity) && opacity.length > 0) {
-			const firstKeyframe = opacity[0];
-			if (typeof firstKeyframe === "object" && "from" in firstKeyframe) return (firstKeyframe as any).from;
-			if (typeof firstKeyframe === "number") return firstKeyframe;
+			const first = opacity[0];
+			if (typeof first === "number") return first;
+
+			if (first && typeof first === "object") {
+				if ("from" in first && typeof (first as { from?: number }).from === "number") {
+					return (first as { from: number }).from;
+				}
+				if ("value" in first && typeof (first as { value?: number }).value === "number") {
+					return (first as { value: number }).value;
+				}
+			}
 		}
+
 		return 1;
 	}
 }

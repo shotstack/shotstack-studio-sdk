@@ -3,11 +3,25 @@ import { FontManager } from "./font-manager";
 import { TextLayoutEngine } from "./text-layout-engine";
 import { TextStyleManager } from "./text-style-manager";
 import { CANVAS_CONFIG } from "./config";
-import type { CanvasConfig, RenderResult } from "./types";
+import type { CanvasConfig, RenderResult, GradientConfig } from "./types";
 import type { AnimationType } from "./config";
-import type { CanvasKit, Surface, Canvas, Paint, Font } from "canvaskit-wasm";
+import type { CanvasKit, Surface, Canvas, Paint, Font, Typeface } from "canvaskit-wasm";
 import { TextMeasurement } from "./text-measurement";
 import { AnimationEngine } from "./animations";
+
+type BackgroundLike =
+	| {
+			color: string;
+			opacity?: number;
+			borderRadius?: number;
+	  }
+	| undefined;
+
+type StyleLike =
+	| {
+			gradient?: GradientConfig;
+	  }
+	| undefined;
 
 export class TextRenderEngine {
 	private canvasKitManager: CanvasKitManager;
@@ -37,23 +51,24 @@ export class TextRenderEngine {
 
 		this.pixelRatio = this.config.pixelRatio || 2;
 
-		if ((this.config as any).background && (this.config as any).background.color) {
-			const bg = (this.config as any).background;
-			const hex = bg.color as string;
+		// Safely read an optional "background" object from the incoming config
+		const bg: BackgroundLike = (config as unknown as { background?: BackgroundLike })?.background;
+		if (bg && bg.color) {
+			const hex = bg.color;
 			const op = typeof bg.opacity === "number" ? Math.max(0, Math.min(1, bg.opacity)) : 1;
-
 			const r = parseInt(hex.slice(1, 3), 16);
 			const g = parseInt(hex.slice(3, 5), 16);
 			const b = parseInt(hex.slice(5, 7), 16);
-			(this.config as any).backgroundColor = `rgba(${r}, ${g}, ${b}, ${op})`;
-
+			(this.config as CanvasConfig).backgroundColor = `rgba(${r}, ${g}, ${b}, ${op})`;
 			if (typeof bg.borderRadius === "number") {
-				(this.config as any).borderRadius = bg.borderRadius;
+				(this.config as CanvasConfig).borderRadius = bg.borderRadius;
 			}
 		}
 
-		if ((this.config as any).style && (this.config as any).style.gradient) {
-			(this.config as any).gradient = (this.config as any).style.gradient;
+		// Safely read an optional "style.gradient" and map to config.gradient
+		const styleLike: StyleLike = (config as unknown as { style?: StyleLike })?.style;
+		if (styleLike?.gradient) {
+			(this.config as CanvasConfig).gradient = styleLike.gradient;
 		}
 
 		this.canvasKit = await this.canvasKitManager.initialize();
@@ -81,10 +96,9 @@ export class TextRenderEngine {
 
 		try {
 			const weight = this.config.fontWeight?.toString() || "400";
-			const style = this.config.fontStyle === "italic" ? "italic " : this.config.fontStyle === "oblique" ? "oblique " : "";
-			if ((document as any).fonts?.load) {
-				await (document as any).fonts.load(`${style}${weight} ${this.config.fontSize}px "${this.config.fontFamily}"`);
-			}
+			const stylePrefix = this.config.fontStyle === "italic" ? "italic " : this.config.fontStyle === "oblique" ? "oblique " : "";
+			// Uses the DOM Font Loading API (augmented in your ambient types)
+			await document.fonts?.load?.(`${stylePrefix}${weight} ${this.config.fontSize}px "${this.config.fontFamily}"`);
 		} catch {
 			/* ignore */
 		}
@@ -142,15 +156,15 @@ export class TextRenderEngine {
 		const ck = this.canvasKit;
 
 		const renderOnceWithTypeface = async (family: string): Promise<ImageData | null> => {
-			let tf = await this.canvasKitManager.getTypefaceForFont(family, this.config!.fontWeight, this.config!.fontStyle);
+			let tf: Typeface | null = await this.canvasKitManager.getTypefaceForFont(family, this.config!.fontWeight, this.config!.fontStyle);
 
 			if (!tf) {
 				const mgr = this.canvasKitManager.getFontManager();
-				if (mgr && (mgr as any).countFamilies?.() > 0) {
-					const fam0 = (mgr as any).getFamilyName?.(0);
+				if (mgr && mgr.countFamilies?.() > 0) {
+					const fam0 = mgr.getFamilyName?.(0);
 					if (fam0) {
 						tf =
-							(mgr as any).matchFamilyStyle?.(fam0, {
+							mgr.matchFamilyStyle?.(fam0, {
 								weight: ck!.FontWeight.Normal,
 								width: ck!.FontWidth.Normal,
 								slant: ck!.FontSlant.Upright
@@ -293,7 +307,7 @@ export class TextRenderEngine {
 		console.log(`Font size: ${this.config.fontSize}, Font family: ${this.config.fontFamily}`);
 
 		const bounds = {
-			x: x,
+			x,
 			y: y - fontMetrics.ascent,
 			width: textWidth,
 			height: fontMetrics.ascent + fontMetrics.descent
@@ -312,9 +326,7 @@ export class TextRenderEngine {
 	}
 
 	private async renderMultilineText(text: string, font: Font, maxWidth: number): Promise<void> {
-		if (!this.canvas || !this.canvasKit || !this.config || !this.layoutEngine || !this.styleManager) {
-			return;
-		}
+		if (!this.canvas || !this.canvasKit || !this.config || !this.layoutEngine || !this.styleManager) return;
 
 		const lines = this.layoutEngine.processTextContent(text, maxWidth, font);
 		const textLines = this.layoutEngine.calculateMultilineLayout(lines, font, this.config.width, this.config.height);
@@ -326,12 +338,10 @@ export class TextRenderEngine {
 	}
 
 	private renderStyledText(text: string, x: number, y: number, font: Font, bounds: { x: number; y: number; width: number; height: number }): void {
-		if (!this.canvas || !this.canvasKit || !this.styleManager) {
-			return;
-		}
+		if (!this.canvas || !this.canvasKit || !this.styleManager) return;
 
-		const renderTextFn = (canvas: Canvas, text: string, x: number, y: number, paint: Paint, font: Font) => {
-			this.styleManager!.renderTextWithLetterSpacing(canvas, text, x, y, paint, font);
+		const renderTextFn = (canvas: Canvas, t: string, lx: number, ly: number, p: Paint, f: Font) => {
+			this.styleManager!.renderTextWithLetterSpacing(canvas, t, lx, ly, p, f);
 		};
 
 		if (this.config?.shadow) {
@@ -449,7 +459,6 @@ export class TextRenderEngine {
 			// shadow/fill/gradient for this line
 			this.apply2DPaint(ctx, { localX: x, totalWidth: this.config!.width, totalHeight: this.config!.height });
 
-			// stroke (if any)
 			if (this.config?.stroke?.width) {
 				ctx.save();
 				ctx.lineWidth = this.config.stroke.width;
@@ -507,7 +516,6 @@ export class TextRenderEngine {
 		for (const ch of text) {
 			w += ctx.measureText(ch).width + letterSpacingPx;
 		}
-
 		if (text.length > 0) w -= letterSpacingPx;
 		return w;
 	}
@@ -629,16 +637,12 @@ export class TextRenderEngine {
 	}
 
 	private getImageData(): ImageData {
-		if (!this.surface || !this.canvasKit) {
-			throw new Error("Surface not initialized");
-		}
+		if (!this.surface || !this.canvasKit) throw new Error("Surface not initialized");
 
 		this.surface.flush();
 
 		const snapshot = this.surface.makeImageSnapshot();
-		if (!snapshot) {
-			throw new Error("Failed to create image snapshot");
-		}
+		if (!snapshot) throw new Error("Failed to create image snapshot");
 
 		try {
 			const width = this.config!.width * this.pixelRatio;
