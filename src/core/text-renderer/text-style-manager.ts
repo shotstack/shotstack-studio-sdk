@@ -23,11 +23,12 @@ export class TextStyleManager {
 
 	applyTextStyles(paint: Paint, bounds?: { x: number; y: number; width: number; height: number }): void {
 		if (this.config.gradient && bounds) {
-			const shader = this.gradientBuilder.createGradient(this.config.gradient, bounds);
+			const shader = this.gradientBuilder.createGradientForBounds(this.config.gradient, bounds);
 			paint.setShader(shader);
 		} else {
 			paint.setColor(this.parseColor(this.config.color));
 		}
+
 		if (this.config.opacity !== undefined && this.config.opacity < 1) {
 			paint.setAlphaf(this.config.opacity);
 		}

@@ -8,6 +8,7 @@ export class TypewriterAnimation extends BaseAnimation {
 		if (!this.canvas || !this.font) throw new Error("Canvas or font not initialized");
 
 		const processed = this.applyTextTransform(text);
+		this.calculateFullTextBounds(processed);
 		const baseDuration = this.config.duration || 3;
 		const speed = this.config.speed || 1;
 		const duration = Math.max(0.1, baseDuration / speed);

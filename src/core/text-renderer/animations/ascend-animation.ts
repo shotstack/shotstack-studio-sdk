@@ -8,6 +8,7 @@ export class AscendAnimation extends BaseAnimation {
 		if (!this.canvas || !this.font) throw new Error("Canvas or font not initialized");
 
 		const processedText = this.applyTextTransform(text);
+		this.calculateFullTextBounds(processedText);
 		const baseDuration = this.config.duration || 3;
 		const speed = this.config.speed || 1;
 		const duration = Math.max(0.1, baseDuration / speed);

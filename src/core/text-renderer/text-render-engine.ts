@@ -130,12 +130,35 @@ export class TextRenderEngine {
 		return this.renderText(text);
 	}
 
-	private checkImageDataContent(imageData: ImageData): boolean {
-		const d = imageData.data;
-		for (let i = 3; i < Math.min(4000, d.length); i += 4) {
-			if (d[i] !== 0) return true;
+	private create2DGradientForBounds(
+		ctx: CanvasRenderingContext2D,
+		config: { type: "linear" | "radial"; angle?: number; stops: { offset: number; color: string }[] },
+		bounds: { x: number; y: number; width: number; height: number }
+	): CanvasGradient {
+		const { type, angle = 0, stops } = config;
+		const { x, y, width, height } = bounds;
+
+		let gradient: CanvasGradient;
+
+		if (type === "linear") {
+			const clampedAngle = Math.max(0, Math.min(360, angle));
+			const angleRad = (clampedAngle * Math.PI) / 180;
+			const cx = x + width / 2;
+			const cy = y + height / 2;
+			const gradientLength = Math.max(width, height);
+			const dx = (Math.cos(angleRad) * gradientLength) / 2;
+			const dy = (Math.sin(angleRad) * gradientLength) / 2;
+
+			gradient = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy);
+		} else {
+			const cx = x + width / 2;
+			const cy = y + height / 2;
+			const r = Math.min(width, height) / 2;
+			gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
 		}
-		return false;
+
+		stops.forEach(s => gradient.addColorStop(Math.max(0, Math.min(1, s.offset)), s.color));
+		return gradient;
 	}
 
 	async renderText(text?: string): Promise<RenderResult> {
@@ -457,7 +480,7 @@ export class TextRenderEngine {
 			const y = startY + i * lineHeightPx;
 
 			// shadow/fill/gradient for this line
-			this.apply2DPaint(ctx, { localX: x, totalWidth: this.config!.width, totalHeight: this.config!.height });
+			this.apply2DPaint(ctx, { x, y: y - this.config!.fontSize, width: lineWidth, height: this.config!.fontSize });
 
 			if (this.config?.stroke?.width) {
 				ctx.save();
@@ -520,7 +543,7 @@ export class TextRenderEngine {
 		return w;
 	}
 
-	private apply2DPaint(ctx: CanvasRenderingContext2D, opts: { localX: number; totalWidth: number; totalHeight: number }) {
+	private apply2DPaint(ctx: CanvasRenderingContext2D, bounds: { x: number; y: number; width: number; height: number }) {
 		const sh = this.config!.shadow;
 		if (sh) {
 			ctx.shadowColor = this.withOpacity(sh.color, sh.opacity ?? 1);
@@ -535,16 +558,8 @@ export class TextRenderEngine {
 		}
 
 		const grad = this.config!.gradient;
-		if (grad && grad.type === "linear" && grad.stops?.length) {
-			const angle = ((grad.angle ?? 0) * Math.PI) / 180;
-			const cx = this.config!.width / 2;
-			const cy = this.config!.height / 2;
-			const dx = Math.cos(angle) * (this.config!.width / 2);
-			const dy = Math.sin(angle) * (this.config!.height / 2);
-
-			const g = ctx.createLinearGradient(cx - dx - opts.localX, cy - dy, cx + dx - opts.localX, cy + dy);
-			for (const stop of grad.stops) g.addColorStop(stop.offset, stop.color);
-			ctx.fillStyle = g;
+		if (grad && grad.stops?.length) {
+			ctx.fillStyle = this.create2DGradientForBounds(ctx, grad, bounds);
 		} else {
 			ctx.fillStyle = this.config!.color;
 		}

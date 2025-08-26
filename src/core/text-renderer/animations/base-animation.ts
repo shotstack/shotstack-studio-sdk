@@ -35,6 +35,7 @@ export abstract class BaseAnimation {
 	protected frames: AnimationFrame[] = [];
 	protected pixelRatio: number = 2;
 	protected font: Font | null = null;
+	protected fullTextBounds: { x: number; y: number; width: number; height: number } | null = null;
 
 	constructor(canvasKit: CanvasKit, config: CanvasConfig) {
 		this.canvasKit = canvasKit;
@@ -147,6 +148,38 @@ export abstract class BaseAnimation {
 		}
 	}
 
+	protected calculateFullTextBounds(text: string): void {
+		if (!this.font) return;
+
+		const padding = this.config.fontSize * 0.5;
+		const maxWidth = this.config.width - padding * 2;
+
+		const lines = this.layoutEngine.processTextContent(text, maxWidth, this.font);
+		const textLines = this.layoutEngine.calculateMultilineLayout(lines, this.font, this.config.width, this.config.height);
+
+		if (textLines.length === 0) return;
+
+		let minX = Infinity,
+			maxX = -Infinity;
+		let minY = Infinity,
+			maxY = -Infinity;
+
+		for (const line of textLines) {
+			const lineWidth = this.layoutEngine.measureTextWithLetterSpacing(line.text, this.font);
+			minX = Math.min(minX, line.x);
+			maxX = Math.max(maxX, line.x + lineWidth);
+			minY = Math.min(minY, line.y - this.config.fontSize);
+			maxY = Math.max(maxY, line.y);
+		}
+
+		this.fullTextBounds = {
+			x: minX,
+			y: minY,
+			width: maxX - minX,
+			height: maxY - minY
+		};
+	}
+
 	protected renderStyledText(text: string, x: number, y: number, opacity: number = 1, scale: number = 1, rotation: number = 0): void {
 		if (!this.canvas || !this.canvasKit || !this.font) return;
 
@@ -159,7 +192,15 @@ export abstract class BaseAnimation {
 			this.canvas.translate(-x, -y);
 		}
 
-		const bounds = { x, y: y - this.config.fontSize, width: this.config.width, height: this.config.fontSize };
+		const textWidth = this.layoutEngine.measureTextWithLetterSpacing(text, this.font);
+
+		const bounds = this.fullTextBounds || {
+			x,
+			y: y - this.config.fontSize * 0.8,
+			width: textWidth,
+			height: this.config.fontSize
+		};
+
 		const combinedAlpha = (this.config.opacity ?? 1) * opacity;
 
 		const renderLetters = (canvas: Canvas, t: string, lx: number, ly: number, paint: Paint, font: Font) => {
@@ -182,11 +223,11 @@ export abstract class BaseAnimation {
 		}
 
 		const fillPaint = new this.canvasKit.Paint();
+		// Always use fullTextBounds for gradient consistency
 		this.styleManager.applyTextStyles(fillPaint, bounds);
 		if (combinedAlpha < 1) fillPaint.setAlphaf(combinedAlpha);
 		this.styleManager.renderTextWithLetterSpacing(this.canvas, text, x, y, fillPaint, this.font);
 
-		const textWidth = this.layoutEngine.measureTextWithLetterSpacing(text, this.font);
 		this.styleManager.applyTextDecoration(this.canvas, text, x, y, textWidth, this.font);
 
 		fillPaint.delete();
@@ -203,6 +244,7 @@ export abstract class BaseAnimation {
 			this.surface = null;
 		}
 		this.canvas = null;
+		this.fullTextBounds = null;
 		this.layoutEngine.cleanup();
 		this.styleManager.cleanup();
 		this.timeline.kill();
