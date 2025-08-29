@@ -57,6 +57,8 @@ export class Edit extends Entity {
 	private selectedClip: Player | null;
 	/** @internal */
 	private updatedClip: Player | null;
+	/** @internal */
+	private viewportMask?: pixi.Graphics;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -93,6 +95,13 @@ export class Edit extends Entity {
 		background.fill();
 
 		this.getContainer().addChild(background);
+
+		// Ensure content outside the edit viewport is not visible
+		this.viewportMask = new pixi.Graphics();
+		this.viewportMask.rect(0, 0, this.size.width, this.size.height);
+		this.viewportMask.fill(0xffffff);
+		this.getContainer().addChild(this.viewportMask);
+		this.getContainer().setMask({ mask: this.viewportMask });
 	}
 
 	/** @internal */
@@ -124,6 +133,18 @@ export class Edit extends Entity {
 	/** @internal */
 	public override dispose(): void {
 		this.clearClips();
+
+		// Clean up mask
+		if (this.viewportMask) {
+			try {
+				// Remove mask first, then destroy the graphics
+				this.getContainer().setMask(null as any);
+			} catch {
+				// Intentionally ignore errors when removing the mask during dispose
+			}
+			this.viewportMask.destroy();
+			this.viewportMask = undefined;
+		}
 	}
 
 	public play(): void {
