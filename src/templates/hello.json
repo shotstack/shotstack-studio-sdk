@@ -11,6 +11,18 @@
 				"clips": [
 					{
 						"asset": {
+							"type": "audio",
+							"src": "https://shotstack-assets.s3.ap-southeast-2.amazonaws.com/music/moment.mp3"
+						},
+						"start": 0,
+						"length": 10
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
 							"type": "text",
 							"text": "Hello World"
 						},

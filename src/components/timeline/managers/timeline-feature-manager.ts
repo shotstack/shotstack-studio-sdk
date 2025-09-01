@@ -95,7 +95,7 @@ export class TimelineFeatureManager {
 	public recreateTimelineFeatures(theme: TimelineTheme, pixelsPerSecond: number, height: number, extendedDuration: number): void {
 		if (this.ruler) {
 			this.ruler.dispose();
-			const rulerHeight = theme.dimensions?.rulerHeight || this.layout.rulerHeight;
+			const {rulerHeight} = this.layout;
 			const rulerOptions: RulerFeatureOptions = {
 				pixelsPerSecond,
 				timelineDuration: extendedDuration,
