@@ -55,7 +55,7 @@ export abstract class BaseAnimation {
 		this.canvas = this.surface.getCanvas();
 		this.canvas.scale(this.pixelRatio, this.pixelRatio);
 
-		this.font = await this.styleManager.createStyledFont();
+		this.font = this.styleManager.createStyledFont();
 	}
 
 	abstract generateFrames(text: string): Promise<AnimationFrame[]>;
