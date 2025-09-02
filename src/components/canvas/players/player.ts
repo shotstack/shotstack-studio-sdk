@@ -234,7 +234,9 @@ export abstract class Player extends Entity {
 		// Check if this clip is selected using clean API
 		const isSelected = this.edit.isPlayerSelected(this);
 
-		if ((!this.isActive() || !isSelected) && !this.isHovering) {
+		const isExporting = this.edit.isInExportMode();
+
+		if (((!this.isActive() || !isSelected) && !this.isHovering) || isExporting) {
 			this.outline.clear();
 			this.topLeftScaleHandle?.clear();
 			this.topRightScaleHandle?.clear();

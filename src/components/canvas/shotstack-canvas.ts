@@ -28,12 +28,16 @@ export class Canvas {
 	private maxZoom = 4;
 	private currentZoom = 0.8;
 
+	private onTickBound: (ticker: pixi.Ticker) => void;
+
 	constructor(size: Size, edit: Edit) {
 		this.size = size;
 		this.application = new pixi.Application();
 
 		this.edit = edit;
 		this.inspector = new Inspector();
+
+		this.onTickBound = this.onTick.bind(this);
 	}
 
 	public async load(): Promise<void> {
@@ -159,7 +163,7 @@ export class Canvas {
 		};
 
 		await this.application.init(options);
-		this.application.ticker.add(this.onTick.bind(this));
+		this.application.ticker.add(this.onTickBound);
 
 		this.application.ticker.minFPS = 60;
 		this.application.ticker.maxFPS = 60;
@@ -197,7 +201,6 @@ export class Canvas {
 		this.application.stage.eventMode = "static";
 		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.size.width, this.size.height);
 
-		// Set up background click handling for selection
 		this.background.eventMode = "static";
 		this.background.on("pointerdown", this.onBackgroundClick.bind(this));
 
@@ -214,11 +217,17 @@ export class Canvas {
 	}
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
-		// Check if the click was on the background (not on a clip)
 		if (event.target === this.background) {
-			// Emit canvas background clicked event
 			this.edit.events.emit("canvas:background:clicked", {});
 		}
+	}
+
+	public pauseTicker(): void {
+		this.application.ticker.remove(this.onTickBound);
+	}
+
+	public resumeTicker(): void {
+		this.application.ticker.add(this.onTickBound);
 	}
 
 	public dispose(): void {
@@ -227,7 +236,7 @@ export class Canvas {
 			root.removeChild(this.application.canvas);
 		}
 
-		this.application.ticker.remove(this.onTick, this);
+		this.application.ticker.remove(this.onTickBound);
 		this.application.stage.off("click", this.onClick, this);
 		this.background?.off("pointerdown", this.onBackgroundClick, this);
 
