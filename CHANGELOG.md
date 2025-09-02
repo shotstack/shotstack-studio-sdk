@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2025-09-02
+
+### Changed
+
+- **Replaced WASM-based FFmpeg with Mediabunny**
+  - Switched from FFmpeg to WebCodecs-based Mediabunny
+  - Export speeds improved by 10x
+
+### Added
+
+- Keyboard shortcut for export/download with Cmd/Ctrl + E
+
+### Removed
+
+- FFmpeg dependency
+
 ## [1.5.1] - 2025-08-29
 
 ### Fixed

@@ -23,7 +23,7 @@ Try Shotstack Studio in your preferred framework:
 - WYSIWYG text editing
 - Multi-track, drag-and-drop clip manipulation with snap-to-grid
 - Use in conjunction with the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) to render video
-- Export to video using browser-based FFmpeg
+- Export to video via the browser
 
 ## Installation
 
@@ -34,16 +34,6 @@ npm install @shotstack/shotstack-studio
 ```bash
 yarn add @shotstack/shotstack-studio
 ```
-
-### FFmpeg (peer dependency)
-
-Install FFmpeg to use the browser based `VideoExporter` class. This is kept separate to prevent WASM / Web Worker clashes in frameworks like Next.js.
-
-```bash
-npm install @ffmpeg/ffmpeg
-```
-
-You can skip this if you're using the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) for rendering videos.
 
 ## Quick Start
 
@@ -186,6 +176,7 @@ await controls.load();
 // Period - Step forward one frame
 // Cmd/Ctrl + Z - Undo
 // Cmd/Ctrl + Shift + Z - Redo
+// Cmd/Ctrl + E - Export/download video
 ```
 
 ### Timeline
@@ -209,7 +200,7 @@ await timeline.load();
 
 ### VideoExporter
 
-The VideoExporter class exports the edit to a video file.
+The VideoExporter class exports the Edit to a MP4 video file encoded in h264 and AAC.
 
 ```typescript
 const exporter = new VideoExporter(edit, canvas);
@@ -483,7 +474,7 @@ Creates a new timeline interface for the provided Edit.
 
 ### VideoExporter
 
-The `VideoExporter` class handles exporting the edit to mp4.
+The `VideoExporter` class handles exporting the edit to MP4.
 
 ```typescript
 import { VideoExporter } from "@shotstack/shotstack-studio";
@@ -499,4 +490,4 @@ Creates a new exporter for the provided Edit and Canvas.
 
 #### Methods
 
-- `async export(filename: string = "shotstack-export.mp4", fps: number = 25)` - Export the edit to a video file
+- `async export(filename: string = "shotstack-export.mp4", fps: number = 25)` - Export the edit to an MP4 video file
