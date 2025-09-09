@@ -15,6 +15,7 @@ export class VideoPlayer extends Player {
 	private volumeKeyframeBuilder: KeyframeBuilder;
 
 	private syncTimer: number;
+	private skipVideoUpdate: boolean;
 
 	constructor(edit: Edit, clipConfiguration: Clip) {
 		super(edit, clipConfiguration);
@@ -27,6 +28,7 @@ export class VideoPlayer extends Player {
 
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
 		this.syncTimer = 0;
+		this.skipVideoUpdate = false;
 	}
 
 	/**
@@ -60,6 +62,10 @@ export class VideoPlayer extends Player {
 
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
+
+		if (this.skipVideoUpdate) {
+			return;
+		}
 
 		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
 

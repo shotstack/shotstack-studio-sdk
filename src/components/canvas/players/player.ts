@@ -209,9 +209,9 @@ export abstract class Player extends Entity {
 
 		const pivot = this.getPivot();
 		const position = this.getPosition();
-		const scale = this.getScale();
+		const scaleVector = this.getContainerScale();
 
-		this.getContainer().scale.set(scale);
+		this.getContainer().scale.set(scaleVector.x, scaleVector.y);
 		this.getContainer().pivot.set(pivot.x, pivot.y);
 		this.getContainer().position.set(position.x + pivot.x, position.y + pivot.y);
 
@@ -234,7 +234,9 @@ export abstract class Player extends Entity {
 		// Check if this clip is selected using clean API
 		const isSelected = this.edit.isPlayerSelected(this);
 
-		if ((!this.isActive() || !isSelected) && !this.isHovering) {
+		const isExporting = this.edit.isInExportMode();
+
+		if (((!this.isActive() || !isSelected) && !this.isHovering) || isExporting) {
 			this.outline.clear();
 			this.topLeftScaleHandle?.clear();
 			this.topRightScaleHandle?.clear();
@@ -369,8 +371,12 @@ export abstract class Player extends Entity {
 
 	protected getFitScale(): number {
 		switch (this.clipConfiguration.fit ?? "crop") {
-			case "crop":
-				return Math.max(this.edit.size.width / this.getSize().width, this.edit.size.height / this.getSize().height);
+			case "crop": {
+				const ratioX = this.edit.size.width / this.getSize().width;
+				const ratioY = this.edit.size.height / this.getSize().height;
+				const isPortrait = this.edit.size.height >= this.edit.size.width;
+				return isPortrait ? ratioY : ratioX;
+			}
 			case "cover":
 				return Math.max(this.edit.size.width / this.getSize().width, this.edit.size.height / this.getSize().height);
 			case "contain":
@@ -383,6 +389,37 @@ export abstract class Player extends Entity {
 
 	public getScale(): number {
 		return (this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1) * this.getFitScale();
+	}
+
+	protected getContainerScale(): Vector {
+		const baseScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
+		const size = this.getSize();
+		const fit = this.clipConfiguration.fit ?? "crop";
+
+		if (size.width === 0 || size.height === 0) {
+			return { x: baseScale, y: baseScale };
+		}
+
+		const ratioX = this.edit.size.width / size.width;
+		const ratioY = this.edit.size.height / size.height;
+
+		switch (fit) {
+			case "contain": {
+				const uniform = Math.min(ratioX, ratioY) * baseScale;
+				return { x: uniform, y: uniform };
+			}
+			case "crop": {
+				const isPortrait = this.edit.size.height >= this.edit.size.width;
+				const uniform = (isPortrait ? ratioY : ratioX) * baseScale;
+				return { x: uniform, y: uniform };
+			}
+			case "cover": {
+				return { x: ratioX * baseScale, y: ratioY * baseScale };
+			}
+			case "none":
+			default:
+				return { x: baseScale, y: baseScale };
+		}
 	}
 
 	public getRotation(): number {

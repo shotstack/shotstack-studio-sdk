@@ -1,7 +1,7 @@
 import { Timeline } from "./components/timeline";
 import theme from "./themes/minimal.json";
 
-import { Edit, Canvas, Controls } from "./index";
+import { Edit, Canvas, Controls, VideoExporter } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide
@@ -40,8 +40,12 @@ async function main() {
 		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
+		
+		// 7. Enable video export (Cmd/Ctrl+E)
+		// eslint-disable-next-line no-new
+		new VideoExporter(edit, canvas);
 
-		// 7. Add event handlers
+		// 8. Add event handlers
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);

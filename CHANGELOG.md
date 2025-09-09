@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2025-09-02
+
+### Changed
+
+- **Replaced WASM-based FFmpeg with Mediabunny**
+  - Switched from FFmpeg to WebCodecs-based Mediabunny
+  - Export speeds improved by 10x
+
+### Added
+
+- Keyboard shortcut for export/download with Cmd/Ctrl + E
+
+### Removed
+
+- FFmpeg dependency
+
+## [1.5.1] - 2025-08-29
+
+### Fixed
+
+- Image fit behaviour corrected ([#31]):
+  - cover: apply non-uniform x/y scaling to fill the viewport (break aspect ratio)
+  - crop: scale by dominant viewport axis (height for portrait viewports)
+- Mask overflow outside the edit viewport using a rectangular stage mask to prevent content drawing beyond bounds
+
 ## [1.5.0] - 2025-07-27
 
 ### Added

@@ -58,6 +58,10 @@ export class Edit extends Entity {
 	private selectedClip: Player | null;
 	/** @internal */
 	private updatedClip: Player | null;
+	/** @internal */
+	private viewportMask?: pixi.Graphics;
+	/** @internal */
+	private isExporting: boolean = false;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -94,6 +98,13 @@ export class Edit extends Entity {
 		background.fill();
 
 		this.getContainer().addChild(background);
+
+		// Ensure content outside the edit viewport is not visible
+		this.viewportMask = new pixi.Graphics();
+		this.viewportMask.rect(0, 0, this.size.width, this.size.height);
+		this.viewportMask.fill(0xffffff);
+		this.getContainer().addChild(this.viewportMask);
+		this.getContainer().setMask({ mask: this.viewportMask });
 	}
 
 	/** @internal */
@@ -125,6 +136,18 @@ export class Edit extends Entity {
 	/** @internal */
 	public override dispose(): void {
 		this.clearClips();
+
+		// Clean up mask
+		if (this.viewportMask) {
+			try {
+				// Remove mask first, then destroy the graphics
+				this.getContainer().setMask(null as any);
+			} catch {
+				// Intentionally ignore errors when removing the mask during dispose
+			}
+			this.viewportMask.destroy();
+			this.viewportMask = undefined;
+		}
 	}
 
 	public play(): void {
@@ -517,18 +540,14 @@ export class Edit extends Entity {
 
 		this.updateTotalDuration();
 	}
-
-	// Selection management methods
 	public selectClip(trackIndex: number, clipIndex: number): void {
 		const command = new SelectClipCommand(trackIndex, clipIndex);
 		this.executeCommand(command);
 	}
-
 	public clearSelection(): void {
 		const command = new ClearSelectionCommand();
 		this.executeCommand(command);
 	}
-
 	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
 		if (!this.selectedClip) return false;
 
@@ -537,7 +556,6 @@ export class Edit extends Entity {
 
 		return trackIndex === selectedTrackIndex && clipIndex === selectedClipIndex;
 	}
-
 	public getSelectedClipInfo(): { trackIndex: number; clipIndex: number; player: Player } | null {
 		if (!this.selectedClip) return null;
 
@@ -546,8 +564,6 @@ export class Edit extends Entity {
 
 		return { trackIndex, clipIndex, player: this.selectedClip };
 	}
-
-	// Clip lookup methods
 	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
 		for (let trackIndex = 0; trackIndex < this.tracks.length; trackIndex += 1) {
 			const clipIndex = this.tracks[trackIndex].indexOf(player);
@@ -557,35 +573,34 @@ export class Edit extends Entity {
 		}
 		return null;
 	}
-
 	public getClipAt(trackIndex: number, clipIndex: number): Player | null {
 		if (trackIndex >= 0 && trackIndex < this.tracks.length && clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
 			return this.tracks[trackIndex][clipIndex];
 		}
 		return null;
 	}
-
-	// Clean encapsulation APIs for selection
 	public selectPlayer(player: Player): void {
 		const indices = this.findClipIndices(player);
 		if (indices) {
 			this.selectClip(indices.trackIndex, indices.clipIndex);
 		}
 	}
-
 	public isPlayerSelected(player: Player): boolean {
+		if (this.isExporting) return false;
 		return this.selectedClip === player;
 	}
+	public setExportMode(exporting: boolean): void {
+		this.isExporting = exporting;
+	}
+	public isInExportMode(): boolean {
+		return this.isExporting;
+	}
 
-	// Event-driven architecture setup
 	private setupIntentListeners(): void {
-		// Handle Timeline intent events
 		this.events.on("timeline:clip:clicked", (data: { player: Player; trackIndex: number; clipIndex: number }) => {
-			// Use the player object directly to ensure correct selection
 			if (data.player) {
 				this.selectPlayer(data.player);
 			} else {
-				// Fallback to indices if player not provided
 				this.selectClip(data.trackIndex, data.clipIndex);
 			}
 		});
@@ -594,7 +609,6 @@ export class Edit extends Entity {
 			this.clearSelection();
 		});
 
-		// Handle Canvas intent events
 		this.events.on("canvas:clip:clicked", (data: { player: Player }) => {
 			this.selectPlayer(data.player);
 		});
