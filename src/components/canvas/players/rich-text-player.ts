@@ -21,7 +21,7 @@ export class RichTextPlayer extends Player {
 	private textContent: string = "";
 	private renderPromise: Promise<void> | null = null;
 	private hasInitialized: boolean = false;
-	private debugMode: boolean = true;
+	private debugMode: boolean = false;
 	private animationDurationMs: number = 0;
 	private sprite: PixiSprite | null = null;
 	private animationSprites: PixiSprite[] = [];

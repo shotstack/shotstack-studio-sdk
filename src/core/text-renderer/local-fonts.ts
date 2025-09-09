@@ -1,4 +1,4 @@
-const localFonts = import.meta.glob("../../assets/fonts/*.{ttf,otf,woff,woff2}", {
+const localFonts = import.meta.glob("../../assets/fonts/*.{ttf,otf}", {
 	eager: true,
 	as: "url"
 }) as Record<string, string>;

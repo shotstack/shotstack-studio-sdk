@@ -35,9 +35,32 @@ export class TextStyleManager {
 		paint.setAntiAlias(true);
 	}
 
-	createStyledFont(typeface?: any): Font {
+	async createStyledFont(typeface?: any): Promise<Font> {
 		const ck = this.canvasKit;
-		const font = new ck.Font(typeface ?? null);
+		const ckManager = CanvasKitManager.getInstance();
+
+		let tf = await ckManager.getTypefaceForFont(this.config.fontFamily, this.config.fontWeight, this.config.fontStyle);
+
+		if (!tf) {
+			try {
+				const fontMgr = ckManager.getFontManager();
+				if (fontMgr && fontMgr.countFamilies() > 0) {
+					const weightEnum = this.getWeightEnum(this.config.fontWeight);
+					const style = {
+						weight: weightEnum,
+						width: ck.FontWidth.Normal,
+						slant: this.getSlantEnum(this.config.fontStyle)
+					};
+					tf = fontMgr.matchFamilyStyle?.(this.config.fontFamily, style) ?? null;
+				}
+			} catch (e) {
+				console.warn("Font matching fallback failed:", e);
+			}
+		}
+
+		if (!tf && typeface) tf = typeface;
+
+		const font = new ck.Font(tf ?? null);
 		font.setSize(this.config.fontSize);
 		this.applyFontStyles(font);
 		return font;
