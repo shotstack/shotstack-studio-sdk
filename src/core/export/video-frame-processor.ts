@@ -21,7 +21,26 @@ export function isVideoPlayer(player: unknown): player is VideoPlayerExtended {
 	const hasVideoConstructor = p.constructor?.name === "VideoPlayer";
 	const texture = p["texture"] as { source?: { resource?: unknown } } | undefined;
 	const hasVideoTexture = texture?.source?.resource instanceof HTMLVideoElement;
+
+	const isRichTextPlayer = p.constructor?.name === "RichTextPlayer";
+	if (isRichTextPlayer) return false;
+
 	return hasVideoConstructor || hasVideoTexture;
+}
+
+export interface RichTextPlayerExtended {
+	clipConfiguration?: { asset?: { type?: string } };
+	constructor?: { name?: string };
+}
+
+export function isRichTextPlayer(player: unknown): player is RichTextPlayerExtended {
+	if (!player || typeof player !== "object") return false;
+	const p = player as Record<string, unknown>;
+	const hasRichTextConstructor = p.constructor?.name === "RichTextPlayer";
+	const config = p["clipConfiguration"] as Record<string, unknown> | undefined;
+	const asset = config?.["asset"] as Record<string, unknown> | undefined;
+	const hasRichTextAsset = asset?.["type"] === "rich-text";
+	return hasRichTextConstructor || hasRichTextAsset;
 }
 
 export class VideoFrameProcessor {

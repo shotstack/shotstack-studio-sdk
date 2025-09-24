@@ -5,6 +5,7 @@ export { Player } from "./players/player";
 // Media players
 export { AudioPlayer } from "./players/audio-player";
 export { HtmlPlayer } from "./players/html-player";
+export { RichTextPlayer } from "./players/rich-text-player";
 export { ImagePlayer } from "./players/image-player";
 export { LumaPlayer } from "./players/luma-player";
 export { ShapePlayer } from "./players/shape-player";

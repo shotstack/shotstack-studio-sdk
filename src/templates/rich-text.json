@@ -1,0 +1,63 @@
+{
+	"timeline": {
+		"background": "#1a1a2e",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "rich-text",
+							"text": "Welcome to Text Animation! Powered by HarfBuzz",
+							"width": 800,
+							"height": 400,
+							"font": {
+								"family": "Didact Gothic",
+								"size": 48,
+								"weight": "400",
+								"style": "normal",
+								"color": "#ffffff",
+								"opacity": 1
+							},
+							"style": {
+								"letterSpacing": 0,
+								"lineHeight": 1.5,
+								"textTransform": "none",
+								"textDecoration": "underline"
+							},
+							"background": {
+								"color": "#1a1a2e",
+								"opacity": 1,
+								"borderRadius": 0
+							},
+							"align": {
+								"horizontal": "center",
+								"vertical": "middle"
+							},
+							"pixelRatio": 2,
+							"animation": {
+								"preset": "shift",
+								"speed": 1,
+								"duration": 3,
+								"style": "word",
+								"direction": "right"
+							},
+							"cacheEnabled": true
+						},
+						"start": 0,
+						"length": 5,
+						"position": "center",
+						"scale": 1
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"size": {
+			"width": 1280,
+			"height": 720
+		},
+		"fps": 30
+	}
+}

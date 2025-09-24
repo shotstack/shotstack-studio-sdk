@@ -29,6 +29,7 @@
 			"audio": "#999999",
 			"image": "#aaaaaa",
 			"text": "#777777",
+			"rich-text": "#af52de",
 			"shape": "#666666",
 			"html": "#555555",
 			"luma": "#444444",

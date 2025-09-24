@@ -1,3 +1,4 @@
+import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { AudioPlayer } from "@canvas/players/audio-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
@@ -468,10 +469,15 @@ export class Edit extends Entity {
 		}
 
 		let player: Player;
-
+		console.log(clipConfiguration.asset?.type);
+		
 		switch (clipConfiguration.asset.type) {
 			case "text": {
 				player = new TextPlayer(this, clipConfiguration);
+				break;
+			}
+			case "rich-text": {
+				player = new RichTextPlayer(this, clipConfiguration);
 				break;
 			}
 			case "shape": {
