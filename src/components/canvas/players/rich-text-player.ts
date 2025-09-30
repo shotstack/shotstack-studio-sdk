@@ -2,16 +2,20 @@ import { Player } from "@canvas/players/player";
 import { type Size } from "@layouts/geometry";
 import { type RichTextAsset } from "@schemas/rich-text-asset";
 import { createTextEngine } from "@shotstack/shotstack-canvas";
+import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
 import * as pixi from "pixi.js";
 
 export class RichTextPlayer extends Player {
-	private textEngine: any = null;
-	private renderer: any = null;
+	private textEngine: TextEngine | null = null;
+	private renderer: TextRenderer | null = null;
 	private canvas: HTMLCanvasElement | null = null;
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
 	private lastRenderedTime: number = -1;
 	private cachedFrames = new Map<number, pixi.Texture>();
+	private isRendering: boolean = false;
+	private targetFPS: number = 30;
+	private validatedAsset: ValidatedRichTextAsset | null = null;
 
 	private createFontMapping(): Map<string, string> {
 		const fontMap = new Map<string, string>();
@@ -44,12 +48,17 @@ export class RichTextPlayer extends Player {
 		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 
 		try {
+			const editData = this.edit.getEdit();
+			this.targetFPS = editData?.output?.fps || 30;
 			this.textEngine = await createTextEngine({
 				width: richTextAsset.width || this.edit.size.width,
 				height: richTextAsset.height || this.edit.size.height,
 				pixelRatio: richTextAsset.pixelRatio || 2,
-				fps: 60
+				fps: this.targetFPS
 			});
+
+			const { value: validated } = this.textEngine.validate(richTextAsset);
+			this.validatedAsset = validated;
 
 			const fontMap = this.createFontMapping();
 
@@ -59,7 +68,6 @@ export class RichTextPlayer extends Player {
 
 			this.renderer = this.textEngine.createRenderer(this.canvas);
 
-			const editData = this.edit.getEdit();
 			const timelineFonts = editData?.timeline?.fonts || [];
 
 			if (timelineFonts.length > 0) {
@@ -106,19 +114,21 @@ export class RichTextPlayer extends Player {
 	}
 
 	private async renderFrame(timeSeconds: number): Promise<void> {
-		if (!this.textEngine || !this.renderer || !this.canvas) return;
+		if (!this.textEngine || !this.renderer || !this.canvas || !this.validatedAsset) return;
 
-		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
-		const cacheKey = Math.floor(timeSeconds * 30);
-		if (richTextAsset.cacheEnabled && this.cachedFrames.has(cacheKey)) {
+		const cacheKey = Math.floor(timeSeconds * this.targetFPS);
+
+		if (this.validatedAsset.cacheEnabled && this.cachedFrames.has(cacheKey)) {
 			const cachedTexture = this.cachedFrames.get(cacheKey)!;
-			if (this.sprite) this.sprite.texture = cachedTexture;
+			if (this.sprite && this.sprite.texture !== cachedTexture) {
+				this.sprite.texture = cachedTexture;
+			}
+			this.lastRenderedTime = timeSeconds;
 			return;
 		}
 
 		try {
-			const { value: validated } = this.textEngine.validate(richTextAsset);
-			const ops = await this.textEngine.renderFrame(validated, timeSeconds);
+			const ops = await this.textEngine.renderFrame(this.validatedAsset, timeSeconds);
 
 			const ctx = this.canvas.getContext("2d");
 			if (ctx) ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -129,15 +139,17 @@ export class RichTextPlayer extends Player {
 
 			if (!this.sprite) {
 				this.sprite = new pixi.Sprite(tex);
-				this.sprite.scale.set(1 / (richTextAsset.pixelRatio || 2));
+				this.sprite.scale.set(1 / this.validatedAsset.pixelRatio);
 				this.contentContainer.addChild(this.sprite);
 			} else {
-				if (this.texture && !this.cachedFrames.has(cacheKey)) this.texture.destroy();
+				if (this.texture && !this.cachedFrames.has(cacheKey)) {
+					this.texture.destroy();
+				}
 				this.sprite.texture = tex;
 			}
 
 			this.texture = tex;
-			if (richTextAsset.cacheEnabled && this.cachedFrames.size < 100) {
+			if (this.validatedAsset.cacheEnabled && this.cachedFrames.size < 150) {
 				this.cachedFrames.set(cacheKey, tex);
 			}
 
@@ -192,15 +204,28 @@ export class RichTextPlayer extends Player {
 
 		this.contentContainer.addChild(fallbackText);
 	}
+	private renderFrameSafe(timeSeconds: number): void {
+		if (this.isRendering) return;
+
+		this.isRendering = true;
+		this.renderFrame(timeSeconds)
+			.catch(err => console.error("Failed to render rich text frame:", err))
+			.finally(() => {
+				this.isRendering = false;
+			});
+	}
 
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
 
-		if (this.textEngine && this.renderer) {
+		if (this.textEngine && this.renderer && !this.isRendering) {
 			const currentTimeSeconds = this.getCurrentTime() / 1000;
+			const editData = this.edit.getEdit();
+			const targetFPS = editData?.output?.fps || 30;
+			const frameInterval = 1 / targetFPS;
 
-			if (Math.abs(currentTimeSeconds - this.lastRenderedTime) > 0.033) {
-				this.renderFrame(currentTimeSeconds);
+			if (Math.abs(currentTimeSeconds - this.lastRenderedTime) > frameInterval) {
+				this.renderFrameSafe(currentTimeSeconds);
 			}
 		}
 	}
@@ -251,6 +276,11 @@ export class RichTextPlayer extends Player {
 		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 		richTextAsset.text = newText;
 
+		if (this.textEngine) {
+			const { value: validated } = this.textEngine.validate(richTextAsset);
+			this.validatedAsset = validated;
+		}
+
 		for (const texture of this.cachedFrames.values()) {
 			texture.destroy();
 		}
@@ -258,7 +288,7 @@ export class RichTextPlayer extends Player {
 
 		this.lastRenderedTime = -1;
 		if (this.textEngine && this.renderer) {
-			this.renderFrame(this.getCurrentTime() / 1000);
+			this.renderFrameSafe(this.getCurrentTime() / 1000);
 		}
 	}
 

@@ -4,10 +4,10 @@ import { AudioAssetSchema } from "./audio-asset";
 import { HtmlAssetSchema } from "./html-asset";
 import { ImageAssetSchema } from "./image-asset";
 import { LumaAssetSchema } from "./luma-asset";
+import { RichTextAssetSchema } from "./rich-text-asset";
 import { ShapeAssetSchema } from "./shape-asset";
 import { TextAssetSchema } from "./text-asset";
 import { VideoAssetSchema } from "./video-asset";
-import { RichTextAssetSchema } from "./rich-text-asset";
 
 export const AssetSchema = zod
 	.union([

@@ -1,9 +1,9 @@
-import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { AudioPlayer } from "@canvas/players/audio-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
 import type { Player } from "@canvas/players/player";
+import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
@@ -469,7 +469,6 @@ export class Edit extends Entity {
 		}
 
 		let player: Player;
-		console.log(clipConfiguration.asset?.type);
 		
 		switch (clipConfiguration.asset.type) {
 			case "text": {

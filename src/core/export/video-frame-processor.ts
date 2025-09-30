@@ -22,8 +22,8 @@ export function isVideoPlayer(player: unknown): player is VideoPlayerExtended {
 	const texture = p["texture"] as { source?: { resource?: unknown } } | undefined;
 	const hasVideoTexture = texture?.source?.resource instanceof HTMLVideoElement;
 
-	const isRichTextPlayer = p.constructor?.name === "RichTextPlayer";
-	if (isRichTextPlayer) return false;
+	const isRichText = p.constructor?.name === "RichTextPlayer";
+	if (isRichText) return false;
 
 	return hasVideoConstructor || hasVideoTexture;
 }
@@ -91,7 +91,6 @@ export class VideoFrameProcessor {
 			this.frameCache.set(cacheKey, imageData);
 			return imageData;
 		} catch (error) {
-			console.warn("Failed to extract frame:", error);
 			return null;
 		}
 	}

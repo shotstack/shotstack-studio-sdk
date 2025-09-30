@@ -1,6 +1,10 @@
 {
 	"timeline": {
-		"background": "#1a1a2e",
+		"fonts": [
+			{
+				"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/euo5r93oyr/zzz01k5s-0qvt9-ck9d4-950ts-hbsa9x/source.ttf"
+			}
+		],
 		"tracks": [
 			{
 				"clips": [
@@ -11,7 +15,7 @@
 							"width": 800,
 							"height": 400,
 							"font": {
-								"family": "Didact Gothic",
+								"family": "Roboto",
 								"size": 48,
 								"weight": "400",
 								"style": "normal",
@@ -21,8 +25,7 @@
 							"style": {
 								"letterSpacing": 0,
 								"lineHeight": 1.5,
-								"textTransform": "none",
-								"textDecoration": "underline"
+								"textTransform": "none"
 							},
 							"background": {
 								"color": "#1a1a2e",
@@ -35,18 +38,15 @@
 							},
 							"pixelRatio": 2,
 							"animation": {
-								"preset": "shift",
+								"preset": "typewriter",
 								"speed": 1,
 								"duration": 3,
-								"style": "word",
-								"direction": "right"
+								"style": "character"
 							},
 							"cacheEnabled": true
 						},
 						"start": 0,
-						"length": 5,
-						"position": "center",
-						"scale": 1
+						"length": 4
 					}
 				]
 			}
@@ -54,10 +54,10 @@
 	},
 	"output": {
 		"format": "mp4",
+		"resolution": "sd",
 		"size": {
-			"width": 1280,
-			"height": 720
-		},
-		"fps": 30
+			"width": 1920,
+			"height": 1080
+		}
 	}
 }

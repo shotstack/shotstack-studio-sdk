@@ -2,6 +2,8 @@
  * Type definitions for timeline assets
  */
 
+import { DrawOp } from "@shotstack/shotstack-canvas";
+
 // Volume keyframe for audio/video assets
 export interface VolumeKeyframe {
 	from: number;
@@ -19,6 +21,26 @@ export interface VideoAsset {
 	trim?: number;
 	volume?: number | VolumeKeyframe[];
 }
+
+
+export type TextRenderer = {
+	render: (ops: DrawOp[]) => Promise<void>;
+};
+
+export type TextEngine = {
+	validate: (asset: unknown) => { value: ValidatedRichTextAsset; error?: unknown };
+	renderFrame: (asset: ValidatedRichTextAsset, time: number) => Promise<DrawOp[]>;
+	createRenderer: (canvas: HTMLCanvasElement) => TextRenderer;
+	registerFontFromUrl: (url: string, desc: FontDescriptor) => Promise<void>;
+	registerFontFromFile: (path: string, desc: FontDescriptor) => Promise<void>;
+	destroy: () => void;
+};
+
+export type FontDescriptor = {
+	family: string;
+	weight: string | number;
+	style: string;
+};
 
 // Audio asset
 export interface AudioAsset {
@@ -52,12 +74,12 @@ export interface TextAsset {
 }
 
 // Rich Text asset (advanced)
-export interface RichTextAsset {
+export interface ValidatedRichTextAsset {
 	type: "rich-text";
 	text: string;
-	width?: number;
-	height?: number;
-	font?: {
+	width: number;
+	height: number;
+	font: {
 		family: string;
 		size: number;
 		weight: string | number;
@@ -65,7 +87,7 @@ export interface RichTextAsset {
 		color: string;
 		opacity: number;
 	};
-	style?: {
+	style: {
 		letterSpacing: number;
 		lineHeight: number;
 		textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
@@ -76,18 +98,18 @@ export interface RichTextAsset {
 			stops: { offset: number; color: string }[];
 		};
 	};
-	stroke?: { width: number; color: string; opacity: number };
-	shadow?: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
-	background?: { color?: string; opacity: number; borderRadius: number };
-	align?: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
-	animation?: {
-		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters" | "bounce" | "elastic" | "pulse";
+	stroke: { width: number; color: string; opacity: number };
+	shadow: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
+	background: { color?: string; opacity: number; borderRadius: number };
+	align: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
+	animation: {
+		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters";
 		speed: number;
 		duration?: number;
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down";
 	};
-	customFonts?: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	customFonts: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
 	cacheEnabled: boolean;
 	pixelRatio: number;
 }
