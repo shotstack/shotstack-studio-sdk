@@ -242,7 +242,7 @@ export class RichTextPlayer extends Player {
 		}
 		this.cachedFrames.clear();
 
-		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * 30))) {
+		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * this.targetFPS))) {
 			this.texture.destroy();
 		}
 		this.texture = null;
@@ -262,6 +262,7 @@ export class RichTextPlayer extends Player {
 		}
 
 		this.renderer = null;
+		this.validatedAsset = null;
 	}
 
 	public override getSize(): Size {
