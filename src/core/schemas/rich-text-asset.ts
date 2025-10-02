@@ -77,6 +77,6 @@ export const RichTextAssetSchema = zod.object({
 	animation: RichTextAnimationSchema.optional(),
 	cacheEnabled: zod.boolean().default(true),
 	pixelRatio: zod.number().min(1).max(4).default(2)
-});
+}).strict();
 
 export type RichTextAsset = zod.infer<typeof RichTextAssetSchema>;

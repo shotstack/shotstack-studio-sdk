@@ -1,6 +1,6 @@
 import { Player } from "@canvas/players/player";
 import { type Size } from "@layouts/geometry";
-import { type RichTextAsset } from "@schemas/rich-text-asset";
+import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
 import { createTextEngine } from "@shotstack/shotstack-canvas";
 import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
 import * as pixi from "pixi.js";
@@ -50,16 +50,24 @@ export class RichTextPlayer extends Player {
 		try {
 			const editData = this.edit.getEdit();
 			this.targetFPS = editData?.output?.fps || 30;
-			this.textEngine = await createTextEngine({
-				width: richTextAsset.width || this.edit.size.width,
-				height: richTextAsset.height || this.edit.size.height,
-				pixelRatio: richTextAsset.pixelRatio || 2,
-				fps: this.targetFPS
-			});
 			richTextAsset.width = richTextAsset.width || this.edit.size.width;
 			richTextAsset.height = richTextAsset.height || this.edit.size.height;
 			richTextAsset.pixelRatio = richTextAsset.pixelRatio || 2;
 			richTextAsset.cacheEnabled = richTextAsset.cacheEnabled ?? true;
+
+			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
+			if (!validationResult.success) {
+				console.error("Rich-text asset validation failed:", validationResult.error);
+				this.createFallbackText(richTextAsset);
+				return;
+			}
+
+			this.textEngine = await createTextEngine({
+				width: richTextAsset.width,
+				height: richTextAsset.height,
+				pixelRatio: richTextAsset.pixelRatio,
+				fps: this.targetFPS
+			});
 
 			const { value: validated } = this.textEngine.validate(richTextAsset);
 			this.validatedAsset = validated;
@@ -67,27 +75,27 @@ export class RichTextPlayer extends Player {
 			const fontMap = this.createFontMapping();
 
 			this.canvas = document.createElement("canvas");
-			this.canvas.width = (richTextAsset.width || this.edit.size.width) * (richTextAsset.pixelRatio || 2);
-			this.canvas.height = (richTextAsset.height || this.edit.size.height) * (richTextAsset.pixelRatio || 2);
+			this.canvas.width = richTextAsset.width * richTextAsset.pixelRatio;
+			this.canvas.height = richTextAsset.height * richTextAsset.pixelRatio;
 
 			this.renderer = this.textEngine.createRenderer(this.canvas);
 
 			const timelineFonts = editData?.timeline?.fonts || [];
 
 			if (timelineFonts.length > 0) {
-				for (const timelineFont of timelineFonts) {
+				const fontPromises = timelineFonts.map(async timelineFont => {
 					try {
 						const fontDesc = {
 							family: richTextAsset.font?.family || "Roboto",
 							weight: richTextAsset.font?.weight || "400",
 							style: richTextAsset.font?.style || "normal"
 						};
-
-						await this.textEngine.registerFontFromUrl(timelineFont.src, fontDesc);
+						await this.textEngine!.registerFontFromUrl(timelineFont.src, fontDesc);
 					} catch (error) {
 						console.warn(`Failed to load timeline font: ${timelineFont.src}`, error);
 					}
-				}
+				});
+				await Promise.allSettled(fontPromises);
 			} else if (richTextAsset.font?.family) {
 				const fontFamily = richTextAsset.font.family;
 				const fontPath = fontMap.get(fontFamily);
@@ -99,7 +107,6 @@ export class RichTextPlayer extends Player {
 							weight: richTextAsset.font.weight || "400",
 							style: richTextAsset.font.style || "normal"
 						};
-
 						await this.textEngine.registerFontFromFile(fontPath, fontDesc);
 					} catch (error) {
 						console.warn(`Failed to load local font: ${fontFamily}`, error);
@@ -113,8 +120,26 @@ export class RichTextPlayer extends Player {
 			this.configureKeyframes();
 		} catch (error) {
 			console.error("Failed to initialize rich text player:", error);
+
+			this.cleanupResources();
+
 			this.createFallbackText(richTextAsset);
 		}
+	}
+
+	private cleanupResources(): void {
+		if (this.textEngine) {
+			try {
+				this.textEngine.destroy();
+			} catch (e) {
+				console.warn("Error destroying text engine:", e);
+			}
+			this.textEngine = null;
+		}
+
+		this.renderer = null;
+		this.canvas = null;
+		this.validatedAsset = null;
 	}
 
 	private async renderFrame(timeSeconds: number): Promise<void> {
