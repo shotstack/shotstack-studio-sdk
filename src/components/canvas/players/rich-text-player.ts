@@ -56,6 +56,10 @@ export class RichTextPlayer extends Player {
 				pixelRatio: richTextAsset.pixelRatio || 2,
 				fps: this.targetFPS
 			});
+			richTextAsset.width = richTextAsset.width || this.edit.size.width;
+			richTextAsset.height = richTextAsset.height || this.edit.size.height;
+			richTextAsset.pixelRatio = richTextAsset.pixelRatio || 2;
+			richTextAsset.cacheEnabled = richTextAsset.cacheEnabled ?? true;
 
 			const { value: validated } = this.textEngine.validate(richTextAsset);
 			this.validatedAsset = validated;
