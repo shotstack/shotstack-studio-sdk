@@ -5,6 +5,17 @@ import { createTextEngine } from "@shotstack/shotstack-canvas";
 import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
 import * as pixi from "pixi.js";
 
+const extractFontNames = (url: string): { full: string; base: string } => {
+	const filename = url.split("/").pop() || "";
+	const withoutExtension = filename.replace(/\.(ttf|otf|woff|woff2)$/i, "");
+	const baseFamily = withoutExtension.replace(/-(Bold|Light|Regular|Italic|Medium|SemiBold|Black|Thin|ExtraLight|ExtraBold|Heavy)$/i, "");
+
+	return {
+		full: withoutExtension,
+		base: baseFamily
+	};
+};
+
 export class RichTextPlayer extends Player {
 	private textEngine: TextEngine | null = null;
 	private renderer: TextRenderer | null = null;
@@ -54,6 +65,27 @@ export class RichTextPlayer extends Player {
 			richTextAsset.height = richTextAsset.height || this.edit.size.height;
 			richTextAsset.pixelRatio = richTextAsset.pixelRatio || 2;
 			richTextAsset.cacheEnabled = richTextAsset.cacheEnabled ?? true;
+			if (Array.isArray(editData?.timeline?.fonts) && editData.timeline.fonts.length > 0) {
+				const requestedFamily = richTextAsset.font?.family;
+				if (requestedFamily) {
+					const matchingFont = editData.timeline.fonts?.find(font => {
+						const { full, base } = extractFontNames(font.src);
+						const requested = requestedFamily.toLowerCase();
+						return full.toLowerCase() === requested || base.toLowerCase() === requested;
+					});
+
+					if (matchingFont) {
+						richTextAsset.customFonts = [
+							{
+								src: matchingFont.src,
+								family: requestedFamily,
+								weight: richTextAsset.font?.weight?.toString() || "400",
+								style: richTextAsset.font?.style || "normal"
+							}
+						];
+					}
+				}
+			}
 
 			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
 			if (!validationResult.success) {
@@ -83,19 +115,27 @@ export class RichTextPlayer extends Player {
 			const timelineFonts = editData?.timeline?.fonts || [];
 
 			if (timelineFonts.length > 0) {
-				const fontPromises = timelineFonts.map(async timelineFont => {
-					try {
-						const fontDesc = {
-							family: richTextAsset.font?.family || "Roboto",
-							weight: richTextAsset.font?.weight || "400",
-							style: richTextAsset.font?.style || "normal"
-						};
-						await this.textEngine!.registerFontFromUrl(timelineFont.src, fontDesc);
-					} catch (error) {
-						console.warn(`Failed to load timeline font: ${timelineFont.src}`, error);
+				const requestedFamily = richTextAsset.font?.family;
+				if (requestedFamily) {
+					const matchingFont = timelineFonts.find(font => {
+						const { full, base } = extractFontNames(font.src);
+						const requested = requestedFamily.toLowerCase();
+						return full.toLowerCase() === requested || base.toLowerCase() === requested;
+					});
+
+					if (matchingFont) {
+						try {
+							const fontDesc = {
+								family: requestedFamily,
+								weight: richTextAsset.font?.weight?.toString() || "400",
+								style: richTextAsset.font?.style || "normal"
+							};
+							await this.textEngine!.registerFontFromUrl(matchingFont.src, fontDesc);
+						} catch (error) {
+							console.warn(`Failed to load font ${requestedFamily}:`, error);
+						}
 					}
-				});
-				await Promise.allSettled(fontPromises);
+				}
 			} else if (richTextAsset.font?.family) {
 				const fontFamily = richTextAsset.font.family;
 				const fontPath = fontMap.get(fontFamily);
