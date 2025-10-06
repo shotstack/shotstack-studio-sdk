@@ -208,6 +208,8 @@ export class VisualClip extends Entity {
 				return themeClips.image;
 			case "text":
 				return themeClips.text;
+			case "rich-text":
+				return themeClips["rich-text"] || themeClips.text;
 			case "shape":
 				return themeClips.shape;
 			case "html":

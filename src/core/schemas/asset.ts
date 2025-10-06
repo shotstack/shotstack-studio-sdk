@@ -4,15 +4,29 @@ import { AudioAssetSchema } from "./audio-asset";
 import { HtmlAssetSchema } from "./html-asset";
 import { ImageAssetSchema } from "./image-asset";
 import { LumaAssetSchema } from "./luma-asset";
+import { RichTextAssetSchema } from "./rich-text-asset";
 import { ShapeAssetSchema } from "./shape-asset";
 import { TextAssetSchema } from "./text-asset";
 import { VideoAssetSchema } from "./video-asset";
 
 export const AssetSchema = zod
-	.union([TextAssetSchema, ShapeAssetSchema, HtmlAssetSchema, ImageAssetSchema, VideoAssetSchema, LumaAssetSchema, AudioAssetSchema])
+	.union([
+		TextAssetSchema,
+		RichTextAssetSchema,
+		ShapeAssetSchema,
+		HtmlAssetSchema,
+		ImageAssetSchema,
+		VideoAssetSchema,
+		LumaAssetSchema,
+		AudioAssetSchema
+	])
 	.refine(schema => {
 		if (schema.type === "text") {
 			return TextAssetSchema.safeParse(schema);
+		}
+
+		if (schema.type === "rich-text") {
+			return RichTextAssetSchema.safeParse(schema);
 		}
 
 		if (schema.type === "shape") {

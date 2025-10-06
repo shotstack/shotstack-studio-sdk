@@ -2,6 +2,8 @@
  * Type definitions for timeline assets
  */
 
+import { DrawOp } from "@shotstack/shotstack-canvas";
+
 // Volume keyframe for audio/video assets
 export interface VolumeKeyframe {
 	from: number;
@@ -20,6 +22,26 @@ export interface VideoAsset {
 	volume?: number | VolumeKeyframe[];
 }
 
+
+export type TextRenderer = {
+	render: (ops: DrawOp[]) => Promise<void>;
+};
+
+export type TextEngine = {
+	validate: (asset: unknown) => { value: ValidatedRichTextAsset; error?: unknown };
+	renderFrame: (asset: ValidatedRichTextAsset, time: number) => Promise<DrawOp[]>;
+	createRenderer: (canvas: HTMLCanvasElement) => TextRenderer;
+	registerFontFromUrl: (url: string, desc: FontDescriptor) => Promise<void>;
+	registerFontFromFile: (path: string, desc: FontDescriptor) => Promise<void>;
+	destroy: () => void;
+};
+
+export type FontDescriptor = {
+	family: string;
+	weight: string | number;
+	style: string;
+};
+
 // Audio asset
 export interface AudioAsset {
 	type: "audio";
@@ -34,7 +56,7 @@ export interface ImageAsset {
 	src: string;
 }
 
-// Text asset
+// Text asset (basic)
 export interface TextAsset {
 	type: "text";
 	text: string;
@@ -49,6 +71,47 @@ export interface TextAsset {
 		horizontal?: "left" | "center" | "right";
 		vertical?: "top" | "center" | "bottom";
 	};
+}
+
+// Rich Text asset (advanced)
+export interface ValidatedRichTextAsset {
+	type: "rich-text";
+	text: string;
+	width: number;
+	height: number;
+	font: {
+		family: string;
+		size: number;
+		weight: string | number;
+		style: "normal" | "italic" | "oblique";
+		color: string;
+		opacity: number;
+	};
+	style: {
+		letterSpacing: number;
+		lineHeight: number;
+		textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
+		textDecoration: "none" | "underline" | "line-through";
+		gradient?: {
+			type: "linear" | "radial";
+			angle: number;
+			stops: { offset: number; color: string }[];
+		};
+	};
+	stroke: { width: number; color: string; opacity: number };
+	shadow: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
+	background: { color?: string; opacity: number; borderRadius: number };
+	align: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
+	animation: {
+		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters";
+		speed: number;
+		duration?: number;
+		style?: "character" | "word";
+		direction?: "left" | "right" | "up" | "down";
+	};
+	customFonts: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	cacheEnabled: boolean;
+	pixelRatio: number;
 }
 
 // Shape asset
@@ -75,7 +138,7 @@ export interface LumaAsset {
 }
 
 // Union type for all assets
-export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | ShapeAsset | HtmlAsset | LumaAsset;
+export type TimelineAsset = VideoAsset | AudioAsset | ImageAsset | TextAsset | RichTextAsset | ShapeAsset | HtmlAsset | LumaAsset;
 
 // Type guards
 export function isVideoAsset(asset: TimelineAsset): asset is VideoAsset {
@@ -92,6 +155,10 @@ export function isImageAsset(asset: TimelineAsset): asset is ImageAsset {
 
 export function isTextAsset(asset: TimelineAsset): asset is TextAsset {
 	return asset.type === "text";
+}
+
+export function isRichTextAsset(asset: TimelineAsset): asset is RichTextAsset {
+	return asset.type === "rich-text";
 }
 
 export function isShapeAsset(asset: TimelineAsset): asset is ShapeAsset {
@@ -123,6 +190,8 @@ export function getAssetDisplayName(asset: TimelineAsset): string {
 			return asset.src ? getFilenameFromPath(asset.src) : "Image";
 		case "text":
 			return asset.text || "Text";
+		case "rich-text":
+			return asset.text || "Rich Text";
 		case "shape":
 			return asset.shape || "Shape";
 		case "html":

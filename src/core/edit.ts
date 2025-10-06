@@ -3,6 +3,7 @@ import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
 import type { Player } from "@canvas/players/player";
+import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
@@ -468,10 +469,14 @@ export class Edit extends Entity {
 		}
 
 		let player: Player;
-
+		
 		switch (clipConfiguration.asset.type) {
 			case "text": {
 				player = new TextPlayer(this, clipConfiguration);
+				break;
+			}
+			case "rich-text": {
+				player = new RichTextPlayer(this, clipConfiguration);
 				break;
 			}
 			case "shape": {
