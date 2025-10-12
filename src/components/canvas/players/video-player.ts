@@ -11,6 +11,7 @@ export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;
 	private sprite: pixi.Sprite | null;
 	private isPlaying: boolean;
+	private originalSize: Size | null;
 
 	private volumeKeyframeBuilder: KeyframeBuilder;
 
@@ -23,6 +24,7 @@ export class VideoPlayer extends Player {
 		this.texture = null;
 		this.sprite = null;
 		this.isPlaying = false;
+		this.originalSize = null;
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 
@@ -57,6 +59,11 @@ export class VideoPlayer extends Player {
 		this.sprite = new pixi.Sprite(this.texture);
 
 		this.contentContainer.addChild(this.sprite);
+
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+
 		this.configureKeyframes();
 	}
 
@@ -121,9 +128,18 @@ export class VideoPlayer extends Player {
 
 		this.texture?.destroy();
 		this.texture = null;
+
+		this.originalSize = null;
 	}
 
 	public override getSize(): Size {
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			return {
+				width: this.clipConfiguration.width,
+				height: this.clipConfiguration.height
+			};
+		}
+
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 
