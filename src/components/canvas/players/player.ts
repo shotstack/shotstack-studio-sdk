@@ -356,11 +356,6 @@ export abstract class Player extends Entity {
 			y: this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0
 		};
 
-		const asset = this.clipConfiguration.asset as any;
-		if (this.clipConfiguration.width && this.clipConfiguration.height && asset.anchor) {
-			return this.positionBuilder.relativeToAbsolute(this.getSize(), asset.anchor, offset);
-		}
-
 		return this.positionBuilder.relativeToAbsolute(this.getSize(), this.clipConfiguration.position ?? "center", offset);
 	}
 
@@ -702,13 +697,10 @@ export abstract class Player extends Entity {
 	protected applyFixedDimensions(): void {
 		const clipWidth = this.clipConfiguration.width;
 		const clipHeight = this.clipConfiguration.height;
-
-		if (!clipWidth || !clipHeight) {
-			return;
-		}
+		if (!clipWidth || !clipHeight) return;
 
 		const sprite = this.contentContainer.children[0] as pixi.Sprite;
-		if (!sprite) return;
+		if (!sprite || !sprite.texture) return;
 
 		const nativeWidth = sprite.texture.width;
 		const nativeHeight = sprite.texture.height;
@@ -716,118 +708,89 @@ export abstract class Player extends Entity {
 		const fit = this.clipConfiguration.fit || "crop";
 		const userScale = typeof this.clipConfiguration.scale === "number" ? this.clipConfiguration.scale : 1;
 
-		let finalScaleX = 1;
-		let finalScaleY = 1;
-
-		if (fit === "cover") {
-			const scaleX = clipWidth / nativeWidth;
-			const scaleY = clipHeight / nativeHeight;
-			finalScaleX = scaleX * userScale;
-			finalScaleY = scaleY * userScale;
-		} else if (fit === "crop") {
-			const scaleX = clipWidth / nativeWidth;
-			const scaleY = clipHeight / nativeHeight;
-			const baseScale = Math.max(scaleX, scaleY);
-			finalScaleX = baseScale * userScale;
-			finalScaleY = baseScale * userScale;
-
-			const scaledWidth = nativeWidth * baseScale;
-			const scaledHeight = nativeHeight * baseScale;
-
-			if (scaledWidth > clipWidth || scaledHeight > clipHeight) {
-				let cropLeft = 0;
-				let cropRight = 0;
-				let cropTop = 0;
-				let cropBottom = 0;
-
-				if (scaledWidth > clipWidth) {
-					const overflow = (scaledWidth - clipWidth) / scaledWidth;
-					cropLeft = cropRight = overflow / 2;
-				}
-
-				if (scaledHeight > clipHeight) {
-					const overflow = (scaledHeight - clipHeight) / scaledHeight;
-					cropTop = cropBottom = overflow / 2;
-				}
-
-				const maskWidth = nativeWidth * (1 - cropLeft - cropRight);
-				const maskHeight = nativeHeight * (1 - cropTop - cropBottom);
-				const maskX = nativeWidth * cropLeft;
-				const maskY = nativeHeight * cropTop;
-
-				const mask = new pixi.Graphics();
-				mask.rect(maskX, maskY, maskWidth, maskHeight);
-				mask.fill(0xffffff);
-				sprite.mask = mask;
-				sprite.addChild(mask);
-			}
-		} else if (fit === "contain") {
-			const scaleX = clipWidth / nativeWidth;
-			const scaleY = clipHeight / nativeHeight;
-			const baseScale = Math.min(scaleX, scaleY);
-			finalScaleX = baseScale * userScale;
-			finalScaleY = baseScale * userScale;
-		} else if (fit === "none") {
-			finalScaleX = userScale;
-			finalScaleY = userScale;
-
-			const scaledWidth = nativeWidth * userScale;
-			const scaledHeight = nativeHeight * userScale;
-
-			if (scaledWidth > clipWidth || scaledHeight > clipHeight) {
-				let cropLeft = 0;
-				let cropRight = 0;
-				let cropTop = 0;
-				let cropBottom = 0;
-
-				if (scaledWidth > clipWidth) {
-					const overflow = (scaledWidth - clipWidth) / scaledWidth;
-					cropLeft = cropRight = overflow / 2;
-				}
-
-				if (scaledHeight > clipHeight) {
-					const overflow = (scaledHeight - clipHeight) / scaledHeight;
-					cropTop = cropBottom = overflow / 2;
-				}
-
-				const maskWidth = nativeWidth * (1 - cropLeft - cropRight);
-				const maskHeight = nativeHeight * (1 - cropTop - cropBottom);
-				const maskX = nativeWidth * cropLeft;
-				const maskY = nativeHeight * cropTop;
-
-				const mask = new pixi.Graphics();
-				mask.rect(maskX, maskY, maskWidth, maskHeight);
-				mask.fill(0xffffff);
-				sprite.mask = mask;
-				sprite.addChild(mask);
-			}
+		if (this.contentContainer.mask) {
+			const oldMask = this.contentContainer.mask as pixi.Graphics;
+			try {
+				oldMask.destroy();
+			} catch {}
+			this.contentContainer.mask = null as any;
 		}
+		const clipMask = new pixi.Graphics();
+		clipMask.rect(0, 0, clipWidth, clipHeight);
+		clipMask.fill(0xffffff);
+		this.contentContainer.addChild(clipMask);
+		this.contentContainer.mask = clipMask;
 
-		sprite.scale.set(finalScaleX, finalScaleY);
+		const scaleX = clipWidth / nativeWidth;
+		const scaleY = clipHeight / nativeHeight;
 
-		const asset = this.clipConfiguration.asset as any;
-		const anchor = asset.anchor || "center";
-		this.applyAnchorPositioning(anchor, clipWidth, clipHeight, sprite);
+		let baseScale = 1;
+		switch (fit) {
+			case "cover":
+			case "crop":
+				baseScale = Math.max(scaleX, scaleY);
+				break;
+			case "contain":
+				baseScale = Math.min(scaleX, scaleY);
+				break;
+			case "none":
+			default:
+				baseScale = 1;
+				break;
+		}
+		const finalScale = baseScale * userScale;
+		sprite.scale.set(finalScale, finalScale);
+
+		const asset: any = this.clipConfiguration.asset;
+		const anchorRaw = (asset?.anchor as string) ?? "center";
+		const anchor = anchorRaw.toLowerCase();
+
+		const renderedWidth = nativeWidth * finalScale;
+		const renderedHeight = nativeHeight * finalScale;
+
+		const offsetX =
+			anchor.includes("left") || anchor === "left"
+				? 0
+				: anchor.includes("right") || anchor === "right"
+				? clipWidth - renderedWidth
+				: (clipWidth - renderedWidth) / 2;
+
+		const offsetY =
+			anchor.includes("top") || anchor === "top"
+				? 0
+				: anchor.includes("bottom") || anchor === "bottom"
+				? clipHeight - renderedHeight
+				: (clipHeight - renderedHeight) / 2;
+
+		sprite.position.set(offsetX, offsetY);
 	}
 
 	protected applyAnchorPositioning(anchor: string, clipWidth: number, clipHeight: number, sprite: pixi.Sprite): void {
 		const renderedWidth = sprite.width;
 		const renderedHeight = sprite.height;
 
+		const hasMask = Boolean(sprite.mask);
+		if (hasMask) {
+			sprite.position.set(0, 0);
+			return;
+		}
+
+		const a = (anchor ?? "center").toLowerCase();
+
 		let offsetX = 0;
 		let offsetY = 0;
 
-		if (anchor.includes("Left") || anchor === "left") {
+		if (a.includes("left") || a === "left") {
 			offsetX = 0;
-		} else if (anchor.includes("Right") || anchor === "right") {
+		} else if (a.includes("right") || a === "right") {
 			offsetX = clipWidth - renderedWidth;
 		} else {
 			offsetX = (clipWidth - renderedWidth) / 2;
 		}
 
-		if (anchor.includes("top") || anchor === "top") {
+		if (a.includes("top") || a === "top") {
 			offsetY = 0;
-		} else if (anchor.includes("bottom") || anchor === "bottom") {
+		} else if (a.includes("bottom") || a === "bottom") {
 			offsetY = clipHeight - renderedHeight;
 		} else {
 			offsetY = (clipHeight - renderedHeight) / 2;
