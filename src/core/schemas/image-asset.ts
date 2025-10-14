@@ -12,8 +12,7 @@ export const ImageAssetCropSchema = zod.object({
 export const ImageAssetSchema = zod.object({
 	type: zod.literal("image"),
 	src: ImageAssetUrlSchema,
-	crop: ImageAssetCropSchema.optional(),
-	anchor: zod.enum(["topLeft", "top", "topRight", "left", "center", "right", "bottomLeft", "bottom", "bottomRight"]).optional()
+	crop: ImageAssetCropSchema.optional()
 });
 
 export type ImageAsset = zod.infer<typeof ImageAssetSchema>;

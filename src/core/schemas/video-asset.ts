@@ -23,8 +23,7 @@ export const VideoAssetSchema = zod.object({
 	src: VideoAssetUrlSchema,
 	trim: zod.number().optional(),
 	crop: VideoAssetCropSchema.optional(),
-	volume: VideoAssetVolumeSchema.optional(),
-	anchor: zod.enum(["topLeft", "top", "topRight", "left", "center", "right", "bottomLeft", "bottom", "bottomRight"]).optional()
+	volume: VideoAssetVolumeSchema.optional()
 });
 
 export type VideoAsset = zod.infer<typeof VideoAssetSchema>;
