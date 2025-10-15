@@ -9,12 +9,14 @@ import { Player } from "./player";
 export class ImagePlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null;
 	private sprite: pixi.Sprite | null;
+	private originalSize: Size | null;
 
 	constructor(timeline: Edit, clipConfiguration: Clip) {
 		super(timeline, clipConfiguration);
 
 		this.texture = null;
 		this.sprite = null;
+		this.originalSize = null;
 	}
 
 	public override async load(): Promise<void> {
@@ -39,6 +41,11 @@ export class ImagePlayer extends Player {
 		this.sprite = new pixi.Sprite(this.texture);
 
 		this.contentContainer.addChild(this.sprite);
+
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+
 		this.configureKeyframes();
 	}
 
@@ -58,9 +65,18 @@ export class ImagePlayer extends Player {
 
 		this.texture?.destroy();
 		this.texture = null;
+
+		this.originalSize = null;
 	}
 
 	public override getSize(): Size {
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			return {
+				width: this.clipConfiguration.width,
+				height: this.clipConfiguration.height
+			};
+		}
+
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 

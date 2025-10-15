@@ -68,24 +68,28 @@ const ClipTransformSchema = zod.object({
 	rotate: ClipTransformRotationSchema.default({ angle: 0 })
 });
 
-export const ClipSchema = zod.object({
-	asset: AssetSchema,
-	start: zod.number().min(0),
-	length: zod.number().positive(),
-	position: ClipAnchorSchema.default("center").optional(),
-	fit: ClipFitSchema.optional(),
-	offset: ClipOffsetSchema.default({ x: 0, y: 0 }).optional(),
-	opacity: ClipOpacitySchema.default(1).optional(),
-	scale: ClipScaleSchema.default(1).optional(),
-	transform: ClipTransformSchema.default({ rotate: { angle: 0 } }).optional(),
-	effect: ClipEffectSchema.optional(),
-	transition: ClipTransitionSchema.optional()
-}).transform((data) => {
-	if (data.fit === undefined) {
-		data.fit = data.asset.type === "rich-text" ? "none" : "crop";
-	}
-	return data;
-});
+export const ClipSchema = zod
+	.object({
+		asset: AssetSchema,
+		start: zod.number().min(0),
+		length: zod.number().positive(),
+		position: ClipAnchorSchema.default("center").optional(),
+		fit: ClipFitSchema.optional(),
+		offset: ClipOffsetSchema.default({ x: 0, y: 0 }).optional(),
+		opacity: ClipOpacitySchema.default(1).optional(),
+		scale: ClipScaleSchema.default(1).optional(),
+		transform: ClipTransformSchema.default({ rotate: { angle: 0 } }).optional(),
+		effect: ClipEffectSchema.optional(),
+		transition: ClipTransitionSchema.optional(),
+		width: zod.number().min(1).max(3840).optional(),
+		height: zod.number().min(1).max(2160).optional()
+	})
+	.transform(data => {
+		if (data.fit === undefined) {
+			data.fit = data.asset.type === "rich-text" ? "none" : "crop";
+		}
+		return data;
+	});
 
 export type ClipAnchor = zod.infer<typeof ClipAnchorSchema>;
 export type Clip = zod.infer<typeof ClipSchema>;
