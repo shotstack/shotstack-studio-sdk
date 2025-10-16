@@ -710,7 +710,6 @@ export abstract class Player extends Entity {
 		const nativeHeight = sprite.texture.height;
 		const fit = this.clipConfiguration.fit || "crop";
 
-		// Only create mask once
 		if (!this.contentContainer.mask) {
 			const clipMask = new pixi.Graphics();
 			clipMask.rect(0, 0, clipWidth, clipHeight);
@@ -719,13 +718,10 @@ export abstract class Player extends Entity {
 			this.contentContainer.mask = clipMask;
 		}
 
-		// Get current user scale from keyframe (supports animated scale)
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
-		// Calculate base scale and apply based on fit mode
 		switch (fit) {
 			case "cover": {
-				// Cover: Stretch/compress to fill - loses aspect ratio, no cropping
 				const scaleX = clipWidth / nativeWidth;
 				const scaleY = clipHeight / nativeHeight;
 
@@ -734,7 +730,6 @@ export abstract class Player extends Entity {
 
 				sprite.scale.set(finalScaleX, finalScaleY);
 
-				// Center the sprite
 				const baseRenderedWidth = nativeWidth * scaleX;
 				const baseRenderedHeight = nativeHeight * scaleY;
 				const centerOffsetX = (clipWidth - baseRenderedWidth) / 2;
@@ -748,16 +743,13 @@ export abstract class Player extends Entity {
 				break;
 			}
 			case "crop": {
-				// Crop: Image is always scaled to fill, user scale only affects opacity/zoom
 				const scaleX = clipWidth / nativeWidth;
 				const scaleY = clipHeight / nativeHeight;
 				const baseScale = Math.max(scaleX, scaleY);
 
-				// Always apply base scale to maintain crop, user scale on top
 				const finalScale = baseScale * currentUserScale;
 				sprite.scale.set(finalScale, finalScale);
 
-				// Always center within clip bounds
 				const renderedWidth = nativeWidth * finalScale;
 				const renderedHeight = nativeHeight * finalScale;
 				sprite.position.set((clipWidth - renderedWidth) / 2, (clipHeight - renderedHeight) / 2);
@@ -765,8 +757,6 @@ export abstract class Player extends Entity {
 				break;
 			}
 			case "none": {
-				// None: Resize image to fit output, then apply user scale for zoom effect
-				// Step 1: Calculate scale to fit the image within the output dimensions
 				const outputWidth = this.edit.size.width;
 				const outputHeight = this.edit.size.height;
 
@@ -775,16 +765,13 @@ export abstract class Player extends Entity {
 					resizeScale = Math.min(outputWidth / nativeWidth, outputHeight / nativeHeight);
 				}
 
-				// Step 2: Calculate scale to make the resized image fill the clip dimensions
 				const resizedWidth = nativeWidth * resizeScale;
 				const resizedHeight = nativeHeight * resizeScale;
 				const scaleToFillClip = Math.max(clipWidth / resizedWidth, clipHeight / resizedHeight);
 
-				// Step 3: Apply combined scale with user animation
 				const finalScale = resizeScale * scaleToFillClip * currentUserScale;
 				sprite.scale.set(finalScale, finalScale);
 
-				// Center within clip bounds
 				const renderedWidth = nativeWidth * finalScale;
 				const renderedHeight = nativeHeight * finalScale;
 				sprite.position.set((clipWidth - renderedWidth) / 2, (clipHeight - renderedHeight) / 2);
@@ -792,7 +779,6 @@ export abstract class Player extends Entity {
 				break;
 			}
 			case "contain": {
-				// Contain: Scale to fit entirely within bounds
 				const scaleX = clipWidth / nativeWidth;
 				const scaleY = clipHeight / nativeHeight;
 				const baseScale = Math.min(scaleX, scaleY);
