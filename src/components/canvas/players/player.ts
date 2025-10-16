@@ -217,6 +217,10 @@ export abstract class Player extends Entity {
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
 
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
 		}
@@ -704,65 +708,111 @@ export abstract class Player extends Entity {
 
 		const nativeWidth = sprite.texture.width;
 		const nativeHeight = sprite.texture.height;
-
 		const fit = this.clipConfiguration.fit || "crop";
-		const userScale = typeof this.clipConfiguration.scale === "number" ? this.clipConfiguration.scale : 1;
 
-		if (this.contentContainer.mask) {
-			const oldMask = this.contentContainer.mask as pixi.Graphics;
-			try {
-				oldMask.destroy();
-			} catch {}
-			this.contentContainer.mask = null as any;
+		// Only create mask once
+		if (!this.contentContainer.mask) {
+			const clipMask = new pixi.Graphics();
+			clipMask.rect(0, 0, clipWidth, clipHeight);
+			clipMask.fill(0xffffff);
+			this.contentContainer.addChild(clipMask);
+			this.contentContainer.mask = clipMask;
 		}
-		const clipMask = new pixi.Graphics();
-		clipMask.rect(0, 0, clipWidth, clipHeight);
-		clipMask.fill(0xffffff);
-		this.contentContainer.addChild(clipMask);
-		this.contentContainer.mask = clipMask;
 
-		const scaleX = clipWidth / nativeWidth;
-		const scaleY = clipHeight / nativeHeight;
+		// Get current user scale from keyframe (supports animated scale)
+		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
-		let baseScale = 1;
+		// Calculate base scale and apply based on fit mode
 		switch (fit) {
-			case "cover":
-			case "crop":
-				baseScale = Math.max(scaleX, scaleY);
+			case "cover": {
+				// Cover: Stretch/compress to fill - loses aspect ratio, no cropping
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+
+				const finalScaleX = scaleX * currentUserScale;
+				const finalScaleY = scaleY * currentUserScale;
+
+				sprite.scale.set(finalScaleX, finalScaleY);
+
+				// Center the sprite
+				const baseRenderedWidth = nativeWidth * scaleX;
+				const baseRenderedHeight = nativeHeight * scaleY;
+				const centerOffsetX = (clipWidth - baseRenderedWidth) / 2;
+				const centerOffsetY = (clipHeight - baseRenderedHeight) / 2;
+
+				sprite.position.set(
+					centerOffsetX + (baseRenderedWidth - baseRenderedWidth * currentUserScale) / 2,
+					centerOffsetY + (baseRenderedHeight - baseRenderedHeight * currentUserScale) / 2
+				);
+
 				break;
-			case "contain":
-				baseScale = Math.min(scaleX, scaleY);
+			}
+			case "crop": {
+				// Crop: Image is always scaled to fill, user scale only affects opacity/zoom
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+				const baseScale = Math.max(scaleX, scaleY);
+
+				// Always apply base scale to maintain crop, user scale on top
+				const finalScale = baseScale * currentUserScale;
+				sprite.scale.set(finalScale, finalScale);
+
+				// Always center within clip bounds
+				const renderedWidth = nativeWidth * finalScale;
+				const renderedHeight = nativeHeight * finalScale;
+				sprite.position.set((clipWidth - renderedWidth) / 2, (clipHeight - renderedHeight) / 2);
+
 				break;
-			case "none":
-			default:
-				baseScale = 1;
+			}
+			case "none": {
+				// None: Resize image to fit output, then apply user scale for zoom effect
+				// Step 1: Calculate scale to fit the image within the output dimensions
+				const outputWidth = this.edit.size.width;
+				const outputHeight = this.edit.size.height;
+
+				let resizeScale = 1;
+				if (nativeWidth > outputWidth || nativeHeight > outputHeight) {
+					resizeScale = Math.min(outputWidth / nativeWidth, outputHeight / nativeHeight);
+				}
+
+				// Step 2: Calculate scale to make the resized image fill the clip dimensions
+				const resizedWidth = nativeWidth * resizeScale;
+				const resizedHeight = nativeHeight * resizeScale;
+				const scaleToFillClip = Math.max(clipWidth / resizedWidth, clipHeight / resizedHeight);
+
+				// Step 3: Apply combined scale with user animation
+				const finalScale = resizeScale * scaleToFillClip * currentUserScale;
+				sprite.scale.set(finalScale, finalScale);
+
+				// Center within clip bounds
+				const renderedWidth = nativeWidth * finalScale;
+				const renderedHeight = nativeHeight * finalScale;
+				sprite.position.set((clipWidth - renderedWidth) / 2, (clipHeight - renderedHeight) / 2);
+
 				break;
+			}
+			case "contain": {
+				// Contain: Scale to fit entirely within bounds
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+				const baseScale = Math.min(scaleX, scaleY);
+
+				const finalScale = baseScale * currentUserScale;
+				sprite.scale.set(finalScale, finalScale);
+
+				const baseRenderedWidth = nativeWidth * baseScale;
+				const baseRenderedHeight = nativeHeight * baseScale;
+				const centerOffsetX = (clipWidth - baseRenderedWidth) / 2;
+				const centerOffsetY = (clipHeight - baseRenderedHeight) / 2;
+
+				sprite.position.set(
+					centerOffsetX + (baseRenderedWidth - baseRenderedWidth * currentUserScale) / 2,
+					centerOffsetY + (baseRenderedHeight - baseRenderedHeight * currentUserScale) / 2
+				);
+
+				break;
+			}
 		}
-		const finalScale = baseScale * userScale;
-		sprite.scale.set(finalScale, finalScale);
-
-		const asset: any = this.clipConfiguration.asset;
-		const anchorRaw = (asset?.anchor as string) ?? "center";
-		const anchor = anchorRaw.toLowerCase();
-
-		const renderedWidth = nativeWidth * finalScale;
-		const renderedHeight = nativeHeight * finalScale;
-
-		const offsetX =
-			anchor.includes("left") || anchor === "left"
-				? 0
-				: anchor.includes("right") || anchor === "right"
-				? clipWidth - renderedWidth
-				: (clipWidth - renderedWidth) / 2;
-
-		const offsetY =
-			anchor.includes("top") || anchor === "top"
-				? 0
-				: anchor.includes("bottom") || anchor === "bottom"
-				? clipHeight - renderedHeight
-				: (clipHeight - renderedHeight) / 2;
-
-		sprite.position.set(offsetX, offsetY);
 	}
 
 	protected applyAnchorPositioning(anchor: string, clipWidth: number, clipHeight: number, sprite: pixi.Sprite): void {
