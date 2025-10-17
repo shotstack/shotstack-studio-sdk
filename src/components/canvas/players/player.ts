@@ -751,13 +751,10 @@ export abstract class Player extends Entity {
 				break;
 			}
 			case "none": {
-				const scaleToFillClip = Math.max(clipWidth / nativeWidth, clipHeight / nativeHeight);
-
-				sprite.scale.set(scaleToFillClip, scaleToFillClip);
+				sprite.scale.set(1, 1);
 				sprite.position.set(clipWidth / 2, clipHeight / 2);
 
 				this.contentContainer.scale.set(currentUserScale, currentUserScale);
-
 				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 
 				break;
