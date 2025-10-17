@@ -720,25 +720,19 @@ export abstract class Player extends Entity {
 
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
+		sprite.anchor.set(0.5, 0.5);
+
 		switch (fit) {
 			case "cover": {
 				const scaleX = clipWidth / nativeWidth;
 				const scaleY = clipHeight / nativeHeight;
 
-				const finalScaleX = scaleX * currentUserScale;
-				const finalScaleY = scaleY * currentUserScale;
+				sprite.scale.set(scaleX, scaleY);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 
-				sprite.scale.set(finalScaleX, finalScaleY);
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
 
-				const baseRenderedWidth = nativeWidth * scaleX;
-				const baseRenderedHeight = nativeHeight * scaleY;
-				const centerOffsetX = (clipWidth - baseRenderedWidth) / 2;
-				const centerOffsetY = (clipHeight - baseRenderedHeight) / 2;
-
-				sprite.position.set(
-					centerOffsetX + (baseRenderedWidth - baseRenderedWidth * currentUserScale) / 2,
-					centerOffsetY + (baseRenderedHeight - baseRenderedHeight * currentUserScale) / 2
-				);
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 
 				break;
 			}
@@ -747,34 +741,24 @@ export abstract class Player extends Entity {
 				const scaleY = clipHeight / nativeHeight;
 				const baseScale = Math.max(scaleX, scaleY);
 
-				const finalScale = baseScale * currentUserScale;
-				sprite.scale.set(finalScale, finalScale);
+				sprite.scale.set(baseScale, baseScale);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 
-				const renderedWidth = nativeWidth * finalScale;
-				const renderedHeight = nativeHeight * finalScale;
-				sprite.position.set((clipWidth - renderedWidth) / 2, (clipHeight - renderedHeight) / 2);
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
+
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 
 				break;
 			}
 			case "none": {
-				const outputWidth = this.edit.size.width;
-				const outputHeight = this.edit.size.height;
+				const scaleToFillClip = Math.max(clipWidth / nativeWidth, clipHeight / nativeHeight);
 
-				let resizeScale = 1;
-				if (nativeWidth > outputWidth || nativeHeight > outputHeight) {
-					resizeScale = Math.min(outputWidth / nativeWidth, outputHeight / nativeHeight);
-				}
+				sprite.scale.set(scaleToFillClip, scaleToFillClip);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 
-				const resizedWidth = nativeWidth * resizeScale;
-				const resizedHeight = nativeHeight * resizeScale;
-				const scaleToFillClip = Math.max(clipWidth / resizedWidth, clipHeight / resizedHeight);
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
 
-				const finalScale = resizeScale * scaleToFillClip * currentUserScale;
-				sprite.scale.set(finalScale, finalScale);
-
-				const renderedWidth = nativeWidth * finalScale;
-				const renderedHeight = nativeHeight * finalScale;
-				sprite.position.set((clipWidth - renderedWidth) / 2, (clipHeight - renderedHeight) / 2);
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 
 				break;
 			}
@@ -783,18 +767,12 @@ export abstract class Player extends Entity {
 				const scaleY = clipHeight / nativeHeight;
 				const baseScale = Math.min(scaleX, scaleY);
 
-				const finalScale = baseScale * currentUserScale;
-				sprite.scale.set(finalScale, finalScale);
+				sprite.scale.set(baseScale, baseScale);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 
-				const baseRenderedWidth = nativeWidth * baseScale;
-				const baseRenderedHeight = nativeHeight * baseScale;
-				const centerOffsetX = (clipWidth - baseRenderedWidth) / 2;
-				const centerOffsetY = (clipHeight - baseRenderedHeight) / 2;
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
 
-				sprite.position.set(
-					centerOffsetX + (baseRenderedWidth - baseRenderedWidth * currentUserScale) / 2,
-					centerOffsetY + (baseRenderedHeight - baseRenderedHeight * currentUserScale) / 2
-				);
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 
 				break;
 			}
