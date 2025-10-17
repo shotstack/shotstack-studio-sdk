@@ -217,6 +217,10 @@ export abstract class Player extends Entity {
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
 
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
 		}
@@ -704,65 +708,72 @@ export abstract class Player extends Entity {
 
 		const nativeWidth = sprite.texture.width;
 		const nativeHeight = sprite.texture.height;
-
 		const fit = this.clipConfiguration.fit || "crop";
-		const userScale = typeof this.clipConfiguration.scale === "number" ? this.clipConfiguration.scale : 1;
 
-		if (this.contentContainer.mask) {
-			const oldMask = this.contentContainer.mask as pixi.Graphics;
-			try {
-				oldMask.destroy();
-			} catch {}
-			this.contentContainer.mask = null as any;
+		if (!this.contentContainer.mask) {
+			const clipMask = new pixi.Graphics();
+			clipMask.rect(0, 0, clipWidth, clipHeight);
+			clipMask.fill(0xffffff);
+			this.contentContainer.addChild(clipMask);
+			this.contentContainer.mask = clipMask;
 		}
-		const clipMask = new pixi.Graphics();
-		clipMask.rect(0, 0, clipWidth, clipHeight);
-		clipMask.fill(0xffffff);
-		this.contentContainer.addChild(clipMask);
-		this.contentContainer.mask = clipMask;
 
-		const scaleX = clipWidth / nativeWidth;
-		const scaleY = clipHeight / nativeHeight;
+		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
-		let baseScale = 1;
+		sprite.anchor.set(0.5, 0.5);
+
 		switch (fit) {
-			case "cover":
-			case "crop":
-				baseScale = Math.max(scaleX, scaleY);
+			case "cover": {
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+
+				sprite.scale.set(scaleX, scaleY);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
+
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
+
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
+
 				break;
-			case "contain":
-				baseScale = Math.min(scaleX, scaleY);
+			}
+			case "crop": {
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+				const baseScale = Math.max(scaleX, scaleY);
+
+				sprite.scale.set(baseScale, baseScale);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
+
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
+
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
+
 				break;
-			case "none":
-			default:
-				baseScale = 1;
+			}
+			case "none": {
+				sprite.scale.set(1, 1);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
+
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
+
 				break;
+			}
+			case "contain": {
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+				const baseScale = Math.min(scaleX, scaleY);
+
+				sprite.scale.set(baseScale, baseScale);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
+
+				this.contentContainer.scale.set(currentUserScale, currentUserScale);
+
+				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
+
+				break;
+			}
 		}
-		const finalScale = baseScale * userScale;
-		sprite.scale.set(finalScale, finalScale);
-
-		const asset: any = this.clipConfiguration.asset;
-		const anchorRaw = (asset?.anchor as string) ?? "center";
-		const anchor = anchorRaw.toLowerCase();
-
-		const renderedWidth = nativeWidth * finalScale;
-		const renderedHeight = nativeHeight * finalScale;
-
-		const offsetX =
-			anchor.includes("left") || anchor === "left"
-				? 0
-				: anchor.includes("right") || anchor === "right"
-				? clipWidth - renderedWidth
-				: (clipWidth - renderedWidth) / 2;
-
-		const offsetY =
-			anchor.includes("top") || anchor === "top"
-				? 0
-				: anchor.includes("bottom") || anchor === "bottom"
-				? clipHeight - renderedHeight
-				: (clipHeight - renderedHeight) / 2;
-
-		sprite.position.set(offsetX, offsetY);
 	}
 
 	protected applyAnchorPositioning(anchor: string, clipWidth: number, clipHeight: number, sprite: pixi.Sprite): void {
