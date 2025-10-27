@@ -217,6 +217,10 @@ export abstract class Player extends Entity {
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
 
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
 		}
@@ -704,65 +708,89 @@ export abstract class Player extends Entity {
 
 		const nativeWidth = sprite.texture.width;
 		const nativeHeight = sprite.texture.height;
-
 		const fit = this.clipConfiguration.fit || "crop";
-		const userScale = typeof this.clipConfiguration.scale === "number" ? this.clipConfiguration.scale : 1;
 
-		if (this.contentContainer.mask) {
-			const oldMask = this.contentContainer.mask as pixi.Graphics;
-			try {
-				oldMask.destroy();
-			} catch {}
-			this.contentContainer.mask = null as any;
+		if (!this.contentContainer.mask) {
+			const clipMask = new pixi.Graphics();
+			clipMask.rect(0, 0, clipWidth, clipHeight);
+			clipMask.fill(0xffffff);
+			this.contentContainer.addChild(clipMask);
+			this.contentContainer.mask = clipMask;
 		}
-		const clipMask = new pixi.Graphics();
-		clipMask.rect(0, 0, clipWidth, clipHeight);
-		clipMask.fill(0xffffff);
-		this.contentContainer.addChild(clipMask);
-		this.contentContainer.mask = clipMask;
 
-		const scaleX = clipWidth / nativeWidth;
-		const scaleY = clipHeight / nativeHeight;
+		// keep animation code exactly as-is
+		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
-		let baseScale = 1;
+		sprite.anchor.set(0.5, 0.5);
+
 		switch (fit) {
-			case "cover":
-			case "crop":
-				baseScale = Math.max(scaleX, scaleY);
+			// 🟢 cover → non-uniform stretch to exactly fill (distort)
+			case "cover": {
+				const scaleX = clipWidth / nativeWidth;
+				const scaleY = clipHeight / nativeHeight;
+
+				// backend “cover” stretches image to fill without cropping
+				sprite.scale.set(scaleX, scaleY);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 				break;
-			case "contain":
-				baseScale = Math.min(scaleX, scaleY);
+			}
+
+			// 🟢 crop → uniform fill but never downscale (only upscale if smaller)
+			case "crop": {
+				// Viewport (output) dimensions — same concept as backend "canvas"
+				const outW = this.edit.size.width;
+				const outH = this.edit.size.height;
+
+				// 1) Pre-downscale to fit the viewport if the source is larger (preserve AR)
+				let prescale = 1;
+				if (nativeWidth > outW || nativeHeight > outH) {
+					prescale = Math.min(outW / nativeWidth, outH / nativeHeight);
+				}
+
+				// Adjusted (virtual) native after prescale
+				const adjW = nativeWidth * prescale;
+				const adjH = nativeHeight * prescale;
+
+				// 2) Uniform fill to cover the clip box (may overflow → mask crops)
+				const fill = Math.max(clipWidth / adjW, clipHeight / adjH);
+
+				// 3) Effective scale to apply to the *original* texture:
+				//    - Large images: prescale * fill (we normalized to viewport first)
+				//    - Small images: never downscale below native => clamp to >= 1
+				const effective = prescale < 1 ? prescale * fill : Math.max(1, fill);
+
+				// Apply base fit (animation is applied separately via contentContainer in your code)
+				sprite.scale.set(effective, effective);
+				sprite.anchor.set(0.5, 0.5);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
+
 				break;
+			}
+
+			// 🟢 contain → uniform fit fully inside (may letterbox)
+			case "contain": {
+				const sx = clipWidth / nativeWidth;
+				const sy = clipHeight / nativeHeight;
+
+				const baseScale = Math.min(sx, sy);
+
+				sprite.scale.set(baseScale, baseScale);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
+				break;
+			}
+
+			// 🟢 none → no fitting, use native size, cropped by mask
 			case "none":
-			default:
-				baseScale = 1;
+			default: {
+				sprite.scale.set(1, 1);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 				break;
+			}
 		}
-		const finalScale = baseScale * userScale;
-		sprite.scale.set(finalScale, finalScale);
 
-		const asset: any = this.clipConfiguration.asset;
-		const anchorRaw = (asset?.anchor as string) ?? "center";
-		const anchor = anchorRaw.toLowerCase();
-
-		const renderedWidth = nativeWidth * finalScale;
-		const renderedHeight = nativeHeight * finalScale;
-
-		const offsetX =
-			anchor.includes("left") || anchor === "left"
-				? 0
-				: anchor.includes("right") || anchor === "right"
-				? clipWidth - renderedWidth
-				: (clipWidth - renderedWidth) / 2;
-
-		const offsetY =
-			anchor.includes("top") || anchor === "top"
-				? 0
-				: anchor.includes("bottom") || anchor === "bottom"
-				? clipHeight - renderedHeight
-				: (clipHeight - renderedHeight) / 2;
-
-		sprite.position.set(offsetX, offsetY);
+		// 🟣 keep animation logic untouched
+		this.contentContainer.scale.set(currentUserScale, currentUserScale);
+		this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 	}
 
 	protected applyAnchorPositioning(anchor: string, clipWidth: number, clipHeight: number, sprite: pixi.Sprite): void {
