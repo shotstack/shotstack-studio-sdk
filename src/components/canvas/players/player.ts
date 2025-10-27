@@ -718,62 +718,79 @@ export abstract class Player extends Entity {
 			this.contentContainer.mask = clipMask;
 		}
 
+		// keep animation code exactly as-is
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
 		sprite.anchor.set(0.5, 0.5);
 
 		switch (fit) {
+			// 🟢 cover → non-uniform stretch to exactly fill (distort)
 			case "cover": {
 				const scaleX = clipWidth / nativeWidth;
 				const scaleY = clipHeight / nativeHeight;
 
+				// backend “cover” stretches image to fill without cropping
 				sprite.scale.set(scaleX, scaleY);
 				sprite.position.set(clipWidth / 2, clipHeight / 2);
+				break;
+			}
 
-				this.contentContainer.scale.set(currentUserScale, currentUserScale);
+			// 🟢 crop → uniform fill but never downscale (only upscale if smaller)
+			case "crop": {
+				// Viewport (output) dimensions — same concept as backend "canvas"
+				const outW = this.edit.size.width;
+				const outH = this.edit.size.height;
 
-				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
+				// 1) Pre-downscale to fit the viewport if the source is larger (preserve AR)
+				let prescale = 1;
+				if (nativeWidth > outW || nativeHeight > outH) {
+					prescale = Math.min(outW / nativeWidth, outH / nativeHeight);
+				}
+
+				// Adjusted (virtual) native after prescale
+				const adjW = nativeWidth * prescale;
+				const adjH = nativeHeight * prescale;
+
+				// 2) Uniform fill to cover the clip box (may overflow → mask crops)
+				const fill = Math.max(clipWidth / adjW, clipHeight / adjH);
+
+				// 3) Effective scale to apply to the *original* texture:
+				//    - Large images: prescale * fill (we normalized to viewport first)
+				//    - Small images: never downscale below native => clamp to >= 1
+				const effective = prescale < 1 ? prescale * fill : Math.max(1, fill);
+
+				// Apply base fit (animation is applied separately via contentContainer in your code)
+				sprite.scale.set(effective, effective);
+				sprite.anchor.set(0.5, 0.5);
+				sprite.position.set(clipWidth / 2, clipHeight / 2);
 
 				break;
 			}
-			case "crop": {
-				const scaleX = clipWidth / nativeWidth;
-				const scaleY = clipHeight / nativeHeight;
-				const baseScale = Math.max(scaleX, scaleY);
+
+			// 🟢 contain → uniform fit fully inside (may letterbox)
+			case "contain": {
+				const sx = clipWidth / nativeWidth;
+				const sy = clipHeight / nativeHeight;
+
+				const baseScale = Math.min(sx, sy);
 
 				sprite.scale.set(baseScale, baseScale);
 				sprite.position.set(clipWidth / 2, clipHeight / 2);
-
-				this.contentContainer.scale.set(currentUserScale, currentUserScale);
-
-				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
-
 				break;
 			}
-			case "none": {
+
+			// 🟢 none → no fitting, use native size, cropped by mask
+			case "none":
+			default: {
 				sprite.scale.set(1, 1);
 				sprite.position.set(clipWidth / 2, clipHeight / 2);
-
-				this.contentContainer.scale.set(currentUserScale, currentUserScale);
-				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
-
-				break;
-			}
-			case "contain": {
-				const scaleX = clipWidth / nativeWidth;
-				const scaleY = clipHeight / nativeHeight;
-				const baseScale = Math.min(scaleX, scaleY);
-
-				sprite.scale.set(baseScale, baseScale);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-
-				this.contentContainer.scale.set(currentUserScale, currentUserScale);
-
-				this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
-
 				break;
 			}
 		}
+
+		// 🟣 keep animation logic untouched
+		this.contentContainer.scale.set(currentUserScale, currentUserScale);
+		this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 	}
 
 	protected applyAnchorPositioning(anchor: string, clipWidth: number, clipHeight: number, sprite: pixi.Sprite): void {
