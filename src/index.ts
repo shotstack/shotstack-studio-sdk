@@ -1,3 +1,4 @@
+// Export main SDK classes
 export { Edit } from "@core/edit";
 export { Canvas } from "@canvas/shotstack-canvas";
 export { Controls } from "@core/inputs/controls";
@@ -6,3 +7,7 @@ export { Timeline } from "./components/timeline/timeline";
 
 // Export theme types for library users
 export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types";
+
+// Export all Zod schemas and their inferred types
+// These can be used for validation, form libraries, and custom tooling
+export * from "./core/schemas";
