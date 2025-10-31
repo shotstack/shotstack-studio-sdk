@@ -1,42 +1,40 @@
+// Asset
 export { AssetSchema } from "./asset";
+export type { Asset } from "./asset";
 
-export {
-	AudioAssetUrlSchema,
-	AudioAssetVolumeSchema,
-	AudioAssetSchema
-} from "./audio-asset";
+// Audio Asset
+export { AudioAssetUrlSchema, AudioAssetVolumeSchema, AudioAssetSchema } from "./audio-asset";
+export type { AudioAsset } from "./audio-asset";
 
+// Clip
 export { ClipSchema } from "./clip";
+export type { Clip, ClipAnchor } from "./clip";
 
-export {
-	FontSourceUrlSchema,
-	FontSourceSchema,
-	TimelineSchema,
-	OutputSchema,
-	EditSchema
-} from "./edit";
+// Edit, Timeline, Output, Fonts
+export { FontSourceUrlSchema, FontSourceSchema, TimelineSchema, OutputSchema, EditSchema } from "./edit";
+export type { Track } from "./edit";
 
+// HTML Asset
 export { HtmlAssetSchema } from "./html-asset";
+export type { HtmlAsset, HtmlAssetPosition } from "./html-asset";
 
-export {
-	ImageAssetUrlSchema,
-	ImageAssetCropSchema,
-	ImageAssetSchema
-} from "./image-asset";
+// Image Asset
+export { ImageAssetUrlSchema, ImageAssetCropSchema, ImageAssetSchema } from "./image-asset";
+export type { ImageAsset } from "./image-asset";
 
-export {
-	KeyframeInterpolationSchema,
-	KeyframeEasingSchema,
-	KeyframeSchema
-} from "./keyframe";
+// Keyframe
+export { KeyframeInterpolationSchema, KeyframeEasingSchema, KeyframeSchema } from "./keyframe";
+export type { Keyframe } from "./keyframe";
 
-export {
-	LumaAssetUrlSchema,
-	LumaAssetSchema
-} from "./luma-asset";
+// Luma Asset
+export { LumaAssetUrlSchema, LumaAssetSchema } from "./luma-asset";
+export type { LumaAsset } from "./luma-asset";
 
+// Rich Text Asset
 export { RichTextAssetSchema } from "./rich-text-asset";
+export type { RichTextAsset } from "./rich-text-asset";
 
+// Shape Asset
 export {
 	ShapeAssetColorSchema,
 	ShapeAssetRectangleSchema,
@@ -46,7 +44,9 @@ export {
 	ShapeAssetStrokeSchema,
 	ShapeAssetSchema
 } from "./shape-asset";
+export type { ShapeAsset } from "./shape-asset";
 
+// Text Asset
 export {
 	TextAssetColorSchema,
 	TextAssetFontSchema,
@@ -55,13 +55,12 @@ export {
 	TextAssetStrokeSchema,
 	TextAssetSchema
 } from "./text-asset";
+export type { TextAsset } from "./text-asset";
 
+// Track
 export { TrackSchema } from "./track";
+// Note: Track type is exported from "./edit" for historical reasons
 
-export {
-	VideoAssetUrlSchema,
-	VideoAssetCropSchema,
-	VideoAssetVolumeSchema,
-	VideoAssetSchema
-} from "./video-asset";
-
+// Video Asset
+export { VideoAssetUrlSchema, VideoAssetCropSchema, VideoAssetVolumeSchema, VideoAssetSchema } from "./video-asset";
+export type { VideoAsset } from "./video-asset";
