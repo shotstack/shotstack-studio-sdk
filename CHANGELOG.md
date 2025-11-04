@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2025-11-04
+
+### Added
+
+- **Rich Text Asset Support ([#35](https://github.com/shotstack/shotstack-studio-sdk/pull/35))**
+
+  - New `rich-text` asset type with RichTextPlayer
+  - Custom font loading from URLs and local files
+
+- **Clip Dimensions ([#36](https://github.com/shotstack/shotstack-studio-sdk/pull/36))**
+
+  - Added optional `width` and `height` properties to clips (1-3840px, 1-2160px)
+
+- **Schema Exports ([#38](https://github.com/shotstack/shotstack-studio-sdk/pull/38))**
+  - All Zod validation schemas now exported for external package usage
+
+### Changed
+
+- Fit property now optional with smart defaults: `none` for rich-text, `crop` for other assets ([#36](https://github.com/shotstack/shotstack-studio-sdk/pull/36))
+- Updated `@shotstack/shotstack-canvas` to v1.1.2
+
+### Fixed
+
+- Rewrote fit logic to match backend behavior ([#37](https://github.com/shotstack/shotstack-studio-sdk/pull/37)):
+  - `cover`: non-uniform stretch to fill
+  - `crop`: viewport-aware scaling, never downscales small images
+  - `contain`: fit within bounds preserving aspect ratio
+  - `none`: native dimensions
+- Fixed animation sequence and tween properties integration
+
 ## [1.6.0] - 2025-09-02
 
 ### Changed
