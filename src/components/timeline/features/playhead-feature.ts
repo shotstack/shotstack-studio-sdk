@@ -81,6 +81,7 @@ export class PlayheadFeature extends Entity {
 
 	/** @internal */
 	private updateTimeFromPointer(event: PIXI.FederatedPointerEvent): void {
+		if (!this.graphics.parent) return;
 		const localPos = this.graphics.parent.toLocal(event.global);
 		const newTime = Math.max(0, localPos.x / this.options.pixelsPerSecond);
 		this.setTime(newTime);

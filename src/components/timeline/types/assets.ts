@@ -130,6 +130,45 @@ export interface HtmlAsset {
 	css?: string;
 }
 
+// Rich text asset
+export interface RichTextAsset {
+	type: "rich-text";
+	text: string;
+	width?: number;
+	height?: number;
+	font?: {
+		family: string;
+		size: number;
+		weight: string | number;
+		style: "normal" | "italic" | "oblique";
+		color: string;
+		opacity: number;
+	};
+	style?: {
+		bold: boolean;
+		italic: boolean;
+		underline: boolean;
+		lineThrough: boolean;
+		uppercase: boolean;
+		letterSpacing: number;
+		lineHeight: number;
+	};
+	stroke?: { width: number; color: string; opacity: number };
+	shadow?: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
+	background?: { color?: string; opacity: number; borderRadius: number };
+	align?: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
+	animation?: {
+		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters";
+		speed: number;
+		duration?: number;
+		style?: "character" | "word";
+		direction?: "left" | "right" | "up" | "down";
+	};
+	customFonts?: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	cacheEnabled?: boolean;
+	pixelRatio?: number;
+}
+
 // Luma asset
 export interface LumaAsset {
 	type: "luma";

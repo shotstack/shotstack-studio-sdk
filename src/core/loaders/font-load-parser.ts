@@ -9,6 +9,7 @@ type Woff2Decompressor = {
 export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 	public static readonly Name = "FontLoadParser";
 
+	public id: string;
 	public name: string;
 	public extension: pixi.ExtensionFormat;
 	private validFontExtensions: string[];
@@ -16,6 +17,7 @@ export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 	private woff2Decompressor: Woff2Decompressor | null;
 
 	constructor() {
+		this.id = FontLoadParser.Name;
 		this.name = FontLoadParser.Name;
 		this.extension = {
 			type: [pixi.ExtensionType.LoadParser],

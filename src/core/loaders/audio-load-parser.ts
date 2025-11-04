@@ -4,11 +4,13 @@ import * as pixi from "pixi.js";
 export class AudioLoadParser implements pixi.LoaderParser<Howl | null> {
 	public static readonly Name = "AudioLoadParser";
 
+	public id: string;
 	public name: string;
 	public extension: pixi.ExtensionFormat;
 	private validAudioExtensions: string[];
 
 	constructor() {
+		this.id = AudioLoadParser.Name;
 		this.name = AudioLoadParser.Name;
 		this.extension = {
 			type: [pixi.ExtensionType.LoadParser],

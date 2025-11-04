@@ -11,7 +11,7 @@
 					{
 						"asset": {
 							"type": "rich-text",
-							"text": "Welcome to Text Animation! Powered by HarfBuzz",
+							"text": "Introducing Rich Text Animations!",
 							"width": 800,
 							"height": 400,
 							"font": {
