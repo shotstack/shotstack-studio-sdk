@@ -40,7 +40,7 @@ async function main() {
 		// 6. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
-		
+
 		// 7. Enable video export (Cmd/Ctrl+E)
 		// eslint-disable-next-line no-new
 		new VideoExporter(edit, canvas);

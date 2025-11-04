@@ -85,10 +85,11 @@ export const ClipSchema = zod
 		height: zod.number().min(1).max(2160).optional()
 	})
 	.transform(data => {
-		if (data.fit === undefined) {
-			data.fit = data.asset.type === "rich-text" ? "none" : "crop";
+		if (data.fit !== undefined) {
+			return data;
 		}
-		return data;
+		const fit = data.asset.type === "rich-text" ? "none" : "crop";
+		return { ...data, fit };
 	});
 
 export type ClipAnchor = zod.infer<typeof ClipAnchorSchema>;

@@ -469,7 +469,7 @@ export class Edit extends Entity {
 		}
 
 		let player: Player;
-		
+
 		switch (clipConfiguration.asset.type) {
 			case "text": {
 				player = new TextPlayer(this, clipConfiguration);

@@ -40,12 +40,12 @@ export class SimpleLRUCache<T> extends Map<string, T> {
 export class ExportError extends Error {
 	constructor(
 		message: string,
-		public readonly phase: string = 'unknown',
+		public readonly phase: string = "unknown",
 		public readonly context: Record<string, any> = {},
 		cause?: Error
 	) {
 		super(message);
-		this.name = 'ExportError';
+		this.name = "ExportError";
 		this.cause = cause;
 	}
 }
@@ -55,7 +55,7 @@ export class ExportError extends Error {
  */
 export class BrowserCompatibilityError extends ExportError {
 	constructor(message: string, missingFeatures: string[]) {
-		super(message, 'initialization', { missingFeatures });
-		this.name = 'BrowserCompatibilityError';
+		super(message, "initialization", { missingFeatures });
+		this.name = "BrowserCompatibilityError";
 	}
 }

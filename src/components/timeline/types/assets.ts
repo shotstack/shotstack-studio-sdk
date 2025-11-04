@@ -22,7 +22,6 @@ export interface VideoAsset {
 	volume?: number | VolumeKeyframe[];
 }
 
-
 export type TextRenderer = {
 	render: (ops: DrawOp[]) => Promise<void>;
 };

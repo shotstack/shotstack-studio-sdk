@@ -76,7 +76,7 @@ export interface TimelineTheme {
 			audio: number;
 			image: number;
 			text: number;
-			"rich-text":number;
+			"rich-text": number;
 			shape: number;
 			html: number;
 			luma: number;

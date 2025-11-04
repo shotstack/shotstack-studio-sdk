@@ -83,7 +83,7 @@ export class TimelineThemeResolver {
 
 			// Validate toolbar
 			if (!timeline.toolbar) return false;
-			const {toolbar} = timeline;
+			const { toolbar } = timeline;
 			if (typeof toolbar.background !== "number") return false;
 			if (typeof toolbar.surface !== "number") return false;
 			if (typeof toolbar.hover !== "number") return false;
@@ -95,7 +95,7 @@ export class TimelineThemeResolver {
 
 			// Validate ruler
 			if (!timeline.ruler) return false;
-			const {ruler} = timeline;
+			const { ruler } = timeline;
 			if (typeof ruler.background !== "number") return false;
 			if (typeof ruler.text !== "number") return false;
 			if (typeof ruler.markers !== "number") return false;
@@ -103,7 +103,7 @@ export class TimelineThemeResolver {
 
 			// Validate tracks
 			if (!timeline.tracks) return false;
-			const {tracks} = timeline;
+			const { tracks } = timeline;
 			if (typeof tracks.surface !== "number") return false;
 			if (typeof tracks.surfaceAlt !== "number") return false;
 			if (typeof tracks.border !== "number") return false;
@@ -111,7 +111,7 @@ export class TimelineThemeResolver {
 
 			// Validate clips
 			if (!timeline.clips) return false;
-			const {clips} = timeline;
+			const { clips } = timeline;
 			const clipColors = ["video", "audio", "image", "text", "shape", "html", "luma", "default", "selected"];
 			for (const color of clipColors) {
 				if (typeof clips[color as keyof typeof clips] !== "number") return false;

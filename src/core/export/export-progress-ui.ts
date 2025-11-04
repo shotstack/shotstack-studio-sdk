@@ -6,7 +6,8 @@ export class ExportProgressUI {
 
 	create(): void {
 		this.overlay = Object.assign(document.createElement("div"), {
-			style: "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;justify-content:center;align-items:center;color:white;font-family:Arial"
+			style:
+				"position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;justify-content:center;align-items:center;color:white;font-family:Arial"
 		});
 
 		const card = Object.assign(document.createElement("div"), {
@@ -14,7 +15,7 @@ export class ExportProgressUI {
 		});
 
 		card.innerHTML = `<h3 style="margin:0 0 15px 0;font-weight:normal">Exporting Video</h3>`;
-		
+
 		this.status = Object.assign(document.createElement("div"), {
 			style: "font-size:12px;margin-bottom:10px;opacity:0.8"
 		});

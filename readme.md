@@ -293,7 +293,6 @@ const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: custo
 Themes are organized by component, making it intuitive to customize specific parts of the interface:
 
 - **Timeline**: Controls the appearance of the timeline interface
-
   - `toolbar`: Playback controls and buttons
   - `ruler`: Time markers and labels
   - `tracks`: Track backgrounds and borders

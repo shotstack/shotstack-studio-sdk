@@ -9,4 +9,3 @@ export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types
 
 // Export Zod schemas for library users
 export * from "./core/schemas";
-

@@ -29,7 +29,7 @@ export class AudioProcessor {
 		for (const track of this.audioTracks) {
 			const audioBuffer = await audioContext.decodeAudioData(track.data.slice(0));
 			const { numberOfChannels, sampleRate, length: frameCount } = audioBuffer;
-			const framesToUse = Math.min(frameCount, Math.floor(sampleRate * track.duration / 1000));
+			const framesToUse = Math.min(frameCount, Math.floor((sampleRate * track.duration) / 1000));
 			const interleavedData = new Float32Array(framesToUse * numberOfChannels);
 
 			for (let ch = 0; ch < numberOfChannels; ch += 1) {
@@ -39,13 +39,15 @@ export class AudioProcessor {
 				}
 			}
 
-			await audioSource.add(new AudioSample({
-				data: interleavedData,
-				format: "f32",
-				numberOfChannels,
-				sampleRate,
-				timestamp: track.start / 1000
-			}));
+			await audioSource.add(
+				new AudioSample({
+					data: interleavedData,
+					format: "f32",
+					numberOfChannels,
+					sampleRate,
+					timestamp: track.start / 1000
+				})
+			);
 		}
 		this.audioTracks = [];
 	}
@@ -64,7 +66,6 @@ export class AudioProcessor {
 		return players;
 	}
 
-
 	private async processAudioTrack(player: AudioPlayer) {
 		try {
 			const asset = player.clipConfiguration?.asset as AudioAsset;
@@ -80,7 +81,7 @@ export class AudioProcessor {
 				volume: player.getVolume()
 			};
 		} catch (error) {
-			console.warn('Failed to process audio track:', error);
+			console.warn("Failed to process audio track:", error);
 			return null;
 		}
 	}

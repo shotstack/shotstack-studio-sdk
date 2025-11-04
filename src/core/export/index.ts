@@ -10,17 +10,10 @@ export { VideoFrameProcessor } from "./video-frame-processor";
 export { AudioProcessor } from "./audio-processor";
 
 // Export utilities and errors
-export { 
-	SimpleLRUCache, 
-	ExportError, 
-	BrowserCompatibilityError 
-} from "./export-utils";
+export { SimpleLRUCache, ExportError, BrowserCompatibilityError } from "./export-utils";
 
 // Export UI component
 export { ExportProgressUI } from "./export-progress-ui";
 
 // Re-export type guards and interfaces
-export { 
-	isVideoPlayer,
-	type VideoPlayerExtended
-} from "./video-frame-processor";
+export { isVideoPlayer, type VideoPlayerExtended } from "./video-frame-processor";

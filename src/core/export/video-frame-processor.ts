@@ -90,7 +90,7 @@ export class VideoFrameProcessor {
 			const imageData = this.extractionContext.getImageData(0, 0, width, height);
 			this.frameCache.set(cacheKey, imageData);
 			return imageData;
-		} catch (error) {
+		} catch {
 			return null;
 		}
 	}

@@ -110,7 +110,12 @@ export class ExportCoordinator {
 		}
 	}
 
-	private async processFrames(cfg: ExportConfig, videoSource: CanvasSource, _canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): Promise<void> {
+	private async processFrames(
+		cfg: ExportConfig,
+		videoSource: CanvasSource,
+		_canvas: HTMLCanvasElement,
+		ctx: CanvasRenderingContext2D
+	): Promise<void> {
 		const container = this.edit.getContainer();
 		this.edit.pause();
 		Object.assign(container.position, { x: 0, y: 0 });

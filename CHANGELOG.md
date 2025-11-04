@@ -7,12 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Rich Text Asset Support ([#35](https://github.com/shotstack/shotstack-studio-sdk/pull/35))**
-
   - New `rich-text` asset type with RichTextPlayer
   - Custom font loading from URLs and local files
 
 - **Clip Dimensions ([#36](https://github.com/shotstack/shotstack-studio-sdk/pull/36))**
-
   - Added optional `width` and `height` properties to clips (1-3840px, 1-2160px)
 
 - **Schema Exports ([#38](https://github.com/shotstack/shotstack-studio-sdk/pull/38))**
