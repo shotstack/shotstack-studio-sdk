@@ -3,7 +3,7 @@
 	"extends": ["airbnb-base", "airbnb-typescript/base", "prettier"],
 	"parser": "@typescript-eslint/parser",
 	"parserOptions": {
-		"project": "./tsconfig.json"
+		"project": ["./tsconfig.json", "./tsconfig.test.json"]
 	},
 	"plugins": ["@typescript-eslint"],
 	"ignorePatterns": ["**/*.d.ts"],
@@ -43,6 +43,24 @@
 						"newlines-between": "always"
 					}
 				]
+			}
+		},
+		{
+			"files": [
+				"*.config.ts",
+				"*.config.js",
+				"vite.config.*.ts",
+				"jest.config.ts",
+				"jest.config.js"
+			],
+			"rules": {
+				"import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
+			}
+		},
+		{
+			"files": ["tests/**/*.ts", "**/*.test.ts", "**/*.spec.ts"],
+			"rules": {
+				"import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
 			}
 		}
 	]

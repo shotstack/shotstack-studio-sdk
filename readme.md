@@ -35,6 +35,47 @@ npm install @shotstack/shotstack-studio
 yarn add @shotstack/shotstack-studio
 ```
 
+## Schema Validation
+
+For validation in tests without WASM initialization (e.g., in Jest), use the schema-only export:
+
+```typescript
+import {
+	ClipSchema,
+	EditSchema,
+	VideoAssetSchema,
+	AudioAssetSchema,
+	TextAssetSchema
+	// ... all other schemas
+} from "@shotstack/shotstack-studio/schema";
+
+// Validate data structures
+const result = ClipSchema.safeParse({
+	asset: {
+		type: "video",
+		src: "https://example.com/video.mp4"
+	},
+	start: 0,
+	length: 5
+});
+
+if (result.success) {
+	console.log("Valid clip:", result.data);
+} else {
+	console.error("Validation errors:", result.error);
+}
+```
+
+**Why use `/schema`?**
+
+The main import (`@shotstack/shotstack-studio`) includes rendering libraries that initialize WASM, which can cause issues in Node.js test environments. The `/schema` export provides only the Zod validation schemas without any WASM dependencies.
+
+**Available schemas:**
+
+- Asset schemas: `AssetSchema`, `VideoAssetSchema`, `AudioAssetSchema`, `ImageAssetSchema`, `TextAssetSchema`, `ShapeAssetSchema`, `HtmlAssetSchema`, `LumaAssetSchema`, `RichTextAssetSchema`
+- Structure schemas: `ClipSchema`, `TrackSchema`, `KeyframeSchema`, `EditSchema`, `TimelineSchema`, `OutputSchema`
+- All TypeScript types are also exported
+
 ## Quick Start
 
 ```typescript
@@ -78,6 +119,10 @@ Your HTML should include containers for both the canvas and timeline:
 The Edit class represents a video project with its timeline, clips, and properties.
 
 ```typescript
+import { Edit } from "@shotstack/shotstack-studio";
+
+// For schema validation only (e.g., in tests):
+import { EditSchema, ClipSchema } from "@shotstack/shotstack-studio/schema";
 // Create an edit with dimensions and background
 const edit = new Edit({ width: 1280, height: 720 }, "#000000");
 await edit.load();

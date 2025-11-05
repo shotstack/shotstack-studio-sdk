@@ -39,11 +39,17 @@
 		"url": "https://github.com/shotstack/shotstack-studio-sdk"
 	},
 	"scripts": {
-		"build": "npm run build:main && npm run build:schema && npm run test",
+		"dev": "vite",
+		"start": "npm run build && vite preview",
+		"build": "npm run build:main && npm run build:schema",
 		"build:main": "vite build",
 		"build:schema": "vite build --config vite.config.schema.ts",
-		"prepublishOnly": "npm run build",
-		"test": "jest"
+		"test": "npm run build && jest",
+		"test:watch": "jest --watch",
+		"lint": "eslint --ignore-path .gitignore .",
+		"lint:fix": "eslint --ignore-path .gitignore --fix .",
+		"format": "prettier --ignore-path .gitignore --write .",
+		"prepublishOnly": "npm run build && npm run test"
 	},
 	"devDependencies": {
 		"@jest/globals": "^30.2.0",
