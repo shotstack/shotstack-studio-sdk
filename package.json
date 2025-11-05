@@ -11,9 +11,20 @@
 	"main": "dist/shotstack-studio.umd.js",
 	"module": "dist/shotstack-studio.es.js",
 	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/shotstack-studio.es.js",
+			"require": "./dist/shotstack-studio.umd.js"
+		},
+		"./schema": {
+			"import": "./dist/schema/index.mjs",
+			"require": "./dist/schema/index.js"
+		}
+	},
 	"files": [
 		"dist/shotstack-studio.umd.js",
 		"dist/shotstack-studio.es.js",
+		"dist/schema/**",
 		"dist/**/*.d.ts"
 	],
 	"keywords": [
@@ -28,11 +39,22 @@
 		"url": "https://github.com/shotstack/shotstack-studio-sdk"
 	},
 	"scripts": {
-		"build": "vite build",
-		"prepublishOnly": "npm run build"
+		"dev": "vite",
+		"start": "npm run build && vite preview",
+		"build": "npm run build:main && npm run build:schema",
+		"build:main": "vite build",
+		"build:schema": "vite build --config vite.config.schema.ts",
+		"test": "npm run build && jest",
+		"test:watch": "jest --watch",
+		"lint": "eslint --ignore-path .gitignore .",
+		"lint:fix": "eslint --ignore-path .gitignore --fix .",
+		"format": "prettier --ignore-path .gitignore --write .",
+		"prepublishOnly": "npm run build && npm run test"
 	},
 	"devDependencies": {
+		"@jest/globals": "^30.2.0",
 		"@types/howler": "^2.2.12",
+		"@types/jest": "^30.0.0",
 		"@types/node": "^22.9.0",
 		"@types/opentype.js": "^1.3.8",
 		"@typescript-eslint/eslint-plugin": "^7.18.0",
@@ -42,6 +64,8 @@
 		"eslint-config-airbnb-typescript": "^18.0.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-import": "^2.31.0",
+		"jest": "^30.2.0",
+		"ts-jest": "^29.4.5",
 		"typescript": "^5.6.2",
 		"vite": "^5.4.10",
 		"vite-plugin-dts": "^4.5.4"
