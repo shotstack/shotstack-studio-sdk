@@ -35,47 +35,6 @@ npm install @shotstack/shotstack-studio
 yarn add @shotstack/shotstack-studio
 ```
 
-## Schema Validation
-
-For validation in tests without WASM initialization (e.g., in Jest), use the schema-only export:
-
-```typescript
-import {
-	ClipSchema,
-	EditSchema,
-	VideoAssetSchema,
-	AudioAssetSchema,
-	TextAssetSchema
-	// ... all other schemas
-} from "@shotstack/shotstack-studio/schema";
-
-// Validate data structures
-const result = ClipSchema.safeParse({
-	asset: {
-		type: "video",
-		src: "https://example.com/video.mp4"
-	},
-	start: 0,
-	length: 5
-});
-
-if (result.success) {
-	console.log("Valid clip:", result.data);
-} else {
-	console.error("Validation errors:", result.error);
-}
-```
-
-**Why use `/schema`?**
-
-The main import (`@shotstack/shotstack-studio`) includes rendering libraries that initialize WASM, which can cause issues in Node.js test environments. The `/schema` export provides only the Zod validation schemas without any WASM dependencies.
-
-**Available schemas:**
-
-- Asset schemas: `AssetSchema`, `VideoAssetSchema`, `AudioAssetSchema`, `ImageAssetSchema`, `TextAssetSchema`, `ShapeAssetSchema`, `HtmlAssetSchema`, `LumaAssetSchema`, `RichTextAssetSchema`
-- Structure schemas: `ClipSchema`, `TrackSchema`, `KeyframeSchema`, `EditSchema`, `TimelineSchema`, `OutputSchema`
-- All TypeScript types are also exported
-
 ## Quick Start
 
 ```typescript
@@ -338,6 +297,7 @@ const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: custo
 Themes are organized by component, making it intuitive to customize specific parts of the interface:
 
 - **Timeline**: Controls the appearance of the timeline interface
+
   - `toolbar`: Playback controls and buttons
   - `ruler`: Time markers and labels
   - `tracks`: Track backgrounds and borders

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2025-11-06
+
+### Added
+
+- Test cases for Jest builds ([#39](https://github.com/shotstack/shotstack-studio-sdk/pull/39))
+- Schema exports for Jest compatibility
+
+### Changed
+
+- Removed makefile build commands in favour of package.json scripts
+
 ## [1.7.0] - 2025-11-04
 
 ### Added
