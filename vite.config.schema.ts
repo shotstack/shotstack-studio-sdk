@@ -4,10 +4,6 @@ import dts from "vite-plugin-dts";
 
 const external = ["zod"];
 
-const globals = {
-	zod: "zod"
-};
-
 export default defineConfig({
 	plugins: [
 		dts({
@@ -28,16 +24,22 @@ export default defineConfig({
 		lib: {
 			entry: resolve(__dirname, "src/schema.ts"),
 			name: "ShotstackStudioSchema",
-			fileName: format => `index.${format === "es" ? "mjs" : "js"}`,
 			formats: ["es", "cjs"]
 		},
 		rollupOptions: {
 			external,
-			output: {
-				globals,
-				preserveModules: false,
-				exports: "named"
-			}
+			output: [
+				{
+					format: "es",
+					entryFileNames: "index.mjs",
+					exports: "named"
+				},
+				{
+					format: "cjs",
+					entryFileNames: "index.cjs",
+					exports: "named"
+				}
+			]
 		}
 	}
 });
