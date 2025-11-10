@@ -4,7 +4,7 @@ export default {
 	extensionsToTreatAsEsm: [".ts"],
 	moduleNameMapper: {
 		"^(\\.{1,2}/.*)\\.js$": "$1",
-		"^@shotstack/shotstack-studio/schema$": "<rootDir>/dist/schema/index.js"
+		"^@shotstack/shotstack-studio/schema$": "<rootDir>/dist/schema/index.cjs"
 	},
 	testPathIgnorePatterns: ["/node_modules/", "/dist/"],
 	transform: {
