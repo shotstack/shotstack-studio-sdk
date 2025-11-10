@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2025-11-10
+
+### Changed
+
+- Updated `@shotstack/shotstack-canvas` to v1.1.7
+- Improved package exports with explicit TypeScript types and better module format support
+- Updated schema build to output `.mjs` and `.cjs` files for better compatibility
+
 ## [1.7.1] - 2025-11-06
 
 ### Added
