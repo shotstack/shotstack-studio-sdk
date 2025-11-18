@@ -3,13 +3,14 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 import dts from "vite-plugin-dts";
 
-const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg"];
+const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg", "harfbuzzjs"];
 
 const globals = {
 	"pixi.js": "PIXI",
 	howler: "Howler",
 	"opentype.js": "opentype",
-	"@ffmpeg/ffmpeg": "FFmpeg"
+	"@ffmpeg/ffmpeg": "FFmpeg",
+	harfbuzzjs: "createHarfBuzz"
 };
 
 export default defineConfig({
