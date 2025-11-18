@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2025-11-18
+
+### Fixed
+
+- Fixed module resolution issues in Next.js and other bundlers ([#11](https://github.com/shotstack/shotstack-studio-sdk/issues/11), [#42](https://github.com/shotstack/shotstack-studio-sdk/pull/42))
+  - Added `inlineDynamicImports: true` to Vite build configuration to prevent chunk file generation
+  - Resolved "Cannot find module" errors when importing the SDK in Next.js applications
+  - All code is now properly inlined into single ES and UMD bundle files
+
+### Changed
+
+- Updated `@shotstack/shotstack-canvas` to v1.3.0
+- Improved development tooling:
+  - Added `typecheck` script for TypeScript validation
+  - Added `test:package` script to validate build output before publishing
+
 ## [1.8.0] - 2025-11-10
 
 ### Changed
