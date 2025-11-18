@@ -97,12 +97,12 @@ edit.stop(); // Stop and return to beginning
 
 // Editing functions
 edit.addClip(0, {
-	asset: {
-		type: "image",
-		src: "https://example.com/image.jpg"
-	},
-	start: 0,
-	length: 5
+  asset: {
+    type: "image",
+    src: "https://example.com/image.jpg"
+  },
+  start: 0,
+  length: 5
 });
 
 edit.addTrack(1, { clips: [] });
@@ -127,15 +127,15 @@ The Edit class provides an event system to listen for specific actions:
 ```typescript
 // Listen for clip selection events
 edit.events.on("clip:selected", data => {
-	console.log("Clip selected:", data.clip);
-	console.log("Track index:", data.trackIndex);
-	console.log("Clip index:", data.clipIndex);
+  console.log("Clip selected:", data.clip);
+  console.log("Track index:", data.trackIndex);
+  console.log("Clip index:", data.clipIndex);
 });
 
 // Listen for clip update events
 edit.events.on("clip:updated", data => {
-	console.log("Previous state:", data.previous); // { clip, trackIndex, clipIndex }
-	console.log("Current state:", data.current); // { clip, trackIndex, clipIndex }
+  console.log("Previous state:", data.previous); // { clip, trackIndex, clipIndex }
+  console.log("Current state:", data.current); // { clip, trackIndex, clipIndex }
 });
 ```
 
@@ -234,59 +234,59 @@ Create your own theme by defining colors and dimensions for each component:
 
 ```typescript
 const customTheme = {
-	timeline: {
-		// Main timeline colors
-		background: "#1e1e1e",
-		divider: "#1a1a1a",
-		playhead: "#ff4444",
-		snapGuide: "#888888",
-		dropZone: "#00ff00",
-		trackInsertion: "#00ff00",
+  timeline: {
+    // Main timeline colors
+    background: "#1e1e1e",
+    divider: "#1a1a1a",
+    playhead: "#ff4444",
+    snapGuide: "#888888",
+    dropZone: "#00ff00",
+    trackInsertion: "#00ff00",
 
-		// Toolbar styling
-		toolbar: {
-			background: "#1a1a1a",
-			surface: "#2a2a2a", // Button backgrounds
-			hover: "#3a3a3a", // Button hover state
-			active: "#007acc", // Button active state
-			divider: "#3a3a3a", // Separator lines
-			icon: "#888888", // Icon colors
-			text: "#ffffff", // Text color
-			height: 36 // Toolbar height in pixels
-		},
+    // Toolbar styling
+    toolbar: {
+      background: "#1a1a1a",
+      surface: "#2a2a2a", // Button backgrounds
+      hover: "#3a3a3a", // Button hover state
+      active: "#007acc", // Button active state
+      divider: "#3a3a3a", // Separator lines
+      icon: "#888888", // Icon colors
+      text: "#ffffff", // Text color
+      height: 36 // Toolbar height in pixels
+    },
 
-		// Ruler styling
-		ruler: {
-			background: "#404040",
-			text: "#ffffff", // Time labels
-			markers: "#666666", // Time marker dots
-			height: 40 // Ruler height in pixels
-		},
+    // Ruler styling
+    ruler: {
+      background: "#404040",
+      text: "#ffffff", // Time labels
+      markers: "#666666", // Time marker dots
+      height: 40 // Ruler height in pixels
+    },
 
-		// Track styling
-		tracks: {
-			surface: "#2d2d2d", // Primary track color
-			surfaceAlt: "#252525", // Alternating track color
-			border: "#3a3a3a", // Track borders
-			height: 60 // Track height in pixels
-		},
+    // Track styling
+    tracks: {
+      surface: "#2d2d2d", // Primary track color
+      surfaceAlt: "#252525", // Alternating track color
+      border: "#3a3a3a", // Track borders
+      height: 60 // Track height in pixels
+    },
 
-		// Clip colors by asset type
-		clips: {
-			video: "#4a9eff",
-			audio: "#00d4aa",
-			image: "#f5a623",
-			text: "#d0021b",
-			shape: "#9013fe",
-			html: "#50e3c2",
-			luma: "#b8e986",
-			default: "#8e8e93", // Unknown asset types
-			selected: "#007acc", // Selection border
-			radius: 4 // Corner radius in pixels
-		}
-	}
-	// Canvas theming will be available in future releases
-	// canvas: { ... }
+    // Clip colors by asset type
+    clips: {
+      video: "#4a9eff",
+      audio: "#00d4aa",
+      image: "#f5a623",
+      text: "#d0021b",
+      shape: "#9013fe",
+      html: "#50e3c2",
+      luma: "#b8e986",
+      default: "#8e8e93", // Unknown asset types
+      selected: "#007acc", // Selection border
+      radius: 4 // Corner radius in pixels
+    }
+  }
+  // Canvas theming will be available in future releases
+  // canvas: { ... }
 };
 
 const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: customTheme });
@@ -297,7 +297,6 @@ const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: custo
 Themes are organized by component, making it intuitive to customize specific parts of the interface:
 
 - **Timeline**: Controls the appearance of the timeline interface
-
   - `toolbar`: Playback controls and buttons
   - `ruler`: Time markers and labels
   - `tracks`: Track backgrounds and borders
