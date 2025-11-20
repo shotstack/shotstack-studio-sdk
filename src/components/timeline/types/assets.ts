@@ -38,7 +38,6 @@ export type TextEngine = {
 export type FontDescriptor = {
 	family: string;
 	weight: string | number;
-	style: string;
 };
 
 // Audio asset
@@ -82,7 +81,6 @@ export interface ValidatedRichTextAsset {
 		family: string;
 		size: number;
 		weight: string | number;
-		style: "normal" | "italic" | "oblique";
 		color: string;
 		opacity: number;
 	};
@@ -108,7 +106,7 @@ export interface ValidatedRichTextAsset {
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down";
 	};
-	customFonts: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	customFonts: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
 	cacheEnabled: boolean;
 	pixelRatio: number;
 }
@@ -139,7 +137,6 @@ export interface RichTextAsset {
 		family: string;
 		size: number;
 		weight: string | number;
-		style: "normal" | "italic" | "oblique";
 		color: string;
 		opacity: number;
 	};
@@ -163,7 +160,7 @@ export interface RichTextAsset {
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down";
 	};
-	customFonts?: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	customFonts?: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
 	cacheEnabled?: boolean;
 	pixelRatio?: number;
 }

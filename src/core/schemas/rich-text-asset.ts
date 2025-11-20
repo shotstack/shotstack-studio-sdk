@@ -22,7 +22,6 @@ const RichTextFontSchema = zod
 		family: zod.string().default("Roboto"),
 		size: zod.number().min(8).max(500).default(48),
 		weight: zod.union([zod.string(), zod.number()]).default("400"),
-		style: zod.enum(["normal", "italic", "oblique"]).default("normal"),
 		color: HexColorSchema.default("#000000"),
 		opacity: zod.number().min(0).max(1).default(1)
 	})
@@ -85,8 +84,7 @@ const CustomFontSchema = zod
 	.object({
 		src: zod.string().url("Invalid font URL"),
 		family: zod.string(),
-		weight: zod.union([zod.string(), zod.number()]).default("400"),
-		style: zod.enum(["normal", "italic", "oblique"]).default("normal")
+		weight: zod.union([zod.string(), zod.number()]).default("400")
 	})
 	.strict();
 
