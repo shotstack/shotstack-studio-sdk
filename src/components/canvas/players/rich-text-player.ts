@@ -144,8 +144,7 @@ export class RichTextPlayer extends Player {
 					try {
 						const fontDesc = {
 							family: richTextAsset.font.family,
-							weight: richTextAsset.font.weight || "400",
-							style: richTextAsset.font.style || "normal"
+							weight: richTextAsset.font.weight || "400"
 						};
 						await this.textEngine.registerFontFromFile(fontPath, fontDesc);
 					} catch (error) {
