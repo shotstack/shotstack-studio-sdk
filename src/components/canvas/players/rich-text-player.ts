@@ -79,8 +79,7 @@ export class RichTextPlayer extends Player {
 							{
 								src: matchingFont.src,
 								family: requestedFamily,
-								weight: richTextAsset.font?.weight?.toString() || "400",
-								style: richTextAsset.font?.style || "normal"
+								weight: richTextAsset.font?.weight?.toString() || "400"
 							}
 						];
 					}
@@ -127,8 +126,7 @@ export class RichTextPlayer extends Player {
 						try {
 							const fontDesc = {
 								family: requestedFamily,
-								weight: richTextAsset.font?.weight?.toString() || "400",
-								style: richTextAsset.font?.style || "normal"
+								weight: richTextAsset.font?.weight?.toString() || "400"
 							};
 							await this.textEngine!.registerFontFromUrl(matchingFont.src, fontDesc);
 						} catch (error) {
