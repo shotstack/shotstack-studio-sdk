@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2025-11-22
+
+### Changed
+
+- Updated `@shotstack/shotstack-canvas` to v1.4.7
+- Removed `style` property from font configurations ([#43](https://github.com/shotstack/shotstack-studio-sdk/pull/43))
+  - Font style variants should now be loaded as separate font families
+
+### Added
+
+- Support for `background.border` property (width, color, opacity)
+- Support for `padding` property (uniform or per-side values)
+
 ## [1.8.1] - 2025-11-18
 
 ### Fixed
