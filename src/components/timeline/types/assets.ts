@@ -38,7 +38,6 @@ export type TextEngine = {
 export type FontDescriptor = {
 	family: string;
 	weight: string | number;
-	style: string;
 };
 
 // Audio asset
@@ -82,7 +81,6 @@ export interface ValidatedRichTextAsset {
 		family: string;
 		size: number;
 		weight: string | number;
-		style: "normal" | "italic" | "oblique";
 		color: string;
 		opacity: number;
 	};
@@ -99,7 +97,13 @@ export interface ValidatedRichTextAsset {
 	};
 	stroke: { width: number; color: string; opacity: number };
 	shadow: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
-	background: { color?: string; opacity: number; borderRadius: number };
+	background: {
+		color?: string;
+		opacity: number;
+		borderRadius: number;
+		border?: { width: number; color: string; opacity: number };
+	};
+	padding?: number | { top: number; right: number; bottom: number; left: number };
 	align: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
 	animation: {
 		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters";
@@ -108,7 +112,7 @@ export interface ValidatedRichTextAsset {
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down";
 	};
-	customFonts: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	customFonts: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
 	cacheEnabled: boolean;
 	pixelRatio: number;
 }
@@ -139,7 +143,6 @@ export interface RichTextAsset {
 		family: string;
 		size: number;
 		weight: string | number;
-		style: "normal" | "italic" | "oblique";
 		color: string;
 		opacity: number;
 	};
@@ -154,7 +157,13 @@ export interface RichTextAsset {
 	};
 	stroke?: { width: number; color: string; opacity: number };
 	shadow?: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
-	background?: { color?: string; opacity: number; borderRadius: number };
+	background?: {
+		color?: string;
+		opacity: number;
+		borderRadius: number;
+		border?: { width: number; color: string; opacity: number };
+	};
+	padding?: number | { top: number; right: number; bottom: number; left: number };
 	align?: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
 	animation?: {
 		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters";
@@ -163,7 +172,7 @@ export interface RichTextAsset {
 		style?: "character" | "word";
 		direction?: "left" | "right" | "up" | "down";
 	};
-	customFonts?: { src: string; family: string; weight?: string | number; style?: string; originalFamily?: string }[];
+	customFonts?: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
 	cacheEnabled?: boolean;
 	pixelRatio?: number;
 }
