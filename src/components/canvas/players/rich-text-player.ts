@@ -63,8 +63,6 @@ export class RichTextPlayer extends Player {
 			this.targetFPS = editData?.output?.fps || 30;
 			richTextAsset.width = richTextAsset.width || this.edit.size.width;
 			richTextAsset.height = richTextAsset.height || this.edit.size.height;
-			richTextAsset.pixelRatio = richTextAsset.pixelRatio || 2;
-			richTextAsset.cacheEnabled = richTextAsset.cacheEnabled ?? true;
 			if (Array.isArray(editData?.timeline?.fonts) && editData.timeline.fonts.length > 0) {
 				const requestedFamily = richTextAsset.font?.family;
 				if (requestedFamily) {
@@ -93,23 +91,22 @@ export class RichTextPlayer extends Player {
 				return;
 			}
 
-			this.textEngine = await createTextEngine({
+			this.textEngine = (await createTextEngine({
 				width: richTextAsset.width,
 				height: richTextAsset.height,
-				pixelRatio: richTextAsset.pixelRatio,
 				fps: this.targetFPS
-			});
+			})) as TextEngine;
 
-			const { value: validated } = this.textEngine.validate(richTextAsset);
+			const { value: validated } = this.textEngine!.validate(richTextAsset);
 			this.validatedAsset = validated;
 
 			const fontMap = this.createFontMapping();
 
 			this.canvas = document.createElement("canvas");
-			this.canvas.width = richTextAsset.width * richTextAsset.pixelRatio;
-			this.canvas.height = richTextAsset.height * richTextAsset.pixelRatio;
+			this.canvas.width = richTextAsset.width;
+			this.canvas.height = richTextAsset.height;
 
-			this.renderer = this.textEngine.createRenderer(this.canvas);
+			this.renderer = this.textEngine!.createRenderer(this.canvas);
 
 			const timelineFonts = editData?.timeline?.fonts || [];
 
@@ -144,7 +141,7 @@ export class RichTextPlayer extends Player {
 							family: richTextAsset.font.family,
 							weight: richTextAsset.font.weight || "400"
 						};
-						await this.textEngine.registerFontFromFile(fontPath, fontDesc);
+						await this.textEngine!.registerFontFromFile(fontPath, fontDesc);
 					} catch (error) {
 						console.warn(`Failed to load local font: ${fontFamily}`, error);
 					}
@@ -184,7 +181,7 @@ export class RichTextPlayer extends Player {
 
 		const cacheKey = Math.floor(timeSeconds * this.targetFPS);
 
-		if (this.validatedAsset.cacheEnabled && this.cachedFrames.has(cacheKey)) {
+		if (this.cachedFrames.has(cacheKey)) {
 			const cachedTexture = this.cachedFrames.get(cacheKey)!;
 			if (this.sprite && this.sprite.texture !== cachedTexture) {
 				this.sprite.texture = cachedTexture;
@@ -205,7 +202,6 @@ export class RichTextPlayer extends Player {
 
 			if (!this.sprite) {
 				this.sprite = new pixi.Sprite(tex);
-				this.sprite.scale.set(1 / this.validatedAsset.pixelRatio);
 				this.contentContainer.addChild(this.sprite);
 			} else {
 				if (this.texture && !this.cachedFrames.has(cacheKey)) {
@@ -215,7 +211,7 @@ export class RichTextPlayer extends Player {
 			}
 
 			this.texture = tex;
-			if (this.validatedAsset.cacheEnabled && this.cachedFrames.size < 150) {
+			if (this.cachedFrames.size < 150) {
 				this.cachedFrames.set(cacheKey, tex);
 			}
 
