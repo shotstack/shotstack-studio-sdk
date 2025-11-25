@@ -113,8 +113,6 @@ export interface ValidatedRichTextAsset {
 		direction?: "left" | "right" | "up" | "down";
 	};
 	customFonts: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
-	cacheEnabled: boolean;
-	pixelRatio: number;
 }
 
 // Shape asset
@@ -173,8 +171,6 @@ export interface RichTextAsset {
 		direction?: "left" | "right" | "up" | "down";
 	};
 	customFonts?: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
-	cacheEnabled?: boolean;
-	pixelRatio?: number;
 }
 
 // Luma asset

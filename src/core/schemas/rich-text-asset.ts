@@ -55,13 +55,32 @@ const RichTextShadowSchema = zod
 	})
 	.strict();
 
+const RichTextBorderSchema = zod
+	.object({
+		width: zod.number().min(0).default(0),
+		color: HexColorSchema.default("#000000"),
+		opacity: zod.number().min(0).max(1).default(1)
+	})
+	.strict();
+
 const RichTextBackgroundSchema = zod
 	.object({
 		color: HexColorSchema.optional(),
 		opacity: zod.number().min(0).max(1).default(1),
-		borderRadius: zod.number().min(0).default(0)
+		borderRadius: zod.number().min(0).default(0),
+		border: RichTextBorderSchema.optional()
 	})
 	.strict();
+
+const RichTextPaddingSchema = zod.union([
+	zod.number().min(0),
+	zod.object({
+		top: zod.number().min(0).default(0),
+		right: zod.number().min(0).default(0),
+		bottom: zod.number().min(0).default(0),
+		left: zod.number().min(0).default(0)
+	}).strict()
+]);
 
 const RichTextAlignmentSchema = zod
 	.object({
@@ -99,10 +118,9 @@ export const RichTextAssetSchema = zod
 		stroke: RichTextStrokeSchema.optional(),
 		shadow: RichTextShadowSchema.optional(),
 		background: RichTextBackgroundSchema.optional(),
+		padding: RichTextPaddingSchema.optional(),
 		align: RichTextAlignmentSchema.optional(),
 		animation: RichTextAnimationSchema.optional(),
-		cacheEnabled: zod.boolean().default(true),
-		pixelRatio: zod.number().min(1).max(4).default(2),
 		customFonts: zod.array(CustomFontSchema).optional()
 	})
 	.strict();
