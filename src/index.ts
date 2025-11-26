@@ -1,3 +1,5 @@
+import pkg from "../package.json";
+
 export { Edit } from "@core/edit";
 export { Canvas } from "@canvas/shotstack-canvas";
 export { Controls } from "@core/inputs/controls";
@@ -9,3 +11,5 @@ export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types
 
 // Export Zod schemas for library users
 export * from "./core/schemas";
+
+export const VERSION = pkg.version;
