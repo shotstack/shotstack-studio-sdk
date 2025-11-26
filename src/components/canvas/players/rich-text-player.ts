@@ -53,6 +53,26 @@ export class RichTextPlayer extends Player {
 		return fontMap;
 	}
 
+	public override reconfigureAfterRestore(): void {
+		super.reconfigureAfterRestore();
+
+		for (const texture of this.cachedFrames.values()) {
+			texture.destroy();
+		}
+		this.cachedFrames.clear();
+		this.lastRenderedTime = -1;
+
+		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
+		if (this.textEngine) {
+			const { value: validated } = this.textEngine.validate(richTextAsset);
+			this.validatedAsset = validated;
+		}
+
+		if (this.textEngine && this.renderer) {
+			this.renderFrameSafe(this.getCurrentTime() / 1000);
+		}
+	}
+
 	public override async load(): Promise<void> {
 		await super.load();
 
@@ -279,6 +299,12 @@ export class RichTextPlayer extends Player {
 
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
+
+		// Reset render state on seek to prevent race conditions
+		if (elapsed === 101) {
+			this.isRendering = false;
+			this.lastRenderedTime = -1;
+		}
 
 		if (this.textEngine && this.renderer && !this.isRendering) {
 			const currentTimeSeconds = this.getCurrentTime() / 1000;
