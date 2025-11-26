@@ -28,10 +28,12 @@ const ClipOffsetYSchema = KeyframeSchema.extend({
 	.array()
 	.or(ClipOffsetValueSchema);
 
-const ClipOffsetSchema = zod.object({
-	x: ClipOffsetXSchema.default(0),
-	y: ClipOffsetYSchema.default(0)
-});
+const ClipOffsetSchema = zod
+	.object({
+		x: ClipOffsetXSchema.default(0),
+		y: ClipOffsetYSchema.default(0)
+	})
+	.strict();
 
 const ClipOpacitySchema = KeyframeSchema.extend({
 	from: zod.number().min(0).max(1),
@@ -47,32 +49,38 @@ const ClipScaleSchema = KeyframeSchema.extend({
 	.array()
 	.or(zod.number().min(0));
 
-const ClipTransformRotationSchema = zod.object({
-	angle: KeyframeSchema.extend({
-		from: zod.number(),
-		to: zod.number()
+const ClipTransformRotationSchema = zod
+	.object({
+		angle: KeyframeSchema.extend({
+			from: zod.number(),
+			to: zod.number()
+		})
+			.array()
+			.or(zod.number())
 	})
-		.array()
-		.or(zod.number())
-});
+	.strict();
 
 const ClipEffectSchema = zod.string();
 const ClipTransitionValueSchema = zod.string();
 
-const ClipTransitionSchema = zod.object({
-	in: ClipTransitionValueSchema.optional(),
-	out: ClipTransitionValueSchema.optional()
-});
+const ClipTransitionSchema = zod
+	.object({
+		in: ClipTransitionValueSchema.optional(),
+		out: ClipTransitionValueSchema.optional()
+	})
+	.strict();
 
-const ClipTransformSchema = zod.object({
-	rotate: ClipTransformRotationSchema.default({ angle: 0 })
-});
+const ClipTransformSchema = zod
+	.object({
+		rotate: ClipTransformRotationSchema.default({ angle: 0 })
+	})
+	.strict();
 
 export const ClipSchema = zod
 	.object({
 		asset: AssetSchema,
-		start: zod.number().min(0),
-		length: zod.number().positive(),
+		start: zod.union([zod.number().min(0), zod.literal("auto")]),
+		length: zod.union([zod.number().positive(), zod.literal("auto"), zod.literal("end")]),
 		position: ClipAnchorSchema.default("center").optional(),
 		fit: ClipFitSchema.optional(),
 		offset: ClipOffsetSchema.default({ x: 0, y: 0 }).optional(),
@@ -84,13 +92,13 @@ export const ClipSchema = zod
 		width: zod.number().min(1).max(3840).optional(),
 		height: zod.number().min(1).max(2160).optional()
 	})
-	.transform(data => {
-		if (data.fit !== undefined) {
-			return data;
-		}
-		const fit = data.asset.type === "rich-text" ? "none" : "crop";
-		return { ...data, fit };
-	});
+	.strict()
+	.transform(data => ({
+		...data,
+		fit: data.fit ?? (data.asset.type === "rich-text" ? "none" : "crop"),
+		start: data.start as number,
+		length: data.length as number
+	}));
 
 export type ClipAnchor = zod.infer<typeof ClipAnchorSchema>;
 export type Clip = zod.infer<typeof ClipSchema>;

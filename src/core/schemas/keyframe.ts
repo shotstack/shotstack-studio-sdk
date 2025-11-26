@@ -33,13 +33,15 @@ export const KeyframeEasingSchema = zod.enum([
 	"easeInOutBack"
 ]);
 
-export const KeyframeSchema = zod.object({
-	from: zod.number(),
-	to: zod.number(),
-	start: zod.number().min(0),
-	length: zod.number().positive(),
-	interpolation: KeyframeInterpolationSchema.optional(),
-	easing: KeyframeEasingSchema.optional()
-});
+export const KeyframeSchema = zod
+	.object({
+		from: zod.number(),
+		to: zod.number(),
+		start: zod.number().min(0),
+		length: zod.number().positive(),
+		interpolation: KeyframeInterpolationSchema.optional(),
+		easing: KeyframeEasingSchema.optional()
+	})
+	.strict();
 
 export type Keyframe = zod.infer<typeof KeyframeSchema>;
