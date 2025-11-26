@@ -74,12 +74,14 @@ const RichTextBackgroundSchema = zod
 
 const RichTextPaddingSchema = zod.union([
 	zod.number().min(0),
-	zod.object({
-		top: zod.number().min(0).default(0),
-		right: zod.number().min(0).default(0),
-		bottom: zod.number().min(0).default(0),
-		left: zod.number().min(0).default(0)
-	}).strict()
+	zod
+		.object({
+			top: zod.number().min(0).default(0),
+			right: zod.number().min(0).default(0),
+			bottom: zod.number().min(0).default(0),
+			left: zod.number().min(0).default(0)
+		})
+		.strict()
 ]);
 
 const RichTextAlignmentSchema = zod
