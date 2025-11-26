@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2025-11-26
+
+### Added
+
+- **Audio fade effects** - Added `effect` property to audio assets supporting `fadeIn`, `fadeOut`, and `fadeInFadeOut` with 2-second fade duration
+- **updateClip command** ([#44](https://github.com/shotstack/shotstack-studio-sdk/pull/44), [#34](https://github.com/shotstack/shotstack-studio-sdk/issues/34))
+  - New command to update clip properties programmatically
+  - Dynamic background color updates
+- **Rich text padding and border support** ([#45](https://github.com/shotstack/shotstack-studio-sdk/pull/45))
+  - Added `padding` property to rich-text assets
+  - Added `background.border` property (width, color, opacity) to rich-text assets
+- **Merge fields support** for template variable substitution
+- **Smart-clip timing values** with support for `"auto"` and `"end"` values with resolution logic
+- Emits `timeline:updated` event when edit is reloaded
+- Exported `VERSION` constant from package.json
+
+### Changed
+
+- Added strict validation to all Zod schemas
+- Rich text player implements `reconfigureAfterRestore` to clear cache and re-render
+
+### Fixed
+
+- Reset render state on seek to prevent race conditions
+- Stored bound event handlers to fix listener cleanup
+
 ## [1.9.0] - 2025-11-22
 
 ### Changed

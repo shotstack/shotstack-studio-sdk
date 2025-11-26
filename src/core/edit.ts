@@ -17,7 +17,10 @@ import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
+import { applyMergeFields } from "@core/merge/merge-fields";
 import { Entity } from "@core/shared/entity";
+import { deepMerge } from "@core/shared/utils";
+import { resolveSmartClips } from "@core/smart-clips/smart-clips";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -61,6 +64,8 @@ export class Edit extends Entity {
 	/** @internal */
 	private viewportMask?: pixi.Graphics;
 	/** @internal */
+	private background: pixi.Graphics | null;
+	/** @internal */
 	private isExporting: boolean = false;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
@@ -83,6 +88,7 @@ export class Edit extends Entity {
 		this.selectedClip = null;
 		this.updatedClip = null;
 		this.backgroundColor = backgroundColor;
+		this.background = null;
 
 		// Set up event-driven architecture
 		this.setupIntentListeners();
@@ -90,6 +96,7 @@ export class Edit extends Entity {
 
 	public override async load(): Promise<void> {
 		const background = new pixi.Graphics();
+		this.background = background;
 		background.fillStyle = {
 			color: this.backgroundColor
 		};
@@ -161,6 +168,9 @@ export class Edit extends Entity {
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
 		this.pause();
+		// Force immediate render - elapsed > 100 triggers VideoPlayer sync
+		this.update(0, 101);
+		this.draw();
 	}
 	public stop(): void {
 		this.seek(0);
@@ -169,9 +179,25 @@ export class Edit extends Entity {
 	public async loadEdit(edit: EditType): Promise<void> {
 		this.clearClips();
 
-		this.edit = EditSchema.parse(edit);
+		// Apply merge fields transparently (if present)
+		const mergeFields = edit.merge ?? [];
+		const mergedEdit = mergeFields.length > 0 ? applyMergeFields(edit, mergeFields) : edit;
+
+		// Resolve smart-clips ("auto", "end" values) to numeric timings
+		const resolvedEdit = await resolveSmartClips(mergedEdit);
+
+		this.edit = EditSchema.parse(resolvedEdit);
 
 		this.backgroundColor = this.edit.timeline.background || "#000000";
+
+		if (this.background) {
+			this.background.clear();
+			this.background.fillStyle = {
+				color: this.backgroundColor
+			};
+			this.background.rect(0, 0, this.size.width, this.size.height);
+			this.background.fill();
+		}
 
 		await Promise.all(
 			(this.edit.timeline.fonts ?? []).map(async font => {
@@ -191,6 +217,9 @@ export class Edit extends Entity {
 		}
 
 		this.updateTotalDuration();
+
+		// Notify listeners that edit has been reloaded
+		this.events.emit("timeline:updated", { current: this.getEdit() });
 	}
 	public getEdit(): EditType {
 		// Use the actual tracks array to preserve empty tracks
@@ -284,6 +313,20 @@ export class Edit extends Entity {
 		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig);
 		this.executeCommand(command);
 	}
+
+	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<ClipType>): void {
+		const clip = this.getPlayerClip(trackIdx, clipIdx);
+		if (!clip) {
+			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
+			return;
+		}
+
+		const initialConfig = structuredClone(clip.clipConfiguration);
+		const currentConfig = structuredClone(clip.clipConfiguration);
+		const mergedConfig = deepMerge(currentConfig, updates);
+		this.setUpdatedClip(clip, initialConfig, mergedConfig);
+	}
+
 	/** @internal */
 	public updateTextContent(clip: Player, newText: string, initialConfig: ClipType): void {
 		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
@@ -400,7 +443,7 @@ export class Edit extends Entity {
 		}
 
 		this.clips = [];
-
+		this.tracks = [];
 		this.clipsToDispose = [];
 
 		this.updateTotalDuration();

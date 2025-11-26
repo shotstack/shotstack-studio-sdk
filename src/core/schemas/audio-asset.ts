@@ -11,11 +11,16 @@ export const AudioAssetVolumeSchema = KeyframeSchema.extend({
 	.array()
 	.or(zod.number().min(0).max(1));
 
-export const AudioAssetSchema = zod.object({
-	type: zod.literal("audio"),
-	src: AudioAssetUrlSchema,
-	trim: zod.number().optional(),
-	volume: AudioAssetVolumeSchema.optional()
-});
+export const AudioAssetEffectSchema = zod.enum(["none", "fadeIn", "fadeOut", "fadeInFadeOut"]);
+
+export const AudioAssetSchema = zod
+	.object({
+		type: zod.literal("audio"),
+		src: AudioAssetUrlSchema,
+		trim: zod.number().optional(),
+		volume: AudioAssetVolumeSchema.optional(),
+		effect: AudioAssetEffectSchema.optional()
+	})
+	.strict();
 
 export type AudioAsset = zod.infer<typeof AudioAssetSchema>;

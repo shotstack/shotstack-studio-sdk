@@ -4,6 +4,7 @@ import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { type AudioAsset } from "@schemas/audio-asset";
 import { type Clip } from "@schemas/clip";
+import { type Keyframe } from "@schemas/keyframe";
 import * as howler from "howler";
 import * as pixi from "pixi.js";
 
@@ -24,8 +25,13 @@ export class AudioPlayer extends Player {
 		this.isPlaying = false;
 
 		const audioAsset = clipConfiguration.asset as AudioAsset;
+		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
 
-		this.volumeKeyframeBuilder = new KeyframeBuilder(audioAsset.volume ?? 1, this.getLength());
+		this.volumeKeyframeBuilder = new KeyframeBuilder(
+			this.createVolumeKeyframes(audioAsset, baseVolume),
+			this.getLength(),
+			baseVolume
+		);
 		this.syncTimer = 0;
 	}
 
@@ -110,5 +116,28 @@ export class AudioPlayer extends Player {
 
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {
+		const { effect, volume } = asset;
+
+		if (!effect || effect === "none" || Array.isArray(volume)) {
+			return volume ?? 1;
+		}
+
+		const clipLength = this.getLength() / 1000;
+		const fade = Math.min(2, clipLength / 2);
+
+		if (effect === "fadeIn") {
+			return [{ from: 0, to: baseVolume, start: 0, length: fade }];
+		}
+		if (effect === "fadeOut") {
+			return [{ from: baseVolume, to: 0, start: clipLength - fade, length: fade }];
+		}
+		// fadeInFadeOut
+		return [
+			{ from: 0, to: baseVolume, start: 0, length: fade },
+			{ from: baseVolume, to: 0, start: clipLength - fade, length: fade }
+		];
 	}
 }

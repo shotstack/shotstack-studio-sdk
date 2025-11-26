@@ -4,12 +4,14 @@ import { KeyframeSchema } from "./keyframe";
 
 export const VideoAssetUrlSchema = zod.string().url("Invalid video url format.");
 
-export const VideoAssetCropSchema = zod.object({
-	top: zod.number().min(0).optional(),
-	right: zod.number().min(0).optional(),
-	bottom: zod.number().min(0).optional(),
-	left: zod.number().min(0).optional()
-});
+export const VideoAssetCropSchema = zod
+	.object({
+		top: zod.number().min(0).optional(),
+		right: zod.number().min(0).optional(),
+		bottom: zod.number().min(0).optional(),
+		left: zod.number().min(0).optional()
+	})
+	.strict();
 
 export const VideoAssetVolumeSchema = KeyframeSchema.extend({
 	from: zod.number().min(0).max(1),
@@ -18,12 +20,14 @@ export const VideoAssetVolumeSchema = KeyframeSchema.extend({
 	.array()
 	.or(zod.number().min(0).max(1));
 
-export const VideoAssetSchema = zod.object({
-	type: zod.literal("video"),
-	src: VideoAssetUrlSchema,
-	trim: zod.number().optional(),
-	crop: VideoAssetCropSchema.optional(),
-	volume: VideoAssetVolumeSchema.optional()
-});
+export const VideoAssetSchema = zod
+	.object({
+		type: zod.literal("video"),
+		src: VideoAssetUrlSchema,
+		trim: zod.number().optional(),
+		crop: VideoAssetCropSchema.optional(),
+		volume: VideoAssetVolumeSchema.optional()
+	})
+	.strict();
 
 export type VideoAsset = zod.infer<typeof VideoAssetSchema>;

@@ -12,19 +12,30 @@ export interface TimelineEventCallbacks {
 }
 
 export class TimelineEventHandler {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private boundHandlers = new Map<string, (...args: any[]) => void>();
+
 	constructor(
 		private edit: Edit,
 		private callbacks: TimelineEventCallbacks
 	) {}
 
 	public setupEventListeners(): void {
-		this.edit.events.on("timeline:updated", this.handleTimelineUpdated.bind(this));
-		this.edit.events.on("clip:updated", this.handleClipUpdated.bind(this));
-		this.edit.events.on("clip:selected", this.handleClipSelected.bind(this));
-		this.edit.events.on("selection:cleared", this.handleSelectionCleared.bind(this));
-		this.edit.events.on("drag:started", this.handleDragStarted.bind(this));
-		this.edit.events.on("drag:ended", this.handleDragEnded.bind(this));
-		this.edit.events.on("track:created", this.handleTrackCreated.bind(this));
+		const events = [
+			["timeline:updated", this.handleTimelineUpdated],
+			["clip:updated", this.handleClipUpdated],
+			["clip:selected", this.handleClipSelected],
+			["selection:cleared", this.handleSelectionCleared],
+			["drag:started", this.handleDragStarted],
+			["drag:ended", this.handleDragEnded],
+			["track:created", this.handleTrackCreated]
+		] as const;
+
+		for (const [event, handler] of events) {
+			const bound = handler.bind(this);
+			this.boundHandlers.set(event, bound);
+			this.edit.events.on(event, bound);
+		}
 	}
 
 	private async handleTimelineUpdated(event: { current: EditType }): Promise<void> {
@@ -61,12 +72,9 @@ export class TimelineEventHandler {
 	}
 
 	public dispose(): void {
-		this.edit.events.off("timeline:updated", this.handleTimelineUpdated.bind(this));
-		this.edit.events.off("clip:updated", this.handleClipUpdated.bind(this));
-		this.edit.events.off("clip:selected", this.handleClipSelected.bind(this));
-		this.edit.events.off("selection:cleared", this.handleSelectionCleared.bind(this));
-		this.edit.events.off("drag:started", this.handleDragStarted.bind(this));
-		this.edit.events.off("drag:ended", this.handleDragEnded.bind(this));
-		this.edit.events.off("track:created", this.handleTrackCreated.bind(this));
+		for (const [event, handler] of this.boundHandlers) {
+			this.edit.events.off(event, handler);
+		}
+		this.boundHandlers.clear();
 	}
 }

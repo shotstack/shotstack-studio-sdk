@@ -22,6 +22,7 @@
 		"noPropertyAccessFromIndexSignature": true,
 		"forceConsistentCasingInFileNames": true,
 		"esModuleInterop": true,
+		"resolveJsonModule": true,
 		"baseUrl": "./src",
 		"paths": {
 			"@core/*": ["core/*"],
