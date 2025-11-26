@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Audio fade effects** - Added `effect` property to audio assets supporting `fadeIn`, `fadeOut`, and `fadeInFadeOut` with 2-second fade duration
 - **updateClip command** ([#44](https://github.com/shotstack/shotstack-studio-sdk/pull/44), [#34](https://github.com/shotstack/shotstack-studio-sdk/issues/34))
   - New command to update clip properties programmatically
   - Dynamic background color updates
@@ -15,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - **Merge fields support** for template variable substitution
 - **Smart-clip timing values** with support for `"auto"` and `"end"` values with resolution logic
 - Emits `timeline:updated` event when edit is reloaded
+- Exported `VERSION` constant from package.json
 
 ### Changed
 
