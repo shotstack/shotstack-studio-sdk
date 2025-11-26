@@ -19,7 +19,7 @@
 			"default": "./dist/shotstack-studio.es.js"
 		},
 		"./schema": {
-			"types": "./dist/schema/index.d.ts",
+			"types": "./dist/schema/schema.d.ts",
 			"import": "./dist/schema/index.mjs",
 			"require": "./dist/schema/index.cjs",
 			"default": "./dist/schema/index.mjs"
