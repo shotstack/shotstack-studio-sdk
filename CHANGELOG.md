@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.1] - 2025-11-27
+
+### Changed
+
+- Moved `width`, `height`, and `customFonts` out of `RichTextAssetSchema` - dimensions now resolved from clip config, custom fonts computed at runtime ([#46](https://github.com/shotstack/shotstack-studio-sdk/pull/46))
+- Updated `@shotstack/shotstack-canvas` to v1.5.3
+
 ## [1.10.0] - 2025-11-26
 
 ### Added
