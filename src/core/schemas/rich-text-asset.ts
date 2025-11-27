@@ -101,20 +101,11 @@ const RichTextAnimationSchema = zod
 	})
 	.strict();
 
-const CustomFontSchema = zod
-	.object({
-		src: zod.string().url("Invalid font URL"),
-		family: zod.string(),
-		weight: zod.union([zod.string(), zod.number()]).default("400")
-	})
-	.strict();
 
 export const RichTextAssetSchema = zod
 	.object({
 		type: zod.literal("rich-text"),
 		text: zod.string().max(10000).default(""),
-		width: zod.number().min(1).max(8192).optional(),
-		height: zod.number().min(1).max(8192).optional(),
 		font: RichTextFontSchema.optional(),
 		style: RichTextStyleSchema.optional(),
 		stroke: RichTextStrokeSchema.optional(),
@@ -122,8 +113,7 @@ export const RichTextAssetSchema = zod
 		background: RichTextBackgroundSchema.optional(),
 		padding: RichTextPaddingSchema.optional(),
 		align: RichTextAlignmentSchema.optional(),
-		animation: RichTextAnimationSchema.optional(),
-		customFonts: zod.array(CustomFontSchema).optional()
+		animation: RichTextAnimationSchema.optional()
 	})
 	.strict();
 

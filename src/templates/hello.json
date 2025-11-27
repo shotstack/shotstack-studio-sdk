@@ -12,8 +12,6 @@
 						"asset": {
 							"type": "rich-text",
 							"text": "Hello World!",
-							"width": 800,
-							"height": 400,
 							"font": {
 								"family": "Roboto",
 								"size": 48,
