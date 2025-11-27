@@ -5,6 +5,12 @@ import { createTextEngine } from "@shotstack/shotstack-canvas";
 import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
 import * as pixi from "pixi.js";
 
+interface CanvasRichTextPayload extends RichTextAsset {
+	width: number;
+	height: number;
+	customFonts?: Array<{ src: string; family: string; weight: string }>;
+}
+
 const extractFontNames = (url: string): { full: string; base: string } => {
 	const filename = url.split("/").pop() || "";
 	const withoutExtension = filename.replace(/\.(ttf|otf|woff|woff2)$/i, "");
@@ -27,6 +33,49 @@ export class RichTextPlayer extends Player {
 	private isRendering: boolean = false;
 	private targetFPS: number = 30;
 	private validatedAsset: ValidatedRichTextAsset | null = null;
+
+	private getResolvedDimensions(): Size {
+		const editData = this.edit.getEdit();
+		return {
+			width: this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height
+		};
+	}
+
+	private buildCanvasPayload(richTextAsset: RichTextAsset): CanvasRichTextPayload {
+		const { width, height } = this.getResolvedDimensions();
+		const editData = this.edit.getEdit();
+
+		// Build customFonts array internally
+		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
+		if (Array.isArray(editData?.timeline?.fonts) && editData.timeline.fonts.length > 0) {
+			const requestedFamily = richTextAsset.font?.family;
+			if (requestedFamily) {
+				const matchingFont = editData.timeline.fonts?.find(font => {
+					const { full, base } = extractFontNames(font.src);
+					const requested = requestedFamily.toLowerCase();
+					return full.toLowerCase() === requested || base.toLowerCase() === requested;
+				});
+
+				if (matchingFont) {
+					customFonts = [
+						{
+							src: matchingFont.src,
+							family: requestedFamily,
+							weight: richTextAsset.font?.weight?.toString() || "400"
+						}
+					];
+				}
+			}
+		}
+
+		return {
+			...richTextAsset,
+			width,
+			height,
+			...(customFonts && { customFonts })
+		};
+	}
 
 	private createFontMapping(): Map<string, string> {
 		const fontMap = new Map<string, string>();
@@ -64,7 +113,8 @@ export class RichTextPlayer extends Player {
 
 		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 		if (this.textEngine) {
-			const { value: validated } = this.textEngine.validate(richTextAsset);
+			const canvasPayload = this.buildCanvasPayload(richTextAsset);
+			const { value: validated } = this.textEngine.validate(canvasPayload);
 			this.validatedAsset = validated;
 		}
 
@@ -81,29 +131,8 @@ export class RichTextPlayer extends Player {
 		try {
 			const editData = this.edit.getEdit();
 			this.targetFPS = editData?.output?.fps || 30;
-			richTextAsset.width = richTextAsset.width || this.edit.size.width;
-			richTextAsset.height = richTextAsset.height || this.edit.size.height;
-			if (Array.isArray(editData?.timeline?.fonts) && editData.timeline.fonts.length > 0) {
-				const requestedFamily = richTextAsset.font?.family;
-				if (requestedFamily) {
-					const matchingFont = editData.timeline.fonts?.find(font => {
-						const { full, base } = extractFontNames(font.src);
-						const requested = requestedFamily.toLowerCase();
-						return full.toLowerCase() === requested || base.toLowerCase() === requested;
-					});
 
-					if (matchingFont) {
-						richTextAsset.customFonts = [
-							{
-								src: matchingFont.src,
-								family: requestedFamily,
-								weight: richTextAsset.font?.weight?.toString() || "400"
-							}
-						];
-					}
-				}
-			}
-
+			// Validate the rich-text asset schema (without width, height, customFonts)
 			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
 			if (!validationResult.success) {
 				console.error("Rich-text asset validation failed:", validationResult.error);
@@ -111,20 +140,23 @@ export class RichTextPlayer extends Player {
 				return;
 			}
 
+			// Build canvas payload with dimensions and customFonts
+			const canvasPayload = this.buildCanvasPayload(richTextAsset);
+
 			this.textEngine = (await createTextEngine({
-				width: richTextAsset.width,
-				height: richTextAsset.height,
+				width: canvasPayload.width,
+				height: canvasPayload.height,
 				fps: this.targetFPS
 			})) as TextEngine;
 
-			const { value: validated } = this.textEngine!.validate(richTextAsset);
+			const { value: validated } = this.textEngine!.validate(canvasPayload);
 			this.validatedAsset = validated;
 
 			const fontMap = this.createFontMapping();
 
 			this.canvas = document.createElement("canvas");
-			this.canvas.width = richTextAsset.width;
-			this.canvas.height = richTextAsset.height;
+			this.canvas.width = canvasPayload.width;
+			this.canvas.height = canvasPayload.height;
 
 			this.renderer = this.textEngine!.createRenderer(this.canvas);
 
@@ -242,19 +274,18 @@ export class RichTextPlayer extends Player {
 	}
 
 	private createFallbackText(richTextAsset: RichTextAsset): void {
+		const { width: containerWidth, height: containerHeight } = this.getResolvedDimensions();
+
 		const style = new pixi.TextStyle({
 			fontFamily: richTextAsset.font?.family || "Arial",
 			fontSize: richTextAsset.font?.size || 48,
 			fill: richTextAsset.font?.color || "#ffffff",
 			align: richTextAsset.align?.horizontal || "center",
 			wordWrap: true,
-			wordWrapWidth: richTextAsset.width || this.edit.size.width
+			wordWrapWidth: containerWidth
 		});
 
 		const fallbackText = new pixi.Text(richTextAsset.text, style);
-
-		const containerWidth = richTextAsset.width || this.edit.size.width;
-		const containerHeight = richTextAsset.height || this.edit.size.height;
 
 		switch (richTextAsset.align?.horizontal) {
 			case "left":
@@ -350,11 +381,7 @@ export class RichTextPlayer extends Player {
 	}
 
 	public override getSize(): Size {
-		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
-		return {
-			width: richTextAsset.width || this.edit.size.width,
-			height: richTextAsset.height || this.edit.size.height
-		};
+		return this.getResolvedDimensions();
 	}
 
 	protected override getFitScale(): number {
@@ -366,7 +393,8 @@ export class RichTextPlayer extends Player {
 		richTextAsset.text = newText;
 
 		if (this.textEngine) {
-			const { value: validated } = this.textEngine.validate(richTextAsset);
+			const canvasPayload = this.buildCanvasPayload(richTextAsset);
+			const { value: validated } = this.textEngine.validate(canvasPayload);
 			this.validatedAsset = validated;
 		}
 
