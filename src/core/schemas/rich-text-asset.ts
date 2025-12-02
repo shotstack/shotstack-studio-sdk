@@ -67,7 +67,6 @@ const RichTextBackgroundSchema = zod
 	.object({
 		color: HexColorSchema.optional(),
 		opacity: zod.number().min(0).max(1).default(1),
-		borderRadius: zod.number().min(0).default(0),
 		border: RichTextBorderSchema.optional()
 	})
 	.strict();
@@ -100,7 +99,6 @@ const RichTextAnimationSchema = zod
 		direction: zod.enum(["left", "right", "up", "down"]).optional()
 	})
 	.strict();
-
 
 export const RichTextAssetSchema = zod
 	.object({
