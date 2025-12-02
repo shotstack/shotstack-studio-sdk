@@ -1,13 +1,13 @@
 import * as PIXI from "pixi.js";
 
 import { TimelineLayout } from "../timeline-layout";
-import { ClipConfig } from "../types/timeline";
+import { ResolvedClipConfig } from "../types/timeline";
 import { VisualTrack } from "../visual/visual-track";
 
 export interface DraggedClipInfo {
 	trackIndex: number;
 	clipIndex: number;
-	clipConfig: ClipConfig;
+	clipConfig: ResolvedClipConfig;
 }
 
 export class DragPreviewManager {
@@ -23,7 +23,7 @@ export class DragPreviewManager {
 		private getVisualTracks: () => VisualTrack[]
 	) {}
 
-	public showDragPreview(trackIndex: number, clipIndex: number, clipData: ClipConfig): void {
+	public showDragPreview(trackIndex: number, clipIndex: number, clipData: ResolvedClipConfig): void {
 		if (!clipData) return;
 
 		this.draggedClipInfo = { trackIndex, clipIndex, clipConfig: clipData };
@@ -39,7 +39,7 @@ export class DragPreviewManager {
 		visualTracks[trackIndex]?.getClip(clipIndex)?.setDragging(true);
 
 		// Draw initial preview
-		this.drawDragPreview(trackIndex, clipData.start || 0);
+		this.drawDragPreview(trackIndex, clipData.start);
 	}
 
 	/** @internal */
@@ -49,7 +49,7 @@ export class DragPreviewManager {
 		const { clipConfig } = this.draggedClipInfo;
 		const x = this.layout.getXAtTime(time);
 		const y = trackIndex * this.layout.trackHeight;
-		const width = (clipConfig.length || 0) * this.getPixelsPerSecond();
+		const width = clipConfig.length * this.getPixelsPerSecond();
 
 		// Clear and redraw
 		this.dragPreviewGraphics.clear();
@@ -67,7 +67,7 @@ export class DragPreviewManager {
 
 		const { clipConfig } = this.draggedClipInfo;
 		const x = this.layout.getXAtTime(time);
-		const width = (clipConfig.length || 0) * this.getPixelsPerSecond();
+		const width = clipConfig.length * this.getPixelsPerSecond();
 		const height = this.getTrackHeight();
 
 		// Clear and redraw

@@ -1,9 +1,11 @@
-import { ClipSchema } from "@core/schemas/clip";
+import { ClipSchema, type ResolvedClipConfig } from "@core/schemas/clip";
 import { EditSchema } from "@schemas/edit";
 import { z } from "zod";
 
 export type EditType = z.infer<typeof EditSchema>;
 export type ClipConfig = z.infer<typeof ClipSchema>;
+
+export type { ResolvedClipConfig };
 
 export interface TimelineOptions {
 	width?: number;
@@ -18,7 +20,7 @@ export interface TimelineOptions {
 export interface ClipInfo {
 	trackIndex: number;
 	clipIndex: number;
-	clipConfig: ClipConfig;
+	clipConfig: ResolvedClipConfig;
 	x: number;
 	y: number;
 	width: number;

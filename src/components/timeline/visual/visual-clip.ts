@@ -5,7 +5,7 @@ import { TimelineTheme } from "../../../core/theme";
 import { CLIP_CONSTANTS } from "../constants";
 import { SelectionOverlayRenderer } from "../managers/selection-overlay-renderer";
 import { getAssetDisplayName, TimelineAsset } from "../types/assets";
-import { ClipConfig } from "../types/timeline";
+import { ResolvedClipConfig } from "../types/timeline";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
@@ -17,7 +17,7 @@ export interface VisualClipOptions {
 }
 
 export class VisualClip extends Entity {
-	private clipConfig: ClipConfig;
+	private clipConfig: ResolvedClipConfig;
 	private options: VisualClipOptions;
 	private graphics: PIXI.Graphics;
 	private background: PIXI.Graphics;
@@ -38,7 +38,7 @@ export class VisualClip extends Entity {
 		return this.options.theme.timeline.clips.radius || CLIP_CONSTANTS.CORNER_RADIUS;
 	}
 
-	constructor(clipConfig: ClipConfig, options: VisualClipOptions) {
+	constructor(clipConfig: ResolvedClipConfig, options: VisualClipOptions) {
 		super();
 		this.clipConfig = clipConfig;
 		this.options = options;
@@ -86,7 +86,7 @@ export class VisualClip extends Entity {
 		this.text.y = this.CLIP_PADDING;
 	}
 
-	public updateFromConfig(newConfig: ClipConfig): void {
+	public updateFromConfig(newConfig: ResolvedClipConfig): void {
 		this.clipConfig = newConfig;
 		this.updateVisualState();
 	}
@@ -111,7 +111,7 @@ export class VisualClip extends Entity {
 	/** @internal */
 	private updatePosition(): void {
 		const container = this.getContainer();
-		const startTime = this.clipConfig.start || 0;
+		const startTime = this.clipConfig.start;
 		container.x = startTime * this.options.pixelsPerSecond;
 		// Clip should be positioned at y=0 relative to its parent track
 		// The track itself handles the trackIndex positioning
@@ -133,7 +133,7 @@ export class VisualClip extends Entity {
 			return this.visualState.previewWidth;
 		}
 
-		const duration = this.clipConfig.length || 0;
+		const duration = this.clipConfig.length;
 		const calculatedWidth = duration * this.options.pixelsPerSecond;
 		return Math.max(CLIP_CONSTANTS.MIN_WIDTH, calculatedWidth);
 	}
@@ -237,7 +237,7 @@ export class VisualClip extends Entity {
 		this.text.text = displayText;
 
 		// Ensure text fits within clip bounds
-		const clipWidth = (this.clipConfig.length || 0) * this.options.pixelsPerSecond;
+		const clipWidth = this.clipConfig.length * this.options.pixelsPerSecond;
 		const maxTextWidth = clipWidth - this.CLIP_PADDING * 2;
 
 		if (this.text.width > maxTextWidth) {
@@ -304,7 +304,7 @@ export class VisualClip extends Entity {
 	}
 
 	// Getters
-	public getClipConfig(): ClipConfig {
+	public getClipConfig(): ResolvedClipConfig {
 		return this.clipConfig;
 	}
 
@@ -332,7 +332,7 @@ export class VisualClip extends Entity {
 
 	public getRightEdgeX(): number {
 		const width = this.getEffectiveWidth();
-		const startTime = this.clipConfig.start || 0;
+		const startTime = this.clipConfig.start;
 		return startTime * this.options.pixelsPerSecond + width;
 	}
 

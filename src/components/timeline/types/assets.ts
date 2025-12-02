@@ -100,7 +100,6 @@ export interface ValidatedRichTextAsset {
 	background: {
 		color?: string;
 		opacity: number;
-		borderRadius: number;
 		border?: { width: number; color: string; opacity: number };
 	};
 	padding?: number | { top: number; right: number; bottom: number; left: number };
@@ -158,7 +157,6 @@ export interface RichTextAsset {
 	background?: {
 		color?: string;
 		opacity: number;
-		borderRadius: number;
 		border?: { width: number; color: string; opacity: number };
 	};
 	padding?: number | { top: number; right: number; bottom: number; left: number };

@@ -47,7 +47,7 @@ export class ResizeHandler implements InteractionHandler {
 		this.resizeInfo = {
 			trackIndex: clipInfo.trackIndex,
 			clipIndex: clipInfo.clipIndex,
-			originalLength: clipData.length || 0,
+			originalLength: clipData.length,
 			startX: event.global.x
 		};
 
