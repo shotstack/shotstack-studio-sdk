@@ -1,4 +1,4 @@
-import { type Clip } from "../schemas/clip";
+import { type ResolvedClipConfig } from "../schemas/clip";
 import { type Keyframe } from "../schemas/keyframe";
 
 export type TransitionKeyframeSet = {
@@ -10,9 +10,9 @@ export type TransitionKeyframeSet = {
 };
 
 export class TransitionPresetBuilder {
-	private clipConfiguration: Clip;
+	private clipConfiguration: ResolvedClipConfig;
 
-	constructor(clipConfiguration: Clip) {
+	constructor(clipConfiguration: ResolvedClipConfig) {
 		this.clipConfiguration = clipConfiguration;
 	}
 
@@ -66,9 +66,11 @@ export class TransitionPresetBuilder {
 			}
 			case "zoom": {
 				const zoomScaleDistance = 9;
+				const rawScale = this.clipConfiguration.scale;
+				const scale = typeof rawScale === "number" ? rawScale : 1;
 
-				const initialScale = (this.clipConfiguration.scale as number) + zoomScaleDistance;
-				const targetScale = this.clipConfiguration.scale as number;
+				const initialScale = scale + zoomScaleDistance;
+				const targetScale = scale;
 				scaleKeyframes.push({ from: initialScale, to: targetScale, start, length, interpolation: "bezier", easing: "easeIn" });
 
 				const initialOpacity = 0;
@@ -78,8 +80,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideLeft": {
-				const initialOffsetX = (this.clipConfiguration.offset?.x as number) + 0.025;
-				const targetOffsetX = this.clipConfiguration.offset?.x as number;
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX + 0.025;
+				const targetOffsetX = offsetX;
 				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeIn" });
 
 				const initialOpacity = 0;
@@ -89,8 +93,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideRight": {
-				const initialOffsetX = (this.clipConfiguration.offset?.x as number) - 0.025;
-				const targetOffsetX = this.clipConfiguration.offset?.x as number;
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX - 0.025;
+				const targetOffsetX = offsetX;
 				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeIn" });
 
 				const initialOpacity = 0;
@@ -100,8 +106,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideUp": {
-				const initialOffsetY = (this.clipConfiguration.offset?.y as number) + 0.025;
-				const targetOffsetY = this.clipConfiguration.offset?.y as number;
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY + 0.025;
+				const targetOffsetY = offsetY;
 				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
 
 				const initialOpacity = 0;
@@ -111,8 +119,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideDown": {
-				const initialOffsetY = (this.clipConfiguration.offset?.y as number) - 0.025;
-				const targetOffsetY = this.clipConfiguration.offset?.y as number;
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY - 0.025;
+				const targetOffsetY = offsetY;
 				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeOut" });
 
 				const initialOpacity = 0;
@@ -166,9 +176,11 @@ export class TransitionPresetBuilder {
 			}
 			case "zoom": {
 				const zoomScaleDistance = 9;
+				const rawScale = this.clipConfiguration.scale;
+				const scale = typeof rawScale === "number" ? rawScale : 1;
 
-				const initialScale = this.clipConfiguration.scale as number;
-				const targetScale = initialScale + zoomScaleDistance;
+				const initialScale = scale;
+				const targetScale = scale + zoomScaleDistance;
 				scaleKeyframes.push({ from: initialScale, to: targetScale, start, length, interpolation: "bezier", easing: "easeOut" });
 
 				const initialOpacity = 1;
@@ -178,8 +190,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideLeft": {
-				const initialOffsetX = this.clipConfiguration.offset?.x as number;
-				const targetOffsetX = initialOffsetX - 0.025;
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX;
+				const targetOffsetX = offsetX - 0.025;
 				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeOut" });
 
 				const initialOpacity = 1;
@@ -189,8 +203,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideRight": {
-				const initialOffsetX = this.clipConfiguration.offset?.x as number;
-				const targetOffsetX = initialOffsetX + 0.025;
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX;
+				const targetOffsetX = offsetX + 0.025;
 				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeOut" });
 
 				const initialOpacity = 1;
@@ -200,8 +216,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideUp": {
-				const initialOffsetY = this.clipConfiguration.offset?.y as number;
-				const targetOffsetY = initialOffsetY - 0.025;
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY;
+				const targetOffsetY = offsetY - 0.025;
 				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
 
 				const initialOpacity = 1;
@@ -211,8 +229,10 @@ export class TransitionPresetBuilder {
 				break;
 			}
 			case "slideDown": {
-				const initialOffsetY = this.clipConfiguration.offset?.y as number;
-				const targetOffsetY = initialOffsetY + 0.025;
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY;
+				const targetOffsetY = offsetY + 0.025;
 				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
 
 				const initialOpacity = 1;

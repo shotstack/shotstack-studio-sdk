@@ -1,5 +1,5 @@
 import { type Size } from "../layouts/geometry";
-import { type Clip } from "../schemas/clip";
+import { type ResolvedClipConfig } from "../schemas/clip";
 import { type Keyframe } from "../schemas/keyframe";
 
 export type EffectKeyframeSet = {
@@ -11,9 +11,9 @@ export type EffectKeyframeSet = {
 };
 
 export class EffectPresetBuilder {
-	private clipConfiguration: Clip;
+	private clipConfiguration: ResolvedClipConfig;
 
-	constructor(clipConfiguration: Clip) {
+	constructor(clipConfiguration: ResolvedClipConfig) {
 		this.clipConfiguration = clipConfiguration;
 	}
 
@@ -36,9 +36,11 @@ export class EffectPresetBuilder {
 		switch (effectName) {
 			case "zoomIn": {
 				const zoomSpeed = this.getZoomSpeed();
+				const rawScale = this.clipConfiguration.scale;
+				const scale = typeof rawScale === "number" ? rawScale : 1;
 
-				const initialScale = 1 * (this.clipConfiguration.scale as number);
-				const targetScale = zoomSpeed * (this.clipConfiguration.scale as number);
+				const initialScale = 1 * scale;
+				const targetScale = zoomSpeed * scale;
 
 				scaleKeyframes.push({ from: initialScale, to: targetScale, start, length, interpolation: "linear" });
 
@@ -46,25 +48,27 @@ export class EffectPresetBuilder {
 			}
 			case "zoomOut": {
 				const zoomSpeed = this.getZoomSpeed();
+				const rawScale = this.clipConfiguration.scale;
+				const scale = typeof rawScale === "number" ? rawScale : 1;
 
-				const initialScale = zoomSpeed * (this.clipConfiguration.scale as number);
-				const targetScale = 1 * (this.clipConfiguration.scale as number);
+				const initialScale = zoomSpeed * scale;
+				const targetScale = 1 * scale;
 
 				scaleKeyframes.push({ from: initialScale, to: targetScale, start, length, interpolation: "linear" });
 
 				break;
 			}
 			case "slideLeft": {
+				const fittedSize = this.getFittedSize(editSize, clipSize);
 				let targetOffsetX = this.getSlideStart();
 
 				const minScaleWidth = editSize.width + editSize.width * targetOffsetX * 2;
-				const fitWidth = (clipSize.height / clipSize.width) * editSize.height;
 
-				if (fitWidth < minScaleWidth) {
-					const scaleFactorWidth = Math.abs(minScaleWidth / editSize.width);
+				if (fittedSize.width < minScaleWidth) {
+					const scaleFactorWidth = minScaleWidth / fittedSize.width;
 					scaleKeyframes.push({ from: scaleFactorWidth, to: scaleFactorWidth, start, length, interpolation: "linear" });
 				} else {
-					targetOffsetX = (fitWidth - editSize.width) / 2 / editSize.width;
+					targetOffsetX = (fittedSize.width - editSize.width) / 2 / editSize.width;
 				}
 
 				offsetXKeyframes.push({ from: targetOffsetX, to: -targetOffsetX, start, length });
@@ -72,16 +76,16 @@ export class EffectPresetBuilder {
 				break;
 			}
 			case "slideRight": {
+				const fittedSize = this.getFittedSize(editSize, clipSize);
 				let targetOffsetX = this.getSlideStart();
 
 				const minScaleWidth = editSize.width + editSize.width * targetOffsetX * 2;
-				const fitWidth = (clipSize.height / clipSize.width) * editSize.height;
 
-				if (fitWidth < minScaleWidth) {
-					const scaleFactorWidth = Math.abs(minScaleWidth / editSize.width);
+				if (fittedSize.width < minScaleWidth) {
+					const scaleFactorWidth = minScaleWidth / fittedSize.width;
 					scaleKeyframes.push({ from: scaleFactorWidth, to: scaleFactorWidth, start, length, interpolation: "linear" });
 				} else {
-					targetOffsetX = (fitWidth - editSize.width) / 2 / editSize.width;
+					targetOffsetX = (fittedSize.width - editSize.width) / 2 / editSize.width;
 				}
 
 				offsetXKeyframes.push({ from: -targetOffsetX, to: targetOffsetX, start, length });
@@ -89,16 +93,16 @@ export class EffectPresetBuilder {
 				break;
 			}
 			case "slideUp": {
+				const fittedSize = this.getFittedSize(editSize, clipSize);
 				let targetOffsetY = this.getSlideStart();
 
 				const minScaleHeight = editSize.height + editSize.height * targetOffsetY * 2;
-				const fitHeight = (clipSize.height / clipSize.width) * editSize.width;
 
-				if (fitHeight < minScaleHeight) {
-					const scaleFactorHeight = Math.abs(minScaleHeight / editSize.height);
+				if (fittedSize.height < minScaleHeight) {
+					const scaleFactorHeight = minScaleHeight / fittedSize.height;
 					scaleKeyframes.push({ from: scaleFactorHeight, to: scaleFactorHeight, start, length, interpolation: "linear" });
 				} else {
-					targetOffsetY = (fitHeight - editSize.height) / 2 / editSize.height;
+					targetOffsetY = (fittedSize.height - editSize.height) / 2 / editSize.height;
 				}
 
 				offsetYKeyframes.push({ from: targetOffsetY, to: -targetOffsetY, start, length });
@@ -106,16 +110,16 @@ export class EffectPresetBuilder {
 				break;
 			}
 			case "slideDown": {
+				const fittedSize = this.getFittedSize(editSize, clipSize);
 				let targetOffsetY = this.getSlideStart();
 
 				const minScaleHeight = editSize.height + editSize.height * targetOffsetY * 2;
-				const fitHeight = (clipSize.height / clipSize.width) * editSize.width;
 
-				if (fitHeight < minScaleHeight) {
-					const scaleFactorHeight = Math.abs(minScaleHeight / editSize.height);
+				if (fittedSize.height < minScaleHeight) {
+					const scaleFactorHeight = minScaleHeight / fittedSize.height;
 					scaleKeyframes.push({ from: scaleFactorHeight, to: scaleFactorHeight, start, length, interpolation: "linear" });
 				} else {
-					targetOffsetY = (fitHeight - editSize.height) / 2 / editSize.height;
+					targetOffsetY = (fittedSize.height - editSize.height) / 2 / editSize.height;
 				}
 
 				offsetYKeyframes.push({ from: -targetOffsetY, to: targetOffsetY, start, length });
@@ -159,12 +163,31 @@ export class EffectPresetBuilder {
 				case "Slow":
 					return 0.03;
 				case "Fast":
-					return 1.7;
+					return 0.2;
 				default:
 					return 0.12;
 			}
 		}
 
 		return 0;
+	}
+
+	private getFittedSize(editSize: Size, clipSize: Size): Size {
+		const fit = this.clipConfiguration.fit ?? "crop";
+
+		switch (fit) {
+			case "cover":
+			case "crop": {
+				const scale = Math.max(editSize.width / clipSize.width, editSize.height / clipSize.height);
+				return { width: clipSize.width * scale, height: clipSize.height * scale };
+			}
+			case "contain": {
+				const scale = Math.min(editSize.width / clipSize.width, editSize.height / clipSize.height);
+				return { width: clipSize.width * scale, height: clipSize.height * scale };
+			}
+			case "none":
+			default:
+				return clipSize;
+		}
 	}
 }
