@@ -20,7 +20,7 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { applyMergeFields } from "@core/merge/merge-fields";
 import { Entity } from "@core/shared/entity";
 import { deepMerge } from "@core/shared/utils";
-import { resolveSmartClips } from "@core/smart-clips/smart-clips";
+import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -67,6 +67,10 @@ export class Edit extends Entity {
 	private background: pixi.Graphics | null;
 	/** @internal */
 	private isExporting: boolean = false;
+
+	// Performance optimization: cache timeline end and track "end" length clips
+	private cachedTimelineEnd: number = 0;
+	private endLengthClips: Set<Player> = new Set();
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -183,10 +187,9 @@ export class Edit extends Entity {
 		const mergeFields = edit.merge ?? [];
 		const mergedEdit = mergeFields.length > 0 ? applyMergeFields(edit, mergeFields) : edit;
 
-		// Resolve smart-clips ("auto", "end" values) to numeric timings
-		const resolvedEdit = await resolveSmartClips(mergedEdit);
-
-		this.edit = EditSchema.parse(resolvedEdit);
+		// Note: We no longer resolve smart-clips here - timing intent is preserved
+		// and resolved after all clips are loaded
+		this.edit = EditSchema.parse(mergedEdit);
 
 		this.backgroundColor = this.edit.timeline.background || "#000000";
 
@@ -216,17 +219,38 @@ export class Edit extends Entity {
 			}
 		}
 
+		// Resolve all timing after clips are loaded
+		await this.resolveAllTiming();
+
 		this.updateTotalDuration();
 
-		// Notify listeners that edit has been reloaded
-		this.events.emit("timeline:updated", { current: this.getEdit() });
+		// Notify listeners that edit has been reloaded (use resolved values for Timeline)
+		this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
 	}
 	public getEdit(): EditType {
-		// Use the actual tracks array to preserve empty tracks
-		const tracks: TrackType[] = this.tracks.map((track, _trackIndex) => {
-			const clipsOnTrack = track.filter(player => player && !this.clipsToDispose.includes(player)).map(player => player.clipConfiguration);
-			return { clips: clipsOnTrack };
-		});
+		return this.buildEditSnapshot(player => player.getTimingIntent());
+	}
+
+	public getResolvedEdit(): EditType {
+		return this.buildEditSnapshot(player => ({
+			start: player.getStart() / 1000,
+			length: player.getLength() / 1000
+		}));
+	}
+
+	private buildEditSnapshot(getClipTiming: (player: Player) => { start: number | "auto"; length: number | "auto" | "end" }): EditType {
+		const tracks: TrackType[] = this.tracks.map(track => ({
+			clips: track
+				.filter(player => player && !this.clipsToDispose.includes(player))
+				.map(player => {
+					const timing = getClipTiming(player);
+					return {
+						...player.clipConfiguration,
+						start: timing.start,
+						length: timing.length
+					};
+				})
+		}));
 
 		return {
 			timeline: {
@@ -364,8 +388,25 @@ export class Edit extends Entity {
 			createPlayerFromAssetType: clipConfiguration => this.createPlayerFromAssetType(clipConfiguration),
 			queueDisposeClip: player => this.queueDisposeClip(player),
 			disposeClips: () => this.disposeClips(),
-			undeleteClip: (_trackIdx, clip) => {
+			undeleteClip: (trackIdx, clip) => {
 				this.clips.push(clip);
+
+				if (trackIdx >= 0 && trackIdx < this.tracks.length) {
+					const track = this.tracks[trackIdx];
+					let insertIdx = track.length;
+					for (let i = 0; i < track.length; i += 1) {
+						if (track[i].getStart() > clip.getStart()) {
+							insertIdx = i;
+							break;
+						}
+					}
+					track.splice(insertIdx, 0, clip);
+				}
+
+				this.addPlayerToContainer(trackIdx, clip);
+
+				clip.load();
+
 				this.updateTotalDuration();
 			},
 			setUpdatedClip: clip => {
@@ -385,7 +426,11 @@ export class Edit extends Entity {
 				this.selectedClip = clip;
 			},
 			movePlayerToTrackContainer: (player, fromTrackIdx, toTrackIdx) => this.movePlayerToTrackContainer(player, fromTrackIdx, toTrackIdx),
-			getEditState: () => this.getEdit()
+			getEditState: () => this.getResolvedEdit(),
+			propagateTimingChanges: (trackIndex, startFromClipIndex) => this.propagateTimingChanges(trackIndex, startFromClipIndex),
+			resolveClipAutoLength: clip => this.resolveClipAutoLength(clip),
+			untrackEndLengthClip: clip => this.endLengthClips.delete(clip),
+			trackEndLengthClip: clip => this.endLengthClips.add(clip)
 		};
 	}
 
@@ -402,6 +447,17 @@ export class Edit extends Entity {
 		}
 
 		this.clips = this.clips.filter((clip: Player) => !this.clipsToDispose.includes(clip));
+
+		for (const clip of this.clipsToDispose) {
+			const trackIdx = clip.layer - 1;
+			if (trackIdx >= 0 && trackIdx < this.tracks.length) {
+				const clipIdx = this.tracks[trackIdx].indexOf(clip);
+				if (clipIdx !== -1) {
+					this.tracks[trackIdx].splice(clipIdx, 1);
+				}
+			}
+		}
+
 		this.clipsToDispose = [];
 		this.updateTotalDuration();
 	}
@@ -425,6 +481,13 @@ export class Edit extends Entity {
 		}
 
 		this.unloadClipAssets(clip);
+
+		// Remove from endLengthClips tracking
+		this.endLengthClips.delete(clip);
+
+		// Invalidate cache since timeline end may have changed
+		this.cachedTimelineEnd = 0;
+
 		clip.dispose();
 	}
 	private unloadClipAssets(clip: Player): void {
@@ -463,6 +526,104 @@ export class Edit extends Entity {
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {
 			this.events.emit("duration:changed", { duration: this.totalDuration });
+		}
+	}
+
+	private async resolveAllTiming(): Promise<void> {
+		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
+			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
+				const clip = this.tracks[trackIdx][clipIdx];
+				const intent = clip.getTimingIntent();
+
+				let resolvedStart: number;
+				if (intent.start === "auto") {
+					resolvedStart = resolveAutoStart(trackIdx, clipIdx, this.tracks);
+				} else {
+					resolvedStart = intent.start * 1000;
+				}
+
+				let resolvedLength: number;
+				if (intent.length === "auto") {
+					resolvedLength = await resolveAutoLength(clip.clipConfiguration.asset);
+				} else if (intent.length === "end") {
+					resolvedLength = 0;
+				} else {
+					resolvedLength = intent.length * 1000;
+				}
+
+				clip.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
+			}
+		}
+
+		const timelineEnd = calculateTimelineEnd(this.tracks);
+
+		this.cachedTimelineEnd = timelineEnd;
+
+		for (const clip of [...this.endLengthClips]) {
+			const resolved = clip.getResolvedTiming();
+			clip.setResolvedTiming({
+				start: resolved.start,
+				length: resolveEndLength(resolved.start, timelineEnd)
+			});
+		}
+	}
+
+	public propagateTimingChanges(trackIndex: number, startFromClipIndex: number): void {
+		const track = this.tracks[trackIndex];
+		if (!track) return;
+
+		for (let i = Math.max(0, startFromClipIndex + 1); i < track.length; i += 1) {
+			const clip = track[i];
+			if (clip.getTimingIntent().start === "auto") {
+				const newStart = resolveAutoStart(trackIndex, i, this.tracks);
+				clip.setResolvedTiming({
+					start: newStart,
+					length: clip.getLength()
+				});
+				clip.reconfigureAfterRestore();
+			}
+		}
+
+		const newTimelineEnd = calculateTimelineEnd(this.tracks);
+		if (newTimelineEnd !== this.cachedTimelineEnd) {
+			this.cachedTimelineEnd = newTimelineEnd;
+
+			for (const clip of [...this.endLengthClips]) {
+				const newLength = resolveEndLength(clip.getStart(), newTimelineEnd);
+				const currentLength = clip.getLength();
+
+				if (Math.abs(newLength - currentLength) > 1) {
+					clip.setResolvedTiming({
+						start: clip.getStart(),
+						length: newLength
+					});
+					clip.reconfigureAfterRestore();
+				}
+			}
+		}
+
+		this.updateTotalDuration();
+
+		// Notify Timeline to update visuals with new timing (use resolved values)
+		this.events.emit("timeline:updated", {
+			current: this.getResolvedEdit()
+		});
+	}
+
+	public async resolveClipAutoLength(clip: Player): Promise<void> {
+		const intent = clip.getTimingIntent();
+		if (intent.length !== "auto") return;
+
+		const newLength = await resolveAutoLength(clip.clipConfiguration.asset);
+		clip.setResolvedTiming({
+			start: clip.getStart(),
+			length: newLength
+		});
+		clip.reconfigureAfterRestore();
+
+		const indices = this.findClipIndices(clip);
+		if (indices) {
+			this.propagateTimingChanges(indices.trackIndex, indices.clipIndex);
 		}
 	}
 
@@ -560,6 +721,10 @@ export class Edit extends Entity {
 		this.tracks[trackIdx].push(clipToAdd);
 
 		this.clips.push(clipToAdd);
+
+		if (clipToAdd.getTimingIntent().length === "end") {
+			this.endLengthClips.add(clipToAdd);
+		}
 
 		const zIndex = 100000 - (trackIdx + 1) * Edit.ZIndexPadding;
 

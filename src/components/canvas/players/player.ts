@@ -2,10 +2,11 @@ import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit";
+import { type ResolvedTiming, type TimingIntent } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import { type Clip } from "@schemas/clip";
+import { type Clip, type ResolvedClipConfig } from "@schemas/clip";
 import { type Keyframe } from "@schemas/keyframe";
 import * as pixi from "pixi.js";
 
@@ -38,6 +39,9 @@ export abstract class Player extends Entity {
 
 	protected edit: Edit;
 	public clipConfiguration: Clip;
+
+	private timingIntent: TimingIntent;
+	private resolvedTiming: ResolvedTiming;
 
 	private positionBuilder: PositionBuilder;
 	private offsetXKeyframeBuilder?: KeyframeBuilder;
@@ -77,6 +81,15 @@ export abstract class Player extends Entity {
 
 		this.clipConfiguration = clipConfiguration;
 		this.positionBuilder = new PositionBuilder(edit.size);
+
+		this.timingIntent = {
+			start: clipConfiguration.start,
+			length: clipConfiguration.length
+		};
+
+		const startValue = typeof clipConfiguration.start === "number" ? clipConfiguration.start * 1000 : 0;
+		const lengthValue = typeof clipConfiguration.length === "number" ? clipConfiguration.length * 1000 : 3000;
+		this.resolvedTiming = { start: startValue, length: lengthValue };
 
 		this.outline = null;
 		this.topLeftScaleHandle = null;
@@ -125,14 +138,20 @@ export abstract class Player extends Entity {
 		const scaleKeyframes: Keyframe[] = [];
 		const rotationKeyframes: Keyframe[] = [];
 
-		const effectKeyframeSet = new EffectPresetBuilder(this.clipConfiguration).build(this.edit.size, this.getSize());
+		const resolvedClipConfig: ResolvedClipConfig = {
+			...this.clipConfiguration,
+			start: this.getStart() / 1000,
+			length: this.getLength() / 1000
+		};
+
+		const effectKeyframeSet = new EffectPresetBuilder(resolvedClipConfig).build(this.edit.size, this.getSize());
 		offsetXKeyframes.push(...effectKeyframeSet.offsetXKeyframes);
 		offsetYKeyframes.push(...effectKeyframeSet.offsetYKeyframes);
 		opacityKeyframes.push(...effectKeyframeSet.opacityKeyframes);
 		scaleKeyframes.push(...effectKeyframeSet.scaleKeyframes);
 		rotationKeyframes.push(...effectKeyframeSet.rotationKeyframes);
 
-		const transitionKeyframeSet = new TransitionPresetBuilder(this.clipConfiguration).build();
+		const transitionKeyframeSet = new TransitionPresetBuilder(resolvedClipConfig).build();
 		offsetXKeyframes.push(...transitionKeyframeSet.offsetXKeyframes);
 		offsetYKeyframes.push(...transitionKeyframeSet.offsetYKeyframes);
 		opacityKeyframes.push(...transitionKeyframeSet.opacityKeyframes);
@@ -161,6 +180,11 @@ export abstract class Player extends Entity {
 	}
 
 	public override async load(): Promise<void> {
+		if (this.contentContainer?.destroyed) {
+			this.contentContainer = new pixi.Container();
+			this.getContainer().addChild(this.contentContainer);
+		}
+
 		this.outline = new pixi.Graphics();
 		this.getContainer().addChild(this.outline);
 
@@ -328,15 +352,43 @@ export abstract class Player extends Entity {
 	}
 
 	public getStart(): number {
-		return this.clipConfiguration.start * 1000;
+		return this.resolvedTiming.start;
 	}
 
 	public getLength(): number {
-		return this.clipConfiguration.length * 1000;
+		return this.resolvedTiming.length;
 	}
 
 	public getEnd(): number {
-		return this.getStart() + this.getLength();
+		return this.resolvedTiming.start + this.resolvedTiming.length;
+	}
+
+	public getTimingIntent(): TimingIntent {
+		return { ...this.timingIntent };
+	}
+
+	public setTimingIntent(intent: Partial<TimingIntent>): void {
+		if (intent.start !== undefined) {
+			this.timingIntent.start = intent.start;
+		}
+		if (intent.length !== undefined) {
+			this.timingIntent.length = intent.length;
+		}
+	}
+
+	public getResolvedTiming(): ResolvedTiming {
+		return { ...this.resolvedTiming };
+	}
+
+	public setResolvedTiming(timing: ResolvedTiming): void {
+		this.resolvedTiming = { ...timing };
+	}
+
+	public convertToFixedTiming(): void {
+		this.timingIntent = {
+			start: this.resolvedTiming.start / 1000,
+			length: this.resolvedTiming.length / 1000
+		};
 	}
 
 	public getPlaybackTime(): number {
