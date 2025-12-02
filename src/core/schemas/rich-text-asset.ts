@@ -67,7 +67,7 @@ const RichTextBackgroundSchema = zod
 	.object({
 		color: HexColorSchema.optional(),
 		opacity: zod.number().min(0).max(1).default(1),
-		border: RichTextBorderSchema.optional()
+		border: RichTextBorderSchema.default({ width: 0, color: "#000000", opacity: 1 })
 	})
 	.strict();
 
