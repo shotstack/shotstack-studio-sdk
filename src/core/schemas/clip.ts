@@ -95,10 +95,14 @@ export const ClipSchema = zod
 	.strict()
 	.transform(data => ({
 		...data,
-		fit: data.fit ?? (data.asset.type === "rich-text" ? "none" : "crop"),
-		start: data.start as number,
-		length: data.length as number
+		fit: data.fit ?? (data.asset.type === "rich-text" ? "none" : "crop")
 	}));
 
 export type ClipAnchor = zod.infer<typeof ClipAnchorSchema>;
 export type Clip = zod.infer<typeof ClipSchema>;
+
+/** Clip with resolved numeric timing values in seconds (no "auto" or "end") */
+export type ResolvedClipConfig = Omit<Clip, "start" | "length"> & {
+	start: number;
+	length: number;
+};

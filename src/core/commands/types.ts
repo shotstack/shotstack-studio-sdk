@@ -39,4 +39,8 @@ export type CommandContext = {
 	setSelectedClip(clip: Player | null): void;
 	movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void;
 	getEditState(): EditType;
+	propagateTimingChanges(trackIndex: number, startFromClipIndex: number): void;
+	resolveClipAutoLength(clip: Player): Promise<void>;
+	untrackEndLengthClip(clip: Player): void;
+	trackEndLengthClip(clip: Player): void;
 };

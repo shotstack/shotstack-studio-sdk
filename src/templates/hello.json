@@ -26,8 +26,7 @@
 							},
 							"background": {
 								"color": "#1a1a2e",
-								"opacity": 1,
-								"borderRadius": 0
+								"opacity": 1
 							},
 							"align": {
 								"horizontal": "center",

@@ -117,13 +117,14 @@ export class VisualTrackManager {
 
 		const result = visualTrack.findClipAtPosition(x, relativeY);
 		if (result) {
+			const clipConfig = result.clip.getClipConfig();
 			return {
 				trackIndex,
 				clipIndex: result.clipIndex,
-				clipConfig: result.clip.getClipConfig(),
-				x: (result.clip.getClipConfig().start || 0) * this.getPixelsPerSecond(),
+				clipConfig,
+				x: clipConfig.start * this.getPixelsPerSecond(),
 				y: trackIndex * this.layout.trackHeight,
-				width: (result.clip.getClipConfig().length || 0) * this.getPixelsPerSecond(),
+				width: clipConfig.length * this.getPixelsPerSecond(),
 				height: this.layout.trackHeight
 			};
 		}

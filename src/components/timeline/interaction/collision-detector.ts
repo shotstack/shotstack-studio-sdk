@@ -67,12 +67,12 @@ export class CollisionDetector {
 			.filter(({ index }: { index: number }) => index !== excludeClipIndex)
 			.map(({ clip }) => {
 				const config = clip.getClipConfig();
-				return config
-					? {
-							start: config.start || 0,
-							end: (config.start || 0) + (config.length || 0)
-						}
-					: null;
+				if (!config) return null;
+				const start = config.start;
+				return {
+					start,
+					end: start + config.length
+				};
 			})
 			.filter((clip: ClipBounds | null): clip is ClipBounds => clip !== null)
 			.sort((a: ClipBounds, b: ClipBounds) => a.start - b.start);

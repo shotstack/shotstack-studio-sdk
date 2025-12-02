@@ -4,12 +4,12 @@ import * as PIXI from "pixi.js";
 
 import { TimelineTheme } from "../../../core/theme";
 import { TimelineLayout } from "../timeline-layout";
-import { ClipConfig, TimelineOptions } from "../types/timeline";
+import { ResolvedClipConfig, TimelineOptions } from "../types/timeline";
 
 // Visual component interfaces
 export interface VisualClip {
 	getContainer(): PIXI.Container;
-	getClipConfig(): ClipConfig | null;
+	getClipConfig(): ResolvedClipConfig | null;
 	setResizing(resizing: boolean): void;
 	setPreviewWidth(width: number | null): void;
 }
@@ -36,7 +36,7 @@ export interface TimelineInterface {
 	getTheme(): TimelineTheme;
 	getOptions(): TimelineOptions;
 	getVisualTracks(): VisualTrack[];
-	getClipData(trackIndex: number, clipIndex: number): ClipConfig | null;
+	getClipData(trackIndex: number, clipIndex: number): ResolvedClipConfig | null;
 	getPlayheadTime(): number;
 	getExtendedTimelineWidth(): number;
 	getContainer(): PIXI.Container;

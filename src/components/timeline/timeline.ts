@@ -15,7 +15,7 @@ import {
 	TimelineOptionsManager
 } from "./managers";
 import { TimelineLayout } from "./timeline-layout";
-import { EditType, TimelineOptions, ClipInfo, ClipConfig } from "./types/timeline";
+import { EditType, TimelineOptions, ClipInfo, ResolvedClipConfig } from "./types/timeline";
 import { VisualTrack } from "./visual/visual-track";
 
 export class Timeline extends Entity {
@@ -112,7 +112,7 @@ export class Timeline extends Entity {
 
 		// Try to render initial state from Edit
 		try {
-			const currentEdit = this.edit.getEdit();
+			const currentEdit = this.edit.getResolvedEdit();
 			if (currentEdit) {
 				// Cache the initial state for tools to query
 				this.currentEditType = currentEdit;
@@ -211,11 +211,10 @@ export class Timeline extends Entity {
 		return this.renderer.getOverlayLayer();
 	}
 
-	// Interaction integration methods
-	public getClipData(trackIndex: number, clipIndex: number): ClipConfig | null {
+	public getClipData(trackIndex: number, clipIndex: number): ResolvedClipConfig | null {
 		if (!this.currentEditType?.timeline?.tracks) return null;
 		const track = this.currentEditType.timeline.tracks[trackIndex];
-		return track?.clips?.[clipIndex] || null;
+		return (track?.clips?.[clipIndex] as ResolvedClipConfig) || null;
 	}
 
 	// Layout access for interactions
@@ -276,8 +275,8 @@ export class Timeline extends Entity {
 		// Clean up drag preview before rebuilding
 		this.dragPreviewManager.hideDragPreview();
 
-		// Get current edit state
-		const currentEdit = editType || this.edit.getEdit();
+		// Get current edit state (always use resolved values for positioning)
+		const currentEdit = editType || this.edit.getResolvedEdit();
 		if (!currentEdit) return;
 
 		// Cache current state

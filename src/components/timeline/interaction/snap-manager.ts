@@ -22,14 +22,15 @@ export class SnapManager {
 
 				const clipConfig = clip.getClipConfig();
 				if (clipConfig) {
+					const start = clipConfig.start;
 					snapPoints.push({
-						time: clipConfig.start || 0,
+						time: start,
 						type: "clip-start",
 						trackIndex: trackIdx,
 						clipIndex: clipIdx
 					});
 					snapPoints.push({
-						time: (clipConfig.start || 0) + (clipConfig.length || 0),
+						time: start + clipConfig.length,
 						type: "clip-end",
 						trackIndex: trackIdx,
 						clipIndex: clipIdx
@@ -102,8 +103,8 @@ export class SnapManager {
 				const config = clip.getClipConfig();
 				if (!config) return;
 
-				const otherStart = config.start || 0;
-				const otherEnd = otherStart + (config.length || 0);
+				const otherStart = config.start;
+				const otherEnd = otherStart + config.length;
 
 				// Check alignments
 				[

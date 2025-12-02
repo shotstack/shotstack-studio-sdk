@@ -58,14 +58,15 @@ export class DragHandler implements InteractionHandler {
 		// Calculate offset from clip start to mouse position
 		const localPos = this.timeline.getContainer().toLocal(event.global);
 		const layout = this.timeline.getLayout();
-		const clipStartX = layout.getXAtTime(clipData.start || 0);
+		const clipStart = clipData.start;
+		const clipStartX = layout.getXAtTime(clipStart);
 		// Use relative position within tracks area, not absolute position
 		const clipStartY = clipInfo.trackIndex * layout.trackHeight;
 
 		this.dragInfo = {
 			trackIndex: clipInfo.trackIndex,
 			clipIndex: clipInfo.clipIndex,
-			startTime: clipData.start || 0,
+			startTime: clipStart,
 			offsetX: localPos.x - clipStartX,
 			offsetY: localPos.y - clipStartY
 		};
@@ -186,7 +187,7 @@ export class DragHandler implements InteractionHandler {
 		// Get clip duration for calculations
 		const clipConfig = this.timeline.getClipData(this.dragInfo.trackIndex, this.dragInfo.clipIndex);
 		if (!clipConfig) return;
-		const clipDuration = clipConfig.length || 0;
+		const clipDuration = clipConfig.length;
 
 		// Calculate final position with snapping and collision prevention
 		const excludeIndex = position.track === this.dragInfo.trackIndex ? this.dragInfo.clipIndex : undefined;
@@ -207,11 +208,14 @@ export class DragHandler implements InteractionHandler {
 		this.timeline.showDragGhost(position.track, finalTime, position.ghostY);
 	}
 
-	private calculateFinalPosition(time: number, track: number, clipDuration: number, excludeIndex?: number): number {
-		// First apply snapping
+	private calculateFinalPosition(time: number, track: number, clipDuration: number, excludeIndex?: number, originalTrackIndex?: number): number {
 		const snapResult = this.snapManager.calculateSnapPosition(time, track, clipDuration, excludeIndex);
 
-		// Then ensure no overlaps
+		const sourceTrack = originalTrackIndex ?? this.dragInfo?.trackIndex;
+		if (sourceTrack !== undefined && track === sourceTrack) {
+			return Math.max(0, snapResult.time);
+		}
+
 		const validPosition = this.collisionDetector.getValidDropPosition(snapResult.time, clipDuration, track, excludeIndex);
 
 		return validPosition.validTime;
@@ -222,7 +226,7 @@ export class DragHandler implements InteractionHandler {
 
 		const clipConfig = this.timeline.getClipData(this.dragInfo.trackIndex, this.dragInfo.clipIndex);
 		if (!clipConfig) return;
-		const clipDuration = clipConfig.length || 0;
+		const clipDuration = clipConfig.length;
 
 		const finalTime = dropZone
 			? position.time
@@ -249,9 +253,10 @@ export class DragHandler implements InteractionHandler {
 		const clipConfig = this.timeline.getClipData(dragInfo.trackIndex, dragInfo.clipIndex);
 		if (!clipConfig) return;
 
-		const clipDuration = clipConfig.length || 0;
+		const clipDuration = clipConfig.length;
 		const excludeIndex = position.track === dragInfo.trackIndex ? dragInfo.clipIndex : undefined;
-		const finalTime = this.calculateFinalPosition(position.time, position.track, clipDuration, excludeIndex);
+		// Pass dragInfo.trackIndex as originalTrackIndex since this.dragInfo is cleared before this call
+		const finalTime = this.calculateFinalPosition(position.time, position.track, clipDuration, excludeIndex, dragInfo.trackIndex);
 
 		// Only execute if position changed
 		const hasChanged = position.track !== dragInfo.trackIndex || Math.abs(finalTime - dragInfo.startTime) > 0.01;

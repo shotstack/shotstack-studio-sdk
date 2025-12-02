@@ -6,7 +6,7 @@ import { z } from "zod";
 import { TimelineTheme } from "../../../core/theme";
 import { TRACK_CONSTANTS } from "../constants";
 import { SelectionOverlayRenderer } from "../managers/selection-overlay-renderer";
-import { ClipConfig } from "../types/timeline";
+import { ResolvedClipConfig } from "../types/timeline";
 
 import { VisualClip, VisualClipOptions } from "./visual-clip";
 
@@ -102,7 +102,7 @@ export class VisualTrack extends Entity {
 					selectionRenderer: this.options.selectionRenderer
 				};
 
-				const visualClip = new VisualClip(clipConfig, visualClipOptions);
+				const visualClip = new VisualClip(clipConfig as ResolvedClipConfig, visualClipOptions);
 				this.addClip(visualClip);
 			});
 		}
@@ -144,7 +144,7 @@ export class VisualTrack extends Entity {
 		}
 	}
 
-	public updateClip(clipIndex: number, newClipConfig: ClipConfig): void {
+	public updateClip(clipIndex: number, newClipConfig: ResolvedClipConfig): void {
 		if (clipIndex >= 0 && clipIndex < this.clips.length) {
 			const clip = this.clips[clipIndex];
 			clip.updateFromConfig(newClipConfig);
@@ -260,8 +260,8 @@ export class VisualTrack extends Entity {
 		for (let i = 0; i < this.clips.length; i += 1) {
 			const clip = this.clips[i];
 			const clipConfig = clip.getClipConfig();
-			const clipStart = clipConfig.start || 0;
-			const clipEnd = clipStart + (clipConfig.length || 0);
+			const clipStart = clipConfig.start;
+			const clipEnd = clipStart + clipConfig.length;
 
 			if (time >= clipStart && time <= clipEnd) {
 				return { clip, clipIndex: i };
