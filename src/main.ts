@@ -5,7 +5,7 @@ import { Edit, Canvas, Controls, VideoExporter } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide
- * Run with `make dev` to see it in action
+ * Run with `npm run dev` to see it in action
  */
 async function main() {
 	try {
