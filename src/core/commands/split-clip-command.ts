@@ -26,8 +26,8 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		const clipConfig = player.clipConfiguration;
-		const clipStart = clipConfig.start || 0;
-		const clipLength = clipConfig.length;
+		const clipStart = typeof clipConfig.start === "number" ? clipConfig.start : 0;
+		const clipLength = typeof clipConfig.length === "number" ? clipConfig.length : player.getLength() / 1000;
 
 		// Validate split point
 		const MIN_CLIP_LENGTH = 0.1;

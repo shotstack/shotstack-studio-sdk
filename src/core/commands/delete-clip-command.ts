@@ -19,12 +19,20 @@ export class DeleteClipCommand implements EditCommand {
 
 		if (this.deletedClip) {
 			context.queueDisposeClip(this.deletedClip);
+			context.disposeClips();
 			context.updateDuration();
+
+			// Propagate timing changes to clips that were after the deleted clip
+			// Use clipIdx - 1 because the clip at clipIdx no longer exists
+			context.propagateTimingChanges(this.trackIdx, this.clipIdx - 1);
 		}
 	}
 
 	undo(context?: CommandContext): void {
 		if (!context || !this.deletedClip) return;
 		context.undeleteClip(this.trackIdx, this.deletedClip);
+
+		// Propagate timing changes after restoring the clip
+		context.propagateTimingChanges(this.trackIdx, this.clipIdx);
 	}
 }

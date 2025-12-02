@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import type { TimingIntent } from "@core/timing/types";
 
 import type { EditCommand, CommandContext } from "./types";
 
@@ -7,7 +8,8 @@ export class MoveClipCommand implements EditCommand {
 	private player?: Player;
 	private originalTrackIndex: number;
 	private originalClipIndex: number;
-	private originalStart?: number;
+	private originalStart?: number | "auto";
+	private originalTimingIntent?: TimingIntent;
 
 	constructor(
 		private fromTrackIndex: number,
@@ -40,6 +42,9 @@ export class MoveClipCommand implements EditCommand {
 		this.player = fromTrack[this.fromClipIndex];
 		this.originalStart = this.player.clipConfiguration.start;
 
+		// Store original timing intent for undo
+		this.originalTimingIntent = this.player.getTimingIntent();
+
 		// If moving to a different track
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			// Validate destination track
@@ -61,10 +66,9 @@ export class MoveClipCommand implements EditCommand {
 			let insertIndex = 0;
 			for (let i = 0; i < toTrack.length; i += 1) {
 				const clip = toTrack[i];
-				if (clip.clipConfiguration && clip.clipConfiguration.start !== undefined) {
-					if (this.newStart < clip.clipConfiguration.start) {
-						break;
-					}
+				const clipStart = clip.getStart() / 1000; // Use resolved start time in seconds
+				if (this.newStart < clipStart) {
+					break;
 				}
 				insertIndex += 1;
 			}
@@ -74,10 +78,50 @@ export class MoveClipCommand implements EditCommand {
 
 			// Store the new clip index for undo
 			this.originalClipIndex = insertIndex;
+		} else {
+			// Same track - need to reorder if position changed
+			const track = fromTrack;
+
+			// Remove from current position
+			track.splice(this.fromClipIndex, 1);
+
+			// Find new insertion point based on start time
+			let insertIndex = 0;
+			for (let i = 0; i < track.length; i += 1) {
+				const clip = track[i];
+				const clipStart = clip.getStart() / 1000;
+				if (this.newStart < clipStart) {
+					break;
+				}
+				insertIndex += 1;
+			}
+
+			// Insert at correct position
+			track.splice(insertIndex, 0, this.player);
+
+			// Store new index
+			this.originalClipIndex = insertIndex;
 		}
 
 		// Update the clip position
 		this.player.clipConfiguration.start = this.newStart;
+
+		// Update resolved timing to match the new position
+		this.player.setResolvedTiming({
+			start: this.newStart * 1000,
+			length: this.player.getLength()
+		});
+
+		// Update timing intent to match new position
+		this.player.setTimingIntent({
+			start: this.newStart,
+			length: this.player.getTimingIntent().length
+		});
+
+		// If timing intent changed from "end" to fixed, untrack from endLengthClips Set
+		if (this.originalTimingIntent?.length === "end" && this.player.getTimingIntent().length !== "end") {
+			context.untrackEndLengthClip(this.player);
+		}
 
 		// Move the player container to the new track container if needed
 		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
@@ -102,6 +146,14 @@ export class MoveClipCommand implements EditCommand {
 			});
 		}
 
+		// Propagate timing changes to dependent clips
+		// Need to propagate on both source and destination tracks if they differ
+		if (this.fromTrackIndex !== this.toTrackIndex) {
+			context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex - 1);
+		}
+		context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex);
+
+		// Emit events AFTER all changes complete to avoid partial rebuilds
 		context.emitEvent("clip:updated", {
 			previous: {
 				clip: { ...this.player.clipConfiguration, start: this.originalStart },
@@ -113,6 +165,13 @@ export class MoveClipCommand implements EditCommand {
 				trackIndex: this.toTrackIndex,
 				clipIndex: this.originalClipIndex
 			}
+		});
+
+		// Re-select the moved clip at its new position
+		context.setSelectedClip(this.player);
+		context.emitEvent("clip:selected", {
+			trackIndex: this.toTrackIndex,
+			clipIndex: this.originalClipIndex
 		});
 	}
 
@@ -136,10 +195,35 @@ export class MoveClipCommand implements EditCommand {
 			// Add back to original track at original position
 			const originalTrack = tracks[this.fromTrackIndex];
 			originalTrack.splice(this.fromClipIndex, 0, this.player);
+		} else {
+			// Same track - need to reorder back to original position
+			const track = tracks[this.fromTrackIndex];
+			const currentIndex = track.indexOf(this.player);
+			if (currentIndex !== -1) {
+				track.splice(currentIndex, 1);
+			}
+
+			// Insert at original position
+			track.splice(this.fromClipIndex, 0, this.player);
 		}
 
 		// Restore original position
 		this.player.clipConfiguration.start = this.originalStart;
+
+		// Restore original timing intent
+		if (this.originalTimingIntent) {
+			this.player.setTimingIntent(this.originalTimingIntent);
+			// Update resolved timing to match
+			this.player.setResolvedTiming({
+				start: typeof this.originalTimingIntent.start === "number" ? this.originalTimingIntent.start * 1000 : this.player.getStart(),
+				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length * 1000 : this.player.getLength()
+			});
+
+			// If restoring "end" length, re-track in endLengthClips Set
+			if (this.originalTimingIntent.length === "end") {
+				context.trackEndLengthClip(this.player);
+			}
+		}
 
 		// Move the player container back to the original track container if needed
 		context.movePlayerToTrackContainer(this.player, this.toTrackIndex, this.fromTrackIndex);
@@ -149,6 +233,14 @@ export class MoveClipCommand implements EditCommand {
 		this.player.draw();
 
 		context.updateDuration();
+
+		// Propagate timing changes on both tracks
+		if (this.fromTrackIndex !== this.toTrackIndex) {
+			context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex - 1);
+		}
+		context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex);
+
+		// Emit events AFTER all changes complete to avoid partial rebuilds
 		context.emitEvent("clip:updated", {
 			previous: {
 				clip: { ...this.player.clipConfiguration, start: this.newStart },
@@ -160,6 +252,13 @@ export class MoveClipCommand implements EditCommand {
 				trackIndex: this.fromTrackIndex,
 				clipIndex: this.fromClipIndex
 			}
+		});
+
+		// Re-select the clip at its restored position
+		context.setSelectedClip(this.player);
+		context.emitEvent("clip:selected", {
+			trackIndex: this.fromTrackIndex,
+			clipIndex: this.fromClipIndex
 		});
 	}
 }
