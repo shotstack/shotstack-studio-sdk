@@ -1,9 +1,4 @@
 /**
- * Timing types for auto/end clip resolution.
- * @internal
- */
-
-/**
  * A timing value can be a numeric value (in seconds) or a special string.
  * - "auto" for start: position after previous clip on track
  * - "auto" for length: asset's intrinsic duration
