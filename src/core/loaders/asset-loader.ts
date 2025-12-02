@@ -13,6 +13,10 @@ export class AssetLoader {
 	};
 	public readonly loadTracker = new AssetLoadTracker();
 
+	constructor() {
+		pixi.Assets.setPreferences({ crossOrigin: "anonymous" });
+	}
+
 	public async load<TResolvedAsset>(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<TResolvedAsset | null> {
 		this.updateAssetLoadMetadata(identifier, "pending", 0);
 
