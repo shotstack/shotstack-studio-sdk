@@ -23,7 +23,16 @@ const RichTextFontSchema = zod
 		size: zod.number().min(8).max(500).default(48),
 		weight: zod.union([zod.string(), zod.number()]).default("400"),
 		color: HexColorSchema.default("#000000"),
-		opacity: zod.number().min(0).max(1).default(1)
+		opacity: zod.number().min(0).max(1).default(1),
+		background: HexColorSchema.optional(),
+		stroke: zod
+			.object({
+				width: zod.number().min(0).default(0),
+				color: HexColorSchema.default("#000000"),
+				opacity: zod.number().min(0).max(1).default(1)
+			})
+			.strict()
+			.optional()
 	})
 	.strict();
 
@@ -59,7 +68,8 @@ const RichTextBorderSchema = zod
 	.object({
 		width: zod.number().min(0).default(0),
 		color: HexColorSchema.default("#000000"),
-		opacity: zod.number().min(0).max(1).default(1)
+		opacity: zod.number().min(0).max(1).default(1),
+		radius: zod.number().min(0).default(0),
 	})
 	.strict();
 
@@ -67,7 +77,6 @@ const RichTextBackgroundSchema = zod
 	.object({
 		color: HexColorSchema.optional(),
 		opacity: zod.number().min(0).max(1).default(1),
-		border: RichTextBorderSchema.default({ width: 0, color: "#000000", opacity: 1 })
 	})
 	.strict();
 
@@ -93,7 +102,6 @@ const RichTextAlignmentSchema = zod
 const RichTextAnimationSchema = zod
 	.object({
 		preset: zod.enum(["fadeIn", "slideIn", "typewriter", "shift", "ascend", "movingLetters", "bounce", "elastic", "pulse"]),
-		speed: zod.number().min(0.1).max(10).default(1),
 		duration: zod.number().min(0.1).max(60).optional(),
 		style: zod.enum(["character", "word"]).optional(),
 		direction: zod.enum(["left", "right", "up", "down"]).optional()
@@ -106,9 +114,9 @@ export const RichTextAssetSchema = zod
 		text: zod.string().max(10000).default(""),
 		font: RichTextFontSchema.optional(),
 		style: RichTextStyleSchema.optional(),
-		stroke: RichTextStrokeSchema.optional(),
 		shadow: RichTextShadowSchema.optional(),
 		background: RichTextBackgroundSchema.optional(),
+		border: RichTextBorderSchema.optional(),
 		padding: RichTextPaddingSchema.optional(),
 		align: RichTextAlignmentSchema.optional(),
 		animation: RichTextAnimationSchema.optional()
