@@ -143,6 +143,10 @@ export class VideoPlayer extends Player {
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 
+	protected override supportsEdgeResize(): boolean {
+		return true;
+	}
+
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
 	}

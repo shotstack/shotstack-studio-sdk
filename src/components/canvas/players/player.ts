@@ -985,13 +985,18 @@ export abstract class Player extends Entity {
 		const nativeHeight = sprite.texture.height;
 		const fit = this.clipConfiguration.fit || "crop";
 
-		if (!this.contentContainer.mask) {
-			const clipMask = new pixi.Graphics();
-			clipMask.rect(0, 0, clipWidth, clipHeight);
-			clipMask.fill(0xffffff);
+		// Get or create the mask
+		let clipMask = this.contentContainer.mask as pixi.Graphics;
+		if (!clipMask) {
+			clipMask = new pixi.Graphics();
 			this.contentContainer.addChild(clipMask);
 			this.contentContainer.mask = clipMask;
 		}
+
+		// Update mask to current dimensions
+		clipMask.clear();
+		clipMask.rect(0, 0, clipWidth, clipHeight);
+		clipMask.fill(0xffffff);
 
 		// keep animation code exactly as-is
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
