@@ -1,3 +1,4 @@
+import type { Canvas } from "@canvas/shotstack-canvas";
 import { AudioPlayer } from "@canvas/players/audio-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
@@ -71,6 +72,8 @@ export class Edit extends Entity {
 	// Performance optimization: cache timeline end and track "end" length clips
 	private cachedTimelineEnd: number = 0;
 	private endLengthClips: Set<Player> = new Set();
+
+	private canvas: Canvas | null = null;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -807,6 +810,14 @@ export class Edit extends Entity {
 	}
 	public isInExportMode(): boolean {
 		return this.isExporting;
+	}
+
+	public setCanvas(canvas: Canvas): void {
+		this.canvas = canvas;
+	}
+
+	public getCanvasZoom(): number {
+		return this.canvas?.getZoom() ?? 1;
 	}
 
 	private setupIntentListeners(): void {

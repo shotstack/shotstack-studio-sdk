@@ -18,7 +18,7 @@ async function main() {
 		await edit.load();
 
 		// 3. Create a canvas to display the edit
-		const canvas = new Canvas(template.output.size, edit);
+		const canvas = new Canvas(edit);
 		await canvas.load(); // Renders to [data-shotstack-studio] element
 
 		// 4. Load the template

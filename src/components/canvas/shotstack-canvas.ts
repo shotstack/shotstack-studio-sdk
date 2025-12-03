@@ -13,7 +13,7 @@ export class Canvas {
 
 	private static extensionsRegistered = false;
 
-	private readonly size: Size;
+	private viewportSize: Size = { width: 0, height: 0 };
 	/** @internal */
 	public readonly application: pixi.Application;
 
@@ -26,18 +26,17 @@ export class Canvas {
 
 	private minZoom = 0.1;
 	private maxZoom = 4;
-	private currentZoom = 0.8;
+	private currentZoom = 1;
 
 	private onTickBound: (ticker: pixi.Ticker) => void;
 
-	constructor(size: Size, edit: Edit) {
-		this.size = size;
+	constructor(edit: Edit) {
 		this.application = new pixi.Application();
-
 		this.edit = edit;
 		this.inspector = new Inspector();
-
 		this.onTickBound = this.onTick.bind(this);
+
+		edit.setCanvas(this);
 	}
 
 	public async load(): Promise<void> {
@@ -46,19 +45,22 @@ export class Canvas {
 			throw new Error(`Shotstack canvas root element '${Canvas.CanvasSelector}' not found.`);
 		}
 
+		const rect = root.getBoundingClientRect();
+		this.viewportSize =
+			rect.width > 0 && rect.height > 0 ? { width: rect.width, height: rect.height } : { width: this.edit.size.width, height: this.edit.size.height };
+
 		this.registerExtensions();
 
 		this.container = new pixi.Container();
 		this.background = new pixi.Graphics();
 		this.background.fillStyle = { color: "#424242" };
-		this.background.rect(0, 0, this.size.width, this.size.height);
+		this.background.rect(0, 0, this.viewportSize.width, this.viewportSize.height);
 		this.background.fill();
 
 		await this.configureApplication();
 		this.configureStage();
-
 		this.setupTouchHandling(root);
-		this.edit.getContainer().scale = this.currentZoom;
+		this.zoomToFit();
 
 		root.appendChild(this.application.canvas);
 	}
@@ -116,13 +118,16 @@ export class Canvas {
 		};
 	}
 
-	public zoomToFit(): void {
+	public zoomToFit(padding: number = 40): void {
 		if (!this.edit) {
 			return;
 		}
 
-		const widthRatio = this.application.canvas.width / this.edit.size.width;
-		const heightRatio = this.application.canvas.height / this.edit.size.height;
+		const availableWidth = this.viewportSize.width - padding * 2;
+		const availableHeight = this.viewportSize.height - padding * 2;
+
+		const widthRatio = availableWidth / this.edit.size.width;
+		const heightRatio = availableHeight / this.edit.size.height;
 
 		const idealZoom = Math.min(widthRatio, heightRatio);
 
@@ -142,6 +147,10 @@ export class Canvas {
 		edit.scale.y = this.currentZoom;
 	}
 
+	public getZoom(): number {
+		return this.currentZoom;
+	}
+
 	public registerTimeline(timeline: Timeline): void {
 		this.timeline = timeline;
 	}
@@ -157,8 +166,8 @@ export class Canvas {
 	private async configureApplication(): Promise<void> {
 		const options: Partial<pixi.ApplicationOptions> = {
 			background: "#000000",
-			width: this.size.width,
-			height: this.size.height,
+			width: this.viewportSize.width,
+			height: this.viewportSize.height,
 			antialias: true
 		};
 
@@ -199,17 +208,12 @@ export class Canvas {
 		this.application.stage.addChild(this.container);
 
 		this.application.stage.eventMode = "static";
-		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.size.width, this.size.height);
+		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.viewportSize.width, this.viewportSize.height);
 
 		this.background.eventMode = "static";
 		this.background.on("pointerdown", this.onBackgroundClick.bind(this));
 
 		this.application.stage.on("click", this.onClick.bind(this));
-
-		this.edit.getContainer().position = {
-			x: this.application.canvas.width / 2 - (this.edit.size.width * this.currentZoom) / 2,
-			y: this.application.canvas.height / 2 - (this.edit.size.height * this.currentZoom) / 2
-		};
 	}
 
 	private onClick(): void {

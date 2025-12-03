@@ -2,9 +2,16 @@
 
 html,
 body {
+	height: 100%;
 	overscroll-behavior: none;
 }
 
 .c-shotstack-studio {
-	width: 80%;
+	width: 100%;
+	height: calc(100vh - 300px);
+	min-height: 400px;
+}
+
+.c-shotstack-timeline {
+	height: 300px;
 }

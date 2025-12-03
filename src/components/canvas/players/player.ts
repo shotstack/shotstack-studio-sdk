@@ -335,13 +335,13 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		const color = this.isHovering || this.isDragging ? 0x00ffff : 0xffffff;
+		const color = this.isHovering || this.isDragging ? 0x00ffff : 0x0d99ff;
 		const size = this.getSize();
 
-		const scale = this.getScale();
+		const uiScale = this.getUIScale();
 
 		this.outline.clear();
-		this.outline.strokeStyle = { width: Player.OutlineWidth / scale, color };
+		this.outline.strokeStyle = { width: Player.OutlineWidth / uiScale, color };
 		this.outline.rect(0, 0, size.width, size.height);
 		this.outline.stroke();
 
@@ -356,7 +356,7 @@ export abstract class Player extends Entity {
 			this.bottomRightScaleHandle &&
 			this.bottomLeftScaleHandle
 		) {
-			const handleSize = (Player.ScaleHandleRadius * 2) / scale;
+			const handleSize = (Player.ScaleHandleRadius * 2) / uiScale;
 
 			this.topLeftScaleHandle.fillStyle = { color };
 			this.topLeftScaleHandle.clear();
@@ -382,14 +382,14 @@ export abstract class Player extends Entity {
 		// Draw rotation handle (for all asset types)
 		if (this.rotationHandle) {
 			const rotationHandleX = size.width / 2;
-			const rotationHandleY = -Player.RotationHandleOffset / scale;
+			const rotationHandleY = -Player.RotationHandleOffset / uiScale;
 
 			this.rotationHandle.clear();
 			this.rotationHandle.fillStyle = { color };
-			this.rotationHandle.circle(rotationHandleX, rotationHandleY, Player.RotationHandleRadius / scale);
+			this.rotationHandle.circle(rotationHandleX, rotationHandleY, Player.RotationHandleRadius / uiScale);
 			this.rotationHandle.fill();
 
-			this.outline.strokeStyle = { width: Player.OutlineWidth / scale, color };
+			this.outline.strokeStyle = { width: Player.OutlineWidth / uiScale, color };
 			this.outline.moveTo(rotationHandleX, 0);
 			this.outline.lineTo(rotationHandleX, rotationHandleY);
 			this.outline.stroke();
@@ -397,8 +397,8 @@ export abstract class Player extends Entity {
 
 		// Draw edge handles for text/rich-text assets
 		if (this.supportsEdgeResize()) {
-			const edgeLength = Player.EdgeHandleLength / scale;
-			const edgeThickness = Player.EdgeHandleThickness / scale;
+			const edgeLength = Player.EdgeHandleLength / uiScale;
+			const edgeThickness = Player.EdgeHandleThickness / uiScale;
 
 			// Left edge handle (vertical bar on left edge, centered)
 			if (this.leftEdgeHandle) {
@@ -561,6 +561,10 @@ export abstract class Player extends Entity {
 
 	public getScale(): number {
 		return (this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1) * this.getFitScale();
+	}
+
+	private getUIScale(): number {
+		return this.getScale() * this.edit.getCanvasZoom();
 	}
 
 	protected getContainerScale(): Vector {
