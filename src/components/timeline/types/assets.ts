@@ -100,8 +100,8 @@ export interface ValidatedRichTextAsset {
 	background: {
 		color?: string;
 		opacity: number;
-		border: { width: number; color: string; opacity: number };
 	};
+	border: { width: number; color: string; opacity: number; radius: number };
 	padding?: number | { top: number; right: number; bottom: number; left: number };
 	align: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
 	animation: {
@@ -157,8 +157,8 @@ export interface RichTextAsset {
 	background?: {
 		color?: string;
 		opacity: number;
-		border?: { width: number; color: string; opacity: number };
 	};
+	border?: { width: number; color: string; opacity: number; radius: number };
 	padding?: number | { top: number; right: number; bottom: number; left: number };
 	align?: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
 	animation?: {
