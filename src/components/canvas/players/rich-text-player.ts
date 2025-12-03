@@ -34,17 +34,18 @@ export class RichTextPlayer extends Player {
 	private targetFPS: number = 30;
 	private validatedAsset: ValidatedRichTextAsset | null = null;
 
-	private getResolvedDimensions(): Size {
-		const editData = this.edit.getEdit();
-		return {
-			width: this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width,
-			height: this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height
-		};
+	constructor(edit: any, clipConfiguration: any) {
+		// Default fit to "cover" for rich-text assets if not provided
+		if (!clipConfiguration.fit) {
+			clipConfiguration.fit = "cover";
+		}
+		super(edit, clipConfiguration);
 	}
 
-	private buildCanvasPayload(richTextAsset: RichTextAsset): CanvasRichTextPayload {
-		const { width, height } = this.getResolvedDimensions();
+	private buildCanvasPayload(richTextAsset: RichTextAsset): any {
 		const editData = this.edit.getEdit();
+		const width = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
+		const height = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
 
 		// Build customFonts array internally
 		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
@@ -69,12 +70,17 @@ export class RichTextPlayer extends Player {
 			}
 		}
 
-		return {
+		// Build payload with stroke extracted from font and placed at root level for canvas compatibility
+		const payload: any = {
 			...richTextAsset,
 			width,
 			height,
+			// Extract stroke from font property and place at root level for canvas compatibility
+			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};
+
+		return payload;
 	}
 
 	private createFontMapping(): Map<string, string> {
@@ -274,7 +280,9 @@ export class RichTextPlayer extends Player {
 	}
 
 	private createFallbackText(richTextAsset: RichTextAsset): void {
-		const { width: containerWidth, height: containerHeight } = this.getResolvedDimensions();
+		const editData = this.edit.getEdit();
+		const containerWidth = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
+		const containerHeight = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
 
 		const style = new pixi.TextStyle({
 			fontFamily: richTextAsset.font?.family || "Arial",
@@ -381,7 +389,11 @@ export class RichTextPlayer extends Player {
 	}
 
 	public override getSize(): Size {
-		return this.getResolvedDimensions();
+		const editData = this.edit.getEdit();
+		return {
+			width: this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height
+		};
 	}
 
 	protected override getFitScale(): number {
