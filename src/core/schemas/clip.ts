@@ -95,7 +95,7 @@ export const ClipSchema = zod
 	.strict()
 	.transform(data => ({
 		...data,
-		fit: data.fit ?? (data.asset.type === "rich-text" ? "none" : "crop")
+		fit: data.fit ?? (data.asset.type === "rich-text" ? "cover" : "crop")
 	}));
 
 export type ClipAnchor = zod.infer<typeof ClipAnchorSchema>;
