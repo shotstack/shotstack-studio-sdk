@@ -1,57 +1,63 @@
 {
 	"timeline": {
-		"fonts": [
-			{
-				"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/euo5r93oyr/zzz01k5s-0qvt9-ck9d4-950ts-hbsa9x/source.ttf"
-			}
-		],
+		"background": "#FFFFFF",
 		"tracks": [
 			{
 				"clips": [
 					{
 						"asset": {
 							"type": "rich-text",
-							"text": "Hello World!",
+							"text": "Production",
 							"font": {
-								"family": "Roboto",
-								"size": 48,
+								"family": "Montserrat Extrabold",
+								"size": 72,
 								"weight": "400",
-								"color": "#ffffff",
+								"color": "#000000",
 								"opacity": 1
-							},
-							"style": {
-								"letterSpacing": 0,
-								"lineHeight": 1.5,
-								"textTransform": "none"
-							},
-							"background": {
-								"color": "#1a1a2e",
-								"opacity": 1
-							},
-							"align": {
-								"horizontal": "center",
-								"vertical": "middle"
-							},
-							"animation": {
-								"preset": "typewriter",
-								"duration": 3,
-								"style": "character"
 							}
 						},
 						"start": 0,
-						"length": 4,
+						"length": 3,
+						"position": "center",
+						"fit": "crop",
+						"offset": {
+							"x": 0.06491932678222656,
+							"y": 0
+						},
 						"width": 800,
-						"height": 400
+						"height": 200
 					}
 				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-assets.s3.amazonaws.com/images/woods1.jpg"
+						},
+						"start": 0,
+						"length": 3,
+						"position": "center",
+						"fit": "none",
+						"width": 500,
+						"height": 300
+					}
+				]
+			}
+		],
+		"fonts": [
+			{
+				"src": "https://shotstack-assets.s3.amazonaws.com/fonts/Oswald-VariableFont.ttf"
 			}
 		]
 	},
 	"output": {
-		"format": "mp4",
 		"size": {
-			"width": 1920,
-			"height": 1080
-		}
+			"width": 1280,
+			"height": 720
+		},
+		"fps": 25,
+		"format": "mp4"
 	}
 }

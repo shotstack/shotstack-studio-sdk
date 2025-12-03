@@ -6,7 +6,7 @@ export const TextAssetFontSchema = zod
 	.object({
 		color: TextAssetColorSchema.optional(),
 		family: zod.string().optional(),
-		size: zod.number().positive().optional(),
+		size: zod.coerce.number().positive().optional(),
 		weight: zod.number().optional(),
 		lineHeight: zod.number().optional()
 	})
@@ -22,7 +22,7 @@ export const TextAssetAlignmentSchema = zod
 export const TextAssetBackgroundSchema = zod
 	.object({
 		color: TextAssetColorSchema,
-		opacity: zod.number().min(0).max(1)
+		opacity: zod.number().min(0).max(1).default(1)
 	})
 	.strict();
 

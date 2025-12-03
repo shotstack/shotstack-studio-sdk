@@ -1,15 +1,10 @@
 import { Player } from "@canvas/players/player";
+import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
 import { createTextEngine } from "@shotstack/shotstack-canvas";
 import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
 import * as pixi from "pixi.js";
-
-interface CanvasRichTextPayload extends RichTextAsset {
-	width: number;
-	height: number;
-	customFonts?: Array<{ src: string; family: string; weight: string }>;
-}
 
 const extractFontNames = (url: string): { full: string; base: string } => {
 	const filename = url.split("/").pop() || "";
@@ -42,70 +37,63 @@ export class RichTextPlayer extends Player {
 		super(edit, clipConfiguration);
 	}
 
-	private buildCanvasPayload(richTextAsset: RichTextAsset): any {
+	private buildCanvasPayload(
+		richTextAsset: RichTextAsset,
+		fontInfo?: { baseFontFamily: string; fontWeight: number }
+	): any {
 		const editData = this.edit.getEdit();
 		const width = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
 
-		// Build customFonts array internally
-		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
-		if (Array.isArray(editData?.timeline?.fonts) && editData.timeline.fonts.length > 0) {
-			const requestedFamily = richTextAsset.font?.family;
-			if (requestedFamily) {
-				const matchingFont = editData.timeline.fonts?.find(font => {
+		// Use provided font info or parse fresh (for reconfigure/updateTextContent calls)
+		const requestedFamily = richTextAsset.font?.family;
+		const { baseFontFamily, fontWeight } = fontInfo
+			?? (requestedFamily ? parseFontFamily(requestedFamily) : { baseFontFamily: requestedFamily, fontWeight: 400 });
+
+		// Find matching timeline font for customFonts payload
+		const timelineFonts = editData?.timeline?.fonts || [];
+		const matchingFont = requestedFamily
+			? timelineFonts.find(font => {
 					const { full, base } = extractFontNames(font.src);
 					const requested = requestedFamily.toLowerCase();
 					return full.toLowerCase() === requested || base.toLowerCase() === requested;
-				});
+				})
+			: undefined;
 
-				if (matchingFont) {
-					customFonts = [
-						{
-							src: matchingFont.src,
-							family: requestedFamily,
-							weight: richTextAsset.font?.weight?.toString() || "400"
-						}
-					];
-				}
-			}
-		}
+		const customFonts = matchingFont
+			? [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }]
+			: undefined;
 
-		// Build payload with stroke extracted from font and placed at root level for canvas compatibility
-		const payload: any = {
+		return {
 			...richTextAsset,
 			width,
 			height,
-			// Extract stroke from font property and place at root level for canvas compatibility
+			font: richTextAsset.font
+				? { ...richTextAsset.font, family: baseFontFamily, weight: fontWeight }
+				: undefined,
 			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};
-
-		return payload;
 	}
 
-	private createFontMapping(): Map<string, string> {
-		const fontMap = new Map<string, string>();
-
-		fontMap.set("Arapey", "/assets/fonts/Arapey-Regular.ttf");
-		fontMap.set("ClearSans", "/assets/fonts/ClearSans-Regular.ttf");
-		fontMap.set("Clear Sans", "/assets/fonts/ClearSans-Regular.ttf");
-		fontMap.set("DidactGothic", "/assets/fonts/DidactGothic-Regular.ttf");
-		fontMap.set("Didact Gothic", "/assets/fonts/DidactGothic-Regular.ttf");
-		fontMap.set("Montserrat", "/assets/fonts/Montserrat-SemiBold.ttf");
-		fontMap.set("MovLette", "/assets/fonts/MovLette.ttf");
-		fontMap.set("OpenSans", "/assets/fonts/OpenSans-Bold.ttf");
-		fontMap.set("Open Sans", "/assets/fonts/OpenSans-Bold.ttf");
-		fontMap.set("PermanentMarker", "/assets/fonts/PermanentMarker-Regular.ttf");
-		fontMap.set("Permanent Marker", "/assets/fonts/PermanentMarker-Regular.ttf");
-		fontMap.set("Roboto", "/assets/fonts/Roboto-BlackItalic.ttf");
-		fontMap.set("SueEllenFrancisco", "/assets/fonts/SueEllenFrancisco.ttf");
-		fontMap.set("Sue Ellen Francisco", "/assets/fonts/SueEllenFrancisco.ttf");
-		fontMap.set("UniNeue", "/assets/fonts/UniNeue-Bold.otf");
-		fontMap.set("Uni Neue", "/assets/fonts/UniNeue-Bold.otf");
-		fontMap.set("WorkSans", "/assets/fonts/WorkSans-Light.ttf");
-		fontMap.set("Work Sans", "/assets/fonts/WorkSans-Light.ttf");
-
-		return fontMap;
+	private async registerFont(
+		family: string,
+		weight: number,
+		source: { type: "url"; path: string } | { type: "file"; path: string }
+	): Promise<boolean> {
+		if (!this.textEngine) return false;
+		try {
+			const fontDesc = { family, weight: weight.toString() };
+			if (source.type === "url") {
+				await this.textEngine.registerFontFromUrl(source.path, fontDesc);
+			} else {
+				await this.textEngine.registerFontFromFile(source.path, fontDesc);
+			}
+			return true;
+		} catch (error) {
+			console.warn(`Failed to load font ${family}:`, error);
+			return false;
+		}
 	}
 
 	public override reconfigureAfterRestore(): void {
@@ -138,7 +126,6 @@ export class RichTextPlayer extends Player {
 			const editData = this.edit.getEdit();
 			this.targetFPS = editData?.output?.fps || 30;
 
-			// Validate the rich-text asset schema (without width, height, customFonts)
 			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
 			if (!validationResult.success) {
 				console.error("Rich-text asset validation failed:", validationResult.error);
@@ -146,8 +133,11 @@ export class RichTextPlayer extends Player {
 				return;
 			}
 
-			// Build canvas payload with dimensions and customFonts
-			const canvasPayload = this.buildCanvasPayload(richTextAsset);
+			// Parse font info once, reuse throughout
+			const requestedFamily = richTextAsset.font?.family;
+			const fontInfo = requestedFamily ? parseFontFamily(requestedFamily) : undefined;
+
+			const canvasPayload = this.buildCanvasPayload(richTextAsset, fontInfo);
 
 			this.textEngine = (await createTextEngine({
 				width: canvasPayload.width,
@@ -158,53 +148,32 @@ export class RichTextPlayer extends Player {
 			const { value: validated } = this.textEngine!.validate(canvasPayload);
 			this.validatedAsset = validated;
 
-			const fontMap = this.createFontMapping();
-
 			this.canvas = document.createElement("canvas");
 			this.canvas.width = canvasPayload.width;
 			this.canvas.height = canvasPayload.height;
 
 			this.renderer = this.textEngine!.createRenderer(this.canvas);
 
-			const timelineFonts = editData?.timeline?.fonts || [];
+			// Register font: try timeline fonts first, then built-in fonts
+			if (fontInfo && requestedFamily) {
+				const { baseFontFamily, fontWeight } = fontInfo;
+				const timelineFonts = editData?.timeline?.fonts || [];
 
-			if (timelineFonts.length > 0) {
-				const requestedFamily = richTextAsset.font?.family;
-				if (requestedFamily) {
-					const matchingFont = timelineFonts.find(font => {
-						const { full, base } = extractFontNames(font.src);
-						const requested = requestedFamily.toLowerCase();
-						return full.toLowerCase() === requested || base.toLowerCase() === requested;
-					});
+				const matchingFont = timelineFonts.find(font => {
+					const { full, base } = extractFontNames(font.src);
+					const requested = requestedFamily.toLowerCase();
+					return full.toLowerCase() === requested || base.toLowerCase() === requested;
+				});
 
-					if (matchingFont) {
-						try {
-							const fontDesc = {
-								family: requestedFamily,
-								weight: richTextAsset.font?.weight?.toString() || "400"
-							};
-							await this.textEngine!.registerFontFromUrl(matchingFont.src, fontDesc);
-						} catch (error) {
-							console.warn(`Failed to load font ${requestedFamily}:`, error);
-						}
-					}
-				}
-			} else if (richTextAsset.font?.family) {
-				const fontFamily = richTextAsset.font.family;
-				const fontPath = fontMap.get(fontFamily);
-
-				if (fontPath) {
-					try {
-						const fontDesc = {
-							family: richTextAsset.font.family,
-							weight: richTextAsset.font.weight || "400"
-						};
-						await this.textEngine!.registerFontFromFile(fontPath, fontDesc);
-					} catch (error) {
-						console.warn(`Failed to load local font: ${fontFamily}`, error);
-					}
+				if (matchingFont) {
+					await this.registerFont(baseFontFamily, fontWeight, { type: "url", path: matchingFont.src });
 				} else {
-					console.warn(`Font ${fontFamily} not found in local assets. Available fonts:`, Array.from(fontMap.keys()));
+					const fontPath = resolveFontPath(requestedFamily);
+					if (fontPath) {
+						await this.registerFont(baseFontFamily, fontWeight, { type: "file", path: fontPath });
+					} else {
+						console.warn(`Font ${requestedFamily} not found. Available:`, Object.keys(FONT_PATHS));
+					}
 				}
 			}
 
@@ -212,9 +181,7 @@ export class RichTextPlayer extends Player {
 			this.configureKeyframes();
 		} catch (error) {
 			console.error("Failed to initialize rich text player:", error);
-
 			this.cleanupResources();
-
 			this.createFallbackText(richTextAsset);
 		}
 	}

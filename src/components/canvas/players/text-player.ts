@@ -1,5 +1,6 @@
 import { Player } from "@canvas/players/player";
 import { TextEditor } from "@canvas/text/text-editor";
+import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size } from "@layouts/geometry";
 import { type Clip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";
@@ -18,6 +19,10 @@ export class TextPlayer extends Player {
 		await super.load();
 
 		const textAsset = this.clipConfiguration.asset as TextAsset;
+
+		// Load the font before rendering
+		const fontFamily = textAsset.font?.family ?? "Open Sans";
+		await this.loadFont(fontFamily);
 
 		// Create background if specified
 		this.background = new pixi.Graphics();
@@ -86,11 +91,14 @@ export class TextPlayer extends Player {
 	}
 
 	private createTextStyle(textAsset: TextAsset): pixi.TextStyle {
+		const fontFamily = textAsset.font?.family ?? "Open Sans";
+		const { baseFontFamily, fontWeight } = parseFontFamily(fontFamily);
+
 		return new pixi.TextStyle({
-			fontFamily: textAsset.font?.family ?? "Open Sans",
+			fontFamily: baseFontFamily,
 			fontSize: textAsset.font?.size ?? 32,
 			fill: textAsset.font?.color ?? "#ffffff",
-			fontWeight: (textAsset.font?.weight ?? "400").toString() as pixi.TextStyleFontWeight,
+			fontWeight: fontWeight.toString() as pixi.TextStyleFontWeight,
 			wordWrap: true,
 			wordWrapWidth: textAsset.width ?? this.edit.size.width,
 			lineHeight: (textAsset.font?.lineHeight ?? 1) * (textAsset.font?.size ?? 32),
@@ -126,5 +134,20 @@ export class TextPlayer extends Player {
 
 	public updateTextContent(newText: string, initialConfig: Clip): void {
 		this.edit.updateTextContent(this, newText, initialConfig);
+	}
+
+	private async loadFont(fontFamily: string): Promise<void> {
+		const { baseFontFamily } = parseFontFamily(fontFamily);
+
+		if (document.fonts.check(`16px "${baseFontFamily}"`)) {
+			return;
+		}
+
+		const fontPath = resolveFontPath(fontFamily);
+		if (fontPath) {
+			const fontFace = new FontFace(baseFontFamily, `url(${fontPath})`);
+			await fontFace.load();
+			document.fonts.add(fontFace);
+		}
 	}
 }
