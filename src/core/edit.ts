@@ -413,7 +413,12 @@ export class Edit extends Entity {
 				this.updatedClip = clip;
 			},
 			restoreClipConfiguration: (clip, previousConfig) => {
-				Object.assign(clip.clipConfiguration, structuredClone(previousConfig));
+				const cloned = structuredClone(previousConfig);
+				const config = clip.clipConfiguration as Record<string, unknown>;
+				for (const key of Object.keys(config)) {
+					delete config[key];
+				}
+				Object.assign(config, cloned);
 				clip.reconfigureAfterRestore();
 				clip.draw();
 			},
