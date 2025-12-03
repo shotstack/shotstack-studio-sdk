@@ -34,7 +34,6 @@
 							},
 							"animation": {
 								"preset": "typewriter",
-								"speed": 1,
 								"duration": 3,
 								"style": "character"
 							}

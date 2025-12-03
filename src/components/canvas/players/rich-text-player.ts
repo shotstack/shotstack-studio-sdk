@@ -400,6 +400,32 @@ export class RichTextPlayer extends Player {
 		return 1;
 	}
 
+	protected override supportsEdgeResize(): boolean {
+		return true;
+	}
+
+	protected override onDimensionsChanged(): void {
+		if (!this.textEngine || !this.renderer || !this.canvas) return;
+
+		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
+		const { width, height } = this.getSize();
+
+		this.canvas.width = width;
+		this.canvas.height = height;
+
+		for (const texture of this.cachedFrames.values()) {
+			texture.destroy();
+		}
+		this.cachedFrames.clear();
+		this.lastRenderedTime = -1;
+
+		const canvasPayload = this.buildCanvasPayload(richTextAsset);
+		const { value: validated } = this.textEngine.validate(canvasPayload);
+		this.validatedAsset = validated;
+
+		this.renderFrameSafe(this.getCurrentTime() / 1000);
+	}
+
 	public updateTextContent(newText: string): void {
 		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 		richTextAsset.text = newText;
