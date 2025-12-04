@@ -3,6 +3,7 @@ import * as zod from "zod";
 export const KeyframeInterpolationSchema = zod.enum(["linear", "bezier", "constant"]);
 
 export const KeyframeEasingSchema = zod.enum([
+	"smooth",
 	"ease",
 	"easeIn",
 	"easeOut",

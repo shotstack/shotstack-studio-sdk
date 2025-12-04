@@ -218,11 +218,15 @@ export abstract class Player extends Entity {
 		rotationKeyframes.push(...transitionKeyframeSet.rotationKeyframes);
 
 		if (offsetXKeyframes.length) {
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(offsetXKeyframes, this.getLength());
+			const offsetX = this.clipConfiguration.offset?.x;
+			const initialOffsetX = typeof offsetX === "number" ? offsetX : 0;
+			this.offsetXKeyframeBuilder = new KeyframeBuilder(offsetXKeyframes, this.getLength(), initialOffsetX);
 		}
 
 		if (offsetYKeyframes.length) {
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(offsetYKeyframes, this.getLength());
+			const offsetY = this.clipConfiguration.offset?.y;
+			const initialOffsetY = typeof offsetY === "number" ? offsetY : 0;
+			this.offsetYKeyframeBuilder = new KeyframeBuilder(offsetYKeyframes, this.getLength(), initialOffsetY);
 		}
 
 		if (opacityKeyframes.length) {

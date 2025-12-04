@@ -60,7 +60,7 @@ export class TransitionPresetBuilder {
 			case "fade": {
 				const initialOpacity = 0;
 				const targetOpacity = Math.max(0, Math.min((this.clipConfiguration.opacity as number) ?? 1, 1));
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "linear" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -84,11 +84,11 @@ export class TransitionPresetBuilder {
 				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
 				const initialOffsetX = offsetX + 0.025;
 				const targetOffsetX = offsetX;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeIn" });
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "linear" });
 
 				const initialOpacity = 0;
 				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -97,11 +97,11 @@ export class TransitionPresetBuilder {
 				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
 				const initialOffsetX = offsetX - 0.025;
 				const targetOffsetX = offsetX;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeIn" });
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "linear" });
 
 				const initialOpacity = 0;
 				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -110,11 +110,11 @@ export class TransitionPresetBuilder {
 				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
 				const initialOffsetY = offsetY + 0.025;
 				const targetOffsetY = offsetY;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "linear" });
 
 				const initialOpacity = 0;
 				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -123,18 +123,50 @@ export class TransitionPresetBuilder {
 				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
 				const initialOffsetY = offsetY - 0.025;
 				const targetOffsetY = offsetY;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeOut" });
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "linear" });
 
 				const initialOpacity = 0;
 				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
-			case "carouselLeft":
-			case "carouselRight":
-			case "carouselUp":
-			case "carouselDown":
+			case "carouselLeft": {
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX + 1;
+				const targetOffsetX = offsetX;
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "linear" });
+
+				break;
+			}
+			case "carouselRight": {
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX - 1;
+				const targetOffsetX = offsetX;
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "linear" });
+
+				break;
+			}
+			case "carouselUp": {
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY - 1.05;
+				const targetOffsetY = offsetY;
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "linear" });
+
+				break;
+			}
+			case "carouselDown": {
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY + 1.05;
+				const targetOffsetY = offsetY;
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "linear" });
+
+				break;
+			}
 			case "shuffleTopRight":
 			case "shuffleRightTop":
 			case "shuffleRightBottom":
@@ -170,7 +202,7 @@ export class TransitionPresetBuilder {
 			case "fade": {
 				const initialOpacity = Math.max(0, Math.min((this.clipConfiguration.opacity as number) ?? 1, 1));
 				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "linear" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -194,11 +226,11 @@ export class TransitionPresetBuilder {
 				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
 				const initialOffsetX = offsetX;
 				const targetOffsetX = offsetX - 0.025;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeOut" });
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "smooth" });
 
 				const initialOpacity = 1;
 				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -207,11 +239,11 @@ export class TransitionPresetBuilder {
 				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
 				const initialOffsetX = offsetX;
 				const targetOffsetX = offsetX + 0.025;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeOut" });
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "smooth" });
 
 				const initialOpacity = 1;
 				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -220,11 +252,11 @@ export class TransitionPresetBuilder {
 				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
 				const initialOffsetY = offsetY;
 				const targetOffsetY = offsetY - 0.025;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "smooth" });
 
 				const initialOpacity = 1;
 				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
@@ -233,18 +265,50 @@ export class TransitionPresetBuilder {
 				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
 				const initialOffsetY = offsetY;
 				const targetOffsetY = offsetY + 0.025;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "smooth" });
 
 				const initialOpacity = 1;
 				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
+				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "smooth" });
 
 				break;
 			}
-			case "carouselLeft":
-			case "carouselRight":
-			case "carouselUp":
-			case "carouselDown":
+			case "carouselLeft": {
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX;
+				const targetOffsetX = offsetX - 1;
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "smooth" });
+
+				break;
+			}
+			case "carouselRight": {
+				const rawOffsetX = this.clipConfiguration.offset?.x;
+				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
+				const initialOffsetX = offsetX;
+				const targetOffsetX = offsetX + 1;
+				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "smooth" });
+
+				break;
+			}
+			case "carouselUp": {
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY;
+				const targetOffsetY = offsetY + 1.1;
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "smooth" });
+
+				break;
+			}
+			case "carouselDown": {
+				const rawOffsetY = this.clipConfiguration.offset?.y;
+				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
+				const initialOffsetY = offsetY;
+				const targetOffsetY = offsetY - 1.1;
+				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "smooth" });
+
+				break;
+			}
 			case "shuffleTopRight":
 			case "shuffleRightTop":
 			case "shuffleRightBottom":
@@ -272,32 +336,44 @@ export class TransitionPresetBuilder {
 	}
 
 	private getInPresetLength(): number {
-		const [, transitionSpeed] = (this.clipConfiguration.transition?.in ?? "").split(/(Slow|Fast|VeryFast)/);
+		const transitionIn = this.clipConfiguration.transition?.in ?? "";
+		const [transitionName, transitionSpeed] = transitionIn.split(/(Slow|Fast|VeryFast)/);
+		const isCarousel = transitionName.startsWith("carousel");
+		const isSlide = transitionName.startsWith("slide");
+		const isZoom = transitionName === "zoom";
+
+		if (isZoom) return 0.4;
 
 		switch (transitionSpeed) {
 			case "Slow":
 				return 2;
 			case "Fast":
-				return 0.5;
+				return isCarousel || isSlide ? 0.25 : 0.5;
 			case "VeryFast":
 				return 0.25;
 			default:
-				return 1;
+				return isCarousel || isSlide ? 0.5 : 1;
 		}
 	}
 
 	private getOutPresetLength(): number {
-		const [, transitionSpeed] = (this.clipConfiguration.transition?.out ?? "").split(/(Slow|Fast|VeryFast)/);
+		const transitionOut = this.clipConfiguration.transition?.out ?? "";
+		const [transitionName, transitionSpeed] = transitionOut.split(/(Slow|Fast|VeryFast)/);
+		const isCarousel = transitionName.startsWith("carousel");
+		const isSlide = transitionName.startsWith("slide");
+		const isZoom = transitionName === "zoom";
+
+		if (isZoom) return 0.4;
 
 		switch (transitionSpeed) {
 			case "Slow":
 				return 2;
 			case "Fast":
-				return 0.5;
+				return isCarousel || isSlide ? 0.25 : 0.5;
 			case "VeryFast":
 				return 0.25;
 			default:
-				return 1;
+				return isCarousel || isSlide ? 0.5 : 1;
 		}
 	}
 }
