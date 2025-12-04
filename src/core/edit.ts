@@ -170,6 +170,14 @@ export class Edit extends Entity {
 		TextPlayer.resetFontCache();
 	}
 
+	private updateViewportMask(): void {
+		if (this.viewportMask) {
+			this.viewportMask.clear();
+			this.viewportMask.rect(0, 0, this.size.width, this.size.height);
+			this.viewportMask.fill(0xffffff);
+		}
+	}
+
 	public play(): void {
 		this.isPlaying = true;
 		this.events.emit("playback:play", {});
@@ -199,6 +207,13 @@ export class Edit extends Entity {
 		// Note: We no longer resolve smart-clips here - timing intent is preserved
 		// and resolved after all clips are loaded
 		this.edit = EditSchema.parse(mergedEdit);
+
+		const newSize = this.edit.output?.size;
+		if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
+			this.size = newSize;
+			this.updateViewportMask();
+			this.canvas?.zoomToFit();
+		}
 
 		this.backgroundColor = this.edit.timeline.background || "#000000";
 
