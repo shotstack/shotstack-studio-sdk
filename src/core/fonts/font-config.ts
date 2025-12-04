@@ -2,23 +2,35 @@
  * Shared font configuration for text and rich-text players
  */
 
+const FONT_CDN = "https://templates.shotstack.io/basic/asset/font";
+
 /** Font family name to file path mapping */
 export const FONT_PATHS: Record<string, string> = {
-	Arapey: "/assets/fonts/Arapey-Regular.ttf",
-	"Clear Sans": "/assets/fonts/ClearSans-Regular.ttf",
-	"Didact Gothic": "/assets/fonts/DidactGothic-Regular.ttf",
-	Montserrat: "/assets/fonts/Montserrat.ttf",
-	"Montserrat ExtraBold": "/assets/fonts/Montserrat-ExtraBold.ttf",
-	"Montserrat SemiBold": "/assets/fonts/Montserrat-SemiBold.ttf",
-	MovLette: "/assets/fonts/MovLette.ttf",
-	"Open Sans": "/assets/fonts/OpenSans.ttf",
-	"Open Sans Bold": "/assets/fonts/OpenSans-Bold.ttf",
-	"Permanent Marker": "/assets/fonts/PermanentMarker-Regular.ttf",
-	Roboto: "/assets/fonts/Roboto.ttf",
-	"Sue Ellen Francisco": "/assets/fonts/SueEllenFrancisco.ttf",
-	"Uni Neue": "/assets/fonts/UniNeue-Bold.otf",
-	"Work Sans": "/assets/fonts/WorkSans.ttf",
-	"Work Sans Light": "/assets/fonts/WorkSans-Light.ttf"
+	Arapey: `${FONT_CDN}/arapey-regular.ttf`,
+	"Clear Sans": `${FONT_CDN}/clearsans-regular.ttf`,
+	"Clear Sans Bold": `${FONT_CDN}/clearsans-bold.ttf`,
+	"Didact Gothic": `${FONT_CDN}/didactgothic-regular.ttf`,
+	Montserrat: `${FONT_CDN}/montserrat-regular.ttf`,
+	"Montserrat Bold": `${FONT_CDN}/montserrat-bold.ttf`,
+	"Montserrat ExtraBold": `${FONT_CDN}/montserrat-extrabold.ttf`,
+	"Montserrat SemiBold": `${FONT_CDN}/montserrat-semibold.ttf`,
+	"Montserrat Light": `${FONT_CDN}/montserrat-light.ttf`,
+	"Montserrat Medium": `${FONT_CDN}/montserrat-medium.ttf`,
+	"Montserrat Black": `${FONT_CDN}/montserrat-black.ttf`,
+	MovLette: `${FONT_CDN}/movlette.ttf`,
+	"Open Sans": `${FONT_CDN}/opensans-regular.ttf`,
+	"Open Sans Bold": `${FONT_CDN}/opensans-bold.ttf`,
+	"Open Sans ExtraBold": `${FONT_CDN}/opensans-extrabold.ttf`,
+	"Permanent Marker": `${FONT_CDN}/permanentmarker-regular.ttf`,
+	Roboto: `${FONT_CDN}/roboto-regular.ttf`,
+	"Roboto Bold": `${FONT_CDN}/roboto-bold.ttf`,
+	"Roboto Light": `${FONT_CDN}/roboto-light.ttf`,
+	"Roboto Medium": `${FONT_CDN}/roboto-medium.ttf`,
+	"Sue Ellen Francisco": `${FONT_CDN}/sueellenfrancisco-regular.ttf`,
+	"Work Sans": `${FONT_CDN}/worksans-regular.ttf`,
+	"Work Sans Bold": `${FONT_CDN}/worksans-bold.ttf`,
+	"Work Sans Light": `${FONT_CDN}/worksans-light.ttf`,
+	"Work Sans SemiBold": `${FONT_CDN}/worksans-semibold.ttf`
 };
 
 /** Alternative names (camelCase, etc.) mapped to canonical names */
@@ -28,7 +40,6 @@ export const FONT_ALIASES: Record<string, string> = {
 	OpenSans: "Open Sans",
 	PermanentMarker: "Permanent Marker",
 	SueEllenFrancisco: "Sue Ellen Francisco",
-	UniNeue: "Uni Neue",
 	WorkSans: "Work Sans"
 };
 
