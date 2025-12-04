@@ -166,6 +166,8 @@ export class Edit extends Entity {
 			this.viewportMask.destroy();
 			this.viewportMask = undefined;
 		}
+
+		TextPlayer.resetFontCache();
 	}
 
 	public play(): void {

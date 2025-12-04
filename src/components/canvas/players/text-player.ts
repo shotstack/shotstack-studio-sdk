@@ -11,6 +11,8 @@ import * as pixi from "pixi.js";
  * TextPlayer renders and manages editable text elements in the canvas
  */
 export class TextPlayer extends Player {
+	private static loadedFonts = new Set<string>();
+
 	private background: pixi.Graphics | null = null;
 	private text: pixi.Text | null = null;
 	private textEditor: TextEditor | null = null;
@@ -144,17 +146,25 @@ export class TextPlayer extends Player {
 	}
 
 	private async loadFont(fontFamily: string): Promise<void> {
-		const { baseFontFamily } = parseFontFamily(fontFamily);
+		const { baseFontFamily, fontWeight } = parseFontFamily(fontFamily);
+		const cacheKey = `${baseFontFamily}-${fontWeight}`;
 
-		if (document.fonts.check(`16px "${baseFontFamily}"`)) {
+		if (TextPlayer.loadedFonts.has(cacheKey)) {
 			return;
 		}
 
 		const fontPath = resolveFontPath(fontFamily);
 		if (fontPath) {
-			const fontFace = new FontFace(baseFontFamily, `url(${fontPath})`);
+			const fontFace = new FontFace(baseFontFamily, `url(${fontPath})`, {
+				weight: fontWeight.toString()
+			});
 			await fontFace.load();
 			document.fonts.add(fontFace);
+			TextPlayer.loadedFonts.add(cacheKey);
 		}
+	}
+
+	public static resetFontCache(): void {
+		TextPlayer.loadedFonts.clear();
 	}
 }

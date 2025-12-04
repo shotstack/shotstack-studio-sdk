@@ -8,13 +8,17 @@ export const FONT_PATHS: Record<string, string> = {
 	"Clear Sans": "/assets/fonts/ClearSans-Regular.ttf",
 	"Didact Gothic": "/assets/fonts/DidactGothic-Regular.ttf",
 	Montserrat: "/assets/fonts/Montserrat.ttf",
+	"Montserrat ExtraBold": "/assets/fonts/Montserrat-ExtraBold.ttf",
+	"Montserrat SemiBold": "/assets/fonts/Montserrat-SemiBold.ttf",
 	MovLette: "/assets/fonts/MovLette.ttf",
 	"Open Sans": "/assets/fonts/OpenSans.ttf",
+	"Open Sans Bold": "/assets/fonts/OpenSans-Bold.ttf",
 	"Permanent Marker": "/assets/fonts/PermanentMarker-Regular.ttf",
 	Roboto: "/assets/fonts/Roboto.ttf",
 	"Sue Ellen Francisco": "/assets/fonts/SueEllenFrancisco.ttf",
 	"Uni Neue": "/assets/fonts/UniNeue-Bold.otf",
-	"Work Sans": "/assets/fonts/WorkSans.ttf"
+	"Work Sans": "/assets/fonts/WorkSans.ttf",
+	"Work Sans Light": "/assets/fonts/WorkSans-Light.ttf"
 };
 
 /** Alternative names (camelCase, etc.) mapped to canonical names */
@@ -65,6 +69,11 @@ export function parseFontFamily(fontFamily: string): { baseFontFamily: string; f
  * Handles aliases and weight modifiers
  */
 export function resolveFontPath(fontFamily: string): string | undefined {
+	// First try exact match (e.g., "Montserrat ExtraBold")
+	if (FONT_PATHS[fontFamily]) {
+		return FONT_PATHS[fontFamily];
+	}
+	// Fall back to base family name
 	const { baseFontFamily } = parseFontFamily(fontFamily);
 	const resolvedName = FONT_ALIASES[baseFontFamily] ?? baseFontFamily;
 	return FONT_PATHS[resolvedName];
