@@ -33,6 +33,30 @@ export abstract class Player extends Entity {
 	private static readonly MaxScale = 5;
 
 	private static readonly EdgeHitZone = 8;
+	private static readonly RotationHitZone = 15;
+	private static readonly CornerNames = ["topLeft", "topRight", "bottomRight", "bottomLeft"] as const;
+
+	// Curved arrow cursor path from rotation-cursors.svg
+	private static readonly RotationCursorPath =
+		"M1113.142,1956.331C1008.608,1982.71 887.611,2049.487 836.035,2213.487" +
+		"L891.955,2219.403L779,2396L705.496,2199.678L772.745,2206.792" +
+		"C832.051,1999.958 984.143,1921.272 1110.63,1892.641L1107.952,1824.711" +
+		"L1299,1911L1115.34,2012.065L1113.142,1956.331Z";
+
+	private static buildRotationCursor(rotateDeg: number): string {
+		const path = Player.RotationCursorPath;
+		const transform = rotateDeg === 0 ? "" : `<g transform='translate(1002 2110) rotate(${rotateDeg}) translate(-1002 -2110)'>`;
+		const closeTag = rotateDeg === 0 ? "" : "</g>";
+		const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='680 1800 640 620'>${transform}<path d='${path}' fill='black' stroke='white' stroke-width='33.33'/>${closeTag}</svg>`;
+		return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, auto`;
+	}
+
+	private static readonly RotationCursors: Record<string, string> = {
+		topLeft: Player.buildRotationCursor(0),
+		topRight: Player.buildRotationCursor(90),
+		bottomRight: Player.buildRotationCursor(180),
+		bottomLeft: Player.buildRotationCursor(270)
+	};
 	private static readonly MinDimension = 50;
 	private static readonly MaxDimension = 3840;
 
@@ -69,6 +93,10 @@ export abstract class Player extends Entity {
 	private edgeDragDirection: "left" | "right" | "top" | "bottom" | null;
 	private edgeDragStart: Vector;
 	private originalDimensions: { width: number; height: number; offsetX: number; offsetY: number } | null;
+
+	private isRotating: boolean;
+	private rotationStart: number | null;
+	private initialRotation: number;
 
 	private initialClipConfiguration: Clip | null;
 	protected contentContainer: pixi.Container;
@@ -110,6 +138,10 @@ export abstract class Player extends Entity {
 		this.edgeDragDirection = null;
 		this.edgeDragStart = { x: 0, y: 0 };
 		this.originalDimensions = null;
+
+		this.isRotating = false;
+		this.rotationStart = null;
+		this.initialRotation = 0;
 
 		this.initialClipConfiguration = null;
 
@@ -282,6 +314,10 @@ export abstract class Player extends Entity {
 		const size = this.getSize();
 
 		const uiScale = this.getUIScale();
+
+		// Expand hit area to include rotation zones outside corners
+		const hitMargin = (Player.RotationHitZone + Player.ScaleHandleRadius) / uiScale;
+		this.getContainer().hitArea = new pixi.Rectangle(-hitMargin, -hitMargin, size.width + hitMargin * 2, size.height + hitMargin * 2);
 
 		this.outline.clear();
 		this.outline.strokeStyle = { width: Player.OutlineWidth / uiScale, color };
@@ -501,6 +537,44 @@ export abstract class Player extends Entity {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
 
+	private getRotationCorner(event: pixi.FederatedPointerEvent): string | null {
+		const localPoint = event.getLocalPosition(this.getContainer());
+		const size = this.getSize();
+		const uiScale = this.getUIScale();
+		const handleRadius = Player.ScaleHandleRadius / uiScale;
+		const rotationZone = Player.RotationHitZone / uiScale;
+
+		const cornerCoords = [
+			{ x: 0, y: 0 },
+			{ x: size.width, y: 0 },
+			{ x: size.width, y: size.height },
+			{ x: 0, y: size.height }
+		];
+
+		const isOutsideContent = localPoint.x < 0 || localPoint.x > size.width || localPoint.y < 0 || localPoint.y > size.height;
+		if (!isOutsideContent) return null;
+
+		for (let i = 0; i < cornerCoords.length; i += 1) {
+			const corner = cornerCoords[i];
+			const dx = localPoint.x - corner.x;
+			const dy = localPoint.y - corner.y;
+			const distance = Math.sqrt(dx * dx + dy * dy);
+
+			if (distance > handleRadius && distance < handleRadius + rotationZone) {
+				return Player.CornerNames[i];
+			}
+		}
+		return null;
+	}
+
+	private getContentCenter(): Vector {
+		const bounds = this.contentContainer.getBounds();
+		return {
+			x: bounds.x + bounds.width / 2,
+			y: bounds.y + bounds.height / 2
+		};
+	}
+
 	private onPointerStart(event: pixi.FederatedPointerEvent): void {
 		if (event.button !== Pointer.ButtonLeftClick) {
 			return;
@@ -515,6 +589,16 @@ export abstract class Player extends Entity {
 		}
 
 		this.scaleDirection = null;
+
+		// Check for rotation zone click (outside corners)
+		const rotationCorner = this.getRotationCorner(event);
+		if (rotationCorner) {
+			this.isRotating = true;
+			const center = this.getContentCenter();
+			this.rotationStart = Math.atan2(event.globalY - center.y, event.globalX - center.x);
+			this.initialRotation = this.getRotation();
+			return;
+		}
 
 		const isTopLeftScaling = this.topLeftScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
 		if (isTopLeftScaling) {
@@ -785,6 +869,23 @@ export abstract class Player extends Entity {
 			return;
 		}
 
+		// Handle rotation dragging
+		if (this.isRotating && this.rotationStart !== null) {
+			const center = this.getContentCenter();
+			const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
+			const deltaAngle = (currentAngle - this.rotationStart) * (180 / Math.PI);
+
+			const newRotation = this.initialRotation + deltaAngle;
+
+			this.clipConfiguration.transform = {
+				...this.clipConfiguration.transform,
+				rotate: { angle: newRotation }
+			};
+
+			this.rotationKeyframeBuilder = new KeyframeBuilder(newRotation, this.getLength());
+			return;
+		}
+
 		if (this.isDragging) {
 			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
 
@@ -858,24 +959,36 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		// Update cursor based on edge proximity when not dragging (for edge resize)
-		if (this.supportsEdgeResize() && !this.isDragging && !this.scaleDirection && !this.edgeDragDirection) {
-			const localPoint = event.getLocalPosition(this.getContainer());
-			const size = this.getSize();
-			const hitZone = Player.EdgeHitZone / this.getUIScale();
+		// Update cursor based on proximity when not dragging
+		if (!this.isDragging && !this.scaleDirection && !this.edgeDragDirection && !this.isRotating) {
+			// Check for rotation cursor (outside corners)
+			const rotationCorner = this.getRotationCorner(event);
+			if (rotationCorner && Player.RotationCursors[rotationCorner]) {
+				this.getContainer().cursor = Player.RotationCursors[rotationCorner];
+				return;
+			}
 
-			const nearLeft = localPoint.x >= -hitZone && localPoint.x <= hitZone;
-			const nearRight = localPoint.x >= size.width - hitZone && localPoint.x <= size.width + hitZone;
-			const nearTop = localPoint.y >= -hitZone && localPoint.y <= hitZone;
-			const nearBottom = localPoint.y >= size.height - hitZone && localPoint.y <= size.height + hitZone;
+			// Check for edge resize cursor
+			if (this.supportsEdgeResize()) {
+				const localPoint = event.getLocalPosition(this.getContainer());
+				const size = this.getSize();
+				const hitZone = Player.EdgeHitZone / this.getUIScale();
 
-			const withinVerticalRange = localPoint.y > hitZone && localPoint.y < size.height - hitZone;
-			const withinHorizontalRange = localPoint.x > hitZone && localPoint.x < size.width - hitZone;
+				const nearLeft = localPoint.x >= -hitZone && localPoint.x <= hitZone;
+				const nearRight = localPoint.x >= size.width - hitZone && localPoint.x <= size.width + hitZone;
+				const nearTop = localPoint.y >= -hitZone && localPoint.y <= hitZone;
+				const nearBottom = localPoint.y >= size.height - hitZone && localPoint.y <= size.height + hitZone;
 
-			if ((nearLeft || nearRight) && withinVerticalRange) {
-				this.getContainer().cursor = "ew-resize";
-			} else if ((nearTop || nearBottom) && withinHorizontalRange) {
-				this.getContainer().cursor = "ns-resize";
+				const withinVerticalRange = localPoint.y > hitZone && localPoint.y < size.height - hitZone;
+				const withinHorizontalRange = localPoint.x > hitZone && localPoint.x < size.width - hitZone;
+
+				if ((nearLeft || nearRight) && withinVerticalRange) {
+					this.getContainer().cursor = "ew-resize";
+				} else if ((nearTop || nearBottom) && withinHorizontalRange) {
+					this.getContainer().cursor = "ns-resize";
+				} else {
+					this.getContainer().cursor = "pointer";
+				}
 			} else {
 				this.getContainer().cursor = "pointer";
 			}
@@ -883,7 +996,7 @@ export abstract class Player extends Entity {
 	}
 
 	private onPointerUp(): void {
-		if ((this.isDragging || this.scaleDirection !== null || this.edgeDragDirection !== null) && this.hasStateChanged()) {
+		if ((this.isDragging || this.scaleDirection !== null || this.edgeDragDirection !== null || this.isRotating) && this.hasStateChanged()) {
 			this.edit.setUpdatedClip(this, this.initialClipConfiguration, structuredClone(this.clipConfiguration));
 		}
 
@@ -897,6 +1010,9 @@ export abstract class Player extends Entity {
 		this.edgeDragDirection = null;
 		this.edgeDragStart = { x: 0, y: 0 };
 		this.originalDimensions = null;
+
+		this.isRotating = false;
+		this.rotationStart = null;
 
 		this.initialClipConfiguration = null;
 	}
