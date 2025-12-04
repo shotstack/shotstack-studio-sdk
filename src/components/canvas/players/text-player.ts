@@ -26,17 +26,8 @@ export class TextPlayer extends Player {
 		const fontFamily = textAsset.font?.family ?? "Open Sans";
 		await this.loadFont(fontFamily);
 
-		// Create background if specified
 		this.background = new pixi.Graphics();
-		if (textAsset.background) {
-			this.background.fillStyle = {
-				color: textAsset.background.color,
-				alpha: textAsset.background.opacity
-			};
-
-			this.background.rect(0, 0, textAsset.width ?? this.edit.size.width, textAsset.height ?? this.edit.size.height);
-			this.background.fill();
-		}
+		this.drawBackground();
 
 		// Create and style text
 		this.text = new pixi.Text(textAsset.text, this.createTextStyle(textAsset));
@@ -83,8 +74,8 @@ export class TextPlayer extends Player {
 		const textAsset = this.clipConfiguration.asset as TextAsset;
 
 		return {
-			width: textAsset.width ?? this.edit.size.width,
-			height: textAsset.height ?? this.edit.size.height
+			width: this.clipConfiguration.width ?? textAsset.width ?? this.edit.size.width,
+			height: this.clipConfiguration.height ?? textAsset.height ?? this.edit.size.height
 		};
 	}
 
@@ -99,9 +90,29 @@ export class TextPlayer extends Player {
 		return { x: scale, y: scale };
 	}
 
+	protected override supportsEdgeResize(): boolean {
+		return true;
+	}
+
+	protected override onDimensionsChanged(): void {
+		this.drawBackground();
+
+		if (this.text) {
+			const textAsset = this.clipConfiguration.asset as TextAsset;
+			this.text.style.wordWrapWidth = this.getSize().width;
+			this.positionText(textAsset);
+		}
+	}
+
+	protected override applyFixedDimensions(): void {
+		// No-op: base implementation expects a Sprite with texture for fit/crop.
+		// Text uses Graphics + Text objects that size themselves via getSize().
+	}
+
 	private createTextStyle(textAsset: TextAsset): pixi.TextStyle {
 		const fontFamily = textAsset.font?.family ?? "Open Sans";
 		const { baseFontFamily, fontWeight } = parseFontFamily(fontFamily);
+		const { width } = this.getSize();
 
 		return new pixi.TextStyle({
 			fontFamily: baseFontFamily,
@@ -109,7 +120,7 @@ export class TextPlayer extends Player {
 			fill: textAsset.font?.color ?? "#ffffff",
 			fontWeight: fontWeight.toString() as pixi.TextStyleFontWeight,
 			wordWrap: true,
-			wordWrapWidth: textAsset.width ?? this.edit.size.width,
+			wordWrapWidth: width,
 			lineHeight: (textAsset.font?.lineHeight ?? 1) * (textAsset.font?.size ?? 32),
 			align: textAsset.alignment?.horizontal ?? "center"
 		});
@@ -120,8 +131,7 @@ export class TextPlayer extends Player {
 
 		const textAlignmentHorizontal = textAsset.alignment?.horizontal ?? "center";
 		const textAlignmentVertical = textAsset.alignment?.vertical ?? "center";
-		const containerWidth = textAsset.width ?? this.edit.size.width;
-		const containerHeight = textAsset.height ?? this.edit.size.height;
+		const { width: containerWidth, height: containerHeight } = this.getSize();
 
 		let textX = containerWidth / 2 - this.text.width / 2;
 		let textY = containerHeight / 2 - this.text.height / 2;
@@ -139,6 +149,20 @@ export class TextPlayer extends Player {
 		}
 
 		this.text.position.set(textX, textY);
+	}
+
+	private drawBackground(): void {
+		const textAsset = this.clipConfiguration.asset as TextAsset;
+		if (!this.background || !textAsset.background) return;
+
+		const { width, height } = this.getSize();
+		this.background.clear();
+		this.background.fillStyle = {
+			color: textAsset.background.color,
+			alpha: textAsset.background.opacity
+		};
+		this.background.rect(0, 0, width, height);
+		this.background.fill();
 	}
 
 	public updateTextContent(newText: string, initialConfig: Clip): void {
