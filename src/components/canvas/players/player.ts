@@ -188,8 +188,8 @@ export abstract class Player extends Entity {
 		this.outline = new pixi.Graphics();
 		this.getContainer().addChild(this.outline);
 
-		// Only create corner scale handles for assets that don't use edge resize
-		if (!this.supportsEdgeResize()) {
+		// Create corner resize handles for assets that support edge resize
+		if (this.supportsEdgeResize()) {
 			this.topLeftScaleHandle = new pixi.Graphics();
 			this.topRightScaleHandle = new pixi.Graphics();
 			this.bottomRightScaleHandle = new pixi.Graphics();
@@ -199,6 +199,16 @@ export abstract class Player extends Entity {
 			this.topRightScaleHandle.zIndex = 1000;
 			this.bottomRightScaleHandle.zIndex = 1000;
 			this.bottomLeftScaleHandle.zIndex = 1000;
+
+			// Set resize cursors for corner handles
+			this.topLeftScaleHandle.eventMode = "static";
+			this.topLeftScaleHandle.cursor = "nwse-resize";
+			this.topRightScaleHandle.eventMode = "static";
+			this.topRightScaleHandle.cursor = "nesw-resize";
+			this.bottomRightScaleHandle.eventMode = "static";
+			this.bottomRightScaleHandle.cursor = "nwse-resize";
+			this.bottomLeftScaleHandle.eventMode = "static";
+			this.bottomLeftScaleHandle.cursor = "nesw-resize";
 
 			this.getContainer().addChild(this.topLeftScaleHandle);
 			this.getContainer().addChild(this.topRightScaleHandle);
@@ -528,10 +538,32 @@ export abstract class Player extends Entity {
 		}
 
 		if (this.scaleDirection !== null) {
-			this.scaleStart = this.getScale() / this.getFitScale();
-
 			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-			this.scaleOffset = timelinePoint;
+			this.edgeDragStart = timelinePoint;
+
+			// Get current offset values
+			const currentOffsetX = this.offsetXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
+			const currentOffsetY = this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
+
+			// Use existing dimensions if set, otherwise calculate visual size
+			let width: number;
+			let height: number;
+			if (this.clipConfiguration.width && this.clipConfiguration.height) {
+				width = this.clipConfiguration.width;
+				height = this.clipConfiguration.height;
+			} else {
+				const contentSize = this.getContentSize();
+				const fitScale = this.getFitScale();
+				width = contentSize.width * fitScale;
+				height = contentSize.height * fitScale;
+			}
+
+			this.originalDimensions = {
+				width,
+				height,
+				offsetX: currentOffsetX,
+				offsetY: currentOffsetY
+			};
 
 			return;
 		}
@@ -608,22 +640,70 @@ export abstract class Player extends Entity {
 	}
 
 	private onPointerMove(event: pixi.FederatedPointerEvent): void {
-		if (this.scaleDirection !== null && this.scaleStart !== null) {
+		// Handle corner resize dragging (two-axis resize)
+		if (this.scaleDirection !== null && this.originalDimensions !== null) {
 			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
 
-			const position = this.getPosition();
-			const pivot = this.getPivot();
+			const deltaX = timelinePoint.x - this.edgeDragStart.x;
+			const deltaY = timelinePoint.y - this.edgeDragStart.y;
 
-			const center: Vector = { x: position.x + pivot.x, y: position.y + pivot.y };
+			let newWidth = this.originalDimensions.width;
+			let newHeight = this.originalDimensions.height;
+			let newOffsetX = this.originalDimensions.offsetX;
+			let newOffsetY = this.originalDimensions.offsetY;
 
-			const initialDistance = Math.sqrt((this.scaleOffset.x - center.x) ** 2 + (this.scaleOffset.y - center.y) ** 2);
-			const currentDistance = Math.sqrt((timelinePoint.x - center.x) ** 2 + (timelinePoint.y - center.y) ** 2);
+			switch (this.scaleDirection) {
+				case "topLeft":
+					// Decrease width, decrease height, shift offset to keep bottom-right fixed
+					newWidth = this.originalDimensions.width - deltaX;
+					newHeight = this.originalDimensions.height - deltaY;
+					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
+					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
+					break;
+				case "topRight":
+					// Increase width, decrease height, shift offset to keep bottom-left fixed
+					newWidth = this.originalDimensions.width + deltaX;
+					newHeight = this.originalDimensions.height - deltaY;
+					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
+					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
+					break;
+				case "bottomLeft":
+					// Decrease width, increase height, shift offset to keep top-right fixed
+					newWidth = this.originalDimensions.width - deltaX;
+					newHeight = this.originalDimensions.height + deltaY;
+					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
+					newOffsetY = this.originalDimensions.offsetY + deltaY / 2 / this.edit.size.height;
+					break;
+				case "bottomRight":
+					// Increase width, increase height, shift offset to keep top-left fixed
+					newWidth = this.originalDimensions.width + deltaX;
+					newHeight = this.originalDimensions.height + deltaY;
+					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
+					newOffsetY = this.originalDimensions.offsetY + deltaY / 2 / this.edit.size.height;
+					break;
+			}
 
-			const scaleRatio = currentDistance / initialDistance;
-			const targetScale = this.scaleStart * scaleRatio;
+			// Clamp dimensions
+			newWidth = Math.max(Player.MinDimension, Math.min(newWidth, Player.MaxDimension));
+			newHeight = Math.max(Player.MinDimension, Math.min(newHeight, Player.MaxDimension));
 
-			this.clipConfiguration.scale = Math.max(Player.MinScale, Math.min(targetScale, Player.MaxScale));
-			this.scaleKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.scale, this.getLength(), 1);
+			// Apply dimensions
+			this.clipConfiguration.width = newWidth;
+			this.clipConfiguration.height = newHeight;
+
+			// Apply offset
+			if (!this.clipConfiguration.offset) {
+				this.clipConfiguration.offset = { x: 0, y: 0 };
+			}
+			this.clipConfiguration.offset.x = newOffsetX;
+			this.clipConfiguration.offset.y = newOffsetY;
+
+			// Update keyframe builders
+			this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.x, this.getLength());
+			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
+
+			// Notify subclass about dimension change
+			this.onDimensionsChanged();
 
 			return;
 		}
