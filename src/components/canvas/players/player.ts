@@ -34,29 +34,58 @@ export abstract class Player extends Entity {
 
 	private static readonly EdgeHitZone = 8;
 	private static readonly RotationHitZone = 15;
+	private static readonly ExpandedHitArea = 10000;
 	private static readonly CornerNames = ["topLeft", "topRight", "bottomRight", "bottomLeft"] as const;
 
-	// Curved arrow cursor path from rotation-cursors.svg
+	// Curved arrow for rotation cursor
 	private static readonly RotationCursorPath =
 		"M1113.142,1956.331C1008.608,1982.71 887.611,2049.487 836.035,2213.487" +
 		"L891.955,2219.403L779,2396L705.496,2199.678L772.745,2206.792" +
 		"C832.051,1999.958 984.143,1921.272 1110.63,1892.641L1107.952,1824.711" +
 		"L1299,1911L1115.34,2012.065L1113.142,1956.331Z";
 
-	private static buildRotationCursor(rotateDeg: number): string {
+	// Double-headed arrow for resize cursor
+	private static readonly ResizeCursorPath =
+		"M1320,2186L1085,2421L1120,2457L975,2496" +
+		"L1014,2351L1050,2386L1285,2151L1250,2115" +
+		"L1396,2075L1356,2221L1320,2186Z";
+	private static readonly ResizeCursorMatrix = "matrix(0.807871,0.707107,-0.807871,0.707107,2111.872433,-206.020386)";
+
+	// Base angles for cursors (before clip rotation is applied)
+	private static readonly CursorBaseAngles: Record<string, number> = {
+		// Rotation cursor angles
+		topLeft: 0,
+		topRight: 90,
+		bottomRight: 180,
+		bottomLeft: 270,
+		// Resize cursor angles (NW-SE diagonal = 45°, NE-SW = -45°, horizontal = 0°, vertical = 90°)
+		topLeftResize: 45,
+		topRightResize: -45,
+		bottomRightResize: 45,
+		bottomLeftResize: -45,
+		left: 0,
+		right: 0,
+		top: 90,
+		bottom: 90
+	};
+
+	private static buildRotationCursor(angleDeg: number): string {
 		const path = Player.RotationCursorPath;
-		const transform = rotateDeg === 0 ? "" : `<g transform='translate(1002 2110) rotate(${rotateDeg}) translate(-1002 -2110)'>`;
-		const closeTag = rotateDeg === 0 ? "" : "</g>";
+		const transform = angleDeg === 0 ? "" : `<g transform='translate(1002 2110) rotate(${angleDeg}) translate(-1002 -2110)'>`;
+		const closeTag = angleDeg === 0 ? "" : "</g>";
 		const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='680 1800 640 620'>${transform}<path d='${path}' fill='black' stroke='white' stroke-width='33.33'/>${closeTag}</svg>`;
 		return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, auto`;
 	}
 
-	private static readonly RotationCursors: Record<string, string> = {
-		topLeft: Player.buildRotationCursor(0),
-		topRight: Player.buildRotationCursor(90),
-		bottomRight: Player.buildRotationCursor(180),
-		bottomLeft: Player.buildRotationCursor(270)
-	};
+	private static buildResizeCursor(angleDeg: number): string {
+		const path = Player.ResizeCursorPath;
+		const matrix = Player.ResizeCursorMatrix;
+		const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='905 1940 640 620'>` +
+			`<g transform='rotate(${angleDeg} 1225 2250)'>` +
+			`<g transform='${matrix}'><path d='${path}' fill='black' stroke='white' stroke-width='33.33'/></g></g></svg>`;
+		return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, auto`;
+	}
+
 	private static readonly MinDimension = 50;
 	private static readonly MaxDimension = 3840;
 
@@ -87,8 +116,6 @@ export abstract class Player extends Entity {
 	private dragOffset: Vector;
 
 	private scaleDirection: "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | null;
-	private scaleStart: number | null;
-	private scaleOffset: Vector;
 
 	private edgeDragDirection: "left" | "right" | "top" | "bottom" | null;
 	private edgeDragStart: Vector;
@@ -97,6 +124,7 @@ export abstract class Player extends Entity {
 	private isRotating: boolean;
 	private rotationStart: number | null;
 	private initialRotation: number;
+	private rotationCorner: (typeof Player.CornerNames)[number] | null;
 
 	private initialClipConfiguration: Clip | null;
 	protected contentContainer: pixi.Container;
@@ -132,8 +160,6 @@ export abstract class Player extends Entity {
 		this.dragOffset = { x: 0, y: 0 };
 
 		this.scaleDirection = null;
-		this.scaleStart = null;
-		this.scaleOffset = { x: 0, y: 0 };
 
 		this.edgeDragDirection = null;
 		this.edgeDragStart = { x: 0, y: 0 };
@@ -142,6 +168,7 @@ export abstract class Player extends Entity {
 		this.isRotating = false;
 		this.rotationStart = null;
 		this.initialRotation = 0;
+		this.rotationCorner = null;
 
 		this.initialClipConfiguration = null;
 
@@ -232,15 +259,15 @@ export abstract class Player extends Entity {
 			this.bottomRightScaleHandle.zIndex = 1000;
 			this.bottomLeftScaleHandle.zIndex = 1000;
 
-			// Set resize cursors for corner handles
+			// Set resize cursors for corner handles (dynamic based on rotation)
 			this.topLeftScaleHandle.eventMode = "static";
-			this.topLeftScaleHandle.cursor = "nwse-resize";
+			this.topLeftScaleHandle.cursor = this.getCornerResizeCursor("topLeft");
 			this.topRightScaleHandle.eventMode = "static";
-			this.topRightScaleHandle.cursor = "nesw-resize";
+			this.topRightScaleHandle.cursor = this.getCornerResizeCursor("topRight");
 			this.bottomRightScaleHandle.eventMode = "static";
-			this.bottomRightScaleHandle.cursor = "nwse-resize";
+			this.bottomRightScaleHandle.cursor = this.getCornerResizeCursor("bottomRight");
 			this.bottomLeftScaleHandle.eventMode = "static";
-			this.bottomLeftScaleHandle.cursor = "nesw-resize";
+			this.bottomLeftScaleHandle.cursor = this.getCornerResizeCursor("bottomLeft");
 
 			this.getContainer().addChild(this.topLeftScaleHandle);
 			this.getContainer().addChild(this.topRightScaleHandle);
@@ -316,8 +343,12 @@ export abstract class Player extends Entity {
 		const uiScale = this.getUIScale();
 
 		// Expand hit area to include rotation zones outside corners
-		const hitMargin = (Player.RotationHitZone + Player.ScaleHandleRadius) / uiScale;
-		this.getContainer().hitArea = new pixi.Rectangle(-hitMargin, -hitMargin, size.width + hitMargin * 2, size.height + hitMargin * 2);
+		// During drag operations, keep the expanded hit area to capture mouse events anywhere
+		const isDraggingHandle = this.isRotating || this.scaleDirection !== null || this.edgeDragDirection !== null;
+		if (!isDraggingHandle) {
+			const hitMargin = (Player.RotationHitZone + Player.ScaleHandleRadius) / uiScale;
+			this.getContainer().hitArea = new pixi.Rectangle(-hitMargin, -hitMargin, size.width + hitMargin * 2, size.height + hitMargin * 2);
+		}
 
 		this.outline.clear();
 		this.outline.strokeStyle = { width: Player.OutlineWidth / uiScale, color };
@@ -537,7 +568,7 @@ export abstract class Player extends Entity {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
 
-	private getRotationCorner(event: pixi.FederatedPointerEvent): string | null {
+	private getRotationCorner(event: pixi.FederatedPointerEvent): (typeof Player.CornerNames)[number] | null {
 		const localPoint = event.getLocalPosition(this.getContainer());
 		const size = this.getSize();
 		const uiScale = this.getUIScale();
@@ -575,6 +606,21 @@ export abstract class Player extends Entity {
 		};
 	}
 
+	private getRotationCursor(corner: string): string {
+		const baseAngle = Player.CursorBaseAngles[corner] ?? 0;
+		return Player.buildRotationCursor(baseAngle + this.getRotation());
+	}
+
+	private getCornerResizeCursor(corner: string): string {
+		const baseAngle = Player.CursorBaseAngles[`${corner}Resize`] ?? 45;
+		return Player.buildResizeCursor(baseAngle + this.getRotation());
+	}
+
+	private getEdgeResizeCursor(edge: "left" | "right" | "top" | "bottom"): string {
+		const baseAngle = Player.CursorBaseAngles[edge] ?? 0;
+		return Player.buildResizeCursor(baseAngle + this.getRotation());
+	}
+
 	private onPointerStart(event: pixi.FederatedPointerEvent): void {
 		if (event.button !== Pointer.ButtonLeftClick) {
 			return;
@@ -594,9 +640,14 @@ export abstract class Player extends Entity {
 		const rotationCorner = this.getRotationCorner(event);
 		if (rotationCorner) {
 			this.isRotating = true;
+			this.rotationCorner = rotationCorner;
 			const center = this.getContentCenter();
 			this.rotationStart = Math.atan2(event.globalY - center.y, event.globalX - center.x);
 			this.initialRotation = this.getRotation();
+
+			// Expand hit area to capture pointer events anywhere during rotation drag
+			const size = Player.ExpandedHitArea;
+			this.getContainer().hitArea = new pixi.Rectangle(-size, -size, size * 2, size * 2);
 			return;
 		}
 
@@ -656,6 +707,9 @@ export abstract class Player extends Entity {
 				offsetY: currentOffsetY
 			};
 
+			// Expand hit area to capture pointer events anywhere during resize drag
+			const hitSize = Player.ExpandedHitArea;
+			this.getContainer().hitArea = new pixi.Rectangle(-hitSize, -hitSize, hitSize * 2, hitSize * 2);
 			return;
 		}
 
@@ -724,6 +778,9 @@ export abstract class Player extends Entity {
 					offsetY: currentOffsetY
 				};
 
+				// Expand hit area to capture pointer events anywhere during resize drag
+				const hitSize = Player.ExpandedHitArea;
+				this.getContainer().hitArea = new pixi.Rectangle(-hitSize, -hitSize, hitSize * 2, hitSize * 2);
 				return;
 			}
 		}
@@ -883,6 +940,11 @@ export abstract class Player extends Entity {
 			};
 
 			this.rotationKeyframeBuilder = new KeyframeBuilder(newRotation, this.getLength());
+
+			// Update cursor to follow the rotation
+			if (this.rotationCorner) {
+				this.getContainer().cursor = this.getRotationCursor(this.rotationCorner);
+			}
 			return;
 		}
 
@@ -963,8 +1025,8 @@ export abstract class Player extends Entity {
 		if (!this.isDragging && !this.scaleDirection && !this.edgeDragDirection && !this.isRotating) {
 			// Check for rotation cursor (outside corners)
 			const rotationCorner = this.getRotationCorner(event);
-			if (rotationCorner && Player.RotationCursors[rotationCorner]) {
-				this.getContainer().cursor = Player.RotationCursors[rotationCorner];
+			if (rotationCorner) {
+				this.getContainer().cursor = this.getRotationCursor(rotationCorner);
 				return;
 			}
 
@@ -983,9 +1045,9 @@ export abstract class Player extends Entity {
 				const withinHorizontalRange = localPoint.x > hitZone && localPoint.x < size.width - hitZone;
 
 				if ((nearLeft || nearRight) && withinVerticalRange) {
-					this.getContainer().cursor = "ew-resize";
+					this.getContainer().cursor = this.getEdgeResizeCursor(nearLeft ? "left" : "right");
 				} else if ((nearTop || nearBottom) && withinHorizontalRange) {
-					this.getContainer().cursor = "ns-resize";
+					this.getContainer().cursor = this.getEdgeResizeCursor(nearTop ? "top" : "bottom");
 				} else {
 					this.getContainer().cursor = "pointer";
 				}
@@ -1004,8 +1066,6 @@ export abstract class Player extends Entity {
 		this.dragOffset = { x: 0, y: 0 };
 
 		this.scaleDirection = null;
-		this.scaleStart = null;
-		this.scaleOffset = { x: 0, y: 0 };
 
 		this.edgeDragDirection = null;
 		this.edgeDragStart = { x: 0, y: 0 };
@@ -1013,6 +1073,7 @@ export abstract class Player extends Entity {
 
 		this.isRotating = false;
 		this.rotationStart = null;
+		this.rotationCorner = null;
 
 		this.initialClipConfiguration = null;
 	}
@@ -1023,12 +1084,6 @@ export abstract class Player extends Entity {
 
 	private onPointerOut(): void {
 		this.isHovering = false;
-	}
-
-	private clipHasPresets(): boolean {
-		return (
-			Boolean(this.clipConfiguration.effect) || Boolean(this.clipConfiguration.transition?.in) || Boolean(this.clipConfiguration.transition?.out)
-		);
 	}
 
 	private clipHasKeyframes(): boolean {
