@@ -8,7 +8,8 @@ export const TextAssetFontSchema = zod
 		family: zod.string().optional(),
 		size: zod.coerce.number().positive().optional(),
 		weight: zod.number().optional(),
-		lineHeight: zod.number().optional()
+		lineHeight: zod.number().optional(),
+		opacity: zod.number().min(0).max(1).optional()
 	})
 	.strict();
 
@@ -22,13 +23,15 @@ export const TextAssetAlignmentSchema = zod
 export const TextAssetBackgroundSchema = zod
 	.object({
 		color: TextAssetColorSchema,
-		opacity: zod.number().min(0).max(1).default(1)
+		opacity: zod.number().min(0).max(1).default(1),
+		padding: zod.number().min(0).max(100).optional(),
+		borderRadius: zod.number().min(0).optional()
 	})
 	.strict();
 
 export const TextAssetStrokeSchema = zod
 	.object({
-		width: zod.number().positive(),
+		width: zod.number().positive().optional(),
 		color: TextAssetColorSchema
 	})
 	.strict();
