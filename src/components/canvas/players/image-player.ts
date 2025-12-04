@@ -80,6 +80,10 @@ export class ImagePlayer extends Player {
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 
+	public override getContentSize(): Size {
+		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
+	}
+
 	protected override supportsEdgeResize(): boolean {
 		return true;
 	}

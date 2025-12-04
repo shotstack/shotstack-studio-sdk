@@ -519,6 +519,15 @@ export abstract class Player extends Entity {
 
 	public abstract getSize(): Size;
 
+	/**
+	 * Returns the source content dimensions (before fit scaling).
+	 * Override in subclasses that have different source vs output sizes.
+	 * Default implementation returns getSize().
+	 */
+	public getContentSize(): Size {
+		return this.getSize();
+	}
+
 	public getOpacity(): number {
 		return this.opacityKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 	}
@@ -538,21 +547,21 @@ export abstract class Player extends Entity {
 	}
 
 	protected getFitScale(): number {
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			return 1;
-		}
+		const targetWidth = this.clipConfiguration.width ?? this.edit.size.width;
+		const targetHeight = this.clipConfiguration.height ?? this.edit.size.height;
+		const contentSize = this.getContentSize();
 
 		switch (this.clipConfiguration.fit ?? "crop") {
 			case "crop": {
-				const ratioX = this.edit.size.width / this.getSize().width;
-				const ratioY = this.edit.size.height / this.getSize().height;
-				const isPortrait = this.edit.size.height >= this.edit.size.width;
+				const ratioX = targetWidth / contentSize.width;
+				const ratioY = targetHeight / contentSize.height;
+				const isPortrait = targetHeight >= targetWidth;
 				return isPortrait ? ratioY : ratioX;
 			}
 			case "cover":
-				return Math.max(this.edit.size.width / this.getSize().width, this.edit.size.height / this.getSize().height);
+				return Math.max(targetWidth / contentSize.width, targetHeight / contentSize.height);
 			case "contain":
-				return Math.min(this.edit.size.width / this.getSize().width, this.edit.size.height / this.getSize().height);
+				return Math.min(targetWidth / contentSize.width, targetHeight / contentSize.height);
 			case "none":
 			default:
 				return 1;
@@ -568,20 +577,24 @@ export abstract class Player extends Entity {
 	}
 
 	protected getContainerScale(): Vector {
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			return { x: 1, y: 1 };
-		}
-
 		const baseScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
-		const size = this.getSize();
-		const fit = this.clipConfiguration.fit ?? "crop";
 
-		if (size.width === 0 || size.height === 0) {
+		// When explicit dimensions are set, applyFixedDimensions() handles fit scaling internally
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			return { x: baseScale, y: baseScale };
 		}
 
-		const ratioX = this.edit.size.width / size.width;
-		const ratioY = this.edit.size.height / size.height;
+		const contentSize = this.getContentSize();
+		const fit = this.clipConfiguration.fit ?? "crop";
+
+		if (contentSize.width === 0 || contentSize.height === 0) {
+			return { x: baseScale, y: baseScale };
+		}
+
+		const targetWidth = this.edit.size.width;
+		const targetHeight = this.edit.size.height;
+		const ratioX = targetWidth / contentSize.width;
+		const ratioY = targetHeight / contentSize.height;
 
 		switch (fit) {
 			case "contain": {
@@ -589,7 +602,7 @@ export abstract class Player extends Entity {
 				return { x: uniform, y: uniform };
 			}
 			case "crop": {
-				const isPortrait = this.edit.size.height >= this.edit.size.width;
+				const isPortrait = targetHeight >= targetWidth;
 				const uniform = (isPortrait ? ratioY : ratioX) * baseScale;
 				return { x: uniform, y: uniform };
 			}
@@ -687,13 +700,27 @@ export abstract class Player extends Entity {
 				const timelinePoint = event.getLocalPosition(this.edit.getContainer());
 				this.edgeDragStart = timelinePoint;
 
-				const currentSize = this.getSize();
 				// Get current offset values from keyframe builders (handles both numeric and keyframe array cases)
 				const currentOffsetX = this.offsetXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
 				const currentOffsetY = this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
+
+				// Use existing dimensions if set, otherwise calculate visual size from content + fit scaling
+				let width: number;
+				let height: number;
+				if (this.clipConfiguration.width && this.clipConfiguration.height) {
+					width = this.clipConfiguration.width;
+					height = this.clipConfiguration.height;
+				} else {
+					// Calculate the visual size (content scaled by fit)
+					const contentSize = this.getContentSize();
+					const fitScale = this.getFitScale();
+					width = contentSize.width * fitScale;
+					height = contentSize.height * fitScale;
+				}
+
 				this.originalDimensions = {
-					width: currentSize.width,
-					height: currentSize.height,
+					width,
+					height,
 					offsetX: currentOffsetX,
 					offsetY: currentOffsetY
 				};
