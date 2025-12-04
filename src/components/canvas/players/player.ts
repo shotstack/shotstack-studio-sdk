@@ -686,14 +686,14 @@ export abstract class Player extends Entity {
 					newWidth = this.originalDimensions.width - deltaX;
 					newHeight = this.originalDimensions.height + deltaY;
 					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					newOffsetY = this.originalDimensions.offsetY + deltaY / 2 / this.edit.size.height;
+					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
 					break;
 				case "bottomRight":
 					// Increase width, increase height, shift offset to keep top-left fixed
 					newWidth = this.originalDimensions.width + deltaX;
 					newHeight = this.originalDimensions.height + deltaY;
 					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					newOffsetY = this.originalDimensions.offsetY + deltaY / 2 / this.edit.size.height;
+					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
 					break;
 				default:
 					break;
