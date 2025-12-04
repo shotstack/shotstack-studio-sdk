@@ -293,12 +293,7 @@ export abstract class Player extends Entity {
 		}
 
 		// Draw corner scale handles (only for assets that don't support edge resize)
-		if (
-			this.topLeftScaleHandle &&
-			this.topRightScaleHandle &&
-			this.bottomRightScaleHandle &&
-			this.bottomLeftScaleHandle
-		) {
+		if (this.topLeftScaleHandle && this.topRightScaleHandle && this.bottomRightScaleHandle && this.bottomLeftScaleHandle) {
 			const handleSize = (Player.ScaleHandleRadius * 2) / uiScale;
 
 			this.topLeftScaleHandle.fillStyle = { color };
@@ -321,7 +316,6 @@ export abstract class Player extends Entity {
 			this.bottomLeftScaleHandle.rect(-handleSize / 2, size.height - handleSize / 2, handleSize, handleSize);
 			this.bottomLeftScaleHandle.fill();
 		}
-
 	}
 
 	public override dispose(): void {
@@ -559,8 +553,16 @@ export abstract class Player extends Entity {
 			} else {
 				const contentSize = this.getContentSize();
 				const fitScale = this.getFitScale();
-				width = contentSize.width * fitScale;
-				height = contentSize.height * fitScale;
+				const userScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
+				width = contentSize.width * fitScale * userScale;
+				height = contentSize.height * fitScale * userScale;
+
+				if (this.clipConfiguration.scale !== undefined) {
+					this.clipConfiguration.width = width;
+					this.clipConfiguration.height = height;
+					delete this.clipConfiguration.scale;
+					this.scaleKeyframeBuilder = new KeyframeBuilder(1, this.getLength(), 1);
+				}
 			}
 
 			this.originalDimensions = {
@@ -617,11 +619,18 @@ export abstract class Player extends Entity {
 					width = this.clipConfiguration.width;
 					height = this.clipConfiguration.height;
 				} else {
-					// Calculate the visual size (content scaled by fit)
 					const contentSize = this.getContentSize();
 					const fitScale = this.getFitScale();
-					width = contentSize.width * fitScale;
-					height = contentSize.height * fitScale;
+					const userScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
+					width = contentSize.width * fitScale * userScale;
+					height = contentSize.height * fitScale * userScale;
+
+					if (this.clipConfiguration.scale !== undefined) {
+						this.clipConfiguration.width = width;
+						this.clipConfiguration.height = height;
+						delete this.clipConfiguration.scale;
+						this.scaleKeyframeBuilder = new KeyframeBuilder(1, this.getLength(), 1);
+					}
 				}
 
 				this.originalDimensions = {
