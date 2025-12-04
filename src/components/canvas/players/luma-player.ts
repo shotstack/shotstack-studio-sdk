@@ -107,7 +107,7 @@ export class LumaPlayer extends Player {
 		return 0;
 	}
 
-	public getMask(): pixi.Sprite | null {
+	public getSprite(): pixi.Sprite | null {
 		return this.sprite;
 	}
 }

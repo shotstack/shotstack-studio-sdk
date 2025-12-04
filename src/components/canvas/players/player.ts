@@ -403,6 +403,11 @@ export abstract class Player extends Entity {
 		return this.getSize();
 	}
 
+	/** @internal */
+	public getContentContainer(): pixi.Container {
+		return this.contentContainer;
+	}
+
 	public getOpacity(): number {
 		return this.opacityKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 	}

@@ -1,4 +1,3 @@
-import type { Canvas } from "@canvas/shotstack-canvas";
 import { AudioPlayer } from "@canvas/players/audio-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
@@ -8,6 +7,7 @@ import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
+import type { Canvas } from "@canvas/shotstack-canvas";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
@@ -74,6 +74,7 @@ export class Edit extends Entity {
 	private endLengthClips: Set<Player> = new Set();
 
 	private canvas: Canvas | null = null;
+	private lumaMaskTextures: pixi.Texture[] = [];
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -151,13 +152,16 @@ export class Edit extends Entity {
 	public override dispose(): void {
 		this.clearClips();
 
-		// Clean up mask
+		for (const texture of this.lumaMaskTextures) {
+			texture.destroy(true);
+		}
+		this.lumaMaskTextures = [];
+
 		if (this.viewportMask) {
 			try {
-				// Remove mask first, then destroy the graphics
 				this.getContainer().setMask(null as any);
 			} catch {
-				// Intentionally ignore errors when removing the mask during dispose
+				// Ignore errors when removing mask during dispose
 			}
 			this.viewportMask.destroy();
 			this.viewportMask = undefined;
@@ -222,12 +226,12 @@ export class Edit extends Entity {
 			}
 		}
 
-		// Resolve all timing after clips are loaded
+		this.finalizeLumaMasking();
+
 		await this.resolveAllTiming();
 
 		this.updateTotalDuration();
 
-		// Notify listeners that edit has been reloaded (use resolved values for Timeline)
 		this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
 	}
 	public getEdit(): EditType {
@@ -746,16 +750,54 @@ export class Edit extends Entity {
 
 		trackContainer.addChild(clipToAdd.getContainer());
 
-		const isClipMask = clipToAdd instanceof LumaPlayer;
-
 		await clipToAdd.load();
-
-		if (isClipMask) {
-			trackContainer.setMask({ mask: clipToAdd.getMask(), inverse: true });
-		}
 
 		this.updateTotalDuration();
 	}
+
+	private finalizeLumaMasking(): void {
+		if (!this.canvas) {
+			return;
+		}
+
+		for (const trackClips of this.tracks) {
+			const lumaPlayer = trackClips.find(clip => clip instanceof LumaPlayer) as LumaPlayer | undefined;
+			const lumaSprite = lumaPlayer?.getSprite();
+			const contentClips = trackClips.filter(clip => !(clip instanceof LumaPlayer));
+
+			if (lumaPlayer && lumaSprite?.texture && contentClips.length > 0) {
+				this.applyLumaMasksToClips(lumaSprite.texture, contentClips);
+				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
+			}
+		}
+	}
+
+	private applyLumaMasksToClips(lumaTexture: pixi.Texture, contentClips: Player[]): void {
+		const { renderer } = this.canvas!.application;
+
+		for (const clip of contentClips) {
+			const size = clip.getSize();
+
+			const tempContainer = new pixi.Container();
+			const tempSprite = new pixi.Sprite(lumaTexture);
+			tempSprite.width = size.width;
+			tempSprite.height = size.height;
+
+			const invertFilter = new pixi.ColorMatrixFilter();
+			invertFilter.negative(false);
+			tempSprite.filters = [invertFilter];
+			tempContainer.addChild(tempSprite);
+
+			const maskTexture = renderer.generateTexture(tempContainer);
+			this.lumaMaskTextures.push(maskTexture);
+			tempContainer.destroy({ children: true });
+
+			const maskSprite = new pixi.Sprite(maskTexture);
+			clip.getContainer().addChild(maskSprite);
+			clip.getContentContainer().setMask({ mask: maskSprite });
+		}
+	}
+
 	public selectClip(trackIndex: number, clipIndex: number): void {
 		const command = new SelectClipCommand(trackIndex, clipIndex);
 		this.executeCommand(command);
