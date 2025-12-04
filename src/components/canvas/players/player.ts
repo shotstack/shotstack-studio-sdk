@@ -686,6 +686,8 @@ export abstract class Player extends Entity {
 					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
 					newOffsetY = this.originalDimensions.offsetY + deltaY / 2 / this.edit.size.height;
 					break;
+				default:
+					break;
 			}
 
 			// Clamp dimensions
@@ -745,6 +747,8 @@ export abstract class Player extends Entity {
 					// Dragging bottom edge: height increases, offset shifts down to keep top edge fixed
 					newHeight = this.originalDimensions.height + deltaY;
 					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
+					break;
+				default:
 					break;
 			}
 
