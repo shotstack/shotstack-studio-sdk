@@ -24,7 +24,7 @@ import { Entity } from "../../../core/shared/entity";
 export abstract class Player extends Entity {
 	private static readonly SnapThreshold = 20;
 
-	private static readonly DiscardedFrameCount = Math.ceil((1 / 30) * 1000);
+	private static readonly DiscardedFrameCount = 0;
 
 	private static readonly ScaleHandleRadius = 4;
 	private static readonly OutlineWidth = 1;
