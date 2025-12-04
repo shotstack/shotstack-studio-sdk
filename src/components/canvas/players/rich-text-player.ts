@@ -1,6 +1,6 @@
 import { Player } from "@canvas/players/player";
 import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
-import { type Size } from "@layouts/geometry";
+import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
 import { createTextEngine } from "@shotstack/shotstack-canvas";
 import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
@@ -365,6 +365,12 @@ export class RichTextPlayer extends Player {
 
 	protected override getFitScale(): number {
 		return 1;
+	}
+
+	protected override getContainerScale(): Vector {
+		// Rich text should not be fit-scaled - use only the user-defined scale
+		const scale = this.getScale();
+		return { x: scale, y: scale };
 	}
 
 	protected override supportsEdgeResize(): boolean {

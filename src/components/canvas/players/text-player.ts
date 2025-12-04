@@ -1,7 +1,7 @@
 import { Player } from "@canvas/players/player";
 import { TextEditor } from "@canvas/text/text-editor";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
-import { type Size } from "@layouts/geometry";
+import { type Size, type Vector } from "@layouts/geometry";
 import { type Clip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";
 import * as pixiFilters from "pixi-filters";
@@ -88,6 +88,13 @@ export class TextPlayer extends Player {
 
 	protected override getFitScale(): number {
 		return 1;
+	}
+
+	protected override getContainerScale(): Vector {
+		// Text should not be fit-scaled - use only the user-defined scale
+		// getScale() returns keyframe scale * getFitScale(), and we override getFitScale() to return 1
+		const scale = this.getScale();
+		return { x: scale, y: scale };
 	}
 
 	private createTextStyle(textAsset: TextAsset): pixi.TextStyle {
