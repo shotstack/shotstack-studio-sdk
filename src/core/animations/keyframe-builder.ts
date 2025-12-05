@@ -111,7 +111,9 @@ export class KeyframeBuilder {
 
 			const shouldFillMiddle = current.start + current.length !== next.start;
 			if (shouldFillMiddle) {
-				const fillerKeyframe: Keyframe = { start: current.start + current.length, length: next.start, from: current.to, to: next.from };
+				const fillerStart = current.start + current.length;
+				const fillerLength = next.start - fillerStart;
+				const fillerKeyframe: Keyframe = { start: fillerStart, length: fillerLength, from: current.to, to: next.from };
 				updatedKeyframes.push(fillerKeyframe);
 			}
 		}
