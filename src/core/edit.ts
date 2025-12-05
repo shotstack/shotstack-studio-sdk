@@ -257,7 +257,28 @@ export class Edit extends Entity {
 
 		this.updateTotalDuration();
 
+		if (this.edit.timeline.soundtrack) {
+			await this.loadSoundtrack(this.edit.timeline.soundtrack);
+		}
+
 		this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
+	}
+
+	private async loadSoundtrack(soundtrack: { src: string; effect?: string; volume?: number }): Promise<void> {
+		const clip = ClipSchema.parse({
+			asset: {
+				type: "audio",
+				src: soundtrack.src,
+				effect: soundtrack.effect,
+				volume: soundtrack.volume ?? 1
+			},
+			start: 0,
+			length: this.totalDuration / 1000
+		});
+
+		const player = new AudioPlayer(this, clip);
+		player.layer = this.tracks.length + 1;
+		await this.addPlayer(this.tracks.length, player);
 	}
 	public getEdit(): EditType {
 		return this.buildEditSnapshot(player => player.getTimingIntent());

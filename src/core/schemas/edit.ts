@@ -10,11 +10,22 @@ export const FontSourceSchema = zod
 	})
 	.strict();
 
+export const SoundtrackEffectSchema = zod.enum(["fadeIn", "fadeOut", "fadeInFadeOut"]);
+
+export const SoundtrackSchema = zod
+	.object({
+		src: zod.string().url(),
+		effect: SoundtrackEffectSchema.optional(),
+		volume: zod.number().min(0).max(1).optional()
+	})
+	.strict();
+
 export const TimelineSchema = zod
 	.object({
 		background: zod.string().optional(),
 		fonts: FontSourceSchema.array().optional(),
-		tracks: TrackSchema.array()
+		tracks: TrackSchema.array(),
+		soundtrack: SoundtrackSchema.optional()
 	})
 	.strict();
 
