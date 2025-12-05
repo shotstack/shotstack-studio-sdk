@@ -33,9 +33,6 @@ export class VideoPlayer extends Player {
 		this.skipVideoUpdate = false;
 	}
 
-	/**
-	 * TODO: Add support for .mov and .webm files
-	 */
 	public override async load(): Promise<void> {
 		await super.load();
 
@@ -43,8 +40,11 @@ export class VideoPlayer extends Player {
 
 		const identifier = videoAsset.src;
 
-		if (identifier.endsWith(".mov") || identifier.endsWith(".webm")) {
-			throw new Error(`Video source '${videoAsset.src}' is not supported. .mov and .webm files are currently not supported.`);
+		if (identifier.endsWith(".mov")) {
+			throw new Error(
+				`Video source '${videoAsset.src}' is not supported. ` +
+					`.mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`
+			);
 		}
 
 		const loadOptions: pixi.UnresolvedAsset = { src: identifier, data: { autoPlay: false, muted: false } };
