@@ -497,12 +497,7 @@ export abstract class Player extends Entity {
 		const contentSize = this.getContentSize();
 
 		switch (this.clipConfiguration.fit ?? "crop") {
-			case "crop": {
-				const ratioX = targetWidth / contentSize.width;
-				const ratioY = targetHeight / contentSize.height;
-				const isPortrait = targetHeight >= targetWidth;
-				return isPortrait ? ratioY : ratioX;
-			}
+			case "crop":
 			case "cover":
 				return Math.max(targetWidth / contentSize.width, targetHeight / contentSize.height);
 			case "contain":
@@ -547,8 +542,7 @@ export abstract class Player extends Entity {
 				return { x: uniform, y: uniform };
 			}
 			case "crop": {
-				const isPortrait = targetHeight >= targetWidth;
-				const uniform = (isPortrait ? ratioY : ratioX) * baseScale;
+				const uniform = Math.max(ratioX, ratioY) * baseScale;
 				return { x: uniform, y: uniform };
 			}
 			case "cover": {
