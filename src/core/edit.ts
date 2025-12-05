@@ -74,7 +74,11 @@ export class Edit extends Entity {
 	private endLengthClips: Set<Player> = new Set();
 
 	private canvas: Canvas | null = null;
-	private lumaMaskTextures: pixi.Texture[] = [];
+	private activeLumaMasks: Array<{
+		lumaPlayer: LumaPlayer;
+		maskSprite: pixi.Sprite;
+		tempContainer: pixi.Container;
+	}> = [];
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -134,6 +138,9 @@ export class Edit extends Entity {
 
 		this.disposeClips();
 
+		// Update luma masks for video sources (regenerate mask texture each frame)
+		this.updateLumaMasks();
+
 		if (this.isPlaying) {
 			this.playbackTime = Math.max(0, Math.min(this.playbackTime + elapsed, this.totalDuration));
 
@@ -152,10 +159,11 @@ export class Edit extends Entity {
 	public override dispose(): void {
 		this.clearClips();
 
-		for (const texture of this.lumaMaskTextures) {
-			texture.destroy(true);
+		for (const mask of this.activeLumaMasks) {
+			mask.tempContainer.destroy({ children: true });
+			mask.maskSprite.texture.destroy(true);
 		}
-		this.lumaMaskTextures = [];
+		this.activeLumaMasks = [];
 
 		if (this.viewportMask) {
 			try {
@@ -772,10 +780,14 @@ export class Edit extends Entity {
 		this.updateTotalDuration();
 	}
 
+	/**
+	 * Luma mattes use grayscale video to mask content clips.
+	 * PixiJS masks are inverted vs backend convention (white=visible, not transparent),
+	 * so we bake a negative filter into the mask texture via generateTexture().
+	 * For video luma sources, we regenerate the mask texture each frame.
+	 */
 	private finalizeLumaMasking(): void {
-		if (!this.canvas) {
-			return;
-		}
+		if (!this.canvas) return;
 
 		for (const trackClips of this.tracks) {
 			const lumaPlayer = trackClips.find(clip => clip instanceof LumaPlayer) as LumaPlayer | undefined;
@@ -783,35 +795,45 @@ export class Edit extends Entity {
 			const contentClips = trackClips.filter(clip => !(clip instanceof LumaPlayer));
 
 			if (lumaPlayer && lumaSprite?.texture && contentClips.length > 0) {
-				this.applyLumaMasksToClips(lumaSprite.texture, contentClips);
+				this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
 				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
 			}
 		}
 	}
 
-	private applyLumaMasksToClips(lumaTexture: pixi.Texture, contentClips: Player[]): void {
+	private setupLumaMask(lumaPlayer: LumaPlayer, lumaTexture: pixi.Texture, contentClip: Player): void {
 		const { renderer } = this.canvas!.application;
+		const { width, height } = contentClip.getSize();
 
-		for (const clip of contentClips) {
-			const size = clip.getSize();
+		const tempContainer = new pixi.Container();
+		const tempSprite = new pixi.Sprite(lumaTexture);
+		tempSprite.width = width;
+		tempSprite.height = height;
 
-			const tempContainer = new pixi.Container();
-			const tempSprite = new pixi.Sprite(lumaTexture);
-			tempSprite.width = size.width;
-			tempSprite.height = size.height;
+		const invertFilter = new pixi.ColorMatrixFilter();
+		invertFilter.negative(false);
+		tempSprite.filters = [invertFilter];
+		tempContainer.addChild(tempSprite);
 
-			const invertFilter = new pixi.ColorMatrixFilter();
-			invertFilter.negative(false);
-			tempSprite.filters = [invertFilter];
-			tempContainer.addChild(tempSprite);
+		const maskTexture = renderer.generateTexture(tempContainer);
+		const maskSprite = new pixi.Sprite(maskTexture);
+		contentClip.getContainer().addChild(maskSprite);
+		contentClip.getContentContainer().setMask({ mask: maskSprite });
 
-			const maskTexture = renderer.generateTexture(tempContainer);
-			this.lumaMaskTextures.push(maskTexture);
-			tempContainer.destroy({ children: true });
+		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer });
+	}
 
-			const maskSprite = new pixi.Sprite(maskTexture);
-			clip.getContainer().addChild(maskSprite);
-			clip.getContentContainer().setMask({ mask: maskSprite });
+	private updateLumaMasks(): void {
+		if (!this.canvas) return;
+		const { renderer } = this.canvas.application;
+
+		for (const mask of this.activeLumaMasks) {
+			if (mask.lumaPlayer.isVideoSource()) {
+				const oldTexture = mask.maskSprite.texture;
+				mask.maskSprite.texture = renderer.generateTexture(mask.tempContainer);
+
+				oldTexture.destroy(true);
+			}
 		}
 	}
 

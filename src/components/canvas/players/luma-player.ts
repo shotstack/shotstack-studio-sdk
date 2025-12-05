@@ -110,4 +110,8 @@ export class LumaPlayer extends Player {
 	public getSprite(): pixi.Sprite | null {
 		return this.sprite;
 	}
+
+	public isVideoSource(): boolean {
+		return this.texture?.source instanceof pixi.VideoSource;
+	}
 }
