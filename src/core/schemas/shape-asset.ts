@@ -31,8 +31,8 @@ export const ShapeAssetFillSchema = zod
 
 export const ShapeAssetStrokeSchema = zod
 	.object({
-		color: ShapeAssetColorSchema,
-		width: zod.number().positive()
+		color: ShapeAssetColorSchema.optional(),
+		width: zod.number().min(0).optional()
 	})
 	.strict();
 

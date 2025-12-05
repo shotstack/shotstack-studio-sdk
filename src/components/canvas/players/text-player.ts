@@ -35,8 +35,8 @@ export class TextPlayer extends Player {
 		// Position text according to alignment
 		this.positionText(textAsset);
 
-		// Apply stroke filter if specified
-		if (textAsset.stroke) {
+		// Apply stroke filter if specified with a positive width and color
+		if (textAsset.stroke?.width && textAsset.stroke.width > 0 && textAsset.stroke.color) {
 			const textStrokeFilter = new pixiFilters.OutlineFilter({
 				thickness: textAsset.stroke.width,
 				color: textAsset.stroke.color

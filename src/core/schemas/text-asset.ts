@@ -31,8 +31,8 @@ export const TextAssetBackgroundSchema = zod
 
 export const TextAssetStrokeSchema = zod
 	.object({
-		width: zod.number().positive().optional(),
-		color: TextAssetColorSchema
+		width: zod.number().min(0).optional(),
+		color: TextAssetColorSchema.optional()
 	})
 	.strict();
 

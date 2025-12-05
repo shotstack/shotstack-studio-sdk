@@ -12,7 +12,7 @@ const ClipAnchorSchema = zod.enum(["topLeft", "top", "topRight", "left", "center
 
 const ClipFitSchema = zod.enum(["crop", "cover", "contain", "none"]);
 
-const ClipOffsetValueSchema = zod.number().min(-10).max(10).default(0);
+const ClipOffsetValueSchema = zod.coerce.number().min(-10).max(10).default(0);
 
 const ClipOffsetXSchema = KeyframeSchema.extend({
 	from: ClipOffsetValueSchema,
