@@ -55,6 +55,10 @@ export class VideoPlayer extends Player {
 			throw new Error(`Invalid video source '${videoAsset.src}'.`);
 		}
 
+		// Fix alpha channel rendering for WebM VP9 videos
+		// PixiJS 8's auto-detection is buggy, causing invisible rendering
+		texture.source.alphaMode = "no-premultiply-alpha";
+
 		this.texture = this.createCroppedTexture(texture);
 		this.sprite = new pixi.Sprite(this.texture);
 

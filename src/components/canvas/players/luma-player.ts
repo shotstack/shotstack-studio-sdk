@@ -35,6 +35,12 @@ export class LumaPlayer extends Player {
 			throw new Error(`Invalid luma source '${lumaAsset.src}'.`);
 		}
 
+		// Fix alpha channel rendering for WebM VP9 videos
+		// PixiJS 8's auto-detection is buggy, causing invisible rendering
+		if (texture.source instanceof pixi.VideoSource) {
+			texture.source.alphaMode = "no-premultiply-alpha";
+		}
+
 		this.texture = texture;
 		this.sprite = new pixi.Sprite(this.texture);
 
