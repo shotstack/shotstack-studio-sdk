@@ -7,6 +7,7 @@ export type TransitionKeyframeSet = {
 	opacityKeyframes: Keyframe[];
 	scaleKeyframes: Keyframe[];
 	rotationKeyframes: Keyframe[];
+	maskXKeyframes: Keyframe[];
 };
 
 export class TransitionPresetBuilder {
@@ -22,6 +23,7 @@ export class TransitionPresetBuilder {
 		const opacityKeyframes: Keyframe[] = [];
 		const scaleKeyframes: Keyframe[] = [];
 		const rotationKeyframes: Keyframe[] = [];
+		const maskXKeyframes: Keyframe[] = [];
 
 		const inPresetKeyframeSet = this.buildInPreset();
 		offsetXKeyframes.push(...inPresetKeyframeSet.offsetXKeyframes);
@@ -29,6 +31,7 @@ export class TransitionPresetBuilder {
 		opacityKeyframes.push(...inPresetKeyframeSet.opacityKeyframes);
 		scaleKeyframes.push(...inPresetKeyframeSet.scaleKeyframes);
 		rotationKeyframes.push(...inPresetKeyframeSet.rotationKeyframes);
+		maskXKeyframes.push(...inPresetKeyframeSet.maskXKeyframes);
 
 		const outPresetKeyframeSet = this.buildOutPreset();
 
@@ -37,8 +40,9 @@ export class TransitionPresetBuilder {
 		opacityKeyframes.push(...outPresetKeyframeSet.opacityKeyframes);
 		scaleKeyframes.push(...outPresetKeyframeSet.scaleKeyframes);
 		rotationKeyframes.push(...outPresetKeyframeSet.rotationKeyframes);
+		maskXKeyframes.push(...outPresetKeyframeSet.maskXKeyframes);
 
-		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes, maskXKeyframes };
 	}
 
 	private buildInPreset(): TransitionKeyframeSet {
@@ -47,9 +51,10 @@ export class TransitionPresetBuilder {
 		const opacityKeyframes: Keyframe[] = [];
 		const scaleKeyframes: Keyframe[] = [];
 		const rotationKeyframes: Keyframe[] = [];
+		const maskXKeyframes: Keyframe[] = [];
 
 		if (!this.clipConfiguration.transition?.in) {
-			return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+			return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes, maskXKeyframes };
 		}
 
 		const start = 0;
@@ -167,6 +172,17 @@ export class TransitionPresetBuilder {
 
 				break;
 			}
+			case "reveal":
+			case "wipeRight": {
+				// Wipe/reveal left to right - mask progress 0 → 1
+				maskXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				break;
+			}
+			case "wipeLeft": {
+				// Wipe from right to left - mask progress 1 → 0
+				maskXKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				break;
+			}
 			case "shuffleTopRight":
 			case "shuffleRightTop":
 			case "shuffleRightBottom":
@@ -180,7 +196,7 @@ export class TransitionPresetBuilder {
 				break;
 		}
 
-		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes, maskXKeyframes };
 	}
 
 	private buildOutPreset(): TransitionKeyframeSet {
@@ -189,9 +205,10 @@ export class TransitionPresetBuilder {
 		const opacityKeyframes: Keyframe[] = [];
 		const scaleKeyframes: Keyframe[] = [];
 		const rotationKeyframes: Keyframe[] = [];
+		const maskXKeyframes: Keyframe[] = [];
 
 		if (!this.clipConfiguration.transition?.out) {
-			return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+			return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes, maskXKeyframes };
 		}
 
 		const length = this.getOutPresetLength();
@@ -309,6 +326,17 @@ export class TransitionPresetBuilder {
 
 				break;
 			}
+			case "reveal":
+			case "wipeRight": {
+				// Wipe/reveal out left to right - mask progress 1 → 0
+				maskXKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				break;
+			}
+			case "wipeLeft": {
+				// Wipe out right to left - mask progress 0 → 1
+				maskXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				break;
+			}
 			case "shuffleTopRight":
 			case "shuffleRightTop":
 			case "shuffleRightBottom":
@@ -322,7 +350,7 @@ export class TransitionPresetBuilder {
 				break;
 		}
 
-		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes, maskXKeyframes };
 	}
 
 	private getInPresetName(): string {
@@ -340,9 +368,8 @@ export class TransitionPresetBuilder {
 		const [transitionName, transitionSpeed] = transitionIn.split(/(Slow|Fast|VeryFast)/);
 		const isCarousel = transitionName.startsWith("carousel");
 		const isSlide = transitionName.startsWith("slide");
-		const isZoom = transitionName === "zoom";
 
-		if (isZoom) return 0.4;
+		if (transitionName === "zoom") return 0.4;
 
 		switch (transitionSpeed) {
 			case "Slow":
@@ -361,9 +388,8 @@ export class TransitionPresetBuilder {
 		const [transitionName, transitionSpeed] = transitionOut.split(/(Slow|Fast|VeryFast)/);
 		const isCarousel = transitionName.startsWith("carousel");
 		const isSlide = transitionName.startsWith("slide");
-		const isZoom = transitionName === "zoom";
 
-		if (isZoom) return 0.4;
+		if (transitionName === "zoom") return 0.4;
 
 		switch (transitionSpeed) {
 			case "Slow":

@@ -104,6 +104,9 @@ export abstract class Player extends Entity {
 	private scaleKeyframeBuilder?: KeyframeBuilder;
 	private opacityKeyframeBuilder?: KeyframeBuilder;
 	private rotationKeyframeBuilder?: KeyframeBuilder;
+	private maskXKeyframeBuilder?: KeyframeBuilder;
+
+	private wipeMask: pixi.Graphics | null;
 
 	private outline: pixi.Graphics | null;
 	private topLeftScaleHandle: pixi.Graphics | null;
@@ -147,6 +150,8 @@ export abstract class Player extends Entity {
 		const startValue = typeof clipConfiguration.start === "number" ? clipConfiguration.start * 1000 : 0;
 		const lengthValue = typeof clipConfiguration.length === "number" ? clipConfiguration.length * 1000 : 3000;
 		this.resolvedTiming = { start: startValue, length: lengthValue };
+
+		this.wipeMask = null;
 
 		this.outline = null;
 		this.topLeftScaleHandle = null;
@@ -196,6 +201,7 @@ export abstract class Player extends Entity {
 		const opacityKeyframes: Keyframe[] = [];
 		const scaleKeyframes: Keyframe[] = [];
 		const rotationKeyframes: Keyframe[] = [];
+		const maskXKeyframes: Keyframe[] = [];
 
 		const resolvedClipConfig: ResolvedClipConfig = {
 			...this.clipConfiguration,
@@ -216,6 +222,7 @@ export abstract class Player extends Entity {
 		opacityKeyframes.push(...transitionKeyframeSet.opacityKeyframes);
 		scaleKeyframes.push(...transitionKeyframeSet.scaleKeyframes);
 		rotationKeyframes.push(...transitionKeyframeSet.rotationKeyframes);
+		maskXKeyframes.push(...transitionKeyframeSet.maskXKeyframes);
 
 		if (offsetXKeyframes.length) {
 			const offsetX = this.clipConfiguration.offset?.x;
@@ -239,6 +246,10 @@ export abstract class Player extends Entity {
 
 		if (rotationKeyframes.length) {
 			this.rotationKeyframeBuilder = new KeyframeBuilder(rotationKeyframes, this.getLength());
+		}
+
+		if (maskXKeyframes.length) {
+			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, this.getLength());
 		}
 	}
 
@@ -318,9 +329,42 @@ export abstract class Player extends Entity {
 			this.applyFixedDimensions();
 		}
 
+		// Update wipe/reveal mask animation
+		this.updateWipeMask();
+
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
 		}
+	}
+
+	private updateWipeMask(): void {
+		if (!this.maskXKeyframeBuilder) {
+			// No wipe transition, ensure mask is removed
+			if (this.wipeMask) {
+				this.getContainer().mask = null;
+				this.wipeMask.destroy();
+				this.wipeMask = null;
+			}
+			return;
+		}
+
+		const maskProgress = this.maskXKeyframeBuilder.getValue(this.getPlaybackTime());
+		const size = this.getSize();
+
+		// Create mask if it doesn't exist
+		// Apply to main container (not contentContainer) to avoid conflict with fixed dimensions mask
+		if (!this.wipeMask) {
+			this.wipeMask = new pixi.Graphics();
+			this.getContainer().addChild(this.wipeMask);
+			this.getContainer().mask = this.wipeMask;
+		}
+
+		// Update mask to create wipe effect
+		// maskProgress 0 → 1 reveals content from left to right
+		// maskProgress 1 → 0 hides content from right to left
+		this.wipeMask.clear();
+		this.wipeMask.rect(0, 0, size.width * maskProgress, size.height);
+		this.wipeMask.fill(0xffffff);
 	}
 
 	public override draw(): void {
@@ -404,6 +448,9 @@ export abstract class Player extends Entity {
 
 		this.bottomRightScaleHandle?.destroy();
 		this.bottomRightScaleHandle = null;
+
+		this.wipeMask?.destroy();
+		this.wipeMask = null;
 
 		this.contentContainer?.destroy();
 	}
