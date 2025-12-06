@@ -22,6 +22,7 @@ import { applyMergeFields } from "@core/merge/merge-fields";
 import { Entity } from "@core/shared/entity";
 import { deepMerge } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
+import { LoadingOverlay } from "@core/ui/loading-overlay";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -206,62 +207,70 @@ export class Edit extends Entity {
 	}
 
 	public async loadEdit(edit: EditType): Promise<void> {
-		this.clearClips();
+		const loading = new LoadingOverlay();
+		loading.show();
 
-		// Apply merge fields transparently (if present)
-		const mergeFields = edit.merge ?? [];
-		const mergedEdit = mergeFields.length > 0 ? applyMergeFields(edit, mergeFields) : edit;
+		const onProgress = () => loading.update(this.assetLoader.getProgress());
+		this.assetLoader.loadTracker.on("onAssetLoadInfoUpdated", onProgress);
 
-		// Note: We no longer resolve smart-clips here - timing intent is preserved
-		// and resolved after all clips are loaded
-		this.edit = EditSchema.parse(mergedEdit);
+		try {
+			this.clearClips();
 
-		const newSize = this.edit.output?.size;
-		if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
-			this.size = newSize;
-			this.updateViewportMask();
-			this.canvas?.zoomToFit();
-		}
+			const mergeFields = edit.merge ?? [];
+			const mergedEdit = mergeFields.length > 0 ? applyMergeFields(edit, mergeFields) : edit;
 
-		this.backgroundColor = this.edit.timeline.background || "#000000";
+			this.edit = EditSchema.parse(mergedEdit);
 
-		if (this.background) {
-			this.background.clear();
-			this.background.fillStyle = {
-				color: this.backgroundColor
-			};
-			this.background.rect(0, 0, this.size.width, this.size.height);
-			this.background.fill();
-		}
-
-		await Promise.all(
-			(this.edit.timeline.fonts ?? []).map(async font => {
-				const identifier = font.src;
-				const loadOptions: pixi.UnresolvedAsset = { src: identifier, loadParser: FontLoadParser.Name };
-
-				return this.assetLoader.load<FontFace>(identifier, loadOptions);
-			})
-		);
-
-		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
-			for (const clip of track.clips) {
-				const clipPlayer = this.createPlayerFromAssetType(clip);
-				clipPlayer.layer = trackIdx + 1;
-				await this.addPlayer(trackIdx, clipPlayer);
+			const newSize = this.edit.output?.size;
+			if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
+				this.size = newSize;
+				this.updateViewportMask();
+				this.canvas?.zoomToFit();
 			}
+
+			this.backgroundColor = this.edit.timeline.background || "#000000";
+
+			if (this.background) {
+				this.background.clear();
+				this.background.fillStyle = {
+					color: this.backgroundColor
+				};
+				this.background.rect(0, 0, this.size.width, this.size.height);
+				this.background.fill();
+			}
+
+			await Promise.all(
+				(this.edit.timeline.fonts ?? []).map(async font => {
+					const identifier = font.src;
+					const loadOptions: pixi.UnresolvedAsset = { src: identifier, loadParser: FontLoadParser.Name };
+
+					return this.assetLoader.load<FontFace>(identifier, loadOptions);
+				})
+			);
+
+			for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
+				for (const clip of track.clips) {
+					const clipPlayer = this.createPlayerFromAssetType(clip);
+					clipPlayer.layer = trackIdx + 1;
+					await this.addPlayer(trackIdx, clipPlayer);
+				}
+			}
+
+			this.finalizeLumaMasking();
+
+			await this.resolveAllTiming();
+
+			this.updateTotalDuration();
+
+			if (this.edit.timeline.soundtrack) {
+				await this.loadSoundtrack(this.edit.timeline.soundtrack);
+			}
+
+			this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
+		} finally {
+			this.assetLoader.loadTracker.off("onAssetLoadInfoUpdated", onProgress);
+			loading.hide();
 		}
-
-		this.finalizeLumaMasking();
-
-		await this.resolveAllTiming();
-
-		this.updateTotalDuration();
-
-		if (this.edit.timeline.soundtrack) {
-			await this.loadSoundtrack(this.edit.timeline.soundtrack);
-		}
-
-		this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
 	}
 
 	private async loadSoundtrack(soundtrack: { src: string; effect?: string; volume?: number }): Promise<void> {
