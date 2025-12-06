@@ -22,7 +22,7 @@ export const TextAssetAlignmentSchema = zod
 
 export const TextAssetBackgroundSchema = zod
 	.object({
-		color: TextAssetColorSchema,
+		color: TextAssetColorSchema.optional(),
 		opacity: zod.number().min(0).max(1).default(1),
 		padding: zod.number().min(0).max(100).optional(),
 		borderRadius: zod.number().min(0).optional()

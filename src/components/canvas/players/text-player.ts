@@ -153,7 +153,7 @@ export class TextPlayer extends Player {
 
 	private drawBackground(): void {
 		const textAsset = this.clipConfiguration.asset as TextAsset;
-		if (!this.background || !textAsset.background) return;
+		if (!this.background || !textAsset.background || !textAsset.background.color) return;
 
 		const { width, height } = this.getSize();
 		this.background.clear();
