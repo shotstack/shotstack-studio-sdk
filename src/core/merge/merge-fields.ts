@@ -20,7 +20,7 @@ function replaceMergeFieldsRecursive<T>(obj: T, fields: MergeField[]): T {
 	if (typeof obj === "string") {
 		let result: string = obj;
 		for (const { find, replace } of fields) {
-			result = result.replace(new RegExp(`\\{\\{\\s*${escapeRegExp(find)}\\s*\\}\\}`, "g"), replace);
+			result = result.replace(new RegExp(`\\{\\{\\s*${escapeRegExp(find)}\\s*\\}\\}`, "gi"), replace);
 		}
 		return result as unknown as T;
 	}
