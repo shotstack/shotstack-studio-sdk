@@ -1,3 +1,4 @@
+import { CaptionPlayer } from "@canvas/players/caption-player";
 import { Canvas } from "@canvas/shotstack-canvas";
 import { ExportCommand } from "@core/commands/export-command";
 import { Edit } from "@core/edit";
@@ -55,10 +56,12 @@ export class ExportCoordinator {
 			this.progressUI.create();
 			this.canvas.pauseTicker();
 
+			this.edit.executeEditCommand(this.exportCommand);
+			await this.waitForPendingTranscriptions();
+
 			const cfg = this.prepareConfig(fps ?? this.edit.getEdit().output?.fps ?? 30);
 			this.progressUI.update(0, 100, "Preparing...");
 
-			this.edit.executeEditCommand(this.exportCommand);
 			await this.videoProcessor.initialize(this.exportCommand.getClips());
 			this.progressUI.update(10, 100, "Video ready");
 
@@ -231,5 +234,21 @@ export class ExportCoordinator {
 		const texture = c["texture"] as { source?: { resource?: unknown } } | undefined;
 		const hasVideoTexture = texture?.source?.resource instanceof HTMLVideoElement;
 		return hasVideoConstructor || hasVideoTexture;
+	}
+
+	private async waitForPendingTranscriptions(): Promise<void> {
+		const clips = this.exportCommand.getClips();
+		const transcriptionPromises: Promise<void>[] = [];
+
+		for (const clip of clips) {
+			if (clip instanceof CaptionPlayer && clip.isTranscriptionPending()) {
+				transcriptionPromises.push(clip.waitForTranscription());
+			}
+		}
+
+		if (transcriptionPromises.length > 0) {
+			this.progressUI.update(0, 100, "Waiting for transcription...");
+			await Promise.all(transcriptionPromises);
+		}
 	}
 }

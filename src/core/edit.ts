@@ -1,4 +1,5 @@
 import { AudioPlayer } from "@canvas/players/audio-player";
+import { CaptionPlayer } from "@canvas/players/caption-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
@@ -38,6 +39,7 @@ export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
 
 	public assetLoader: AssetLoader;
+	// TODO: Create typed EditEventMap for SDK consumers (autocomplete, type-safe payloads)
 	public events: EventEmitter;
 
 	private edit: ResolvedEdit | null;
@@ -331,6 +333,15 @@ export class Edit extends Entity {
 			},
 			output: this.edit?.output || { size: this.size, format: "mp4" }
 		};
+	}
+
+	/**
+	 * Get the original parsed edit configuration.
+	 * Unlike getResolvedEdit(), this returns the edit as originally parsed,
+	 * with all clips present regardless of loading state.
+	 */
+	public getOriginalEdit(): ResolvedEdit | null {
+		return this.edit;
 	}
 
 	public addClip(trackIdx: number, clip: ResolvedClip): void {
@@ -781,6 +792,10 @@ export class Edit extends Entity {
 			}
 			case "luma": {
 				player = new LumaPlayer(this, clipConfiguration);
+				break;
+			}
+			case "caption": {
+				player = new CaptionPlayer(this, clipConfiguration);
 				break;
 			}
 			default:

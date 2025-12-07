@@ -1,8 +1,10 @@
 import { Inspector } from "@canvas/system/inspector";
+import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 import { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";
+import { SubtitleLoadParser } from "@loaders/subtitle-load-parser";
 import * as pixi from "pixi.js";
 
 import type { Timeline } from "../timeline/timeline";
@@ -19,6 +21,7 @@ export class Canvas {
 
 	private readonly edit: Edit;
 	private readonly inspector: Inspector;
+	private readonly transcriptionIndicator: TranscriptionIndicator;
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
@@ -29,12 +32,15 @@ export class Canvas {
 	private currentZoom = 1;
 
 	private onTickBound: (ticker: pixi.Ticker) => void;
+	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
 
 	constructor(edit: Edit) {
 		this.application = new pixi.Application();
 		this.edit = edit;
 		this.inspector = new Inspector();
+		this.transcriptionIndicator = new TranscriptionIndicator();
 		this.onTickBound = this.onTick.bind(this);
+		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
 
 		edit.setCanvas(this);
 	}
@@ -58,6 +64,7 @@ export class Canvas {
 		this.background.fill();
 
 		await this.configureApplication();
+		await this.transcriptionIndicator.load();
 		this.configureStage();
 		this.setupTouchHandling(root);
 		this.zoomToFit();
@@ -159,6 +166,7 @@ export class Canvas {
 		if (!Canvas.extensionsRegistered) {
 			pixi.extensions.add(new AudioLoadParser());
 			pixi.extensions.add(new FontLoadParser());
+			pixi.extensions.add(new SubtitleLoadParser());
 			Canvas.extensionsRegistered = true;
 		}
 	}
@@ -190,6 +198,8 @@ export class Canvas {
 		this.inspector.update(ticker.deltaTime, ticker.deltaMS);
 		this.inspector.draw();
 
+		this.transcriptionIndicator.update(ticker.deltaTime, ticker.deltaMS);
+
 		if (this.timeline) {
 			this.timeline.update(ticker.deltaTime, ticker.deltaMS);
 			this.timeline.draw();
@@ -204,6 +214,9 @@ export class Canvas {
 		this.container.addChild(this.background);
 		this.container.addChild(this.edit.getContainer());
 		this.container.addChild(this.inspector.getContainer());
+		this.container.addChild(this.transcriptionIndicator.getContainer());
+
+		this.transcriptionIndicator.setPosition(this.viewportSize.width - 10, 10);
 
 		this.application.stage.addChild(this.container);
 
@@ -211,13 +224,28 @@ export class Canvas {
 		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.viewportSize.width, this.viewportSize.height);
 
 		this.background.eventMode = "static";
-		this.background.on("pointerdown", this.onBackgroundClick.bind(this));
+		this.background.on("pointerdown", this.onBackgroundClickBound);
 
-		this.application.stage.on("click", this.onClick.bind(this));
+		this.setupTranscriptionEventListeners();
 	}
 
-	private onClick(): void {
-		this.edit.pause();
+	private setupTranscriptionEventListeners(): void {
+		this.edit.events.on("transcription:progress", (payload: { message?: string }) => {
+			const message = payload.message ?? "Transcribing...";
+			this.transcriptionIndicator.show(message);
+			this.transcriptionIndicator.setPosition(
+				this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10,
+				10
+			);
+		});
+
+		this.edit.events.on("transcription:complete", () => {
+			this.transcriptionIndicator.hide();
+		});
+
+		this.edit.events.on("transcription:error", () => {
+			this.transcriptionIndicator.hide();
+		});
 	}
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
@@ -241,13 +269,13 @@ export class Canvas {
 		}
 
 		this.application.ticker.remove(this.onTickBound);
-		this.application.stage.off("click", this.onClick, this);
-		this.background?.off("pointerdown", this.onBackgroundClick, this);
+		this.background?.off("pointerdown", this.onBackgroundClickBound);
 
 		this.background?.destroy();
 		this.container?.destroy();
 
 		this.inspector.dispose();
+		this.transcriptionIndicator.dispose();
 
 		this.application.destroy(true, { children: true, texture: true });
 	}
