@@ -51,7 +51,7 @@ export class TranscriptionService {
 	async transcribe(audioUrl: string, onProgress?: (p: TranscriptionProgress) => void): Promise<TranscriptionResult> {
 		if (!this.worker) {
 			try {
-				this.worker = new Worker(new URL("./transcription.worker.ts", import.meta.url), {
+				this.worker = new Worker(new URL("./transcription.worker.ts?worker&inline", import.meta.url), {
 					type: "module"
 				});
 			} catch {

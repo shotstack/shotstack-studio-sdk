@@ -14,6 +14,9 @@ const globals = {
 };
 
 export default defineConfig({
+	worker: {
+		format: "es"
+	},
 	plugins: [
 		dts({
 			rollupTypes: true,
