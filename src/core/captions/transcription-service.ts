@@ -1,4 +1,5 @@
 import type { Cue } from "./parser";
+import { TRANSCRIPTION_WORKER_CODE } from "./transcription-worker-code";
 
 export interface TranscriptionProgress {
 	status: "loading" | "transcribing" | "complete" | "error";
@@ -37,11 +38,9 @@ interface WorkerErrorMessage {
 
 type WorkerMessage = WorkerProgressMessage | WorkerCompleteMessage | WorkerErrorMessage;
 
-const MODEL_LOADING_WEIGHT = 0.4; // 0-40%
-const TRANSCRIPTION_WEIGHT = 0.6; // 40-100%
-
 export class TranscriptionService {
 	private worker: Worker | null = null;
+	private workerUrl: string | null = null;
 	private modelId: WhisperModel;
 
 	constructor(config: TranscriptionConfig = {}) {
@@ -50,14 +49,9 @@ export class TranscriptionService {
 
 	async transcribe(audioUrl: string, onProgress?: (p: TranscriptionProgress) => void): Promise<TranscriptionResult> {
 		if (!this.worker) {
-			try {
-				this.worker = new Worker(new URL("./transcription.worker.ts?worker&inline", import.meta.url), {
-					type: "module"
-				});
-			} catch {
-				console.warn("Web Workers not available, falling back to main thread transcription");
-				return this.transcribeOnMainThread(audioUrl, onProgress);
-			}
+			const blob = new Blob([TRANSCRIPTION_WORKER_CODE], { type: "application/javascript" });
+			this.workerUrl = URL.createObjectURL(blob);
+			this.worker = new Worker(this.workerUrl, { type: "module" });
 		}
 
 		onProgress?.({
@@ -166,72 +160,14 @@ export class TranscriptionService {
 		}
 	}
 
-	private async transcribeOnMainThread(
-		audioUrl: string,
-		onProgress?: (p: TranscriptionProgress) => void
-	): Promise<TranscriptionResult> {
-		onProgress?.({
-			status: "loading",
-			progress: 0,
-			message: "Loading AI model..."
-		});
-
-		const { pipeline } = await import("@huggingface/transformers");
-
-		const transcriber = await pipeline("automatic-speech-recognition", this.modelId, {
-			progress_callback: (data: { progress?: number; status?: string }) => {
-				if (data.progress !== undefined) {
-					const scaledProgress = Math.round(data.progress * MODEL_LOADING_WEIGHT * 100);
-					onProgress?.({
-						status: "loading",
-						progress: scaledProgress,
-						message: `Loading AI model... ${scaledProgress}%`
-					});
-				}
-			}
-		});
-
-		onProgress?.({
-			status: "transcribing",
-			progress: Math.round(MODEL_LOADING_WEIGHT * 100),
-			message: "Transcribing audio..."
-		});
-
-		const result = await transcriber(audioUrl, {
-			return_timestamps: "word",
-			chunk_length_s: 30,
-			stride_length_s: 5
-		});
-
-		await new Promise(resolve => setTimeout(resolve, 0));
-
-		onProgress?.({
-			status: "transcribing",
-			progress: Math.round((MODEL_LOADING_WEIGHT + TRANSCRIPTION_WEIGHT * 0.5) * 100),
-			message: "Processing results..."
-		});
-
-		const cues = this.chunksToVTTCues(
-			(result as { chunks?: Array<{ text: string; timestamp: [number, number] }> }).chunks ?? []
-		);
-
-		await new Promise(resolve => setTimeout(resolve, 0));
-
-		const vtt = this.cuesToVTT(cues);
-
-		onProgress?.({
-			status: "complete",
-			progress: 100,
-			message: "Transcription complete"
-		});
-
-		return { vtt, cues };
-	}
-
 	dispose(): void {
 		if (this.worker) {
 			this.worker.terminate();
 			this.worker = null;
+		}
+		if (this.workerUrl) {
+			URL.revokeObjectURL(this.workerUrl);
+			this.workerUrl = null;
 		}
 	}
 
@@ -303,14 +239,5 @@ export class TranscriptionService {
 		const ss = secs.toFixed(3).padStart(6, "0");
 
 		return `${hh}:${mm}:${ss}`;
-	}
-
-	static async isAvailable(): Promise<boolean> {
-		try {
-			await import("@huggingface/transformers");
-			return true;
-		} catch {
-			return false;
-		}
 	}
 }
