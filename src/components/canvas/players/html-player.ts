@@ -1,5 +1,5 @@
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type HtmlAsset, HtmlAssetPosition } from "@schemas/html-asset";
 import type { Edit } from "core/edit";
 import * as pixiFilters from "pixi-filters";
@@ -45,7 +45,7 @@ export class HtmlPlayer extends Player {
 	private background: pixi.Graphics | null;
 	private text: pixi.Text | null;
 
-	constructor(timeline: Edit, clipConfiguration: Clip) {
+	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
 		super(timeline, clipConfiguration);
 
 		this.background = null;

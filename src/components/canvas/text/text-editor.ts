@@ -1,5 +1,5 @@
 import type { TextPlayer } from "@canvas/players/text-player";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";
 import * as pixi from "pixi.js";
 
@@ -26,7 +26,7 @@ export class TextEditor {
 
 	private parent: TextPlayer;
 	private targetText: pixi.Text;
-	private clipConfig: Clip;
+	private clipConfig: ResolvedClip;
 	private isEditing: boolean = false;
 	private lastClickTime: number = 0;
 
@@ -36,7 +36,7 @@ export class TextEditor {
 	private textInputHandler: TextInputHandler | null = null;
 	private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
 
-	constructor(parent: TextPlayer, targetText: pixi.Text, clipConfig: Clip) {
+	constructor(parent: TextPlayer, targetText: pixi.Text, clipConfig: ResolvedClip) {
 		this.parent = parent;
 		this.targetText = targetText;
 		this.clipConfig = clipConfig;
@@ -70,7 +70,7 @@ export class TextEditor {
 		this.isEditing = true;
 	}
 
-	private stopEditing(saveChanges = false, initialConfig?: Clip): void {
+	private stopEditing(saveChanges = false, initialConfig?: ResolvedClip): void {
 		if (!this.isEditing) return;
 
 		let newText = "";
@@ -116,7 +116,7 @@ export class TextEditor {
 		this.lastClickTime = currentTime;
 	};
 
-	private setupOutsideClickHandler(initialConfig: Clip): void {
+	private setupOutsideClickHandler(initialConfig: ResolvedClip): void {
 		this.outsideClickHandler = (e: MouseEvent) => {
 			const container = this.parent.getContainer();
 			const bounds = container.getBounds();

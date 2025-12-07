@@ -1,14 +1,14 @@
 import type { Player } from "@canvas/players/player";
 
 import type { AudioAsset } from "../schemas/audio-asset";
-import type { Clip } from "../schemas/clip";
+import type { ResolvedClip } from "../schemas/clip";
 import type { VideoAsset } from "../schemas/video-asset";
 
 import type { EditCommand, CommandContext } from "./types";
 
 export class SplitClipCommand implements EditCommand {
 	public readonly name = "SplitClip";
-	private originalClipConfig: Clip | null = null;
+	private originalClipConfig: ResolvedClip | null = null;
 	private rightClipPlayer: Player | null = null;
 	private splitSuccessful = false;
 
@@ -41,12 +41,12 @@ export class SplitClipCommand implements EditCommand {
 		this.originalClipConfig = { ...clipConfig };
 
 		// Calculate left and right clip configurations
-		const leftClip: Clip = {
+		const leftClip: ResolvedClip = {
 			...clipConfig,
 			length: splitPoint
 		};
 
-		const rightClip: Clip = {
+		const rightClip: ResolvedClip = {
 			...clipConfig,
 			start: clipStart + splitPoint,
 			length: clipLength - splitPoint

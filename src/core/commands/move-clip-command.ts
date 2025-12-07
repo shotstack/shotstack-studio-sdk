@@ -8,7 +8,7 @@ export class MoveClipCommand implements EditCommand {
 	private player?: Player;
 	private originalTrackIndex: number;
 	private originalClipIndex: number;
-	private originalStart?: number | "auto";
+	private originalStart?: number;
 	private originalTimingIntent?: TimingIntent;
 
 	constructor(

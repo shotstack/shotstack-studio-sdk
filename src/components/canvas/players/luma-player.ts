@@ -1,6 +1,6 @@
 import type { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type LumaAsset } from "@schemas/luma-asset";
 import * as pixi from "pixi.js";
 
@@ -13,7 +13,7 @@ export class LumaPlayer extends Player {
 	private sprite: pixi.Sprite | null;
 	private isPlaying: boolean;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration);
 
 		this.texture = null;

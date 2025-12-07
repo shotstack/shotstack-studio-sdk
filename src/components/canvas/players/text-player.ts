@@ -2,7 +2,7 @@ import { Player } from "@canvas/players/player";
 import { TextEditor } from "@canvas/text/text-editor";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type TextAsset } from "@schemas/text-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
@@ -165,7 +165,7 @@ export class TextPlayer extends Player {
 		this.background.fill();
 	}
 
-	public updateTextContent(newText: string, initialConfig: Clip): void {
+	public updateTextContent(newText: string, initialConfig: ResolvedClip): void {
 		this.edit.updateTextContent(this, newText, initialConfig);
 	}
 

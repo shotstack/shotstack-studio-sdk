@@ -1,11 +1,10 @@
 import type { Player } from "@canvas/players/player";
-import type { ClipSchema } from "@schemas/clip";
-import type { EditSchema } from "@schemas/edit";
+import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedEdit } from "@schemas/edit";
 import type { Container } from "pixi.js";
-import type { z } from "zod";
 
-type ClipType = z.infer<typeof ClipSchema>;
-type EditType = z.infer<typeof EditSchema>;
+type ClipType = ResolvedClip;
+type EditType = ResolvedEdit;
 
 export interface TimelineUpdatedEvent {
 	previous: { timeline: EditType };

@@ -1,10 +1,9 @@
 import type { Player } from "@canvas/players/player";
-import { ClipSchema } from "@schemas/clip";
-import { z } from "zod";
+import type { ResolvedClip } from "@schemas/clip";
 
 import type { EditCommand, CommandContext } from "./types";
 
-type ClipType = z.infer<typeof ClipSchema>;
+type ClipType = ResolvedClip;
 
 export class SetUpdatedClipCommand implements EditCommand {
 	name = "setUpdatedClip";

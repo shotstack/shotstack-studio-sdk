@@ -12,7 +12,6 @@ export type { Clip, ClipAnchor } from "./clip";
 
 // Edit, Timeline, Output, Fonts
 export { FontSourceUrlSchema, FontSourceSchema, TimelineSchema, OutputSchema, EditSchema } from "./edit";
-export type { Track } from "./edit";
 
 // HTML Asset
 export { HtmlAssetSchema } from "./html-asset";
@@ -59,7 +58,7 @@ export type { TextAsset } from "./text-asset";
 
 // Track
 export { TrackSchema } from "./track";
-// Note: Track type is exported from "./edit" for historical reasons
+export type { Track } from "./track";
 
 // Video Asset
 export { VideoAssetUrlSchema, VideoAssetCropSchema, VideoAssetVolumeSchema, VideoAssetSchema } from "./video-asset";

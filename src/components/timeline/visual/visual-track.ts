@@ -6,7 +6,7 @@ import { z } from "zod";
 import { TimelineTheme } from "../../../core/theme";
 import { TRACK_CONSTANTS } from "../constants";
 import { SelectionOverlayRenderer } from "../managers/selection-overlay-renderer";
-import { ResolvedClipConfig } from "../types/timeline";
+import { ResolvedClip } from "../types/timeline";
 
 import { VisualClip, VisualClipOptions } from "./visual-clip";
 
@@ -102,7 +102,7 @@ export class VisualTrack extends Entity {
 					selectionRenderer: this.options.selectionRenderer
 				};
 
-				const visualClip = new VisualClip(clipConfig as ResolvedClipConfig, visualClipOptions);
+				const visualClip = new VisualClip(clipConfig as ResolvedClip, visualClipOptions);
 				this.addClip(visualClip);
 			});
 		}
@@ -144,7 +144,7 @@ export class VisualTrack extends Entity {
 		}
 	}
 
-	public updateClip(clipIndex: number, newClipConfig: ResolvedClipConfig): void {
+	public updateClip(clipIndex: number, newClipConfig: ResolvedClip): void {
 		if (clipIndex >= 0 && clipIndex < this.clips.length) {
 			const clip = this.clips[clipIndex];
 			clip.updateFromConfig(newClipConfig);

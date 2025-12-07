@@ -1,7 +1,7 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type VideoAsset } from "@schemas/video-asset";
 import * as pixi from "pixi.js";
 
@@ -18,7 +18,7 @@ export class VideoPlayer extends Player {
 	private syncTimer: number;
 	private skipVideoUpdate: boolean;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration);
 
 		this.texture = null;

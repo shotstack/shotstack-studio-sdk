@@ -1,6 +1,6 @@
 import type { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type ImageAsset } from "@schemas/image-asset";
 import * as pixi from "pixi.js";
 
@@ -11,7 +11,7 @@ export class ImagePlayer extends Player {
 	private sprite: pixi.Sprite | null;
 	private originalSize: Size | null;
 
-	constructor(timeline: Edit, clipConfiguration: Clip) {
+	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
 		super(timeline, clipConfiguration);
 
 		this.texture = null;

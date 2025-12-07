@@ -8,6 +8,7 @@ import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
 import type { Canvas } from "@canvas/shotstack-canvas";
+import { resolveAliasReferences } from "@core/alias";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
@@ -26,17 +27,12 @@ import { LoadingOverlay } from "@core/ui/loading-overlay";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
-import { ClipSchema } from "@schemas/clip";
-import { EditSchema } from "@schemas/edit";
-import { TrackSchema } from "@schemas/track";
+import type { ResolvedClip } from "@schemas/clip";
+import { EditSchema, type Edit as EditConfig, type ResolvedEdit, type Soundtrack } from "@schemas/edit";
+import type { ResolvedTrack } from "@schemas/track";
 import * as pixi from "pixi.js";
-import { z } from "zod";
 
 import type { EditCommand, CommandContext } from "./commands/types";
-
-type EditType = z.infer<typeof EditSchema>;
-type ClipType = z.infer<typeof ClipSchema>;
-type TrackType = z.infer<typeof TrackSchema>;
 
 export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
@@ -44,7 +40,7 @@ export class Edit extends Entity {
 	public assetLoader: AssetLoader;
 	public events: EventEmitter;
 
-	private edit: EditType | null;
+	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
 	private clipsToDispose: Player[];
 	private clips: Player[];
@@ -206,7 +202,7 @@ export class Edit extends Entity {
 		this.seek(0);
 	}
 
-	public async loadEdit(edit: EditType): Promise<void> {
+	public async loadEdit(edit: ResolvedEdit): Promise<void> {
 		const loading = new LoadingOverlay();
 		loading.show();
 
@@ -219,7 +215,9 @@ export class Edit extends Entity {
 			const mergeFields = edit.merge ?? [];
 			const mergedEdit = mergeFields.length > 0 ? applyMergeFields(edit, mergeFields) : edit;
 
-			this.edit = EditSchema.parse(mergedEdit);
+			const parsedEdit = EditSchema.parse(mergedEdit);
+			resolveAliasReferences(parsedEdit);
+			this.edit = parsedEdit as ResolvedEdit;
 
 			const newSize = this.edit.output?.size;
 			if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
@@ -273,39 +271,29 @@ export class Edit extends Entity {
 		}
 	}
 
-	private async loadSoundtrack(soundtrack: { src: string; effect?: string; volume?: number }): Promise<void> {
-		const clip = ClipSchema.parse({
+	private async loadSoundtrack(soundtrack: Soundtrack): Promise<void> {
+		const clip: ResolvedClip = {
 			asset: {
 				type: "audio",
 				src: soundtrack.src,
 				effect: soundtrack.effect,
 				volume: soundtrack.volume ?? 1
 			},
+			fit: "crop",
 			start: 0,
 			length: this.totalDuration / 1000
-		});
+		};
 
 		const player = new AudioPlayer(this, clip);
 		player.layer = this.tracks.length + 1;
 		await this.addPlayer(this.tracks.length, player);
 	}
-	public getEdit(): EditType {
-		return this.buildEditSnapshot(player => player.getTimingIntent());
-	}
-
-	public getResolvedEdit(): EditType {
-		return this.buildEditSnapshot(player => ({
-			start: player.getStart() / 1000,
-			length: player.getLength() / 1000
-		}));
-	}
-
-	private buildEditSnapshot(getClipTiming: (player: Player) => { start: number | "auto"; length: number | "auto" | "end" }): EditType {
-		const tracks: TrackType[] = this.tracks.map(track => ({
+	public getEdit(): EditConfig {
+		const tracks = this.tracks.map(track => ({
 			clips: track
 				.filter(player => player && !this.clipsToDispose.includes(player))
 				.map(player => {
-					const timing = getClipTiming(player);
+					const timing = player.getTimingIntent();
 					return {
 						...player.clipConfiguration,
 						start: timing.start,
@@ -321,14 +309,35 @@ export class Edit extends Entity {
 				fonts: this.edit?.timeline.fonts || []
 			},
 			output: this.edit?.output || { size: this.size, format: "mp4" }
+		} as EditConfig;
+	}
+
+	public getResolvedEdit(): ResolvedEdit {
+		const tracks: ResolvedTrack[] = this.tracks.map(track => ({
+			clips: track
+				.filter(player => player && !this.clipsToDispose.includes(player))
+				.map(player => ({
+					...player.clipConfiguration,
+					start: player.getStart() / 1000,
+					length: player.getLength() / 1000
+				}))
+		}));
+
+		return {
+			timeline: {
+				background: this.backgroundColor,
+				tracks,
+				fonts: this.edit?.timeline.fonts || []
+			},
+			output: this.edit?.output || { size: this.size, format: "mp4" }
 		};
 	}
 
-	public addClip(trackIdx: number, clip: ClipType): void {
+	public addClip(trackIdx: number, clip: ResolvedClip): void {
 		const command = new AddClipCommand(trackIdx, clip);
 		this.executeCommand(command);
 	}
-	public getClip(trackIdx: number, clipIdx: number): ClipType | null {
+	public getClip(trackIdx: number, clipIdx: number): ResolvedClip | null {
 		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
 		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
 
@@ -351,12 +360,12 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
-	public addTrack(trackIdx: number, track: TrackType): void {
+	public addTrack(trackIdx: number, track: ResolvedTrack): void {
 		const command = new AddTrackCommand(trackIdx);
 		this.executeCommand(command);
 		track?.clips?.forEach(clip => this.addClip(trackIdx, clip));
 	}
-	public getTrack(trackIdx: number): TrackType | null {
+	public getTrack(trackIdx: number): ResolvedTrack | null {
 		const trackClips = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
 		if (trackClips.length === 0) return null;
 
@@ -395,12 +404,12 @@ export class Edit extends Entity {
 		}
 	}
 	/** @internal */
-	public setUpdatedClip(clip: Player, initialClipConfig: ClipType | null = null, finalClipConfig: ClipType | null = null): void {
+	public setUpdatedClip(clip: Player, initialClipConfig: ResolvedClip | null = null, finalClipConfig: ResolvedClip | null = null): void {
 		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig);
 		this.executeCommand(command);
 	}
 
-	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<ClipType>): void {
+	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<ResolvedClip>): void {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
 		if (!clip) {
 			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
@@ -414,7 +423,7 @@ export class Edit extends Entity {
 	}
 
 	/** @internal */
-	public updateTextContent(clip: Player, newText: string, initialConfig: ClipType): void {
+	public updateTextContent(clip: Player, newText: string, initialConfig: ResolvedClip): void {
 		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
 		this.executeCommand(command);
 	}
@@ -734,7 +743,7 @@ export class Edit extends Entity {
 		}
 		toTrackContainer.addChild(player.getContainer());
 	}
-	private createPlayerFromAssetType(clipConfiguration: ClipType): Player {
+	private createPlayerFromAssetType(clipConfiguration: ResolvedClip): Player {
 		if (!clipConfiguration.asset?.type) {
 			throw new Error("Invalid clip configuration: missing asset type");
 		}

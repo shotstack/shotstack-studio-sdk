@@ -70,7 +70,6 @@ export async function resolveClipTiming(
 	clipIndex: number,
 	tracks: Player[][]
 ): Promise<ResolvedTiming> {
-	// Resolve start
 	let resolvedStart: number;
 	if (intent.start === "auto") {
 		resolvedStart = resolveAutoStart(trackIndex, clipIndex, tracks);
@@ -78,12 +77,10 @@ export async function resolveClipTiming(
 		resolvedStart = intent.start * 1000;
 	}
 
-	// Resolve length (except "end" which needs a separate pass)
 	let resolvedLength: number;
 	if (intent.length === "auto") {
 		resolvedLength = await resolveAutoLength(asset);
 	} else if (intent.length === "end") {
-		// Placeholder - will be resolved in second pass
 		resolvedLength = 0;
 	} else {
 		resolvedLength = intent.length * 1000;

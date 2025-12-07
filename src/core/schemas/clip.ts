@@ -3,10 +3,7 @@ import * as zod from "zod";
 import { AssetSchema } from "./asset";
 import { KeyframeSchema } from "./keyframe";
 
-/**
- * TODO: Rename all these to clip configuration
- * TODO: Change all default to optional
- */
+const ALIAS_REFERENCE_PATTERN = /^alias:\/\/[a-zA-Z0-9_-]+$/;
 
 const ClipAnchorSchema = zod.enum(["topLeft", "top", "topRight", "left", "center", "right", "bottomLeft", "bottom", "bottomRight"]);
 
@@ -79,8 +76,9 @@ const ClipTransformSchema = zod
 export const ClipSchema = zod
 	.object({
 		asset: AssetSchema,
-		start: zod.union([zod.number().min(0), zod.literal("auto")]),
-		length: zod.union([zod.number().positive(), zod.literal("auto"), zod.literal("end")]),
+		start: zod.union([zod.number().min(0), zod.literal("auto"), zod.string().regex(ALIAS_REFERENCE_PATTERN)]),
+		length: zod.union([zod.number().positive(), zod.literal("auto"), zod.literal("end"), zod.string().regex(ALIAS_REFERENCE_PATTERN)]),
+		alias: zod.string().optional(),
 		position: ClipAnchorSchema.default("center").optional(),
 		fit: ClipFitSchema.optional(),
 		offset: ClipOffsetSchema.default({ x: 0, y: 0 }).optional(),
@@ -99,10 +97,10 @@ export const ClipSchema = zod
 	}));
 
 export type ClipAnchor = zod.infer<typeof ClipAnchorSchema>;
+
 export type Clip = zod.infer<typeof ClipSchema>;
 
-/** Clip with resolved numeric timing values in seconds (no "auto" or "end") */
-export type ResolvedClipConfig = Omit<Clip, "start" | "length"> & {
+export type ResolvedClip = Omit<Clip, "start" | "length"> & {
 	start: number;
 	length: number;
 };

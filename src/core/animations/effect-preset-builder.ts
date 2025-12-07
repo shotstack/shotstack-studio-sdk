@@ -1,5 +1,5 @@
 import { type Size } from "../layouts/geometry";
-import { type ResolvedClipConfig } from "../schemas/clip";
+import { type ResolvedClip } from "../schemas/clip";
 import { type Keyframe } from "../schemas/keyframe";
 
 export type EffectKeyframeSet = {
@@ -11,9 +11,9 @@ export type EffectKeyframeSet = {
 };
 
 export class EffectPresetBuilder {
-	private clipConfiguration: ResolvedClipConfig;
+	private clipConfiguration: ResolvedClip;
 
-	constructor(clipConfiguration: ResolvedClipConfig) {
+	constructor(clipConfiguration: ResolvedClip) {
 		this.clipConfiguration = clipConfiguration;
 	}
 

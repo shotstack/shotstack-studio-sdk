@@ -5,7 +5,7 @@ import { TimelineTheme } from "../../../core/theme";
 import { CLIP_CONSTANTS } from "../constants";
 import { SelectionOverlayRenderer } from "../managers/selection-overlay-renderer";
 import { getAssetDisplayName, TimelineAsset } from "../types/assets";
-import { ResolvedClipConfig } from "../types/timeline";
+import { ResolvedClip } from "../types/timeline";
 
 export interface VisualClipOptions {
 	pixelsPerSecond: number;
@@ -17,7 +17,7 @@ export interface VisualClipOptions {
 }
 
 export class VisualClip extends Entity {
-	private clipConfig: ResolvedClipConfig;
+	private clipConfig: ResolvedClip;
 	private options: VisualClipOptions;
 	private graphics: PIXI.Graphics;
 	private background: PIXI.Graphics;
@@ -38,7 +38,7 @@ export class VisualClip extends Entity {
 		return this.options.theme.timeline.clips.radius || CLIP_CONSTANTS.CORNER_RADIUS;
 	}
 
-	constructor(clipConfig: ResolvedClipConfig, options: VisualClipOptions) {
+	constructor(clipConfig: ResolvedClip, options: VisualClipOptions) {
 		super();
 		this.clipConfig = clipConfig;
 		this.options = options;
@@ -86,7 +86,7 @@ export class VisualClip extends Entity {
 		this.text.y = this.CLIP_PADDING;
 	}
 
-	public updateFromConfig(newConfig: ResolvedClipConfig): void {
+	public updateFromConfig(newConfig: ResolvedClip): void {
 		this.clipConfig = newConfig;
 		this.updateVisualState();
 	}
@@ -304,7 +304,7 @@ export class VisualClip extends Entity {
 	}
 
 	// Getters
-	public getClipConfig(): ResolvedClipConfig {
+	public getClipConfig(): ResolvedClip {
 		return this.clipConfig;
 	}
 

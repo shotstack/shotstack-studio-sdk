@@ -1,4 +1,4 @@
-import { type ResolvedClipConfig } from "../schemas/clip";
+import { type ResolvedClip } from "../schemas/clip";
 import { type Keyframe } from "../schemas/keyframe";
 
 export type TransitionKeyframeSet = {
@@ -11,9 +11,9 @@ export type TransitionKeyframeSet = {
 };
 
 export class TransitionPresetBuilder {
-	private clipConfiguration: ResolvedClipConfig;
+	private clipConfiguration: ResolvedClip;
 
-	constructor(clipConfiguration: ResolvedClipConfig) {
+	constructor(clipConfiguration: ResolvedClip) {
 		this.clipConfiguration = clipConfiguration;
 	}
 

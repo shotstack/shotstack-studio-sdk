@@ -1,13 +1,13 @@
 import * as PIXI from "pixi.js";
 
 import { TimelineLayout } from "../timeline-layout";
-import { ResolvedClipConfig } from "../types/timeline";
+import { ResolvedClip } from "../types/timeline";
 import { VisualTrack } from "../visual/visual-track";
 
 export interface DraggedClipInfo {
 	trackIndex: number;
 	clipIndex: number;
-	clipConfig: ResolvedClipConfig;
+	clipConfig: ResolvedClip;
 }
 
 export class DragPreviewManager {
@@ -23,7 +23,7 @@ export class DragPreviewManager {
 		private getVisualTracks: () => VisualTrack[]
 	) {}
 
-	public showDragPreview(trackIndex: number, clipIndex: number, clipData: ResolvedClipConfig): void {
+	public showDragPreview(trackIndex: number, clipIndex: number, clipData: ResolvedClip): void {
 		if (!clipData) return;
 
 		this.draggedClipInfo = { trackIndex, clipIndex, clipConfig: clipData };

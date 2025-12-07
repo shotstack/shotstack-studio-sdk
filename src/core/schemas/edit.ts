@@ -1,6 +1,6 @@
 import * as zod from "zod";
 
-import { TrackSchema } from "./track";
+import { TrackSchema, type ResolvedTrack } from "./track";
 
 export const FontSourceUrlSchema = zod.string().url("Invalid image url format.");
 
@@ -55,5 +55,13 @@ export const EditSchema = zod
 	})
 	.strict();
 
-export type Track = zod.infer<typeof TrackSchema>;
 export type MergeField = zod.infer<typeof MergeFieldSchema>;
+export type Soundtrack = zod.infer<typeof SoundtrackSchema>;
+
+export type Edit = zod.infer<typeof EditSchema>;
+
+export type ResolvedEdit = Omit<Edit, "timeline"> & {
+	timeline: Omit<Edit["timeline"], "tracks"> & {
+		tracks: ResolvedTrack[];
+	};
+};

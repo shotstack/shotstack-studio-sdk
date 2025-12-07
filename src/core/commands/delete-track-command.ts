@@ -1,10 +1,9 @@
-import type { ClipSchema } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas/clip";
 import * as pixi from "pixi.js";
-import type { z } from "zod";
 
 import type { EditCommand, CommandContext } from "./types";
 
-type ClipType = z.infer<typeof ClipSchema>;
+type ClipType = ResolvedClip;
 
 export class DeleteTrackCommand implements EditCommand {
 	name = "deleteTrack";

@@ -1,11 +1,10 @@
 import type { Player } from "@canvas/players/player";
-import type { ClipSchema } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas/clip";
 import type { TextAsset } from "@schemas/text-asset";
-import type { z } from "zod";
 
 import type { EditCommand, CommandContext } from "./types";
 
-type ClipType = z.infer<typeof ClipSchema>;
+type ClipType = ResolvedClip;
 
 export class UpdateTextContentCommand implements EditCommand {
 	name = "updateTextContent";

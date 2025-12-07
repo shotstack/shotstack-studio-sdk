@@ -1,0 +1,1 @@
+export { resolveAliasReferences } from "./alias";

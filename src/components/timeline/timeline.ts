@@ -15,7 +15,7 @@ import {
 	TimelineOptionsManager
 } from "./managers";
 import { TimelineLayout } from "./timeline-layout";
-import { EditType, TimelineOptions, ClipInfo, ResolvedClipConfig } from "./types/timeline";
+import { EditType, TimelineOptions, ClipInfo, ResolvedClip } from "./types/timeline";
 import { VisualTrack } from "./visual/visual-track";
 
 export class Timeline extends Entity {
@@ -211,10 +211,10 @@ export class Timeline extends Entity {
 		return this.renderer.getOverlayLayer();
 	}
 
-	public getClipData(trackIndex: number, clipIndex: number): ResolvedClipConfig | null {
+	public getClipData(trackIndex: number, clipIndex: number): ResolvedClip | null {
 		if (!this.currentEditType?.timeline?.tracks) return null;
 		const track = this.currentEditType.timeline.tracks[trackIndex];
-		return (track?.clips?.[clipIndex] as ResolvedClipConfig) || null;
+		return (track?.clips?.[clipIndex] as ResolvedClip) || null;
 	}
 
 	// Layout access for interactions

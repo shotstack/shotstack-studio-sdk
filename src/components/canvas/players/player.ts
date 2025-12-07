@@ -6,7 +6,7 @@ import { type ResolvedTiming, type TimingIntent } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import { type Clip, type ResolvedClipConfig } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type Keyframe } from "@schemas/keyframe";
 import * as pixi from "pixi.js";
 
@@ -93,7 +93,7 @@ export abstract class Player extends Entity {
 	public shouldDispose: boolean;
 
 	protected edit: Edit;
-	public clipConfiguration: Clip;
+	public clipConfiguration: ResolvedClip;
 
 	private timingIntent: TimingIntent;
 	private resolvedTiming: ResolvedTiming;
@@ -129,10 +129,10 @@ export abstract class Player extends Entity {
 	private initialRotation: number;
 	private rotationCorner: (typeof Player.CornerNames)[number] | null;
 
-	private initialClipConfiguration: Clip | null;
+	private initialClipConfiguration: ResolvedClip | null;
 	protected contentContainer: pixi.Container;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super();
 
 		this.edit = edit;
@@ -203,7 +203,7 @@ export abstract class Player extends Entity {
 		const rotationKeyframes: Keyframe[] = [];
 		const maskXKeyframes: Keyframe[] = [];
 
-		const resolvedClipConfig: ResolvedClipConfig = {
+		const resolvedClipConfig: ResolvedClip = {
 			...this.clipConfiguration,
 			start: this.getStart() / 1000,
 			length: this.getLength() / 1000

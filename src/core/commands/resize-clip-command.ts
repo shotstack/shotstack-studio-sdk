@@ -5,7 +5,7 @@ import type { EditCommand, CommandContext } from "./types";
 
 export class ResizeClipCommand implements EditCommand {
 	name = "resizeClip";
-	private originalLength?: number | "auto" | "end";
+	private originalLength?: number;
 	private originalTimingIntent?: TimingIntent;
 	private player?: Player;
 

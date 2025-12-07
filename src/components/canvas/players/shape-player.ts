@@ -1,6 +1,6 @@
 import type { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type ShapeAsset } from "@schemas/shape-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
@@ -11,7 +11,7 @@ export class ShapePlayer extends Player {
 	private shape: pixi.Graphics | null;
 	private shapeBackground: pixi.Graphics | null;
 
-	constructor(timeline: Edit, clipConfiguration: Clip) {
+	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
 		super(timeline, clipConfiguration);
 
 		this.shape = null;

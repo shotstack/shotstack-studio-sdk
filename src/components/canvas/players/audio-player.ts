@@ -3,7 +3,7 @@ import type { Edit } from "@core/edit";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { type AudioAsset } from "@schemas/audio-asset";
-import { type Clip } from "@schemas/clip";
+import { type ResolvedClip } from "@schemas/clip";
 import { type Keyframe } from "@schemas/keyframe";
 import * as howler from "howler";
 import * as pixi from "pixi.js";
@@ -18,7 +18,7 @@ export class AudioPlayer extends Player {
 
 	private syncTimer: number;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration);
 
 		this.audioResource = null;
