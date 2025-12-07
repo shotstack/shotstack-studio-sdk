@@ -6,6 +6,17 @@ export type { Asset } from "./asset";
 export { AudioAssetUrlSchema, AudioAssetVolumeSchema, AudioAssetSchema } from "./audio-asset";
 export type { AudioAsset } from "./audio-asset";
 
+// Caption Asset
+export {
+	CaptionAssetColorSchema,
+	CaptionAssetFontSchema,
+	CaptionAssetStrokeSchema,
+	CaptionAssetBackgroundSchema,
+	CaptionAssetAlignmentSchema,
+	CaptionAssetSchema
+} from "./caption-asset";
+export type { CaptionAsset } from "./caption-asset";
+
 // Clip
 export { ClipSchema } from "./clip";
 export type { Clip, ClipAnchor } from "./clip";

@@ -1,6 +1,7 @@
 import * as zod from "zod";
 
 import { AudioAssetSchema } from "./audio-asset";
+import { CaptionAssetSchema } from "./caption-asset";
 import { HtmlAssetSchema } from "./html-asset";
 import { ImageAssetSchema } from "./image-asset";
 import { LumaAssetSchema } from "./luma-asset";
@@ -18,7 +19,8 @@ export const AssetSchema = zod
 		ImageAssetSchema,
 		VideoAssetSchema,
 		LumaAssetSchema,
-		AudioAssetSchema
+		AudioAssetSchema,
+		CaptionAssetSchema
 	])
 	.refine(schema => {
 		if (schema.type === "text") {
@@ -51,6 +53,10 @@ export const AssetSchema = zod
 
 		if (schema.type === "audio") {
 			return AudioAssetSchema.safeParse(schema);
+		}
+
+		if (schema.type === "caption") {
+			return CaptionAssetSchema.safeParse(schema);
 		}
 
 		return false;
