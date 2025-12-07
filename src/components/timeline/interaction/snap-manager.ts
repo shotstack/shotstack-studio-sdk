@@ -22,7 +22,7 @@ export class SnapManager {
 
 				const clipConfig = clip.getClipConfig();
 				if (clipConfig) {
-					const start = clipConfig.start;
+					const { start } = clipConfig;
 					snapPoints.push({
 						time: start,
 						type: "clip-start",

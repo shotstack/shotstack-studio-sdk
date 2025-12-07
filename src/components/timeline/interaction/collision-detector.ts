@@ -68,7 +68,7 @@ export class CollisionDetector {
 			.map(({ clip }) => {
 				const config = clip.getClipConfig();
 				if (!config) return null;
-				const start = config.start;
+				const { start } = config;
 				return {
 					start,
 					end: start + config.length
