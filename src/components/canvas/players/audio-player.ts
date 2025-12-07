@@ -41,7 +41,7 @@ export class AudioPlayer extends Player {
 		const audioClipConfiguration = this.clipConfiguration.asset as AudioAsset;
 
 		const identifier = audioClipConfiguration.src;
-		const loadOptions: pixi.UnresolvedAsset = { src: identifier, loadParser: AudioLoadParser.Name };
+		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(identifier, loadOptions);
 
 		const isValidAudioSource = audioResource instanceof howler.Howl;

@@ -27,7 +27,7 @@ export class ImagePlayer extends Player {
 		const identifier = imageAsset.src;
 		const loadOptions: pixi.UnresolvedAsset = {
 			src: identifier,
-			crossovern: "anonymous",
+			crossorigin: "anonymous",
 			data: {}
 		};
 		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(identifier, loadOptions);

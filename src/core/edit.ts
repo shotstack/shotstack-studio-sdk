@@ -242,7 +242,7 @@ export class Edit extends Entity {
 			await Promise.all(
 				(this.edit.timeline.fonts ?? []).map(async font => {
 					const identifier = font.src;
-					const loadOptions: pixi.UnresolvedAsset = { src: identifier, loadParser: FontLoadParser.Name };
+					const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
 
 					return this.assetLoader.load<FontFace>(identifier, loadOptions);
 				})

@@ -81,7 +81,7 @@ export class CaptionPlayer extends Player {
 
 			const loadOptions: pixi.UnresolvedAsset = {
 				src: result.vttUrl,
-				loadParser: SubtitleLoadParser.Name
+				parser: SubtitleLoadParser.Name
 			};
 			const subtitle = await this.edit.assetLoader.load<SubtitleAsset>(result.vttUrl, loadOptions);
 
@@ -174,7 +174,7 @@ export class CaptionPlayer extends Player {
 		try {
 			const loadOptions: pixi.UnresolvedAsset = {
 				src,
-				loadParser: SubtitleLoadParser.Name
+				parser: SubtitleLoadParser.Name
 			};
 			const subtitle = await this.edit.assetLoader.load<SubtitleAsset>(src, loadOptions);
 
