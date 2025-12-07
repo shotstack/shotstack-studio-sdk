@@ -31,10 +31,8 @@ export class RichTextPlayer extends Player {
 
 	constructor(edit: any, clipConfiguration: any) {
 		// Default fit to "cover" for rich-text assets if not provided
-		if (!clipConfiguration.fit) {
-			clipConfiguration.fit = "cover";
-		}
-		super(edit, clipConfiguration);
+		const config = clipConfiguration.fit ? clipConfiguration : { ...clipConfiguration, fit: "cover" };
+		super(edit, config);
 	}
 
 	private buildCanvasPayload(
