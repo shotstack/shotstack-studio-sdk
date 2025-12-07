@@ -17,6 +17,14 @@ const GradientSchema = zod
 	})
 	.strict();
 
+const RichTextStrokeSchema = zod
+	.object({
+		width: zod.number().min(0).default(0),
+		color: HexColorSchema.default("#000000"),
+		opacity: zod.number().min(0).max(1).default(1)
+	})
+	.strict();
+
 const RichTextFontSchema = zod
 	.object({
 		family: zod.string().default("Roboto"),
@@ -25,14 +33,7 @@ const RichTextFontSchema = zod
 		color: HexColorSchema.default("#000000"),
 		opacity: zod.number().min(0).max(1).default(1),
 		background: HexColorSchema.optional(),
-		stroke: zod
-			.object({
-				width: zod.number().min(0).default(0),
-				color: HexColorSchema.default("#000000"),
-				opacity: zod.number().min(0).max(1).default(1)
-			})
-			.strict()
-			.optional()
+		stroke: RichTextStrokeSchema.optional()
 	})
 	.strict();
 
@@ -43,14 +44,6 @@ const RichTextStyleSchema = zod
 		textTransform: zod.enum(["none", "uppercase", "lowercase", "capitalize"]).default("none"),
 		textDecoration: zod.enum(["none", "underline", "line-through"]).default("none"),
 		gradient: GradientSchema.optional()
-	})
-	.strict();
-
-const RichTextStrokeSchema = zod
-	.object({
-		width: zod.number().min(0).default(0),
-		color: HexColorSchema.default("#000000"),
-		opacity: zod.number().min(0).max(1).default(1)
 	})
 	.strict();
 
