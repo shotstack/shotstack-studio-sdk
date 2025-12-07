@@ -22,6 +22,10 @@ self.onmessage = async (event) => {
       const { pipeline } = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3");
 
       transcriber = await pipeline("automatic-speech-recognition", modelId, {
+        dtype: {
+          encoder_model: "q8",
+          decoder_model_merged: "q8",
+        },
         progress_callback: (data) => {
           if (data.progress !== undefined) {
             const pct = Math.round(data.progress);
@@ -36,6 +40,7 @@ self.onmessage = async (event) => {
     postWorkerMessage({ type: "progress", status: "transcribing", progress: 0, message: "Transcribing audio..." });
 
     const result = await transcriber(audioData, {
+      task: "transcribe",
       return_timestamps: "word",
       chunk_length_s: 30,
       stride_length_s: 5
