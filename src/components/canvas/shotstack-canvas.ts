@@ -233,10 +233,7 @@ export class Canvas {
 		this.edit.events.on("transcription:progress", (payload: { message?: string }) => {
 			const message = payload.message ?? "Transcribing...";
 			this.transcriptionIndicator.show(message);
-			this.transcriptionIndicator.setPosition(
-				this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10,
-				10
-			);
+			this.transcriptionIndicator.setPosition(this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10, 10);
 		});
 
 		this.edit.events.on("transcription:complete", () => {

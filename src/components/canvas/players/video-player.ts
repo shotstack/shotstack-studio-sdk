@@ -16,6 +16,7 @@ export class VideoPlayer extends Player {
 	private volumeKeyframeBuilder: KeyframeBuilder;
 
 	private syncTimer: number;
+	private activeSyncTimer: number;
 	private skipVideoUpdate: boolean;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
@@ -30,6 +31,7 @@ export class VideoPlayer extends Player {
 
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
 		this.syncTimer = 0;
+		this.activeSyncTimer = 0;
 		this.skipVideoUpdate = false;
 	}
 
@@ -92,6 +94,7 @@ export class VideoPlayer extends Player {
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
+				this.activeSyncTimer = 0;
 				this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
 				this.texture.source.resource.play().catch(console.error);
 			}
@@ -100,11 +103,15 @@ export class VideoPlayer extends Player {
 				this.texture.source.resource.volume = this.getVolume();
 			}
 
-			const desyncThreshold = 100;
-			const shouldSync = Math.abs((this.texture.source.resource.currentTime - trim) * 1000 - playbackTime) > desyncThreshold;
-
-			if (shouldSync) {
-				this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+			// Rate-limit sync checks to once per second to prevent audio stuttering
+			this.activeSyncTimer += elapsed;
+			if (this.activeSyncTimer > 1000) {
+				this.activeSyncTimer = 0;
+				const desyncThreshold = 300;
+				const drift = Math.abs((this.texture.source.resource.currentTime - trim) * 1000 - playbackTime);
+				if (drift > desyncThreshold) {
+					this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+				}
 			}
 		}
 
