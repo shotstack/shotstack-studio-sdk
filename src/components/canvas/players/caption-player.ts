@@ -234,7 +234,7 @@ export class CaptionPlayer extends Player {
 			textX = containerWidth - this.text.width - padding;
 		}
 
-		let textY = containerHeight - this.text.height - padding;
+		let textY = containerHeight * 0.9;
 		if (verticalAlign === "top") {
 			textY = padding;
 		} else if (verticalAlign === "center") {
