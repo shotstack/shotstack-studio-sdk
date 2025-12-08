@@ -44,8 +44,7 @@ export class VideoPlayer extends Player {
 
 		if (identifier.endsWith(".mov")) {
 			throw new Error(
-				`Video source '${videoAsset.src}' is not supported. ` +
-					`.mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`
+				`Video source '${videoAsset.src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`
 			);
 		}
 

@@ -75,7 +75,7 @@ export class TranscriptionService {
 			}
 
 			this.worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
-				const data = event.data;
+				const {data} = event;
 
 				switch (data.type) {
 					case "progress":
@@ -107,6 +107,9 @@ export class TranscriptionService {
 							message: data.message
 						});
 						reject(new Error(data.message));
+						break;
+
+					default:
 						break;
 				}
 			};
@@ -147,7 +150,7 @@ export class TranscriptionService {
 				const left = audioBuffer.getChannelData(0);
 				const right = audioBuffer.getChannelData(1);
 				audioData = new Float32Array(left.length);
-				for (let i = 0; i < left.length; i++) {
+				for (let i = 0; i < left.length; i += 1) {
 					audioData[i] = (left[i] + right[i]) / 2;
 				}
 			} else {

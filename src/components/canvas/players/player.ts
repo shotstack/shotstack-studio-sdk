@@ -46,9 +46,7 @@ export abstract class Player extends Entity {
 
 	// Double-headed arrow for resize cursor
 	private static readonly ResizeCursorPath =
-		"M1320,2186L1085,2421L1120,2457L975,2496" +
-		"L1014,2351L1050,2386L1285,2151L1250,2115" +
-		"L1396,2075L1356,2221L1320,2186Z";
+		"M1320,2186L1085,2421L1120,2457L975,2496L1014,2351L1050,2386L1285,2151L1250,2115L1396,2075L1356,2221L1320,2186Z";
 	private static readonly ResizeCursorMatrix = "matrix(0.807871,0.707107,-0.807871,0.707107,2111.872433,-206.020386)";
 
 	// Base angles for cursors (before clip rotation is applied)
@@ -80,7 +78,8 @@ export abstract class Player extends Entity {
 	private static buildResizeCursor(angleDeg: number): string {
 		const path = Player.ResizeCursorPath;
 		const matrix = Player.ResizeCursorMatrix;
-		const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='905 1940 640 620'>` +
+		const svg =
+			`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='905 1940 640 620'>` +
 			`<g transform='rotate(${angleDeg} 1225 2250)'>` +
 			`<g transform='${matrix}'><path d='${path}' fill='black' stroke='white' stroke-width='33.33'/></g></g></svg>`;
 		return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, auto`;

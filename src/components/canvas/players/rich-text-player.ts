@@ -35,18 +35,15 @@ export class RichTextPlayer extends Player {
 		super(edit, config);
 	}
 
-	private buildCanvasPayload(
-		richTextAsset: RichTextAsset,
-		fontInfo?: { baseFontFamily: string; fontWeight: number }
-	): any {
+	private buildCanvasPayload(richTextAsset: RichTextAsset, fontInfo?: { baseFontFamily: string; fontWeight: number }): any {
 		const editData = this.edit.getEdit();
 		const width = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
 
 		// Use provided font info or parse fresh (for reconfigure/updateTextContent calls)
 		const requestedFamily = richTextAsset.font?.family;
-		const { baseFontFamily, fontWeight } = fontInfo
-			?? (requestedFamily ? parseFontFamily(requestedFamily) : { baseFontFamily: requestedFamily, fontWeight: 400 });
+		const { baseFontFamily, fontWeight } =
+			fontInfo ?? (requestedFamily ? parseFontFamily(requestedFamily) : { baseFontFamily: requestedFamily, fontWeight: 400 });
 
 		// Find matching timeline font for customFonts payload
 		const timelineFonts = editData?.timeline?.fonts || [];
@@ -66,9 +63,7 @@ export class RichTextPlayer extends Player {
 			...richTextAsset,
 			width,
 			height,
-			font: richTextAsset.font
-				? { ...richTextAsset.font, family: baseFontFamily, weight: fontWeight }
-				: undefined,
+			font: richTextAsset.font ? { ...richTextAsset.font, family: baseFontFamily, weight: fontWeight } : undefined,
 			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};

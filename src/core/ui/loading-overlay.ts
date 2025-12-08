@@ -5,8 +5,7 @@ export class LoadingOverlay {
 
 	show(): void {
 		this.overlay = document.createElement("div");
-		this.overlay.style.cssText =
-			"position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;justify-content:center;align-items:center";
+		this.overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;justify-content:center;align-items:center";
 		this.overlay.innerHTML = `
 			<div style="width:240px">
 				<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px">

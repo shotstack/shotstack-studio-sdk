@@ -1,14 +1,8 @@
 import { Player } from "@canvas/players/player";
-import {
-	type Cue,
-	findActiveCue,
-	isAliasReference,
-	resolveTranscriptionAlias,
-	revokeVttUrl
-} from "@core/captions";
+import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
-import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
 import { type Size, type Vector } from "@layouts/geometry";
+import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
 import { type CaptionAsset } from "@schemas/caption-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
@@ -70,7 +64,7 @@ export class CaptionPlayer extends Player {
 				throw new Error("Cannot resolve alias: edit not loaded");
 			}
 
-			const result = await resolveTranscriptionAlias(src, originalEdit, (progress) => {
+			const result = await resolveTranscriptionAlias(src, originalEdit, progress => {
 				this.edit.events.emit("transcription:progress", {
 					clipAlias: this.clipConfiguration.alias,
 					...progress

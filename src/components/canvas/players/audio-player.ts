@@ -27,11 +27,7 @@ export class AudioPlayer extends Player {
 		const audioAsset = clipConfiguration.asset as AudioAsset;
 		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
 
-		this.volumeKeyframeBuilder = new KeyframeBuilder(
-			this.createVolumeKeyframes(audioAsset, baseVolume),
-			this.getLength(),
-			baseVolume
-		);
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
 		this.syncTimer = 0;
 	}
 

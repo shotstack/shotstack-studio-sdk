@@ -62,7 +62,7 @@ const RichTextBorderSchema = zod
 		width: zod.number().min(0).default(0),
 		color: HexColorSchema.default("#000000"),
 		opacity: zod.number().min(0).max(1).default(1),
-		radius: zod.number().min(0).default(0),
+		radius: zod.number().min(0).default(0)
 	})
 	.strict();
 

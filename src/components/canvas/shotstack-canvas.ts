@@ -1,6 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
-import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 import { Edit } from "@core/edit";
+import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";

@@ -1,4 +1,3 @@
-
 export interface Cue {
 	start: number;
 	end: number;

@@ -1,8 +1,6 @@
 import * as zod from "zod";
 
-export const CaptionAssetColorSchema = zod
-	.string()
-	.regex(/^#([A-Fa-f0-9]{8}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})|transparent$/, "Invalid color format.");
+export const CaptionAssetColorSchema = zod.string().regex(/^#([A-Fa-f0-9]{8}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})|transparent$/, "Invalid color format.");
 
 export const CaptionAssetFontSchema = zod
 	.object({
