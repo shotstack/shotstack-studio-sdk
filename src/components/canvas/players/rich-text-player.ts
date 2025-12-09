@@ -4,6 +4,7 @@ import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
 import { createTextEngine } from "@shotstack/shotstack-canvas";
 import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
+import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
 
 const extractFontNames = (url: string): { full: string; base: string } => {
@@ -28,6 +29,7 @@ export class RichTextPlayer extends Player {
 	private isRendering: boolean = false;
 	private targetFPS: number = 30;
 	private validatedAsset: ValidatedRichTextAsset | null = null;
+	private fontSupportsBold: boolean = false;
 
 	constructor(edit: any, clipConfiguration: any) {
 		// Default fit to "cover" for rich-text assets if not provided
@@ -42,8 +44,14 @@ export class RichTextPlayer extends Player {
 
 		// Use provided font info or parse fresh (for reconfigure/updateTextContent calls)
 		const requestedFamily = richTextAsset.font?.family;
-		const { baseFontFamily, fontWeight } =
+		const { baseFontFamily, fontWeight: parsedWeight } =
 			fontInfo ?? (requestedFamily ? parseFontFamily(requestedFamily) : { baseFontFamily: requestedFamily, fontWeight: 400 });
+
+		// Use explicit font.weight if set, otherwise fall back to parsed weight from family name
+		const explicitWeight = richTextAsset.font?.weight;
+		const fontWeight = explicitWeight
+			? (typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || parsedWeight : explicitWeight)
+			: parsedWeight;
 
 		// Find matching timeline font for customFonts payload
 		const timelineFonts = editData?.timeline?.fonts || [];
@@ -89,8 +97,65 @@ export class RichTextPlayer extends Player {
 		}
 	}
 
+	private async checkFontCapabilities(fontUrl: string): Promise<void> {
+		try {
+			const response = await fetch(fontUrl);
+			const buffer = await response.arrayBuffer();
+			const font = opentype.parse(buffer);
+
+			// Check for fvar table (variable font) with weight axis
+			const fvar = font.tables["fvar"] as { axes?: Array<{ tag: string }> } | undefined;
+			if (fvar?.axes) {
+				const weightAxis = fvar.axes.find(axis => axis.tag === "wght");
+				this.fontSupportsBold = !!weightAxis;
+			} else {
+				this.fontSupportsBold = false;
+			}
+		} catch (error) {
+			console.warn("Failed to check font capabilities:", error);
+			this.fontSupportsBold = false;
+		}
+	}
+
+	public supportsBold(): boolean {
+		return this.fontSupportsBold;
+	}
+
+	private resolveFont(family: string): { url: string; baseFontFamily: string; fontWeight: number } | null {
+		const { baseFontFamily, fontWeight } = parseFontFamily(family);
+		const editData = this.edit.getEdit();
+		const timelineFonts = editData?.timeline?.fonts || [];
+
+		const matchingFont = timelineFonts.find(font => {
+			const { full, base } = extractFontNames(font.src);
+			const requested = family.toLowerCase();
+			return full.toLowerCase() === requested || base.toLowerCase() === requested;
+		});
+
+		if (matchingFont) {
+			return { url: matchingFont.src, baseFontFamily, fontWeight };
+		}
+
+		const builtInPath = resolveFontPath(family);
+		if (builtInPath) {
+			return { url: builtInPath, baseFontFamily, fontWeight };
+		}
+
+		return null;
+	}
+
 	public override reconfigureAfterRestore(): void {
 		super.reconfigureAfterRestore();
+		this.reconfigure(this.clipConfiguration.asset as RichTextAsset);
+	}
+
+	private async reconfigure(richTextAsset: RichTextAsset): Promise<void> {
+		const fontUrl = await this.ensureFontRegistered(richTextAsset);
+
+		if (fontUrl) {
+			await this.checkFontCapabilities(fontUrl);
+			this.edit.events.emit("font:capabilities:changed", { supportsBold: this.fontSupportsBold });
+		}
 
 		for (const texture of this.cachedFrames.values()) {
 			texture.destroy();
@@ -98,7 +163,6 @@ export class RichTextPlayer extends Player {
 		this.cachedFrames.clear();
 		this.lastRenderedTime = -1;
 
-		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 		if (this.textEngine) {
 			const canvasPayload = this.buildCanvasPayload(richTextAsset);
 			const { value: validated } = this.textEngine.validate(canvasPayload);
@@ -108,6 +172,19 @@ export class RichTextPlayer extends Player {
 		if (this.textEngine && this.renderer) {
 			this.renderFrameSafe(this.getCurrentTime() / 1000);
 		}
+	}
+
+	private async ensureFontRegistered(richTextAsset: RichTextAsset): Promise<string | null> {
+		if (!this.textEngine) return null;
+
+		const family = richTextAsset.font?.family;
+		if (!family) return null;
+
+		const resolved = this.resolveFont(family);
+		if (!resolved) return null;
+
+		await this.registerFont(resolved.baseFontFamily, resolved.fontWeight, { type: "url", path: resolved.url });
+		return resolved.url;
 	}
 
 	public override async load(): Promise<void> {
@@ -147,26 +224,14 @@ export class RichTextPlayer extends Player {
 
 			this.renderer = this.textEngine!.createRenderer(this.canvas);
 
-			// Register font: try timeline fonts first, then built-in fonts
-			if (fontInfo && requestedFamily) {
-				const { baseFontFamily, fontWeight } = fontInfo;
-				const timelineFonts = editData?.timeline?.fonts || [];
-
-				const matchingFont = timelineFonts.find(font => {
-					const { full, base } = extractFontNames(font.src);
-					const requested = requestedFamily.toLowerCase();
-					return full.toLowerCase() === requested || base.toLowerCase() === requested;
-				});
-
-				if (matchingFont) {
-					await this.registerFont(baseFontFamily, fontWeight, { type: "url", path: matchingFont.src });
+			// Register font and check capabilities
+			if (requestedFamily) {
+				const resolved = this.resolveFont(requestedFamily);
+				if (resolved) {
+					await this.registerFont(resolved.baseFontFamily, resolved.fontWeight, { type: "url", path: resolved.url });
+					await this.checkFontCapabilities(resolved.url);
 				} else {
-					const fontPath = resolveFontPath(requestedFamily);
-					if (fontPath) {
-						await this.registerFont(baseFontFamily, fontWeight, { type: "file", path: fontPath });
-					} else {
-						console.warn(`Font ${requestedFamily} not found. Available:`, Object.keys(FONT_PATHS));
-					}
+					console.warn(`Font ${requestedFamily} not found. Available:`, Object.keys(FONT_PATHS));
 				}
 			}
 

@@ -1,5 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
+import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
 import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
@@ -22,6 +23,7 @@ export class Canvas {
 	private readonly edit: Edit;
 	private readonly inspector: Inspector;
 	private readonly transcriptionIndicator: TranscriptionIndicator;
+	private readonly richTextToolbar: RichTextToolbar;
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
@@ -39,6 +41,7 @@ export class Canvas {
 		this.edit = edit;
 		this.inspector = new Inspector();
 		this.transcriptionIndicator = new TranscriptionIndicator();
+		this.richTextToolbar = new RichTextToolbar(edit);
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
 
@@ -70,6 +73,9 @@ export class Canvas {
 		this.zoomToFit();
 
 		root.appendChild(this.application.canvas);
+
+		this.richTextToolbar.mount(root);
+		this.setupRichTextToolbarListeners();
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {
@@ -78,6 +84,12 @@ export class Canvas {
 		root.addEventListener(
 			"wheel",
 			(e: WheelEvent) => {
+				// Allow scrolling in toolbar popups
+				const target = e.target as HTMLElement;
+				if (target.closest(".ss-toolbar-popup")) {
+					return;
+				}
+
 				e.preventDefault();
 				e.stopPropagation();
 
@@ -245,6 +257,21 @@ export class Canvas {
 		});
 	}
 
+	private setupRichTextToolbarListeners(): void {
+		this.edit.events.on("clip:selected", ({ trackIndex, clipIndex }) => {
+			const player = this.edit.getPlayerClip(trackIndex, clipIndex);
+			if (player?.clipConfiguration.asset.type === "rich-text") {
+				this.richTextToolbar.show(trackIndex, clipIndex);
+			} else {
+				this.richTextToolbar.hide();
+			}
+		});
+
+		this.edit.events.on("selection:cleared", () => {
+			this.richTextToolbar.hide();
+		});
+	}
+
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
 		if (event.target === this.background) {
 			this.edit.events.emit("canvas:background:clicked", {});
@@ -273,6 +300,7 @@ export class Canvas {
 
 		this.inspector.dispose();
 		this.transcriptionIndicator.dispose();
+		this.richTextToolbar.dispose();
 
 		this.application.destroy(true, { children: true, texture: true });
 	}
