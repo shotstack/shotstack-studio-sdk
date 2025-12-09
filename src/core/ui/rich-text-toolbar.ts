@@ -5,6 +5,7 @@ import type { RichTextAsset } from "@schemas/rich-text-asset";
 
 import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 import { BackgroundColorPicker } from "./background-color-picker";
+import { FontColorPicker } from "./font-color-picker";
 
 /** Built-in font families (base names only, without weight variants) */
 const BUILT_IN_FONTS = [
@@ -35,7 +36,6 @@ export class RichTextToolbar {
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
 	private boldBtn: HTMLButtonElement | null = null;
-	private colorInput: HTMLInputElement | null = null;
 	private opacityBtn: HTMLButtonElement | null = null;
 	private opacityPopup: HTMLDivElement | null = null;
 	private opacitySlider: HTMLInputElement | null = null;
@@ -80,6 +80,11 @@ export class RichTextToolbar {
 	private paddingBottomValue: HTMLSpanElement | null = null;
 	private paddingLeftSlider: HTMLInputElement | null = null;
 	private paddingLeftValue: HTMLSpanElement | null = null;
+
+	private fontColorBtn: HTMLButtonElement | null = null;
+	private fontColorPopup: HTMLDivElement | null = null;
+	private fontColorPicker: FontColorPicker | null = null;
+	private colorDisplay: HTMLButtonElement | null = null;
 
 	private styleElement: HTMLStyleElement | null = null;
 
@@ -138,8 +143,10 @@ export class RichTextToolbar {
 			</div>
 
 			<div class="ss-toolbar-color-wrap">
-				<input type="color" data-action="color" class="ss-toolbar-color" title="Font color" />
-				<div class="ss-toolbar-color-ring"></div>
+				<button data-action="font-color-toggle" class="ss-toolbar-color" title="Font color" data-color-display></button>
+				<div data-font-color-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+					<div data-font-color-picker></div>
+				</div>
 			</div>
 
 			<div class="ss-toolbar-dropdown">
@@ -354,10 +361,19 @@ export class RichTextToolbar {
 		});
 		this.buildSizePopup();
 
-		this.colorInput?.addEventListener("input", (e) => {
-			const color = (e.target as HTMLInputElement).value;
-			this.updateClipProperty({ font: { color } });
-		});
+		// Font color picker
+		this.fontColorBtn = this.container.querySelector("[data-action='font-color-toggle']");
+		this.colorDisplay = this.container.querySelector("[data-color-display]");
+		this.fontColorPopup = this.container.querySelector("[data-font-color-popup]");
+		const fontColorPickerContainer = this.container.querySelector("[data-font-color-picker]");
+
+		if (fontColorPickerContainer) {
+			this.fontColorPicker = new FontColorPicker();
+			this.fontColorPicker.mount(fontColorPickerContainer as HTMLElement);
+			this.fontColorPicker.onChange((updates) => {
+				this.updateFontColorProperty(updates);
+			});
+		}
 
 		this.opacityBtn = this.container.querySelector("[data-action='opacity-toggle']");
 		this.opacityPopup = this.container.querySelector("[data-opacity-popup]");
@@ -539,6 +555,11 @@ export class RichTextToolbar {
 					this.paddingPopup.style.display = "none";
 				}
 			}
+			if (this.fontColorPopup && this.fontColorPopup.style.display !== "none") {
+				if (!this.fontColorBtn?.contains(target) && !this.fontColorPopup.contains(target)) {
+					this.fontColorPopup.style.display = "none";
+				}
+			}
 			if (this.fontPopup && this.fontPopup.style.display !== "none") {
 				if (!this.fontBtn?.contains(target) && !this.fontPopup.contains(target)) {
 					this.fontPopup.style.display = "none";
@@ -612,6 +633,9 @@ export class RichTextToolbar {
 				break;
 			case "padding-toggle":
 				this.togglePaddingPopup();
+				break;
+			case "font-color-toggle":
+				this.toggleFontColorPopup();
 				break;
 			case "anchor-top":
 				this.updateVerticalAlign("top");
@@ -701,6 +725,7 @@ export class RichTextToolbar {
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 		const isVisible = this.opacityPopup.style.display !== "none";
 		this.opacityPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -714,6 +739,7 @@ export class RichTextToolbar {
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 		const isVisible = this.spacingPopup.style.display !== "none";
 		this.spacingPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -727,6 +753,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 		const isVisible = this.borderPopup.style.display !== "none";
 		this.borderPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -740,6 +767,7 @@ export class RichTextToolbar {
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 
 		const isVisible = this.backgroundPopup.style.display !== "none";
 		this.backgroundPopup.style.display = isVisible ? "none" : "block";
@@ -764,9 +792,44 @@ export class RichTextToolbar {
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 
 		const isVisible = this.paddingPopup.style.display !== "none";
 		this.paddingPopup.style.display = isVisible ? "none" : "block";
+	}
+
+	private toggleFontColorPopup(): void {
+		if (!this.fontColorPopup) return;
+
+		// Close other popups
+		if (this.sizePopup) this.sizePopup.style.display = "none";
+		if (this.opacityPopup) this.opacityPopup.style.display = "none";
+		if (this.spacingPopup) this.spacingPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+		if (this.fontPopup) this.fontPopup.style.display = "none";
+
+		const isVisible = this.fontColorPopup.style.display !== "none";
+		this.fontColorPopup.style.display = isVisible ? "none" : "block";
+
+		// Sync state when opening
+		if (!isVisible && this.fontColorPicker) {
+			const asset = this.getCurrentAsset();
+			const font = asset?.font;
+
+			// Set color and opacity
+			this.fontColorPicker.setColor(
+				font?.color || "#000000",
+				font?.opacity ?? 1
+			);
+
+			// Set highlight if present
+			if (font?.background) {
+				this.fontColorPicker.setHighlight(font.background);
+			}
+		}
 	}
 
 	private toggleFontPopup(): void {
@@ -778,6 +841,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 		const isVisible = this.fontPopup.style.display !== "none";
 		if (!isVisible) {
 			this.buildFontList();
@@ -794,6 +858,7 @@ export class RichTextToolbar {
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 
 		const isVisible = this.textEditPopup.style.display !== "none";
 		if (!isVisible && this.textEditArea) {
@@ -1006,6 +1071,43 @@ export class RichTextToolbar {
 		}
 	}
 
+	private updateFontColorProperty(updates: {
+		color?: string;
+		opacity?: number;
+		background?: string;
+		backgroundOpacity?: number;
+	}): void {
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!player) return;
+
+		const asset = player.clipConfiguration.asset as RichTextAsset;
+		const currentFont = asset.font || {};
+
+		let fontUpdates: Record<string, unknown> = { ...currentFont };
+
+		// Handle solid color and opacity
+		if (updates.color !== undefined) {
+			fontUpdates.color = updates.color;
+		}
+		if (updates.opacity !== undefined) {
+			fontUpdates.opacity = updates.opacity;
+		}
+
+		// Handle text highlight (font.background)
+		if (updates.background !== undefined) {
+			fontUpdates.background = updates.background;
+		}
+		if (updates.backgroundOpacity !== undefined) {
+			// For now, just store it - will need schema update to fully support
+			// Alternative: encode in hex color as #RRGGBBAA
+		}
+
+		// Apply updates
+		this.updateClipProperty({
+			font: fontUpdates
+		});
+	}
+
 	private updateClipProperty(assetUpdates: Record<string, unknown>): void {
 		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
@@ -1072,8 +1174,9 @@ export class RichTextToolbar {
 			this.fontPreview.style.fontFamily = `'${fontFamily}', sans-serif`;
 		}
 
-		if (this.colorInput) {
-			this.colorInput.value = asset.font?.color ?? "#000000";
+		if (this.colorDisplay) {
+			const color = asset.font?.color ?? "#000000";
+			this.colorDisplay.style.backgroundColor = color;
 		}
 
 		if (this.opacitySlider && this.opacityValue) {
@@ -1178,7 +1281,13 @@ export class RichTextToolbar {
 		this.fontBtn = null;
 		this.fontPopup = null;
 		this.fontPreview = null;
-		this.colorInput = null;
+
+		this.fontColorPicker?.dispose();
+		this.fontColorPicker = null;
+		this.fontColorBtn = null;
+		this.fontColorPopup = null;
+		this.colorDisplay = null;
+
 		this.opacityBtn = null;
 		this.opacityPopup = null;
 		this.opacitySlider = null;
