@@ -4,6 +4,7 @@ import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
 
 import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
+import { BackgroundColorPicker } from "./background-color-picker";
 
 /** Built-in font families (base names only, without weight variants) */
 const BUILT_IN_FONTS = [
@@ -65,6 +66,9 @@ export class RichTextToolbar {
 	private borderOpacityValue: HTMLSpanElement | null = null;
 	private borderRadiusSlider: HTMLInputElement | null = null;
 	private borderRadiusValue: HTMLSpanElement | null = null;
+	private backgroundBtn: HTMLButtonElement | null = null;
+	private backgroundPopup: HTMLDivElement | null = null;
+	private backgroundColorPicker: BackgroundColorPicker | null = null;
 
 	private styleElement: HTMLStyleElement | null = null;
 
@@ -125,6 +129,18 @@ export class RichTextToolbar {
 			<div class="ss-toolbar-color-wrap">
 				<input type="color" data-action="color" class="ss-toolbar-color" title="Font color" />
 				<div class="ss-toolbar-color-ring"></div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="background-toggle" class="ss-toolbar-btn" title="Background Fill">
+					<svg width="16" height="16" viewBox="0 0 491.879 491.879" fill="currentColor">
+						<path d="M462.089,151.673h-88.967c2.115,10.658,2.743,21.353,1.806,31.918h85.05v247.93H212.051v-59.488l-11.615,11.609 c-5.921,5.733-12.882,10.113-20.304,13.591v36.4c0,16.423,13.363,29.79,29.791,29.79h252.166c16.425,0,29.79-13.367,29.79-29.79 V181.467C491.879,165.039,478.514,151.673,462.089,151.673z"/>
+						<path d="M333.156,201.627c-1.527-3.799-0.837-6.296,0.225-10.065c0.311-1.124,0.613-2.205,0.855-3.3 c3.189-14.43,1.178-31.357-5.57-46.378c-8.859-19.715-24.563-41.406-44.258-61.103c-32.759-32.773-67.686-52.324-93.457-52.324 c-9.418,0-16.406,2.624-21.658,6.136L9.937,192.753c-26.248,27.201,3.542,81.343,42.343,120.142 c32.738,32.738,67.667,52.289,93.419,52.289c13.563,0,22.081-5.506,26.943-10.192l109.896-109.863 c-0.998,3.653-1.478,6.683-1.478,9.243c0,20.097,16.359,36.459,36.475,36.459c20.115,0,36.494-16.362,36.494-36.459 C354.029,250.907,354.029,240.375,333.156,201.627z M146.649,326.792c-10.341-0.163-37.364-11.113-67.284-40.984 c-32.884-32.902-42.807-61.614-42.084-66.191L160.646,96.242c0.289,0.676,0.561,1.335,0.885,2.011 c8.842,19.712,24.559,41.422,44.256,61.118c20.645,20.645,43.046,36.556,63.225,45.079L146.649,326.792z M281.898,149.465 c-10.629,0-27.218-5.104-46.128-14.46l-2.88-2.723c-16.508-16.523-29.439-34.173-36.412-49.717c-3.4-7.634-4.445-12.88-4.622-15.75 c10.724,0.614,36.153,11.76,65.464,41.069c13.045,13.061,24.074,27.23,31.551,40.551 C287.005,149.127,284.632,149.465,281.898,149.465z"/>
+					</svg>
+				</button>
+				<div data-background-popup class="ss-toolbar-popup ss-toolbar-popup--background">
+					<div data-background-color-picker></div>
+				</div>
 			</div>
 
 			<div class="ss-toolbar-dropdown">
@@ -369,6 +385,18 @@ export class RichTextToolbar {
 			this.updateBorderProperty({ radius });
 		});
 
+		this.backgroundBtn = this.container.querySelector("[data-action='background-toggle']");
+		this.backgroundPopup = this.container.querySelector("[data-background-popup]");
+		const backgroundPickerContainer = this.container.querySelector("[data-background-color-picker]");
+
+		if (backgroundPickerContainer) {
+			this.backgroundColorPicker = new BackgroundColorPicker();
+			this.backgroundColorPicker.mount(backgroundPickerContainer as HTMLElement);
+			this.backgroundColorPicker.onChange((color, opacity) => {
+				this.updateBackgroundProperty({ color, opacity });
+			});
+		}
+
 		// Text edit area handlers
 		this.textEditArea?.addEventListener("input", () => this.debouncedApplyTextEdit());
 		this.textEditArea?.addEventListener("keydown", (e) => {
@@ -408,6 +436,11 @@ export class RichTextToolbar {
 			if (this.borderPopup && this.borderPopup.style.display !== "none") {
 				if (!this.borderBtn?.contains(target) && !this.borderPopup.contains(target)) {
 					this.borderPopup.style.display = "none";
+				}
+			}
+			if (this.backgroundPopup && this.backgroundPopup.style.display !== "none") {
+				if (!this.backgroundBtn?.contains(target) && !this.backgroundPopup.contains(target)) {
+					this.backgroundPopup.style.display = "none";
 				}
 			}
 			if (this.fontPopup && this.fontPopup.style.display !== "none") {
@@ -477,6 +510,9 @@ export class RichTextToolbar {
 				break;
 			case "border-toggle":
 				this.toggleBorderPopup();
+				break;
+			case "background-toggle":
+				this.toggleBackgroundPopup();
 				break;
 			case "anchor-top":
 				this.updateVerticalAlign("top");
@@ -564,6 +600,7 @@ export class RichTextToolbar {
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		const isVisible = this.opacityPopup.style.display !== "none";
 		this.opacityPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -575,6 +612,7 @@ export class RichTextToolbar {
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		const isVisible = this.spacingPopup.style.display !== "none";
 		this.spacingPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -586,8 +624,30 @@ export class RichTextToolbar {
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		const isVisible = this.borderPopup.style.display !== "none";
 		this.borderPopup.style.display = isVisible ? "none" : "block";
+	}
+
+	private toggleBackgroundPopup(): void {
+		if (!this.backgroundPopup) return;
+		if (this.sizePopup) this.sizePopup.style.display = "none";
+		if (this.opacityPopup) this.opacityPopup.style.display = "none";
+		if (this.fontPopup) this.fontPopup.style.display = "none";
+		if (this.spacingPopup) this.spacingPopup.style.display = "none";
+		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+
+		const isVisible = this.backgroundPopup.style.display !== "none";
+		this.backgroundPopup.style.display = isVisible ? "none" : "block";
+
+		// Sync color picker state when opening
+		if (!isVisible && this.backgroundColorPicker) {
+			const asset = this.getCurrentAsset();
+			const background = asset?.background;
+			this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
+			this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
+		}
 	}
 
 	private toggleFontPopup(): void {
@@ -597,6 +657,7 @@ export class RichTextToolbar {
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		const isVisible = this.fontPopup.style.display !== "none";
 		if (!isVisible) {
 			this.buildFontList();
@@ -611,6 +672,7 @@ export class RichTextToolbar {
 		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 
 		const isVisible = this.textEditPopup.style.display !== "none";
 		if (!isVisible && this.textEditArea) {
@@ -756,6 +818,24 @@ export class RichTextToolbar {
 		this.updateClipProperty({ border: updatedBorder });
 	}
 
+	private updateBackgroundProperty(updates: Partial<{ color?: string; opacity: number }>): void {
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!player) return;
+
+		const asset = player.clipConfiguration.asset as RichTextAsset;
+		const currentBackground = asset.background || { opacity: 1 };
+
+		const updatedBackground = { ...currentBackground, ...updates };
+
+		// If color is being removed and opacity is 1, remove background entirely
+		if (!updatedBackground.color && updatedBackground.opacity === 1) {
+			const { background, ...assetWithoutBackground } = asset;
+			this.updateClipProperty(assetWithoutBackground);
+		} else {
+			this.updateClipProperty({ background: updatedBackground });
+		}
+	}
+
 	private updateClipProperty(assetUpdates: Record<string, unknown>): void {
 		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
@@ -786,6 +866,9 @@ export class RichTextToolbar {
 		}
 		if (this.borderPopup) {
 			this.borderPopup.style.display = "none";
+		}
+		if (this.backgroundPopup) {
+			this.backgroundPopup.style.display = "none";
 		}
 		if (this.fontPopup) {
 			this.fontPopup.style.display = "none";
@@ -925,6 +1008,11 @@ export class RichTextToolbar {
 		this.borderOpacityValue = null;
 		this.borderRadiusSlider = null;
 		this.borderRadiusValue = null;
+
+		this.backgroundColorPicker?.dispose();
+		this.backgroundColorPicker = null;
+		this.backgroundBtn = null;
+		this.backgroundPopup = null;
 
 		this.styleElement?.remove();
 		this.styleElement = null;
