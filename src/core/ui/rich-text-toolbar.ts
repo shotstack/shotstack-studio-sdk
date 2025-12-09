@@ -70,6 +70,17 @@ export class RichTextToolbar {
 	private backgroundPopup: HTMLDivElement | null = null;
 	private backgroundColorPicker: BackgroundColorPicker | null = null;
 
+	private paddingBtn: HTMLButtonElement | null = null;
+	private paddingPopup: HTMLDivElement | null = null;
+	private paddingTopSlider: HTMLInputElement | null = null;
+	private paddingTopValue: HTMLSpanElement | null = null;
+	private paddingRightSlider: HTMLInputElement | null = null;
+	private paddingRightValue: HTMLSpanElement | null = null;
+	private paddingBottomSlider: HTMLInputElement | null = null;
+	private paddingBottomValue: HTMLSpanElement | null = null;
+	private paddingLeftSlider: HTMLInputElement | null = null;
+	private paddingLeftValue: HTMLSpanElement | null = null;
+
 	private styleElement: HTMLStyleElement | null = null;
 
 	constructor(edit: Edit) {
@@ -140,6 +151,49 @@ export class RichTextToolbar {
 				</button>
 				<div data-background-popup class="ss-toolbar-popup ss-toolbar-popup--background">
 					<div data-background-color-picker></div>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="padding-toggle" class="ss-toolbar-btn" title="Padding">
+					<svg width="16" height="16" viewBox="0 0 15 15" fill="none">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M2.85714 2H12.1429C12.6162 2 13 2.38376 13 2.85714V12.1429C13 12.6162 12.6162 13 12.1429 13H2.85714C2.38376 13 2 12.6162 2 12.1429V2.85714C2 2.38376 2.38376 2 2.85714 2ZM1 2.85714C1 1.83147 1.83147 1 2.85714 1H12.1429C13.1685 1 14 1.83147 14 2.85714V12.1429C14 13.1685 13.1685 14 12.1429 14H2.85714C1.83147 14 1 13.1685 1 12.1429V2.85714ZM7.49988 5.00012C7.77602 5.00012 7.99988 4.77626 7.99988 4.50012C7.99988 4.22398 7.77602 4.00012 7.49988 4.00012C7.22374 4.00012 6.99988 4.22398 6.99988 4.50012C6.99988 4.77626 7.22374 5.00012 7.49988 5.00012ZM4.49988 11.0001C4.77602 11.0001 4.99988 10.7763 4.99988 10.5001C4.99988 10.224 4.77602 10.0001 4.49988 10.0001C4.22374 10.0001 3.99988 10.224 3.99988 10.5001C3.99988 10.7763 4.22374 11.0001 4.49988 11.0001ZM4.99988 7.50012C4.99988 7.77626 4.77602 8.00012 4.49988 8.00012C4.22374 8.00012 3.99988 7.77626 3.99988 7.50012C3.99988 7.22398 4.22374 7.00012 4.49988 7.00012C4.77602 7.00012 4.99988 7.22398 4.99988 7.50012ZM4.49988 5.00012C4.77602 5.00012 4.99988 4.77626 4.99988 4.50012C4.99988 4.22398 4.77602 4.00012 4.49988 4.00012C4.22374 4.00012 3.99988 4.22398 3.99988 4.50012C3.99988 4.77626 4.22374 5.00012 4.49988 5.00012ZM10.9999 10.5001C10.9999 10.7763 10.776 11.0001 10.4999 11.0001C10.2237 11.0001 9.99988 10.7763 9.99988 10.5001C9.99988 10.224 10.2237 10.0001 10.4999 10.0001C10.776 10.0001 10.9999 10.224 10.9999 10.5001ZM10.4999 8.00012C10.776 8.00012 10.9999 7.77626 10.9999 7.50012C10.9999 7.22398 10.776 7.00012 10.4999 7.00012C10.2237 7.00012 9.99988 7.22398 9.99988 7.50012C9.99988 7.77626 10.2237 8.00012 10.4999 8.00012ZM10.9999 4.50012C10.9999 4.77626 10.776 5.00012 10.4999 5.00012C10.2237 5.00012 9.99988 4.77626 9.99988 4.50012C9.99988 4.22398 10.2237 4.00012 10.4999 4.00012C10.776 4.00012 10.9999 4.22398 10.9999 4.50012ZM7.49988 11.0001C7.77602 11.0001 7.99988 10.7763 7.99988 10.5001C7.99988 10.224 7.77602 10.0001 7.49988 10.0001C7.22374 10.0001 6.99988 10.224 6.99988 10.5001C6.99988 10.7763 7.22374 11.0001 7.49988 11.0001Z" fill="currentColor"/>
+					</svg>
+				</button>
+				<div data-padding-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+					<div class="ss-toolbar-popup-header">Padding</div>
+
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Top</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-padding-top-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
+							<span data-padding-top-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Right</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-padding-right-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
+							<span data-padding-right-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Bottom</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-padding-bottom-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
+							<span data-padding-bottom-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Left</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-padding-left-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
+							<span data-padding-left-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -397,6 +451,43 @@ export class RichTextToolbar {
 			});
 		}
 
+		// Padding controls
+		this.paddingBtn = this.container.querySelector("[data-action='padding-toggle']");
+		this.paddingPopup = this.container.querySelector("[data-padding-popup]");
+		this.paddingTopSlider = this.container.querySelector("[data-padding-top-slider]");
+		this.paddingTopValue = this.container.querySelector("[data-padding-top-value]");
+		this.paddingRightSlider = this.container.querySelector("[data-padding-right-slider]");
+		this.paddingRightValue = this.container.querySelector("[data-padding-right-value]");
+		this.paddingBottomSlider = this.container.querySelector("[data-padding-bottom-slider]");
+		this.paddingBottomValue = this.container.querySelector("[data-padding-bottom-value]");
+		this.paddingLeftSlider = this.container.querySelector("[data-padding-left-slider]");
+		this.paddingLeftValue = this.container.querySelector("[data-padding-left-value]");
+
+		// Event listeners
+		this.paddingTopSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.paddingTopValue) this.paddingTopValue.textContent = String(value);
+			this.updatePaddingProperty({ top: value });
+		});
+
+		this.paddingRightSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.paddingRightValue) this.paddingRightValue.textContent = String(value);
+			this.updatePaddingProperty({ right: value });
+		});
+
+		this.paddingBottomSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.paddingBottomValue) this.paddingBottomValue.textContent = String(value);
+			this.updatePaddingProperty({ bottom: value });
+		});
+
+		this.paddingLeftSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.paddingLeftValue) this.paddingLeftValue.textContent = String(value);
+			this.updatePaddingProperty({ left: value });
+		});
+
 		// Text edit area handlers
 		this.textEditArea?.addEventListener("input", () => this.debouncedApplyTextEdit());
 		this.textEditArea?.addEventListener("keydown", (e) => {
@@ -441,6 +532,11 @@ export class RichTextToolbar {
 			if (this.backgroundPopup && this.backgroundPopup.style.display !== "none") {
 				if (!this.backgroundBtn?.contains(target) && !this.backgroundPopup.contains(target)) {
 					this.backgroundPopup.style.display = "none";
+				}
+			}
+			if (this.paddingPopup && this.paddingPopup.style.display !== "none") {
+				if (!this.paddingBtn?.contains(target) && !this.paddingPopup.contains(target)) {
+					this.paddingPopup.style.display = "none";
 				}
 			}
 			if (this.fontPopup && this.fontPopup.style.display !== "none") {
@@ -513,6 +609,9 @@ export class RichTextToolbar {
 				break;
 			case "background-toggle":
 				this.toggleBackgroundPopup();
+				break;
+			case "padding-toggle":
+				this.togglePaddingPopup();
 				break;
 			case "anchor-top":
 				this.updateVerticalAlign("top");
@@ -601,6 +700,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		const isVisible = this.opacityPopup.style.display !== "none";
 		this.opacityPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -613,6 +713,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		const isVisible = this.spacingPopup.style.display !== "none";
 		this.spacingPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -625,6 +726,7 @@ export class RichTextToolbar {
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		const isVisible = this.borderPopup.style.display !== "none";
 		this.borderPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -636,6 +738,7 @@ export class RichTextToolbar {
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 
 		const isVisible = this.backgroundPopup.style.display !== "none";
@@ -650,11 +753,28 @@ export class RichTextToolbar {
 		}
 	}
 
+	private togglePaddingPopup(): void {
+		if (!this.paddingPopup) return;
+
+		// Close other popups
+		if (this.sizePopup) this.sizePopup.style.display = "none";
+		if (this.opacityPopup) this.opacityPopup.style.display = "none";
+		if (this.fontPopup) this.fontPopup.style.display = "none";
+		if (this.spacingPopup) this.spacingPopup.style.display = "none";
+		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+
+		const isVisible = this.paddingPopup.style.display !== "none";
+		this.paddingPopup.style.display = isVisible ? "none" : "block";
+	}
+
 	private toggleFontPopup(): void {
 		if (!this.fontPopup) return;
 		if (this.sizePopup) this.sizePopup.style.display = "none";
 		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
@@ -673,6 +793,7 @@ export class RichTextToolbar {
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 
 		const isVisible = this.textEditPopup.style.display !== "none";
 		if (!isVisible && this.textEditArea) {
@@ -836,6 +957,55 @@ export class RichTextToolbar {
 		}
 	}
 
+	private updatePaddingProperty(updates: Partial<{ top: number; right: number; bottom: number; left: number }>): void {
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!player) return;
+
+		const asset = player.clipConfiguration.asset as RichTextAsset;
+
+		// Get current padding (handle both number and object formats)
+		let currentPadding: { top: number; right: number; bottom: number; left: number };
+
+		if (typeof asset.padding === "number") {
+			// Convert uniform padding to object format
+			currentPadding = {
+				top: asset.padding,
+				right: asset.padding,
+				bottom: asset.padding,
+				left: asset.padding
+			};
+		} else if (asset.padding) {
+			// Already object format
+			currentPadding = { ...asset.padding };
+		} else {
+			// No padding set, use defaults
+			currentPadding = { top: 0, right: 0, bottom: 0, left: 0 };
+		}
+
+		// Merge updates
+		const updatedPadding = { ...currentPadding, ...updates };
+
+		// Check if all sides are equal (can simplify to uniform padding)
+		const allEqual =
+			updatedPadding.top === updatedPadding.right &&
+			updatedPadding.right === updatedPadding.bottom &&
+			updatedPadding.bottom === updatedPadding.left;
+
+		// If all sides are 0, remove padding entirely
+		if (updatedPadding.top === 0 && updatedPadding.right === 0 && updatedPadding.bottom === 0 && updatedPadding.left === 0) {
+			const { padding, ...assetWithoutPadding } = asset;
+			this.updateClipProperty(assetWithoutPadding);
+		}
+		// If all sides are equal, use uniform padding (simpler format)
+		else if (allEqual) {
+			this.updateClipProperty({ padding: updatedPadding.top });
+		}
+		// Otherwise use object format
+		else {
+			this.updateClipProperty({ padding: updatedPadding });
+		}
+	}
+
 	private updateClipProperty(assetUpdates: Record<string, unknown>): void {
 		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
@@ -869,6 +1039,9 @@ export class RichTextToolbar {
 		}
 		if (this.backgroundPopup) {
 			this.backgroundPopup.style.display = "none";
+		}
+		if (this.paddingPopup) {
+			this.paddingPopup.style.display = "none";
 		}
 		if (this.fontPopup) {
 			this.fontPopup.style.display = "none";
@@ -958,6 +1131,37 @@ export class RichTextToolbar {
 			this.borderRadiusSlider.value = String(border.radius);
 			this.borderRadiusValue.textContent = String(border.radius);
 		}
+
+		// Padding
+		if (this.paddingTopSlider && this.paddingRightSlider && this.paddingBottomSlider && this.paddingLeftSlider) {
+			let top = 0,
+				right = 0,
+				bottom = 0,
+				left = 0;
+
+			if (typeof asset.padding === "number") {
+				// Uniform padding
+				top = right = bottom = left = asset.padding;
+			} else if (asset.padding) {
+				// Object padding
+				top = asset.padding.top ?? 0;
+				right = asset.padding.right ?? 0;
+				bottom = asset.padding.bottom ?? 0;
+				left = asset.padding.left ?? 0;
+			}
+
+			this.paddingTopSlider.value = String(top);
+			if (this.paddingTopValue) this.paddingTopValue.textContent = String(top);
+
+			this.paddingRightSlider.value = String(right);
+			if (this.paddingRightValue) this.paddingRightValue.textContent = String(right);
+
+			this.paddingBottomSlider.value = String(bottom);
+			if (this.paddingBottomValue) this.paddingBottomValue.textContent = String(bottom);
+
+			this.paddingLeftSlider.value = String(left);
+			if (this.paddingLeftValue) this.paddingLeftValue.textContent = String(left);
+		}
 	}
 
 	private setButtonActive(btn: HTMLButtonElement | null, active: boolean): void {
@@ -1013,6 +1217,17 @@ export class RichTextToolbar {
 		this.backgroundColorPicker = null;
 		this.backgroundBtn = null;
 		this.backgroundPopup = null;
+
+		this.paddingBtn = null;
+		this.paddingPopup = null;
+		this.paddingTopSlider = null;
+		this.paddingTopValue = null;
+		this.paddingRightSlider = null;
+		this.paddingRightValue = null;
+		this.paddingBottomSlider = null;
+		this.paddingBottomValue = null;
+		this.paddingLeftSlider = null;
+		this.paddingLeftValue = null;
 
 		this.styleElement?.remove();
 		this.styleElement = null;
