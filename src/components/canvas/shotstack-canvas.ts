@@ -179,6 +179,32 @@ export class Canvas {
 		this.updateCanvasToolbarPosition();
 	}
 
+	public resize(): void {
+		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
+		if (!root) return;
+
+		const rect = root.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
+
+		this.viewportSize = { width: rect.width, height: rect.height };
+
+		// Resize Pixi renderer
+		this.application.renderer.resize(rect.width, rect.height);
+
+		// Redraw background
+		if (this.background) {
+			this.background.clear();
+			this.background.rect(0, 0, this.viewportSize.width, this.viewportSize.height);
+			this.background.fill({ color: 0x424242 });
+		}
+
+		// Update stage hit area
+		this.application.stage.hitArea = new pixi.Rectangle(0, 0, this.viewportSize.width, this.viewportSize.height);
+
+		// Reposition content and UI elements
+		this.zoomToFit();
+	}
+
 	private updateAssetToolbarPosition(): void {
 		const editContainer = this.edit.getContainer();
 		this.assetToolbar.setPosition(editContainer.position.x);
