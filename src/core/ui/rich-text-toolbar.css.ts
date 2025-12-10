@@ -172,4 +172,11 @@ export const TOOLBAR_STYLES = `
 }
 .ss-toolbar-text-area:focus { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08); }
 .ss-toolbar-text-area::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+.ss-toolbar-checkbox {
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
+	accent-color: #007AFF;
+}
 `;

@@ -82,6 +82,20 @@ export class RichTextToolbar {
 	private fontColorPicker: FontColorPicker | null = null;
 	private colorDisplay: HTMLButtonElement | null = null;
 
+	private shadowBtn: HTMLButtonElement | null = null;
+	private shadowPopup: HTMLDivElement | null = null;
+	private shadowToggle: HTMLInputElement | null = null;
+	private shadowOffsetXSlider: HTMLInputElement | null = null;
+	private shadowOffsetXValue: HTMLSpanElement | null = null;
+	private shadowOffsetYSlider: HTMLInputElement | null = null;
+	private shadowOffsetYValue: HTMLSpanElement | null = null;
+	private shadowBlurSlider: HTMLInputElement | null = null;
+	private shadowBlurValue: HTMLSpanElement | null = null;
+	private shadowColorInput: HTMLInputElement | null = null;
+	private shadowOpacitySlider: HTMLInputElement | null = null;
+	private shadowOpacityValue: HTMLSpanElement | null = null;
+	private lastShadowConfig: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number } | null = null;
+
 	private styleElement: HTMLStyleElement | null = null;
 
 	constructor(edit: Edit) {
@@ -283,6 +297,55 @@ export class RichTextToolbar {
 				</div>
 			</div>
 
+			<div class="ss-toolbar-dropdown">
+				<button data-action="shadow-toggle" class="ss-toolbar-btn" title="Text Shadow">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+						<circle cx="6" cy="10" r="5.5" fill="currentColor" stroke="currentColor" fill-opacity="0.15"></circle>
+						<path stroke="currentColor" stroke-opacity="0.5" d="m3.68 14.973 6.594-6.594M2.26 13.722l6.233-6.233m-7.45 4.779 9.231-9.231M.479 10.16l7.124-7.123m-1.776 12.46 5.661-5.661"></path>
+						<circle cx="10" cy="6" r="5.5" fill="#18181b" stroke="currentColor"></circle>
+					</svg>
+				</button>
+				<div data-shadow-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-row">
+							<span class="ss-toolbar-popup-label">Enable Shadow</span>
+							<input type="checkbox" data-shadow-toggle class="ss-toolbar-checkbox" />
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Offset X</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-shadow-offset-x class="ss-toolbar-slider" min="-20" max="20" value="0" />
+							<span data-shadow-offset-x-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Offset Y</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-shadow-offset-y class="ss-toolbar-slider" min="-20" max="20" value="0" />
+							<span data-shadow-offset-y-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Blur</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-shadow-blur class="ss-toolbar-slider" min="0" max="100" value="0" />
+							<span data-shadow-blur-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Color & Opacity</div>
+						<div class="ss-toolbar-popup-row">
+							<div class="ss-toolbar-color-wrap">
+								<input type="color" data-shadow-color class="ss-toolbar-color" value="#000000" />
+							</div>
+							<input type="range" data-shadow-opacity class="ss-toolbar-slider" min="0" max="100" value="50" />
+							<span data-shadow-opacity-value class="ss-toolbar-popup-value">50</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div class="ss-toolbar-divider"></div>
 
 			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
@@ -406,6 +469,64 @@ export class RichTextToolbar {
 			this.updateBorderProperty({ radius });
 		});
 
+		// Shadow controls
+		this.shadowBtn = this.container.querySelector("[data-action='shadow-toggle']");
+		this.shadowPopup = this.container.querySelector("[data-shadow-popup]");
+		this.shadowToggle = this.container.querySelector("[data-shadow-toggle]");
+		this.shadowOffsetXSlider = this.container.querySelector("[data-shadow-offset-x]");
+		this.shadowOffsetXValue = this.container.querySelector("[data-shadow-offset-x-value]");
+		this.shadowOffsetYSlider = this.container.querySelector("[data-shadow-offset-y]");
+		this.shadowOffsetYValue = this.container.querySelector("[data-shadow-offset-y-value]");
+		this.shadowBlurSlider = this.container.querySelector("[data-shadow-blur]");
+		this.shadowBlurValue = this.container.querySelector("[data-shadow-blur-value]");
+		this.shadowColorInput = this.container.querySelector("[data-shadow-color]");
+		this.shadowOpacitySlider = this.container.querySelector("[data-shadow-opacity]");
+		this.shadowOpacityValue = this.container.querySelector("[data-shadow-opacity-value]");
+
+		this.shadowToggle?.addEventListener("change", (e) => {
+			const enabled = (e.target as HTMLInputElement).checked;
+			if (enabled) {
+				// Restore previous config or use defaults
+				const config = this.lastShadowConfig || { offsetX: 2, offsetY: 2, blur: 4, color: "#000000", opacity: 0.5 };
+				this.updateShadowProperty(config);
+			} else {
+				// Store current config before disabling
+				const asset = this.getCurrentAsset();
+				if (asset?.shadow) {
+					this.lastShadowConfig = { ...asset.shadow };
+				}
+				this.updateClipProperty({ shadow: undefined });
+			}
+		});
+
+		this.shadowOffsetXSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.shadowOffsetXValue) this.shadowOffsetXValue.textContent = String(value);
+			this.updateShadowProperty({ offsetX: value });
+		});
+
+		this.shadowOffsetYSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.shadowOffsetYValue) this.shadowOffsetYValue.textContent = String(value);
+			this.updateShadowProperty({ offsetY: value });
+		});
+
+		this.shadowBlurSlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.shadowBlurValue) this.shadowBlurValue.textContent = String(value);
+			this.updateShadowProperty({ blur: value });
+		});
+
+		this.shadowColorInput?.addEventListener("input", (e) => {
+			this.updateShadowProperty({ color: (e.target as HTMLInputElement).value });
+		});
+
+		this.shadowOpacitySlider?.addEventListener("input", (e) => {
+			const value = parseInt((e.target as HTMLInputElement).value, 10);
+			if (this.shadowOpacityValue) this.shadowOpacityValue.textContent = String(value);
+			this.updateShadowProperty({ opacity: value / 100 });
+		});
+
 		this.backgroundBtn = this.container.querySelector("[data-action='background-toggle']");
 		this.backgroundPopup = this.container.querySelector("[data-background-popup]");
 		const backgroundPickerContainer = this.container.querySelector("[data-background-color-picker]");
@@ -491,6 +612,11 @@ export class RichTextToolbar {
 					this.borderPopup.style.display = "none";
 				}
 			}
+			if (this.shadowPopup && this.shadowPopup.style.display !== "none") {
+				if (!this.shadowBtn?.contains(target) && !this.shadowPopup.contains(target)) {
+					this.shadowPopup.style.display = "none";
+				}
+			}
 			if (this.backgroundPopup && this.backgroundPopup.style.display !== "none") {
 				if (!this.backgroundBtn?.contains(target) && !this.backgroundPopup.contains(target)) {
 					this.backgroundPopup.style.display = "none";
@@ -570,6 +696,9 @@ export class RichTextToolbar {
 				break;
 			case "border-toggle":
 				this.toggleBorderPopup();
+				break;
+			case "shadow-toggle":
+				this.toggleShadowPopup();
 				break;
 			case "background-toggle":
 				this.toggleBackgroundPopup();
@@ -667,6 +796,7 @@ export class RichTextToolbar {
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		if (this.shadowPopup) this.shadowPopup.style.display = "none";
 		const isVisible = this.spacingPopup.style.display !== "none";
 		this.spacingPopup.style.display = isVisible ? "none" : "block";
 	}
@@ -680,8 +810,23 @@ export class RichTextToolbar {
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		if (this.shadowPopup) this.shadowPopup.style.display = "none";
 		const isVisible = this.borderPopup.style.display !== "none";
 		this.borderPopup.style.display = isVisible ? "none" : "block";
+	}
+
+	private toggleShadowPopup(): void {
+		if (!this.shadowPopup) return;
+		if (this.sizePopup) this.sizePopup.style.display = "none";
+		if (this.fontPopup) this.fontPopup.style.display = "none";
+		if (this.spacingPopup) this.spacingPopup.style.display = "none";
+		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		const isVisible = this.shadowPopup.style.display !== "none";
+		this.shadowPopup.style.display = isVisible ? "none" : "block";
 	}
 
 	private toggleBackgroundPopup(): void {
@@ -693,6 +838,7 @@ export class RichTextToolbar {
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		if (this.shadowPopup) this.shadowPopup.style.display = "none";
 
 		const isVisible = this.backgroundPopup.style.display !== "none";
 		this.backgroundPopup.style.display = isVisible ? "none" : "block";
@@ -717,6 +863,7 @@ export class RichTextToolbar {
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		if (this.shadowPopup) this.shadowPopup.style.display = "none";
 
 		const isVisible = this.paddingPopup.style.display !== "none";
 		this.paddingPopup.style.display = isVisible ? "none" : "block";
@@ -733,6 +880,7 @@ export class RichTextToolbar {
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
+		if (this.shadowPopup) this.shadowPopup.style.display = "none";
 
 		const isVisible = this.fontColorPopup.style.display !== "none";
 		this.fontColorPopup.style.display = isVisible ? "none" : "block";
@@ -932,6 +1080,17 @@ export class RichTextToolbar {
 		this.updateClipProperty({ border: updatedBorder });
 	}
 
+	private updateShadowProperty(updates: Partial<{ offsetX: number; offsetY: number; blur: number; color: string; opacity: number }>): void {
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!player) return;
+
+		const asset = player.clipConfiguration.asset as RichTextAsset;
+		const currentShadow = asset.shadow || { offsetX: 0, offsetY: 0, blur: 0, color: "#000000", opacity: 0.5 };
+
+		const updatedShadow = { ...currentShadow, ...updates };
+		this.updateClipProperty({ shadow: updatedShadow });
+	}
+
 	private updateBackgroundProperty(updates: Partial<{ color?: string; opacity: number }>): void {
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!player) return;
@@ -1080,6 +1239,9 @@ export class RichTextToolbar {
 		if (this.borderPopup) {
 			this.borderPopup.style.display = "none";
 		}
+		if (this.shadowPopup) {
+			this.shadowPopup.style.display = "none";
+		}
 		if (this.backgroundPopup) {
 			this.backgroundPopup.style.display = "none";
 		}
@@ -1170,6 +1332,34 @@ export class RichTextToolbar {
 			this.borderRadiusValue.textContent = String(border.radius);
 		}
 
+		// Shadow
+		const shadow = asset.shadow;
+		if (this.shadowToggle) {
+			this.shadowToggle.checked = !!shadow;
+		}
+		if (shadow) {
+			if (this.shadowOffsetXSlider && this.shadowOffsetXValue) {
+				this.shadowOffsetXSlider.value = String(shadow.offsetX);
+				this.shadowOffsetXValue.textContent = String(shadow.offsetX);
+			}
+			if (this.shadowOffsetYSlider && this.shadowOffsetYValue) {
+				this.shadowOffsetYSlider.value = String(shadow.offsetY);
+				this.shadowOffsetYValue.textContent = String(shadow.offsetY);
+			}
+			if (this.shadowBlurSlider && this.shadowBlurValue) {
+				this.shadowBlurSlider.value = String(shadow.blur);
+				this.shadowBlurValue.textContent = String(shadow.blur);
+			}
+			if (this.shadowColorInput) {
+				this.shadowColorInput.value = shadow.color;
+			}
+			if (this.shadowOpacitySlider && this.shadowOpacityValue) {
+				const opacityPercent = Math.round(shadow.opacity * 100);
+				this.shadowOpacitySlider.value = String(opacityPercent);
+				this.shadowOpacityValue.textContent = String(opacityPercent);
+			}
+		}
+
 		// Padding
 		if (this.paddingTopSlider && this.paddingRightSlider && this.paddingBottomSlider && this.paddingLeftSlider) {
 			let top = 0,
@@ -1252,6 +1442,20 @@ export class RichTextToolbar {
 		this.borderOpacityValue = null;
 		this.borderRadiusSlider = null;
 		this.borderRadiusValue = null;
+
+		this.shadowBtn = null;
+		this.shadowPopup = null;
+		this.shadowToggle = null;
+		this.shadowOffsetXSlider = null;
+		this.shadowOffsetXValue = null;
+		this.shadowOffsetYSlider = null;
+		this.shadowOffsetYValue = null;
+		this.shadowBlurSlider = null;
+		this.shadowBlurValue = null;
+		this.shadowColorInput = null;
+		this.shadowOpacitySlider = null;
+		this.shadowOpacityValue = null;
+		this.lastShadowConfig = null;
 
 		this.backgroundColorPicker?.dispose();
 		this.backgroundColorPicker = null;
