@@ -12,11 +12,11 @@ interface ResolutionPreset {
 }
 
 const RESOLUTION_PRESETS: ResolutionPreset[] = [
-	{ label: "1920 × 1080", sublabel: "16:9 • HD", width: 1920, height: 1080 },
+	{ label: "1920 × 1080", sublabel: "16:9 • 1080p", width: 1920, height: 1080 },
+	{ label: "1280 × 720", sublabel: "16:9 • 720p", width: 1280, height: 720 },
 	{ label: "1080 × 1920", sublabel: "9:16 • Vertical", width: 1080, height: 1920 },
 	{ label: "1080 × 1080", sublabel: "1:1 • Square", width: 1080, height: 1080 },
-	{ label: "1080 × 1350", sublabel: "4:5 • Portrait", width: 1080, height: 1350 },
-	{ label: "3840 × 2160", sublabel: "16:9 • 4K", width: 3840, height: 2160 }
+	{ label: "1080 × 1350", sublabel: "4:5 • Portrait", width: 1080, height: 1350 }
 ];
 
 const FPS_OPTIONS = [24, 25, 30, 60];
@@ -50,7 +50,7 @@ export class CanvasToolbar {
 	// Current state
 	private currentWidth: number = 1920;
 	private currentHeight: number = 1080;
-	private currentFps: number = 30;
+	private currentFps: number = 25;
 	private currentBgColor: string = "#000000";
 
 	// Popup elements
