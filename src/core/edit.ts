@@ -955,6 +955,68 @@ export class Edit extends Entity {
 		return this.canvas?.getZoom() ?? 1;
 	}
 
+	public setOutputSize(width: number, height: number): void {
+		this.size = { width, height };
+
+		if (this.edit) {
+			this.edit.output = {
+				...this.edit.output,
+				size: { width, height }
+			};
+		}
+
+		this.updateViewportMask();
+		this.canvas?.zoomToFit();
+
+		if (this.background) {
+			this.background.clear();
+			this.background.fillStyle = { color: this.backgroundColor };
+			this.background.rect(0, 0, width, height);
+			this.background.fill();
+		}
+
+		this.events.emit("output:size:changed", { width, height });
+	}
+
+	public setOutputFps(fps: number): void {
+		if (this.edit) {
+			this.edit.output = {
+				...this.edit.output,
+				fps
+			};
+		}
+
+		this.events.emit("output:fps:changed", { fps });
+	}
+
+	public getOutputFps(): number {
+		return this.edit?.output?.fps ?? 30;
+	}
+
+	public setTimelineBackground(color: string): void {
+		this.backgroundColor = color;
+
+		if (this.edit) {
+			this.edit.timeline = {
+				...this.edit.timeline,
+				background: color
+			};
+		}
+
+		if (this.background) {
+			this.background.clear();
+			this.background.fillStyle = { color: this.backgroundColor };
+			this.background.rect(0, 0, this.size.width, this.size.height);
+			this.background.fill();
+		}
+
+		this.events.emit("timeline:background:changed", { color });
+	}
+
+	public getTimelineBackground(): string {
+		return this.backgroundColor;
+	}
+
 	private setupIntentListeners(): void {
 		this.events.on("timeline:clip:clicked", (data: { player: Player; trackIndex: number; clipIndex: number }) => {
 			if (data.player) {

@@ -1,5 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
+import { CanvasToolbar } from "@core/ui/canvas-toolbar";
 import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
 import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 import { type Size } from "@layouts/geometry";
@@ -24,6 +25,7 @@ export class Canvas {
 	private readonly inspector: Inspector;
 	private readonly transcriptionIndicator: TranscriptionIndicator;
 	private readonly richTextToolbar: RichTextToolbar;
+	private readonly canvasToolbar: CanvasToolbar;
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
@@ -42,6 +44,7 @@ export class Canvas {
 		this.inspector = new Inspector();
 		this.transcriptionIndicator = new TranscriptionIndicator();
 		this.richTextToolbar = new RichTextToolbar(edit);
+		this.canvasToolbar = new CanvasToolbar();
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
 
@@ -76,6 +79,10 @@ export class Canvas {
 
 		this.richTextToolbar.mount(root);
 		this.setupRichTextToolbarListeners();
+
+		this.canvasToolbar.mount(root);
+		this.setupCanvasToolbarListeners();
+		this.syncCanvasToolbarState();
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {
@@ -272,6 +279,31 @@ export class Canvas {
 		});
 	}
 
+	private setupCanvasToolbarListeners(): void {
+		this.canvasToolbar.onResolutionChange((width, height) => {
+			this.edit.setOutputSize(width, height);
+		});
+
+		this.canvasToolbar.onFpsChange((fps) => {
+			this.edit.setOutputFps(fps);
+		});
+
+		this.canvasToolbar.onBackgroundChange((color) => {
+			this.edit.setTimelineBackground(color);
+		});
+	}
+
+	private syncCanvasToolbarState(): void {
+		const size = this.edit.size;
+		this.canvasToolbar.setResolution(size.width, size.height);
+
+		const fps = this.edit.getOutputFps();
+		this.canvasToolbar.setFps(fps);
+
+		const background = this.edit.getTimelineBackground();
+		this.canvasToolbar.setBackground(background);
+	}
+
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
 		if (event.target === this.background) {
 			this.edit.events.emit("canvas:background:clicked", {});
@@ -301,6 +333,7 @@ export class Canvas {
 		this.inspector.dispose();
 		this.transcriptionIndicator.dispose();
 		this.richTextToolbar.dispose();
+		this.canvasToolbar.dispose();
 
 		this.application.destroy(true, { children: true, texture: true });
 	}
