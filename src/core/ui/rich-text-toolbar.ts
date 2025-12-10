@@ -36,10 +36,6 @@ export class RichTextToolbar {
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
 	private boldBtn: HTMLButtonElement | null = null;
-	private opacityBtn: HTMLButtonElement | null = null;
-	private opacityPopup: HTMLDivElement | null = null;
-	private opacitySlider: HTMLInputElement | null = null;
-	private opacityValue: HTMLSpanElement | null = null;
 	private spacingBtn: HTMLButtonElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
 	private letterSpacingSlider: HTMLInputElement | null = null;
@@ -205,36 +201,6 @@ export class RichTextToolbar {
 			</div>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="opacity-toggle" class="ss-toolbar-btn" title="Transparency">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" opacity="0.9">
-						<rect x="0" y="0" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="4" y="0" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="8" y="0" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="12" y="0" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="0" y="4" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="4" y="4" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="8" y="4" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="12" y="4" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="0" y="8" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="4" y="8" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="8" y="8" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="12" y="8" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="0" y="12" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="4" y="12" width="4" height="4" fill-opacity="0.2"/>
-						<rect x="8" y="12" width="4" height="4" fill-opacity="0.6"/>
-						<rect x="12" y="12" width="4" height="4" fill-opacity="0.2"/>
-					</svg>
-				</button>
-				<div data-opacity-popup class="ss-toolbar-popup">
-					<div class="ss-toolbar-popup-header">Transparency</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-opacity-slider class="ss-toolbar-slider" min="0" max="100" value="100" />
-						<span data-opacity-value class="ss-toolbar-popup-value">100</span>
-					</div>
-				</div>
-			</div>
-
-			<div class="ss-toolbar-dropdown">
 				<button data-action="spacing-toggle" class="ss-toolbar-btn" title="Spacing">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 						<path d="M17.952 15.75a.75.75 0 0 1 .535.238l2.147 2.146a1.255 1.255 0 0 1 0 1.77l-2.147 2.145a.75.75 0 0 1-1.06-1.06l1.22-1.22H5.352l1.22 1.22a.753.753 0 0 1 .019 1.078.752.752 0 0 1-1.08-.018l-2.146-2.146a1.255 1.255 0 0 1-.342-.64 1.253 1.253 0 0 1-.02-.225L3 19.018c0-.02.002-.041.004-.062a1.25 1.25 0 0 1 .09-.416 1.25 1.25 0 0 1 .27-.406l2.147-2.146a.751.751 0 0 1 1.279.53c0 .2-.08.39-.22.53l-1.22 1.22h13.298l-1.22-1.22a.752.752 0 0 1-.02-1.078.752.752 0 0 1 .544-.22ZM15.854 3c.725 0 1.313.588 1.313 1.313v1.31a.782.782 0 0 1-1.563 0v-.956a.104.104 0 0 0-.104-.104l-2.754.005.007 8.245c0 .252.206.457.459.457h.996a.782.782 0 0 1 0 1.563H9.736a.781.781 0 0 1 0-1.563h.996a.458.458 0 0 0 .458-.457l-.006-8.245-2.767-.005a.104.104 0 0 0-.104.104v.976a.781.781 0 0 1-1.563 0v-1.33C6.75 3.587 7.338 3 8.063 3h7.791Z"/>
@@ -335,7 +301,6 @@ export class RichTextToolbar {
 		this.fontBtn = this.container.querySelector("[data-action='font-toggle']");
 		this.fontPopup = this.container.querySelector("[data-font-popup]");
 		this.fontPreview = this.container.querySelector("[data-font-preview]");
-		this.colorInput = this.container.querySelector("[data-action='color']");
 		this.alignBtn = this.container.querySelector("[data-action='align-cycle']");
 		this.alignIcon = this.container.querySelector("[data-align-icon]");
 		this.transformBtn = this.container.querySelector("[data-action='transform']");
@@ -374,20 +339,6 @@ export class RichTextToolbar {
 				this.updateFontColorProperty(updates);
 			});
 		}
-
-		this.opacityBtn = this.container.querySelector("[data-action='opacity-toggle']");
-		this.opacityPopup = this.container.querySelector("[data-opacity-popup]");
-		this.opacitySlider = this.container.querySelector("[data-opacity-slider]");
-		this.opacityValue = this.container.querySelector("[data-opacity-value]");
-
-		this.opacitySlider?.addEventListener("input", (e) => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			const opacity = value / 100;
-			if (this.opacityValue) {
-				this.opacityValue.textContent = String(value);
-			}
-			this.updateClipProperty({ font: { opacity } });
-		});
 
 		this.spacingBtn = this.container.querySelector("[data-action='spacing-toggle']");
 		this.spacingPopup = this.container.querySelector("[data-spacing-popup]");
@@ -530,11 +481,6 @@ export class RichTextToolbar {
 					this.sizePopup.style.display = "none";
 				}
 			}
-			if (this.opacityPopup && this.opacityPopup.style.display !== "none") {
-				if (!this.opacityBtn?.contains(target) && !this.opacityPopup.contains(target)) {
-					this.opacityPopup.style.display = "none";
-				}
-			}
 			if (this.spacingPopup && this.spacingPopup.style.display !== "none") {
 				if (!this.spacingBtn?.contains(target) && !this.spacingPopup.contains(target)) {
 					this.spacingPopup.style.display = "none";
@@ -619,9 +565,6 @@ export class RichTextToolbar {
 			case "text-edit-toggle":
 				this.toggleTextEditPopup();
 				break;
-			case "opacity-toggle":
-				this.toggleOpacityPopup();
-				break;
 			case "spacing-toggle":
 				this.toggleSpacingPopup();
 				break;
@@ -677,7 +620,6 @@ export class RichTextToolbar {
 
 	private toggleSizePopup(): void {
 		if (!this.sizePopup) return;
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
@@ -716,24 +658,9 @@ export class RichTextToolbar {
 		this.syncState();
 	}
 
-	private toggleOpacityPopup(): void {
-		if (!this.opacityPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		const isVisible = this.opacityPopup.style.display !== "none";
-		this.opacityPopup.style.display = isVisible ? "none" : "block";
-	}
-
 	private toggleSpacingPopup(): void {
 		if (!this.spacingPopup) return;
 		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
@@ -747,7 +674,6 @@ export class RichTextToolbar {
 	private toggleBorderPopup(): void {
 		if (!this.borderPopup) return;
 		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
@@ -761,7 +687,6 @@ export class RichTextToolbar {
 	private toggleBackgroundPopup(): void {
 		if (!this.backgroundPopup) return;
 		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
@@ -786,7 +711,6 @@ export class RichTextToolbar {
 
 		// Close other popups
 		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
@@ -803,7 +727,6 @@ export class RichTextToolbar {
 
 		// Close other popups
 		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
@@ -818,16 +741,23 @@ export class RichTextToolbar {
 		if (!isVisible && this.fontColorPicker) {
 			const asset = this.getCurrentAsset();
 			const font = asset?.font;
+			const style = asset?.style;
 
-			// Set color and opacity
-			this.fontColorPicker.setColor(
-				font?.color || "#000000",
-				font?.opacity ?? 1
-			);
+			// If gradient is set, show gradient tab
+			if (style?.gradient) {
+				this.fontColorPicker.setMode("gradient");
+			} else {
+				// Otherwise show color tab with current values
+				this.fontColorPicker.setMode("color");
+				this.fontColorPicker.setColor(
+					font?.color || "#000000",
+					font?.opacity ?? 1
+				);
 
-			// Set highlight if present
-			if (font?.background) {
-				this.fontColorPicker.setHighlight(font.background);
+				// Set highlight if present
+				if (font?.background) {
+					this.fontColorPicker.setHighlight(font.background);
+				}
 			}
 		}
 	}
@@ -835,7 +765,6 @@ export class RichTextToolbar {
 	private toggleFontPopup(): void {
 		if (!this.fontPopup) return;
 		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
@@ -853,7 +782,6 @@ export class RichTextToolbar {
 		if (!this.textEditPopup) return;
 		if (this.sizePopup) this.sizePopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.opacityPopup) this.opacityPopup.style.display = "none";
 		if (this.spacingPopup) this.spacingPopup.style.display = "none";
 		if (this.borderPopup) this.borderPopup.style.display = "none";
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
@@ -1075,7 +1003,7 @@ export class RichTextToolbar {
 		color?: string;
 		opacity?: number;
 		background?: string;
-		backgroundOpacity?: number;
+		gradient?: { type: "linear" | "radial"; angle: number; stops: Array<{ offset: number; color: string }> };
 	}): void {
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!player) return;
@@ -1087,19 +1015,35 @@ export class RichTextToolbar {
 
 		// Handle solid color and opacity
 		if (updates.color !== undefined) {
-			fontUpdates.color = updates.color;
+			fontUpdates["color"] = updates.color;
 		}
 		if (updates.opacity !== undefined) {
-			fontUpdates.opacity = updates.opacity;
+			fontUpdates["opacity"] = updates.opacity;
 		}
 
 		// Handle text highlight (font.background)
 		if (updates.background !== undefined) {
-			fontUpdates.background = updates.background;
+			fontUpdates["background"] = updates.background;
 		}
-		if (updates.backgroundOpacity !== undefined) {
-			// For now, just store it - will need schema update to fully support
-			// Alternative: encode in hex color as #RRGGBBAA
+
+		// Handle gradient (stored in style.gradient)
+		if (updates.gradient !== undefined) {
+			const currentStyle = asset.style || {};
+			this.updateClipProperty({
+				font: fontUpdates,
+				style: { ...currentStyle, gradient: updates.gradient }
+			});
+			return;
+		}
+
+		// Clear gradient when setting solid color
+		const currentStyle = asset.style || {} as Record<string, unknown>;
+		if ((updates.color !== undefined || updates.opacity !== undefined) && currentStyle["gradient"]) {
+			this.updateClipProperty({
+				font: fontUpdates,
+				style: { ...currentStyle, gradient: undefined }
+			});
+			return;
 		}
 
 		// Apply updates
@@ -1129,9 +1073,6 @@ export class RichTextToolbar {
 		}
 		if (this.sizePopup) {
 			this.sizePopup.style.display = "none";
-		}
-		if (this.opacityPopup) {
-			this.opacityPopup.style.display = "none";
 		}
 		if (this.spacingPopup) {
 			this.spacingPopup.style.display = "none";
@@ -1177,12 +1118,6 @@ export class RichTextToolbar {
 		if (this.colorDisplay) {
 			const color = asset.font?.color ?? "#000000";
 			this.colorDisplay.style.backgroundColor = color;
-		}
-
-		if (this.opacitySlider && this.opacityValue) {
-			const opacity = Math.round((asset.font?.opacity ?? 1) * 100);
-			this.opacitySlider.value = String(opacity);
-			this.opacityValue.textContent = String(opacity);
 		}
 
 		if (this.letterSpacingSlider && this.letterSpacingValue) {
@@ -1288,10 +1223,6 @@ export class RichTextToolbar {
 		this.fontColorPopup = null;
 		this.colorDisplay = null;
 
-		this.opacityBtn = null;
-		this.opacityPopup = null;
-		this.opacitySlider = null;
-		this.opacityValue = null;
 		this.spacingBtn = null;
 		this.spacingPopup = null;
 		this.letterSpacingSlider = null;

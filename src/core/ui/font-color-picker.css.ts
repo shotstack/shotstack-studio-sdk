@@ -125,4 +125,41 @@ export const FONT_COLOR_PICKER_STYLES = `
 	color: rgba(255, 255, 255, 0.9);
 	font-variant-numeric: tabular-nums;
 }
+
+.ss-gradient-category {
+	margin-bottom: 16px;
+}
+
+.ss-gradient-category:last-child {
+	margin-bottom: 0;
+}
+
+.ss-gradient-category-name {
+	font-size: 11px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 8px;
+}
+
+.ss-gradient-swatches {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 6px;
+}
+
+.ss-gradient-swatch {
+	aspect-ratio: 1;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: transform 0.15s, box-shadow 0.15s;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.ss-gradient-swatch:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
 `;
