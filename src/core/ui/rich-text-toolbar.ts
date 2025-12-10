@@ -97,6 +97,13 @@ export class RichTextToolbar {
 	private shadowOpacityValue: HTMLSpanElement | null = null;
 	private lastShadowConfig: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number } | null = null;
 
+	private animationBtn: HTMLButtonElement | null = null;
+	private animationPopup: HTMLDivElement | null = null;
+	private animationDurationSlider: HTMLInputElement | null = null;
+	private animationDurationValue: HTMLSpanElement | null = null;
+	private animationStyleSection: HTMLDivElement | null = null;
+	private animationDirectionSection: HTMLDivElement | null = null;
+
 	private styleElement: HTMLStyleElement | null = null;
 
 	constructor(edit: Edit) {
@@ -347,6 +354,49 @@ export class RichTextToolbar {
 				</div>
 			</div>
 
+			<div class="ss-toolbar-dropdown">
+				<button data-action="animation-toggle" class="ss-toolbar-btn ss-toolbar-btn--text" title="Animation" style="width: auto; padding: 0 8px;">
+					Animate
+				</button>
+				<div data-animation-popup class="ss-toolbar-popup ss-toolbar-popup--animation">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Preset</div>
+						<div class="ss-animation-presets">
+							<button class="ss-animation-preset" data-preset="typewriter">Typewriter</button>
+							<button class="ss-animation-preset" data-preset="fadeIn">Fade In</button>
+							<button class="ss-animation-preset" data-preset="slideIn">Slide In</button>
+							<button class="ss-animation-preset" data-preset="ascend">Ascend</button>
+							<button class="ss-animation-preset" data-preset="shift">Shift</button>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Duration</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-animation-duration class="ss-toolbar-slider" min="0.1" max="10" step="0.1" value="1" />
+							<span data-animation-duration-value class="ss-toolbar-popup-value">1.0s</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section" data-animation-style-section>
+						<div class="ss-toolbar-popup-label">Writing Style</div>
+						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
+							<button class="ss-toolbar-anchor-btn" data-animation-style="character">Character</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-style="word">Word</button>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section" data-animation-direction-section>
+						<div class="ss-toolbar-popup-label">Direction</div>
+						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="left">←</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="right">→</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="up">↑</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="down">↓</button>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-divider"></div>
+					<button class="ss-toolbar-anchor-btn" data-action="animation-clear" style="width: 100%;">Clear Animation</button>
+				</div>
+			</div>
+
 			<div class="ss-toolbar-divider"></div>
 
 			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
@@ -534,6 +584,45 @@ export class RichTextToolbar {
 			this.updateShadowProperty({ opacity: value / 100 });
 		});
 
+		// Animation controls
+		this.animationBtn = this.container.querySelector("[data-action='animation-toggle']");
+		this.animationPopup = this.container.querySelector("[data-animation-popup]");
+		this.animationDurationSlider = this.container.querySelector("[data-animation-duration]");
+		this.animationDurationValue = this.container.querySelector("[data-animation-duration-value]");
+		this.animationStyleSection = this.container.querySelector("[data-animation-style-section]");
+		this.animationDirectionSection = this.container.querySelector("[data-animation-direction-section]");
+
+		// Preset buttons
+		this.container.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const preset = btn.dataset["preset"] as "typewriter" | "fadeIn" | "slideIn" | "ascend" | "shift";
+				if (preset) this.updateAnimationProperty({ preset });
+			});
+		});
+
+		// Duration slider
+		this.animationDurationSlider?.addEventListener("input", (e) => {
+			const value = parseFloat((e.target as HTMLInputElement).value);
+			if (this.animationDurationValue) this.animationDurationValue.textContent = `${value.toFixed(1)}s`;
+			this.updateAnimationProperty({ duration: value });
+		});
+
+		// Style buttons
+		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const style = btn.dataset["animationStyle"] as "character" | "word";
+				if (style) this.updateAnimationProperty({ style });
+			});
+		});
+
+		// Direction buttons
+		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const direction = btn.dataset["animationDirection"] as "left" | "right" | "up" | "down";
+				if (direction) this.updateAnimationProperty({ direction });
+			});
+		});
+
 		this.backgroundBtn = this.container.querySelector("[data-action='background-toggle']");
 		this.backgroundPopup = this.container.querySelector("[data-background-popup]");
 		const backgroundPickerContainer = this.container.querySelector("[data-background-color-picker]");
@@ -649,6 +738,11 @@ export class RichTextToolbar {
 					this.textEditPopup.style.display = "none";
 				}
 			}
+			if (this.animationPopup && this.animationPopup.style.display !== "none") {
+				if (!this.animationBtn?.contains(target) && !this.animationPopup.contains(target)) {
+					this.animationPopup.style.display = "none";
+				}
+			}
 		});
 
 		parent.style.position = "relative";
@@ -736,6 +830,13 @@ export class RichTextToolbar {
 				break;
 			case "linethrough":
 				this.toggleLinethrough(asset);
+				break;
+			case "animation-toggle":
+				this.toggleAnimationPopup();
+				break;
+			case "animation-clear":
+				this.updateClipProperty({ animation: undefined });
+				this.animationPopup && (this.animationPopup.style.display = "none");
 				break;
 		}
 	}
@@ -835,8 +936,30 @@ export class RichTextToolbar {
 		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
 		if (this.paddingPopup) this.paddingPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		if (this.animationPopup) this.animationPopup.style.display = "none";
 		const isVisible = this.shadowPopup.style.display !== "none";
 		this.shadowPopup.style.display = isVisible ? "none" : "block";
+	}
+
+	private toggleAnimationPopup(): void {
+		if (!this.animationPopup) return;
+		if (this.sizePopup) this.sizePopup.style.display = "none";
+		if (this.fontPopup) this.fontPopup.style.display = "none";
+		if (this.spacingPopup) this.spacingPopup.style.display = "none";
+		if (this.textEditPopup) this.textEditPopup.style.display = "none";
+		if (this.borderPopup) this.borderPopup.style.display = "none";
+		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
+		if (this.paddingPopup) this.paddingPopup.style.display = "none";
+		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
+		if (this.shadowPopup) this.shadowPopup.style.display = "none";
+		const isVisible = this.animationPopup.style.display !== "none";
+		this.animationPopup.style.display = isVisible ? "none" : "block";
+
+		// Update visibility of style/direction sections based on current preset
+		if (!isVisible) {
+			const asset = this.getCurrentAsset();
+			this.updateAnimationSections(asset?.animation?.preset);
+		}
 	}
 
 	private toggleBackgroundPopup(): void {
@@ -849,6 +972,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 		if (this.shadowPopup) this.shadowPopup.style.display = "none";
+		if (this.animationPopup) this.animationPopup.style.display = "none";
 
 		const isVisible = this.backgroundPopup.style.display !== "none";
 		this.backgroundPopup.style.display = isVisible ? "none" : "block";
@@ -874,6 +998,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
 		if (this.shadowPopup) this.shadowPopup.style.display = "none";
+		if (this.animationPopup) this.animationPopup.style.display = "none";
 
 		const isVisible = this.paddingPopup.style.display !== "none";
 		this.paddingPopup.style.display = isVisible ? "none" : "block";
@@ -891,6 +1016,7 @@ export class RichTextToolbar {
 		if (this.textEditPopup) this.textEditPopup.style.display = "none";
 		if (this.fontPopup) this.fontPopup.style.display = "none";
 		if (this.shadowPopup) this.shadowPopup.style.display = "none";
+		if (this.animationPopup) this.animationPopup.style.display = "none";
 
 		const isVisible = this.fontColorPopup.style.display !== "none";
 		this.fontColorPopup.style.display = isVisible ? "none" : "block";
@@ -1105,6 +1231,36 @@ export class RichTextToolbar {
 
 		const updatedShadow = { ...currentShadow, ...updates };
 		this.updateClipProperty({ shadow: updatedShadow });
+	}
+
+	private updateAnimationProperty(updates: Partial<{ preset: string; duration: number; style: string; direction: string }>): void {
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!player) return;
+
+		const asset = player.clipConfiguration.asset as RichTextAsset;
+		const currentAnimation = asset.animation || { preset: "fadeIn" as const };
+
+		const updatedAnimation = { ...currentAnimation, ...updates };
+		this.updateClipProperty({ animation: updatedAnimation });
+
+		// Update UI sections visibility when preset changes
+		if (updates.preset) {
+			this.updateAnimationSections(updates.preset);
+		}
+	}
+
+	private updateAnimationSections(preset?: string): void {
+		// style is allowed for: typewriter, shift, fadeIn, slideIn
+		const stylePresets = ["typewriter", "shift", "fadeIn", "slideIn"];
+		// direction is allowed for: ascend, shift, slideIn
+		const directionPresets = ["ascend", "shift", "slideIn"];
+
+		if (this.animationStyleSection) {
+			this.animationStyleSection.style.display = preset && stylePresets.includes(preset) ? "block" : "none";
+		}
+		if (this.animationDirectionSection) {
+			this.animationDirectionSection.style.display = preset && directionPresets.includes(preset) ? "block" : "none";
+		}
 	}
 
 	private updateBackgroundProperty(updates: Partial<{ color?: string; opacity: number }>): void {
@@ -1379,6 +1535,24 @@ export class RichTextToolbar {
 			}
 		}
 
+		// Animation
+		const animation = asset.animation;
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((btn) => {
+			this.setButtonActive(btn, btn.dataset["preset"] === animation?.preset);
+		});
+		if (this.animationDurationSlider && this.animationDurationValue) {
+			const duration = animation?.duration ?? 1;
+			this.animationDurationSlider.value = String(duration);
+			this.animationDurationValue.textContent = `${duration.toFixed(1)}s`;
+		}
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach((btn) => {
+			this.setButtonActive(btn, btn.dataset["animationStyle"] === animation?.style);
+		});
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach((btn) => {
+			this.setButtonActive(btn, btn.dataset["animationDirection"] === animation?.direction);
+		});
+		this.updateAnimationSections(animation?.preset);
+
 		// Padding
 		if (this.paddingTopSlider && this.paddingRightSlider && this.paddingBottomSlider && this.paddingLeftSlider) {
 			let top = 0,
@@ -1476,6 +1650,13 @@ export class RichTextToolbar {
 		this.shadowOpacitySlider = null;
 		this.shadowOpacityValue = null;
 		this.lastShadowConfig = null;
+
+		this.animationBtn = null;
+		this.animationPopup = null;
+		this.animationDurationSlider = null;
+		this.animationDurationValue = null;
+		this.animationStyleSection = null;
+		this.animationDirectionSection = null;
 
 		this.backgroundColorPicker?.dispose();
 		this.backgroundColorPicker = null;

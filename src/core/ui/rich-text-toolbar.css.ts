@@ -179,4 +179,22 @@ export const TOOLBAR_STYLES = `
 	cursor: pointer;
 	accent-color: #007AFF;
 }
+
+.ss-toolbar-popup--animation { min-width: 240px; }
+.ss-animation-presets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.ss-animation-preset {
+	padding: 10px 6px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	color: rgba(255, 255, 255, 0.7);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	font-size: 11px;
+	font-weight: 500;
+	text-align: center;
+	white-space: nowrap;
+}
+.ss-animation-preset:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.9); }
+.ss-animation-preset.active { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.25); color: #fff; }
 `;

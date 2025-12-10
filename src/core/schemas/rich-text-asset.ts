@@ -94,7 +94,7 @@ const RichTextAlignmentSchema = zod
 
 const RichTextAnimationSchema = zod
 	.object({
-		preset: zod.enum(["fadeIn", "slideIn", "typewriter", "shift", "ascend", "movingLetters", "bounce", "elastic", "pulse"]),
+		preset: zod.enum(["typewriter", "fadeIn", "slideIn", "ascend", "shift"]),
 		duration: zod.number().min(0.1).max(60).optional(),
 		style: zod.enum(["character", "word"]).optional(),
 		direction: zod.enum(["left", "right", "up", "down"]).optional()
