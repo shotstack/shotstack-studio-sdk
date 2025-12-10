@@ -25,6 +25,7 @@ import { Entity } from "@core/shared/entity";
 import { deepMerge } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { LoadingOverlay } from "@core/ui/loading-overlay";
+import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -71,6 +72,9 @@ export class Edit extends Entity {
 	// Performance optimization: cache timeline end and track "end" length clips
 	private cachedTimelineEnd: number = 0;
 	private endLengthClips: Set<Player> = new Set();
+
+	// Toolbar button registry
+	private toolbarButtons: ToolbarButtonConfig[] = [];
 
 	private canvas: Canvas | null = null;
 	private activeLumaMasks: Array<{
@@ -1016,6 +1020,32 @@ export class Edit extends Entity {
 	public getTimelineBackground(): string {
 		return this.backgroundColor;
 	}
+
+	// ─── Toolbar Button Registry ─────────────────────────────────────────────────
+
+	public registerToolbarButton(config: ToolbarButtonConfig): void {
+		const existing = this.toolbarButtons.findIndex(b => b.id === config.id);
+		if (existing >= 0) {
+			this.toolbarButtons[existing] = config;
+		} else {
+			this.toolbarButtons.push(config);
+		}
+		this.events.emit("toolbar:buttons:changed", { buttons: this.toolbarButtons });
+	}
+
+	public unregisterToolbarButton(id: string): void {
+		const index = this.toolbarButtons.findIndex(b => b.id === id);
+		if (index >= 0) {
+			this.toolbarButtons.splice(index, 1);
+			this.events.emit("toolbar:buttons:changed", { buttons: this.toolbarButtons });
+		}
+	}
+
+	public getToolbarButtons(): ToolbarButtonConfig[] {
+		return [...this.toolbarButtons];
+	}
+
+	// ─── Intent Listeners ────────────────────────────────────────────────────────
 
 	private setupIntentListeners(): void {
 		this.events.on("timeline:clip:clicked", (data: { player: Player; trackIndex: number; clipIndex: number }) => {

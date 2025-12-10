@@ -2,11 +2,6 @@ import type { Edit } from "@core/edit";
 
 import { ASSET_TOOLBAR_STYLES } from "./asset-toolbar.css";
 
-const ICONS = {
-	text: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>`,
-	media: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`
-};
-
 export class AssetToolbar {
 	private container: HTMLDivElement | null = null;
 	private styleElement: HTMLStyleElement | null = null;
@@ -37,74 +32,48 @@ export class AssetToolbar {
 		this.container = document.createElement("div");
 		this.container.className = "ss-asset-toolbar";
 
-		this.container.innerHTML = `
-			<button class="ss-asset-toolbar-btn" data-action="rich-text" data-tooltip="Add Text">
-				${ICONS.text}
-			</button>
-			<div class="ss-asset-toolbar-divider"></div>
-			<button class="ss-asset-toolbar-btn" data-action="media" data-tooltip="Add Media">
-				${ICONS.media}
-			</button>
-		`;
+		this.render();
 
 		parent.appendChild(this.container);
+
+		this.edit.events.on("toolbar:buttons:changed", () => this.render());
+	}
+
+	private render(): void {
+		if (!this.container) return;
+
+		const buttons = this.edit.getToolbarButtons();
+
+		// Hide toolbar if no buttons registered
+		this.container.style.display = buttons.length === 0 ? "none" : "flex";
+
+		this.container.innerHTML = buttons
+			.map(
+				btn => `
+			${btn.dividerBefore ? '<div class="ss-asset-toolbar-divider"></div>' : ""}
+			<button class="ss-asset-toolbar-btn" data-button-id="${btn.id}" data-tooltip="${btn.tooltip}">
+				${btn.icon}
+			</button>
+		`
+			)
+			.join("");
+
 		this.setupEventListeners();
 	}
 
 	private setupEventListeners(): void {
-		this.container?.querySelectorAll("[data-action]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const { action } = el.dataset;
+		this.container?.querySelectorAll("[data-button-id]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const id = (btn as HTMLElement).dataset["buttonId"];
+				const config = this.edit.getToolbarButtons().find(b => b.id === id);
+				if (!config) return;
 
-				switch (action) {
-					case "rich-text":
-						this.addRichTextClip();
-						break;
-					case "media":
-						this.requestMediaUpload();
-						break;
-					default:
-						break;
-				}
+				const selectedClip = this.edit.getSelectedClipInfo();
+				this.edit.events.emit(config.event, {
+					position: this.edit.playbackTime,
+					selectedClip: selectedClip ? { trackIndex: selectedClip.trackIndex, clipIndex: selectedClip.clipIndex } : null
+				});
 			});
-		});
-	}
-
-	private addRichTextClip(): void {
-		const newTrackIndex = 0;
-
-		// Add new track at top (index 0)
-		this.edit.addTrack(newTrackIndex, { clips: [] });
-
-		// Add rich-text clip
-		this.edit.addClip(newTrackIndex, {
-			asset: {
-				type: "rich-text",
-				text: "Title",
-				font: {
-					family: "Open Sans Bold",
-					size: 72,
-					weight: 700,
-					color: "#ffffff",
-					opacity: 1
-				},
-				align: {
-					horizontal: "center",
-					vertical: "middle"
-				}
-			},
-			start: this.edit.playbackTime,
-			length: 5,
-			width: 500,
-			height: 200,
-			fit: "none"
-		});
-	}
-
-	private requestMediaUpload(): void {
-		this.edit.events.emit("upload:requested", {
-			position: this.edit.playbackTime
 		});
 	}
 
