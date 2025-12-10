@@ -39,7 +39,6 @@ const COLOR_SWATCHES = [
 // SVG Icons
 const ICONS = {
 	monitor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`,
-	chevron: `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
 	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
 };
 
@@ -83,8 +82,19 @@ export class CanvasToolbar {
 	// Click outside handler
 	private clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
 
+	// Positioning
+	private padding = 12;
+
 	constructor() {
 		this.injectStyles();
+	}
+
+	setPosition(viewportWidth: number, editRightEdge: number): void {
+		if (this.container) {
+			const toolbarWidth = this.container.offsetWidth || 48;
+			const rightOffset = viewportWidth - editRightEdge;
+			this.container.style.right = `${Math.max(this.padding, rightOffset - toolbarWidth - this.padding)}px`;
+		}
 	}
 
 	private injectStyles(): void {
@@ -103,10 +113,8 @@ export class CanvasToolbar {
 		this.container.innerHTML = `
 			<!-- Resolution -->
 			<div class="ss-canvas-toolbar-dropdown">
-				<button class="ss-canvas-toolbar-btn" data-action="resolution">
+				<button class="ss-canvas-toolbar-btn" data-action="resolution" data-tooltip-label data-tooltip="Resolution">
 					${ICONS.monitor}
-					<span data-resolution-label>${this.currentWidth} × ${this.currentHeight}</span>
-					${ICONS.chevron}
 				</button>
 				<div class="ss-canvas-toolbar-popup" data-popup="resolution">
 					<div class="ss-canvas-toolbar-popup-header">Presets</div>
@@ -135,9 +143,8 @@ export class CanvasToolbar {
 
 			<!-- Background -->
 			<div class="ss-canvas-toolbar-dropdown">
-				<button class="ss-canvas-toolbar-btn" data-action="background">
+				<button class="ss-canvas-toolbar-btn" data-action="background" data-tooltip="Background">
 					<span class="ss-canvas-toolbar-color-dot" data-bg-preview style="background: ${this.currentBgColor}"></span>
-					<span>Background</span>
 				</button>
 				<div class="ss-canvas-toolbar-popup" data-popup="background">
 					<div class="ss-canvas-toolbar-color-picker">
@@ -157,9 +164,8 @@ export class CanvasToolbar {
 
 			<!-- FPS -->
 			<div class="ss-canvas-toolbar-dropdown">
-				<button class="ss-canvas-toolbar-btn" data-action="fps">
-					<span data-fps-label>${this.currentFps} fps</span>
-					${ICONS.chevron}
+				<button class="ss-canvas-toolbar-btn" data-action="fps" data-tooltip="Frame Rate">
+					<span class="ss-canvas-toolbar-fps-label">fps</span>
 				</button>
 				<div class="ss-canvas-toolbar-popup" data-popup="fps">
 					${FPS_OPTIONS.map(

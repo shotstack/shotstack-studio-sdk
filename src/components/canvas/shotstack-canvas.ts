@@ -90,6 +90,7 @@ export class Canvas {
 		this.canvasToolbar.mount(root);
 		this.setupCanvasToolbarListeners();
 		this.syncCanvasToolbarState();
+		this.updateCanvasToolbarPosition();
 
 		this.assetToolbar.mount(root);
 		this.updateAssetToolbarPosition();
@@ -175,11 +176,18 @@ export class Canvas {
 
 		this.centerEdit();
 		this.updateAssetToolbarPosition();
+		this.updateCanvasToolbarPosition();
 	}
 
 	private updateAssetToolbarPosition(): void {
 		const editContainer = this.edit.getContainer();
 		this.assetToolbar.setPosition(editContainer.position.x);
+	}
+
+	private updateCanvasToolbarPosition(): void {
+		const editContainer = this.edit.getContainer();
+		const editRightEdge = editContainer.position.x + this.edit.size.width * this.currentZoom;
+		this.canvasToolbar.setPosition(this.viewportSize.width, editRightEdge);
 	}
 
 	public setZoom(zoom: number): void {

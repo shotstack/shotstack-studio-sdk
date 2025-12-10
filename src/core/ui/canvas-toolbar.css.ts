@@ -1,16 +1,17 @@
 export const CANVAS_TOOLBAR_STYLES = `
 .ss-canvas-toolbar {
 	position: absolute;
-	bottom: 20px;
-	left: 50%;
-	transform: translateX(-50%);
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
 	display: flex;
-	align-items: center;
+	flex-direction: column;
+	align-items: stretch;
 	gap: 2px;
-	padding: 5px 6px;
+	padding: 6px;
 	background: rgba(255, 255, 255, 0.98);
 	border: 1px solid rgba(0, 0, 0, 0.06);
-	border-radius: 50px;
+	border-radius: 14px;
 	box-shadow:
 		0 2px 8px rgba(0, 0, 0, 0.06),
 		0 8px 24px rgba(0, 0, 0, 0.08);
@@ -21,24 +22,28 @@ export const CANVAS_TOOLBAR_STYLES = `
 }
 
 .ss-canvas-toolbar-btn {
+	width: 36px;
+	height: 36px;
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	padding: 7px 12px;
+	justify-content: center;
 	background: transparent;
 	border: none;
-	border-radius: 40px;
-	color: #1a1a1a;
-	font-size: 13px;
-	font-weight: 500;
-	letter-spacing: -0.01em;
+	border-radius: 8px;
+	color: rgba(0, 0, 0, 0.65);
 	cursor: pointer;
-	transition: background 0.15s ease;
-	white-space: nowrap;
+	transition: all 0.15s ease;
+	position: relative;
 }
 
 .ss-canvas-toolbar-btn:hover {
-	background: rgba(0, 0, 0, 0.05);
+	background: rgba(0, 0, 0, 0.06);
+	color: rgba(0, 0, 0, 0.9);
+}
+
+.ss-canvas-toolbar-btn:active {
+	background: rgba(0, 0, 0, 0.1);
+	transform: scale(0.95);
 }
 
 .ss-canvas-toolbar-btn.active {
@@ -46,31 +51,78 @@ export const CANVAS_TOOLBAR_STYLES = `
 }
 
 .ss-canvas-toolbar-btn svg {
-	width: 16px;
-	height: 16px;
+	width: 18px;
+	height: 18px;
 	flex-shrink: 0;
 }
 
-.ss-canvas-toolbar-btn svg.chevron {
-	width: 12px;
-	height: 12px;
-	opacity: 0.5;
-	margin-left: -2px;
+/* Tooltip */
+.ss-canvas-toolbar-btn::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	right: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%);
+	padding: 6px 10px;
+	background: rgba(24, 24, 27, 0.95);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+	border-radius: 6px;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.15s ease, visibility 0.15s ease;
+	pointer-events: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ss-canvas-toolbar-btn::before {
+	content: "";
+	position: absolute;
+	right: calc(100% + 4px);
+	top: 50%;
+	transform: translateY(-50%);
+	border: 5px solid transparent;
+	border-left-color: rgba(24, 24, 27, 0.95);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.ss-canvas-toolbar-btn:hover::after,
+.ss-canvas-toolbar-btn:hover::before {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* Hide tooltip when popup is open */
+.ss-canvas-toolbar-btn.active::after,
+.ss-canvas-toolbar-btn.active::before {
+	opacity: 0;
+	visibility: hidden;
+}
+
+.ss-canvas-toolbar-fps-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.01em;
 }
 
 .ss-canvas-toolbar-color-dot {
-	width: 16px;
-	height: 16px;
+	width: 18px;
+	height: 18px;
 	border-radius: 50%;
-	border: 1.5px solid rgba(0, 0, 0, 0.12);
+	border: 1.5px solid rgba(0, 0, 0, 0.15);
 	flex-shrink: 0;
 }
 
 .ss-canvas-toolbar-divider {
-	width: 1px;
-	height: 20px;
+	width: 24px;
+	height: 1px;
 	background: rgba(0, 0, 0, 0.08);
-	margin: 0 4px;
+	margin: 4px auto;
 	flex-shrink: 0;
 }
 
@@ -83,9 +135,9 @@ export const CANVAS_TOOLBAR_STYLES = `
 .ss-canvas-toolbar-popup {
 	display: none;
 	position: absolute;
-	bottom: calc(100% + 10px);
-	left: 50%;
-	transform: translateX(-50%);
+	right: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%);
 	background: #fff;
 	border: 1px solid rgba(0, 0, 0, 0.08);
 	border-radius: 14px;
@@ -104,9 +156,9 @@ export const CANVAS_TOOLBAR_STYLES = `
 .ss-canvas-toolbar-popup::after {
 	content: "";
 	position: absolute;
-	bottom: -6px;
-	left: 50%;
-	transform: translateX(-50%) rotate(45deg);
+	right: -6px;
+	top: 50%;
+	transform: translateY(-50%) rotate(45deg);
 	width: 10px;
 	height: 10px;
 	background: #fff;
