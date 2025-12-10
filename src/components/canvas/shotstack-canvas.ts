@@ -1,5 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
+import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
 import { MediaToolbar } from "@core/ui/media-toolbar";
 import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
@@ -28,6 +29,7 @@ export class Canvas {
 	private readonly richTextToolbar: RichTextToolbar;
 	private readonly mediaToolbar: MediaToolbar;
 	private readonly canvasToolbar: CanvasToolbar;
+	private readonly assetToolbar: AssetToolbar;
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
@@ -48,6 +50,7 @@ export class Canvas {
 		this.richTextToolbar = new RichTextToolbar(edit);
 		this.mediaToolbar = new MediaToolbar(edit);
 		this.canvasToolbar = new CanvasToolbar();
+		this.assetToolbar = new AssetToolbar(edit);
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
 
@@ -87,6 +90,9 @@ export class Canvas {
 		this.canvasToolbar.mount(root);
 		this.setupCanvasToolbarListeners();
 		this.syncCanvasToolbarState();
+
+		this.assetToolbar.mount(root);
+		this.updateAssetToolbarPosition();
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {
@@ -168,6 +174,12 @@ export class Canvas {
 		edit.scale.y = this.currentZoom;
 
 		this.centerEdit();
+		this.updateAssetToolbarPosition();
+	}
+
+	private updateAssetToolbarPosition(): void {
+		const editContainer = this.edit.getContainer();
+		this.assetToolbar.setPosition(editContainer.position.x);
 	}
 
 	public setZoom(zoom: number): void {
@@ -347,6 +359,7 @@ export class Canvas {
 		this.richTextToolbar.dispose();
 		this.mediaToolbar.dispose();
 		this.canvasToolbar.dispose();
+		this.assetToolbar.dispose();
 
 		this.application.destroy(true, { children: true, texture: true });
 	}
