@@ -3,9 +3,9 @@ import { FONT_PATHS } from "@core/fonts/font-config";
 import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
 
-import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 import { BackgroundColorPicker } from "./background-color-picker";
 import { FontColorPicker } from "./font-color-picker";
+import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 
 /** Built-in font families (base names only, without weight variants) */
 const BUILT_IN_FONTS = [
@@ -432,12 +432,12 @@ export class RichTextToolbar {
 		this.container.addEventListener("click", this.handleClick.bind(this));
 
 		// Size input handlers
-		this.sizeInput?.addEventListener("click", (e) => {
+		this.sizeInput?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.toggleSizePopup();
 		});
 		this.sizeInput?.addEventListener("blur", () => this.applyManualSize());
-		this.sizeInput?.addEventListener("keydown", (e) => {
+		this.sizeInput?.addEventListener("keydown", e => {
 			if (e.key === "Enter") {
 				this.applyManualSize();
 				this.sizeInput?.blur();
@@ -455,7 +455,7 @@ export class RichTextToolbar {
 		if (fontColorPickerContainer) {
 			this.fontColorPicker = new FontColorPicker();
 			this.fontColorPicker.mount(fontColorPickerContainer as HTMLElement);
-			this.fontColorPicker.onChange((updates) => {
+			this.fontColorPicker.onChange(updates => {
 				this.updateFontColorProperty(updates);
 			});
 		}
@@ -470,7 +470,7 @@ export class RichTextToolbar {
 		this.anchorMiddleBtn = this.container.querySelector("[data-action='anchor-middle']");
 		this.anchorBottomBtn = this.container.querySelector("[data-action='anchor-bottom']");
 
-		this.letterSpacingSlider?.addEventListener("input", (e) => {
+		this.letterSpacingSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.letterSpacingValue) {
 				this.letterSpacingValue.textContent = String(value);
@@ -478,7 +478,7 @@ export class RichTextToolbar {
 			this.updateClipProperty({ style: { letterSpacing: value } });
 		});
 
-		this.lineHeightSlider?.addEventListener("input", (e) => {
+		this.lineHeightSlider?.addEventListener("input", e => {
 			const value = parseFloat((e.target as HTMLInputElement).value) / 10;
 			if (this.lineHeightValue) {
 				this.lineHeightValue.textContent = value.toFixed(1);
@@ -496,7 +496,7 @@ export class RichTextToolbar {
 		this.borderRadiusSlider = this.container.querySelector("[data-border-radius-slider]");
 		this.borderRadiusValue = this.container.querySelector("[data-border-radius-value]");
 
-		this.borderWidthSlider?.addEventListener("input", (e) => {
+		this.borderWidthSlider?.addEventListener("input", e => {
 			const width = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.borderWidthValue) {
 				this.borderWidthValue.textContent = String(width);
@@ -504,12 +504,12 @@ export class RichTextToolbar {
 			this.updateBorderProperty({ width });
 		});
 
-		this.borderColorInput?.addEventListener("input", (e) => {
+		this.borderColorInput?.addEventListener("input", e => {
 			const color = (e.target as HTMLInputElement).value;
 			this.updateBorderProperty({ color });
 		});
 
-		this.borderOpacitySlider?.addEventListener("input", (e) => {
+		this.borderOpacitySlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			const opacity = value / 100;
 			if (this.borderOpacityValue) {
@@ -518,7 +518,7 @@ export class RichTextToolbar {
 			this.updateBorderProperty({ opacity });
 		});
 
-		this.borderRadiusSlider?.addEventListener("input", (e) => {
+		this.borderRadiusSlider?.addEventListener("input", e => {
 			const radius = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.borderRadiusValue) {
 				this.borderRadiusValue.textContent = String(radius);
@@ -540,7 +540,7 @@ export class RichTextToolbar {
 		this.shadowOpacitySlider = this.container.querySelector("[data-shadow-opacity]");
 		this.shadowOpacityValue = this.container.querySelector("[data-shadow-opacity-value]");
 
-		this.shadowToggle?.addEventListener("change", (e) => {
+		this.shadowToggle?.addEventListener("change", e => {
 			const enabled = (e.target as HTMLInputElement).checked;
 			if (enabled) {
 				// Restore previous config or use defaults
@@ -556,29 +556,29 @@ export class RichTextToolbar {
 			}
 		});
 
-		this.shadowOffsetXSlider?.addEventListener("input", (e) => {
+		this.shadowOffsetXSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.shadowOffsetXValue) this.shadowOffsetXValue.textContent = String(value);
 			this.updateShadowProperty({ offsetX: value });
 		});
 
-		this.shadowOffsetYSlider?.addEventListener("input", (e) => {
+		this.shadowOffsetYSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.shadowOffsetYValue) this.shadowOffsetYValue.textContent = String(value);
 			this.updateShadowProperty({ offsetY: value });
 		});
 
-		this.shadowBlurSlider?.addEventListener("input", (e) => {
+		this.shadowBlurSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.shadowBlurValue) this.shadowBlurValue.textContent = String(value);
 			this.updateShadowProperty({ blur: value });
 		});
 
-		this.shadowColorInput?.addEventListener("input", (e) => {
+		this.shadowColorInput?.addEventListener("input", e => {
 			this.updateShadowProperty({ color: (e.target as HTMLInputElement).value });
 		});
 
-		this.shadowOpacitySlider?.addEventListener("input", (e) => {
+		this.shadowOpacitySlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.shadowOpacityValue) this.shadowOpacityValue.textContent = String(value);
 			this.updateShadowProperty({ opacity: value / 100 });
@@ -593,7 +593,7 @@ export class RichTextToolbar {
 		this.animationDirectionSection = this.container.querySelector("[data-animation-direction-section]");
 
 		// Preset buttons
-		this.container.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((btn) => {
+		this.container.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach(btn => {
 			btn.addEventListener("click", () => {
 				const preset = btn.dataset["preset"] as "typewriter" | "fadeIn" | "slideIn" | "ascend" | "shift";
 				if (preset) this.updateAnimationProperty({ preset });
@@ -601,14 +601,14 @@ export class RichTextToolbar {
 		});
 
 		// Duration slider
-		this.animationDurationSlider?.addEventListener("input", (e) => {
+		this.animationDurationSlider?.addEventListener("input", e => {
 			const value = parseFloat((e.target as HTMLInputElement).value);
 			if (this.animationDurationValue) this.animationDurationValue.textContent = `${value.toFixed(1)}s`;
 			this.updateAnimationProperty({ duration: value });
 		});
 
 		// Style buttons
-		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach((btn) => {
+		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach(btn => {
 			btn.addEventListener("click", () => {
 				const style = btn.dataset["animationStyle"] as "character" | "word";
 				if (style) this.updateAnimationProperty({ style });
@@ -616,7 +616,7 @@ export class RichTextToolbar {
 		});
 
 		// Direction buttons
-		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach((btn) => {
+		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach(btn => {
 			btn.addEventListener("click", () => {
 				const direction = btn.dataset["animationDirection"] as "left" | "right" | "up" | "down";
 				if (direction) this.updateAnimationProperty({ direction });
@@ -648,25 +648,25 @@ export class RichTextToolbar {
 		this.paddingLeftValue = this.container.querySelector("[data-padding-left-value]");
 
 		// Event listeners
-		this.paddingTopSlider?.addEventListener("input", (e) => {
+		this.paddingTopSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.paddingTopValue) this.paddingTopValue.textContent = String(value);
 			this.updatePaddingProperty({ top: value });
 		});
 
-		this.paddingRightSlider?.addEventListener("input", (e) => {
+		this.paddingRightSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.paddingRightValue) this.paddingRightValue.textContent = String(value);
 			this.updatePaddingProperty({ right: value });
 		});
 
-		this.paddingBottomSlider?.addEventListener("input", (e) => {
+		this.paddingBottomSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.paddingBottomValue) this.paddingBottomValue.textContent = String(value);
 			this.updatePaddingProperty({ bottom: value });
 		});
 
-		this.paddingLeftSlider?.addEventListener("input", (e) => {
+		this.paddingLeftSlider?.addEventListener("input", e => {
 			const value = parseInt((e.target as HTMLInputElement).value, 10);
 			if (this.paddingLeftValue) this.paddingLeftValue.textContent = String(value);
 			this.updatePaddingProperty({ left: value });
@@ -674,7 +674,7 @@ export class RichTextToolbar {
 
 		// Text edit area handlers
 		this.textEditArea?.addEventListener("input", () => this.debouncedApplyTextEdit());
-		this.textEditArea?.addEventListener("keydown", (e) => {
+		this.textEditArea?.addEventListener("keydown", e => {
 			// Apply on Ctrl/Cmd+Enter (allow normal Enter for newlines)
 			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 				e.preventDefault();
@@ -691,7 +691,7 @@ export class RichTextToolbar {
 			}
 		});
 
-		document.addEventListener("click", (e) => {
+		document.addEventListener("click", e => {
 			const target = e.target as Node;
 			if (this.sizePopup && this.sizePopup.style.display !== "none") {
 				if (!this.sizeInput?.contains(target) && !this.sizePopup.contains(target)) {
@@ -1033,10 +1033,7 @@ export class RichTextToolbar {
 			} else {
 				// Otherwise show color tab with current values
 				this.fontColorPicker.setMode("color");
-				this.fontColorPicker.setColor(
-					font?.color || "#000000",
-					font?.opacity ?? 1
-				);
+				this.fontColorPicker.setColor(font?.color || "#000000", font?.opacity ?? 1);
 
 				// Set highlight if present
 				if (font?.background) {
@@ -1311,9 +1308,7 @@ export class RichTextToolbar {
 
 		// Check if all sides are equal (can simplify to uniform padding)
 		const allEqual =
-			updatedPadding.top === updatedPadding.right &&
-			updatedPadding.right === updatedPadding.bottom &&
-			updatedPadding.bottom === updatedPadding.left;
+			updatedPadding.top === updatedPadding.right && updatedPadding.right === updatedPadding.bottom && updatedPadding.bottom === updatedPadding.left;
 
 		// If all sides are 0, remove padding entirely
 		if (updatedPadding.top === 0 && updatedPadding.right === 0 && updatedPadding.bottom === 0 && updatedPadding.left === 0) {
@@ -1342,7 +1337,7 @@ export class RichTextToolbar {
 		const asset = player.clipConfiguration.asset as RichTextAsset;
 		const currentFont = asset.font || {};
 
-		let fontUpdates: Record<string, unknown> = { ...currentFont };
+		const fontUpdates: Record<string, unknown> = { ...currentFont };
 
 		// Handle solid color and opacity
 		if (updates.color !== undefined) {
@@ -1368,8 +1363,8 @@ export class RichTextToolbar {
 		}
 
 		// Clear gradient when setting solid color
-		const currentStyle = asset.style || {} as Record<string, unknown>;
-		if ((updates.color !== undefined || updates.opacity !== undefined) && currentStyle["gradient"]) {
+		const currentStyle = asset.style || ({} as Record<string, unknown>);
+		if ((updates.color !== undefined || updates.opacity !== undefined) && currentStyle.gradient) {
 			this.updateClipProperty({
 				font: fontUpdates,
 				style: { ...currentStyle, gradient: undefined }
@@ -1508,7 +1503,7 @@ export class RichTextToolbar {
 		}
 
 		// Shadow
-		const shadow = asset.shadow;
+		const { shadow } = asset;
 		if (this.shadowToggle) {
 			this.shadowToggle.checked = !!shadow;
 		}
@@ -1536,8 +1531,8 @@ export class RichTextToolbar {
 		}
 
 		// Animation
-		const animation = asset.animation;
-		this.container?.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((btn) => {
+		const { animation } = asset;
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["preset"] === animation?.preset);
 		});
 		if (this.animationDurationSlider && this.animationDurationValue) {
@@ -1545,20 +1540,20 @@ export class RichTextToolbar {
 			this.animationDurationSlider.value = String(duration);
 			this.animationDurationValue.textContent = `${duration.toFixed(1)}s`;
 		}
-		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach((btn) => {
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["animationStyle"] === animation?.style);
 		});
-		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach((btn) => {
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["animationDirection"] === animation?.direction);
 		});
 		this.updateAnimationSections(animation?.preset);
 
 		// Padding
 		if (this.paddingTopSlider && this.paddingRightSlider && this.paddingBottomSlider && this.paddingLeftSlider) {
-			let top = 0,
-				right = 0,
-				bottom = 0,
-				left = 0;
+			let top = 0;
+			let right = 0;
+			let bottom = 0;
+			let left = 0;
 
 			if (typeof asset.padding === "number") {
 				// Uniform padding

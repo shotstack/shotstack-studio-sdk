@@ -75,7 +75,7 @@ export class TranscriptionService {
 			}
 
 			this.worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
-				const {data} = event;
+				const { data } = event;
 
 				switch (data.type) {
 					case "progress":

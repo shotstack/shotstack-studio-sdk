@@ -296,17 +296,17 @@ export class Canvas {
 			this.edit.setOutputSize(width, height);
 		});
 
-		this.canvasToolbar.onFpsChange((fps) => {
+		this.canvasToolbar.onFpsChange(fps => {
 			this.edit.setOutputFps(fps);
 		});
 
-		this.canvasToolbar.onBackgroundChange((color) => {
+		this.canvasToolbar.onBackgroundChange(color => {
 			this.edit.setTimelineBackground(color);
 		});
 	}
 
 	private syncCanvasToolbarState(): void {
-		const size = this.edit.size;
+		const { size } = this.edit;
 		this.canvasToolbar.setResolution(size.width, size.height);
 
 		const fps = this.edit.getOutputFps();

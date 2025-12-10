@@ -111,7 +111,7 @@ export class CanvasToolbar {
 				<div class="ss-canvas-toolbar-popup" data-popup="resolution">
 					<div class="ss-canvas-toolbar-popup-header">Presets</div>
 					${RESOLUTION_PRESETS.map(
-						(preset) => `
+						preset => `
 						<div class="ss-canvas-toolbar-popup-item" data-width="${preset.width}" data-height="${preset.height}">
 							<div class="ss-canvas-toolbar-popup-item-label">
 								<span>${preset.label}</span>
@@ -145,7 +145,7 @@ export class CanvasToolbar {
 					</div>
 					<div class="ss-canvas-toolbar-color-swatches">
 						${COLOR_SWATCHES.map(
-							(color) => `
+							color => `
 							<div class="ss-canvas-toolbar-color-swatch" data-swatch-color="${color}" style="background: ${color}"></div>
 						`
 						).join("")}
@@ -163,7 +163,7 @@ export class CanvasToolbar {
 				</button>
 				<div class="ss-canvas-toolbar-popup" data-popup="fps">
 					${FPS_OPTIONS.map(
-						(fps) => `
+						fps => `
 						<div class="ss-canvas-toolbar-popup-item" data-fps="${fps}">
 							<span>${fps} fps</span>
 							${ICONS.check}
@@ -200,22 +200,22 @@ export class CanvasToolbar {
 
 	private setupEventListeners(): void {
 		// Toggle popups
-		this.resolutionBtn?.addEventListener("click", (e) => {
+		this.resolutionBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("resolution");
 		});
-		this.backgroundBtn?.addEventListener("click", (e) => {
+		this.backgroundBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("background");
 		});
-		this.fpsBtn?.addEventListener("click", (e) => {
+		this.fpsBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("fps");
 		});
 
 		// Resolution preset clicks
-		this.resolutionPopup?.querySelectorAll("[data-width]").forEach((item) => {
-			item.addEventListener("click", (e) => {
+		this.resolutionPopup?.querySelectorAll("[data-width]").forEach(item => {
+			item.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const width = parseInt(el.dataset["width"] || "1920", 10);
 				const height = parseInt(el.dataset["height"] || "1080", 10);
@@ -228,8 +228,8 @@ export class CanvasToolbar {
 		this.customHeightInput?.addEventListener("change", () => this.handleCustomSizeChange());
 
 		// FPS clicks
-		this.fpsPopup?.querySelectorAll("[data-fps]").forEach((item) => {
-			item.addEventListener("click", (e) => {
+		this.fpsPopup?.querySelectorAll("[data-fps]").forEach(item => {
+			item.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const fps = parseInt(el.dataset["fps"] || "30", 10);
 				this.handleFpsSelect(fps);
@@ -244,8 +244,8 @@ export class CanvasToolbar {
 		});
 
 		// Color swatches
-		this.backgroundPopup?.querySelectorAll("[data-swatch-color]").forEach((swatch) => {
-			swatch.addEventListener("click", (e) => {
+		this.backgroundPopup?.querySelectorAll("[data-swatch-color]").forEach(swatch => {
+			swatch.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const color = el.dataset["swatchColor"] || "#000000";
 				this.handleColorChange(color);
@@ -369,7 +369,7 @@ export class CanvasToolbar {
 
 	private updateActiveStates(): void {
 		// Update resolution presets
-		this.resolutionPopup?.querySelectorAll("[data-width]").forEach((item) => {
+		this.resolutionPopup?.querySelectorAll("[data-width]").forEach(item => {
 			const el = item as HTMLElement;
 			const width = parseInt(el.dataset["width"] || "0", 10);
 			const height = parseInt(el.dataset["height"] || "0", 10);
@@ -377,14 +377,14 @@ export class CanvasToolbar {
 		});
 
 		// Update FPS options
-		this.fpsPopup?.querySelectorAll("[data-fps]").forEach((item) => {
+		this.fpsPopup?.querySelectorAll("[data-fps]").forEach(item => {
 			const el = item as HTMLElement;
 			const fps = parseInt(el.dataset["fps"] || "0", 10);
 			el.classList.toggle("active", fps === this.currentFps);
 		});
 
 		// Update color swatches
-		this.backgroundPopup?.querySelectorAll("[data-swatch-color]").forEach((swatch) => {
+		this.backgroundPopup?.querySelectorAll("[data-swatch-color]").forEach(swatch => {
 			const el = swatch as HTMLElement;
 			const color = el.dataset["swatchColor"] || "";
 			el.classList.toggle("active", color.toLowerCase() === this.currentBgColor.toLowerCase());

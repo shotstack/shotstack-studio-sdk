@@ -119,7 +119,7 @@ export class MediaToolbar {
 				</button>
 				<div class="ss-media-toolbar-popup" data-popup="fit">
 					${FIT_OPTIONS.map(
-						(opt) => `
+						opt => `
 						<div class="ss-media-toolbar-popup-item" data-fit="${opt.value}">
 							<div class="ss-media-toolbar-popup-item-label">
 								<span>${opt.label}</span>
@@ -268,30 +268,30 @@ export class MediaToolbar {
 
 	private setupEventListeners(): void {
 		// Toggle popups
-		this.fitBtn?.addEventListener("click", (e) => {
+		this.fitBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("fit");
 		});
-		this.opacityBtn?.addEventListener("click", (e) => {
+		this.opacityBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("opacity");
 		});
-		this.scaleBtn?.addEventListener("click", (e) => {
+		this.scaleBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("scale");
 		});
-		this.volumeBtn?.addEventListener("click", (e) => {
+		this.volumeBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("volume");
 		});
-		this.transitionBtn?.addEventListener("click", (e) => {
+		this.transitionBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("transition");
 		});
 
 		// Fit options
-		this.fitPopup?.querySelectorAll("[data-fit]").forEach((item) => {
-			item.addEventListener("click", (e) => {
+		this.fitPopup?.querySelectorAll("[data-fit]").forEach(item => {
+			item.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const fit = el.dataset["fit"] as FitValue;
 				this.handleFitChange(fit);
@@ -317,8 +317,8 @@ export class MediaToolbar {
 		});
 
 		// Transition tabs
-		this.transitionPopup?.querySelectorAll("[data-tab]").forEach((tab) => {
-			tab.addEventListener("click", (e) => {
+		this.transitionPopup?.querySelectorAll("[data-tab]").forEach(tab => {
+			tab.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const tabValue = el.dataset["tab"] as "in" | "out";
 				this.handleTabChange(tabValue);
@@ -326,8 +326,8 @@ export class MediaToolbar {
 		});
 
 		// Effect buttons
-		this.transitionPopup?.querySelectorAll("[data-effect]").forEach((btn) => {
-			btn.addEventListener("click", (e) => {
+		this.transitionPopup?.querySelectorAll("[data-effect]").forEach(btn => {
+			btn.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const effect = el.dataset["effect"] || "";
 				this.handleEffectSelect(effect);
@@ -335,8 +335,8 @@ export class MediaToolbar {
 		});
 
 		// Direction buttons
-		this.transitionPopup?.querySelectorAll("[data-dir]").forEach((btn) => {
-			btn.addEventListener("click", (e) => {
+		this.transitionPopup?.querySelectorAll("[data-dir]").forEach(btn => {
+			btn.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLElement;
 				const dir = el.dataset["dir"] || "";
 				this.handleDirectionSelect(dir);
@@ -468,7 +468,7 @@ export class MediaToolbar {
 		let currentIdx = this.SPEED_VALUES.indexOf(currentSpeed);
 		if (currentIdx === -1) {
 			// Find closest value
-			currentIdx = this.SPEED_VALUES.findIndex((v) => v >= currentSpeed);
+			currentIdx = this.SPEED_VALUES.findIndex(v => v >= currentSpeed);
 			if (currentIdx === -1) currentIdx = this.SPEED_VALUES.length - 1;
 		}
 
@@ -604,13 +604,13 @@ export class MediaToolbar {
 		const speed = tab === "in" ? this.transitionInSpeed : this.transitionOutSpeed;
 
 		// Update tab active states
-		this.transitionPopup?.querySelectorAll("[data-tab]").forEach((el) => {
+		this.transitionPopup?.querySelectorAll("[data-tab]").forEach(el => {
 			const tabEl = el as HTMLElement;
 			tabEl.classList.toggle("active", tabEl.dataset["tab"] === tab);
 		});
 
 		// Update effect active states
-		this.transitionPopup?.querySelectorAll("[data-effect]").forEach((el) => {
+		this.transitionPopup?.querySelectorAll("[data-effect]").forEach(el => {
 			const effectEl = el as HTMLElement;
 			effectEl.classList.toggle("active", effectEl.dataset["effect"] === effect);
 		});
@@ -620,7 +620,7 @@ export class MediaToolbar {
 		this.directionRow?.classList.toggle("visible", showDirection);
 
 		// Hide Up/Down for wipe (only Left/Right)
-		this.transitionPopup?.querySelectorAll("[data-dir]").forEach((el) => {
+		this.transitionPopup?.querySelectorAll("[data-dir]").forEach(el => {
 			const dirEl = el as HTMLElement;
 			const dir = dirEl.dataset["dir"] || "";
 			const isVertical = dir === "Up" || dir === "Down";
@@ -649,7 +649,7 @@ export class MediaToolbar {
 
 	private updateFitDisplay(): void {
 		if (this.fitLabel) {
-			const option = FIT_OPTIONS.find((o) => o.value === this.currentFit);
+			const option = FIT_OPTIONS.find(o => o.value === this.currentFit);
 			this.fitLabel.textContent = option?.label || "Crop";
 		}
 	}
@@ -688,7 +688,7 @@ export class MediaToolbar {
 	}
 
 	private updateFitActiveState(): void {
-		this.fitPopup?.querySelectorAll("[data-fit]").forEach((item) => {
+		this.fitPopup?.querySelectorAll("[data-fit]").forEach(item => {
 			const el = item as HTMLElement;
 			el.classList.toggle("active", el.dataset["fit"] === this.currentFit);
 		});

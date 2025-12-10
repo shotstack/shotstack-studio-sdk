@@ -10,54 +10,301 @@ const GRADIENT_PRESETS: Array<{ name: string; gradients: GradientPreset[] }> = [
 	{
 		name: "Cool Tones",
 		gradients: [
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#8B5CF6" }, { offset: 1, color: "#06B6D4" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#3B82F6" }, { offset: 1, color: "#8B5CF6" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#06B6D4" }, { offset: 1, color: "#3B82F6" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#3B82F6" }, { offset: 1, color: "#6366F1" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#06B6D4" }, { offset: 1, color: "#14B8A6" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#0EA5E9" }, { offset: 1, color: "#38BDF8" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#8B5CF6" }, { offset: 0.5, color: "#3B82F6" }, { offset: 1, color: "#06B6D4" }] }
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#8B5CF6" },
+					{ offset: 1, color: "#06B6D4" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#3B82F6" },
+					{ offset: 1, color: "#8B5CF6" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#06B6D4" },
+					{ offset: 1, color: "#3B82F6" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#3B82F6" },
+					{ offset: 1, color: "#6366F1" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#06B6D4" },
+					{ offset: 1, color: "#14B8A6" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#0EA5E9" },
+					{ offset: 1, color: "#38BDF8" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#8B5CF6" },
+					{ offset: 0.5, color: "#3B82F6" },
+					{ offset: 1, color: "#06B6D4" }
+				]
+			}
 		]
 	},
 	{
 		name: "Warm Tones",
 		gradients: [
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#EF4444" }, { offset: 1, color: "#F97316" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#F97316" }, { offset: 1, color: "#EAB308" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#EC4899" }, { offset: 1, color: "#F43F5E" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#EF4444" }, { offset: 1, color: "#EC4899" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#F97316" }, { offset: 1, color: "#F59E0B" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#EC4899" }, { offset: 1, color: "#F97316" }] },
-			{ type: "linear", angle: 45, stops: [{ offset: 0, color: "#8B5CF6" }, { offset: 0.5, color: "#EC4899" }, { offset: 1, color: "#EAB308" }] }
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#EF4444" },
+					{ offset: 1, color: "#F97316" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#F97316" },
+					{ offset: 1, color: "#EAB308" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#EC4899" },
+					{ offset: 1, color: "#F43F5E" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#EF4444" },
+					{ offset: 1, color: "#EC4899" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#F97316" },
+					{ offset: 1, color: "#F59E0B" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#EC4899" },
+					{ offset: 1, color: "#F97316" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 45,
+				stops: [
+					{ offset: 0, color: "#8B5CF6" },
+					{ offset: 0.5, color: "#EC4899" },
+					{ offset: 1, color: "#EAB308" }
+				]
+			}
 		]
 	},
 	{
 		name: "Monochromatic",
 		gradients: [
 			// Neutrals row
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#878274" }, { offset: 1, color: "#24221a" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#dfdcda" }, { offset: 1, color: "#858176" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#fffcf5" }, { offset: 1, color: "#d8d5ca" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#feffff" }, { offset: 1, color: "#c5c5c5" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#e9f0f3" }, { offset: 1, color: "#a2a5ac" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#a5acb9" }, { offset: 1, color: "#303643" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#6d7486" }, { offset: 1, color: "#0a0d13" }] },
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#878274" },
+					{ offset: 1, color: "#24221a" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#dfdcda" },
+					{ offset: 1, color: "#858176" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#fffcf5" },
+					{ offset: 1, color: "#d8d5ca" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#feffff" },
+					{ offset: 1, color: "#c5c5c5" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#e9f0f3" },
+					{ offset: 1, color: "#a2a5ac" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#a5acb9" },
+					{ offset: 1, color: "#303643" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#6d7486" },
+					{ offset: 1, color: "#0a0d13" }
+				]
+			},
 			// Dark to light colors row
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#731919" }, { offset: 1, color: "#e52b2b" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#963e15" }, { offset: 1, color: "#f4773e" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#997300" }, { offset: 1, color: "#ffc000" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#226214" }, { offset: 1, color: "#43cc25" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#004d48" }, { offset: 1, color: "#3ff3e7" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#001f65" }, { offset: 1, color: "#6895fd" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#450050" }, { offset: 1, color: "#e753fe" }] },
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#731919" },
+					{ offset: 1, color: "#e52b2b" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#963e15" },
+					{ offset: 1, color: "#f4773e" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#997300" },
+					{ offset: 1, color: "#ffc000" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#226214" },
+					{ offset: 1, color: "#43cc25" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#004d48" },
+					{ offset: 1, color: "#3ff3e7" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#001f65" },
+					{ offset: 1, color: "#6895fd" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#450050" },
+					{ offset: 1, color: "#e753fe" }
+				]
+			},
 			// Pastels row
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#ff6767" }, { offset: 1, color: "#ffd1d1" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#ff9869" }, { offset: 1, color: "#ffd2bd" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#ffda6a" }, { offset: 1, color: "#fff7de" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#7cce6b" }, { offset: 1, color: "#d8ffd0" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#7af6ee" }, { offset: 1, color: "#eafffe" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#84a9ff" }, { offset: 1, color: "#f5f8ff" }] },
-			{ type: "linear", angle: 180, stops: [{ offset: 0, color: "#f093ff" }, { offset: 1, color: "#fdf1ff" }] }
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#ff6767" },
+					{ offset: 1, color: "#ffd1d1" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#ff9869" },
+					{ offset: 1, color: "#ffd2bd" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#ffda6a" },
+					{ offset: 1, color: "#fff7de" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#7cce6b" },
+					{ offset: 1, color: "#d8ffd0" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#7af6ee" },
+					{ offset: 1, color: "#eafffe" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#84a9ff" },
+					{ offset: 1, color: "#f5f8ff" }
+				]
+			},
+			{
+				type: "linear",
+				angle: 180,
+				stops: [
+					{ offset: 0, color: "#f093ff" },
+					{ offset: 1, color: "#fdf1ff" }
+				]
+			}
 		]
 	}
 ];
@@ -162,13 +409,13 @@ export class FontColorPicker {
 		this.gradientTab?.addEventListener("click", () => this.setMode("gradient"));
 
 		this.colorInput?.addEventListener("input", () => this.handleColorChange());
-		this.colorOpacitySlider?.addEventListener("input", (e) => this.handleColorOpacityChange(e));
+		this.colorOpacitySlider?.addEventListener("input", e => this.handleColorOpacityChange(e));
 
 		this.highlightColorInput?.addEventListener("input", () => this.handleHighlightChange());
 
 		// Setup gradient swatch click handlers
-		this.container.querySelectorAll("[data-cat]").forEach((btn) => {
-			btn.addEventListener("click", (e) => {
+		this.container.querySelectorAll("[data-cat]").forEach(btn => {
+			btn.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLButtonElement;
 				this.handleGradientClick(parseInt(el.dataset["cat"] || "0"), parseInt(el.dataset["idx"] || "0"));
 			});
@@ -212,7 +459,7 @@ export class FontColorPicker {
 	}
 
 	private buildGradientHTML(): string {
-		let html = '';
+		let html = "";
 		GRADIENT_PRESETS.forEach((category, catIdx) => {
 			html += `<div class="ss-gradient-category">
 				<div class="ss-gradient-category-name">${category.name}</div>

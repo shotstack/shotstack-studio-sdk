@@ -1,7 +1,6 @@
 import { type Cue, parseSubtitle } from "@core/captions";
 import * as pixi from "pixi.js";
 
-
 export interface SubtitleAsset {
 	content: string;
 	cues: Cue[];
