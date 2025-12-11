@@ -463,6 +463,23 @@ export const TIMELINE_STYLES = `
 	z-index: 200;
 }
 
+/* Drag time tooltip */
+.ss-drag-time-tooltip {
+	position: absolute;
+	background: #1a1a2e;
+	color: #fff;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+	font-family: monospace;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 250;
+	transform: translateX(-50%);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 /* Selection box */
 .ss-selection-box {
 	position: absolute;

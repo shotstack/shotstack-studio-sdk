@@ -63,6 +63,7 @@ export class InteractionController {
 	private snapLine: HTMLElement | null = null;
 	private dragGhost: HTMLElement | null = null;
 	private dropZone: HTMLElement | null = null;
+	private dragTimeTooltip: HTMLElement | null = null;
 
 	// Bound handlers for cleanup
 	private readonly handlePointerMove: (e: PointerEvent) => void;
@@ -277,6 +278,9 @@ export class InteractionController {
 		this.state.ghost.style.left = `${clipTime * pps}px`;
 		this.state.ghost.style.top = `${ghostY + tracksOffset}px`;
 
+		// Show timestamp tooltip above ghost
+		this.showDragTimeTooltip(clipTime, clipTime * pps, ghostY + tracksOffset);
+
 		// Show drop zone indicator when over insertion zone
 		if (dragTarget.type === "insert") {
 			this.showDropZone(dragTarget.insertionIndex);
@@ -395,6 +399,7 @@ export class InteractionController {
 		ghost.remove();
 		this.hideSnapLine();
 		this.hideDropZone();
+		this.hideDragTimeTooltip();
 		this.stateManager.setClipVisualState(clipRef.trackIndex, clipRef.clipIndex, "normal");
 		this.state = { type: "idle" };
 	}
@@ -540,6 +545,33 @@ export class InteractionController {
 		}
 	}
 
+	/** Format time for drag tooltip display (MM:SS.T) */
+	private formatDragTime(seconds: number): string {
+		const mins = Math.floor(seconds / 60);
+		const secs = Math.floor(seconds % 60);
+		const tenths = Math.floor((seconds % 1) * 10);
+		return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${tenths}`;
+	}
+
+	private showDragTimeTooltip(time: number, x: number, y: number): void {
+		if (!this.dragTimeTooltip) {
+			this.dragTimeTooltip = document.createElement("div");
+			this.dragTimeTooltip.className = "ss-drag-time-tooltip";
+			this.feedbackLayer.appendChild(this.dragTimeTooltip);
+		}
+
+		this.dragTimeTooltip.textContent = this.formatDragTime(time);
+		this.dragTimeTooltip.style.left = `${x}px`;
+		this.dragTimeTooltip.style.top = `${y - 28}px`;
+		this.dragTimeTooltip.style.display = "block";
+	}
+
+	private hideDragTimeTooltip(): void {
+		if (this.dragTimeTooltip) {
+			this.dragTimeTooltip.style.display = "none";
+		}
+	}
+
 	/** Get track index at a given Y position (accounting for variable heights) */
 	private getTrackIndexAtY(y: number): number {
 		const tracks = this.stateManager.getTracks();
@@ -617,6 +649,11 @@ export class InteractionController {
 		if (this.dropZone) {
 			this.dropZone.remove();
 			this.dropZone = null;
+		}
+
+		if (this.dragTimeTooltip) {
+			this.dragTimeTooltip.remove();
+			this.dragTimeTooltip = null;
 		}
 	}
 }
