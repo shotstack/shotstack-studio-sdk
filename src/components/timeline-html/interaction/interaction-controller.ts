@@ -315,9 +315,7 @@ export class InteractionController {
 
 		// Apply collision detection for track targets
 		if (dragTarget.type === "track") {
-			// Calculate mouse time (mouse position in seconds, for left/right half detection)
-			const mouseTime = mouseX / pps;
-			const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef, mouseTime);
+			const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
 			clipTime = collisionResult.newStartTime;
 			this.state.collisionResult = collisionResult;
 		} else {
@@ -524,31 +522,43 @@ export class InteractionController {
 			.sort((a, b) => a.config.start - b.config.start);
 	}
 
-	/** Find which clip (if any) the mouse is directly over */
-	private findClipUnderMouse(clips: ClipState[], mouseTime: number): { clip: ClipState; index: number } | null {
+	/** Find which clip (if any) the dragged clip overlaps */
+	private findOverlappingClip(
+		clips: ClipState[],
+		desiredStart: number,
+		clipLength: number
+	): { clip: ClipState; index: number } | null {
+		const desiredEnd = desiredStart + clipLength;
 		for (let i = 0; i < clips.length; i += 1) {
 			const clip = clips[i];
-			if (mouseTime >= clip.config.start && mouseTime < clip.config.start + clip.config.length) {
+			const clipStart = clip.config.start;
+			const clipEnd = clipStart + clip.config.length;
+			if (desiredStart < clipEnd && desiredEnd > clipStart) {
 				return { clip, index: i };
 			}
 		}
 		return null;
 	}
 
-	/** Resolve snap position when mouse is over a clip (left/right half logic) */
-	private resolveMouseOverSnap(
+	/** Resolve snap position when dragged clip overlaps another (uses clip centers for direction) */
+	private resolveOverlapSnap(
 		targetClip: ClipState,
 		targetIndex: number,
+		desiredStart: number,
 		clipLength: number,
-		isRightHalf: boolean,
 		clips: ClipState[]
 	): CollisionResult {
-		const clipStart = targetClip.config.start;
-		const clipEnd = clipStart + targetClip.config.length;
+		const targetStart = targetClip.config.start;
+		const targetEnd = targetStart + targetClip.config.length;
 
-		if (isRightHalf) {
+		// Determine snap direction based on dragged clip center vs target clip center
+		const draggedCenter = desiredStart + clipLength / 2;
+		const targetCenter = targetStart + targetClip.config.length / 2;
+		const snapRight = draggedCenter >= targetCenter;
+
+		if (snapRight) {
 			// Snap to RIGHT of target clip
-			const newStartTime = clipEnd;
+			const newStartTime = targetEnd;
 			const newEndTime = newStartTime + clipLength;
 			const nextClip = clips[targetIndex + 1];
 
@@ -560,60 +570,35 @@ export class InteractionController {
 
 		// Snap to LEFT of target clip
 		const prevClipEnd = targetIndex > 0 ? clips[targetIndex - 1].config.start + clips[targetIndex - 1].config.length : 0;
-		const availableSpace = clipStart - prevClipEnd;
+		const availableSpace = targetStart - prevClipEnd;
 
 		if (availableSpace >= clipLength) {
-			return { newStartTime: clipStart - clipLength, pushOffset: 0 };
+			return { newStartTime: targetStart - clipLength, pushOffset: 0 };
 		}
 
-		// No space - push target clip forward
+		// No space on left - push target clip forward
 		const newStartTime = prevClipEnd;
-		return { newStartTime, pushOffset: newStartTime + clipLength - clipStart };
+		return { newStartTime, pushOffset: newStartTime + clipLength - targetStart };
 	}
 
-	/** Resolve collision when dragged clip overlaps another (mouse not directly over any clip) */
-	private resolveOverlapCollision(desiredStart: number, clipLength: number, clips: ClipState[]): CollisionResult {
-		const desiredEnd = desiredStart + clipLength;
-
-		for (let i = 0; i < clips.length; i += 1) {
-			const clip = clips[i];
-			const clipStart = clip.config.start;
-			const clipEnd = clipStart + clip.config.length;
-
-			if (desiredStart < clipEnd && desiredEnd > clipStart) {
-				const prevClipEnd = i > 0 ? clips[i - 1].config.start + clips[i - 1].config.length : 0;
-				const availableSpace = clipStart - prevClipEnd;
-
-				if (availableSpace >= clipLength) {
-					return { newStartTime: clipStart - clipLength, pushOffset: 0 };
-				}
-				return { newStartTime: desiredStart, pushOffset: desiredEnd - clipStart };
-			}
-		}
-		return { newStartTime: desiredStart, pushOffset: 0 };
-	}
-
-	/** Resolve clip collision - orchestrates detection and resolution */
+	/** Resolve clip collision based on clip boundaries */
 	private resolveClipCollision(
 		trackIndex: number,
 		desiredStart: number,
 		clipLength: number,
-		excludeClip: ClipRef,
-		mouseTime: number
+		excludeClip: ClipRef
 	): CollisionResult {
 		const clips = this.getTrackClips(trackIndex, excludeClip);
 		if (clips.length === 0) {
 			return { ...InteractionController.NO_COLLISION, newStartTime: desiredStart };
 		}
 
-		const mouseTarget = this.findClipUnderMouse(clips, mouseTime);
-		if (mouseTarget) {
-			const midpoint = mouseTarget.clip.config.start + mouseTarget.clip.config.length / 2;
-			const isRightHalf = mouseTime >= midpoint;
-			return this.resolveMouseOverSnap(mouseTarget.clip, mouseTarget.index, clipLength, isRightHalf, clips);
+		const overlap = this.findOverlappingClip(clips, desiredStart, clipLength);
+		if (overlap) {
+			return this.resolveOverlapSnap(overlap.clip, overlap.index, desiredStart, clipLength, clips);
 		}
 
-		return this.resolveOverlapCollision(desiredStart, clipLength, clips);
+		return { newStartTime: desiredStart, pushOffset: 0 };
 	}
 
 	private buildSnapPoints(excludeClip: ClipRef): void {
