@@ -83,8 +83,14 @@ export class HtmlTimeline extends TimelineEntity {
 		// Bind event handlers
 		this.handleTimelineUpdated = () => this.requestRender();
 		this.handlePlaybackPlay = () => this.startRenderLoop();
-		this.handlePlaybackPause = () => this.stopRenderLoop();
-		this.handlePlaybackStop = () => this.stopRenderLoop();
+		this.handlePlaybackPause = () => {
+			this.stopRenderLoop();
+			this.requestRender(); // Final render to update UI with paused state
+		};
+		this.handlePlaybackStop = () => {
+			this.stopRenderLoop();
+			this.requestRender(); // Final render to update UI with stopped state
+		};
 	}
 
 	/** Initialize and mount the timeline */
@@ -136,6 +142,7 @@ export class HtmlTimeline extends TimelineEntity {
 		// Update toolbar
 		this.toolbar?.updatePlayState(playback.isPlaying);
 		this.toolbar?.updateTimeDisplay(playback.time, playback.duration);
+		this.toolbar?.draw();
 
 		// Update ruler and draw
 		this.ruler?.updateRuler(viewport.pixelsPerSecond, this.stateManager.getExtendedDuration());
@@ -147,6 +154,7 @@ export class HtmlTimeline extends TimelineEntity {
 
 		// Update playhead
 		this.playhead?.setTime(playback.time);
+		this.playhead?.draw();
 	}
 
 	/** Clean up and unmount the timeline */
@@ -273,6 +281,8 @@ export class HtmlTimeline extends TimelineEntity {
 				{
 					onPlay: () => this.edit.play(),
 					onPause: () => this.edit.pause(),
+					onSkipBack: () => this.edit.seek(Math.max(0, this.edit.playbackTime - 1000)),
+					onSkipForward: () => this.edit.seek(this.edit.playbackTime + 1000),
 					onZoomChange: pps => this.setZoom(pps)
 				},
 				viewport.pixelsPerSecond

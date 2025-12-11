@@ -1,4 +1,4 @@
-/** Main timeline styles - dark theme only, no CSS variables for theming */
+/** Main timeline styles - light theme */
 export const TIMELINE_STYLES = `
 /* Main container */
 .ss-html-timeline {
@@ -6,10 +6,10 @@ export const TIMELINE_STYLES = `
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	background: #18181b;
+	background: #ffffff;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 	font-size: 12px;
-	color: #fafafa;
+	color: #1f2937;
 	overflow: hidden;
 	user-select: none;
 	-webkit-user-select: none;
@@ -19,18 +19,55 @@ export const TIMELINE_STYLES = `
 .ss-timeline-toolbar {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	height: 40px;
-	padding: 0 12px;
-	background: #18181b;
-	border-bottom: 1px solid #27272a;
+	justify-content: center;
+	height: 64px;
+	padding: 12px;
+	background: #ffffff;
+	border-bottom: 1px solid #e5e7eb;
 	flex-shrink: 0;
+	position: relative;
 }
 
 .ss-toolbar-section {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+}
+
+/* Left section - positioned absolute to not affect center */
+.ss-toolbar-section:first-child {
+	position: absolute;
+	left: 12px;
+}
+
+/* Right section - positioned absolute to not affect center */
+.ss-toolbar-section:last-child {
+	position: absolute;
+	right: 12px;
+}
+
+/* Playback controls group - centered */
+.ss-playback-controls {
+	gap: 8px;
+}
+
+/* Large circular play button */
+.ss-toolbar-btn.ss-play-btn {
+	width: 40px;
+	height: 40px;
+	background: #374151;
+	border-radius: 50%;
+	color: #ffffff;
+}
+
+.ss-toolbar-btn.ss-play-btn:hover {
+	background: #4b5563;
+	color: #ffffff;
+}
+
+.ss-toolbar-btn.ss-play-btn svg {
+	width: 20px;
+	height: 20px;
 }
 
 .ss-toolbar-btn {
@@ -43,19 +80,19 @@ export const TIMELINE_STYLES = `
 	background: transparent;
 	border: none;
 	border-radius: 6px;
-	color: #a1a1aa;
+	color: #6b7280;
 	cursor: pointer;
 	transition: background 0.1s ease, color 0.1s ease;
 }
 
 .ss-toolbar-btn:hover {
-	background: #3f3f46;
-	color: #fafafa;
+	background: #e5e7eb;
+	color: #1f2937;
 }
 
 .ss-toolbar-btn:active,
 .ss-toolbar-btn.active {
-	background: #52525b;
+	background: #d1d5db;
 }
 
 .ss-toolbar-btn svg {
@@ -66,7 +103,7 @@ export const TIMELINE_STYLES = `
 .ss-time-display {
 	font-variant-numeric: tabular-nums;
 	font-size: 11px;
-	color: #a1a1aa;
+	color: #6b7280;
 	min-width: 120px;
 	text-align: center;
 }
@@ -76,7 +113,7 @@ export const TIMELINE_STYLES = `
 	height: 4px;
 	-webkit-appearance: none;
 	appearance: none;
-	background: #27272a;
+	background: #e5e7eb;
 	border-radius: 2px;
 	cursor: pointer;
 }
@@ -85,7 +122,7 @@ export const TIMELINE_STYLES = `
 	-webkit-appearance: none;
 	width: 12px;
 	height: 12px;
-	background: #fafafa;
+	background: #3b82f6;
 	border-radius: 50%;
 	cursor: grab;
 }
@@ -94,8 +131,8 @@ export const TIMELINE_STYLES = `
 .ss-timeline-ruler {
 	position: relative;
 	height: 32px;
-	background: #18181b;
-	border-bottom: 1px solid #27272a;
+	background: #ffffff;
+	border-bottom: 1px solid #e5e7eb;
 	overflow: hidden;
 	flex-shrink: 0;
 }
@@ -117,12 +154,12 @@ export const TIMELINE_STYLES = `
 .ss-ruler-marker-line {
 	width: 1px;
 	height: 8px;
-	background: #3f3f46;
+	background: #d1d5db;
 }
 
 .ss-ruler-marker-label {
 	font-size: 10px;
-	color: #71717a;
+	color: #6b7280;
 	white-space: nowrap;
 	margin-bottom: 2px;
 }
@@ -141,6 +178,7 @@ export const TIMELINE_STYLES = `
 	flex: 1;
 	overflow: auto;
 	outline: none;
+	background: #ffffff;
 }
 
 .ss-tracks-content {
@@ -151,21 +189,22 @@ export const TIMELINE_STYLES = `
 /* Track - height set dynamically via inline style */
 .ss-track {
 	position: relative;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	border-bottom: 1px solid #f3f4f6;
 	transition: background 0.15s ease;
+	background: #ffffff;
 }
 
-/* Track backgrounds by asset type - subtle tints */
-.ss-track[data-asset-type="video"] { background: rgba(232, 222, 248, 0.06); }
-.ss-track[data-asset-type="image"] { background: rgba(209, 232, 255, 0.06); }
-.ss-track[data-asset-type="audio"] { background: rgba(184, 230, 212, 0.06); }
+/* Track backgrounds by asset type - subtle tints on white */
+.ss-track[data-asset-type="video"] { background: rgba(232, 222, 248, 0.3); }
+.ss-track[data-asset-type="image"] { background: rgba(209, 232, 255, 0.3); }
+.ss-track[data-asset-type="audio"] { background: rgba(184, 230, 212, 0.3); }
 .ss-track[data-asset-type="text"],
-.ss-track[data-asset-type="rich-text"] { background: rgba(255, 228, 201, 0.06); }
-.ss-track[data-asset-type="shape"] { background: rgba(255, 243, 184, 0.06); }
-.ss-track[data-asset-type="caption"] { background: rgba(225, 190, 231, 0.06); }
-.ss-track[data-asset-type="html"] { background: rgba(179, 229, 252, 0.06); }
-.ss-track[data-asset-type="luma"] { background: rgba(207, 216, 220, 0.06); }
-.ss-track[data-asset-type="empty"] { background: #1f1f23; }
+.ss-track[data-asset-type="rich-text"] { background: rgba(255, 228, 201, 0.3); }
+.ss-track[data-asset-type="shape"] { background: rgba(255, 243, 184, 0.3); }
+.ss-track[data-asset-type="caption"] { background: rgba(225, 190, 231, 0.3); }
+.ss-track[data-asset-type="html"] { background: rgba(179, 229, 252, 0.3); }
+.ss-track[data-asset-type="luma"] { background: rgba(207, 216, 220, 0.3); }
+.ss-track[data-asset-type="empty"] { background: #f9fafb; }
 
 .ss-track.drop-target {
 	background: rgba(59, 130, 246, 0.15);
@@ -325,7 +364,7 @@ export const TIMELINE_STYLES = `
 }
 
 .ss-clip-resize-handle:hover {
-	background: rgba(255, 255, 255, 0.1);
+	background: rgba(0, 0, 0, 0.08);
 }
 
 /* Playhead */
@@ -345,7 +384,7 @@ export const TIMELINE_STYLES = `
 	bottom: 0;
 	left: 0;
 	width: 2px;
-	background: #ef4444;
+	background: #3b82f6;
 }
 
 .ss-playhead-handle {
@@ -355,7 +394,7 @@ export const TIMELINE_STYLES = `
 	transform: translateX(-50%);
 	width: 12px;
 	height: 12px;
-	background: #ef4444;
+	background: #3b82f6;
 	border-radius: 2px 2px 50% 50%;
 	cursor: grab;
 	pointer-events: auto;
@@ -430,7 +469,7 @@ export const TIMELINE_STYLES = `
 	align-items: center;
 	justify-content: center;
 	flex: 1;
-	color: #a1a1aa;
+	color: #9ca3af;
 	font-size: 13px;
 }
 `;

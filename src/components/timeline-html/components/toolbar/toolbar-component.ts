@@ -3,6 +3,8 @@ import { TimelineEntity } from "../../core/timeline-entity";
 export interface ToolbarOptions {
 	onPlay: () => void;
 	onPause: () => void;
+	onSkipBack: () => void;
+	onSkipForward: () => void;
 	onZoomChange: (pixelsPerSecond: number) => void;
 }
 
@@ -47,10 +49,22 @@ export class ToolbarComponent extends TimelineEntity {
 	}
 
 	private buildElement(initialZoom: number): void {
-		// Left section - playback controls
+		// Left section - empty for balance
 		const leftSection = document.createElement("div");
 		leftSection.className = "ss-toolbar-section";
+		this.element.appendChild(leftSection);
 
+		// Center section - playback controls + time display
+		const centerSection = document.createElement("div");
+		centerSection.className = "ss-toolbar-section ss-playback-controls";
+
+		// Skip back button
+		const skipBackBtn = this.createButton("skip-back", this.getSkipBackIcon(), () => {
+			this.options.onSkipBack();
+		});
+		centerSection.appendChild(skipBackBtn);
+
+		// Play/pause button (larger circular)
 		this.playButton = this.createButton("play", this.getPlayIcon(), () => {
 			if (this.isPlaying) {
 				this.options.onPause();
@@ -58,17 +72,19 @@ export class ToolbarComponent extends TimelineEntity {
 				this.options.onPlay();
 			}
 		});
-		leftSection.appendChild(this.playButton);
+		this.playButton.classList.add("ss-play-btn");
+		centerSection.appendChild(this.playButton);
 
-		this.element.appendChild(leftSection);
+		// Skip forward button
+		const skipForwardBtn = this.createButton("skip-forward", this.getSkipForwardIcon(), () => {
+			this.options.onSkipForward();
+		});
+		centerSection.appendChild(skipForwardBtn);
 
-		// Center section - time display
-		const centerSection = document.createElement("div");
-		centerSection.className = "ss-toolbar-section";
-
+		// Time display
 		this.timeDisplayElement = document.createElement("span");
 		this.timeDisplayElement.className = "ss-time-display";
-		this.timeDisplayElement.textContent = "00:00.000 / 00:00.000";
+		this.timeDisplayElement.textContent = "00:00.0 / 00:00.0";
 		centerSection.appendChild(this.timeDisplayElement);
 
 		this.element.appendChild(centerSection);
@@ -133,11 +149,10 @@ export class ToolbarComponent extends TimelineEntity {
 	}
 
 	private formatTime(ms: number): string {
-		const totalSeconds = Math.floor(ms / 1000);
+		const totalSeconds = ms / 1000;
 		const minutes = Math.floor(totalSeconds / 60);
 		const seconds = totalSeconds % 60;
-		const milliseconds = Math.floor(ms % 1000);
-		return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+		return `${minutes.toString().padStart(2, "0")}:${seconds.toFixed(1).padStart(4, "0")}`;
 	}
 
 	// Icon SVGs
@@ -155,5 +170,13 @@ export class ToolbarComponent extends TimelineEntity {
 
 	private getZoomOutIcon(): string {
 		return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M8 11h6"/></svg>`;
+	}
+
+	private getSkipBackIcon(): string {
+		return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>`;
+	}
+
+	private getSkipForwardIcon(): string {
+		return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>`;
 	}
 }

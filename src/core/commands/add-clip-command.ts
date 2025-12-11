@@ -20,6 +20,7 @@ export class AddClipCommand implements EditCommand {
 		clipPlayer.layer = this.trackIdx + 1;
 		await context.addPlayer(this.trackIdx, clipPlayer);
 		context.updateDuration();
+		context.emitEvent("timeline:updated", { current: context.getEditState() });
 
 		this.addedPlayer = clipPlayer;
 	}
@@ -28,5 +29,6 @@ export class AddClipCommand implements EditCommand {
 		if (!context || !this.addedPlayer) return;
 		context.queueDisposeClip(this.addedPlayer);
 		context.updateDuration();
+		context.emitEvent("timeline:updated", { current: context.getEditState() });
 	}
 }
