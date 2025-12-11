@@ -318,4 +318,125 @@ export const CANVAS_TOOLBAR_STYLES = `
 .ss-canvas-toolbar-color-swatch.active {
 	border-color: rgba(0, 0, 0, 0.3);
 }
+
+/* Variables popup */
+.ss-canvas-toolbar-popup--variables {
+	min-width: 260px;
+}
+
+.ss-variables-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.ss-variables-add-btn {
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.06);
+	border: none;
+	border-radius: 6px;
+	color: rgba(0, 0, 0, 0.65);
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.ss-variables-add-btn:hover {
+	background: rgba(0, 0, 0, 0.1);
+	color: rgba(0, 0, 0, 0.9);
+}
+
+.ss-variables-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 240px;
+	overflow-y: auto;
+}
+
+.ss-variables-empty {
+	padding: 16px 12px;
+	text-align: center;
+	font-size: 13px;
+	color: rgba(0, 0, 0, 0.4);
+}
+
+.ss-variable-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	background: rgba(0, 0, 0, 0.03);
+	border-radius: 8px;
+}
+
+.ss-variable-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.ss-variable-name {
+	font-size: 12px;
+	font-weight: 600;
+	color: rgba(99, 102, 241, 0.9);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+}
+
+.ss-variable-value {
+	width: 100%;
+	padding: 6px 8px;
+	background: rgba(255, 255, 255, 0.8);
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 6px;
+	font-size: 12px;
+	color: #1a1a1a;
+	outline: none;
+}
+
+.ss-variable-value:focus {
+	border-color: rgba(99, 102, 241, 0.5);
+	background: #fff;
+}
+
+.ss-variable-value::placeholder {
+	color: rgba(0, 0, 0, 0.35);
+}
+
+.ss-variable-value.error {
+	border-color: rgba(239, 68, 68, 0.6);
+	background: rgba(239, 68, 68, 0.15);
+}
+
+.ss-variable-value.error:focus {
+	border-color: rgba(239, 68, 68, 0.8);
+}
+
+.ss-variable-delete {
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	color: rgba(0, 0, 0, 0.35);
+	font-size: 16px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+}
+
+.ss-variable-delete:hover {
+	background: rgba(239, 68, 68, 0.1);
+	color: #ef4444;
+}
 `;

@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import type { MergeFieldService } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
 import type { ResolvedEdit } from "@schemas/edit";
 import type { Container } from "pixi.js";
@@ -42,4 +43,12 @@ export type CommandContext = {
 	resolveClipAutoLength(clip: Player): Promise<void>;
 	untrackEndLengthClip(clip: Player): void;
 	trackEndLengthClip(clip: Player): void;
+	// Merge field context
+	getMergeFields(): MergeFieldService;
+	getTemplateClip(trackIndex: number, clipIndex: number): ClipType | null;
+	setTemplateClipProperty(trackIndex: number, clipIndex: number, propertyPath: string, value: unknown): void;
+	syncTemplateClip(trackIndex: number, clipIndex: number, templateClip: ClipType): void;
+	// originalEdit track sync (for track add/delete commands)
+	insertOriginalEditTrack(trackIdx: number): void;
+	removeOriginalEditTrack(trackIdx: number): void;
 };

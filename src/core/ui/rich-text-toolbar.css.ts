@@ -154,6 +154,7 @@ export const TOOLBAR_STYLES = `
 .ss-toolbar-btn--text-edit span { font-size: 12px; font-weight: 500; }
 
 .ss-toolbar-popup--text-edit { min-width: 280px; padding: 14px 16px; }
+.ss-toolbar-text-area-wrapper { position: relative; }
 .ss-toolbar-text-area {
 	width: 100%;
 	min-height: 80px;
@@ -172,6 +173,49 @@ export const TOOLBAR_STYLES = `
 }
 .ss-toolbar-text-area:focus { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08); }
 .ss-toolbar-text-area::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+/* Autocomplete popup for merge field variables */
+.ss-autocomplete-popup {
+	display: none;
+	position: absolute;
+	bottom: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	background: rgba(32, 32, 36, 0.98);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	max-height: 160px;
+	overflow-y: auto;
+	z-index: 300;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.ss-autocomplete-popup.visible { display: block; }
+.ss-autocomplete-item {
+	padding: 8px 12px;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	transition: background 0.1s ease;
+}
+.ss-autocomplete-item:hover,
+.ss-autocomplete-item.selected { background: rgba(255, 255, 255, 0.1); }
+.ss-autocomplete-var {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+	color: rgba(99, 102, 241, 0.9);
+	font-size: 13px;
+	font-weight: 500;
+}
+.ss-autocomplete-preview {
+	color: rgba(255, 255, 255, 0.4);
+	font-size: 12px;
+	max-width: 100px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 
 .ss-toolbar-checkbox {
 	width: 18px;

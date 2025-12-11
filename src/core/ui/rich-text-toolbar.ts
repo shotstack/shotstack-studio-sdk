@@ -1,5 +1,6 @@
 import type { Edit } from "@core/edit";
 import { FONT_PATHS } from "@core/fonts/font-config";
+import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
 
@@ -54,6 +55,14 @@ export class RichTextToolbar {
 	private textEditPopup: HTMLDivElement | null = null;
 	private textEditArea: HTMLTextAreaElement | null = null;
 	private textEditDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Autocomplete for merge field variables
+	private autocompletePopup: HTMLDivElement | null = null;
+	private autocompleteItems: HTMLDivElement | null = null;
+	private autocompleteVisible: boolean = false;
+	private autocompleteFilter: string = "";
+	private autocompleteStartPos: number = 0;
+	private selectedAutocompleteIndex: number = 0;
 	private borderBtn: HTMLButtonElement | null = null;
 	private borderPopup: HTMLDivElement | null = null;
 	private borderWidthSlider: HTMLInputElement | null = null;
@@ -126,7 +135,12 @@ export class RichTextToolbar {
 				</button>
 				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
 					<div class="ss-toolbar-popup-header">Edit Text</div>
-					<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
+					<div class="ss-toolbar-text-area-wrapper">
+						<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
+						<div class="ss-autocomplete-popup" data-autocomplete-popup>
+							<div class="ss-autocomplete-items" data-autocomplete-items></div>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -428,6 +442,8 @@ export class RichTextToolbar {
 		this.textEditBtn = this.container.querySelector("[data-action='text-edit-toggle']");
 		this.textEditPopup = this.container.querySelector("[data-text-edit-popup]");
 		this.textEditArea = this.container.querySelector("[data-text-edit-area]");
+		this.autocompletePopup = this.container.querySelector("[data-autocomplete-popup]");
+		this.autocompleteItems = this.container.querySelector("[data-autocomplete-items]");
 
 		this.container.addEventListener("click", this.handleClick.bind(this));
 
@@ -673,8 +689,38 @@ export class RichTextToolbar {
 		});
 
 		// Text edit area handlers
-		this.textEditArea?.addEventListener("input", () => this.debouncedApplyTextEdit());
+		this.textEditArea?.addEventListener("input", () => {
+			this.checkAutocomplete();
+			this.debouncedApplyTextEdit();
+		});
 		this.textEditArea?.addEventListener("keydown", e => {
+			// Handle autocomplete navigation when visible
+			if (this.autocompleteVisible) {
+				if (e.key === "ArrowDown") {
+					e.preventDefault();
+					const count = this.getFilteredFieldCount();
+					this.selectedAutocompleteIndex = Math.min(this.selectedAutocompleteIndex + 1, count - 1);
+					this.showAutocomplete();
+					return;
+				}
+				if (e.key === "ArrowUp") {
+					e.preventDefault();
+					this.selectedAutocompleteIndex = Math.max(this.selectedAutocompleteIndex - 1, 0);
+					this.showAutocomplete();
+					return;
+				}
+				if (e.key === "Enter" || e.key === "Tab") {
+					e.preventDefault();
+					this.insertSelectedVariable();
+					return;
+				}
+				if (e.key === "Escape") {
+					e.preventDefault();
+					this.hideAutocomplete();
+					return;
+				}
+			}
+
 			// Apply on Ctrl/Cmd+Enter (allow normal Enter for newlines)
 			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 				e.preventDefault();
@@ -1071,8 +1117,14 @@ export class RichTextToolbar {
 
 		const isVisible = this.textEditPopup.style.display !== "none";
 		if (!isVisible && this.textEditArea) {
+			// Read from originalEdit (template) to show merge field placeholders
+			const templateText = this.edit.getTemplateClipText(
+				this.selectedTrackIdx,
+				this.selectedClipIdx
+			);
+			// Fallback to resolved text if no template available
 			const asset = this.getCurrentAsset();
-			this.textEditArea.value = asset?.text ?? "";
+			this.textEditArea.value = templateText ?? asset?.text ?? "";
 		}
 		this.textEditPopup.style.display = isVisible ? "none" : "block";
 		if (!isVisible) {
@@ -1092,8 +1144,139 @@ export class RichTextToolbar {
 
 	private applyTextEdit(): void {
 		if (!this.textEditArea) return;
-		const newText = this.textEditArea.value;
-		this.updateClipProperty({ text: newText });
+		const templateText = this.textEditArea.value;
+
+		// Resolve any merge field templates in the text for canvas rendering
+		const resolvedText = this.edit.mergeFields.resolve(templateText);
+
+		// Update both stores: resolved for canvas, template for export
+		this.edit.updateClipWithTemplate(
+			this.selectedTrackIdx,
+			this.selectedClipIdx,
+			{ asset: { text: resolvedText } as ResolvedClip["asset"] },
+			{ asset: { text: templateText } as ResolvedClip["asset"] }
+		);
+		this.syncState();
+	}
+
+	// ─── Autocomplete for Merge Field Variables ─────────────────────────────────
+
+	private checkAutocomplete(): void {
+		if (!this.textEditArea) return;
+
+		const pos = this.textEditArea.selectionStart;
+		const text = this.textEditArea.value.substring(0, pos);
+		const match = text.match(/\{\{\s*([A-Z_0-9]*)$/i);
+
+		if (match) {
+			this.autocompleteStartPos = pos - match[0].length;
+			this.autocompleteFilter = match[1].toUpperCase();
+			this.showAutocomplete();
+		} else {
+			this.hideAutocomplete();
+		}
+	}
+
+	private showAutocomplete(): void {
+		if (!this.autocompletePopup || !this.autocompleteItems) return;
+
+		const fields = this.edit.mergeFields.getAll();
+		const filtered = fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter));
+
+		if (filtered.length === 0) {
+			this.hideAutocomplete();
+			return;
+		}
+
+		// Reset selection if out of bounds
+		if (this.selectedAutocompleteIndex >= filtered.length) {
+			this.selectedAutocompleteIndex = 0;
+		}
+
+		this.autocompleteItems.innerHTML = filtered
+			.map(
+				(f: MergeField, i: number) => `
+			<div class="ss-autocomplete-item${i === this.selectedAutocompleteIndex ? " selected" : ""}"
+				 data-var-name="${f.name}">
+				<span class="ss-autocomplete-var">{{ ${f.name} }}</span>
+				${f.defaultValue ? `<span class="ss-autocomplete-preview">${f.defaultValue}</span>` : ""}
+			</div>
+		`
+			)
+			.join("");
+
+		// Add click handlers
+		this.autocompleteItems.querySelectorAll(".ss-autocomplete-item").forEach(item => {
+			item.addEventListener("click", e => {
+				e.stopPropagation();
+				const el = e.currentTarget as HTMLElement;
+				const { varName } = el.dataset;
+				if (varName) {
+					this.insertVariable(varName);
+				}
+			});
+		});
+
+		this.autocompletePopup.classList.add("visible");
+		this.autocompleteVisible = true;
+	}
+
+	private hideAutocomplete(): void {
+		if (this.autocompletePopup) {
+			this.autocompletePopup.classList.remove("visible");
+		}
+		this.autocompleteVisible = false;
+		this.selectedAutocompleteIndex = 0;
+	}
+
+	private insertVariable(varName: string): void {
+		if (!this.textEditArea) return;
+
+		const before = this.textEditArea.value.substring(0, this.autocompleteStartPos);
+		const after = this.textEditArea.value.substring(this.textEditArea.selectionStart);
+
+		// Build template string (keeps {{ VAR }})
+		const templateText = `${before}{{ ${varName} }}${after}`;
+
+		// Resolve for clipConfiguration (canvas rendering)
+		const field = this.edit.mergeFields.get(varName);
+		const resolvedValue = field?.defaultValue ?? `{{ ${varName} }}`;
+		const resolvedText = `${before}${resolvedValue}${after}`;
+
+		// Keep template in text area (user can see merge fields)
+		this.textEditArea.value = templateText;
+
+		// Position cursor after inserted template
+		const newPos = this.autocompleteStartPos + varName.length + 6; // "{{ " + name + " }}"
+		this.textEditArea.selectionStart = newPos;
+		this.textEditArea.selectionEnd = newPos;
+		this.textEditArea.focus();
+
+		this.hideAutocomplete();
+
+		// Update both stores: resolved for canvas, template for export
+		this.edit.updateClipWithTemplate(
+			this.selectedTrackIdx,
+			this.selectedClipIdx,
+			{ asset: { text: resolvedText } as ResolvedClip["asset"] },
+			{ asset: { text: templateText } as ResolvedClip["asset"] }
+		);
+		this.syncState();
+	}
+
+	private insertSelectedVariable(): void {
+		const selected = this.autocompleteItems?.querySelector(".selected") as HTMLElement | null;
+		if (!selected) return;
+
+		const { varName } = selected.dataset;
+		if (varName) {
+			this.insertVariable(varName);
+		}
+	}
+
+	private getFilteredFieldCount(): number {
+		const fields = this.edit.mergeFields.getAll();
+		return fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter)).length;
 	}
 
 	private buildFontList(): void {

@@ -483,4 +483,181 @@ export const MEDIA_TOOLBAR_STYLES = `
 	border-left: 1px solid rgba(255, 255, 255, 0.06);
 	border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+/* Advanced menu button - icon only */
+.ss-media-toolbar-btn--icon {
+	min-width: 32px;
+	padding: 0 8px;
+}
+
+/* Advanced popup */
+.ss-media-toolbar-popup--advanced {
+	min-width: 200px;
+	padding: 12px;
+}
+
+/* Advanced option row */
+.ss-advanced-option {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.ss-advanced-label {
+	font-size: 12px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.85);
+}
+
+/* Toggle switch */
+.ss-toggle {
+	position: relative;
+	display: inline-block;
+	width: 36px;
+	height: 20px;
+	flex-shrink: 0;
+}
+
+.ss-toggle input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.ss-toggle-slider {
+	position: absolute;
+	cursor: pointer;
+	inset: 0;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 10px;
+	transition: 0.2s ease;
+}
+
+.ss-toggle-slider::before {
+	content: '';
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	left: 2px;
+	top: 2px;
+	background: rgba(255, 255, 255, 0.9);
+	border-radius: 50%;
+	transition: 0.2s ease;
+}
+
+.ss-toggle input:checked + .ss-toggle-slider {
+	background: rgba(99, 102, 241, 0.8);
+}
+
+.ss-toggle input:checked + .ss-toggle-slider::before {
+	transform: translateX(16px);
+}
+
+/* Dynamic source panel */
+.ss-dynamic-panel {
+	display: none;
+	padding-top: 12px;
+	margin-top: 12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ss-dynamic-input-wrapper {
+	position: relative;
+}
+
+.ss-dynamic-input {
+	width: 100%;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	padding: 8px 12px;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 12px;
+	font-family: inherit;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.ss-dynamic-input:focus {
+	border-color: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.ss-dynamic-input::placeholder {
+	color: rgba(255, 255, 255, 0.4);
+}
+
+.ss-dynamic-input.error {
+	border-color: rgba(239, 68, 68, 0.6);
+	background: rgba(239, 68, 68, 0.1);
+}
+
+.ss-dynamic-input.error:focus {
+	border-color: rgba(239, 68, 68, 0.8);
+}
+
+/* Dynamic dropdown */
+.ss-dynamic-dropdown {
+	display: none;
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	background: rgba(32, 32, 36, 0.98);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	max-height: 160px;
+	overflow-y: auto;
+	z-index: 200;
+}
+
+.ss-dynamic-dropdown.visible {
+	display: block;
+}
+
+.ss-dynamic-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	cursor: pointer;
+	transition: background 0.1s ease;
+}
+
+.ss-dynamic-item:hover,
+.ss-dynamic-item.selected {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.ss-dynamic-item-name {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+	font-size: 12px;
+	color: rgba(99, 102, 241, 0.9);
+}
+
+.ss-dynamic-item-preview {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.4);
+	max-width: 80px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ss-dynamic-item--create {
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ss-dynamic-item--create .ss-dynamic-item-name {
+	color: rgba(52, 211, 153, 0.9);
+}
+
+.ss-dynamic-empty {
+	padding: 12px;
+	text-align: center;
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.4);
+}
 `;

@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit";
+import { validateAssetUrl } from "@core/shared/utils";
 
 import { MEDIA_TOOLBAR_STYLES } from "./media-toolbar.css";
 
@@ -25,7 +26,8 @@ const ICONS = {
 	volumeMute: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`,
 	transition: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/></svg>`,
 	chevron: `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
-	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`
 };
 
 export class MediaToolbar {
@@ -87,6 +89,18 @@ export class MediaToolbar {
 
 	// Volume section
 	private volumeSection: HTMLDivElement | null = null;
+
+	// Advanced menu elements
+	private advancedBtn: HTMLButtonElement | null = null;
+	private advancedPopup: HTMLDivElement | null = null;
+	private dynamicToggle: HTMLInputElement | null = null;
+	private dynamicPanel: HTMLDivElement | null = null;
+	private dynamicInput: HTMLInputElement | null = null;
+
+	// Dynamic source state
+	private isDynamicSource: boolean = false;
+	private dynamicFieldName: string = "";
+	private originalSrc: string = "";
 
 	// Click outside handler
 	private clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
@@ -231,6 +245,30 @@ export class MediaToolbar {
 					</div>
 				</div>
 			</div>
+
+			<div class="ss-media-toolbar-divider"></div>
+
+			<!-- Advanced Menu -->
+			<div class="ss-media-toolbar-dropdown">
+				<button class="ss-media-toolbar-btn ss-media-toolbar-btn--icon" data-action="advanced" data-tooltip="Advanced">
+					${ICONS.moreVertical}
+				</button>
+				<div class="ss-media-toolbar-popup ss-media-toolbar-popup--advanced" data-popup="advanced">
+					<div class="ss-advanced-option">
+						<span class="ss-advanced-label">Dynamic Source</span>
+						<label class="ss-toggle">
+							<input type="checkbox" data-dynamic-toggle />
+							<span class="ss-toggle-slider"></span>
+						</label>
+					</div>
+					<div class="ss-dynamic-panel" data-dynamic-panel>
+						<input type="text"
+							class="ss-dynamic-input"
+							data-dynamic-input
+							placeholder="Enter default URL..." />
+					</div>
+				</div>
+			</div>
 		`;
 
 		parent.insertBefore(this.container, parent.firstChild);
@@ -263,6 +301,13 @@ export class MediaToolbar {
 		this.directionRow = this.container.querySelector("[data-direction-row]");
 		this.speedValueLabel = this.container.querySelector("[data-speed-value]");
 
+		// Advanced menu elements
+		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
+		this.advancedPopup = this.container.querySelector('[data-popup="advanced"]');
+		this.dynamicToggle = this.container.querySelector("[data-dynamic-toggle]");
+		this.dynamicPanel = this.container.querySelector("[data-dynamic-panel]");
+		this.dynamicInput = this.container.querySelector("[data-dynamic-input]");
+
 		this.setupEventListeners();
 	}
 
@@ -288,6 +333,13 @@ export class MediaToolbar {
 			e.stopPropagation();
 			this.togglePopup("transition");
 		});
+		this.advancedBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopup("advanced");
+		});
+
+		// Dynamic source handlers
+		this.setupDynamicSourceHandlers();
 
 		// Fit options
 		this.fitPopup?.querySelectorAll("[data-fit]").forEach(item => {
@@ -358,13 +410,14 @@ export class MediaToolbar {
 		document.addEventListener("click", this.clickOutsideHandler);
 	}
 
-	private togglePopup(popup: "fit" | "opacity" | "scale" | "volume" | "transition"): void {
+	private togglePopup(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "advanced"): void {
 		const popupMap = {
 			fit: { popup: this.fitPopup, btn: this.fitBtn },
 			opacity: { popup: this.opacityPopup, btn: this.opacityBtn },
 			scale: { popup: this.scalePopup, btn: this.scaleBtn },
 			volume: { popup: this.volumePopup, btn: this.volumeBtn },
-			transition: { popup: this.transitionPopup, btn: this.transitionBtn }
+			transition: { popup: this.transitionPopup, btn: this.transitionBtn },
+			advanced: { popup: this.advancedPopup, btn: this.advancedBtn }
 		};
 
 		const isCurrentlyOpen = popupMap[popup].popup?.classList.contains("visible");
@@ -382,11 +435,13 @@ export class MediaToolbar {
 		this.scalePopup?.classList.remove("visible");
 		this.volumePopup?.classList.remove("visible");
 		this.transitionPopup?.classList.remove("visible");
+		this.advancedPopup?.classList.remove("visible");
 		this.fitBtn?.classList.remove("active");
 		this.opacityBtn?.classList.remove("active");
 		this.scaleBtn?.classList.remove("active");
 		this.volumeBtn?.classList.remove("active");
 		this.transitionBtn?.classList.remove("active");
+		this.advancedBtn?.classList.remove("active");
 	}
 
 	private handleFitChange(fit: FitValue): void {
@@ -647,6 +702,165 @@ export class MediaToolbar {
 		}
 	}
 
+	// ─── Dynamic Source Handlers ─────────────────────────────────────────────────
+
+	private setupDynamicSourceHandlers(): void {
+		// Toggle handler
+		this.dynamicToggle?.addEventListener("change", () => {
+			const checked = this.dynamicToggle?.checked || false;
+			this.isDynamicSource = checked;
+
+			if (this.dynamicPanel) {
+				this.dynamicPanel.style.display = checked ? "block" : "none";
+			}
+
+			if (checked) {
+				this.dynamicInput?.focus();
+			} else {
+				// Revert to original src using Edit API
+				this.clearDynamicSource();
+			}
+		});
+
+		// On Enter key, apply the URL as dynamic source
+		this.dynamicInput?.addEventListener("keydown", e => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				this.applyDynamicUrl();
+			} else if (e.key === "Escape") {
+				this.dynamicInput?.blur();
+			}
+		});
+
+		// On blur, also apply the URL
+		this.dynamicInput?.addEventListener("blur", () => {
+			this.applyDynamicUrl();
+		});
+	}
+
+	/**
+	 * Apply dynamic source using the new Edit.applyMergeField() API.
+	 * This uses the command pattern for undo/redo support and in-place asset reloading.
+	 * Validates the URL before applying to prevent CORS/404 errors.
+	 */
+	private async applyDynamicUrl(): Promise<void> {
+		const url = (this.dynamicInput?.value || "").trim();
+		if (!url) return;
+
+		// Validate URL before applying
+		const validation = await validateAssetUrl(url);
+		if (!validation.valid) {
+			this.showUrlError(validation.error || "Invalid URL");
+			return;
+		}
+
+		// Clear any previous error state
+		this.clearUrlError();
+
+		// If already a dynamic source, update the field value via live update
+		if (this.dynamicFieldName) {
+			this.edit.updateMergeFieldValueLive(this.dynamicFieldName, url);
+			// Also reload the asset to show the new image/video
+			const player = this.edit.getPlayerClip(this.currentTrackIndex, this.currentClipIndex);
+			if (player) {
+				player.reloadAsset();
+			}
+			return;
+		}
+
+		// Generate unique field name and apply merge field
+		const fieldName = this.edit.mergeFields.generateUniqueName("MEDIA");
+
+		// Use Edit API to apply merge field (handles template + resolved value atomically)
+		this.edit.applyMergeField(
+			this.currentTrackIndex,
+			this.currentClipIndex,
+			"asset.src",
+			fieldName,
+			url,
+			this.originalSrc // Pass original src for undo
+		);
+
+		this.dynamicFieldName = fieldName;
+	}
+
+	private showUrlError(message: string): void {
+		if (this.dynamicInput) {
+			this.dynamicInput.classList.add("error");
+			this.dynamicInput.title = message;
+		}
+	}
+
+	private clearUrlError(): void {
+		if (this.dynamicInput) {
+			this.dynamicInput.classList.remove("error");
+			this.dynamicInput.title = "";
+		}
+	}
+
+	/**
+	 * Remove dynamic source using the new Edit.removeMergeField() API.
+	 * Restores the original src value.
+	 */
+	private clearDynamicSource(): void {
+		if (!this.dynamicFieldName) return;
+
+		// Use Edit API to remove merge field (handles undo and asset reload)
+		this.edit.removeMergeField(
+			this.currentTrackIndex,
+			this.currentClipIndex,
+			"asset.src",
+			this.originalSrc // Restore original src
+		);
+
+		this.dynamicFieldName = "";
+		if (this.dynamicInput) {
+			this.dynamicInput.value = "";
+		}
+	}
+
+	/**
+	 * Update UI based on whether this clip has a dynamic source applied.
+	 * Uses the new Edit.getMergeFieldForProperty() API.
+	 */
+	private updateDynamicSourceUI(): void {
+		const player = this.edit.getPlayerClip(this.currentTrackIndex, this.currentClipIndex);
+		if (!player) return;
+
+		// Use Edit API to check if this property has a merge field
+		const fieldName = this.edit.getMergeFieldForProperty(
+			this.currentTrackIndex,
+			this.currentClipIndex,
+			"asset.src"
+		);
+
+		if (fieldName) {
+			// Has dynamic source
+			this.isDynamicSource = true;
+			this.dynamicFieldName = fieldName;
+			if (this.dynamicToggle) this.dynamicToggle.checked = true;
+			if (this.dynamicPanel) this.dynamicPanel.style.display = "block";
+
+			// Show the default URL value
+			const mergeField = this.edit.mergeFields.get(fieldName);
+			if (this.dynamicInput) {
+				this.dynamicInput.value = mergeField?.defaultValue || "";
+			}
+		} else {
+			// No dynamic source - store original src for later restoration
+			this.isDynamicSource = false;
+			this.dynamicFieldName = "";
+
+			// Get current resolved src as the original value
+			const asset = player.clipConfiguration.asset as { src?: string };
+			this.originalSrc = asset?.src || "";
+
+			if (this.dynamicToggle) this.dynamicToggle.checked = false;
+			if (this.dynamicPanel) this.dynamicPanel.style.display = "none";
+			if (this.dynamicInput) this.dynamicInput.value = "";
+		}
+	}
+
 	private updateFitDisplay(): void {
 		if (this.fitLabel) {
 			const option = FIT_OPTIONS.find(o => o.value === this.currentFit);
@@ -745,6 +959,9 @@ export class MediaToolbar {
 		this.activeTransitionTab = "in";
 		this.updateTransitionUI();
 
+		// Update dynamic source state
+		this.updateDynamicSourceUI();
+
 		// Show/hide volume section based on asset type
 		if (this.volumeSection) {
 			this.volumeSection.classList.toggle("hidden", !isVideo);
@@ -796,5 +1013,12 @@ export class MediaToolbar {
 		// Transition elements
 		this.directionRow = null;
 		this.speedValueLabel = null;
+
+		// Advanced menu elements
+		this.advancedBtn = null;
+		this.advancedPopup = null;
+		this.dynamicToggle = null;
+		this.dynamicPanel = null;
+		this.dynamicInput = null;
 	}
 }

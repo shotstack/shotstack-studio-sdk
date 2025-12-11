@@ -1,3 +1,7 @@
+import type { Edit } from "@core/edit";
+import type { MergeField } from "@core/merge";
+import { validateAssetUrl } from "@core/shared/utils";
+
 import { CANVAS_TOOLBAR_STYLES } from "./canvas-toolbar.css";
 
 type ResolutionChangeCallback = (width: number, height: number) => void;
@@ -39,12 +43,14 @@ const COLOR_SWATCHES = [
 // SVG Icons
 const ICONS = {
 	monitor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`,
-	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+	variables: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5H9a2 2 0 0 0-2 2v2c0 1-.6 3-3 3 1 0 3 .6 3 3v2a2 2 0 0 0 2 2h.5m5-14h.5a2 2 0 0 1 2 2v2c0 1 .6 3 3 3-1 0-3 .6-3 3v2a2 2 0 0 1-2 2h-.5"/></svg>`
 };
 
 export class CanvasToolbar {
 	private container: HTMLDivElement | null = null;
 	private styleElement: HTMLStyleElement | null = null;
+	private edit: Edit | null = null;
 
 	// Current state
 	private currentWidth: number = 1920;
@@ -56,11 +62,17 @@ export class CanvasToolbar {
 	private resolutionPopup: HTMLDivElement | null = null;
 	private backgroundPopup: HTMLDivElement | null = null;
 	private fpsPopup: HTMLDivElement | null = null;
+	private variablesPopup: HTMLDivElement | null = null;
 
 	// Button elements
 	private resolutionBtn: HTMLButtonElement | null = null;
 	private backgroundBtn: HTMLButtonElement | null = null;
 	private fpsBtn: HTMLButtonElement | null = null;
+	private variablesBtn: HTMLButtonElement | null = null;
+
+	// Variables elements
+	private variablesList: HTMLDivElement | null = null;
+	private variablesEmpty: HTMLDivElement | null = null;
 
 	// Label elements
 	private resolutionLabel: HTMLSpanElement | null = null;
@@ -85,7 +97,8 @@ export class CanvasToolbar {
 	// Positioning
 	private padding = 12;
 
-	constructor() {
+	constructor(edit?: Edit) {
+		this.edit = edit ?? null;
 		this.injectStyles();
 	}
 
@@ -178,6 +191,23 @@ export class CanvasToolbar {
 					).join("")}
 				</div>
 			</div>
+
+			<div class="ss-canvas-toolbar-divider"></div>
+
+			<!-- Variables -->
+			<div class="ss-canvas-toolbar-dropdown">
+				<button class="ss-canvas-toolbar-btn" data-action="variables" data-tooltip="Merge Fields">
+					${ICONS.variables}
+				</button>
+				<div class="ss-canvas-toolbar-popup ss-canvas-toolbar-popup--variables" data-popup="variables">
+					<div class="ss-canvas-toolbar-popup-header ss-variables-header">
+						<span>Merge Fields</span>
+						<button class="ss-variables-add-btn" data-action="add-variable">+</button>
+					</div>
+					<div class="ss-variables-list" data-variables-list></div>
+					<div class="ss-variables-empty" data-variables-empty>No merge fields defined</div>
+				</div>
+			</div>
 		`;
 
 		parent.appendChild(this.container);
@@ -186,10 +216,15 @@ export class CanvasToolbar {
 		this.resolutionBtn = this.container.querySelector('[data-action="resolution"]');
 		this.backgroundBtn = this.container.querySelector('[data-action="background"]');
 		this.fpsBtn = this.container.querySelector('[data-action="fps"]');
+		this.variablesBtn = this.container.querySelector('[data-action="variables"]');
 
 		this.resolutionPopup = this.container.querySelector('[data-popup="resolution"]');
 		this.backgroundPopup = this.container.querySelector('[data-popup="background"]');
 		this.fpsPopup = this.container.querySelector('[data-popup="fps"]');
+		this.variablesPopup = this.container.querySelector('[data-popup="variables"]');
+
+		this.variablesList = this.container.querySelector("[data-variables-list]");
+		this.variablesEmpty = this.container.querySelector("[data-variables-empty]");
 
 		this.resolutionLabel = this.container.querySelector("[data-resolution-label]");
 		this.fpsLabel = this.container.querySelector("[data-fps-label]");
@@ -217,6 +252,17 @@ export class CanvasToolbar {
 		this.fpsBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup("fps");
+		});
+		this.variablesBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopup("variables");
+			this.renderVariablesList();
+		});
+
+		// Variables - Add button
+		this.variablesPopup?.querySelector('[data-action="add-variable"]')?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.addVariable();
 		});
 
 		// Resolution preset clicks
@@ -267,11 +313,12 @@ export class CanvasToolbar {
 		document.addEventListener("click", this.clickOutsideHandler);
 	}
 
-	private togglePopup(popup: "resolution" | "background" | "fps"): void {
+	private togglePopup(popup: "resolution" | "background" | "fps" | "variables"): void {
 		const popupMap = {
 			resolution: { popup: this.resolutionPopup, btn: this.resolutionBtn },
 			background: { popup: this.backgroundPopup, btn: this.backgroundBtn },
-			fps: { popup: this.fpsPopup, btn: this.fpsBtn }
+			fps: { popup: this.fpsPopup, btn: this.fpsBtn },
+			variables: { popup: this.variablesPopup, btn: this.variablesBtn }
 		};
 
 		const isCurrentlyOpen = popupMap[popup].popup?.classList.contains("visible");
@@ -296,9 +343,11 @@ export class CanvasToolbar {
 		this.resolutionPopup?.classList.remove("visible");
 		this.backgroundPopup?.classList.remove("visible");
 		this.fpsPopup?.classList.remove("visible");
+		this.variablesPopup?.classList.remove("visible");
 		this.resolutionBtn?.classList.remove("active");
 		this.backgroundBtn?.classList.remove("active");
 		this.fpsBtn?.classList.remove("active");
+		this.variablesBtn?.classList.remove("active");
 	}
 
 	private handleResolutionSelect(width: number, height: number): void {
@@ -317,7 +366,7 @@ export class CanvasToolbar {
 		if (this.customWidthInput && this.customHeightInput) {
 			const width = parseInt(this.customWidthInput.value, 10);
 			const height = parseInt(this.customHeightInput.value, 10);
-			if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
+			if (!Number.isNaN(width) && !Number.isNaN(height) && width > 0 && height > 0) {
 				this.currentWidth = width;
 				this.currentHeight = height;
 				this.updateResolutionLabel();
@@ -397,6 +446,83 @@ export class CanvasToolbar {
 		});
 	}
 
+	private renderVariablesList(): void {
+		if (!this.variablesList || !this.variablesEmpty || !this.edit) return;
+
+		const fields = this.edit.mergeFields.getAll();
+
+		if (fields.length === 0) {
+			this.variablesList.innerHTML = "";
+			this.variablesList.style.display = "none";
+			this.variablesEmpty.style.display = "block";
+			return;
+		}
+
+		this.variablesEmpty.style.display = "none";
+		this.variablesList.style.display = "block";
+		this.variablesList.innerHTML = fields
+			.map(
+				(f: MergeField) => `
+			<div class="ss-variable-item" data-var-name="${f.name}">
+				<div class="ss-variable-info">
+					<span class="ss-variable-name">{{ ${f.name} }}</span>
+					<input class="ss-variable-value" value="${f.defaultValue}" placeholder="Default value" data-var-input="${f.name}" />
+				</div>
+				<button class="ss-variable-delete" data-delete-var="${f.name}">×</button>
+			</div>
+		`
+			)
+			.join("");
+
+		// Add event listeners for value changes and delete buttons
+		this.variablesList.querySelectorAll("[data-var-input]").forEach(input => {
+			input.addEventListener("change", async e => {
+				const el = e.target as HTMLInputElement;
+				const name = el.dataset["varInput"];
+				if (name && this.edit) {
+					// Validate URL if this is a src-type merge field
+					if (this.edit.isSrcMergeField(name)) {
+						const validation = await validateAssetUrl(el.value);
+						if (!validation.valid) {
+							el.classList.add("error");
+							el.title = validation.error || "Invalid URL";
+							return;
+						}
+						el.classList.remove("error");
+						el.title = "";
+					}
+
+					// Update the merge field value and refresh affected clips
+					this.edit.updateMergeFieldValueLive(name, el.value);
+					this.edit.redrawMergeFieldClips(name);
+				}
+			});
+		});
+
+		this.variablesList.querySelectorAll("[data-delete-var]").forEach(btn => {
+			btn.addEventListener("click", e => {
+				e.stopPropagation();
+				const el = e.target as HTMLElement;
+				const name = el.dataset["deleteVar"];
+				if (name) {
+					this.edit?.deleteMergeFieldGlobally(name);
+					this.renderVariablesList();
+				}
+			});
+		});
+	}
+
+	private addVariable(): void {
+		if (!this.edit) return;
+
+		const name = prompt("Variable name:");
+		if (!name || !name.trim()) return;
+
+		const sanitizedName = name.trim().toUpperCase().replace(/\s+/g, "_");
+		this.edit.mergeFields.register({ name: sanitizedName, defaultValue: "" });
+		this.renderVariablesList();
+	}
+
 	setResolution(width: number, height: number): void {
 		this.currentWidth = Math.round(width);
 		this.currentHeight = Math.round(height);
@@ -448,9 +574,13 @@ export class CanvasToolbar {
 		this.resolutionPopup = null;
 		this.backgroundPopup = null;
 		this.fpsPopup = null;
+		this.variablesPopup = null;
 		this.resolutionBtn = null;
 		this.backgroundBtn = null;
 		this.fpsBtn = null;
+		this.variablesBtn = null;
+		this.variablesList = null;
+		this.variablesEmpty = null;
 		this.resolutionLabel = null;
 		this.fpsLabel = null;
 		this.bgColorDot = null;

@@ -1,13 +1,10 @@
 /**
  * Merge field replacement utility for Shotstack Studio SDK.
- * Replaces {{ VARIABLE_NAME }} placeholders with actual values.
+ * Applies merge field substitutions to entire data structures.
  * @internal
  */
 
-export interface MergeField {
-	find: string;
-	replace: string;
-}
+import type { SerializedMergeField } from "./types";
 
 /**
  * Escapes special regex characters in a string.
@@ -16,7 +13,7 @@ function escapeRegExp(str: string): string {
 	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function replaceMergeFieldsRecursive<T>(obj: T, fields: MergeField[]): T {
+function replaceMergeFieldsRecursive<T>(obj: T, fields: SerializedMergeField[]): T {
 	if (typeof obj === "string") {
 		let result: string = obj;
 		for (const { find, replace } of fields) {
@@ -42,8 +39,12 @@ function replaceMergeFieldsRecursive<T>(obj: T, fields: MergeField[]): T {
 /**
  * Applies merge field replacements to any data structure.
  * Recursively traverses objects and arrays, replacing placeholders in strings.
+ *
+ * @param data - The data structure to process
+ * @param mergeFields - Array of { find, replace } pairs
+ * @returns A deep clone of the data with all merge fields replaced
  */
-export function applyMergeFields<T>(data: T, mergeFields: MergeField[]): T {
+export function applyMergeFields<T>(data: T, mergeFields: SerializedMergeField[]): T {
 	if (!mergeFields?.length) return data;
 	return replaceMergeFieldsRecursive(structuredClone(data), mergeFields);
 }

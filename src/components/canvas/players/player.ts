@@ -29,9 +29,6 @@ export abstract class Player extends Entity {
 	private static readonly ScaleHandleRadius = 4;
 	private static readonly OutlineWidth = 1;
 
-	private static readonly MinScale = 0.1;
-	private static readonly MaxScale = 5;
-
 	private static readonly EdgeHitZone = 8;
 	private static readonly RotationHitZone = 15;
 	private static readonly ExpandedHitArea = 10000;
@@ -184,6 +181,15 @@ export abstract class Player extends Entity {
 		this.configureKeyframes();
 	}
 
+	/**
+	 * Reload the asset for this player (e.g., when asset.src changes).
+	 * Override in subclasses that have loadable assets (image, video).
+	 * Default implementation is a no-op.
+	 */
+	public async reloadAsset(): Promise<void> {
+		// Default: no-op. Override in ImagePlayer, VideoPlayer, etc.
+	}
+
 	protected configureKeyframes() {
 		this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset?.x ?? 0, this.getLength());
 		this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset?.y ?? 0, this.getLength());
@@ -256,6 +262,27 @@ export abstract class Player extends Entity {
 		if (this.contentContainer?.destroyed) {
 			this.contentContainer = new pixi.Container();
 			this.getContainer().addChild(this.contentContainer);
+		}
+
+		if (this.outline) {
+			this.outline.destroy();
+			this.outline = null;
+		}
+		if (this.topLeftScaleHandle) {
+			this.topLeftScaleHandle.destroy();
+			this.topLeftScaleHandle = null;
+		}
+		if (this.topRightScaleHandle) {
+			this.topRightScaleHandle.destroy();
+			this.topRightScaleHandle = null;
+		}
+		if (this.bottomRightScaleHandle) {
+			this.bottomRightScaleHandle.destroy();
+			this.bottomRightScaleHandle = null;
+		}
+		if (this.bottomLeftScaleHandle) {
+			this.bottomLeftScaleHandle.destroy();
+			this.bottomLeftScaleHandle = null;
 		}
 
 		this.outline = new pixi.Graphics();
@@ -1171,8 +1198,9 @@ export abstract class Player extends Entity {
 		const clipHeight = this.clipConfiguration.height;
 		if (!clipWidth || !clipHeight) return;
 
-		const sprite = this.contentContainer.children[0] as pixi.Sprite;
-		if (!sprite || !sprite.texture) return;
+		// Find sprite by type, not index (mask may be children[0] after refresh)
+		const sprite = this.contentContainer.children.find(child => child instanceof pixi.Sprite) as pixi.Sprite | undefined;
+		if (!sprite?.texture) return;
 
 		const nativeWidth = sprite.texture.width;
 		const nativeHeight = sprite.texture.height;

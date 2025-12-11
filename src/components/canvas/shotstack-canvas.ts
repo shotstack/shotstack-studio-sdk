@@ -49,7 +49,7 @@ export class Canvas {
 		this.transcriptionIndicator = new TranscriptionIndicator();
 		this.richTextToolbar = new RichTextToolbar(edit);
 		this.mediaToolbar = new MediaToolbar(edit);
-		this.canvasToolbar = new CanvasToolbar();
+		this.canvasToolbar = new CanvasToolbar(edit);
 		this.assetToolbar = new AssetToolbar(edit);
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);

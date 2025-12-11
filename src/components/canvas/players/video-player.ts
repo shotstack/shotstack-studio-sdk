@@ -11,7 +11,6 @@ export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;
 	private sprite: pixi.Sprite | null;
 	private isPlaying: boolean;
-	private originalSize: Size | null;
 
 	private volumeKeyframeBuilder: KeyframeBuilder;
 
@@ -25,7 +24,6 @@ export class VideoPlayer extends Player {
 		this.texture = null;
 		this.sprite = null;
 		this.isPlaying = false;
-		this.originalSize = null;
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 
@@ -37,38 +35,7 @@ export class VideoPlayer extends Player {
 
 	public override async load(): Promise<void> {
 		await super.load();
-
-		const videoAsset = this.clipConfiguration.asset as VideoAsset;
-
-		const identifier = videoAsset.src;
-
-		if (identifier.endsWith(".mov")) {
-			throw new Error(
-				`Video source '${videoAsset.src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`
-			);
-		}
-
-		const loadOptions: pixi.UnresolvedAsset = { src: identifier, data: { autoPlay: false, muted: false } };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.VideoSource>>(identifier, loadOptions);
-
-		const isValidVideoSource = texture?.source instanceof pixi.VideoSource;
-		if (!isValidVideoSource) {
-			throw new Error(`Invalid video source '${videoAsset.src}'.`);
-		}
-
-		// Fix alpha channel rendering for WebM VP9 videos
-		// PixiJS 8's auto-detection is buggy, causing invisible rendering
-		texture.source.alphaMode = "no-premultiply-alpha";
-
-		this.texture = this.createCroppedTexture(texture);
-		this.sprite = new pixi.Sprite(this.texture);
-
-		this.contentContainer.addChild(this.sprite);
-
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			this.applyFixedDimensions();
-		}
-
+		await this.loadVideo();
 		this.configureKeyframes();
 	}
 
@@ -132,14 +99,7 @@ export class VideoPlayer extends Player {
 
 	public override dispose(): void {
 		super.dispose();
-
-		this.sprite?.destroy();
-		this.sprite = null;
-
-		this.texture?.destroy();
-		this.texture = null;
-
-		this.originalSize = null;
+		this.disposeVideo();
 	}
 
 	public override getSize(): Size {
@@ -155,6 +115,61 @@ export class VideoPlayer extends Player {
 
 	protected override supportsEdgeResize(): boolean {
 		return true;
+	}
+
+	/** Reload the video asset when asset.src changes (e.g., merge field update) */
+	public override async reloadAsset(): Promise<void> {
+		this.skipVideoUpdate = true;
+		this.disposeVideo();
+		await this.loadVideo();
+		this.isPlaying = false;
+		this.syncTimer = 0;
+		this.activeSyncTimer = 0;
+		this.skipVideoUpdate = false;
+	}
+
+	private async loadVideo(): Promise<void> {
+		const videoAsset = this.clipConfiguration.asset as VideoAsset;
+		const { src } = videoAsset;
+
+		if (src.endsWith(".mov")) {
+			throw new Error(
+				`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`
+			);
+		}
+
+		const loadOptions: pixi.UnresolvedAsset = { src, data: { autoPlay: false, muted: false } };
+		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.VideoSource>>(src, loadOptions);
+
+		if (!(texture?.source instanceof pixi.VideoSource)) {
+			throw new Error(`Invalid video source '${src}'.`);
+		}
+
+		// Fix alpha channel rendering for WebM VP9 videos (PixiJS 8 auto-detection is buggy)
+		texture.source.alphaMode = "no-premultiply-alpha";
+
+		this.texture = this.createCroppedTexture(texture);
+		this.sprite = new pixi.Sprite(this.texture);
+		this.contentContainer.addChild(this.sprite);
+
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+	}
+
+	private disposeVideo(): void {
+		if (this.texture?.source?.resource) {
+			this.texture.source.resource.pause();
+		}
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		if (this.texture) {
+			this.texture.destroy();
+			this.texture = null;
+		}
 	}
 
 	public getVolume(): number {

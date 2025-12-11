@@ -20,9 +20,9 @@ import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
-import { applyMergeFields } from "@core/merge/merge-fields";
+import { applyMergeFields, MergeFieldService, type MergeField } from "@core/merge";
 import { Entity } from "@core/shared/entity";
-import { deepMerge } from "@core/shared/utils";
+import { deepMerge, getNestedValue, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { LoadingOverlay } from "@core/ui/loading-overlay";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
@@ -34,6 +34,7 @@ import { EditSchema, type Edit as EditConfig, type ResolvedEdit, type Soundtrack
 import type { ResolvedTrack } from "@schemas/track";
 import * as pixi from "pixi.js";
 
+import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import type { EditCommand, CommandContext } from "./commands/types";
 
 export class Edit extends Entity {
@@ -44,6 +45,7 @@ export class Edit extends Entity {
 	public events: EventEmitter;
 
 	private edit: ResolvedEdit | null;
+	private originalEdit: ResolvedEdit | null;
 	private tracks: Player[][];
 	private clipsToDispose: Player[];
 	private clips: Player[];
@@ -76,6 +78,9 @@ export class Edit extends Entity {
 	// Toolbar button registry
 	private toolbarButtons: ToolbarButtonConfig[] = [];
 
+	/** Merge field service for managing dynamic content placeholders */
+	public mergeFields: MergeFieldService;
+
 	private canvas: Canvas | null = null;
 	private activeLumaMasks: Array<{
 		lumaPlayer: LumaPlayer;
@@ -88,12 +93,14 @@ export class Edit extends Entity {
 
 		this.assetLoader = new AssetLoader();
 		this.edit = null;
+		this.originalEdit = null;
 
 		this.tracks = [];
 		this.clipsToDispose = [];
 		this.clips = [];
 
 		this.events = new EventEmitter();
+		this.mergeFields = new MergeFieldService(this.events);
 
 		this.size = size;
 
@@ -218,8 +225,15 @@ export class Edit extends Entity {
 		try {
 			this.clearClips();
 
-			const mergeFields = edit.merge ?? [];
-			const mergedEdit = mergeFields.length > 0 ? applyMergeFields(edit, mergeFields) : edit;
+			// Store original (unresolved) edit for re-resolution on merge field changes
+			this.originalEdit = structuredClone(edit);
+
+			// Load merge fields from edit payload into service
+			const serializedMergeFields = edit.merge ?? [];
+			this.mergeFields.loadFromSerialized(serializedMergeFields);
+
+			// Apply merge field substitutions for initial load
+			const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(edit, serializedMergeFields) : edit;
 
 			const parsedEdit = EditSchema.parse(mergedEdit);
 			resolveAliasReferences(parsedEdit);
@@ -295,13 +309,18 @@ export class Edit extends Entity {
 		await this.addPlayer(this.tracks.length, player);
 	}
 	public getEdit(): EditConfig {
-		const tracks = this.tracks.map(track => ({
+		const tracks = this.tracks.map((track, trackIdx) => ({
 			clips: track
 				.filter(player => player && !this.clipsToDispose.includes(player))
-				.map(player => {
+				.map((player, clipIdx) => {
 					const timing = player.getTimingIntent();
+
+					// Use asset from originalEdit to preserve merge field templates
+					const originalAsset = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx]?.asset;
+
 					return {
 						...player.clipConfiguration,
+						asset: originalAsset ?? player.clipConfiguration.asset,
 						start: timing.start,
 						length: timing.length
 					};
@@ -314,7 +333,8 @@ export class Edit extends Entity {
 				tracks,
 				fonts: this.edit?.timeline.fonts || []
 			},
-			output: this.edit?.output || { size: this.size, format: "mp4" }
+			output: this.edit?.output || { size: this.size, format: "mp4" },
+			merge: this.mergeFields.toSerializedArray()
 		} as EditConfig;
 	}
 
@@ -365,6 +385,12 @@ export class Edit extends Entity {
 
 		return clipsByTrack[clipIdx];
 	}
+
+	/** Get the original (unresolved) asset for a clip, preserving merge field templates */
+	public getOriginalAsset(trackIndex: number, clipIndex: number): unknown | undefined {
+		return this.originalEdit?.timeline.tracks[trackIndex]?.clips[clipIndex]?.asset;
+	}
+
 	public deleteClip(trackIdx: number, clipIdx: number): void {
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
 		this.executeCommand(command);
@@ -437,6 +463,44 @@ export class Edit extends Entity {
 		this.setUpdatedClip(clip, initialConfig, mergedConfig);
 	}
 
+	/**
+	 * Update a clip with separate resolved and template configurations.
+	 * Use this when the resolved value (for rendering) differs from the template value (for export).
+	 * This is typically used when a property contains a merge field template.
+	 *
+	 * @param trackIdx - Track index
+	 * @param clipIdx - Clip index within the track
+	 * @param resolvedUpdates - Updates with resolved values (for clipConfiguration/rendering)
+	 * @param templateUpdates - Updates with template values (for originalEdit/export)
+	 */
+	public updateClipWithTemplate(
+		trackIdx: number,
+		clipIdx: number,
+		resolvedUpdates: Partial<ResolvedClip>,
+		templateUpdates: Partial<ResolvedClip>
+	): void {
+		const clip = this.getPlayerClip(trackIdx, clipIdx);
+		if (!clip) {
+			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
+			return;
+		}
+
+		const initialConfig = structuredClone(clip.clipConfiguration);
+		const mergedResolved = deepMerge(structuredClone(initialConfig), resolvedUpdates);
+
+		const templateClip = this.getTemplateClip(trackIdx, clipIdx);
+		const mergedTemplate = templateClip
+			? deepMerge(structuredClone(templateClip), templateUpdates)
+			: deepMerge(structuredClone(initialConfig), templateUpdates);
+
+		const command = new SetUpdatedClipCommand(clip, initialConfig, mergedResolved, {
+			trackIndex: trackIdx,
+			clipIndex: clipIdx,
+			templateConfig: mergedTemplate
+		});
+		this.executeCommand(command);
+	}
+
 	/** @internal */
 	public updateTextContent(clip: Player, newText: string, initialConfig: ResolvedClip): void {
 		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
@@ -487,6 +551,15 @@ export class Edit extends Entity {
 						}
 					}
 					track.splice(insertIdx, 0, clip);
+
+					// Sync originalEdit - re-insert clip template at same index
+					if (this.originalEdit?.timeline.tracks[trackIdx]?.clips) {
+						this.originalEdit.timeline.tracks[trackIdx].clips.splice(
+							insertIdx,
+							0,
+							structuredClone(clip.clipConfiguration)
+						);
+					}
 				}
 
 				this.addPlayerToContainer(trackIdx, clip);
@@ -521,7 +594,17 @@ export class Edit extends Entity {
 			propagateTimingChanges: (trackIndex, startFromClipIndex) => this.propagateTimingChanges(trackIndex, startFromClipIndex),
 			resolveClipAutoLength: clip => this.resolveClipAutoLength(clip),
 			untrackEndLengthClip: clip => this.endLengthClips.delete(clip),
-			trackEndLengthClip: clip => this.endLengthClips.add(clip)
+			trackEndLengthClip: clip => this.endLengthClips.add(clip),
+			// Merge field context
+			getMergeFields: () => this.mergeFields,
+			getTemplateClip: (trackIndex, clipIndex) => this.getTemplateClip(trackIndex, clipIndex),
+			setTemplateClipProperty: (trackIndex, clipIndex, propertyPath, value) =>
+				this.setTemplateClipProperty(trackIndex, clipIndex, propertyPath, value),
+			syncTemplateClip: (trackIndex, clipIndex, templateClip) =>
+				this.syncTemplateClip(trackIndex, clipIndex, templateClip),
+			// originalEdit track sync
+			insertOriginalEditTrack: trackIdx => this.insertOriginalEditTrack(trackIdx),
+			removeOriginalEditTrack: trackIdx => this.removeOriginalEditTrack(trackIdx)
 		};
 	}
 
@@ -545,6 +628,11 @@ export class Edit extends Entity {
 				const clipIdx = this.tracks[trackIdx].indexOf(clip);
 				if (clipIdx !== -1) {
 					this.tracks[trackIdx].splice(clipIdx, 1);
+
+					// Sync originalEdit - remove from template data to keep aligned with tracks array
+					if (this.originalEdit?.timeline.tracks[trackIdx]?.clips) {
+						this.originalEdit.timeline.tracks[trackIdx].clips.splice(clipIdx, 1);
+					}
 				}
 			}
 		}
@@ -815,6 +903,13 @@ export class Edit extends Entity {
 
 		this.tracks[trackIdx].push(clipToAdd);
 
+		// Sync originalEdit with new clip to keep template data aligned with tracks array
+		if (this.originalEdit?.timeline.tracks[trackIdx]) {
+			this.originalEdit.timeline.tracks[trackIdx].clips.push(
+				structuredClone(clipToAdd.clipConfiguration)
+			);
+		}
+
 		this.clips.push(clipToAdd);
 
 		if (clipToAdd.getTimingIntent().length === "end") {
@@ -1043,6 +1138,318 @@ export class Edit extends Entity {
 
 	public getToolbarButtons(): ToolbarButtonConfig[] {
 		return [...this.toolbarButtons];
+	}
+
+	// ─── Template Edit Access (for merge field commands) ───────────────────────
+
+	/** Get the template clip from originalEdit */
+	private getTemplateClip(trackIndex: number, clipIndex: number): ResolvedClip | null {
+		return this.originalEdit?.timeline.tracks[trackIndex]?.clips[clipIndex] ?? null;
+	}
+
+	/** Get the text content from the template clip (with merge field placeholders) */
+	public getTemplateClipText(trackIdx: number, clipIdx: number): string | null {
+		const templateClip = this.getTemplateClip(trackIdx, clipIdx);
+		if (!templateClip) return null;
+		const asset = templateClip.asset as { text?: string } | undefined;
+		return asset?.text ?? null;
+	}
+
+	/** Set a property on the template clip in originalEdit using dot notation */
+	public setTemplateClipProperty(trackIndex: number, clipIndex: number, propertyPath: string, value: unknown): void {
+		const clip = this.originalEdit?.timeline.tracks[trackIndex]?.clips[clipIndex];
+		if (!clip) return;
+		setNestedValue(clip, propertyPath, value);
+	}
+
+	/** Sync the entire template clip in originalEdit with a new clip configuration */
+	private syncTemplateClip(trackIndex: number, clipIndex: number, templateClip: ResolvedClip): void {
+		if (!this.originalEdit?.timeline.tracks[trackIndex]?.clips) return;
+		this.originalEdit.timeline.tracks[trackIndex].clips[clipIndex] = structuredClone(templateClip);
+	}
+
+	/** Insert an empty track into originalEdit at the specified index */
+	private insertOriginalEditTrack(trackIdx: number): void {
+		if (!this.originalEdit?.timeline.tracks) return;
+		this.originalEdit.timeline.tracks.splice(trackIdx, 0, { clips: [] });
+	}
+
+	/** Remove a track from originalEdit at the specified index */
+	private removeOriginalEditTrack(trackIdx: number): void {
+		if (!this.originalEdit?.timeline.tracks) return;
+		this.originalEdit.timeline.tracks.splice(trackIdx, 1);
+	}
+
+	// ─── Merge Field API (command-based) ───────────────────────────────────────
+
+	/**
+	 * Apply a merge field to a clip property.
+	 * Creates a command for undo/redo support.
+	 *
+	 * @param trackIndex - Track index
+	 * @param clipIndex - Clip index within the track
+	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src", "asset.color")
+	 * @param fieldName - Name of the merge field (e.g., "MEDIA_URL")
+	 * @param value - The resolved value to apply
+	 * @param originalValue - Optional: the original value before merge field (for undo)
+	 */
+	public applyMergeField(
+		trackIndex: number,
+		clipIndex: number,
+		propertyPath: string,
+		fieldName: string,
+		value: string,
+		originalValue?: string
+	): void {
+		const player = this.getPlayerClip(trackIndex, clipIndex);
+		if (!player) return;
+
+		// Get current value from player for undo
+		const currentValue = getNestedValue(player.clipConfiguration, propertyPath);
+		const previousValue = originalValue ?? (typeof currentValue === "string" ? currentValue : "");
+
+		// Check if there's already a merge field on this property
+		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
+		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
+		const previousFieldName =
+			typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
+
+		const command = new SetMergeFieldCommand(
+			player,
+			propertyPath,
+			fieldName,
+			previousFieldName,
+			previousValue,
+			value,
+			trackIndex,
+			clipIndex
+		);
+		this.executeCommand(command);
+	}
+
+	/**
+	 * Remove a merge field from a clip property, restoring the original value.
+	 *
+	 * @param trackIndex - Track index
+	 * @param clipIndex - Clip index within the track
+	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src")
+	 * @param restoreValue - The value to restore (original pre-merge-field value)
+	 */
+	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void {
+		const player = this.getPlayerClip(trackIndex, clipIndex);
+		if (!player) return;
+
+		// Get current merge field name
+		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
+		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
+		const currentFieldName =
+			typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
+
+		if (!currentFieldName) return; // No merge field to remove
+
+		const command = new SetMergeFieldCommand(
+			player,
+			propertyPath,
+			null, // Removing merge field
+			currentFieldName,
+			restoreValue,
+			restoreValue, // New value is the restore value
+			trackIndex,
+			clipIndex
+		);
+		this.executeCommand(command);
+	}
+
+	/**
+	 * Get the merge field name for a clip property, if any.
+	 *
+	 * @returns The field name if a merge field is applied, null otherwise
+	 */
+	public getMergeFieldForProperty(trackIndex: number, clipIndex: number, propertyPath: string): string | null {
+		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
+		if (!templateClip) return null;
+
+		const value = getNestedValue(templateClip, propertyPath);
+		return typeof value === "string" ? this.mergeFields.extractFieldName(value) : null;
+	}
+
+	/**
+	 * Update the value of a merge field. Updates all clips using this field in-place.
+	 * This does NOT use the command pattern (no undo) - it's for live preview updates.
+	 */
+	public updateMergeFieldValueLive(fieldName: string, newValue: string): void {
+		// Update the field in the service
+		const field = this.mergeFields.get(fieldName);
+		if (!field) return;
+		this.mergeFields.register({ ...field, defaultValue: newValue }, { silent: true });
+
+		// Find and update all clips using this field
+		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
+			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
+				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
+				if (templateClip) {
+					// Check all string properties for this field
+					this.updateMergeFieldInObject(
+						this.tracks[trackIdx][clipIdx].clipConfiguration,
+						templateClip,
+						fieldName,
+						newValue
+					);
+				}
+			}
+		}
+	}
+
+	/** Helper: Update merge field occurrences in an object */
+	private updateMergeFieldInObject(target: unknown, template: unknown, fieldName: string, newValue: string): void {
+		if (!target || !template || typeof target !== "object" || typeof template !== "object") return;
+
+		for (const key of Object.keys(template as Record<string, unknown>)) {
+			const templateVal = (template as Record<string, unknown>)[key];
+			const targetObj = target as Record<string, unknown>;
+
+			if (typeof templateVal === "string") {
+				const extractedField = this.mergeFields.extractFieldName(templateVal);
+				if (extractedField === fieldName) {
+					targetObj[key] = newValue;
+				}
+			} else if (templateVal && typeof templateVal === "object") {
+				this.updateMergeFieldInObject(targetObj[key], templateVal, fieldName, newValue);
+			}
+		}
+	}
+
+	/**
+	 * Redraw all clips that use a specific merge field.
+	 * Call this after updateMergeFieldValueLive() to refresh the canvas.
+	 * Handles both text redraws and asset reloads for URL changes.
+	 */
+	public redrawMergeFieldClips(fieldName: string): void {
+		for (const track of this.tracks) {
+			for (const player of track) {
+				const indices = this.findClipIndices(player);
+				if (indices) {
+					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
+					if (templateClip) {
+						// Check if this clip uses the merge field and where
+						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
+						if (usageInfo.used) {
+							// If the merge field is used for asset.src, reload the asset
+							if (usageInfo.isSrcField) {
+								player.reloadAsset();
+							}
+							player.reconfigureAfterRestore();
+							player.draw();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/** Helper: Check if and how a clip uses a specific merge field */
+	private getMergeFieldUsage(
+		clip: unknown,
+		fieldName: string,
+		path: string = ""
+	): { used: boolean; isSrcField: boolean } {
+		if (!clip || typeof clip !== "object") return { used: false, isSrcField: false };
+
+		for (const [key, value] of Object.entries(clip as Record<string, unknown>)) {
+			const currentPath = path ? `${path}.${key}` : key;
+
+			if (typeof value === "string") {
+				const extractedField = this.mergeFields.extractFieldName(value);
+				if (extractedField === fieldName) {
+					// Check if this is an asset.src property
+					const isSrcField = currentPath === "asset.src" || currentPath.endsWith(".src");
+					return { used: true, isSrcField };
+				}
+			} else if (typeof value === "object" && value !== null) {
+				const nested = this.getMergeFieldUsage(value, fieldName, currentPath);
+				if (nested.used) return nested;
+			}
+		}
+		return { used: false, isSrcField: false };
+	}
+
+	/**
+	 * Check if a merge field is used for asset.src in any clip.
+	 * Used by UI to determine if URL validation should be applied.
+	 */
+	public isSrcMergeField(fieldName: string): boolean {
+		for (const track of this.tracks) {
+			for (const player of track) {
+				const indices = this.findClipIndices(player);
+				if (indices) {
+					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
+					if (templateClip) {
+						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
+						if (usageInfo.used && usageInfo.isSrcField) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	// ─── Global Merge Field Operations ──────────────────────────────────────────
+
+	/**
+	 * Remove a merge field globally from all clips and the registry.
+	 * Restores all affected clip properties to the merge field's default value.
+	 *
+	 * @param fieldName - The merge field name to remove
+	 */
+	public deleteMergeFieldGlobally(fieldName: string): void {
+		const field = this.mergeFields.get(fieldName);
+		if (!field) return;
+
+		const template = this.mergeFields.createTemplate(fieldName);
+		const restoreValue = field.defaultValue;
+
+		// Find and restore all clips using this merge field
+		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
+			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
+				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
+				if (templateClip) {
+					// Find properties with this template and restore them
+					this.restoreMergeFieldInClip(trackIdx, clipIdx, templateClip, template, restoreValue);
+				}
+			}
+		}
+
+		// Remove from registry
+		this.mergeFields.remove(fieldName);
+	}
+
+	/**
+	 * Helper: Find and restore merge field occurrences in a clip
+	 */
+	private restoreMergeFieldInClip(
+		trackIdx: number,
+		clipIdx: number,
+		templateClip: unknown,
+		template: string,
+		restoreValue: string,
+		path: string = ""
+	): void {
+		if (!templateClip || typeof templateClip !== "object") return;
+
+		for (const key of Object.keys(templateClip as Record<string, unknown>)) {
+			const value = (templateClip as Record<string, unknown>)[key];
+			const propertyPath = path ? `${path}.${key}` : key;
+
+			if (typeof value === "string" && value === template) {
+				// Found a property using this merge field - use removeMergeField for proper handling
+				this.removeMergeField(trackIdx, clipIdx, propertyPath, restoreValue);
+			} else if (typeof value === "object" && value !== null) {
+				// Recurse into nested objects
+				this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath);
+			}
+		}
 	}
 
 	// ─── Intent Listeners ────────────────────────────────────────────────────────
