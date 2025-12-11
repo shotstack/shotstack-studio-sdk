@@ -2,6 +2,7 @@ import { TimelineEntity } from "../../core/timeline-entity";
 
 interface RulerOptions {
 	onSeek?: (timeMs: number) => void;
+	onWheel?: (e: WheelEvent) => void;
 }
 
 /** Time ruler component for the timeline */
@@ -22,6 +23,15 @@ export class RulerComponent extends TimelineEntity {
 
 	private setupClickHandler(): void {
 		this.element.addEventListener("click", this.handleClick.bind(this));
+		this.element.addEventListener(
+			"wheel",
+			e => {
+				if (this.options.onWheel) {
+					this.options.onWheel(e);
+				}
+			},
+			{ passive: true }
+		);
 	}
 
 	private handleClick(e: MouseEvent): void {

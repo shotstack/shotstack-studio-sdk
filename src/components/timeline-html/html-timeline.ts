@@ -294,7 +294,13 @@ export class HtmlTimeline extends TimelineEntity {
 		// Build ruler
 		if (this.features.ruler) {
 			this.ruler = new RulerComponent({
-				onSeek: timeMs => this.edit.seek(timeMs)
+				onSeek: timeMs => this.edit.seek(timeMs),
+				onWheel: e => {
+					if (this.trackList) {
+						this.trackList.element.scrollTop += e.deltaY;
+						this.trackList.element.scrollLeft += e.deltaX;
+					}
+				}
 			});
 			this.rulerTracksWrapper.appendChild(this.ruler.element);
 		}
