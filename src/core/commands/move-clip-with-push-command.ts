@@ -5,8 +5,7 @@ import { MoveClipCommand } from "./move-clip-command";
 
 /**
  * Command to move a clip while pushing other clips forward to make room.
- * Used when dropping a clip would overlap with existing clips and there's
- * no space available before them.
+ * Self-contained: calculates which clips to push based on the move destination.
  */
 export class MoveClipWithPushCommand implements EditCommand {
 	name = "moveClipWithPush";
@@ -18,10 +17,8 @@ export class MoveClipWithPushCommand implements EditCommand {
 		private fromClipIndex: number,
 		private toTrackIndex: number,
 		private newStart: number,
-		private pushOffset: number,
-		private firstPushedClipIndex: number
+		private pushOffset: number
 	) {
-		// The underlying move command handles the clip movement
 		this.moveCommand = new MoveClipCommand(fromTrackIndex, fromClipIndex, toTrackIndex, newStart);
 	}
 
@@ -30,66 +27,52 @@ export class MoveClipWithPushCommand implements EditCommand {
 
 		const tracks = context.getTracks();
 		const targetTrack = tracks[this.toTrackIndex];
-		if (!targetTrack) return;
+		const sourceTrack = tracks[this.fromTrackIndex];
+		if (!targetTrack || !sourceTrack) return;
 
-		// First, push all clips starting from firstPushedClipIndex forward
+		// Get the clip being moved to know its length
+		const movingClip = sourceTrack[this.fromClipIndex];
+		if (!movingClip) return;
+
+		const newEnd = this.newStart + movingClip.clipConfiguration.length;
+
+		// Find and push clips that would overlap with the new position
 		this.pushedClips = [];
-		for (let i = 0; i < targetTrack.length; i += 1) {
-			const player = targetTrack[i];
+		for (const player of targetTrack) {
+			// Skip the clip we're moving
+			if (player === movingClip) continue;
+
 			const clipStart = player.clipConfiguration.start;
-
-			// Push clips that start at or after the first pushed clip
-			// Also need to exclude the clip we're moving if it's on the same track
-			const isMovingClip = this.fromTrackIndex === this.toTrackIndex && i === this.fromClipIndex;
-			if (!isMovingClip && i >= this.firstPushedClipIndex) {
-				// Store original position for undo
+			// Push clips that start before our new end position and would overlap
+			if (clipStart >= this.newStart && clipStart < newEnd) {
 				this.pushedClips.push({ player, originalStart: clipStart });
-
-				// Push forward
-				const newClipStart = clipStart + this.pushOffset;
-				player.clipConfiguration.start = newClipStart;
-				player.setResolvedTiming({
-					start: newClipStart * 1000,
-					length: player.getLength()
-				});
-				player.setTimingIntent({
-					start: newClipStart,
-					length: player.getTimingIntent().length
-				});
-				player.reconfigureAfterRestore();
-				player.draw();
+				this.pushClip(player, clipStart + this.pushOffset);
 			}
 		}
 
-		// Now execute the move command to place the dragged clip
+		// Execute the move
 		this.moveCommand.execute(context);
-
-		// Propagate timing changes
 		context.propagateTimingChanges(this.toTrackIndex, 0);
+	}
+
+	private pushClip(player: Player, newStart: number): void {
+		player.clipConfiguration.start = newStart;
+		player.setResolvedTiming({ start: newStart * 1000, length: player.getLength() });
+		player.setTimingIntent({ start: newStart, length: player.getTimingIntent().length });
+		player.reconfigureAfterRestore();
+		player.draw();
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
 		if (!context) return;
 
-		// First, undo the move
 		await this.moveCommand.undo(context);
 
-		// Then restore all pushed clips to their original positions
+		// Restore pushed clips
 		for (const { player, originalStart } of this.pushedClips) {
-			player.clipConfiguration.start = originalStart;
-			player.setResolvedTiming({
-				start: originalStart * 1000,
-				length: player.getLength()
-			});
-			player.setTimingIntent({
-				start: originalStart,
-				length: player.getTimingIntent().length
-			});
-			player.reconfigureAfterRestore();
-			player.draw();
+			this.pushClip(player, originalStart);
 		}
 
-		// Propagate timing changes
 		context.propagateTimingChanges(this.toTrackIndex, 0);
 		context.updateDuration();
 	}

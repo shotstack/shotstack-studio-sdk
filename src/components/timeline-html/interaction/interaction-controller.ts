@@ -29,7 +29,6 @@ interface SnapPoint {
 interface CollisionResult {
 	newStartTime: number;
 	pushOffset: number;
-	firstPushedClipIndex: number | null;
 }
 
 /** Drag target - either an existing track or an insertion point between tracks */
@@ -248,7 +247,7 @@ export class InteractionController {
 			dragOffsetY,
 			originalStyles,
 			draggedClipLength: clip.config.length,
-			collisionResult: { newStartTime: originalTime, pushOffset: 0, firstPushedClipIndex: null }
+			collisionResult: { newStartTime: originalTime, pushOffset: 0 }
 		};
 
 		// Position ghost at current clip position initially
@@ -328,7 +327,7 @@ export class InteractionController {
 			this.state.collisionResult = collisionResult;
 		} else {
 			// No collision for insertion targets (new track)
-			this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0, firstPushedClipIndex: null };
+			this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 		}
 
 		// Get offset for positioning in feedback layer (accounts for ruler height)
@@ -456,15 +455,14 @@ export class InteractionController {
 				newTime
 			);
 			this.edit.executeEditCommand(command);
-		} else if (collisionResult.pushOffset > 0 && collisionResult.firstPushedClipIndex !== null) {
+		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
 			const command = new MoveClipWithPushCommand(
 				originalTrack,
 				clipRef.clipIndex,
 				dragTarget.trackIndex,
 				newTime,
-				collisionResult.pushOffset,
-				collisionResult.firstPushedClipIndex
+				collisionResult.pushOffset
 			);
 			this.edit.executeEditCommand(command);
 		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
@@ -533,11 +531,92 @@ export class InteractionController {
 		this.state = { type: "idle" };
 	}
 
-	/**
-	 * Resolve clip collision when dragging to a target position
-	 * Returns adjusted start time and push offset if clips need to be pushed
-	 * @param mouseTime - Mouse X position in seconds (used to detect left/right half of target clip)
-	 */
+	/** Default result when no collision detected */
+	private static readonly NO_COLLISION: CollisionResult = {
+		newStartTime: 0,
+		pushOffset: 0
+	};
+
+	/** Get sorted clips on a track, excluding the dragged clip */
+	private getTrackClips(trackIndex: number, excludeClip: ClipRef): ClipState[] {
+		const track = this.stateManager.getTracks()[trackIndex];
+		if (!track) return [];
+
+		return track.clips
+			.filter(c => !(c.trackIndex === excludeClip.trackIndex && c.clipIndex === excludeClip.clipIndex))
+			.sort((a, b) => a.config.start - b.config.start);
+	}
+
+	/** Find which clip (if any) the mouse is directly over */
+	private findClipUnderMouse(clips: ClipState[], mouseTime: number): { clip: ClipState; index: number } | null {
+		for (let i = 0; i < clips.length; i += 1) {
+			const clip = clips[i];
+			if (mouseTime >= clip.config.start && mouseTime < clip.config.start + clip.config.length) {
+				return { clip, index: i };
+			}
+		}
+		return null;
+	}
+
+	/** Resolve snap position when mouse is over a clip (left/right half logic) */
+	private resolveMouseOverSnap(
+		targetClip: ClipState,
+		targetIndex: number,
+		clipLength: number,
+		isRightHalf: boolean,
+		clips: ClipState[]
+	): CollisionResult {
+		const clipStart = targetClip.config.start;
+		const clipEnd = clipStart + targetClip.config.length;
+
+		if (isRightHalf) {
+			// Snap to RIGHT of target clip
+			const newStartTime = clipEnd;
+			const newEndTime = newStartTime + clipLength;
+			const nextClip = clips[targetIndex + 1];
+
+			if (nextClip && newEndTime > nextClip.config.start) {
+				return { newStartTime, pushOffset: newEndTime - nextClip.config.start };
+			}
+			return { newStartTime, pushOffset: 0 };
+		}
+
+		// Snap to LEFT of target clip
+		const prevClipEnd = targetIndex > 0 ? clips[targetIndex - 1].config.start + clips[targetIndex - 1].config.length : 0;
+		const availableSpace = clipStart - prevClipEnd;
+
+		if (availableSpace >= clipLength) {
+			return { newStartTime: clipStart - clipLength, pushOffset: 0 };
+		}
+
+		// No space - push target clip forward
+		const newStartTime = prevClipEnd;
+		return { newStartTime, pushOffset: newStartTime + clipLength - clipStart };
+	}
+
+	/** Resolve collision when dragged clip overlaps another (mouse not directly over any clip) */
+	private resolveOverlapCollision(desiredStart: number, clipLength: number, clips: ClipState[]): CollisionResult {
+		const desiredEnd = desiredStart + clipLength;
+
+		for (let i = 0; i < clips.length; i += 1) {
+			const clip = clips[i];
+			const clipStart = clip.config.start;
+			const clipEnd = clipStart + clip.config.length;
+
+			if (desiredStart < clipEnd && desiredEnd > clipStart) {
+				const prevClipEnd = i > 0 ? clips[i - 1].config.start + clips[i - 1].config.length : 0;
+				const availableSpace = clipStart - prevClipEnd;
+
+				if (availableSpace >= clipLength) {
+					return { newStartTime: clipStart - clipLength, pushOffset: 0 };
+				}
+				return { newStartTime: desiredStart, pushOffset: desiredEnd - clipStart };
+			}
+		}
+		return { newStartTime: desiredStart, pushOffset: 0 };
+	}
+
+	/** Resolve clip collision - orchestrates detection and resolution */
 	private resolveClipCollision(
 		trackIndex: number,
 		desiredStart: number,
@@ -545,102 +624,19 @@ export class InteractionController {
 		excludeClip: ClipRef,
 		mouseTime: number
 	): CollisionResult {
-		const tracks = this.stateManager.getTracks();
-		const track = tracks[trackIndex];
-		if (!track) {
-			return { newStartTime: desiredStart, pushOffset: 0, firstPushedClipIndex: null };
-		}
-
-		// Get clips on target track, excluding the dragged clip if on same track
-		const clips = track.clips
-			.filter(c => !(c.trackIndex === excludeClip.trackIndex && c.clipIndex === excludeClip.clipIndex))
-			.sort((a, b) => a.config.start - b.config.start);
-
+		const clips = this.getTrackClips(trackIndex, excludeClip);
 		if (clips.length === 0) {
-			return { newStartTime: desiredStart, pushOffset: 0, firstPushedClipIndex: null };
+			return { ...InteractionController.NO_COLLISION, newStartTime: desiredStart };
 		}
 
-		const desiredEnd = desiredStart + clipLength;
-
-		// Find the clip that the mouse is hovering over
-		for (let i = 0; i < clips.length; i += 1) {
-			const clip = clips[i];
-			const clipStart = clip.config.start;
-			const clipEnd = clipStart + clip.config.length;
-
-			// Check if mouse is over this clip
-			if (mouseTime >= clipStart && mouseTime < clipEnd) {
-				const clipMidpoint = clipStart + clip.config.length / 2;
-				const isRightHalf = mouseTime >= clipMidpoint;
-
-				if (isRightHalf) {
-					// Snap to RIGHT of this clip
-					const newStartTime = clipEnd;
-					const newEndTime = newStartTime + clipLength;
-
-					// Check if there's a next clip that would be overlapped
-					const nextClip = clips[i + 1];
-					if (nextClip && newEndTime > nextClip.config.start) {
-						// Need to push the next clip forward
-						const pushAmount = newEndTime - nextClip.config.start;
-						return {
-							newStartTime,
-							pushOffset: pushAmount,
-							firstPushedClipIndex: nextClip.clipIndex
-						};
-					}
-
-					// No collision after snapping to right
-					return { newStartTime, pushOffset: 0, firstPushedClipIndex: null };
-				}
-				// Left half - snap to LEFT of this clip
-				const prevClipEnd = i > 0 ? clips[i - 1].config.start + clips[i - 1].config.length : 0;
-				const availableSpace = clipStart - prevClipEnd;
-
-				if (availableSpace >= clipLength) {
-					// Space available - snap to just before this clip
-					return {
-						newStartTime: clipStart - clipLength,
-						pushOffset: 0,
-						firstPushedClipIndex: null
-					};
-				}
-				// No space - need to push this clip forward
-				const newStartTime = prevClipEnd;
-				const pushAmount = newStartTime + clipLength - clipStart;
-				return {
-					newStartTime,
-					pushOffset: pushAmount,
-					firstPushedClipIndex: clip.clipIndex
-				};
-			}
-
-			// Check if there would be overlap with desired position (mouse not directly over clip)
-			if (desiredStart < clipEnd && desiredEnd > clipStart) {
-				// Calculate available space before this clip
-				const prevClipEnd = i > 0 ? clips[i - 1].config.start + clips[i - 1].config.length : 0;
-				const availableSpace = clipStart - prevClipEnd;
-
-				if (availableSpace >= clipLength) {
-					// Space available - snap to just before this clip
-					return {
-						newStartTime: clipStart - clipLength,
-						pushOffset: 0,
-						firstPushedClipIndex: null
-					};
-				}
-				// No space - need to push clips forward
-				const pushAmount = desiredEnd - clipStart;
-				return {
-					newStartTime: desiredStart,
-					pushOffset: pushAmount,
-					firstPushedClipIndex: clip.clipIndex
-				};
-			}
+		const mouseTarget = this.findClipUnderMouse(clips, mouseTime);
+		if (mouseTarget) {
+			const midpoint = mouseTarget.clip.config.start + mouseTarget.clip.config.length / 2;
+			const isRightHalf = mouseTime >= midpoint;
+			return this.resolveMouseOverSnap(mouseTarget.clip, mouseTarget.index, clipLength, isRightHalf, clips);
 		}
 
-		// No collision
-		return { newStartTime: desiredStart, pushOffset: 0, firstPushedClipIndex: null };
+		return this.resolveOverlapCollision(desiredStart, clipLength, clips);
 	}
 
 	private buildSnapPoints(excludeClip: ClipRef): void {
