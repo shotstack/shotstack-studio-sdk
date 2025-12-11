@@ -432,6 +432,23 @@ export const TIMELINE_STYLES = `
 	cursor: grabbing;
 }
 
+/* Playhead ghost (hover preview) */
+.ss-playhead-ghost {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: rgba(59, 130, 246, 0.4);
+	pointer-events: none;
+	z-index: 49;
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.ss-ruler-tracks-wrapper:hover .ss-playhead-ghost {
+	opacity: 1;
+}
+
 /* Feedback layer */
 .ss-feedback-layer {
 	position: absolute;

@@ -27,6 +27,7 @@ export class HtmlTimeline extends TimelineEntity {
 	private ruler: RulerComponent | null = null;
 	private trackList: TrackListComponent | null = null;
 	private playhead: PlayheadComponent | null = null;
+	private playheadGhost: HTMLElement | null = null;
 	private feedbackLayer: HTMLElement | null = null;
 	private interactionController: InteractionController | null = null;
 
@@ -340,6 +341,19 @@ export class HtmlTimeline extends TimelineEntity {
 			});
 			this.playhead.setPixelsPerSecond(viewport.pixelsPerSecond);
 			this.rulerTracksWrapper.appendChild(this.playhead.element);
+
+			// Build playhead ghost (hover preview)
+			this.playheadGhost = document.createElement("div");
+			this.playheadGhost.className = "ss-playhead-ghost";
+			this.rulerTracksWrapper.appendChild(this.playheadGhost);
+
+			this.rulerTracksWrapper.addEventListener("mousemove", e => {
+				if (!this.playheadGhost || !this.rulerTracksWrapper) return;
+				const rect = this.rulerTracksWrapper.getBoundingClientRect();
+				const scrollX = this.trackList?.element.scrollLeft ?? 0;
+				const x = e.clientX - rect.left + scrollX;
+				this.playheadGhost.style.left = `${x}px`;
+			});
 		}
 
 		// Build feedback layer (inside rulerTracksWrapper so coordinates align with tracks)
