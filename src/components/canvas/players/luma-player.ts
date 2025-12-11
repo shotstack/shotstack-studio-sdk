@@ -101,7 +101,8 @@ export class LumaPlayer extends Player {
 		this.sprite?.destroy();
 		this.sprite = null;
 
-		this.texture?.destroy();
+		// DON'T destroy the texture - it's managed by Assets
+		// The unloadClipAssets() method in Edit already calls Assets.unload()
 		this.texture = null;
 	}
 

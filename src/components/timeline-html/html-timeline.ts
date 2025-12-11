@@ -327,6 +327,13 @@ export class HtmlTimeline extends TimelineEntity {
 			getAttachedLuma: (trackIndex, clipIndex) => this.stateManager.getAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {
 				this.stateManager.toggleLumaVisibility(contentTrackIndex, contentClipIndex);
+
+				// Select the luma clip when toggling mask visibility
+				const lumaRef = this.stateManager.getAttachedLuma(contentTrackIndex, contentClipIndex);
+				if (lumaRef) {
+					this.edit.selectClip(lumaRef.trackIndex, lumaRef.clipIndex);
+				}
+
 				this.requestRender();
 			},
 			isLumaVisibleForEditing: (contentTrackIndex, contentClipIndex) =>
