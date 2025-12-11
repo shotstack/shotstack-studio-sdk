@@ -314,6 +314,7 @@ export class HtmlTimeline extends TimelineEntity {
 					this.stateManager.selectClip(trackIndex, clipIndex, false);
 				}
 				this.edit.selectClip(trackIndex, clipIndex);
+				this.requestRender();
 			},
 			getClipRenderer: type => this.clipRenderers.get(type)
 		});
@@ -416,11 +417,13 @@ export class HtmlTimeline extends TimelineEntity {
 	public selectClip(trackIndex: number, clipIndex: number): void {
 		this.stateManager.selectClip(trackIndex, clipIndex, false);
 		this.edit.selectClip(trackIndex, clipIndex);
+		this.requestRender();
 	}
 
 	public clearSelection(): void {
 		this.stateManager.clearSelection();
 		this.edit.clearSelection();
+		this.requestRender();
 	}
 
 	public enableFeature(feature: keyof HtmlTimelineFeatures): void {

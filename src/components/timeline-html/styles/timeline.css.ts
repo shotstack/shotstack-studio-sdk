@@ -240,9 +240,15 @@ export const TIMELINE_STYLES = `
 }
 
 .ss-clip.selected {
-	outline: 2px solid #3b82f6;
-	outline-offset: -1px;
-	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+	/* Solid selection ring - professional, non-distracting */
+	outline: 2px solid var(--clip-border, #3b82f6);
+	outline-offset: 0px;
+
+	/* Subtle lift with soft glow */
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+		0 2px 8px rgba(0, 0, 0, 0.2),
+		0 0 0 3px color-mix(in srgb, var(--clip-border, #3b82f6) 25%, transparent);
 }
 
 .ss-clip.dragging {
@@ -374,6 +380,15 @@ export const TIMELINE_STYLES = `
 
 .ss-clip-resize-handle:hover {
 	background: rgba(0, 0, 0, 0.08);
+}
+
+/* Visible resize handles when selected */
+.ss-clip.selected .ss-clip-resize-handle {
+	background: rgba(0, 0, 0, 0.06);
+}
+
+.ss-clip.selected .ss-clip-resize-handle:hover {
+	background: rgba(0, 0, 0, 0.12);
 }
 
 /* Playhead */
