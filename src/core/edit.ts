@@ -63,6 +63,8 @@ export class Edit extends Entity {
 	/** @internal */
 	private selectedClip: Player | null;
 	/** @internal */
+	private copiedClip: { trackIndex: number; clipConfiguration: ResolvedClip } | null = null;
+	/** @internal */
 	private updatedClip: Player | null;
 	/** @internal */
 	private viewportMask?: pixi.Graphics;
@@ -1006,6 +1008,39 @@ export class Edit extends Entity {
 		const clipIndex = this.tracks[trackIndex].indexOf(this.selectedClip);
 
 		return { trackIndex, clipIndex, player: this.selectedClip };
+	}
+
+	/**
+	 * Copy a clip to the internal clipboard
+	 */
+	public copyClip(trackIdx: number, clipIdx: number): void {
+		const player = this.getClipAt(trackIdx, clipIdx);
+		if (player) {
+			this.copiedClip = {
+				trackIndex: trackIdx,
+				clipConfiguration: structuredClone(player.clipConfiguration)
+			};
+			this.events.emit("clip:copied", { trackIndex: trackIdx, clipIndex: clipIdx });
+		}
+	}
+
+	/**
+	 * Paste the copied clip at the current playhead position
+	 */
+	public pasteClip(): void {
+		if (!this.copiedClip) return;
+
+		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
+		pastedClip.start = this.playbackTime / 1000; // Paste at playhead position
+
+		this.addClip(this.copiedClip.trackIndex, pastedClip);
+	}
+
+	/**
+	 * Check if there is a clip in the clipboard
+	 */
+	public hasCopiedClip(): boolean {
+		return this.copiedClip !== null;
 	}
 	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
 		for (let trackIndex = 0; trackIndex < this.tracks.length; trackIndex += 1) {

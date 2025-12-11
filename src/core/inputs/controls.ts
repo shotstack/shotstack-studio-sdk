@@ -96,6 +96,23 @@ export class Controls {
 				}
 				break;
 			}
+			case "KeyC": {
+				if (event.metaKey || event.ctrlKey) {
+					event.preventDefault();
+					const selected = this.edit.getSelectedClipInfo();
+					if (selected) {
+						this.edit.copyClip(selected.trackIndex, selected.clipIndex);
+					}
+				}
+				break;
+			}
+			case "KeyV": {
+				if (event.metaKey || event.ctrlKey) {
+					event.preventDefault();
+					this.edit.pasteClip();
+				}
+				break;
+			}
 			default: {
 				break;
 			}
