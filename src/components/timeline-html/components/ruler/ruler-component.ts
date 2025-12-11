@@ -1,15 +1,37 @@
 import { TimelineEntity } from "../../core/timeline-entity";
 
+interface RulerOptions {
+	onSeek?: (timeMs: number) => void;
+}
+
 /** Time ruler component for the timeline */
 export class RulerComponent extends TimelineEntity {
 	private readonly contentElement: HTMLElement;
+	private readonly options: RulerOptions;
 	private currentPixelsPerSecond = 50;
 	private currentDuration = 60;
 	private needsRender = true;
+	private scrollX = 0;
 
-	constructor() {
+	constructor(options: RulerOptions = {}) {
 		super("div", "ss-timeline-ruler");
+		this.options = options;
 		this.contentElement = this.buildElement();
+		this.setupClickHandler();
+	}
+
+	private setupClickHandler(): void {
+		this.element.addEventListener("click", this.handleClick.bind(this));
+	}
+
+	private handleClick(e: MouseEvent): void {
+		if (!this.options.onSeek) return;
+
+		const rect = this.element.getBoundingClientRect();
+		const x = e.clientX - rect.left + this.scrollX;
+		const time = Math.max(0, x / this.currentPixelsPerSecond);
+
+		this.options.onSeek(time * 1000);
 	}
 
 	private buildElement(): HTMLElement {

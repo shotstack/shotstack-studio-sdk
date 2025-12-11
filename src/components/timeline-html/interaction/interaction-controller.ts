@@ -202,7 +202,7 @@ export class InteractionController {
 		const dragOffsetY = mouseY - clipTop;
 
 		// Create drag ghost
-		const ghost = this.createDragGhost(clip);
+		const ghost = this.createDragGhost(clip, clipRef.trackIndex);
 		this.feedbackLayer.appendChild(ghost);
 
 		this.state = {
@@ -220,15 +220,17 @@ export class InteractionController {
 		this.buildSnapPoints(clipRef);
 	}
 
-	private createDragGhost(clip: ClipState): HTMLElement {
+	private createDragGhost(clip: ClipState, trackIndex: number): HTMLElement {
 		const ghost = document.createElement("div");
 		ghost.className = "ss-drag-ghost ss-clip";
-		const assetType = clip.config.asset?.type || "unknown";
-		ghost.dataset["assetType"] = assetType;
+		const clipAssetType = clip.config.asset?.type || "unknown";
+		ghost.dataset["assetType"] = clipAssetType;
 
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 		const width = clip.config.length * pps;
-		const trackHeight = getTrackHeight(assetType);
+		const track = this.stateManager.getTracks()[trackIndex];
+		const trackAssetType = track?.primaryAssetType ?? clipAssetType;
+		const trackHeight = getTrackHeight(trackAssetType);
 
 		ghost.style.width = `${width}px`;
 		ghost.style.height = `${trackHeight - 8}px`; // Track height - padding

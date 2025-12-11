@@ -298,7 +298,9 @@ export class HtmlTimeline extends TimelineEntity {
 
 		// Build ruler
 		if (this.features.ruler) {
-			this.ruler = new RulerComponent();
+			this.ruler = new RulerComponent({
+				onSeek: timeMs => this.edit.seek(timeMs)
+			});
 			this.rulerTracksWrapper.appendChild(this.ruler.element);
 		}
 
