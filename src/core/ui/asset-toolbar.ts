@@ -70,7 +70,7 @@ export class AssetToolbar {
 
 				const selectedClip = this.edit.getSelectedClipInfo();
 				this.edit.events.emit(config.event, {
-					position: this.edit.playbackTime,
+					position: this.edit.playbackTime / 1000,
 					selectedClip: selectedClip ? { trackIndex: selectedClip.trackIndex, clipIndex: selectedClip.clipIndex } : null
 				});
 			});
