@@ -1,5 +1,4 @@
 import type { Edit } from "@core/edit";
-import { FONT_PATHS } from "@core/fonts/font-config";
 import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
@@ -791,6 +790,7 @@ export class RichTextToolbar {
 			}
 		});
 
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM parent styling
 		parent.style.position = "relative";
 		parent.insertBefore(this.container, parent.firstChild);
 
@@ -816,7 +816,7 @@ export class RichTextToolbar {
 		const button = target.closest("button");
 		if (!button) return;
 
-		const action = button.dataset["action"];
+		const { action } = button.dataset;
 		if (!action) return;
 
 		const asset = this.getCurrentAsset();
@@ -882,7 +882,11 @@ export class RichTextToolbar {
 				break;
 			case "animation-clear":
 				this.updateClipProperty({ animation: undefined });
-				this.animationPopup && (this.animationPopup.style.display = "none");
+				if (this.animationPopup) {
+					this.animationPopup.style.display = "none";
+				}
+				break;
+			default:
 				break;
 		}
 	}
@@ -938,7 +942,7 @@ export class RichTextToolbar {
 	private applyManualSize(): void {
 		if (!this.sizeInput) return;
 		const value = parseInt(this.sizeInput.value, 10);
-		if (!isNaN(value) && value > 0) {
+		if (!Number.isNaN(value) && value > 0) {
 			this.updateSize(value);
 		}
 		this.syncState();
@@ -1118,10 +1122,7 @@ export class RichTextToolbar {
 		const isVisible = this.textEditPopup.style.display !== "none";
 		if (!isVisible && this.textEditArea) {
 			// Read from originalEdit (template) to show merge field placeholders
-			const templateText = this.edit.getTemplateClipText(
-				this.selectedTrackIdx,
-				this.selectedClipIdx
-			);
+			const templateText = this.edit.getTemplateClipText(this.selectedTrackIdx, this.selectedClipIdx);
 			// Fallback to resolved text if no template available
 			const asset = this.getCurrentAsset();
 			this.textEditArea.value = templateText ?? asset?.text ?? "";
@@ -1657,7 +1658,13 @@ export class RichTextToolbar {
 
 		const transform = asset.style?.textTransform ?? "none";
 		if (this.transformBtn) {
-			this.transformBtn.textContent = transform === "uppercase" ? "AA" : transform === "lowercase" ? "aa" : "Aa";
+			let transformLabel = "Aa";
+			if (transform === "uppercase") {
+				transformLabel = "AA";
+			} else if (transform === "lowercase") {
+				transformLabel = "aa";
+			}
+			this.transformBtn.textContent = transformLabel;
 			this.setButtonActive(this.transformBtn, transform !== "none");
 		}
 
@@ -1740,7 +1747,10 @@ export class RichTextToolbar {
 
 			if (typeof asset.padding === "number") {
 				// Uniform padding
-				top = right = bottom = left = asset.padding;
+				top = asset.padding;
+				right = asset.padding;
+				bottom = asset.padding;
+				left = asset.padding;
 			} else if (asset.padding) {
 				// Object padding
 				top = asset.padding.top ?? 0;

@@ -133,9 +133,7 @@ export class VideoPlayer extends Player {
 		const { src } = videoAsset;
 
 		if (src.endsWith(".mov")) {
-			throw new Error(
-				`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`
-			);
+			throw new Error(`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`);
 		}
 
 		const loadOptions: pixi.UnresolvedAsset = { src, data: { autoPlay: false, muted: false } };

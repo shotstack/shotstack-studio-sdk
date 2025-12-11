@@ -1,11 +1,12 @@
-import type { Edit } from "@core/edit";
-import type { ClipState, HtmlTimelineInteractionConfig } from "../html-timeline.types";
-import { getTrackHeight, TRACK_HEIGHTS } from "../html-timeline.types";
-import { TimelineStateManager } from "../core/state/timeline-state";
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { MoveClipWithPushCommand } from "@core/commands/move-clip-with-push-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
-import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
+import type { Edit } from "@core/edit";
+
+import { TimelineStateManager } from "../core/state/timeline-state";
+import type { ClipState, HtmlTimelineInteractionConfig } from "../html-timeline.types";
+import { getTrackHeight } from "../html-timeline.types";
 
 /** Point coordinates */
 interface Point {
@@ -32,9 +33,7 @@ interface CollisionResult {
 }
 
 /** Drag target - either an existing track or an insertion point between tracks */
-type DragTarget =
-	| { type: "track"; trackIndex: number }
-	| { type: "insert"; insertionIndex: number };
+type DragTarget = { type: "track"; trackIndex: number } | { type: "insert"; insertionIndex: number };
 
 /** Interaction state machine */
 type InteractionState =
@@ -168,6 +167,8 @@ export class InteractionController {
 				break;
 			case "resizing":
 				this.handleResizeMove(e);
+				break;
+			default:
 				break;
 		}
 	}
@@ -316,13 +317,7 @@ export class InteractionController {
 		if (dragTarget.type === "track") {
 			// Calculate mouse time (mouse position in seconds, for left/right half detection)
 			const mouseTime = mouseX / pps;
-			const collisionResult = this.resolveClipCollision(
-				dragTarget.trackIndex,
-				clipTime,
-				this.state.draggedClipLength,
-				this.state.clipRef,
-				mouseTime
-			);
+			const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef, mouseTime);
 			clipTime = collisionResult.newStartTime;
 			this.state.collisionResult = collisionResult;
 		} else {
@@ -424,6 +419,8 @@ export class InteractionController {
 			case "resizing":
 				this.completeResize(e);
 				break;
+			default:
+				break;
 		}
 	}
 
@@ -448,31 +445,15 @@ export class InteractionController {
 		// Execute appropriate command based on drag target
 		if (dragTarget.type === "insert") {
 			// Create new track and move clip to it
-			const command = new CreateTrackAndMoveClipCommand(
-				dragTarget.insertionIndex,
-				originalTrack,
-				clipRef.clipIndex,
-				newTime
-			);
+			const command = new CreateTrackAndMoveClipCommand(dragTarget.insertionIndex, originalTrack, clipRef.clipIndex, newTime);
 			this.edit.executeEditCommand(command);
 		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
-			const command = new MoveClipWithPushCommand(
-				originalTrack,
-				clipRef.clipIndex,
-				dragTarget.trackIndex,
-				newTime,
-				collisionResult.pushOffset
-			);
+			const command = new MoveClipWithPushCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime, collisionResult.pushOffset);
 			this.edit.executeEditCommand(command);
 		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
 			// Simple move without push
-			const command = new MoveClipCommand(
-				originalTrack,
-				clipRef.clipIndex,
-				dragTarget.trackIndex,
-				newTime
-			);
+			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime);
 			this.edit.executeEditCommand(command);
 		}
 
@@ -514,11 +495,7 @@ export class InteractionController {
 
 		// Execute resize command if dimensions changed
 		if (newLength !== originalLength) {
-			const command = new ResizeClipCommand(
-				clipRef.trackIndex,
-				clipRef.clipIndex,
-				newLength
-			);
+			const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
 			this.edit.executeEditCommand(command);
 
 			// TODO: For left-edge resize (start changed), also need MoveClipCommand
@@ -654,18 +631,17 @@ export class InteractionController {
 		for (const track of tracks) {
 			for (const clip of track.clips) {
 				// Skip the clip being dragged/resized
-				if (clip.trackIndex === excludeClip.trackIndex && clip.clipIndex === excludeClip.clipIndex) {
-					continue;
+				const isExcluded = clip.trackIndex === excludeClip.trackIndex && clip.clipIndex === excludeClip.clipIndex;
+				if (!isExcluded) {
+					this.snapPoints.push({
+						time: clip.config.start,
+						type: "clip-start"
+					});
+					this.snapPoints.push({
+						time: clip.config.start + clip.config.length,
+						type: "clip-end"
+					});
 				}
-
-				this.snapPoints.push({
-					time: clip.config.start,
-					type: "clip-start"
-				});
-				this.snapPoints.push({
-					time: clip.config.start + clip.config.length,
-					type: "clip-end"
-				});
 			}
 		}
 	}
@@ -760,20 +736,6 @@ export class InteractionController {
 		}
 	}
 
-	/** Get track index at a given Y position (accounting for variable heights) */
-	private getTrackIndexAtY(y: number): number {
-		const tracks = this.stateManager.getTracks();
-		let currentY = 0;
-		for (let i = 0; i < tracks.length; i++) {
-			const height = getTrackHeight(tracks[i].primaryAssetType);
-			if (y >= currentY && y < currentY + height) {
-				return i;
-			}
-			currentY += height;
-		}
-		return Math.max(0, tracks.length - 1);
-	}
-
 	/** Get drag target at Y position - either an existing track or an insertion point between tracks */
 	private getDragTargetAtY(y: number): DragTarget {
 		const tracks = this.stateManager.getTracks();
@@ -785,7 +747,7 @@ export class InteractionController {
 			return { type: "insert", insertionIndex: 0 };
 		}
 
-		for (let i = 0; i < tracks.length; i++) {
+		for (let i = 0; i < tracks.length; i += 1) {
 			const height = getTrackHeight(tracks[i].primaryAssetType);
 
 			// Top edge insert zone (between this track and previous)
@@ -814,7 +776,7 @@ export class InteractionController {
 	private getTrackYPosition(trackIndex: number): number {
 		const tracks = this.stateManager.getTracks();
 		let y = 0;
-		for (let i = 0; i < trackIndex && i < tracks.length; i++) {
+		for (let i = 0; i < trackIndex && i < tracks.length; i += 1) {
 			y += getTrackHeight(tracks[i].primaryAssetType);
 		}
 		return y;

@@ -1,7 +1,7 @@
 import type { Player } from "@canvas/players/player";
 
-import type { EditCommand, CommandContext } from "./types";
 import { MoveClipCommand } from "./move-clip-command";
+import type { EditCommand, CommandContext } from "./types";
 
 /**
  * Command to move a clip while pushing other clips forward to make room.
@@ -40,13 +40,13 @@ export class MoveClipWithPushCommand implements EditCommand {
 		this.pushedClips = [];
 		for (const player of targetTrack) {
 			// Skip the clip we're moving
-			if (player === movingClip) continue;
-
-			const clipStart = player.clipConfiguration.start;
-			// Push clips that start before our new end position and would overlap
-			if (clipStart >= this.newStart && clipStart < newEnd) {
-				this.pushedClips.push({ player, originalStart: clipStart });
-				this.pushClip(player, clipStart + this.pushOffset);
+			if (player !== movingClip) {
+				const clipStart = player.clipConfiguration.start;
+				// Push clips that start before our new end position and would overlap
+				if (clipStart >= this.newStart && clipStart < newEnd) {
+					this.pushedClips.push({ player, originalStart: clipStart });
+					this.updateClipStart(player, clipStart + this.pushOffset);
+				}
 			}
 		}
 
@@ -55,12 +55,13 @@ export class MoveClipWithPushCommand implements EditCommand {
 		context.propagateTimingChanges(this.toTrackIndex, 0);
 	}
 
-	private pushClip(player: Player, newStart: number): void {
-		player.clipConfiguration.start = newStart;
-		player.setResolvedTiming({ start: newStart * 1000, length: player.getLength() });
-		player.setTimingIntent({ start: newStart, length: player.getTimingIntent().length });
-		player.reconfigureAfterRestore();
-		player.draw();
+	private updateClipStart(clip: Player, newStart: number): void {
+		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
+		clip.clipConfiguration.start = newStart;
+		clip.setResolvedTiming({ start: newStart * 1000, length: clip.getLength() });
+		clip.setTimingIntent({ start: newStart, length: clip.getTimingIntent().length });
+		clip.reconfigureAfterRestore();
+		clip.draw();
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
@@ -70,7 +71,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 
 		// Restore pushed clips
 		for (const { player, originalStart } of this.pushedClips) {
-			this.pushClip(player, originalStart);
+			this.updateClipStart(player, originalStart);
 		}
 
 		context.propagateTimingChanges(this.toTrackIndex, 0);

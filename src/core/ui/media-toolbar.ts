@@ -828,11 +828,7 @@ export class MediaToolbar {
 		if (!player) return;
 
 		// Use Edit API to check if this property has a merge field
-		const fieldName = this.edit.getMergeFieldForProperty(
-			this.currentTrackIndex,
-			this.currentClipIndex,
-			"asset.src"
-		);
+		const fieldName = this.edit.getMergeFieldForProperty(this.currentTrackIndex, this.currentClipIndex, "asset.src");
 
 		if (fieldName) {
 			// Has dynamic source

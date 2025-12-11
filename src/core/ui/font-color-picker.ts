@@ -417,7 +417,7 @@ export class FontColorPicker {
 		this.container.querySelectorAll("[data-cat]").forEach(btn => {
 			btn.addEventListener("click", e => {
 				const el = e.currentTarget as HTMLButtonElement;
-				this.handleGradientClick(parseInt(el.dataset["cat"] || "0"), parseInt(el.dataset["idx"] || "0"));
+				this.handleGradientClick(parseInt(el.dataset["cat"] || "0", 10), parseInt(el.dataset["idx"] || "0", 10));
 			});
 		});
 	}

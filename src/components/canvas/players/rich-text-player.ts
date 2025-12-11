@@ -49,11 +49,10 @@ export class RichTextPlayer extends Player {
 
 		// Use explicit font.weight if set, otherwise fall back to parsed weight from family name
 		const explicitWeight = richTextAsset.font?.weight;
-		const fontWeight = explicitWeight
-			? typeof explicitWeight === "string"
-				? parseInt(explicitWeight, 10) || parsedWeight
-				: explicitWeight
-			: parsedWeight;
+		let fontWeight = parsedWeight;
+		if (explicitWeight) {
+			fontWeight = typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || parsedWeight : explicitWeight;
+		}
 
 		// Find matching timeline font for customFonts payload
 		const timelineFonts = editData?.timeline?.fonts || [];

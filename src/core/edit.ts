@@ -20,7 +20,7 @@ import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
-import { applyMergeFields, MergeFieldService, type MergeField } from "@core/merge";
+import { applyMergeFields, MergeFieldService } from "@core/merge";
 import { Entity } from "@core/shared/entity";
 import { deepMerge, getNestedValue, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
@@ -554,11 +554,7 @@ export class Edit extends Entity {
 
 					// Sync originalEdit - re-insert clip template at same index
 					if (this.originalEdit?.timeline.tracks[trackIdx]?.clips) {
-						this.originalEdit.timeline.tracks[trackIdx].clips.splice(
-							insertIdx,
-							0,
-							structuredClone(clip.clipConfiguration)
-						);
+						this.originalEdit.timeline.tracks[trackIdx].clips.splice(insertIdx, 0, structuredClone(clip.clipConfiguration));
 					}
 				}
 
@@ -600,8 +596,7 @@ export class Edit extends Entity {
 			getTemplateClip: (trackIndex, clipIndex) => this.getTemplateClip(trackIndex, clipIndex),
 			setTemplateClipProperty: (trackIndex, clipIndex, propertyPath, value) =>
 				this.setTemplateClipProperty(trackIndex, clipIndex, propertyPath, value),
-			syncTemplateClip: (trackIndex, clipIndex, templateClip) =>
-				this.syncTemplateClip(trackIndex, clipIndex, templateClip),
+			syncTemplateClip: (trackIndex, clipIndex, templateClip) => this.syncTemplateClip(trackIndex, clipIndex, templateClip),
 			// originalEdit track sync
 			insertOriginalEditTrack: trackIdx => this.insertOriginalEditTrack(trackIdx),
 			removeOriginalEditTrack: trackIdx => this.removeOriginalEditTrack(trackIdx)
@@ -905,9 +900,7 @@ export class Edit extends Entity {
 
 		// Sync originalEdit with new clip to keep template data aligned with tracks array
 		if (this.originalEdit?.timeline.tracks[trackIdx]) {
-			this.originalEdit.timeline.tracks[trackIdx].clips.push(
-				structuredClone(clipToAdd.clipConfiguration)
-			);
+			this.originalEdit.timeline.tracks[trackIdx].clips.push(structuredClone(clipToAdd.clipConfiguration));
 		}
 
 		this.clips.push(clipToAdd);
@@ -1211,19 +1204,9 @@ export class Edit extends Entity {
 		// Check if there's already a merge field on this property
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
-		const previousFieldName =
-			typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
+		const previousFieldName = typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
 
-		const command = new SetMergeFieldCommand(
-			player,
-			propertyPath,
-			fieldName,
-			previousFieldName,
-			previousValue,
-			value,
-			trackIndex,
-			clipIndex
-		);
+		const command = new SetMergeFieldCommand(player, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
 		this.executeCommand(command);
 	}
 
@@ -1242,8 +1225,7 @@ export class Edit extends Entity {
 		// Get current merge field name
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
-		const currentFieldName =
-			typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
+		const currentFieldName = typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
 
 		if (!currentFieldName) return; // No merge field to remove
 
@@ -1289,12 +1271,7 @@ export class Edit extends Entity {
 				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
 				if (templateClip) {
 					// Check all string properties for this field
-					this.updateMergeFieldInObject(
-						this.tracks[trackIdx][clipIdx].clipConfiguration,
-						templateClip,
-						fieldName,
-						newValue
-					);
+					this.updateMergeFieldInObject(this.tracks[trackIdx][clipIdx].clipConfiguration, templateClip, fieldName, newValue);
 				}
 			}
 		}
@@ -1348,11 +1325,7 @@ export class Edit extends Entity {
 	}
 
 	/** Helper: Check if and how a clip uses a specific merge field */
-	private getMergeFieldUsage(
-		clip: unknown,
-		fieldName: string,
-		path: string = ""
-	): { used: boolean; isSrcField: boolean } {
+	private getMergeFieldUsage(clip: unknown, fieldName: string, path: string = ""): { used: boolean; isSrcField: boolean } {
 		if (!clip || typeof clip !== "object") return { used: false, isSrcField: false };
 
 		for (const [key, value] of Object.entries(clip as Record<string, unknown>)) {

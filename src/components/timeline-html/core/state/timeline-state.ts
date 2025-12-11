@@ -1,6 +1,7 @@
 import type { Edit } from "@core/edit";
 import type { ResolvedClip } from "@schemas/clip";
 import type { ResolvedTrack } from "@schemas/track";
+
 import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../html-timeline.types";
 
 type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
@@ -31,13 +32,10 @@ export class TimelineStateManager {
 		if (!resolvedEdit?.timeline?.tracks) return [];
 
 		return resolvedEdit.timeline.tracks.map((track: ResolvedTrack, trackIndex: number) => {
-			const clips = (track.clips || []).map((clip: ResolvedClip, clipIndex: number) =>
-				this.createClipState(clip, trackIndex, clipIndex)
-			);
+			const clips = (track.clips || []).map((clip: ResolvedClip, clipIndex: number) => this.createClipState(clip, trackIndex, clipIndex));
 
 			// Derive primary asset type from first clip
-			const primaryAssetType =
-				clips.length > 0 && clips[0].config.asset ? clips[0].config.asset.type || "unknown" : "empty";
+			const primaryAssetType = clips.length > 0 && clips[0].config.asset ? clips[0].config.asset.type || "unknown" : "empty";
 
 			return {
 				index: trackIndex,
@@ -141,10 +139,7 @@ export class TimelineStateManager {
 			visualState,
 			timingIntent: {
 				start: unresolvedClip?.start === "auto" ? "auto" : clip.start,
-				length:
-					unresolvedClip?.length === "auto" || unresolvedClip?.length === "end"
-						? unresolvedClip.length
-						: clip.length
+				length: unresolvedClip?.length === "auto" || unresolvedClip?.length === "end" ? unresolvedClip.length : clip.length
 			}
 		};
 	}

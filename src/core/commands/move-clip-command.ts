@@ -1,8 +1,8 @@
 import type { Player } from "@canvas/players/player";
 import type { TimingIntent } from "@core/timing/types";
 
-import type { EditCommand, CommandContext } from "./types";
 import { DeleteTrackCommand } from "./delete-track-command";
+import type { EditCommand, CommandContext } from "./types";
 
 export class MoveClipCommand implements EditCommand {
 	name = "moveClip";

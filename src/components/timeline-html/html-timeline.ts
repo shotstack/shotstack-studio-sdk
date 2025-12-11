@@ -1,19 +1,14 @@
 import type { Edit } from "@core/edit";
 
-import { TimelineEntity } from "./core/timeline-entity";
-import { TimelineStateManager } from "./core/state/timeline-state";
-import { TrackListComponent } from "./components/track/track-list";
-import { RulerComponent } from "./components/ruler/ruler-component";
 import { PlayheadComponent } from "./components/playhead/playhead-component";
+import { RulerComponent } from "./components/ruler/ruler-component";
 import { ToolbarComponent } from "./components/toolbar/toolbar-component";
+import { TrackListComponent } from "./components/track/track-list";
+import { TimelineStateManager } from "./core/state/timeline-state";
+import { TimelineEntity } from "./core/timeline-entity";
+import type { HtmlTimelineOptions, HtmlTimelineFeatures, ClipRenderer, ClipInfo } from "./html-timeline.types";
 import { InteractionController } from "./interaction/interaction-controller";
 import { getTimelineStyles } from "./styles/timeline.css";
-import type {
-	HtmlTimelineOptions,
-	HtmlTimelineFeatures,
-	ClipRenderer,
-	ClipInfo
-} from "./html-timeline.types";
 
 /** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */
 export class HtmlTimeline extends TimelineEntity {
@@ -347,13 +342,9 @@ export class HtmlTimeline extends TimelineEntity {
 		this.rulerTracksWrapper.appendChild(this.feedbackLayer);
 
 		// Initialize interaction controller
-		this.interactionController = new InteractionController(
-			this.edit,
-			this.stateManager,
-			this.trackList.element,
-			this.feedbackLayer,
-			{ snapThreshold: this.features.snap ? 10 : 0 }
-		);
+		this.interactionController = new InteractionController(this.edit, this.stateManager, this.trackList.element, this.feedbackLayer, {
+			snapThreshold: this.features.snap ? 10 : 0
+		});
 	}
 
 	private disposeComponents(): void {

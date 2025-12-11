@@ -1,5 +1,6 @@
-import { TimelineEntity } from "../../core/timeline-entity";
 import type { ResolvedClip } from "@schemas/clip";
+
+import { TimelineEntity } from "../../core/timeline-entity";
 import type { ClipState, ClipRenderer } from "../../html-timeline.types";
 
 export interface ClipComponentOptions {
@@ -86,7 +87,7 @@ export class ClipComponent extends TimelineEntity {
 		this.needsUpdate = false;
 
 		const clip = this.currentState;
-		const config = clip.config;
+		const { config } = clip;
 		const assetType = this.getAssetType(config);
 
 		// Update data attributes
@@ -164,13 +165,15 @@ export class ClipComponent extends TimelineEntity {
 			tooltip = "Extends to timeline end";
 		}
 
+		/* eslint-disable no-param-reassign -- Intentional DOM element mutation */
 		badge.textContent = icon;
 		badge.dataset["intent"] = intent;
 		badge.title = tooltip;
+		/* eslint-enable no-param-reassign */
 	}
 
 	private getAssetType(clip: ResolvedClip): string {
-		const asset = clip.asset;
+		const { asset } = clip;
 		if (!asset) return "unknown";
 		return asset.type || "unknown";
 	}
@@ -191,12 +194,12 @@ export class ClipComponent extends TimelineEntity {
 	}
 
 	private getClipLabel(clip: ResolvedClip): string {
-		const asset = clip.asset;
+		const { asset } = clip;
 		if (!asset) return "Clip";
 
 		// Try to get a meaningful label
 		if ("src" in asset && typeof asset.src === "string") {
-			const src = asset.src;
+			const { src } = asset;
 			const filename = src.split("/").pop() || src;
 			return filename.split("?")[0];
 		}

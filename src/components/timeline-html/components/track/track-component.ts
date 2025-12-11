@@ -124,13 +124,13 @@ export class TrackComponent extends TimelineEntity {
 	public getClipAtPosition(x: number, pixelsPerSecond: number): ClipState | null {
 		for (const component of this.clipComponents.values()) {
 			const state = component.getState();
-			if (!state) continue;
+			if (state) {
+				const clipStart = state.config.start * pixelsPerSecond;
+				const clipEnd = (state.config.start + state.config.length) * pixelsPerSecond;
 
-			const clipStart = state.config.start * pixelsPerSecond;
-			const clipEnd = (state.config.start + state.config.length) * pixelsPerSecond;
-
-			if (x >= clipStart && x <= clipEnd) {
-				return state;
+				if (x >= clipStart && x <= clipEnd) {
+					return state;
+				}
 			}
 		}
 		return null;

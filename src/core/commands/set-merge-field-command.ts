@@ -83,9 +83,7 @@ export class SetMergeFieldCommand implements EditCommand {
 		setNestedValue(this.clip.clipConfiguration, this.propertyPath, this.storedPreviousValue);
 
 		// 2. Restore template edit
-		const templateValue = this.previousFieldName
-			? mergeFields.createTemplate(this.previousFieldName)
-			: this.storedPreviousValue;
+		const templateValue = this.previousFieldName ? mergeFields.createTemplate(this.previousFieldName) : this.storedPreviousValue;
 		context.setTemplateClipProperty(this.trackIndex, this.clipIndex, this.propertyPath, templateValue);
 
 		// 3. Re-register previous field or update current (silent to prevent reload)

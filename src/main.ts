@@ -1,6 +1,4 @@
-import { Timeline } from "./components/timeline";
 import { HtmlTimeline } from "./components/timeline-html";
-import theme from "./themes/minimal.json";
 
 import { Edit, Canvas, Controls, VideoExporter } from "./index";
 
@@ -64,19 +62,6 @@ async function main() {
 
 		// 4. Load the template
 		await edit.loadEdit(template);
-
-		// // 5. Initialize the Timeline with size and theme
-		// const timeline = new Timeline(
-		// 	edit,
-		// 	{
-		// 		width: template.output.size.width,
-		// 		height: 300
-		// 	},
-		// 	{
-		// 		theme // Uses imported theme from JSON
-		// 	}
-		// );
-		// await timeline.load(); // Renders to [data-shotstack-timeline] element
 
 		// 5b. Initialize the HTML Timeline (new implementation)
 		const htmlTimelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;

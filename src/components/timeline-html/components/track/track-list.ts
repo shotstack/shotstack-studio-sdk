@@ -1,6 +1,7 @@
 import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../html-timeline.types";
 import { getTrackHeight } from "../../html-timeline.types";
+
 import { TrackComponent } from "./track-component";
 
 export interface TrackListOptions {
@@ -127,7 +128,7 @@ export class TrackListComponent extends TimelineEntity {
 		// Find track at y position using variable heights
 		let currentY = 0;
 		let trackIndex = -1;
-		for (let i = 0; i < this.trackComponents.length; i++) {
+		for (let i = 0; i < this.trackComponents.length; i += 1) {
 			const track = this.trackComponents[i].getCurrentTrack();
 			const height = getTrackHeight(track?.primaryAssetType ?? "default");
 
@@ -154,7 +155,7 @@ export class TrackListComponent extends TimelineEntity {
 		const relativeY = y + scrollY;
 
 		let currentY = 0;
-		for (let i = 0; i < this.trackComponents.length; i++) {
+		for (let i = 0; i < this.trackComponents.length; i += 1) {
 			const track = this.trackComponents[i].getCurrentTrack();
 			const height = getTrackHeight(track?.primaryAssetType ?? "default");
 
@@ -169,7 +170,7 @@ export class TrackListComponent extends TimelineEntity {
 	/** Get the Y position of a track by index */
 	public getTrackYPosition(trackIndex: number): number {
 		let y = 0;
-		for (let i = 0; i < trackIndex && i < this.trackComponents.length; i++) {
+		for (let i = 0; i < trackIndex && i < this.trackComponents.length; i += 1) {
 			const track = this.trackComponents[i].getCurrentTrack();
 			y += getTrackHeight(track?.primaryAssetType ?? "default");
 		}
