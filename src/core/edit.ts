@@ -1073,10 +1073,9 @@ export class Edit extends Entity {
 	 * Rebuild luma masks for any tracks that need masking but don't have it set up.
 	 * Called after clip operations (move, delete, etc.) to ensure canvas stays in sync.
 	 */
-	private rebuildLumaMasksIfNeeded(): void {
+	private async rebuildLumaMasksIfNeeded(): Promise<void> {
 		if (!this.canvas) return;
 
-		// Check each track for luma+content pairs that need masking
 		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
 			const trackClips = this.tracks[trackIdx];
 			const lumaPlayer = trackClips.find(clip => clip instanceof LumaPlayer) as LumaPlayer | undefined;
@@ -1085,6 +1084,11 @@ export class Edit extends Entity {
 			const existingMask = lumaPlayer && this.activeLumaMasks.find(m => m.lumaPlayer === lumaPlayer);
 
 			if (lumaPlayer && !existingMask && contentClips.length > 0) {
+				// If sprite was destroyed (undo after delete), wait for reload
+				if (!lumaPlayer.getSprite()) {
+					await lumaPlayer.load();
+				}
+
 				const lumaSprite = lumaPlayer.getSprite();
 				if (lumaSprite?.texture) {
 					this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
