@@ -1,63 +1,26 @@
 {
+	"output": {
+		"format": "mp4",
+		"size": {
+			"width": 1920,
+			"height": 1080
+		}
+	},
 	"timeline": {
-		"background": "#FFFFFF",
+		"background": "#000000",
 		"tracks": [
 			{
 				"clips": [
 					{
 						"asset": {
-							"type": "rich-text",
-							"text": "Production",
-							"font": {
-								"family": "Montserrat Extrabold",
-								"size": 72,
-								"weight": "400",
-								"color": "#000000",
-								"opacity": 1
-							}
+							"type": "video",
+							"src": "https://shotstack-assets.s3.amazonaws.com/footage/night-sky.mp4"
 						},
 						"start": 0,
-						"length": 3,
-						"position": "center",
-						"fit": "crop",
-						"offset": {
-							"x": 0.06491932678222656,
-							"y": 0
-						},
-						"width": 800,
-						"height": 200
+						"length": 10
 					}
 				]
-			},
-			{
-				"clips": [
-					{
-						"asset": {
-							"type": "image",
-							"src": "https://shotstack-assets.s3.amazonaws.com/images/woods1.jpg"
-						},
-						"start": 0,
-						"length": 3,
-						"position": "center",
-						"fit": "none",
-						"width": 500,
-						"height": 300
-					}
-				]
-			}
-		],
-		"fonts": [
-			{
-				"src": "https://shotstack-assets.s3.amazonaws.com/fonts/Oswald-VariableFont.ttf"
 			}
 		]
-	},
-	"output": {
-		"size": {
-			"width": 1280,
-			"height": 720
-		},
-		"fps": 25,
-		"format": "mp4"
 	}
 }

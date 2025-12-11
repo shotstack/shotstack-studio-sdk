@@ -1,5 +1,6 @@
 import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../html-timeline.types";
+import { getTrackHeight } from "../../html-timeline.types";
 import { ClipComponent } from "../clip/clip-component";
 
 export interface TrackComponentOptions {
@@ -97,7 +98,18 @@ export class TrackComponent extends TimelineEntity {
 	public updateTrack(track: TrackState, pixelsPerSecond: number): void {
 		this.currentTrack = track;
 		this.currentPixelsPerSecond = pixelsPerSecond;
+
+		// Set height based on primary asset type
+		const height = getTrackHeight(track.primaryAssetType);
+		this.element.style.height = `${height}px`;
+		this.element.dataset["assetType"] = track.primaryAssetType;
+
 		this.needsUpdate = true;
+	}
+
+	/** Get the current track state */
+	public getCurrentTrack(): TrackState | null {
+		return this.currentTrack;
 	}
 
 	public getClipComponent(clipId: string): ClipComponent | undefined {

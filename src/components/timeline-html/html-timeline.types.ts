@@ -63,6 +63,8 @@ export interface TrackState {
 	index: number;
 	/** Clips in this track */
 	clips: ClipState[];
+	/** Primary asset type (from first clip, determines track height) */
+	primaryAssetType: string;
 }
 
 /** Viewport state */
@@ -123,6 +125,25 @@ export const DEFAULT_INTERACTION: Required<HtmlTimelineInteractionConfig> = {
 
 /** Default timeline settings */
 export const DEFAULT_PIXELS_PER_SECOND = 50;
-export const DEFAULT_TRACK_HEIGHT = 64;
+export const DEFAULT_TRACK_HEIGHT = 48;
 export const DEFAULT_TOOLBAR_HEIGHT = 40;
 export const DEFAULT_RULER_HEIGHT = 32;
+
+/** Track heights by asset type */
+export const TRACK_HEIGHTS: Record<string, number> = {
+	video: 72,
+	image: 72,
+	audio: 48,
+	text: 36,
+	"rich-text": 36,
+	shape: 36,
+	caption: 36,
+	html: 48,
+	luma: 48,
+	default: 48
+};
+
+/** Get track height for an asset type */
+export function getTrackHeight(assetType: string): number {
+	return TRACK_HEIGHTS[assetType] ?? TRACK_HEIGHTS["default"];
+}

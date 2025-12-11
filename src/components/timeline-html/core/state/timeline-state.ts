@@ -30,12 +30,21 @@ export class TimelineStateManager {
 		const resolvedEdit = this.edit.getResolvedEdit();
 		if (!resolvedEdit?.timeline?.tracks) return [];
 
-		return resolvedEdit.timeline.tracks.map((track: ResolvedTrack, trackIndex: number) => ({
-			index: trackIndex,
-			clips: (track.clips || []).map((clip: ResolvedClip, clipIndex: number) =>
+		return resolvedEdit.timeline.tracks.map((track: ResolvedTrack, trackIndex: number) => {
+			const clips = (track.clips || []).map((clip: ResolvedClip, clipIndex: number) =>
 				this.createClipState(clip, trackIndex, clipIndex)
-			)
-		}));
+			);
+
+			// Derive primary asset type from first clip
+			const primaryAssetType =
+				clips.length > 0 && clips[0].config.asset ? clips[0].config.asset.type || "unknown" : "empty";
+
+			return {
+				index: trackIndex,
+				clips,
+				primaryAssetType
+			};
+		});
 	}
 
 	public getPlayback(): PlaybackState {

@@ -148,70 +148,107 @@ export const TIMELINE_STYLES = `
 	min-height: 100%;
 }
 
-/* Track */
+/* Track - height set dynamically via inline style */
 .ss-track {
 	position: relative;
-	height: 64px;
-	border-bottom: 1px solid #3f3f46;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	transition: background 0.15s ease;
 }
 
-.ss-track:nth-child(odd) {
-	background: #1f1f23;
-}
-
-.ss-track:nth-child(even) {
-	background: #27272a;
-}
+/* Track backgrounds by asset type - subtle tints */
+.ss-track[data-asset-type="video"] { background: rgba(232, 222, 248, 0.06); }
+.ss-track[data-asset-type="image"] { background: rgba(209, 232, 255, 0.06); }
+.ss-track[data-asset-type="audio"] { background: rgba(184, 230, 212, 0.06); }
+.ss-track[data-asset-type="text"],
+.ss-track[data-asset-type="rich-text"] { background: rgba(255, 228, 201, 0.06); }
+.ss-track[data-asset-type="shape"] { background: rgba(255, 243, 184, 0.06); }
+.ss-track[data-asset-type="caption"] { background: rgba(225, 190, 231, 0.06); }
+.ss-track[data-asset-type="html"] { background: rgba(179, 229, 252, 0.06); }
+.ss-track[data-asset-type="luma"] { background: rgba(207, 216, 220, 0.06); }
+.ss-track[data-asset-type="empty"] { background: #1f1f23; }
 
 .ss-track.drop-target {
 	background: rgba(59, 130, 246, 0.15);
 }
 
-/* Clip */
+/* Clip - height adjusts to track via top/bottom */
 .ss-clip {
 	position: absolute;
 	top: 4px;
-	height: calc(64px - 8px);
+	bottom: 4px;
 	left: calc(var(--clip-start, 0) * var(--ss-timeline-pixels-per-second) * 1px);
 	width: calc(var(--clip-length, 1) * var(--ss-timeline-pixels-per-second) * 1px);
 	min-width: 20px;
-	background: var(--clip-color, #71717a);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: var(--clip-bg, #71717a);
+	border-left: 3px solid var(--clip-border, #555);
 	border-radius: 4px;
 	cursor: grab;
 	overflow: hidden;
-	transition: box-shadow 0.1s ease, opacity 0.1s ease;
+	transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .ss-clip:hover {
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .ss-clip.selected {
 	outline: 2px solid #3b82f6;
 	outline-offset: -1px;
-	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .ss-clip.dragging {
-	opacity: 0.5;
+	opacity: 0.6;
 	cursor: grabbing;
+	transform: scale(1.02);
 }
 
 .ss-clip.resizing {
 	cursor: ew-resize;
 }
 
-/* Clip asset type colors */
-.ss-clip[data-asset-type="video"] { --clip-color: #8b5cf6; }
-.ss-clip[data-asset-type="audio"] { --clip-color: #10b981; }
-.ss-clip[data-asset-type="image"] { --clip-color: #3b82f6; }
-.ss-clip[data-asset-type="text"] { --clip-color: #f59e0b; }
-.ss-clip[data-asset-type="rich-text"] { --clip-color: #f59e0b; }
-.ss-clip[data-asset-type="shape"] { --clip-color: #ec4899; }
-.ss-clip[data-asset-type="html"] { --clip-color: #06b6d4; }
-.ss-clip[data-asset-type="luma"] { --clip-color: #6366f1; }
-.ss-clip[data-asset-type="caption"] { --clip-color: #14b8a6; }
+/* Clip colors - light pastel backgrounds with dark text */
+.ss-clip[data-asset-type="video"] {
+	--clip-bg: #E8DEF8;
+	--clip-fg: #4A148C;
+	--clip-border: #7C4DFF;
+}
+.ss-clip[data-asset-type="image"] {
+	--clip-bg: #D1E8FF;
+	--clip-fg: #0D47A1;
+	--clip-border: #2196F3;
+}
+.ss-clip[data-asset-type="audio"] {
+	--clip-bg: #B8E6D4;
+	--clip-fg: #004D40;
+	--clip-border: #00897B;
+}
+.ss-clip[data-asset-type="text"],
+.ss-clip[data-asset-type="rich-text"] {
+	--clip-bg: #FFE4C9;
+	--clip-fg: #BF360C;
+	--clip-border: #E65100;
+}
+.ss-clip[data-asset-type="shape"] {
+	--clip-bg: #FFF3B8;
+	--clip-fg: #F57F17;
+	--clip-border: #F9A825;
+}
+.ss-clip[data-asset-type="caption"] {
+	--clip-bg: #E1BEE7;
+	--clip-fg: #4A148C;
+	--clip-border: #8E24AA;
+}
+.ss-clip[data-asset-type="html"] {
+	--clip-bg: #B3E5FC;
+	--clip-fg: #006064;
+	--clip-border: #0097A7;
+}
+.ss-clip[data-asset-type="luma"] {
+	--clip-bg: #CFD8DC;
+	--clip-fg: #37474F;
+	--clip-border: #546E7A;
+}
 
 /* Clip content */
 .ss-clip-content {
@@ -219,17 +256,26 @@ export const TIMELINE_STYLES = `
 	align-items: center;
 	padding: 0 8px;
 	height: 100%;
-	gap: 4px;
+	gap: 6px;
 }
 
+/* Clip icon */
+.ss-clip-icon {
+	font-size: 12px;
+	color: var(--clip-fg, #333);
+	opacity: 0.7;
+	flex-shrink: 0;
+	font-weight: 600;
+}
+
+/* Clip label - dark text on light background */
 .ss-clip-label {
 	font-size: 11px;
 	font-weight: 500;
-	color: white;
+	color: var(--clip-fg, #333);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Timing badge */
@@ -242,11 +288,11 @@ export const TIMELINE_STYLES = `
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0, 0, 0, 0.4);
+	background: rgba(0, 0, 0, 0.15);
 	border-radius: 3px;
 	font-size: 10px;
-	color: white;
-	opacity: 0.7;
+	color: var(--clip-fg, #333);
+	opacity: 0.6;
 	transition: opacity 0.1s ease;
 }
 

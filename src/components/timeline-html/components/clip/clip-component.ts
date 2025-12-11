@@ -27,6 +27,11 @@ export class ClipComponent extends TimelineEntity {
 		const content = document.createElement("div");
 		content.className = "ss-clip-content";
 
+		// Icon for asset type
+		const icon = document.createElement("span");
+		icon.className = "ss-clip-icon";
+		content.appendChild(icon);
+
 		const label = document.createElement("span");
 		label.className = "ss-clip-label";
 		content.appendChild(label);
@@ -98,6 +103,12 @@ export class ClipComponent extends TimelineEntity {
 		this.element.classList.toggle("dragging", clip.visualState === "dragging");
 		this.element.classList.toggle("resizing", clip.visualState === "resizing");
 
+		// Update icon
+		const icon = this.element.querySelector(".ss-clip-icon") as HTMLElement;
+		if (icon) {
+			icon.textContent = this.getAssetIcon(assetType);
+		}
+
 		// Update label
 		const label = this.element.querySelector(".ss-clip-label") as HTMLElement;
 		if (label) {
@@ -162,6 +173,21 @@ export class ClipComponent extends TimelineEntity {
 		const asset = clip.asset;
 		if (!asset) return "unknown";
 		return asset.type || "unknown";
+	}
+
+	private getAssetIcon(type: string): string {
+		const icons: Record<string, string> = {
+			video: "▶",
+			image: "◻",
+			audio: "♪",
+			text: "T",
+			"rich-text": "T",
+			shape: "◇",
+			caption: "≡",
+			html: "<>",
+			luma: "◐"
+		};
+		return icons[type] ?? "•";
 	}
 
 	private getClipLabel(clip: ResolvedClip): string {

@@ -1,5 +1,6 @@
 import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../html-timeline.types";
+import { getTrackHeight } from "../../html-timeline.types";
 import { TrackComponent } from "./track-component";
 
 export interface TrackListOptions {
@@ -119,10 +120,23 @@ export class TrackListComponent extends TimelineEntity {
 		return this.trackComponents[trackIndex];
 	}
 
-	public findClipAtPosition(x: number, y: number, trackHeight: number, pixelsPerSecond: number): ClipState | null {
+	public findClipAtPosition(x: number, y: number, _trackHeight: number, pixelsPerSecond: number): ClipState | null {
 		const scrollY = this.element.scrollTop;
 		const relativeY = y + scrollY;
-		const trackIndex = Math.floor(relativeY / trackHeight);
+
+		// Find track at y position using variable heights
+		let currentY = 0;
+		let trackIndex = -1;
+		for (let i = 0; i < this.trackComponents.length; i++) {
+			const track = this.trackComponents[i].getCurrentTrack();
+			const height = getTrackHeight(track?.primaryAssetType ?? "default");
+
+			if (relativeY >= currentY && relativeY < currentY + height) {
+				trackIndex = i;
+				break;
+			}
+			currentY += height;
+		}
 
 		if (trackIndex < 0 || trackIndex >= this.trackComponents.length) {
 			return null;
@@ -132,6 +146,34 @@ export class TrackListComponent extends TimelineEntity {
 		const relativeX = x + scrollX;
 
 		return this.trackComponents[trackIndex].getClipAtPosition(relativeX, pixelsPerSecond);
+	}
+
+	/** Get the track index at a given y position */
+	public getTrackIndexAtY(y: number): number {
+		const scrollY = this.element.scrollTop;
+		const relativeY = y + scrollY;
+
+		let currentY = 0;
+		for (let i = 0; i < this.trackComponents.length; i++) {
+			const track = this.trackComponents[i].getCurrentTrack();
+			const height = getTrackHeight(track?.primaryAssetType ?? "default");
+
+			if (relativeY >= currentY && relativeY < currentY + height) {
+				return i;
+			}
+			currentY += height;
+		}
+		return -1;
+	}
+
+	/** Get the Y position of a track by index */
+	public getTrackYPosition(trackIndex: number): number {
+		let y = 0;
+		for (let i = 0; i < trackIndex && i < this.trackComponents.length; i++) {
+			const track = this.trackComponents[i].getCurrentTrack();
+			y += getTrackHeight(track?.primaryAssetType ?? "default");
+		}
+		return y;
 	}
 
 	public getScrollPosition(): { scrollX: number; scrollY: number } {

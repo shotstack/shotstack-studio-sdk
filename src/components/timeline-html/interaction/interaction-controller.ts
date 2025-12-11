@@ -1,5 +1,6 @@
 import type { Edit } from "@core/edit";
 import type { ClipState, HtmlTimelineInteractionConfig } from "../html-timeline.types";
+import { getTrackHeight, TRACK_HEIGHTS } from "../html-timeline.types";
 import { TimelineStateManager } from "../core/state/timeline-state";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
@@ -184,13 +185,15 @@ export class InteractionController {
 	private createDragGhost(clip: ClipState): HTMLElement {
 		const ghost = document.createElement("div");
 		ghost.className = "ss-drag-ghost ss-clip";
-		ghost.dataset["assetType"] = clip.config.asset?.type || "unknown";
+		const assetType = clip.config.asset?.type || "unknown";
+		ghost.dataset["assetType"] = assetType;
 
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 		const width = clip.config.length * pps;
+		const trackHeight = getTrackHeight(assetType);
 
 		ghost.style.width = `${width}px`;
-		ghost.style.height = "56px"; // Track height - padding
+		ghost.style.height = `${trackHeight - 8}px`; // Track height - padding
 		ghost.style.position = "absolute";
 		ghost.style.pointerEvents = "none";
 		ghost.style.opacity = "0.8";
@@ -205,14 +208,13 @@ export class InteractionController {
 		const scrollX = this.tracksContainer.scrollLeft;
 		const scrollY = this.tracksContainer.scrollTop;
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
-		const trackHeight = 64;
 
 		// Calculate new position
 		const x = e.clientX - rect.left + scrollX;
 		const y = e.clientY - rect.top + scrollY;
 
 		let time = Math.max(0, x / pps);
-		const trackIndex = Math.max(0, Math.floor(y / trackHeight));
+		const trackIndex = Math.max(0, this.getTrackIndexAtY(y));
 
 		// Apply snapping
 		const snappedTime = this.applySnap(time);
@@ -225,7 +227,7 @@ export class InteractionController {
 
 		// Update ghost position
 		this.state.ghost.style.left = `${time * pps}px`;
-		this.state.ghost.style.top = `${trackIndex * trackHeight + 4}px`;
+		this.state.ghost.style.top = `${this.getTrackYPosition(trackIndex) + 4}px`;
 	}
 
 	private handleResizeMove(e: PointerEvent): void {
@@ -300,13 +302,12 @@ export class InteractionController {
 		const scrollX = this.tracksContainer.scrollLeft;
 		const scrollY = this.tracksContainer.scrollTop;
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
-		const trackHeight = 64;
 
 		const x = e.clientX - rect.left + scrollX;
 		const y = e.clientY - rect.top + scrollY;
 
 		let newTime = Math.max(0, x / pps);
-		const newTrackIndex = Math.max(0, Math.floor(y / trackHeight));
+		const newTrackIndex = Math.max(0, this.getTrackIndexAtY(y));
 
 		// Apply snapping
 		const snappedTime = this.applySnap(newTime);
@@ -440,6 +441,30 @@ export class InteractionController {
 		if (this.snapLine) {
 			this.snapLine.style.display = "none";
 		}
+	}
+
+	/** Get track index at a given Y position (accounting for variable heights) */
+	private getTrackIndexAtY(y: number): number {
+		const tracks = this.stateManager.getTracks();
+		let currentY = 0;
+		for (let i = 0; i < tracks.length; i++) {
+			const height = getTrackHeight(tracks[i].primaryAssetType);
+			if (y >= currentY && y < currentY + height) {
+				return i;
+			}
+			currentY += height;
+		}
+		return Math.max(0, tracks.length - 1);
+	}
+
+	/** Get Y position of a track by index (accounting for variable heights) */
+	private getTrackYPosition(trackIndex: number): number {
+		const tracks = this.stateManager.getTracks();
+		let y = 0;
+		for (let i = 0; i < trackIndex && i < tracks.length; i++) {
+			y += getTrackHeight(tracks[i].primaryAssetType);
+		}
+		return y;
 	}
 
 	public dispose(): void {
