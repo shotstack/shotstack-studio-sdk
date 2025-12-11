@@ -326,34 +326,25 @@ export class InteractionController {
 		// Get offset for positioning in feedback layer (accounts for ruler height)
 		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
 
-		// Calculate target track Y position and height for the ghost
-		const tracks = this.stateManager.getTracks();
-		let targetTrackY: number;
-		let targetHeight: number;
+		// Position ghost and drop zone based on target type
 		if (dragTarget.type === "track") {
-			targetTrackY = this.getTrackYPosition(dragTarget.trackIndex) + 4; // +4 for clip padding
+			// Show ghost for track targets
+			this.state.ghost.style.display = "block";
+			const tracks = this.stateManager.getTracks();
+			const targetTrackY = this.getTrackYPosition(dragTarget.trackIndex) + 4; // +4 for clip padding
 			const targetTrack = tracks[dragTarget.trackIndex];
-			targetHeight = getTrackHeight(targetTrack?.primaryAssetType ?? "default") - 8;
-		} else {
-			// For insertion, show ghost at the insertion line position with original track height
-			targetTrackY = this.getTrackYPosition(dragTarget.insertionIndex);
-			const originalTrack = tracks[this.state.originalTrack];
-			targetHeight = getTrackHeight(originalTrack?.primaryAssetType ?? "default") - 8;
-		}
+			const targetHeight = getTrackHeight(targetTrack?.primaryAssetType ?? "default") - 8;
 
-		// Position and size ghost at snapped target position (shows where clip will land)
-		this.state.ghost.style.left = `${clipTime * pps}px`;
-		this.state.ghost.style.top = `${targetTrackY + tracksOffset}px`;
-		this.state.ghost.style.height = `${targetHeight}px`;
+			this.state.ghost.style.left = `${clipTime * pps}px`;
+			this.state.ghost.style.top = `${targetTrackY + tracksOffset}px`;
+			this.state.ghost.style.height = `${targetHeight}px`;
 
-		// Show timestamp tooltip near the ghost
-		this.showDragTimeTooltip(clipTime, clipTime * pps, targetTrackY + tracksOffset);
-
-		// Show drop zone indicator when over insertion zone
-		if (dragTarget.type === "insert") {
-			this.showDropZone(dragTarget.insertionIndex);
-		} else {
+			this.showDragTimeTooltip(clipTime, clipTime * pps, targetTrackY + tracksOffset);
 			this.hideDropZone();
+		} else {
+			// Hide ghost for insertion targets - drop zone indicator is sufficient
+			this.state.ghost.style.display = "none";
+			this.showDropZone(dragTarget.insertionIndex);
 		}
 	}
 
