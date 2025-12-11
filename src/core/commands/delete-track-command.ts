@@ -53,7 +53,7 @@ export class DeleteTrackCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context || this.deletedClips.length === 0) return;
+		if (!context) return;
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 

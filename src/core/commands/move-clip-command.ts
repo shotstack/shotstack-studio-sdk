@@ -2,6 +2,7 @@ import type { Player } from "@canvas/players/player";
 import type { TimingIntent } from "@core/timing/types";
 
 import type { EditCommand, CommandContext } from "./types";
+import { DeleteTrackCommand } from "./delete-track-command";
 
 export class MoveClipCommand implements EditCommand {
 	name = "moveClip";
@@ -10,6 +11,8 @@ export class MoveClipCommand implements EditCommand {
 	private originalClipIndex: number;
 	private originalStart?: number;
 	private originalTimingIntent?: TimingIntent;
+	private deleteTrackCommand?: DeleteTrackCommand;
+	private sourceTrackWasDeleted = false;
 
 	constructor(
 		private fromTrackIndex: number,
@@ -78,6 +81,19 @@ export class MoveClipCommand implements EditCommand {
 
 			// Store the new clip index for undo
 			this.originalClipIndex = insertIndex;
+
+			// Check if source track is now empty and delete it
+			if (fromTrack.length === 0) {
+				this.deleteTrackCommand = new DeleteTrackCommand(this.fromTrackIndex);
+				this.deleteTrackCommand.execute(context);
+				this.sourceTrackWasDeleted = true;
+
+				// Adjust destination track index if it was after the deleted track
+				if (this.toTrackIndex > this.fromTrackIndex) {
+					this.toTrackIndex -= 1;
+					this.player.layer = this.toTrackIndex + 1;
+				}
+			}
 		} else {
 			// Same track - need to reorder if position changed
 			const track = fromTrack;
@@ -124,7 +140,10 @@ export class MoveClipCommand implements EditCommand {
 		}
 
 		// Move the player container to the new track container if needed
-		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
+		// Skip if source track was deleted - the container move is handled by DeleteTrackCommand
+		if (!this.sourceTrackWasDeleted) {
+			context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
+		}
 
 		// Reconfigure and redraw the player
 		this.player.reconfigureAfterRestore();
@@ -134,8 +153,8 @@ export class MoveClipCommand implements EditCommand {
 		context.updateDuration();
 
 		// If we moved tracks, we need to update all clips in both tracks
-		if (this.fromTrackIndex !== this.toTrackIndex) {
-			// Force all clips in the affected tracks to redraw
+		if (this.fromTrackIndex !== this.toTrackIndex && !this.sourceTrackWasDeleted) {
+			// Force all clips in the affected tracks to redraw (skip if source was deleted)
 			const sourceTrack = tracks[this.fromTrackIndex];
 			const destTrack = tracks[this.toTrackIndex];
 
@@ -144,11 +163,19 @@ export class MoveClipCommand implements EditCommand {
 					clip.draw();
 				}
 			});
+		} else if (this.sourceTrackWasDeleted) {
+			// Only redraw destination track clips
+			const destTrack = tracks[this.toTrackIndex];
+			destTrack?.forEach(clip => {
+				if (clip && clip !== this.player) {
+					clip.draw();
+				}
+			});
 		}
 
 		// Propagate timing changes to dependent clips
 		// Need to propagate on both source and destination tracks if they differ
-		if (this.fromTrackIndex !== this.toTrackIndex) {
+		if (this.fromTrackIndex !== this.toTrackIndex && !this.sourceTrackWasDeleted) {
 			context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex - 1);
 		}
 		context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex);
@@ -175,8 +202,20 @@ export class MoveClipCommand implements EditCommand {
 		});
 	}
 
-	undo(context?: CommandContext): void {
+	async undo(context?: CommandContext): Promise<void> {
 		if (!context || !this.player || this.originalStart === undefined) return;
+
+		// If source track was deleted, recreate it first
+		if (this.sourceTrackWasDeleted && this.deleteTrackCommand) {
+			await this.deleteTrackCommand.undo(context);
+			this.sourceTrackWasDeleted = false;
+
+			// Re-adjust track indices that were modified during execute
+			if (this.toTrackIndex >= this.fromTrackIndex) {
+				this.toTrackIndex += 1;
+				this.player.layer = this.toTrackIndex + 1;
+			}
+		}
 
 		const tracks = context.getTracks();
 

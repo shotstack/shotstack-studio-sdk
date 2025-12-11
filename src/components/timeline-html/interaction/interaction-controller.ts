@@ -4,6 +4,7 @@ import { getTrackHeight, TRACK_HEIGHTS } from "../html-timeline.types";
 import { TimelineStateManager } from "../core/state/timeline-state";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 
 /** Point coordinates */
 interface Point {
@@ -23,11 +24,25 @@ interface SnapPoint {
 	type: "clip-start" | "clip-end" | "playhead";
 }
 
+/** Drag target - either an existing track or an insertion point between tracks */
+type DragTarget =
+	| { type: "track"; trackIndex: number }
+	| { type: "insert"; insertionIndex: number };
+
 /** Interaction state machine */
 type InteractionState =
 	| { type: "idle" }
 	| { type: "pending"; startPoint: Point; clipRef: ClipRef; originalTime: number }
-	| { type: "dragging"; clipRef: ClipRef; ghost: HTMLElement; startTime: number; originalTrack: number }
+	| {
+			type: "dragging";
+			clipRef: ClipRef;
+			ghost: HTMLElement;
+			startTime: number;
+			originalTrack: number;
+			dragTarget: DragTarget;
+			dragOffsetX: number; // Pixel offset from ghost left edge to mouse
+			dragOffsetY: number; // Pixel offset from ghost top to mouse
+	  }
 	| { type: "resizing"; clipRef: ClipRef; edge: "left" | "right"; originalStart: number; originalLength: number };
 
 /** Configuration defaults */
@@ -47,6 +62,7 @@ export class InteractionController {
 	private readonly feedbackLayer: HTMLElement;
 	private snapLine: HTMLElement | null = null;
 	private dragGhost: HTMLElement | null = null;
+	private dropZone: HTMLElement | null = null;
 
 	// Bound handlers for cleanup
 	private readonly handlePointerMove: (e: PointerEvent) => void;
@@ -166,6 +182,24 @@ export class InteractionController {
 			return;
 		}
 
+		// Calculate drag offsets - distance from mouse to clip's top-left corner
+		const rect = this.tracksContainer.getBoundingClientRect();
+		const scrollX = this.tracksContainer.scrollLeft;
+		const scrollY = this.tracksContainer.scrollTop;
+		const pps = this.stateManager.getViewport().pixelsPerSecond;
+
+		// Mouse position in content space
+		const mouseX = e.clientX - rect.left + scrollX;
+		const mouseY = e.clientY - rect.top + scrollY;
+
+		// Clip position in content space
+		const clipLeft = clip.config.start * pps;
+		const clipTop = this.getTrackYPosition(clipRef.trackIndex) + 4; // +4 for padding
+
+		// Offsets from clip corner to mouse
+		const dragOffsetX = mouseX - clipLeft;
+		const dragOffsetY = mouseY - clipTop;
+
 		// Create drag ghost
 		const ghost = this.createDragGhost(clip);
 		this.feedbackLayer.appendChild(ghost);
@@ -175,7 +209,10 @@ export class InteractionController {
 			clipRef,
 			ghost,
 			startTime: originalTime,
-			originalTrack: clipRef.trackIndex
+			originalTrack: clipRef.trackIndex,
+			dragTarget: { type: "track", trackIndex: clipRef.trackIndex },
+			dragOffsetX,
+			dragOffsetY
 		};
 
 		this.stateManager.setClipVisualState(clipRef.trackIndex, clipRef.clipIndex, "dragging");
@@ -209,25 +246,43 @@ export class InteractionController {
 		const scrollY = this.tracksContainer.scrollTop;
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 
-		// Calculate new position
-		const x = e.clientX - rect.left + scrollX;
-		const y = e.clientY - rect.top + scrollY;
+		// Mouse position in content space
+		const mouseX = e.clientX - rect.left + scrollX;
+		const mouseY = e.clientY - rect.top + scrollY;
 
-		let time = Math.max(0, x / pps);
-		const trackIndex = Math.max(0, this.getTrackIndexAtY(y));
+		// Calculate ghost position (mouse minus offset = clip corner position)
+		const ghostX = mouseX - this.state.dragOffsetX;
+		const ghostY = mouseY - this.state.dragOffsetY;
 
-		// Apply snapping
-		const snappedTime = this.applySnap(time);
+		// Calculate new clip start time from ghost position
+		let clipTime = Math.max(0, ghostX / pps);
+
+		// Determine drag target based on mouse Y (not ghost Y)
+		const dragTarget = this.getDragTargetAtY(mouseY);
+		this.state.dragTarget = dragTarget;
+
+		// Apply snapping to clip time (not mouse position)
+		const snappedTime = this.applySnap(clipTime);
 		if (snappedTime !== null) {
-			time = snappedTime;
-			this.showSnapLine(time);
+			clipTime = snappedTime;
+			this.showSnapLine(clipTime);
 		} else {
 			this.hideSnapLine();
 		}
 
-		// Update ghost position
-		this.state.ghost.style.left = `${time * pps}px`;
-		this.state.ghost.style.top = `${this.getTrackYPosition(trackIndex) + 4}px`;
+		// Get offset for positioning in feedback layer (accounts for ruler height)
+		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
+
+		// Position ghost freely - X follows clip time (with snap), Y follows mouse
+		this.state.ghost.style.left = `${clipTime * pps}px`;
+		this.state.ghost.style.top = `${ghostY + tracksOffset}px`;
+
+		// Show drop zone indicator when over insertion zone
+		if (dragTarget.type === "insert") {
+			this.showDropZone(dragTarget.insertionIndex);
+		} else {
+			this.hideDropZone();
+		}
 	}
 
 	private handleResizeMove(e: PointerEvent): void {
@@ -296,18 +351,18 @@ export class InteractionController {
 	private completeDrag(e: PointerEvent): void {
 		if (this.state.type !== "dragging") return;
 
-		const { clipRef, ghost, startTime, originalTrack } = this.state;
+		const { clipRef, ghost, startTime, originalTrack, dragTarget, dragOffsetX } = this.state;
 
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
-		const scrollY = this.tracksContainer.scrollTop;
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 
-		const x = e.clientX - rect.left + scrollX;
-		const y = e.clientY - rect.top + scrollY;
+		// Calculate ghost position (mouse minus offset = clip corner position)
+		const mouseX = e.clientX - rect.left + scrollX;
+		const ghostX = mouseX - dragOffsetX;
 
-		let newTime = Math.max(0, x / pps);
-		const newTrackIndex = Math.max(0, this.getTrackIndexAtY(y));
+		// Calculate new clip start time from ghost position
+		let newTime = Math.max(0, ghostX / pps);
 
 		// Apply snapping
 		const snappedTime = this.applySnap(newTime);
@@ -315,12 +370,22 @@ export class InteractionController {
 			newTime = snappedTime;
 		}
 
-		// Execute move command if position changed
-		if (newTime !== startTime || newTrackIndex !== originalTrack) {
+		// Execute appropriate command based on drag target
+		if (dragTarget.type === "insert") {
+			// Create new track and move clip to it
+			const command = new CreateTrackAndMoveClipCommand(
+				dragTarget.insertionIndex,
+				originalTrack,
+				clipRef.clipIndex,
+				newTime
+			);
+			this.edit.executeEditCommand(command);
+		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
+			// Move to existing track
 			const command = new MoveClipCommand(
 				originalTrack,
 				clipRef.clipIndex,
-				newTrackIndex,
+				dragTarget.trackIndex,
 				newTime
 			);
 			this.edit.executeEditCommand(command);
@@ -329,6 +394,7 @@ export class InteractionController {
 		// Cleanup
 		ghost.remove();
 		this.hideSnapLine();
+		this.hideDropZone();
 		this.stateManager.setClipVisualState(clipRef.trackIndex, clipRef.clipIndex, "normal");
 		this.state = { type: "idle" };
 	}
@@ -443,6 +509,37 @@ export class InteractionController {
 		}
 	}
 
+	private showDropZone(insertionIndex: number): void {
+		if (!this.dropZone) {
+			this.dropZone = document.createElement("div");
+			this.dropZone.className = "ss-drop-zone";
+			this.feedbackLayer.appendChild(this.dropZone);
+		}
+
+		const y = this.getTrackYPosition(insertionIndex);
+		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
+		this.dropZone.style.top = `${y - 2 + tracksOffset}px`;
+		this.dropZone.style.display = "block";
+	}
+
+	/** Get the Y offset of tracks container relative to feedback layer's parent */
+	private getTracksOffsetInFeedbackLayer(): number {
+		// Feedback layer and tracks container are siblings inside rulerTracksWrapper
+		// The ruler sits above the tracks, so we need this offset for correct positioning
+		const feedbackParent = this.feedbackLayer.parentElement;
+		if (!feedbackParent) return 0;
+
+		const parentRect = feedbackParent.getBoundingClientRect();
+		const tracksRect = this.tracksContainer.getBoundingClientRect();
+		return tracksRect.top - parentRect.top;
+	}
+
+	private hideDropZone(): void {
+		if (this.dropZone) {
+			this.dropZone.style.display = "none";
+		}
+	}
+
 	/** Get track index at a given Y position (accounting for variable heights) */
 	private getTrackIndexAtY(y: number): number {
 		const tracks = this.stateManager.getTracks();
@@ -455,6 +552,42 @@ export class InteractionController {
 			currentY += height;
 		}
 		return Math.max(0, tracks.length - 1);
+	}
+
+	/** Get drag target at Y position - either an existing track or an insertion point between tracks */
+	private getDragTargetAtY(y: number): DragTarget {
+		const tracks = this.stateManager.getTracks();
+		const insertZoneSize = 12; // pixels at track edges for insert detection
+		let currentY = 0;
+
+		// Top edge - insert above first track
+		if (y < insertZoneSize / 2) {
+			return { type: "insert", insertionIndex: 0 };
+		}
+
+		for (let i = 0; i < tracks.length; i++) {
+			const height = getTrackHeight(tracks[i].primaryAssetType);
+
+			// Top edge insert zone (between this track and previous)
+			if (i > 0 && y >= currentY - insertZoneSize / 2 && y < currentY + insertZoneSize / 2) {
+				return { type: "insert", insertionIndex: i };
+			}
+
+			// Inside track (not in edge zones)
+			if (y >= currentY + insertZoneSize / 2 && y < currentY + height - insertZoneSize / 2) {
+				return { type: "track", trackIndex: i };
+			}
+
+			currentY += height;
+		}
+
+		// Bottom edge - insert after last track
+		if (y >= currentY - insertZoneSize / 2) {
+			return { type: "insert", insertionIndex: tracks.length };
+		}
+
+		// Default to last track
+		return { type: "track", trackIndex: Math.max(0, tracks.length - 1) };
 	}
 
 	/** Get Y position of a track by index (accounting for variable heights) */
@@ -479,6 +612,11 @@ export class InteractionController {
 		if (this.dragGhost) {
 			this.dragGhost.remove();
 			this.dragGhost = null;
+		}
+
+		if (this.dropZone) {
+			this.dropZone.remove();
+			this.dropZone = null;
 		}
 	}
 }

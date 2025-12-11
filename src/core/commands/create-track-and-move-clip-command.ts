@@ -52,11 +52,11 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		}
 	}
 
-	undo(context?: CommandContext): void {
+	async undo(context?: CommandContext): Promise<void> {
 		if (!context || !this.wasExecuted) return;
 
 		// Undo in reverse order
-		this.moveClipCommand.undo(context);
+		await this.moveClipCommand.undo(context);
 		this.addTrackCommand.undo(context);
 		this.wasExecuted = false;
 

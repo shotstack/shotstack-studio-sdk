@@ -338,10 +338,10 @@ export class HtmlTimeline extends TimelineEntity {
 			this.rulerTracksWrapper.appendChild(this.playhead.element);
 		}
 
-		// Build feedback layer
+		// Build feedback layer (inside rulerTracksWrapper so coordinates align with tracks)
 		this.feedbackLayer = document.createElement("div");
 		this.feedbackLayer.className = "ss-feedback-layer";
-		this.element.appendChild(this.feedbackLayer);
+		this.rulerTracksWrapper.appendChild(this.feedbackLayer);
 
 		// Initialize interaction controller
 		this.interactionController = new InteractionController(
