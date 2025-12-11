@@ -469,12 +469,15 @@ export const TIMELINE_STYLES = `
 	50% { opacity: 1; }
 }
 
-/* Drag ghost */
+/* Drag ghost - drop target preview */
 .ss-drag-ghost {
 	position: absolute;
 	pointer-events: none;
-	opacity: 0.8;
-	box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+	opacity: 0.4;
+	background: transparent !important;
+	border: 2px dashed var(--clip-border, #6b7280);
+	border-left-width: 2px;
+	box-shadow: none;
 	z-index: 200;
 }
 
