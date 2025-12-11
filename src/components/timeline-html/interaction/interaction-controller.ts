@@ -426,9 +426,6 @@ export class InteractionController {
 
 		const { clipRef, clipElement, ghost, startTime, originalTrack, dragTarget, originalStyles, collisionResult } = this.state;
 
-		// Use the collision-resolved time from the last drag move
-		const newTime = collisionResult.newStartTime;
-
 		// Restore clip element to normal flow before executing command
 		clipElement.style.position = originalStyles.position;
 		clipElement.style.left = originalStyles.left;
@@ -439,19 +436,100 @@ export class InteractionController {
 		clipElement.style.height = "";
 		clipElement.classList.remove("dragging");
 
-		// Execute appropriate command based on drag target
+		// Get dragged clip's asset type
+		const draggedClip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
+		const draggedAssetType = draggedClip?.config.asset?.type;
+
+		// Use the collision-resolved time from the last drag move
+		let newTime = collisionResult.newStartTime;
+
+		// Handle luma clip drop - must attach to a content clip
+		if (draggedAssetType === "luma" && dragTarget.type === "track") {
+			const targetContentClip = this.findContentClipAtPosition(dragTarget.trackIndex, newTime);
+
+			if (!targetContentClip) {
+				// No valid target content clip - cancel drop
+				ghost.remove();
+				this.hideSnapLine();
+				this.hideDropZone();
+				this.hideDragTimeTooltip();
+				this.state = { type: "idle" };
+				return;
+			}
+
+			// Snap luma timing to content clip
+			newTime = targetContentClip.config.start;
+
+			// Move luma to target position
+			if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
+				const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime);
+				this.edit.executeEditCommand(command);
+			}
+
+			// Register attachment in state manager
+			this.stateManager.attachLuma(
+				targetContentClip.trackIndex,
+				targetContentClip.clipIndex,
+				dragTarget.trackIndex,
+				clipRef.clipIndex
+			);
+
+			// Cleanup and return early
+			ghost.remove();
+			this.hideSnapLine();
+			this.hideDropZone();
+			this.hideDragTimeTooltip();
+			this.state = { type: "idle" };
+			return;
+		}
+
+		// Check if this content clip has an attached luma that needs to sync
+		const attachedLuma = this.stateManager.getAttachedLuma(clipRef.trackIndex, clipRef.clipIndex);
+
+		// Execute appropriate command based on drag target (non-luma clips)
 		if (dragTarget.type === "insert") {
 			// Create new track and move clip to it
 			const command = new CreateTrackAndMoveClipCommand(dragTarget.insertionIndex, originalTrack, clipRef.clipIndex, newTime);
 			this.edit.executeEditCommand(command);
+
+			// Also move attached luma to the new track and time
+			if (attachedLuma) {
+				const lumaCommand = new MoveClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, dragTarget.insertionIndex, newTime);
+				this.edit.executeEditCommand(lumaCommand);
+				// Update attachment reference to new track
+				this.stateManager.detachLuma(clipRef.trackIndex, clipRef.clipIndex);
+				this.stateManager.attachLuma(dragTarget.insertionIndex, clipRef.clipIndex, dragTarget.insertionIndex, attachedLuma.clipIndex);
+			}
 		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
 			const command = new MoveClipWithPushCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime, collisionResult.pushOffset);
 			this.edit.executeEditCommand(command);
+
+			// Also move attached luma to new position
+			if (attachedLuma) {
+				const lumaCommand = new MoveClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, dragTarget.trackIndex, newTime);
+				this.edit.executeEditCommand(lumaCommand);
+				// Update attachment reference if track changed
+				if (dragTarget.trackIndex !== originalTrack) {
+					this.stateManager.detachLuma(clipRef.trackIndex, clipRef.clipIndex);
+					this.stateManager.attachLuma(dragTarget.trackIndex, clipRef.clipIndex, dragTarget.trackIndex, attachedLuma.clipIndex);
+				}
+			}
 		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
 			// Simple move without push
 			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime);
 			this.edit.executeEditCommand(command);
+
+			// Also move attached luma to new position
+			if (attachedLuma) {
+				const lumaCommand = new MoveClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, dragTarget.trackIndex, newTime);
+				this.edit.executeEditCommand(lumaCommand);
+				// Update attachment reference if track changed
+				if (dragTarget.trackIndex !== originalTrack) {
+					this.stateManager.detachLuma(clipRef.trackIndex, clipRef.clipIndex);
+					this.stateManager.attachLuma(dragTarget.trackIndex, clipRef.clipIndex, dragTarget.trackIndex, attachedLuma.clipIndex);
+				}
+			}
 		}
 
 		// Cleanup
@@ -494,6 +572,13 @@ export class InteractionController {
 		if (newLength !== originalLength) {
 			const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
 			this.edit.executeEditCommand(command);
+
+			// Also resize attached luma to match
+			const attachedLuma = this.stateManager.getAttachedLuma(clipRef.trackIndex, clipRef.clipIndex);
+			if (attachedLuma) {
+				const lumaResizeCommand = new ResizeClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, newLength);
+				this.edit.executeEditCommand(lumaResizeCommand);
+			}
 
 			// TODO: For left-edge resize (start changed), also need MoveClipCommand
 			// Currently ResizeClipCommand only handles length changes
@@ -602,6 +687,26 @@ export class InteractionController {
 		}
 
 		return { newStartTime: desiredStart, pushOffset: 0 };
+	}
+
+	/** Find a non-luma content clip at the given position on a track */
+	private findContentClipAtPosition(trackIndex: number, time: number): ClipState | null {
+		const track = this.stateManager.getTracks()[trackIndex];
+		if (!track) return null;
+
+		for (const clip of track.clips) {
+			// Only consider non-luma content clips
+			if (clip.config.asset?.type !== "luma") {
+				const clipStart = clip.config.start;
+				const clipEnd = clipStart + clip.config.length;
+
+				// Check if time falls within this clip
+				if (time >= clipStart && time < clipEnd) {
+					return clip;
+				}
+			}
+		}
+		return null;
 	}
 
 	private buildSnapPoints(excludeClip: ClipRef): void {

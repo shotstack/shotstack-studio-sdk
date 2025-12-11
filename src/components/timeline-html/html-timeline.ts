@@ -78,7 +78,11 @@ export class HtmlTimeline extends TimelineEntity {
 		});
 
 		// Bind event handlers
-		this.handleTimelineUpdated = () => this.requestRender();
+		this.handleTimelineUpdated = () => {
+			// Re-detect luma attachments in case clips were added/removed/moved
+			this.stateManager.detectAndAttachLumas();
+			this.requestRender();
+		};
 		this.handlePlaybackPlay = () => this.startRenderLoop();
 		this.handlePlaybackPause = () => {
 			this.stopRenderLoop();
@@ -318,7 +322,16 @@ export class HtmlTimeline extends TimelineEntity {
 				this.edit.selectClip(trackIndex, clipIndex);
 				this.requestRender();
 			},
-			getClipRenderer: type => this.clipRenderers.get(type)
+			getClipRenderer: type => this.clipRenderers.get(type),
+			isLumaAttached: (trackIndex, clipIndex) => this.stateManager.isLumaAttached(trackIndex, clipIndex),
+			getAttachedLuma: (trackIndex, clipIndex) => this.stateManager.getAttachedLuma(trackIndex, clipIndex),
+			onMaskClick: (contentTrackIndex, contentClipIndex) => {
+				this.stateManager.toggleLumaVisibility(contentTrackIndex, contentClipIndex);
+				this.requestRender();
+			},
+			isLumaVisibleForEditing: (contentTrackIndex, contentClipIndex) =>
+				this.stateManager.isLumaVisibleForEditing(contentTrackIndex, contentClipIndex),
+			getContentClipForLuma: (lumaTrack, lumaClip) => this.stateManager.getContentClipForLuma(lumaTrack, lumaClip)
 		});
 
 		// Set up scroll sync (also sync playhead)
@@ -365,6 +378,9 @@ export class HtmlTimeline extends TimelineEntity {
 		this.interactionController = new InteractionController(this.edit, this.stateManager, this.trackList.element, this.feedbackLayer, {
 			snapThreshold: this.features.snap ? 10 : 0
 		});
+
+		// Auto-detect luma attachments from existing clips (e.g., on template load)
+		this.stateManager.detectAndAttachLumas();
 	}
 
 	private disposeComponents(): void {

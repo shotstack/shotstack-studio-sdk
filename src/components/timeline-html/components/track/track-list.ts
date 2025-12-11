@@ -8,6 +8,16 @@ export interface TrackListOptions {
 	showBadges: boolean;
 	onClipSelect: (trackIndex: number, clipIndex: number, addToSelection: boolean) => void;
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
+	/** Check if a luma clip is attached (and should be hidden) */
+	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
+	/** Get attached luma for a content clip (to show badge) */
+	getAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Callback when mask badge is clicked on a content clip */
+	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
+	/** Check if attached luma is currently visible for editing */
+	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
+	/** Get the content clip that a luma is attached to */
+	getContentClipForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 }
 
 /** Container for all track components with virtualization support */
@@ -77,7 +87,12 @@ export class TrackListComponent extends TimelineEntity {
 			const trackComponent = new TrackComponent(trackIndex, {
 				showBadges: this.options.showBadges,
 				onClipSelect: this.options.onClipSelect,
-				getClipRenderer: this.options.getClipRenderer
+				getClipRenderer: this.options.getClipRenderer,
+				isLumaAttached: this.options.isLumaAttached,
+				getAttachedLuma: this.options.getAttachedLuma,
+				onMaskClick: this.options.onMaskClick,
+				isLumaVisibleForEditing: this.options.isLumaVisibleForEditing,
+				getContentClipForLuma: this.options.getContentClipForLuma
 			});
 			this.trackComponents.push(trackComponent);
 			this.contentElement.appendChild(trackComponent.element);

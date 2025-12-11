@@ -7,6 +7,16 @@ export interface TrackComponentOptions {
 	showBadges: boolean;
 	onClipSelect: (trackIndex: number, clipIndex: number, addToSelection: boolean) => void;
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
+	/** Check if a luma clip is attached (and should be hidden) */
+	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
+	/** Get attached luma for a content clip (to show badge) */
+	getAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Callback when mask badge is clicked on a content clip */
+	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
+	/** Check if attached luma is currently visible for editing */
+	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
+	/** Get the content clip that a luma is attached to */
+	getContentClipForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 }
 
 /** Renders a single track with its clips */
@@ -54,20 +64,60 @@ export class TrackComponent extends TimelineEntity {
 
 		// Update or create clips
 		for (const clipState of track.clips) {
-			processedIds.add(clipState.id);
+			// Check if this is an attached luma clip
+			const isLumaClip = clipState.config.asset?.type === "luma";
+			const isAttachedLuma = isLumaClip && this.options.isLumaAttached?.(clipState.trackIndex, clipState.clipIndex);
 
-			let clipComponent = this.clipComponents.get(clipState.id);
-			if (!clipComponent) {
-				clipComponent = new ClipComponent(clipState, {
-					showBadges: this.options.showBadges,
-					onSelect: this.options.onClipSelect,
-					getRenderer: this.options.getClipRenderer
-				});
-				this.clipComponents.set(clipState.id, clipComponent);
-				this.element.appendChild(clipComponent.element);
+			if (isAttachedLuma) {
+				// Check if it should be visible for editing
+				const contentClip = this.options.getContentClipForLuma?.(clipState.trackIndex, clipState.clipIndex);
+				const isVisibleForEditing = contentClip && this.options.isLumaVisibleForEditing?.(contentClip.trackIndex, contentClip.clipIndex);
+
+				if (isVisibleForEditing) {
+					// Render the luma clip (it's visible for editing)
+					processedIds.add(clipState.id);
+
+					let clipComponent = this.clipComponents.get(clipState.id);
+					if (!clipComponent) {
+						clipComponent = new ClipComponent(clipState, {
+							showBadges: this.options.showBadges,
+							onSelect: this.options.onClipSelect,
+							getRenderer: this.options.getClipRenderer
+						});
+						this.clipComponents.set(clipState.id, clipComponent);
+						this.element.appendChild(clipComponent.element);
+					}
+					clipComponent.updateClip(clipState, undefined);
+				} else {
+					// Hide attached luma - remove clip component if it exists
+					const existingComponent = this.clipComponents.get(clipState.id);
+					if (existingComponent) {
+						existingComponent.dispose();
+						this.clipComponents.delete(clipState.id);
+					}
+				}
+			} else {
+				// Normal clip rendering (non-luma or unattached luma)
+				processedIds.add(clipState.id);
+
+				// Check if this content clip has an attached luma (for badge display)
+				const attachedLuma = this.options.getAttachedLuma?.(clipState.trackIndex, clipState.clipIndex);
+
+				let clipComponent = this.clipComponents.get(clipState.id);
+				if (!clipComponent) {
+					clipComponent = new ClipComponent(clipState, {
+						showBadges: this.options.showBadges,
+						onSelect: this.options.onClipSelect,
+						getRenderer: this.options.getClipRenderer,
+						attachedLuma: attachedLuma ?? undefined,
+						onMaskClick: this.options.onMaskClick
+					});
+					this.clipComponents.set(clipState.id, clipComponent);
+					this.element.appendChild(clipComponent.element);
+				}
+
+				clipComponent.updateClip(clipState, attachedLuma ?? undefined);
 			}
-
-			clipComponent.updateClip(clipState);
 		}
 
 		// Remove clips that no longer exist

@@ -3,16 +3,28 @@ import type { ResolvedClip } from "@schemas/clip";
 import { TimelineEntity } from "../../core/timeline-entity";
 import type { ClipState, ClipRenderer } from "../../html-timeline.types";
 
+/** Reference to an attached luma clip */
+interface LumaRef {
+	trackIndex: number;
+	clipIndex: number;
+}
+
 export interface ClipComponentOptions {
 	showBadges: boolean;
 	onSelect: (trackIndex: number, clipIndex: number, addToSelection: boolean) => void;
 	getRenderer: (type: string) => ClipRenderer | undefined;
+	/** Reference to attached luma (if this clip has a mask) */
+	attachedLuma?: LumaRef;
+	/** Callback when mask badge is clicked - passes the CONTENT clip indices */
+	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
 }
 
 /** Renders a single clip element */
 export class ClipComponent extends TimelineEntity {
 	private readonly options: ClipComponentOptions;
 	private currentState: ClipState | null = null;
+	private currentLumaRef: LumaRef | undefined = undefined;
+	private maskBadge: HTMLElement | null = null;
 	private needsUpdate = true;
 
 	constructor(clip: ClipState, options: ClipComponentOptions) {
@@ -124,10 +136,38 @@ export class ClipComponent extends TimelineEntity {
 			}
 		}
 
+		// Update mask badge (show if clip has attached luma)
+		this.updateMaskBadge();
+
 		// Apply custom renderer if available
 		const renderer = this.options.getRenderer(assetType);
 		if (renderer) {
 			renderer.render(config, this.element);
+		}
+	}
+
+	/** Show/hide mask badge based on attached luma */
+	private updateMaskBadge(): void {
+		if (this.currentLumaRef && this.currentState) {
+			// Create badge if it doesn't exist
+			if (!this.maskBadge) {
+				this.maskBadge = document.createElement("div");
+				this.maskBadge.className = "ss-clip-mask-badge";
+				this.maskBadge.textContent = "◐";
+				this.maskBadge.title = "Luma mask attached - click to toggle";
+				this.maskBadge.addEventListener("click", e => {
+					e.stopPropagation();
+					// Pass the CONTENT clip indices (this clip), not the luma indices
+					if (this.currentState && this.options.onMaskClick) {
+						this.options.onMaskClick(this.currentState.trackIndex, this.currentState.clipIndex);
+					}
+				});
+				this.element.appendChild(this.maskBadge);
+			}
+			this.maskBadge.style.display = "flex";
+		} else if (this.maskBadge) {
+			// Hide badge if no luma attached
+			this.maskBadge.style.display = "none";
 		}
 	}
 
@@ -145,8 +185,9 @@ export class ClipComponent extends TimelineEntity {
 	}
 
 	/** Update clip state and mark for re-render */
-	public updateClip(clip: ClipState): void {
+	public updateClip(clip: ClipState, attachedLuma?: LumaRef): void {
 		this.currentState = clip;
+		this.currentLumaRef = attachedLuma;
 		this.needsUpdate = true;
 	}
 

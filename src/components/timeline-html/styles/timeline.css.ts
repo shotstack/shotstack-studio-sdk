@@ -358,6 +358,29 @@ export const TIMELINE_STYLES = `
 	display: none;
 }
 
+/* Mask badge (for clips with attached luma) */
+.ss-clip-mask-badge {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	width: 18px;
+	height: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.4);
+	border-radius: 3px;
+	font-size: 11px;
+	color: #fff;
+	cursor: pointer;
+	z-index: 5;
+	transition: background 0.1s ease;
+}
+
+.ss-clip-mask-badge:hover {
+	background: rgba(0, 0, 0, 0.6);
+}
+
 /* Resize handle */
 .ss-clip-resize-handle {
 	position: absolute;

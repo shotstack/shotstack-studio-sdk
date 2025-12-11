@@ -6,11 +6,23 @@ import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../
 
 type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
 
+/** Clip reference for luma attachments */
+interface LumaAttachmentRef {
+	trackIndex: number;
+	clipIndex: number;
+}
+
 /** Simplified state manager - only holds UI state, derives data from Edit */
 export class TimelineStateManager {
 	// UI-only state (not in Edit)
 	private viewport: ViewportState;
 	private clipVisualStates = new Map<string, ClipVisualState>();
+
+	// Luma attachment map: key = "trackIndex:clipIndex" of content clip, value = luma clip reference
+	private lumaAttachments = new Map<string, LumaAttachmentRef>();
+
+	// Track which attached lumas are currently visible for editing
+	private lumaEditingVisible = new Set<string>();
 
 	constructor(
 		private readonly edit: Edit,
@@ -118,8 +130,113 @@ export class TimelineStateManager {
 		return Math.max(this.getExtendedDuration() * this.viewport.pixelsPerSecond, this.viewport.width);
 	}
 
+	// ========== Luma Attachments ==========
+
+	/** Attach a luma clip to a content clip */
+	public attachLuma(contentTrack: number, contentClip: number, lumaTrack: number, lumaClip: number): void {
+		const key = `${contentTrack}:${contentClip}`;
+		this.lumaAttachments.set(key, { trackIndex: lumaTrack, clipIndex: lumaClip });
+	}
+
+	/** Detach luma from a content clip */
+	public detachLuma(contentTrack: number, contentClip: number): void {
+		const key = `${contentTrack}:${contentClip}`;
+		this.lumaAttachments.delete(key);
+	}
+
+	/** Get attached luma for a content clip */
+	public getAttachedLuma(trackIndex: number, clipIndex: number): LumaAttachmentRef | null {
+		return this.lumaAttachments.get(`${trackIndex}:${clipIndex}`) ?? null;
+	}
+
+	/** Check if a luma clip is attached to any content clip */
+	public isLumaAttached(lumaTrack: number, lumaClip: number): boolean {
+		for (const ref of this.lumaAttachments.values()) {
+			if (ref.trackIndex === lumaTrack && ref.clipIndex === lumaClip) return true;
+		}
+		return false;
+	}
+
+	/** Get the content clip that a luma is attached to */
+	public getContentClipForLuma(lumaTrack: number, lumaClip: number): LumaAttachmentRef | null {
+		for (const [key, ref] of this.lumaAttachments.entries()) {
+			if (ref.trackIndex === lumaTrack && ref.clipIndex === lumaClip) {
+				const [track, clip] = key.split(":").map(Number);
+				return { trackIndex: track, clipIndex: clip };
+			}
+		}
+		return null;
+	}
+
+	/** Clear all luma attachments */
+	public clearLumaAttachments(): void {
+		this.lumaAttachments.clear();
+		this.lumaEditingVisible.clear();
+	}
+
+	/** Toggle visibility of attached luma for editing */
+	public toggleLumaVisibility(contentTrack: number, contentClip: number): boolean {
+		const key = `${contentTrack}:${contentClip}`;
+		if (this.lumaEditingVisible.has(key)) {
+			this.lumaEditingVisible.delete(key);
+			return false; // Now hidden
+		}
+		this.lumaEditingVisible.add(key);
+		return true; // Now visible
+	}
+
+	/** Check if attached luma is currently visible for editing */
+	public isLumaVisibleForEditing(contentTrack: number, contentClip: number): boolean {
+		return this.lumaEditingVisible.has(`${contentTrack}:${contentClip}`);
+	}
+
+	/** Auto-detect and register luma attachments based on clip overlap */
+	public detectAndAttachLumas(): void {
+		// Preserve existing visibility states for attachments that still exist
+		const previousVisibility = new Set(this.lumaEditingVisible);
+
+		// Clear existing attachments (will re-detect)
+		this.lumaAttachments.clear();
+		this.lumaEditingVisible.clear();
+
+		const tracks = this.getTracks();
+
+		// Find all luma clips and attach them to overlapping content clips
+		for (const track of tracks) {
+			for (const clip of track.clips) {
+				if (clip.config.asset?.type === "luma") {
+					const contentClip = this.findContentClipInSameTrack(clip, tracks);
+					if (contentClip) {
+						const key = `${contentClip.trackIndex}:${contentClip.clipIndex}`;
+						this.attachLuma(contentClip.trackIndex, contentClip.clipIndex, clip.trackIndex, clip.clipIndex);
+
+						// Restore visibility state if it existed before
+						if (previousVisibility.has(key)) {
+							this.lumaEditingVisible.add(key);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/** Find the content clip in the same track as the luma clip */
+	private findContentClipInSameTrack(lumaClip: ClipState, tracks: TrackState[]): ClipState | null {
+		const lumaTrack = tracks[lumaClip.trackIndex];
+		if (!lumaTrack) return null;
+
+		for (const clip of lumaTrack.clips) {
+			if (clip.config.asset?.type !== "luma") {
+				return clip;
+			}
+		}
+		return null;
+	}
+
 	public dispose(): void {
 		this.clipVisualStates.clear();
+		this.lumaAttachments.clear();
+		this.lumaEditingVisible.clear();
 	}
 
 	// ========== Private ==========
