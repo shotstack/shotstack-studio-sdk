@@ -313,11 +313,19 @@ export class InteractionController {
 			this.hideSnapLine();
 		}
 
-		// Apply collision detection for track targets
+		// Apply collision detection for track targets (skip for luma assets - they overlay)
 		if (dragTarget.type === "track") {
-			const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
-			clipTime = collisionResult.newStartTime;
-			this.state.collisionResult = collisionResult;
+			const draggedClip = this.stateManager.getClipAt(this.state.clipRef.trackIndex, this.state.clipRef.clipIndex);
+			const draggedAssetType = draggedClip?.config.asset?.type;
+
+			if (draggedAssetType === "luma") {
+				// Luma assets can overlay other clips - skip collision detection
+				this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+			} else {
+				const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
+				clipTime = collisionResult.newStartTime;
+				this.state.collisionResult = collisionResult;
+			}
 		} else {
 			// No collision for insertion targets (new track)
 			this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
@@ -586,6 +594,10 @@ export class InteractionController {
 
 		const overlap = this.findOverlappingClip(clips, desiredStart, clipLength);
 		if (overlap) {
+			// Skip collision for luma assets - they should be overlayable
+			if (overlap.clip.config.asset?.type === "luma") {
+				return { newStartTime: desiredStart, pushOffset: 0 };
+			}
 			return this.resolveOverlapSnap(overlap.clip, overlap.index, desiredStart, clipLength, clips);
 		}
 
