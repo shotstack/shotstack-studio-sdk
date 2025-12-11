@@ -37,6 +37,7 @@ async function main() {
 			id: "code",
 			icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L6 15"/><path d="M12.5 11.5L11 10L13 8L11 6L12.5 4.5L16 8L12.5 11.5Z"/><path d="M3 8L5 10L3.5 11.5L0 8L3.5 4.5L5 6L3 8Z"/></svg>`,
 			tooltip: "Add Code",
+			dividerBefore: true,
 			event: "code:requested"
 		});
 
