@@ -127,6 +127,15 @@ export const TIMELINE_STYLES = `
 	cursor: grab;
 }
 
+/* Ruler + Tracks Wrapper (for playhead to span both) */
+.ss-ruler-tracks-wrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	overflow: hidden;
+}
+
 /* Ruler */
 .ss-timeline-ruler {
 	position: relative;
@@ -389,7 +398,7 @@ export const TIMELINE_STYLES = `
 
 .ss-playhead-handle {
 	position: absolute;
-	top: -4px;
+	top: 0;
 	left: 50%;
 	transform: translateX(-50%);
 	width: 12px;
@@ -401,7 +410,7 @@ export const TIMELINE_STYLES = `
 }
 
 .ss-playhead-handle:hover {
-	transform: translateX(-50%) scale(1.1);
+	transform: translateX(-50%) scale(1.15);
 }
 
 .ss-playhead-handle:active {

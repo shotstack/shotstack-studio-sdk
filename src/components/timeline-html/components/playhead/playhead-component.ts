@@ -2,6 +2,7 @@ import { TimelineEntity } from "../../core/timeline-entity";
 
 export interface PlayheadOptions {
 	onSeek: (timeMs: number) => void;
+	getScrollX?: () => number;
 }
 
 /** Playhead indicator with drag support */
@@ -11,7 +12,7 @@ export class PlayheadComponent extends TimelineEntity {
 	private pixelsPerSecond = 50;
 	private isDragging = false;
 	private containerRect: DOMRect | null = null;
-	private scrollLeft = 0;
+	private currentScrollX = 0;
 	private needsUpdate = true;
 
 	constructor(options: PlayheadOptions) {
@@ -43,14 +44,15 @@ export class PlayheadComponent extends TimelineEntity {
 			const container = this.element.parentElement;
 			if (container) {
 				this.containerRect = container.getBoundingClientRect();
-				this.scrollLeft = container.scrollLeft;
 			}
 		};
 
 		const onPointerMove = (e: PointerEvent) => {
 			if (!this.isDragging || !this.containerRect) return;
 
-			const x = e.clientX - this.containerRect.left + this.scrollLeft;
+			// Get current scroll from callback or stored value
+			const scrollX = this.options.getScrollX?.() ?? this.currentScrollX;
+			const x = e.clientX - this.containerRect.left + scrollX;
 			const time = Math.max(0, x / this.pixelsPerSecond);
 
 			// Update position immediately for smooth feedback
@@ -118,5 +120,9 @@ export class PlayheadComponent extends TimelineEntity {
 
 	public getTime(): number {
 		return this.currentTimeMs;
+	}
+
+	public setScrollX(scrollX: number): void {
+		this.currentScrollX = scrollX;
 	}
 }

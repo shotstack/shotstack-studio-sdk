@@ -96,13 +96,18 @@ export class TrackComponent extends TimelineEntity {
 
 	/** Update track state and mark for re-render */
 	public updateTrack(track: TrackState, pixelsPerSecond: number): void {
+		// Only update height if asset type changed (not every frame)
+		const prevAssetType = this.currentTrack?.primaryAssetType;
+
 		this.currentTrack = track;
 		this.currentPixelsPerSecond = pixelsPerSecond;
 
-		// Set height based on primary asset type
-		const height = getTrackHeight(track.primaryAssetType);
-		this.element.style.height = `${height}px`;
-		this.element.dataset["assetType"] = track.primaryAssetType;
+		// Set height only when asset type changes
+		if (track.primaryAssetType !== prevAssetType) {
+			const height = getTrackHeight(track.primaryAssetType);
+			this.element.style.height = `${height}px`;
+			this.element.dataset["assetType"] = track.primaryAssetType;
+		}
 
 		this.needsUpdate = true;
 	}

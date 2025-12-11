@@ -28,6 +28,7 @@ export class Controls {
 
 		switch (event.code) {
 			case "Space": {
+				event.preventDefault();
 				if (!this.edit.isPlaying) {
 					this.edit.play();
 				} else {

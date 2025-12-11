@@ -28,6 +28,7 @@ export class HtmlTimeline extends TimelineEntity {
 
 	// Components (stored separately from children for typed access)
 	private toolbar: ToolbarComponent | null = null;
+	private rulerTracksWrapper: HTMLElement | null = null;
 	private ruler: RulerComponent | null = null;
 	private trackList: TrackListComponent | null = null;
 	private playhead: PlayheadComponent | null = null;
@@ -290,10 +291,15 @@ export class HtmlTimeline extends TimelineEntity {
 			this.element.appendChild(this.toolbar.element);
 		}
 
+		// Create wrapper for ruler + tracks + playhead (so playhead can span both)
+		this.rulerTracksWrapper = document.createElement("div");
+		this.rulerTracksWrapper.className = "ss-ruler-tracks-wrapper";
+		this.element.appendChild(this.rulerTracksWrapper);
+
 		// Build ruler
 		if (this.features.ruler) {
 			this.ruler = new RulerComponent();
-			this.element.appendChild(this.ruler.element);
+			this.rulerTracksWrapper.appendChild(this.ruler.element);
 		}
 
 		// Build track list
@@ -310,21 +316,26 @@ export class HtmlTimeline extends TimelineEntity {
 			getClipRenderer: type => this.clipRenderers.get(type)
 		});
 
-		// Set up scroll sync
+		// Set up scroll sync (also sync playhead)
 		this.trackList.setScrollHandler((scrollX, scrollY) => {
 			this.stateManager.setScroll(scrollX, scrollY);
 			this.ruler?.syncScroll(scrollX);
+			// Sync playhead with track scroll
+			if (this.playhead) {
+				this.playhead.element.style.transform = `translateX(${-scrollX}px)`;
+				this.playhead.setScrollX(scrollX);
+			}
 		});
 
-		this.element.appendChild(this.trackList.element);
+		this.rulerTracksWrapper.appendChild(this.trackList.element);
 
-		// Build playhead
+		// Build playhead (at wrapper level so it spans ruler + tracks)
 		if (this.features.playhead) {
 			this.playhead = new PlayheadComponent({
 				onSeek: timeMs => this.edit.seek(timeMs)
 			});
 			this.playhead.setPixelsPerSecond(viewport.pixelsPerSecond);
-			this.trackList.contentElement.appendChild(this.playhead.element);
+			this.rulerTracksWrapper.appendChild(this.playhead.element);
 		}
 
 		// Build feedback layer
@@ -357,6 +368,9 @@ export class HtmlTimeline extends TimelineEntity {
 
 		this.trackList?.dispose();
 		this.trackList = null;
+
+		this.rulerTracksWrapper?.remove();
+		this.rulerTracksWrapper = null;
 
 		this.feedbackLayer?.remove();
 		this.feedbackLayer = null;
