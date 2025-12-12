@@ -27,7 +27,8 @@ const ICONS = {
 	transition: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/></svg>`,
 	chevron: `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
 	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`
+	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+	effect: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`
 };
 
 type MediaAssetType = "video" | "image" | "audio";
@@ -56,6 +57,21 @@ export class MediaToolbar extends BaseToolbar {
 	// Transition popup elements
 	private directionRow: HTMLDivElement | null = null;
 	private speedValueLabel: HTMLSpanElement | null = null;
+
+	// Effect state - progressive disclosure design
+	private effectType: "" | "zoom" | "slide" = "";
+	private effectVariant: "In" | "Out" = "In";  // For zoom
+	private effectDirection: "Left" | "Right" | "Up" | "Down" = "Right";  // For slide
+	private effectSpeed: number = 1.0;
+	private readonly EFFECT_SPEED_VALUES = [0.5, 1.0, 2.0];
+
+	// Effect popup elements
+	private effectBtn: HTMLButtonElement | null = null;
+	private effectPopup: HTMLDivElement | null = null;
+	private effectVariantRow: HTMLDivElement | null = null;
+	private effectDirectionRow: HTMLDivElement | null = null;
+	private effectSpeedRow: HTMLDivElement | null = null;
+	private effectSpeedValueLabel: HTMLSpanElement | null = null;
 
 	// Button elements
 	private fitBtn: HTMLButtonElement | null = null;
@@ -212,6 +228,54 @@ export class MediaToolbar extends BaseToolbar {
 						</div>
 					</div>
 				</div>
+
+				<div class="ss-media-toolbar-divider"></div>
+
+				<!-- Effect -->
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="effect">
+						${ICONS.effect}
+						<span>Effect</span>
+					</button>
+					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--effect" data-popup="effect">
+						<!-- Effect Type Selection - Always visible -->
+						<div class="ss-effect-types">
+							<button class="ss-effect-type" data-effect-type="">None</button>
+							<button class="ss-effect-type" data-effect-type="zoom">Zoom</button>
+							<button class="ss-effect-type" data-effect-type="slide">Slide</button>
+						</div>
+
+						<!-- Zoom Variant Row - Progressive disclosure -->
+						<div class="ss-effect-variant-row" data-effect-variant-row>
+							<span class="ss-effect-label">Variant</span>
+							<div class="ss-effect-variants">
+								<button class="ss-effect-variant" data-variant="In">In</button>
+								<button class="ss-effect-variant" data-variant="Out">Out</button>
+							</div>
+						</div>
+
+						<!-- Slide Direction Row - Progressive disclosure -->
+						<div class="ss-effect-direction-row" data-effect-direction-row>
+							<span class="ss-effect-label">Direction</span>
+							<div class="ss-effect-directions">
+								<button class="ss-effect-dir" data-effect-dir="Left">←</button>
+								<button class="ss-effect-dir" data-effect-dir="Right">→</button>
+								<button class="ss-effect-dir" data-effect-dir="Up">↑</button>
+								<button class="ss-effect-dir" data-effect-dir="Down">↓</button>
+							</div>
+						</div>
+
+						<!-- Speed Row - Shows when effect is selected -->
+						<div class="ss-effect-speed-row" data-effect-speed-row>
+							<span class="ss-effect-label">Speed</span>
+							<div class="ss-effect-speed-stepper">
+								<button class="ss-effect-speed-btn" data-effect-speed-decrease>−</button>
+								<span class="ss-effect-speed-value" data-effect-speed-value>1s</span>
+								<button class="ss-effect-speed-btn" data-effect-speed-increase>+</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<!-- Volume (video and audio only) -->
@@ -288,6 +352,14 @@ export class MediaToolbar extends BaseToolbar {
 		this.directionRow = this.container.querySelector("[data-direction-row]");
 		this.speedValueLabel = this.container.querySelector("[data-speed-value]");
 
+		// Effect elements
+		this.effectBtn = this.container.querySelector('[data-action="effect"]');
+		this.effectPopup = this.container.querySelector('[data-popup="effect"]');
+		this.effectVariantRow = this.container.querySelector("[data-effect-variant-row]");
+		this.effectDirectionRow = this.container.querySelector("[data-effect-direction-row]");
+		this.effectSpeedRow = this.container.querySelector("[data-effect-speed-row]");
+		this.effectSpeedValueLabel = this.container.querySelector("[data-effect-speed-value]");
+
 		// Advanced menu elements
 		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
 		this.advancedPopup = this.container.querySelector('[data-popup="advanced"]');
@@ -320,6 +392,10 @@ export class MediaToolbar extends BaseToolbar {
 		this.transitionBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopupByName("transition");
+		});
+		this.effectBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopupByName("effect");
 		});
 		this.advancedBtn?.addEventListener("click", e => {
 			e.stopPropagation();
@@ -388,15 +464,49 @@ export class MediaToolbar extends BaseToolbar {
 		const speedIncrease = this.transitionPopup?.querySelector("[data-speed-increase]");
 		speedDecrease?.addEventListener("click", () => this.handleSpeedStep(-1));
 		speedIncrease?.addEventListener("click", () => this.handleSpeedStep(1));
+
+		// Effect type buttons
+		this.effectPopup?.querySelectorAll("[data-effect-type]").forEach(btn => {
+			btn.addEventListener("click", e => {
+				const el = e.currentTarget as HTMLElement;
+				const effectType = el.dataset["effectType"] || "";
+				this.handleEffectTypeSelect(effectType as "" | "zoom" | "slide");
+			});
+		});
+
+		// Effect variant buttons (for Zoom)
+		this.effectPopup?.querySelectorAll("[data-variant]").forEach(btn => {
+			btn.addEventListener("click", e => {
+				const el = e.currentTarget as HTMLElement;
+				const variant = el.dataset["variant"] || "In";
+				this.handleEffectVariantSelect(variant as "In" | "Out");
+			});
+		});
+
+		// Effect direction buttons (for Slide)
+		this.effectPopup?.querySelectorAll("[data-effect-dir]").forEach(btn => {
+			btn.addEventListener("click", e => {
+				const el = e.currentTarget as HTMLElement;
+				const dir = el.dataset["effectDir"] || "Right";
+				this.handleEffectDirectionSelect(dir as "Left" | "Right" | "Up" | "Down");
+			});
+		});
+
+		// Effect speed buttons
+		const effectSpeedDecrease = this.effectPopup?.querySelector("[data-effect-speed-decrease]");
+		const effectSpeedIncrease = this.effectPopup?.querySelector("[data-effect-speed-increase]");
+		effectSpeedDecrease?.addEventListener("click", () => this.handleEffectSpeedStep(-1));
+		effectSpeedIncrease?.addEventListener("click", () => this.handleEffectSpeedStep(1));
 	}
 
-	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "advanced"): void {
+	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced"): void {
 		const popupMap = {
 			fit: { popup: this.fitPopup, btn: this.fitBtn },
 			opacity: { popup: this.opacityPopup, btn: this.opacityBtn },
 			scale: { popup: this.scalePopup, btn: this.scaleBtn },
 			volume: { popup: this.volumePopup, btn: this.volumeBtn },
 			transition: { popup: this.transitionPopup, btn: this.transitionBtn },
+			effect: { popup: this.effectPopup, btn: this.effectBtn },
 			advanced: { popup: this.advancedPopup, btn: this.advancedBtn }
 		};
 
@@ -418,11 +528,12 @@ export class MediaToolbar extends BaseToolbar {
 		this.scaleBtn?.classList.remove("active");
 		this.volumeBtn?.classList.remove("active");
 		this.transitionBtn?.classList.remove("active");
+		this.effectBtn?.classList.remove("active");
 		this.advancedBtn?.classList.remove("active");
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [this.fitPopup, this.opacityPopup, this.scalePopup, this.volumePopup, this.transitionPopup, this.advancedPopup];
+		return [this.fitPopup, this.opacityPopup, this.scalePopup, this.volumePopup, this.transitionPopup, this.effectPopup, this.advancedPopup];
 	}
 
 	protected override syncState(): void {
@@ -457,6 +568,9 @@ export class MediaToolbar extends BaseToolbar {
 			this.transitionOutEffect = parsedOut.effect;
 			this.transitionOutDirection = parsedOut.direction;
 			this.transitionOutSpeed = parsedOut.speed;
+
+			// Effect - parse type, variant/direction, and speed from stored value
+			this.parseEffectValue(clip.effect || "");
 		}
 
 		// Update displays
@@ -471,6 +585,9 @@ export class MediaToolbar extends BaseToolbar {
 		// Reset to IN tab and update transition UI
 		this.activeTransitionTab = "in";
 		this.updateTransitionUI();
+
+		// Update effect UI
+		this.updateEffectUI();
 
 		// Update dynamic source state
 		this.updateDynamicSourceUI();
@@ -738,6 +855,133 @@ export class MediaToolbar extends BaseToolbar {
 		if (increaseBtn) increaseBtn.disabled = speedIdx >= this.SPEED_VALUES.length - 1;
 	}
 
+	// ==================== Effect Handlers ====================
+
+	private handleEffectTypeSelect(effectType: "" | "zoom" | "slide"): void {
+		this.effectType = effectType;
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private handleEffectVariantSelect(variant: "In" | "Out"): void {
+		this.effectVariant = variant;
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private handleEffectDirectionSelect(direction: "Left" | "Right" | "Up" | "Down"): void {
+		this.effectDirection = direction;
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private handleEffectSpeedStep(direction: number): void {
+		const currentIndex = this.EFFECT_SPEED_VALUES.indexOf(this.effectSpeed);
+		const newIndex = Math.max(0, Math.min(this.EFFECT_SPEED_VALUES.length - 1, currentIndex + direction));
+		this.effectSpeed = this.EFFECT_SPEED_VALUES[newIndex];
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private updateEffectUI(): void {
+		// Update active state on effect type buttons
+		this.effectPopup?.querySelectorAll("[data-effect-type]").forEach(btn => {
+			const type = (btn as HTMLElement).dataset["effectType"] || "";
+			btn.classList.toggle("active", type === this.effectType);
+		});
+
+		// Show/hide variant row (for Zoom)
+		this.effectVariantRow?.classList.toggle("visible", this.effectType === "zoom");
+
+		// Update variant active states
+		this.effectPopup?.querySelectorAll("[data-variant]").forEach(btn => {
+			const variant = (btn as HTMLElement).dataset["variant"] || "";
+			btn.classList.toggle("active", variant === this.effectVariant);
+		});
+
+		// Show/hide direction row (for Slide)
+		this.effectDirectionRow?.classList.toggle("visible", this.effectType === "slide");
+
+		// Update direction active states
+		this.effectPopup?.querySelectorAll("[data-effect-dir]").forEach(btn => {
+			const dir = (btn as HTMLElement).dataset["effectDir"] || "";
+			btn.classList.toggle("active", dir === this.effectDirection);
+		});
+
+		// Show/hide speed row (when effect is selected)
+		this.effectSpeedRow?.classList.toggle("visible", this.effectType !== "");
+
+		// Update speed display
+		if (this.effectSpeedValueLabel) {
+			this.effectSpeedValueLabel.textContent = `${this.effectSpeed}s`;
+		}
+
+		// Update stepper button disabled states
+		const speedIdx = this.EFFECT_SPEED_VALUES.indexOf(this.effectSpeed);
+		const decreaseBtn = this.effectPopup?.querySelector("[data-effect-speed-decrease]") as HTMLButtonElement | null;
+		const increaseBtn = this.effectPopup?.querySelector("[data-effect-speed-increase]") as HTMLButtonElement | null;
+		if (decreaseBtn) decreaseBtn.disabled = speedIdx <= 0;
+		if (increaseBtn) increaseBtn.disabled = speedIdx >= this.EFFECT_SPEED_VALUES.length - 1;
+	}
+
+	private buildEffectValue(): string {
+		if (this.effectType === "") return "";
+
+		let value = "";
+		if (this.effectType === "zoom") {
+			value = `zoom${this.effectVariant}`;  // "zoomIn" or "zoomOut"
+		} else if (this.effectType === "slide") {
+			value = `slide${this.effectDirection}`;  // "slideRight", "slideLeft", etc.
+		}
+
+		// Add speed suffix
+		if (this.effectSpeed === 0.5) value += "Fast";
+		else if (this.effectSpeed === 2.0) value += "Slow";
+
+		return value;
+	}
+
+	private applyEffect(): void {
+		const effectValue = this.buildEffectValue();
+		if (!effectValue) {
+			this.applyClipUpdate({ effect: undefined });
+		} else {
+			this.applyClipUpdate({ effect: effectValue });
+		}
+	}
+
+	private parseEffectValue(effect: string): void {
+		if (!effect) {
+			this.effectType = "";
+			this.effectSpeed = 1.0;
+			return;
+		}
+
+		// Extract speed suffix first
+		let base = effect;
+		if (effect.endsWith("Slow")) {
+			this.effectSpeed = 2.0;
+			base = effect.slice(0, -4);
+		} else if (effect.endsWith("Fast")) {
+			this.effectSpeed = 0.5;
+			base = effect.slice(0, -4);
+		} else {
+			this.effectSpeed = 1.0;
+		}
+
+		// Parse type and variant/direction
+		if (base.startsWith("zoom")) {
+			this.effectType = "zoom";
+			this.effectVariant = base === "zoomOut" ? "Out" : "In";
+		} else if (base.startsWith("slide")) {
+			this.effectType = "slide";
+			const dir = base.replace("slide", "");
+			this.effectDirection = (dir as "Left" | "Right" | "Up" | "Down") || "Right";
+		} else {
+			this.effectType = "";
+		}
+	}
+
 	private applyClipUpdate(updates: Record<string, unknown>): void {
 		if (this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0) {
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
@@ -975,6 +1219,14 @@ export class MediaToolbar extends BaseToolbar {
 		// Transition elements
 		this.directionRow = null;
 		this.speedValueLabel = null;
+
+		// Effect elements
+		this.effectBtn = null;
+		this.effectPopup = null;
+		this.effectVariantRow = null;
+		this.effectDirectionRow = null;
+		this.effectSpeedRow = null;
+		this.effectSpeedValueLabel = null;
 
 		// Advanced menu elements
 		this.advancedBtn = null;

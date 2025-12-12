@@ -669,4 +669,220 @@ export const MEDIA_TOOLBAR_STYLES = `
 	font-size: 11px;
 	color: rgba(255, 255, 255, 0.4);
 }
+
+/* Effect popup - progressive disclosure design */
+.ss-media-toolbar-popup--effect {
+	min-width: 200px;
+	padding: 12px;
+}
+
+/* Effect types - horizontal row */
+.ss-effect-types {
+	display: flex;
+	gap: 6px;
+}
+
+.ss-effect-type {
+	flex: 1;
+	padding: 10px 8px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 8px;
+	color: rgba(255, 255, 255, 0.6);
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	text-align: center;
+}
+
+.ss-effect-type:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.ss-effect-type.active {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.2);
+	color: #fff;
+}
+
+/* Variant row (for Zoom) - progressive disclosure */
+.ss-effect-variant-row {
+	display: none;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	animation: fadeSlideIn 0.15s ease;
+}
+
+.ss-effect-variant-row.visible {
+	display: flex;
+}
+
+.ss-effect-variants {
+	display: flex;
+	gap: 4px;
+	flex: 1;
+}
+
+.ss-effect-variant {
+	flex: 1;
+	padding: 6px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 6px;
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 11px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	text-align: center;
+}
+
+.ss-effect-variant:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.ss-effect-variant.active {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.2);
+	color: #fff;
+}
+
+/* Direction row (for Slide) - progressive disclosure */
+.ss-effect-direction-row {
+	display: none;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	animation: fadeSlideIn 0.15s ease;
+}
+
+.ss-effect-direction-row.visible {
+	display: flex;
+}
+
+.ss-effect-directions {
+	display: flex;
+	gap: 4px;
+	flex: 1;
+}
+
+.ss-effect-dir {
+	flex: 1;
+	padding: 6px 8px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 6px;
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	text-align: center;
+}
+
+.ss-effect-dir:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.ss-effect-dir.active {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.2);
+	color: #fff;
+}
+
+/* Speed row - shows when effect selected */
+.ss-effect-speed-row {
+	display: none;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	animation: fadeSlideIn 0.15s ease;
+}
+
+.ss-effect-speed-row.visible {
+	display: flex;
+}
+
+/* Shared label style */
+.ss-effect-label {
+	font-size: 10px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.4);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	min-width: 52px;
+}
+
+/* Speed stepper */
+.ss-effect-speed-stepper {
+	display: flex;
+	align-items: center;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.ss-effect-speed-btn {
+	width: 28px;
+	height: 26px;
+	background: transparent;
+	border: none;
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.ss-effect-speed-btn:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.ss-effect-speed-btn:active {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+.ss-effect-speed-btn:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
+.ss-effect-speed-value {
+	min-width: 42px;
+	padding: 0 4px;
+	text-align: center;
+	font-size: 11px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.85);
+	font-variant-numeric: tabular-nums;
+	border-left: 1px solid rgba(255, 255, 255, 0.06);
+	border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Subtle entrance animation */
+@keyframes fadeSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
 `;
