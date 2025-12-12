@@ -17,6 +17,7 @@ export const TOOLBAR_STYLES = `
 	align-items: center;
 	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
+.ss-toolbar.visible { display: flex; }
 
 .ss-toolbar-group { display: flex; align-items: center; gap: 1px; }
 .ss-toolbar-group--bordered { background: rgba(255, 255, 255, 0.04); border-radius: 6px; padding: 2px; }
@@ -48,6 +49,7 @@ export const TOOLBAR_STYLES = `
 .ss-toolbar-color::-webkit-color-swatch-wrapper { padding: 0; }
 .ss-toolbar-color::-webkit-color-swatch { border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); }
 .ss-toolbar-color::-moz-color-swatch { border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; }
+.ss-toolbar-color-btn { width: 22px; height: 22px; padding: 0; border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; cursor: pointer; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); }
 
 .ss-toolbar-dropdown { position: relative; }
 
@@ -67,6 +69,7 @@ export const TOOLBAR_STYLES = `
 	z-index: 200;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
+.ss-toolbar-popup.visible { display: block; }
 .ss-toolbar-popup::before {
 	content: "";
 	position: absolute;

@@ -1,34 +1,13 @@
-import type { Edit } from "@core/edit";
 import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
 
 import { BackgroundColorPicker } from "./background-color-picker";
+import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES } from "./base-toolbar";
 import { FontColorPicker } from "./font-color-picker";
 import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 
-/** Built-in font families (base names only, without weight variants) */
-const BUILT_IN_FONTS = [
-	"Arapey",
-	"Clear Sans",
-	"Didact Gothic",
-	"Montserrat",
-	"MovLette",
-	"Open Sans",
-	"Permanent Marker",
-	"Roboto",
-	"Sue Ellen Francisco",
-	"Work Sans"
-];
-
-/** Preset font sizes for the dropdown */
-const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 96, 128];
-
-export class RichTextToolbar {
-	private container: HTMLDivElement | null = null;
-	private edit: Edit;
-	private selectedTrackIdx = -1;
-	private selectedClipIdx = -1;
+export class RichTextToolbar extends BaseToolbar {
 
 	private fontBtn: HTMLButtonElement | null = null;
 	private fontPopup: HTMLDivElement | null = null;
@@ -112,14 +91,8 @@ export class RichTextToolbar {
 	private animationStyleSection: HTMLDivElement | null = null;
 	private animationDirectionSection: HTMLDivElement | null = null;
 
-	private styleElement: HTMLStyleElement | null = null;
-
-	constructor(edit: Edit) {
-		this.edit = edit;
-	}
-
-	mount(parent: HTMLElement): void {
-		this.injectStyles();
+	override mount(parent: HTMLElement): void {
+		this.injectStyles("ss-toolbar-styles", TOOLBAR_STYLES);
 
 		this.container = document.createElement("div");
 		this.container.className = "ss-toolbar";
@@ -800,15 +773,6 @@ export class RichTextToolbar {
 				this.syncState();
 			}
 		});
-	}
-
-	private injectStyles(): void {
-		if (document.getElementById("ss-toolbar-styles")) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = "ss-toolbar-styles";
-		this.styleElement.textContent = TOOLBAR_STYLES;
-		document.head.appendChild(this.styleElement);
 	}
 
 	private handleClick(e: MouseEvent): void {
@@ -1568,46 +1532,22 @@ export class RichTextToolbar {
 		this.syncState();
 	}
 
-	show(trackIdx: number, clipIdx: number): void {
-		this.selectedTrackIdx = trackIdx;
-		this.selectedClipIdx = clipIdx;
-		if (this.container) {
-			this.container.style.display = "flex";
-		}
-		this.syncState();
+	protected override getPopupList(): (HTMLElement | null)[] {
+		return [
+			this.sizePopup,
+			this.spacingPopup,
+			this.borderPopup,
+			this.shadowPopup,
+			this.backgroundPopup,
+			this.paddingPopup,
+			this.fontPopup,
+			this.textEditPopup,
+			this.fontColorPopup,
+			this.animationPopup
+		];
 	}
 
-	hide(): void {
-		if (this.container) {
-			this.container.style.display = "none";
-		}
-		if (this.sizePopup) {
-			this.sizePopup.style.display = "none";
-		}
-		if (this.spacingPopup) {
-			this.spacingPopup.style.display = "none";
-		}
-		if (this.borderPopup) {
-			this.borderPopup.style.display = "none";
-		}
-		if (this.shadowPopup) {
-			this.shadowPopup.style.display = "none";
-		}
-		if (this.backgroundPopup) {
-			this.backgroundPopup.style.display = "none";
-		}
-		if (this.paddingPopup) {
-			this.paddingPopup.style.display = "none";
-		}
-		if (this.fontPopup) {
-			this.fontPopup.style.display = "none";
-		}
-		if (this.textEditPopup) {
-			this.textEditPopup.style.display = "none";
-		}
-	}
-
-	private syncState(): void {
+	protected override syncState(): void {
 		const asset = this.getCurrentAsset();
 		if (!asset) return;
 
@@ -1773,14 +1713,8 @@ export class RichTextToolbar {
 		}
 	}
 
-	private setButtonActive(btn: HTMLButtonElement | null, active: boolean): void {
-		if (!btn) return;
-		btn.classList.toggle("active", active);
-	}
-
-	dispose(): void {
-		this.container?.remove();
-		this.container = null;
+	override dispose(): void {
+		super.dispose();
 		this.sizeInput = null;
 		this.sizePopup = null;
 		this.boldBtn = null;
@@ -1861,8 +1795,5 @@ export class RichTextToolbar {
 		this.paddingBottomValue = null;
 		this.paddingLeftSlider = null;
 		this.paddingLeftValue = null;
-
-		this.styleElement?.remove();
-		this.styleElement = null;
 	}
 }

@@ -4,6 +4,7 @@ import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
 import { MediaToolbar } from "@core/ui/media-toolbar";
 import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
+import { TextToolbar } from "@core/ui/text-toolbar";
 import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
@@ -27,6 +28,7 @@ export class Canvas {
 	private readonly inspector: Inspector;
 	private readonly transcriptionIndicator: TranscriptionIndicator;
 	private readonly richTextToolbar: RichTextToolbar;
+	private readonly textToolbar: TextToolbar;
 	private readonly mediaToolbar: MediaToolbar;
 	private readonly canvasToolbar: CanvasToolbar;
 	private readonly assetToolbar: AssetToolbar;
@@ -48,6 +50,7 @@ export class Canvas {
 		this.inspector = new Inspector();
 		this.transcriptionIndicator = new TranscriptionIndicator();
 		this.richTextToolbar = new RichTextToolbar(edit);
+		this.textToolbar = new TextToolbar(edit);
 		this.mediaToolbar = new MediaToolbar(edit);
 		this.canvasToolbar = new CanvasToolbar(edit);
 		this.assetToolbar = new AssetToolbar(edit);
@@ -84,6 +87,7 @@ export class Canvas {
 		root.appendChild(this.application.canvas);
 
 		this.richTextToolbar.mount(root);
+		this.textToolbar.mount(root);
 		this.mediaToolbar.mount(root);
 		this.setupClipToolbarListeners();
 
@@ -321,18 +325,26 @@ export class Canvas {
 
 			if (assetType === "rich-text") {
 				this.mediaToolbar.hide();
+				this.textToolbar.hide();
 				this.richTextToolbar.show(trackIndex, clipIndex);
+			} else if (assetType === "text") {
+				this.mediaToolbar.hide();
+				this.richTextToolbar.hide();
+				this.textToolbar.show(trackIndex, clipIndex);
 			} else if (assetType === "video" || assetType === "image") {
 				this.richTextToolbar.hide();
-				this.mediaToolbar.show(trackIndex, clipIndex, assetType === "video");
+				this.textToolbar.hide();
+				this.mediaToolbar.showMedia(trackIndex, clipIndex, assetType === "video");
 			} else {
 				this.richTextToolbar.hide();
+				this.textToolbar.hide();
 				this.mediaToolbar.hide();
 			}
 		});
 
 		this.edit.events.on("selection:cleared", () => {
 			this.richTextToolbar.hide();
+			this.textToolbar.hide();
 			this.mediaToolbar.hide();
 		});
 	}
@@ -391,6 +403,7 @@ export class Canvas {
 		this.inspector.dispose();
 		this.transcriptionIndicator.dispose();
 		this.richTextToolbar.dispose();
+		this.textToolbar.dispose();
 		this.mediaToolbar.dispose();
 		this.canvasToolbar.dispose();
 		this.assetToolbar.dispose();

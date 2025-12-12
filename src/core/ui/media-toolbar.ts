@@ -1,6 +1,6 @@
-import type { Edit } from "@core/edit";
 import { validateAssetUrl } from "@core/shared/utils";
 
+import { BaseToolbar } from "./base-toolbar";
 import { MEDIA_TOOLBAR_STYLES } from "./media-toolbar.css";
 
 type FitValue = "crop" | "cover" | "contain" | "none";
@@ -30,14 +30,7 @@ const ICONS = {
 	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`
 };
 
-export class MediaToolbar {
-	private container: HTMLDivElement | null = null;
-	private styleElement: HTMLStyleElement | null = null;
-	private edit: Edit;
-
-	// Current clip info
-	private currentTrackIndex: number = -1;
-	private currentClipIndex: number = -1;
+export class MediaToolbar extends BaseToolbar {
 	private isVideoClip: boolean = false;
 
 	// Current values
@@ -102,24 +95,9 @@ export class MediaToolbar {
 	private dynamicFieldName: string = "";
 	private originalSrc: string = "";
 
-	// Click outside handler
-	private clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
+	override mount(parent: HTMLElement): void {
+		this.injectStyles("ss-media-toolbar-styles", MEDIA_TOOLBAR_STYLES);
 
-	constructor(edit: Edit) {
-		this.edit = edit;
-		this.injectStyles();
-	}
-
-	private injectStyles(): void {
-		if (document.getElementById("ss-media-toolbar-styles")) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = "ss-media-toolbar-styles";
-		this.styleElement.textContent = MEDIA_TOOLBAR_STYLES;
-		document.head.appendChild(this.styleElement);
-	}
-
-	mount(parent: HTMLElement): void {
 		this.container = document.createElement("div");
 		this.container.className = "ss-media-toolbar";
 
@@ -309,33 +287,34 @@ export class MediaToolbar {
 		this.dynamicInput = this.container.querySelector("[data-dynamic-input]");
 
 		this.setupEventListeners();
+		this.setupOutsideClickHandler();
 	}
 
 	private setupEventListeners(): void {
 		// Toggle popups
 		this.fitBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup("fit");
+			this.togglePopupByName("fit");
 		});
 		this.opacityBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup("opacity");
+			this.togglePopupByName("opacity");
 		});
 		this.scaleBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup("scale");
+			this.togglePopupByName("scale");
 		});
 		this.volumeBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup("volume");
+			this.togglePopupByName("volume");
 		});
 		this.transitionBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup("transition");
+			this.togglePopupByName("transition");
 		});
 		this.advancedBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup("advanced");
+			this.togglePopupByName("advanced");
 		});
 
 		// Dynamic source handlers
@@ -400,17 +379,9 @@ export class MediaToolbar {
 		const speedIncrease = this.transitionPopup?.querySelector("[data-speed-increase]");
 		speedDecrease?.addEventListener("click", () => this.handleSpeedStep(-1));
 		speedIncrease?.addEventListener("click", () => this.handleSpeedStep(1));
-
-		// Click outside to close
-		this.clickOutsideHandler = (e: MouseEvent) => {
-			if (!this.container?.contains(e.target as Node)) {
-				this.closeAllPopups();
-			}
-		};
-		document.addEventListener("click", this.clickOutsideHandler);
 	}
 
-	private togglePopup(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "advanced"): void {
+	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "advanced"): void {
 		const popupMap = {
 			fit: { popup: this.fitPopup, btn: this.fitBtn },
 			opacity: { popup: this.opacityPopup, btn: this.opacityBtn },
@@ -424,24 +395,81 @@ export class MediaToolbar {
 		this.closeAllPopups();
 
 		if (!isCurrentlyOpen) {
-			popupMap[popup].popup?.classList.add("visible");
+			this.togglePopup(popupMap[popup].popup);
 			popupMap[popup].btn?.classList.add("active");
 		}
 	}
 
-	private closeAllPopups(): void {
-		this.fitPopup?.classList.remove("visible");
-		this.opacityPopup?.classList.remove("visible");
-		this.scalePopup?.classList.remove("visible");
-		this.volumePopup?.classList.remove("visible");
-		this.transitionPopup?.classList.remove("visible");
-		this.advancedPopup?.classList.remove("visible");
+	protected override closeAllPopups(): void {
+		super.closeAllPopups();
+
+		// Also remove active state from buttons
 		this.fitBtn?.classList.remove("active");
 		this.opacityBtn?.classList.remove("active");
 		this.scaleBtn?.classList.remove("active");
 		this.volumeBtn?.classList.remove("active");
 		this.transitionBtn?.classList.remove("active");
 		this.advancedBtn?.classList.remove("active");
+	}
+
+	protected override getPopupList(): (HTMLElement | null)[] {
+		return [this.fitPopup, this.opacityPopup, this.scalePopup, this.volumePopup, this.transitionPopup, this.advancedPopup];
+	}
+
+	protected override syncState(): void {
+		// Get current clip values
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (player) {
+			const clip = player.clipConfiguration;
+
+			// Fit
+			this.currentFit = (clip.fit as FitValue) || "crop";
+
+			// Opacity (convert from 0-1 to 0-100)
+			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
+			this.currentOpacity = Math.round(opacity * 100);
+
+			// Scale (convert from 0-1 to percentage)
+			const scale = typeof clip.scale === "number" ? clip.scale : 1;
+			this.currentScale = Math.round(scale * 100);
+
+			// Volume (video only)
+			if (this.isVideoClip && clip.asset.type === "video") {
+				const volume = typeof clip.asset.volume === "number" ? clip.asset.volume : 1;
+				this.currentVolume = Math.round(volume * 100);
+			}
+
+			// Transition - parse effect, direction, and speed
+			const parsedIn = this.parseTransitionValue(clip.transition?.in || "");
+			const parsedOut = this.parseTransitionValue(clip.transition?.out || "");
+			this.transitionInEffect = parsedIn.effect;
+			this.transitionInDirection = parsedIn.direction;
+			this.transitionInSpeed = parsedIn.speed;
+			this.transitionOutEffect = parsedOut.effect;
+			this.transitionOutDirection = parsedOut.direction;
+			this.transitionOutSpeed = parsedOut.speed;
+		}
+
+		// Update displays
+		this.updateFitDisplay();
+		this.updateOpacityDisplay();
+		this.updateScaleDisplay();
+		this.updateVolumeDisplay();
+
+		// Update active states
+		this.updateFitActiveState();
+
+		// Reset to IN tab and update transition UI
+		this.activeTransitionTab = "in";
+		this.updateTransitionUI();
+
+		// Update dynamic source state
+		this.updateDynamicSourceUI();
+
+		// Show/hide volume section based on asset type
+		if (this.volumeSection) {
+			this.volumeSection.classList.toggle("hidden", !this.isVideoClip);
+		}
 	}
 
 	private handleFitChange(fit: FitValue): void {
@@ -469,9 +497,9 @@ export class MediaToolbar {
 		this.updateVolumeDisplay();
 
 		// Volume is on the asset, not the clip
-		const player = this.edit.getPlayerClip(this.currentTrackIndex, this.currentClipIndex);
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (player && player.clipConfiguration.asset.type === "video") {
-			this.edit.updateClip(this.currentTrackIndex, this.currentClipIndex, {
+			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
 				asset: {
 					...player.clipConfiguration.asset,
 					volume: value / 100
@@ -697,8 +725,8 @@ export class MediaToolbar {
 	}
 
 	private applyClipUpdate(updates: Record<string, unknown>): void {
-		if (this.currentTrackIndex >= 0 && this.currentClipIndex >= 0) {
-			this.edit.updateClip(this.currentTrackIndex, this.currentClipIndex, updates);
+		if (this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0) {
+			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
 		}
 	}
 
@@ -761,7 +789,7 @@ export class MediaToolbar {
 		if (this.dynamicFieldName) {
 			this.edit.updateMergeFieldValueLive(this.dynamicFieldName, url);
 			// Also reload the asset to show the new image/video
-			const player = this.edit.getPlayerClip(this.currentTrackIndex, this.currentClipIndex);
+			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 			if (player) {
 				player.reloadAsset();
 			}
@@ -772,14 +800,7 @@ export class MediaToolbar {
 		const fieldName = this.edit.mergeFields.generateUniqueName("MEDIA");
 
 		// Use Edit API to apply merge field (handles template + resolved value atomically)
-		this.edit.applyMergeField(
-			this.currentTrackIndex,
-			this.currentClipIndex,
-			"asset.src",
-			fieldName,
-			url,
-			this.originalSrc // Pass original src for undo
-		);
+		this.edit.applyMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", fieldName, url, this.originalSrc);
 
 		this.dynamicFieldName = fieldName;
 	}
@@ -806,12 +827,7 @@ export class MediaToolbar {
 		if (!this.dynamicFieldName) return;
 
 		// Use Edit API to remove merge field (handles undo and asset reload)
-		this.edit.removeMergeField(
-			this.currentTrackIndex,
-			this.currentClipIndex,
-			"asset.src",
-			this.originalSrc // Restore original src
-		);
+		this.edit.removeMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", this.originalSrc);
 
 		this.dynamicFieldName = "";
 		if (this.dynamicInput) {
@@ -824,11 +840,11 @@ export class MediaToolbar {
 	 * Uses the new Edit.getMergeFieldForProperty() API.
 	 */
 	private updateDynamicSourceUI(): void {
-		const player = this.edit.getPlayerClip(this.currentTrackIndex, this.currentClipIndex);
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!player) return;
 
 		// Use Edit API to check if this property has a merge field
-		const fieldName = this.edit.getMergeFieldForProperty(this.currentTrackIndex, this.currentClipIndex, "asset.src");
+		const fieldName = this.edit.getMergeFieldForProperty(this.selectedTrackIdx, this.selectedClipIdx, "asset.src");
 
 		if (fieldName) {
 			// Has dynamic source
@@ -904,84 +920,19 @@ export class MediaToolbar {
 		});
 	}
 
-	show(trackIndex: number, clipIndex: number, isVideo: boolean): void {
-		this.currentTrackIndex = trackIndex;
-		this.currentClipIndex = clipIndex;
+	/**
+	 * Show the toolbar for a specific clip.
+	 * @param trackIndex - Track index
+	 * @param clipIndex - Clip index
+	 * @param isVideo - Whether the clip is a video (optional, defaults to false)
+	 */
+	showMedia(trackIndex: number, clipIndex: number, isVideo: boolean = false): void {
 		this.isVideoClip = isVideo;
-
-		// Get current clip values
-		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-		if (player) {
-			const clip = player.clipConfiguration;
-
-			// Fit
-			this.currentFit = (clip.fit as FitValue) || "crop";
-
-			// Opacity (convert from 0-1 to 0-100)
-			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-			this.currentOpacity = Math.round(opacity * 100);
-
-			// Scale (convert from 0-1 to percentage)
-			const scale = typeof clip.scale === "number" ? clip.scale : 1;
-			this.currentScale = Math.round(scale * 100);
-
-			// Volume (video only)
-			if (isVideo && clip.asset.type === "video") {
-				const volume = typeof clip.asset.volume === "number" ? clip.asset.volume : 1;
-				this.currentVolume = Math.round(volume * 100);
-			}
-
-			// Transition - parse effect, direction, and speed
-			const parsedIn = this.parseTransitionValue(clip.transition?.in || "");
-			const parsedOut = this.parseTransitionValue(clip.transition?.out || "");
-			this.transitionInEffect = parsedIn.effect;
-			this.transitionInDirection = parsedIn.direction;
-			this.transitionInSpeed = parsedIn.speed;
-			this.transitionOutEffect = parsedOut.effect;
-			this.transitionOutDirection = parsedOut.direction;
-			this.transitionOutSpeed = parsedOut.speed;
-		}
-
-		// Update displays
-		this.updateFitDisplay();
-		this.updateOpacityDisplay();
-		this.updateScaleDisplay();
-		this.updateVolumeDisplay();
-
-		// Update active states
-		this.updateFitActiveState();
-
-		// Reset to IN tab and update transition UI
-		this.activeTransitionTab = "in";
-		this.updateTransitionUI();
-
-		// Update dynamic source state
-		this.updateDynamicSourceUI();
-
-		// Show/hide volume section based on asset type
-		if (this.volumeSection) {
-			this.volumeSection.classList.toggle("hidden", !isVideo);
-		}
-
-		// Show toolbar
-		this.container?.classList.add("visible");
+		super.show(trackIndex, clipIndex);
 	}
 
-	hide(): void {
-		this.container?.classList.remove("visible");
-		this.closeAllPopups();
-		this.currentTrackIndex = -1;
-		this.currentClipIndex = -1;
-	}
-
-	dispose(): void {
-		if (this.clickOutsideHandler) {
-			document.removeEventListener("click", this.clickOutsideHandler);
-			this.clickOutsideHandler = null;
-		}
-
-		this.container?.remove();
-		this.container = null;
+	override dispose(): void {
+		super.dispose();
 
 		this.fitBtn = null;
 		this.opacityBtn = null;

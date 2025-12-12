@@ -57,6 +57,42 @@ export class TextPlayer extends Player {
 		super.update(deltaTime, elapsed);
 	}
 
+	public override reconfigureAfterRestore(): void {
+		super.reconfigureAfterRestore();
+		this.reconfigure();
+	}
+
+	private async reconfigure(): Promise<void> {
+		const textAsset = this.clipConfiguration.asset as TextAsset;
+
+		// Load font if changed
+		const fontFamily = textAsset.font?.family ?? "Open Sans";
+		await this.loadFont(fontFamily);
+
+		// Update background
+		this.drawBackground();
+
+		// Update text content and style
+		if (this.text) {
+			this.text.text = textAsset.text;
+			this.text.style = this.createTextStyle(textAsset);
+
+			// Update stroke filter
+			if (textAsset.stroke?.width && textAsset.stroke.width > 0 && textAsset.stroke.color) {
+				const textStrokeFilter = new pixiFilters.OutlineFilter({
+					thickness: textAsset.stroke.width,
+					color: textAsset.stroke.color
+				});
+				this.text.filters = [textStrokeFilter];
+			} else {
+				this.text.filters = [];
+			}
+
+			// Reposition text based on alignment
+			this.positionText(textAsset);
+		}
+	}
+
 	public override dispose(): void {
 		super.dispose();
 
