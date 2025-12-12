@@ -448,6 +448,9 @@ export class RichTextPlayer extends Player {
 	}
 
 	private getCurrentTime(): number {
-		return this.edit.playbackTime;
+		// Return clip-relative time in milliseconds
+		// (global playback time minus clip start time)
+		// This ensures animations start from 0 when the clip begins playing
+		return this.edit.playbackTime - this.getStart();
 	}
 }
