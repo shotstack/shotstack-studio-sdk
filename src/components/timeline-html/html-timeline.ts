@@ -46,6 +46,7 @@ export class HtmlTimeline extends TimelineEntity {
 	private readonly handlePlaybackPlay: () => void;
 	private readonly handlePlaybackPause: () => void;
 	private readonly handlePlaybackStop: () => void;
+	private readonly handleClipSelected: () => void;
 
 	constructor(
 		private readonly edit: Edit,
@@ -92,6 +93,7 @@ export class HtmlTimeline extends TimelineEntity {
 			this.stopRenderLoop();
 			this.requestRender(); // Final render to update UI with stopped state
 		};
+		this.handleClipSelected = () => this.requestRender();
 	}
 
 	/** Initialize and mount the timeline */
@@ -197,6 +199,9 @@ export class HtmlTimeline extends TimelineEntity {
 		this.edit.events.on("playback:play", this.handlePlaybackPlay);
 		this.edit.events.on("playback:pause", this.handlePlaybackPause);
 		this.edit.events.on("playback:stop", this.handlePlaybackStop);
+
+		// Listen for selection changes (from canvas or other sources)
+		this.edit.events.on("clip:selected", this.handleClipSelected);
 	}
 
 	private removeEventListeners(): void {
@@ -204,6 +209,7 @@ export class HtmlTimeline extends TimelineEntity {
 		this.edit.events.off("playback:play", this.handlePlaybackPlay);
 		this.edit.events.off("playback:pause", this.handlePlaybackPause);
 		this.edit.events.off("playback:stop", this.handlePlaybackStop);
+		this.edit.events.off("clip:selected", this.handleClipSelected);
 	}
 
 	/** Start continuous render loop (during playback or interaction) */
