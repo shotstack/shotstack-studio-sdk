@@ -483,8 +483,8 @@ export class InteractionController {
 			return;
 		}
 
-		// Check if this content clip has an attached luma that needs to sync
-		const attachedLuma = this.stateManager.getAttachedLuma(clipRef.trackIndex, clipRef.clipIndex);
+		// Get attached luma Player reference BEFORE any move (stable across index changes)
+		const lumaPlayer = this.stateManager.getAttachedLumaPlayer(clipRef.trackIndex, clipRef.clipIndex);
 
 		// Execute appropriate command based on drag target (non-luma clips)
 		if (dragTarget.type === "insert") {
@@ -492,27 +492,25 @@ export class InteractionController {
 			const command = new CreateTrackAndMoveClipCommand(dragTarget.insertionIndex, originalTrack, clipRef.clipIndex, newTime);
 			this.edit.executeEditCommand(command);
 
-			// Also move attached luma to the new track and time
-			if (attachedLuma) {
-				const lumaCommand = new MoveClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, dragTarget.insertionIndex, newTime);
-				this.edit.executeEditCommand(lumaCommand);
-				// Update attachment reference to new track
-				this.stateManager.detachLuma(clipRef.trackIndex, clipRef.clipIndex);
-				this.stateManager.attachLuma(dragTarget.insertionIndex, clipRef.clipIndex, dragTarget.insertionIndex, attachedLuma.clipIndex);
+			// Move attached luma - get fresh indices AFTER content move
+			if (lumaPlayer) {
+				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+				if (lumaIndices) {
+					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.insertionIndex, newTime);
+					this.edit.executeEditCommand(lumaCommand);
+				}
 			}
 		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
 			const command = new MoveClipWithPushCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime, collisionResult.pushOffset);
 			this.edit.executeEditCommand(command);
 
-			// Also move attached luma to new position
-			if (attachedLuma) {
-				const lumaCommand = new MoveClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, dragTarget.trackIndex, newTime);
-				this.edit.executeEditCommand(lumaCommand);
-				// Update attachment reference if track changed
-				if (dragTarget.trackIndex !== originalTrack) {
-					this.stateManager.detachLuma(clipRef.trackIndex, clipRef.clipIndex);
-					this.stateManager.attachLuma(dragTarget.trackIndex, clipRef.clipIndex, dragTarget.trackIndex, attachedLuma.clipIndex);
+			// Move attached luma - get fresh indices AFTER content move
+			if (lumaPlayer) {
+				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+				if (lumaIndices) {
+					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, newTime);
+					this.edit.executeEditCommand(lumaCommand);
 				}
 			}
 		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
@@ -520,14 +518,12 @@ export class InteractionController {
 			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime);
 			this.edit.executeEditCommand(command);
 
-			// Also move attached luma to new position
-			if (attachedLuma) {
-				const lumaCommand = new MoveClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, dragTarget.trackIndex, newTime);
-				this.edit.executeEditCommand(lumaCommand);
-				// Update attachment reference if track changed
-				if (dragTarget.trackIndex !== originalTrack) {
-					this.stateManager.detachLuma(clipRef.trackIndex, clipRef.clipIndex);
-					this.stateManager.attachLuma(dragTarget.trackIndex, clipRef.clipIndex, dragTarget.trackIndex, attachedLuma.clipIndex);
+			// Move attached luma - get fresh indices AFTER content move
+			if (lumaPlayer) {
+				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+				if (lumaIndices) {
+					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, newTime);
+					this.edit.executeEditCommand(lumaCommand);
 				}
 			}
 		}
@@ -568,16 +564,21 @@ export class InteractionController {
 			newLength = Math.max(0.1, time - originalStart);
 		}
 
+		// Get attached luma Player reference BEFORE resize (stable across index changes)
+		const lumaPlayer = this.stateManager.getAttachedLumaPlayer(clipRef.trackIndex, clipRef.clipIndex);
+
 		// Execute resize command if dimensions changed
 		if (newLength !== originalLength) {
 			const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
 			this.edit.executeEditCommand(command);
 
 			// Also resize attached luma to match
-			const attachedLuma = this.stateManager.getAttachedLuma(clipRef.trackIndex, clipRef.clipIndex);
-			if (attachedLuma) {
-				const lumaResizeCommand = new ResizeClipCommand(attachedLuma.trackIndex, attachedLuma.clipIndex, newLength);
-				this.edit.executeEditCommand(lumaResizeCommand);
+			if (lumaPlayer) {
+				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+				if (lumaIndices) {
+					const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, newLength);
+					this.edit.executeEditCommand(lumaResizeCommand);
+				}
 			}
 
 			// TODO: For left-edge resize (start changed), also need MoveClipCommand

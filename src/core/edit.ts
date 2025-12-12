@@ -413,6 +413,36 @@ export class Edit extends Entity {
 	}
 
 	public deleteClip(trackIdx: number, clipIdx: number): void {
+		const track = this.tracks[trackIdx];
+		if (!track) return;
+
+		// Get the clip being deleted
+		const clipToDelete = track[clipIdx];
+		if (!clipToDelete) return;
+
+		// Check if this is a content clip (not a luma)
+		const isContentClip = !(clipToDelete instanceof LumaPlayer);
+
+		if (isContentClip) {
+			// Find attached luma in the same track
+			const lumaIndex = track.findIndex(clip => clip instanceof LumaPlayer);
+
+			if (lumaIndex !== -1) {
+				// Delete luma first (handles index shifting correctly)
+				// If luma comes before content clip, content clip index shifts after luma deletion
+				const adjustedContentIdx = lumaIndex < clipIdx ? clipIdx - 1 : clipIdx;
+
+				const lumaCommand = new DeleteClipCommand(trackIdx, lumaIndex);
+				this.executeCommand(lumaCommand);
+
+				// Now delete content clip with adjusted index
+				const contentCommand = new DeleteClipCommand(trackIdx, adjustedContentIdx);
+				this.executeCommand(contentCommand);
+				return;
+			}
+		}
+
+		// No luma attachment or deleting a luma directly - just delete the clip
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
 		this.executeCommand(command);
 	}
@@ -1025,6 +1055,17 @@ export class Edit extends Entity {
 		this.events.on("clip:restored", () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
+
+		// Rebuild masks after clip deletion (track shift may re-add luma to scene)
+		this.events.on("clip:deleted", () => {
+			this.rebuildLumaMasksIfNeeded();
+		});
+
+		// Rebuild masks after any timeline change (clips added/removed/tracks changed)
+		// This handles the case where AddTrackCommand re-adds luma players to scene
+		this.events.on("timeline:updated", () => {
+			this.rebuildLumaMasksIfNeeded();
+		});
 	}
 
 	/** Clean up luma mask when a luma player is deleted. */
@@ -1072,6 +1113,7 @@ export class Edit extends Entity {
 	/**
 	 * Rebuild luma masks for any tracks that need masking but don't have it set up.
 	 * Called after clip operations (move, delete, etc.) to ensure canvas stays in sync.
+	 * Also ensures luma players are hidden from display even if mask already exists.
 	 */
 	private async rebuildLumaMasksIfNeeded(): Promise<void> {
 		if (!this.canvas) return;
@@ -1080,6 +1122,12 @@ export class Edit extends Entity {
 			const trackClips = this.tracks[trackIdx];
 			const lumaPlayer = trackClips.find(clip => clip instanceof LumaPlayer) as LumaPlayer | undefined;
 			const contentClips = trackClips.filter(clip => !(clip instanceof LumaPlayer));
+
+			// ALWAYS hide luma player if it has a parent (even if mask exists)
+			// This handles the case where AddTrackCommand re-adds luma to scene
+			if (lumaPlayer) {
+				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
+			}
 
 			const existingMask = lumaPlayer && this.activeLumaMasks.find(m => m.lumaPlayer === lumaPlayer);
 
@@ -1092,6 +1140,7 @@ export class Edit extends Entity {
 				const lumaSprite = lumaPlayer.getSprite();
 				if (lumaSprite?.texture) {
 					this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
+					// Already removed above, but kept for safety
 					lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
 				}
 			}
