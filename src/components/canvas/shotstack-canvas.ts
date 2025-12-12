@@ -331,10 +331,10 @@ export class Canvas {
 				this.mediaToolbar.hide();
 				this.richTextToolbar.hide();
 				this.textToolbar.show(trackIndex, clipIndex);
-			} else if (assetType === "video" || assetType === "image") {
+			} else if (assetType === "video" || assetType === "image" || assetType === "audio") {
 				this.richTextToolbar.hide();
 				this.textToolbar.hide();
-				this.mediaToolbar.showMedia(trackIndex, clipIndex, assetType === "video");
+				this.mediaToolbar.showMedia(trackIndex, clipIndex, assetType);
 			} else {
 				this.richTextToolbar.hide();
 				this.textToolbar.hide();

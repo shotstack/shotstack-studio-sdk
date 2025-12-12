@@ -30,8 +30,10 @@ const ICONS = {
 	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`
 };
 
+type MediaAssetType = "video" | "image" | "audio";
+
 export class MediaToolbar extends BaseToolbar {
-	private isVideoClip: boolean = false;
+	private assetType: MediaAssetType = "image";
 
 	// Current values
 	private currentFit: FitValue = "crop";
@@ -83,6 +85,9 @@ export class MediaToolbar extends BaseToolbar {
 	// Volume section
 	private volumeSection: HTMLDivElement | null = null;
 
+	// Visual controls section (fit, opacity, scale, transition - hidden for audio)
+	private visualSection: HTMLDivElement | null = null;
+
 	// Advanced menu elements
 	private advancedBtn: HTMLButtonElement | null = null;
 	private advancedPopup: HTMLDivElement | null = null;
@@ -102,63 +107,114 @@ export class MediaToolbar extends BaseToolbar {
 		this.container.className = "ss-media-toolbar";
 
 		this.container.innerHTML = `
-			<!-- Fit Dropdown -->
-			<div class="ss-media-toolbar-dropdown">
-				<button class="ss-media-toolbar-btn" data-action="fit">
-					${ICONS.fit}
-					<span data-fit-label>Crop</span>
-					${ICONS.chevron}
-				</button>
-				<div class="ss-media-toolbar-popup" data-popup="fit">
-					${FIT_OPTIONS.map(
-						opt => `
-						<div class="ss-media-toolbar-popup-item" data-fit="${opt.value}">
-							<div class="ss-media-toolbar-popup-item-label">
-								<span>${opt.label}</span>
-								<span class="ss-media-toolbar-popup-item-sublabel">${opt.description}</span>
+			<!-- Visual controls (hidden for audio) -->
+			<div class="ss-media-toolbar-visual" data-visual-section>
+				<!-- Fit Dropdown -->
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="fit">
+						${ICONS.fit}
+						<span data-fit-label>Crop</span>
+						${ICONS.chevron}
+					</button>
+					<div class="ss-media-toolbar-popup" data-popup="fit">
+						${FIT_OPTIONS.map(
+							opt => `
+							<div class="ss-media-toolbar-popup-item" data-fit="${opt.value}">
+								<div class="ss-media-toolbar-popup-item-label">
+									<span>${opt.label}</span>
+									<span class="ss-media-toolbar-popup-item-sublabel">${opt.description}</span>
+								</div>
+								${ICONS.check}
 							</div>
-							${ICONS.check}
+						`
+						).join("")}
+					</div>
+				</div>
+
+				<div class="ss-media-toolbar-divider"></div>
+
+				<!-- Opacity -->
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="opacity">
+						${ICONS.opacity}
+						<span data-opacity-value>100%</span>
+					</button>
+					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="opacity">
+						<div class="ss-media-toolbar-popup-header">Opacity</div>
+						<div class="ss-media-toolbar-slider-row">
+							<input type="range" class="ss-media-toolbar-slider" data-opacity-slider min="0" max="100" value="100" />
+							<span class="ss-media-toolbar-slider-value" data-opacity-display>100%</span>
 						</div>
-					`
-					).join("")}
+					</div>
 				</div>
-			</div>
 
-			<div class="ss-media-toolbar-divider"></div>
+				<div class="ss-media-toolbar-divider"></div>
 
-			<!-- Opacity -->
-			<div class="ss-media-toolbar-dropdown">
-				<button class="ss-media-toolbar-btn" data-action="opacity">
-					${ICONS.opacity}
-					<span data-opacity-value>100%</span>
-				</button>
-				<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="opacity">
-					<div class="ss-media-toolbar-popup-header">Opacity</div>
-					<div class="ss-media-toolbar-slider-row">
-						<input type="range" class="ss-media-toolbar-slider" data-opacity-slider min="0" max="100" value="100" />
-						<span class="ss-media-toolbar-slider-value" data-opacity-display>100%</span>
+				<!-- Scale -->
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="scale">
+						${ICONS.scale}
+						<span data-scale-value>100%</span>
+					</button>
+					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="scale">
+						<div class="ss-media-toolbar-popup-header">Scale</div>
+						<div class="ss-media-toolbar-slider-row">
+							<input type="range" class="ss-media-toolbar-slider" data-scale-slider min="10" max="200" value="100" />
+							<span class="ss-media-toolbar-slider-value" data-scale-display>100%</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="ss-media-toolbar-divider"></div>
+
+				<!-- Transition -->
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="transition">
+						${ICONS.transition}
+						<span>Transition</span>
+					</button>
+					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--transition" data-popup="transition">
+						<!-- Tabs -->
+						<div class="ss-transition-tabs">
+							<button class="ss-transition-tab active" data-tab="in">In</button>
+							<button class="ss-transition-tab" data-tab="out">Out</button>
+						</div>
+
+						<!-- Effects Grid -->
+						<div class="ss-transition-effects">
+							<button class="ss-transition-effect" data-effect="">None</button>
+							<button class="ss-transition-effect" data-effect="fade">Fade</button>
+							<button class="ss-transition-effect" data-effect="zoom">Zoom</button>
+							<button class="ss-transition-effect" data-effect="slide">Slide</button>
+							<button class="ss-transition-effect" data-effect="wipe">Wipe</button>
+							<button class="ss-transition-effect" data-effect="carousel">Car</button>
+						</div>
+
+						<!-- Direction Row (progressive disclosure) -->
+						<div class="ss-transition-direction-row" data-direction-row>
+							<span class="ss-transition-label">Direction</span>
+							<div class="ss-transition-directions">
+								<button class="ss-transition-dir" data-dir="Left">←</button>
+								<button class="ss-transition-dir" data-dir="Right">→</button>
+								<button class="ss-transition-dir" data-dir="Up">↑</button>
+								<button class="ss-transition-dir" data-dir="Down">↓</button>
+							</div>
+						</div>
+
+						<!-- Speed Stepper -->
+						<div class="ss-transition-speed-row">
+							<span class="ss-transition-label">Speed</span>
+							<div class="ss-transition-speed-stepper">
+								<button class="ss-transition-speed-btn" data-speed-decrease>−</button>
+								<span class="ss-transition-speed-value" data-speed-value>1.0s</span>
+								<button class="ss-transition-speed-btn" data-speed-increase>+</button>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 
-			<div class="ss-media-toolbar-divider"></div>
-
-			<!-- Scale -->
-			<div class="ss-media-toolbar-dropdown">
-				<button class="ss-media-toolbar-btn" data-action="scale">
-					${ICONS.scale}
-					<span data-scale-value>100%</span>
-				</button>
-				<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="scale">
-					<div class="ss-media-toolbar-popup-header">Scale</div>
-					<div class="ss-media-toolbar-slider-row">
-						<input type="range" class="ss-media-toolbar-slider" data-scale-slider min="10" max="200" value="100" />
-						<span class="ss-media-toolbar-slider-value" data-scale-display>100%</span>
-					</div>
-				</div>
-			</div>
-
-			<!-- Volume (video only) -->
+			<!-- Volume (video and audio only) -->
 			<div class="ss-media-toolbar-volume" data-volume-section>
 				<div class="ss-media-toolbar-divider"></div>
 				<div class="ss-media-toolbar-dropdown">
@@ -176,55 +232,7 @@ export class MediaToolbar extends BaseToolbar {
 				</div>
 			</div>
 
-			<div class="ss-media-toolbar-divider"></div>
-
-			<!-- Transition -->
-			<div class="ss-media-toolbar-dropdown">
-				<button class="ss-media-toolbar-btn" data-action="transition">
-					${ICONS.transition}
-					<span>Transition</span>
-				</button>
-				<div class="ss-media-toolbar-popup ss-media-toolbar-popup--transition" data-popup="transition">
-					<!-- Tabs -->
-					<div class="ss-transition-tabs">
-						<button class="ss-transition-tab active" data-tab="in">In</button>
-						<button class="ss-transition-tab" data-tab="out">Out</button>
-					</div>
-
-					<!-- Effects Grid -->
-					<div class="ss-transition-effects">
-						<button class="ss-transition-effect" data-effect="">None</button>
-						<button class="ss-transition-effect" data-effect="fade">Fade</button>
-						<button class="ss-transition-effect" data-effect="zoom">Zoom</button>
-						<button class="ss-transition-effect" data-effect="slide">Slide</button>
-						<button class="ss-transition-effect" data-effect="wipe">Wipe</button>
-						<button class="ss-transition-effect" data-effect="carousel">Car</button>
-					</div>
-
-					<!-- Direction Row (progressive disclosure) -->
-					<div class="ss-transition-direction-row" data-direction-row>
-						<span class="ss-transition-label">Direction</span>
-						<div class="ss-transition-directions">
-							<button class="ss-transition-dir" data-dir="Left">←</button>
-							<button class="ss-transition-dir" data-dir="Right">→</button>
-							<button class="ss-transition-dir" data-dir="Up">↑</button>
-							<button class="ss-transition-dir" data-dir="Down">↓</button>
-						</div>
-					</div>
-
-					<!-- Speed Stepper -->
-					<div class="ss-transition-speed-row">
-						<span class="ss-transition-label">Speed</span>
-						<div class="ss-transition-speed-stepper">
-							<button class="ss-transition-speed-btn" data-speed-decrease>−</button>
-							<span class="ss-transition-speed-value" data-speed-value>1.0s</span>
-							<button class="ss-transition-speed-btn" data-speed-increase>+</button>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="ss-media-toolbar-divider"></div>
+			<div class="ss-media-toolbar-divider" data-divider-before-advanced></div>
 
 			<!-- Advanced Menu -->
 			<div class="ss-media-toolbar-dropdown">
@@ -274,6 +282,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeSlider = this.container.querySelector("[data-volume-slider]");
 
 		this.volumeSection = this.container.querySelector("[data-volume-section]");
+		this.visualSection = this.container.querySelector("[data-visual-section]");
 
 		// Transition elements
 		this.directionRow = this.container.querySelector("[data-direction-row]");
@@ -433,8 +442,8 @@ export class MediaToolbar extends BaseToolbar {
 			const scale = typeof clip.scale === "number" ? clip.scale : 1;
 			this.currentScale = Math.round(scale * 100);
 
-			// Volume (video only)
-			if (this.isVideoClip && clip.asset.type === "video") {
+			// Volume (video and audio only)
+			if ((this.assetType === "video" || this.assetType === "audio") && (clip.asset.type === "video" || clip.asset.type === "audio")) {
 				const volume = typeof clip.asset.volume === "number" ? clip.asset.volume : 1;
 				this.currentVolume = Math.round(volume * 100);
 			}
@@ -466,9 +475,14 @@ export class MediaToolbar extends BaseToolbar {
 		// Update dynamic source state
 		this.updateDynamicSourceUI();
 
-		// Show/hide volume section based on asset type
+		// Show/hide visual section (hidden for audio)
+		if (this.visualSection) {
+			this.visualSection.classList.toggle("hidden", this.assetType === "audio");
+		}
+
+		// Show/hide volume section (hidden for image)
 		if (this.volumeSection) {
-			this.volumeSection.classList.toggle("hidden", !this.isVideoClip);
+			this.volumeSection.classList.toggle("hidden", this.assetType === "image");
 		}
 	}
 
@@ -924,10 +938,10 @@ export class MediaToolbar extends BaseToolbar {
 	 * Show the toolbar for a specific clip.
 	 * @param trackIndex - Track index
 	 * @param clipIndex - Clip index
-	 * @param isVideo - Whether the clip is a video (optional, defaults to false)
+	 * @param assetType - The asset type (video, image, or audio)
 	 */
-	showMedia(trackIndex: number, clipIndex: number, isVideo: boolean = false): void {
-		this.isVideoClip = isVideo;
+	showMedia(trackIndex: number, clipIndex: number, assetType: MediaAssetType = "image"): void {
+		this.assetType = assetType;
 		super.show(trackIndex, clipIndex);
 	}
 
@@ -956,6 +970,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeValue = null;
 
 		this.volumeSection = null;
+		this.visualSection = null;
 
 		// Transition elements
 		this.directionRow = null;

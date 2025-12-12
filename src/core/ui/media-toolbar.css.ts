@@ -22,6 +22,15 @@ export const MEDIA_TOOLBAR_STYLES = `
 	display: flex;
 }
 
+.ss-media-toolbar-visual {
+	display: flex;
+	align-items: center;
+}
+
+.ss-media-toolbar-visual.hidden {
+	display: none;
+}
+
 .ss-media-toolbar-group {
 	display: flex;
 	align-items: center;

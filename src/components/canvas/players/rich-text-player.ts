@@ -480,6 +480,6 @@ export class RichTextPlayer extends Player {
 	}
 
 	private getCurrentTime(): number {
-		return this.edit.playbackTime;
+		return this.edit.playbackTime - this.getStart();
 	}
 }
