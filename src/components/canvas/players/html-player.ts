@@ -5,7 +5,7 @@ import type { Edit } from "core/edit";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 type HtmlDocumentFont = {
 	color?: string;
@@ -46,7 +46,7 @@ export class HtmlPlayer extends Player {
 	private text: pixi.Text | null;
 
 	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
-		super(timeline, clipConfiguration);
+		super(timeline, clipConfiguration, PlayerType.Html);
 
 		this.background = null;
 		this.text = null;

@@ -5,14 +5,14 @@ import { type ShapeAsset } from "@schemas/shape-asset";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class ShapePlayer extends Player {
 	private shape: pixi.Graphics | null;
 	private shapeBackground: pixi.Graphics | null;
 
 	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
-		super(timeline, clipConfiguration);
+		super(timeline, clipConfiguration, PlayerType.Shape);
 
 		this.shape = null;
 		this.shapeBackground = null;

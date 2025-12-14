@@ -1,4 +1,5 @@
-import { Player } from "@canvas/players/player";
+import { Player, PlayerType } from "@canvas/players/player";
+import type { Edit } from "@core/edit";
 import { TextEditor } from "@canvas/text/text-editor";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
@@ -16,6 +17,10 @@ export class TextPlayer extends Player {
 	private background: pixi.Graphics | null = null;
 	private text: pixi.Text | null = null;
 	private textEditor: TextEditor | null = null;
+
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		super(edit, clipConfiguration, PlayerType.Text);
+	}
 
 	public override async load(): Promise<void> {
 		await super.load();

@@ -4,7 +4,7 @@ import { type ResolvedClip } from "@schemas/clip";
 import { type LumaAsset } from "@schemas/luma-asset";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 type LumaSource = pixi.ImageSource | pixi.VideoSource;
 
@@ -14,7 +14,7 @@ export class LumaPlayer extends Player {
 	private isPlaying: boolean;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
-		super(edit, clipConfiguration);
+		super(edit, clipConfiguration, PlayerType.Luma);
 
 		this.texture = null;
 		this.sprite = null;

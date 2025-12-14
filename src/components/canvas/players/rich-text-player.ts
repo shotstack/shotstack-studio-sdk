@@ -1,4 +1,4 @@
-import { Player } from "@canvas/players/player";
+import { Player, PlayerType } from "@canvas/players/player";
 import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
@@ -34,7 +34,7 @@ export class RichTextPlayer extends Player {
 	constructor(edit: any, clipConfiguration: any) {
 		// Default fit to "cover" for rich-text assets if not provided
 		const config = clipConfiguration.fit ? clipConfiguration : { ...clipConfiguration, fit: "cover" };
-		super(edit, config);
+		super(edit, config, PlayerType.RichText);
 	}
 
 	private buildCanvasPayload(richTextAsset: RichTextAsset, fontInfo?: { baseFontFamily: string; fontWeight: number }): any {

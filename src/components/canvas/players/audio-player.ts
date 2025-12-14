@@ -8,7 +8,7 @@ import { type Keyframe } from "@schemas/keyframe";
 import * as howler from "howler";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class AudioPlayer extends Player {
 	private audioResource: howler.Howl | null;
@@ -19,7 +19,7 @@ export class AudioPlayer extends Player {
 	private syncTimer: number;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
-		super(edit, clipConfiguration);
+		super(edit, clipConfiguration, PlayerType.Audio);
 
 		this.audioResource = null;
 		this.isPlaying = false;

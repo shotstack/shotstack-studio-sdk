@@ -3,7 +3,7 @@ import { CaptionPlayer } from "@canvas/players/caption-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
-import type { Player } from "@canvas/players/player";
+import { type Player, PlayerType } from "@canvas/players/player";
 import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
@@ -425,11 +425,11 @@ export class Edit extends Entity {
 		if (!clipToDelete) return;
 
 		// Check if this is a content clip (not a luma)
-		const isContentClip = !(clipToDelete instanceof LumaPlayer);
+		const isContentClip = clipToDelete.playerType !== PlayerType.Luma;
 
 		if (isContentClip) {
 			// Find attached luma in the same track
-			const lumaIndex = track.findIndex(clip => clip instanceof LumaPlayer);
+			const lumaIndex = track.findIndex(clip => clip.playerType === PlayerType.Luma);
 
 			if (lumaIndex !== -1) {
 				// Delete luma first (handles index shifting correctly)
@@ -499,11 +499,11 @@ export class Edit extends Entity {
 		let totalFrames = 0;
 		let textPlayerCount = 0;
 		for (const clip of this.clips) {
-			if (clip instanceof RichTextPlayer) {
+			if (clip.playerType === PlayerType.RichText) {
 				richTextClips += 1;
-				totalFrames += clip.getCacheSize();
+				totalFrames += (clip as RichTextPlayer).getCacheSize();
 			}
-			if (clip instanceof TextPlayer) {
+			if (clip.playerType === PlayerType.Text) {
 				textPlayerCount += 1;
 			}
 		}
@@ -608,8 +608,8 @@ export class Edit extends Entity {
 
 		// Add animated text frame caches (RichTextPlayer)
 		for (const clip of this.clips) {
-			if (clip instanceof RichTextPlayer) {
-				const frames = clip.getCacheSize();
+			if (clip.playerType === PlayerType.RichText) {
+				const frames = (clip as RichTextPlayer).getCacheSize();
 				if (frames > 0) {
 					stats.animated.count += 1;
 					stats.animated.frames += frames;
@@ -708,13 +708,13 @@ export class Edit extends Entity {
 			if (clip.isActive()) {
 				activeCount += 1;
 
-				if (clip instanceof VideoPlayer) {
-					const drift = clip.getCurrentDrift();
+				if (clip.playerType === PlayerType.Video) {
+					const drift = (clip as VideoPlayer).getCurrentDrift();
 					videoMaxDrift = Math.max(videoMaxDrift, drift);
 				}
 
-				if (clip instanceof AudioPlayer) {
-					const drift = clip.getCurrentDrift();
+				if (clip.playerType === PlayerType.Audio) {
+					const drift = (clip as AudioPlayer).getCurrentDrift();
 					audioMaxDrift = Math.max(audioMaxDrift, drift);
 				}
 			}
@@ -923,8 +923,8 @@ export class Edit extends Entity {
 
 		// Clean up luma masks for any luma players being deleted
 		for (const clip of this.clipsToDispose) {
-			if (clip instanceof LumaPlayer) {
-				this.cleanupLumaMaskForPlayer(clip);
+			if (clip.playerType === PlayerType.Luma) {
+				this.cleanupLumaMaskForPlayer(clip as LumaPlayer);
 			}
 		}
 
@@ -1253,9 +1253,9 @@ export class Edit extends Entity {
 		if (!this.canvas) return;
 
 		for (const trackClips of this.tracks) {
-			const lumaPlayer = trackClips.find(clip => clip instanceof LumaPlayer) as LumaPlayer | undefined;
+			const lumaPlayer = trackClips.find(clip => clip.playerType === PlayerType.Luma) as LumaPlayer | undefined;
 			const lumaSprite = lumaPlayer?.getSprite();
-			const contentClips = trackClips.filter(clip => !(clip instanceof LumaPlayer));
+			const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
 
 			if (lumaPlayer && lumaSprite?.texture && contentClips.length > 0) {
 				this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
@@ -1395,8 +1395,8 @@ export class Edit extends Entity {
 
 		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
 			const trackClips = this.tracks[trackIdx];
-			const lumaPlayer = trackClips.find(clip => clip instanceof LumaPlayer) as LumaPlayer | undefined;
-			const contentClips = trackClips.filter(clip => !(clip instanceof LumaPlayer));
+			const lumaPlayer = trackClips.find(clip => clip.playerType === PlayerType.Luma) as LumaPlayer | undefined;
+			const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
 
 			// ALWAYS hide luma player if it has a parent (even if mask exists)
 			// This handles the case where AddTrackCommand re-adds luma to scene

@@ -5,7 +5,7 @@ import { type ResolvedClip } from "@schemas/clip";
 import { type VideoAsset } from "@schemas/video-asset";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;
@@ -19,7 +19,7 @@ export class VideoPlayer extends Player {
 	private skipVideoUpdate: boolean;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
-		super(edit, clipConfiguration);
+		super(edit, clipConfiguration, PlayerType.Video);
 
 		this.texture = null;
 		this.sprite = null;

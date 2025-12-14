@@ -1,4 +1,5 @@
 import { CaptionPlayer } from "@canvas/players/caption-player";
+import { PlayerType } from "@canvas/players/player";
 import { Canvas } from "@canvas/shotstack-canvas";
 import { ExportCommand } from "@core/commands/export-command";
 import { Edit } from "@core/edit";
@@ -241,8 +242,8 @@ export class ExportCoordinator {
 		const transcriptionPromises: Promise<void>[] = [];
 
 		for (const clip of clips) {
-			if (clip instanceof CaptionPlayer && clip.isTranscriptionPending()) {
-				transcriptionPromises.push(clip.waitForTranscription());
+			if (clip.playerType === PlayerType.Caption && (clip as CaptionPlayer).isTranscriptionPending()) {
+				transcriptionPromises.push((clip as CaptionPlayer).waitForTranscription());
 			}
 		}
 

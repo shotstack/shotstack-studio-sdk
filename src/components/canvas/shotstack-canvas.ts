@@ -290,13 +290,6 @@ export class Canvas {
 
 			// Pass playback health stats
 			this.inspector.playbackHealth = this.edit.getPlaybackHealth();
-
-			// Legacy stats for backward compatibility
-			const memoryStats = this.edit.getMemoryStats();
-			this.inspector.clipCounts = memoryStats.clipCounts;
-			this.inspector.totalClips = memoryStats.totalClips;
-			this.inspector.commandHistorySize = memoryStats.commandHistorySize;
-			this.inspector.trackCount = memoryStats.trackCount;
 		}
 
 		this.inspector.update(ticker.deltaTime, ticker.deltaMS);

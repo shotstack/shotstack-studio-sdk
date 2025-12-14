@@ -1,4 +1,6 @@
-import { Player } from "@canvas/players/player";
+import { Player, PlayerType } from "@canvas/players/player";
+import type { Edit } from "@core/edit";
+import { type ResolvedClip } from "@schemas/clip";
 import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
@@ -23,6 +25,10 @@ export class CaptionPlayer extends Player {
 
 	private pendingTranscription: Promise<void> | null = null;
 	private isTranscribing = false;
+
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		super(edit, clipConfiguration, PlayerType.Caption);
+	}
 
 	public override async load(): Promise<void> {
 		await super.load();

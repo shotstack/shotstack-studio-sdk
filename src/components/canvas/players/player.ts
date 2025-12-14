@@ -12,6 +12,18 @@ import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
 
+export enum PlayerType {
+	Video = "video",
+	Image = "image",
+	Audio = "audio",
+	Text = "text",
+	RichText = "rich-text",
+	Luma = "luma",
+	Html = "html",
+	Shape = "shape",
+	Caption = "caption"
+}
+
 /**
  * TODO: Move handles on UI level (screen space)
  * TODO: Handle overlapping frames - ex: length of a clip is 1.5s but there's an in (1s) and out (1s) transition
@@ -87,6 +99,7 @@ export abstract class Player extends Entity {
 
 	public layer: number;
 	public shouldDispose: boolean;
+	public readonly playerType: PlayerType;
 
 	protected edit: Edit;
 	public clipConfiguration: ResolvedClip;
@@ -128,12 +141,13 @@ export abstract class Player extends Entity {
 	private initialClipConfiguration: ResolvedClip | null;
 	protected contentContainer: pixi.Container;
 
-	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip, playerType: PlayerType) {
 		super();
 
 		this.edit = edit;
 		this.layer = 0;
 		this.shouldDispose = false;
+		this.playerType = playerType;
 
 		this.clipConfiguration = clipConfiguration;
 		this.positionBuilder = new PositionBuilder(edit.size);

@@ -4,14 +4,14 @@ import { type ResolvedClip } from "@schemas/clip";
 import { type ImageAsset } from "@schemas/image-asset";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class ImagePlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null;
 	private sprite: pixi.Sprite | null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
-		super(edit, clipConfiguration);
+		super(edit, clipConfiguration, PlayerType.Image);
 
 		this.texture = null;
 		this.sprite = null;
