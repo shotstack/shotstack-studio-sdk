@@ -139,14 +139,11 @@ export const CANVAS_TOOLBAR_STYLES = `
 	top: 50%;
 	transform: translateY(-50%);
 	background: #fff;
-	border: 1px solid rgba(0, 0, 0, 0.08);
 	border-radius: 14px;
 	padding: 8px;
-	box-shadow:
-		0 4px 12px rgba(0, 0, 0, 0.08),
-		0 12px 40px rgba(0, 0, 0, 0.12);
 	min-width: 180px;
 	z-index: 100;
+	filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .ss-canvas-toolbar-popup.visible {
@@ -159,11 +156,9 @@ export const CANVAS_TOOLBAR_STYLES = `
 	right: -6px;
 	top: 50%;
 	transform: translateY(-50%) rotate(45deg);
-	width: 10px;
-	height: 10px;
+	width: 12px;
+	height: 12px;
 	background: #fff;
-	border-right: 1px solid rgba(0, 0, 0, 0.08);
-	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Popup items */
@@ -332,7 +327,7 @@ export const CANVAS_TOOLBAR_STYLES = `
 	transform: none;
 	top: calc(50% - 200px);
 	flex-direction: column;
-	overflow: hidden;
+	overflow: visible;
 }
 
 /* Only display as flex when visible */
@@ -388,6 +383,7 @@ export const CANVAS_TOOLBAR_STYLES = `
 	overflow-x: hidden;
 	overscroll-behavior: contain;
 	-webkit-overflow-scrolling: touch;
+	border-radius: 0 0 10px 10px;
 }
 
 /* Custom scrollbar */
