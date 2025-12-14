@@ -19,6 +19,7 @@ const extractFontNames = (url: string): { full: string; base: string } => {
 };
 
 export class RichTextPlayer extends Player {
+	private static readonly PREVIEW_FPS = 60;
 	private textEngine: TextEngine | null = null;
 	private renderer: TextRenderer | null = null;
 	private canvas: HTMLCanvasElement | null = null;
@@ -27,7 +28,6 @@ export class RichTextPlayer extends Player {
 	private lastRenderedTime: number = -1;
 	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
-	private targetFPS: number = 30;
 	private validatedAsset: ValidatedRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
 
@@ -193,9 +193,6 @@ export class RichTextPlayer extends Player {
 		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 
 		try {
-			const editData = this.edit.getEdit();
-			this.targetFPS = editData?.output?.fps || 30;
-
 			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
 			if (!validationResult.success) {
 				console.error("Rich-text asset validation failed:", validationResult.error);
@@ -212,7 +209,7 @@ export class RichTextPlayer extends Player {
 			this.textEngine = (await createTextEngine({
 				width: canvasPayload.width,
 				height: canvasPayload.height,
-				fps: this.targetFPS
+				fps: RichTextPlayer.PREVIEW_FPS
 			})) as TextEngine;
 
 			const { value: validated } = this.textEngine!.validate(canvasPayload);
@@ -262,7 +259,7 @@ export class RichTextPlayer extends Player {
 	private async renderFrame(timeSeconds: number): Promise<void> {
 		if (!this.textEngine || !this.renderer || !this.canvas || !this.validatedAsset) return;
 
-		const cacheKey = Math.floor(timeSeconds * this.targetFPS);
+		const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
 
 		if (this.cachedFrames.has(cacheKey)) {
 			const cachedTexture = this.cachedFrames.get(cacheKey)!;
@@ -351,7 +348,15 @@ export class RichTextPlayer extends Player {
 		this.contentContainer.addChild(fallbackText);
 	}
 	private renderFrameSafe(timeSeconds: number): void {
-		if (this.isRendering) return;
+		if (this.isRendering) {
+			// Show nearest cached frame instead of skipping entirely
+			const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
+			const cachedTexture = this.cachedFrames.get(cacheKey);
+			if (cachedTexture && this.sprite && this.sprite.texture !== cachedTexture) {
+				this.sprite.texture = cachedTexture;
+			}
+			return;
+		}
 
 		this.isRendering = true;
 		this.renderFrame(timeSeconds)
@@ -376,8 +381,7 @@ export class RichTextPlayer extends Player {
 
 		if (this.textEngine && this.renderer && !this.isRendering) {
 			const currentTimeSeconds = this.getCurrentTime() / 1000;
-			const targetFPS = this.edit.getOutputFps();
-			const frameInterval = 1 / targetFPS;
+			const frameInterval = 1 / 60; // Always render at 60fps for smooth preview
 
 			if (Math.abs(currentTimeSeconds - this.lastRenderedTime) > frameInterval) {
 				this.renderFrameSafe(currentTimeSeconds);
@@ -393,7 +397,7 @@ export class RichTextPlayer extends Player {
 		}
 		this.cachedFrames.clear();
 
-		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * this.targetFPS))) {
+		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * RichTextPlayer.PREVIEW_FPS))) {
 			this.texture.destroy();
 		}
 		this.texture = null;
