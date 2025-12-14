@@ -121,4 +121,11 @@ export class LumaPlayer extends Player {
 	public isVideoSource(): boolean {
 		return this.texture?.source instanceof pixi.VideoSource;
 	}
+
+	public getVideoCurrentTime(): number {
+		if (this.texture?.source instanceof pixi.VideoSource) {
+			return this.texture.source.resource.currentTime;
+		}
+		return -1;
+	}
 }

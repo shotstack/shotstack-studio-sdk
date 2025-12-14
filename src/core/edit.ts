@@ -89,6 +89,7 @@ export class Edit extends Entity {
 		maskSprite: pixi.Sprite;
 		tempContainer: pixi.Container;
 		contentClip: Player;
+		lastVideoTime: number;
 	}> = [];
 
 	// Queue for deferred mask sprite cleanup - must wait for PixiJS to finish rendering
@@ -1019,24 +1020,40 @@ export class Edit extends Entity {
 		tempSprite.filters = [invertFilter];
 		tempContainer.addChild(tempSprite);
 
-		const maskTexture = renderer.generateTexture(tempContainer);
+		const maskTexture = renderer.generateTexture({
+			target: tempContainer,
+			resolution: 0.5,
+		});
 		const maskSprite = new pixi.Sprite(maskTexture);
 		contentClip.getContainer().addChild(maskSprite);
 		contentClip.getContentContainer().setMask({ mask: maskSprite });
 
-		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer, contentClip });
+		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer, contentClip, lastVideoTime: -1 });
 	}
 
 	private updateLumaMasks(): void {
 		if (!this.canvas) return;
 		const { renderer } = this.canvas.application;
 
+		const frameInterval = 1 / 30; // 30fps threshold
+
 		for (const mask of this.activeLumaMasks) {
 			if (mask.lumaPlayer.isVideoSource()) {
-				const oldTexture = mask.maskSprite.texture;
-				mask.maskSprite.texture = renderer.generateTexture(mask.tempContainer);
+				const videoTime = mask.lumaPlayer.getVideoCurrentTime();
 
-				oldTexture.destroy(true);
+				// Only regenerate if frame has changed (within threshold)
+				const frameChanged = Math.abs(videoTime - mask.lastVideoTime) >= frameInterval;
+				if (frameChanged) {
+					mask.lastVideoTime = videoTime;
+
+					const oldTexture = mask.maskSprite.texture;
+					mask.maskSprite.texture = renderer.generateTexture({
+						target: mask.tempContainer,
+						resolution: 0.5,
+					});
+
+					oldTexture.destroy(true);
+				}
 			}
 		}
 	}
