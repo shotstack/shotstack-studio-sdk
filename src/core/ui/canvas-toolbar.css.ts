@@ -274,7 +274,7 @@ export const CANVAS_TOOLBAR_STYLES = `
 .ss-canvas-toolbar-color-input {
 	width: 100%;
 	height: 120px;
-	border: none;
+	border: 1px solid rgba(0, 0, 0, 0.1);
 	border-radius: 10px;
 	cursor: pointer;
 	padding: 0;
@@ -286,12 +286,12 @@ export const CANVAS_TOOLBAR_STYLES = `
 
 .ss-canvas-toolbar-color-input::-webkit-color-swatch {
 	border: none;
-	border-radius: 10px;
+	border-radius: 9px;
 }
 
 .ss-canvas-toolbar-color-input::-moz-color-swatch {
 	border: none;
-	border-radius: 10px;
+	border-radius: 9px;
 }
 
 /* Color swatches grid */
