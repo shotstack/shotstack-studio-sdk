@@ -32,7 +32,9 @@ export const TOOLBAR_ICONS = {
 	background: `<path d="M462.089,151.673h-88.967c2.115,10.658,2.743,21.353,1.806,31.918h85.05v247.93H212.051v-59.488l-11.615,11.609 c-5.921,5.733-12.882,10.113-20.304,13.591v36.4c0,16.423,13.363,29.79,29.791,29.79h252.166c16.425,0,29.79-13.367,29.79-29.79 V181.467C491.879,165.039,478.514,151.673,462.089,151.673z"/><path d="M333.156,201.627c-1.527-3.799-0.837-6.296,0.225-10.065c0.311-1.124,0.613-2.205,0.855-3.3 c3.189-14.43,1.178-31.357-5.57-46.378c-8.859-19.715-24.563-41.406-44.258-61.103c-32.759-32.773-67.686-52.324-93.457-52.324 c-9.418,0-16.406,2.624-21.658,6.136L9.937,192.753c-26.248,27.201,3.542,81.343,42.343,120.142 c32.738,32.738,67.667,52.289,93.419,52.289c13.563,0,22.081-5.506,26.943-10.192l109.896-109.863 c-0.998,3.653-1.478,6.683-1.478,9.243c0,20.097,16.359,36.459,36.475,36.459c20.115,0,36.494-16.362,36.494-36.459 C354.029,250.907,354.029,240.375,333.156,201.627z"/>`,
 	stroke: `<rect x="5" y="5" width="14" height="14" rx="2"/>`,
 	edit: `<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>`,
-	chevron: `<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>`
+	chevron: `<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
+	transition: `<path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/>`,
+	effect: `<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>`
 };
 
 /**
@@ -114,17 +116,26 @@ export abstract class BaseToolbar {
 	}
 
 	/**
-	 * Toggle a popup's visibility, closing all others first.
-	 * Uses CSS class-based visibility.
+	 * Check if a popup is currently visible (handles both CSS class and inline style patterns).
 	 */
-	protected togglePopup(popup: HTMLElement | null): void {
-		const isOpen = popup?.classList.contains("visible");
+	protected isPopupOpen(popup: HTMLElement | null): boolean {
+		if (!popup) return false;
+		return popup.classList.contains("visible") || popup.style.display === "block";
+	}
+
+	/**
+	 * Toggle a popup's visibility, closing all others first.
+	 * Uses CSS class-based visibility. Optional callback fires when popup opens.
+	 */
+	protected togglePopup(popup: HTMLElement | null, onOpen?: () => void): void {
+		const isOpen = this.isPopupOpen(popup);
 
 		this.closeAllPopups();
 
 		if (!isOpen && popup) {
 			popup.classList.add("visible");
 			popup.style.display = ""; // Clear inline style, let CSS control
+			onOpen?.();
 		}
 	}
 

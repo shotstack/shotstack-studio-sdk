@@ -153,8 +153,8 @@ export const TOOLBAR_STYLES = `
 .ss-toolbar-size-item:hover { background: rgba(255, 255, 255, 0.08); }
 .ss-toolbar-size-item.active { background: rgba(255, 255, 255, 0.12); }
 
-.ss-toolbar-btn--text-edit { width: auto; min-width: 56px; padding: 0 10px; gap: 6px; }
-.ss-toolbar-btn--text-edit span { font-size: 12px; font-weight: 500; }
+.ss-toolbar-btn.ss-toolbar-btn--text-edit { width: auto; min-width: auto; padding: 0 10px; gap: 6px; }
+.ss-toolbar-btn--text-edit span { font-size: 12px; font-weight: 500; white-space: nowrap; }
 
 .ss-toolbar-popup--text-edit { min-width: 280px; padding: 14px 16px; }
 .ss-toolbar-text-area-wrapper { position: relative; }
@@ -244,4 +244,67 @@ export const TOOLBAR_STYLES = `
 }
 .ss-animation-preset:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.9); }
 .ss-animation-preset.active { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.25); color: #fff; }
+
+/* Transition popup - tabbed design */
+.ss-toolbar-popup--transition { min-width: 220px; padding: 12px; }
+
+.ss-transition-tabs { display: flex; background: rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 2px; margin-bottom: 12px; }
+.ss-transition-tab { flex: 1; padding: 6px 12px; background: transparent; border: none; border-radius: 4px; color: rgba(255, 255, 255, 0.5); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-transform: uppercase; letter-spacing: 0.03em; }
+.ss-transition-tab:hover { color: rgba(255, 255, 255, 0.7); }
+.ss-transition-tab.active { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+.ss-transition-effects { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.ss-transition-effect { padding: 8px 4px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; text-align: center; }
+.ss-transition-effect:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-transition-effect.active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.ss-transition-direction-row { display: none; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.ss-transition-direction-row.visible { display: flex; }
+.ss-transition-label { font-size: 10px; font-weight: 500; color: rgba(255, 255, 255, 0.4); min-width: 52px; }
+.ss-transition-directions { display: flex; gap: 4px; flex: 1; }
+.ss-transition-dir { flex: 1; padding: 6px 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 5px; color: rgba(255, 255, 255, 0.5); font-size: 12px; cursor: pointer; transition: all 0.15s ease; text-align: center; }
+.ss-transition-dir:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-transition-dir.active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+.ss-transition-dir.hidden { display: none; }
+
+.ss-transition-speed-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.ss-transition-speed-stepper { display: flex; align-items: center; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; }
+.ss-transition-speed-btn { width: 28px; height: 26px; background: transparent; border: none; color: rgba(255, 255, 255, 0.5); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; }
+.ss-transition-speed-btn:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-transition-speed-btn:active { background: rgba(255, 255, 255, 0.12); }
+.ss-transition-speed-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.ss-transition-speed-value { min-width: 42px; padding: 0 4px; text-align: center; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.85); font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255, 255, 255, 0.06); border-right: 1px solid rgba(255, 255, 255, 0.06); }
+
+/* Effect popup - progressive disclosure design */
+.ss-toolbar-popup--effect { min-width: 200px; padding: 12px; }
+.ss-effect-types { display: flex; gap: 6px; }
+.ss-effect-type { flex: 1; padding: 10px 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; color: rgba(255, 255, 255, 0.6); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; text-align: center; }
+.ss-effect-type:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-effect-type.active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.ss-effect-variant-row { display: none; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); animation: fadeSlideIn 0.15s ease; }
+.ss-effect-variant-row.visible { display: flex; }
+.ss-effect-variants { display: flex; gap: 4px; flex: 1; }
+.ss-effect-variant { flex: 1; padding: 6px 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: rgba(255, 255, 255, 0.5); font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; text-align: center; }
+.ss-effect-variant:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-effect-variant.active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.ss-effect-direction-row { display: none; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); animation: fadeSlideIn 0.15s ease; }
+.ss-effect-direction-row.visible { display: flex; }
+.ss-effect-directions { display: flex; gap: 4px; flex: 1; }
+.ss-effect-dir { flex: 1; padding: 6px 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: rgba(255, 255, 255, 0.5); font-size: 13px; cursor: pointer; transition: all 0.15s ease; text-align: center; }
+.ss-effect-dir:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-effect-dir.active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.ss-effect-speed-row { display: none; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); animation: fadeSlideIn 0.15s ease; }
+.ss-effect-speed-row.visible { display: flex; }
+.ss-effect-label { font-size: 10px; font-weight: 500; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 0.03em; min-width: 52px; }
+.ss-effect-speed-stepper { display: flex; align-items: center; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; overflow: hidden; }
+.ss-effect-speed-btn { width: 28px; height: 26px; background: transparent; border: none; color: rgba(255, 255, 255, 0.5); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; }
+.ss-effect-speed-btn:hover { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.9); }
+.ss-effect-speed-btn:active { background: rgba(255, 255, 255, 0.12); }
+.ss-effect-speed-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.ss-effect-speed-value { min-width: 42px; padding: 0 4px; text-align: center; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.85); font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255, 255, 255, 0.06); border-right: 1px solid rgba(255, 255, 255, 0.06); }
+
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 `;

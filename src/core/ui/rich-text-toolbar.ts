@@ -9,13 +9,11 @@ import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 
 export class RichTextToolbar extends BaseToolbar {
 
-	private fontBtn: HTMLButtonElement | null = null;
 	private fontPopup: HTMLDivElement | null = null;
 	private fontPreview: HTMLSpanElement | null = null;
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
 	private boldBtn: HTMLButtonElement | null = null;
-	private spacingBtn: HTMLButtonElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
 	private letterSpacingSlider: HTMLInputElement | null = null;
 	private letterSpacingValue: HTMLSpanElement | null = null;
@@ -24,12 +22,10 @@ export class RichTextToolbar extends BaseToolbar {
 	private anchorTopBtn: HTMLButtonElement | null = null;
 	private anchorMiddleBtn: HTMLButtonElement | null = null;
 	private anchorBottomBtn: HTMLButtonElement | null = null;
-	private alignBtn: HTMLButtonElement | null = null;
 	private alignIcon: SVGElement | null = null;
 	private transformBtn: HTMLButtonElement | null = null;
 	private underlineBtn: HTMLButtonElement | null = null;
 	private linethroughBtn: HTMLButtonElement | null = null;
-	private textEditBtn: HTMLButtonElement | null = null;
 	private textEditPopup: HTMLDivElement | null = null;
 	private textEditArea: HTMLTextAreaElement | null = null;
 	private textEditDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -41,7 +37,6 @@ export class RichTextToolbar extends BaseToolbar {
 	private autocompleteFilter: string = "";
 	private autocompleteStartPos: number = 0;
 	private selectedAutocompleteIndex: number = 0;
-	private borderBtn: HTMLButtonElement | null = null;
 	private borderPopup: HTMLDivElement | null = null;
 	private borderWidthSlider: HTMLInputElement | null = null;
 	private borderWidthValue: HTMLSpanElement | null = null;
@@ -50,11 +45,9 @@ export class RichTextToolbar extends BaseToolbar {
 	private borderOpacityValue: HTMLSpanElement | null = null;
 	private borderRadiusSlider: HTMLInputElement | null = null;
 	private borderRadiusValue: HTMLSpanElement | null = null;
-	private backgroundBtn: HTMLButtonElement | null = null;
 	private backgroundPopup: HTMLDivElement | null = null;
 	private backgroundColorPicker: BackgroundColorPicker | null = null;
 
-	private paddingBtn: HTMLButtonElement | null = null;
 	private paddingPopup: HTMLDivElement | null = null;
 	private paddingTopSlider: HTMLInputElement | null = null;
 	private paddingTopValue: HTMLSpanElement | null = null;
@@ -65,12 +58,10 @@ export class RichTextToolbar extends BaseToolbar {
 	private paddingLeftSlider: HTMLInputElement | null = null;
 	private paddingLeftValue: HTMLSpanElement | null = null;
 
-	private fontColorBtn: HTMLButtonElement | null = null;
 	private fontColorPopup: HTMLDivElement | null = null;
 	private fontColorPicker: FontColorPicker | null = null;
 	private colorDisplay: HTMLButtonElement | null = null;
 
-	private shadowBtn: HTMLButtonElement | null = null;
 	private shadowPopup: HTMLDivElement | null = null;
 	private shadowToggle: HTMLInputElement | null = null;
 	private shadowOffsetXSlider: HTMLInputElement | null = null;
@@ -84,12 +75,40 @@ export class RichTextToolbar extends BaseToolbar {
 	private shadowOpacityValue: HTMLSpanElement | null = null;
 	private lastShadowConfig: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number } | null = null;
 
-	private animationBtn: HTMLButtonElement | null = null;
 	private animationPopup: HTMLDivElement | null = null;
 	private animationDurationSlider: HTMLInputElement | null = null;
 	private animationDurationValue: HTMLSpanElement | null = null;
 	private animationStyleSection: HTMLDivElement | null = null;
 	private animationDirectionSection: HTMLDivElement | null = null;
+
+	// Transition state
+	private activeTransitionTab: "in" | "out" = "in";
+	private transitionInEffect: string = "";
+	private transitionInDirection: string = "";
+	private transitionInSpeed: number = 1.0;
+	private transitionOutEffect: string = "";
+	private transitionOutDirection: string = "";
+	private transitionOutSpeed: number = 1.0;
+	private readonly SPEED_VALUES = [0.25, 0.5, 1.0, 2.0];
+
+	// Transition elements
+	private transitionPopup: HTMLDivElement | null = null;
+	private directionRow: HTMLDivElement | null = null;
+	private speedValueLabel: HTMLSpanElement | null = null;
+
+	// Effect state
+	private effectType: "" | "zoom" | "slide" = "";
+	private effectVariant: "In" | "Out" = "In";
+	private effectDirection: "Left" | "Right" | "Up" | "Down" = "Right";
+	private effectSpeed: number = 1.0;
+	private readonly EFFECT_SPEED_VALUES = [0.5, 1.0, 2.0];
+
+	// Effect elements
+	private effectPopup: HTMLDivElement | null = null;
+	private effectVariantRow: HTMLDivElement | null = null;
+	private effectDirectionRow: HTMLDivElement | null = null;
+	private effectSpeedRow: HTMLDivElement | null = null;
+	private effectSpeedValueLabel: HTMLSpanElement | null = null;
 
 	override mount(parent: HTMLElement): void {
 		this.injectStyles("ss-toolbar-styles", TOOLBAR_STYLES);
@@ -383,6 +402,86 @@ export class RichTextToolbar extends BaseToolbar {
 				</div>
 			</div>
 
+			<div class="ss-toolbar-dropdown">
+				<button data-action="transition-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Transition">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/>
+					</svg>
+					<span>Transition</span>
+				</button>
+				<div data-transition-popup class="ss-toolbar-popup ss-toolbar-popup--transition">
+					<div class="ss-transition-tabs">
+						<button class="ss-transition-tab active" data-tab="in">In</button>
+						<button class="ss-transition-tab" data-tab="out">Out</button>
+					</div>
+					<div class="ss-transition-effects">
+						<button class="ss-transition-effect" data-effect="">None</button>
+						<button class="ss-transition-effect" data-effect="fade">Fade</button>
+						<button class="ss-transition-effect" data-effect="zoom">Zoom</button>
+						<button class="ss-transition-effect" data-effect="slide">Slide</button>
+						<button class="ss-transition-effect" data-effect="wipe">Wipe</button>
+						<button class="ss-transition-effect" data-effect="carousel">Car</button>
+					</div>
+					<div class="ss-transition-direction-row" data-direction-row>
+						<span class="ss-transition-label">Direction</span>
+						<div class="ss-transition-directions">
+							<button class="ss-transition-dir" data-dir="Left">←</button>
+							<button class="ss-transition-dir" data-dir="Right">→</button>
+							<button class="ss-transition-dir" data-dir="Up">↑</button>
+							<button class="ss-transition-dir" data-dir="Down">↓</button>
+						</div>
+					</div>
+					<div class="ss-transition-speed-row">
+						<span class="ss-transition-label">Speed</span>
+						<div class="ss-transition-speed-stepper">
+							<button class="ss-transition-speed-btn" data-speed-decrease>−</button>
+							<span class="ss-transition-speed-value" data-speed-value>1.00s</span>
+							<button class="ss-transition-speed-btn" data-speed-increase>+</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="effect-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Effect">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+					</svg>
+					<span>Effect</span>
+				</button>
+				<div data-effect-popup class="ss-toolbar-popup ss-toolbar-popup--effect">
+					<div class="ss-effect-types">
+						<button class="ss-effect-type" data-effect-type="">None</button>
+						<button class="ss-effect-type" data-effect-type="zoom">Zoom</button>
+						<button class="ss-effect-type" data-effect-type="slide">Slide</button>
+					</div>
+					<div class="ss-effect-variant-row" data-effect-variant-row>
+						<span class="ss-effect-label">Variant</span>
+						<div class="ss-effect-variants">
+							<button class="ss-effect-variant" data-variant="In">In</button>
+							<button class="ss-effect-variant" data-variant="Out">Out</button>
+						</div>
+					</div>
+					<div class="ss-effect-direction-row" data-effect-direction-row>
+						<span class="ss-effect-label">Direction</span>
+						<div class="ss-effect-directions">
+							<button class="ss-effect-dir" data-effect-dir="Left">←</button>
+							<button class="ss-effect-dir" data-effect-dir="Right">→</button>
+							<button class="ss-effect-dir" data-effect-dir="Up">↑</button>
+							<button class="ss-effect-dir" data-effect-dir="Down">↓</button>
+						</div>
+					</div>
+					<div class="ss-effect-speed-row" data-effect-speed-row>
+						<span class="ss-effect-label">Speed</span>
+						<div class="ss-effect-speed-stepper">
+							<button class="ss-effect-speed-btn" data-effect-speed-decrease>−</button>
+							<span class="ss-effect-speed-value" data-effect-speed-value>1s</span>
+							<button class="ss-effect-speed-btn" data-effect-speed-increase>+</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div class="ss-toolbar-divider"></div>
 
 			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
@@ -403,15 +502,12 @@ export class RichTextToolbar extends BaseToolbar {
 		this.sizeInput = this.container.querySelector("[data-size-input]");
 		this.sizePopup = this.container.querySelector("[data-size-popup]");
 		this.boldBtn = this.container.querySelector("[data-action='bold']");
-		this.fontBtn = this.container.querySelector("[data-action='font-toggle']");
 		this.fontPopup = this.container.querySelector("[data-font-popup]");
 		this.fontPreview = this.container.querySelector("[data-font-preview]");
-		this.alignBtn = this.container.querySelector("[data-action='align-cycle']");
 		this.alignIcon = this.container.querySelector("[data-align-icon]");
 		this.transformBtn = this.container.querySelector("[data-action='transform']");
 		this.underlineBtn = this.container.querySelector("[data-action='underline']");
 		this.linethroughBtn = this.container.querySelector("[data-action='linethrough']");
-		this.textEditBtn = this.container.querySelector("[data-action='text-edit-toggle']");
 		this.textEditPopup = this.container.querySelector("[data-text-edit-popup]");
 		this.textEditArea = this.container.querySelector("[data-text-edit-area]");
 		this.autocompletePopup = this.container.querySelector("[data-autocomplete-popup]");
@@ -429,13 +525,12 @@ export class RichTextToolbar extends BaseToolbar {
 			if (e.key === "Enter") {
 				this.applyManualSize();
 				this.sizeInput?.blur();
-				if (this.sizePopup) this.sizePopup.style.display = "none";
+				this.closeAllPopups();
 			}
 		});
 		this.buildSizePopup();
 
 		// Font color picker
-		this.fontColorBtn = this.container.querySelector("[data-action='font-color-toggle']");
 		this.colorDisplay = this.container.querySelector("[data-color-display]");
 		this.fontColorPopup = this.container.querySelector("[data-font-color-popup]");
 		const fontColorPickerContainer = this.container.querySelector("[data-font-color-picker]");
@@ -448,7 +543,6 @@ export class RichTextToolbar extends BaseToolbar {
 			});
 		}
 
-		this.spacingBtn = this.container.querySelector("[data-action='spacing-toggle']");
 		this.spacingPopup = this.container.querySelector("[data-spacing-popup]");
 		this.letterSpacingSlider = this.container.querySelector("[data-letter-spacing-slider]");
 		this.letterSpacingValue = this.container.querySelector("[data-letter-spacing-value]");
@@ -474,7 +568,6 @@ export class RichTextToolbar extends BaseToolbar {
 			this.updateClipProperty({ style: { lineHeight: value } });
 		});
 
-		this.borderBtn = this.container.querySelector("[data-action='border-toggle']");
 		this.borderPopup = this.container.querySelector("[data-border-popup]");
 		this.borderWidthSlider = this.container.querySelector("[data-border-width-slider]");
 		this.borderWidthValue = this.container.querySelector("[data-border-width-value]");
@@ -515,7 +608,6 @@ export class RichTextToolbar extends BaseToolbar {
 		});
 
 		// Shadow controls
-		this.shadowBtn = this.container.querySelector("[data-action='shadow-toggle']");
 		this.shadowPopup = this.container.querySelector("[data-shadow-popup]");
 		this.shadowToggle = this.container.querySelector("[data-shadow-toggle]");
 		this.shadowOffsetXSlider = this.container.querySelector("[data-shadow-offset-x]");
@@ -573,12 +665,83 @@ export class RichTextToolbar extends BaseToolbar {
 		});
 
 		// Animation controls
-		this.animationBtn = this.container.querySelector("[data-action='animation-toggle']");
 		this.animationPopup = this.container.querySelector("[data-animation-popup]");
 		this.animationDurationSlider = this.container.querySelector("[data-animation-duration]");
 		this.animationDurationValue = this.container.querySelector("[data-animation-duration-value]");
 		this.animationStyleSection = this.container.querySelector("[data-animation-style-section]");
 		this.animationDirectionSection = this.container.querySelector("[data-animation-direction-section]");
+
+		// Transition elements
+		this.transitionPopup = this.container.querySelector("[data-transition-popup]");
+		this.directionRow = this.container.querySelector("[data-direction-row]");
+		this.speedValueLabel = this.container.querySelector("[data-speed-value]");
+
+		// Effect elements
+		this.effectPopup = this.container.querySelector("[data-effect-popup]");
+		this.effectVariantRow = this.container.querySelector("[data-effect-variant-row]");
+		this.effectDirectionRow = this.container.querySelector("[data-effect-direction-row]");
+		this.effectSpeedRow = this.container.querySelector("[data-effect-speed-row]");
+		this.effectSpeedValueLabel = this.container.querySelector("[data-effect-speed-value]");
+
+		// Transition event listeners
+		this.transitionPopup?.querySelectorAll("[data-tab]").forEach(tab => {
+			tab.addEventListener("click", () => {
+				const tabValue = (tab as HTMLElement).dataset["tab"] as "in" | "out";
+				this.handleTabChange(tabValue);
+			});
+		});
+
+		this.transitionPopup?.querySelectorAll("[data-effect]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const effect = (btn as HTMLElement).dataset["effect"] || "";
+				this.handleTransitionEffectSelect(effect);
+			});
+		});
+
+		this.transitionPopup?.querySelectorAll("[data-dir]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const direction = (btn as HTMLElement).dataset["dir"] || "";
+				this.handleDirectionSelect(direction);
+			});
+		});
+
+		this.transitionPopup?.querySelector("[data-speed-decrease]")?.addEventListener("click", () => {
+			this.handleSpeedStep(-1);
+		});
+
+		this.transitionPopup?.querySelector("[data-speed-increase]")?.addEventListener("click", () => {
+			this.handleSpeedStep(1);
+		});
+
+		// Effect event listeners
+		this.effectPopup?.querySelectorAll("[data-effect-type]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const type = (btn as HTMLElement).dataset["effectType"] as "" | "zoom" | "slide";
+				this.handleEffectTypeSelect(type);
+			});
+		});
+
+		this.effectPopup?.querySelectorAll("[data-variant]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const variant = (btn as HTMLElement).dataset["variant"] as "In" | "Out";
+				this.handleEffectVariantSelect(variant);
+			});
+		});
+
+		this.effectPopup?.querySelectorAll("[data-effect-dir]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const direction = (btn as HTMLElement).dataset["effectDir"] as "Left" | "Right" | "Up" | "Down";
+				this.handleEffectDirectionSelect(direction);
+			});
+		});
+
+		this.effectPopup?.querySelector("[data-effect-speed-decrease]")?.addEventListener("click", () => {
+			this.handleEffectSpeedStep(-1);
+		});
+
+		this.effectPopup?.querySelector("[data-effect-speed-increase]")?.addEventListener("click", () => {
+			this.handleEffectSpeedStep(1);
+		});
 
 		// Preset buttons
 		this.container.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach(btn => {
@@ -611,7 +774,6 @@ export class RichTextToolbar extends BaseToolbar {
 			});
 		});
 
-		this.backgroundBtn = this.container.querySelector("[data-action='background-toggle']");
 		this.backgroundPopup = this.container.querySelector("[data-background-popup]");
 		const backgroundPickerContainer = this.container.querySelector("[data-background-color-picker]");
 
@@ -624,7 +786,6 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		// Padding controls
-		this.paddingBtn = this.container.querySelector("[data-action='padding-toggle']");
 		this.paddingPopup = this.container.querySelector("[data-padding-popup]");
 		this.paddingTopSlider = this.container.querySelector("[data-padding-top-slider]");
 		this.paddingTopValue = this.container.querySelector("[data-padding-top-value]");
@@ -701,67 +862,14 @@ export class RichTextToolbar extends BaseToolbar {
 					this.textEditDebounceTimer = null;
 				}
 				this.applyTextEdit();
-				if (this.textEditPopup) this.textEditPopup.style.display = "none";
+				this.closeAllPopups();
 			}
-			// Close on Escape
 			if (e.key === "Escape") {
-				if (this.textEditPopup) this.textEditPopup.style.display = "none";
+				this.closeAllPopups();
 			}
 		});
 
-		document.addEventListener("click", e => {
-			const target = e.target as Node;
-			if (this.sizePopup && this.sizePopup.style.display !== "none") {
-				if (!this.sizeInput?.contains(target) && !this.sizePopup.contains(target)) {
-					this.sizePopup.style.display = "none";
-				}
-			}
-			if (this.spacingPopup && this.spacingPopup.style.display !== "none") {
-				if (!this.spacingBtn?.contains(target) && !this.spacingPopup.contains(target)) {
-					this.spacingPopup.style.display = "none";
-				}
-			}
-			if (this.borderPopup && this.borderPopup.style.display !== "none") {
-				if (!this.borderBtn?.contains(target) && !this.borderPopup.contains(target)) {
-					this.borderPopup.style.display = "none";
-				}
-			}
-			if (this.shadowPopup && this.shadowPopup.style.display !== "none") {
-				if (!this.shadowBtn?.contains(target) && !this.shadowPopup.contains(target)) {
-					this.shadowPopup.style.display = "none";
-				}
-			}
-			if (this.backgroundPopup && this.backgroundPopup.style.display !== "none") {
-				if (!this.backgroundBtn?.contains(target) && !this.backgroundPopup.contains(target)) {
-					this.backgroundPopup.style.display = "none";
-				}
-			}
-			if (this.paddingPopup && this.paddingPopup.style.display !== "none") {
-				if (!this.paddingBtn?.contains(target) && !this.paddingPopup.contains(target)) {
-					this.paddingPopup.style.display = "none";
-				}
-			}
-			if (this.fontColorPopup && this.fontColorPopup.style.display !== "none") {
-				if (!this.fontColorBtn?.contains(target) && !this.fontColorPopup.contains(target)) {
-					this.fontColorPopup.style.display = "none";
-				}
-			}
-			if (this.fontPopup && this.fontPopup.style.display !== "none") {
-				if (!this.fontBtn?.contains(target) && !this.fontPopup.contains(target)) {
-					this.fontPopup.style.display = "none";
-				}
-			}
-			if (this.textEditPopup && this.textEditPopup.style.display !== "none") {
-				if (!this.textEditBtn?.contains(target) && !this.textEditPopup.contains(target)) {
-					this.textEditPopup.style.display = "none";
-				}
-			}
-			if (this.animationPopup && this.animationPopup.style.display !== "none") {
-				if (!this.animationBtn?.contains(target) && !this.animationPopup.contains(target)) {
-					this.animationPopup.style.display = "none";
-				}
-			}
-		});
+		this.setupOutsideClickHandler();
 
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM parent styling
 		parent.style.position = "relative";
@@ -846,9 +954,13 @@ export class RichTextToolbar extends BaseToolbar {
 				break;
 			case "animation-clear":
 				this.updateClipProperty({ animation: undefined });
-				if (this.animationPopup) {
-					this.animationPopup.style.display = "none";
-				}
+				this.closeAllPopups();
+				break;
+			case "transition-toggle":
+				this.togglePopup(this.transitionPopup);
+				break;
+			case "effect-toggle":
+				this.togglePopup(this.effectPopup);
 				break;
 			default:
 				break;
@@ -873,16 +985,7 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private toggleSizePopup(): void {
-		if (!this.sizePopup) return;
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		const isVisible = this.sizePopup.style.display !== "none";
-		if (!isVisible) {
-			this.buildSizePopup();
-		}
-		this.sizePopup.style.display = isVisible ? "none" : "block";
+		this.togglePopup(this.sizePopup, () => this.buildSizePopup());
 	}
 
 	private buildSizePopup(): void {
@@ -898,7 +1001,7 @@ export class RichTextToolbar extends BaseToolbar {
 			item.addEventListener("click", () => {
 				const size = parseInt((item as HTMLElement).dataset["size"]!, 10);
 				this.updateSize(size);
-				this.sizePopup!.style.display = "none";
+				this.closeAllPopups();
 			});
 		});
 	}
@@ -913,188 +1016,72 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private toggleSpacingPopup(): void {
-		if (!this.spacingPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		if (this.shadowPopup) this.shadowPopup.style.display = "none";
-		const isVisible = this.spacingPopup.style.display !== "none";
-		this.spacingPopup.style.display = isVisible ? "none" : "block";
+		this.togglePopup(this.spacingPopup);
 	}
 
 	private toggleBorderPopup(): void {
-		if (!this.borderPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		if (this.shadowPopup) this.shadowPopup.style.display = "none";
-		const isVisible = this.borderPopup.style.display !== "none";
-		this.borderPopup.style.display = isVisible ? "none" : "block";
+		this.togglePopup(this.borderPopup);
 	}
 
 	private toggleShadowPopup(): void {
-		if (!this.shadowPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		if (this.animationPopup) this.animationPopup.style.display = "none";
-		const isVisible = this.shadowPopup.style.display !== "none";
-		this.shadowPopup.style.display = isVisible ? "none" : "block";
+		this.togglePopup(this.shadowPopup);
 	}
 
 	private toggleAnimationPopup(): void {
-		if (!this.animationPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		if (this.shadowPopup) this.shadowPopup.style.display = "none";
-		const isVisible = this.animationPopup.style.display !== "none";
-		this.animationPopup.style.display = isVisible ? "none" : "block";
-
-		// Update visibility of style/direction sections based on current preset
-		if (!isVisible) {
+		this.togglePopup(this.animationPopup, () => {
 			const asset = this.getCurrentAsset();
 			this.updateAnimationSections(asset?.animation?.preset);
-		}
+		});
 	}
 
 	private toggleBackgroundPopup(): void {
-		if (!this.backgroundPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		if (this.shadowPopup) this.shadowPopup.style.display = "none";
-		if (this.animationPopup) this.animationPopup.style.display = "none";
-
-		const isVisible = this.backgroundPopup.style.display !== "none";
-		this.backgroundPopup.style.display = isVisible ? "none" : "block";
-
-		// Sync color picker state when opening
-		if (!isVisible && this.backgroundColorPicker) {
-			const asset = this.getCurrentAsset();
-			const background = asset?.background;
-			this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
-			this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
-		}
+		this.togglePopup(this.backgroundPopup, () => {
+			if (this.backgroundColorPicker) {
+				const asset = this.getCurrentAsset();
+				const background = asset?.background;
+				this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
+				this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
+			}
+		});
 	}
 
 	private togglePaddingPopup(): void {
-		if (!this.paddingPopup) return;
-
-		// Close other popups
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		if (this.shadowPopup) this.shadowPopup.style.display = "none";
-		if (this.animationPopup) this.animationPopup.style.display = "none";
-
-		const isVisible = this.paddingPopup.style.display !== "none";
-		this.paddingPopup.style.display = isVisible ? "none" : "block";
+		this.togglePopup(this.paddingPopup);
 	}
 
 	private toggleFontColorPopup(): void {
-		if (!this.fontColorPopup) return;
+		this.togglePopup(this.fontColorPopup, () => {
+			if (this.fontColorPicker) {
+				const asset = this.getCurrentAsset();
+				const font = asset?.font;
+				const style = asset?.style;
 
-		// Close other popups
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.shadowPopup) this.shadowPopup.style.display = "none";
-		if (this.animationPopup) this.animationPopup.style.display = "none";
-
-		const isVisible = this.fontColorPopup.style.display !== "none";
-		this.fontColorPopup.style.display = isVisible ? "none" : "block";
-
-		// Sync state when opening
-		if (!isVisible && this.fontColorPicker) {
-			const asset = this.getCurrentAsset();
-			const font = asset?.font;
-			const style = asset?.style;
-
-			// If gradient is set, show gradient tab
-			if (style?.gradient) {
-				this.fontColorPicker.setMode("gradient");
-			} else {
-				// Otherwise show color tab with current values
-				this.fontColorPicker.setMode("color");
-				this.fontColorPicker.setColor(font?.color || "#000000", font?.opacity ?? 1);
-
-				// Set highlight if present
-				if (font?.background) {
-					this.fontColorPicker.setHighlight(font.background);
+				if (style?.gradient) {
+					this.fontColorPicker.setMode("gradient");
+				} else {
+					this.fontColorPicker.setMode("color");
+					this.fontColorPicker.setColor(font?.color || "#000000", font?.opacity ?? 1);
+					if (font?.background) {
+						this.fontColorPicker.setHighlight(font.background);
+					}
 				}
 			}
-		}
+		});
 	}
 
 	private toggleFontPopup(): void {
-		if (!this.fontPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.textEditPopup) this.textEditPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-		const isVisible = this.fontPopup.style.display !== "none";
-		if (!isVisible) {
-			this.buildFontList();
-		}
-		this.fontPopup.style.display = isVisible ? "none" : "block";
+		this.togglePopup(this.fontPopup, () => this.buildFontList());
 	}
 
 	private toggleTextEditPopup(): void {
-		if (!this.textEditPopup) return;
-		if (this.sizePopup) this.sizePopup.style.display = "none";
-		if (this.fontPopup) this.fontPopup.style.display = "none";
-		if (this.spacingPopup) this.spacingPopup.style.display = "none";
-		if (this.borderPopup) this.borderPopup.style.display = "none";
-		if (this.backgroundPopup) this.backgroundPopup.style.display = "none";
-		if (this.paddingPopup) this.paddingPopup.style.display = "none";
-		if (this.fontColorPopup) this.fontColorPopup.style.display = "none";
-
-		const isVisible = this.textEditPopup.style.display !== "none";
-		if (!isVisible && this.textEditArea) {
-			// Read from originalEdit (template) to show merge field placeholders
-			const templateText = this.edit.getTemplateClipText(this.selectedTrackIdx, this.selectedClipIdx);
-			// Fallback to resolved text if no template available
-			const asset = this.getCurrentAsset();
-			this.textEditArea.value = templateText ?? asset?.text ?? "";
-		}
-		this.textEditPopup.style.display = isVisible ? "none" : "block";
-		if (!isVisible) {
-			this.textEditArea?.focus();
-		}
+		this.togglePopup(this.textEditPopup, () => {
+			if (this.textEditArea) {
+				const templateText = this.edit.getTemplateClipText(this.selectedTrackIdx, this.selectedClipIdx);
+				const asset = this.getCurrentAsset();
+				this.textEditArea.value = templateText ?? asset?.text ?? "";
+				this.textEditArea.focus();
+			}
+		});
 	}
 
 	private debouncedApplyTextEdit(): void {
@@ -1301,9 +1288,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 	private selectFont(fontFamily: string): void {
 		this.updateClipProperty({ font: { family: fontFamily } });
-		if (this.fontPopup) {
-			this.fontPopup.style.display = "none";
-		}
+		this.closeAllPopups();
 	}
 
 	private updateVerticalAlign(align: "top" | "middle" | "bottom"): void {
@@ -1532,6 +1517,333 @@ export class RichTextToolbar extends BaseToolbar {
 		this.syncState();
 	}
 
+	private applyClipUpdate(updates: Record<string, unknown>): void {
+		if (this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0) {
+			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
+		}
+	}
+
+	// ==================== Transition Handlers ====================
+
+	private handleTabChange(tab: "in" | "out"): void {
+		this.activeTransitionTab = tab;
+		this.updateTransitionUI();
+	}
+
+	private handleTransitionEffectSelect(effect: string): void {
+		const tab = this.activeTransitionTab;
+
+		if (tab === "in") {
+			this.transitionInEffect = effect;
+			this.transitionInDirection = this.getDefaultDirection(effect);
+		} else {
+			this.transitionOutEffect = effect;
+			this.transitionOutDirection = this.getDefaultDirection(effect);
+		}
+
+		this.updateTransitionUI();
+		this.applyTransitionUpdate();
+	}
+
+	private handleDirectionSelect(direction: string): void {
+		const tab = this.activeTransitionTab;
+
+		if (tab === "in") {
+			this.transitionInDirection = direction;
+		} else {
+			this.transitionOutDirection = direction;
+		}
+
+		this.updateTransitionUI();
+		this.applyTransitionUpdate();
+	}
+
+	private handleSpeedStep(direction: number): void {
+		const tab = this.activeTransitionTab;
+		const currentSpeed = tab === "in" ? this.transitionInSpeed : this.transitionOutSpeed;
+
+		let currentIdx = this.SPEED_VALUES.indexOf(currentSpeed);
+		if (currentIdx === -1) {
+			currentIdx = this.SPEED_VALUES.findIndex(v => v >= currentSpeed);
+			if (currentIdx === -1) currentIdx = this.SPEED_VALUES.length - 1;
+		}
+
+		const newIdx = Math.max(0, Math.min(this.SPEED_VALUES.length - 1, currentIdx + direction));
+		const newSpeed = this.SPEED_VALUES[newIdx];
+
+		if (tab === "in") {
+			this.transitionInSpeed = newSpeed;
+		} else {
+			this.transitionOutSpeed = newSpeed;
+		}
+
+		this.updateTransitionUI();
+		this.applyTransitionUpdate();
+	}
+
+	private needsDirection(effect: string): boolean {
+		return ["slide", "wipe", "carousel"].includes(effect);
+	}
+
+	private getDefaultDirection(effect: string): string {
+		if (this.needsDirection(effect)) {
+			return "Right";
+		}
+		return "";
+	}
+
+	private speedToSuffix(speed: number, effect: string): string {
+		const isSlideOrCarousel = effect === "slide" || effect === "carousel";
+
+		if (isSlideOrCarousel) {
+			if (speed === 0.5) return "";
+			if (speed === 1.0) return "Slow";
+			if (speed === 0.25) return "Fast";
+			if (speed === 2.0) return "Slow";
+		} else {
+			if (speed === 1.0) return "";
+			if (speed === 2.0) return "Slow";
+			if (speed === 0.5) return "Fast";
+			if (speed === 0.25) return "Fast";
+		}
+		return "";
+	}
+
+	private buildTransitionValue(effect: string, direction: string, speed: number): string {
+		if (!effect) return "";
+
+		const speedSuffix = this.speedToSuffix(speed, effect);
+
+		if (!this.needsDirection(effect)) {
+			return effect + speedSuffix;
+		}
+
+		return effect + direction + speedSuffix;
+	}
+
+	private suffixToSpeed(suffix: string, effect: string): number {
+		const isSlideOrCarousel = effect === "slide" || effect === "carousel";
+
+		if (isSlideOrCarousel) {
+			if (suffix === "") return 0.5;
+			if (suffix === "Slow") return 1.0;
+			if (suffix === "Fast") return 0.25;
+		} else {
+			if (suffix === "") return 1.0;
+			if (suffix === "Slow") return 2.0;
+			if (suffix === "Fast") return 0.5;
+		}
+		return 1.0;
+	}
+
+	private parseTransitionValue(value: string): { effect: string; direction: string; speed: number } {
+		if (!value) return { effect: "", direction: "", speed: 1.0 };
+
+		let speedSuffix = "";
+		let base = value;
+		if (value.endsWith("Fast")) {
+			speedSuffix = "Fast";
+			base = value.slice(0, -4);
+		} else if (value.endsWith("Slow")) {
+			speedSuffix = "Slow";
+			base = value.slice(0, -4);
+		}
+
+		const directions = ["Left", "Right", "Up", "Down"];
+		for (const dir of directions) {
+			if (base.endsWith(dir)) {
+				const effect = base.slice(0, -dir.length);
+				const speed = this.suffixToSpeed(speedSuffix, effect);
+				return { effect, direction: dir, speed };
+			}
+		}
+
+		const speed = this.suffixToSpeed(speedSuffix, base);
+		return { effect: base, direction: "", speed };
+	}
+
+	private applyTransitionUpdate(): void {
+		const transitionIn = this.buildTransitionValue(this.transitionInEffect, this.transitionInDirection, this.transitionInSpeed);
+		const transitionOut = this.buildTransitionValue(this.transitionOutEffect, this.transitionOutDirection, this.transitionOutSpeed);
+
+		const transition: { in?: string; out?: string } = {};
+		if (transitionIn) transition.in = transitionIn;
+		if (transitionOut) transition.out = transitionOut;
+
+		if (!transitionIn && !transitionOut) {
+			this.applyClipUpdate({ transition: undefined });
+		} else {
+			this.applyClipUpdate({ transition });
+		}
+	}
+
+	private updateTransitionUI(): void {
+		const tab = this.activeTransitionTab;
+		const effect = tab === "in" ? this.transitionInEffect : this.transitionOutEffect;
+		const direction = tab === "in" ? this.transitionInDirection : this.transitionOutDirection;
+		const speed = tab === "in" ? this.transitionInSpeed : this.transitionOutSpeed;
+
+		// Update tab active states
+		this.transitionPopup?.querySelectorAll("[data-tab]").forEach(el => {
+			const tabEl = el as HTMLElement;
+			tabEl.classList.toggle("active", tabEl.dataset["tab"] === tab);
+		});
+
+		// Update effect active states
+		this.transitionPopup?.querySelectorAll("[data-effect]").forEach(el => {
+			const effectEl = el as HTMLElement;
+			effectEl.classList.toggle("active", effectEl.dataset["effect"] === effect);
+		});
+
+		// Update direction visibility and active states
+		const showDirection = this.needsDirection(effect);
+		this.directionRow?.classList.toggle("visible", showDirection);
+
+		this.transitionPopup?.querySelectorAll("[data-dir]").forEach(el => {
+			const dirEl = el as HTMLElement;
+			const dir = dirEl.dataset["dir"] || "";
+			const isVertical = dir === "Up" || dir === "Down";
+			dirEl.classList.toggle("hidden", effect === "wipe" && isVertical);
+			dirEl.classList.toggle("active", dir === direction);
+		});
+
+		// Update speed display
+		if (this.speedValueLabel) {
+			this.speedValueLabel.textContent = `${speed.toFixed(2)}s`;
+		}
+
+		// Update stepper button disabled states
+		const speedIdx = this.SPEED_VALUES.indexOf(speed);
+		const decreaseBtn = this.transitionPopup?.querySelector("[data-speed-decrease]") as HTMLButtonElement | null;
+		const increaseBtn = this.transitionPopup?.querySelector("[data-speed-increase]") as HTMLButtonElement | null;
+		if (decreaseBtn) decreaseBtn.disabled = speedIdx <= 0;
+		if (increaseBtn) increaseBtn.disabled = speedIdx >= this.SPEED_VALUES.length - 1;
+	}
+
+	// ==================== Effect Handlers ====================
+
+	private handleEffectTypeSelect(effectType: "" | "zoom" | "slide"): void {
+		this.effectType = effectType;
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private handleEffectVariantSelect(variant: "In" | "Out"): void {
+		this.effectVariant = variant;
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private handleEffectDirectionSelect(direction: "Left" | "Right" | "Up" | "Down"): void {
+		this.effectDirection = direction;
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private handleEffectSpeedStep(direction: number): void {
+		const currentIndex = this.EFFECT_SPEED_VALUES.indexOf(this.effectSpeed);
+		const newIndex = Math.max(0, Math.min(this.EFFECT_SPEED_VALUES.length - 1, currentIndex + direction));
+		this.effectSpeed = this.EFFECT_SPEED_VALUES[newIndex];
+		this.updateEffectUI();
+		this.applyEffect();
+	}
+
+	private updateEffectUI(): void {
+		// Update active state on effect type buttons
+		this.effectPopup?.querySelectorAll("[data-effect-type]").forEach(btn => {
+			const type = (btn as HTMLElement).dataset["effectType"] || "";
+			btn.classList.toggle("active", type === this.effectType);
+		});
+
+		// Show/hide variant row (for Zoom)
+		this.effectVariantRow?.classList.toggle("visible", this.effectType === "zoom");
+
+		// Update variant active states
+		this.effectPopup?.querySelectorAll("[data-variant]").forEach(btn => {
+			const variant = (btn as HTMLElement).dataset["variant"] || "";
+			btn.classList.toggle("active", variant === this.effectVariant);
+		});
+
+		// Show/hide direction row (for Slide)
+		this.effectDirectionRow?.classList.toggle("visible", this.effectType === "slide");
+
+		// Update direction active states
+		this.effectPopup?.querySelectorAll("[data-effect-dir]").forEach(btn => {
+			const dir = (btn as HTMLElement).dataset["effectDir"] || "";
+			btn.classList.toggle("active", dir === this.effectDirection);
+		});
+
+		// Show/hide speed row (when effect is selected)
+		this.effectSpeedRow?.classList.toggle("visible", this.effectType !== "");
+
+		// Update speed display
+		if (this.effectSpeedValueLabel) {
+			this.effectSpeedValueLabel.textContent = `${this.effectSpeed}s`;
+		}
+
+		// Update stepper button disabled states
+		const speedIdx = this.EFFECT_SPEED_VALUES.indexOf(this.effectSpeed);
+		const decreaseBtn = this.effectPopup?.querySelector("[data-effect-speed-decrease]") as HTMLButtonElement | null;
+		const increaseBtn = this.effectPopup?.querySelector("[data-effect-speed-increase]") as HTMLButtonElement | null;
+		if (decreaseBtn) decreaseBtn.disabled = speedIdx <= 0;
+		if (increaseBtn) increaseBtn.disabled = speedIdx >= this.EFFECT_SPEED_VALUES.length - 1;
+	}
+
+	private buildEffectValue(): string {
+		if (this.effectType === "") return "";
+
+		let value = "";
+		if (this.effectType === "zoom") {
+			value = `zoom${this.effectVariant}`;
+		} else if (this.effectType === "slide") {
+			value = `slide${this.effectDirection}`;
+		}
+
+		if (this.effectSpeed === 0.5) value += "Fast";
+		else if (this.effectSpeed === 2.0) value += "Slow";
+
+		return value;
+	}
+
+	private applyEffect(): void {
+		const effectValue = this.buildEffectValue();
+		if (!effectValue) {
+			this.applyClipUpdate({ effect: undefined });
+		} else {
+			this.applyClipUpdate({ effect: effectValue });
+		}
+	}
+
+	private parseEffectValue(effect: string): void {
+		if (!effect) {
+			this.effectType = "";
+			this.effectSpeed = 1.0;
+			return;
+		}
+
+		let base = effect;
+		if (effect.endsWith("Slow")) {
+			this.effectSpeed = 2.0;
+			base = effect.slice(0, -4);
+		} else if (effect.endsWith("Fast")) {
+			this.effectSpeed = 0.5;
+			base = effect.slice(0, -4);
+		} else {
+			this.effectSpeed = 1.0;
+		}
+
+		if (base.startsWith("zoom")) {
+			this.effectType = "zoom";
+			this.effectVariant = base === "zoomOut" ? "Out" : "In";
+		} else if (base.startsWith("slide")) {
+			this.effectType = "slide";
+			const dir = base.replace("slide", "");
+			this.effectDirection = (dir as "Left" | "Right" | "Up" | "Down") || "Right";
+		} else {
+			this.effectType = "";
+		}
+	}
+
 	protected override getPopupList(): (HTMLElement | null)[] {
 		return [
 			this.sizePopup,
@@ -1543,7 +1855,9 @@ export class RichTextToolbar extends BaseToolbar {
 			this.fontPopup,
 			this.textEditPopup,
 			this.fontColorPopup,
-			this.animationPopup
+			this.animationPopup,
+			this.transitionPopup,
+			this.effectPopup
 		];
 	}
 
@@ -1711,6 +2025,26 @@ export class RichTextToolbar extends BaseToolbar {
 			this.paddingLeftSlider.value = String(left);
 			if (this.paddingLeftValue) this.paddingLeftValue.textContent = String(left);
 		}
+
+		// Get clip for transition and effect values
+		const clip = this.edit.getClip(this.selectedTrackIdx, this.selectedClipIdx);
+
+		// Transition
+		const transitionIn = this.parseTransitionValue((clip?.transition as { in?: string })?.in ?? "");
+		const transitionOut = this.parseTransitionValue((clip?.transition as { out?: string })?.out ?? "");
+
+		this.transitionInEffect = transitionIn.effect;
+		this.transitionInDirection = transitionIn.direction;
+		this.transitionInSpeed = transitionIn.speed;
+		this.transitionOutEffect = transitionOut.effect;
+		this.transitionOutDirection = transitionOut.direction;
+		this.transitionOutSpeed = transitionOut.speed;
+
+		this.updateTransitionUI();
+
+		// Effect
+		this.parseEffectValue((clip?.effect as string) ?? "");
+		this.updateEffectUI();
 	}
 
 	override dispose(): void {
@@ -1718,17 +2052,14 @@ export class RichTextToolbar extends BaseToolbar {
 		this.sizeInput = null;
 		this.sizePopup = null;
 		this.boldBtn = null;
-		this.fontBtn = null;
 		this.fontPopup = null;
 		this.fontPreview = null;
 
 		this.fontColorPicker?.dispose();
 		this.fontColorPicker = null;
-		this.fontColorBtn = null;
 		this.fontColorPopup = null;
 		this.colorDisplay = null;
 
-		this.spacingBtn = null;
 		this.spacingPopup = null;
 		this.letterSpacingSlider = null;
 		this.letterSpacingValue = null;
@@ -1737,19 +2068,16 @@ export class RichTextToolbar extends BaseToolbar {
 		this.anchorTopBtn = null;
 		this.anchorMiddleBtn = null;
 		this.anchorBottomBtn = null;
-		this.alignBtn = null;
 		this.alignIcon = null;
 		this.transformBtn = null;
 		this.underlineBtn = null;
 		this.linethroughBtn = null;
-		this.textEditBtn = null;
 		this.textEditPopup = null;
 		this.textEditArea = null;
 		if (this.textEditDebounceTimer) {
 			clearTimeout(this.textEditDebounceTimer);
 			this.textEditDebounceTimer = null;
 		}
-		this.borderBtn = null;
 		this.borderPopup = null;
 		this.borderWidthSlider = null;
 		this.borderWidthValue = null;
@@ -1759,7 +2087,6 @@ export class RichTextToolbar extends BaseToolbar {
 		this.borderRadiusSlider = null;
 		this.borderRadiusValue = null;
 
-		this.shadowBtn = null;
 		this.shadowPopup = null;
 		this.shadowToggle = null;
 		this.shadowOffsetXSlider = null;
@@ -1773,7 +2100,6 @@ export class RichTextToolbar extends BaseToolbar {
 		this.shadowOpacityValue = null;
 		this.lastShadowConfig = null;
 
-		this.animationBtn = null;
 		this.animationPopup = null;
 		this.animationDurationSlider = null;
 		this.animationDurationValue = null;
@@ -1782,10 +2108,8 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.backgroundColorPicker?.dispose();
 		this.backgroundColorPicker = null;
-		this.backgroundBtn = null;
 		this.backgroundPopup = null;
 
-		this.paddingBtn = null;
 		this.paddingPopup = null;
 		this.paddingTopSlider = null;
 		this.paddingTopValue = null;
@@ -1795,5 +2119,17 @@ export class RichTextToolbar extends BaseToolbar {
 		this.paddingBottomValue = null;
 		this.paddingLeftSlider = null;
 		this.paddingLeftValue = null;
+
+		// Transition elements
+		this.transitionPopup = null;
+		this.directionRow = null;
+		this.speedValueLabel = null;
+
+		// Effect elements
+		this.effectPopup = null;
+		this.effectVariantRow = null;
+		this.effectDirectionRow = null;
+		this.effectSpeedRow = null;
+		this.effectSpeedValueLabel = null;
 	}
 }
