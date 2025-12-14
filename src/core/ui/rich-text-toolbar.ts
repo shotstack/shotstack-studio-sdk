@@ -583,7 +583,7 @@ export class RichTextToolbar extends BaseToolbar {
 		// Preset buttons
 		this.container.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach(btn => {
 			btn.addEventListener("click", () => {
-				const preset = btn.dataset["preset"] as "typewriter" | "fadeIn" | "slideIn" | "ascend" | "shift";
+				const preset = btn.dataset["preset"] as "typewriter" | "fadeIn" | "slideIn" | "ascend" | "shift" | "movingLetters";
 				if (preset) this.updateAnimationProperty({ preset });
 			});
 		});
