@@ -132,6 +132,7 @@ export class RulerComponent extends TimelineEntity {
 	}
 
 	public syncScroll(scrollX: number): void {
+		this.scrollX = scrollX;
 		this.contentElement.style.transform = `translateX(${-scrollX}px)`;
 	}
 
