@@ -1557,6 +1557,10 @@ export class Edit extends Entity {
 		return this.edit?.output?.fps ?? 30;
 	}
 
+	public getTimelineFonts(): Array<{ src: string }> {
+		return this.edit?.timeline?.fonts ?? [];
+	}
+
 	public setTimelineBackground(color: string): void {
 		this.backgroundColor = color;
 

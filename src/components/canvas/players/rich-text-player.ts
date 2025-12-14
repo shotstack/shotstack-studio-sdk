@@ -38,9 +38,8 @@ export class RichTextPlayer extends Player {
 	}
 
 	private buildCanvasPayload(richTextAsset: RichTextAsset, fontInfo?: { baseFontFamily: string; fontWeight: number }): any {
-		const editData = this.edit.getEdit();
-		const width = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
-		const height = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
+		const width = this.clipConfiguration.width || this.edit.size.width;
+		const height = this.clipConfiguration.height || this.edit.size.height;
 
 		// Use provided font info or parse fresh (for reconfigure/updateTextContent calls)
 		const requestedFamily = richTextAsset.font?.family;
@@ -55,7 +54,7 @@ export class RichTextPlayer extends Player {
 		}
 
 		// Find matching timeline font for customFonts payload
-		const timelineFonts = editData?.timeline?.fonts || [];
+		const timelineFonts = this.edit.getTimelineFonts();
 		const matchingFont = requestedFamily
 			? timelineFonts.find(font => {
 					const { full, base } = extractFontNames(font.src);
@@ -373,8 +372,7 @@ export class RichTextPlayer extends Player {
 
 		if (this.textEngine && this.renderer && !this.isRendering) {
 			const currentTimeSeconds = this.getCurrentTime() / 1000;
-			const editData = this.edit.getEdit();
-			const targetFPS = editData?.output?.fps || 30;
+			const targetFPS = this.edit.getOutputFps();
 			const frameInterval = 1 / targetFPS;
 
 			if (Math.abs(currentTimeSeconds - this.lastRenderedTime) > frameInterval) {
