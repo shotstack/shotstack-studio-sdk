@@ -270,25 +270,31 @@ export class Canvas {
 		this.inspector.playbackDuration = this.edit.totalDuration;
 		this.inspector.isPlaying = this.edit.isPlaying;
 
-		// Pass comprehensive memory stats (throttled - every 500ms)
+		// Pass stats to inspector (throttled - every 500ms)
 		const now = performance.now();
 		if (now - this.lastInspectorUpdate > 500) {
 			this.lastInspectorUpdate = now;
+
+			// Get clip and system stats
 			const comprehensiveStats = this.edit.getComprehensiveMemoryStats();
-			this.inspector.textureStats = comprehensiveStats.textureStats;
-			this.inspector.assetDetails = comprehensiveStats.assetDetails;
+			this.inspector.clipStats = {
+				videos: comprehensiveStats.textureStats.videos.count,
+				images: comprehensiveStats.textureStats.images.count,
+				text: comprehensiveStats.textureStats.text.count,
+				richText: comprehensiveStats.textureStats.richText.count,
+				luma: comprehensiveStats.textureStats.luma.count,
+				animatedClips: comprehensiveStats.textureStats.animated.count,
+				cachedFrames: comprehensiveStats.textureStats.animated.frames
+			};
 			this.inspector.systemStats = comprehensiveStats.systemStats;
 
 			// Pass playback health stats
 			this.inspector.playbackHealth = this.edit.getPlaybackHealth();
 
-			// Also update legacy stats for backward compatibility
+			// Legacy stats for backward compatibility
 			const memoryStats = this.edit.getMemoryStats();
 			this.inspector.clipCounts = memoryStats.clipCounts;
 			this.inspector.totalClips = memoryStats.totalClips;
-			this.inspector.richTextCacheStats = memoryStats.richTextCacheStats;
-			this.inspector.textPlayerCount = memoryStats.textPlayerCount;
-			this.inspector.lumaMaskCount = memoryStats.lumaMaskCount;
 			this.inspector.commandHistorySize = memoryStats.commandHistorySize;
 			this.inspector.trackCount = memoryStats.trackCount;
 		}

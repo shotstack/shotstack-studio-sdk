@@ -7,24 +7,14 @@ type MemoryInfo = {
 	heapSizeLimit?: number;
 };
 
-export interface AssetMemoryInfo {
-	id: string;
-	type: "video" | "image" | "text" | "rich-text" | "luma" | "audio" | "html" | "shape" | "caption" | "unknown";
-	label: string;
-	width: number;
-	height: number;
-	estimatedMB: number;
-}
-
-export interface TextureStats {
-	videos: { count: number; totalMB: number; avgDimensions: string };
-	images: { count: number; totalMB: number; avgDimensions: string };
-	text: { count: number; totalMB: number };
-	richText: { count: number; totalMB: number };
-	luma: { count: number; totalMB: number };
-	animated: { count: number; frames: number; totalMB: number };
-	totalTextures: number;
-	totalMB: number;
+export interface ClipStats {
+	videos: number;
+	images: number;
+	text: number;
+	richText: number;
+	luma: number;
+	animatedClips: number;
+	cachedFrames: number;
 }
 
 export interface SystemStats {
@@ -38,7 +28,6 @@ export interface SystemStats {
 interface MemorySnapshot {
 	timestamp: number;
 	jsHeapUsed: number;
-	gpuEstimate: number;
 }
 
 export interface PlaybackHealth {
@@ -59,25 +48,21 @@ export class Inspector extends Entity {
 	public playbackDuration: number;
 	public isPlaying: boolean;
 
-	// Comprehensive stats (set by Canvas)
-	public textureStats: TextureStats | null = null;
-	public assetDetails: AssetMemoryInfo[] = [];
+	// Stats (set by Canvas)
+	public clipStats: ClipStats | null = null;
 	public systemStats: SystemStats | null = null;
 	public playbackHealth: PlaybackHealth | null = null;
 
 	// Legacy stats (for backward compatibility)
 	public clipCounts: Record<string, number> = {};
 	public totalClips: number = 0;
-	public richTextCacheStats: { clips: number; totalFrames: number } = { clips: 0, totalFrames: 0 };
-	public textPlayerCount: number = 0;
-	public lumaMaskCount: number = 0;
 	public commandHistorySize: number = 0;
 	public trackCount: number = 0;
 
 	private background: pixi.Graphics | null;
 	private text: pixi.Text | null;
 
-	// History tracking (inline implementation)
+	// History tracking
 	private historySamples: MemorySnapshot[] = [];
 	private readonly maxSamples = 20; // 10 seconds at 2 samples/sec
 	private lastSampleTime: number = 0;
@@ -138,12 +123,10 @@ export class Inspector extends Entity {
 		const now = performance.now();
 		if (now - this.lastSampleTime > this.sampleInterval) {
 			const memoryInfo = this.getMemoryInfo();
-			const gpuEstimate = this.textureStats?.totalMB ?? this.estimateGpuMemory();
 
 			this.addHistorySample({
 				timestamp: now,
-				jsHeapUsed: memoryInfo.usedHeapSize ?? 0,
-				gpuEstimate
+				jsHeapUsed: memoryInfo.usedHeapSize ?? 0
 			});
 			this.lastSampleTime = now;
 		}
@@ -187,11 +170,11 @@ export class Inspector extends Entity {
 		}
 	}
 
-	private getSparkline(metric: "jsHeapUsed" | "gpuEstimate"): string {
+	private getJsHeapSparkline(): string {
 		if (this.historySamples.length === 0) return "";
 
 		const chars = "▁▂▃▄▅▆▇█";
-		const values = this.historySamples.map(s => s[metric]);
+		const values = this.historySamples.map(s => s.jsHeapUsed);
 		const max = Math.max(...values);
 		const min = Math.min(...values);
 		const range = max - min || 1;
@@ -203,13 +186,10 @@ export class Inspector extends Entity {
 		if (!this.text) return;
 
 		const memoryInfo = this.getMemoryInfo();
-		const jsSparkline = this.getSparkline("jsHeapUsed");
-		const gpuSparkline = this.getSparkline("gpuEstimate");
+		const jsSparkline = this.getJsHeapSparkline();
 
 		const jsHeapMB = memoryInfo.usedHeapSize ? this.bytesToMegabytes(memoryInfo.usedHeapSize) : 0;
 		const jsLimitMB = memoryInfo.heapSizeLimit ? this.bytesToMegabytes(memoryInfo.heapSizeLimit) : 0;
-		const gpuEstMB = this.textureStats?.totalMB ?? this.estimateGpuMemory();
-		const totalEstMB = jsHeapMB + gpuEstMB;
 
 		// Frame timing stats
 		const frameStats = this.getFrameStats();
@@ -219,7 +199,7 @@ export class Inspector extends Entity {
 			// Header row with FPS and playback time
 			`FPS: ${this.fps}  ${this.isPlaying ? "▶" : "⏸"}  ${(this.playbackTime / 1000).toFixed(1)}s / ${(this.playbackDuration / 1000).toFixed(1)}s`,
 			// Frame timing row
-			`Frame: ${frameStats.avgFrameTime.toFixed(0)}ms avg  ${frameStats.maxFrameTime.toFixed(0)}ms max  ${frameSparkline}  Jank: ${frameStats.jankCount}`,
+			`Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms  ${frameSparkline}  Jank: ${frameStats.jankCount}`,
 			``
 		];
 
@@ -237,46 +217,22 @@ export class Inspector extends Entity {
 			stats.push(``);
 		}
 
-		stats.push(`── MEMORY SUMMARY ──`);
+		stats.push(`── MEMORY ──`);
 		stats.push(`  JS Heap: ${jsHeapMB}MB / ${jsLimitMB}MB  ${jsSparkline}`);
-		stats.push(`  GPU Est: ~${gpuEstMB.toFixed(1)}MB  ${gpuSparkline}`);
-		stats.push(`  Total Est: ~${totalEstMB.toFixed(1)}MB`);
 		stats.push(``);
 
-		// GPU Textures section
-		if (this.textureStats) {
-			stats.push(`── GPU TEXTURES (est) ──`);
-			stats.push(`  Videos:  ${this.textureStats.videos.count} clip${this.textureStats.videos.count !== 1 ? "s" : ""}  ${this.textureStats.videos.avgDimensions}  ~${this.textureStats.videos.totalMB.toFixed(1)}MB`);
-			stats.push(`  Images:  ${this.textureStats.images.count} clip${this.textureStats.images.count !== 1 ? "s" : ""}  ${this.textureStats.images.avgDimensions}  ~${this.textureStats.images.totalMB.toFixed(1)}MB`);
-			stats.push(`  Text:    ${this.textureStats.text.count} clip${this.textureStats.text.count !== 1 ? "s" : ""} (static)  ~${this.textureStats.text.totalMB.toFixed(1)}MB`);
-			stats.push(`  RichTxt: ${this.textureStats.richText.count} clip${this.textureStats.richText.count !== 1 ? "s" : ""}  ~${this.textureStats.richText.totalMB.toFixed(1)}MB`);
-			stats.push(`  Luma:    ${this.textureStats.luma.count} mask${this.textureStats.luma.count !== 1 ? "s" : ""}  ~${this.textureStats.luma.totalMB.toFixed(1)}MB`);
-			stats.push(`  Animated: ${this.textureStats.animated.count} clip${this.textureStats.animated.count !== 1 ? "s" : ""}  ${this.textureStats.animated.frames} frames  ~${this.textureStats.animated.totalMB.toFixed(1)}MB`);
-			stats.push(`  ─────────────────────────────`);
-			stats.push(`  Subtotal: ${this.textureStats.totalTextures} textures  ~${this.textureStats.totalMB.toFixed(1)}MB`);
-			stats.push(``);
-		} else {
-			// Fallback to legacy stats
-			stats.push(`── GPU TEXTURES ──`);
-			stats.push(`  Text clips: ${this.textPlayerCount} (static)`);
-			stats.push(`  Animated text: ${this.richTextCacheStats.clips} clips`);
-			stats.push(`  Cached frames: ${this.richTextCacheStats.totalFrames} (~${this.estimateLegacyTextureMemory()}MB)`);
-			stats.push(`  Luma masks: ${this.lumaMaskCount}`);
-			stats.push(``);
-		}
-
-		// Asset Details section (show top 6)
-		if (this.assetDetails.length > 0) {
-			stats.push(`── ASSET DETAILS ──`);
-			const displayAssets = this.assetDetails.slice(0, 6);
-			for (const asset of displayAssets) {
-				const typeIcon = this.getAssetTypeIcon(asset.type);
-				const dims = asset.width > 0 && asset.height > 0 ? `${asset.width}×${asset.height}` : "";
-				const label = asset.label.length > 18 ? `${asset.label.substring(0, 15)}...` : asset.label;
-				stats.push(`  ${typeIcon} ${label.padEnd(18)} ${dims.padEnd(10)} ~${asset.estimatedMB.toFixed(1)}MB`);
-			}
-			if (this.assetDetails.length > 6) {
-				stats.push(`  ... +${this.assetDetails.length - 6} more`);
+		// Clip counts by type
+		if (this.clipStats) {
+			stats.push(`── CLIPS ──`);
+			const clipLines: string[] = [];
+			if (this.clipStats.videos > 0) clipLines.push(`Video: ${this.clipStats.videos}`);
+			if (this.clipStats.images > 0) clipLines.push(`Image: ${this.clipStats.images}`);
+			if (this.clipStats.text > 0) clipLines.push(`Text: ${this.clipStats.text}`);
+			if (this.clipStats.richText > 0) clipLines.push(`RichText: ${this.clipStats.richText}`);
+			if (this.clipStats.luma > 0) clipLines.push(`Luma: ${this.clipStats.luma}`);
+			stats.push(`  ${clipLines.join("  ")}`);
+			if (this.clipStats.animatedClips > 0) {
+				stats.push(`  Animated: ${this.clipStats.animatedClips} clips  ${this.clipStats.cachedFrames} cached frames`);
 			}
 			stats.push(``);
 		}
@@ -310,31 +266,6 @@ export class Inspector extends Entity {
 		return "🔴 DESYNC";
 	}
 
-	private getAssetTypeIcon(type: string): string {
-		switch (type) {
-			case "video":
-				return "[V]";
-			case "image":
-				return "[I]";
-			case "text":
-				return "[T]";
-			case "rich-text":
-				return "[R]";
-			case "luma":
-				return "[L]";
-			case "audio":
-				return "[A]";
-			case "html":
-				return "[H]";
-			case "shape":
-				return "[S]";
-			case "caption":
-				return "[C]";
-			default:
-				return "[?]";
-		}
-	}
-
 	public override draw(): void {}
 
 	public override dispose(): void {
@@ -349,20 +280,6 @@ export class Inspector extends Entity {
 		const types = ["video", "image", "text", "audio", "luma", "html", "title"];
 		const counts = types.filter(t => (this.clipCounts[t] || 0) > 0).map(t => `${t}: ${this.clipCounts[t]}`);
 		return counts.length > 0 ? counts.join("  ") : "none";
-	}
-
-	private estimateLegacyTextureMemory(): number {
-		// Assume 1080x1080 @ 4 bytes/pixel = ~4.5MB per frame
-		const bytesPerFrame = 1080 * 1080 * 4;
-		return Math.round((this.richTextCacheStats.totalFrames * bytesPerFrame) / 1024 / 1024);
-	}
-
-	private estimateGpuMemory(): number {
-		// Legacy estimation when textureStats not available
-		const textMemory = this.estimateLegacyTextureMemory();
-		const lumaMaskMemory = this.lumaMaskCount * 1; // ~1MB per luma mask
-		const textPlayerMemory = this.textPlayerCount * 0.5; // ~0.5MB per static text
-		return textMemory + lumaMaskMemory + textPlayerMemory;
 	}
 
 	private getMemoryInfo(): MemoryInfo {
