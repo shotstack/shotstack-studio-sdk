@@ -542,8 +542,6 @@ export class Edit extends Entity {
 			clipCount: number;
 			trackCount: number;
 			commandCount: number;
-			spriteCount: number;
-			containerCount: number;
 		};
 	} {
 		type AssetType = "video" | "image" | "text" | "rich-text" | "luma" | "audio" | "html" | "shape" | "caption" | "unknown";
@@ -641,10 +639,6 @@ export class Edit extends Entity {
 			stats.luma.totalMB +
 			stats.animated.totalMB;
 
-		// Count sprites and containers in scene graph
-		const spriteCount = this.countInstancesInContainer(this.getContainer(), pixi.Sprite);
-		const containerCount = this.countInstancesInContainer(this.getContainer(), pixi.Container);
-
 		return {
 			textureStats: {
 				videos: {
@@ -668,9 +662,7 @@ export class Edit extends Entity {
 			systemStats: {
 				clipCount: this.clips.length,
 				trackCount: this.tracks.length,
-				commandCount: this.commandHistory.length,
-				spriteCount,
-				containerCount
+				commandCount: this.commandHistory.length
 			}
 		};
 	}
@@ -699,19 +691,6 @@ export class Edit extends Entity {
 		}
 
 		return asset["type"]?.toString() || "unknown";
-	}
-
-	private countInstancesInContainer(container: pixi.Container, type: typeof pixi.Sprite | typeof pixi.Container): number {
-		let count = 0;
-		for (const child of container.children) {
-			if (child instanceof type) {
-				count += 1;
-			}
-			if (child instanceof pixi.Container) {
-				count += this.countInstancesInContainer(child, type);
-			}
-		}
-		return count;
 	}
 
 	public getPlaybackHealth(): {

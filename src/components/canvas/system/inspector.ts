@@ -21,8 +21,6 @@ export interface SystemStats {
 	clipCount: number;
 	trackCount: number;
 	commandCount: number;
-	spriteCount: number;
-	containerCount: number;
 }
 
 interface MemorySnapshot {
@@ -241,7 +239,6 @@ export class Inspector extends Entity {
 		if (this.systemStats) {
 			stats.push(`── SYSTEM ──`);
 			stats.push(`  Clips: ${this.systemStats.clipCount}  Tracks: ${this.systemStats.trackCount}  Commands: ${this.systemStats.commandCount}`);
-			stats.push(`  Sprites: ${this.systemStats.spriteCount}  Containers: ${this.systemStats.containerCount}`);
 		} else {
 			// Fallback to legacy
 			stats.push(`── SYSTEM ──`);
