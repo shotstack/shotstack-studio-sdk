@@ -139,11 +139,8 @@ export class MoveClipCommand implements EditCommand {
 			context.untrackEndLengthClip(this.player);
 		}
 
-		// Move the player container to the new track container if needed
-		// Skip if source track was deleted - the container move is handled by DeleteTrackCommand
-		if (!this.sourceTrackWasDeleted) {
-			context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
-		}
+		// Move the player container to the new track container
+		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
 
 		// Reconfigure and redraw the player
 		this.player.reconfigureAfterRestore();

@@ -127,6 +127,9 @@ export class Edit extends Entity {
 	}
 
 	public override async load(): Promise<void> {
+		// Enable z-index sorting so track containers render in correct layer order
+		this.getContainer().sortableChildren = true;
+
 		const background = new pixi.Graphics();
 		this.background = background;
 		background.fillStyle = {
