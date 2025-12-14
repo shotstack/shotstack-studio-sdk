@@ -482,4 +482,8 @@ export class RichTextPlayer extends Player {
 	private getCurrentTime(): number {
 		return this.edit.playbackTime - this.getStart();
 	}
+
+	public getCacheSize(): number {
+		return this.cachedFrames.size;
+	}
 }

@@ -77,6 +77,9 @@ export class Edit extends Entity {
 	private cachedTimelineEnd: number = 0;
 	private endLengthClips: Set<Player> = new Set();
 
+	// Playback health tracking
+	private syncCorrectionCount: number = 0;
+
 	// Toolbar button registry
 	private toolbarButtons: ToolbarButtonConfig[] = [];
 
@@ -473,6 +476,282 @@ export class Edit extends Entity {
 
 	public getTotalDuration(): number {
 		return this.totalDuration;
+	}
+
+	public getMemoryStats(): {
+		clipCounts: Record<string, number>;
+		totalClips: number;
+		richTextCacheStats: { clips: number; totalFrames: number };
+		textPlayerCount: number;
+		lumaMaskCount: number;
+		commandHistorySize: number;
+		trackCount: number;
+	} {
+		// Count clips by type
+		const clipCounts: Record<string, number> = {};
+		for (const clip of this.clips) {
+			const type = clip.clipConfiguration.asset?.type || "unknown";
+			clipCounts[type] = (clipCounts[type] || 0) + 1;
+		}
+
+		// Count text players and RichText cache frames
+		let richTextClips = 0;
+		let totalFrames = 0;
+		let textPlayerCount = 0;
+		for (const clip of this.clips) {
+			if (clip instanceof RichTextPlayer) {
+				richTextClips += 1;
+				totalFrames += clip.getCacheSize();
+			}
+			if (clip instanceof TextPlayer) {
+				textPlayerCount += 1;
+			}
+		}
+
+		return {
+			clipCounts,
+			totalClips: this.clips.length,
+			richTextCacheStats: { clips: richTextClips, totalFrames },
+			textPlayerCount,
+			lumaMaskCount: this.activeLumaMasks.length,
+			commandHistorySize: this.commandHistory.length,
+			trackCount: this.tracks.length
+		};
+	}
+
+	public getComprehensiveMemoryStats(): {
+		textureStats: {
+			videos: { count: number; totalMB: number; avgDimensions: string };
+			images: { count: number; totalMB: number; avgDimensions: string };
+			text: { count: number; totalMB: number };
+			richText: { count: number; totalMB: number };
+			luma: { count: number; totalMB: number };
+			animated: { count: number; frames: number; totalMB: number };
+			totalTextures: number;
+			totalMB: number;
+		};
+		assetDetails: Array<{
+			id: string;
+			type: "video" | "image" | "text" | "rich-text" | "luma" | "audio" | "html" | "shape" | "caption" | "unknown";
+			label: string;
+			width: number;
+			height: number;
+			estimatedMB: number;
+		}>;
+		systemStats: {
+			clipCount: number;
+			trackCount: number;
+			commandCount: number;
+			spriteCount: number;
+			containerCount: number;
+		};
+	} {
+		type AssetType = "video" | "image" | "text" | "rich-text" | "luma" | "audio" | "html" | "shape" | "caption" | "unknown";
+
+		const assetDetails: Array<{
+			id: string;
+			type: AssetType;
+			label: string;
+			width: number;
+			height: number;
+			estimatedMB: number;
+		}> = [];
+
+		const stats = {
+			videos: { count: 0, totalMB: 0, dimensions: [] as Array<{ width: number; height: number }> },
+			images: { count: 0, totalMB: 0, dimensions: [] as Array<{ width: number; height: number }> },
+			text: { count: 0, totalMB: 0 },
+			richText: { count: 0, totalMB: 0 },
+			luma: { count: 0, totalMB: 0 },
+			animated: { count: 0, frames: 0, totalMB: 0 }
+		};
+
+		for (const clip of this.clips) {
+			const { asset } = clip.clipConfiguration;
+			const rawType = asset?.type || "unknown";
+			const type = (["video", "image", "text", "rich-text", "luma", "audio", "html", "shape", "caption"].includes(rawType)
+				? rawType
+				: "unknown") as AssetType;
+			const size = clip.getSize();
+			const estimatedMB = this.estimateTextureMB(size.width, size.height);
+
+			// Get label for asset
+			const label = this.getAssetLabel(clip);
+
+			assetDetails.push({
+				id: clip.clipConfiguration.asset?.type || "unknown",
+				type,
+				label,
+				width: size.width,
+				height: size.height,
+				estimatedMB
+			});
+
+			// Aggregate by type
+			if (type === "video") {
+				stats.videos.count += 1;
+				stats.videos.totalMB += estimatedMB;
+				stats.videos.dimensions.push({ width: size.width, height: size.height });
+			} else if (type === "image") {
+				stats.images.count += 1;
+				stats.images.totalMB += estimatedMB;
+				stats.images.dimensions.push({ width: size.width, height: size.height });
+			} else if (type === "text") {
+				stats.text.count += 1;
+				stats.text.totalMB += estimatedMB;
+			} else if (type === "rich-text") {
+				stats.richText.count += 1;
+				stats.richText.totalMB += estimatedMB;
+			} else if (type === "luma") {
+				stats.luma.count += 1;
+				stats.luma.totalMB += estimatedMB;
+			}
+		}
+
+		// Add animated text frame caches (RichTextPlayer)
+		for (const clip of this.clips) {
+			if (clip instanceof RichTextPlayer) {
+				const frames = clip.getCacheSize();
+				if (frames > 0) {
+					stats.animated.count += 1;
+					stats.animated.frames += frames;
+					// Estimate based on output size for cached frames
+					stats.animated.totalMB += frames * this.estimateTextureMB(this.size.width, this.size.height);
+				}
+			}
+		}
+
+		// Calculate average dimensions
+		const calcAvgDimensions = (dims: Array<{ width: number; height: number }>): string => {
+			if (dims.length === 0) return "";
+			if (dims.length === 1) return `${dims[0].width}×${dims[0].height}`;
+			const avgW = Math.round(dims.reduce((s, d) => s + d.width, 0) / dims.length);
+			const avgH = Math.round(dims.reduce((s, d) => s + d.height, 0) / dims.length);
+			return `avg ${avgW}×${avgH}`;
+		};
+
+		const totalTextures =
+			stats.videos.count + stats.images.count + stats.text.count + stats.richText.count + stats.luma.count + stats.animated.count;
+
+		const totalMB =
+			stats.videos.totalMB +
+			stats.images.totalMB +
+			stats.text.totalMB +
+			stats.richText.totalMB +
+			stats.luma.totalMB +
+			stats.animated.totalMB;
+
+		// Count sprites and containers in scene graph
+		const spriteCount = this.countInstancesInContainer(this.getContainer(), pixi.Sprite);
+		const containerCount = this.countInstancesInContainer(this.getContainer(), pixi.Container);
+
+		return {
+			textureStats: {
+				videos: {
+					count: stats.videos.count,
+					totalMB: stats.videos.totalMB,
+					avgDimensions: calcAvgDimensions(stats.videos.dimensions)
+				},
+				images: {
+					count: stats.images.count,
+					totalMB: stats.images.totalMB,
+					avgDimensions: calcAvgDimensions(stats.images.dimensions)
+				},
+				text: { count: stats.text.count, totalMB: stats.text.totalMB },
+				richText: { count: stats.richText.count, totalMB: stats.richText.totalMB },
+				luma: { count: stats.luma.count, totalMB: stats.luma.totalMB },
+				animated: { count: stats.animated.count, frames: stats.animated.frames, totalMB: stats.animated.totalMB },
+				totalTextures,
+				totalMB
+			},
+			assetDetails,
+			systemStats: {
+				clipCount: this.clips.length,
+				trackCount: this.tracks.length,
+				commandCount: this.commandHistory.length,
+				spriteCount,
+				containerCount
+			}
+		};
+	}
+
+	private estimateTextureMB(width: number, height: number): number {
+		// GPU Memory (MB) = width × height × 4 (RGBA bytes) / 1024 / 1024
+		return (width * height * 4) / (1024 * 1024);
+	}
+
+	private getAssetLabel(clip: Player): string {
+		const asset = clip.clipConfiguration.asset as Record<string, unknown> | undefined;
+		if (!asset) return "unknown";
+
+		// For media assets with src, extract filename
+		const srcValue = asset["src"];
+		if ("src" in asset && typeof srcValue === "string") {
+			const filename = srcValue.split("/").pop() || srcValue;
+			// Remove query params
+			return filename.split("?")[0];
+		}
+
+		// For text assets, use the text content
+		const textValue = asset["text"];
+		if ("text" in asset && typeof textValue === "string") {
+			return textValue.length > 20 ? `${textValue.substring(0, 17)}...` : textValue;
+		}
+
+		return asset["type"]?.toString() || "unknown";
+	}
+
+	private countInstancesInContainer(container: pixi.Container, type: typeof pixi.Sprite | typeof pixi.Container): number {
+		let count = 0;
+		for (const child of container.children) {
+			if (child instanceof type) {
+				count += 1;
+			}
+			if (child instanceof pixi.Container) {
+				count += this.countInstancesInContainer(child, type);
+			}
+		}
+		return count;
+	}
+
+	public getPlaybackHealth(): {
+		activePlayerCount: number;
+		totalPlayerCount: number;
+		videoMaxDrift: number;
+		audioMaxDrift: number;
+		syncCorrections: number;
+	} {
+		let activeCount = 0;
+		let videoMaxDrift = 0;
+		let audioMaxDrift = 0;
+
+		for (const clip of this.clips) {
+			if (clip.isActive()) {
+				activeCount += 1;
+
+				if (clip instanceof VideoPlayer) {
+					const drift = clip.getCurrentDrift();
+					videoMaxDrift = Math.max(videoMaxDrift, drift);
+				}
+
+				if (clip instanceof AudioPlayer) {
+					const drift = clip.getCurrentDrift();
+					audioMaxDrift = Math.max(audioMaxDrift, drift);
+				}
+			}
+		}
+
+		return {
+			activePlayerCount: activeCount,
+			totalPlayerCount: this.clips.length,
+			videoMaxDrift,
+			audioMaxDrift,
+			syncCorrections: this.syncCorrectionCount
+		};
+	}
+
+	public recordSyncCorrection(): void {
+		this.syncCorrectionCount += 1;
 	}
 
 	public undo(): void {

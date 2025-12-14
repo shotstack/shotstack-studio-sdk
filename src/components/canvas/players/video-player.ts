@@ -77,6 +77,7 @@ export class VideoPlayer extends Player {
 				const drift = Math.abs((this.texture.source.resource.currentTime - trim) * 1000 - playbackTime);
 				if (drift > desyncThreshold) {
 					this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+					this.edit.recordSyncCorrection();
 				}
 			}
 		}
@@ -172,6 +173,14 @@ export class VideoPlayer extends Player {
 
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	public getCurrentDrift(): number {
+		if (!this.texture?.source?.resource) return 0;
+		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
+		const videoTime = this.texture.source.resource.currentTime;
+		const playbackTime = this.getPlaybackTime();
+		return Math.abs((videoTime - trim) * 1000 - playbackTime);
 	}
 
 	private createCroppedTexture(texture: pixi.Texture<pixi.VideoSource>): pixi.Texture<pixi.VideoSource> {

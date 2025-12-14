@@ -82,6 +82,7 @@ export class AudioPlayer extends Player {
 
 			if (shouldSync) {
 				this.audioResource.seek(playbackTime / 1000 + trim);
+				this.edit.recordSyncCorrection();
 			}
 		}
 
@@ -112,6 +113,14 @@ export class AudioPlayer extends Player {
 
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	public getCurrentDrift(): number {
+		if (!this.audioResource) return 0;
+		const { trim = 0 } = this.clipConfiguration.asset as AudioAsset;
+		const audioTime = this.audioResource.seek() as number;
+		const playbackTime = this.getPlaybackTime();
+		return Math.abs((audioTime - trim) * 1000 - playbackTime);
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {

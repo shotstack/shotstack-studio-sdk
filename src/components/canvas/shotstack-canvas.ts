@@ -43,6 +43,7 @@ export class Canvas {
 
 	private onTickBound: (ticker: pixi.Ticker) => void;
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
+	private lastInspectorUpdate: number = 0;
 
 	constructor(edit: Edit) {
 		this.application = new pixi.Application();
@@ -79,6 +80,7 @@ export class Canvas {
 		this.background.fill();
 
 		await this.configureApplication();
+		await this.inspector.load();
 		await this.transcriptionIndicator.load();
 		this.configureStage();
 		this.setupTouchHandling(root);
@@ -267,6 +269,29 @@ export class Canvas {
 		this.inspector.playbackTime = this.edit.playbackTime;
 		this.inspector.playbackDuration = this.edit.totalDuration;
 		this.inspector.isPlaying = this.edit.isPlaying;
+
+		// Pass comprehensive memory stats (throttled - every 500ms)
+		const now = performance.now();
+		if (now - this.lastInspectorUpdate > 500) {
+			this.lastInspectorUpdate = now;
+			const comprehensiveStats = this.edit.getComprehensiveMemoryStats();
+			this.inspector.textureStats = comprehensiveStats.textureStats;
+			this.inspector.assetDetails = comprehensiveStats.assetDetails;
+			this.inspector.systemStats = comprehensiveStats.systemStats;
+
+			// Pass playback health stats
+			this.inspector.playbackHealth = this.edit.getPlaybackHealth();
+
+			// Also update legacy stats for backward compatibility
+			const memoryStats = this.edit.getMemoryStats();
+			this.inspector.clipCounts = memoryStats.clipCounts;
+			this.inspector.totalClips = memoryStats.totalClips;
+			this.inspector.richTextCacheStats = memoryStats.richTextCacheStats;
+			this.inspector.textPlayerCount = memoryStats.textPlayerCount;
+			this.inspector.lumaMaskCount = memoryStats.lumaMaskCount;
+			this.inspector.commandHistorySize = memoryStats.commandHistorySize;
+			this.inspector.trackCount = memoryStats.trackCount;
+		}
 
 		this.inspector.update(ticker.deltaTime, ticker.deltaMS);
 		this.inspector.draw();
