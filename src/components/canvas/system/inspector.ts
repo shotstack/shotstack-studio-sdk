@@ -294,6 +294,14 @@ export class Inspector extends Entity {
 		}
 
 		this.text.text = stats.join("\n");
+
+		// Resize background to fit content
+		if (this.background) {
+			this.background.clear();
+			this.background.fillStyle = { color: "#424242", alpha: 0.85 };
+			this.background.rect(0, 0, Inspector.Width, this.text.height + 10);
+			this.background.fill();
+		}
 	}
 
 	private getSyncStatusIcon(driftMs: number): string {
