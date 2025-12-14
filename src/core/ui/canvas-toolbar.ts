@@ -464,11 +464,11 @@ export class CanvasToolbar {
 			.map(
 				(f: MergeField) => `
 			<div class="ss-variable-item" data-var-name="${f.name}">
-				<div class="ss-variable-info">
+				<div class="ss-variable-item-header">
 					<span class="ss-variable-name">{{ ${f.name} }}</span>
-					<input class="ss-variable-value" value="${f.defaultValue}" placeholder="Default value" data-var-input="${f.name}" />
+					<button class="ss-variable-delete" data-delete-var="${f.name}">×</button>
 				</div>
-				<button class="ss-variable-delete" data-delete-var="${f.name}">×</button>
+				<input class="ss-variable-value" value="${f.defaultValue}" placeholder="Default value" data-var-input="${f.name}" />
 			</div>
 		`
 			)

@@ -110,7 +110,7 @@ export class Canvas {
 			(e: WheelEvent) => {
 				// Allow scrolling in toolbar popups
 				const target = e.target as HTMLElement;
-				if (target.closest(".ss-toolbar-popup")) {
+				if (target.closest(".ss-toolbar-popup") || target.closest(".ss-canvas-toolbar-popup")) {
 					return;
 				}
 

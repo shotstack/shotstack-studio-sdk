@@ -319,117 +319,177 @@ export const CANVAS_TOOLBAR_STYLES = `
 	border-color: rgba(0, 0, 0, 0.3);
 }
 
-/* Variables popup */
+/* ===========================================
+   MERGE FIELDS POPUP
+   Rebuilt with proper scroll architecture
+   =========================================== */
+
+/* Container - Override transform positioning to fix scroll */
 .ss-canvas-toolbar-popup--variables {
-	min-width: 260px;
+	width: 300px;
+	max-height: 400px;
+	/* Override transform-based centering - use top offset instead */
+	transform: none;
+	top: calc(50% - 200px);
+	flex-direction: column;
+	overflow: hidden;
 }
 
+/* Only display as flex when visible */
+.ss-canvas-toolbar-popup--variables.visible {
+	display: flex;
+}
+
+/* Reposition the arrow for non-transform positioning */
+.ss-canvas-toolbar-popup--variables::after {
+	top: 200px;
+	transform: rotate(45deg);
+}
+
+/* Header - fixed, never scrolls */
 .ss-variables-header {
+	flex-shrink: 0;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	padding: 10px 12px 8px;
 }
 
 .ss-variables-add-btn {
-	width: 24px;
-	height: 24px;
+	width: 26px;
+	height: 26px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0, 0, 0, 0.06);
+	background: rgba(0, 0, 0, 0.05);
 	border: none;
-	border-radius: 6px;
-	color: rgba(0, 0, 0, 0.65);
-	font-size: 16px;
-	font-weight: 500;
+	border-radius: 8px;
+	color: rgba(0, 0, 0, 0.5);
+	font-size: 18px;
+	font-weight: 400;
 	cursor: pointer;
 	transition: all 0.15s ease;
 }
 
 .ss-variables-add-btn:hover {
 	background: rgba(0, 0, 0, 0.1);
-	color: rgba(0, 0, 0, 0.9);
+	color: rgba(0, 0, 0, 0.8);
 }
 
+/* THE scroll container - single source of scroll */
 .ss-variables-list {
+	flex: 1 1 auto;
+	min-height: 0; /* Critical for flex scroll */
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-	max-height: 240px;
+	padding: 4px 8px 8px;
 	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
 }
 
+/* Custom scrollbar */
+.ss-variables-list::-webkit-scrollbar {
+	width: 5px;
+}
+
+.ss-variables-list::-webkit-scrollbar-track {
+	background: transparent;
+	margin: 4px 0;
+}
+
+.ss-variables-list::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.12);
+	border-radius: 3px;
+}
+
+.ss-variables-list::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+/* Empty state */
 .ss-variables-empty {
-	padding: 16px 12px;
+	padding: 20px 12px;
 	text-align: center;
 	font-size: 13px;
-	color: rgba(0, 0, 0, 0.4);
+	color: rgba(0, 0, 0, 0.35);
 }
 
+/* Field item container */
 .ss-variable-item {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 8px 10px;
-	background: rgba(0, 0, 0, 0.03);
-	border-radius: 8px;
-}
-
-.ss-variable-info {
-	flex: 1;
+	flex-shrink: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
-	min-width: 0;
+	gap: 6px;
+	padding: 10px;
+	background: rgba(0, 0, 0, 0.025);
+	border-radius: 10px;
+	border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
+/* Field header row */
+.ss-variable-item-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+/* Variable name label */
 .ss-variable-name {
-	font-size: 12px;
+	font-size: 11px;
 	font-weight: 600;
-	color: rgba(99, 102, 241, 0.9);
+	color: rgba(99, 102, 241, 0.85);
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+	letter-spacing: 0.02em;
 }
 
+/* Value input */
 .ss-variable-value {
 	width: 100%;
-	padding: 6px 8px;
-	background: rgba(255, 255, 255, 0.8);
-	border: 1px solid rgba(0, 0, 0, 0.08);
-	border-radius: 6px;
-	font-size: 12px;
+	padding: 8px 10px;
+	background: #fff;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 8px;
+	font-size: 13px;
 	color: #1a1a1a;
 	outline: none;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .ss-variable-value:focus {
 	border-color: rgba(99, 102, 241, 0.5);
-	background: #fff;
+	box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
 }
 
 .ss-variable-value::placeholder {
-	color: rgba(0, 0, 0, 0.35);
+	color: rgba(0, 0, 0, 0.3);
 }
 
 .ss-variable-value.error {
-	border-color: rgba(239, 68, 68, 0.6);
-	background: rgba(239, 68, 68, 0.15);
+	border-color: rgba(239, 68, 68, 0.5);
+	background: rgba(239, 68, 68, 0.03);
 }
 
 .ss-variable-value.error:focus {
-	border-color: rgba(239, 68, 68, 0.8);
+	border-color: rgba(239, 68, 68, 0.7);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
 }
 
+/* Delete button */
 .ss-variable-delete {
-	width: 24px;
-	height: 24px;
+	width: 22px;
+	height: 22px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	background: transparent;
 	border: none;
 	border-radius: 6px;
-	color: rgba(0, 0, 0, 0.35);
-	font-size: 16px;
+	color: rgba(0, 0, 0, 0.25);
+	font-size: 14px;
 	cursor: pointer;
 	transition: all 0.15s ease;
 	flex-shrink: 0;
