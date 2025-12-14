@@ -370,6 +370,10 @@ export class RichTextPlayer extends Player {
 			this.lastRenderedTime = -1;
 		}
 
+		if (!this.isActive()) {
+			return;
+		}
+
 		if (this.textEngine && this.renderer && !this.isRendering) {
 			const currentTimeSeconds = this.getCurrentTime() / 1000;
 			const targetFPS = this.edit.getOutputFps();
