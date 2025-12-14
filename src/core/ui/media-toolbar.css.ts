@@ -885,4 +885,87 @@ export const MEDIA_TOOLBAR_STYLES = `
 		transform: translateY(0);
 	}
 }
+
+/* Audio section - only visible for audio assets */
+.ss-media-toolbar-audio {
+	display: flex;
+	align-items: center;
+}
+
+.ss-media-toolbar-audio.hidden {
+	display: none;
+}
+
+/* Audio fade popup */
+.ss-media-toolbar-popup--audio-fade {
+	min-width: 180px;
+	padding: 8px;
+}
+
+/* Audio fade options - 2x2 grid for balanced layout */
+.ss-audio-fade-options {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 6px;
+}
+
+/* Audio fade button - icon + label stacked */
+.ss-audio-fade-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 12px 8px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.ss-audio-fade-btn:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.12);
+}
+
+.ss-audio-fade-btn.active {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Icon container */
+.ss-audio-fade-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 16px;
+	color: rgba(255, 255, 255, 0.5);
+	transition: color 0.15s ease;
+}
+
+.ss-audio-fade-icon svg {
+	width: 32px;
+	height: 16px;
+}
+
+.ss-audio-fade-btn:hover .ss-audio-fade-icon,
+.ss-audio-fade-btn.active .ss-audio-fade-icon {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+/* Label */
+.ss-audio-fade-label {
+	font-size: 10px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	transition: color 0.15s ease;
+}
+
+.ss-audio-fade-btn:hover .ss-audio-fade-label,
+.ss-audio-fade-btn.active .ss-audio-fade-label {
+	color: rgba(255, 255, 255, 0.9);
+}
 `;

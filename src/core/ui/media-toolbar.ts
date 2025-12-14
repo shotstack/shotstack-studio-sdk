@@ -28,7 +28,12 @@ const ICONS = {
 	chevron: `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
 	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
 	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
-	effect: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`
+	effect: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`,
+	// Audio fade icons - waveform-inspired shapes
+	fadeIn: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L14 4 L30 4"/></svg>`,
+	fadeOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L18 4 L30 14"/></svg>`,
+	fadeInOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L10 4 L22 4 L30 14"/></svg>`,
+	fadeNone: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 10 L30 10"/></svg>`
 };
 
 type MediaAssetType = "video" | "image" | "audio";
@@ -103,6 +108,14 @@ export class MediaToolbar extends BaseToolbar {
 
 	// Visual controls section (fit, opacity, scale, transition - hidden for audio)
 	private visualSection: HTMLDivElement | null = null;
+
+	// Audio fade state
+	private audioFadeEffect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut" = "";
+
+	// Audio section element references
+	private audioSection: HTMLDivElement | null = null;
+	private audioFadeBtn: HTMLButtonElement | null = null;
+	private audioFadePopup: HTMLDivElement | null = null;
 
 	// Advanced menu elements
 	private advancedBtn: HTMLButtonElement | null = null;
@@ -296,6 +309,38 @@ export class MediaToolbar extends BaseToolbar {
 				</div>
 			</div>
 
+			<!-- Audio Section - only visible for audio assets -->
+			<div class="ss-media-toolbar-audio" data-audio-section>
+				<div class="ss-media-toolbar-divider"></div>
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="audio-fade">
+						${ICONS.fadeNone}
+						<span>Fade</span>
+						${ICONS.chevron}
+					</button>
+					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--audio-fade" data-popup="audio-fade">
+						<div class="ss-audio-fade-options">
+							<button class="ss-audio-fade-btn" data-audio-fade="">
+								<span class="ss-audio-fade-icon">${ICONS.fadeNone}</span>
+								<span class="ss-audio-fade-label">None</span>
+							</button>
+							<button class="ss-audio-fade-btn" data-audio-fade="fadeIn">
+								<span class="ss-audio-fade-icon">${ICONS.fadeIn}</span>
+								<span class="ss-audio-fade-label">Fade In</span>
+							</button>
+							<button class="ss-audio-fade-btn" data-audio-fade="fadeOut">
+								<span class="ss-audio-fade-icon">${ICONS.fadeOut}</span>
+								<span class="ss-audio-fade-label">Fade Out</span>
+							</button>
+							<button class="ss-audio-fade-btn" data-audio-fade="fadeInFadeOut">
+								<span class="ss-audio-fade-icon">${ICONS.fadeInOut}</span>
+								<span class="ss-audio-fade-label">Both</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div class="ss-media-toolbar-divider" data-divider-before-advanced></div>
 
 			<!-- Advanced Menu -->
@@ -359,6 +404,11 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectDirectionRow = this.container.querySelector("[data-effect-direction-row]");
 		this.effectSpeedRow = this.container.querySelector("[data-effect-speed-row]");
 		this.effectSpeedValueLabel = this.container.querySelector("[data-effect-speed-value]");
+
+		// Audio section elements
+		this.audioSection = this.container.querySelector("[data-audio-section]");
+		this.audioFadeBtn = this.container.querySelector('[data-action="audio-fade"]');
+		this.audioFadePopup = this.container.querySelector('[data-popup="audio-fade"]');
 
 		// Advanced menu elements
 		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
@@ -497,9 +547,24 @@ export class MediaToolbar extends BaseToolbar {
 		const effectSpeedIncrease = this.effectPopup?.querySelector("[data-effect-speed-increase]");
 		effectSpeedDecrease?.addEventListener("click", () => this.handleEffectSpeedStep(-1));
 		effectSpeedIncrease?.addEventListener("click", () => this.handleEffectSpeedStep(1));
+
+		// Audio fade button
+		this.audioFadeBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopupByName("audio-fade");
+		});
+
+		// Audio fade options
+		this.audioFadePopup?.querySelectorAll("[data-audio-fade]").forEach(btn => {
+			btn.addEventListener("click", e => {
+				const el = e.currentTarget as HTMLElement;
+				const fadeValue = el.dataset["audioFade"] || "";
+				this.handleAudioFadeSelect(fadeValue as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut");
+			});
+		});
 	}
 
-	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced"): void {
+	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade"): void {
 		const popupMap = {
 			fit: { popup: this.fitPopup, btn: this.fitBtn },
 			opacity: { popup: this.opacityPopup, btn: this.opacityBtn },
@@ -507,7 +572,8 @@ export class MediaToolbar extends BaseToolbar {
 			volume: { popup: this.volumePopup, btn: this.volumeBtn },
 			transition: { popup: this.transitionPopup, btn: this.transitionBtn },
 			effect: { popup: this.effectPopup, btn: this.effectBtn },
-			advanced: { popup: this.advancedPopup, btn: this.advancedBtn }
+			advanced: { popup: this.advancedPopup, btn: this.advancedBtn },
+			"audio-fade": { popup: this.audioFadePopup, btn: this.audioFadeBtn }
 		};
 
 		const isCurrentlyOpen = popupMap[popup].popup?.classList.contains("visible");
@@ -530,10 +596,11 @@ export class MediaToolbar extends BaseToolbar {
 		this.transitionBtn?.classList.remove("active");
 		this.effectBtn?.classList.remove("active");
 		this.advancedBtn?.classList.remove("active");
+		this.audioFadeBtn?.classList.remove("active");
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [this.fitPopup, this.opacityPopup, this.scalePopup, this.volumePopup, this.transitionPopup, this.effectPopup, this.advancedPopup];
+		return [this.fitPopup, this.opacityPopup, this.scalePopup, this.volumePopup, this.transitionPopup, this.effectPopup, this.advancedPopup, this.audioFadePopup];
 	}
 
 	protected override syncState(): void {
@@ -571,6 +638,11 @@ export class MediaToolbar extends BaseToolbar {
 
 			// Effect - parse type, variant/direction, and speed from stored value
 			this.parseEffectValue(clip.effect || "");
+
+			// Audio fade effect (for audio assets)
+			if (clip.asset.type === "audio") {
+				this.audioFadeEffect = (clip.asset.effect as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut") || "";
+			}
 		}
 
 		// Update displays
@@ -589,6 +661,9 @@ export class MediaToolbar extends BaseToolbar {
 		// Update effect UI
 		this.updateEffectUI();
 
+		// Update audio fade UI
+		this.updateAudioFadeUI();
+
 		// Update dynamic source state
 		this.updateDynamicSourceUI();
 
@@ -600,6 +675,11 @@ export class MediaToolbar extends BaseToolbar {
 		// Show/hide volume section (hidden for image)
 		if (this.volumeSection) {
 			this.volumeSection.classList.toggle("hidden", this.assetType === "image");
+		}
+
+		// Show/hide audio section (only visible for audio)
+		if (this.audioSection) {
+			this.audioSection.classList.toggle("hidden", this.assetType !== "audio");
 		}
 	}
 
@@ -627,9 +707,9 @@ export class MediaToolbar extends BaseToolbar {
 		this.currentVolume = value;
 		this.updateVolumeDisplay();
 
-		// Volume is on the asset, not the clip
+		// Volume is on the asset, not the clip (applies to both video and audio)
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (player && player.clipConfiguration.asset.type === "video") {
+		if (player && (player.clipConfiguration.asset.type === "video" || player.clipConfiguration.asset.type === "audio")) {
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
 				asset: {
 					...player.clipConfiguration.asset,
@@ -982,6 +1062,51 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
+	// ─── Audio Fade Handlers ───────────────────────────────────────────────────
+
+	private handleAudioFadeSelect(effect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut"): void {
+		this.audioFadeEffect = effect;
+		this.updateAudioFadeUI();
+		this.applyAudioFade();
+	}
+
+	private applyAudioFade(): void {
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!player || player.clipConfiguration.asset.type !== "audio") return;
+
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
+			asset: {
+				...player.clipConfiguration.asset,
+				effect: this.audioFadeEffect || undefined
+			}
+		});
+	}
+
+	private updateAudioFadeUI(): void {
+		if (!this.audioFadePopup) return;
+
+		// Update active states on buttons
+		const buttons = this.audioFadePopup.querySelectorAll("[data-audio-fade]");
+		buttons.forEach(btn => {
+			const fadeValue = (btn as HTMLElement).dataset["audioFade"] || "";
+			btn.classList.toggle("active", fadeValue === this.audioFadeEffect);
+		});
+
+		// Update button icon to show current selection
+		if (this.audioFadeBtn) {
+			const iconMap: Record<string, string> = {
+				"": ICONS.fadeNone,
+				fadeIn: ICONS.fadeIn,
+				fadeOut: ICONS.fadeOut,
+				fadeInFadeOut: ICONS.fadeInOut
+			};
+			const svg = this.audioFadeBtn.querySelector("svg");
+			if (svg) {
+				svg.outerHTML = iconMap[this.audioFadeEffect] || ICONS.fadeNone;
+			}
+		}
+	}
+
 	private applyClipUpdate(updates: Record<string, unknown>): void {
 		if (this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0) {
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
@@ -1227,6 +1352,11 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectDirectionRow = null;
 		this.effectSpeedRow = null;
 		this.effectSpeedValueLabel = null;
+
+		// Audio section elements
+		this.audioSection = null;
+		this.audioFadeBtn = null;
+		this.audioFadePopup = null;
 
 		// Advanced menu elements
 		this.advancedBtn = null;
