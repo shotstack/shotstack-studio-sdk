@@ -319,13 +319,10 @@ export const CANVAS_TOOLBAR_STYLES = `
    Rebuilt with proper scroll architecture
    =========================================== */
 
-/* Container - Override transform positioning to fix scroll */
+/* Variables popup - sizing and layout only, inherits positioning from base popup */
 .ss-canvas-toolbar-popup--variables {
 	width: 300px;
 	max-height: 400px;
-	/* Override transform-based centering - use top offset instead */
-	transform: none;
-	top: calc(50% - 200px);
 	flex-direction: column;
 	overflow: visible;
 }
@@ -333,12 +330,6 @@ export const CANVAS_TOOLBAR_STYLES = `
 /* Only display as flex when visible */
 .ss-canvas-toolbar-popup--variables.visible {
 	display: flex;
-}
-
-/* Reposition the arrow for non-transform positioning */
-.ss-canvas-toolbar-popup--variables::after {
-	top: 200px;
-	transform: rotate(45deg);
 }
 
 /* Header - fixed, never scrolls */
