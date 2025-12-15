@@ -1898,9 +1898,17 @@ export class Edit extends Entity {
 			const value = (templateClip as Record<string, unknown>)[key];
 			const propertyPath = path ? `${path}.${key}` : key;
 
-			if (typeof value === "string" && value === template) {
-				// Found a property using this merge field - use removeMergeField for proper handling
-				this.removeMergeField(trackIdx, clipIdx, propertyPath, restoreValue);
+			if (typeof value === "string") {
+				const extractedField = this.mergeFields.extractFieldName(value);
+				const templateFieldName = this.mergeFields.extractFieldName(template);
+				if (extractedField && templateFieldName && extractedField === templateFieldName) {
+					// Apply proper substitution - replace {{ FIELD }} with restoreValue, preserving surrounding text
+					const substitutedValue = value.replace(
+						new RegExp(`\\{\\{\\s*${extractedField}\\s*\\}\\}`, "gi"),
+						restoreValue
+					);
+					this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue);
+				}
 			} else if (typeof value === "object" && value !== null) {
 				// Recurse into nested objects
 				this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath);
