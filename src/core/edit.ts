@@ -1767,7 +1767,11 @@ export class Edit extends Entity {
 			if (typeof templateVal === "string") {
 				const extractedField = this.mergeFields.extractFieldName(templateVal);
 				if (extractedField === fieldName) {
-					targetObj[key] = newValue;
+					// Apply proper substitution - replace {{ FIELD }} with newValue, preserving surrounding text
+					targetObj[key] = templateVal.replace(
+						new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"),
+						newValue
+					);
 				}
 			} else if (templateVal && typeof templateVal === "object") {
 				this.updateMergeFieldInObject(targetObj[key], templateVal, fieldName, newValue);
