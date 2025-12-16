@@ -97,7 +97,7 @@ export class RichTextPlayer extends Player {
 		fontMap.set("Open Sans", "/assets/fonts/OpenSans-Bold.ttf");
 		fontMap.set("PermanentMarker", "/assets/fonts/PermanentMarker-Regular.ttf");
 		fontMap.set("Permanent Marker", "/assets/fonts/PermanentMarker-Regular.ttf");
-		fontMap.set("Roboto", "/assets/fonts/Roboto-BlackItalic.ttf");
+		fontMap.set("Roboto", "/assets/fonts/Roboto.ttf");
 		fontMap.set("SueEllenFrancisco", "/assets/fonts/SueEllenFrancisco.ttf");
 		fontMap.set("Sue Ellen Francisco", "/assets/fonts/SueEllenFrancisco.ttf");
 		fontMap.set("UniNeue", "/assets/fonts/UniNeue-Bold.otf");
