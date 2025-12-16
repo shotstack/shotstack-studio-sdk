@@ -1,6 +1,6 @@
 import { TimelineEntity } from "../../core/timeline-entity";
-import type { TrackState, ClipState, ClipRenderer } from "../../html-timeline.types";
-import { getTrackHeight } from "../../html-timeline.types";
+import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
+import { getTrackHeight } from "../../timeline.types";
 import { ClipComponent } from "../clip/clip-component";
 
 export interface TrackComponentOptions {

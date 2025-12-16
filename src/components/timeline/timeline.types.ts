@@ -1,19 +1,19 @@
 import type { ResolvedClip } from "@schemas/clip";
 
-/** Configuration options for HtmlTimeline */
-export interface HtmlTimelineOptions {
+/** Configuration options for Timeline */
+export interface TimelineOptions {
 	/** Feature toggles */
-	features?: HtmlTimelineFeatures;
+	features?: TimelineFeatures;
 	/** Interaction configuration */
-	interaction?: HtmlTimelineInteractionConfig;
+	interaction?: TimelineInteractionConfig;
 	/** Initial pixels per second (zoom level) */
 	pixelsPerSecond?: number;
 	/** Track height in pixels */
 	trackHeight?: number;
 }
 
-/** Feature toggles for HtmlTimeline */
-export interface HtmlTimelineFeatures {
+/** Feature toggles for Timeline */
+export interface TimelineFeatures {
 	/** Show toolbar with playback controls */
 	toolbar?: boolean;
 	/** Show time ruler */
@@ -29,7 +29,7 @@ export interface HtmlTimelineFeatures {
 }
 
 /** Interaction configuration */
-export interface HtmlTimelineInteractionConfig {
+export interface TimelineInteractionConfig {
 	/** Minimum pixels to move before starting drag */
 	dragThreshold?: number;
 	/** Snap distance in pixels */
@@ -107,7 +107,7 @@ export interface ClipRenderer {
 }
 
 /** Default feature settings */
-export const DEFAULT_FEATURES: Required<HtmlTimelineFeatures> = {
+export const DEFAULT_FEATURES: Required<TimelineFeatures> = {
 	toolbar: true,
 	ruler: true,
 	playhead: true,
@@ -117,7 +117,7 @@ export const DEFAULT_FEATURES: Required<HtmlTimelineFeatures> = {
 };
 
 /** Default interaction settings */
-export const DEFAULT_INTERACTION: Required<HtmlTimelineInteractionConfig> = {
+export const DEFAULT_INTERACTION: Required<TimelineInteractionConfig> = {
 	dragThreshold: 3,
 	snapThreshold: 10,
 	resizeZone: 12

@@ -3,7 +3,7 @@ import type { Edit } from "@core/edit";
 import type { ResolvedClip } from "@schemas/clip";
 import type { ResolvedTrack } from "@schemas/track";
 
-import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../html-timeline.types";
+import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../timeline.types";
 
 type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
 

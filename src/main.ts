@@ -1,4 +1,4 @@
-import { HtmlTimeline } from "./components/timeline-html";
+import { Timeline } from "@timeline/index";
 
 import { Edit, Canvas, Controls, VideoExporter } from "./index";
 
@@ -63,10 +63,10 @@ async function main() {
 		// 4. Load the template
 		await edit.loadEdit(template);
 
-		// 5b. Initialize the HTML Timeline (new implementation)
-		const htmlTimelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-		if (htmlTimelineContainer) {
-			const htmlTimeline = new HtmlTimeline(edit, htmlTimelineContainer, {
+		// 5b. Initialize the Timeline
+		const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
+		if (timelineContainer) {
+			const timeline = new Timeline(edit, timelineContainer, {
 				features: {
 					toolbar: true,
 					ruler: true,
@@ -76,8 +76,8 @@ async function main() {
 					multiSelect: true
 				}
 			});
-			await htmlTimeline.load();
-			console.log("HTML Timeline loaded!");
+			await timeline.load();
+			console.log("Timeline loaded!");
 		}
 
 		// 6. Add keyboard controls

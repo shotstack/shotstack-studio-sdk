@@ -1,7 +1,7 @@
 import type { ResolvedClip } from "@schemas/clip";
 
 import { TimelineEntity } from "../../core/timeline-entity";
-import type { ClipState, ClipRenderer } from "../../html-timeline.types";
+import type { ClipState, ClipRenderer } from "../../timeline.types";
 
 /** Reference to an attached luma clip */
 interface LumaRef {
