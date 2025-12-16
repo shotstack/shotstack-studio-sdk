@@ -35,6 +35,8 @@ export enum PlayerType {
 
 export abstract class Player extends Entity {
 	private static readonly SnapThreshold = 20;
+	private static readonly RotationSnapThreshold = 5; // degrees
+	private static readonly RotationSnapAngles = [0, 45, 90, 135, 180, 225, 270, 315];
 
 	private static readonly DiscardedFrameCount = 0;
 
@@ -1017,7 +1019,19 @@ export abstract class Player extends Entity {
 			const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
 			const deltaAngle = (currentAngle - this.rotationStart) * (180 / Math.PI);
 
-			const newRotation = this.initialRotation + deltaAngle;
+			let newRotation = this.initialRotation + deltaAngle;
+
+			// Snap to fixed angles
+			const normalizedRotation = ((newRotation % 360) + 360) % 360;
+			for (const snapAngle of Player.RotationSnapAngles) {
+				const distance = Math.abs(normalizedRotation - snapAngle);
+				const wrappedDistance = Math.min(distance, 360 - distance);
+				if (wrappedDistance < Player.RotationSnapThreshold) {
+					const fullRotations = Math.round(newRotation / 360) * 360;
+					newRotation = fullRotations + snapAngle;
+					break;
+				}
+			}
 
 			this.clipConfiguration.transform = {
 				...this.clipConfiguration.transform,
