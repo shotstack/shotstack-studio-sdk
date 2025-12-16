@@ -391,6 +391,7 @@ export class InteractionController {
 				clipEl.style.setProperty("--clip-start", String(newStart));
 				clipEl.style.setProperty("--clip-length", String(newLength));
 			}
+			this.showDragTimeTooltip(newStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
 		} else {
 			// Resize from right edge
 			const newLength = Math.max(0.1, time - originalStart);
@@ -401,6 +402,7 @@ export class InteractionController {
 			if (clipEl) {
 				clipEl.style.setProperty("--clip-length", String(newLength));
 			}
+			this.showDragTimeTooltip(originalStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
 		}
 	}
 
@@ -587,6 +589,7 @@ export class InteractionController {
 
 		// Cleanup
 		this.hideSnapLine();
+		this.hideDragTimeTooltip();
 		this.stateManager.setClipVisualState(clipRef.trackIndex, clipRef.clipIndex, "normal");
 		this.state = { type: "idle" };
 	}
