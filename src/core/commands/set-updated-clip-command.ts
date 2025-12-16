@@ -19,6 +19,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 	private storedFinalTemplateConfig: ClipType | null = null;
 	private trackIndex: number;
 	private clipIndex: number;
+	private storedInitialTiming: { start: number; length: number } | null = null;
 
 	constructor(
 		private clip: Player,
@@ -39,6 +40,28 @@ export class SetUpdatedClipCommand implements EditCommand {
 		if (!context) return;
 		if (this.storedFinalConfig) {
 			context.restoreClipConfiguration(this.clip, this.storedFinalConfig);
+		}
+
+		// Sync timing state if start or length actually changed
+		const startChanged = this.storedFinalConfig.start !== this.storedInitialConfig?.start;
+		const lengthChanged = this.storedFinalConfig.length !== this.storedInitialConfig?.length;
+
+		if (startChanged || lengthChanged) {
+			// Store initial timing for undo
+			this.storedInitialTiming = {
+				start: this.clip.getStart() / 1000,
+				length: this.clip.getLength() / 1000
+			};
+
+			this.clip.setTimingIntent({
+				start: this.storedFinalConfig.start,
+				length: this.storedFinalConfig.length
+			});
+
+			this.clip.setResolvedTiming({
+				start: this.storedFinalConfig.start * 1000,
+				length: this.storedFinalConfig.length * 1000
+			});
 		}
 
 		context.setUpdatedClip(this.clip);
@@ -82,6 +105,18 @@ export class SetUpdatedClipCommand implements EditCommand {
 		if (!context || !this.storedInitialConfig) return;
 
 		context.restoreClipConfiguration(this.clip, this.storedInitialConfig);
+
+		// Restore timing state if we modified it
+		if (this.storedInitialTiming) {
+			this.clip.setTimingIntent({
+				start: this.storedInitialTiming.start,
+				length: this.storedInitialTiming.length
+			});
+			this.clip.setResolvedTiming({
+				start: this.storedInitialTiming.start * 1000,
+				length: this.storedInitialTiming.length * 1000
+			});
+		}
 
 		context.setUpdatedClip(this.clip);
 

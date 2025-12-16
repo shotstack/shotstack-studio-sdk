@@ -351,13 +351,14 @@ export class Edit extends Entity {
 				.map((player, clipIdx) => {
 					const timing = player.getTimingIntent();
 
-					// Merge original asset (for merge field templates) with current asset (for runtime changes like animation)
-					const originalAsset = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx]?.asset;
+					// Use original clip as base to preserve user input without Zod defaults
+					const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
+					const originalAsset = originalClip?.asset;
 					const currentAsset = player.clipConfiguration.asset;
 					const mergedAsset = mergeAssetForExport(originalAsset, currentAsset);
 
 					return {
-						...player.clipConfiguration,
+						...(originalClip ?? player.clipConfiguration),
 						asset: mergedAsset,
 						start: timing.start,
 						length: timing.length
@@ -765,7 +766,22 @@ export class Edit extends Entity {
 	}
 	/** @internal */
 	public setUpdatedClip(clip: Player, initialClipConfig: ResolvedClip | null = null, finalClipConfig: ResolvedClip | null = null): void {
-		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig);
+		// Find track and clip indices
+		const trackIdx = clip.layer - 1;
+		const track = this.tracks[trackIdx];
+		const clipIdx = track ? track.indexOf(clip) : -1;
+
+		// Sync to originalEdit so getEdit() returns updated values
+		const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
+		const templateConfig = finalClipConfig && originalClip
+			? deepMerge(structuredClone(originalClip), finalClipConfig)
+			: finalClipConfig;
+
+		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig, {
+			trackIndex: trackIdx,
+			clipIndex: clipIdx,
+			templateConfig: templateConfig ?? undefined
+		});
 		this.executeCommand(command);
 	}
 
@@ -779,7 +795,17 @@ export class Edit extends Entity {
 		const initialConfig = structuredClone(clip.clipConfiguration);
 		const currentConfig = structuredClone(clip.clipConfiguration);
 		const mergedConfig = deepMerge(currentConfig, updates);
-		this.setUpdatedClip(clip, initialConfig, mergedConfig);
+
+		// Also sync to originalEdit so getEdit() returns updated values
+		const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
+		const mergedTemplate = originalClip ? deepMerge(structuredClone(originalClip), updates) : mergedConfig;
+
+		const command = new SetUpdatedClipCommand(clip, initialConfig, mergedConfig, {
+			trackIndex: trackIdx,
+			clipIndex: clipIdx,
+			templateConfig: mergedTemplate
+		});
+		this.executeCommand(command);
 	}
 
 	/**
