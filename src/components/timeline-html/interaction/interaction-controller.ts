@@ -379,11 +379,11 @@ export class InteractionController {
 		const { clipRef, edge, originalStart, originalLength } = this.state;
 
 		if (edge === "left") {
-			// Resize from left edge
-			const newStart = Math.min(time, originalStart + originalLength - 0.1);
-			const newLength = originalStart + originalLength - newStart;
+			// Resize from left edge (keep end fixed, change start and length)
+			const originalEnd = originalStart + originalLength;
+			const newStart = Math.max(0, Math.min(time, originalEnd - 0.1));
+			const newLength = originalEnd - newStart;
 
-			// Update clip visually (temporary state during resize)
 			const clipEl = this.tracksContainer.querySelector(
 				`[data-track-index="${clipRef.trackIndex}"][data-clip-index="${clipRef.clipIndex}"]`
 			) as HTMLElement;
@@ -391,7 +391,7 @@ export class InteractionController {
 				clipEl.style.setProperty("--clip-start", String(newStart));
 				clipEl.style.setProperty("--clip-length", String(newLength));
 			}
-			this.showDragTimeTooltip(newStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
+			this.showDragTimeTooltip(newStart, e.clientX - rect.left, e.clientY - rect.top);
 		} else {
 			// Resize from right edge
 			const newLength = Math.max(0.1, time - originalStart);
@@ -556,35 +556,60 @@ export class InteractionController {
 			time = snappedTime;
 		}
 
-		let newStart = originalStart;
-		let newLength = originalLength;
-
-		if (edge === "left") {
-			newStart = Math.min(time, originalStart + originalLength - 0.1);
-			newLength = originalStart + originalLength - newStart;
-		} else {
-			newLength = Math.max(0.1, time - originalStart);
-		}
-
-		// Get attached luma Player reference BEFORE resize (stable across index changes)
+		// Get attached luma Player reference BEFORE changes (stable across index changes)
 		const lumaPlayer = this.stateManager.getAttachedLumaPlayer(clipRef.trackIndex, clipRef.clipIndex);
 
-		// Execute resize command if dimensions changed
-		if (newLength !== originalLength) {
-			const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
-			this.edit.executeEditCommand(command);
+		if (edge === "left") {
+			// Resize from left edge (keep end fixed, change start and length)
+			const originalEnd = originalStart + originalLength;
+			const newStart = Math.max(0, Math.min(time, originalEnd - 0.1));
+			const newLength = originalEnd - newStart;
 
-			// Also resize attached luma to match
-			if (lumaPlayer) {
-				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
-				if (lumaIndices) {
-					const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, newLength);
-					this.edit.executeEditCommand(lumaResizeCommand);
+			if (newStart !== originalStart || newLength !== originalLength) {
+				// Move clip to new start position
+				if (newStart !== originalStart) {
+					const moveCommand = new MoveClipCommand(clipRef.trackIndex, clipRef.clipIndex, clipRef.trackIndex, newStart);
+					this.edit.executeEditCommand(moveCommand);
+				}
+
+				// Resize clip to new length
+				if (newLength !== originalLength) {
+					const resizeCommand = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
+					this.edit.executeEditCommand(resizeCommand);
+				}
+
+				// Also update attached luma clip
+				if (lumaPlayer) {
+					const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+					if (lumaIndices) {
+						if (newStart !== originalStart) {
+							const lumaMoveCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, lumaIndices.trackIndex, newStart);
+							this.edit.executeEditCommand(lumaMoveCommand);
+						}
+						if (newLength !== originalLength) {
+							const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, newLength);
+							this.edit.executeEditCommand(lumaResizeCommand);
+						}
+					}
 				}
 			}
+		} else {
+			// Resize from right edge (keep start fixed, change length)
+			const newLength = Math.max(0.1, time - originalStart);
 
-			// TODO: For left-edge resize (start changed), also need MoveClipCommand
-			// Currently ResizeClipCommand only handles length changes
+			if (newLength !== originalLength) {
+				const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
+				this.edit.executeEditCommand(command);
+
+				// Also resize attached luma to match
+				if (lumaPlayer) {
+					const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+					if (lumaIndices) {
+						const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, newLength);
+						this.edit.executeEditCommand(lumaResizeCommand);
+					}
+				}
+			}
 		}
 
 		// Cleanup
