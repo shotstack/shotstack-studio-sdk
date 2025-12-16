@@ -74,7 +74,7 @@ export class Canvas {
 
 		this.container = new pixi.Container();
 		this.background = new pixi.Graphics();
-		this.background.fillStyle = { color: "#424242" };
+		this.background.fillStyle = { color: "#F0F1F5" };
 		this.background.rect(0, 0, this.viewportSize.width, this.viewportSize.height);
 		this.background.fill();
 
@@ -199,7 +199,7 @@ export class Canvas {
 		if (this.background) {
 			this.background.clear();
 			this.background.rect(0, 0, this.viewportSize.width, this.viewportSize.height);
-			this.background.fill({ color: 0x424242 });
+			this.background.fill({ color: 0xf0f1f5 });
 		}
 
 		// Update stage hit area
