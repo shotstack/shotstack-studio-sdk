@@ -403,9 +403,9 @@ export class Edit extends Entity {
 		return this.edit;
 	}
 
-	public addClip(trackIdx: number, clip: ResolvedClip): void {
+	public addClip(trackIdx: number, clip: ResolvedClip): void | Promise<void> {
 		const command = new AddClipCommand(trackIdx, clip);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 	public getClip(trackIdx: number, clipIdx: number): ResolvedClip | null {
 		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
@@ -466,10 +466,12 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
-	public addTrack(trackIdx: number, track: ResolvedTrack): void {
+	public async addTrack(trackIdx: number, track: ResolvedTrack): Promise<void> {
 		const command = new AddTrackCommand(trackIdx);
-		this.executeCommand(command);
-		track?.clips?.forEach(clip => this.addClip(trackIdx, clip));
+		await this.executeCommand(command);
+		for (const clip of track?.clips ?? []) {
+			await this.addClip(trackIdx, clip);
+		}
 	}
 	public getTrack(trackIdx: number): ResolvedTrack | null {
 		const trackClips = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);

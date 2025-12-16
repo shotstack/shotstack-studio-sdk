@@ -80,7 +80,6 @@ export class Canvas {
 		this.background.fill();
 
 		await this.configureApplication();
-		await this.inspector.load();
 		await this.transcriptionIndicator.load();
 		this.configureStage();
 		this.setupTouchHandling(root);
