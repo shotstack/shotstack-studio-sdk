@@ -124,9 +124,21 @@ export const TOOLBAR_STYLES = `
 .ss-toolbar-anchor-btn:hover { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.9); }
 .ss-toolbar-anchor-btn.active { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
 
-.ss-toolbar-btn--font { width: auto; min-width: 48px; padding: 0 8px; gap: 4px; }
-.ss-toolbar-font-preview { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ss-toolbar-chevron { opacity: 0.5; flex-shrink: 0; }
+.ss-toolbar-font-btn {
+	display: flex;
+	align-items: center;
+	height: 32px;
+	padding: 0 8px;
+	gap: 4px;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	color: rgba(255, 255, 255, 0.65);
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+}
+.ss-toolbar-font-btn:hover { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.95); }
 
 .ss-toolbar-popup--font { min-width: 220px; max-height: 340px; overflow-y: auto; padding: 8px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
 .ss-toolbar-popup--font::-webkit-scrollbar { width: 6px; }

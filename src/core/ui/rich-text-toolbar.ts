@@ -156,9 +156,9 @@ export class RichTextToolbar extends BaseToolbar {
 			<button data-action="bold" class="ss-toolbar-btn ss-toolbar-btn--text" title="Bold">B</button>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="font-toggle" class="ss-toolbar-btn ss-toolbar-btn--font" title="Font">
-					<span data-font-preview class="ss-toolbar-font-preview">Aa</span>
-					<svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor" class="ss-toolbar-chevron">
+				<button data-action="font-toggle" class="ss-toolbar-font-btn" title="Font">
+					<span data-font-preview></span>
+					<svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5;">
 						<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 					</svg>
 				</button>
