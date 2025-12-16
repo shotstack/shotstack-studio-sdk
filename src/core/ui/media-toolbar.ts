@@ -65,8 +65,8 @@ export class MediaToolbar extends BaseToolbar {
 
 	// Effect state - progressive disclosure design
 	private effectType: "" | "zoom" | "slide" = "";
-	private effectVariant: "In" | "Out" = "In";  // For zoom
-	private effectDirection: "Left" | "Right" | "Up" | "Down" = "Right";  // For slide
+	private effectVariant: "In" | "Out" = "In"; // For zoom
+	private effectDirection: "Left" | "Right" | "Up" | "Down" = "Right"; // For slide
 	private effectSpeed: number = 1.0;
 	private readonly EFFECT_SPEED_VALUES = [0.5, 1.0, 2.0];
 
@@ -600,7 +600,16 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [this.fitPopup, this.opacityPopup, this.scalePopup, this.volumePopup, this.transitionPopup, this.effectPopup, this.advancedPopup, this.audioFadePopup];
+		return [
+			this.fitPopup,
+			this.opacityPopup,
+			this.scalePopup,
+			this.volumePopup,
+			this.transitionPopup,
+			this.effectPopup,
+			this.advancedPopup,
+			this.audioFadePopup
+		];
 	}
 
 	protected override syncState(): void {
@@ -1009,9 +1018,9 @@ export class MediaToolbar extends BaseToolbar {
 
 		let value = "";
 		if (this.effectType === "zoom") {
-			value = `zoom${this.effectVariant}`;  // "zoomIn" or "zoomOut"
+			value = `zoom${this.effectVariant}`; // "zoomIn" or "zoomOut"
 		} else if (this.effectType === "slide") {
-			value = `slide${this.effectDirection}`;  // "slideRight", "slideLeft", etc.
+			value = `slide${this.effectDirection}`; // "slideRight", "slideLeft", etc.
 		}
 
 		// Add speed suffix

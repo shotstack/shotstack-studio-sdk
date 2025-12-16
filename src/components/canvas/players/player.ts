@@ -588,11 +588,7 @@ export abstract class Player extends Entity {
 		const currentPos = this.getPosition();
 		const newAbsolutePos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
 
-		const relativePos = this.positionBuilder.absoluteToRelative(
-			this.getSize(),
-			this.clipConfiguration.position ?? "center",
-			newAbsolutePos
-		);
+		const relativePos = this.positionBuilder.absoluteToRelative(this.getSize(), this.clipConfiguration.position ?? "center", newAbsolutePos);
 
 		if (!this.clipConfiguration.offset) {
 			this.clipConfiguration.offset = { x: 0, y: 0 };

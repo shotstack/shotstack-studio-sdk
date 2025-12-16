@@ -469,12 +469,7 @@ export class InteractionController {
 			}
 
 			// Register attachment in state manager
-			this.stateManager.attachLuma(
-				targetContentClip.trackIndex,
-				targetContentClip.clipIndex,
-				dragTarget.trackIndex,
-				clipRef.clipIndex
-			);
+			this.stateManager.attachLuma(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
 
 			// Cleanup and return early
 			ghost.remove();
@@ -636,11 +631,7 @@ export class InteractionController {
 	}
 
 	/** Find which clip (if any) the dragged clip overlaps */
-	private findOverlappingClip(
-		clips: ClipState[],
-		desiredStart: number,
-		clipLength: number
-	): { clip: ClipState; index: number } | null {
+	private findOverlappingClip(clips: ClipState[], desiredStart: number, clipLength: number): { clip: ClipState; index: number } | null {
 		const desiredEnd = desiredStart + clipLength;
 		for (let i = 0; i < clips.length; i += 1) {
 			const clip = clips[i];
@@ -695,12 +686,7 @@ export class InteractionController {
 	}
 
 	/** Resolve clip collision based on clip boundaries */
-	private resolveClipCollision(
-		trackIndex: number,
-		desiredStart: number,
-		clipLength: number,
-		excludeClip: ClipRef
-	): CollisionResult {
+	private resolveClipCollision(trackIndex: number, desiredStart: number, clipLength: number, excludeClip: ClipRef): CollisionResult {
 		const clips = this.getTrackClips(trackIndex, excludeClip);
 		if (clips.length === 0) {
 			return { ...InteractionController.NO_COLLISION, newStartTime: desiredStart };

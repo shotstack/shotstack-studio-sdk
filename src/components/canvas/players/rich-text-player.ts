@@ -222,7 +222,14 @@ export class RichTextPlayer extends Player {
 		const resolved = this.resolveFont(family);
 		if (!resolved) return null;
 
-		await this.registerFont(resolved.baseFontFamily, resolved.fontWeight, { type: "url", path: resolved.url });
+		// Use explicit weight from asset if set, otherwise use parsed weight from family name
+		const explicitWeight = richTextAsset.font?.weight;
+		let { fontWeight } = resolved;
+		if (explicitWeight) {
+			fontWeight = typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || resolved.fontWeight : explicitWeight;
+		}
+
+		await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
 		return resolved.url;
 	}
 
@@ -264,7 +271,13 @@ export class RichTextPlayer extends Player {
 			if (requestedFamily) {
 				const resolved = this.resolveFont(requestedFamily);
 				if (resolved) {
-					await this.registerFont(resolved.baseFontFamily, resolved.fontWeight, { type: "url", path: resolved.url });
+					// Use explicit weight from asset if set, otherwise use parsed weight from family name
+					const explicitWeight = richTextAsset.font?.weight;
+					let { fontWeight } = resolved;
+					if (explicitWeight) {
+						fontWeight = typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || resolved.fontWeight : explicitWeight;
+					}
+					await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
 					await this.checkFontCapabilities(resolved.url);
 				} else {
 					console.warn(`Font ${requestedFamily} not found. Available:`, Object.keys(FONT_PATHS));

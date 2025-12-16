@@ -582,9 +582,9 @@ export class Edit extends Entity {
 		for (const clip of this.clips) {
 			const { asset } = clip.clipConfiguration;
 			const rawType = asset?.type || "unknown";
-			const type = (["video", "image", "text", "rich-text", "luma", "audio", "html", "shape", "caption"].includes(rawType)
-				? rawType
-				: "unknown") as AssetType;
+			const type = (
+				["video", "image", "text", "rich-text", "luma", "audio", "html", "shape", "caption"].includes(rawType) ? rawType : "unknown"
+			) as AssetType;
 			const size = clip.getSize();
 			const estimatedMB = this.estimateTextureMB(size.width, size.height);
 
@@ -643,16 +643,10 @@ export class Edit extends Entity {
 			return `avg ${avgW}×${avgH}`;
 		};
 
-		const totalTextures =
-			stats.videos.count + stats.images.count + stats.text.count + stats.richText.count + stats.luma.count + stats.animated.count;
+		const totalTextures = stats.videos.count + stats.images.count + stats.text.count + stats.richText.count + stats.luma.count + stats.animated.count;
 
 		const totalMB =
-			stats.videos.totalMB +
-			stats.images.totalMB +
-			stats.text.totalMB +
-			stats.richText.totalMB +
-			stats.luma.totalMB +
-			stats.animated.totalMB;
+			stats.videos.totalMB + stats.images.totalMB + stats.text.totalMB + stats.richText.totalMB + stats.luma.totalMB + stats.animated.totalMB;
 
 		return {
 			textureStats: {
@@ -1295,7 +1289,7 @@ export class Edit extends Entity {
 
 		const maskTexture = renderer.generateTexture({
 			target: tempContainer,
-			resolution: 0.5,
+			resolution: 0.5
 		});
 		const maskSprite = new pixi.Sprite(maskTexture);
 		contentClip.getContainer().addChild(maskSprite);
@@ -1322,7 +1316,7 @@ export class Edit extends Entity {
 					const oldTexture = mask.maskSprite.texture;
 					mask.maskSprite.texture = renderer.generateTexture({
 						target: mask.tempContainer,
-						resolution: 0.5,
+						resolution: 0.5
 					});
 
 					oldTexture.destroy(true);
@@ -1836,10 +1830,7 @@ export class Edit extends Entity {
 				const extractedField = this.mergeFields.extractFieldName(templateVal);
 				if (extractedField === fieldName) {
 					// Apply proper substitution - replace {{ FIELD }} with newValue, preserving surrounding text
-					targetObj[key] = templateVal.replace(
-						new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"),
-						newValue
-					);
+					targetObj[key] = templateVal.replace(new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"), newValue);
 				}
 			} else if (templateVal && typeof templateVal === "object") {
 				this.updateMergeFieldInObject(targetObj[key], templateVal, fieldName, newValue);
@@ -1971,10 +1962,7 @@ export class Edit extends Entity {
 				const templateFieldName = this.mergeFields.extractFieldName(template);
 				if (extractedField && templateFieldName && extractedField === templateFieldName) {
 					// Apply proper substitution - replace {{ FIELD }} with restoreValue, preserving surrounding text
-					const substitutedValue = value.replace(
-						new RegExp(`\\{\\{\\s*${extractedField}\\s*\\}\\}`, "gi"),
-						restoreValue
-					);
+					const substitutedValue = value.replace(new RegExp(`\\{\\{\\s*${extractedField}\\s*\\}\\}`, "gi"), restoreValue);
 					this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue);
 				}
 			} else if (typeof value === "object" && value !== null) {

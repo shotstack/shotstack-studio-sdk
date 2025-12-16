@@ -427,10 +427,15 @@ export class TextToolbar extends BaseToolbar {
 		this.fontColorInput?.addEventListener("input", () => this.handleFontColorChange());
 
 		// Line height - use base class helper
-		this.createSliderHandler(this.lineHeightSlider, this.lineHeightValue, value => {
-			const lineHeight = value / 10;
-			this.updateAssetProperty({ font: { ...this.getCurrentAsset()?.font, lineHeight } });
-		}, value => (value / 10).toFixed(1));
+		this.createSliderHandler(
+			this.lineHeightSlider,
+			this.lineHeightValue,
+			value => {
+				const lineHeight = value / 10;
+				this.updateAssetProperty({ font: { ...this.getCurrentAsset()?.font, lineHeight } });
+			},
+			value => (value / 10).toFixed(1)
+		);
 
 		// Background color
 		this.bgColorInput?.addEventListener("input", () => this.handleBackgroundChange());

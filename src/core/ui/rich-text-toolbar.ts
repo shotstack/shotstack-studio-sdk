@@ -8,7 +8,6 @@ import { FontColorPicker } from "./font-color-picker";
 import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 
 export class RichTextToolbar extends BaseToolbar {
-
 	private fontPopup: HTMLDivElement | null = null;
 	private fontPreview: HTMLSpanElement | null = null;
 	private sizeInput: HTMLInputElement | null = null;
