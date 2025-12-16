@@ -580,6 +580,30 @@ export abstract class Player extends Entity {
 		return { x: size.width / 2, y: size.height / 2 };
 	}
 
+	/**
+	 * Move the clip by a pixel delta. Used for keyboard arrow key positioning.
+	 * @internal
+	 */
+	public moveBy(deltaX: number, deltaY: number): void {
+		const currentPos = this.getPosition();
+		const newAbsolutePos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
+
+		const relativePos = this.positionBuilder.absoluteToRelative(
+			this.getSize(),
+			this.clipConfiguration.position ?? "center",
+			newAbsolutePos
+		);
+
+		if (!this.clipConfiguration.offset) {
+			this.clipConfiguration.offset = { x: 0, y: 0 };
+		}
+		this.clipConfiguration.offset.x = relativePos.x;
+		this.clipConfiguration.offset.y = relativePos.y;
+
+		this.offsetXKeyframeBuilder = new KeyframeBuilder(relativePos.x, this.getLength());
+		this.offsetYKeyframeBuilder = new KeyframeBuilder(relativePos.y, this.getLength());
+	}
+
 	protected getFitScale(): number {
 		const targetWidth = this.clipConfiguration.width ?? this.edit.size.width;
 		const targetHeight = this.clipConfiguration.height ?? this.edit.size.height;

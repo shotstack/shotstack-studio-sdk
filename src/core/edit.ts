@@ -1554,6 +1554,22 @@ export class Edit extends Entity {
 		this.alignmentGuides?.clear();
 	}
 
+	/**
+	 * Move the selected clip by a pixel delta.
+	 * Used for keyboard arrow key positioning.
+	 */
+	public moveSelectedClip(deltaX: number, deltaY: number): void {
+		const info = this.getSelectedClipInfo();
+		if (!info) return;
+
+		const { player } = info;
+		const initialConfig = structuredClone(player.clipConfiguration);
+
+		player.moveBy(deltaX, deltaY);
+
+		this.setUpdatedClip(player, initialConfig, structuredClone(player.clipConfiguration));
+	}
+
 	public setExportMode(exporting: boolean): void {
 		this.isExporting = exporting;
 	}

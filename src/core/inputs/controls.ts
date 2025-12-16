@@ -37,7 +37,12 @@ export class Controls {
 				break;
 			}
 			case "ArrowLeft": {
-				if (event.metaKey) {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(-delta, 0);
+				} else if (event.metaKey) {
 					this.edit.seek(0);
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
@@ -46,11 +51,34 @@ export class Controls {
 				break;
 			}
 			case "ArrowRight": {
-				if (event.metaKey) {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(delta, 0);
+				} else if (event.metaKey) {
 					this.edit.seek(this.edit.getTotalDuration());
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
 					this.edit.seek(this.edit.playbackTime + seekAmount);
+				}
+				break;
+			}
+			case "ArrowUp": {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(0, -delta);
+				}
+				break;
+			}
+			case "ArrowDown": {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(0, delta);
 				}
 				break;
 			}
