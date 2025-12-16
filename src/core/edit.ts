@@ -23,6 +23,7 @@ import { UpdateTextContentCommand } from "@core/commands/update-text-content-com
 import { EventEmitter } from "@core/events/event-emitter";
 import { applyMergeFields, MergeFieldService } from "@core/merge";
 import { Entity } from "@core/shared/entity";
+import { mergeAssetForExport } from "@core/shared/merge-asset";
 import { deepMerge, getNestedValue, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { LoadingOverlay } from "@core/ui/loading-overlay";
@@ -350,12 +351,14 @@ export class Edit extends Entity {
 				.map((player, clipIdx) => {
 					const timing = player.getTimingIntent();
 
-					// Use asset from originalEdit to preserve merge field templates
+					// Merge original asset (for merge field templates) with current asset (for runtime changes like animation)
 					const originalAsset = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx]?.asset;
+					const currentAsset = player.clipConfiguration.asset;
+					const mergedAsset = mergeAssetForExport(originalAsset, currentAsset);
 
 					return {
 						...player.clipConfiguration,
-						asset: originalAsset ?? player.clipConfiguration.asset,
+						asset: mergedAsset,
 						start: timing.start,
 						length: timing.length
 					};
