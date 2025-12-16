@@ -1041,52 +1041,131 @@ export abstract class Player extends Entity {
 			const cursorPosition: Vector = { x: timelinePoint.x - this.dragOffset.x, y: timelinePoint.y - this.dragOffset.y };
 			const updatedPosition: Vector = { x: cursorPosition.x - pivot.x, y: cursorPosition.y - pivot.y };
 
-			const timelineCorners = [
-				{ x: 0, y: 0 },
-				{ x: this.edit.size.width, y: 0 },
-				{ x: 0, y: this.edit.size.height },
-				{ x: this.edit.size.width, y: this.edit.size.height }
-			];
-			const timelineCenter = { x: this.edit.size.width / 2, y: this.edit.size.height / 2 };
-			const timelineSnapPositions: Vector[] = [...timelineCorners, timelineCenter];
+			// Clear guides before drawing new ones
+			this.edit.clearAlignmentGuides();
 
-			const clipCorners = [
-				{ x: updatedPosition.x, y: updatedPosition.y },
-				{ x: updatedPosition.x + this.getSize().width, y: updatedPosition.y },
-				{ x: updatedPosition.x, y: updatedPosition.y + this.getSize().height },
-				{ x: updatedPosition.x + this.getSize().width, y: updatedPosition.y + this.getSize().height }
-			];
-			const clipCenter = { x: updatedPosition.x + this.getSize().width / 2, y: updatedPosition.y + this.getSize().height / 2 };
-			const clipSnapPositions: Vector[] = [...clipCorners, clipCenter];
+			// Canvas snap positions (corners + center + edges)
+			const canvasSnapPositionsX = [0, this.edit.size.width / 2, this.edit.size.width];
+			const canvasSnapPositionsY = [0, this.edit.size.height / 2, this.edit.size.height];
+
+			// Current clip snap positions (corners + center + edges)
+			const mySize = this.getSize();
+			const myLeft = updatedPosition.x;
+			const myRight = updatedPosition.x + mySize.width;
+			const myCenterX = updatedPosition.x + mySize.width / 2;
+			const myTop = updatedPosition.y;
+			const myBottom = updatedPosition.y + mySize.height;
+			const myCenterY = updatedPosition.y + mySize.height / 2;
+
+			const clipSnapPositionsX = [myLeft, myCenterX, myRight];
+			const clipSnapPositionsY = [myTop, myCenterY, myBottom];
 
 			let closestDistanceX = Player.SnapThreshold;
 			let closestDistanceY = Player.SnapThreshold;
-
 			let snapPositionX: number | null = null;
 			let snapPositionY: number | null = null;
+			let snapTypeX: "canvas" | "clip" | null = null;
+			let snapTypeY: "canvas" | "clip" | null = null;
+			let snapTargetX: number | null = null;
+			let snapTargetY: number | null = null;
+			let clipBoundsX: { start: number; end: number } | null = null;
+			let clipBoundsY: { start: number; end: number } | null = null;
 
-			for (const clipSnapPosition of clipSnapPositions) {
-				for (const timelineSnapPosition of timelineSnapPositions) {
-					const distanceX = Math.abs(clipSnapPosition.x - timelineSnapPosition.x);
-					if (distanceX < closestDistanceX) {
-						closestDistanceX = distanceX;
-						snapPositionX = updatedPosition.x + (timelineSnapPosition.x - clipSnapPosition.x);
-					}
-
-					const distanceY = Math.abs(clipSnapPosition.y - timelineSnapPosition.y);
-					if (distanceY < closestDistanceY) {
-						closestDistanceY = distanceY;
-						snapPositionY = updatedPosition.y + (timelineSnapPosition.y - clipSnapPosition.y);
+			// Check canvas snapping
+			for (const clipX of clipSnapPositionsX) {
+				for (const canvasX of canvasSnapPositionsX) {
+					const distance = Math.abs(clipX - canvasX);
+					if (distance < closestDistanceX) {
+						closestDistanceX = distance;
+						snapPositionX = updatedPosition.x + (canvasX - clipX);
+						snapTypeX = "canvas";
+						snapTargetX = canvasX;
 					}
 				}
 			}
 
+			for (const clipY of clipSnapPositionsY) {
+				for (const canvasY of canvasSnapPositionsY) {
+					const distance = Math.abs(clipY - canvasY);
+					if (distance < closestDistanceY) {
+						closestDistanceY = distance;
+						snapPositionY = updatedPosition.y + (canvasY - clipY);
+						snapTypeY = "canvas";
+						snapTargetY = canvasY;
+					}
+				}
+			}
+
+			// Check clip-to-clip snapping
+			const otherPlayers = this.edit.getActivePlayersExcept(this);
+			for (const other of otherPlayers) {
+				const otherPos = other.getContainer().position;
+				const otherSize = other.getSize();
+				const otherLeft = otherPos.x;
+				const otherRight = otherPos.x + otherSize.width;
+				const otherCenterX = otherPos.x + otherSize.width / 2;
+				const otherTop = otherPos.y;
+				const otherBottom = otherPos.y + otherSize.height;
+				const otherCenterY = otherPos.y + otherSize.height / 2;
+
+				const otherSnapX = [otherLeft, otherCenterX, otherRight];
+				const otherSnapY = [otherTop, otherCenterY, otherBottom];
+
+				for (const clipX of clipSnapPositionsX) {
+					for (const targetX of otherSnapX) {
+						const distance = Math.abs(clipX - targetX);
+						if (distance < closestDistanceX) {
+							closestDistanceX = distance;
+							snapPositionX = updatedPosition.x + (targetX - clipX);
+							snapTypeX = "clip";
+							snapTargetX = targetX;
+							// Bounds for the dotted line: from top of higher clip to bottom of lower
+							const minY = Math.min(myTop, otherTop);
+							const maxY = Math.max(myBottom, otherBottom);
+							clipBoundsX = { start: minY, end: maxY };
+						}
+					}
+				}
+
+				for (const clipY of clipSnapPositionsY) {
+					for (const targetY of otherSnapY) {
+						const distance = Math.abs(clipY - targetY);
+						if (distance < closestDistanceY) {
+							closestDistanceY = distance;
+							snapPositionY = updatedPosition.y + (targetY - clipY);
+							snapTypeY = "clip";
+							snapTargetY = targetY;
+							// Bounds for the dotted line: from left of leftmost clip to right of rightmost
+							const minX = Math.min(myLeft, otherLeft);
+							const maxX = Math.max(myRight, otherRight);
+							clipBoundsY = { start: minX, end: maxX };
+						}
+					}
+				}
+			}
+
+			// Apply snaps
 			if (snapPositionX !== null) {
 				updatedPosition.x = snapPositionX;
 			}
-
 			if (snapPositionY !== null) {
 				updatedPosition.y = snapPositionY;
+			}
+
+			// Draw alignment guides for active snaps
+			if (snapTypeX !== null && snapTargetX !== null) {
+				if (snapTypeX === "canvas") {
+					this.edit.showAlignmentGuide("canvas", "x", snapTargetX);
+				} else if (clipBoundsX) {
+					this.edit.showAlignmentGuide("clip", "x", snapTargetX, clipBoundsX);
+				}
+			}
+			if (snapTypeY !== null && snapTargetY !== null) {
+				if (snapTypeY === "canvas") {
+					this.edit.showAlignmentGuide("canvas", "y", snapTargetY);
+				} else if (clipBoundsY) {
+					this.edit.showAlignmentGuide("clip", "y", snapTargetY, clipBoundsY);
+				}
 			}
 
 			const updatedRelativePosition = this.positionBuilder.absoluteToRelative(
@@ -1149,6 +1228,7 @@ export abstract class Player extends Entity {
 
 		this.isDragging = false;
 		this.dragOffset = { x: 0, y: 0 };
+		this.edit.clearAlignmentGuides();
 
 		this.scaleDirection = null;
 

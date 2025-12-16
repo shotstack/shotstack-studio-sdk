@@ -1,4 +1,5 @@
 import { AudioPlayer } from "@canvas/players/audio-player";
+import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { CaptionPlayer } from "@canvas/players/caption-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
@@ -87,6 +88,9 @@ export class Edit extends Entity {
 	public mergeFields: MergeFieldService;
 
 	private canvas: Canvas | null = null;
+
+	/** @internal */
+	private alignmentGuides: AlignmentGuides | null = null;
 	private activeLumaMasks: Array<{
 		lumaPlayer: LumaPlayer;
 		maskSprite: pixi.Sprite;
@@ -147,6 +151,9 @@ export class Edit extends Entity {
 		this.viewportMask.fill(0xffffff);
 		this.getContainer().addChild(this.viewportMask);
 		this.getContainer().setMask({ mask: this.viewportMask });
+
+		// Initialize alignment guides (rendered above all clips)
+		this.alignmentGuides = new AlignmentGuides(this.getContainer(), this.size.width, this.size.height);
 	}
 
 	/** @internal */
@@ -1507,6 +1514,46 @@ export class Edit extends Entity {
 		if (this.isExporting) return false;
 		return this.selectedClip === player;
 	}
+
+	/**
+	 * Get all active players except the specified one.
+	 * Used for clip-to-clip alignment snapping.
+	 * @internal
+	 */
+	public getActivePlayersExcept(excludePlayer: Player): Player[] {
+		const active: Player[] = [];
+		for (const track of this.tracks) {
+			for (const player of track) {
+				if (player !== excludePlayer && player.isActive()) {
+					active.push(player);
+				}
+			}
+		}
+		return active;
+	}
+
+	/**
+	 * Show an alignment guide line.
+	 * @internal
+	 */
+	public showAlignmentGuide(type: "canvas" | "clip", axis: "x" | "y", position: number, bounds?: { start: number; end: number }): void {
+		if (!this.alignmentGuides) return;
+
+		if (type === "canvas") {
+			this.alignmentGuides.drawCanvasGuide(axis, position);
+		} else if (bounds) {
+			this.alignmentGuides.drawClipGuide(axis, position, bounds.start, bounds.end);
+		}
+	}
+
+	/**
+	 * Clear all alignment guides.
+	 * @internal
+	 */
+	public clearAlignmentGuides(): void {
+		this.alignmentGuides?.clear();
+	}
+
 	public setExportMode(exporting: boolean): void {
 		this.isExporting = exporting;
 	}
