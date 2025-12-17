@@ -21,6 +21,7 @@ import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
+import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService } from "@core/merge";
 import { Entity } from "@core/shared/entity";
 import { serializeEditForExport, type ClipExportData } from "@core/shared/serialize-edit";
@@ -92,16 +93,7 @@ export class Edit extends Entity {
 
 	/** @internal */
 	private alignmentGuides: AlignmentGuides | null = null;
-	private activeLumaMasks: Array<{
-		lumaPlayer: LumaPlayer;
-		maskSprite: pixi.Sprite;
-		tempContainer: pixi.Container;
-		contentClip: Player;
-		lastVideoTime: number;
-	}> = [];
-
-	// Queue for deferred mask sprite cleanup - must wait for PixiJS to finish rendering
-	private pendingMaskCleanup: Array<{ maskSprite: pixi.Sprite; frameCount: number }> = [];
+	private lumaMaskController: LumaMaskController;
 
 	constructor(size: Size, backgroundColor: string = "#ffffff") {
 		super();
@@ -116,6 +108,11 @@ export class Edit extends Entity {
 
 		this.events = new EventEmitter();
 		this.mergeFields = new MergeFieldService(this.events);
+		this.lumaMaskController = new LumaMaskController(
+			() => this.canvas,
+			() => this.tracks,
+			this.events
+		);
 
 		this.size = size;
 
@@ -169,12 +166,7 @@ export class Edit extends Entity {
 
 		this.disposeClips();
 
-		// Update luma masks for video sources (regenerate mask texture each frame)
-		this.updateLumaMasks();
-
-		// Process pending mask cleanup AFTER updateLumaMasks
-		// This ensures sprites are destroyed only after PixiJS has finished with them
-		this.processPendingMaskCleanup();
+		this.lumaMaskController.update();
 
 		if (this.isPlaying) {
 			this.playbackTime = Math.max(0, Math.min(this.playbackTime + elapsed, this.totalDuration));
@@ -193,22 +185,7 @@ export class Edit extends Entity {
 	/** @internal */
 	public override dispose(): void {
 		this.clearClips();
-
-		for (const mask of this.activeLumaMasks) {
-			mask.tempContainer.destroy({ children: true });
-			mask.maskSprite.texture.destroy(true);
-		}
-		this.activeLumaMasks = [];
-
-		for (const item of this.pendingMaskCleanup) {
-			try {
-				item.maskSprite.parent?.removeChild(item.maskSprite);
-				item.maskSprite.destroy({ texture: true });
-			} catch {
-				// Ignore cleanup errors during dispose
-			}
-		}
-		this.pendingMaskCleanup = [];
+		this.lumaMaskController.dispose();
 
 		if (this.viewportMask) {
 			try {
@@ -309,8 +286,7 @@ export class Edit extends Entity {
 				}
 			}
 
-			this.finalizeLumaMasking();
-			this.setupLumaMaskEventListeners();
+			this.lumaMaskController.initialize();
 
 			await this.resolveAllTiming();
 
@@ -516,7 +492,7 @@ export class Edit extends Entity {
 			totalClips: this.clips.length,
 			richTextCacheStats: { clips: richTextClips, totalFrames },
 			textPlayerCount,
-			lumaMaskCount: this.activeLumaMasks.length,
+			lumaMaskCount: this.lumaMaskController.getActiveMaskCount(),
 			commandHistorySize: this.commandHistory.length,
 			trackCount: this.tracks.length
 		};
@@ -946,7 +922,7 @@ export class Edit extends Entity {
 		// Clean up luma masks for any luma players being deleted
 		for (const clip of this.clipsToDispose) {
 			if (clip.playerType === PlayerType.Luma) {
-				this.cleanupLumaMaskForPlayer(clip as LumaPlayer);
+				this.lumaMaskController.cleanupForPlayer(clip);
 			}
 		}
 
@@ -1263,185 +1239,6 @@ export class Edit extends Entity {
 		await clipToAdd.load();
 
 		this.updateTotalDuration();
-	}
-
-	/**
-	 * Luma mattes use grayscale video to mask content clips.
-	 * PixiJS masks are inverted vs backend convention (white=visible, not transparent),
-	 * so we bake a negative filter into the mask texture via generateTexture().
-	 * For video luma sources, we regenerate the mask texture each frame.
-	 */
-	private finalizeLumaMasking(): void {
-		if (!this.canvas) return;
-
-		for (const trackClips of this.tracks) {
-			const lumaPlayer = trackClips.find(clip => clip.playerType === PlayerType.Luma) as LumaPlayer | undefined;
-			const lumaSprite = lumaPlayer?.getSprite();
-			const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
-
-			if (lumaPlayer && lumaSprite?.texture && contentClips.length > 0) {
-				this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
-				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
-			}
-		}
-	}
-
-	private setupLumaMask(lumaPlayer: LumaPlayer, lumaTexture: pixi.Texture, contentClip: Player): void {
-		const { renderer } = this.canvas!.application;
-		const { width, height } = contentClip.getSize();
-
-		const tempContainer = new pixi.Container();
-		const tempSprite = new pixi.Sprite(lumaTexture);
-		tempSprite.width = width;
-		tempSprite.height = height;
-
-		const invertFilter = new pixi.ColorMatrixFilter();
-		invertFilter.negative(false);
-		tempSprite.filters = [invertFilter];
-		tempContainer.addChild(tempSprite);
-
-		const maskTexture = renderer.generateTexture({
-			target: tempContainer,
-			resolution: 0.5
-		});
-		const maskSprite = new pixi.Sprite(maskTexture);
-		contentClip.getContainer().addChild(maskSprite);
-		contentClip.getContentContainer().setMask({ mask: maskSprite });
-
-		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer, contentClip, lastVideoTime: -1 });
-	}
-
-	private updateLumaMasks(): void {
-		if (!this.canvas) return;
-		const { renderer } = this.canvas.application;
-
-		const frameInterval = 1 / 30; // 30fps threshold
-
-		for (const mask of this.activeLumaMasks) {
-			if (mask.lumaPlayer.isVideoSource()) {
-				const videoTime = mask.lumaPlayer.getVideoCurrentTime();
-
-				// Only regenerate if frame has changed (within threshold)
-				const frameChanged = Math.abs(videoTime - mask.lastVideoTime) >= frameInterval;
-				if (frameChanged) {
-					mask.lastVideoTime = videoTime;
-
-					const oldTexture = mask.maskSprite.texture;
-					mask.maskSprite.texture = renderer.generateTexture({
-						target: mask.tempContainer,
-						resolution: 0.5
-					});
-
-					oldTexture.destroy(true);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Set up event listeners for luma mask synchronization.
-	 * Ensures canvas masking stays in sync with clip operations.
-	 */
-	private setupLumaMaskEventListeners(): void {
-		// Rebuild masks after clip moves (luma might have moved to new track)
-		this.events.on("clip:updated", () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		// Rebuild masks after clip deletion undo (luma might be restored)
-		this.events.on("clip:restored", () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		// Rebuild masks after clip deletion (track shift may re-add luma to scene)
-		this.events.on("clip:deleted", () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		// Rebuild masks after any timeline change (clips added/removed/tracks changed)
-		// This handles the case where AddTrackCommand re-adds luma players to scene
-		this.events.on("timeline:updated", () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-	}
-
-	/** Clean up luma mask when a luma player is deleted. */
-	private cleanupLumaMaskForPlayer(player: Player): void {
-		const maskIndex = this.activeLumaMasks.findIndex(mask => mask.lumaPlayer === player);
-		if (maskIndex === -1) return;
-
-		const mask = this.activeLumaMasks[maskIndex];
-
-		// Clear mask (PixiJS 8 requires direct assignment, not setMask(null))
-		if (mask.contentClip) {
-			mask.contentClip.getContentContainer().mask = null;
-		}
-
-		mask.maskSprite.parent?.removeChild(mask.maskSprite);
-		mask.tempContainer.destroy({ children: true });
-		this.activeLumaMasks.splice(maskIndex, 1);
-
-		// Defer maskSprite destruction until PixiJS finishes rendering
-		this.pendingMaskCleanup.push({ maskSprite: mask.maskSprite, frameCount: 0 });
-	}
-
-	/**
-	 * Process pending mask cleanup queue.
-	 * Sprites are destroyed after 3 frames to ensure PixiJS has finished rendering.
-	 * Called at the end of update() after updateLumaMasks().
-	 */
-	private processPendingMaskCleanup(): void {
-		for (let i = this.pendingMaskCleanup.length - 1; i >= 0; i -= 1) {
-			const item = this.pendingMaskCleanup[i];
-			item.frameCount += 1;
-
-			if (item.frameCount >= 3) {
-				try {
-					item.maskSprite.parent?.removeChild(item.maskSprite);
-					item.maskSprite.destroy({ texture: true });
-				} catch {
-					// Ignore cleanup errors
-				}
-				this.pendingMaskCleanup.splice(i, 1);
-			}
-		}
-	}
-
-	/**
-	 * Rebuild luma masks for any tracks that need masking but don't have it set up.
-	 * Called after clip operations (move, delete, etc.) to ensure canvas stays in sync.
-	 * Also ensures luma players are hidden from display even if mask already exists.
-	 */
-	private async rebuildLumaMasksIfNeeded(): Promise<void> {
-		if (!this.canvas) return;
-
-		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
-			const trackClips = this.tracks[trackIdx];
-			const lumaPlayer = trackClips.find(clip => clip.playerType === PlayerType.Luma) as LumaPlayer | undefined;
-			const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
-
-			// ALWAYS hide luma player if it has a parent (even if mask exists)
-			// This handles the case where AddTrackCommand re-adds luma to scene
-			if (lumaPlayer) {
-				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
-			}
-
-			const existingMask = lumaPlayer && this.activeLumaMasks.find(m => m.lumaPlayer === lumaPlayer);
-
-			if (lumaPlayer && !existingMask && contentClips.length > 0) {
-				// If sprite was destroyed (undo after delete), wait for reload
-				if (!lumaPlayer.getSprite()) {
-					await lumaPlayer.load();
-				}
-
-				const lumaSprite = lumaPlayer.getSprite();
-				if (lumaSprite?.texture) {
-					this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
-					// Already removed above, but kept for safety
-					lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
-				}
-			}
-		}
 	}
 
 	public selectClip(trackIndex: number, clipIndex: number): void {
