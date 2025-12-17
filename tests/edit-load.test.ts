@@ -129,17 +129,6 @@ jest.mock("@core/luma-mask-controller", () => ({
 	LumaMaskController: jest.fn().mockImplementation(() => mockLumaMaskController)
 }));
 
-// Mock LoadingOverlay
-const mockLoadingOverlay = {
-	show: jest.fn(),
-	hide: jest.fn(),
-	update: jest.fn()
-};
-
-jest.mock("@core/ui/loading-overlay", () => ({
-	LoadingOverlay: jest.fn().mockImplementation(() => mockLoadingOverlay)
-}));
-
 // Mock AlignmentGuides
 jest.mock("@canvas/system/alignment-guides", () => ({
 	AlignmentGuides: jest.fn().mockImplementation(() => ({
@@ -800,14 +789,6 @@ describe("Edit loadEdit()", () => {
 			expect(getEditState(edit).tracks[0].length).toBe(2);
 		});
 
-		it("shows and hides loading overlay", async () => {
-			const editConfig = createMinimalEdit([]);
-
-			await edit.loadEdit(editConfig);
-
-			expect(mockLoadingOverlay.show).toHaveBeenCalled();
-			expect(mockLoadingOverlay.hide).toHaveBeenCalled();
-		});
 	});
 
 	describe("soundtrack", () => {

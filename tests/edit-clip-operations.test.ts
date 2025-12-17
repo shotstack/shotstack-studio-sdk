@@ -105,15 +105,6 @@ jest.mock("@core/luma-mask-controller", () => ({
 	}))
 }));
 
-// Mock LoadingOverlay
-jest.mock("@core/ui/loading-overlay", () => ({
-	LoadingOverlay: jest.fn().mockImplementation(() => ({
-		show: jest.fn(),
-		hide: jest.fn(),
-		update: jest.fn()
-	}))
-}));
-
 // Mock AlignmentGuides
 jest.mock("@canvas/system/alignment-guides", () => ({
 	AlignmentGuides: jest.fn().mockImplementation(() => ({
