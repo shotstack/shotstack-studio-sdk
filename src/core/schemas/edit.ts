@@ -20,9 +20,11 @@ export const SoundtrackSchema = zod
 	})
 	.strict();
 
+export const HexColorSchema = zod.string().regex(/^#[A-Fa-f0-9]{6}$/, "Must be a valid hex color (e.g., #000000)");
+
 export const TimelineSchema = zod
 	.object({
-		background: zod.string().optional(),
+		background: HexColorSchema.optional(),
 		fonts: FontSourceSchema.array().optional(),
 		tracks: TrackSchema.array(),
 		soundtrack: SoundtrackSchema.optional()
@@ -119,7 +121,7 @@ const TiktokDestinationSchema = zod
 	})
 	.strict();
 
-const DestinationSchema = zod.union([
+export const DestinationSchema = zod.union([
 	ShotstackDestinationSchema,
 	S3DestinationSchema,
 	MuxDestinationSchema,
@@ -129,16 +131,38 @@ const DestinationSchema = zod.union([
 	TiktokDestinationSchema
 ]);
 
+export const OutputFormatSchema = zod.enum(["mp4", "gif", "mp3", "jpg", "png", "bmp"], {
+	errorMap: () => ({ message: "Must be one of mp4, gif, mp3, jpg, png, bmp" })
+});
+
+const VALID_FPS = [12, 15, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60] as const;
+
+export const OutputFpsSchema = zod
+	.number()
+	.refine((val): val is (typeof VALID_FPS)[number] => VALID_FPS.includes(val as (typeof VALID_FPS)[number]), {
+		message: "Must be one of 12, 15, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60"
+	});
+
+export const OutputSizeSchema = zod
+	.object({
+		width: zod
+			.number({ message: "Width must be a number" })
+			.int({ message: "Width must be an integer" })
+			.min(1, { message: "Width must be at least 1" })
+			.max(3840, { message: "Width must be at most 3840" }),
+		height: zod
+			.number({ message: "Height must be a number" })
+			.int({ message: "Height must be an integer" })
+			.min(1, { message: "Height must be at least 1" })
+			.max(3840, { message: "Height must be at most 3840" })
+	})
+	.strict();
+
 export const OutputSchema = zod
 	.object({
-		size: zod
-			.object({
-				width: zod.number().positive(),
-				height: zod.number().positive()
-			})
-			.strict(),
-		fps: zod.number().positive().optional(),
-		format: zod.string(),
+		size: OutputSizeSchema,
+		fps: OutputFpsSchema.optional(),
+		format: OutputFormatSchema,
 		destinations: zod.array(DestinationSchema).optional()
 	})
 	.strict();
@@ -158,6 +182,7 @@ export const EditSchema = zod
 
 export type MergeField = zod.infer<typeof MergeFieldSchema>;
 export type Soundtrack = zod.infer<typeof SoundtrackSchema>;
+export type Destination = zod.infer<typeof DestinationSchema>;
 
 export type Edit = zod.infer<typeof EditSchema>;
 

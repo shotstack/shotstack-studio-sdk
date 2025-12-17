@@ -1,5 +1,4 @@
 import { AudioPlayer } from "@canvas/players/audio-player";
-import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { CaptionPlayer } from "@canvas/players/caption-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
@@ -10,6 +9,7 @@ import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
 import type { Canvas } from "@canvas/shotstack-canvas";
+import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { resolveAliasReferences } from "@core/alias";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
@@ -33,7 +33,18 @@ import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
 import type { ResolvedClip } from "@schemas/clip";
-import { EditSchema, type Edit as EditConfig, type ResolvedEdit, type Soundtrack } from "@schemas/edit";
+import {
+	DestinationSchema,
+	EditSchema,
+	HexColorSchema,
+	OutputFormatSchema,
+	OutputFpsSchema,
+	OutputSizeSchema,
+	type Destination,
+	type Edit as EditConfig,
+	type ResolvedEdit,
+	type Soundtrack
+} from "@schemas/edit";
 import type { ResolvedTrack } from "@schemas/track";
 import * as pixi from "pixi.js";
 
@@ -736,9 +747,7 @@ export class Edit extends Entity {
 
 		// Sync to originalEdit so getEdit() returns updated values
 		const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
-		const templateConfig = finalClipConfig && originalClip
-			? deepMerge(structuredClone(originalClip), finalClipConfig)
-			: finalClipConfig;
+		const templateConfig = finalClipConfig && originalClip ? deepMerge(structuredClone(originalClip), finalClipConfig) : finalClipConfig;
 
 		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig, {
 			trackIndex: trackIdx,
@@ -1395,12 +1404,17 @@ export class Edit extends Entity {
 	}
 
 	public setOutputSize(width: number, height: number): void {
-		this.size = { width, height };
+		const result = OutputSizeSchema.safeParse({ width, height });
+		if (!result.success) {
+			throw new Error(`Invalid size: ${result.error.errors[0]?.message}`);
+		}
+
+		this.size = result.data;
 
 		if (this.edit) {
 			this.edit.output = {
 				...this.edit.output,
-				size: { width, height }
+				size: result.data
 			};
 		}
 
@@ -1410,18 +1424,23 @@ export class Edit extends Entity {
 		if (this.background) {
 			this.background.clear();
 			this.background.fillStyle = { color: this.backgroundColor };
-			this.background.rect(0, 0, width, height);
+			this.background.rect(0, 0, result.data.width, result.data.height);
 			this.background.fill();
 		}
 
-		this.events.emit("output:size:changed", { width, height });
+		this.events.emit("output:size:changed", result.data);
 	}
 
 	public setOutputFps(fps: number): void {
+		const result = OutputFpsSchema.safeParse(fps);
+		if (!result.success) {
+			throw new Error(`Invalid fps: ${result.error.errors[0]?.message}`);
+		}
+
 		if (this.edit) {
 			this.edit.output = {
 				...this.edit.output,
-				fps
+				fps: result.data
 			};
 		}
 
@@ -1432,17 +1451,62 @@ export class Edit extends Entity {
 		return this.edit?.output?.fps ?? 30;
 	}
 
+	public setOutputFormat(format: string): void {
+		const result = OutputFormatSchema.safeParse(format);
+		if (!result.success) {
+			throw new Error(`Invalid format: ${result.error.errors[0]?.message}`);
+		}
+
+		if (this.edit) {
+			this.edit.output = {
+				...this.edit.output,
+				format: result.data
+			};
+		}
+
+		this.events.emit("output:format:changed", { format: result.data });
+	}
+
+	public getOutputFormat(): string {
+		return this.edit?.output?.format ?? "mp4";
+	}
+
+	public setOutputDestinations(destinations: Destination[]): void {
+		const result = DestinationSchema.array().safeParse(destinations);
+		if (!result.success) {
+			throw new Error(`Invalid destinations: ${result.error.message}`);
+		}
+
+		if (this.edit) {
+			this.edit.output = {
+				...this.edit.output,
+				destinations: result.data
+			};
+		}
+
+		this.events.emit("output:destinations:changed", { destinations: result.data });
+	}
+
+	public getOutputDestinations(): Destination[] {
+		return this.edit?.output?.destinations ?? [];
+	}
+
 	public getTimelineFonts(): Array<{ src: string }> {
 		return this.edit?.timeline?.fonts ?? [];
 	}
 
 	public setTimelineBackground(color: string): void {
-		this.backgroundColor = color;
+		const result = HexColorSchema.safeParse(color);
+		if (!result.success) {
+			throw new Error(`Invalid color: ${result.error.errors[0]?.message}`);
+		}
+
+		this.backgroundColor = result.data;
 
 		if (this.edit) {
 			this.edit.timeline = {
 				...this.edit.timeline,
-				background: color
+				background: result.data
 			};
 		}
 
@@ -1453,7 +1517,7 @@ export class Edit extends Entity {
 			this.background.fill();
 		}
 
-		this.events.emit("timeline:background:changed", { color });
+		this.events.emit("timeline:background:changed", { color: result.data });
 	}
 
 	public getTimelineBackground(): string {
