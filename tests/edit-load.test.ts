@@ -829,4 +829,201 @@ describe("Edit loadEdit()", () => {
 			expect(AudioPlayer).not.toHaveBeenCalled();
 		});
 	});
+
+	describe("smart loadEdit diffing", () => {
+		describe("structural change detection", () => {
+			it("detects different track count as structural change", async () => {
+				// Load 1-track edit
+				const edit1 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit1);
+				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+
+				// Load 2-track edit - should trigger full reload
+				const edit2 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] },
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit2);
+
+				// Should have created new players (full reload)
+				expect((ImagePlayer as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+			});
+
+			it("detects different clip count as structural change", async () => {
+				// Load edit with 1 clip
+				const edit1 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit1);
+				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+
+				// Load edit with 2 clips - should trigger full reload
+				const edit2 = createMinimalEdit([
+					{
+						clips: [
+							{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" },
+							{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 3, length: 3, fit: "crop" }
+						]
+					}
+				]);
+				await edit.loadEdit(edit2);
+
+				// Should have created new players (full reload)
+				expect((ImagePlayer as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+			});
+
+			it("detects asset type change as structural change", async () => {
+				// Load edit with image clip
+				const edit1 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit1);
+				const imageCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+
+				// Load edit with video clip - should trigger full reload
+				const edit2 = createMinimalEdit([
+					{ clips: [{ asset: { type: "video", src: "https://example.com/video.mp4" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit2);
+
+				// Video player should be created (not just updating image player)
+				expect(VideoPlayer).toHaveBeenCalled();
+			});
+
+			it("uses granular path for property-only changes", async () => {
+				// Load initial edit
+				const edit1 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit1);
+				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+
+				// Load edit with only length changed - should use granular path
+				const edit2 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 10, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit2);
+
+				// Should NOT create new players (granular path)
+				expect((ImagePlayer as jest.Mock).mock.calls.length).toBe(initialCallCount);
+			});
+		});
+
+		describe("granular updates", () => {
+			it("updates clip properties without rebuilding players", async () => {
+				// Load initial edit
+				const edit1 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit1);
+
+				// Get player reference
+				const playerBefore = edit.getPlayerClip(0, 0);
+
+				// Load edit with changed property
+				const edit2 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 10, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit2);
+
+				// Same player instance should be used
+				const playerAfter = edit.getPlayerClip(0, 0);
+				expect(playerAfter).toBe(playerBefore);
+			});
+
+			it("updates output settings via granular path", async () => {
+				// Load initial edit
+				const edit1: ResolvedEdit = {
+					timeline: {
+						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }]
+					},
+					output: { size: { width: 1920, height: 1080 }, format: "mp4", fps: 25 }
+				};
+				await edit.loadEdit(edit1);
+				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+
+				// Change fps only
+				const edit2: ResolvedEdit = {
+					timeline: {
+						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }]
+					},
+					output: { size: { width: 1920, height: 1080 }, format: "mp4", fps: 30 }
+				};
+				await edit.loadEdit(edit2);
+
+				// Should NOT rebuild players
+				expect((ImagePlayer as jest.Mock).mock.calls.length).toBe(initialCallCount);
+				// FPS should be updated
+				expect(edit.getOutputFps()).toBe(30);
+			});
+
+			it("updates background color via granular path", async () => {
+				// Load initial edit
+				const edit1: ResolvedEdit = {
+					timeline: {
+						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }],
+						background: "#000000"
+					},
+					output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+				};
+				await edit.loadEdit(edit1);
+				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+
+				// Change background only
+				const edit2: ResolvedEdit = {
+					timeline: {
+						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }],
+						background: "#ff0000"
+					},
+					output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+				};
+				await edit.loadEdit(edit2);
+
+				// Should NOT rebuild players
+				expect((ImagePlayer as jest.Mock).mock.calls.length).toBe(initialCallCount);
+				// Background should be updated
+				expect(getEditState(edit).backgroundColor).toBe("#ff0000");
+			});
+		});
+
+		describe("event emission", () => {
+			it("emits edit:changed event for full reload", async () => {
+				const editChangedHandler = jest.fn();
+				events.on("edit:changed", editChangedHandler);
+
+				const editConfig = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(editConfig);
+
+				expect(editChangedHandler).toHaveBeenCalledWith(expect.objectContaining({ source: "loadEdit" }));
+			});
+
+			it("emits single edit:changed event for granular updates", async () => {
+				// Load initial edit
+				const edit1 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit1);
+
+				// Reset and track events
+				const editChangedHandler = jest.fn();
+				events.on("edit:changed", editChangedHandler);
+
+				// Load edit with property change (granular path)
+				const edit2 = createMinimalEdit([
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 10, fit: "crop" }] }
+				]);
+				await edit.loadEdit(edit2);
+
+				// Should emit exactly 1 event with granular source
+				const granularEvents = editChangedHandler.mock.calls.filter(
+					(call: [{ source: string }]) => call[0].source === "loadEdit:granular"
+				);
+				expect(granularEvents.length).toBe(1);
+			});
+		});
+	});
 });

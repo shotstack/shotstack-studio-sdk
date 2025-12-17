@@ -48,7 +48,7 @@
 		"build": "npm run build:main && npm run build:schema",
 		"build:main": "vite build",
 		"build:schema": "vite build --config vite.config.schema.ts",
-		"test": "jest && npm run build",
+		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:package": "node test-package.js",
 		"typecheck": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit",

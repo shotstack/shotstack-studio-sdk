@@ -1717,7 +1717,11 @@ export class Edit extends Entity {
 
 	/** Push a clip to originalEdit track (for AddClipCommand) */
 	private pushOriginalEditClip(trackIdx: number, clip: ResolvedClip): void {
-		if (!this.originalEdit?.timeline.tracks[trackIdx]) return;
+		if (!this.originalEdit) return;
+		// Ensure track exists (mirrors ensureTrack behavior)
+		while (this.originalEdit.timeline.tracks.length <= trackIdx) {
+			this.originalEdit.timeline.tracks.push({ clips: [] });
+		}
 		this.originalEdit.timeline.tracks[trackIdx].clips.push(structuredClone(clip));
 	}
 

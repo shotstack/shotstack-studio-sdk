@@ -715,6 +715,87 @@ describe("Edit Clip Operations", () => {
 		});
 	});
 
+	describe("AddClipCommand originalEdit sync", () => {
+		const baseEdit = {
+			timeline: { tracks: [] },
+			output: { format: "mp4" as const, fps: 25, size: { width: 1920, height: 1080 } }
+		};
+
+		it("syncs clip to originalEdit on addClip", async () => {
+			// Load an initial edit so originalEdit is populated
+			await edit.loadEdit(baseEdit);
+
+			const clip = createVideoClip(0, 5);
+			await edit.addClip(0, clip);
+
+			const { originalEdit } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(originalEdit.timeline.tracks[0].clips).toHaveLength(1);
+		});
+
+		it("removes clip from originalEdit on undo", async () => {
+			// Load an initial edit so originalEdit is populated
+			await edit.loadEdit(baseEdit);
+
+			const clip = createVideoClip(0, 5);
+			await edit.addClip(0, clip);
+
+			const { originalEdit: afterAdd } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(afterAdd.timeline.tracks[0].clips).toHaveLength(1);
+
+			edit.undo();
+			edit.update(0, 0); // Process disposal
+
+			const { originalEdit: afterUndo } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(afterUndo.timeline.tracks[0].clips).toHaveLength(0);
+		});
+
+		it("syncs multiple clips to originalEdit", async () => {
+			await edit.loadEdit(baseEdit);
+
+			await edit.addClip(0, createVideoClip(0, 3));
+			await edit.addClip(0, createImageClip(3, 2));
+
+			const { originalEdit } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(originalEdit.timeline.tracks[0].clips).toHaveLength(2);
+		});
+
+		it("maintains sync with originalEdit across multiple undo operations", async () => {
+			await edit.loadEdit(baseEdit);
+
+			await edit.addClip(0, createVideoClip(0, 3));
+			await edit.addClip(0, createImageClip(3, 2));
+
+			const { originalEdit: withTwo } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(withTwo.timeline.tracks[0].clips).toHaveLength(2);
+
+			edit.undo(); // Undo second add
+			edit.update(0, 0);
+
+			const { originalEdit: withOne } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(withOne.timeline.tracks[0].clips).toHaveLength(1);
+
+			edit.undo(); // Undo first add
+			edit.update(0, 0);
+
+			const { originalEdit: withNone } = getEditState(edit) as {
+				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
+			};
+			expect(withNone.timeline.tracks[0].clips).toHaveLength(0);
+		});
+	});
+
 	describe("edge cases", () => {
 		it("handles rapid add/delete cycles", async () => {
 			for (let i = 0; i < 5; i++) {
