@@ -1040,7 +1040,10 @@ export class Edit extends Entity {
 			syncTemplateClip: (trackIndex, clipIndex, templateClip) => this.syncTemplateClip(trackIndex, clipIndex, templateClip),
 			// originalEdit track sync
 			insertOriginalEditTrack: trackIdx => this.insertOriginalEditTrack(trackIdx),
-			removeOriginalEditTrack: trackIdx => this.removeOriginalEditTrack(trackIdx)
+			removeOriginalEditTrack: trackIdx => this.removeOriginalEditTrack(trackIdx),
+			// originalEdit clip sync
+			pushOriginalEditClip: (trackIdx, clip) => this.pushOriginalEditClip(trackIdx, clip),
+			popOriginalEditClip: trackIdx => this.popOriginalEditClip(trackIdx)
 		};
 	}
 
@@ -1710,6 +1713,18 @@ export class Edit extends Entity {
 	private removeOriginalEditTrack(trackIdx: number): void {
 		if (!this.originalEdit?.timeline.tracks) return;
 		this.originalEdit.timeline.tracks.splice(trackIdx, 1);
+	}
+
+	/** Push a clip to originalEdit track (for AddClipCommand) */
+	private pushOriginalEditClip(trackIdx: number, clip: ResolvedClip): void {
+		if (!this.originalEdit?.timeline.tracks[trackIdx]) return;
+		this.originalEdit.timeline.tracks[trackIdx].clips.push(structuredClone(clip));
+	}
+
+	/** Pop a clip from originalEdit track (for AddClipCommand undo) */
+	private popOriginalEditClip(trackIdx: number): void {
+		if (!this.originalEdit?.timeline.tracks[trackIdx]?.clips) return;
+		this.originalEdit.timeline.tracks[trackIdx].clips.pop();
 	}
 
 	// ─── Merge Field API (command-based) ───────────────────────────────────────

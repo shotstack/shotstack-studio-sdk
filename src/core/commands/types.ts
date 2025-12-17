@@ -51,4 +51,7 @@ export type CommandContext = {
 	// originalEdit track sync (for track add/delete commands)
 	insertOriginalEditTrack(trackIdx: number): void;
 	removeOriginalEditTrack(trackIdx: number): void;
+	// originalEdit clip sync (for clip add/delete commands)
+	pushOriginalEditClip(trackIdx: number, clip: ClipType): void;
+	popOriginalEditClip(trackIdx: number): void;
 };

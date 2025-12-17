@@ -19,6 +19,10 @@ export class AddClipCommand implements EditCommand {
 		const clipPlayer = context.createPlayerFromAssetType(this.clip);
 		clipPlayer.layer = this.trackIdx + 1;
 		await context.addPlayer(this.trackIdx, clipPlayer);
+
+		// Sync to originalEdit
+		context.pushOriginalEditClip(this.trackIdx, this.clip);
+
 		context.updateDuration();
 		context.emitEvent("timeline:updated", { current: context.getEditState() });
 
@@ -28,6 +32,10 @@ export class AddClipCommand implements EditCommand {
 	async undo(context?: CommandContext): Promise<void> {
 		if (!context || !this.addedPlayer) return;
 		context.queueDisposeClip(this.addedPlayer);
+
+		// Remove from originalEdit
+		context.popOriginalEditClip(this.trackIdx);
+
 		context.updateDuration();
 		context.emitEvent("timeline:updated", { current: context.getEditState() });
 	}
