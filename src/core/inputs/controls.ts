@@ -21,8 +21,26 @@ export class Controls {
 		document.removeEventListener("keyup", this.handleKeyUp);
 	}
 
+	private shouldIgnoreKeyboardEvent(event: KeyboardEvent): boolean {
+		const target = event.target as HTMLElement;
+
+		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+			return true;
+		}
+
+		if (target.isContentEditable) {
+			return true;
+		}
+
+		if (target.getAttribute?.("role") === "textbox") {
+			return true;
+		}
+
+		return false;
+	}
+
 	private handleKeyDown = (event: KeyboardEvent): void => {
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+		if (this.shouldIgnoreKeyboardEvent(event)) {
 			return;
 		}
 
@@ -148,8 +166,7 @@ export class Controls {
 	};
 
 	private handleKeyUp = (event: KeyboardEvent): void => {
-		// Skip if inside input elements
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+		if (this.shouldIgnoreKeyboardEvent(event)) {
 			return;
 		}
 
