@@ -279,3 +279,284 @@ describe("serializeEditForExport", () => {
 		expect(result.timeline.tracks[1].clips[0].start).toBe("auto");
 	});
 });
+
+describe("asset merge behavior", () => {
+	it("current src overrides original template (shallow merge)", () => {
+		const originalClip = {
+			asset: { type: "video", src: "{{ VIDEO_URL }}" },
+			start: 0,
+			length: 5
+		} as Clip;
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "video", src: "https://resolved.example.com/video.mp4" },
+				start: 0,
+				length: 5,
+				fit: "crop"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, originalClip);
+
+		// Current asset values override original (shallow merge behavior)
+		expect((result.asset as { src: string }).src).toBe("https://resolved.example.com/video.mp4");
+	});
+
+	it("current text overrides original template", () => {
+		const originalClip = {
+			asset: { type: "text", text: "Hello {{ NAME }}" },
+			start: 0,
+			length: 3
+		} as Clip;
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "text", text: "Hello John" },
+				start: 0,
+				length: 3,
+				fit: "crop"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 3 })
+		};
+
+		const result = serializeClipForExport(clip, originalClip);
+
+		// Current text overrides original template
+		expect((result.asset as { text: string }).text).toBe("Hello John");
+	});
+
+	it("preserves original properties not in current asset", () => {
+		const originalClip = {
+			asset: {
+				type: "video",
+				src: "{{ URL }}",
+				volume: 0.5,
+				customProp: "preserved"
+			},
+			start: 0,
+			length: 5
+		} as Clip;
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "video", src: "https://example.com/video.mp4" },
+				start: 0,
+				length: 5,
+				fit: "crop"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, originalClip);
+
+		// Properties from original that aren't in current should be preserved
+		expect((result.asset as { customProp: string }).customProp).toBe("preserved");
+	});
+});
+
+describe("asset type coverage", () => {
+	it("serializes video asset with all properties", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: {
+					type: "video",
+					src: "https://example.com/video.mp4",
+					trim: 2,
+					volume: 0.8,
+					crop: { top: 0.1, bottom: 0.1, left: 0, right: 0 }
+				},
+				start: 0,
+				length: 10,
+				fit: "cover",
+				scale: 1.5,
+				opacity: 0.9
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 10 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.asset.type).toBe("video");
+		expect((result.asset as { trim: number }).trim).toBe(2);
+		expect((result.asset as { volume: number }).volume).toBe(0.8);
+	});
+
+	it("serializes image asset with crop", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: {
+					type: "image",
+					src: "https://example.com/image.jpg",
+					crop: { top: 0.1, bottom: 0.1, left: 0.1, right: 0.1 }
+				},
+				start: 0,
+				length: 5,
+				fit: "contain"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.asset.type).toBe("image");
+		expect((result.asset as { crop: object }).crop).toBeDefined();
+	});
+
+	it("serializes audio asset", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: {
+					type: "audio",
+					src: "https://example.com/audio.mp3",
+					trim: 5,
+					volume: 0.5
+				},
+				start: 0,
+				length: 30,
+				fit: "crop"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 30 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.asset.type).toBe("audio");
+		expect((result.asset as { volume: number }).volume).toBe(0.5);
+	});
+
+	it("serializes shape asset", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: {
+					type: "shape",
+					shape: "rectangle",
+					rectangle: { width: 100, height: 50 },
+					fill: { color: "#ff0000", opacity: 1 }
+				},
+				start: 0,
+				length: 5,
+				fit: "crop"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.asset.type).toBe("shape");
+		expect((result.asset as { shape: string }).shape).toBe("rectangle");
+	});
+
+	it("serializes html asset", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: {
+					type: "html",
+					html: "<div>Hello</div>",
+					css: "div { color: red; }",
+					width: 400,
+					height: 200
+				},
+				start: 0,
+				length: 5,
+				fit: "crop"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.asset.type).toBe("html");
+		expect((result.asset as { html: string }).html).toBe("<div>Hello</div>");
+	});
+});
+
+describe("clip properties preservation", () => {
+	it("preserves position property", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "text", text: "Test" },
+				start: 0,
+				length: 5,
+				fit: "crop",
+				position: "topRight"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.position).toBe("topRight");
+	});
+
+	it("preserves offset property", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "text", text: "Test" },
+				start: 0,
+				length: 5,
+				fit: "crop",
+				offset: { x: 0.1, y: -0.2 }
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.offset).toEqual({ x: 0.1, y: -0.2 });
+	});
+
+	it("preserves scale and opacity", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "image", src: "https://example.com/img.png" },
+				start: 0,
+				length: 5,
+				fit: "cover",
+				scale: 1.5,
+				opacity: 0.8
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.scale).toBe(1.5);
+		expect(result.opacity).toBe(0.8);
+	});
+
+	it("preserves transition configuration", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "text", text: "Fade In" },
+				start: 0,
+				length: 5,
+				fit: "crop",
+				transition: {
+					in: "fade",
+					out: "slideRight"
+				}
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 5 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.transition).toEqual({ in: "fade", out: "slideRight" });
+	});
+
+	it("preserves filter effects", () => {
+		const clip: ClipExportData = {
+			clipConfiguration: {
+				asset: { type: "video", src: "https://example.com/video.mp4" },
+				start: 0,
+				length: 10,
+				fit: "cover",
+				filter: "greyscale"
+			} as ResolvedClip,
+			getTimingIntent: () => ({ start: 0, length: 10 })
+		};
+
+		const result = serializeClipForExport(clip, undefined);
+
+		expect(result.filter).toBe("greyscale");
+	});
+});
