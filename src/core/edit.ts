@@ -23,7 +23,7 @@ import { UpdateTextContentCommand } from "@core/commands/update-text-content-com
 import { EventEmitter } from "@core/events/event-emitter";
 import { applyMergeFields, MergeFieldService } from "@core/merge";
 import { Entity } from "@core/shared/entity";
-import { mergeAssetForExport } from "@core/shared/merge-asset";
+import { serializeEditForExport, type ClipExportData } from "@core/shared/serialize-edit";
 import { deepMerge, getNestedValue, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { LoadingOverlay } from "@core/ui/loading-overlay";
@@ -345,36 +345,23 @@ export class Edit extends Entity {
 		await this.addPlayer(this.tracks.length, player);
 	}
 	public getEdit(): EditConfig {
-		const tracks = this.tracks.map((track, trackIdx) => ({
-			clips: track
+		const clipData: ClipExportData[][] = this.tracks.map(track =>
+			track
 				.filter(player => player && !this.clipsToDispose.includes(player))
-				.map((player, clipIdx) => {
-					const timing = player.getTimingIntent();
+				.map(player => ({
+					clipConfiguration: player.clipConfiguration,
+					getTimingIntent: () => player.getTimingIntent()
+				}))
+		);
 
-					// Use original clip as base to preserve user input without Zod defaults
-					const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
-					const originalAsset = originalClip?.asset;
-					const currentAsset = player.clipConfiguration.asset;
-					const mergedAsset = mergeAssetForExport(originalAsset, currentAsset);
-
-					return {
-						...(originalClip ?? player.clipConfiguration),
-						asset: mergedAsset,
-						start: timing.start,
-						length: timing.length
-					};
-				})
-		}));
-
-		return {
-			timeline: {
-				background: this.backgroundColor,
-				tracks,
-				fonts: this.edit?.timeline.fonts || []
-			},
-			output: this.edit?.output || { size: this.size, format: "mp4" },
-			merge: this.mergeFields.toSerializedArray()
-		} as EditConfig;
+		return serializeEditForExport(
+			clipData,
+			this.originalEdit,
+			this.backgroundColor,
+			this.edit?.timeline.fonts || [],
+			this.edit?.output || { size: this.size, format: "mp4" },
+			this.mergeFields.toSerializedArray()
+		);
 	}
 
 	public getResolvedEdit(): ResolvedEdit {

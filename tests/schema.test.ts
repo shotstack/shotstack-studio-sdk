@@ -1,17 +1,13 @@
 import { describe, it, expect } from "@jest/globals";
-import {
-	ClipSchema,
-	EditSchema,
-	VideoAssetSchema,
-	AudioAssetSchema,
-	TextAssetSchema,
-	ImageAssetSchema,
-	ShapeAssetSchema,
-	HtmlAssetSchema,
-	TrackSchema,
-	TimelineSchema,
-	OutputSchema
-} from "@shotstack/shotstack-studio/schema";
+import { ClipSchema } from "../src/core/schemas/clip";
+import { EditSchema, TimelineSchema, OutputSchema } from "../src/core/schemas/edit";
+import { TrackSchema } from "../src/core/schemas/track";
+import { VideoAssetSchema } from "../src/core/schemas/video-asset";
+import { AudioAssetSchema } from "../src/core/schemas/audio-asset";
+import { TextAssetSchema } from "../src/core/schemas/text-asset";
+import { ImageAssetSchema } from "../src/core/schemas/image-asset";
+import { ShapeAssetSchema } from "../src/core/schemas/shape-asset";
+import { HtmlAssetSchema } from "../src/core/schemas/html-asset";
 
 describe("Schema Imports", () => {
 	it("should import all schemas without WASM errors", () => {
