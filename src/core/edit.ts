@@ -27,7 +27,6 @@ import { Entity } from "@core/shared/entity";
 import { serializeEditForExport, type ClipExportData } from "@core/shared/serialize-edit";
 import { deepMerge, getNestedValue, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { LoadingOverlay } from "@core/ui/loading-overlay";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -90,6 +89,7 @@ export class Edit extends Entity {
 	// Performance optimization: cache timeline end and track "end" length clips
 	private cachedTimelineEnd: number = 0;
 	private endLengthClips: Set<Player> = new Set();
+	private isBatchingEvents: boolean = false;
 
 	// Playback health tracking
 	private syncCorrectionCount: number = 0;
@@ -239,79 +239,78 @@ export class Edit extends Entity {
 	}
 
 	public async loadEdit(edit: ResolvedEdit): Promise<void> {
-		const loading = new LoadingOverlay();
-		loading.show();
-
-		const onProgress = () => loading.update(this.assetLoader.getProgress());
-		this.assetLoader.loadTracker.on("onAssetLoadInfoUpdated", onProgress);
-
-		try {
-			this.clearClips();
-
-			// Store original (unresolved) edit for re-resolution on merge field changes
-			this.originalEdit = structuredClone(edit);
-
-			// Load merge fields from edit payload into service
-			const serializedMergeFields = edit.merge ?? [];
-			this.mergeFields.loadFromSerialized(serializedMergeFields);
-
-			// Apply merge field substitutions for initial load
-			const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(edit, serializedMergeFields) : edit;
-
-			const parsedEdit = EditSchema.parse(mergedEdit);
-			resolveAliasReferences(parsedEdit);
-			this.edit = parsedEdit as ResolvedEdit;
-
-			const newSize = this.edit.output?.size;
-			if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
-				this.size = newSize;
-				this.updateViewportMask();
-				this.canvas?.zoomToFit();
-			}
-
-			this.backgroundColor = this.edit.timeline.background || "#000000";
-
-			if (this.background) {
-				this.background.clear();
-				this.background.fillStyle = {
-					color: this.backgroundColor
-				};
-				this.background.rect(0, 0, this.size.width, this.size.height);
-				this.background.fill();
-			}
-
-			await Promise.all(
-				(this.edit.timeline.fonts ?? []).map(async font => {
-					const identifier = font.src;
-					const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
-
-					return this.assetLoader.load<FontFace>(identifier, loadOptions);
-				})
-			);
-
-			for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
-				for (const clip of track.clips) {
-					const clipPlayer = this.createPlayerFromAssetType(clip);
-					clipPlayer.layer = trackIdx + 1;
-					await this.addPlayer(trackIdx, clipPlayer);
-				}
-			}
-
-			this.lumaMaskController.initialize();
-
-			await this.resolveAllTiming();
-
-			this.updateTotalDuration();
-
-			if (this.edit.timeline.soundtrack) {
-				await this.loadSoundtrack(this.edit.timeline.soundtrack);
-			}
-
-			this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
-		} finally {
-			this.assetLoader.loadTracker.off("onAssetLoadInfoUpdated", onProgress);
-			loading.hide();
+		// Smart diff: only do full reload when structure changes (track/clip count, asset type)
+		if (this.edit && !this.hasStructuralChanges(edit)) {
+			this.isBatchingEvents = true;
+			this.applyGranularChanges(edit);
+			this.isBatchingEvents = false;
+			this.emitEditChanged("loadEdit:granular");
+			return;
 		}
+
+		this.clearClips();
+
+		// Store original (unresolved) edit for re-resolution on merge field changes
+		this.originalEdit = structuredClone(edit);
+
+		// Load merge fields from edit payload into service
+		const serializedMergeFields = edit.merge ?? [];
+		this.mergeFields.loadFromSerialized(serializedMergeFields);
+
+		// Apply merge field substitutions for initial load
+		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(edit, serializedMergeFields) : edit;
+
+		const parsedEdit = EditSchema.parse(mergedEdit);
+		resolveAliasReferences(parsedEdit);
+		this.edit = parsedEdit as ResolvedEdit;
+
+		const newSize = this.edit.output?.size;
+		if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
+			this.size = newSize;
+			this.updateViewportMask();
+			this.canvas?.zoomToFit();
+		}
+
+		this.backgroundColor = this.edit.timeline.background || "#000000";
+
+		if (this.background) {
+			this.background.clear();
+			this.background.fillStyle = {
+				color: this.backgroundColor
+			};
+			this.background.rect(0, 0, this.size.width, this.size.height);
+			this.background.fill();
+		}
+
+		await Promise.all(
+			(this.edit.timeline.fonts ?? []).map(async font => {
+				const identifier = font.src;
+				const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
+
+				return this.assetLoader.load<FontFace>(identifier, loadOptions);
+			})
+		);
+
+		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
+			for (const clip of track.clips) {
+				const clipPlayer = this.createPlayerFromAssetType(clip);
+				clipPlayer.layer = trackIdx + 1;
+				await this.addPlayer(trackIdx, clipPlayer);
+			}
+		}
+
+		this.lumaMaskController.initialize();
+
+		await this.resolveAllTiming();
+
+		this.updateTotalDuration();
+
+		if (this.edit.timeline.soundtrack) {
+			await this.loadSoundtrack(this.edit.timeline.soundtrack);
+		}
+
+		this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
+		this.emitEditChanged("loadEdit");
 	}
 
 	private async loadSoundtrack(soundtrack: Soundtrack): Promise<void> {
@@ -349,6 +348,27 @@ export class Edit extends Entity {
 			this.edit?.output || { size: this.size, format: "mp4" },
 			this.mergeFields.toSerializedArray()
 		);
+	}
+
+	/**
+	 * Validates an edit configuration without applying it.
+	 * Use this to pre-validate user input before calling loadEdit().
+	 *
+	 * @param edit - The edit configuration to validate
+	 * @returns Validation result with valid boolean and any errors
+	 */
+	public validateEdit(edit: unknown): { valid: boolean; errors: Array<{ path: string; message: string }> } {
+		const result = EditSchema.safeParse(edit);
+		if (result.success) {
+			return { valid: true, errors: [] };
+		}
+		return {
+			valid: false,
+			errors: result.error.issues.map(issue => ({
+				path: issue.path.join("."),
+				message: issue.message
+			}))
+		};
 	}
 
 	public getResolvedEdit(): ResolvedEdit {
@@ -725,6 +745,7 @@ export class Edit extends Entity {
 				command.undo(context);
 				this.commandIndex -= 1;
 				this.events.emit("edit:undo", { command: command.name });
+				this.emitEditChanged(`undo:${command.name}`);
 			}
 		}
 	}
@@ -736,6 +757,7 @@ export class Edit extends Entity {
 			const context = this.createCommandContext();
 			command.execute(context);
 			this.events.emit("edit:redo", { command: command.name });
+			this.emitEditChanged(`redo:${command.name}`);
 		}
 	}
 	/** @internal */
@@ -834,7 +856,109 @@ export class Edit extends Entity {
 		this.commandHistory = this.commandHistory.slice(0, this.commandIndex + 1);
 		this.commandHistory.push(command);
 		this.commandIndex += 1;
+
+		// Handle both sync and async commands
+		if (result instanceof Promise) {
+			return result.then(() => this.emitEditChanged(command.name));
+		}
+		this.emitEditChanged(command.name);
 		return result;
+	}
+
+	/**
+	 * Emits a unified `edit:changed` event after any state mutation.
+	 * Consumers can subscribe to this single event instead of tracking 31+ granular events.
+	 */
+	private emitEditChanged(source: string): void {
+		if (this.isBatchingEvents) return;
+		this.events.emit("edit:changed", { source, timestamp: Date.now() });
+	}
+
+	/**
+	 * Checks if edit has structural changes requiring full reload.
+	 * Structural = track count, clip count, or asset type changed.
+	 */
+	private hasStructuralChanges(newEdit: ResolvedEdit): boolean {
+		if (!this.edit || !this.originalEdit) return true;
+
+		const currentTracks = this.originalEdit.timeline.tracks;
+		const newTracks = newEdit.timeline.tracks;
+
+		// Different track count = structural
+		if (currentTracks.length !== newTracks.length) return true;
+
+		// Check each track
+		for (let t = 0; t < currentTracks.length; t++) {
+			// Different clip count = structural
+			if (currentTracks[t].clips.length !== newTracks[t].clips.length) return true;
+
+			// Asset TYPE change = structural (ImagePlayer vs VideoPlayer)
+			for (let c = 0; c < currentTracks[t].clips.length; c++) {
+				const currentType = (currentTracks[t].clips[c]?.asset as { type?: string })?.type;
+				const newType = (newTracks[t].clips[c]?.asset as { type?: string })?.type;
+				if (currentType !== newType) return true;
+			}
+		}
+
+		// Merge fields changed = structural (affects asset resolution)
+		if (JSON.stringify(this.originalEdit.merge ?? []) !== JSON.stringify(newEdit.merge ?? [])) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Applies granular changes without full reload (preserves undo history, no flash).
+	 * Only called when structure is unchanged (same track/clip counts).
+	 */
+	private applyGranularChanges(newEdit: ResolvedEdit): void {
+		const currentOutput = this.edit?.output;
+		const newOutput = newEdit.output;
+
+		// 1. Apply output changes
+		if (newOutput?.size && (currentOutput?.size?.width !== newOutput.size.width || currentOutput?.size?.height !== newOutput.size.height)) {
+			this.setOutputSize(newOutput.size.width, newOutput.size.height);
+		}
+
+		if (newOutput?.fps !== undefined && currentOutput?.fps !== newOutput.fps) {
+			this.setOutputFps(newOutput.fps);
+		}
+
+		if (newOutput?.format !== undefined && currentOutput?.format !== newOutput.format) {
+			this.setOutputFormat(newOutput.format);
+		}
+
+		if (newOutput?.destinations && JSON.stringify(currentOutput?.destinations) !== JSON.stringify(newOutput.destinations)) {
+			this.setOutputDestinations(newOutput.destinations);
+		}
+
+		const newBg = newEdit.timeline?.background;
+		if (newBg && this.backgroundColor !== newBg) {
+			this.setTimelineBackground(newBg);
+		}
+
+		// 2. Diff and update each clip
+		const currentTracks = this.originalEdit!.timeline.tracks;
+		const newTracks = newEdit.timeline.tracks;
+
+		for (let trackIdx = 0; trackIdx < newTracks.length; trackIdx++) {
+			const currentClips = currentTracks[trackIdx].clips;
+			const newClips = newTracks[trackIdx].clips;
+
+			for (let clipIdx = 0; clipIdx < newClips.length; clipIdx++) {
+				const currentClip = currentClips[clipIdx];
+				const newClip = newClips[clipIdx];
+
+				// Only update if clip changed
+				if (JSON.stringify(currentClip) !== JSON.stringify(newClip)) {
+					this.updateClip(trackIdx, clipIdx, newClip);
+				}
+			}
+		}
+
+		// 3. Update originalEdit to reflect new state
+		this.originalEdit = structuredClone(newEdit);
 	}
 
 	private createCommandContext(): CommandContext {
@@ -1222,11 +1346,6 @@ export class Edit extends Entity {
 
 		this.tracks[trackIdx].push(clipToAdd);
 
-		// Sync originalEdit with new clip to keep template data aligned with tracks array
-		if (this.originalEdit?.timeline.tracks[trackIdx]) {
-			this.originalEdit.timeline.tracks[trackIdx].clips.push(structuredClone(clipToAdd.clipConfiguration));
-		}
-
 		this.clips.push(clipToAdd);
 
 		if (clipToAdd.getTimingIntent().length === "end") {
@@ -1429,6 +1548,7 @@ export class Edit extends Entity {
 		}
 
 		this.events.emit("output:size:changed", result.data);
+		this.emitEditChanged("output:size");
 	}
 
 	public setOutputFps(fps: number): void {
@@ -1445,6 +1565,7 @@ export class Edit extends Entity {
 		}
 
 		this.events.emit("output:fps:changed", { fps });
+		this.emitEditChanged("output:fps");
 	}
 
 	public getOutputFps(): number {
@@ -1465,6 +1586,7 @@ export class Edit extends Entity {
 		}
 
 		this.events.emit("output:format:changed", { format: result.data });
+		this.emitEditChanged("output:format");
 	}
 
 	public getOutputFormat(): string {
@@ -1485,6 +1607,7 @@ export class Edit extends Entity {
 		}
 
 		this.events.emit("output:destinations:changed", { destinations: result.data });
+		this.emitEditChanged("output:destinations");
 	}
 
 	public getOutputDestinations(): Destination[] {
@@ -1518,6 +1641,7 @@ export class Edit extends Entity {
 		}
 
 		this.events.emit("timeline:background:changed", { color: result.data });
+		this.emitEditChanged("timeline:background");
 	}
 
 	public getTimelineBackground(): string {
