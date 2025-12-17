@@ -9,12 +9,7 @@ import { Edit } from "@core/edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas/clip";
-import {
-	resolveAutoStart,
-	resolveAutoLength,
-	resolveEndLength,
-	calculateTimelineEnd
-} from "@core/timing/resolver";
+import { resolveAutoStart, resolveAutoLength, resolveEndLength, calculateTimelineEnd } from "@core/timing/resolver";
 
 // Mock probeMediaDuration since document.createElement doesn't work in Node
 jest.mock("@core/timing/resolver", () => ({
@@ -154,11 +149,7 @@ const createMockPlayerContainer = () => {
 };
 
 // Mock player factory with timing intent support
-const createMockPlayer = (
-	edit: Edit,
-	config: ResolvedClip,
-	type: PlayerType
-) => {
+const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) => {
 	const container = createMockPlayerContainer();
 	const contentContainer = createMockPlayerContainer();
 
@@ -206,54 +197,38 @@ const createMockPlayer = (
 
 // Mock all player types
 jest.mock("@canvas/players/video-player", () => ({
-	VideoPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Video)
-	)
+	VideoPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Video))
 }));
 
 jest.mock("@canvas/players/image-player", () => ({
-	ImagePlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Image)
-	)
+	ImagePlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Image))
 }));
 
 jest.mock("@canvas/players/text-player", () => ({
 	TextPlayer: Object.assign(
-		jest.fn().mockImplementation((edit, config) =>
-			createMockPlayer(edit, config, PlayerType.Text)
-		),
+		jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Text)),
 		{ resetFontCache: jest.fn() }
 	)
 }));
 
 jest.mock("@canvas/players/audio-player", () => ({
-	AudioPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Audio)
-	)
+	AudioPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Audio))
 }));
 
 jest.mock("@canvas/players/html-player", () => ({
-	HtmlPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Html)
-	)
+	HtmlPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Html))
 }));
 
 jest.mock("@canvas/players/luma-player", () => ({
-	LumaPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Luma)
-	)
+	LumaPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Luma))
 }));
 
 jest.mock("@canvas/players/shape-player", () => ({
-	ShapePlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Shape)
-	)
+	ShapePlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Shape))
 }));
 
 jest.mock("@canvas/players/caption-player", () => ({
-	CaptionPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Caption)
-	)
+	CaptionPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Caption))
 }));
 
 /**
@@ -330,12 +305,7 @@ describe("Timing Resolver Functions", () => {
 		});
 
 		it("returns previous clip end for subsequent clips", () => {
-			const tracks = [
-				[
-					createMockPlayerForResolver(0, 5000),
-					createMockPlayerForResolver(5000, 3000)
-				]
-			];
+			const tracks = [[createMockPlayerForResolver(0, 5000), createMockPlayerForResolver(5000, 3000)]];
 
 			const result = resolveAutoStart(0, 1, tracks as never);
 
@@ -357,10 +327,7 @@ describe("Timing Resolver Functions", () => {
 		});
 
 		it("works independently across tracks", () => {
-			const tracks = [
-				[createMockPlayerForResolver(0, 10000)],
-				[createMockPlayerForResolver(0, 3000)]
-			];
+			const tracks = [[createMockPlayerForResolver(0, 10000)], [createMockPlayerForResolver(0, 3000)]];
 
 			const resultTrack0 = resolveAutoStart(0, 0, tracks as never);
 			const resultTrack1 = resolveAutoStart(1, 0, tracks as never);
@@ -416,11 +383,7 @@ describe("Timing Resolver Functions", () => {
 
 	describe("calculateTimelineEnd()", () => {
 		it("returns max end time of all clips", () => {
-			const tracks = [
-				[createMockPlayerForResolver(0, 5000)],
-				[createMockPlayerForResolver(0, 8000)],
-				[createMockPlayerForResolver(2000, 3000)]
-			];
+			const tracks = [[createMockPlayerForResolver(0, 5000)], [createMockPlayerForResolver(0, 8000)], [createMockPlayerForResolver(2000, 3000)]];
 
 			const result = calculateTimelineEnd(tracks as never);
 
@@ -447,9 +410,7 @@ describe("Timing Resolver Functions", () => {
 		});
 
 		it("returns 0 when all clips have length: 'end'", () => {
-			const tracks = [
-				[createMockPlayerForResolver(0, 10000, "end")]
-			];
+			const tracks = [[createMockPlayerForResolver(0, 10000, "end")]];
 
 			const result = calculateTimelineEnd(tracks as never);
 

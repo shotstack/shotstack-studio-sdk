@@ -268,10 +268,7 @@ export abstract class Player extends Entity {
 		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
 		// Mask keyframes (wipe/reveal effects) - still use KeyframeBuilder directly
-		const maskXKeyframes: Keyframe[] = [
-			...transitionSet.in.maskXKeyframes,
-			...transitionSet.out.maskXKeyframes
-		];
+		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
 			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
 		}

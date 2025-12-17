@@ -540,9 +540,7 @@ describe("LumaMaskController", () => {
 			videoTime = 0.05;
 			controller.update();
 
-			expect((canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length).toBeGreaterThan(
-				initialCalls
-			);
+			expect((canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
 		});
 
 		it("does NOT update when frame has not changed enough", () => {
@@ -571,9 +569,7 @@ describe("LumaMaskController", () => {
 			videoTime = 0.06;
 			controller.update();
 
-			expect((canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length).toBe(
-				callsAfterFirstUpdate
-			);
+			expect((canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length).toBe(callsAfterFirstUpdate);
 		});
 	});
 

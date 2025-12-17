@@ -138,14 +138,7 @@ describe("serializeEditForExport", () => {
 			]
 		];
 
-		const result = serializeEditForExport(
-			clips,
-			null,
-			"#000000",
-			[],
-			{ size: { width: 1920, height: 1080 }, format: "mp4" },
-			[]
-		);
+		const result = serializeEditForExport(clips, null, "#000000", [], { size: { width: 1920, height: 1080 }, format: "mp4" }, []);
 
 		expect(() => EditSchema.parse(result)).not.toThrow();
 	});
@@ -156,14 +149,7 @@ describe("serializeEditForExport", () => {
 			{ find: "TITLE", replace: "Welcome" }
 		];
 
-		const result = serializeEditForExport(
-			[],
-			null,
-			"#000000",
-			[],
-			{ size: { width: 1920, height: 1080 }, format: "mp4" },
-			mergeFields
-		);
+		const result = serializeEditForExport([], null, "#000000", [], { size: { width: 1920, height: 1080 }, format: "mp4" }, mergeFields);
 
 		expect(result.merge).toEqual(mergeFields);
 	});
@@ -183,45 +169,21 @@ describe("serializeEditForExport", () => {
 			]
 		];
 
-		const result = serializeEditForExport(
-			clips,
-			null,
-			"#ffffff",
-			[],
-			{ size: { width: 1280, height: 720 }, format: "mp4" },
-			[]
-		);
+		const result = serializeEditForExport(clips, null, "#ffffff", [], { size: { width: 1280, height: 720 }, format: "mp4" }, []);
 
 		expect(result.timeline.tracks[0].clips[0].start).toBe("auto");
 	});
 
 	it("includes fonts in output", () => {
-		const fonts = [
-			{ src: "https://fonts.example.com/open-sans.ttf" },
-			{ src: "https://fonts.example.com/roboto.ttf" }
-		];
+		const fonts = [{ src: "https://fonts.example.com/open-sans.ttf" }, { src: "https://fonts.example.com/roboto.ttf" }];
 
-		const result = serializeEditForExport(
-			[],
-			null,
-			"#000000",
-			fonts,
-			{ size: { width: 1920, height: 1080 }, format: "mp4" },
-			[]
-		);
+		const result = serializeEditForExport([], null, "#000000", fonts, { size: { width: 1920, height: 1080 }, format: "mp4" }, []);
 
 		expect(result.timeline.fonts).toEqual(fonts);
 	});
 
 	it("includes background color in output", () => {
-		const result = serializeEditForExport(
-			[],
-			null,
-			"#ff5500",
-			[],
-			{ size: { width: 1920, height: 1080 }, format: "mp4" },
-			[]
-		);
+		const result = serializeEditForExport([], null, "#ff5500", [], { size: { width: 1920, height: 1080 }, format: "mp4" }, []);
 
 		expect(result.timeline.background).toBe("#ff5500");
 	});
@@ -264,14 +226,7 @@ describe("serializeEditForExport", () => {
 			]
 		];
 
-		const result = serializeEditForExport(
-			clips,
-			null,
-			"#000",
-			[],
-			{ size: { width: 1920, height: 1080 }, format: "mp4" },
-			[]
-		);
+		const result = serializeEditForExport(clips, null, "#000", [], { size: { width: 1920, height: 1080 }, format: "mp4" }, []);
 
 		expect(result.timeline.tracks.length).toBe(2);
 		expect(result.timeline.tracks[0].clips.length).toBe(1);

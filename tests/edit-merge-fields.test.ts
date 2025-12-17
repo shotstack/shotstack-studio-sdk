@@ -188,60 +188,42 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 
 // Mock all player types
 jest.mock("@canvas/players/video-player", () => ({
-	VideoPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Video)
-	)
+	VideoPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Video))
 }));
 
 jest.mock("@canvas/players/image-player", () => ({
-	ImagePlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Image)
-	)
+	ImagePlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Image))
 }));
 
 jest.mock("@canvas/players/text-player", () => ({
 	TextPlayer: Object.assign(
-		jest.fn().mockImplementation((edit, config) =>
-			createMockPlayer(edit, config, PlayerType.Text)
-		),
+		jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Text)),
 		{ resetFontCache: jest.fn() }
 	)
 }));
 
 jest.mock("@canvas/players/audio-player", () => ({
-	AudioPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Audio)
-	)
+	AudioPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Audio))
 }));
 
 jest.mock("@canvas/players/luma-player", () => ({
-	LumaPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Luma)
-	)
+	LumaPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Luma))
 }));
 
 jest.mock("@canvas/players/shape-player", () => ({
-	ShapePlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Shape)
-	)
+	ShapePlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Shape))
 }));
 
 jest.mock("@canvas/players/html-player", () => ({
-	HtmlPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Html)
-	)
+	HtmlPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Html))
 }));
 
 jest.mock("@canvas/players/rich-text-player", () => ({
-	RichTextPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.RichText)
-	)
+	RichTextPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.RichText))
 }));
 
 jest.mock("@canvas/players/caption-player", () => ({
-	CaptionPlayer: jest.fn().mockImplementation((edit, config) =>
-		createMockPlayer(edit, config, PlayerType.Caption)
-	)
+	CaptionPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Caption))
 }));
 
 /**
@@ -307,7 +289,7 @@ describe("Edit Merge Fields", () => {
 			timeline: {
 				tracks: [
 					{ clips: [] }, // Track 0
-					{ clips: [] }  // Track 1
+					{ clips: [] } // Track 1
 				]
 			},
 			output: {
