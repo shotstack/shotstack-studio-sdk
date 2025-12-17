@@ -1,3 +1,4 @@
+import { ComposedKeyframeBuilder } from "@animations/composed-keyframe-builder";
 import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
@@ -110,12 +111,12 @@ export abstract class Player extends Entity {
 	private resolvedTiming: ResolvedTiming;
 
 	private positionBuilder: PositionBuilder;
-	private offsetXKeyframeBuilder?: KeyframeBuilder;
-	private offsetYKeyframeBuilder?: KeyframeBuilder;
-	private scaleKeyframeBuilder?: KeyframeBuilder;
-	private opacityKeyframeBuilder?: KeyframeBuilder;
-	private rotationKeyframeBuilder?: KeyframeBuilder;
-	private maskXKeyframeBuilder?: KeyframeBuilder;
+	private offsetXKeyframeBuilder?: ComposedKeyframeBuilder;
+	private offsetYKeyframeBuilder?: ComposedKeyframeBuilder;
+	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
+	private opacityKeyframeBuilder?: ComposedKeyframeBuilder;
+	private rotationKeyframeBuilder?: ComposedKeyframeBuilder;
+	private maskXKeyframeBuilder?: KeyframeBuilder; // maskX doesn't need composition
 
 	private wipeMask: pixi.Graphics | null;
 
@@ -207,70 +208,72 @@ export abstract class Player extends Entity {
 	}
 
 	protected configureKeyframes() {
-		this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset?.x ?? 0, this.getLength());
-		this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset?.y ?? 0, this.getLength());
-		this.scaleKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.scale ?? 1, this.getLength(), 1);
-		this.opacityKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.opacity ?? 1, this.getLength(), 1);
-		this.rotationKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.transform?.rotate?.angle ?? 0, this.getLength());
+		const length = this.getLength();
+		const config = this.clipConfiguration;
 
+		// Extract base values from clip configuration
+		const baseOffsetX = typeof config.offset?.x === "number" ? config.offset.x : 0;
+		const baseOffsetY = typeof config.offset?.y === "number" ? config.offset.y : 0;
+		const baseScale = typeof config.scale === "number" ? config.scale : 1;
+		const baseOpacity = typeof config.opacity === "number" ? config.opacity : 1;
+		const baseRotation = typeof config.transform?.rotate?.angle === "number" ? config.transform.rotate.angle : 0;
+
+		// Create composed builders with base values
+		// Offsets use additive composition (base + effect delta + transition delta)
+		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, length, "additive");
+		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, length, "additive");
+		// Scale and opacity use multiplicative composition (base × effect factor × transition factor)
+		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, length, "multiplicative");
+		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, length, "multiplicative", { min: 0, max: 1 });
+		// Rotation uses additive composition
+		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, length, "additive");
+
+		// If user has custom keyframes, don't add effect/transition layers
 		if (this.clipHasKeyframes()) {
 			return;
 		}
 
-		const offsetXKeyframes: Keyframe[] = [];
-		const offsetYKeyframes: Keyframe[] = [];
-		const opacityKeyframes: Keyframe[] = [];
-		const scaleKeyframes: Keyframe[] = [];
-		const rotationKeyframes: Keyframe[] = [];
-		const maskXKeyframes: Keyframe[] = [];
-
+		// Build resolved clip config for preset builders
 		const resolvedClipConfig: ResolvedClip = {
-			...this.clipConfiguration,
+			...config,
 			start: this.getStart() / 1000,
-			length: this.getLength() / 1000
+			length: length / 1000
 		};
 
-		const effectKeyframeSet = new EffectPresetBuilder(resolvedClipConfig).build(this.edit.size, this.getSize());
-		offsetXKeyframes.push(...effectKeyframeSet.offsetXKeyframes);
-		offsetYKeyframes.push(...effectKeyframeSet.offsetYKeyframes);
-		opacityKeyframes.push(...effectKeyframeSet.opacityKeyframes);
-		scaleKeyframes.push(...effectKeyframeSet.scaleKeyframes);
-		rotationKeyframes.push(...effectKeyframeSet.rotationKeyframes);
+		// Build relative effect keyframes (factors/deltas)
+		const effectSet = new EffectPresetBuilder(resolvedClipConfig).buildRelative(this.edit.size, this.getSize());
 
-		const transitionKeyframeSet = new TransitionPresetBuilder(resolvedClipConfig).build();
-		offsetXKeyframes.push(...transitionKeyframeSet.offsetXKeyframes);
-		offsetYKeyframes.push(...transitionKeyframeSet.offsetYKeyframes);
-		opacityKeyframes.push(...transitionKeyframeSet.opacityKeyframes);
-		scaleKeyframes.push(...transitionKeyframeSet.scaleKeyframes);
-		rotationKeyframes.push(...transitionKeyframeSet.rotationKeyframes);
-		maskXKeyframes.push(...transitionKeyframeSet.maskXKeyframes);
+		// Build relative transition keyframes (separate in/out sets)
+		const transitionSet = new TransitionPresetBuilder(resolvedClipConfig).buildRelative();
 
-		if (offsetXKeyframes.length) {
-			const offsetX = this.clipConfiguration.offset?.x;
-			const initialOffsetX = typeof offsetX === "number" ? offsetX : 0;
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(offsetXKeyframes, this.getLength(), initialOffsetX);
-		}
+		// Add effect layer (runs for full clip duration)
+		this.offsetXKeyframeBuilder.addLayer(effectSet.offsetXKeyframes);
+		this.offsetYKeyframeBuilder.addLayer(effectSet.offsetYKeyframes);
+		this.scaleKeyframeBuilder.addLayer(effectSet.scaleKeyframes);
+		this.opacityKeyframeBuilder.addLayer(effectSet.opacityKeyframes);
+		this.rotationKeyframeBuilder.addLayer(effectSet.rotationKeyframes);
 
-		if (offsetYKeyframes.length) {
-			const offsetY = this.clipConfiguration.offset?.y;
-			const initialOffsetY = typeof offsetY === "number" ? offsetY : 0;
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(offsetYKeyframes, this.getLength(), initialOffsetY);
-		}
+		// Add transition-in layer (runs at clip start)
+		this.offsetXKeyframeBuilder.addLayer(transitionSet.in.offsetXKeyframes);
+		this.offsetYKeyframeBuilder.addLayer(transitionSet.in.offsetYKeyframes);
+		this.scaleKeyframeBuilder.addLayer(transitionSet.in.scaleKeyframes);
+		this.opacityKeyframeBuilder.addLayer(transitionSet.in.opacityKeyframes);
+		this.rotationKeyframeBuilder.addLayer(transitionSet.in.rotationKeyframes);
 
-		if (opacityKeyframes.length) {
-			this.opacityKeyframeBuilder = new KeyframeBuilder(opacityKeyframes, this.getLength(), 1);
-		}
+		// Add transition-out layer (runs at clip end)
+		this.offsetXKeyframeBuilder.addLayer(transitionSet.out.offsetXKeyframes);
+		this.offsetYKeyframeBuilder.addLayer(transitionSet.out.offsetYKeyframes);
+		this.scaleKeyframeBuilder.addLayer(transitionSet.out.scaleKeyframes);
+		this.opacityKeyframeBuilder.addLayer(transitionSet.out.opacityKeyframes);
+		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
-		if (scaleKeyframes.length) {
-			this.scaleKeyframeBuilder = new KeyframeBuilder(scaleKeyframes, this.getLength(), 1);
-		}
-
-		if (rotationKeyframes.length) {
-			this.rotationKeyframeBuilder = new KeyframeBuilder(rotationKeyframes, this.getLength());
-		}
-
+		// Mask keyframes (wipe/reveal effects) - still use KeyframeBuilder directly
+		const maskXKeyframes: Keyframe[] = [
+			...transitionSet.in.maskXKeyframes,
+			...transitionSet.out.maskXKeyframes
+		];
 		if (maskXKeyframes.length) {
-			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, this.getLength());
+			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
 		}
 	}
 
@@ -596,8 +599,8 @@ export abstract class Player extends Entity {
 		this.clipConfiguration.offset.x = relativePos.x;
 		this.clipConfiguration.offset.y = relativePos.y;
 
-		this.offsetXKeyframeBuilder = new KeyframeBuilder(relativePos.x, this.getLength());
-		this.offsetYKeyframeBuilder = new KeyframeBuilder(relativePos.y, this.getLength());
+		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(relativePos.x, this.getLength(), "additive");
+		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(relativePos.y, this.getLength(), "additive");
 	}
 
 	protected getFitScale(): number {
@@ -803,7 +806,7 @@ export abstract class Player extends Entity {
 					this.clipConfiguration.width = width;
 					this.clipConfiguration.height = height;
 					delete this.clipConfiguration.scale;
-					this.scaleKeyframeBuilder = new KeyframeBuilder(1, this.getLength(), 1);
+					this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(1, this.getLength(), "multiplicative");
 				}
 			}
 
@@ -874,7 +877,7 @@ export abstract class Player extends Entity {
 						this.clipConfiguration.width = width;
 						this.clipConfiguration.height = height;
 						delete this.clipConfiguration.scale;
-						this.scaleKeyframeBuilder = new KeyframeBuilder(1, this.getLength(), 1);
+						this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(1, this.getLength(), "multiplicative");
 					}
 				}
 
@@ -963,8 +966,8 @@ export abstract class Player extends Entity {
 			this.clipConfiguration.offset.y = newOffsetY;
 
 			// Update keyframe builders
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.x, this.getLength());
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
+			this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.x, this.getLength(), "additive");
+			this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.y, this.getLength(), "additive");
 
 			// Notify subclass about dimension change
 			this.onDimensionsChanged();
@@ -1024,8 +1027,8 @@ export abstract class Player extends Entity {
 			this.clipConfiguration.offset.y = newOffsetY;
 
 			// Update keyframe builders for position
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.x, this.getLength());
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
+			this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.x, this.getLength(), "additive");
+			this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.y, this.getLength(), "additive");
 
 			// Notify subclass about dimension change for re-rendering
 			this.onDimensionsChanged();
@@ -1058,7 +1061,7 @@ export abstract class Player extends Entity {
 				rotate: { angle: newRotation }
 			};
 
-			this.rotationKeyframeBuilder = new KeyframeBuilder(newRotation, this.getLength());
+			this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(newRotation, this.getLength(), "additive");
 
 			// Update cursor to follow the rotation
 			if (this.rotationCorner) {
@@ -1214,8 +1217,8 @@ export abstract class Player extends Entity {
 			this.clipConfiguration.offset.x = updatedRelativePosition.x;
 			this.clipConfiguration.offset.y = updatedRelativePosition.y;
 
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.x, this.getLength());
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
+			this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.x, this.getLength(), "additive");
+			this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.y, this.getLength(), "additive");
 			return;
 		}
 
