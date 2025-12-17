@@ -29,6 +29,8 @@ export class AssetToolbar {
 	}
 
 	mount(parent: HTMLElement): void {
+		this.container?.remove();
+
 		this.container = document.createElement("div");
 		this.container.className = "ss-asset-toolbar";
 

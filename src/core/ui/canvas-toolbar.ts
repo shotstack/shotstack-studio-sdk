@@ -120,6 +120,8 @@ export class CanvasToolbar {
 	}
 
 	mount(parent: HTMLElement): void {
+		this.container?.remove();
+
 		this.container = document.createElement("div");
 		this.container.className = "ss-canvas-toolbar";
 
