@@ -43,6 +43,11 @@ export class Canvas {
 
 	private onTickBound: (ticker: pixi.Ticker) => void;
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
+	private onTranscriptionProgressBound: (payload: { clipAlias: string; message?: string }) => void;
+	private onTranscriptionCompletedBound: () => void;
+	private onTranscriptionFailedBound: () => void;
+	private onClipSelectedBound: (payload: { trackIndex: number; clipIndex: number }) => void;
+	private onSelectionClearedBound: () => void;
 	private lastInspectorUpdate: number = 0;
 
 	constructor(edit: Edit) {
@@ -57,6 +62,11 @@ export class Canvas {
 		this.assetToolbar = new AssetToolbar(edit);
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
+		this.onTranscriptionProgressBound = this.onTranscriptionProgress.bind(this);
+		this.onTranscriptionCompletedBound = this.onTranscriptionCompleted.bind(this);
+		this.onTranscriptionFailedBound = this.onTranscriptionFailed.bind(this);
+		this.onClipSelectedBound = this.onClipSelected.bind(this);
+		this.onSelectionClearedBound = this.onSelectionCleared.bind(this);
 
 		edit.setCanvas(this);
 	}
@@ -326,50 +336,57 @@ export class Canvas {
 	}
 
 	private setupTranscriptionEventListeners(): void {
-		this.edit.events.on(EditEvent.TranscriptionProgress, (payload) => {
-			const message = payload.message ?? "Transcribing...";
-			this.transcriptionIndicator.show(message);
-			this.transcriptionIndicator.setPosition(this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10, 10);
-		});
+		this.edit.events.on(EditEvent.TranscriptionProgress, this.onTranscriptionProgressBound);
+		this.edit.events.on(EditEvent.TranscriptionCompleted, this.onTranscriptionCompletedBound);
+		this.edit.events.on(EditEvent.TranscriptionFailed, this.onTranscriptionFailedBound);
+	}
 
-		this.edit.events.on(EditEvent.TranscriptionCompleted, () => {
-			this.transcriptionIndicator.hide();
-		});
+	private onTranscriptionProgress(payload: { clipAlias: string; message?: string }): void {
+		const message = payload.message ?? "Transcribing...";
+		this.transcriptionIndicator.show(message);
+		this.transcriptionIndicator.setPosition(this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10, 10);
+	}
 
-		this.edit.events.on(EditEvent.TranscriptionFailed, () => {
-			this.transcriptionIndicator.hide();
-		});
+	private onTranscriptionCompleted(): void {
+		this.transcriptionIndicator.hide();
+	}
+
+	private onTranscriptionFailed(): void {
+		this.transcriptionIndicator.hide();
 	}
 
 	private setupClipToolbarListeners(): void {
-		this.edit.events.on(EditEvent.ClipSelected, ({ trackIndex, clipIndex }) => {
-			const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-			const assetType = player?.clipConfiguration.asset.type;
+		this.edit.events.on(EditEvent.ClipSelected, this.onClipSelectedBound);
+		this.edit.events.on(EditEvent.SelectionCleared, this.onSelectionClearedBound);
+	}
 
-			if (assetType === "rich-text") {
-				this.mediaToolbar.hide();
-				this.textToolbar.hide();
-				this.richTextToolbar.show(trackIndex, clipIndex);
-			} else if (assetType === "text") {
-				this.mediaToolbar.hide();
-				this.richTextToolbar.hide();
-				this.textToolbar.show(trackIndex, clipIndex);
-			} else if (assetType === "video" || assetType === "image" || assetType === "audio") {
-				this.richTextToolbar.hide();
-				this.textToolbar.hide();
-				this.mediaToolbar.showMedia(trackIndex, clipIndex, assetType);
-			} else {
-				this.richTextToolbar.hide();
-				this.textToolbar.hide();
-				this.mediaToolbar.hide();
-			}
-		});
+	private onClipSelected({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
+		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
+		const assetType = player?.clipConfiguration.asset.type;
 
-		this.edit.events.on(EditEvent.SelectionCleared, () => {
+		if (assetType === "rich-text") {
+			this.mediaToolbar.hide();
+			this.textToolbar.hide();
+			this.richTextToolbar.show(trackIndex, clipIndex);
+		} else if (assetType === "text") {
+			this.mediaToolbar.hide();
+			this.richTextToolbar.hide();
+			this.textToolbar.show(trackIndex, clipIndex);
+		} else if (assetType === "video" || assetType === "image" || assetType === "audio") {
+			this.richTextToolbar.hide();
+			this.textToolbar.hide();
+			this.mediaToolbar.showMedia(trackIndex, clipIndex, assetType);
+		} else {
 			this.richTextToolbar.hide();
 			this.textToolbar.hide();
 			this.mediaToolbar.hide();
-		});
+		}
+	}
+
+	private onSelectionCleared(): void {
+		this.richTextToolbar.hide();
+		this.textToolbar.hide();
+		this.mediaToolbar.hide();
 	}
 
 	private setupCanvasToolbarListeners(): void {
@@ -419,6 +436,13 @@ export class Canvas {
 
 		this.application.ticker.remove(this.onTickBound);
 		this.background?.off("pointerdown", this.onBackgroundClickBound);
+
+		// Remove event listeners
+		this.edit.events.off(EditEvent.TranscriptionProgress, this.onTranscriptionProgressBound);
+		this.edit.events.off(EditEvent.TranscriptionCompleted, this.onTranscriptionCompletedBound);
+		this.edit.events.off(EditEvent.TranscriptionFailed, this.onTranscriptionFailedBound);
+		this.edit.events.off(EditEvent.ClipSelected, this.onClipSelectedBound);
+		this.edit.events.off(EditEvent.SelectionCleared, this.onSelectionClearedBound);
 
 		this.background?.destroy();
 		this.container?.destroy();

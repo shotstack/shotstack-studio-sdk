@@ -26,12 +26,15 @@ interface PendingMaskCleanup {
 export class LumaMaskController {
 	private activeLumaMasks: ActiveLumaMask[] = [];
 	private pendingMaskCleanup: PendingMaskCleanup[] = [];
+	private readonly onClipChangedBound: () => void;
 
 	constructor(
 		private getCanvas: () => Canvas | null,
 		private getTracks: () => Player[][],
 		private events: EventEmitter<EditEventMap>
-	) {}
+	) {
+		this.onClipChangedBound = () => this.rebuildLumaMasksIfNeeded();
+	}
 
 	/**
 	 * Initialize luma masking after clips are loaded.
@@ -61,6 +64,8 @@ export class LumaMaskController {
 	 * Clean up all luma masks.
 	 */
 	dispose(): void {
+		this.removeEventListeners();
+
 		for (const mask of this.activeLumaMasks) {
 			mask.tempContainer.destroy({ children: true });
 			mask.maskSprite.destroy({ texture: true });
@@ -176,25 +181,19 @@ export class LumaMaskController {
 	}
 
 	private setupEventListeners(): void {
-		this.events.on(EditEvent.ClipAdded, () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
+		this.events.on(EditEvent.ClipAdded, this.onClipChangedBound);
+		this.events.on(EditEvent.ClipSplit, this.onClipChangedBound);
+		this.events.on(EditEvent.ClipUpdated, this.onClipChangedBound);
+		this.events.on(EditEvent.ClipRestored, this.onClipChangedBound);
+		this.events.on(EditEvent.ClipDeleted, this.onClipChangedBound);
+	}
 
-		this.events.on(EditEvent.ClipSplit, () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		this.events.on(EditEvent.ClipUpdated, () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		this.events.on(EditEvent.ClipRestored, () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		this.events.on(EditEvent.ClipDeleted, () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
+	private removeEventListeners(): void {
+		this.events.off(EditEvent.ClipAdded, this.onClipChangedBound);
+		this.events.off(EditEvent.ClipSplit, this.onClipChangedBound);
+		this.events.off(EditEvent.ClipUpdated, this.onClipChangedBound);
+		this.events.off(EditEvent.ClipRestored, this.onClipChangedBound);
+		this.events.off(EditEvent.ClipDeleted, this.onClipChangedBound);
 	}
 
 	private processPendingMaskCleanup(): void {
