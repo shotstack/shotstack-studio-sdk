@@ -20,6 +20,7 @@ import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
+import { EditEvent, type EditEventMap } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
@@ -53,8 +54,7 @@ export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
 
 	public assetLoader: AssetLoader;
-	// TODO: Create typed EditEventMap for SDK consumers (autocomplete, type-safe payloads)
-	public events: EventEmitter;
+	public events: EventEmitter<EditEventMap>;
 
 	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
@@ -218,11 +218,11 @@ export class Edit extends Entity {
 
 	public play(): void {
 		this.isPlaying = true;
-		this.events.emit("playback:play", {});
+		this.events.emit(EditEvent.PlaybackPlay);
 	}
 	public pause(): void {
 		this.isPlaying = false;
-		this.events.emit("playback:pause", {});
+		this.events.emit(EditEvent.PlaybackPause);
 	}
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
@@ -313,7 +313,7 @@ export class Edit extends Entity {
 			await this.loadSoundtrack(this.edit.timeline.soundtrack);
 		}
 
-		this.events.emit("timeline:updated", { current: this.getResolvedEdit() });
+		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
 		this.emitEditChanged("loadEdit");
 	}
 
@@ -746,7 +746,7 @@ export class Edit extends Entity {
 				const context = this.createCommandContext();
 				command.undo(context);
 				this.commandIndex -= 1;
-				this.events.emit("edit:undo", { command: command.name });
+				this.events.emit(EditEvent.EditUndo, { command: command.name });
 				this.emitEditChanged(`undo:${command.name}`);
 			}
 		}
@@ -758,7 +758,7 @@ export class Edit extends Entity {
 			const command = this.commandHistory[this.commandIndex];
 			const context = this.createCommandContext();
 			command.execute(context);
-			this.events.emit("edit:redo", { command: command.name });
+			this.events.emit(EditEvent.EditRedo, { command: command.name });
 			this.emitEditChanged(`redo:${command.name}`);
 		}
 	}
@@ -825,7 +825,7 @@ export class Edit extends Entity {
 	 */
 	private emitEditChanged(source: string): void {
 		if (this.isBatchingEvents) return;
-		this.events.emit("edit:changed", { source, timestamp: Date.now() });
+		this.events.emit(EditEvent.EditChanged, { source, timestamp: Date.now() });
 	}
 
 	/**
@@ -1044,7 +1044,7 @@ export class Edit extends Entity {
 				clip.draw();
 			},
 			updateDuration: () => this.updateTotalDuration(),
-			emitEvent: (name, data) => this.events.emit(name, data),
+			emitEvent: (name, ...args) => this.events.emit(name, ...args),
 			findClipIndices: player => this.findClipIndices(player),
 			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
 			getSelectedClip: () => this.selectedClip,
@@ -1160,7 +1160,7 @@ export class Edit extends Entity {
 
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {
-			this.events.emit("duration:changed", { duration: this.totalDuration });
+			this.events.emit(EditEvent.DurationChanged, { duration: this.totalDuration });
 		}
 	}
 
@@ -1240,7 +1240,7 @@ export class Edit extends Entity {
 		this.updateTotalDuration();
 
 		// Notify Timeline to update visuals with new timing (use resolved values)
-		this.events.emit("timeline:updated", {
+		this.events.emit(EditEvent.TimelineUpdated, {
 			current: this.getResolvedEdit()
 		});
 	}
@@ -1417,7 +1417,7 @@ export class Edit extends Entity {
 				trackIndex: trackIdx,
 				clipConfiguration: structuredClone(player.clipConfiguration)
 			};
-			this.events.emit("clip:copied", { trackIndex: trackIdx, clipIndex: clipIdx });
+			this.events.emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
 		}
 	}
 
@@ -1560,7 +1560,7 @@ export class Edit extends Entity {
 			this.background.fill();
 		}
 
-		this.events.emit("output:size:changed", result.data);
+		this.events.emit(EditEvent.OutputSizeChanged, result.data);
 		this.emitEditChanged("output:size");
 	}
 
@@ -1577,7 +1577,7 @@ export class Edit extends Entity {
 			};
 		}
 
-		this.events.emit("output:fps:changed", { fps });
+		this.events.emit(EditEvent.OutputFpsChanged, { fps });
 		this.emitEditChanged("output:fps");
 	}
 
@@ -1598,7 +1598,7 @@ export class Edit extends Entity {
 			};
 		}
 
-		this.events.emit("output:format:changed", { format: result.data });
+		this.events.emit(EditEvent.OutputFormatChanged, { format: result.data });
 		this.emitEditChanged("output:format");
 	}
 
@@ -1619,7 +1619,7 @@ export class Edit extends Entity {
 			};
 		}
 
-		this.events.emit("output:destinations:changed", { destinations: result.data });
+		this.events.emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
 		this.emitEditChanged("output:destinations");
 	}
 
@@ -1653,7 +1653,7 @@ export class Edit extends Entity {
 			this.background.fill();
 		}
 
-		this.events.emit("timeline:background:changed", { color: result.data });
+		this.events.emit(EditEvent.TimelineBackgroundChanged, { color: result.data });
 		this.emitEditChanged("timeline:background");
 	}
 
@@ -1670,14 +1670,14 @@ export class Edit extends Entity {
 		} else {
 			this.toolbarButtons.push(config);
 		}
-		this.events.emit("toolbar:buttons:changed", { buttons: this.toolbarButtons });
+		this.events.emit(EditEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });
 	}
 
 	public unregisterToolbarButton(id: string): void {
 		const index = this.toolbarButtons.findIndex(b => b.id === id);
 		if (index >= 0) {
 			this.toolbarButtons.splice(index, 1);
-			this.events.emit("toolbar:buttons:changed", { buttons: this.toolbarButtons });
+			this.events.emit(EditEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });
 		}
 	}
 
@@ -1963,7 +1963,7 @@ export class Edit extends Entity {
 	// ─── Intent Listeners ────────────────────────────────────────────────────────
 
 	private setupIntentListeners(): void {
-		this.events.on("timeline:clip:clicked", (data: { player: Player; trackIndex: number; clipIndex: number }) => {
+		this.events.on(EditEvent.TimelineClipClicked, data => {
 			if (data.player) {
 				this.selectPlayer(data.player);
 			} else {
@@ -1971,15 +1971,15 @@ export class Edit extends Entity {
 			}
 		});
 
-		this.events.on("timeline:background:clicked", () => {
+		this.events.on(EditEvent.TimelineBackgroundClicked, () => {
 			this.clearSelection();
 		});
 
-		this.events.on("canvas:clip:clicked", (data: { player: Player }) => {
+		this.events.on(EditEvent.CanvasClipClicked, data => {
 			this.selectPlayer(data.player);
 		});
 
-		this.events.on("canvas:background:clicked", () => {
+		this.events.on(EditEvent.CanvasBackgroundClicked, () => {
 			this.clearSelection();
 		});
 	}

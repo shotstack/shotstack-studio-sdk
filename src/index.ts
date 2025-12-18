@@ -6,6 +6,10 @@ export { Controls } from "@core/inputs/controls";
 export { VideoExporter } from "@core/export";
 export { Timeline } from "@timeline/index";
 
+// Event system
+export { EditEvent } from "@core/events/edit-events";
+export type { EditEventMap, EditEventName, ClipLocation, ClipReference } from "@core/events/edit-events";
+
 // Export theme types for library users
 export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types";
 export type { TimelineOptions, TimelineFeatures } from "@timeline/index";

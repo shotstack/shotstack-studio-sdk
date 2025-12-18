@@ -1,4 +1,5 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 
 import type { AudioAsset } from "../schemas/audio-asset";
 import type { ResolvedClip } from "../schemas/clip";
@@ -128,7 +129,7 @@ export class SplitClipCommand implements EditCommand {
 					this.rightClipPlayer.draw();
 				}
 				context.updateDuration();
-				context.emitEvent("timeline:updated", {
+				context.emitEvent(EditEvent.TimelineUpdated, {
 					current: context.getEditState()
 				});
 			})
@@ -175,7 +176,7 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		context.updateDuration();
-		context.emitEvent("timeline:updated", {
+		context.emitEvent(EditEvent.TimelineUpdated, {
 			current: context.getEditState()
 		});
 	}

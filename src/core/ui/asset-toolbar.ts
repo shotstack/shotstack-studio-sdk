@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit";
+import { EditEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
 
 export class AssetToolbar {
@@ -27,7 +28,7 @@ export class AssetToolbar {
 
 		parent.appendChild(this.container);
 
-		this.edit.events.on("toolbar:buttons:changed", () => this.render());
+		this.edit.events.on(EditEvent.ToolbarButtonsChanged, () => this.render());
 	}
 
 	private render(): void {
@@ -60,7 +61,8 @@ export class AssetToolbar {
 				if (!config) return;
 
 				const selectedClip = this.edit.getSelectedClipInfo();
-				this.edit.events.emit(config.event, {
+				// Toolbar buttons emit custom events registered by SDK consumers
+				(this.edit.events.emit as (name: string, payload: unknown) => void)(config.event, {
 					position: this.edit.playbackTime / 1000,
 					selectedClip: selectedClip ? { trackIndex: selectedClip.trackIndex, clipIndex: selectedClip.clipIndex } : null
 				});

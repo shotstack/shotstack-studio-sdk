@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 import type { TimingIntent } from "@core/timing/types";
 
 import { DeleteTrackCommand } from "./delete-track-command";
@@ -178,7 +179,7 @@ export class MoveClipCommand implements EditCommand {
 		context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex);
 
 		// Emit events AFTER all changes complete to avoid partial rebuilds
-		context.emitEvent("clip:updated", {
+		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: {
 				clip: { ...this.player.clipConfiguration, start: this.originalStart },
 				trackIndex: this.fromTrackIndex,
@@ -193,7 +194,8 @@ export class MoveClipCommand implements EditCommand {
 
 		// Re-select the moved clip at its new position
 		context.setSelectedClip(this.player);
-		context.emitEvent("clip:selected", {
+		context.emitEvent(EditEvent.ClipSelected, {
+			clip: this.player.clipConfiguration,
 			trackIndex: this.toTrackIndex,
 			clipIndex: this.originalClipIndex
 		});
@@ -277,7 +279,7 @@ export class MoveClipCommand implements EditCommand {
 		context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex);
 
 		// Emit events AFTER all changes complete to avoid partial rebuilds
-		context.emitEvent("clip:updated", {
+		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: {
 				clip: { ...this.player.clipConfiguration, start: this.newStart },
 				trackIndex: this.toTrackIndex,
@@ -292,7 +294,8 @@ export class MoveClipCommand implements EditCommand {
 
 		// Re-select the clip at its restored position
 		context.setSelectedClip(this.player);
-		context.emitEvent("clip:selected", {
+		context.emitEvent(EditEvent.ClipSelected, {
+			clip: this.player.clipConfiguration,
 			trackIndex: this.fromTrackIndex,
 			clipIndex: this.fromClipIndex
 		});

@@ -3,6 +3,7 @@ import { type Player, PlayerType } from "@canvas/players/player";
 import type { Canvas } from "@canvas/shotstack-canvas";
 import * as pixi from "pixi.js";
 
+import { EditEvent, type EditEventMap } from "./events/edit-events";
 import type { EventEmitter } from "./events/event-emitter";
 
 interface ActiveLumaMask {
@@ -29,7 +30,7 @@ export class LumaMaskController {
 	constructor(
 		private getCanvas: () => Canvas | null,
 		private getTracks: () => Player[][],
-		private events: EventEmitter
+		private events: EventEmitter<EditEventMap>
 	) {}
 
 	/**
@@ -175,19 +176,19 @@ export class LumaMaskController {
 	}
 
 	private setupEventListeners(): void {
-		this.events.on("clip:updated", () => {
+		this.events.on(EditEvent.ClipUpdated, () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
 
-		this.events.on("clip:restored", () => {
+		this.events.on(EditEvent.ClipRestored, () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
 
-		this.events.on("clip:deleted", () => {
+		this.events.on(EditEvent.ClipDeleted, () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
 
-		this.events.on("timeline:updated", () => {
+		this.events.on(EditEvent.TimelineUpdated, () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
 	}

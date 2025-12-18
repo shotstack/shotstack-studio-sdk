@@ -1,5 +1,6 @@
-import { getNestedValue } from "@core/shared/utils";
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
+import { getNestedValue } from "@core/shared/utils";
 import type { ResolvedClip } from "@schemas/clip";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -92,9 +93,10 @@ export class SetUpdatedClipCommand implements EditCommand {
 			}
 		}
 
-		context.emitEvent("clip:updated", {
-			previous: { clip: this.storedInitialConfig || this.initialClipConfig, trackIndex, clipIndex },
-			current: { clip: this.storedFinalConfig || this.clip.clipConfiguration, trackIndex, clipIndex }
+		const previousClip = this.storedInitialConfig ?? this.initialClipConfig ?? this.clip.clipConfiguration;
+		context.emitEvent(EditEvent.ClipUpdated, {
+			previous: { clip: previousClip, trackIndex, clipIndex },
+			current: { clip: this.storedFinalConfig, trackIndex, clipIndex }
 		});
 	}
 
@@ -138,7 +140,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 			}
 		}
 
-		context.emitEvent("clip:updated", {
+		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { clip: this.storedFinalConfig, trackIndex, clipIndex },
 			current: { clip: this.storedInitialConfig, trackIndex, clipIndex }
 		});

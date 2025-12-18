@@ -5,6 +5,7 @@
  * for merge fields throughout the SDK.
  */
 
+import { EditEvent } from "@core/events/edit-events";
 import type { EventEmitter } from "@core/events/event-emitter";
 
 import { type MergeField, type SerializedMergeField, fromSerialized, toSerialized } from "./types";
@@ -43,8 +44,8 @@ export class MergeFieldService {
 		this.fields.set(field.name, field);
 
 		if (!options?.silent) {
-			this.events.emit(isNew ? "mergefield:registered" : "mergefield:updated", { field });
-			this.events.emit("mergefield:changed", { fields: this.getAll() });
+			this.events.emit(isNew ? EditEvent.MergeFieldRegistered : EditEvent.MergeFieldUpdated, { field });
+			this.events.emit(EditEvent.MergeFieldChanged, { fields: this.getAll() });
 		}
 	}
 
@@ -56,8 +57,8 @@ export class MergeFieldService {
 	remove(name: string, options?: { silent?: boolean }): boolean {
 		const removed = this.fields.delete(name);
 		if (removed && !options?.silent) {
-			this.events.emit("mergefield:removed", { name });
-			this.events.emit("mergefield:changed", { fields: this.getAll() });
+			this.events.emit(EditEvent.MergeFieldRemoved, { name });
+			this.events.emit(EditEvent.MergeFieldChanged, { fields: this.getAll() });
 		}
 		return removed;
 	}

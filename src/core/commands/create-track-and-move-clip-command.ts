@@ -1,3 +1,5 @@
+import { EditEvent } from "@core/events/edit-events";
+
 import { AddTrackCommand } from "./add-track-command";
 import { MoveClipCommand } from "./move-clip-command";
 import type { EditCommand, CommandContext } from "./types";
@@ -60,7 +62,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		this.addTrackCommand.undo(context);
 		this.wasExecuted = false;
 
-		context.emitEvent("track:created:undone", {
+		context.emitEvent(EditEvent.TrackCreatedUndone, {
 			trackIndex: this.insertionIndex
 		});
 	}

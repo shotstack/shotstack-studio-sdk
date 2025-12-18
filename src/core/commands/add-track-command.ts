@@ -1,3 +1,4 @@
+import { EditEvent } from "@core/events/edit-events";
 import * as pixi from "pixi.js";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -42,7 +43,7 @@ export class AddTrackCommand implements EditCommand {
 		context.updateDuration();
 
 		// Emit track creation event to trigger timeline visual updates
-		context.emitEvent("track:added", {
+		context.emitEvent(EditEvent.TrackAdded, {
 			trackIndex: this.trackIdx,
 			totalTracks: tracks.length
 		});

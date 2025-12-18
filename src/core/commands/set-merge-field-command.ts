@@ -1,4 +1,5 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 import { setNestedValue } from "@core/shared/utils";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -77,10 +78,9 @@ export class SetMergeFieldCommand implements EditCommand {
 		this.clip.draw();
 
 		// 5. Emit event
-		context.emitEvent("mergefield:applied", {
-			clip: this.clip,
+		context.emitEvent(EditEvent.MergeFieldApplied, {
 			propertyPath: this.propertyPath,
-			fieldName: this.fieldName,
+			fieldName: this.fieldName ?? "",
 			trackIndex: this.trackIndex,
 			clipIndex: this.clipIndex
 		});
@@ -117,8 +117,7 @@ export class SetMergeFieldCommand implements EditCommand {
 		this.clip.draw();
 
 		// 5. Emit event
-		context.emitEvent("mergefield:removed", {
-			clip: this.clip,
+		context.emitEvent(EditEvent.MergeFieldRemoved, {
 			propertyPath: this.propertyPath,
 			fieldName: this.previousFieldName,
 			trackIndex: this.trackIndex,

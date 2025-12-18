@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit";
+import { EditEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { PlayheadComponent } from "./components/playhead/playhead-component";
@@ -184,23 +185,23 @@ export class Timeline extends TimelineEntity {
 
 	private setupEventListeners(): void {
 		// Listen for timeline data changes (single render when idle)
-		this.edit.events.on("timeline:updated", this.handleTimelineUpdated);
+		this.edit.events.on(EditEvent.TimelineUpdated, this.handleTimelineUpdated);
 
 		// Listen for playback state changes (start/stop render loop)
-		this.edit.events.on("playback:play", this.handlePlaybackPlay);
-		this.edit.events.on("playback:pause", this.handlePlaybackPause);
-		this.edit.events.on("playback:stop", this.handlePlaybackStop);
+		this.edit.events.on(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
+		this.edit.events.on(EditEvent.PlaybackPause, this.handlePlaybackPause);
+		this.edit.events.on(EditEvent.PlaybackStop, this.handlePlaybackStop);
 
 		// Listen for selection changes (from canvas or other sources)
-		this.edit.events.on("clip:selected", this.handleClipSelected);
+		this.edit.events.on(EditEvent.ClipSelected, this.handleClipSelected);
 	}
 
 	private removeEventListeners(): void {
-		this.edit.events.off("timeline:updated", this.handleTimelineUpdated);
-		this.edit.events.off("playback:play", this.handlePlaybackPlay);
-		this.edit.events.off("playback:pause", this.handlePlaybackPause);
-		this.edit.events.off("playback:stop", this.handlePlaybackStop);
-		this.edit.events.off("clip:selected", this.handleClipSelected);
+		this.edit.events.off(EditEvent.TimelineUpdated, this.handleTimelineUpdated);
+		this.edit.events.off(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
+		this.edit.events.off(EditEvent.PlaybackPause, this.handlePlaybackPause);
+		this.edit.events.off(EditEvent.PlaybackStop, this.handlePlaybackStop);
+		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
 	}
 
 	/** Start continuous render loop (during playback or interaction) */

@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 import type { TimingIntent } from "@core/timing/types";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -51,7 +52,7 @@ export class ResizeClipCommand implements EditCommand {
 		this.player.draw();
 
 		context.updateDuration();
-		context.emitEvent("clip:updated", {
+		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { clip: { ...this.player.clipConfiguration, length: this.originalLength }, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
 			current: { clip: this.player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
@@ -79,7 +80,7 @@ export class ResizeClipCommand implements EditCommand {
 		this.player.draw();
 
 		context.updateDuration();
-		context.emitEvent("clip:updated", {
+		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { clip: { ...this.player.clipConfiguration, length: this.newLength }, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
 			current: { clip: this.player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});

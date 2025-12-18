@@ -40,8 +40,8 @@ async function main() {
 			event: "code:requested"
 		});
 
-		// Handle text:requested event - adds a text clip
-		edit.events.on("text:requested", ({ position }: { position: number }) => {
+		// Handle text:requested event - adds a text clip (custom toolbar event)
+		(edit.events.on as (name: string, listener: (payload: { position: number }) => void) => void)("text:requested", ({ position }) => {
 			edit.addTrack(0, { clips: [] });
 			edit.addClip(0, {
 				asset: {

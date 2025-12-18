@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 
 import { DeleteTrackCommand } from "./delete-track-command";
 import type { EditCommand, CommandContext } from "./types";
@@ -38,11 +39,11 @@ export class DeleteClipCommand implements EditCommand {
 				this.trackWasDeleted = true;
 
 				// Emit timeline:updated so timeline UI refreshes after track deletion
-				context.emitEvent("timeline:updated", { current: context.getEditState() });
+				context.emitEvent(EditEvent.TimelineUpdated, { current: context.getEditState() });
 			}
 
 			// Emit event so luma masking and other listeners can update
-			context.emitEvent("clip:deleted", {
+			context.emitEvent(EditEvent.ClipDeleted, {
 				trackIndex: this.trackIdx,
 				clipIndex: this.clipIdx
 			});
@@ -64,7 +65,7 @@ export class DeleteClipCommand implements EditCommand {
 		context.propagateTimingChanges(this.trackIdx, this.clipIdx);
 
 		// Emit event so luma masking can rebuild after restore
-		context.emitEvent("clip:restored", {
+		context.emitEvent(EditEvent.ClipRestored, {
 			trackIndex: this.trackIdx,
 			clipIndex: this.clipIdx
 		});

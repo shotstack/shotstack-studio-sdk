@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas/clip";
 import type { TextAsset } from "@schemas/text-asset";
 
@@ -37,7 +38,7 @@ export class UpdateTextContentCommand implements EditCommand {
 			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 			const clipIndex = clipsByTrack.indexOf(this.clip);
 
-			context.emitEvent("clip:updated", {
+			context.emitEvent(EditEvent.ClipUpdated, {
 				previous: { clip: this.initialConfig, trackIndex, clipIndex },
 				current: { clip: this.clip.clipConfiguration, trackIndex, clipIndex }
 			});
@@ -62,7 +63,7 @@ export class UpdateTextContentCommand implements EditCommand {
 			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 			const clipIndex = clipsByTrack.indexOf(this.clip);
 
-			context.emitEvent("clip:updated", {
+			context.emitEvent(EditEvent.ClipUpdated, {
 				previous: { clip: this.clip.clipConfiguration, trackIndex, clipIndex },
 				current: { clip: this.initialConfig, trackIndex, clipIndex }
 			});

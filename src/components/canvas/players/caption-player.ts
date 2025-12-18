@@ -1,5 +1,6 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import type { Edit } from "@core/edit";
+import { EditEvent } from "@core/events/edit-events";
 import { type ResolvedClip } from "@schemas/clip";
 import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
@@ -64,15 +65,15 @@ export class CaptionPlayer extends Player {
 	}
 
 	private async loadTranscriptionInBackground(src: string): Promise<void> {
+		const clipAlias = this.clipConfiguration.alias ?? "";
 		try {
 			const originalEdit = this.edit.getOriginalEdit();
 			if (!originalEdit) {
 				throw new Error("Cannot resolve alias: edit not loaded");
 			}
-
 			const result = await resolveTranscriptionAlias(src, originalEdit, progress => {
-				this.edit.events.emit("transcription:progress", {
-					clipAlias: this.clipConfiguration.alias,
+				this.edit.events.emit(EditEvent.TranscriptionProgress, {
+					clipAlias,
 					...progress
 				});
 			});
@@ -91,16 +92,16 @@ export class CaptionPlayer extends Player {
 
 			this.isTranscribing = false;
 
-			this.edit.events.emit("transcription:complete", {
-				clipAlias: this.clipConfiguration.alias,
+			this.edit.events.emit(EditEvent.TranscriptionComplete, {
+				clipAlias,
 				cueCount: this.cues.length
 			});
 		} catch (error) {
 			this.isTranscribing = false;
 			console.error("Failed to transcribe:", error);
 
-			this.edit.events.emit("transcription:error", {
-				clipAlias: this.clipConfiguration.alias,
+			this.edit.events.emit(EditEvent.TranscriptionError, {
+				clipAlias,
 				error: error instanceof Error ? error.message : "Transcription failed"
 			});
 		}

@@ -150,7 +150,7 @@ describe("Edit Playback", () => {
 		it("emits playback:play event", () => {
 			edit.play();
 
-			expect(emitSpy).toHaveBeenCalledWith("playback:play", {});
+			expect(emitSpy).toHaveBeenCalledWith("playback:play");
 		});
 
 		it("does not change playbackTime", () => {
@@ -174,7 +174,7 @@ describe("Edit Playback", () => {
 		it("emits playback:pause event", () => {
 			edit.pause();
 
-			expect(emitSpy).toHaveBeenCalledWith("playback:pause", {});
+			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 
 		it("does not change playbackTime", () => {
@@ -219,7 +219,7 @@ describe("Edit Playback", () => {
 
 			edit.seek(5000);
 
-			expect(emitSpy).toHaveBeenCalledWith("playback:pause", {});
+			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 
 		it("seeks to exact boundary values", () => {
@@ -284,7 +284,7 @@ describe("Edit Playback", () => {
 			edit.update(16, 100); // Reaches end
 
 			expect(edit.isPlaying).toBe(false);
-			expect(emitSpy).toHaveBeenCalledWith("playback:pause", {});
+			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 
 		it("clamps negative elapsed values to 0", () => {
@@ -419,7 +419,7 @@ describe("Edit Playback", () => {
 
 			edit.seek(5000);
 
-			expect(emitSpy).toHaveBeenCalledWith("playback:pause", {});
+			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 
 		it("stop emits pause event (via seek → pause)", () => {
@@ -428,7 +428,7 @@ describe("Edit Playback", () => {
 
 			edit.stop();
 
-			expect(emitSpy).toHaveBeenCalledWith("playback:pause", {});
+			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 	});
 });

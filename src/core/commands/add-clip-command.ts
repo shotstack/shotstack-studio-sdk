@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas/clip";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -21,7 +22,7 @@ export class AddClipCommand implements EditCommand {
 		await context.addPlayer(this.trackIdx, clipPlayer);
 
 		context.updateDuration();
-		context.emitEvent("timeline:updated", { current: context.getEditState() });
+		context.emitEvent(EditEvent.TimelineUpdated, { current: context.getEditState() });
 
 		this.addedPlayer = clipPlayer;
 	}
@@ -31,6 +32,6 @@ export class AddClipCommand implements EditCommand {
 		context.queueDisposeClip(this.addedPlayer);
 
 		context.updateDuration();
-		context.emitEvent("timeline:updated", { current: context.getEditState() });
+		context.emitEvent(EditEvent.TimelineUpdated, { current: context.getEditState() });
 	}
 }

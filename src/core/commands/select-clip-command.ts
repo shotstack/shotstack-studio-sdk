@@ -1,3 +1,5 @@
+import { EditEvent } from "@core/events/edit-events";
+
 import type { EditCommand, CommandContext } from "./types";
 
 export class SelectClipCommand implements EditCommand {
@@ -26,7 +28,7 @@ export class SelectClipCommand implements EditCommand {
 			context.setSelectedClip(player);
 
 			// Emit selection event
-			context.emitEvent("clip:selected", {
+			context.emitEvent(EditEvent.ClipSelected, {
 				clip: player.clipConfiguration,
 				trackIndex: this.trackIndex,
 				clipIndex: this.clipIndex
@@ -43,14 +45,14 @@ export class SelectClipCommand implements EditCommand {
 			const player = context.getClipAt(this.previousSelection.trackIndex, this.previousSelection.clipIndex);
 			if (player) {
 				context.setSelectedClip(player);
-				context.emitEvent("clip:selected", {
+				context.emitEvent(EditEvent.ClipSelected, {
 					clip: player.clipConfiguration,
 					trackIndex: this.previousSelection.trackIndex,
 					clipIndex: this.previousSelection.clipIndex
 				});
 			}
 		} else {
-			context.emitEvent("selection:cleared", {});
+			context.emitEvent(EditEvent.SelectionCleared);
 		}
 	}
 }

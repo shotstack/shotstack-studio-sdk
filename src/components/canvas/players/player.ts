@@ -3,6 +3,7 @@ import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit";
+import { EditEvent } from "@core/events/edit-events";
 import { getNestedValue, setNestedValue } from "@core/shared/utils";
 import { type ResolvedTiming, type TimingIntent } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
@@ -817,7 +818,7 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		this.edit.events.emit("canvas:clip:clicked", { player: this });
+		this.edit.events.emit(EditEvent.CanvasClipClicked, { player: this });
 
 		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
 

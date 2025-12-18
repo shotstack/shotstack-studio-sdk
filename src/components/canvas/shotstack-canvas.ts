@@ -1,5 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
+import { EditEvent } from "@core/events/edit-events";
 import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
 import { MediaToolbar } from "@core/ui/media-toolbar";
@@ -325,23 +326,23 @@ export class Canvas {
 	}
 
 	private setupTranscriptionEventListeners(): void {
-		this.edit.events.on("transcription:progress", (payload: { message?: string }) => {
+		this.edit.events.on(EditEvent.TranscriptionProgress, (payload) => {
 			const message = payload.message ?? "Transcribing...";
 			this.transcriptionIndicator.show(message);
 			this.transcriptionIndicator.setPosition(this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10, 10);
 		});
 
-		this.edit.events.on("transcription:complete", () => {
+		this.edit.events.on(EditEvent.TranscriptionComplete, () => {
 			this.transcriptionIndicator.hide();
 		});
 
-		this.edit.events.on("transcription:error", () => {
+		this.edit.events.on(EditEvent.TranscriptionError, () => {
 			this.transcriptionIndicator.hide();
 		});
 	}
 
 	private setupClipToolbarListeners(): void {
-		this.edit.events.on("clip:selected", ({ trackIndex, clipIndex }) => {
+		this.edit.events.on(EditEvent.ClipSelected, ({ trackIndex, clipIndex }) => {
 			const player = this.edit.getPlayerClip(trackIndex, clipIndex);
 			const assetType = player?.clipConfiguration.asset.type;
 
@@ -364,7 +365,7 @@ export class Canvas {
 			}
 		});
 
-		this.edit.events.on("selection:cleared", () => {
+		this.edit.events.on(EditEvent.SelectionCleared, () => {
 			this.richTextToolbar.hide();
 			this.textToolbar.hide();
 			this.mediaToolbar.hide();
@@ -398,7 +399,7 @@ export class Canvas {
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
 		if (event.target === this.background) {
-			this.edit.events.emit("canvas:background:clicked", {});
+			this.edit.events.emit(EditEvent.CanvasBackgroundClicked);
 		}
 	}
 
