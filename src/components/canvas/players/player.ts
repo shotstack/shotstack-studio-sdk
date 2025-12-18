@@ -4,6 +4,16 @@ import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit";
 import { InternalEvent } from "@core/events/edit-events";
+import { calculateCornerScale, calculateEdgeResize, clampDimensions, detectCornerZone, detectEdgeZone } from "@core/interaction/clip-interaction";
+import {
+	SELECTION_CONSTANTS,
+	CURSOR_BASE_ANGLES,
+	type CornerName,
+	buildRotationCursor,
+	buildResizeCursor
+} from "@core/interaction/selection-overlay";
+import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
+import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
 import { getNestedValue, setNestedValue } from "@core/shared/utils";
 import { type Milliseconds, type ResolvedTiming, type TimingIntent, ms, sec, toSec } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
@@ -38,80 +48,9 @@ export enum PlayerType {
 	Caption = "caption"
 }
 
-/**
- * TODO: Move handles on UI level (screen space)
- * TODO: Handle overlapping frames - ex: length of a clip is 1.5s but there's an in (1s) and out (1s) transition
- * TODO: Scale X and Y needs to be implemented separately for getFitScale cover
- * TODO: Move animation effects and transitions out of player
- * TODO: On pointer down and custom keyframe, add a keyframe at the current time. Get current and time and push a keyframe into the state, and then reconfigure the keyframes.
- * TODO: Move bounding box to a separate entity
- */
-
 export abstract class Player extends Entity {
-	private static readonly SnapThreshold = 20;
-	private static readonly RotationSnapThreshold = 5; // degrees
-	private static readonly RotationSnapAngles = [0, 45, 90, 135, 180, 225, 270, 315];
-
 	private static readonly DiscardedFrameCount = 0;
-
-	private static readonly ScaleHandleRadius = 4;
-	private static readonly OutlineWidth = 1;
-
-	private static readonly EdgeHitZone = 8;
-	private static readonly RotationHitZone = 15;
 	private static readonly ExpandedHitArea = 10000;
-	private static readonly CornerNames = ["topLeft", "topRight", "bottomRight", "bottomLeft"] as const;
-
-	// Curved arrow for rotation cursor
-	private static readonly RotationCursorPath =
-		"M1113.142,1956.331C1008.608,1982.71 887.611,2049.487 836.035,2213.487" +
-		"L891.955,2219.403L779,2396L705.496,2199.678L772.745,2206.792" +
-		"C832.051,1999.958 984.143,1921.272 1110.63,1892.641L1107.952,1824.711" +
-		"L1299,1911L1115.34,2012.065L1113.142,1956.331Z";
-
-	// Double-headed arrow for resize cursor
-	private static readonly ResizeCursorPath =
-		"M1320,2186L1085,2421L1120,2457L975,2496L1014,2351L1050,2386L1285,2151L1250,2115L1396,2075L1356,2221L1320,2186Z";
-	private static readonly ResizeCursorMatrix = "matrix(0.807871,0.707107,-0.807871,0.707107,2111.872433,-206.020386)";
-
-	// Base angles for cursors (before clip rotation is applied)
-	private static readonly CursorBaseAngles: Record<string, number> = {
-		// Rotation cursor angles
-		topLeft: 0,
-		topRight: 90,
-		bottomRight: 180,
-		bottomLeft: 270,
-		// Resize cursor angles (NW-SE diagonal = 45°, NE-SW = -45°, horizontal = 0°, vertical = 90°)
-		topLeftResize: 45,
-		topRightResize: -45,
-		bottomRightResize: 45,
-		bottomLeftResize: -45,
-		left: 0,
-		right: 0,
-		top: 90,
-		bottom: 90
-	};
-
-	private static buildRotationCursor(angleDeg: number): string {
-		const path = Player.RotationCursorPath;
-		const transform = angleDeg === 0 ? "" : `<g transform='translate(1002 2110) rotate(${angleDeg}) translate(-1002 -2110)'>`;
-		const closeTag = angleDeg === 0 ? "" : "</g>";
-		const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='680 1800 640 620'>${transform}<path d='${path}' fill='black' stroke='white' stroke-width='33.33'/>${closeTag}</svg>`;
-		return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, auto`;
-	}
-
-	private static buildResizeCursor(angleDeg: number): string {
-		const path = Player.ResizeCursorPath;
-		const matrix = Player.ResizeCursorMatrix;
-		const svg =
-			`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='905 1940 640 620'>` +
-			`<g transform='rotate(${angleDeg} 1225 2250)'>` +
-			`<g transform='${matrix}'><path d='${path}' fill='black' stroke='white' stroke-width='33.33'/></g></g></svg>`;
-		return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 12 12, auto`;
-	}
-
-	private static readonly MinDimension = 50;
-	private static readonly MaxDimension = 3840;
 
 	public layer: number;
 	public shouldDispose: boolean;
@@ -152,7 +91,7 @@ export abstract class Player extends Entity {
 	private isRotating: boolean;
 	private rotationStart: number | null;
 	private initialRotation: number;
-	private rotationCorner: (typeof Player.CornerNames)[number] | null;
+	private rotationCorner: CornerName | null;
 
 	private initialClipConfiguration: ResolvedClip | null;
 	protected contentContainer: pixi.Container;
@@ -455,12 +394,12 @@ export abstract class Player extends Entity {
 		// During drag operations, keep the expanded hit area to capture mouse events anywhere
 		const isDraggingHandle = this.isRotating || this.scaleDirection !== null || this.edgeDragDirection !== null;
 		if (!isDraggingHandle) {
-			const hitMargin = (Player.RotationHitZone + Player.ScaleHandleRadius) / uiScale;
+			const hitMargin = (SELECTION_CONSTANTS.ROTATION_HIT_ZONE + SELECTION_CONSTANTS.SCALE_HANDLE_RADIUS) / uiScale;
 			this.getContainer().hitArea = new pixi.Rectangle(-hitMargin, -hitMargin, size.width + hitMargin * 2, size.height + hitMargin * 2);
 		}
 
 		this.outline.clear();
-		this.outline.strokeStyle = { width: Player.OutlineWidth / uiScale, color };
+		this.outline.strokeStyle = { width: SELECTION_CONSTANTS.OUTLINE_WIDTH / uiScale, color };
 		this.outline.rect(0, 0, size.width, size.height);
 		this.outline.stroke();
 
@@ -470,7 +409,7 @@ export abstract class Player extends Entity {
 
 		// Draw corner scale handles (only for assets that don't support edge resize)
 		if (this.topLeftScaleHandle && this.topRightScaleHandle && this.bottomRightScaleHandle && this.bottomLeftScaleHandle) {
-			const handleSize = (Player.ScaleHandleRadius * 2) / uiScale;
+			const handleSize = (SELECTION_CONSTANTS.SCALE_HANDLE_RADIUS * 2) / uiScale;
 
 			this.topLeftScaleHandle.fillStyle = { color };
 			this.topLeftScaleHandle.clear();
@@ -686,20 +625,14 @@ export abstract class Player extends Entity {
 	}
 
 	protected getFitScale(): number {
-		const targetWidth = this.clipConfiguration.width ?? this.edit.size.width;
-		const targetHeight = this.clipConfiguration.height ?? this.edit.size.height;
+		const targetSize = {
+			width: this.clipConfiguration.width ?? this.edit.size.width,
+			height: this.clipConfiguration.height ?? this.edit.size.height
+		};
 		const contentSize = this.getContentSize();
+		const fit = (this.clipConfiguration.fit ?? "crop") as FitMode;
 
-		switch (this.clipConfiguration.fit ?? "crop") {
-			case "crop":
-			case "cover":
-				return Math.max(targetWidth / contentSize.width, targetHeight / contentSize.height);
-			case "contain":
-				return Math.min(targetWidth / contentSize.width, targetHeight / contentSize.height);
-			case "none":
-			default:
-				return 1;
-		}
+		return calculateFitScale(contentSize, targetSize, fit);
 	}
 
 	public getScale(): number {
@@ -712,40 +645,11 @@ export abstract class Player extends Entity {
 
 	protected getContainerScale(): Vector {
 		const baseScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
-
-		// When explicit dimensions are set, applyFixedDimensions() handles fit scaling internally
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			return { x: baseScale, y: baseScale };
-		}
-
 		const contentSize = this.getContentSize();
-		const fit = this.clipConfiguration.fit ?? "crop";
+		const fit = (this.clipConfiguration.fit ?? "crop") as FitMode;
+		const hasFixedDimensions = Boolean(this.clipConfiguration.width && this.clipConfiguration.height);
 
-		if (contentSize.width === 0 || contentSize.height === 0) {
-			return { x: baseScale, y: baseScale };
-		}
-
-		const targetWidth = this.edit.size.width;
-		const targetHeight = this.edit.size.height;
-		const ratioX = targetWidth / contentSize.width;
-		const ratioY = targetHeight / contentSize.height;
-
-		switch (fit) {
-			case "contain": {
-				const uniform = Math.min(ratioX, ratioY) * baseScale;
-				return { x: uniform, y: uniform };
-			}
-			case "crop": {
-				const uniform = Math.max(ratioX, ratioY) * baseScale;
-				return { x: uniform, y: uniform };
-			}
-			case "cover": {
-				return { x: ratioX * baseScale, y: ratioY * baseScale };
-			}
-			case "none":
-			default:
-				return { x: baseScale, y: baseScale };
-		}
+		return calculateContainerScale(contentSize, this.edit.size, fit, baseScale, hasFixedDimensions);
 	}
 
 	public getRotation(): number {
@@ -760,34 +664,28 @@ export abstract class Player extends Entity {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
 
-	private getRotationCorner(event: pixi.FederatedPointerEvent): (typeof Player.CornerNames)[number] | null {
+	private getRotationCorner(event: pixi.FederatedPointerEvent): CornerName | null {
 		const localPoint = event.getLocalPosition(this.getContainer());
 		const size = this.getSize();
-		const uiScale = this.getUIScale();
-		const handleRadius = Player.ScaleHandleRadius / uiScale;
-		const rotationZone = Player.RotationHitZone / uiScale;
 
-		const cornerCoords = [
+		// Rotation zones only active when pointer is outside the content bounds
+		const isOutsideContent = localPoint.x < 0 || localPoint.x > size.width || localPoint.y < 0 || localPoint.y > size.height;
+		if (!isOutsideContent) return null;
+
+		const uiScale = this.getUIScale();
+		const handleRadius = SELECTION_CONSTANTS.SCALE_HANDLE_RADIUS / uiScale;
+		const rotationZone = SELECTION_CONSTANTS.ROTATION_HIT_ZONE / uiScale;
+
+		// Build corner coordinates array
+		const corners = [
 			{ x: 0, y: 0 },
 			{ x: size.width, y: 0 },
 			{ x: size.width, y: size.height },
 			{ x: 0, y: size.height }
 		];
 
-		const isOutsideContent = localPoint.x < 0 || localPoint.x > size.width || localPoint.y < 0 || localPoint.y > size.height;
-		if (!isOutsideContent) return null;
-
-		for (let i = 0; i < cornerCoords.length; i += 1) {
-			const corner = cornerCoords[i];
-			const dx = localPoint.x - corner.x;
-			const dy = localPoint.y - corner.y;
-			const distance = Math.sqrt(dx * dx + dy * dy);
-
-			if (distance > handleRadius && distance < handleRadius + rotationZone) {
-				return Player.CornerNames[i];
-			}
-		}
-		return null;
+		// Use pure function for corner zone detection
+		return detectCornerZone(localPoint, corners, handleRadius, rotationZone);
 	}
 
 	private getContentCenter(): Vector {
@@ -799,18 +697,18 @@ export abstract class Player extends Entity {
 	}
 
 	private getRotationCursor(corner: string): string {
-		const baseAngle = Player.CursorBaseAngles[corner] ?? 0;
-		return Player.buildRotationCursor(baseAngle + this.getRotation());
+		const baseAngle = CURSOR_BASE_ANGLES[corner] ?? 0;
+		return buildRotationCursor(baseAngle + this.getRotation());
 	}
 
 	private getCornerResizeCursor(corner: string): string {
-		const baseAngle = Player.CursorBaseAngles[`${corner}Resize`] ?? 45;
-		return Player.buildResizeCursor(baseAngle + this.getRotation());
+		const baseAngle = CURSOR_BASE_ANGLES[`${corner}Resize`] ?? 45;
+		return buildResizeCursor(baseAngle + this.getRotation());
 	}
 
 	private getEdgeResizeCursor(edge: "left" | "right" | "top" | "bottom"): string {
-		const baseAngle = Player.CursorBaseAngles[edge] ?? 0;
-		return Player.buildResizeCursor(baseAngle + this.getRotation());
+		const baseAngle = CURSOR_BASE_ANGLES[edge] ?? 0;
+		return buildResizeCursor(baseAngle + this.getRotation());
 	}
 
 	private onPointerStart(event: pixi.FederatedPointerEvent): void {
@@ -907,32 +805,12 @@ export abstract class Player extends Entity {
 
 		// Check for edge resize interactions (for assets that support edge resize)
 		if (this.supportsEdgeResize()) {
-			this.edgeDragDirection = null;
-
-			// Get local position within the container
 			const localPoint = event.getLocalPosition(this.getContainer());
 			const size = this.getSize();
-			const hitZone = Player.EdgeHitZone / this.getUIScale();
+			const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
 
-			// Check if pointer is near any edge (within hit zone)
-			const nearLeft = localPoint.x >= -hitZone && localPoint.x <= hitZone;
-			const nearRight = localPoint.x >= size.width - hitZone && localPoint.x <= size.width + hitZone;
-			const nearTop = localPoint.y >= -hitZone && localPoint.y <= hitZone;
-			const nearBottom = localPoint.y >= size.height - hitZone && localPoint.y <= size.height + hitZone;
-
-			// Determine which edge (prioritize horizontal/vertical edges, not corners)
-			const withinVerticalRange = localPoint.y > hitZone && localPoint.y < size.height - hitZone;
-			const withinHorizontalRange = localPoint.x > hitZone && localPoint.x < size.width - hitZone;
-
-			if (nearLeft && withinVerticalRange) {
-				this.edgeDragDirection = "left";
-			} else if (nearRight && withinVerticalRange) {
-				this.edgeDragDirection = "right";
-			} else if (nearTop && withinHorizontalRange) {
-				this.edgeDragDirection = "top";
-			} else if (nearBottom && withinHorizontalRange) {
-				this.edgeDragDirection = "bottom";
-			}
+			// Use pure function for edge zone detection
+			this.edgeDragDirection = detectEdgeZone(localPoint, size, hitZone);
 
 			if (this.edgeDragDirection !== null) {
 				const timelinePoint = event.getLocalPosition(this.edit.getContainer());
@@ -990,51 +868,20 @@ export abstract class Player extends Entity {
 		// Handle corner resize dragging (two-axis resize)
 		if (this.scaleDirection !== null && this.originalDimensions !== null) {
 			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+			const delta = {
+				x: timelinePoint.x - this.edgeDragStart.x,
+				y: timelinePoint.y - this.edgeDragStart.y
+			};
 
-			const deltaX = timelinePoint.x - this.edgeDragStart.x;
-			const deltaY = timelinePoint.y - this.edgeDragStart.y;
+			// Use pure function for corner scale calculation
+			const result = calculateCornerScale(this.scaleDirection, delta, this.originalDimensions, this.edit.size);
 
-			let newWidth = this.originalDimensions.width;
-			let newHeight = this.originalDimensions.height;
-			let newOffsetX = this.originalDimensions.offsetX;
-			let newOffsetY = this.originalDimensions.offsetY;
-
-			switch (this.scaleDirection) {
-				case "topLeft":
-					// Decrease width, decrease height, shift offset to keep bottom-right fixed
-					newWidth = this.originalDimensions.width - deltaX;
-					newHeight = this.originalDimensions.height - deltaY;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				case "topRight":
-					// Increase width, decrease height, shift offset to keep bottom-left fixed
-					newWidth = this.originalDimensions.width + deltaX;
-					newHeight = this.originalDimensions.height - deltaY;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				case "bottomLeft":
-					// Decrease width, increase height, shift offset to keep top-right fixed
-					newWidth = this.originalDimensions.width - deltaX;
-					newHeight = this.originalDimensions.height + deltaY;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				case "bottomRight":
-					// Increase width, increase height, shift offset to keep top-left fixed
-					newWidth = this.originalDimensions.width + deltaX;
-					newHeight = this.originalDimensions.height + deltaY;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				default:
-					break;
-			}
-
-			// Clamp dimensions
-			newWidth = Math.max(Player.MinDimension, Math.min(newWidth, Player.MaxDimension));
-			newHeight = Math.max(Player.MinDimension, Math.min(newHeight, Player.MaxDimension));
+			// Clamp dimensions using pure function
+			const clamped = clampDimensions(result.width, result.height);
+			const newWidth = clamped.width;
+			const newHeight = clamped.height;
+			const newOffsetX = result.offsetX;
+			const newOffsetY = result.offsetY;
 
 			// Apply dimensions
 			this.clipConfiguration.width = newWidth;
@@ -1060,43 +907,20 @@ export abstract class Player extends Entity {
 		// Handle edge resize dragging
 		if (this.edgeDragDirection !== null && this.originalDimensions !== null) {
 			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+			const delta = {
+				x: timelinePoint.x - this.edgeDragStart.x,
+				y: timelinePoint.y - this.edgeDragStart.y
+			};
 
-			const deltaX = timelinePoint.x - this.edgeDragStart.x;
-			const deltaY = timelinePoint.y - this.edgeDragStart.y;
+			// Use pure function for edge resize calculation
+			const result = calculateEdgeResize(this.edgeDragDirection, delta, this.originalDimensions, this.edit.size);
 
-			let newWidth = this.originalDimensions.width;
-			let newHeight = this.originalDimensions.height;
-			let newOffsetX = this.originalDimensions.offsetX;
-			let newOffsetY = this.originalDimensions.offsetY;
-
-			switch (this.edgeDragDirection) {
-				case "left":
-					// Dragging left edge: width decreases, offset shifts right to keep right edge fixed
-					newWidth = this.originalDimensions.width - deltaX;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					break;
-				case "right":
-					// Dragging right edge: width increases, offset shifts right to keep left edge fixed
-					newWidth = this.originalDimensions.width + deltaX;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					break;
-				case "top":
-					// Dragging top edge: height decreases, offset shifts up to keep bottom edge fixed
-					newHeight = this.originalDimensions.height - deltaY;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				case "bottom":
-					// Dragging bottom edge: height increases, offset shifts down to keep top edge fixed
-					newHeight = this.originalDimensions.height + deltaY;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				default:
-					break;
-			}
-
-			// Clamp dimensions to valid bounds
-			newWidth = Math.max(Player.MinDimension, Math.min(newWidth, Player.MaxDimension));
-			newHeight = Math.max(Player.MinDimension, Math.min(newHeight, Player.MaxDimension));
+			// Clamp dimensions using pure function
+			const clamped = clampDimensions(result.width, result.height);
+			const newWidth = clamped.width;
+			const newHeight = clamped.height;
+			const newOffsetX = result.offsetX;
+			const newOffsetY = result.offsetY;
 
 			// Update clip configuration
 			this.clipConfiguration.width = Math.round(newWidth);
@@ -1124,19 +948,10 @@ export abstract class Player extends Entity {
 			const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
 			const deltaAngle = (currentAngle - this.rotationStart) * (180 / Math.PI);
 
-			let newRotation = this.initialRotation + deltaAngle;
+			const rawRotation = this.initialRotation + deltaAngle;
 
-			// Snap to fixed angles
-			const normalizedRotation = ((newRotation % 360) + 360) % 360;
-			for (const snapAngle of Player.RotationSnapAngles) {
-				const distance = Math.abs(normalizedRotation - snapAngle);
-				const wrappedDistance = Math.min(distance, 360 - distance);
-				if (wrappedDistance < Player.RotationSnapThreshold) {
-					const fullRotations = Math.round(newRotation / 360) * 360;
-					newRotation = fullRotations + snapAngle;
-					break;
-				}
-			}
+			// Snap to fixed angles using pure snap function
+			const { angle: newRotation } = snapRotation(rawRotation);
 
 			this.clipConfiguration.transform = {
 				...this.clipConfiguration.transform,
@@ -1158,133 +973,29 @@ export abstract class Player extends Entity {
 			const pivot = this.getPivot();
 
 			const cursorPosition: Vector = { x: timelinePoint.x - this.dragOffset.x, y: timelinePoint.y - this.dragOffset.y };
-			const updatedPosition: Vector = { x: cursorPosition.x - pivot.x, y: cursorPosition.y - pivot.y };
+			const rawPosition: Vector = { x: cursorPosition.x - pivot.x, y: cursorPosition.y - pivot.y };
 
 			// Clear guides before drawing new ones
 			this.edit.clearAlignmentGuides();
 
-			// Canvas snap positions (corners + center + edges)
-			const canvasSnapPositionsX = [0, this.edit.size.width / 2, this.edit.size.width];
-			const canvasSnapPositionsY = [0, this.edit.size.height / 2, this.edit.size.height];
-
-			// Current clip snap positions (corners + center + edges)
-			const mySize = this.getSize();
-			const myLeft = updatedPosition.x;
-			const myRight = updatedPosition.x + mySize.width;
-			const myCenterX = updatedPosition.x + mySize.width / 2;
-			const myTop = updatedPosition.y;
-			const myBottom = updatedPosition.y + mySize.height;
-			const myCenterY = updatedPosition.y + mySize.height / 2;
-
-			const clipSnapPositionsX = [myLeft, myCenterX, myRight];
-			const clipSnapPositionsY = [myTop, myCenterY, myBottom];
-
-			let closestDistanceX = Player.SnapThreshold;
-			let closestDistanceY = Player.SnapThreshold;
-			let snapPositionX: number | null = null;
-			let snapPositionY: number | null = null;
-			let snapTypeX: "canvas" | "clip" | null = null;
-			let snapTypeY: "canvas" | "clip" | null = null;
-			let snapTargetX: number | null = null;
-			let snapTargetY: number | null = null;
-			let clipBoundsX: { start: number; end: number } | null = null;
-			let clipBoundsY: { start: number; end: number } | null = null;
-
-			// Check canvas snapping
-			for (const clipX of clipSnapPositionsX) {
-				for (const canvasX of canvasSnapPositionsX) {
-					const distance = Math.abs(clipX - canvasX);
-					if (distance < closestDistanceX) {
-						closestDistanceX = distance;
-						snapPositionX = updatedPosition.x + (canvasX - clipX);
-						snapTypeX = "canvas";
-						snapTargetX = canvasX;
-					}
-				}
-			}
-
-			for (const clipY of clipSnapPositionsY) {
-				for (const canvasY of canvasSnapPositionsY) {
-					const distance = Math.abs(clipY - canvasY);
-					if (distance < closestDistanceY) {
-						closestDistanceY = distance;
-						snapPositionY = updatedPosition.y + (canvasY - clipY);
-						snapTypeY = "canvas";
-						snapTargetY = canvasY;
-					}
-				}
-			}
-
-			// Check clip-to-clip snapping
+			// Get bounds of other clips for snap calculations
 			const otherPlayers = this.edit.getActivePlayersExcept(this);
-			for (const other of otherPlayers) {
-				const otherPos = other.getContainer().position;
-				const otherSize = other.getSize();
-				const otherLeft = otherPos.x;
-				const otherRight = otherPos.x + otherSize.width;
-				const otherCenterX = otherPos.x + otherSize.width / 2;
-				const otherTop = otherPos.y;
-				const otherBottom = otherPos.y + otherSize.height;
-				const otherCenterY = otherPos.y + otherSize.height / 2;
+			const otherClipBounds: ClipBounds[] = otherPlayers.map(other => {
+				const pos = other.getContainer().position;
+				const size = other.getSize();
+				return createClipBounds({ x: pos.x, y: pos.y }, size);
+			});
 
-				const otherSnapX = [otherLeft, otherCenterX, otherRight];
-				const otherSnapY = [otherTop, otherCenterY, otherBottom];
+			// Perform snapping using pure snap functions
+			const snapContext = createSnapContext(this.getSize(), this.edit.size, otherClipBounds);
+			const snapResult = snap(rawPosition, snapContext);
 
-				for (const clipX of clipSnapPositionsX) {
-					for (const targetX of otherSnapX) {
-						const distance = Math.abs(clipX - targetX);
-						if (distance < closestDistanceX) {
-							closestDistanceX = distance;
-							snapPositionX = updatedPosition.x + (targetX - clipX);
-							snapTypeX = "clip";
-							snapTargetX = targetX;
-							// Bounds for the dotted line: from top of higher clip to bottom of lower
-							const minY = Math.min(myTop, otherTop);
-							const maxY = Math.max(myBottom, otherBottom);
-							clipBoundsX = { start: minY, end: maxY };
-						}
-					}
-				}
-
-				for (const clipY of clipSnapPositionsY) {
-					for (const targetY of otherSnapY) {
-						const distance = Math.abs(clipY - targetY);
-						if (distance < closestDistanceY) {
-							closestDistanceY = distance;
-							snapPositionY = updatedPosition.y + (targetY - clipY);
-							snapTypeY = "clip";
-							snapTargetY = targetY;
-							// Bounds for the dotted line: from left of leftmost clip to right of rightmost
-							const minX = Math.min(myLeft, otherLeft);
-							const maxX = Math.max(myRight, otherRight);
-							clipBoundsY = { start: minX, end: maxX };
-						}
-					}
-				}
-			}
-
-			// Apply snaps
-			if (snapPositionX !== null) {
-				updatedPosition.x = snapPositionX;
-			}
-			if (snapPositionY !== null) {
-				updatedPosition.y = snapPositionY;
-			}
+			// Apply snapped position
+			const updatedPosition = snapResult.position;
 
 			// Draw alignment guides for active snaps
-			if (snapTypeX !== null && snapTargetX !== null) {
-				if (snapTypeX === "canvas") {
-					this.edit.showAlignmentGuide("canvas", "x", snapTargetX);
-				} else if (clipBoundsX) {
-					this.edit.showAlignmentGuide("clip", "x", snapTargetX, clipBoundsX);
-				}
-			}
-			if (snapTypeY !== null && snapTargetY !== null) {
-				if (snapTypeY === "canvas") {
-					this.edit.showAlignmentGuide("canvas", "y", snapTargetY);
-				} else if (clipBoundsY) {
-					this.edit.showAlignmentGuide("clip", "y", snapTargetY, clipBoundsY);
-				}
+			for (const guide of snapResult.guides) {
+				this.edit.showAlignmentGuide(guide.type, guide.axis, guide.position, guide.bounds);
 			}
 
 			const updatedRelativePosition = this.positionBuilder.absoluteToRelative(
@@ -1313,24 +1024,15 @@ export abstract class Player extends Entity {
 				return;
 			}
 
-			// Check for edge resize cursor
+			// Check for edge resize cursor using pure function
 			if (this.supportsEdgeResize()) {
 				const localPoint = event.getLocalPosition(this.getContainer());
 				const size = this.getSize();
-				const hitZone = Player.EdgeHitZone / this.getUIScale();
+				const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
 
-				const nearLeft = localPoint.x >= -hitZone && localPoint.x <= hitZone;
-				const nearRight = localPoint.x >= size.width - hitZone && localPoint.x <= size.width + hitZone;
-				const nearTop = localPoint.y >= -hitZone && localPoint.y <= hitZone;
-				const nearBottom = localPoint.y >= size.height - hitZone && localPoint.y <= size.height + hitZone;
-
-				const withinVerticalRange = localPoint.y > hitZone && localPoint.y < size.height - hitZone;
-				const withinHorizontalRange = localPoint.x > hitZone && localPoint.x < size.width - hitZone;
-
-				if ((nearLeft || nearRight) && withinVerticalRange) {
-					this.getContainer().cursor = this.getEdgeResizeCursor(nearLeft ? "left" : "right");
-				} else if ((nearTop || nearBottom) && withinHorizontalRange) {
-					this.getContainer().cursor = this.getEdgeResizeCursor(nearTop ? "top" : "bottom");
+				const edge = detectEdgeZone(localPoint, size, hitZone);
+				if (edge) {
+					this.getContainer().cursor = this.getEdgeResizeCursor(edge);
 				} else {
 					this.getContainer().cursor = "pointer";
 				}
@@ -1437,47 +1139,13 @@ export abstract class Player extends Entity {
 
 		sprite.anchor.set(0.5, 0.5);
 
-		switch (fit) {
-			// 🟢 cover → non-uniform stretch to exactly fill (distort)
-			case "cover": {
-				const scaleX = clipWidth / nativeWidth;
-				const scaleY = clipHeight / nativeHeight;
+		// Use pure function for sprite transform calculation
+		const nativeSize = { width: nativeWidth, height: nativeHeight };
+		const targetSize = { width: clipWidth, height: clipHeight };
+		const transform = calculateSpriteTransform(nativeSize, targetSize, fit as FitMode);
 
-				// backend “cover” stretches image to fill without cropping
-				sprite.scale.set(scaleX, scaleY);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-
-			// 🟢 crop → uniform fill using max scale (overflow is masked/cropped)
-			case "crop": {
-				const cropScale = Math.max(clipWidth / nativeWidth, clipHeight / nativeHeight);
-				sprite.scale.set(cropScale, cropScale);
-				sprite.anchor.set(0.5, 0.5);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-
-			// 🟢 contain → uniform fit fully inside (may letterbox)
-			case "contain": {
-				const sx = clipWidth / nativeWidth;
-				const sy = clipHeight / nativeHeight;
-
-				const baseScale = Math.min(sx, sy);
-
-				sprite.scale.set(baseScale, baseScale);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-
-			// 🟢 none → no fitting, use native size, cropped by mask
-			case "none":
-			default: {
-				sprite.scale.set(1, 1);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-		}
+		sprite.scale.set(transform.scaleX, transform.scaleY);
+		sprite.position.set(transform.positionX, transform.positionY);
 
 		// 🟣 keep animation logic untouched
 		this.contentContainer.scale.set(currentUserScale, currentUserScale);
