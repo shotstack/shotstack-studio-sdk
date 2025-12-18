@@ -17,7 +17,7 @@ export class UpdateTextContentCommand implements EditCommand {
 		private initialConfig: ClipType
 	) {
 		const { asset } = this.clip.clipConfiguration;
-		this.previousText = asset && "text" in asset ? (asset as TextAsset).text : "";
+		this.previousText = asset && "text" in asset ? ((asset as TextAsset).text ?? "") : "";
 	}
 
 	execute(context?: CommandContext): void {

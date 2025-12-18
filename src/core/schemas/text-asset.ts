@@ -39,7 +39,7 @@ export const TextAssetStrokeSchema = zod
 export const TextAssetSchema = zod
 	.object({
 		type: zod.literal("text"),
-		text: zod.string(),
+		text: zod.string().optional(),
 		width: zod.number().positive().optional(),
 		height: zod.number().positive().optional(),
 		font: TextAssetFontSchema.optional(),

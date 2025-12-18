@@ -79,7 +79,7 @@ export class TextPlayer extends Player {
 
 		// Update text content and style
 		if (this.text) {
-			this.text.text = textAsset.text;
+			this.text.text = textAsset.text ?? "";
 			this.text.style = this.createTextStyle(textAsset);
 
 			// Update stroke filter
