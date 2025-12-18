@@ -5,7 +5,7 @@ import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { getNestedValue, setNestedValue } from "@core/shared/utils";
-import { type ResolvedTiming, type TimingIntent } from "@core/timing/types";
+import { type Milliseconds, type ResolvedTiming, type Seconds, type TimingIntent, ms, sec, toSec } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
@@ -175,12 +175,12 @@ export abstract class Player extends Entity {
 		this.positionBuilder = new PositionBuilder(edit.size);
 
 		this.timingIntent = {
-			start: clipConfiguration.start,
-			length: clipConfiguration.length
+			start: sec(clipConfiguration.start),
+			length: sec(clipConfiguration.length)
 		};
 
-		const startValue = typeof clipConfiguration.start === "number" ? clipConfiguration.start * 1000 : 0;
-		const lengthValue = typeof clipConfiguration.length === "number" ? clipConfiguration.length * 1000 : 3000;
+		const startValue = typeof clipConfiguration.start === "number" ? ms(clipConfiguration.start * 1000) : ms(0);
+		const lengthValue = typeof clipConfiguration.length === "number" ? ms(clipConfiguration.length * 1000) : ms(3000);
 		this.resolvedTiming = { start: startValue, length: lengthValue };
 
 		this.wipeMask = null;
@@ -516,16 +516,16 @@ export abstract class Player extends Entity {
 		this.contentContainer?.destroy();
 	}
 
-	public getStart(): number {
+	public getStart(): Milliseconds {
 		return this.resolvedTiming.start;
 	}
 
-	public getLength(): number {
+	public getLength(): Milliseconds {
 		return this.resolvedTiming.length;
 	}
 
-	public getEnd(): number {
-		return this.resolvedTiming.start + this.resolvedTiming.length;
+	public getEnd(): Milliseconds {
+		return ms(this.resolvedTiming.start + this.resolvedTiming.length);
 	}
 
 	public getTimingIntent(): TimingIntent {
@@ -551,8 +551,8 @@ export abstract class Player extends Entity {
 
 	public convertToFixedTiming(): void {
 		this.timingIntent = {
-			start: this.resolvedTiming.start / 1000,
-			length: this.resolvedTiming.length / 1000
+			start: toSec(this.resolvedTiming.start),
+			length: toSec(this.resolvedTiming.length)
 		};
 	}
 

@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { TimingIntent } from "@core/timing/types";
+import { type Seconds, type TimingIntent, ms, sec, toMs, toSec } from "@core/timing/types";
 
 import { DeleteTrackCommand } from "./delete-track-command";
 import type { EditCommand, CommandContext } from "./types";
@@ -10,7 +10,7 @@ export class MoveClipCommand implements EditCommand {
 	private player?: Player;
 	private originalTrackIndex: number;
 	private originalClipIndex: number;
-	private originalStart?: number;
+	private originalStart?: Seconds;
 	private originalTimingIntent?: TimingIntent;
 	private deleteTrackCommand?: DeleteTrackCommand;
 	private sourceTrackWasDeleted = false;
@@ -19,7 +19,7 @@ export class MoveClipCommand implements EditCommand {
 		private fromTrackIndex: number,
 		private fromClipIndex: number,
 		private toTrackIndex: number,
-		private newStart: number
+		private newStart: Seconds
 	) {
 		this.originalTrackIndex = fromTrackIndex;
 		this.originalClipIndex = fromClipIndex;
@@ -44,7 +44,7 @@ export class MoveClipCommand implements EditCommand {
 
 		// Get the clip to move
 		this.player = fromTrack[this.fromClipIndex];
-		this.originalStart = this.player.clipConfiguration.start;
+		this.originalStart = sec(this.player.clipConfiguration.start);
 
 		// Store original timing intent for undo
 		this.originalTimingIntent = this.player.getTimingIntent();
@@ -70,7 +70,7 @@ export class MoveClipCommand implements EditCommand {
 			let insertIndex = 0;
 			for (let i = 0; i < toTrack.length; i += 1) {
 				const clip = toTrack[i];
-				const clipStart = clip.getStart() / 1000; // Use resolved start time in seconds
+				const clipStart = toSec(clip.getStart()); // Use resolved start time in seconds
 				if (this.newStart < clipStart) {
 					break;
 				}
@@ -106,7 +106,7 @@ export class MoveClipCommand implements EditCommand {
 			let insertIndex = 0;
 			for (let i = 0; i < track.length; i += 1) {
 				const clip = track[i];
-				const clipStart = clip.getStart() / 1000;
+				const clipStart = toSec(clip.getStart());
 				if (this.newStart < clipStart) {
 					break;
 				}
@@ -125,7 +125,7 @@ export class MoveClipCommand implements EditCommand {
 
 		// Update resolved timing to match the new position
 		this.player.setResolvedTiming({
-			start: this.newStart * 1000,
+			start: toMs(this.newStart),
 			length: this.player.getLength()
 		});
 
@@ -253,8 +253,8 @@ export class MoveClipCommand implements EditCommand {
 			this.player.setTimingIntent(this.originalTimingIntent);
 			// Update resolved timing to match
 			this.player.setResolvedTiming({
-				start: typeof this.originalTimingIntent.start === "number" ? this.originalTimingIntent.start * 1000 : this.player.getStart(),
-				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length * 1000 : this.player.getLength()
+				start: typeof this.originalTimingIntent.start === "number" ? toMs(this.originalTimingIntent.start) : this.player.getStart(),
+				length: typeof this.originalTimingIntent.length === "number" ? toMs(this.originalTimingIntent.length) : this.player.getLength()
 			});
 
 			// If restoring "end" length, re-track in endLengthClips Set

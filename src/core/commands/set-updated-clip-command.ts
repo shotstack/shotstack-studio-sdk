@@ -1,6 +1,7 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import { getNestedValue } from "@core/shared/utils";
+import { type Seconds, ms, sec, toMs, toSec } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas/clip";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -19,7 +20,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 	private storedInitialBindings: Map<string, MergeFieldBinding> = new Map();
 	private trackIndex: number;
 	private clipIndex: number;
-	private storedInitialTiming: { start: number; length: number } | null = null;
+	private storedInitialTiming: { start: Seconds; length: Seconds } | null = null;
 
 	constructor(
 		private clip: Player,
@@ -50,18 +51,18 @@ export class SetUpdatedClipCommand implements EditCommand {
 		if (startChanged || lengthChanged) {
 			// Store initial timing for undo
 			this.storedInitialTiming = {
-				start: this.clip.getStart() / 1000,
-				length: this.clip.getLength() / 1000
+				start: toSec(this.clip.getStart()),
+				length: toSec(this.clip.getLength())
 			};
 
 			this.clip.setTimingIntent({
-				start: this.storedFinalConfig.start,
-				length: this.storedFinalConfig.length
+				start: sec(this.storedFinalConfig.start),
+				length: sec(this.storedFinalConfig.length)
 			});
 
 			this.clip.setResolvedTiming({
-				start: this.storedFinalConfig.start * 1000,
-				length: this.storedFinalConfig.length * 1000
+				start: ms(this.storedFinalConfig.start * 1000),
+				length: ms(this.storedFinalConfig.length * 1000)
 			});
 		}
 
@@ -112,8 +113,8 @@ export class SetUpdatedClipCommand implements EditCommand {
 				length: this.storedInitialTiming.length
 			});
 			this.clip.setResolvedTiming({
-				start: this.storedInitialTiming.start * 1000,
-				length: this.storedInitialTiming.length * 1000
+				start: toMs(this.storedInitialTiming.start),
+				length: toMs(this.storedInitialTiming.length)
 			});
 		}
 

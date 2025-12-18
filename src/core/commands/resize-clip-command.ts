@@ -1,19 +1,19 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { TimingIntent } from "@core/timing/types";
+import { type Seconds, type TimingIntent, ms, sec, toMs } from "@core/timing/types";
 
 import type { EditCommand, CommandContext } from "./types";
 
 export class ResizeClipCommand implements EditCommand {
 	name = "resizeClip";
-	private originalLength?: number;
+	private originalLength?: Seconds;
 	private originalTimingIntent?: TimingIntent;
 	private player?: Player;
 
 	constructor(
 		private trackIndex: number,
 		private clipIndex: number,
-		private newLength: number
+		private newLength: Seconds
 	) {}
 
 	execute(context?: CommandContext): void {
@@ -32,7 +32,7 @@ export class ResizeClipCommand implements EditCommand {
 		}
 
 		this.player = track[this.clipIndex];
-		this.originalLength = this.player.clipConfiguration.length;
+		this.originalLength = sec(this.player.clipConfiguration.length);
 
 		// Store original timing intent for undo
 		this.originalTimingIntent = this.player.getTimingIntent();
@@ -45,7 +45,7 @@ export class ResizeClipCommand implements EditCommand {
 		// Update resolved timing
 		this.player.setResolvedTiming({
 			start: this.player.getStart(),
-			length: this.newLength * 1000
+			length: toMs(this.newLength)
 		});
 
 		this.player.reconfigureAfterRestore();
@@ -72,7 +72,7 @@ export class ResizeClipCommand implements EditCommand {
 			// Update resolved timing to match
 			this.player.setResolvedTiming({
 				start: this.player.getStart(),
-				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length * 1000 : this.player.getLength()
+				length: typeof this.originalTimingIntent.length === "number" ? toMs(this.originalTimingIntent.length) : this.player.getLength()
 			});
 		}
 

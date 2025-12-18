@@ -3,6 +3,7 @@ import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { MoveClipWithPushCommand } from "@core/commands/move-clip-with-push-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import type { Edit } from "@core/edit";
+import { sec } from "@core/timing/types";
 import type { ClipState, TimelineInteractionConfig } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
 
@@ -464,7 +465,7 @@ export class InteractionController {
 
 			// Move luma to target position
 			if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
-				const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime);
+				const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
 				this.edit.executeEditCommand(command);
 			}
 
@@ -486,40 +487,40 @@ export class InteractionController {
 		// Execute appropriate command based on drag target (non-luma clips)
 		if (dragTarget.type === "insert") {
 			// Create new track and move clip to it
-			const command = new CreateTrackAndMoveClipCommand(dragTarget.insertionIndex, originalTrack, clipRef.clipIndex, newTime);
+			const command = new CreateTrackAndMoveClipCommand(dragTarget.insertionIndex, originalTrack, clipRef.clipIndex, sec(newTime));
 			this.edit.executeEditCommand(command);
 
 			// Move attached luma - get fresh indices AFTER content move
 			if (lumaPlayer) {
 				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
 				if (lumaIndices) {
-					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.insertionIndex, newTime);
+					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.insertionIndex, sec(newTime));
 					this.edit.executeEditCommand(lumaCommand);
 				}
 			}
 		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
-			const command = new MoveClipWithPushCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime, collisionResult.pushOffset);
+			const command = new MoveClipWithPushCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime), sec(collisionResult.pushOffset));
 			this.edit.executeEditCommand(command);
 
 			// Move attached luma - get fresh indices AFTER content move
 			if (lumaPlayer) {
 				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
 				if (lumaIndices) {
-					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, newTime);
+					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, sec(newTime));
 					this.edit.executeEditCommand(lumaCommand);
 				}
 			}
 		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
 			// Simple move without push
-			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, newTime);
+			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
 			this.edit.executeEditCommand(command);
 
 			// Move attached luma - get fresh indices AFTER content move
 			if (lumaPlayer) {
 				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
 				if (lumaIndices) {
-					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, newTime);
+					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, sec(newTime));
 					this.edit.executeEditCommand(lumaCommand);
 				}
 			}
@@ -563,13 +564,13 @@ export class InteractionController {
 			if (newStart !== originalStart || newLength !== originalLength) {
 				// Move clip to new start position
 				if (newStart !== originalStart) {
-					const moveCommand = new MoveClipCommand(clipRef.trackIndex, clipRef.clipIndex, clipRef.trackIndex, newStart);
+					const moveCommand = new MoveClipCommand(clipRef.trackIndex, clipRef.clipIndex, clipRef.trackIndex, sec(newStart));
 					this.edit.executeEditCommand(moveCommand);
 				}
 
 				// Resize clip to new length
 				if (newLength !== originalLength) {
-					const resizeCommand = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
+					const resizeCommand = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, sec(newLength));
 					this.edit.executeEditCommand(resizeCommand);
 				}
 
@@ -578,11 +579,11 @@ export class InteractionController {
 					const lumaIndices = this.edit.findClipIndices(lumaPlayer);
 					if (lumaIndices) {
 						if (newStart !== originalStart) {
-							const lumaMoveCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, lumaIndices.trackIndex, newStart);
+							const lumaMoveCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, lumaIndices.trackIndex, sec(newStart));
 							this.edit.executeEditCommand(lumaMoveCommand);
 						}
 						if (newLength !== originalLength) {
-							const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, newLength);
+							const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, sec(newLength));
 							this.edit.executeEditCommand(lumaResizeCommand);
 						}
 					}
@@ -593,14 +594,14 @@ export class InteractionController {
 			const newLength = Math.max(0.1, time - originalStart);
 
 			if (newLength !== originalLength) {
-				const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, newLength);
+				const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, sec(newLength));
 				this.edit.executeEditCommand(command);
 
 				// Also resize attached luma to match
 				if (lumaPlayer) {
 					const lumaIndices = this.edit.findClipIndices(lumaPlayer);
 					if (lumaIndices) {
-						const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, newLength);
+						const lumaResizeCommand = new ResizeClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, sec(newLength));
 						this.edit.executeEditCommand(lumaResizeCommand);
 					}
 				}

@@ -1,4 +1,5 @@
 import { EditEvent } from "@core/events/edit-events";
+import { type Seconds } from "@core/timing/types";
 
 import { AddTrackCommand } from "./add-track-command";
 import { MoveClipCommand } from "./move-clip-command";
@@ -19,7 +20,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		private insertionIndex: number,
 		private fromTrackIndex: number,
 		private fromClipIndex: number,
-		private newStart: number
+		private newStart: Seconds
 	) {
 		// Create the track at the insertion index
 		this.addTrackCommand = new AddTrackCommand(insertionIndex);

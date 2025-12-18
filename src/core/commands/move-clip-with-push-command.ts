@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { type Seconds, ms, sec, toMs } from "@core/timing/types";
 
 import { MoveClipCommand } from "./move-clip-command";
 import type { EditCommand, CommandContext } from "./types";
@@ -10,14 +11,14 @@ import type { EditCommand, CommandContext } from "./types";
 export class MoveClipWithPushCommand implements EditCommand {
 	name = "moveClipWithPush";
 	private moveCommand: MoveClipCommand;
-	private pushedClips: Array<{ player: Player; originalStart: number }> = [];
+	private pushedClips: Array<{ player: Player; originalStart: Seconds }> = [];
 
 	constructor(
 		private fromTrackIndex: number,
 		private fromClipIndex: number,
 		private toTrackIndex: number,
-		private newStart: number,
-		private pushOffset: number
+		private newStart: Seconds,
+		private pushOffset: Seconds
 	) {
 		this.moveCommand = new MoveClipCommand(fromTrackIndex, fromClipIndex, toTrackIndex, newStart);
 	}
@@ -41,11 +42,11 @@ export class MoveClipWithPushCommand implements EditCommand {
 		for (const player of targetTrack) {
 			// Skip the clip we're moving
 			if (player !== movingClip) {
-				const clipStart = player.clipConfiguration.start;
+				const clipStart = sec(player.clipConfiguration.start);
 				// Push clips that start before our new end position and would overlap
 				if (clipStart >= this.newStart && clipStart < newEnd) {
 					this.pushedClips.push({ player, originalStart: clipStart });
-					this.updateClipStart(player, clipStart + this.pushOffset);
+					this.updateClipStart(player, sec(clipStart + this.pushOffset));
 				}
 			}
 		}
@@ -55,10 +56,10 @@ export class MoveClipWithPushCommand implements EditCommand {
 		context.propagateTimingChanges(this.toTrackIndex, 0);
 	}
 
-	private updateClipStart(clip: Player, newStart: number): void {
+	private updateClipStart(clip: Player, newStart: Seconds): void {
 		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
 		clip.clipConfiguration.start = newStart;
-		clip.setResolvedTiming({ start: newStart * 1000, length: clip.getLength() });
+		clip.setResolvedTiming({ start: toMs(newStart), length: clip.getLength() });
 		clip.setTimingIntent({ start: newStart, length: clip.getTimingIntent().length });
 		clip.reconfigureAfterRestore();
 		clip.draw();

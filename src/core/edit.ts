@@ -27,6 +27,7 @@ import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "
 import { Entity } from "@core/shared/entity";
 import { deepMerge, getNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
+import { type Milliseconds, ms, toMs } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -1171,20 +1172,20 @@ export class Edit extends Entity {
 				const clip = this.tracks[trackIdx][clipIdx];
 				const intent = clip.getTimingIntent();
 
-				let resolvedStart: number;
+				let resolvedStart: Milliseconds;
 				if (intent.start === "auto") {
 					resolvedStart = resolveAutoStart(trackIdx, clipIdx, this.tracks);
 				} else {
-					resolvedStart = intent.start * 1000;
+					resolvedStart = toMs(intent.start);
 				}
 
-				let resolvedLength: number;
+				let resolvedLength: Milliseconds;
 				if (intent.length === "auto") {
 					resolvedLength = await resolveAutoLength(clip.clipConfiguration.asset);
 				} else if (intent.length === "end") {
-					resolvedLength = 0;
+					resolvedLength = ms(0);
 				} else {
-					resolvedLength = intent.length * 1000;
+					resolvedLength = toMs(intent.length);
 				}
 
 				clip.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
