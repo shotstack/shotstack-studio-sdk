@@ -1300,6 +1300,13 @@ export class Edit extends Entity {
 				length: resolveEndLength(resolved.start, timelineEnd)
 			});
 		}
+
+		// After timing is resolved, reconfigure audio players to rebuild effect keyframes
+		for (const clip of this.clips) {
+			if (clip.playerType === PlayerType.Audio) {
+				clip.reconfigureAfterRestore();
+			}
+		}
 	}
 
 	public propagateTimingChanges(trackIndex: number, startFromClipIndex: number): void {

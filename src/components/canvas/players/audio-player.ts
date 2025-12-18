@@ -14,7 +14,7 @@ export class AudioPlayer extends Player {
 	private audioResource: howler.Howl | null;
 	private isPlaying: boolean;
 
-	private volumeKeyframeBuilder: KeyframeBuilder;
+	private volumeKeyframeBuilder!: KeyframeBuilder;
 
 	private syncTimer: number;
 
@@ -23,11 +23,6 @@ export class AudioPlayer extends Player {
 
 		this.audioResource = null;
 		this.isPlaying = false;
-
-		const audioAsset = clipConfiguration.asset as AudioAsset;
-		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
-
-		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
 		this.syncTimer = 0;
 	}
 
@@ -46,6 +41,15 @@ export class AudioPlayer extends Player {
 		}
 
 		this.audioResource = audioResource;
+
+		// Create volume keyframes after timing is resolved (not in constructor)
+		const baseVolume = typeof audioClipConfiguration.volume === "number" ? audioClipConfiguration.volume : 1;
+		this.volumeKeyframeBuilder = new KeyframeBuilder(
+			this.createVolumeKeyframes(audioClipConfiguration, baseVolume),
+			this.getLength(),
+			baseVolume
+		);
+
 		this.configureKeyframes();
 	}
 
@@ -105,6 +109,19 @@ export class AudioPlayer extends Player {
 	public override dispose(): void {
 		this.audioResource?.unload();
 		this.audioResource = null;
+	}
+
+	public override reconfigureAfterRestore(): void {
+		super.reconfigureAfterRestore();
+
+		// Rebuild volume keyframes with updated timing
+		const audioAsset = this.clipConfiguration.asset as AudioAsset;
+		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
+		this.volumeKeyframeBuilder = new KeyframeBuilder(
+			this.createVolumeKeyframes(audioAsset, baseVolume),
+			this.getLength(),
+			baseVolume
+		);
 	}
 
 	public override getSize(): Size {
