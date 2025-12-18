@@ -169,7 +169,7 @@ export class CanvasToolbar {
 			<!-- FPS -->
 			<div class="ss-canvas-toolbar-dropdown">
 				<button class="ss-canvas-toolbar-btn" data-action="fps" data-tooltip="Frame Rate">
-					<span class="ss-canvas-toolbar-fps-label">fps</span>
+					<span class="ss-canvas-toolbar-fps-label" data-fps-label>fps</span>
 				</button>
 				<div class="ss-canvas-toolbar-popup" data-popup="fps">
 					${FPS_OPTIONS.map(
