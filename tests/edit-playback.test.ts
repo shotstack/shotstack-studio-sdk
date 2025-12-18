@@ -118,8 +118,11 @@ describe("Edit Playback", () => {
 	let emitSpy: jest.SpyInstance;
 
 	beforeEach(async () => {
-		// Create Edit instance with default size
-		edit = new Edit({ width: 1920, height: 1080 });
+		// Create Edit instance from template
+		edit = new Edit({
+			timeline: { tracks: [] },
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
 
 		// Initialize the container (normally done by Canvas)
 		await edit.load();

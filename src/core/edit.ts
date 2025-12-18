@@ -63,7 +63,7 @@ export class Edit extends Entity {
 	 * This is the source of truth for serialization to backend.
 	 * @internal
 	 */
-	private document: EditDocument | null = null;
+	private document: EditDocument;
 
 	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
@@ -98,6 +98,9 @@ export class Edit extends Entity {
 	private endLengthClips: Set<Player> = new Set();
 	private isBatchingEvents: boolean = false;
 
+	// Document sync state - skip sync during initial load (document already has clips)
+	private isLoadingEdit: boolean = false;
+
 	// Playback health tracking
 	private syncCorrectionCount: number = 0;
 
@@ -113,12 +116,33 @@ export class Edit extends Entity {
 	private alignmentGuides: AlignmentGuides | null = null;
 	private lumaMaskController: LumaMaskController;
 
-	constructor(size: Size, backgroundColor: string = "#ffffff") {
+	/**
+	 * Create an Edit instance from a template configuration.
+	 *
+	 * @param template - The Edit JSON configuration (aligns with Shotstack API contract)
+	 *
+	 * @example
+	 * ```typescript
+	 * const edit = new Edit(template);
+	 * await edit.load();
+	 *
+	 * const canvas = new Canvas(edit);
+	 * await canvas.load();
+	 * ```
+	 */
+	constructor(template: EditConfig) {
 		super();
 
+		// Create document layer from template (pure data, preserves "auto"/"end"/placeholders)
+		this.document = new EditDocument(template);
+
+		// Extract configuration from document
+		this.size = this.document.getSize();
+		this.backgroundColor = this.document.getBackground() ?? "#000000";
+
+		// Initialize runtime state
 		this.assetLoader = new AssetLoader();
 		this.edit = null;
-
 		this.tracks = [];
 		this.clipsToDispose = [];
 		this.clips = [];
@@ -131,14 +155,11 @@ export class Edit extends Entity {
 			this.events
 		);
 
-		this.size = size;
-
 		this.playbackTime = 0;
 		this.totalDuration = 0;
 		this.isPlaying = false;
 		this.selectedClip = null;
 		this.updatedClip = null;
-		this.backgroundColor = backgroundColor;
 		this.background = null;
 
 		// Set up event-driven architecture
@@ -169,6 +190,79 @@ export class Edit extends Entity {
 
 		// Initialize alignment guides (rendered above all clips)
 		this.alignmentGuides = new AlignmentGuides(this.getContainer(), this.size.width, this.size.height);
+
+		// Initialize from document - create players, resolve timing
+		await this.initializeFromDocument();
+	}
+
+	/**
+	 * Initialize players and timing from the document.
+	 * Called during initial load() and can be called again via loadEdit() for hot-reload.
+	 * @param source - The source identifier for events (default: "load")
+	 */
+	private async initializeFromDocument(source: string = "load"): Promise<void> {
+		// Get raw edit from document
+		const rawEdit = this.document.toJSON();
+
+		// Load merge fields from edit payload into service
+		const serializedMergeFields = rawEdit.merge ?? [];
+		this.mergeFields.loadFromSerialized(serializedMergeFields);
+
+		// Detect merge field bindings BEFORE substitution (preserves placeholder info)
+		const bindingsPerClip = this.detectMergeFieldBindings(rawEdit as ResolvedEdit, serializedMergeFields);
+
+		// Apply merge field substitutions for initial load
+		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(rawEdit as ResolvedEdit, serializedMergeFields) : rawEdit;
+
+		const parsedEdit = EditSchema.parse(mergedEdit);
+		resolveAliasReferences(parsedEdit);
+		this.edit = parsedEdit as ResolvedEdit;
+
+		// Load fonts
+		await Promise.all(
+			(this.edit.timeline.fonts ?? []).map(async font => {
+				const identifier = font.src;
+				const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
+
+				return this.assetLoader.load<FontFace>(identifier, loadOptions);
+			})
+		);
+
+		// Create players for each clip (skip document sync - document already has clips)
+		this.isLoadingEdit = true;
+		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
+			for (const [clipIdx, clip] of track.clips.entries()) {
+				const clipPlayer = this.createPlayerFromAssetType(clip);
+				clipPlayer.layer = trackIdx + 1;
+
+				// Pass merge field bindings to the player
+				const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
+				if (bindings && bindings.size > 0) {
+					clipPlayer.setInitialBindings(bindings);
+				}
+
+				await this.addPlayer(trackIdx, clipPlayer);
+			}
+		}
+		this.isLoadingEdit = false;
+
+		// Initialize luma mask relationships
+		this.lumaMaskController.initialize();
+
+		// Resolve timing for all clips
+		await this.resolveAllTiming();
+
+		// Update total duration
+		this.updateTotalDuration();
+
+		// Load soundtrack if present
+		if (this.edit.timeline.soundtrack) {
+			await this.loadSoundtrack(this.edit.timeline.soundtrack);
+		}
+
+		// Emit events
+		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
+		this.emitEditChanged(source);
 	}
 
 	/** @internal */
@@ -244,13 +338,23 @@ export class Edit extends Entity {
 		this.seek(0);
 	}
 
+	/**
+	 * Reload the edit with a new configuration (hot-reload).
+	 * Uses smart diffing to only update what changed when possible.
+	 *
+	 * For initial loading, use the constructor + load() pattern instead:
+	 * ```typescript
+	 * const edit = new Edit(template);
+	 * await edit.load();
+	 * ```
+	 *
+	 * @param edit - The new Edit configuration to load
+	 */
 	public async loadEdit(edit: ResolvedEdit): Promise<void> {
-		// Store raw edit in document layer (preserves "auto", "end", placeholders)
-		// Cast to EditConfig since ResolvedEdit is structurally compatible for storage
-		this.document = new EditDocument(edit as unknown as EditConfig);
-
 		// Smart diff: only do full reload when structure changes (track/clip count, asset type)
 		if (this.edit && !this.hasStructuralChanges(edit)) {
+			// Update document with new edit (preserves "auto", "end", placeholders)
+			this.document = new EditDocument(edit as unknown as EditConfig);
 			this.isBatchingEvents = true;
 			this.applyGranularChanges(edit);
 			this.isBatchingEvents = false;
@@ -258,31 +362,19 @@ export class Edit extends Entity {
 			return;
 		}
 
-		this.clearClips();
+		// Full reload - replace document and reinitialize
+		this.document = new EditDocument(edit as unknown as EditConfig);
 
-		// Load merge fields from edit payload into service
-		const serializedMergeFields = edit.merge ?? [];
-		this.mergeFields.loadFromSerialized(serializedMergeFields);
-
-		// Detect merge field bindings BEFORE substitution (preserves placeholder info)
-		const bindingsPerClip = this.detectMergeFieldBindings(edit, serializedMergeFields);
-
-		// Apply merge field substitutions for initial load
-		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(edit, serializedMergeFields) : edit;
-
-		const parsedEdit = EditSchema.parse(mergedEdit);
-		resolveAliasReferences(parsedEdit);
-		this.edit = parsedEdit as ResolvedEdit;
-
-		const newSize = this.edit.output?.size;
-		if (newSize && (newSize.width !== this.size.width || newSize.height !== this.size.height)) {
+		// Handle size changes
+		const newSize = this.document.getSize();
+		if (newSize.width !== this.size.width || newSize.height !== this.size.height) {
 			this.size = newSize;
 			this.updateViewportMask();
 			this.canvas?.zoomToFit();
 		}
 
-		this.backgroundColor = this.edit.timeline.background || "#000000";
-
+		// Handle background changes
+		this.backgroundColor = this.document.getBackground() ?? "#000000";
 		if (this.background) {
 			this.background.clear();
 			this.background.fillStyle = {
@@ -292,42 +384,9 @@ export class Edit extends Entity {
 			this.background.fill();
 		}
 
-		await Promise.all(
-			(this.edit.timeline.fonts ?? []).map(async font => {
-				const identifier = font.src;
-				const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
-
-				return this.assetLoader.load<FontFace>(identifier, loadOptions);
-			})
-		);
-
-		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
-			for (const [clipIdx, clip] of track.clips.entries()) {
-				const clipPlayer = this.createPlayerFromAssetType(clip);
-				clipPlayer.layer = trackIdx + 1;
-
-				// Pass merge field bindings to the player
-				const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
-				if (bindings && bindings.size > 0) {
-					clipPlayer.setInitialBindings(bindings);
-				}
-
-				await this.addPlayer(trackIdx, clipPlayer);
-			}
-		}
-
-		this.lumaMaskController.initialize();
-
-		await this.resolveAllTiming();
-
-		this.updateTotalDuration();
-
-		if (this.edit.timeline.soundtrack) {
-			await this.loadSoundtrack(this.edit.timeline.soundtrack);
-		}
-
-		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
-		this.emitEditChanged("loadEdit");
+		// Clear existing clips and reinitialize from document
+		this.clearClips();
+		await this.initializeFromDocument("loadEdit");
 	}
 
 	private async loadSoundtrack(soundtrack: Soundtrack): Promise<void> {
@@ -348,19 +407,11 @@ export class Edit extends Entity {
 		await this.addPlayer(this.tracks.length, player);
 	}
 	public getEdit(): EditConfig {
-		const tracks = this.tracks.map(track => ({
-			clips: track.filter(player => player && !this.clipsToDispose.includes(player)).map(player => player.getExportableClip())
-		}));
-
-		return {
-			timeline: {
-				background: this.backgroundColor,
-				tracks,
-				fonts: this.edit?.timeline.fonts || []
-			},
-			output: this.edit?.output || { size: this.size, format: "mp4" },
-			merge: this.mergeFields.toSerializedArray()
-		};
+		// Delegate to document layer - preserves "auto"/"end" values
+		const doc = this.document.toJSON();
+		// Overlay current merge field state (may have changed via setMergeField)
+		doc.merge = this.mergeFields.toSerializedArray();
+		return doc;
 	}
 
 	/**
@@ -960,6 +1011,11 @@ export class Edit extends Entity {
 			return true;
 		}
 
+		// Fonts changed = structural (requires re-loading fonts)
+		if (JSON.stringify(this.edit.timeline.fonts ?? []) !== JSON.stringify(newEdit.timeline.fonts ?? [])) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -1034,9 +1090,10 @@ export class Edit extends Entity {
 			undeleteClip: (trackIdx, clip) => {
 				this.clips.push(clip);
 
+				let insertIdx = 0;
 				if (trackIdx >= 0 && trackIdx < this.tracks.length) {
 					const track = this.tracks[trackIdx];
-					let insertIdx = track.length;
+					insertIdx = track.length;
 					for (let i = 0; i < track.length; i += 1) {
 						if (track[i].getStart() > clip.getStart()) {
 							insertIdx = i;
@@ -1044,6 +1101,12 @@ export class Edit extends Entity {
 						}
 					}
 					track.splice(insertIdx, 0, clip);
+				}
+
+				// Sync with document layer - restore clip at the same position
+				if (this.document) {
+					const exportableClip = clip.getExportableClip();
+					this.document.addClip(trackIdx, exportableClip, insertIdx);
 				}
 
 				this.addPlayerToContainer(trackIdx, clip);
@@ -1064,6 +1127,15 @@ export class Edit extends Entity {
 				Object.assign(config, cloned);
 				clip.reconfigureAfterRestore();
 				clip.draw();
+
+				// Sync with document layer - update clip configuration
+				if (this.document) {
+					const indices = this.findClipIndices(clip);
+					if (indices) {
+						const exportableClip = clip.getExportableClip();
+						this.document.replaceClip(indices.trackIndex, indices.clipIndex, exportableClip);
+					}
+				}
 			},
 			updateDuration: () => this.updateTotalDuration(),
 			emitEvent: (name, ...args) => (this.events as EventEmitter<EditEventMap>).emit(name, ...args),
@@ -1111,6 +1183,11 @@ export class Edit extends Entity {
 				const clipIdx = this.tracks[trackIdx].indexOf(clip);
 				if (clipIdx !== -1) {
 					this.tracks[trackIdx].splice(clipIdx, 1);
+
+					// Sync with document layer - remove clip
+					if (this.document) {
+						this.document.removeClip(trackIdx, clipIdx);
+					}
 				}
 			}
 		}
@@ -1383,6 +1460,19 @@ export class Edit extends Entity {
 
 		this.clips.push(clipToAdd);
 
+		// Sync with document layer - add clip to preserve "auto"/"end" values
+		// Skip during initial load since document already has clips from constructor
+		if (this.document && !this.isLoadingEdit) {
+			// Ensure document has enough tracks
+			while (this.document.getTrackCount() <= trackIdx) {
+				this.document.addTrack(this.document.getTrackCount());
+			}
+			// Add clip at the position it was added (end of track)
+			const clipIdx = this.tracks[trackIdx].length - 1;
+			const exportableClip = clipToAdd.getExportableClip();
+			this.document.addClip(trackIdx, exportableClip, clipIdx);
+		}
+
 		if (clipToAdd.getTimingIntent().length === "end") {
 			this.endLengthClips.add(clipToAdd);
 		}
@@ -1572,6 +1662,9 @@ export class Edit extends Entity {
 			};
 		}
 
+		// Sync with document layer
+		this.document?.setSize(result.data);
+
 		this.updateViewportMask();
 		this.canvas?.zoomToFit();
 
@@ -1599,6 +1692,9 @@ export class Edit extends Entity {
 			};
 		}
 
+		// Sync with document layer
+		this.document?.setFps(result.data);
+
 		this.events.emit(EditEvent.OutputFpsChanged, { fps });
 		this.emitEditChanged("output:fps");
 	}
@@ -1619,6 +1715,9 @@ export class Edit extends Entity {
 				format: result.data
 			};
 		}
+
+		// Sync with document layer
+		this.document?.setFormat(result.data);
 
 		this.events.emit(EditEvent.OutputFormatChanged, { format: result.data });
 		this.emitEditChanged("output:format");
@@ -1667,6 +1766,9 @@ export class Edit extends Entity {
 				background: result.data
 			};
 		}
+
+		// Sync with document layer
+		this.document?.setBackground(result.data);
 
 		if (this.background) {
 			this.background.clear();

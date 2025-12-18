@@ -340,7 +340,10 @@ describe("Edit loadEdit()", () => {
 		// Reset all mocks
 		jest.clearAllMocks();
 
-		edit = new Edit({ width: 1920, height: 1080 });
+		edit = new Edit({
+			timeline: { tracks: [] },
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
 		await edit.load();
 
 		events = edit.events;

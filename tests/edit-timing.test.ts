@@ -448,7 +448,10 @@ describe("Edit Timing Integration", () => {
 	let emitSpy: jest.SpyInstance;
 
 	beforeEach(async () => {
-		edit = new Edit({ width: 1920, height: 1080 });
+		edit = new Edit({
+			timeline: { tracks: [] },
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
 		await edit.load();
 		events = edit.events;
 		emitSpy = jest.spyOn(events, "emit");

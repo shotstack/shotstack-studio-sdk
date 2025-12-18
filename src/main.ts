@@ -12,8 +12,8 @@ async function main() {
 		const templateModule = await import("./templates/hello.json");
 		const template = templateModule.default as any;
 
-		// 2. Initialize the edit with dimensions and background color
-		const edit = new Edit(template.output.size, template.timeline.background);
+		// 2. Create Edit from template and load it
+		const edit = new Edit(template);
 		await edit.load();
 
 		// 2b. Register toolbar buttons
@@ -60,10 +60,7 @@ async function main() {
 		const canvas = new Canvas(edit);
 		await canvas.load(); // Renders to [data-shotstack-studio] element
 
-		// 4. Load the template
-		await edit.loadEdit(template);
-
-		// 5b. Initialize the Timeline
+		// 4. Initialize the Timeline
 		const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
 		if (timelineContainer) {
 			const timeline = new Timeline(edit, timelineContainer, {
@@ -80,15 +77,15 @@ async function main() {
 			console.log("Timeline loaded!");
 		}
 
-		// 6. Add keyboard controls
+		// 5. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
 
-		// 7. Enable video export (Cmd/Ctrl+E)
+		// 6. Enable video export (Cmd/Ctrl+E)
 		// eslint-disable-next-line no-new
 		new VideoExporter(edit, canvas);
 
-		// 8. Add event handlers
+		// 7. Add event handlers
 
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);

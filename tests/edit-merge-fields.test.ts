@@ -326,7 +326,10 @@ describe("Edit Merge Fields", () => {
 	let emitSpy: jest.SpyInstance;
 
 	beforeEach(async () => {
-		edit = new Edit({ width: 1920, height: 1080 });
+		edit = new Edit({
+			timeline: { tracks: [] },
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
 		await edit.load();
 
 		// Initialize originalEdit with tracks so merge field templates can be stored
