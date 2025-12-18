@@ -79,7 +79,7 @@ export type EditEventName = (typeof EditEvent)[keyof typeof EditEvent];
 // Internal Events (SDK Plumbing - Not Exported)
 // ─────────────────────────────────────────────────────────────
 
-/** @internal SDK component communication - not part of public API */
+// Internal SDK component communication - not part of public API
 export const InternalEvent = {
 	// Canvas → Edit communication
 	CanvasClipClicked: "canvas:clipClicked",
@@ -150,15 +150,15 @@ export type EditEventMap = {
 	[EditEvent.TranscriptionFailed]: { clipAlias: string; error: string };
 };
 
-/** @internal */
+// Internal event payloads - not part of public API
 export type InternalEventMap = {
 	// Canvas interaction
-	[InternalEvent.CanvasClipClicked]: { player: Player };
-	[InternalEvent.CanvasBackgroundClicked]: void;
+	"canvas:clipClicked": { player: Player };
+	"canvas:backgroundClicked": void;
 
 	// Font
-	[InternalEvent.FontCapabilitiesChanged]: { supportsBold: boolean };
+	"font:capabilitiesChanged": { supportsBold: boolean };
 
 	// Toolbar
-	[InternalEvent.ToolbarButtonsChanged]: { buttons: ToolbarButtonConfig[] };
+	"toolbar:buttonsChanged": { buttons: ToolbarButtonConfig[] };
 };
