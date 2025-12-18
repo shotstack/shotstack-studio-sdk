@@ -4,3 +4,6 @@ export type { EffectState } from "./EffectPanel";
 
 export { TransitionPanel } from "./TransitionPanel";
 export type { TransitionState, ParsedTransition } from "./TransitionPanel";
+
+export { SpacingPanel } from "./SpacingPanel";
+export type { SpacingState, SpacingPanelConfig } from "./SpacingPanel";

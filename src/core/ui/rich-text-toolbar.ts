@@ -8,6 +8,7 @@ import { injectShotstackStyles } from "@styles/inject";
 import { BackgroundColorPicker } from "./background-color-picker";
 import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
+import { SpacingPanel } from "./composites/SpacingPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { FontColorPicker } from "./font-color-picker";
 
@@ -18,10 +19,7 @@ export class RichTextToolbar extends BaseToolbar {
 	private sizePopup: HTMLDivElement | null = null;
 	private boldBtn: HTMLButtonElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
-	private letterSpacingSlider: HTMLInputElement | null = null;
-	private letterSpacingValue: HTMLSpanElement | null = null;
-	private lineHeightSlider: HTMLInputElement | null = null;
-	private lineHeightValue: HTMLSpanElement | null = null;
+	private spacingPanel: SpacingPanel | null = null;
 	private anchorTopBtn: HTMLButtonElement | null = null;
 	private anchorMiddleBtn: HTMLButtonElement | null = null;
 	private anchorBottomBtn: HTMLButtonElement | null = null;
@@ -214,20 +212,7 @@ export class RichTextToolbar extends BaseToolbar {
 					</svg>
 				</button>
 				<div data-spacing-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Letter spacing</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-letter-spacing-slider class="ss-toolbar-slider" min="-50" max="100" value="0" />
-							<span data-letter-spacing-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Line spacing</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-line-height-slider class="ss-toolbar-slider" min="5" max="30" value="12" />
-							<span data-line-height-value class="ss-toolbar-popup-value">1.2</span>
-						</div>
-					</div>
+					<div data-spacing-panel-container class="ss-toolbar-popup-section"></div>
 					<div class="ss-toolbar-popup-divider"></div>
 					<div class="ss-toolbar-popup-section">
 						<div class="ss-toolbar-popup-label">Anchor text box</div>
@@ -464,29 +449,21 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		this.spacingPopup = this.container.querySelector("[data-spacing-popup]");
-		this.letterSpacingSlider = this.container.querySelector("[data-letter-spacing-slider]");
-		this.letterSpacingValue = this.container.querySelector("[data-letter-spacing-value]");
-		this.lineHeightSlider = this.container.querySelector("[data-line-height-slider]");
-		this.lineHeightValue = this.container.querySelector("[data-line-height-value]");
 		this.anchorTopBtn = this.container.querySelector("[data-action='anchor-top']");
 		this.anchorMiddleBtn = this.container.querySelector("[data-action='anchor-middle']");
 		this.anchorBottomBtn = this.container.querySelector("[data-action='anchor-bottom']");
 
-		this.letterSpacingSlider?.addEventListener("input", e => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.letterSpacingValue) {
-				this.letterSpacingValue.textContent = String(value);
-			}
-			this.updateClipProperty({ style: { letterSpacing: value } });
-		});
-
-		this.lineHeightSlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value) / 10;
-			if (this.lineHeightValue) {
-				this.lineHeightValue.textContent = value.toFixed(1);
-			}
-			this.updateClipProperty({ style: { lineHeight: value } });
-		});
+		// Mount SpacingPanel composite (letter spacing + line height)
+		const spacingContainer = this.container.querySelector("[data-spacing-panel-container]") as HTMLElement | null;
+		if (spacingContainer) {
+			this.spacingPanel = new SpacingPanel();
+			this.spacingPanel.onChange(state => {
+				this.updateClipProperty({
+					style: { letterSpacing: state.letterSpacing, lineHeight: state.lineHeight }
+				});
+			});
+			this.spacingPanel.mount(spacingContainer);
+		}
 
 		this.borderPopup = this.container.querySelector("[data-border-popup]");
 		this.borderWidthSlider = this.container.querySelector("[data-border-width-slider]");
@@ -1450,17 +1427,11 @@ export class RichTextToolbar extends BaseToolbar {
 			this.colorDisplay.style.backgroundColor = color;
 		}
 
-		if (this.letterSpacingSlider && this.letterSpacingValue) {
-			const letterSpacing = asset.style?.letterSpacing ?? 0;
-			this.letterSpacingSlider.value = String(letterSpacing);
-			this.letterSpacingValue.textContent = String(letterSpacing);
-		}
-
-		if (this.lineHeightSlider && this.lineHeightValue) {
-			const lineHeight = asset.style?.lineHeight ?? 1.2;
-			this.lineHeightSlider.value = String(Math.round(lineHeight * 10));
-			this.lineHeightValue.textContent = lineHeight.toFixed(1);
-		}
+		// Sync spacing panel
+		this.spacingPanel?.setState(
+			asset.style?.letterSpacing ?? 0,
+			asset.style?.lineHeight ?? 1.2
+		);
 
 		const verticalAlign = asset.align?.vertical ?? "middle";
 		this.setButtonActive(this.anchorTopBtn, verticalAlign === "top");
@@ -1611,10 +1582,8 @@ export class RichTextToolbar extends BaseToolbar {
 		this.colorDisplay = null;
 
 		this.spacingPopup = null;
-		this.letterSpacingSlider = null;
-		this.letterSpacingValue = null;
-		this.lineHeightSlider = null;
-		this.lineHeightValue = null;
+		this.spacingPanel?.dispose();
+		this.spacingPanel = null;
 		this.anchorTopBtn = null;
 		this.anchorMiddleBtn = null;
 		this.anchorBottomBtn = null;

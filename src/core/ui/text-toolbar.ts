@@ -3,6 +3,7 @@ import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES, TOOLBAR_ICONS } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
+import { SpacingPanel } from "./composites/SpacingPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 
 export class TextToolbar extends BaseToolbar {
@@ -33,8 +34,7 @@ export class TextToolbar extends BaseToolbar {
 	// Spacing (line height + vertical anchor)
 	private spacingBtn: HTMLButtonElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
-	private lineHeightSlider: HTMLInputElement | null = null;
-	private lineHeightValue: HTMLSpanElement | null = null;
+	private spacingPanel: SpacingPanel | null = null;
 	private anchorTopBtn: HTMLButtonElement | null = null;
 	private anchorMiddleBtn: HTMLButtonElement | null = null;
 	private anchorBottomBtn: HTMLButtonElement | null = null;
@@ -137,13 +137,7 @@ export class TextToolbar extends BaseToolbar {
 					</svg>
 				</button>
 				<div data-spacing-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Line spacing</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-line-height-slider class="ss-toolbar-slider" min="5" max="30" value="12" />
-							<span data-line-height-value class="ss-toolbar-popup-value">1.2</span>
-						</div>
-					</div>
+					<div data-spacing-panel-container class="ss-toolbar-popup-section"></div>
 					<div class="ss-toolbar-popup-divider"></div>
 					<div class="ss-toolbar-popup-section">
 						<div class="ss-toolbar-popup-label">Anchor text box</div>
@@ -284,8 +278,6 @@ export class TextToolbar extends BaseToolbar {
 		// Spacing
 		this.spacingBtn = this.container.querySelector("[data-action='spacing-toggle']");
 		this.spacingPopup = this.container.querySelector("[data-spacing-popup]");
-		this.lineHeightSlider = this.container.querySelector("[data-line-height-slider]");
-		this.lineHeightValue = this.container.querySelector("[data-line-height-value]");
 		this.anchorTopBtn = this.container.querySelector("[data-action='anchor-top']");
 		this.anchorMiddleBtn = this.container.querySelector("[data-action='anchor-middle']");
 		this.anchorBottomBtn = this.container.querySelector("[data-action='anchor-bottom']");
@@ -340,17 +332,6 @@ export class TextToolbar extends BaseToolbar {
 		// Font color
 		this.fontColorInput?.addEventListener("input", () => this.handleFontColorChange());
 
-		// Line height - use base class helper
-		this.createSliderHandler(
-			this.lineHeightSlider,
-			this.lineHeightValue,
-			value => {
-				const lineHeight = value / 10;
-				this.updateAssetProperty({ font: { ...this.getCurrentAsset()?.font, lineHeight } });
-			},
-			value => (value / 10).toFixed(1)
-		);
-
 		// Background color
 		this.bgColorInput?.addEventListener("input", () => this.handleBackgroundChange());
 
@@ -373,6 +354,16 @@ export class TextToolbar extends BaseToolbar {
 	}
 
 	private mountCompositePanels(): void {
+		// SpacingPanel - line height only for TextToolbar
+		const spacingContainer = this.container?.querySelector("[data-spacing-panel-container]") as HTMLElement | null;
+		if (spacingContainer) {
+			this.spacingPanel = new SpacingPanel({ showLetterSpacing: false });
+			this.spacingPanel.onChange(state => {
+				this.updateAssetProperty({ font: { ...this.getCurrentAsset()?.font, lineHeight: state.lineHeight } });
+			});
+			this.spacingPanel.mount(spacingContainer);
+		}
+
 		// TransitionPanel - replaces ~200 lines of transition handling
 		if (this.transitionPopup) {
 			this.transitionPanel = new TransitionPanel();
@@ -691,9 +682,7 @@ export class TextToolbar extends BaseToolbar {
 		}
 
 		// Line height
-		const lineHeight = asset.font?.lineHeight ?? 1.2;
-		if (this.lineHeightSlider) this.lineHeightSlider.value = String(Math.round(lineHeight * 10));
-		if (this.lineHeightValue) this.lineHeightValue.textContent = lineHeight.toFixed(1);
+		this.spacingPanel?.setLineHeight(asset.font?.lineHeight ?? 1.2);
 
 		// Vertical anchor
 		const verticalAnchor = asset.alignment?.vertical ?? "center";
@@ -733,6 +722,7 @@ export class TextToolbar extends BaseToolbar {
 		}
 
 		// Dispose composite panels (auto-cleans events via EventManager)
+		this.spacingPanel?.dispose();
 		this.transitionPanel?.dispose();
 		this.effectPanel?.dispose();
 
@@ -755,8 +745,7 @@ export class TextToolbar extends BaseToolbar {
 		this.colorDisplay = null;
 		this.spacingBtn = null;
 		this.spacingPopup = null;
-		this.lineHeightSlider = null;
-		this.lineHeightValue = null;
+		this.spacingPanel = null;
 		this.anchorTopBtn = null;
 		this.anchorMiddleBtn = null;
 		this.anchorBottomBtn = null;
