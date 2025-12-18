@@ -885,7 +885,7 @@ export class Edit extends Entity {
 		}
 
 		if (Array.isArray(obj)) {
-			for (let i = 0; i < obj.length; i++) {
+			for (let i = 0; i < obj.length; i += 1) {
 				const path = basePath ? `${basePath}[${i}]` : `[${i}]`;
 				const childBindings = this.detectBindingsInObject(obj[i], path, fieldValues);
 				for (const [p, b] of childBindings) {
@@ -922,12 +922,12 @@ export class Edit extends Entity {
 		if (currentTracks.length !== newTracks.length) return true;
 
 		// Check each track
-		for (let t = 0; t < currentTracks.length; t++) {
+		for (let t = 0; t < currentTracks.length; t += 1) {
 			// Different clip count = structural
 			if (currentTracks[t].clips.length !== newTracks[t].clips.length) return true;
 
 			// Asset TYPE change = structural (ImagePlayer vs VideoPlayer)
-			for (let c = 0; c < currentTracks[t].clips.length; c++) {
+			for (let c = 0; c < currentTracks[t].clips.length; c += 1) {
 				const currentType = (currentTracks[t].clips[c]?.asset as { type?: string })?.type;
 				const newType = (newTracks[t].clips[c]?.asset as { type?: string })?.type;
 				if (currentType !== newType) return true;
@@ -976,11 +976,11 @@ export class Edit extends Entity {
 		const currentTracks = this.edit!.timeline.tracks;
 		const newTracks = newEdit.timeline.tracks;
 
-		for (let trackIdx = 0; trackIdx < newTracks.length; trackIdx++) {
+		for (let trackIdx = 0; trackIdx < newTracks.length; trackIdx += 1) {
 			const currentClips = currentTracks[trackIdx].clips;
 			const newClips = newTracks[trackIdx].clips;
 
-			for (let clipIdx = 0; clipIdx < newClips.length; clipIdx++) {
+			for (let clipIdx = 0; clipIdx < newClips.length; clipIdx += 1) {
 				const currentClip = currentClips[clipIdx];
 				const newClip = newClips[clipIdx];
 
@@ -1045,8 +1045,7 @@ export class Edit extends Entity {
 				clip.draw();
 			},
 			updateDuration: () => this.updateTotalDuration(),
-			emitEvent: (name, ...args) =>
-				(this.events as EventEmitter<EditEventMap>).emit(name, ...args),
+			emitEvent: (name, ...args) => (this.events as EventEmitter<EditEventMap>).emit(name, ...args),
 			findClipIndices: player => this.findClipIndices(player),
 			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
 			getSelectedClip: () => this.selectedClip,

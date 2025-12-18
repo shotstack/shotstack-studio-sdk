@@ -34,6 +34,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
+					// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 					child.parent = self;
 				}
 				return child;
@@ -185,15 +186,15 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		},
 		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
 			mergeFieldBindings.clear();
-			for (const [k, v] of bindings) {
+			bindings.forEach((v, k) => {
 				mergeFieldBindings.set(k, v);
-			}
+			});
 		},
 		getExportableClip: () => {
 			const exported = structuredClone(config);
-			// Apply timing intent
-			if (timingIntent.start !== undefined) exported.start = timingIntent.start;
-			if (timingIntent.length !== undefined) exported.length = timingIntent.length;
+			// Apply timing intent (cast needed as timingIntent can be string for "auto")
+			if (timingIntent.start !== undefined) exported.start = timingIntent.start as number;
+			if (timingIntent.length !== undefined) exported.length = timingIntent.length as number;
 			return exported;
 		}
 	};
@@ -288,7 +289,7 @@ function createImageClip(start: number, length: number): ResolvedClip {
  */
 function createTextClip(start: number, length: number, text: string = "Hello"): ResolvedClip {
 	return {
-		asset: { type: "text", text, style: "minimal" },
+		asset: { type: "text", text },
 		start,
 		length,
 		fit: "none"
@@ -441,7 +442,7 @@ describe("Edit Clip Operations", () => {
 			expect((clipBefore?.asset as { text: string }).text).toBe("Original");
 
 			edit.updateClip(0, 0, {
-				asset: { type: "text", text: "Updated", style: "minimal" }
+				asset: { type: "text", text: "Updated" }
 			});
 
 			const clipAfter = edit.getClip(0, 0);
@@ -466,7 +467,7 @@ describe("Edit Clip Operations", () => {
 
 		it("is undoable - restores original config on undo", () => {
 			edit.updateClip(0, 0, {
-				asset: { type: "text", text: "Changed", style: "minimal" }
+				asset: { type: "text", text: "Changed" }
 			});
 
 			const clipChanged = edit.getClip(0, 0);
@@ -576,7 +577,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createTextClip(0, 5, "Before"));
 
 			edit.updateClip(0, 0, {
-				asset: { type: "text", text: "After", style: "minimal" }
+				asset: { type: "text", text: "After" }
 			});
 			expect((edit.getClip(0, 0)?.asset as { text: string }).text).toBe("After");
 
@@ -742,8 +743,8 @@ describe("Edit Clip Operations", () => {
 
 	describe("AddClipCommand export state sync", () => {
 		const baseEdit = {
-			timeline: { tracks: [] },
-			output: { format: "mp4" as const, fps: 25, size: { width: 1920, height: 1080 } }
+			timeline: { tracks: [] as { clips: ResolvedClip[] }[] },
+			output: { format: "mp4" as const, fps: 25 as const, size: { width: 1920, height: 1080 } }
 		};
 
 		it("tracks clip state after addClip", async () => {
@@ -812,14 +813,14 @@ describe("Edit Clip Operations", () => {
 
 	describe("edge cases", () => {
 		it("handles rapid add/delete cycles", async () => {
-			for (let i = 0; i < 5; i++) {
-				await edit.addClip(0, createVideoClip(i, 1));
+			for (let i = 0; i < 5; i += 1) {
+				await edit.addClip(0, createVideoClip(i, 1)); // eslint-disable-line no-await-in-loop -- Sequential adds are intentional for this test
 			}
 
 			const { tracks: withFive } = getEditState(edit);
 			expect(withFive[0].length).toBe(5);
 
-			for (let i = 4; i >= 0; i--) {
+			for (let i = 4; i >= 0; i -= 1) {
 				edit.deleteClip(0, i);
 			}
 

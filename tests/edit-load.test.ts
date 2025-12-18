@@ -28,7 +28,8 @@
 import { Edit } from "@core/edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip, ResolvedEdit } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedEdit } from "@schemas/edit";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -54,6 +55,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
+					// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 					child.parent = self;
 				}
 				return child;
@@ -215,15 +217,15 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		},
 		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
 			mergeFieldBindings.clear();
-			for (const [k, v] of bindings) {
+			bindings.forEach((v, k) => {
 				mergeFieldBindings.set(k, v);
-			}
+			});
 		},
 		getExportableClip: () => {
 			const exported = structuredClone(config);
-			// Apply timing intent
-			if (timingIntent.start !== undefined) exported.start = timingIntent.start;
-			if (timingIntent.length !== undefined) exported.length = timingIntent.length;
+			// Apply timing intent (cast needed as timingIntent can be string for "auto")
+			if (timingIntent.start !== undefined) exported.start = timingIntent.start as number;
+			if (timingIntent.length !== undefined) exported.length = timingIntent.length as number;
 			return exported;
 		}
 	};
@@ -269,7 +271,8 @@ jest.mock("@canvas/players/caption-player", () => ({
 	CaptionPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Caption))
 }));
 
-// Import mocked player constructors for assertions
+// Import mocked player constructors for assertions (must be after jest.mock)
+/* eslint-disable import/first */
 import { VideoPlayer } from "@canvas/players/video-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { TextPlayer } from "@canvas/players/text-player";
@@ -279,6 +282,7 @@ import { ShapePlayer } from "@canvas/players/shape-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { CaptionPlayer } from "@canvas/players/caption-player";
+/* eslint-enable import/first */
 
 /**
  * Helper to access private Edit state for testing.
@@ -303,13 +307,19 @@ function getEditState(edit: Edit): {
 	};
 }
 
+// Clip type that allows "auto" values for timing (used in tests before resolution)
+type TestClip = Omit<ResolvedClip, "start" | "length"> & {
+	start: number | "auto";
+	length: number | "auto" | "end";
+};
+
 /**
  * Create a minimal valid edit configuration.
  */
-function createMinimalEdit(tracks: { clips: ResolvedClip[] }[] = []): ResolvedEdit {
+function createMinimalEdit(tracks: { clips: TestClip[] }[] = []): ResolvedEdit {
 	return {
 		timeline: {
-			tracks
+			tracks: tracks as { clips: ResolvedClip[] }[]
 		},
 		output: {
 			size: { width: 1920, height: 1080 },
@@ -867,7 +877,7 @@ describe("Edit loadEdit()", () => {
 					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
 				]);
 				await edit.loadEdit(edit1);
-				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Load 2-track edit - should trigger full reload
 				const edit2 = createMinimalEdit([
@@ -877,7 +887,7 @@ describe("Edit loadEdit()", () => {
 				await edit.loadEdit(edit2);
 
 				// Should have created new players (full reload)
-				expect((ImagePlayer as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+				expect((ImagePlayer as unknown as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
 			});
 
 			it("detects different clip count as structural change", async () => {
@@ -886,7 +896,7 @@ describe("Edit loadEdit()", () => {
 					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
 				]);
 				await edit.loadEdit(edit1);
-				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Load edit with 2 clips - should trigger full reload
 				const edit2 = createMinimalEdit([
@@ -900,7 +910,7 @@ describe("Edit loadEdit()", () => {
 				await edit.loadEdit(edit2);
 
 				// Should have created new players (full reload)
-				expect((ImagePlayer as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+				expect((ImagePlayer as unknown as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
 			});
 
 			it("detects asset type change as structural change", async () => {
@@ -909,7 +919,6 @@ describe("Edit loadEdit()", () => {
 					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
 				]);
 				await edit.loadEdit(edit1);
-				const imageCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
 
 				// Load edit with video clip - should trigger full reload
 				const edit2 = createMinimalEdit([
@@ -927,7 +936,7 @@ describe("Edit loadEdit()", () => {
 					{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
 				]);
 				await edit.loadEdit(edit1);
-				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Load edit with only length changed - should use granular path
 				const edit2 = createMinimalEdit([
@@ -936,7 +945,7 @@ describe("Edit loadEdit()", () => {
 				await edit.loadEdit(edit2);
 
 				// Should NOT create new players (granular path)
-				expect((ImagePlayer as jest.Mock).mock.calls.length).toBe(initialCallCount);
+				expect((ImagePlayer as unknown as jest.Mock).mock.calls.length).toBe(initialCallCount);
 			});
 		});
 
@@ -971,7 +980,7 @@ describe("Edit loadEdit()", () => {
 					output: { size: { width: 1920, height: 1080 }, format: "mp4", fps: 25 }
 				};
 				await edit.loadEdit(edit1);
-				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Change fps only
 				const edit2: ResolvedEdit = {
@@ -983,7 +992,7 @@ describe("Edit loadEdit()", () => {
 				await edit.loadEdit(edit2);
 
 				// Should NOT rebuild players
-				expect((ImagePlayer as jest.Mock).mock.calls.length).toBe(initialCallCount);
+				expect((ImagePlayer as unknown as jest.Mock).mock.calls.length).toBe(initialCallCount);
 				// FPS should be updated
 				expect(edit.getOutputFps()).toBe(30);
 			});
@@ -998,7 +1007,7 @@ describe("Edit loadEdit()", () => {
 					output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 				};
 				await edit.loadEdit(edit1);
-				const initialCallCount = (ImagePlayer as jest.Mock).mock.calls.length;
+				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Change background only
 				const edit2: ResolvedEdit = {
@@ -1011,7 +1020,7 @@ describe("Edit loadEdit()", () => {
 				await edit.loadEdit(edit2);
 
 				// Should NOT rebuild players
-				expect((ImagePlayer as jest.Mock).mock.calls.length).toBe(initialCallCount);
+				expect((ImagePlayer as unknown as jest.Mock).mock.calls.length).toBe(initialCallCount);
 				// Background should be updated
 				expect(getEditState(edit).backgroundColor).toBe("#ff0000");
 			});

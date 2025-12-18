@@ -1,6 +1,7 @@
 import type { Edit } from "@core/edit";
 import { EditEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
+import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
 
 import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
@@ -8,7 +9,6 @@ import { ToolbarComponent } from "./components/toolbar/toolbar-component";
 import { TrackListComponent } from "./components/track/track-list";
 import { TimelineStateManager } from "./core/state/timeline-state";
 import { TimelineEntity } from "./core/timeline-entity";
-import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
 import { InteractionController } from "./interaction/interaction-controller";
 
 /** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */

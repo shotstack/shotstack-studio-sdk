@@ -1,7 +1,9 @@
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable import/first */
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import type { Mock } from "jest-mock";
 
 // Mock pixi.js before any imports that use it
 jest.mock("pixi.js", () => ({
@@ -35,6 +37,12 @@ import { AssetToolbar } from "../src/core/ui/asset-toolbar";
 import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
 import { BUILT_IN_FONTS, FONT_SIZES } from "../src/core/ui/base-toolbar";
 import { InternalEvent } from "../src/core/events/edit-events";
+import type { ToolbarButtonConfig } from "../src/core/ui/toolbar-button.types";
+
+type MockPlayer = {
+	clipConfiguration: Record<string, unknown>;
+	getMergeFieldBinding: Mock<() => null>;
+};
 
 // ============================================================================
 // Mock Helpers
@@ -64,7 +72,7 @@ function createMockEventEmitter() {
 function createMockEdit(overrides: Record<string, unknown> = {}) {
 	const events = createMockEventEmitter();
 	return {
-		getPlayerClip: jest.fn(() => null),
+		getPlayerClip: jest.fn((): MockPlayer | null => null),
 		getClip: jest.fn(() => null),
 		getEdit: jest.fn(() => ({
 			timeline: {
@@ -74,8 +82,8 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		})),
 		getMergeFieldForProperty: jest.fn(() => null),
 		updateClip: jest.fn(),
-		getToolbarButtons: jest.fn(() => []),
-		getSelectedClipInfo: jest.fn(() => null),
+		getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
+		getSelectedClipInfo: jest.fn((): { trackIndex: number; clipIndex: number } | null => null),
 		mergeFields: {
 			getAll: jest.fn(() => []),
 			register: jest.fn(),
@@ -96,7 +104,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 	};
 }
 
-function createMockClip(assetType: string, overrides: Record<string, unknown> = {}) {
+function createMockClip(assetType: string, overrides: Record<string, unknown> = {}): MockPlayer {
 	const baseAsset = {
 		type: assetType,
 		...overrides
@@ -168,6 +176,7 @@ function simulateClick(element: Element | null): void {
 // Helper to simulate input events
 function simulateInput(element: HTMLInputElement | null, value: string | number): void {
 	if (element) {
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM manipulation for testing
 		element.value = String(value);
 		element.dispatchEvent(new Event("input", { bubbles: true }));
 	}
@@ -176,6 +185,7 @@ function simulateInput(element: HTMLInputElement | null, value: string | number)
 // Helper to simulate change events (for inputs that listen to 'change' instead of 'input')
 function simulateChange(element: HTMLInputElement | null, value: string | number): void {
 	if (element) {
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM manipulation for testing
 		element.value = String(value);
 		element.dispatchEvent(new Event("change", { bubbles: true }));
 	}
@@ -724,6 +734,8 @@ describe("MediaToolbar", () => {
 
 			// Visual should be visible
 			expect(visualSection?.style.display).not.toBe("none");
+			// Volume should also be visible for video
+			expect(volumeSection?.classList.contains("hidden")).toBe(false);
 		});
 
 		it("showMedia() with 'audio' hides visual section", () => {

@@ -506,6 +506,7 @@ export class CanvasToolbar {
 	private addVariable(): void {
 		if (!this.edit) return;
 
+		// eslint-disable-next-line no-alert -- Intentional use of prompt for quick variable name input
 		const name = prompt("Variable name:");
 		if (!name || !name.trim()) return;
 

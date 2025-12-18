@@ -62,10 +62,6 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 	private speedDecreaseBtn: HTMLButtonElement | null = null;
 	private speedIncreaseBtn: HTMLButtonElement | null = null;
 
-	constructor() {
-		super(); // No wrapper class - mounted inside existing popup container
-	}
-
 	render(): string {
 		const effectButtons = TransitionPanel.EFFECTS.map(e => `<button class="ss-transition-effect" data-effect="${e}">${e || "None"}</button>`).join("");
 

@@ -1,12 +1,12 @@
 import { Player, PlayerType } from "@canvas/players/player";
+import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
 import type { Edit } from "@core/edit";
 import { EditEvent } from "@core/events/edit-events";
-import { type ResolvedClip } from "@schemas/clip";
-import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
 import { type CaptionAsset } from "@schemas/caption-asset";
+import { type ResolvedClip } from "@schemas/clip";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 

@@ -1,3 +1,4 @@
+// @ts-ignore Vite's ?inline query is handled at build time, not by tsc
 import styles from "./index.css?inline";
 
 let injected = false;

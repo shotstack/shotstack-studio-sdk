@@ -1,6 +1,6 @@
 import { Player, PlayerType } from "@canvas/players/player";
-import type { Edit } from "@core/edit";
 import { TextEditor } from "@canvas/text/text-editor";
+import type { Edit } from "@core/edit";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas/clip";

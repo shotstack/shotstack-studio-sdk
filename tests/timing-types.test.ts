@@ -24,11 +24,11 @@ describe("Timing Type System", () => {
 
 		it("round-trip conversion is lossless", () => {
 			const values = [0, 1, 2.5, 3.14159, 100, 0.001];
-			for (const value of values) {
+			values.forEach(value => {
 				const original = sec(value);
 				const result = toSec(toMs(original));
 				expect(result).toBeCloseTo(value, 10);
-			}
+			});
 		});
 
 		it("handles edge cases correctly", () => {
@@ -74,14 +74,9 @@ describe("Timing Type System", () => {
 			expect(good3).toBe(5);
 
 			// The following would fail TypeScript compilation if uncommented:
-			// @ts-expect-error - Cannot assign plain number to Milliseconds
-			// const bad1: Milliseconds = 5000;
-
-			// @ts-expect-error - Cannot assign Seconds to Milliseconds
-			// const bad2: Milliseconds = sec(5);
-
-			// @ts-expect-error - Cannot pass Milliseconds to function expecting Seconds
-			// toMs(ms(5000));
+			// const bad1: Milliseconds = 5000;  // Error: Cannot assign plain number to Milliseconds
+			// const bad2: Milliseconds = sec(5); // Error: Cannot assign Seconds to Milliseconds
+			// toMs(ms(5000));                    // Error: Cannot pass Milliseconds to function expecting Seconds
 		});
 	});
 });

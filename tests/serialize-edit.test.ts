@@ -191,8 +191,8 @@ describe("serializeEditForExport", () => {
 	it("preserves output configuration", () => {
 		const output = {
 			size: { width: 1280, height: 720 },
-			format: "gif",
-			fps: 15
+			format: "gif" as const,
+			fps: 15 as const
 		};
 
 		const result = serializeEditForExport([], null, "#000", [], output, []);
@@ -290,7 +290,7 @@ describe("asset merge behavior", () => {
 			},
 			start: 0,
 			length: 5
-		} as Clip;
+		} as unknown as Clip;
 		const clip: ClipExportData = {
 			clipConfiguration: {
 				asset: { type: "video", src: "https://example.com/video.mp4" },
@@ -304,7 +304,7 @@ describe("asset merge behavior", () => {
 		const result = serializeClipForExport(clip, originalClip);
 
 		// Properties from original that aren't in current should be preserved
-		expect((result.asset as { customProp: string }).customProp).toBe("preserved");
+		expect((result.asset as unknown as { customProp: string }).customProp).toBe("preserved");
 	});
 });
 
@@ -512,6 +512,6 @@ describe("clip properties preservation", () => {
 
 		const result = serializeClipForExport(clip, undefined);
 
-		expect(result.filter).toBe("greyscale");
+		expect((result as unknown as { filter: string }).filter).toBe("greyscale");
 	});
 });

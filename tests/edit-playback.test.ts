@@ -30,6 +30,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
+					// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 					child.parent = createMockContainer();
 				}
 				return child;

@@ -23,6 +23,7 @@ jest.mock("pixi.js", () => {
 			parent: null as unknown,
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
+				// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 				child.parent = createMockPixiContainer();
 			}),
 			removeChild: jest.fn(),
@@ -99,17 +100,26 @@ function createMockContainer(): MockContainer {
 	const container: MockContainer = {
 		children,
 		parent: null,
-		addChild: jest.fn((child: { parent?: unknown }) => {
-			children.push(child);
-			child.parent = container;
-		}),
-		removeChild: jest.fn((child: { parent?: unknown }) => {
-			const idx = children.indexOf(child);
-			if (idx >= 0) children.splice(idx, 1);
-			child.parent = null;
-		}),
+		addChild: jest.fn(),
+		removeChild: jest.fn(),
 		destroy: jest.fn()
 	};
+	// Set up implementations that reference container
+	container.addChild = jest.fn((child: unknown) => {
+		children.push(child);
+		if (child && typeof child === "object") {
+			// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
+			(child as { parent?: unknown }).parent = container;
+		}
+	});
+	container.removeChild = jest.fn((child: unknown) => {
+		const idx = children.indexOf(child);
+		if (idx >= 0) children.splice(idx, 1);
+		if (child && typeof child === "object") {
+			// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
+			(child as { parent?: unknown }).parent = null;
+		}
+	});
 	return container;
 }
 

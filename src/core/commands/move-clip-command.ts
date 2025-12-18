@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { type Seconds, type TimingIntent, ms, sec, toMs, toSec } from "@core/timing/types";
+import { type Seconds, type TimingIntent, sec, toMs, toSec } from "@core/timing/types";
 
 import { DeleteTrackCommand } from "./delete-track-command";
 import type { EditCommand, CommandContext } from "./types";

@@ -10,6 +10,7 @@ import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas/clip";
 import { resolveAutoStart, resolveAutoLength, resolveEndLength, calculateTimelineEnd } from "@core/timing/resolver";
+import { ms } from "@core/timing/types";
 
 // Mock probeMediaDuration since document.createElement doesn't work in Node
 jest.mock("@core/timing/resolver", () => ({
@@ -41,6 +42,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
+					// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 					child.parent = self;
 				}
 				return child;
@@ -197,15 +199,15 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		},
 		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
 			mergeFieldBindings.clear();
-			for (const [k, v] of bindings) {
+			bindings.forEach((v, k) => {
 				mergeFieldBindings.set(k, v);
-			}
+			});
 		},
 		getExportableClip: () => {
 			const exported = structuredClone(config);
-			// Apply timing intent
-			if (timingIntent.start !== undefined) exported.start = timingIntent.start;
-			if (timingIntent.length !== undefined) exported.length = timingIntent.length;
+			// Apply timing intent (cast needed as timingIntent can be string for "auto")
+			if (timingIntent.start !== undefined) exported.start = timingIntent.start as number;
+			if (timingIntent.length !== undefined) exported.length = timingIntent.length as number;
 			return exported;
 		}
 	};
@@ -355,7 +357,7 @@ describe("Timing Resolver Functions", () => {
 
 	describe("resolveAutoLength()", () => {
 		it("falls back to 3000ms for non-media assets", async () => {
-			const asset = { type: "text", text: "Hello" };
+			const asset = { type: "text" as const, text: "Hello" };
 
 			const result = await resolveAutoLength(asset);
 
@@ -363,7 +365,8 @@ describe("Timing Resolver Functions", () => {
 		});
 
 		it("falls back to 3000ms for assets without src", async () => {
-			const asset = { type: "video" }; // No src
+			// Use video asset without src - cast needed as schema expects src
+			const asset = { type: "video" as const } as { type: "video"; src: string };
 
 			const result = await resolveAutoLength(asset);
 
@@ -373,25 +376,25 @@ describe("Timing Resolver Functions", () => {
 
 	describe("resolveEndLength()", () => {
 		it("returns timeline end minus clip start", () => {
-			const result = resolveEndLength(2000, 10000);
+			const result = resolveEndLength(ms(2000), ms(10000));
 
 			expect(result).toBe(8000);
 		});
 
 		it("never returns negative value", () => {
-			const result = resolveEndLength(15000, 10000);
+			const result = resolveEndLength(ms(15000), ms(10000));
 
 			expect(result).toBe(0);
 		});
 
 		it("returns 0 when clip starts at timeline end", () => {
-			const result = resolveEndLength(10000, 10000);
+			const result = resolveEndLength(ms(10000), ms(10000));
 
 			expect(result).toBe(0);
 		});
 
 		it("handles clip starting at 0", () => {
-			const result = resolveEndLength(0, 5000);
+			const result = resolveEndLength(ms(0), ms(5000));
 
 			expect(result).toBe(5000);
 		});

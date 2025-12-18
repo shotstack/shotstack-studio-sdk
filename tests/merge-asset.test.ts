@@ -45,7 +45,7 @@ describe("mergeAssetForExport", () => {
 
 		const result = mergeAssetForExport(originalAsset, currentAsset);
 
-		expect(result.text).toBe("Updated");
+		expect((result as { text: string }).text).toBe("Updated");
 	});
 
 	it("preserves original properties not present in current (shallow merge)", () => {
@@ -61,7 +61,7 @@ describe("mergeAssetForExport", () => {
 			font: { family: "Arial", size: 24 }
 		};
 
-		const result = mergeAssetForExport(originalAsset as Asset, currentAsset as Asset);
+		const result = mergeAssetForExport(originalAsset as unknown as Asset, currentAsset as unknown as Asset);
 
 		// Custom property from original should be preserved since it's not in current
 		expect((result as any).customProperty).toBe("preserved");

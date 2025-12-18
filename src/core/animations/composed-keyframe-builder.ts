@@ -53,7 +53,7 @@ export class ComposedKeyframeBuilder {
 				result += layer.getValue(time);
 			}
 			return result;
-		} else {
+		} 
 			let result = this.baseValue;
 			for (const layer of this.layers) {
 				result *= layer.getValue(time);
@@ -63,6 +63,6 @@ export class ComposedKeyframeBuilder {
 				result = Math.max(this.clampRange.min, Math.min(this.clampRange.max, result));
 			}
 			return result;
-		}
+		
 	}
 }

@@ -1,4 +1,3 @@
-import type { Edit } from "@core/edit";
 import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";

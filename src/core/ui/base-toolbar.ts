@@ -118,7 +118,7 @@ export abstract class BaseToolbar {
 
 		if (!isOpen && popup) {
 			popup.classList.add("visible");
-			popup.style.display = ""; // Clear inline style, let CSS control
+			popup.style.display = ""; // eslint-disable-line no-param-reassign -- Clear inline style, let CSS control
 			onOpen?.();
 		}
 	}

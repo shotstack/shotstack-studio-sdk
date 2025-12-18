@@ -5,6 +5,7 @@
  * The command system is the foundation for all editing operations.
  */
 
+/* eslint-disable max-classes-per-file -- Test helper classes */
 import { Edit } from "@core/edit";
 import type { EditCommand, CommandContext } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
@@ -31,6 +32,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
+					// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 					child.parent = createMockContainer();
 				}
 				return child;
@@ -117,8 +119,11 @@ jest.mock("@canvas/system/alignment-guides", () => ({
  */
 class TestCommand implements EditCommand {
 	readonly name: string;
+
 	executeCount = 0;
+
 	undoCount = 0;
+
 	lastContext: CommandContext | undefined;
 
 	constructor(name: string = "TestCommand") {
@@ -126,12 +131,12 @@ class TestCommand implements EditCommand {
 	}
 
 	execute(context?: CommandContext): void {
-		this.executeCount++;
+		this.executeCount += 1;
 		this.lastContext = context;
 	}
 
 	undo(context?: CommandContext): void {
-		this.undoCount++;
+		this.undoCount += 1;
 		this.lastContext = context;
 	}
 }
@@ -141,8 +146,11 @@ class TestCommand implements EditCommand {
  */
 class AsyncTestCommand implements EditCommand {
 	readonly name = "AsyncTestCommand";
+
 	executeCount = 0;
+
 	undoCount = 0;
+
 	resolveDelay: number;
 
 	constructor(resolveDelay: number = 10) {
@@ -150,13 +158,17 @@ class AsyncTestCommand implements EditCommand {
 	}
 
 	async execute(): Promise<void> {
-		await new Promise(resolve => setTimeout(resolve, this.resolveDelay));
-		this.executeCount++;
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, this.resolveDelay);
+		});
+		this.executeCount += 1;
 	}
 
 	async undo(): Promise<void> {
-		await new Promise(resolve => setTimeout(resolve, this.resolveDelay));
-		this.undoCount++;
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, this.resolveDelay);
+		});
+		this.undoCount += 1;
 	}
 }
 
@@ -165,10 +177,11 @@ class AsyncTestCommand implements EditCommand {
  */
 class NoUndoCommand implements EditCommand {
 	readonly name = "NoUndoCommand";
+
 	executeCount = 0;
 
 	execute(): void {
-		this.executeCount++;
+		this.executeCount += 1;
 	}
 	// Intentionally no undo method
 }

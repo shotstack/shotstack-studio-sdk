@@ -1,5 +1,5 @@
 import type { Player } from "@canvas/players/player";
-import { type Seconds, ms, sec, toMs } from "@core/timing/types";
+import { type Seconds, sec, toMs } from "@core/timing/types";
 
 import { MoveClipCommand } from "./move-clip-command";
 import type { EditCommand, CommandContext } from "./types";

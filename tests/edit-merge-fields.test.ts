@@ -37,6 +37,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
+					// eslint-disable-next-line no-param-reassign -- Intentional mock of Pixi.js Container behavior
 					child.parent = self;
 				}
 				return child;
@@ -188,19 +189,21 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		},
 		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
 			mergeFieldBindings.clear();
-			for (const [k, v] of bindings) {
+			bindings.forEach((v, k) => {
 				mergeFieldBindings.set(k, v);
-			}
+			});
 		},
 		getExportableClip: () => {
 			// Clone the config and restore placeholders for unchanged values
 			const exported = structuredClone(player.clipConfiguration) as Record<string, unknown>;
-			for (const [path, { placeholder, resolvedValue }] of mergeFieldBindings) {
+			mergeFieldBindings.forEach(({ placeholder, resolvedValue }, path) => {
+				// eslint-disable-next-line @typescript-eslint/no-use-before-define -- Helper functions defined below
 				const current = getNestedValue(exported, path);
 				if (current === resolvedValue) {
+					// eslint-disable-next-line @typescript-eslint/no-use-before-define -- Helper functions defined below
 					setNestedValue(exported, path, placeholder);
 				}
-			}
+			});
 			exported["start"] = timingIntent.start;
 			exported["length"] = timingIntent.length;
 			return exported as ResolvedClip;
@@ -214,9 +217,9 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
 	const keys = path.split(".");
 	let current: unknown = obj;
-	for (const key of keys) {
+	for (let i = 0; i < keys.length; i += 1) {
 		if (current === null || current === undefined) return undefined;
-		current = (current as Record<string, unknown>)[key];
+		current = (current as Record<string, unknown>)[keys[i]];
 	}
 	return current;
 }
@@ -310,7 +313,7 @@ function createImageClip(start: number, length: number, src: string = "https://e
  */
 function createTextClip(start: number, length: number, text: string = "Hello World"): ResolvedClip {
 	return {
-		asset: { type: "text", text, style: "minimal" },
+		asset: { type: "text", text },
 		start,
 		length,
 		fit: "none"

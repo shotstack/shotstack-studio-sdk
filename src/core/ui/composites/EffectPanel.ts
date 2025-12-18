@@ -50,10 +50,6 @@ export class EffectPanel extends UIComponent<EffectState> {
 	private speedDecreaseBtn: HTMLButtonElement | null = null;
 	private speedIncreaseBtn: HTMLButtonElement | null = null;
 
-	constructor() {
-		super(); // No wrapper class - mounted inside existing popup container
-	}
-
 	render(): string {
 		const typeButtons = EffectPanel.EFFECT_TYPES.map(
 			t => `<button class="ss-effect-type" data-effect-type="${t}">${t ? t.charAt(0).toUpperCase() + t.slice(1) : "None"}</button>`
