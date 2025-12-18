@@ -50,12 +50,20 @@ import * as pixi from "pixi.js";
 
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import type { EditCommand, CommandContext } from "./commands/types";
+import { EditDocument } from "./edit-document";
 
 export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
 
 	public assetLoader: AssetLoader;
 	public events: EventEmitter<EditEventMap & InternalEventMap>;
+
+	/**
+	 * Pure document layer - holds the raw Edit config with "auto", "end", placeholders.
+	 * This is the source of truth for serialization to backend.
+	 * @internal
+	 */
+	private document: EditDocument | null = null;
 
 	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
@@ -237,6 +245,10 @@ export class Edit extends Entity {
 	}
 
 	public async loadEdit(edit: ResolvedEdit): Promise<void> {
+		// Store raw edit in document layer (preserves "auto", "end", placeholders)
+		// Cast to EditConfig since ResolvedEdit is structurally compatible for storage
+		this.document = new EditDocument(edit as unknown as EditConfig);
+
 		// Smart diff: only do full reload when structure changes (track/clip count, asset type)
 		if (this.edit && !this.hasStructuralChanges(edit)) {
 			this.isBatchingEvents = true;
@@ -400,6 +412,15 @@ export class Edit extends Entity {
 	 */
 	public getOriginalEdit(): ResolvedEdit | null {
 		return this.edit;
+	}
+
+	/**
+	 * Get the pure document layer (holds raw Edit with "auto", "end", placeholders).
+	 * This is the source of truth for backend serialization.
+	 * @internal
+	 */
+	public getDocument(): EditDocument | null {
+		return this.document;
 	}
 
 	public addClip(trackIdx: number, clip: ResolvedClip): void | Promise<void> {
