@@ -1,4 +1,3 @@
-export const CANVAS_TOOLBAR_STYLES = `
 .ss-canvas-toolbar {
 	position: absolute;
 	right: 8px;
@@ -486,4 +485,3 @@ export const CANVAS_TOOLBAR_STYLES = `
 	background: rgba(239, 68, 68, 0.1);
 	color: #ef4444;
 }
-`;

@@ -1,7 +1,7 @@
 import type { TextAsset } from "@schemas/text-asset";
+import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES, TOOLBAR_ICONS } from "./base-toolbar";
-import { TEXT_TOOLBAR_STYLES } from "./text-toolbar.css";
 
 export class TextToolbar extends BaseToolbar {
 	// Text edit
@@ -87,7 +87,7 @@ export class TextToolbar extends BaseToolbar {
 	private effectSpeedValueLabel: HTMLSpanElement | null = null;
 
 	override mount(parent: HTMLElement): void {
-		this.injectStyles("ss-text-toolbar-styles", TEXT_TOOLBAR_STYLES);
+		injectShotstackStyles();
 
 		this.container = document.createElement("div");
 		this.container.className = "ss-toolbar ss-text-toolbar";

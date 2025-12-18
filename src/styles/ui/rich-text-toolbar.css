@@ -1,4 +1,3 @@
-export const TOOLBAR_STYLES = `
 .ss-toolbar {
 	display: none;
 	position: absolute;
@@ -319,4 +318,3 @@ export const TOOLBAR_STYLES = `
 .ss-effect-speed-value { min-width: 42px; padding: 0 4px; text-align: center; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.85); font-variant-numeric: tabular-nums; border-left: 1px solid rgba(255, 255, 255, 0.06); border-right: 1px solid rgba(255, 255, 255, 0.06); }
 
 @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-`;

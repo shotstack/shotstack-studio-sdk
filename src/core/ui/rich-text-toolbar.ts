@@ -1,11 +1,11 @@
 import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
+import { injectShotstackStyles } from "@styles/inject";
 
 import { BackgroundColorPicker } from "./background-color-picker";
 import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES } from "./base-toolbar";
 import { FontColorPicker } from "./font-color-picker";
-import { TOOLBAR_STYLES } from "./rich-text-toolbar.css";
 
 export class RichTextToolbar extends BaseToolbar {
 	private fontPopup: HTMLDivElement | null = null;
@@ -110,7 +110,7 @@ export class RichTextToolbar extends BaseToolbar {
 	private effectSpeedValueLabel: HTMLSpanElement | null = null;
 
 	override mount(parent: HTMLElement): void {
-		this.injectStyles("ss-toolbar-styles", TOOLBAR_STYLES);
+		injectShotstackStyles();
 
 		this.container = document.createElement("div");
 		this.container.className = "ss-toolbar";

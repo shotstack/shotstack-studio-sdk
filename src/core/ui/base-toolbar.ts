@@ -46,7 +46,6 @@ export abstract class BaseToolbar {
 	protected edit: Edit;
 	protected selectedTrackIdx = -1;
 	protected selectedClipIdx = -1;
-	protected styleElement: HTMLStyleElement | null = null;
 	protected clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
 
 	constructor(edit: Edit) {
@@ -98,21 +97,6 @@ export abstract class BaseToolbar {
 
 		this.container?.remove();
 		this.container = null;
-
-		this.styleElement?.remove();
-		this.styleElement = null;
-	}
-
-	/**
-	 * Inject styles into the document head if not already present.
-	 */
-	protected injectStyles(styleId: string, styleContent: string): void {
-		if (document.getElementById(styleId)) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = styleId;
-		this.styleElement.textContent = styleContent;
-		document.head.appendChild(this.styleElement);
 	}
 
 	/**

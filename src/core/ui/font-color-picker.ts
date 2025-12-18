@@ -1,4 +1,4 @@
-import { FONT_COLOR_PICKER_STYLES } from "./font-color-picker.css";
+import { injectShotstackStyles } from "@styles/inject";
 
 type GradientPreset = {
 	type: "linear";
@@ -319,8 +319,6 @@ type FontColorChangeCallback = (updates: {
 
 export class FontColorPicker {
 	private container: HTMLDivElement | null = null;
-	private currentMode: ColorMode = "color";
-	private styleElement: HTMLStyleElement | null = null;
 
 	// Tab buttons
 	private colorTab: HTMLButtonElement | null = null;
@@ -341,16 +339,7 @@ export class FontColorPicker {
 	private onColorChange: FontColorChangeCallback | null = null;
 
 	constructor() {
-		this.injectStyles();
-	}
-
-	private injectStyles(): void {
-		if (document.getElementById("ss-font-color-picker-styles")) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = "ss-font-color-picker-styles";
-		this.styleElement.textContent = FONT_COLOR_PICKER_STYLES;
-		document.head.appendChild(this.styleElement);
+		injectShotstackStyles();
 	}
 
 	mount(parent: HTMLElement): void {
@@ -480,8 +469,6 @@ export class FontColorPicker {
 	}
 
 	setMode(mode: ColorMode): void {
-		this.currentMode = mode;
-
 		// Update tab buttons
 		if (mode === "color") {
 			this.colorTab?.classList.add("active");
@@ -530,10 +517,6 @@ export class FontColorPicker {
 		this.colorOpacitySlider = null;
 		this.colorOpacityValue = null;
 		this.highlightColorInput = null;
-
-		this.styleElement?.remove();
-		this.styleElement = null;
-
 		this.onColorChange = null;
 	}
 }

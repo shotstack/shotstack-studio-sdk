@@ -1,7 +1,7 @@
 import { validateAssetUrl } from "@core/shared/utils";
+import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
-import { MEDIA_TOOLBAR_STYLES } from "./media-toolbar.css";
 
 type FitValue = "crop" | "cover" | "contain" | "none";
 
@@ -130,7 +130,7 @@ export class MediaToolbar extends BaseToolbar {
 	private originalSrc: string = "";
 
 	override mount(parent: HTMLElement): void {
-		this.injectStyles("ss-media-toolbar-styles", MEDIA_TOOLBAR_STYLES);
+		injectShotstackStyles();
 
 		this.container = document.createElement("div");
 		this.container.className = "ss-media-toolbar";

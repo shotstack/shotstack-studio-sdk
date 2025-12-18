@@ -1,4 +1,3 @@
-export const BACKGROUND_COLOR_PICKER_STYLES = `
 .ss-color-picker {
 	padding: 16px;
 }
@@ -109,4 +108,3 @@ export const BACKGROUND_COLOR_PICKER_STYLES = `
 	color: rgba(255, 255, 255, 0.9);
 	font-variant-numeric: tabular-nums;
 }
-`;

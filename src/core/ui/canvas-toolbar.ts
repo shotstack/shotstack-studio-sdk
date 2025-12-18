@@ -1,8 +1,7 @@
 import type { Edit } from "@core/edit";
 import type { MergeField } from "@core/merge";
 import { validateAssetUrl } from "@core/shared/utils";
-
-import { CANVAS_TOOLBAR_STYLES } from "./canvas-toolbar.css";
+import { injectShotstackStyles } from "@styles/inject";
 
 type ResolutionChangeCallback = (width: number, height: number) => void;
 type FpsChangeCallback = (fps: number) => void;
@@ -49,7 +48,6 @@ const ICONS = {
 
 export class CanvasToolbar {
 	private container: HTMLDivElement | null = null;
-	private styleElement: HTMLStyleElement | null = null;
 	private edit: Edit | null = null;
 
 	// Current state
@@ -99,7 +97,7 @@ export class CanvasToolbar {
 
 	constructor(edit?: Edit) {
 		this.edit = edit ?? null;
-		this.injectStyles();
+		injectShotstackStyles();
 	}
 
 	setPosition(viewportWidth: number, editRightEdge: number): void {
@@ -108,15 +106,6 @@ export class CanvasToolbar {
 			const rightOffset = viewportWidth - editRightEdge;
 			this.container.style.right = `${Math.max(this.padding, rightOffset - toolbarWidth - this.padding)}px`;
 		}
-	}
-
-	private injectStyles(): void {
-		if (document.getElementById("ss-canvas-toolbar-styles")) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = "ss-canvas-toolbar-styles";
-		this.styleElement.textContent = CANVAS_TOOLBAR_STYLES;
-		document.head.appendChild(this.styleElement);
 	}
 
 	mount(parent: HTMLElement): void {

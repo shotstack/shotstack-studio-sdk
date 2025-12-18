@@ -1,4 +1,4 @@
-import { BACKGROUND_COLOR_PICKER_STYLES } from "./background-color-picker.css";
+import { injectShotstackStyles } from "@styles/inject";
 
 type ColorChangeCallback = (color: string, opacity: number) => void;
 
@@ -7,21 +7,11 @@ export class BackgroundColorPicker {
 	private colorInput: HTMLInputElement | null = null;
 	private opacitySlider: HTMLInputElement | null = null;
 	private opacityValue: HTMLSpanElement | null = null;
-	private styleElement: HTMLStyleElement | null = null;
 
 	private onColorChange: ColorChangeCallback | null = null;
 
 	constructor() {
-		this.injectStyles();
-	}
-
-	private injectStyles(): void {
-		if (document.getElementById("ss-background-color-picker-styles")) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = "ss-background-color-picker-styles";
-		this.styleElement.textContent = BACKGROUND_COLOR_PICKER_STYLES;
-		document.head.appendChild(this.styleElement);
+		injectShotstackStyles();
 	}
 
 	mount(parent: HTMLElement): void {
@@ -102,10 +92,6 @@ export class BackgroundColorPicker {
 		this.colorInput = null;
 		this.opacitySlider = null;
 		this.opacityValue = null;
-
-		this.styleElement?.remove();
-		this.styleElement = null;
-
 		this.onColorChange = null;
 	}
 }

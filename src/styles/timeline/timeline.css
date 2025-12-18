@@ -1,5 +1,3 @@
-/** Main timeline styles - light theme */
-export const TIMELINE_STYLES = `
 /* Main container */
 .ss-html-timeline {
 	--ss-timeline-pixels-per-second: 50;
@@ -555,10 +553,4 @@ export const TIMELINE_STYLES = `
 	flex: 1;
 	color: #9ca3af;
 	font-size: 13px;
-}
-`;
-
-/** Get all timeline styles as a single string */
-export function getTimelineStyles(): string {
-	return TIMELINE_STYLES;
 }

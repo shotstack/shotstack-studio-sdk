@@ -1,4 +1,3 @@
-export const FONT_COLOR_PICKER_STYLES = `
 .ss-font-color-picker {
 	padding: 16px;
 	min-width: 260px;
@@ -162,4 +161,3 @@ export const FONT_COLOR_PICKER_STYLES = `
 	transform: translateY(-2px);
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
-`;

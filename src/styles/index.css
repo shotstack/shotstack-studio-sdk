@@ -1,0 +1,17 @@
+/**
+ * Shotstack Studio SDK Styles
+ *
+ * All component styles are imported here and bundled together.
+ * The order matters - shared styles first, then components.
+ */
+
+/* UI Component Styles */
+@import "./ui/rich-text-toolbar.css";
+@import "./ui/media-toolbar.css";
+@import "./ui/canvas-toolbar.css";
+@import "./ui/asset-toolbar.css";
+@import "./ui/font-color-picker.css";
+@import "./ui/background-color-picker.css";
+
+/* Timeline Styles */
+@import "./timeline/timeline.css";

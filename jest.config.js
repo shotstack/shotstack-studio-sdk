@@ -4,6 +4,7 @@ export default {
 	extensionsToTreatAsEsm: [".ts"],
 	moduleNameMapper: {
 		"^(\\.{1,2}/.*)\\.js$": "$1",
+		"\\.css\\?inline$": "<rootDir>/tests/__mocks__/css-inline.js",
 		"^@shotstack/shotstack-studio/schema$": "<rootDir>/dist/schema/index.cjs",
 		"^@core/(.*)$": "<rootDir>/src/core/$1",
 		"^@canvas/(.*)$": "<rootDir>/src/components/canvas/$1",

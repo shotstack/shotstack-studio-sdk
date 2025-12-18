@@ -1,31 +1,20 @@
 import type { Edit } from "@core/edit";
-
-import { ASSET_TOOLBAR_STYLES } from "./asset-toolbar.css";
+import { injectShotstackStyles } from "@styles/inject";
 
 export class AssetToolbar {
 	private container: HTMLDivElement | null = null;
-	private styleElement: HTMLStyleElement | null = null;
 	private edit: Edit;
 	private padding = 12;
 
 	constructor(edit: Edit) {
 		this.edit = edit;
-		this.injectStyles();
+		injectShotstackStyles();
 	}
 
 	setPosition(leftOffset: number): void {
 		if (this.container) {
 			this.container.style.left = `${Math.max(this.padding, leftOffset - 48 - this.padding)}px`;
 		}
-	}
-
-	private injectStyles(): void {
-		if (document.getElementById("ss-asset-toolbar-styles")) return;
-
-		this.styleElement = document.createElement("style");
-		this.styleElement.id = "ss-asset-toolbar-styles";
-		this.styleElement.textContent = ASSET_TOOLBAR_STYLES;
-		document.head.appendChild(this.styleElement);
 	}
 
 	mount(parent: HTMLElement): void {

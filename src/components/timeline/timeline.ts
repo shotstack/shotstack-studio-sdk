@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit";
+import { injectShotstackStyles } from "@styles/inject";
 
 import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
@@ -8,7 +9,6 @@ import { TimelineStateManager } from "./core/state/timeline-state";
 import { TimelineEntity } from "./core/timeline-entity";
 import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
 import { InteractionController } from "./interaction/interaction-controller";
-import { getTimelineStyles } from "./styles/timeline.css";
 
 /** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */
 export class Timeline extends TimelineEntity {
@@ -30,9 +30,6 @@ export class Timeline extends TimelineEntity {
 	private playheadGhost: HTMLElement | null = null;
 	private feedbackLayer: HTMLElement | null = null;
 	private interactionController: InteractionController | null = null;
-
-	// Style element for scoped CSS
-	private styleElement: HTMLStyleElement | null = null;
 
 	// Hybrid render loop state
 	private animationFrameId: number | null = null;
@@ -101,7 +98,7 @@ export class Timeline extends TimelineEntity {
 		if (this.isLoaded) return;
 
 		// Inject styles
-		this.injectStyles();
+		injectShotstackStyles();
 
 		// Mount to container first so we can measure
 		this.container.appendChild(this.element);
@@ -179,12 +176,6 @@ export class Timeline extends TimelineEntity {
 
 		// Remove DOM
 		this.element.remove();
-
-		// Remove styles
-		if (this.styleElement) {
-			this.styleElement.remove();
-			this.styleElement = null;
-		}
 
 		this.isLoaded = false;
 	}
@@ -269,12 +260,6 @@ export class Timeline extends TimelineEntity {
 	}
 
 	// ========== Component Building ==========
-
-	private injectStyles(): void {
-		this.styleElement = document.createElement("style");
-		this.styleElement.textContent = getTimelineStyles();
-		document.head.appendChild(this.styleElement);
-	}
 
 	private buildComponents(): void {
 		// Clear existing content
