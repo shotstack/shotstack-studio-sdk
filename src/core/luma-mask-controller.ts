@@ -176,6 +176,14 @@ export class LumaMaskController {
 	}
 
 	private setupEventListeners(): void {
+		this.events.on(EditEvent.ClipAdded, () => {
+			this.rebuildLumaMasksIfNeeded();
+		});
+
+		this.events.on(EditEvent.ClipSplit, () => {
+			this.rebuildLumaMasksIfNeeded();
+		});
+
 		this.events.on(EditEvent.ClipUpdated, () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
@@ -185,10 +193,6 @@ export class LumaMaskController {
 		});
 
 		this.events.on(EditEvent.ClipDeleted, () => {
-			this.rebuildLumaMasksIfNeeded();
-		});
-
-		this.events.on(EditEvent.TimelineUpdated, () => {
 			this.rebuildLumaMasksIfNeeded();
 		});
 	}

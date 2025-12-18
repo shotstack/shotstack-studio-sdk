@@ -43,7 +43,6 @@ export class Timeline extends TimelineEntity {
 	private readonly handleTimelineUpdated: () => void;
 	private readonly handlePlaybackPlay: () => void;
 	private readonly handlePlaybackPause: () => void;
-	private readonly handlePlaybackStop: () => void;
 	private readonly handleClipSelected: () => void;
 
 	constructor(
@@ -86,10 +85,6 @@ export class Timeline extends TimelineEntity {
 		this.handlePlaybackPause = () => {
 			this.stopRenderLoop();
 			this.requestRender(); // Final render to update UI with paused state
-		};
-		this.handlePlaybackStop = () => {
-			this.stopRenderLoop();
-			this.requestRender(); // Final render to update UI with stopped state
 		};
 		this.handleClipSelected = () => this.requestRender();
 	}
@@ -187,10 +182,16 @@ export class Timeline extends TimelineEntity {
 		// Listen for timeline data changes (single render when idle)
 		this.edit.events.on(EditEvent.TimelineUpdated, this.handleTimelineUpdated);
 
+		// Listen for granular clip/track events
+		this.edit.events.on(EditEvent.ClipAdded, this.handleTimelineUpdated);
+		this.edit.events.on(EditEvent.ClipDeleted, this.handleTimelineUpdated);
+		this.edit.events.on(EditEvent.ClipSplit, this.handleTimelineUpdated);
+		this.edit.events.on(EditEvent.TrackAdded, this.handleTimelineUpdated);
+		this.edit.events.on(EditEvent.TrackRemoved, this.handleTimelineUpdated);
+
 		// Listen for playback state changes (start/stop render loop)
 		this.edit.events.on(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
 		this.edit.events.on(EditEvent.PlaybackPause, this.handlePlaybackPause);
-		this.edit.events.on(EditEvent.PlaybackStop, this.handlePlaybackStop);
 
 		// Listen for selection changes (from canvas or other sources)
 		this.edit.events.on(EditEvent.ClipSelected, this.handleClipSelected);
@@ -198,9 +199,13 @@ export class Timeline extends TimelineEntity {
 
 	private removeEventListeners(): void {
 		this.edit.events.off(EditEvent.TimelineUpdated, this.handleTimelineUpdated);
+		this.edit.events.off(EditEvent.ClipAdded, this.handleTimelineUpdated);
+		this.edit.events.off(EditEvent.ClipDeleted, this.handleTimelineUpdated);
+		this.edit.events.off(EditEvent.ClipSplit, this.handleTimelineUpdated);
+		this.edit.events.off(EditEvent.TrackAdded, this.handleTimelineUpdated);
+		this.edit.events.off(EditEvent.TrackRemoved, this.handleTimelineUpdated);
 		this.edit.events.off(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
 		this.edit.events.off(EditEvent.PlaybackPause, this.handlePlaybackPause);
-		this.edit.events.off(EditEvent.PlaybackStop, this.handlePlaybackStop);
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
 	}
 

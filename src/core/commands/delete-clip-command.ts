@@ -32,14 +32,12 @@ export class DeleteClipCommand implements EditCommand {
 			context.propagateTimingChanges(this.trackIdx, this.clipIdx - 1);
 
 			// Check if track is now empty and delete it (same pattern as MoveClipCommand)
+			// DeleteTrackCommand emits TrackRemoved
 			const track = tracks[this.trackIdx];
 			if (track && track.length === 0) {
 				this.deleteTrackCommand = new DeleteTrackCommand(this.trackIdx);
 				this.deleteTrackCommand.execute(context);
 				this.trackWasDeleted = true;
-
-				// Emit timeline:updated so timeline UI refreshes after track deletion
-				context.emitEvent(EditEvent.TimelineUpdated, { current: context.getEditState() });
 			}
 
 			// Emit event so luma masking and other listeners can update

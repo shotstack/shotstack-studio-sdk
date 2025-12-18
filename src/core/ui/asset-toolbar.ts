@@ -1,5 +1,5 @@
 import type { Edit } from "@core/edit";
-import { EditEvent } from "@core/events/edit-events";
+import { InternalEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
 
 export class AssetToolbar {
@@ -28,7 +28,7 @@ export class AssetToolbar {
 
 		parent.appendChild(this.container);
 
-		this.edit.events.on(EditEvent.ToolbarButtonsChanged, () => this.render());
+		this.edit.events.on(InternalEvent.ToolbarButtonsChanged, () => this.render());
 	}
 
 	private render(): void {

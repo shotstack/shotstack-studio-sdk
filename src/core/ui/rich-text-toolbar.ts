@@ -1,5 +1,5 @@
 import type { Edit } from "@core/edit";
-import { EditEvent } from "@core/events/edit-events";
+import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
@@ -877,7 +877,7 @@ export class RichTextToolbar extends BaseToolbar {
 		parent.insertBefore(this.container, parent.firstChild);
 
 		// Re-sync when font capabilities change (async operation)
-		this.edit.events.on(EditEvent.FontCapabilitiesChanged, () => {
+		this.edit.events.on(InternalEvent.FontCapabilitiesChanged, () => {
 			if (this.container?.style.display !== "none") {
 				this.syncState();
 			}

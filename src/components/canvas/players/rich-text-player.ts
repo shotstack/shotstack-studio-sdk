@@ -1,5 +1,5 @@
 import { Player, PlayerType } from "@canvas/players/player";
-import { EditEvent } from "@core/events/edit-events";
+import { InternalEvent } from "@core/events/edit-events";
 import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
@@ -194,7 +194,7 @@ export class RichTextPlayer extends Player {
 
 		if (fontUrl) {
 			await this.checkFontCapabilities(fontUrl);
-			this.edit.events.emit(EditEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
+			this.edit.events.emit(InternalEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
 		}
 
 		for (const texture of this.cachedFrames.values()) {

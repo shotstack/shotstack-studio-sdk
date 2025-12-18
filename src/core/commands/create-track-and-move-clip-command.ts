@@ -62,7 +62,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		this.addTrackCommand.undo(context);
 		this.wasExecuted = false;
 
-		context.emitEvent(EditEvent.TrackCreatedUndone, {
+		context.emitEvent(EditEvent.TrackRemoved, {
 			trackIndex: this.insertionIndex
 		});
 	}

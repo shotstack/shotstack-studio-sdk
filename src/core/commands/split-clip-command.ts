@@ -129,8 +129,10 @@ export class SplitClipCommand implements EditCommand {
 					this.rightClipPlayer.draw();
 				}
 				context.updateDuration();
-				context.emitEvent(EditEvent.TimelineUpdated, {
-					current: context.getEditState()
+				context.emitEvent(EditEvent.ClipSplit, {
+					trackIndex: this.trackIndex,
+					originalClipIndex: this.clipIndex,
+					newClipIndex: this.clipIndex + 1
 				});
 			})
 			.catch(error => {
@@ -176,8 +178,10 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		context.updateDuration();
-		context.emitEvent(EditEvent.TimelineUpdated, {
-			current: context.getEditState()
+		// Emit ClipDeleted for the merged (removed) right clip
+		context.emitEvent(EditEvent.ClipDeleted, {
+			trackIndex: this.trackIndex,
+			clipIndex: this.clipIndex + 1
 		});
 	}
 }

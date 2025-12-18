@@ -92,7 +92,7 @@ export class CaptionPlayer extends Player {
 
 			this.isTranscribing = false;
 
-			this.edit.events.emit(EditEvent.TranscriptionComplete, {
+			this.edit.events.emit(EditEvent.TranscriptionCompleted, {
 				clipAlias,
 				cueCount: this.cues.length
 			});
@@ -100,7 +100,7 @@ export class CaptionPlayer extends Player {
 			this.isTranscribing = false;
 			console.error("Failed to transcribe:", error);
 
-			this.edit.events.emit(EditEvent.TranscriptionError, {
+			this.edit.events.emit(EditEvent.TranscriptionFailed, {
 				clipAlias,
 				error: error instanceof Error ? error.message : "Transcription failed"
 			});

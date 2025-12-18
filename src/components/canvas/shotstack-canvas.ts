@@ -1,6 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
 import { Edit } from "@core/edit";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
 import { MediaToolbar } from "@core/ui/media-toolbar";
@@ -332,11 +332,11 @@ export class Canvas {
 			this.transcriptionIndicator.setPosition(this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10, 10);
 		});
 
-		this.edit.events.on(EditEvent.TranscriptionComplete, () => {
+		this.edit.events.on(EditEvent.TranscriptionCompleted, () => {
 			this.transcriptionIndicator.hide();
 		});
 
-		this.edit.events.on(EditEvent.TranscriptionError, () => {
+		this.edit.events.on(EditEvent.TranscriptionFailed, () => {
 			this.transcriptionIndicator.hide();
 		});
 	}
@@ -399,7 +399,7 @@ export class Canvas {
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
 		if (event.target === this.background) {
-			this.edit.events.emit(EditEvent.CanvasBackgroundClicked);
+			this.edit.events.emit(InternalEvent.CanvasBackgroundClicked);
 		}
 	}
 

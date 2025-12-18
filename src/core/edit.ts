@@ -20,7 +20,7 @@ import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
-import { EditEvent, type EditEventMap } from "@core/events/edit-events";
+import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
@@ -54,7 +54,7 @@ export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
 
 	public assetLoader: AssetLoader;
-	public events: EventEmitter<EditEventMap>;
+	public events: EventEmitter<EditEventMap & InternalEventMap>;
 
 	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
@@ -1044,7 +1044,8 @@ export class Edit extends Entity {
 				clip.draw();
 			},
 			updateDuration: () => this.updateTotalDuration(),
-			emitEvent: (name, ...args) => this.events.emit(name, ...args),
+			emitEvent: (name, ...args) =>
+				(this.events as EventEmitter<EditEventMap>).emit(name, ...args),
 			findClipIndices: player => this.findClipIndices(player),
 			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
 			getSelectedClip: () => this.selectedClip,
@@ -1560,7 +1561,7 @@ export class Edit extends Entity {
 			this.background.fill();
 		}
 
-		this.events.emit(EditEvent.OutputSizeChanged, result.data);
+		this.events.emit(EditEvent.OutputResized, result.data);
 		this.emitEditChanged("output:size");
 	}
 
@@ -1670,14 +1671,14 @@ export class Edit extends Entity {
 		} else {
 			this.toolbarButtons.push(config);
 		}
-		this.events.emit(EditEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });
+		this.events.emit(InternalEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });
 	}
 
 	public unregisterToolbarButton(id: string): void {
 		const index = this.toolbarButtons.findIndex(b => b.id === id);
 		if (index >= 0) {
 			this.toolbarButtons.splice(index, 1);
-			this.events.emit(EditEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });
+			this.events.emit(InternalEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });
 		}
 	}
 
@@ -1963,23 +1964,11 @@ export class Edit extends Entity {
 	// ─── Intent Listeners ────────────────────────────────────────────────────────
 
 	private setupIntentListeners(): void {
-		this.events.on(EditEvent.TimelineClipClicked, data => {
-			if (data.player) {
-				this.selectPlayer(data.player);
-			} else {
-				this.selectClip(data.trackIndex, data.clipIndex);
-			}
-		});
-
-		this.events.on(EditEvent.TimelineBackgroundClicked, () => {
-			this.clearSelection();
-		});
-
-		this.events.on(EditEvent.CanvasClipClicked, data => {
+		this.events.on(InternalEvent.CanvasClipClicked, data => {
 			this.selectPlayer(data.player);
 		});
 
-		this.events.on(EditEvent.CanvasBackgroundClicked, () => {
+		this.events.on(InternalEvent.CanvasBackgroundClicked, () => {
 			this.clearSelection();
 		});
 	}

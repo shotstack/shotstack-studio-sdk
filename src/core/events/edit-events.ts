@@ -18,20 +18,21 @@ export type ClipReference = ClipLocation & {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Event Names
+// Public Events (External API)
 // ─────────────────────────────────────────────────────────────
 
 export const EditEvent = {
 	// Playback
 	PlaybackPlay: "playback:play",
 	PlaybackPause: "playback:pause",
-	PlaybackStop: "playback:stop",
 
 	// Timeline structure
 	TimelineUpdated: "timeline:updated",
-	TimelineBackgroundChanged: "timeline:background:changed",
+	TimelineBackgroundChanged: "timeline:backgroundChanged",
 
 	// Clip lifecycle
+	ClipAdded: "clip:added",
+	ClipSplit: "clip:split",
 	ClipSelected: "clip:selected",
 	ClipUpdated: "clip:updated",
 	ClipDeleted: "clip:deleted",
@@ -49,16 +50,15 @@ export const EditEvent = {
 	// Track
 	TrackAdded: "track:added",
 	TrackRemoved: "track:removed",
-	TrackCreatedUndone: "track:created:undone",
 
 	// Duration
 	DurationChanged: "duration:changed",
 
 	// Output configuration
-	OutputSizeChanged: "output:size:changed",
-	OutputFpsChanged: "output:fps:changed",
-	OutputFormatChanged: "output:format:changed",
-	OutputDestinationsChanged: "output:destinations:changed",
+	OutputResized: "output:resized",
+	OutputFpsChanged: "output:fpsChanged",
+	OutputFormatChanged: "output:formatChanged",
+	OutputDestinationsChanged: "output:destinationsChanged",
 
 	// Merge fields
 	MergeFieldRegistered: "mergefield:registered",
@@ -69,41 +69,47 @@ export const EditEvent = {
 
 	// Transcription (captions)
 	TranscriptionProgress: "transcription:progress",
-	TranscriptionComplete: "transcription:complete",
-	TranscriptionError: "transcription:error",
-
-	// Font
-	FontCapabilitiesChanged: "font:capabilities:changed",
-
-	// Toolbar
-	ToolbarButtonsChanged: "toolbar:buttons:changed",
-
-	// Canvas interaction
-	CanvasClipClicked: "canvas:clip:clicked",
-	CanvasBackgroundClicked: "canvas:background:clicked",
-
-	// Timeline interaction (internal)
-	TimelineClipClicked: "timeline:clip:clicked",
-	TimelineBackgroundClicked: "timeline:background:clicked",
+	TranscriptionCompleted: "transcription:completed",
+	TranscriptionFailed: "transcription:failed"
 } as const;
 
 export type EditEventName = (typeof EditEvent)[keyof typeof EditEvent];
 
 // ─────────────────────────────────────────────────────────────
-// Event Payload Map
+// Internal Events (SDK Plumbing - Not Exported)
+// ─────────────────────────────────────────────────────────────
+
+/** @internal SDK component communication - not part of public API */
+export const InternalEvent = {
+	// Canvas → Edit communication
+	CanvasClipClicked: "canvas:clipClicked",
+	CanvasBackgroundClicked: "canvas:backgroundClicked",
+
+	// Font capability detection
+	FontCapabilitiesChanged: "font:capabilitiesChanged",
+
+	// Toolbar updates
+	ToolbarButtonsChanged: "toolbar:buttonsChanged"
+} as const;
+
+export type InternalEventName = (typeof InternalEvent)[keyof typeof InternalEvent];
+
+// ─────────────────────────────────────────────────────────────
+// Event Payload Maps
 // ─────────────────────────────────────────────────────────────
 
 export type EditEventMap = {
 	// Playback
 	[EditEvent.PlaybackPlay]: void;
 	[EditEvent.PlaybackPause]: void;
-	[EditEvent.PlaybackStop]: void;
 
 	// Timeline
 	[EditEvent.TimelineUpdated]: { current: ResolvedEdit };
 	[EditEvent.TimelineBackgroundChanged]: { color: string };
 
 	// Clip lifecycle
+	[EditEvent.ClipAdded]: ClipLocation;
+	[EditEvent.ClipSplit]: { trackIndex: number; originalClipIndex: number; newClipIndex: number };
 	[EditEvent.ClipSelected]: ClipReference;
 	[EditEvent.ClipUpdated]: { previous: ClipReference; current: ClipReference };
 	[EditEvent.ClipDeleted]: ClipLocation;
@@ -121,13 +127,12 @@ export type EditEventMap = {
 	// Track
 	[EditEvent.TrackAdded]: { trackIndex: number; totalTracks: number };
 	[EditEvent.TrackRemoved]: { trackIndex: number };
-	[EditEvent.TrackCreatedUndone]: { trackIndex: number };
 
 	// Duration
 	[EditEvent.DurationChanged]: { duration: number };
 
 	// Output
-	[EditEvent.OutputSizeChanged]: { width: number; height: number };
+	[EditEvent.OutputResized]: { width: number; height: number };
 	[EditEvent.OutputFpsChanged]: { fps: number };
 	[EditEvent.OutputFormatChanged]: { format: string };
 	[EditEvent.OutputDestinationsChanged]: { destinations: unknown[] };
@@ -141,20 +146,19 @@ export type EditEventMap = {
 
 	// Transcription
 	[EditEvent.TranscriptionProgress]: { clipAlias: string; message?: string };
-	[EditEvent.TranscriptionComplete]: { clipAlias: string; cueCount: number };
-	[EditEvent.TranscriptionError]: { clipAlias: string; error: string };
+	[EditEvent.TranscriptionCompleted]: { clipAlias: string; cueCount: number };
+	[EditEvent.TranscriptionFailed]: { clipAlias: string; error: string };
+};
+
+/** @internal */
+export type InternalEventMap = {
+	// Canvas interaction
+	[InternalEvent.CanvasClipClicked]: { player: Player };
+	[InternalEvent.CanvasBackgroundClicked]: void;
 
 	// Font
-	[EditEvent.FontCapabilitiesChanged]: { supportsBold: boolean };
+	[InternalEvent.FontCapabilitiesChanged]: { supportsBold: boolean };
 
 	// Toolbar
-	[EditEvent.ToolbarButtonsChanged]: { buttons: ToolbarButtonConfig[] };
-
-	// Canvas
-	[EditEvent.CanvasClipClicked]: { player: Player };
-	[EditEvent.CanvasBackgroundClicked]: void;
-
-	// Timeline (internal)
-	[EditEvent.TimelineClipClicked]: { player: Player; trackIndex: number; clipIndex: number };
-	[EditEvent.TimelineBackgroundClicked]: void;
+	[InternalEvent.ToolbarButtonsChanged]: { buttons: ToolbarButtonConfig[] };
 };

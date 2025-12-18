@@ -1,4 +1,5 @@
 import type { MergeFieldBinding } from "@canvas/players/player";
+import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas/clip";
 import * as pixi from "pixi.js";
 
@@ -54,6 +55,8 @@ export class DeleteTrackCommand implements EditCommand {
 		});
 
 		context.updateDuration();
+
+		context.emitEvent(EditEvent.TrackRemoved, { trackIndex: this.trackIdx });
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
