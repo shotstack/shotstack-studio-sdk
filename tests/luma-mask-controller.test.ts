@@ -181,6 +181,7 @@ function createMockEventEmitter() {
 			if (!listeners[event]) listeners[event] = [];
 			listeners[event].push(callback);
 		}),
+		off: jest.fn(),
 		emit: (event: string) => {
 			if (listeners[event]) {
 				listeners[event].forEach(cb => cb());
@@ -212,10 +213,11 @@ describe("LumaMaskController", () => {
 
 			controller.initialize();
 
+			expect(events.on).toHaveBeenCalledWith("clip:added", expect.any(Function));
+			expect(events.on).toHaveBeenCalledWith("clip:split", expect.any(Function));
 			expect(events.on).toHaveBeenCalledWith("clip:updated", expect.any(Function));
 			expect(events.on).toHaveBeenCalledWith("clip:restored", expect.any(Function));
 			expect(events.on).toHaveBeenCalledWith("clip:deleted", expect.any(Function));
-			expect(events.on).toHaveBeenCalledWith("timeline:updated", expect.any(Function));
 		});
 	});
 

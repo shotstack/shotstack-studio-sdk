@@ -333,13 +333,13 @@ describe("Edit Clip Operations", () => {
 			expect(tracks[2].length).toBe(1);
 		});
 
-		it("emits timeline:updated event", async () => {
+		it("emits clip:added event", async () => {
 			const clip = createVideoClip(0, 5);
 			emitSpy.mockClear();
 
 			await edit.addClip(0, clip);
 
-			expect(emitSpy).toHaveBeenCalledWith("timeline:updated", expect.anything());
+			expect(emitSpy).toHaveBeenCalledWith("clip:added", expect.anything());
 		});
 
 		it("updates totalDuration", async () => {
