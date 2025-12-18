@@ -35,7 +35,7 @@ export class TextPlayer extends Player {
 		this.drawBackground();
 
 		// Create and style text
-		this.text = new pixi.Text(textAsset.text ?? "", this.createTextStyle(textAsset));
+		this.text = new pixi.Text({ text: textAsset.text ?? "", style: this.createTextStyle(textAsset) });
 
 		// Position text according to alignment
 		this.positionText(textAsset);
