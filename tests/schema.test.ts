@@ -226,6 +226,32 @@ describe("Asset Schema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
+	it("should validate text asset without text property (background-only text boxes)", () => {
+		// Regression test: text assets without text should be valid
+		// Previously displayed "[object Object]" in canvas when text was undefined
+		const textAssetWithoutText = {
+			type: "text",
+			width: 1080,
+			height: 325,
+			font: {
+				color: "#000000",
+				family: "Montserrat ExtraBold",
+				size: 72,
+				lineHeight: 1
+			},
+			alignment: {
+				horizontal: "center",
+				vertical: "center"
+			},
+			background: {
+				color: "#ffffff"
+			}
+		};
+
+		const result = TextAssetSchema.safeParse(textAssetWithoutText);
+		expect(result.success).toBe(true);
+	});
+
 	it("should validate image asset", () => {
 		const imageAsset = {
 			type: "image",
