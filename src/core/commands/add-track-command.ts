@@ -14,9 +14,6 @@ export class AddTrackCommand implements EditCommand {
 
 		tracks.splice(this.trackIdx, 0, []);
 
-		// Sync originalEdit - insert empty track at same index
-		context.insertOriginalEditTrack(this.trackIdx);
-
 		// Update layers for all clips that are on tracks at or after the insertion point
 		// Since we're inserting a track, all tracks at or after trackIdx shift down
 		clips.forEach(clip => {
@@ -56,9 +53,6 @@ export class AddTrackCommand implements EditCommand {
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 		tracks.splice(this.trackIdx, 1);
-
-		// Sync originalEdit - remove the track we added
-		context.removeOriginalEditTrack(this.trackIdx);
 
 		clips.forEach(clip => {
 			if (clip.layer > this.trackIdx) {

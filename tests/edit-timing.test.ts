@@ -153,7 +153,10 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const lengthMs = typeof lengthIntent === "number" ? lengthIntent * 1000 : 3000;
 
 	let resolvedTiming = { start: startMs, length: lengthMs };
-	let timingIntent = { start: startIntent, length: lengthIntent };
+	const timingIntent: { start: number | string; length: number | string } = { start: startIntent, length: lengthIntent };
+
+	// Merge field bindings support
+	const mergeFieldBindings = new Map<string, { placeholder: string; resolvedValue: string }>();
 
 	return {
 		clipConfiguration: config,
@@ -167,7 +170,7 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getEnd: () => resolvedTiming.start + resolvedTiming.length,
 		getSize: () => ({ width: 1920, height: 1080 }),
 		getTimingIntent: () => ({ ...timingIntent }),
-		setTimingIntent: jest.fn((intent: { start?: unknown; length?: unknown }) => {
+		setTimingIntent: jest.fn((intent: { start?: number | string; length?: number | string }) => {
 			if (intent.start !== undefined) timingIntent.start = intent.start;
 			if (intent.length !== undefined) timingIntent.length = intent.length;
 		}),
@@ -182,7 +185,29 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		convertToFixedTiming: jest.fn()
+		convertToFixedTiming: jest.fn(),
+		// Merge field binding methods
+		getMergeFieldBindings: () => mergeFieldBindings,
+		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),
+		setMergeFieldBinding: (path: string, binding: { placeholder: string; resolvedValue: string }) => {
+			mergeFieldBindings.set(path, binding);
+		},
+		removeMergeFieldBinding: (path: string) => {
+			mergeFieldBindings.delete(path);
+		},
+		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
+			mergeFieldBindings.clear();
+			for (const [k, v] of bindings) {
+				mergeFieldBindings.set(k, v);
+			}
+		},
+		getExportableClip: () => {
+			const exported = structuredClone(config);
+			// Apply timing intent
+			if (timingIntent.start !== undefined) exported.start = timingIntent.start;
+			if (timingIntent.length !== undefined) exported.length = timingIntent.length;
+			return exported;
+		}
 	};
 };
 

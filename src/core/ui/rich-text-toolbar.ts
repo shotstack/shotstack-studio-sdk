@@ -1100,13 +1100,20 @@ export class RichTextToolbar extends BaseToolbar {
 		// Resolve any merge field templates in the text for canvas rendering
 		const resolvedText = this.edit.mergeFields.resolve(templateText);
 
-		// Update both stores: resolved for canvas, template for export
-		this.edit.updateClipWithTemplate(
-			this.selectedTrackIdx,
-			this.selectedClipIdx,
-			{ asset: { text: resolvedText } as ResolvedClip["asset"] },
-			{ asset: { text: templateText } as ResolvedClip["asset"] }
-		);
+		// Update merge field binding for export to preserve templates
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (player && this.edit.mergeFields.isMergeFieldTemplate(templateText)) {
+			player.setMergeFieldBinding("asset.text", {
+				placeholder: templateText,
+				resolvedValue: resolvedText
+			});
+		} else if (player) {
+			player.removeMergeFieldBinding("asset.text");
+		}
+
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
+			asset: { text: resolvedText } as ResolvedClip["asset"]
+		});
 		this.syncState();
 	}
 
@@ -1205,13 +1212,18 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.hideAutocomplete();
 
-		// Update both stores: resolved for canvas, template for export
-		this.edit.updateClipWithTemplate(
-			this.selectedTrackIdx,
-			this.selectedClipIdx,
-			{ asset: { text: resolvedText } as ResolvedClip["asset"] },
-			{ asset: { text: templateText } as ResolvedClip["asset"] }
-		);
+		// Update merge field binding for export to preserve templates
+		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (player) {
+			player.setMergeFieldBinding("asset.text", {
+				placeholder: templateText,
+				resolvedValue: resolvedText
+			});
+		}
+
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
+			asset: { text: resolvedText } as ResolvedClip["asset"]
+		});
 		this.syncState();
 	}
 

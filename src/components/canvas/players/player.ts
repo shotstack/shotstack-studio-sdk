@@ -3,15 +3,27 @@ import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit";
+import { getNestedValue, setNestedValue } from "@core/shared/utils";
 import { type ResolvedTiming, type TimingIntent } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import { type ResolvedClip } from "@schemas/clip";
+import { type Clip, type ResolvedClip } from "@schemas/clip";
 import { type Keyframe } from "@schemas/keyframe";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
+
+/**
+ * Tracks a merge field binding for a specific property path.
+ * Used to restore placeholders on export for properties that haven't changed.
+ */
+export interface MergeFieldBinding {
+	/** The original placeholder string, e.g., "{{ HERO_IMAGE }}" */
+	placeholder: string;
+	/** The resolved value at binding time, used for change detection */
+	resolvedValue: string;
+}
 
 export enum PlayerType {
 	Video = "video",
@@ -143,6 +155,12 @@ export abstract class Player extends Entity {
 
 	private initialClipConfiguration: ResolvedClip | null;
 	protected contentContainer: pixi.Container;
+
+	/**
+	 * Tracks which properties came from merge field templates.
+	 * Key: property path (e.g., "asset.src"), Value: binding info
+	 */
+	private mergeFieldBindings: Map<string, MergeFieldBinding> = new Map();
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip, playerType: PlayerType) {
 		super();
@@ -536,6 +554,72 @@ export abstract class Player extends Entity {
 			length: this.resolvedTiming.length / 1000
 		};
 	}
+
+	// ─── Merge Field Binding Methods ─────────────────────────────────────────────
+
+	/**
+	 * Set a merge field binding for a property path.
+	 * Called when a property is resolved from a merge field template.
+	 */
+	public setMergeFieldBinding(path: string, binding: MergeFieldBinding): void {
+		this.mergeFieldBindings.set(path, binding);
+	}
+
+	/**
+	 * Get the merge field binding for a property path, if any.
+	 */
+	public getMergeFieldBinding(path: string): MergeFieldBinding | undefined {
+		return this.mergeFieldBindings.get(path);
+	}
+
+	/**
+	 * Remove a merge field binding (e.g., when user changes the value).
+	 */
+	public removeMergeFieldBinding(path: string): void {
+		this.mergeFieldBindings.delete(path);
+	}
+
+	/**
+	 * Get all merge field bindings for this player.
+	 */
+	public getMergeFieldBindings(): Map<string, MergeFieldBinding> {
+		return this.mergeFieldBindings;
+	}
+
+	/**
+	 * Bulk set bindings during player initialization.
+	 */
+	public setInitialBindings(bindings: Map<string, MergeFieldBinding>): void {
+		this.mergeFieldBindings = new Map(bindings);
+	}
+
+	/**
+	 * Get the exportable clip configuration with merge field placeholders restored.
+	 * For properties that haven't changed from their resolved value, the original
+	 * placeholder (e.g., "{{ HERO_IMAGE }}") is restored for export.
+	 */
+	public getExportableClip(): Clip {
+		const exported = structuredClone(this.clipConfiguration) as Record<string, unknown>;
+
+		// Restore merge field placeholders for unchanged values
+		for (const [path, { placeholder, resolvedValue }] of this.mergeFieldBindings) {
+			const currentValue = getNestedValue(exported, path);
+			if (currentValue === resolvedValue) {
+				// Value unchanged - restore the placeholder for export
+				setNestedValue(exported, path, placeholder);
+			}
+			// If value changed, leave current value (binding is broken)
+		}
+
+		// Apply timing intent (preserves "auto", "end" strings)
+		const intent = this.getTimingIntent();
+		exported["start"] = intent.start;
+		exported["length"] = intent.length;
+
+		return exported as Clip;
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
 
 	public getPlaybackTime(): number {
 		const clipTime = this.edit.playbackTime - this.getStart();

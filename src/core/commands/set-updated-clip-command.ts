@@ -1,4 +1,5 @@
-import type { Player } from "@canvas/players/player";
+import { getNestedValue } from "@core/shared/utils";
+import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import type { ResolvedClip } from "@schemas/clip";
 
 import type { EditCommand, CommandContext } from "./types";
@@ -8,15 +9,13 @@ type ClipType = ResolvedClip;
 export interface SetUpdatedClipOptions {
 	trackIndex?: number;
 	clipIndex?: number;
-	templateConfig?: ClipType; // If provided, sync to originalEdit
 }
 
 export class SetUpdatedClipCommand implements EditCommand {
 	name = "setUpdatedClip";
 	private storedInitialConfig: ClipType | null;
 	private storedFinalConfig: ClipType;
-	private storedInitialTemplateConfig: ClipType | null = null;
-	private storedFinalTemplateConfig: ClipType | null = null;
+	private storedInitialBindings: Map<string, MergeFieldBinding> = new Map();
 	private trackIndex: number;
 	private clipIndex: number;
 	private storedInitialTiming: { start: number; length: number } | null = null;
@@ -31,13 +30,14 @@ export class SetUpdatedClipCommand implements EditCommand {
 		this.storedFinalConfig = finalClipConfig ? structuredClone(finalClipConfig) : structuredClone(this.clip.clipConfiguration);
 		this.trackIndex = options?.trackIndex ?? -1;
 		this.clipIndex = options?.clipIndex ?? -1;
-		if (options?.templateConfig) {
-			this.storedFinalTemplateConfig = structuredClone(options.templateConfig);
-		}
 	}
 
 	async execute(context?: CommandContext): Promise<void> {
 		if (!context) return;
+
+		// Save bindings before modification (for undo)
+		this.storedInitialBindings = new Map(this.clip.getMergeFieldBindings());
+
 		if (this.storedFinalConfig) {
 			context.restoreClipConfiguration(this.clip, this.storedFinalConfig);
 		}
@@ -66,22 +66,19 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		context.setUpdatedClip(this.clip);
 
+		// Detect broken bindings - if value changed from resolvedValue, remove the binding
+		for (const [path, { resolvedValue }] of this.storedInitialBindings) {
+			const currentValue = getNestedValue(this.clip.clipConfiguration, path);
+			if (currentValue !== resolvedValue) {
+				this.clip.removeMergeFieldBinding(path);
+			}
+		}
+
 		// Use provided indices or calculate from clip
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : this.clip.layer - 1;
 		const clips = context.getClips();
 		const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : clipsByTrack.indexOf(this.clip);
-
-		// Sync originalEdit if template config provided
-		if (this.storedFinalTemplateConfig && trackIndex >= 0 && clipIndex >= 0) {
-			// Store previous template for undo
-			const prevTemplate = context.getTemplateClip(trackIndex, clipIndex);
-			if (prevTemplate) {
-				this.storedInitialTemplateConfig = structuredClone(prevTemplate);
-			}
-			// Update originalEdit with template version
-			context.syncTemplateClip(trackIndex, clipIndex, this.storedFinalTemplateConfig);
-		}
 
 		// Check if asset src changed
 		const previousAsset = this.storedInitialConfig?.asset as { src?: string } | undefined;
@@ -120,16 +117,14 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		context.setUpdatedClip(this.clip);
 
+		// Restore saved bindings
+		this.clip.setInitialBindings(this.storedInitialBindings);
+
 		// Use provided indices or calculate from clip
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : this.clip.layer - 1;
 		const clips = context.getClips();
 		const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : clipsByTrack.indexOf(this.clip);
-
-		// Restore originalEdit if we modified it
-		if (this.storedInitialTemplateConfig && trackIndex >= 0 && clipIndex >= 0) {
-			context.syncTemplateClip(trackIndex, clipIndex, this.storedInitialTemplateConfig);
-		}
 
 		// Check if asset src changed (reverse direction)
 		const previousAsset = this.storedFinalConfig?.asset as { src?: string } | undefined;

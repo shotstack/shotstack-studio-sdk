@@ -45,13 +45,4 @@ export type CommandContext = {
 	trackEndLengthClip(clip: Player): void;
 	// Merge field context
 	getMergeFields(): MergeFieldService;
-	getTemplateClip(trackIndex: number, clipIndex: number): ClipType | null;
-	setTemplateClipProperty(trackIndex: number, clipIndex: number, propertyPath: string, value: unknown): void;
-	syncTemplateClip(trackIndex: number, clipIndex: number, templateClip: ClipType): void;
-	// originalEdit track sync (for track add/delete commands)
-	insertOriginalEditTrack(trackIdx: number): void;
-	removeOriginalEditTrack(trackIdx: number): void;
-	// originalEdit clip sync (for clip add/delete commands)
-	pushOriginalEditClip(trackIdx: number, clip: ClipType): void;
-	popOriginalEditClip(trackIdx: number): void;
 };

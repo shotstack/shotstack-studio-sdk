@@ -1,3 +1,4 @@
+import type { MergeFieldBinding } from "@canvas/players/player";
 import type { ResolvedClip } from "@schemas/clip";
 import * as pixi from "pixi.js";
 
@@ -7,7 +8,7 @@ type ClipType = ResolvedClip;
 
 export class DeleteTrackCommand implements EditCommand {
 	name = "deleteTrack";
-	private deletedClips: Array<{ config: ClipType }> = [];
+	private deletedClips: Array<{ config: ClipType; bindings: Map<string, MergeFieldBinding> }> = [];
 
 	constructor(private trackIdx: number) {}
 
@@ -16,7 +17,13 @@ export class DeleteTrackCommand implements EditCommand {
 		const clips = context.getClips();
 		const tracks = context.getTracks();
 
-		this.deletedClips = clips.filter(c => c.layer === this.trackIdx + 1).map(c => ({ config: structuredClone(c.clipConfiguration) }));
+		// Save config and bindings for undo
+		this.deletedClips = clips
+			.filter(c => c.layer === this.trackIdx + 1)
+			.map(c => ({
+				config: structuredClone(c.clipConfiguration),
+				bindings: new Map(c.getMergeFieldBindings())
+			}));
 
 		clips.forEach((clip, index) => {
 			if (clip.layer === this.trackIdx + 1) {
@@ -26,9 +33,6 @@ export class DeleteTrackCommand implements EditCommand {
 		context.disposeClips();
 
 		tracks.splice(this.trackIdx, 1);
-
-		// Sync originalEdit - remove the track at same index
-		context.removeOriginalEditTrack(this.trackIdx);
 
 		const remainingClips = context.getClips();
 		const container = context.getContainer();
@@ -59,18 +63,19 @@ export class DeleteTrackCommand implements EditCommand {
 
 		tracks.splice(this.trackIdx, 0, []);
 
-		// Sync originalEdit - re-insert the track at same index
-		context.insertOriginalEditTrack(this.trackIdx);
-
 		clips.forEach((clip, index) => {
 			if (clip.layer >= this.trackIdx + 1) {
 				clips[index].layer += 1;
 			}
 		});
 
-		for (const { config } of this.deletedClips) {
+		for (const { config, bindings } of this.deletedClips) {
 			const player = context.createPlayerFromAssetType(config);
 			player.layer = this.trackIdx + 1;
+			// Restore merge field bindings
+			if (bindings.size > 0) {
+				player.setInitialBindings(bindings);
+			}
 			await context.addPlayer(this.trackIdx, player);
 		}
 		context.updateDuration();

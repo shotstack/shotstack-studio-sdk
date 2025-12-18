@@ -3,7 +3,7 @@ import { CaptionPlayer } from "@canvas/players/caption-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
-import { type Player, PlayerType } from "@canvas/players/player";
+import { type MergeFieldBinding, type Player, PlayerType } from "@canvas/players/player";
 import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { TextPlayer } from "@canvas/players/text-player";
@@ -22,10 +22,9 @@ import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EventEmitter } from "@core/events/event-emitter";
 import { LumaMaskController } from "@core/luma-mask-controller";
-import { applyMergeFields, MergeFieldService } from "@core/merge";
+import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { Entity } from "@core/shared/entity";
-import { serializeEditForExport, type ClipExportData } from "@core/shared/serialize-edit";
-import { deepMerge, getNestedValue, setNestedValue } from "@core/shared/utils";
+import { deepMerge, getNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
@@ -58,7 +57,6 @@ export class Edit extends Entity {
 	public events: EventEmitter;
 
 	private edit: ResolvedEdit | null;
-	private originalEdit: ResolvedEdit | null;
 	private tracks: Player[][];
 	private clipsToDispose: Player[];
 	private clips: Player[];
@@ -111,7 +109,6 @@ export class Edit extends Entity {
 
 		this.assetLoader = new AssetLoader();
 		this.edit = null;
-		this.originalEdit = null;
 
 		this.tracks = [];
 		this.clipsToDispose = [];
@@ -250,12 +247,12 @@ export class Edit extends Entity {
 
 		this.clearClips();
 
-		// Store original (unresolved) edit for re-resolution on merge field changes
-		this.originalEdit = structuredClone(edit);
-
 		// Load merge fields from edit payload into service
 		const serializedMergeFields = edit.merge ?? [];
 		this.mergeFields.loadFromSerialized(serializedMergeFields);
+
+		// Detect merge field bindings BEFORE substitution (preserves placeholder info)
+		const bindingsPerClip = this.detectMergeFieldBindings(edit, serializedMergeFields);
 
 		// Apply merge field substitutions for initial load
 		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(edit, serializedMergeFields) : edit;
@@ -292,9 +289,16 @@ export class Edit extends Entity {
 		);
 
 		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
-			for (const clip of track.clips) {
+			for (const [clipIdx, clip] of track.clips.entries()) {
 				const clipPlayer = this.createPlayerFromAssetType(clip);
 				clipPlayer.layer = trackIdx + 1;
+
+				// Pass merge field bindings to the player
+				const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
+				if (bindings && bindings.size > 0) {
+					clipPlayer.setInitialBindings(bindings);
+				}
+
 				await this.addPlayer(trackIdx, clipPlayer);
 			}
 		}
@@ -331,23 +335,19 @@ export class Edit extends Entity {
 		await this.addPlayer(this.tracks.length, player);
 	}
 	public getEdit(): EditConfig {
-		const clipData: ClipExportData[][] = this.tracks.map(track =>
-			track
-				.filter(player => player && !this.clipsToDispose.includes(player))
-				.map(player => ({
-					clipConfiguration: player.clipConfiguration,
-					getTimingIntent: () => player.getTimingIntent()
-				}))
-		);
+		const tracks = this.tracks.map(track => ({
+			clips: track.filter(player => player && !this.clipsToDispose.includes(player)).map(player => player.getExportableClip())
+		}));
 
-		return serializeEditForExport(
-			clipData,
-			this.originalEdit,
-			this.backgroundColor,
-			this.edit?.timeline.fonts || [],
-			this.edit?.output || { size: this.size, format: "mp4" },
-			this.mergeFields.toSerializedArray()
-		);
+		return {
+			timeline: {
+				background: this.backgroundColor,
+				tracks,
+				fonts: this.edit?.timeline.fonts || []
+			},
+			output: this.edit?.output || { size: this.size, format: "mp4" },
+			merge: this.mergeFields.toSerializedArray()
+		};
 	}
 
 	/**
@@ -419,9 +419,11 @@ export class Edit extends Entity {
 		return clipsByTrack[clipIdx];
 	}
 
-	/** Get the original (unresolved) asset for a clip, preserving merge field templates */
+	/** Get the exportable asset for a clip, preserving merge field templates */
 	public getOriginalAsset(trackIndex: number, clipIndex: number): unknown | undefined {
-		return this.originalEdit?.timeline.tracks[trackIndex]?.clips[clipIndex]?.asset;
+		const player = this.getPlayerClip(trackIndex, clipIndex);
+		if (!player) return undefined;
+		return player.getExportableClip()?.asset;
 	}
 
 	public deleteClip(trackIdx: number, clipIdx: number): void {
@@ -767,14 +769,9 @@ export class Edit extends Entity {
 		const track = this.tracks[trackIdx];
 		const clipIdx = track ? track.indexOf(clip) : -1;
 
-		// Sync to originalEdit so getEdit() returns updated values
-		const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
-		const templateConfig = finalClipConfig && originalClip ? deepMerge(structuredClone(originalClip), finalClipConfig) : finalClipConfig;
-
 		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig, {
 			trackIndex: trackIdx,
-			clipIndex: clipIdx,
-			templateConfig: templateConfig ?? undefined
+			clipIndex: clipIdx
 		});
 		this.executeCommand(command);
 	}
@@ -790,52 +787,9 @@ export class Edit extends Entity {
 		const currentConfig = structuredClone(clip.clipConfiguration);
 		const mergedConfig = deepMerge(currentConfig, updates);
 
-		// Also sync to originalEdit so getEdit() returns updated values
-		const originalClip = this.originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];
-		const mergedTemplate = originalClip ? deepMerge(structuredClone(originalClip), updates) : mergedConfig;
-
 		const command = new SetUpdatedClipCommand(clip, initialConfig, mergedConfig, {
 			trackIndex: trackIdx,
-			clipIndex: clipIdx,
-			templateConfig: mergedTemplate
-		});
-		this.executeCommand(command);
-	}
-
-	/**
-	 * Update a clip with separate resolved and template configurations.
-	 * Use this when the resolved value (for rendering) differs from the template value (for export).
-	 * This is typically used when a property contains a merge field template.
-	 *
-	 * @param trackIdx - Track index
-	 * @param clipIdx - Clip index within the track
-	 * @param resolvedUpdates - Updates with resolved values (for clipConfiguration/rendering)
-	 * @param templateUpdates - Updates with template values (for originalEdit/export)
-	 */
-	public updateClipWithTemplate(
-		trackIdx: number,
-		clipIdx: number,
-		resolvedUpdates: Partial<ResolvedClip>,
-		templateUpdates: Partial<ResolvedClip>
-	): void {
-		const clip = this.getPlayerClip(trackIdx, clipIdx);
-		if (!clip) {
-			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
-			return;
-		}
-
-		const initialConfig = structuredClone(clip.clipConfiguration);
-		const mergedResolved = deepMerge(structuredClone(initialConfig), resolvedUpdates);
-
-		const templateClip = this.getTemplateClip(trackIdx, clipIdx);
-		const mergedTemplate = templateClip
-			? deepMerge(structuredClone(templateClip), templateUpdates)
-			: deepMerge(structuredClone(initialConfig), templateUpdates);
-
-		const command = new SetUpdatedClipCommand(clip, initialConfig, mergedResolved, {
-			trackIndex: trackIdx,
-			clipIndex: clipIdx,
-			templateConfig: mergedTemplate
+			clipIndex: clipIdx
 		});
 		this.executeCommand(command);
 	}
@@ -875,13 +829,92 @@ export class Edit extends Entity {
 	}
 
 	/**
+	 * Detects merge field placeholders in the raw edit before substitution.
+	 * Returns a map of clip keys ("trackIdx-clipIdx") to their merge field bindings.
+	 * Each binding maps a property path to its placeholder and resolved value.
+	 */
+	private detectMergeFieldBindings(edit: ResolvedEdit, mergeFields: SerializedMergeField[]): Map<string, Map<string, MergeFieldBinding>> {
+		const result = new Map<string, Map<string, MergeFieldBinding>>();
+
+		if (!mergeFields.length) return result;
+
+		// Build lookup map: FIELD_NAME -> replacement value
+		const fieldValues = new Map<string, string>();
+		for (const { find, replace } of mergeFields) {
+			fieldValues.set(find.toUpperCase(), replace);
+		}
+
+		// Walk each clip and detect placeholder strings
+		for (const [trackIdx, track] of edit.timeline.tracks.entries()) {
+			for (const [clipIdx, clip] of track.clips.entries()) {
+				const bindings = this.detectBindingsInObject(clip, "", fieldValues);
+				if (bindings.size > 0) {
+					result.set(`${trackIdx}-${clipIdx}`, bindings);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Recursively walks an object to find merge field placeholders.
+	 * Returns a map of property paths to their bindings.
+	 */
+	private detectBindingsInObject(obj: unknown, basePath: string, fieldValues: Map<string, string>): Map<string, MergeFieldBinding> {
+		const bindings = new Map<string, MergeFieldBinding>();
+
+		if (typeof obj === "string") {
+			// Check if this string contains a merge field placeholder
+			// Use exec with a fresh regex to get capture groups (MERGE_FIELD_PATTERN has 'g' flag)
+			const regex = /\{\{\s*([A-Z_0-9]+)\s*\}\}/i;
+			const match = obj.match(regex);
+			if (match && match[1]) {
+				// Extract the field name (without braces/whitespace)
+				const fieldName = match[1].toUpperCase();
+				const resolvedValue = fieldValues.get(fieldName);
+				if (resolvedValue !== undefined) {
+					bindings.set(basePath, {
+						placeholder: obj,
+						resolvedValue
+					});
+				}
+			}
+			return bindings;
+		}
+
+		if (Array.isArray(obj)) {
+			for (let i = 0; i < obj.length; i++) {
+				const path = basePath ? `${basePath}[${i}]` : `[${i}]`;
+				const childBindings = this.detectBindingsInObject(obj[i], path, fieldValues);
+				for (const [p, b] of childBindings) {
+					bindings.set(p, b);
+				}
+			}
+			return bindings;
+		}
+
+		if (obj !== null && typeof obj === "object") {
+			for (const [key, value] of Object.entries(obj)) {
+				const path = basePath ? `${basePath}.${key}` : key;
+				const childBindings = this.detectBindingsInObject(value, path, fieldValues);
+				for (const [p, b] of childBindings) {
+					bindings.set(p, b);
+				}
+			}
+		}
+
+		return bindings;
+	}
+
+	/**
 	 * Checks if edit has structural changes requiring full reload.
 	 * Structural = track count, clip count, or asset type changed.
 	 */
 	private hasStructuralChanges(newEdit: ResolvedEdit): boolean {
-		if (!this.edit || !this.originalEdit) return true;
+		if (!this.edit) return true;
 
-		const currentTracks = this.originalEdit.timeline.tracks;
+		const currentTracks = this.edit.timeline.tracks;
 		const newTracks = newEdit.timeline.tracks;
 
 		// Different track count = structural
@@ -901,7 +934,7 @@ export class Edit extends Entity {
 		}
 
 		// Merge fields changed = structural (affects asset resolution)
-		if (JSON.stringify(this.originalEdit.merge ?? []) !== JSON.stringify(newEdit.merge ?? [])) {
+		if (JSON.stringify(this.edit.merge ?? []) !== JSON.stringify(newEdit.merge ?? [])) {
 			return true;
 		}
 
@@ -939,7 +972,7 @@ export class Edit extends Entity {
 		}
 
 		// 2. Diff and update each clip
-		const currentTracks = this.originalEdit!.timeline.tracks;
+		const currentTracks = this.edit!.timeline.tracks;
 		const newTracks = newEdit.timeline.tracks;
 
 		for (let trackIdx = 0; trackIdx < newTracks.length; trackIdx++) {
@@ -956,9 +989,6 @@ export class Edit extends Entity {
 				}
 			}
 		}
-
-		// 3. Update originalEdit to reflect new state
-		this.originalEdit = structuredClone(newEdit);
 	}
 
 	private createCommandContext(): CommandContext {
@@ -992,11 +1022,6 @@ export class Edit extends Entity {
 						}
 					}
 					track.splice(insertIdx, 0, clip);
-
-					// Sync originalEdit - re-insert clip template at same index
-					if (this.originalEdit?.timeline.tracks[trackIdx]?.clips) {
-						this.originalEdit.timeline.tracks[trackIdx].clips.splice(insertIdx, 0, structuredClone(clip.clipConfiguration));
-					}
 				}
 
 				this.addPlayerToContainer(trackIdx, clip);
@@ -1033,17 +1058,7 @@ export class Edit extends Entity {
 			untrackEndLengthClip: clip => this.endLengthClips.delete(clip),
 			trackEndLengthClip: clip => this.endLengthClips.add(clip),
 			// Merge field context
-			getMergeFields: () => this.mergeFields,
-			getTemplateClip: (trackIndex, clipIndex) => this.getTemplateClip(trackIndex, clipIndex),
-			setTemplateClipProperty: (trackIndex, clipIndex, propertyPath, value) =>
-				this.setTemplateClipProperty(trackIndex, clipIndex, propertyPath, value),
-			syncTemplateClip: (trackIndex, clipIndex, templateClip) => this.syncTemplateClip(trackIndex, clipIndex, templateClip),
-			// originalEdit track sync
-			insertOriginalEditTrack: trackIdx => this.insertOriginalEditTrack(trackIdx),
-			removeOriginalEditTrack: trackIdx => this.removeOriginalEditTrack(trackIdx),
-			// originalEdit clip sync
-			pushOriginalEditClip: (trackIdx, clip) => this.pushOriginalEditClip(trackIdx, clip),
-			popOriginalEditClip: trackIdx => this.popOriginalEditClip(trackIdx)
+			getMergeFields: () => this.mergeFields
 		};
 	}
 
@@ -1074,11 +1089,6 @@ export class Edit extends Entity {
 				const clipIdx = this.tracks[trackIdx].indexOf(clip);
 				if (clipIdx !== -1) {
 					this.tracks[trackIdx].splice(clipIdx, 1);
-
-					// Sync originalEdit - remove from template data to keep aligned with tracks array
-					if (this.originalEdit?.timeline.tracks[trackIdx]?.clips) {
-						this.originalEdit.timeline.tracks[trackIdx].clips.splice(clipIdx, 1);
-					}
 				}
 			}
 		}
@@ -1675,11 +1685,13 @@ export class Edit extends Entity {
 		return [...this.toolbarButtons];
 	}
 
-	// ─── Template Edit Access (for merge field commands) ───────────────────────
+	// ─── Template Edit Access (via player bindings) ───────────────────────────
 
-	/** Get the template clip from originalEdit */
+	/** Get the exportable clip (with merge field placeholders restored) */
 	private getTemplateClip(trackIndex: number, clipIndex: number): ResolvedClip | null {
-		return this.originalEdit?.timeline.tracks[trackIndex]?.clips[clipIndex] ?? null;
+		const player = this.getPlayerClip(trackIndex, clipIndex);
+		if (!player) return null;
+		return player.getExportableClip() as ResolvedClip;
 	}
 
 	/** Get the text content from the template clip (with merge field placeholders) */
@@ -1688,47 +1700,6 @@ export class Edit extends Entity {
 		if (!templateClip) return null;
 		const asset = templateClip.asset as { text?: string } | undefined;
 		return asset?.text ?? null;
-	}
-
-	/** Set a property on the template clip in originalEdit using dot notation */
-	public setTemplateClipProperty(trackIndex: number, clipIndex: number, propertyPath: string, value: unknown): void {
-		const clip = this.originalEdit?.timeline.tracks[trackIndex]?.clips[clipIndex];
-		if (!clip) return;
-		setNestedValue(clip, propertyPath, value);
-	}
-
-	/** Sync the entire template clip in originalEdit with a new clip configuration */
-	private syncTemplateClip(trackIndex: number, clipIndex: number, templateClip: ResolvedClip): void {
-		if (!this.originalEdit?.timeline.tracks[trackIndex]?.clips) return;
-		this.originalEdit.timeline.tracks[trackIndex].clips[clipIndex] = structuredClone(templateClip);
-	}
-
-	/** Insert an empty track into originalEdit at the specified index */
-	private insertOriginalEditTrack(trackIdx: number): void {
-		if (!this.originalEdit?.timeline.tracks) return;
-		this.originalEdit.timeline.tracks.splice(trackIdx, 0, { clips: [] });
-	}
-
-	/** Remove a track from originalEdit at the specified index */
-	private removeOriginalEditTrack(trackIdx: number): void {
-		if (!this.originalEdit?.timeline.tracks) return;
-		this.originalEdit.timeline.tracks.splice(trackIdx, 1);
-	}
-
-	/** Push a clip to originalEdit track (for AddClipCommand) */
-	private pushOriginalEditClip(trackIdx: number, clip: ResolvedClip): void {
-		if (!this.originalEdit) return;
-		// Ensure track exists (mirrors ensureTrack behavior)
-		while (this.originalEdit.timeline.tracks.length <= trackIdx) {
-			this.originalEdit.timeline.tracks.push({ clips: [] });
-		}
-		this.originalEdit.timeline.tracks[trackIdx].clips.push(structuredClone(clip));
-	}
-
-	/** Pop a clip from originalEdit track (for AddClipCommand undo) */
-	private popOriginalEditClip(trackIdx: number): void {
-		if (!this.originalEdit?.timeline.tracks[trackIdx]?.clips) return;
-		this.originalEdit.timeline.tracks[trackIdx].clips.pop();
 	}
 
 	// ─── Merge Field API (command-based) ───────────────────────────────────────

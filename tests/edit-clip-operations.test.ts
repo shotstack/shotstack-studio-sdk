@@ -141,7 +141,10 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const lengthMs = typeof config.length === "number" ? config.length * 1000 : 3000;
 
 	let resolvedTiming = { start: startMs, length: lengthMs };
-	let timingIntent = { start: config.start, length: config.length };
+	const timingIntent: { start: number | string; length: number | string } = { start: config.start, length: config.length };
+
+	// Merge field bindings support
+	const mergeFieldBindings = new Map<string, { placeholder: string; resolvedValue: string }>();
 
 	return {
 		clipConfiguration: config,
@@ -155,7 +158,7 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getEnd: () => resolvedTiming.start + resolvedTiming.length,
 		getSize: () => ({ width: 1920, height: 1080 }),
 		getTimingIntent: () => ({ ...timingIntent }),
-		setTimingIntent: jest.fn((intent: { start?: unknown; length?: unknown }) => {
+		setTimingIntent: jest.fn((intent: { start?: number | string; length?: number | string }) => {
 			if (intent.start !== undefined) timingIntent.start = intent.start;
 			if (intent.length !== undefined) timingIntent.length = intent.length;
 		}),
@@ -170,7 +173,29 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		convertToFixedTiming: jest.fn()
+		convertToFixedTiming: jest.fn(),
+		// Merge field binding methods
+		getMergeFieldBindings: () => mergeFieldBindings,
+		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),
+		setMergeFieldBinding: (path: string, binding: { placeholder: string; resolvedValue: string }) => {
+			mergeFieldBindings.set(path, binding);
+		},
+		removeMergeFieldBinding: (path: string) => {
+			mergeFieldBindings.delete(path);
+		},
+		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
+			mergeFieldBindings.clear();
+			for (const [k, v] of bindings) {
+				mergeFieldBindings.set(k, v);
+			}
+		},
+		getExportableClip: () => {
+			const exported = structuredClone(config);
+			// Apply timing intent
+			if (timingIntent.start !== undefined) exported.start = timingIntent.start;
+			if (timingIntent.length !== undefined) exported.length = timingIntent.length;
+			return exported;
+		}
 	};
 };
 
@@ -715,84 +740,73 @@ describe("Edit Clip Operations", () => {
 		});
 	});
 
-	describe("AddClipCommand originalEdit sync", () => {
+	describe("AddClipCommand export state sync", () => {
 		const baseEdit = {
 			timeline: { tracks: [] },
 			output: { format: "mp4" as const, fps: 25, size: { width: 1920, height: 1080 } }
 		};
 
-		it("syncs clip to originalEdit on addClip", async () => {
-			// Load an initial edit so originalEdit is populated
+		it("tracks clip state after addClip", async () => {
+			// Load an initial edit
 			await edit.loadEdit(baseEdit);
 
 			const clip = createVideoClip(0, 5);
 			await edit.addClip(0, clip);
 
-			const { originalEdit } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(originalEdit.timeline.tracks[0].clips).toHaveLength(1);
+			// Verify clip is tracked in player
+			const player = edit.getPlayerClip(0, 0);
+			expect(player).not.toBeNull();
+			expect(player?.clipConfiguration.asset?.type).toBe("video");
 		});
 
-		it("removes clip from originalEdit on undo", async () => {
-			// Load an initial edit so originalEdit is populated
+		it("removes clip state on undo", async () => {
+			// Load an initial edit
 			await edit.loadEdit(baseEdit);
 
 			const clip = createVideoClip(0, 5);
 			await edit.addClip(0, clip);
 
-			const { originalEdit: afterAdd } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(afterAdd.timeline.tracks[0].clips).toHaveLength(1);
+			// Verify clip exists
+			expect(edit.getPlayerClip(0, 0)).not.toBeNull();
 
 			edit.undo();
 			edit.update(0, 0); // Process disposal
 
-			const { originalEdit: afterUndo } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(afterUndo.timeline.tracks[0].clips).toHaveLength(0);
+			// Verify clip is removed
+			expect(edit.getPlayerClip(0, 0)).toBeNull();
 		});
 
-		it("syncs multiple clips to originalEdit", async () => {
+		it("tracks multiple clips after addClip", async () => {
 			await edit.loadEdit(baseEdit);
 
 			await edit.addClip(0, createVideoClip(0, 3));
 			await edit.addClip(0, createImageClip(3, 2));
 
-			const { originalEdit } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(originalEdit.timeline.tracks[0].clips).toHaveLength(2);
+			// Verify both clips are tracked
+			const { tracks } = getEditState(edit);
+			expect(tracks[0]).toHaveLength(2);
 		});
 
-		it("maintains sync with originalEdit across multiple undo operations", async () => {
+		it("maintains state across multiple undo operations", async () => {
 			await edit.loadEdit(baseEdit);
 
 			await edit.addClip(0, createVideoClip(0, 3));
 			await edit.addClip(0, createImageClip(3, 2));
 
-			const { originalEdit: withTwo } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(withTwo.timeline.tracks[0].clips).toHaveLength(2);
+			const { tracks: withTwo } = getEditState(edit);
+			expect(withTwo[0]).toHaveLength(2);
 
 			edit.undo(); // Undo second add
 			edit.update(0, 0);
 
-			const { originalEdit: withOne } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(withOne.timeline.tracks[0].clips).toHaveLength(1);
+			const { tracks: withOne } = getEditState(edit);
+			expect(withOne[0]).toHaveLength(1);
 
 			edit.undo(); // Undo first add
 			edit.update(0, 0);
 
-			const { originalEdit: withNone } = getEditState(edit) as {
-				originalEdit: { timeline: { tracks: Array<{ clips: unknown[] }> } };
-			};
-			expect(withNone.timeline.tracks[0].clips).toHaveLength(0);
+			const { tracks: withNone } = getEditState(edit);
+			expect(withNone[0]?.length ?? 0).toBe(0);
 		});
 	});
 

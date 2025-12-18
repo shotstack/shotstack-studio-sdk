@@ -1,15 +1,15 @@
-import type { Player } from "@canvas/players/player";
+import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { setNestedValue } from "@core/shared/utils";
 
 import type { EditCommand, CommandContext } from "./types";
 
 /**
  * Command to apply or remove a merge field on a clip property.
- * Handles both the template (for export) and resolved value (for rendering) atomically.
+ * Handles both the player binding (for export) and resolved value (for rendering) atomically.
  *
  * This command supports undo/redo and ensures:
  * - Player's clipConfiguration gets the resolved value (for rendering)
- * - Template edit (originalEdit) gets the {{ FIELD }} template (for export)
+ * - Player's mergeFieldBindings track the placeholder (for export)
  * - Merge field registry is updated appropriately
  */
 export class SetMergeFieldCommand implements EditCommand {
@@ -19,6 +19,7 @@ export class SetMergeFieldCommand implements EditCommand {
 	private storedNewValue: string;
 	private trackIndex: number;
 	private clipIndex: number;
+	private storedPreviousBinding: MergeFieldBinding | undefined;
 
 	constructor(
 		private clip: Player,
@@ -41,12 +42,23 @@ export class SetMergeFieldCommand implements EditCommand {
 
 		const mergeFields = context.getMergeFields();
 
+		// Save previous binding for undo
+		this.storedPreviousBinding = this.clip.getMergeFieldBinding(this.propertyPath);
+
 		// 1. Update player's clipConfiguration with resolved value
 		setNestedValue(this.clip.clipConfiguration, this.propertyPath, this.storedNewValue);
 
-		// 2. Update template edit with template or raw value
-		const templateValue = this.fieldName ? mergeFields.createTemplate(this.fieldName) : this.storedNewValue;
-		context.setTemplateClipProperty(this.trackIndex, this.clipIndex, this.propertyPath, templateValue);
+		// 2. Update player binding
+		if (this.fieldName) {
+			// Applying a merge field - create binding with template
+			this.clip.setMergeFieldBinding(this.propertyPath, {
+				placeholder: mergeFields.createTemplate(this.fieldName),
+				resolvedValue: this.storedNewValue
+			});
+		} else {
+			// Removing merge field - remove binding
+			this.clip.removeMergeFieldBinding(this.propertyPath);
+		}
 
 		// 3. Register/update merge field if applying (silent to prevent reload)
 		if (this.fieldName) {
@@ -82,9 +94,12 @@ export class SetMergeFieldCommand implements EditCommand {
 		// 1. Restore player's clipConfiguration with previous value
 		setNestedValue(this.clip.clipConfiguration, this.propertyPath, this.storedPreviousValue);
 
-		// 2. Restore template edit
-		const templateValue = this.previousFieldName ? mergeFields.createTemplate(this.previousFieldName) : this.storedPreviousValue;
-		context.setTemplateClipProperty(this.trackIndex, this.clipIndex, this.propertyPath, templateValue);
+		// 2. Restore previous binding
+		if (this.storedPreviousBinding) {
+			this.clip.setMergeFieldBinding(this.propertyPath, this.storedPreviousBinding);
+		} else {
+			this.clip.removeMergeFieldBinding(this.propertyPath);
+		}
 
 		// 3. Re-register previous field or update current (silent to prevent reload)
 		if (this.previousFieldName) {

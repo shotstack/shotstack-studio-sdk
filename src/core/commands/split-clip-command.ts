@@ -1,4 +1,4 @@
-import type { Player } from "@canvas/players/player";
+import type { MergeFieldBinding, Player } from "@canvas/players/player";
 
 import type { AudioAsset } from "../schemas/audio-asset";
 import type { ResolvedClip } from "../schemas/clip";
@@ -11,6 +11,7 @@ export class SplitClipCommand implements EditCommand {
 	private originalClipConfig: ResolvedClip | null = null;
 	private rightClipPlayer: Player | null = null;
 	private splitSuccessful = false;
+	private originalBindings: Map<string, MergeFieldBinding> = new Map();
 
 	constructor(
 		private trackIndex: number,
@@ -37,8 +38,9 @@ export class SplitClipCommand implements EditCommand {
 			throw new Error("Cannot split clip: split point too close to clip boundaries");
 		}
 
-		// Store original configuration for undo
+		// Store original configuration and bindings for undo
 		this.originalClipConfig = { ...clipConfig };
+		this.originalBindings = new Map(player.getMergeFieldBindings());
 
 		// Calculate left and right clip configurations
 		const leftClip: ResolvedClip = {
@@ -89,6 +91,11 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		this.rightClipPlayer.layer = this.trackIndex + 1;
+
+		// Copy merge field bindings to right clip (both clips inherit same bindings)
+		if (this.originalBindings.size > 0) {
+			this.rightClipPlayer.setInitialBindings(this.originalBindings);
+		}
 
 		// Insert right clip after the current clip
 		const track = context.getTrack(this.trackIndex);

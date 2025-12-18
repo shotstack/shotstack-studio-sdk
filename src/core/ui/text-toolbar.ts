@@ -648,8 +648,21 @@ export class TextToolbar extends BaseToolbar {
 			clearTimeout(this.textEditDebounceTimer);
 		}
 		this.textEditDebounceTimer = setTimeout(() => {
-			const newText = this.textEditArea?.value ?? "";
-			this.updateAssetProperty({ text: newText });
+			const rawText = this.textEditArea?.value ?? "";
+			const resolvedText = this.edit.mergeFields.resolve(rawText);
+
+			// Update merge field binding
+			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+			if (player && this.edit.mergeFields.isMergeFieldTemplate(rawText)) {
+				player.setMergeFieldBinding("asset.text", {
+					placeholder: rawText,
+					resolvedValue: resolvedText
+				});
+			} else if (player) {
+				player.removeMergeFieldBinding("asset.text");
+			}
+
+			this.updateAssetProperty({ text: resolvedText });
 		}, 150);
 	}
 
@@ -1094,9 +1107,11 @@ export class TextToolbar extends BaseToolbar {
 		const asset = this.getCurrentAsset();
 		if (!asset) return;
 
-		// Text
+		// Text - show merge field placeholder if present, otherwise resolved value
 		if (this.textEditArea) {
-			this.textEditArea.value = asset.text || "";
+			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
+			const binding = player?.getMergeFieldBinding("asset.text");
+			this.textEditArea.value = binding?.placeholder ?? asset.text ?? "";
 		}
 
 		// Size

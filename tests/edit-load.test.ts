@@ -171,7 +171,10 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const lengthMs = typeof config.length === "number" ? config.length * 1000 : 3000;
 
 	let resolvedTiming = { start: startMs, length: lengthMs };
-	let timingIntent = { start: config.start, length: config.length };
+	const timingIntent: { start: number | string; length: number | string } = { start: config.start, length: config.length };
+
+	// Merge field bindings support
+	const mergeFieldBindings = new Map<string, { placeholder: string; resolvedValue: string }>();
 
 	return {
 		clipConfiguration: config,
@@ -185,7 +188,7 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getEnd: () => resolvedTiming.start + resolvedTiming.length,
 		getSize: () => ({ width: 1920, height: 1080 }),
 		getTimingIntent: () => ({ ...timingIntent }),
-		setTimingIntent: jest.fn((intent: { start?: unknown; length?: unknown }) => {
+		setTimingIntent: jest.fn((intent: { start?: number | string; length?: number | string }) => {
 			if (intent.start !== undefined) timingIntent.start = intent.start;
 			if (intent.length !== undefined) timingIntent.length = intent.length;
 		}),
@@ -200,7 +203,29 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		convertToFixedTiming: jest.fn()
+		convertToFixedTiming: jest.fn(),
+		// Merge field binding methods
+		getMergeFieldBindings: () => mergeFieldBindings,
+		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),
+		setMergeFieldBinding: (path: string, binding: { placeholder: string; resolvedValue: string }) => {
+			mergeFieldBindings.set(path, binding);
+		},
+		removeMergeFieldBinding: (path: string) => {
+			mergeFieldBindings.delete(path);
+		},
+		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
+			mergeFieldBindings.clear();
+			for (const [k, v] of bindings) {
+				mergeFieldBindings.set(k, v);
+			}
+		},
+		getExportableClip: () => {
+			const exported = structuredClone(config);
+			// Apply timing intent
+			if (timingIntent.start !== undefined) exported.start = timingIntent.start;
+			if (timingIntent.length !== undefined) exported.length = timingIntent.length;
+			return exported;
+		}
 	};
 };
 
@@ -492,17 +517,16 @@ describe("Edit loadEdit()", () => {
 			expect(tracks[0].length).toBe(3);
 		});
 
-		it("preserves original clip data in originalEdit", async () => {
+		it("preserves clip data in player configuration", async () => {
 			const editConfig = createMinimalEdit([
 				{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }
 			]);
 
 			await edit.loadEdit(editConfig);
 
-			const { originalEdit } = getEditState(edit);
-			// Verify originalEdit contains the clip data (note: loadEdit clones edit + addPlayer syncs)
-			expect(originalEdit?.timeline.tracks[0].clips.length).toBeGreaterThanOrEqual(1);
-			expect(originalEdit?.timeline.tracks[0].clips[0].asset).toHaveProperty("src", "https://example.com/img.jpg");
+			// Player should have the resolved clip data
+			const player = edit.getPlayerClip(0, 0);
+			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/img.jpg");
 		});
 	});
 
@@ -591,7 +615,7 @@ describe("Edit loadEdit()", () => {
 	});
 
 	describe("merge field handling", () => {
-		it("stores original edit with {{ FIELD }} templates in originalEdit", async () => {
+		it("stores merge field bindings on player", async () => {
 			const editConfig: ResolvedEdit = {
 				timeline: {
 					tracks: [
@@ -606,9 +630,15 @@ describe("Edit loadEdit()", () => {
 
 			await edit.loadEdit(editConfig);
 
-			const { originalEdit } = getEditState(edit);
-			// Original should preserve the template
-			expect(originalEdit?.timeline.tracks[0].clips[0].asset).toHaveProperty("src", "{{ MEDIA_URL }}");
+			// Player should have resolved value
+			const player = edit.getPlayerClip(0, 0);
+			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://resolved.example.com/img.jpg");
+
+			// Player should track the merge field binding
+			const binding = player?.getMergeFieldBinding("asset.src");
+			expect(binding).toBeDefined();
+			expect(binding?.placeholder).toBe("{{ MEDIA_URL }}");
+			expect(binding?.resolvedValue).toBe("https://resolved.example.com/img.jpg");
 		});
 
 		it("loads merge fields into service from edit.merge array", async () => {
@@ -788,7 +818,6 @@ describe("Edit loadEdit()", () => {
 			// Should only have clips from second edit
 			expect(getEditState(edit).tracks[0].length).toBe(2);
 		});
-
 	});
 
 	describe("soundtrack", () => {
@@ -1019,9 +1048,7 @@ describe("Edit loadEdit()", () => {
 				await edit.loadEdit(edit2);
 
 				// Should emit exactly 1 event with granular source
-				const granularEvents = editChangedHandler.mock.calls.filter(
-					(call: [{ source: string }]) => call[0].source === "loadEdit:granular"
-				);
+				const granularEvents = editChangedHandler.mock.calls.filter((call: [{ source: string }]) => call[0].source === "loadEdit:granular");
 				expect(granularEvents.length).toBe(1);
 			});
 		});
