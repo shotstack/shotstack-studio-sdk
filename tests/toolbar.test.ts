@@ -865,6 +865,49 @@ describe("MediaToolbar", () => {
 			expect(container.querySelector(".ss-media-toolbar")).toBeNull();
 		});
 	});
+
+	describe("composite panels (regression)", () => {
+		beforeEach(() => {
+			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+		});
+
+		it("TransitionPanel renders content inside existing popup without wrapper class conflict", () => {
+			toolbar.mount(container);
+			toolbar.showMedia(0, 0, "video");
+
+			// Open transition popup
+			const transitionBtn = container.querySelector('[data-action="transition"]');
+			simulateClick(transitionBtn);
+
+			// The popup should contain transition tabs (rendered by TransitionPanel)
+			const transitionTabs = container.querySelector(".ss-transition-tabs");
+			expect(transitionTabs).not.toBeNull();
+
+			// The TransitionPanel's container should NOT have ss-toolbar-popup class
+			// (that was the bug - it conflicted with ss-media-toolbar-popup)
+			const panelMount = container.querySelector("[data-transition-panel-mount]");
+			const panelContainer = panelMount?.firstElementChild;
+			expect(panelContainer?.className).not.toContain("ss-toolbar-popup");
+		});
+
+		it("EffectPanel renders content inside existing popup without wrapper class conflict", () => {
+			toolbar.mount(container);
+			toolbar.showMedia(0, 0, "video");
+
+			// Open effect popup
+			const effectBtn = container.querySelector('[data-action="effect"]');
+			simulateClick(effectBtn);
+
+			// The popup should contain effect types (rendered by EffectPanel)
+			const effectTypes = container.querySelector(".ss-effect-types");
+			expect(effectTypes).not.toBeNull();
+
+			// The EffectPanel's container should NOT have ss-toolbar-popup class
+			const panelMount = container.querySelector("[data-effect-panel-mount]");
+			const panelContainer = panelMount?.firstElementChild;
+			expect(panelContainer?.className).not.toContain("ss-toolbar-popup");
+		});
+	});
 });
 
 // ============================================================================

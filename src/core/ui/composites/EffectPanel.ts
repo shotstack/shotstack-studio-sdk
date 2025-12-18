@@ -51,7 +51,7 @@ export class EffectPanel extends UIComponent<EffectState> {
 	private speedIncreaseBtn: HTMLButtonElement | null = null;
 
 	constructor() {
-		super({ className: "ss-toolbar-popup ss-toolbar-popup--effect" });
+		super(); // No wrapper class - mounted inside existing popup container
 	}
 
 	render(): string {

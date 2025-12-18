@@ -63,7 +63,7 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 	private speedIncreaseBtn: HTMLButtonElement | null = null;
 
 	constructor() {
-		super({ className: "ss-toolbar-popup ss-toolbar-popup--transition" });
+		super(); // No wrapper class - mounted inside existing popup container
 	}
 
 	render(): string {
