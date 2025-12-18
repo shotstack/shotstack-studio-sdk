@@ -18,5 +18,5 @@ export { TextEditor } from "./text/text-editor";
 export { TextInputHandler } from "./text/text-input-handler";
 
 // System management
-export { Edit } from "@core/edit";
+export { Edit } from "@core/edit-session";
 export { Inspector } from "./system/inspector";

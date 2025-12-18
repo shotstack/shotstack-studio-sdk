@@ -2,7 +2,7 @@ import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-m
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { MoveClipWithPushCommand } from "@core/commands/move-clip-with-push-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { sec } from "@core/timing/types";
 import type { ClipState, TimelineInteractionConfig } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
@@ -500,7 +500,13 @@ export class InteractionController {
 			}
 		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
-			const command = new MoveClipWithPushCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime), sec(collisionResult.pushOffset));
+			const command = new MoveClipWithPushCommand(
+				originalTrack,
+				clipRef.clipIndex,
+				dragTarget.trackIndex,
+				sec(newTime),
+				sec(collisionResult.pushOffset)
+			);
 			this.edit.executeEditCommand(command);
 
 			// Move attached luma - get fresh indices AFTER content move

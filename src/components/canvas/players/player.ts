@@ -2,7 +2,7 @@ import { ComposedKeyframeBuilder } from "@animations/composed-keyframe-builder";
 import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
-import { type Edit } from "@core/edit";
+import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateCornerScale, calculateEdgeResize, clampDimensions, detectCornerZone, detectEdgeZone } from "@core/interaction/clip-interaction";
 import {

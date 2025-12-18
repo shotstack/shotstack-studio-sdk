@@ -1,5 +1,5 @@
 import { Inspector } from "@canvas/system/inspector";
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";

@@ -1,6 +1,6 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";

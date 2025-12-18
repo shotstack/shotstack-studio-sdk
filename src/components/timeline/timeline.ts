@@ -1,4 +1,4 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
 import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";

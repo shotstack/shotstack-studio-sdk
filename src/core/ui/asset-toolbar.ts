@@ -1,4 +1,4 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
 

@@ -1,7 +1,7 @@
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas/clip";
 import { type HtmlAsset, HtmlAssetPosition } from "@schemas/html-asset";
-import type { Edit } from "core/edit";
+import type { Edit } from "@core/edit-session";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 

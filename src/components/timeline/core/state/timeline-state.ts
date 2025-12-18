@@ -1,5 +1,5 @@
 import type { Player } from "@canvas/players/player";
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import type { ResolvedClip } from "@schemas/clip";
 import type { ResolvedTrack } from "@schemas/track";
 

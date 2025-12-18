@@ -1,5 +1,5 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas/clip";
 import { type VideoAsset } from "@schemas/video-asset";

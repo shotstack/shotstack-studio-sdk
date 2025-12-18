@@ -1,4 +1,4 @@
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 
 export class Controls {
 	private edit: Edit;

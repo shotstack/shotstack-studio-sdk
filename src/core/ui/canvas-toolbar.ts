@@ -1,4 +1,4 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import type { MergeField } from "@core/merge";
 import { validateAssetUrl } from "@core/shared/utils";
 import { injectShotstackStyles } from "@styles/inject";

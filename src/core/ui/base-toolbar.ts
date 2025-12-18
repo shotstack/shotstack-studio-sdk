@@ -1,4 +1,4 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 
 /** Preset font sizes used by text toolbars */
 export const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 96, 128];

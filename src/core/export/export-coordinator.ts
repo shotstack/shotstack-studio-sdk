@@ -2,7 +2,7 @@ import { CaptionPlayer } from "@canvas/players/caption-player";
 import { PlayerType } from "@canvas/players/player";
 import { Canvas } from "@canvas/shotstack-canvas";
 import { ExportCommand } from "@core/commands/export-command";
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource } from "mediabunny";
 import * as pixi from "pixi.js";
 
