@@ -2,6 +2,9 @@ import { validateAssetUrl } from "@core/shared/utils";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
+import { EffectPanel } from "./composites/EffectPanel";
+import { TransitionPanel } from "./composites/TransitionPanel";
+import { SliderControl } from "./primitives/SliderControl";
 
 type FitValue = "crop" | "cover" | "contain" | "none";
 
@@ -29,7 +32,6 @@ const ICONS = {
 	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
 	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
 	effect: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`,
-	// Audio fade icons - waveform-inspired shapes
 	fadeIn: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L14 4 L30 4"/></svg>`,
 	fadeOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L18 4 L30 14"/></svg>`,
 	fadeInOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L10 4 L22 4 L30 14"/></svg>`,
@@ -43,88 +45,49 @@ export class MediaToolbar extends BaseToolbar {
 
 	// Current values
 	private currentFit: FitValue = "crop";
-	private currentOpacity: number = 100;
-	private currentScale: number = 100;
 	private currentVolume: number = 100;
 
-	// Transition state (tabbed design)
-	private activeTransitionTab: "in" | "out" = "in";
-	private transitionInEffect: string = "";
-	private transitionInDirection: string = "";
-	private transitionInSpeed: number = 1.0; // Speed in seconds
-	private transitionOutEffect: string = "";
-	private transitionOutDirection: string = "";
-	private transitionOutSpeed: number = 1.0; // Speed in seconds
+	// ─── Composite UI Components ─────────────────────────────────────────────────
+	private transitionPanel: TransitionPanel | null = null;
+	private effectPanel: EffectPanel | null = null;
+	private opacitySlider: SliderControl | null = null;
+	private scaleSlider: SliderControl | null = null;
 
-	// Speed step values in seconds
-	private readonly SPEED_VALUES = [0.25, 0.5, 1.0, 2.0];
-
-	// Transition popup elements
-	private directionRow: HTMLDivElement | null = null;
-	private speedValueLabel: HTMLSpanElement | null = null;
-
-	// Effect state - progressive disclosure design
-	private effectType: "" | "zoom" | "slide" = "";
-	private effectVariant: "In" | "Out" = "In"; // For zoom
-	private effectDirection: "Left" | "Right" | "Up" | "Down" = "Right"; // For slide
-	private effectSpeed: number = 1.0;
-	private readonly EFFECT_SPEED_VALUES = [0.5, 1.0, 2.0];
-
-	// Effect popup elements
-	private effectBtn: HTMLButtonElement | null = null;
-	private effectPopup: HTMLDivElement | null = null;
-	private effectVariantRow: HTMLDivElement | null = null;
-	private effectDirectionRow: HTMLDivElement | null = null;
-	private effectSpeedRow: HTMLDivElement | null = null;
-	private effectSpeedValueLabel: HTMLSpanElement | null = null;
-
-	// Button elements
+	// ─── Button Elements ─────────────────────────────────────────────────────────
 	private fitBtn: HTMLButtonElement | null = null;
 	private opacityBtn: HTMLButtonElement | null = null;
 	private scaleBtn: HTMLButtonElement | null = null;
 	private volumeBtn: HTMLButtonElement | null = null;
 	private transitionBtn: HTMLButtonElement | null = null;
+	private effectBtn: HTMLButtonElement | null = null;
+	private advancedBtn: HTMLButtonElement | null = null;
+	private audioFadeBtn: HTMLButtonElement | null = null;
 
-	// Popup elements
+	// ─── Popup Elements ──────────────────────────────────────────────────────────
 	private fitPopup: HTMLDivElement | null = null;
 	private opacityPopup: HTMLDivElement | null = null;
 	private scalePopup: HTMLDivElement | null = null;
 	private volumePopup: HTMLDivElement | null = null;
 	private transitionPopup: HTMLDivElement | null = null;
-
-	// Slider elements
-	private opacitySlider: HTMLInputElement | null = null;
-	private scaleSlider: HTMLInputElement | null = null;
-	private volumeSlider: HTMLInputElement | null = null;
-
-	// Value display elements
-	private fitLabel: HTMLSpanElement | null = null;
-	private opacityValue: HTMLSpanElement | null = null;
-	private scaleValue: HTMLSpanElement | null = null;
-	private volumeValue: HTMLSpanElement | null = null;
-
-	// Volume section
-	private volumeSection: HTMLDivElement | null = null;
-
-	// Visual controls section (fit, opacity, scale, transition - hidden for audio)
-	private visualSection: HTMLDivElement | null = null;
-
-	// Audio fade state
-	private audioFadeEffect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut" = "";
-
-	// Audio section element references
-	private audioSection: HTMLDivElement | null = null;
-	private audioFadeBtn: HTMLButtonElement | null = null;
+	private effectPopup: HTMLDivElement | null = null;
+	private advancedPopup: HTMLDivElement | null = null;
 	private audioFadePopup: HTMLDivElement | null = null;
 
-	// Advanced menu elements
-	private advancedBtn: HTMLButtonElement | null = null;
-	private advancedPopup: HTMLDivElement | null = null;
+	// ─── Other Elements ──────────────────────────────────────────────────────────
+	private fitLabel: HTMLSpanElement | null = null;
+	private volumeSlider: HTMLInputElement | null = null;
+	private volumeValue: HTMLSpanElement | null = null;
+	private volumeSection: HTMLDivElement | null = null;
+	private visualSection: HTMLDivElement | null = null;
+	private audioSection: HTMLDivElement | null = null;
+
+	// ─── Advanced Menu ───────────────────────────────────────────────────────────
 	private dynamicToggle: HTMLInputElement | null = null;
 	private dynamicPanel: HTMLDivElement | null = null;
 	private dynamicInput: HTMLInputElement | null = null;
 
-	// Dynamic source state
+	// ─── State ───────────────────────────────────────────────────────────────────
+	private audioFadeEffect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut" = "";
 	private isDynamicSource: boolean = false;
 	private dynamicFieldName: string = "";
 	private originalSrc: string = "";
@@ -169,11 +132,7 @@ export class MediaToolbar extends BaseToolbar {
 						<span data-opacity-value>100%</span>
 					</button>
 					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="opacity">
-						<div class="ss-media-toolbar-popup-header">Opacity</div>
-						<div class="ss-media-toolbar-slider-row">
-							<input type="range" class="ss-media-toolbar-slider" data-opacity-slider min="0" max="100" value="100" />
-							<span class="ss-media-toolbar-slider-value" data-opacity-display>100%</span>
-						</div>
+						<div data-opacity-slider-mount></div>
 					</div>
 				</div>
 
@@ -186,11 +145,7 @@ export class MediaToolbar extends BaseToolbar {
 						<span data-scale-value>100%</span>
 					</button>
 					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="scale">
-						<div class="ss-media-toolbar-popup-header">Scale</div>
-						<div class="ss-media-toolbar-slider-row">
-							<input type="range" class="ss-media-toolbar-slider" data-scale-slider min="10" max="200" value="100" />
-							<span class="ss-media-toolbar-slider-value" data-scale-display>100%</span>
-						</div>
+						<div data-scale-slider-mount></div>
 					</div>
 				</div>
 
@@ -203,42 +158,7 @@ export class MediaToolbar extends BaseToolbar {
 						<span>Transition</span>
 					</button>
 					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--transition" data-popup="transition">
-						<!-- Tabs -->
-						<div class="ss-transition-tabs">
-							<button class="ss-transition-tab active" data-tab="in">In</button>
-							<button class="ss-transition-tab" data-tab="out">Out</button>
-						</div>
-
-						<!-- Effects Grid -->
-						<div class="ss-transition-effects">
-							<button class="ss-transition-effect" data-effect="">None</button>
-							<button class="ss-transition-effect" data-effect="fade">Fade</button>
-							<button class="ss-transition-effect" data-effect="zoom">Zoom</button>
-							<button class="ss-transition-effect" data-effect="slide">Slide</button>
-							<button class="ss-transition-effect" data-effect="wipe">Wipe</button>
-							<button class="ss-transition-effect" data-effect="carousel">Car</button>
-						</div>
-
-						<!-- Direction Row (progressive disclosure) -->
-						<div class="ss-transition-direction-row" data-direction-row>
-							<span class="ss-transition-label">Direction</span>
-							<div class="ss-transition-directions">
-								<button class="ss-transition-dir" data-dir="Left">←</button>
-								<button class="ss-transition-dir" data-dir="Right">→</button>
-								<button class="ss-transition-dir" data-dir="Up">↑</button>
-								<button class="ss-transition-dir" data-dir="Down">↓</button>
-							</div>
-						</div>
-
-						<!-- Speed Stepper -->
-						<div class="ss-transition-speed-row">
-							<span class="ss-transition-label">Speed</span>
-							<div class="ss-transition-speed-stepper">
-								<button class="ss-transition-speed-btn" data-speed-decrease>−</button>
-								<span class="ss-transition-speed-value" data-speed-value>1.0s</span>
-								<button class="ss-transition-speed-btn" data-speed-increase>+</button>
-							</div>
-						</div>
+						<div data-transition-panel-mount></div>
 					</div>
 				</div>
 
@@ -251,42 +171,7 @@ export class MediaToolbar extends BaseToolbar {
 						<span>Effect</span>
 					</button>
 					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--effect" data-popup="effect">
-						<!-- Effect Type Selection - Always visible -->
-						<div class="ss-effect-types">
-							<button class="ss-effect-type" data-effect-type="">None</button>
-							<button class="ss-effect-type" data-effect-type="zoom">Zoom</button>
-							<button class="ss-effect-type" data-effect-type="slide">Slide</button>
-						</div>
-
-						<!-- Zoom Variant Row - Progressive disclosure -->
-						<div class="ss-effect-variant-row" data-effect-variant-row>
-							<span class="ss-effect-label">Variant</span>
-							<div class="ss-effect-variants">
-								<button class="ss-effect-variant" data-variant="In">In</button>
-								<button class="ss-effect-variant" data-variant="Out">Out</button>
-							</div>
-						</div>
-
-						<!-- Slide Direction Row - Progressive disclosure -->
-						<div class="ss-effect-direction-row" data-effect-direction-row>
-							<span class="ss-effect-label">Direction</span>
-							<div class="ss-effect-directions">
-								<button class="ss-effect-dir" data-effect-dir="Left">←</button>
-								<button class="ss-effect-dir" data-effect-dir="Right">→</button>
-								<button class="ss-effect-dir" data-effect-dir="Up">↑</button>
-								<button class="ss-effect-dir" data-effect-dir="Down">↓</button>
-							</div>
-						</div>
-
-						<!-- Speed Row - Shows when effect is selected -->
-						<div class="ss-effect-speed-row" data-effect-speed-row>
-							<span class="ss-effect-label">Speed</span>
-							<div class="ss-effect-speed-stepper">
-								<button class="ss-effect-speed-btn" data-effect-speed-decrease>−</button>
-								<span class="ss-effect-speed-value" data-effect-speed-value>1s</span>
-								<button class="ss-effect-speed-btn" data-effect-speed-increase>+</button>
-							</div>
-						</div>
+						<div data-effect-panel-mount></div>
 					</div>
 				</div>
 			</div>
@@ -374,51 +259,84 @@ export class MediaToolbar extends BaseToolbar {
 		this.scaleBtn = this.container.querySelector('[data-action="scale"]');
 		this.volumeBtn = this.container.querySelector('[data-action="volume"]');
 		this.transitionBtn = this.container.querySelector('[data-action="transition"]');
+		this.effectBtn = this.container.querySelector('[data-action="effect"]');
+		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
+		this.audioFadeBtn = this.container.querySelector('[data-action="audio-fade"]');
 
 		this.fitPopup = this.container.querySelector('[data-popup="fit"]');
 		this.opacityPopup = this.container.querySelector('[data-popup="opacity"]');
 		this.scalePopup = this.container.querySelector('[data-popup="scale"]');
 		this.volumePopup = this.container.querySelector('[data-popup="volume"]');
 		this.transitionPopup = this.container.querySelector('[data-popup="transition"]');
-
-		this.fitLabel = this.container.querySelector("[data-fit-label]");
-		this.opacityValue = this.container.querySelector("[data-opacity-value]");
-		this.scaleValue = this.container.querySelector("[data-scale-value]");
-		this.volumeValue = this.container.querySelector("[data-volume-value]");
-
-		this.opacitySlider = this.container.querySelector("[data-opacity-slider]");
-		this.scaleSlider = this.container.querySelector("[data-scale-slider]");
-		this.volumeSlider = this.container.querySelector("[data-volume-slider]");
-
-		this.volumeSection = this.container.querySelector("[data-volume-section]");
-		this.visualSection = this.container.querySelector("[data-visual-section]");
-
-		// Transition elements
-		this.directionRow = this.container.querySelector("[data-direction-row]");
-		this.speedValueLabel = this.container.querySelector("[data-speed-value]");
-
-		// Effect elements
-		this.effectBtn = this.container.querySelector('[data-action="effect"]');
 		this.effectPopup = this.container.querySelector('[data-popup="effect"]');
-		this.effectVariantRow = this.container.querySelector("[data-effect-variant-row]");
-		this.effectDirectionRow = this.container.querySelector("[data-effect-direction-row]");
-		this.effectSpeedRow = this.container.querySelector("[data-effect-speed-row]");
-		this.effectSpeedValueLabel = this.container.querySelector("[data-effect-speed-value]");
-
-		// Audio section elements
-		this.audioSection = this.container.querySelector("[data-audio-section]");
-		this.audioFadeBtn = this.container.querySelector('[data-action="audio-fade"]');
+		this.advancedPopup = this.container.querySelector('[data-popup="advanced"]');
 		this.audioFadePopup = this.container.querySelector('[data-popup="audio-fade"]');
 
-		// Advanced menu elements
-		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
-		this.advancedPopup = this.container.querySelector('[data-popup="advanced"]');
+		this.fitLabel = this.container.querySelector("[data-fit-label]");
+		this.volumeValue = this.container.querySelector("[data-volume-value]");
+		this.volumeSlider = this.container.querySelector("[data-volume-slider]");
+		this.volumeSection = this.container.querySelector("[data-volume-section]");
+		this.visualSection = this.container.querySelector("[data-visual-section]");
+		this.audioSection = this.container.querySelector("[data-audio-section]");
+
 		this.dynamicToggle = this.container.querySelector("[data-dynamic-toggle]");
 		this.dynamicPanel = this.container.querySelector("[data-dynamic-panel]");
 		this.dynamicInput = this.container.querySelector("[data-dynamic-input]");
 
+		// ─── Mount Composite Components ──────────────────────────────────────────────
+		this.mountCompositeComponents();
+
 		this.setupEventListeners();
 		this.setupOutsideClickHandler();
+	}
+
+	/**
+	 * Mount composite UI components into their placeholder elements.
+	 */
+	private mountCompositeComponents(): void {
+		// Mount opacity slider
+		const opacityMount = this.container?.querySelector("[data-opacity-slider-mount]");
+		if (opacityMount) {
+			this.opacitySlider = new SliderControl({
+				label: "Opacity",
+				min: 0,
+				max: 100,
+				initialValue: 100,
+				formatValue: v => `${Math.round(v)}%`
+			});
+			this.opacitySlider.onChange(value => this.handleOpacityChange(value));
+			this.opacitySlider.mount(opacityMount as HTMLElement);
+		}
+
+		// Mount scale slider
+		const scaleMount = this.container?.querySelector("[data-scale-slider-mount]");
+		if (scaleMount) {
+			this.scaleSlider = new SliderControl({
+				label: "Scale",
+				min: 10,
+				max: 200,
+				initialValue: 100,
+				formatValue: v => `${Math.round(v)}%`
+			});
+			this.scaleSlider.onChange(value => this.handleScaleChange(value));
+			this.scaleSlider.mount(scaleMount as HTMLElement);
+		}
+
+		// Mount transition panel
+		const transitionMount = this.container?.querySelector("[data-transition-panel-mount]");
+		if (transitionMount) {
+			this.transitionPanel = new TransitionPanel();
+			this.transitionPanel.onChange(() => this.applyTransitionUpdate());
+			this.transitionPanel.mount(transitionMount as HTMLElement);
+		}
+
+		// Mount effect panel
+		const effectMount = this.container?.querySelector("[data-effect-panel-mount]");
+		if (effectMount) {
+			this.effectPanel = new EffectPanel();
+			this.effectPanel.onChange(() => this.applyEffect());
+			this.effectPanel.mount(effectMount as HTMLElement);
+		}
 	}
 
 	private setupEventListeners(): void {
@@ -451,6 +369,10 @@ export class MediaToolbar extends BaseToolbar {
 			e.stopPropagation();
 			this.togglePopupByName("advanced");
 		});
+		this.audioFadeBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopupByName("audio-fade");
+		});
 
 		// Dynamic source handlers
 		this.setupDynamicSourceHandlers();
@@ -464,94 +386,10 @@ export class MediaToolbar extends BaseToolbar {
 			});
 		});
 
-		// Opacity slider
-		this.opacitySlider?.addEventListener("input", () => {
-			const value = parseInt(this.opacitySlider!.value, 10);
-			this.handleOpacityChange(value);
-		});
-
-		// Scale slider
-		this.scaleSlider?.addEventListener("input", () => {
-			const value = parseInt(this.scaleSlider!.value, 10);
-			this.handleScaleChange(value);
-		});
-
 		// Volume slider
 		this.volumeSlider?.addEventListener("input", () => {
 			const value = parseInt(this.volumeSlider!.value, 10);
 			this.handleVolumeChange(value);
-		});
-
-		// Transition tabs
-		this.transitionPopup?.querySelectorAll("[data-tab]").forEach(tab => {
-			tab.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const tabValue = el.dataset["tab"] as "in" | "out";
-				this.handleTabChange(tabValue);
-			});
-		});
-
-		// Effect buttons
-		this.transitionPopup?.querySelectorAll("[data-effect]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const effect = el.dataset["effect"] || "";
-				this.handleEffectSelect(effect);
-			});
-		});
-
-		// Direction buttons
-		this.transitionPopup?.querySelectorAll("[data-dir]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const dir = el.dataset["dir"] || "";
-				this.handleDirectionSelect(dir);
-			});
-		});
-
-		// Speed stepper buttons
-		const speedDecrease = this.transitionPopup?.querySelector("[data-speed-decrease]");
-		const speedIncrease = this.transitionPopup?.querySelector("[data-speed-increase]");
-		speedDecrease?.addEventListener("click", () => this.handleSpeedStep(-1));
-		speedIncrease?.addEventListener("click", () => this.handleSpeedStep(1));
-
-		// Effect type buttons
-		this.effectPopup?.querySelectorAll("[data-effect-type]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const effectType = el.dataset["effectType"] || "";
-				this.handleEffectTypeSelect(effectType as "" | "zoom" | "slide");
-			});
-		});
-
-		// Effect variant buttons (for Zoom)
-		this.effectPopup?.querySelectorAll("[data-variant]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const variant = el.dataset["variant"] || "In";
-				this.handleEffectVariantSelect(variant as "In" | "Out");
-			});
-		});
-
-		// Effect direction buttons (for Slide)
-		this.effectPopup?.querySelectorAll("[data-effect-dir]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const dir = el.dataset["effectDir"] || "Right";
-				this.handleEffectDirectionSelect(dir as "Left" | "Right" | "Up" | "Down");
-			});
-		});
-
-		// Effect speed buttons
-		const effectSpeedDecrease = this.effectPopup?.querySelector("[data-effect-speed-decrease]");
-		const effectSpeedIncrease = this.effectPopup?.querySelector("[data-effect-speed-increase]");
-		effectSpeedDecrease?.addEventListener("click", () => this.handleEffectSpeedStep(-1));
-		effectSpeedIncrease?.addEventListener("click", () => this.handleEffectSpeedStep(1));
-
-		// Audio fade button
-		this.audioFadeBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("audio-fade");
 		});
 
 		// Audio fade options
@@ -613,7 +451,6 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	protected override syncState(): void {
-		// Get current clip values
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (player) {
 			const clip = player.clipConfiguration;
@@ -623,11 +460,11 @@ export class MediaToolbar extends BaseToolbar {
 
 			// Opacity (convert from 0-1 to 0-100)
 			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-			this.currentOpacity = Math.round(opacity * 100);
+			this.opacitySlider?.setValue(Math.round(opacity * 100));
 
 			// Scale (convert from 0-1 to percentage)
 			const scale = typeof clip.scale === "number" ? clip.scale : 1;
-			this.currentScale = Math.round(scale * 100);
+			this.scaleSlider?.setValue(Math.round(scale * 100));
 
 			// Volume (video and audio only)
 			if ((this.assetType === "video" || this.assetType === "audio") && (clip.asset.type === "video" || clip.asset.type === "audio")) {
@@ -635,18 +472,11 @@ export class MediaToolbar extends BaseToolbar {
 				this.currentVolume = Math.round(volume * 100);
 			}
 
-			// Transition - parse effect, direction, and speed
-			const parsedIn = this.parseTransitionValue(clip.transition?.in || "");
-			const parsedOut = this.parseTransitionValue(clip.transition?.out || "");
-			this.transitionInEffect = parsedIn.effect;
-			this.transitionInDirection = parsedIn.direction;
-			this.transitionInSpeed = parsedIn.speed;
-			this.transitionOutEffect = parsedOut.effect;
-			this.transitionOutDirection = parsedOut.direction;
-			this.transitionOutSpeed = parsedOut.speed;
+			// Transition - use composite
+			this.transitionPanel?.setFromClip(clip.transition);
 
-			// Effect - parse type, variant/direction, and speed from stored value
-			this.parseEffectValue(clip.effect || "");
+			// Effect - use composite
+			this.effectPanel?.setFromClip(clip.effect);
 
 			// Audio fade effect (for audio assets)
 			if (clip.asset.type === "audio") {
@@ -662,18 +492,7 @@ export class MediaToolbar extends BaseToolbar {
 
 		// Update active states
 		this.updateFitActiveState();
-
-		// Reset to IN tab and update transition UI
-		this.activeTransitionTab = "in";
-		this.updateTransitionUI();
-
-		// Update effect UI
-		this.updateEffectUI();
-
-		// Update audio fade UI
 		this.updateAudioFadeUI();
-
-		// Update dynamic source state
 		this.updateDynamicSourceUI();
 
 		// Show/hide visual section (hidden for audio)
@@ -692,6 +511,8 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
+	// ─── Value Change Handlers ───────────────────────────────────────────────────
+
 	private handleFitChange(fit: FitValue): void {
 		this.currentFit = fit;
 		this.updateFitDisplay();
@@ -701,13 +522,11 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	private handleOpacityChange(value: number): void {
-		this.currentOpacity = value;
 		this.updateOpacityDisplay();
 		this.applyClipUpdate({ opacity: value / 100 });
 	}
 
 	private handleScaleChange(value: number): void {
-		this.currentScale = value;
 		this.updateScaleDisplay();
 		this.applyClipUpdate({ scale: value / 100 });
 	}
@@ -716,7 +535,6 @@ export class MediaToolbar extends BaseToolbar {
 		this.currentVolume = value;
 		this.updateVolumeDisplay();
 
-		// Volume is on the asset, not the clip (applies to both video and audio)
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (player && (player.clipConfiguration.asset.type === "video" || player.clipConfiguration.asset.type === "audio")) {
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
@@ -728,350 +546,21 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
-	// ==================== Transition Handlers ====================
-
-	private handleTabChange(tab: "in" | "out"): void {
-		this.activeTransitionTab = tab;
-		this.updateTransitionUI();
-	}
-
-	private handleEffectSelect(effect: string): void {
-		const tab = this.activeTransitionTab;
-
-		if (tab === "in") {
-			this.transitionInEffect = effect;
-			this.transitionInDirection = this.getDefaultDirection(effect);
-		} else {
-			this.transitionOutEffect = effect;
-			this.transitionOutDirection = this.getDefaultDirection(effect);
-		}
-
-		this.updateTransitionUI();
-		this.applyTransitionUpdate();
-	}
-
-	private handleDirectionSelect(direction: string): void {
-		const tab = this.activeTransitionTab;
-
-		if (tab === "in") {
-			this.transitionInDirection = direction;
-		} else {
-			this.transitionOutDirection = direction;
-		}
-
-		this.updateTransitionUI();
-		this.applyTransitionUpdate();
-	}
-
-	private handleSpeedStep(direction: number): void {
-		const tab = this.activeTransitionTab;
-		const currentSpeed = tab === "in" ? this.transitionInSpeed : this.transitionOutSpeed;
-
-		// Find current index in speed values
-		let currentIdx = this.SPEED_VALUES.indexOf(currentSpeed);
-		if (currentIdx === -1) {
-			// Find closest value
-			currentIdx = this.SPEED_VALUES.findIndex(v => v >= currentSpeed);
-			if (currentIdx === -1) currentIdx = this.SPEED_VALUES.length - 1;
-		}
-
-		// Calculate new index
-		const newIdx = Math.max(0, Math.min(this.SPEED_VALUES.length - 1, currentIdx + direction));
-		const newSpeed = this.SPEED_VALUES[newIdx];
-
-		if (tab === "in") {
-			this.transitionInSpeed = newSpeed;
-		} else {
-			this.transitionOutSpeed = newSpeed;
-		}
-
-		this.updateTransitionUI();
-		this.applyTransitionUpdate();
-	}
-
-	private needsDirection(effect: string): boolean {
-		return ["slide", "wipe", "carousel"].includes(effect);
-	}
-
-	private getDefaultDirection(effect: string): string {
-		if (this.needsDirection(effect)) {
-			return "Right";
-		}
-		return "";
-	}
-
-	private speedToSuffix(speed: number, effect: string): string {
-		// For slide/carousel: default is 0.5s (Fast), so mapping is different
-		// No suffix → 0.5s, Slow → 1.0s, Fast → 0.25s
-		// For others (fade, zoom, wipe): default is 1.0s
-		// No suffix → 1.0s, Slow → 2.0s, Fast → 0.5s
-
-		const isSlideOrCarousel = effect === "slide" || effect === "carousel";
-
-		if (isSlideOrCarousel) {
-			if (speed === 0.5) return ""; // Default for slide/carousel
-			if (speed === 1.0) return "Slow";
-			if (speed === 0.25) return "Fast";
-			if (speed === 2.0) return "Slow"; // Approximate
-		} else {
-			if (speed === 1.0) return ""; // Default for fade/zoom/wipe
-			if (speed === 2.0) return "Slow";
-			if (speed === 0.5) return "Fast";
-			if (speed === 0.25) return "Fast"; // Approximate
-		}
-		return "";
-	}
-
-	private buildTransitionValue(effect: string, direction: string, speed: number): string {
-		if (!effect) return "";
-
-		const speedSuffix = this.speedToSuffix(speed, effect);
-
-		// For effects without direction (fade, zoom)
-		if (!this.needsDirection(effect)) {
-			return effect + speedSuffix;
-		}
-
-		// For directional effects: slide + Right = slideRight
-		return effect + direction + speedSuffix;
-	}
-
-	private suffixToSpeed(suffix: string, effect: string): number {
-		// Reverse mapping from speedToSuffix
-		const isSlideOrCarousel = effect === "slide" || effect === "carousel";
-
-		if (isSlideOrCarousel) {
-			if (suffix === "") return 0.5; // Default for slide/carousel
-			if (suffix === "Slow") return 1.0;
-			if (suffix === "Fast") return 0.25;
-		} else {
-			if (suffix === "") return 1.0; // Default for fade/zoom/wipe
-			if (suffix === "Slow") return 2.0;
-			if (suffix === "Fast") return 0.5;
-		}
-		return 1.0;
-	}
-
-	private parseTransitionValue(value: string): { effect: string; direction: string; speed: number } {
-		if (!value) return { effect: "", direction: "", speed: 1.0 };
-
-		// Extract speed suffix first
-		let speedSuffix = "";
-		let base = value;
-		if (value.endsWith("Fast")) {
-			speedSuffix = "Fast";
-			base = value.slice(0, -4);
-		} else if (value.endsWith("Slow")) {
-			speedSuffix = "Slow";
-			base = value.slice(0, -4);
-		}
-
-		// Check for directional effects
-		const directions = ["Left", "Right", "Up", "Down"];
-		for (const dir of directions) {
-			if (base.endsWith(dir)) {
-				const effect = base.slice(0, -dir.length);
-				const speed = this.suffixToSpeed(speedSuffix, effect);
-				return { effect, direction: dir, speed };
-			}
-		}
-
-		// Non-directional effect (fade, zoom)
-		const speed = this.suffixToSpeed(speedSuffix, base);
-		return { effect: base, direction: "", speed };
-	}
+	// ─── Transition (using composite) ────────────────────────────────────────────
 
 	private applyTransitionUpdate(): void {
-		const transitionIn = this.buildTransitionValue(this.transitionInEffect, this.transitionInDirection, this.transitionInSpeed);
-		const transitionOut = this.buildTransitionValue(this.transitionOutEffect, this.transitionOutDirection, this.transitionOutSpeed);
-
-		const transition: { in?: string; out?: string } = {};
-		if (transitionIn) {
-			transition.in = transitionIn;
-		}
-		if (transitionOut) {
-			transition.out = transitionOut;
-		}
-
-		if (!transitionIn && !transitionOut) {
-			this.applyClipUpdate({ transition: undefined });
-		} else {
-			this.applyClipUpdate({ transition });
-		}
+		const transition = this.transitionPanel?.getClipValue();
+		this.applyClipUpdate({ transition });
 	}
 
-	private updateTransitionUI(): void {
-		const tab = this.activeTransitionTab;
-		const effect = tab === "in" ? this.transitionInEffect : this.transitionOutEffect;
-		const direction = tab === "in" ? this.transitionInDirection : this.transitionOutDirection;
-		const speed = tab === "in" ? this.transitionInSpeed : this.transitionOutSpeed;
-
-		// Update tab active states
-		this.transitionPopup?.querySelectorAll("[data-tab]").forEach(el => {
-			const tabEl = el as HTMLElement;
-			tabEl.classList.toggle("active", tabEl.dataset["tab"] === tab);
-		});
-
-		// Update effect active states
-		this.transitionPopup?.querySelectorAll("[data-effect]").forEach(el => {
-			const effectEl = el as HTMLElement;
-			effectEl.classList.toggle("active", effectEl.dataset["effect"] === effect);
-		});
-
-		// Update direction visibility and active states
-		const showDirection = this.needsDirection(effect);
-		this.directionRow?.classList.toggle("visible", showDirection);
-
-		// Hide Up/Down for wipe (only Left/Right)
-		this.transitionPopup?.querySelectorAll("[data-dir]").forEach(el => {
-			const dirEl = el as HTMLElement;
-			const dir = dirEl.dataset["dir"] || "";
-			const isVertical = dir === "Up" || dir === "Down";
-			dirEl.classList.toggle("hidden", effect === "wipe" && isVertical);
-			dirEl.classList.toggle("active", dir === direction);
-		});
-
-		// Update speed display in seconds (2 decimal places)
-		if (this.speedValueLabel) {
-			this.speedValueLabel.textContent = `${speed.toFixed(2)}s`;
-		}
-
-		// Update stepper button disabled states
-		const speedIdx = this.SPEED_VALUES.indexOf(speed);
-		const decreaseBtn = this.transitionPopup?.querySelector("[data-speed-decrease]") as HTMLButtonElement | null;
-		const increaseBtn = this.transitionPopup?.querySelector("[data-speed-increase]") as HTMLButtonElement | null;
-		if (decreaseBtn) decreaseBtn.disabled = speedIdx <= 0;
-		if (increaseBtn) increaseBtn.disabled = speedIdx >= this.SPEED_VALUES.length - 1;
-	}
-
-	// ==================== Effect Handlers ====================
-
-	private handleEffectTypeSelect(effectType: "" | "zoom" | "slide"): void {
-		this.effectType = effectType;
-		this.updateEffectUI();
-		this.applyEffect();
-	}
-
-	private handleEffectVariantSelect(variant: "In" | "Out"): void {
-		this.effectVariant = variant;
-		this.updateEffectUI();
-		this.applyEffect();
-	}
-
-	private handleEffectDirectionSelect(direction: "Left" | "Right" | "Up" | "Down"): void {
-		this.effectDirection = direction;
-		this.updateEffectUI();
-		this.applyEffect();
-	}
-
-	private handleEffectSpeedStep(direction: number): void {
-		const currentIndex = this.EFFECT_SPEED_VALUES.indexOf(this.effectSpeed);
-		const newIndex = Math.max(0, Math.min(this.EFFECT_SPEED_VALUES.length - 1, currentIndex + direction));
-		this.effectSpeed = this.EFFECT_SPEED_VALUES[newIndex];
-		this.updateEffectUI();
-		this.applyEffect();
-	}
-
-	private updateEffectUI(): void {
-		// Update active state on effect type buttons
-		this.effectPopup?.querySelectorAll("[data-effect-type]").forEach(btn => {
-			const type = (btn as HTMLElement).dataset["effectType"] || "";
-			btn.classList.toggle("active", type === this.effectType);
-		});
-
-		// Show/hide variant row (for Zoom)
-		this.effectVariantRow?.classList.toggle("visible", this.effectType === "zoom");
-
-		// Update variant active states
-		this.effectPopup?.querySelectorAll("[data-variant]").forEach(btn => {
-			const variant = (btn as HTMLElement).dataset["variant"] || "";
-			btn.classList.toggle("active", variant === this.effectVariant);
-		});
-
-		// Show/hide direction row (for Slide)
-		this.effectDirectionRow?.classList.toggle("visible", this.effectType === "slide");
-
-		// Update direction active states
-		this.effectPopup?.querySelectorAll("[data-effect-dir]").forEach(btn => {
-			const dir = (btn as HTMLElement).dataset["effectDir"] || "";
-			btn.classList.toggle("active", dir === this.effectDirection);
-		});
-
-		// Show/hide speed row (when effect is selected)
-		this.effectSpeedRow?.classList.toggle("visible", this.effectType !== "");
-
-		// Update speed display
-		if (this.effectSpeedValueLabel) {
-			this.effectSpeedValueLabel.textContent = `${this.effectSpeed}s`;
-		}
-
-		// Update stepper button disabled states
-		const speedIdx = this.EFFECT_SPEED_VALUES.indexOf(this.effectSpeed);
-		const decreaseBtn = this.effectPopup?.querySelector("[data-effect-speed-decrease]") as HTMLButtonElement | null;
-		const increaseBtn = this.effectPopup?.querySelector("[data-effect-speed-increase]") as HTMLButtonElement | null;
-		if (decreaseBtn) decreaseBtn.disabled = speedIdx <= 0;
-		if (increaseBtn) increaseBtn.disabled = speedIdx >= this.EFFECT_SPEED_VALUES.length - 1;
-	}
-
-	private buildEffectValue(): string {
-		if (this.effectType === "") return "";
-
-		let value = "";
-		if (this.effectType === "zoom") {
-			value = `zoom${this.effectVariant}`; // "zoomIn" or "zoomOut"
-		} else if (this.effectType === "slide") {
-			value = `slide${this.effectDirection}`; // "slideRight", "slideLeft", etc.
-		}
-
-		// Add speed suffix
-		if (this.effectSpeed === 0.5) value += "Fast";
-		else if (this.effectSpeed === 2.0) value += "Slow";
-
-		return value;
-	}
+	// ─── Effect (using composite) ────────────────────────────────────────────────
 
 	private applyEffect(): void {
-		const effectValue = this.buildEffectValue();
-		if (!effectValue) {
-			this.applyClipUpdate({ effect: undefined });
-		} else {
-			this.applyClipUpdate({ effect: effectValue });
-		}
+		const effectValue = this.effectPanel?.getClipValue();
+		this.applyClipUpdate({ effect: effectValue });
 	}
 
-	private parseEffectValue(effect: string): void {
-		if (!effect) {
-			this.effectType = "";
-			this.effectSpeed = 1.0;
-			return;
-		}
-
-		// Extract speed suffix first
-		let base = effect;
-		if (effect.endsWith("Slow")) {
-			this.effectSpeed = 2.0;
-			base = effect.slice(0, -4);
-		} else if (effect.endsWith("Fast")) {
-			this.effectSpeed = 0.5;
-			base = effect.slice(0, -4);
-		} else {
-			this.effectSpeed = 1.0;
-		}
-
-		// Parse type and variant/direction
-		if (base.startsWith("zoom")) {
-			this.effectType = "zoom";
-			this.effectVariant = base === "zoomOut" ? "Out" : "In";
-		} else if (base.startsWith("slide")) {
-			this.effectType = "slide";
-			const dir = base.replace("slide", "");
-			this.effectDirection = (dir as "Left" | "Right" | "Up" | "Down") || "Right";
-		} else {
-			this.effectType = "";
-		}
-	}
-
-	// ─── Audio Fade Handlers ───────────────────────────────────────────────────
+	// ─── Audio Fade Handlers ─────────────────────────────────────────────────────
 
 	private handleAudioFadeSelect(effect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut"): void {
 		this.audioFadeEffect = effect;
@@ -1094,14 +583,12 @@ export class MediaToolbar extends BaseToolbar {
 	private updateAudioFadeUI(): void {
 		if (!this.audioFadePopup) return;
 
-		// Update active states on buttons
 		const buttons = this.audioFadePopup.querySelectorAll("[data-audio-fade]");
 		buttons.forEach(btn => {
 			const fadeValue = (btn as HTMLElement).dataset["audioFade"] || "";
 			btn.classList.toggle("active", fadeValue === this.audioFadeEffect);
 		});
 
-		// Update button icon to show current selection
 		if (this.audioFadeBtn) {
 			const iconMap: Record<string, string> = {
 				"": ICONS.fadeNone,
@@ -1125,7 +612,6 @@ export class MediaToolbar extends BaseToolbar {
 	// ─── Dynamic Source Handlers ─────────────────────────────────────────────────
 
 	private setupDynamicSourceHandlers(): void {
-		// Toggle handler
 		this.dynamicToggle?.addEventListener("change", () => {
 			const checked = this.dynamicToggle?.checked || false;
 			this.isDynamicSource = checked;
@@ -1137,12 +623,10 @@ export class MediaToolbar extends BaseToolbar {
 			if (checked) {
 				this.dynamicInput?.focus();
 			} else {
-				// Revert to original src using Edit API
 				this.clearDynamicSource();
 			}
 		});
 
-		// On Enter key, apply the URL as dynamic source
 		this.dynamicInput?.addEventListener("keydown", e => {
 			if (e.key === "Enter") {
 				e.preventDefault();
@@ -1152,35 +636,25 @@ export class MediaToolbar extends BaseToolbar {
 			}
 		});
 
-		// On blur, also apply the URL
 		this.dynamicInput?.addEventListener("blur", () => {
 			this.applyDynamicUrl();
 		});
 	}
 
-	/**
-	 * Apply dynamic source using the new Edit.applyMergeField() API.
-	 * This uses the command pattern for undo/redo support and in-place asset reloading.
-	 * Validates the URL before applying to prevent CORS/404 errors.
-	 */
 	private async applyDynamicUrl(): Promise<void> {
 		const url = (this.dynamicInput?.value || "").trim();
 		if (!url) return;
 
-		// Validate URL before applying
 		const validation = await validateAssetUrl(url);
 		if (!validation.valid) {
 			this.showUrlError(validation.error || "Invalid URL");
 			return;
 		}
 
-		// Clear any previous error state
 		this.clearUrlError();
 
-		// If already a dynamic source, update the field value via live update
 		if (this.dynamicFieldName) {
 			this.edit.updateMergeFieldValueLive(this.dynamicFieldName, url);
-			// Also reload the asset to show the new image/video
 			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 			if (player) {
 				player.reloadAsset();
@@ -1188,12 +662,8 @@ export class MediaToolbar extends BaseToolbar {
 			return;
 		}
 
-		// Generate unique field name and apply merge field
 		const fieldName = this.edit.mergeFields.generateUniqueName("MEDIA");
-
-		// Use Edit API to apply merge field (handles template + resolved value atomically)
 		this.edit.applyMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", fieldName, url, this.originalSrc);
-
 		this.dynamicFieldName = fieldName;
 	}
 
@@ -1211,51 +681,36 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
-	/**
-	 * Remove dynamic source using the new Edit.removeMergeField() API.
-	 * Restores the original src value.
-	 */
 	private clearDynamicSource(): void {
 		if (!this.dynamicFieldName) return;
 
-		// Use Edit API to remove merge field (handles undo and asset reload)
 		this.edit.removeMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", this.originalSrc);
-
 		this.dynamicFieldName = "";
 		if (this.dynamicInput) {
 			this.dynamicInput.value = "";
 		}
 	}
 
-	/**
-	 * Update UI based on whether this clip has a dynamic source applied.
-	 * Uses the new Edit.getMergeFieldForProperty() API.
-	 */
 	private updateDynamicSourceUI(): void {
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!player) return;
 
-		// Use Edit API to check if this property has a merge field
 		const fieldName = this.edit.getMergeFieldForProperty(this.selectedTrackIdx, this.selectedClipIdx, "asset.src");
 
 		if (fieldName) {
-			// Has dynamic source
 			this.isDynamicSource = true;
 			this.dynamicFieldName = fieldName;
 			if (this.dynamicToggle) this.dynamicToggle.checked = true;
 			if (this.dynamicPanel) this.dynamicPanel.style.display = "block";
 
-			// Show the default URL value
 			const mergeField = this.edit.mergeFields.get(fieldName);
 			if (this.dynamicInput) {
 				this.dynamicInput.value = mergeField?.defaultValue || "";
 			}
 		} else {
-			// No dynamic source - store original src for later restoration
 			this.isDynamicSource = false;
 			this.dynamicFieldName = "";
 
-			// Get current resolved src as the original value
 			const asset = player.clipConfiguration.asset as { src?: string };
 			this.originalSrc = asset?.src || "";
 
@@ -1265,6 +720,8 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
+	// ─── Display Updates ─────────────────────────────────────────────────────────
+
 	private updateFitDisplay(): void {
 		if (this.fitLabel) {
 			const option = FIT_OPTIONS.find(o => o.value === this.currentFit);
@@ -1273,21 +730,17 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	private updateOpacityDisplay(): void {
-		const text = `${this.currentOpacity}%`;
-		if (this.opacityValue) this.opacityValue.textContent = text;
-		if (this.opacitySlider) this.opacitySlider.value = String(this.currentOpacity);
-
-		const display = this.opacityPopup?.querySelector("[data-opacity-display]");
-		if (display) display.textContent = text;
+		const value = this.opacitySlider?.getValue() ?? 100;
+		const text = `${Math.round(value)}%`;
+		const opacityValue = this.container?.querySelector("[data-opacity-value]");
+		if (opacityValue) opacityValue.textContent = text;
 	}
 
 	private updateScaleDisplay(): void {
-		const text = `${this.currentScale}%`;
-		if (this.scaleValue) this.scaleValue.textContent = text;
-		if (this.scaleSlider) this.scaleSlider.value = String(this.currentScale);
-
-		const display = this.scalePopup?.querySelector("[data-scale-display]");
-		if (display) display.textContent = text;
+		const value = this.scaleSlider?.getValue() ?? 100;
+		const text = `${Math.round(value)}%`;
+		const scaleValue = this.container?.querySelector("[data-scale-value]");
+		if (scaleValue) scaleValue.textContent = text;
 	}
 
 	private updateVolumeDisplay(): void {
@@ -1298,7 +751,6 @@ export class MediaToolbar extends BaseToolbar {
 		const display = this.volumePopup?.querySelector("[data-volume-display]");
 		if (display) display.textContent = text;
 
-		// Update icon
 		const iconContainer = this.container?.querySelector("[data-volume-icon]");
 		if (iconContainer) {
 			iconContainer.innerHTML = this.currentVolume === 0 ? ICONS.volumeMute : ICONS.volume;
@@ -1314,9 +766,6 @@ export class MediaToolbar extends BaseToolbar {
 
 	/**
 	 * Show the toolbar for a specific clip.
-	 * @param trackIndex - Track index
-	 * @param clipIndex - Clip index
-	 * @param assetType - The asset type (video, image, or audio)
 	 */
 	showMedia(trackIndex: number, clipIndex: number, assetType: MediaAssetType = "image"): void {
 		this.assetType = assetType;
@@ -1324,52 +773,44 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
+		// Dispose composite components
+		this.transitionPanel?.dispose();
+		this.effectPanel?.dispose();
+		this.opacitySlider?.dispose();
+		this.scaleSlider?.dispose();
+
 		super.dispose();
+
+		this.transitionPanel = null;
+		this.effectPanel = null;
+		this.opacitySlider = null;
+		this.scaleSlider = null;
 
 		this.fitBtn = null;
 		this.opacityBtn = null;
 		this.scaleBtn = null;
 		this.volumeBtn = null;
 		this.transitionBtn = null;
+		this.effectBtn = null;
+		this.advancedBtn = null;
+		this.audioFadeBtn = null;
 
 		this.fitPopup = null;
 		this.opacityPopup = null;
 		this.scalePopup = null;
 		this.volumePopup = null;
 		this.transitionPopup = null;
-
-		this.opacitySlider = null;
-		this.scaleSlider = null;
-		this.volumeSlider = null;
-
-		this.fitLabel = null;
-		this.opacityValue = null;
-		this.scaleValue = null;
-		this.volumeValue = null;
-
-		this.volumeSection = null;
-		this.visualSection = null;
-
-		// Transition elements
-		this.directionRow = null;
-		this.speedValueLabel = null;
-
-		// Effect elements
-		this.effectBtn = null;
 		this.effectPopup = null;
-		this.effectVariantRow = null;
-		this.effectDirectionRow = null;
-		this.effectSpeedRow = null;
-		this.effectSpeedValueLabel = null;
-
-		// Audio section elements
-		this.audioSection = null;
-		this.audioFadeBtn = null;
+		this.advancedPopup = null;
 		this.audioFadePopup = null;
 
-		// Advanced menu elements
-		this.advancedBtn = null;
-		this.advancedPopup = null;
+		this.fitLabel = null;
+		this.volumeSlider = null;
+		this.volumeValue = null;
+		this.volumeSection = null;
+		this.visualSection = null;
+		this.audioSection = null;
+
 		this.dynamicToggle = null;
 		this.dynamicPanel = null;
 		this.dynamicInput = null;
