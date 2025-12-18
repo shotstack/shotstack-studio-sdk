@@ -5,7 +5,7 @@
  * These are the core editing operations that modify timeline content.
  */
 
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas/clip";

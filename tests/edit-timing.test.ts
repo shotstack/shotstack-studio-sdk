@@ -5,7 +5,7 @@
  * Covers pure resolver functions and Edit class integration for propagation.
  */
 
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas/clip";

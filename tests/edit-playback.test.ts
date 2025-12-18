@@ -5,7 +5,7 @@
  * These methods control timeline playback and emit events for UI synchronization.
  */
 
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 import type { EventEmitter } from "@core/events/event-emitter";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)

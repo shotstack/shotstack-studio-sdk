@@ -6,7 +6,7 @@
  */
 
 /* eslint-disable max-classes-per-file -- Test helper classes */
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
 import type { EditCommand, CommandContext } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
 
