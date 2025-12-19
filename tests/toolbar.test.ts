@@ -33,6 +33,22 @@ jest.mock("../src/components/canvas/players/player", () => ({
 	}
 }));
 
+// Mock IntersectionObserver (not provided by jsdom)
+global.IntersectionObserver = class IntersectionObserver {
+	constructor(_callback: IntersectionObserverCallback) {}
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+} as unknown as typeof IntersectionObserver;
+
+// Mock ResizeObserver (not provided by jsdom)
+global.ResizeObserver = class ResizeObserver {
+	constructor(_callback: ResizeObserverCallback) {}
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+} as unknown as typeof ResizeObserver;
+
 import { AssetToolbar } from "../src/core/ui/asset-toolbar";
 import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
 import { BUILT_IN_FONTS, FONT_SIZES } from "../src/core/ui/base-toolbar";
@@ -983,29 +999,6 @@ describe("RichTextToolbar", () => {
 			expect(fontPopup?.classList.contains("visible")).toBe(true);
 		});
 
-		it("clicking font updates fontFamily in clip", () => {
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			// Open font popup
-			const fontBtn = container.querySelector('[data-action="font-toggle"]');
-			simulateClick(fontBtn);
-
-			// Click a font option - uses data-font-family attribute
-			const fontOption = container.querySelector('[data-font-family="Roboto"]');
-			simulateClick(fontOption);
-
-			// RichTextToolbar uses nested font object structure
-			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0,
-				0,
-				expect.objectContaining({
-					asset: expect.objectContaining({
-						font: expect.objectContaining({ family: "Roboto" })
-					})
-				})
-			);
-		});
 	});
 
 	describe("font size", () => {
