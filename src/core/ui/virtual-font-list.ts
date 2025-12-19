@@ -41,6 +41,21 @@ export class VirtualFontList {
 	private resizeObserver: ResizeObserver;
 	private fontLoader = getFontPreviewLoader();
 
+	// Event delegation handler for item clicks
+	private handleContentClick = (e: MouseEvent): void => {
+		const target = e.target as HTMLElement;
+		const item = target.closest(".ss-font-item") as HTMLElement | null;
+		if (!item || !item.dataset["index"]) return;
+
+		const index = parseInt(item.dataset["index"], 10);
+		const font = this.filteredFonts[index];
+		if (!font) return;
+
+		this.selectedFilename = font.filename;
+		this.render();
+		this.onSelect?.(font);
+	};
+
 	constructor(options: VirtualFontListOptions) {
 		this.container = options.container;
 		this.selectedFilename = options.selectedFilename;
@@ -54,6 +69,7 @@ export class VirtualFontList {
 		// Create content (sized to full list height)
 		this.content = document.createElement("div");
 		this.content.className = "ss-font-list-content";
+		this.content.addEventListener("click", this.handleContentClick);
 		this.viewport.appendChild(this.content);
 
 		this.container.appendChild(this.viewport);
@@ -223,13 +239,6 @@ export class VirtualFontList {
 		category.textContent = this.formatCategory(font.category);
 		item.appendChild(category);
 
-		// Click handler
-		item.addEventListener("click", () => {
-			this.selectedFilename = font.filename;
-			this.render();
-			this.onSelect?.(font);
-		});
-
 		return item;
 	}
 
@@ -257,6 +266,7 @@ export class VirtualFontList {
 	 * Clean up resources.
 	 */
 	destroy(): void {
+		this.content.removeEventListener("click", this.handleContentClick);
 		this.viewport.removeEventListener("scroll", this.handleScroll);
 		this.resizeObserver.disconnect();
 

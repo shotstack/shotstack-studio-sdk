@@ -10,6 +10,19 @@ export class BackgroundColorPicker {
 
 	private onColorChange: ColorChangeCallback | null = null;
 
+	// Arrow function handlers for proper cleanup
+	private handleColorChange = (): void => {
+		this.emitColorChange();
+	};
+
+	private handleOpacityChange = (e: Event): void => {
+		const opacity = parseInt((e.target as HTMLInputElement).value, 10);
+		if (this.opacityValue) {
+			this.opacityValue.textContent = `${opacity}%`;
+		}
+		this.emitColorChange();
+	};
+
 	constructor() {
 		injectShotstackStyles();
 	}
@@ -41,20 +54,8 @@ export class BackgroundColorPicker {
 		this.opacitySlider = this.container.querySelector(".ss-color-picker-opacity");
 		this.opacityValue = this.container.querySelector(".ss-color-picker-opacity-value");
 
-		this.colorInput?.addEventListener("input", this.handleColorChange.bind(this));
-		this.opacitySlider?.addEventListener("input", this.handleOpacityChange.bind(this));
-	}
-
-	private handleColorChange(): void {
-		this.emitColorChange();
-	}
-
-	private handleOpacityChange(e: Event): void {
-		const opacity = parseInt((e.target as HTMLInputElement).value, 10);
-		if (this.opacityValue) {
-			this.opacityValue.textContent = `${opacity}%`;
-		}
-		this.emitColorChange();
+		this.colorInput?.addEventListener("input", this.handleColorChange);
+		this.opacitySlider?.addEventListener("input", this.handleOpacityChange);
 	}
 
 	private emitColorChange(): void {
@@ -87,6 +88,8 @@ export class BackgroundColorPicker {
 	}
 
 	dispose(): void {
+		this.colorInput?.removeEventListener("input", this.handleColorChange);
+		this.opacitySlider?.removeEventListener("input", this.handleOpacityChange);
 		this.container?.remove();
 		this.container = null;
 		this.colorInput = null;

@@ -90,6 +90,9 @@ export class RichTextToolbar extends BaseToolbar {
 	private effectPopup: HTMLDivElement | null = null;
 	private effectPanel: EffectPanel | null = null;
 
+	// Bound handler for proper cleanup
+	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
+
 	override mount(parent: HTMLElement): void {
 		injectShotstackStyles();
 
@@ -420,7 +423,8 @@ export class RichTextToolbar extends BaseToolbar {
 		this.autocompletePopup = this.container.querySelector("[data-autocomplete-popup]");
 		this.autocompleteItems = this.container.querySelector("[data-autocomplete-items]");
 
-		this.container.addEventListener("click", this.handleClick.bind(this));
+		this.boundHandleClick = this.handleClick.bind(this);
+		this.container.addEventListener("click", this.boundHandleClick);
 
 		// Size input handlers
 		this.sizeInput?.addEventListener("click", e => {
@@ -1559,6 +1563,11 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
+		// Clean up event listener before super.dispose() removes container
+		if (this.boundHandleClick) {
+			this.container?.removeEventListener("click", this.boundHandleClick);
+			this.boundHandleClick = null;
+		}
 		super.dispose();
 		this.sizeInput = null;
 		this.sizePopup = null;

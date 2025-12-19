@@ -1120,7 +1120,7 @@ export class Edit extends Entity {
 
 				this.addPlayerToContainer(trackIdx, clip);
 
-				clip.load();
+				clip.load().catch(err => console.warn("Clip load failed:", err));
 
 				this.updateTotalDuration();
 			},

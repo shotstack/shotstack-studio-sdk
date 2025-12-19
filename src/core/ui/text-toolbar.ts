@@ -66,6 +66,9 @@ export class TextToolbar extends BaseToolbar {
 	private effectPopup: HTMLDivElement | null = null;
 	private effectPanel: EffectPanel | null = null;
 
+	// Stored bound handler for proper cleanup
+	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
+
 	override mount(parent: HTMLElement): void {
 		injectShotstackStyles();
 
@@ -310,7 +313,8 @@ export class TextToolbar extends BaseToolbar {
 	}
 
 	private setupEventListeners(): void {
-		this.container?.addEventListener("click", this.handleClick.bind(this));
+		this.boundHandleClick = this.handleClick.bind(this);
+		this.container?.addEventListener("click", this.boundHandleClick);
 
 		// Text edit
 		this.textEditArea?.addEventListener("input", () => this.debouncedApplyTextEdit());
@@ -717,6 +721,12 @@ export class TextToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
+		// Clean up event listener before super.dispose() removes container
+		if (this.boundHandleClick) {
+			this.container?.removeEventListener("click", this.boundHandleClick);
+			this.boundHandleClick = null;
+		}
+
 		if (this.textEditDebounceTimer) {
 			clearTimeout(this.textEditDebounceTimer);
 		}
