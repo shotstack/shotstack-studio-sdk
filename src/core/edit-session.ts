@@ -1194,7 +1194,55 @@ export class Edit extends Entity {
 
 		this.clipsToDispose = [];
 		this.updateTotalDuration();
+
+		// Clean up fonts that are no longer used by any clip
+		this.cleanupUnusedFonts();
 	}
+
+	/**
+	 * Remove fonts from timeline.fonts that are no longer referenced by any clip.
+	 * This keeps the document clean and prevents accumulation of unused font URLs.
+	 */
+	private cleanupUnusedFonts(): void {
+		if (!this.document) return;
+
+		const fonts = this.document.getFonts();
+		if (fonts.length === 0) return;
+
+		// Collect all font filenames currently used by RichText clips
+		const usedFilenames = new Set<string>();
+		for (const clip of this.clips) {
+			const asset = clip.clipConfiguration.asset;
+			if (asset && asset.type === "rich-text" && asset.font?.family) {
+				usedFilenames.add(asset.font.family);
+			}
+		}
+
+		// Check each font URL and remove if its filename is not used
+		for (const font of fonts) {
+			const filename = this.extractFilenameFromUrl(font.src);
+			if (filename && !usedFilenames.has(filename)) {
+				this.document.removeFont(font.src);
+			}
+		}
+	}
+
+	/**
+	 * Extract the filename (without extension) from a font URL.
+	 * e.g., "https://fonts.gstatic.com/s/inter/v20/UcCO3Fwr...Bg-4.ttf" → "UcCO3Fwr...Bg-4"
+	 */
+	private extractFilenameFromUrl(url: string): string | null {
+		try {
+			const pathname = new URL(url).pathname;
+			const filename = pathname.split("/").pop();
+			if (!filename) return null;
+			// Remove extension (.ttf, .woff2, etc.)
+			return filename.replace(/\.[^.]+$/, "");
+		} catch {
+			return null;
+		}
+	}
+
 	private disposeClip(clip: Player): void {
 		try {
 			if (this.getContainer().children.includes(clip.getContainer())) {
@@ -1757,6 +1805,14 @@ export class Edit extends Entity {
 
 	public getTimelineFonts(): Array<{ src: string }> {
 		return this.edit?.timeline?.fonts ?? [];
+	}
+
+	/**
+	 * Remove any fonts from timeline.fonts that are no longer used by clips.
+	 * Call this after changing a clip's font to clean up the old font.
+	 */
+	public pruneUnusedFonts(): void {
+		this.cleanupUnusedFonts();
 	}
 
 	public setTimelineBackground(color: string): void {

@@ -2,6 +2,8 @@
  * Shared font configuration for text and rich-text players
  */
 
+import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME } from "./google-fonts";
+
 const FONT_CDN = "https://templates.shotstack.io/basic/asset/font";
 
 /** Font family name to file path mapping */
@@ -77,15 +79,52 @@ export function parseFontFamily(fontFamily: string): { baseFontFamily: string; f
 
 /**
  * Resolve a font family name to its file path
- * Handles aliases and weight modifiers
+ * Handles Google Fonts (by filename hash or display name), built-in fonts, aliases, and weight modifiers
+ *
+ * Priority order:
+ * 1. Google Fonts by filename hash (e.g., "UcC73FwrK3iLTeHuS_fvQtMwCp50KnMw")
+ * 2. Google Fonts by display name (e.g., "Inter")
+ * 3. Built-in fonts by exact name
+ * 4. Built-in fonts by alias or base name
  */
 export function resolveFontPath(fontFamily: string): string | undefined {
-	// First try exact match (e.g., "Montserrat ExtraBold")
+	// Try Google Fonts by filename hash (from FontPicker selection)
+	const googleFontByFilename = GOOGLE_FONTS_BY_FILENAME.get(fontFamily);
+	if (googleFontByFilename) {
+		return googleFontByFilename.url;
+	}
+
+	// Try Google Fonts by display name (for backward compatibility)
+	const googleFontByName = GOOGLE_FONTS_BY_NAME.get(fontFamily);
+	if (googleFontByName) {
+		return googleFontByName.url;
+	}
+
+	// Try built-in fonts by exact match (e.g., "Montserrat ExtraBold")
 	if (FONT_PATHS[fontFamily]) {
 		return FONT_PATHS[fontFamily];
 	}
-	// Fall back to base family name
+
+	// Fall back to base family name for built-in fonts
 	const { baseFontFamily } = parseFontFamily(fontFamily);
 	const resolvedName = FONT_ALIASES[baseFontFamily] ?? baseFontFamily;
 	return FONT_PATHS[resolvedName];
+}
+
+/**
+ * Check if a font family is a Google Font
+ */
+export function isGoogleFont(fontFamily: string): boolean {
+	return GOOGLE_FONTS_BY_FILENAME.has(fontFamily) || GOOGLE_FONTS_BY_NAME.has(fontFamily);
+}
+
+/**
+ * Get the display name for a font (resolves Google Font filename hashes to readable names)
+ */
+export function getFontDisplayName(fontFamily: string): string {
+	const googleFont = GOOGLE_FONTS_BY_FILENAME.get(fontFamily);
+	if (googleFont) {
+		return googleFont.displayName;
+	}
+	return fontFamily;
 }

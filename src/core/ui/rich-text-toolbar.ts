@@ -10,10 +10,13 @@ import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { FontColorPicker } from "./font-color-picker";
+import { FontPicker, getFontDisplayName, type GoogleFont } from "./font-picker";
+import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
 
 export class RichTextToolbar extends BaseToolbar {
 	private fontPopup: HTMLDivElement | null = null;
 	private fontPreview: HTMLSpanElement | null = null;
+	private fontPicker: FontPicker | null = null;
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
 	private boldBtn: HTMLButtonElement | null = null;
@@ -918,7 +921,7 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private toggleFontPopup(): void {
-		this.togglePopup(this.fontPopup, () => this.buildFontList());
+		this.togglePopup(this.fontPopup, () => this.buildFontPicker());
 	}
 
 	private toggleTextEditPopup(): void {
@@ -1091,63 +1094,51 @@ export class RichTextToolbar extends BaseToolbar {
 		return fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter)).length;
 	}
 
-	private buildFontList(): void {
+	private buildFontPicker(): void {
 		if (!this.fontPopup) return;
 
-		const asset = this.getCurrentAsset();
-		const currentFont = asset?.font?.family ?? "Roboto";
-		const customFonts = this.getCustomFonts();
-
-		let html = "";
-
-		if (customFonts.length > 0) {
-			html += `<div class="ss-toolbar-font-section">
-				<div class="ss-toolbar-font-section-header">Custom</div>
-				${customFonts.map(f => this.renderFontItem(f, currentFont)).join("")}
-			</div>`;
+		// Clean up existing picker
+		if (this.fontPicker) {
+			this.fontPicker.destroy();
+			this.fontPicker = null;
 		}
 
-		html += `<div class="ss-toolbar-font-section">
-			<div class="ss-toolbar-font-section-header">Built-in</div>
-			${BUILT_IN_FONTS.map(f => this.renderFontItem(f, currentFont)).join("")}
-		</div>`;
+		const asset = this.getCurrentAsset();
+		const currentFilename = asset?.font?.family;
 
-		this.fontPopup.innerHTML = html;
-
-		// Attach click handlers to font items
-		this.fontPopup.querySelectorAll("[data-font-family]").forEach(item => {
-			item.addEventListener("click", () => {
-				const family = (item as HTMLElement).dataset["fontFamily"];
-				if (family) {
-					this.selectFont(family);
-				}
-			});
+		this.fontPicker = new FontPicker({
+			selectedFilename: currentFilename,
+			onSelect: (font) => this.selectGoogleFont(font),
+			onClose: () => this.closeAllPopups()
 		});
-	}
 
-	private renderFontItem(fontFamily: string, currentFont: string): string {
-		const isActive = fontFamily === currentFont;
-		const displayName = this.getDisplayName(fontFamily);
-		return `<div class="ss-toolbar-font-item${isActive ? " active" : ""}" data-font-family="${fontFamily}">
-			<span class="ss-toolbar-font-name" style="font-family: '${fontFamily}', sans-serif">${displayName}</span>
-		</div>`;
+		this.fontPopup.innerHTML = "";
+		this.fontPopup.appendChild(this.fontPicker.getElement());
 	}
 
 	private getDisplayName(fontFamily: string): string {
-		// Clean up font names: "Oswald-VariableFont" → "Oswald"
+		// First check if it's a Google Font filename (hash)
+		const googleFont = GOOGLE_FONTS_BY_FILENAME.get(fontFamily);
+		if (googleFont) {
+			return googleFont.displayName;
+		}
+		// Fall back to cleaning up font names: "Oswald-VariableFont" → "Oswald"
 		return fontFamily.replace(/-VariableFont$/i, "").replace(/-/g, " ");
 	}
 
-	private getCustomFonts(): string[] {
-		const edit = this.edit.getEdit();
-		return (edit.timeline.fonts ?? []).map(f => {
-			const filename = f.src.split("/").pop() || "";
-			return filename.replace(/\.(ttf|otf|woff2?)$/i, "");
-		});
-	}
+	private selectGoogleFont(font: GoogleFont): void {
+		// Add font URL to timeline.fonts via document layer (persists properly)
+		const document = this.edit.getDocument();
+		if (document) {
+			document.addFont(font.url);
+		}
 
-	private selectFont(fontFamily: string): void {
-		this.updateClipProperty({ font: { family: fontFamily } });
+		// Set the filename (hash) as the font family - this is what the backend expects
+		this.updateClipProperty({ font: { family: font.filename } });
+
+		// Clean up old font if no longer used by any clip
+		this.edit.pruneUnusedFonts();
+
 		this.closeAllPopups();
 	}
 
@@ -1574,6 +1565,8 @@ export class RichTextToolbar extends BaseToolbar {
 		this.boldBtn = null;
 		this.fontPopup = null;
 		this.fontPreview = null;
+		this.fontPicker?.destroy();
+		this.fontPicker = null;
 
 		this.fontColorPicker?.dispose();
 		this.fontColorPicker = null;

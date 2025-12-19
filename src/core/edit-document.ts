@@ -246,6 +246,43 @@ export class EditDocument {
 		this.data.timeline.soundtrack = soundtrack;
 	}
 
+	// ─── Font Mutations ──────────────────────────────────────────────────────
+
+	/**
+	 * Get timeline fonts
+	 */
+	getFonts(): Array<{ src: string }> {
+		return this.data.timeline.fonts ?? [];
+	}
+
+	/**
+	 * Add a font to the timeline (if not already present)
+	 */
+	addFont(src: string): void {
+		if (!this.data.timeline.fonts) {
+			this.data.timeline.fonts = [];
+		}
+		if (!this.data.timeline.fonts.some((f) => f.src === src)) {
+			this.data.timeline.fonts.push({ src });
+		}
+	}
+
+	/**
+	 * Remove a font from the timeline
+	 */
+	removeFont(src: string): void {
+		if (this.data.timeline.fonts) {
+			this.data.timeline.fonts = this.data.timeline.fonts.filter((f) => f.src !== src);
+		}
+	}
+
+	/**
+	 * Set all timeline fonts (replaces existing)
+	 */
+	setFonts(fonts: Array<{ src: string }>): void {
+		this.data.timeline.fonts = fonts;
+	}
+
 	// ─── Output Mutations ─────────────────────────────────────────────────────
 
 	/**
