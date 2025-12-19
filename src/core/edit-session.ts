@@ -948,19 +948,18 @@ export class Edit extends Entity {
 
 		if (typeof obj === "string") {
 			// Check if this string contains a merge field placeholder
-			// Use exec with a fresh regex to get capture groups (MERGE_FIELD_PATTERN has 'g' flag)
-			const regex = /\{\{\s*([A-Z_0-9]+)\s*\}\}/i;
-			const match = obj.match(regex);
-			if (match && match[1]) {
-				// Extract the field name (without braces/whitespace)
-				const fieldName = match[1].toUpperCase();
-				const resolvedValue = fieldValues.get(fieldName);
-				if (resolvedValue !== undefined) {
-					bindings.set(basePath, {
-						placeholder: obj,
-						resolvedValue
-					});
-				}
+			const regex = /\{\{\s*([A-Z_0-9]+)\s*\}\}/gi;
+			const hasMatch = regex.test(obj);
+			if (hasMatch) {
+				// Compute the fully resolved text by replacing all merge fields
+				const resolvedText = obj.replace(
+					/\{\{\s*([A-Z_0-9]+)\s*\}\}/gi,
+					(match, fieldName: string) => fieldValues.get(fieldName.toUpperCase()) ?? match
+				);
+				bindings.set(basePath, {
+					placeholder: obj,
+					resolvedValue: resolvedText
+				});
 			}
 			return bindings;
 		}
@@ -1993,11 +1992,31 @@ export class Edit extends Entity {
 		// Find and update all clips using this field
 		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
 			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
+				const player = this.tracks[trackIdx][clipIdx];
 				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
 				if (templateClip) {
-					// Check all string properties for this field
-					this.updateMergeFieldInObject(this.tracks[trackIdx][clipIdx].clipConfiguration, templateClip, fieldName, newValue);
+					// Update clipConfiguration with new resolved value (for rendering)
+					this.updateMergeFieldInObject(player.clipConfiguration, templateClip, fieldName, newValue);
+
+					// Also update the binding's resolvedValue so getExportableClip() can match correctly
+					this.updateMergeFieldBindings(player, fieldName, newValue);
 				}
+			}
+		}
+	}
+
+	/** Helper: Update merge field binding resolvedValues for a player */
+	private updateMergeFieldBindings(player: Player, fieldName: string, _newValue: string): void {
+		for (const [path, binding] of player.getMergeFieldBindings()) {
+			// Check if this binding's placeholder contains this field
+			const extractedField = this.mergeFields.extractFieldName(binding.placeholder);
+			if (extractedField === fieldName) {
+				// Recompute the resolved value from the placeholder with the new field value
+				const newResolvedValue = this.mergeFields.resolve(binding.placeholder);
+				player.setMergeFieldBinding(path, {
+					placeholder: binding.placeholder,
+					resolvedValue: newResolvedValue
+				});
 			}
 		}
 	}
@@ -2013,7 +2032,7 @@ export class Edit extends Entity {
 			if (typeof templateVal === "string") {
 				const extractedField = this.mergeFields.extractFieldName(templateVal);
 				if (extractedField === fieldName) {
-					// Apply proper substitution - replace {{ FIELD }} with newValue, preserving surrounding text
+					// Replace {{ FIELD }} with newValue in the resolved clipConfiguration
 					targetObj[key] = templateVal.replace(new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"), newValue);
 				}
 			} else if (templateVal && typeof templateVal === "object") {

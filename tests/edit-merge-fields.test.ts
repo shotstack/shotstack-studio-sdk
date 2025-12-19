@@ -697,6 +697,45 @@ describe("Edit Merge Fields", () => {
 			expect(player1?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/updated.jpg");
 			expect(player2?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/updated.jpg");
 		});
+
+		it("preserves merge field placeholder in template when updating value (regression)", async () => {
+			// Bug: Changing placeholder value in merge field overview was removing {{ FIELD }}
+			// from the text asset and replacing it with the placeholder value.
+			// Expected: {{ FIELD }} stays in template/export, canvas shows new resolved value.
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "text", text: "Hello {{ NAME }}" }, start: 0, length: 3, fit: "none" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "NAME", replace: "World" }]
+			});
+
+			const player = edit.getPlayerClip(0, 0);
+
+			// Before update: verify initial state
+			expect((player?.clipConfiguration.asset as { text?: string }).text).toBe("Hello World");
+			const bindingBefore = player?.getMergeFieldBinding("asset.text");
+			expect(bindingBefore?.placeholder).toBe("Hello {{ NAME }}");
+
+			// Update the merge field value (simulates changing placeholder in merge field overview)
+			edit.updateMergeFieldValueLive("NAME", "Universe");
+
+			// After update:
+			// 1. clipConfiguration should have the new RESOLVED value (for canvas rendering)
+			expect((player?.clipConfiguration.asset as { text?: string }).text).toBe("Hello Universe");
+
+			// 2. Binding placeholder should still contain {{ NAME }} (for toolbar display)
+			const bindingAfter = player?.getMergeFieldBinding("asset.text");
+			expect(bindingAfter?.placeholder).toBe("Hello {{ NAME }}");
+
+			// 3. Export should still contain {{ NAME }} (for template output)
+			const exported = player?.getExportableClip();
+			expect((exported?.asset as { text?: string }).text).toBe("Hello {{ NAME }}");
+		});
 	});
 
 	describe("deleteMergeFieldGlobally()", () => {
