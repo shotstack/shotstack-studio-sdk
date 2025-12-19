@@ -410,7 +410,10 @@ export class Edit extends Entity {
 		// Delegate to document layer - preserves "auto"/"end" values
 		const doc = this.document.toJSON();
 		// Overlay current merge field state (may have changed via setMergeField)
-		doc.merge = this.mergeFields.toSerializedArray();
+		const mergeFields = this.mergeFields.toSerializedArray();
+		if (mergeFields.length > 0) {
+			doc.merge = mergeFields;
+		}
 		return doc;
 	}
 

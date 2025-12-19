@@ -322,7 +322,11 @@ export class EditDocument {
 	 * This is what gets sent to the backend API.
 	 */
 	toJSON(): Edit {
-		return structuredClone(this.data);
+		const result = structuredClone(this.data);
+		if (result.merge?.length === 0) {
+			delete result.merge;
+		}
+		return result;
 	}
 
 	/**
