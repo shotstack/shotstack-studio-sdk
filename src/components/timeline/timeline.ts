@@ -10,6 +10,8 @@ import { TrackListComponent } from "./components/track/track-list";
 import { TimelineStateManager } from "./core/state/timeline-state";
 import { TimelineEntity } from "./core/timeline-entity";
 import { InteractionController } from "./interaction/interaction-controller";
+import { VideoThumbnailRenderer } from "./renderers/video-thumbnail-renderer";
+import { ThumbnailGenerator } from "./services/thumbnail-generator";
 
 /** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */
 export class Timeline extends TimelineEntity {
@@ -21,6 +23,10 @@ export class Timeline extends TimelineEntity {
 
 	// Custom renderers
 	private clipRenderers = new Map<string, ClipRenderer>();
+
+	// Video thumbnail generation
+	private thumbnailGenerator: ThumbnailGenerator;
+	private videoThumbnailRenderer: VideoThumbnailRenderer;
 
 	// Components (stored separately from children for typed access)
 	private toolbar: ToolbarComponent | null = null;
@@ -74,6 +80,14 @@ export class Timeline extends TimelineEntity {
 			height: 300, // placeholder, updated in load()
 			pixelsPerSecond: options.pixelsPerSecond ?? 50
 		});
+
+		// Initialize video thumbnail generation
+		this.thumbnailGenerator = new ThumbnailGenerator();
+		this.videoThumbnailRenderer = new VideoThumbnailRenderer(
+			this.thumbnailGenerator,
+			() => this.requestRender()
+		);
+		this.clipRenderers.set("video", this.videoThumbnailRenderer);
 
 		// Bind event handlers
 		this.handleTimelineUpdated = () => {
@@ -166,6 +180,9 @@ export class Timeline extends TimelineEntity {
 
 		// Dispose components
 		this.disposeComponents();
+
+		// Clean up thumbnail generator
+		this.thumbnailGenerator.dispose();
 
 		// Clean up custom renderers
 		this.clipRenderers.clear();

@@ -302,6 +302,65 @@
 	--clip-border: #546E7A;
 }
 
+/* Video thumbnail strips */
+.ss-clip.ss-clip--thumbnails {
+	background-color: #0d0d0d;
+}
+
+/* Cinematic vignette overlay for polished film-strip aesthetic */
+.ss-clip.ss-clip--thumbnails::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg,
+		rgba(0, 0, 0, 0.4) 0%,
+		transparent 8%,
+		transparent 92%,
+		rgba(0, 0, 0, 0.4) 100%
+	);
+	pointer-events: none;
+	z-index: 1;
+	border-radius: inherit;
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-content {
+	background: linear-gradient(to right,
+		rgba(0, 0, 0, 0.6) 0%,
+		rgba(0, 0, 0, 0.15) 20%,
+		rgba(0, 0, 0, 0.15) 80%,
+		rgba(0, 0, 0, 0.6) 100%
+	);
+	z-index: 2;
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-icon,
+.ss-clip.ss-clip--thumbnails .ss-clip-label {
+	color: #ffffff;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-badge {
+	background: rgba(0, 0, 0, 0.5);
+	color: #ffffff;
+}
+
+/* Loading state for thumbnails */
+.ss-clip.ss-clip--loading-thumbnails {
+	background: linear-gradient(
+		90deg,
+		var(--clip-bg) 0%,
+		color-mix(in srgb, var(--clip-bg) 70%, white) 50%,
+		var(--clip-bg) 100%
+	);
+	background-size: 200% 100%;
+	animation: ss-thumbnail-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes ss-thumbnail-loading {
+	0% { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
+}
+
 /* Clip content */
 .ss-clip-content {
 	display: flex;
