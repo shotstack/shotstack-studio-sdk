@@ -1,5 +1,7 @@
 import { Inspector } from "@canvas/system/inspector";
+import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
+import { checkWebGLSupport } from "@core/webgl-support";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
@@ -75,6 +77,13 @@ export class Canvas {
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
 		if (!root) {
 			throw new Error(`Shotstack canvas root element '${Canvas.CanvasSelector}' not found.`);
+		}
+
+		// Check WebGL support before attempting PixiJS initialization
+		const webglSupport = checkWebGLSupport();
+		if (!webglSupport.supported) {
+			createWebGLErrorOverlay(root);
+			return;
 		}
 
 		const rect = root.getBoundingClientRect();

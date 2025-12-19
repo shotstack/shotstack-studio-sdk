@@ -12,6 +12,7 @@
 @import "./ui/asset-toolbar.css";
 @import "./ui/font-color-picker.css";
 @import "./ui/background-color-picker.css";
+@import "./ui/webgl-error.css";
 
 /* Timeline Styles */
 @import "./timeline/timeline.css";
