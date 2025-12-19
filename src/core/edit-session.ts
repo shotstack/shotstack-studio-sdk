@@ -540,8 +540,14 @@ export class Edit extends Entity {
 	}
 
 	public async addTrack(trackIdx: number, track: ResolvedTrack): Promise<void> {
+		// Sync document FIRST, before any async operations that yield to event loop
+		if (this.document && !this.isLoadingEdit) {
+			this.document.addTrack(trackIdx);
+		}
+
 		const command = new AddTrackCommand(trackIdx);
 		await this.executeCommand(command);
+
 		for (const clip of track?.clips ?? []) {
 			await this.addClip(trackIdx, clip);
 		}

@@ -44,17 +44,20 @@ async function main() {
 
 		// Handle text:requested event - adds a text clip (custom toolbar event)
 		(edit.events.on as (name: string, listener: (payload: { position: number }) => void) => void)("text:requested", ({ position }) => {
-			edit.addTrack(0, { clips: [] });
-			edit.addClip(0, {
-				asset: {
-					type: "rich-text",
-					text: "Title",
-					font: { family: "Open Sans Bold", size: 72, weight: 700, color: "#ffffff", opacity: 1 },
-					align: { horizontal: "center", vertical: "middle" }
-				},
-				start: position,
-				length: 5,
-				fit: "none"
+			edit.addTrack(0, {
+				clips: [
+					{
+						asset: {
+							type: "rich-text",
+							text: "Title",
+							font: { family: "Open Sans Bold", size: 72, weight: 700, color: "#ffffff", opacity: 1 },
+							align: { horizontal: "center", vertical: "middle" }
+						},
+						start: position,
+						length: 5,
+						fit: "none"
+					}
+				]
 			});
 		});
 
