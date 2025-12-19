@@ -10,7 +10,7 @@ import { TrackListComponent } from "./components/track/track-list";
 import { TimelineStateManager } from "./core/state/timeline-state";
 import { TimelineEntity } from "./core/timeline-entity";
 import { InteractionController } from "./interaction/interaction-controller";
-import { VideoThumbnailRenderer } from "./renderers/video-thumbnail-renderer";
+import { MediaThumbnailRenderer } from "./renderers/media-thumbnail-renderer";
 import { ThumbnailGenerator } from "./services/thumbnail-generator";
 
 /** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */
@@ -24,9 +24,9 @@ export class Timeline extends TimelineEntity {
 	// Custom renderers
 	private clipRenderers = new Map<string, ClipRenderer>();
 
-	// Video thumbnail generation
+	// Media thumbnail generation (video and image)
 	private thumbnailGenerator: ThumbnailGenerator;
-	private videoThumbnailRenderer: VideoThumbnailRenderer;
+	private mediaThumbnailRenderer: MediaThumbnailRenderer;
 
 	// Components (stored separately from children for typed access)
 	private toolbar: ToolbarComponent | null = null;
@@ -81,13 +81,14 @@ export class Timeline extends TimelineEntity {
 			pixelsPerSecond: options.pixelsPerSecond ?? 50
 		});
 
-		// Initialize video thumbnail generation
+		// Initialize media thumbnail generation (video and image)
 		this.thumbnailGenerator = new ThumbnailGenerator();
-		this.videoThumbnailRenderer = new VideoThumbnailRenderer(
+		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(
 			this.thumbnailGenerator,
 			() => this.requestRender()
 		);
-		this.clipRenderers.set("video", this.videoThumbnailRenderer);
+		this.clipRenderers.set("video", this.mediaThumbnailRenderer);
+		this.clipRenderers.set("image", this.mediaThumbnailRenderer);
 
 		// Bind event handlers
 		this.handleTimelineUpdated = () => {

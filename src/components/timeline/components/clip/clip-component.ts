@@ -222,7 +222,7 @@ export class ClipComponent extends TimelineEntity {
 	private getAssetIcon(type: string): string {
 		const icons: Record<string, string> = {
 			video: "▶",
-			image: "◻",
+			image: "⛰",
 			audio: "♪",
 			text: "T",
 			"rich-text": "T",
