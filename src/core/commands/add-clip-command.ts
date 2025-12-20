@@ -17,19 +17,31 @@ export class AddClipCommand implements EditCommand {
 
 	async execute(context?: CommandContext): Promise<void> {
 		if (!context) return; // For backward compatibility
-		const clipPlayer = context.createPlayerFromAssetType(this.clip);
-		clipPlayer.layer = this.trackIdx + 1;
-		await context.addPlayer(this.trackIdx, clipPlayer);
 
-		// Find the clip's index in the track
-		const clips = context.getClips();
-		const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
-		const clipIndex = trackClips.findIndex(c => c === clipPlayer);
+		try {
+			const clipPlayer = context.createPlayerFromAssetType(this.clip);
+			clipPlayer.layer = this.trackIdx + 1;
+			await context.addPlayer(this.trackIdx, clipPlayer);
 
-		context.updateDuration();
-		context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
+			// Find the clip's index in the track
+			const clips = context.getClips();
+			const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
+			const clipIndex = trackClips.findIndex(c => c === clipPlayer);
 
-		this.addedPlayer = clipPlayer;
+			context.updateDuration();
+			context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
+
+			this.addedPlayer = clipPlayer;
+		} catch (error) {
+			// Emit error event instead of crashing
+			const assetType = (this.clip.asset as { type?: string }).type ?? "unknown";
+			context.emitEvent(EditEvent.ClipLoadFailed, {
+				trackIndex: this.trackIdx,
+				clipIndex: -1, // Not yet added
+				error: error instanceof Error ? error.message : String(error),
+				assetType
+			});
+		}
 	}
 
 	async undo(context?: CommandContext): Promise<void> {

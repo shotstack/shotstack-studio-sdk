@@ -8,6 +8,8 @@ export interface TrackListOptions {
 	showBadges: boolean;
 	onClipSelect: (trackIndex: number, clipIndex: number, addToSelection: boolean) => void;
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
+	/** Get error state for a clip (if asset failed to load) */
+	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
 	/** Check if a luma clip is attached (and should be hidden) */
 	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
 	/** Get attached luma for a content clip (to show badge) */
@@ -88,6 +90,7 @@ export class TrackListComponent extends TimelineEntity {
 				showBadges: this.options.showBadges,
 				onClipSelect: this.options.onClipSelect,
 				getClipRenderer: this.options.getClipRenderer,
+				getClipError: this.options.getClipError,
 				isLumaAttached: this.options.isLumaAttached,
 				getAttachedLuma: this.options.getAttachedLuma,
 				onMaskClick: this.options.onMaskClick,

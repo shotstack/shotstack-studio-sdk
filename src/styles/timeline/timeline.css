@@ -613,3 +613,77 @@
 	color: #9ca3af;
 	font-size: 13px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ERROR STATE - Clean Industrial
+   Single badge indicator. Muted content. Subtle atmosphere.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Error badge - compact, high-contrast indicator */
+.ss-clip-error-badge {
+	position: absolute;
+	top: 50%;
+	left: 6px;
+	transform: translateY(-50%);
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #dc2626;
+	border-radius: 4px;
+	font-size: 12px;
+	color: #fff;
+	z-index: 10;
+	cursor: help;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Error state base */
+.ss-clip.ss-clip--error {
+	--clip-bg: #fef2f2;
+	--clip-fg: #991b1b;
+	--clip-border: #fca5a5;
+	border-color: var(--clip-border) !important;
+	border-left-width: 3px;
+	border-left-color: #dc2626 !important;
+}
+
+/* Diagonal hazard stripes */
+.ss-clip.ss-clip--error::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		-45deg,
+		transparent,
+		transparent 8px,
+		rgba(220, 38, 38, 0.06) 8px,
+		rgba(220, 38, 38, 0.06) 16px
+	);
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Content visible but muted - user sees which clip failed */
+.ss-clip.ss-clip--error .ss-clip-content {
+	opacity: 0.6;
+	padding-left: 28px;
+}
+
+/* Mute the icon */
+.ss-clip.ss-clip--error .ss-clip-icon {
+	color: var(--clip-fg);
+	opacity: 0.5;
+}
+
+/* Style the label */
+.ss-clip.ss-clip--error .ss-clip-label {
+	color: var(--clip-fg);
+}
+
+/* Hide thumbnails on error */
+.ss-clip.ss-clip--error.ss-clip--thumbnails {
+	background-image: none !important;
+}

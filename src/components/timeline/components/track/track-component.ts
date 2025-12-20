@@ -7,6 +7,8 @@ export interface TrackComponentOptions {
 	showBadges: boolean;
 	onClipSelect: (trackIndex: number, clipIndex: number, addToSelection: boolean) => void;
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
+	/** Get error state for a clip (if asset failed to load) */
+	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
 	/** Check if a luma clip is attached (and should be hidden) */
 	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
 	/** Get attached luma for a content clip (to show badge) */
@@ -82,7 +84,8 @@ export class TrackComponent extends TimelineEntity {
 						clipComponent = new ClipComponent(clipState, {
 							showBadges: this.options.showBadges,
 							onSelect: this.options.onClipSelect,
-							getRenderer: this.options.getClipRenderer
+							getRenderer: this.options.getClipRenderer,
+							getClipError: this.options.getClipError
 						});
 						this.clipComponents.set(clipState.id, clipComponent);
 						this.element.appendChild(clipComponent.element);
@@ -109,6 +112,7 @@ export class TrackComponent extends TimelineEntity {
 						showBadges: this.options.showBadges,
 						onSelect: this.options.onClipSelect,
 						getRenderer: this.options.getClipRenderer,
+						getClipError: this.options.getClipError,
 						attachedLuma: attachedLuma ?? undefined,
 						onMaskClick: this.options.onMaskClick
 					});

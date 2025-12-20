@@ -1,6 +1,7 @@
 import type { ResolvedClip } from "@schemas/clip";
 
 import { TimelineEntity } from "../../core/timeline-entity";
+import { formatClipErrorMessage } from "../../utils/error-messages";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
 
 /** Reference to an attached luma clip */
@@ -13,6 +14,8 @@ export interface ClipComponentOptions {
 	showBadges: boolean;
 	onSelect: (trackIndex: number, clipIndex: number, addToSelection: boolean) => void;
 	getRenderer: (type: string) => ClipRenderer | undefined;
+	/** Get error state for a clip (if asset failed to load) */
+	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
 	/** Reference to attached luma (if this clip has a mask) */
 	attachedLuma?: LumaRef;
 	/** Callback when mask badge is clicked - passes the CONTENT clip indices */
@@ -25,6 +28,8 @@ export class ClipComponent extends TimelineEntity {
 	private currentState: ClipState | null = null;
 	private currentLumaRef: LumaRef | undefined = undefined;
 	private maskBadge: HTMLElement | null = null;
+	private errorBadge: HTMLElement | null = null;
+	private currentError: { error: string; assetType: string } | null = null;
 	private needsUpdate = true;
 
 	constructor(clip: ClipState, options: ClipComponentOptions) {
@@ -139,6 +144,9 @@ export class ClipComponent extends TimelineEntity {
 		// Update mask badge (show if clip has attached luma)
 		this.updateMaskBadge();
 
+		// Update error state (show if asset failed to load)
+		this.updateErrorState();
+
 		// Apply custom renderer if available
 		const renderer = this.options.getRenderer(assetType);
 		if (renderer) {
@@ -168,6 +176,36 @@ export class ClipComponent extends TimelineEntity {
 		} else if (this.maskBadge) {
 			// Hide badge if no luma attached
 			this.maskBadge.style.display = "none";
+		}
+	}
+
+	/** Show/hide error state based on clip error */
+	private updateErrorState(): void {
+		const error = this.currentState ? this.options.getClipError?.(this.currentState.trackIndex, this.currentState.clipIndex) : null;
+
+		// Compare by value, not reference (getClipError returns new object each call)
+		const hasNewError = error && (!this.currentError || error.error !== this.currentError.error || error.assetType !== this.currentError.assetType);
+
+		if (hasNewError) {
+			this.currentError = error;
+			this.element.classList.add("ss-clip--error");
+
+			// Create error badge if needed
+			if (!this.errorBadge) {
+				this.errorBadge = document.createElement("div");
+				this.errorBadge.className = "ss-clip-error-badge";
+				this.errorBadge.textContent = "⚠";
+				this.element.appendChild(this.errorBadge);
+			}
+
+			// User-friendly tooltip
+			this.errorBadge.title = formatClipErrorMessage(error.error, error.assetType);
+		} else if (!error && this.currentError) {
+			// Clear error state
+			this.currentError = null;
+			this.element.classList.remove("ss-clip--error");
+			this.errorBadge?.remove();
+			this.errorBadge = null;
 		}
 	}
 

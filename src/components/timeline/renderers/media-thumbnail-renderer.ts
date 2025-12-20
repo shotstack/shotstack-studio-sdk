@@ -18,6 +18,7 @@ interface ThumbnailState {
 	loading: boolean;
 	thumbnails: string[];
 	thumbnailWidth: number;
+	failed: boolean;
 }
 
 // Track height used for calculating thumbnail dimensions
@@ -76,7 +77,8 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		const previousKey = this.clipRequestKeys.get(element);
 		if (previousKey === requestKey) {
 			const state = this.clipStates.get(element);
-			if (state && !state.loading && state.thumbnails.length > 0) {
+			// Skip if already loaded OR failed (prevents infinite retry loop)
+			if (state && !state.loading && (state.thumbnails.length > 0 || state.failed)) {
 				return true;
 			}
 		}
@@ -84,8 +86,8 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	}
 
 	private showLoadingIfNeeded(element: HTMLElement): void {
-		const state = this.clipStates.get(element) ?? { loading: false, thumbnails: [], thumbnailWidth: 0 };
-		if (!state.loading && state.thumbnails.length === 0) {
+		const state = this.clipStates.get(element) ?? { loading: false, thumbnails: [], thumbnailWidth: 0, failed: false };
+		if (!state.loading && state.thumbnails.length === 0 && !state.failed) {
 			this.setLoadingState(element, true);
 		}
 	}
@@ -94,7 +96,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		element: HTMLElement,
 		asset: VideoAsset
 	): Promise<void> {
-		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0 };
+		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(element, state);
 
 		try {
@@ -110,9 +112,12 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 				state.thumbnails = [result.dataUrl];
 				state.thumbnailWidth = result.thumbnailWidth;
 				this.applyThumbnail(element, result.dataUrl, result.thumbnailWidth);
+			} else {
+				state.failed = true;
 			}
 		} catch {
 			// Failed to generate thumbnails - fall back to solid color
+			state.failed = true;
 			this.setLoadingState(element, false);
 		} finally {
 			state.loading = false;
@@ -125,7 +130,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		element: HTMLElement,
 		asset: ImageAsset
 	): Promise<void> {
-		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0 };
+		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(element, state);
 
 		try {
@@ -138,9 +143,12 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 				state.thumbnails = [result.url];
 				state.thumbnailWidth = result.thumbnailWidth;
 				this.applyThumbnail(element, result.url, result.thumbnailWidth);
+			} else {
+				state.failed = true;
 			}
 		} catch {
 			// Failed to load image - fall back to solid color
+			state.failed = true;
 			this.setLoadingState(element, false);
 		} finally {
 			state.loading = false;

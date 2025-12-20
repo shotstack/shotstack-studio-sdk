@@ -65,6 +65,10 @@ export class ImagePlayer extends Player {
 		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(src, loadOptions);
 
 		if (!(texture?.source instanceof pixi.ImageSource)) {
+			if (texture) {
+				texture.destroy(true);
+				pixi.Assets.unload(src);
+			}
 			throw new Error(`Invalid image source '${src}'.`);
 		}
 

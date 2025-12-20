@@ -50,6 +50,7 @@ export class Timeline extends TimelineEntity {
 	private readonly handlePlaybackPlay: () => void;
 	private readonly handlePlaybackPause: () => void;
 	private readonly handleClipSelected: () => void;
+	private readonly handleClipLoadFailed: () => void;
 
 	constructor(
 		private readonly edit: Edit,
@@ -102,6 +103,7 @@ export class Timeline extends TimelineEntity {
 			this.requestRender(); // Final render to update UI with paused state
 		};
 		this.handleClipSelected = () => this.requestRender();
+		this.handleClipLoadFailed = () => this.requestRender();
 	}
 
 	/** Initialize and mount the timeline */
@@ -213,6 +215,9 @@ export class Timeline extends TimelineEntity {
 
 		// Listen for selection changes (from canvas or other sources)
 		this.edit.events.on(EditEvent.ClipSelected, this.handleClipSelected);
+
+		// Listen for clip load failures (to show error badge on timeline)
+		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
 	}
 
 	private removeEventListeners(): void {
@@ -225,6 +230,7 @@ export class Timeline extends TimelineEntity {
 		this.edit.events.off(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
 		this.edit.events.off(EditEvent.PlaybackPause, this.handlePlaybackPause);
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
+		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
 	}
 
 	/** Start continuous render loop (during playback or interaction) */
@@ -338,6 +344,7 @@ export class Timeline extends TimelineEntity {
 				this.requestRender();
 			},
 			getClipRenderer: type => this.clipRenderers.get(type),
+			getClipError: (trackIndex, clipIndex) => this.edit.getClipError(trackIndex, clipIndex),
 			isLumaAttached: (trackIndex, clipIndex) => this.stateManager.isLumaAttached(trackIndex, clipIndex),
 			getAttachedLuma: (trackIndex, clipIndex) => this.stateManager.getAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {

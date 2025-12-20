@@ -116,6 +116,9 @@ export class Edit extends Entity {
 	private alignmentGuides: AlignmentGuides | null = null;
 	private lumaMaskController: LumaMaskController;
 
+	// Clip load errors - persisted so Timeline can query them after subscribing
+	private clipErrors = new Map<string, { error: string; assetType: string }>();
+
 	/**
 	 * Create an Edit instance from a template configuration.
 	 *
@@ -232,16 +235,29 @@ export class Edit extends Entity {
 		this.isLoadingEdit = true;
 		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
 			for (const [clipIdx, clip] of track.clips.entries()) {
-				const clipPlayer = this.createPlayerFromAssetType(clip);
-				clipPlayer.layer = trackIdx + 1;
+				try {
+					const clipPlayer = this.createPlayerFromAssetType(clip);
+					clipPlayer.layer = trackIdx + 1;
 
-				// Pass merge field bindings to the player
-				const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
-				if (bindings && bindings.size > 0) {
-					clipPlayer.setInitialBindings(bindings);
+					// Pass merge field bindings to the player
+					const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
+					if (bindings && bindings.size > 0) {
+						clipPlayer.setInitialBindings(bindings);
+					}
+
+					await this.addPlayer(trackIdx, clipPlayer);
+				} catch (error) {
+					// Store and emit error event, continue loading other clips
+					const assetType = (clip.asset as { type?: string }).type ?? "unknown";
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					this.clipErrors.set(`${trackIdx}-${clipIdx}`, { error: errorMessage, assetType });
+					this.events.emit(EditEvent.ClipLoadFailed, {
+						trackIndex: trackIdx,
+						clipIndex: clipIdx,
+						error: errorMessage,
+						assetType
+					});
 				}
-
-				await this.addPlayer(trackIdx, clipPlayer);
 			}
 		}
 		this.isLoadingEdit = false;
@@ -486,6 +502,14 @@ export class Edit extends Entity {
 		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
 
 		return clipsByTrack[clipIdx].clipConfiguration;
+	}
+
+	/**
+	 * Get the error state for a clip that failed to load.
+	 * Returns null if the clip loaded successfully.
+	 */
+	public getClipError(trackIdx: number, clipIdx: number): { error: string; assetType: string } | null {
+		return this.clipErrors.get(`${trackIdx}-${clipIdx}`) ?? null;
 	}
 
 	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
@@ -1298,6 +1322,7 @@ export class Edit extends Entity {
 		this.clips = [];
 		this.tracks = [];
 		this.clipsToDispose = [];
+		this.clipErrors.clear();
 
 		this.updateTotalDuration();
 	}

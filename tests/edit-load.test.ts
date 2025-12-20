@@ -1065,4 +1065,48 @@ describe("Edit loadEdit()", () => {
 			});
 		});
 	});
+
+	describe("graceful error handling", () => {
+		it("continues loading when a clip fails and emits clip:loadFailed event", async () => {
+			// Track clip:loadFailed events
+			const loadFailedHandler = jest.fn();
+			events.on("clip:loadFailed", loadFailedHandler);
+
+			// Create mock that throws on load for specific config
+			const { ImagePlayer: ImagePlayerMock } = jest.requireMock("@canvas/players/image-player");
+			ImagePlayerMock.mockImplementationOnce((editInstance: Edit, config: ResolvedClip) => {
+				const player = createMockPlayer(editInstance, config, PlayerType.Image);
+				player.load = jest.fn().mockRejectedValue(new Error("Invalid image source 'bad.mp4'."));
+				return player;
+			});
+
+			// Load edit with 2 clips - first will fail, second should succeed
+			const editConfig = createMinimalEdit([
+				{
+					clips: [
+						{ asset: { type: "image", src: "https://example.com/bad.mp4" }, start: 0, length: 3, fit: "crop" },
+						{ asset: { type: "image", src: "https://example.com/good.jpg" }, start: 3, length: 3, fit: "crop" }
+					]
+				}
+			]);
+
+			// Should NOT throw - this is the key behavior
+			await expect(edit.loadEdit(editConfig)).resolves.not.toThrow();
+
+			// Should emit clip:loadFailed for the bad clip
+			expect(loadFailedHandler).toHaveBeenCalledWith(
+				expect.objectContaining({
+					trackIndex: 0,
+					clipIndex: 0,
+					error: "Invalid image source 'bad.mp4'.",
+					assetType: "image"
+				})
+			);
+
+			// Both clips exist (player created even if load failed)
+			// The failed clip can show error state, successful clip renders normally
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(2);
+		});
+	});
 });
