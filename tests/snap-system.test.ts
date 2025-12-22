@@ -114,10 +114,7 @@ describe("SnapSystem", () => {
 
 	describe("createSnapContext", () => {
 		it("creates context with default config", () => {
-			const context = createSnapContext(
-				{ width: 100, height: 100 },
-				{ width: 1920, height: 1080 }
-			);
+			const context = createSnapContext({ width: 100, height: 100 }, { width: 1920, height: 1080 });
 
 			expect(context.clipSize).toEqual({ width: 100, height: 100 });
 			expect(context.canvasSize).toEqual({ width: 1920, height: 1080 });
@@ -126,12 +123,7 @@ describe("SnapSystem", () => {
 		});
 
 		it("allows config overrides", () => {
-			const context = createSnapContext(
-				{ width: 100, height: 100 },
-				{ width: 1920, height: 1080 },
-				[],
-				{ threshold: 10, snapToCanvas: false }
-			);
+			const context = createSnapContext({ width: 100, height: 100 }, { width: 1920, height: 1080 }, [], { threshold: 10, snapToCanvas: false });
 
 			expect(context.config.threshold).toBe(10);
 			expect(context.config.snapToCanvas).toBe(false);
@@ -152,9 +144,7 @@ describe("SnapSystem", () => {
 			const result = snapToCanvas(position, clipSize, canvasSize, threshold);
 
 			expect(result.position.x).toBe(0);
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "x", position: 0, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "x", position: 0, type: "canvas" }));
 		});
 
 		it("snaps clip right edge to canvas right edge", () => {
@@ -164,9 +154,7 @@ describe("SnapSystem", () => {
 			const result = snapToCanvas(position, clipSize, canvasSize, threshold);
 
 			expect(result.position.x).toBe(1820); // 1920 - 100
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "x", position: 1920, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "x", position: 1920, type: "canvas" }));
 		});
 
 		it("snaps clip center to canvas center horizontally", () => {
@@ -176,9 +164,7 @@ describe("SnapSystem", () => {
 			const result = snapToCanvas(position, clipSize, canvasSize, threshold);
 
 			expect(result.position.x).toBe(910); // 960 - 50
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "x", position: 960, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "x", position: 960, type: "canvas" }));
 		});
 
 		it("snaps clip top edge to canvas top edge", () => {
@@ -187,9 +173,7 @@ describe("SnapSystem", () => {
 			const result = snapToCanvas(position, clipSize, canvasSize, threshold);
 
 			expect(result.position.y).toBe(0);
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "y", position: 0, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "y", position: 0, type: "canvas" }));
 		});
 
 		it("snaps clip bottom edge to canvas bottom edge", () => {
@@ -199,9 +183,7 @@ describe("SnapSystem", () => {
 			const result = snapToCanvas(position, clipSize, canvasSize, threshold);
 
 			expect(result.position.y).toBe(980); // 1080 - 100
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "y", position: 1080, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "y", position: 1080, type: "canvas" }));
 		});
 
 		it("snaps clip center to canvas center vertically", () => {
@@ -211,9 +193,7 @@ describe("SnapSystem", () => {
 			const result = snapToCanvas(position, clipSize, canvasSize, threshold);
 
 			expect(result.position.y).toBe(490); // 540 - 50
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "y", position: 540, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "y", position: 540, type: "canvas" }));
 		});
 
 		it("snaps to both X and Y simultaneously", () => {
@@ -253,9 +233,7 @@ describe("SnapSystem", () => {
 
 			// Left edge (958) snaps to canvas center (960), so x moves by +2
 			expect(result.position.x).toBe(960);
-			expect(result.guides).toContainEqual(
-				expect.objectContaining({ axis: "x", position: 960, type: "canvas" })
-			);
+			expect(result.guides).toContainEqual(expect.objectContaining({ axis: "x", position: 960, type: "canvas" }));
 		});
 	});
 

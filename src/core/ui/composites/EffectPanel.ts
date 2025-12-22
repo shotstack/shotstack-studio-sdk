@@ -60,9 +60,9 @@ export class EffectPanel extends UIComponent<EffectState> {
 			<button class="ss-effect-variant" data-variant="Out">Out</button>
 		`;
 
-		const directionButtons = EffectPanel.DIRECTIONS.map(d => `<button class="ss-effect-dir" data-effect-dir="${d}">${this.directionIcon(d)}</button>`).join(
-			""
-		);
+		const directionButtons = EffectPanel.DIRECTIONS.map(
+			d => `<button class="ss-effect-dir" data-effect-dir="${d}">${this.directionIcon(d)}</button>`
+		).join("");
 
 		return `
 			<div class="ss-effect-types">${typeButtons}</div>

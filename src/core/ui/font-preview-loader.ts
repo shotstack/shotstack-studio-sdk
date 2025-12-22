@@ -6,7 +6,7 @@
  * to limit concurrent font downloads and prevent browser freezing.
  */
 
-import { GOOGLE_FONTS_BY_NAME, type GoogleFont } from "../fonts/google-fonts";
+import { GOOGLE_FONTS_BY_NAME } from "../fonts/google-fonts";
 
 /** Maximum concurrent font downloads */
 const MAX_CONCURRENT_LOADS = 3;
@@ -50,7 +50,7 @@ export class FontPreviewLoader {
 			this.observer.disconnect();
 		}
 		this.observer = new IntersectionObserver(
-			(entries) => {
+			entries => {
 				for (const entry of entries) {
 					if (entry.isIntersecting) {
 						const element = entry.target as HTMLElement;
@@ -152,20 +152,20 @@ export class FontPreviewLoader {
 	private async processQueue(): Promise<void> {
 		while (this.activeLoads < MAX_CONCURRENT_LOADS && this.loadingQueue.length > 0) {
 			const fontName = this.loadingQueue.shift();
-			if (!fontName) continue;
+			if (fontName) {
+				this.activeLoads += 1;
 
-			this.activeLoads++;
-
-			// Don't await - allow parallel loading
-			this.loadFont(fontName)
-				.catch(() => {
-					// Font loading failed - remove from pending
-					this.pendingFonts.delete(fontName);
-				})
-				.finally(() => {
-					this.activeLoads--;
-					this.processQueue();
-				});
+				// Don't await - allow parallel loading
+				this.loadFont(fontName)
+					.catch(() => {
+						// Font loading failed - remove from pending
+						this.pendingFonts.delete(fontName);
+					})
+					.finally(() => {
+						this.activeLoads -= 1;
+						this.processQueue();
+					});
+			}
 		}
 	}
 

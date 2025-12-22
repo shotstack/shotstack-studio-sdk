@@ -124,12 +124,7 @@ export function boundsToSnapPoints(bounds: ClipBounds): { x: number[]; y: number
  * Snap a position to canvas edges and center.
  * Pure function - no side effects.
  */
-export function snapToCanvas(
-	position: Vector,
-	clipSize: Size,
-	canvasSize: Size,
-	threshold: number
-): SnapResult {
+export function snapToCanvas(position: Vector, clipSize: Size, canvasSize: Size, threshold: number): SnapResult {
 	const guides: SnapGuide[] = [];
 	const snapped = { ...position };
 
@@ -176,12 +171,7 @@ export function snapToCanvas(
  * Snap a position to other clips.
  * Pure function - no side effects.
  */
-export function snapToClips(
-	position: Vector,
-	clipSize: Size,
-	otherClips: ClipBounds[],
-	threshold: number
-): SnapResult {
+export function snapToClips(position: Vector, clipSize: Size, otherClips: ClipBounds[], threshold: number): SnapResult {
 	const guides: SnapGuide[] = [];
 	const snapped = { ...position };
 

@@ -84,10 +84,7 @@ export class Timeline extends TimelineEntity {
 
 		// Initialize media thumbnail generation (video and image)
 		this.thumbnailGenerator = new ThumbnailGenerator();
-		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(
-			this.thumbnailGenerator,
-			() => this.requestRender()
-		);
+		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(this.thumbnailGenerator, () => this.requestRender());
 		this.clipRenderers.set("video", this.mediaThumbnailRenderer);
 		this.clipRenderers.set("image", this.mediaThumbnailRenderer);
 

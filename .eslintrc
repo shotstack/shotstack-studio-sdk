@@ -6,7 +6,7 @@
 		"project": ["./tsconfig.json", "./tsconfig.test.json"]
 	},
 	"plugins": ["@typescript-eslint"],
-	"ignorePatterns": ["**/*.d.ts", "*.js", "**/*.js"],
+	"ignorePatterns": ["**/*.d.ts", "*.js", "**/*.js", "scripts/**"],
 	"overrides": [
 		{
 			"files": ["src/**/*.ts"],

@@ -73,7 +73,9 @@
 	border-radius: 6px;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.15s ease, visibility 0.15s ease;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
 	pointer-events: none;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -88,7 +90,9 @@
 	border-right-color: rgba(24, 24, 27, 0.95);
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.15s ease, visibility 0.15s ease;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
 }
 
 .ss-asset-toolbar-btn:hover::after,

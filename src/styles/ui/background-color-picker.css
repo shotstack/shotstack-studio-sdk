@@ -69,11 +69,7 @@
 	appearance: none;
 	flex: 1;
 	height: 4px;
-	background: linear-gradient(
-		90deg,
-		rgba(255, 255, 255, 0) 0%,
-		rgba(255, 255, 255, 1) 100%
-	);
+	background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
 	border-radius: 2px;
 	cursor: pointer;
 	outline: none;

@@ -6,19 +6,13 @@
  * virtual scrolling for smooth performance with 200+ fonts.
  */
 
-import {
-	GOOGLE_FONTS,
-	GOOGLE_FONTS_BY_FILENAME,
-	GOOGLE_FONTS_BY_NAME,
-	GOOGLE_FONT_CATEGORIES,
-	type GoogleFont,
-	type GoogleFontCategory
-} from "../fonts/google-fonts";
+import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME, type GoogleFont, type GoogleFontCategory } from "../fonts/google-fonts";
+
+import { getFontPreviewLoader } from "./font-preview-loader";
+import { VirtualFontList } from "./virtual-font-list";
 
 // Re-export for convenience
 export type { GoogleFont } from "../fonts/google-fonts";
-import { VirtualFontList } from "./virtual-font-list";
-import { getFontPreviewLoader } from "./font-preview-loader";
 
 /** LocalStorage key for recently used fonts */
 const RECENT_FONTS_KEY = "ss-recent-fonts";
@@ -27,12 +21,7 @@ const RECENT_FONTS_KEY = "ss-recent-fonts";
 const MAX_RECENT_FONTS = 6;
 
 /** Icon fonts that should not appear in recently used (they don't render as text) */
-const ICON_FONT_NAMES = new Set([
-	"Material Icons",
-	"Material Symbols Outlined",
-	"Material Symbols Rounded",
-	"Material Symbols Sharp"
-]);
+const ICON_FONT_NAMES = new Set(["Material Icons", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Sharp"]);
 
 export interface FontPickerOptions {
 	/** Currently selected font filename */
@@ -78,7 +67,7 @@ export class FontPicker {
 		this.virtualList = new VirtualFontList({
 			container: this.listContainer,
 			selectedFilename: this.selectedFilename,
-			onSelect: (font) => this.handleFontSelect(font)
+			onSelect: font => this.handleFontSelect(font)
 		});
 
 		// Update recent section
@@ -166,7 +155,7 @@ export class FontPicker {
 		});
 
 		// Clear search on escape
-		searchInput.addEventListener("keydown", (e) => {
+		searchInput.addEventListener("keydown", e => {
 			if (e.key === "Escape") {
 				if (this.searchQuery) {
 					this.searchQuery = "";
@@ -180,19 +169,19 @@ export class FontPicker {
 
 		// Category tabs
 		const categoryButtons = picker.querySelectorAll(".ss-font-picker-category");
-		categoryButtons.forEach((button) => {
+		categoryButtons.forEach(button => {
 			button.addEventListener("click", () => {
 				const category = (button as HTMLElement).dataset["category"] as GoogleFontCategory | "";
 				this.setCategory(category || undefined);
 
 				// Update active state
-				categoryButtons.forEach((b) => b.classList.remove("ss-font-picker-category--active"));
+				categoryButtons.forEach(b => b.classList.remove("ss-font-picker-category--active"));
 				button.classList.add("ss-font-picker-category--active");
 			});
 		});
 
 		// Prevent clicks from closing (handled by parent)
-		picker.addEventListener("click", (e) => {
+		picker.addEventListener("click", e => {
 			e.stopPropagation();
 		});
 	}
@@ -262,7 +251,7 @@ export class FontPicker {
 		if (ICON_FONT_NAMES.has(fontName)) return;
 
 		// Remove if already exists
-		this.recentFonts = this.recentFonts.filter((f) => f !== fontName);
+		this.recentFonts = this.recentFonts.filter(f => f !== fontName);
 
 		// Add to front
 		this.recentFonts.unshift(fontName);
@@ -303,13 +292,13 @@ export class FontPicker {
 
 		const list = this.recentSection.querySelector(".ss-font-picker-recent-list") as HTMLElement;
 
-		for (const fontName of this.recentFonts) {
-			// Skip icon fonts - they don't render as text
-			if (ICON_FONT_NAMES.has(fontName)) continue;
+		// Filter out icon fonts and fonts not found in the registry
+		const validFonts = this.recentFonts
+			.filter(fontName => !ICON_FONT_NAMES.has(fontName))
+			.map(fontName => ({ fontName, font: GOOGLE_FONTS_BY_NAME.get(fontName) }))
+			.filter((entry): entry is { fontName: string; font: GoogleFont } => entry.font !== undefined);
 
-			const font = GOOGLE_FONTS_BY_NAME.get(fontName);
-			if (!font) continue;
-
+		for (const { fontName, font } of validFonts) {
 			const chip = document.createElement("button");
 			chip.className = "ss-font-picker-recent-chip";
 			chip.style.fontFamily = `"${fontName}", system-ui, sans-serif`;

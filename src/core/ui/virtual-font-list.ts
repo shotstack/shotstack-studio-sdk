@@ -7,6 +7,7 @@
  */
 
 import { GOOGLE_FONTS, type GoogleFont, type GoogleFontCategory } from "../fonts/google-fonts";
+
 import { getFontPreviewLoader } from "./font-preview-loader";
 
 /** Height of each font item in pixels */
@@ -97,7 +98,7 @@ export class VirtualFontList {
 	setFilter(query?: string, category?: GoogleFontCategory): void {
 		const lowerQuery = query?.toLowerCase().trim() || "";
 
-		this.filteredFonts = GOOGLE_FONTS.filter((font) => {
+		this.filteredFonts = GOOGLE_FONTS.filter(font => {
 			const matchesQuery = !lowerQuery || font.displayName.toLowerCase().includes(lowerQuery);
 			const matchesCategory = !category || font.category === category;
 			return matchesQuery && matchesCategory;
@@ -121,7 +122,7 @@ export class VirtualFontList {
 	 * Scroll to make a font visible.
 	 */
 	scrollToFont(filename: string): void {
-		const index = this.filteredFonts.findIndex((f) => f.filename === filename);
+		const index = this.filteredFonts.findIndex(f => f.filename === filename);
 		if (index >= 0) {
 			const targetScroll = index * ITEM_HEIGHT - this.viewportHeight / 2 + ITEM_HEIGHT / 2;
 			this.viewport.scrollTop = Math.max(0, targetScroll);
@@ -157,7 +158,7 @@ export class VirtualFontList {
 
 		// Track which items are still needed
 		const neededIndices = new Set<number>();
-		for (let i = startIndex; i < endIndex; i++) {
+		for (let i = startIndex; i < endIndex; i += 1) {
 			neededIndices.add(i);
 		}
 
@@ -171,9 +172,13 @@ export class VirtualFontList {
 		}
 
 		// Add/update items in view
-		for (let i = startIndex; i < endIndex; i++) {
+		for (let i = startIndex; i < endIndex; i += 1) {
 			const font = this.filteredFonts[i];
-			if (!font) continue;
+			if (!font) {
+				// Skip missing fonts (shouldn't happen, but guard against out-of-bounds)
+				// eslint-disable-next-line no-continue
+				continue;
+			}
 
 			let item = this.items.get(i);
 

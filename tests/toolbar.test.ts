@@ -34,20 +34,18 @@ jest.mock("../src/components/canvas/players/player", () => ({
 }));
 
 // Mock IntersectionObserver (not provided by jsdom)
-global.IntersectionObserver = class IntersectionObserver {
-	constructor(_callback: IntersectionObserverCallback) {}
-	observe() {}
-	unobserve() {}
-	disconnect() {}
-} as unknown as typeof IntersectionObserver;
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+	observe: jest.fn(),
+	unobserve: jest.fn(),
+	disconnect: jest.fn()
+})) as unknown as typeof IntersectionObserver;
 
 // Mock ResizeObserver (not provided by jsdom)
-global.ResizeObserver = class ResizeObserver {
-	constructor(_callback: ResizeObserverCallback) {}
-	observe() {}
-	unobserve() {}
-	disconnect() {}
-} as unknown as typeof ResizeObserver;
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+	observe: jest.fn(),
+	unobserve: jest.fn(),
+	disconnect: jest.fn()
+})) as unknown as typeof ResizeObserver;
 
 import { AssetToolbar } from "../src/core/ui/asset-toolbar";
 import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
@@ -244,9 +242,7 @@ describe("AssetToolbar", () => {
 		});
 
 		it("shows toolbar when buttons exist", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:click" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:click" }]);
 			toolbar.mount(container);
 
 			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
@@ -267,9 +263,7 @@ describe("AssetToolbar", () => {
 
 	describe("button rendering", () => {
 		it("renders button with correct id and tooltip", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "my-btn", icon: "<svg></svg>", tooltip: "My Button", event: "my:event" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "my-btn", icon: "<svg></svg>", tooltip: "My Button", event: "my:event" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="my-btn"]');
@@ -291,9 +285,7 @@ describe("AssetToolbar", () => {
 
 	describe("event emission", () => {
 		it("clicking button emits configured event name", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "custom:event" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "custom:event" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="test"]');
@@ -304,25 +296,18 @@ describe("AssetToolbar", () => {
 
 		it("event payload includes position in seconds", () => {
 			mockEdit.playbackTime = 5000; // 5 seconds in ms
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="test"]');
 			simulateClick(btn);
 
-			expect(mockEdit.events.emit).toHaveBeenCalledWith(
-				"test:event",
-				expect.objectContaining({ position: 5 })
-			);
+			expect(mockEdit.events.emit).toHaveBeenCalledWith("test:event", expect.objectContaining({ position: 5 }));
 		});
 
 		it("event payload includes selectedClip when clip is selected", () => {
 			mockEdit.getSelectedClipInfo.mockReturnValue({ trackIndex: 1, clipIndex: 2 });
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="test"]');
@@ -338,18 +323,13 @@ describe("AssetToolbar", () => {
 
 		it("event payload has null selectedClip when no clip selected", () => {
 			mockEdit.getSelectedClipInfo.mockReturnValue(null);
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="test"]');
 			simulateClick(btn);
 
-			expect(mockEdit.events.emit).toHaveBeenCalledWith(
-				"test:event",
-				expect.objectContaining({ selectedClip: null })
-			);
+			expect(mockEdit.events.emit).toHaveBeenCalledWith("test:event", expect.objectContaining({ selectedClip: null }));
 		});
 	});
 
@@ -361,9 +341,7 @@ describe("AssetToolbar", () => {
 			expect(container.querySelectorAll(".ss-asset-toolbar-btn").length).toBe(0);
 
 			// Update buttons and trigger event
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "new", icon: "<svg></svg>", tooltip: "New", event: "new:event" }
-			]);
+			mockEdit.getToolbarButtons.mockReturnValue([{ id: "new", icon: "<svg></svg>", tooltip: "New", event: "new:event" }]);
 			mockEdit.events.trigger(InternalEvent.ToolbarButtonsChanged);
 
 			expect(container.querySelectorAll(".ss-asset-toolbar-btn").length).toBe(1);
@@ -486,7 +464,7 @@ describe("CanvasToolbar", () => {
 			toolbar.setFps(30);
 
 			// FPS label is inside the button
-			const fpsLabel = container.querySelector('[data-fps-label]');
+			const fpsLabel = container.querySelector("[data-fps-label]");
 			expect(fpsLabel?.textContent).toContain("30");
 		});
 
@@ -783,11 +761,7 @@ describe("MediaToolbar", () => {
 			simulateClick(coverOption);
 
 			// MediaToolbar.applyClipUpdate passes fit at top level, not nested in asset
-			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0,
-				0,
-				expect.objectContaining({ fit: "cover" })
-			);
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ fit: "cover" }));
 		});
 
 		it("fit label displays current selection", () => {
@@ -812,16 +786,12 @@ describe("MediaToolbar", () => {
 			const opacityBtn = container.querySelector('[data-action="opacity"]');
 			simulateClick(opacityBtn);
 
-			const slider = container.querySelector('[data-opacity-slider]') as HTMLInputElement;
+			const slider = container.querySelector("[data-opacity-slider]") as HTMLInputElement;
 			if (slider) {
 				simulateInput(slider, 50);
 
 				// Opacity is at clip level, not nested in asset
-				expect(mockEdit.updateClip).toHaveBeenCalledWith(
-					0,
-					0,
-					expect.objectContaining({ opacity: 0.5 })
-				);
+				expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ opacity: 0.5 }));
 			}
 		});
 	});
@@ -839,16 +809,12 @@ describe("MediaToolbar", () => {
 			const scaleBtn = container.querySelector('[data-action="scale"]');
 			simulateClick(scaleBtn);
 
-			const slider = container.querySelector('[data-scale-slider]') as HTMLInputElement;
+			const slider = container.querySelector("[data-scale-slider]") as HTMLInputElement;
 			if (slider) {
 				simulateInput(slider, 150);
 
 				// Scale is at clip level, not nested in asset
-				expect(mockEdit.updateClip).toHaveBeenCalledWith(
-					0,
-					0,
-					expect.objectContaining({ scale: 1.5 })
-				);
+				expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ scale: 1.5 }));
 			}
 		});
 	});
@@ -866,7 +832,7 @@ describe("MediaToolbar", () => {
 			const volumeBtn = container.querySelector('[data-action="volume"]');
 			simulateClick(volumeBtn);
 
-			const slider = container.querySelector('[data-volume-slider]') as HTMLInputElement;
+			const slider = container.querySelector("[data-volume-slider]") as HTMLInputElement;
 			if (slider) {
 				simulateInput(slider, 75);
 
@@ -998,7 +964,6 @@ describe("RichTextToolbar", () => {
 			const fontPopup = container.querySelector("[data-font-popup]");
 			expect(fontPopup?.classList.contains("visible")).toBe(true);
 		});
-
 	});
 
 	describe("font size", () => {

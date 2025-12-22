@@ -17,10 +17,7 @@ const DEFAULT_MESSAGE = "Please try a different browser or enable hardware accel
 /**
  * Creates and displays a WebGL error overlay in the specified container.
  */
-export function createWebGLErrorOverlay(
-	container: HTMLElement,
-	options?: WebGLErrorOptions
-): HTMLElement {
+export function createWebGLErrorOverlay(container: HTMLElement, options?: WebGLErrorOptions): HTMLElement {
 	const title = options?.title ?? DEFAULT_TITLE;
 	const message = options?.message ?? DEFAULT_MESSAGE;
 

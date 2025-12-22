@@ -77,13 +77,7 @@ export function calculateFitScale(contentSize: Size, targetSize: Size, fit: FitM
  * - cover: Non-uniform stretch (distorts content)
  * - none: No scaling
  */
-export function calculateContainerScale(
-	contentSize: Size,
-	targetSize: Size,
-	fit: FitMode,
-	baseScale: number,
-	hasFixedDimensions: boolean
-): Vector {
+export function calculateContainerScale(contentSize: Size, targetSize: Size, fit: FitMode, baseScale: number, hasFixedDimensions: boolean): Vector {
 	// When explicit dimensions are set, applyFixedDimensions handles fit scaling
 	if (hasFixedDimensions) {
 		return { x: baseScale, y: baseScale };

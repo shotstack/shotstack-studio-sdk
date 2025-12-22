@@ -53,16 +53,15 @@ export class ComposedKeyframeBuilder {
 				result += layer.getValue(time);
 			}
 			return result;
-		} 
-			let result = this.baseValue;
-			for (const layer of this.layers) {
-				result *= layer.getValue(time);
-			}
-			// Clamp to range if specified (e.g., [0, 1] for opacity)
-			if (this.clampRange) {
-				result = Math.max(this.clampRange.min, Math.min(this.clampRange.max, result));
-			}
-			return result;
-		
+		}
+		let result = this.baseValue;
+		for (const layer of this.layers) {
+			result *= layer.getValue(time);
+		}
+		// Clamp to range if specified (e.g., [0, 1] for opacity)
+		if (this.clampRange) {
+			result = Math.max(this.clampRange.min, Math.min(this.clampRange.max, result));
+		}
+		return result;
 	}
 }

@@ -8,7 +8,7 @@ describe("extractFilenameFromError", () => {
 	});
 
 	it("should extract filename from URL with query params", () => {
-		const error = 'Failed to load: https://cdn.example.com/assets/image.jpg?token=abc123';
+		const error = "Failed to load: https://cdn.example.com/assets/image.jpg?token=abc123";
 		expect(extractFilenameFromError(error)).toBe("image.jpg");
 	});
 

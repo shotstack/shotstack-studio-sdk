@@ -1,7 +1,6 @@
 import { Inspector } from "@canvas/system/inspector";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
-import { checkWebGLSupport } from "@core/webgl-support";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
@@ -9,6 +8,7 @@ import { MediaToolbar } from "@core/ui/media-toolbar";
 import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
 import { TextToolbar } from "@core/ui/text-toolbar";
 import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
+import { checkWebGLSupport } from "@core/webgl-support";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";

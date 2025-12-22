@@ -23,13351 +23,13355 @@ export interface GoogleFont {
 
 export const GOOGLE_FONTS: GoogleFont[] = [
 	{
-		"displayName": "Roboto",
-		"filename": "KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTggvWl0Qn",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/roboto/v50/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTggvWl0Qn.ttf",
-		"weight": 400
+		displayName: "Roboto",
+		filename: "KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTggvWl0Qn",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/roboto/v50/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTggvWl0Qn.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Open Sans",
-		"filename": "memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4nY1M2xLER",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4nY1M2xLER.ttf",
-		"weight": 400
+		displayName: "Open Sans",
+		filename: "memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4nY1M2xLER",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/opensans/v44/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0C4nY1M2xLER.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Google Sans",
-		"filename": "4Ua_rENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RFD48TE63OOYKtrwEIKlirSjiEjo5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/googlesans/v67/4Ua_rENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RFD48TE63OOYKtrwEIKlirSjiEjo5.ttf",
-		"weight": 400
+		displayName: "Google Sans",
+		filename: "4Ua_rENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RFD48TE63OOYKtrwEIKlirSjiEjo5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/googlesans/v67/4Ua_rENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RFD48TE63OOYKtrwEIKlirSjiEjo5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans JP",
-		"filename": "-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75vY0rw-oME",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansjp/v55/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75vY0rw-oME.ttf",
-		"weight": 400
+		displayName: "Noto Sans JP",
+		filename: "-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75vY0rw-oME",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansjp/v55/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75vY0rw-oME.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inter",
-		"filename": "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrib2Bg-4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf",
-		"weight": 400
+		displayName: "Inter",
+		filename: "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrib2Bg-4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Montserrat",
-		"filename": "JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Ew-Y3tcoqK5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Ew-Y3tcoqK5.ttf",
-		"weight": 400
+		displayName: "Montserrat",
+		filename: "JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Ew-Y3tcoqK5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Ew-Y3tcoqK5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poppins",
-		"filename": "pxiEyp8kv8JHgFVrFJDUc1NECPY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJDUc1NECPY.ttf",
-		"weight": 400
+		displayName: "Poppins",
+		filename: "pxiEyp8kv8JHgFVrFJDUc1NECPY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrFJDUc1NECPY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lato",
-		"filename": "S6uyw4BMUTPHvxk6XweuBCY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lato/v25/S6uyw4BMUTPHvxk6XweuBCY.ttf",
-		"weight": 400
+		displayName: "Lato",
+		filename: "S6uyw4BMUTPHvxk6XweuBCY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lato/v25/S6uyw4BMUTPHvxk6XweuBCY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Roboto Condensed",
-		"filename": "ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyWyovBJ731BKMSK",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/robotocondensed/v31/ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyWyovBJ731BKMSK.ttf",
-		"weight": 400
+		displayName: "Roboto Condensed",
+		filename: "ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyWyovBJ731BKMSK",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/robotocondensed/v31/ieVo2ZhZI2eCN5jzbjEETS9weq8-_d6T_POl0fRJeyWyovBJ731BKMSK.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Roboto Mono",
-		"filename": "L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vqPQ--5Ip2sSQ",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/robotomono/v31/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vqPQ--5Ip2sSQ.ttf",
-		"weight": 400
+		displayName: "Roboto Mono",
+		filename: "L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vqPQ--5Ip2sSQ",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/robotomono/v31/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vqPQ--5Ip2sSQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arimo",
-		"filename": "P5sfzZCDf9_T_3cV7NCUECyoxNk37cxsBxDAVQI4aA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/arimo/v35/P5sfzZCDf9_T_3cV7NCUECyoxNk37cxsBxDAVQI4aA.ttf",
-		"weight": 400
+		displayName: "Arimo",
+		filename: "P5sfzZCDf9_T_3cV7NCUECyoxNk37cxsBxDAVQI4aA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/arimo/v35/P5sfzZCDf9_T_3cV7NCUECyoxNk37cxsBxDAVQI4aA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oswald",
-		"filename": "TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvgUFoZAaRliE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/oswald/v57/TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvgUFoZAaRliE.ttf",
-		"weight": 400
+		displayName: "Oswald",
+		filename: "TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvgUFoZAaRliE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/oswald/v57/TK3_WkUHHAIjg75cFRf3bXL8LICs1_FvgUFoZAaRliE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans",
-		"filename": "o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY.ttf",
-		"weight": 400
+		displayName: "Noto Sans",
+		filename: "o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Raleway",
-		"filename": "1Ptxg8zYS_SKggPN4iEgvnHyvveLxVvaooCPNLA3JC9c",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/raleway/v37/1Ptxg8zYS_SKggPN4iEgvnHyvveLxVvaooCPNLA3JC9c.ttf",
-		"weight": 400
+		displayName: "Raleway",
+		filename: "1Ptxg8zYS_SKggPN4iEgvnHyvveLxVvaooCPNLA3JC9c",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/raleway/v37/1Ptxg8zYS_SKggPN4iEgvnHyvveLxVvaooCPNLA3JC9c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nunito",
-		"filename": "XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM9jo7eTWk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM9jo7eTWk.ttf",
-		"weight": 400
+		displayName: "Nunito",
+		filename: "XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM9jo7eTWk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM9jo7eTWk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nunito Sans",
-		"filename": "pe1mMImSLYBIv1o4X1M8ce2xCx3yop4tQpF_MeTm0lfGWVpNn64CL7U8upHZIbMV51Q42ptCp5F5bxqqtQ1yiU4G1ilntF8kA_Ykqw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nunitosans/v19/pe1mMImSLYBIv1o4X1M8ce2xCx3yop4tQpF_MeTm0lfGWVpNn64CL7U8upHZIbMV51Q42ptCp5F5bxqqtQ1yiU4G1ilntF8kA_Ykqw.ttf",
-		"weight": 400
+		displayName: "Nunito Sans",
+		filename: "pe1mMImSLYBIv1o4X1M8ce2xCx3yop4tQpF_MeTm0lfGWVpNn64CL7U8upHZIbMV51Q42ptCp5F5bxqqtQ1yiU4G1ilntF8kA_Ykqw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nunitosans/v19/pe1mMImSLYBIv1o4X1M8ce2xCx3yop4tQpF_MeTm0lfGWVpNn64CL7U8upHZIbMV51Q42ptCp5F5bxqqtQ1yiU4G1ilntF8kA_Ykqw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playfair Display",
-		"filename": "nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQZNLo_U2r",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQZNLo_U2r.ttf",
-		"weight": 400
+		displayName: "Playfair Display",
+		filename: "nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQZNLo_U2r",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvUDQZNLo_U2r.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ubuntu",
-		"filename": "4iCs6KVjbNBYlgo6eAT3v02QFg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ubuntu/v21/4iCs6KVjbNBYlgo6eAT3v02QFg.ttf",
-		"weight": 400
+		displayName: "Ubuntu",
+		filename: "4iCs6KVjbNBYlgo6eAT3v02QFg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ubuntu/v21/4iCs6KVjbNBYlgo6eAT3v02QFg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik",
-		"filename": "iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UE80V4bVkA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UE80V4bVkA.ttf",
-		"weight": 400
+		displayName: "Rubik",
+		filename: "iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UE80V4bVkA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UE80V4bVkA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans KR",
-		"filename": "PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskr/v38/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.ttf",
-		"weight": 400
+		displayName: "Noto Sans KR",
+		filename: "PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskr/v38/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Roboto Slab",
-		"filename": "BngbUXZYTXPIvIBgJJSb6s3BzlRRfKOFbvjojISWaG5iddG-1A",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/robotoslab/v36/BngbUXZYTXPIvIBgJJSb6s3BzlRRfKOFbvjojISWaG5iddG-1A.ttf",
-		"weight": 400
+		displayName: "Roboto Slab",
+		filename: "BngbUXZYTXPIvIBgJJSb6s3BzlRRfKOFbvjojISWaG5iddG-1A",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/robotoslab/v36/BngbUXZYTXPIvIBgJJSb6s3BzlRRfKOFbvjojISWaG5iddG-1A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "DM Sans",
-		"filename": "rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxhTmf3ZGMZpg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxhTmf3ZGMZpg.ttf",
-		"weight": 400
+		displayName: "DM Sans",
+		filename: "rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxhTmf3ZGMZpg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dmsans/v17/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxhTmf3ZGMZpg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Merriweather",
-		"filename": "u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDr3icqE1f0KvXKYQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/merriweather/v33/u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDr3icqE1f0KvXKYQ.ttf",
-		"weight": 400
+		displayName: "Merriweather",
+		filename: "u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDr3icqE1f0KvXKYQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/merriweather/v33/u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDr3icqE1f0KvXKYQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Work Sans",
-		"filename": "QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/worksans/v24/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA.ttf",
-		"weight": 400
+		displayName: "Work Sans",
+		filename: "QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/worksans/v24/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "PT Sans",
-		"filename": "jizaRExUiTo99u79P0WOxOGMMDQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ptsans/v18/jizaRExUiTo99u79P0WOxOGMMDQ.ttf",
-		"weight": 400
+		displayName: "PT Sans",
+		filename: "jizaRExUiTo99u79P0WOxOGMMDQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ptsans/v18/jizaRExUiTo99u79P0WOxOGMMDQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kanit",
-		"filename": "nKKZ-Go6G5tXcoaSEQGodLxA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kanit/v17/nKKZ-Go6G5tXcoaSEQGodLxA.ttf",
-		"weight": 400
+		displayName: "Kanit",
+		filename: "nKKZ-Go6G5tXcoaSEQGodLxA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kanit/v17/nKKZ-Go6G5tXcoaSEQGodLxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lora",
-		"filename": "0QI6MX1D_JOuGQbT0gvTJPa787weuyJGmKxemMeZ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787weuyJGmKxemMeZ.ttf",
-		"weight": 400
+		displayName: "Lora",
+		filename: "0QI6MX1D_JOuGQbT0gvTJPa787weuyJGmKxemMeZ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787weuyJGmKxemMeZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mulish",
-		"filename": "1Ptyg83HX_SGhgqO0yLcmjzUAuWexZNRwaClGrw-PTY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mulish/v18/1Ptyg83HX_SGhgqO0yLcmjzUAuWexZNRwaClGrw-PTY.ttf",
-		"weight": 400
+		displayName: "Mulish",
+		filename: "1Ptyg83HX_SGhgqO0yLcmjzUAuWexZNRwaClGrw-PTY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mulish/v18/1Ptyg83HX_SGhgqO0yLcmjzUAuWexZNRwaClGrw-PTY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Quicksand",
-		"filename": "6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o18G0wx40QDw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o18G0wx40QDw.ttf",
-		"weight": 400
+		displayName: "Quicksand",
+		filename: "6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o18G0wx40QDw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o18G0wx40QDw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Manrope",
-		"filename": "xn7_YHE41ni1AdIRqAuZuw1Bx9mbZk79FO_F87jxeN7B",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/manrope/v20/xn7_YHE41ni1AdIRqAuZuw1Bx9mbZk79FO_F87jxeN7B.ttf",
-		"weight": 400
+		displayName: "Manrope",
+		filename: "xn7_YHE41ni1AdIRqAuZuw1Bx9mbZk79FO_F87jxeN7B",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/manrope/v20/xn7_YHE41ni1AdIRqAuZuw1Bx9mbZk79FO_F87jxeN7B.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans TC",
-		"filename": "-nFuOG829Oofr2wohFbTp9ifNAn722rq0MXz76Cy_CpOtma3uNQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstc/v38/-nFuOG829Oofr2wohFbTp9ifNAn722rq0MXz76Cy_CpOtma3uNQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans TC",
+		filename: "-nFuOG829Oofr2wohFbTp9ifNAn722rq0MXz76Cy_CpOtma3uNQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstc/v38/-nFuOG829Oofr2wohFbTp9ifNAn722rq0MXz76Cy_CpOtma3uNQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans",
-		"filename": "zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSD6llzAKI5loa26g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSD6llzAKI5loa26g.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans",
+		filename: "zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSD6llzAKI5loa26g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsans/v23/zYXGKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1swZSAXcomDVmadSD6llzAKI5loa26g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fira Sans",
-		"filename": "va9E4kDNxMZdWfMOD5VfkILKSTbndQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/firasans/v18/va9E4kDNxMZdWfMOD5VfkILKSTbndQ.ttf",
-		"weight": 400
+		displayName: "Fira Sans",
+		filename: "va9E4kDNxMZdWfMOD5VfkILKSTbndQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/firasans/v18/va9E4kDNxMZdWfMOD5VfkILKSTbndQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Outfit",
-		"filename": "QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-EiAou6Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-EiAou6Y.ttf",
-		"weight": 400
+		displayName: "Outfit",
+		filename: "QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-EiAou6Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-EiAou6Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inconsolata",
-		"filename": "QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp4U8aRr8lleY2co",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/inconsolata/v37/QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp4U8aRr8lleY2co.ttf",
-		"weight": 400
+		displayName: "Inconsolata",
+		filename: "QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp4U8aRr8lleY2co",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/inconsolata/v37/QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp4U8aRr8lleY2co.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Barlow",
-		"filename": "7cHpv4kjgoGqM7EPC8E46HsxnA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/barlow/v13/7cHpv4kjgoGqM7EPC8E46HsxnA.ttf",
-		"weight": 400
+		displayName: "Barlow",
+		filename: "7cHpv4kjgoGqM7EPC8E46HsxnA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/barlow/v13/7cHpv4kjgoGqM7EPC8E46HsxnA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Figtree",
-		"filename": "_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_d_QF5ewkEU4HTy",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_d_QF5ewkEU4HTy.ttf",
-		"weight": 400
+		displayName: "Figtree",
+		filename: "_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_d_QF5ewkEU4HTy",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/figtree/v9/_Xmz-HUzqDCFdgfMsYiV_F7wfS-Bs_d_QF5ewkEU4HTy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Archivo",
-		"filename": "k3k6o8UDI-1M0wlSV9XAw6lQkqWY8Q82sJaRE-NWIDdgffTTNDNp8B1oJ0vyVQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/archivo/v25/k3k6o8UDI-1M0wlSV9XAw6lQkqWY8Q82sJaRE-NWIDdgffTTNDNp8B1oJ0vyVQ.ttf",
-		"weight": 400
+		displayName: "Archivo",
+		filename: "k3k6o8UDI-1M0wlSV9XAw6lQkqWY8Q82sJaRE-NWIDdgffTTNDNp8B1oJ0vyVQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/archivo/v25/k3k6o8UDI-1M0wlSV9XAw6lQkqWY8Q82sJaRE-NWIDdgffTTNDNp8B1oJ0vyVQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bebas Neue",
-		"filename": "JTUSjIg69CK48gW7PXooxW5rygbi49c",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXooxW5rygbi49c.ttf",
-		"weight": 400
+		displayName: "Bebas Neue",
+		filename: "JTUSjIg69CK48gW7PXooxW5rygbi49c",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXooxW5rygbi49c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hind Siliguri",
-		"filename": "ijwTs5juQtsyLLR5jN4cxBEofJvQxuk0Nig",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hindsiliguri/v14/ijwTs5juQtsyLLR5jN4cxBEofJvQxuk0Nig.ttf",
-		"weight": 400
+		displayName: "Hind Siliguri",
+		filename: "ijwTs5juQtsyLLR5jN4cxBEofJvQxuk0Nig",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hindsiliguri/v14/ijwTs5juQtsyLLR5jN4cxBEofJvQxuk0Nig.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Source Sans 3",
-		"filename": "nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky461EN_io6npfB",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sourcesans3/v19/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky461EN_io6npfB.ttf",
-		"weight": 400
+		displayName: "Source Sans 3",
+		filename: "nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky461EN_io6npfB",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sourcesans3/v19/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky461EN_io6npfB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Karla",
-		"filename": "qkBIXvYC6trAT55ZBi1ueQVIjQTD-JqqFENLR7fHGw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/karla/v33/qkBIXvYC6trAT55ZBi1ueQVIjQTD-JqqFENLR7fHGw.ttf",
-		"weight": 400
+		displayName: "Karla",
+		filename: "qkBIXvYC6trAT55ZBi1ueQVIjQTD-JqqFENLR7fHGw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/karla/v33/qkBIXvYC6trAT55ZBi1ueQVIjQTD-JqqFENLR7fHGw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Prompt",
-		"filename": "-W__XJnvUD7dzB26Z9AcZkIzeg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/prompt/v12/-W__XJnvUD7dzB26Z9AcZkIzeg.ttf",
-		"weight": 400
+		displayName: "Prompt",
+		filename: "-W__XJnvUD7dzB26Z9AcZkIzeg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/prompt/v12/-W__XJnvUD7dzB26Z9AcZkIzeg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "PT Serif",
-		"filename": "EJRVQgYoZZY2vCFuvDFRxL6ddjb-",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ptserif/v19/EJRVQgYoZZY2vCFuvDFRxL6ddjb-.ttf",
-		"weight": 400
+		displayName: "PT Serif",
+		filename: "EJRVQgYoZZY2vCFuvDFRxL6ddjb-",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ptserif/v19/EJRVQgYoZZY2vCFuvDFRxL6ddjb-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Titillium Web",
-		"filename": "NaPecZTIAOhVxoMyOr9n_E7fRMTsDIRSfr0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/titilliumweb/v19/NaPecZTIAOhVxoMyOr9n_E7fRMTsDIRSfr0.ttf",
-		"weight": 400
+		displayName: "Titillium Web",
+		filename: "NaPecZTIAOhVxoMyOr9n_E7fRMTsDIRSfr0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/titilliumweb/v19/NaPecZTIAOhVxoMyOr9n_E7fRMTsDIRSfr0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif",
-		"filename": "ga6iaw1J5X9T9RW6j9bNVls-hfgvz8JcMofYTa32J4wsL2JAlAhZqFCjwM0Lhq_Szw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserif/v33/ga6iaw1J5X9T9RW6j9bNVls-hfgvz8JcMofYTa32J4wsL2JAlAhZqFCjwM0Lhq_Szw.ttf",
-		"weight": 400
+		displayName: "Noto Serif",
+		filename: "ga6iaw1J5X9T9RW6j9bNVls-hfgvz8JcMofYTa32J4wsL2JAlAhZqFCjwM0Lhq_Szw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserif/v33/ga6iaw1J5X9T9RW6j9bNVls-hfgvz8JcMofYTa32J4wsL2JAlAhZqFCjwM0Lhq_Szw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jost",
-		"filename": "92zPtBhPNqw79Ij1E865zBUv7myjJQVGPokMmuHL",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/jost/v20/92zPtBhPNqw79Ij1E865zBUv7myjJQVGPokMmuHL.ttf",
-		"weight": 400
+		displayName: "Jost",
+		filename: "92zPtBhPNqw79Ij1E865zBUv7myjJQVGPokMmuHL",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/jost/v20/92zPtBhPNqw79Ij1E865zBUv7myjJQVGPokMmuHL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Heebo",
-		"filename": "NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSycckOnz02SXQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSycckOnz02SXQ.ttf",
-		"weight": 400
+		displayName: "Heebo",
+		filename: "NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSycckOnz02SXQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSycckOnz02SXQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Saira",
-		"filename": "memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA71rCosg7lwYmUVY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/saira/v23/memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA71rCosg7lwYmUVY.ttf",
-		"weight": 400
+		displayName: "Saira",
+		filename: "memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA71rCosg7lwYmUVY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/saira/v23/memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA71rCosg7lwYmUVY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans SC",
-		"filename": "k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYxNbPzS5HE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssc/v39/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYxNbPzS5HE.ttf",
-		"weight": 400
+		displayName: "Noto Sans SC",
+		filename: "k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYxNbPzS5HE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssc/v39/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYxNbPzS5HE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Roboto Flex",
-		"filename": "NaNnepOXO_NexZs0b5QrzlOHb8wCikXpYqmZsWI-__OGbt8jZktqc2V3Zs0KvDLdBP8SBZtOs2IifRuUZQMsPJtUsR4DEK6cULNeUx9XgTnH37Ha_FIAp4Fm0PP1hw45DntW2x0wZGzhPmr1YNMYKYn9_1IQXGwJAiUJVUMdN5YUW4O8HtSoXjC1z3QSabshNFVe3e0O5j3ZjrZCu23Qd4G0EBysQNK-QKavMl1cKq3tHXtXi8mzLjaAQbGunCNCKMY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/robotoflex/v30/NaNnepOXO_NexZs0b5QrzlOHb8wCikXpYqmZsWI-__OGbt8jZktqc2V3Zs0KvDLdBP8SBZtOs2IifRuUZQMsPJtUsR4DEK6cULNeUx9XgTnH37Ha_FIAp4Fm0PP1hw45DntW2x0wZGzhPmr1YNMYKYn9_1IQXGwJAiUJVUMdN5YUW4O8HtSoXjC1z3QSabshNFVe3e0O5j3ZjrZCu23Qd4G0EBysQNK-QKavMl1cKq3tHXtXi8mzLjaAQbGunCNCKMY.ttf",
-		"weight": 400
+		displayName: "Roboto Flex",
+		filename:
+			"NaNnepOXO_NexZs0b5QrzlOHb8wCikXpYqmZsWI-__OGbt8jZktqc2V3Zs0KvDLdBP8SBZtOs2IifRuUZQMsPJtUsR4DEK6cULNeUx9XgTnH37Ha_FIAp4Fm0PP1hw45DntW2x0wZGzhPmr1YNMYKYn9_1IQXGwJAiUJVUMdN5YUW4O8HtSoXjC1z3QSabshNFVe3e0O5j3ZjrZCu23Qd4G0EBysQNK-QKavMl1cKq3tHXtXi8mzLjaAQbGunCNCKMY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/robotoflex/v30/NaNnepOXO_NexZs0b5QrzlOHb8wCikXpYqmZsWI-__OGbt8jZktqc2V3Zs0KvDLdBP8SBZtOs2IifRuUZQMsPJtUsR4DEK6cULNeUx9XgTnH37Ha_FIAp4Fm0PP1hw45DntW2x0wZGzhPmr1YNMYKYn9_1IQXGwJAiUJVUMdN5YUW4O8HtSoXjC1z3QSabshNFVe3e0O5j3ZjrZCu23Qd4G0EBysQNK-QKavMl1cKq3tHXtXi8mzLjaAQbGunCNCKMY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dancing Script",
-		"filename": "If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSoHTeB9ptDqpw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/dancingscript/v29/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSoHTeB9ptDqpw.ttf",
-		"weight": 400
+		displayName: "Dancing Script",
+		filename: "If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSoHTeB9ptDqpw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/dancingscript/v29/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSoHTeB9ptDqpw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Baskerville",
-		"filename": "kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQlOvuPCfQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQlOvuPCfQ.ttf",
-		"weight": 400
+		displayName: "Libre Baskerville",
+		filename: "kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQlOvuPCfQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQlOvuPCfQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Source Code Pro",
-		"filename": "HI_diYsKILxRpg3hIP6sJ7fM7PqPMcMnZFqUwX28DMyQhM5hTXUcdJg",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/sourcecodepro/v31/HI_diYsKILxRpg3hIP6sJ7fM7PqPMcMnZFqUwX28DMyQhM5hTXUcdJg.ttf",
-		"weight": 400
+		displayName: "Source Code Pro",
+		filename: "HI_diYsKILxRpg3hIP6sJ7fM7PqPMcMnZFqUwX28DMyQhM5hTXUcdJg",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/sourcecodepro/v31/HI_diYsKILxRpg3hIP6sJ7fM7PqPMcMnZFqUwX28DMyQhM5hTXUcdJg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Share Tech",
-		"filename": "7cHtv4Uyi5K0OeZ7bohUwHoDmTcibrA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sharetech/v23/7cHtv4Uyi5K0OeZ7bohUwHoDmTcibrA.ttf",
-		"weight": 400
+		displayName: "Share Tech",
+		filename: "7cHtv4Uyi5K0OeZ7bohUwHoDmTcibrA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sharetech/v23/7cHtv4Uyi5K0OeZ7bohUwHoDmTcibrA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Smooch Sans",
-		"filename": "c4mz1n5uGsXss2LJh1QH6b129FZvxPj6I4oiwUBodqIeNlzayg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/smoochsans/v15/c4mz1n5uGsXss2LJh1QH6b129FZvxPj6I4oiwUBodqIeNlzayg.ttf",
-		"weight": 400
+		displayName: "Smooch Sans",
+		filename: "c4mz1n5uGsXss2LJh1QH6b129FZvxPj6I4oiwUBodqIeNlzayg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/smoochsans/v15/c4mz1n5uGsXss2LJh1QH6b129FZvxPj6I4oiwUBodqIeNlzayg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Archivo Black",
-		"filename": "HTxqL289NzCGg4MzN6KJ7eW6OYuP_x7yx3A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/archivoblack/v23/HTxqL289NzCGg4MzN6KJ7eW6OYuP_x7yx3A.ttf",
-		"weight": 400
+		displayName: "Archivo Black",
+		filename: "HTxqL289NzCGg4MzN6KJ7eW6OYuP_x7yx3A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/archivoblack/v23/HTxqL289NzCGg4MzN6KJ7eW6OYuP_x7yx3A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Franklin",
-		"filename": "jizOREVItHgc8qDIbSTKq4XkRg8T88bjFuXOnduhLsWUB9rIb-JH1g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/librefranklin/v20/jizOREVItHgc8qDIbSTKq4XkRg8T88bjFuXOnduhLsWUB9rIb-JH1g.ttf",
-		"weight": 400
+		displayName: "Libre Franklin",
+		filename: "jizOREVItHgc8qDIbSTKq4XkRg8T88bjFuXOnduhLsWUB9rIb-JH1g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/librefranklin/v20/jizOREVItHgc8qDIbSTKq4XkRg8T88bjFuXOnduhLsWUB9rIb-JH1g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Josefin Sans",
-		"filename": "Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_DjQXMFrLgTsQV0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/josefinsans/v34/Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_DjQXMFrLgTsQV0.ttf",
-		"weight": 400
+		displayName: "Josefin Sans",
+		filename: "Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_DjQXMFrLgTsQV0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/josefinsans/v34/Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_DjQXMFrLgTsQV0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "PT Mono",
-		"filename": "9oRONYoBnWILk-9ArCg5MtPyAcg",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/ptmono/v14/9oRONYoBnWILk-9ArCg5MtPyAcg.ttf",
-		"weight": 400
+		displayName: "PT Mono",
+		filename: "9oRONYoBnWILk-9ArCg5MtPyAcg",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/ptmono/v14/9oRONYoBnWILk-9ArCg5MtPyAcg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Plus Jakarta Sans",
-		"filename": "LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU7NShXUEKi4Rw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU7NShXUEKi4Rw.ttf",
-		"weight": 400
+		displayName: "Plus Jakarta Sans",
+		filename: "LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU7NShXUEKi4Rw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU7NShXUEKi4Rw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anton",
-		"filename": "1Ptgg87LROyAm0K08i4gS7lu",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anton/v27/1Ptgg87LROyAm0K08i4gS7lu.ttf",
-		"weight": 400
+		displayName: "Anton",
+		filename: "1Ptgg87LROyAm0K08i4gS7lu",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anton/v27/1Ptgg87LROyAm0K08i4gS7lu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "EB Garamond",
-		"filename": "SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUA4V-e6yHgQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ebgaramond/v32/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUA4V-e6yHgQ.ttf",
-		"weight": 400
+		displayName: "EB Garamond",
+		filename: "SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUA4V-e6yHgQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ebgaramond/v32/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUA4V-e6yHgQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif JP",
-		"filename": "xn71YHs72GKoTvER4Gn3b5eMRtWGkp6o7MjQ2bwxOubAILO5wBCU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifjp/v32/xn71YHs72GKoTvER4Gn3b5eMRtWGkp6o7MjQ2bwxOubAILO5wBCU.ttf",
-		"weight": 400
+		displayName: "Noto Serif JP",
+		filename: "xn71YHs72GKoTvER4Gn3b5eMRtWGkp6o7MjQ2bwxOubAILO5wBCU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifjp/v32/xn71YHs72GKoTvER4Gn3b5eMRtWGkp6o7MjQ2bwxOubAILO5wBCU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mukta",
-		"filename": "iJWKBXyXfDDVXYnGp32S0H3f",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mukta/v17/iJWKBXyXfDDVXYnGp32S0H3f.ttf",
-		"weight": 400
+		displayName: "Mukta",
+		filename: "iJWKBXyXfDDVXYnGp32S0H3f",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mukta/v17/iJWKBXyXfDDVXYnGp32S0H3f.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cairo",
-		"filename": "SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hOA-W1ToLQ-HmkA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cairo/v31/SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hOA-W1ToLQ-HmkA.ttf",
-		"weight": 400
+		displayName: "Cairo",
+		filename: "SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hOA-W1ToLQ-HmkA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cairo/v31/SLXgc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hOA-W1ToLQ-HmkA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Barlow Condensed",
-		"filename": "HTx3L3I-JCGChYJ8VI-L6OO_au7B2xbZ23n3pKg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/barlowcondensed/v13/HTx3L3I-JCGChYJ8VI-L6OO_au7B2xbZ23n3pKg.ttf",
-		"weight": 400
+		displayName: "Barlow Condensed",
+		filename: "HTx3L3I-JCGChYJ8VI-L6OO_au7B2xbZ23n3pKg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/barlowcondensed/v13/HTx3L3I-JCGChYJ8VI-L6OO_au7B2xbZ23n3pKg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Schibsted Grotesk",
-		"filename": "JqzK5SSPQuCQF3t8uOwiUL-taUTtarVKQ9vZ6pJJWlMNIsEAT8JuXFGVOQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/schibstedgrotesk/v7/JqzK5SSPQuCQF3t8uOwiUL-taUTtarVKQ9vZ6pJJWlMNIsEAT8JuXFGVOQ.ttf",
-		"weight": 400
+		displayName: "Schibsted Grotesk",
+		filename: "JqzK5SSPQuCQF3t8uOwiUL-taUTtarVKQ9vZ6pJJWlMNIsEAT8JuXFGVOQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/schibstedgrotesk/v7/JqzK5SSPQuCQF3t8uOwiUL-taUTtarVKQ9vZ6pJJWlMNIsEAT8JuXFGVOQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dosis",
-		"filename": "HhyJU5sn9vOmLxNkIwRSjTVNWLEJN7MV3BkFTq4EPw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dosis/v34/HhyJU5sn9vOmLxNkIwRSjTVNWLEJN7MV3BkFTq4EPw.ttf",
-		"weight": 400
+		displayName: "Dosis",
+		filename: "HhyJU5sn9vOmLxNkIwRSjTVNWLEJN7MV3BkFTq4EPw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dosis/v34/HhyJU5sn9vOmLxNkIwRSjTVNWLEJN7MV3BkFTq4EPw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nanum Gothic",
-		"filename": "PN_3Rfi-oW3hYwmKDpxS7F_z_tLfxno73g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nanumgothic/v26/PN_3Rfi-oW3hYwmKDpxS7F_z_tLfxno73g.ttf",
-		"weight": 400
+		displayName: "Nanum Gothic",
+		filename: "PN_3Rfi-oW3hYwmKDpxS7F_z_tLfxno73g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nanumgothic/v26/PN_3Rfi-oW3hYwmKDpxS7F_z_tLfxno73g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Public Sans",
-		"filename": "ijwGs572Xtc6ZYQws9YVwllKVG8qX1oyOymuFpm5ww0pX189fg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/publicsans/v21/ijwGs572Xtc6ZYQws9YVwllKVG8qX1oyOymuFpm5ww0pX189fg.ttf",
-		"weight": 400
+		displayName: "Public Sans",
+		filename: "ijwGs572Xtc6ZYQws9YVwllKVG8qX1oyOymuFpm5ww0pX189fg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/publicsans/v21/ijwGs572Xtc6ZYQws9YVwllKVG8qX1oyOymuFpm5ww0pX189fg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Arabic",
-		"filename": "nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyGyvu3CBFQLaig",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansarabic/v33/nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyGyvu3CBFQLaig.ttf",
-		"weight": 400
+		displayName: "Noto Sans Arabic",
+		filename: "nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyGyvu3CBFQLaig",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansarabic/v33/nwpxtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyGyvu3CBFQLaig.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cabin",
-		"filename": "u-4X0qWljRw-PfU81xCKCpdpbgZJl6XFpfEd7eA9BIxxkV2EL7Gvxm7rE_s",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cabin/v35/u-4X0qWljRw-PfU81xCKCpdpbgZJl6XFpfEd7eA9BIxxkV2EL7Gvxm7rE_s.ttf",
-		"weight": 400
+		displayName: "Cabin",
+		filename: "u-4X0qWljRw-PfU81xCKCpdpbgZJl6XFpfEd7eA9BIxxkV2EL7Gvxm7rE_s",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cabin/v35/u-4X0qWljRw-PfU81xCKCpdpbgZJl6XFpfEd7eA9BIxxkV2EL7Gvxm7rE_s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitter",
-		"filename": "raxhHiqOu8IVPmnRc6SY1KXhnF_Y8fbfCL_EXFh2reU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bitter/v40/raxhHiqOu8IVPmnRc6SY1KXhnF_Y8fbfCL_EXFh2reU.ttf",
-		"weight": 400
+		displayName: "Bitter",
+		filename: "raxhHiqOu8IVPmnRc6SY1KXhnF_Y8fbfCL_EXFh2reU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bitter/v40/raxhHiqOu8IVPmnRc6SY1KXhnF_Y8fbfCL_EXFh2reU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Thai",
-		"filename": "iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpzF-QRvzzXg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansthai/v29/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpzF-QRvzzXg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Thai",
+		filename: "iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpzF-QRvzzXg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansthai/v29/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpzF-QRvzzXg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pacifico",
-		"filename": "FwZY7-Qmy14u9lezJ96A4sijpFu_",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/pacifico/v23/FwZY7-Qmy14u9lezJ96A4sijpFu_.ttf",
-		"weight": 400
+		displayName: "Pacifico",
+		filename: "FwZY7-Qmy14u9lezJ96A4sijpFu_",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/pacifico/v23/FwZY7-Qmy14u9lezJ96A4sijpFu_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lobster",
-		"filename": "neILzCirqoswsqX9_oWsMqEzSJQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lobster/v32/neILzCirqoswsqX9_oWsMqEzSJQ.ttf",
-		"weight": 400
+		displayName: "Lobster",
+		filename: "neILzCirqoswsqX9_oWsMqEzSJQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lobster/v32/neILzCirqoswsqX9_oWsMqEzSJQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Space Grotesk",
-		"filename": "V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsjNsFjTDJK",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsjNsFjTDJK.ttf",
-		"weight": 400
+		displayName: "Space Grotesk",
+		filename: "V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsjNsFjTDJK",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsjNsFjTDJK.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Assistant",
-		"filename": "2sDPZGJYnIjSi6H75xkZZE1I0yCmYzzQtuZnEGGf3qGuvM4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/assistant/v24/2sDPZGJYnIjSi6H75xkZZE1I0yCmYzzQtuZnEGGf3qGuvM4.ttf",
-		"weight": 400
+		displayName: "Assistant",
+		filename: "2sDPZGJYnIjSi6H75xkZZE1I0yCmYzzQtuZnEGGf3qGuvM4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/assistant/v24/2sDPZGJYnIjSi6H75xkZZE1I0yCmYzzQtuZnEGGf3qGuvM4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ramabhadra",
-		"filename": "EYq2maBOwqRW9P1SQ83LehNGX5uWw3o",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ramabhadra/v17/EYq2maBOwqRW9P1SQ83LehNGX5uWw3o.ttf",
-		"weight": 400
+		displayName: "Ramabhadra",
+		filename: "EYq2maBOwqRW9P1SQ83LehNGX5uWw3o",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ramabhadra/v17/EYq2maBOwqRW9P1SQ83LehNGX5uWw3o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Telugu",
-		"filename": "0FlxVOGZlE2Rrtr-HmgkMWJNjJ5_RyT8o8c7fHkeg-esVC5dzHkHIJQqrEntezbqQUbf-3v37w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstelugu/v30/0FlxVOGZlE2Rrtr-HmgkMWJNjJ5_RyT8o8c7fHkeg-esVC5dzHkHIJQqrEntezbqQUbf-3v37w.ttf",
-		"weight": 400
+		displayName: "Noto Sans Telugu",
+		filename: "0FlxVOGZlE2Rrtr-HmgkMWJNjJ5_RyT8o8c7fHkeg-esVC5dzHkHIJQqrEntezbqQUbf-3v37w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstelugu/v30/0FlxVOGZlE2Rrtr-HmgkMWJNjJ5_RyT8o8c7fHkeg-esVC5dzHkHIJQqrEntezbqQUbf-3v37w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oxygen",
-		"filename": "2sDfZG1Wl4Lcnbu6iUcnZ0SkAg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/oxygen/v16/2sDfZG1Wl4Lcnbu6iUcnZ0SkAg.ttf",
-		"weight": 400
+		displayName: "Oxygen",
+		filename: "2sDfZG1Wl4Lcnbu6iUcnZ0SkAg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/oxygen/v16/2sDfZG1Wl4Lcnbu6iUcnZ0SkAg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Red Hat Display",
-		"filename": "8vIf7wUr0m80wwYf0QCXZzYzUoTK8RZQvRd-D1NYbmyWckg5-Xecg3w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/redhatdisplay/v21/8vIf7wUr0m80wwYf0QCXZzYzUoTK8RZQvRd-D1NYbmyWckg5-Xecg3w.ttf",
-		"weight": 400
+		displayName: "Red Hat Display",
+		filename: "8vIf7wUr0m80wwYf0QCXZzYzUoTK8RZQvRd-D1NYbmyWckg5-Xecg3w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/redhatdisplay/v21/8vIf7wUr0m80wwYf0QCXZzYzUoTK8RZQvRd-D1NYbmyWckg5-Xecg3w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Changa One",
-		"filename": "xfu00W3wXn3QLUJXhzq46AbouLfbK64",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/changaone/v22/xfu00W3wXn3QLUJXhzq46AbouLfbK64.ttf",
-		"weight": 400
+		displayName: "Changa One",
+		filename: "xfu00W3wXn3QLUJXhzq46AbouLfbK64",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/changaone/v22/xfu00W3wXn3QLUJXhzq46AbouLfbK64.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Telugu",
-		"filename": "LhWLMVrUNvsddMtYGCx4FcVWOjlwE1WgXdoJ-5XHMl2DkooGK7i13y--oE2G2ep10_8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anektelugu/v13/LhWLMVrUNvsddMtYGCx4FcVWOjlwE1WgXdoJ-5XHMl2DkooGK7i13y--oE2G2ep10_8.ttf",
-		"weight": 400
+		displayName: "Anek Telugu",
+		filename: "LhWLMVrUNvsddMtYGCx4FcVWOjlwE1WgXdoJ-5XHMl2DkooGK7i13y--oE2G2ep10_8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anektelugu/v13/LhWLMVrUNvsddMtYGCx4FcVWOjlwE1WgXdoJ-5XHMl2DkooGK7i13y--oE2G2ep10_8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend",
-		"filename": "wlptgwvFAVdoq2_F94zlCfv0bz1WCzsW_LBte6KuGEo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WCzsW_LBte6KuGEo.ttf",
-		"weight": 400
+		displayName: "Lexend",
+		filename: "wlptgwvFAVdoq2_F94zlCfv0bz1WCzsW_LBte6KuGEo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexend/v26/wlptgwvFAVdoq2_F94zlCfv0bz1WCzsW_LBte6KuGEo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Exo 2",
-		"filename": "7cH1v4okm5zmbvwkAx_sfcEuiD8jvvKcPtq-rpvLpQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/exo2/v26/7cH1v4okm5zmbvwkAx_sfcEuiD8jvvKcPtq-rpvLpQ.ttf",
-		"weight": 400
+		displayName: "Exo 2",
+		filename: "7cH1v4okm5zmbvwkAx_sfcEuiD8jvvKcPtq-rpvLpQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/exo2/v26/7cH1v4okm5zmbvwkAx_sfcEuiD8jvvKcPtq-rpvLpQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hind",
-		"filename": "5aU69_a8oxmIRG5yBROzkDM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIRG5yBROzkDM.ttf",
-		"weight": 400
+		displayName: "Hind",
+		filename: "5aU69_a8oxmIRG5yBROzkDM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIRG5yBROzkDM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inter Tight",
-		"filename": "NGSnv5HMAFg6IuGlBNMjxJEL2VmU3NS7Z2mjDw-qXCRToK8EPg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/intertight/v9/NGSnv5HMAFg6IuGlBNMjxJEL2VmU3NS7Z2mjDw-qXCRToK8EPg.ttf",
-		"weight": 400
+		displayName: "Inter Tight",
+		filename: "NGSnv5HMAFg6IuGlBNMjxJEL2VmU3NS7Z2mjDw-qXCRToK8EPg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/intertight/v9/NGSnv5HMAFg6IuGlBNMjxJEL2VmU3NS7Z2mjDw-qXCRToK8EPg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "M PLUS Rounded 1c",
-		"filename": "VdGEAYIAV6gnpUpoWwNkYvrugw9RuPWGzr8C7vav",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mplusrounded1c/v19/VdGEAYIAV6gnpUpoWwNkYvrugw9RuPWGzr8C7vav.ttf",
-		"weight": 400
+		displayName: "M PLUS Rounded 1c",
+		filename: "VdGEAYIAV6gnpUpoWwNkYvrugw9RuPWGzr8C7vav",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mplusrounded1c/v19/VdGEAYIAV6gnpUpoWwNkYvrugw9RuPWGzr8C7vav.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Urbanist",
-		"filename": "L0xjDF02iFML4hGCyOCpRdycFsGxSrqDyx4fFpOrS8SlKw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/urbanist/v18/L0xjDF02iFML4hGCyOCpRdycFsGxSrqDyx4fFpOrS8SlKw.ttf",
-		"weight": 400
+		displayName: "Urbanist",
+		filename: "L0xjDF02iFML4hGCyOCpRdycFsGxSrqDyx4fFpOrS8SlKw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/urbanist/v18/L0xjDF02iFML4hGCyOCpRdycFsGxSrqDyx4fFpOrS8SlKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alfa Slab One",
-		"filename": "6NUQ8FmMKwSEKjnm5-4v-4Jh6dVretWvYmE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/alfaslabone/v21/6NUQ8FmMKwSEKjnm5-4v-4Jh6dVretWvYmE.ttf",
-		"weight": 400
+		displayName: "Alfa Slab One",
+		filename: "6NUQ8FmMKwSEKjnm5-4v-4Jh6dVretWvYmE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/alfaslabone/v21/6NUQ8FmMKwSEKjnm5-4v-4Jh6dVretWvYmE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Crimson Text",
-		"filename": "wlp2gwHKFkZgtmSR3NB0oRJvaAJSA_JN3Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/crimsontext/v19/wlp2gwHKFkZgtmSR3NB0oRJvaAJSA_JN3Q.ttf",
-		"weight": 400
+		displayName: "Crimson Text",
+		filename: "wlp2gwHKFkZgtmSR3NB0oRJvaAJSA_JN3Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/crimsontext/v19/wlp2gwHKFkZgtmSR3NB0oRJvaAJSA_JN3Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cormorant Garamond",
-		"filename": "co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_v86GnPEi_s4Mfs",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_v86GnPEi_s4Mfs.ttf",
-		"weight": 400
+		displayName: "Cormorant Garamond",
+		filename: "co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_v86GnPEi_s4Mfs",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_v86GnPEi_s4Mfs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caveat",
-		"filename": "WnznHAc5bAfYB2QRah7pcpNvOx-pjfJ9SIKjYBxPigs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/caveat/v23/WnznHAc5bAfYB2QRah7pcpNvOx-pjfJ9SIKjYBxPigs.ttf",
-		"weight": 400
+		displayName: "Caveat",
+		filename: "WnznHAc5bAfYB2QRah7pcpNvOx-pjfJ9SIKjYBxPigs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/caveat/v23/WnznHAc5bAfYB2QRah7pcpNvOx-pjfJ9SIKjYBxPigs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arvo",
-		"filename": "tDbD2oWUg0MKmSAa7Lzr7vs",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/arvo/v23/tDbD2oWUg0MKmSAa7Lzr7vs.ttf",
-		"weight": 400
+		displayName: "Arvo",
+		filename: "tDbD2oWUg0MKmSAa7Lzr7vs",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/arvo/v23/tDbD2oWUg0MKmSAa7Lzr7vs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "DM Serif Display",
-		"filename": "-nFnOHM81r4j6k0gjAW3mujVU2B2K_d709jy92k",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/dmserifdisplay/v17/-nFnOHM81r4j6k0gjAW3mujVU2B2K_d709jy92k.ttf",
-		"weight": 400
+		displayName: "DM Serif Display",
+		filename: "-nFnOHM81r4j6k0gjAW3mujVU2B2K_d709jy92k",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/dmserifdisplay/v17/-nFnOHM81r4j6k0gjAW3mujVU2B2K_d709jy92k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "PT Sans Narrow",
-		"filename": "BngRUXNadjH0qYEzV7ab-oWlsYCByxyKeuDp",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ptsansnarrow/v19/BngRUXNadjH0qYEzV7ab-oWlsYCByxyKeuDp.ttf",
-		"weight": 400
+		displayName: "PT Sans Narrow",
+		filename: "BngRUXNadjH0qYEzV7ab-oWlsYCByxyKeuDp",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ptsansnarrow/v19/BngRUXNadjH0qYEzV7ab-oWlsYCByxyKeuDp.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Comfortaa",
-		"filename": "1Pt_g8LJRfWJmhDAuUsSQamb1W0lwk4S4WjMPrQVIT9c2c8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/comfortaa/v47/1Pt_g8LJRfWJmhDAuUsSQamb1W0lwk4S4WjMPrQVIT9c2c8.ttf",
-		"weight": 400
+		displayName: "Comfortaa",
+		filename: "1Pt_g8LJRfWJmhDAuUsSQamb1W0lwk4S4WjMPrQVIT9c2c8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/comfortaa/v47/1Pt_g8LJRfWJmhDAuUsSQamb1W0lwk4S4WjMPrQVIT9c2c8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Slabo 27px",
-		"filename": "mFT0WbgBwKPR_Z4hGN2qsxgJ1EJ7i90",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/slabo27px/v16/mFT0WbgBwKPR_Z4hGN2qsxgJ1EJ7i90.ttf",
-		"weight": 400
+		displayName: "Slabo 27px",
+		filename: "mFT0WbgBwKPR_Z4hGN2qsxgJ1EJ7i90",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/slabo27px/v16/mFT0WbgBwKPR_Z4hGN2qsxgJ1EJ7i90.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Devanagari",
-		"filename": "TuGoUUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHn6B2OHjbL_08AlXQly-AzoFoW4Ow",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansdevanagari/v30/TuGoUUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHn6B2OHjbL_08AlXQly-AzoFoW4Ow.ttf",
-		"weight": 400
+		displayName: "Noto Sans Devanagari",
+		filename: "TuGoUUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHn6B2OHjbL_08AlXQly-AzoFoW4Ow",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansdevanagari/v30/TuGoUUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHn6B2OHjbL_08AlXQly-AzoFoW4Ow.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fjalla One",
-		"filename": "Yq6R-LCAWCX3-6Ky7FAFnOZwkxgtUb8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/fjallaone/v16/Yq6R-LCAWCX3-6Ky7FAFnOZwkxgtUb8.ttf",
-		"weight": 400
+		displayName: "Fjalla One",
+		filename: "Yq6R-LCAWCX3-6Ky7FAFnOZwkxgtUb8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/fjallaone/v16/Yq6R-LCAWCX3-6Ky7FAFnOZwkxgtUb8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Overpass",
-		"filename": "qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPrOZCLtce-og",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/overpass/v19/qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPrOZCLtce-og.ttf",
-		"weight": 400
+		displayName: "Overpass",
+		filename: "qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPrOZCLtce-og",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/overpass/v19/qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPrOZCLtce-og.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tajawal",
-		"filename": "Iura6YBj_oCad4k1rzaLCr5IlLA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tajawal/v12/Iura6YBj_oCad4k1rzaLCr5IlLA.ttf",
-		"weight": 400
+		displayName: "Tajawal",
+		filename: "Iura6YBj_oCad4k1rzaLCr5IlLA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tajawal/v12/Iura6YBj_oCad4k1rzaLCr5IlLA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rajdhani",
-		"filename": "LDIxapCSOBg7S-QT7q4AOeekWPrP",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rajdhani/v17/LDIxapCSOBg7S-QT7q4AOeekWPrP.ttf",
-		"weight": 400
+		displayName: "Rajdhani",
+		filename: "LDIxapCSOBg7S-QT7q4AOeekWPrP",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rajdhani/v17/LDIxapCSOBg7S-QT7q4AOeekWPrP.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sora",
-		"filename": "xMQOuFFYT72X5wkB_18qmnndmSdSnn-KIwNhBti0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sora/v17/xMQOuFFYT72X5wkB_18qmnndmSdSnn-KIwNhBti0.ttf",
-		"weight": 400
+		displayName: "Sora",
+		filename: "xMQOuFFYT72X5wkB_18qmnndmSdSnn-KIwNhBti0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sora/v17/xMQOuFFYT72X5wkB_18qmnndmSdSnn-KIwNhBti0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Abel",
-		"filename": "MwQ5bhbm2POE6VhLPJp6qGI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/abel/v18/MwQ5bhbm2POE6VhLPJp6qGI.ttf",
-		"weight": 400
+		displayName: "Abel",
+		filename: "MwQ5bhbm2POE6VhLPJp6qGI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/abel/v18/MwQ5bhbm2POE6VhLPJp6qGI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Satisfy",
-		"filename": "rP2Hp2yn6lkG50LoOZSCHBeHFl0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/satisfy/v22/rP2Hp2yn6lkG50LoOZSCHBeHFl0.ttf",
-		"weight": 400
+		displayName: "Satisfy",
+		filename: "rP2Hp2yn6lkG50LoOZSCHBeHFl0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/satisfy/v22/rP2Hp2yn6lkG50LoOZSCHBeHFl0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Almarai",
-		"filename": "tsstApxBaigK_hnnc1qPonC3vqc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/almarai/v19/tsstApxBaigK_hnnc1qPonC3vqc.ttf",
-		"weight": 400
+		displayName: "Almarai",
+		filename: "tsstApxBaigK_hnnc1qPonC3vqc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/almarai/v19/tsstApxBaigK_hnnc1qPonC3vqc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Merriweather Sans",
-		"filename": "2-cO9IRs1JiJN1FRAMjTN5zd9vgsFF_5asQTb6hZ2JKZou4ljuEG7xFHnQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/merriweathersans/v28/2-cO9IRs1JiJN1FRAMjTN5zd9vgsFF_5asQTb6hZ2JKZou4ljuEG7xFHnQ.ttf",
-		"weight": 400
+		displayName: "Merriweather Sans",
+		filename: "2-cO9IRs1JiJN1FRAMjTN5zd9vgsFF_5asQTb6hZ2JKZou4ljuEG7xFHnQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/merriweathersans/v28/2-cO9IRs1JiJN1FRAMjTN5zd9vgsFF_5asQTb6hZ2JKZou4ljuEG7xFHnQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Domine",
-		"filename": "L0xhDFMnlVwD4h3Lt9JWnbX3jG-2X3LAI10VErGuW8Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/domine/v25/L0xhDFMnlVwD4h3Lt9JWnbX3jG-2X3LAI10VErGuW8Q.ttf",
-		"weight": 400
+		displayName: "Domine",
+		filename: "L0xhDFMnlVwD4h3Lt9JWnbX3jG-2X3LAI10VErGuW8Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/domine/v25/L0xhDFMnlVwD4h3Lt9JWnbX3jG-2X3LAI10VErGuW8Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shadows Into Light",
-		"filename": "UqyNK9UOIntux_czAvDQx_ZcHqZXBNQDcsr4xzSMYA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/shadowsintolight/v22/UqyNK9UOIntux_czAvDQx_ZcHqZXBNQDcsr4xzSMYA.ttf",
-		"weight": 400
+		displayName: "Shadows Into Light",
+		filename: "UqyNK9UOIntux_czAvDQx_ZcHqZXBNQDcsr4xzSMYA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/shadowsintolight/v22/UqyNK9UOIntux_czAvDQx_ZcHqZXBNQDcsr4xzSMYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee",
-		"filename": "N0bU2SZBIuF2PU_ECn50Kd_PmA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungee/v17/N0bU2SZBIuF2PU_ECn50Kd_PmA.ttf",
-		"weight": 400
+		displayName: "Bungee",
+		filename: "N0bU2SZBIuF2PU_ECn50Kd_PmA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungee/v17/N0bU2SZBIuF2PU_ECn50Kd_PmA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Teko",
-		"filename": "LYjYdG7kmE0gV69VVPPdFl06VN8XG7Sy3TKEvkCF",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/teko/v23/LYjYdG7kmE0gV69VVPPdFl06VN8XG7Sy3TKEvkCF.ttf",
-		"weight": 400
+		displayName: "Teko",
+		filename: "LYjYdG7kmE0gV69VVPPdFl06VN8XG7Sy3TKEvkCF",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/teko/v23/LYjYdG7kmE0gV69VVPPdFl06VN8XG7Sy3TKEvkCF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bricolage Grotesque",
-		"filename": "3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0vs-wJDtw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bricolagegrotesque/v9/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0vs-wJDtw.ttf",
-		"weight": 400
+		displayName: "Bricolage Grotesque",
+		filename: "3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0vs-wJDtw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bricolagegrotesque/v9/3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM0vs-wJDtw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asap",
-		"filename": "KFOOCniXp96a4Tc2DaTeuDAoKsE617JFc49knOIYdjTYkqUsLmOXoA7Glw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/asap/v34/KFOOCniXp96a4Tc2DaTeuDAoKsE617JFc49knOIYdjTYkqUsLmOXoA7Glw.ttf",
-		"weight": 400
+		displayName: "Asap",
+		filename: "KFOOCniXp96a4Tc2DaTeuDAoKsE617JFc49knOIYdjTYkqUsLmOXoA7Glw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/asap/v34/KFOOCniXp96a4Tc2DaTeuDAoKsE617JFc49knOIYdjTYkqUsLmOXoA7Glw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Source Serif 4",
-		"filename": "vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjihdqrhxXD-wGvjU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sourceserif4/v14/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjihdqrhxXD-wGvjU.ttf",
-		"weight": 400
+		displayName: "Source Serif 4",
+		filename: "vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjihdqrhxXD-wGvjU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sourceserif4/v14/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjihdqrhxXD-wGvjU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lilita One",
-		"filename": "i7dPIFZ9Zz-WBtRtedDbUEZ2RFq7AwU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lilitaone/v17/i7dPIFZ9Zz-WBtRtedDbUEZ2RFq7AwU.ttf",
-		"weight": 400
+		displayName: "Lilita One",
+		filename: "i7dPIFZ9Zz-WBtRtedDbUEZ2RFq7AwU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lilitaone/v17/i7dPIFZ9Zz-WBtRtedDbUEZ2RFq7AwU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Varela Round",
-		"filename": "w8gdH283Tvk__Lua32TysjIvoMGOD9gxZw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/varelaround/v21/w8gdH283Tvk__Lua32TysjIvoMGOD9gxZw.ttf",
-		"weight": 400
+		displayName: "Varela Round",
+		filename: "w8gdH283Tvk__Lua32TysjIvoMGOD9gxZw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/varelaround/v21/w8gdH283Tvk__Lua32TysjIvoMGOD9gxZw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Maven Pro",
-		"filename": "7Auup_AqnyWWAxW2Wk3swUz56MS91Eww8SX25nCpozp5GvU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mavenpro/v40/7Auup_AqnyWWAxW2Wk3swUz56MS91Eww8SX25nCpozp5GvU.ttf",
-		"weight": 400
+		displayName: "Maven Pro",
+		filename: "7Auup_AqnyWWAxW2Wk3swUz56MS91Eww8SX25nCpozp5GvU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mavenpro/v40/7Auup_AqnyWWAxW2Wk3swUz56MS91Eww8SX25nCpozp5GvU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Indie Flower",
-		"filename": "m8JVjfNVeKWVnh3QMuKkFcZlbkGG1dKEDw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/indieflower/v24/m8JVjfNVeKWVnh3QMuKkFcZlbkGG1dKEDw.ttf",
-		"weight": 400
+		displayName: "Indie Flower",
+		filename: "m8JVjfNVeKWVnh3QMuKkFcZlbkGG1dKEDw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/indieflower/v24/m8JVjfNVeKWVnh3QMuKkFcZlbkGG1dKEDw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Deca",
-		"filename": "K2FifZFYk-dHSE0UPPuwQ7CrD94i-NCKm-U48M1ArBPCqLNflg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexenddeca/v25/K2FifZFYk-dHSE0UPPuwQ7CrD94i-NCKm-U48M1ArBPCqLNflg.ttf",
-		"weight": 400
+		displayName: "Lexend Deca",
+		filename: "K2FifZFYk-dHSE0UPPuwQ7CrD94i-NCKm-U48M1ArBPCqLNflg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexenddeca/v25/K2FifZFYk-dHSE0UPPuwQ7CrD94i-NCKm-U48M1ArBPCqLNflg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chakra Petch",
-		"filename": "cIf6MapbsEk7TDLdtEz1BwkmmKBhSL7Y1Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIf6MapbsEk7TDLdtEz1BwkmmKBhSL7Y1Q.ttf",
-		"weight": 400
+		displayName: "Chakra Petch",
+		filename: "cIf6MapbsEk7TDLdtEz1BwkmmKBhSL7Y1Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chakrapetch/v13/cIf6MapbsEk7TDLdtEz1BwkmmKBhSL7Y1Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Barlow Semi Condensed",
-		"filename": "wlpvgxjLBV1hqnzfr-F8sEYMB0Yybp0mudRnf4CrCEo4gg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpvgxjLBV1hqnzfr-F8sEYMB0Yybp0mudRnf4CrCEo4gg.ttf",
-		"weight": 400
+		displayName: "Barlow Semi Condensed",
+		filename: "wlpvgxjLBV1hqnzfr-F8sEYMB0Yybp0mudRnf4CrCEo4gg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpvgxjLBV1hqnzfr-F8sEYMB0Yybp0mudRnf4CrCEo4gg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Abril Fatface",
-		"filename": "zOL64pLDlL1D99S8g8PtiKchm-BsjOLhZBY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchm-BsjOLhZBY.ttf",
-		"weight": 400
+		displayName: "Abril Fatface",
+		filename: "zOL64pLDlL1D99S8g8PtiKchm-BsjOLhZBY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchm-BsjOLhZBY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Be Vietnam Pro",
-		"filename": "QdVPSTAyLFyeg_IDWvOJmVES_EwwD3s6ZKAi",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bevietnampro/v12/QdVPSTAyLFyeg_IDWvOJmVES_EwwD3s6ZKAi.ttf",
-		"weight": 400
+		displayName: "Be Vietnam Pro",
+		filename: "QdVPSTAyLFyeg_IDWvOJmVES_EwwD3s6ZKAi",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bevietnampro/v12/QdVPSTAyLFyeg_IDWvOJmVES_EwwD3s6ZKAi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Mono",
-		"filename": "-F63fjptAgt5VM-kVkqdyU8n5igg1l9kn-s",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n5igg1l9kn-s.ttf",
-		"weight": 400
+		displayName: "IBM Plex Mono",
+		filename: "-F63fjptAgt5VM-kVkqdyU8n5igg1l9kn-s",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n5igg1l9kn-s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Play",
-		"filename": "6aez4K2oVqwIjtI8Hp8Tx3A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/play/v21/6aez4K2oVqwIjtI8Hp8Tx3A.ttf",
-		"weight": 400
+		displayName: "Play",
+		filename: "6aez4K2oVqwIjtI8Hp8Tx3A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/play/v21/6aez4K2oVqwIjtI8Hp8Tx3A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Orbitron",
-		"filename": "yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpmIyXjU1pg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpmIyXjU1pg.ttf",
-		"weight": 400
+		displayName: "Orbitron",
+		filename: "yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpmIyXjU1pg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/orbitron/v35/yMJMMIlzdpvBhQQL_SC3X9yhF25-T1nyGy6xpmIyXjU1pg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "M PLUS 1p",
-		"filename": "e3tjeuShHdiFyPFzBRro-D4Ec2jKqw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mplus1p/v32/e3tjeuShHdiFyPFzBRro-D4Ec2jKqw.ttf",
-		"weight": 400
+		displayName: "M PLUS 1p",
+		filename: "e3tjeuShHdiFyPFzBRro-D4Ec2jKqw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mplus1p/v32/e3tjeuShHdiFyPFzBRro-D4Ec2jKqw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Questrial",
-		"filename": "QdVUSTchPBm7nuUeVf7EuStkm20oJA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/questrial/v19/QdVUSTchPBm7nuUeVf7EuStkm20oJA.ttf",
-		"weight": 400
+		displayName: "Questrial",
+		filename: "QdVUSTchPBm7nuUeVf7EuStkm20oJA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/questrial/v19/QdVUSTchPBm7nuUeVf7EuStkm20oJA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Titan One",
-		"filename": "mFTzWbsGxbbS_J5cQcjykzIn2Etikg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/titanone/v17/mFTzWbsGxbbS_J5cQcjykzIn2Etikg.ttf",
-		"weight": 400
+		displayName: "Titan One",
+		filename: "mFTzWbsGxbbS_J5cQcjykzIn2Etikg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/titanone/v17/mFTzWbsGxbbS_J5cQcjykzIn2Etikg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cinzel",
-		"filename": "8vIU7ww63mVu7gtR-kwKxNvkNOjw-tbnTYrvDE5ZdqU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cinzel/v26/8vIU7ww63mVu7gtR-kwKxNvkNOjw-tbnTYrvDE5ZdqU.ttf",
-		"weight": 400
+		displayName: "Cinzel",
+		filename: "8vIU7ww63mVu7gtR-kwKxNvkNOjw-tbnTYrvDE5ZdqU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cinzel/v26/8vIU7ww63mVu7gtR-kwKxNvkNOjw-tbnTYrvDE5ZdqU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bodoni Moda",
-		"filename": "aFT67PxzY382XsXX63LUYL6GYFcan6NJrKp-VPjfJMShrpsGFUt8oU7awIBytVjMYwE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bodonimoda/v28/aFT67PxzY382XsXX63LUYL6GYFcan6NJrKp-VPjfJMShrpsGFUt8oU7awIBytVjMYwE.ttf",
-		"weight": 400
+		displayName: "Bodoni Moda",
+		filename: "aFT67PxzY382XsXX63LUYL6GYFcan6NJrKp-VPjfJMShrpsGFUt8oU7awIBytVjMYwE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bodonimoda/v28/aFT67PxzY382XsXX63LUYL6GYFcan6NJrKp-VPjfJMShrpsGFUt8oU7awIBytVjMYwE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fira Sans Condensed",
-		"filename": "wEOhEADFm8hSaQTFG18FErVhsC9x-tarYfHnrMtVbx8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/firasanscondensed/v11/wEOhEADFm8hSaQTFG18FErVhsC9x-tarYfHnrMtVbx8.ttf",
-		"weight": 400
+		displayName: "Fira Sans Condensed",
+		filename: "wEOhEADFm8hSaQTFG18FErVhsC9x-tarYfHnrMtVbx8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/firasanscondensed/v11/wEOhEADFm8hSaQTFG18FErVhsC9x-tarYfHnrMtVbx8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zilla Slab",
-		"filename": "dFa6ZfeM_74wlPZtksIFWj0w_HyIRlE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/zillaslab/v12/dFa6ZfeM_74wlPZtksIFWj0w_HyIRlE.ttf",
-		"weight": 400
+		displayName: "Zilla Slab",
+		filename: "dFa6ZfeM_74wlPZtksIFWj0w_HyIRlE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/zillaslab/v12/dFa6ZfeM_74wlPZtksIFWj0w_HyIRlE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans JP",
-		"filename": "Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Cr4iNJ-pwc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Cr4iNJ-pwc.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans JP",
+		filename: "Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Cr4iNJ-pwc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsansjp/v7/Z9XNDn9KbTDf6_f7dISNqYf_tvPT1Cr4iNJ-pwc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kalam",
-		"filename": "YA9dr0Wd4kDdMuhWMibDszkB",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kalam/v18/YA9dr0Wd4kDdMuhWMibDszkB.ttf",
-		"weight": 400
+		displayName: "Kalam",
+		filename: "YA9dr0Wd4kDdMuhWMibDszkB",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kalam/v18/YA9dr0Wd4kDdMuhWMibDszkB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Great Vibes",
-		"filename": "RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/greatvibes/v21/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf",
-		"weight": 400
+		displayName: "Great Vibes",
+		filename: "RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/greatvibes/v21/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Archivo Narrow",
-		"filename": "tss5ApVBdCYD5Q7hcxTE1ArZ0Zz8oY2KRmwvKhhvLFGKpHOtFCQ76Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/archivonarrow/v35/tss5ApVBdCYD5Q7hcxTE1ArZ0Zz8oY2KRmwvKhhvLFGKpHOtFCQ76Q.ttf",
-		"weight": 400
+		displayName: "Archivo Narrow",
+		filename: "tss5ApVBdCYD5Q7hcxTE1ArZ0Zz8oY2KRmwvKhhvLFGKpHOtFCQ76Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/archivonarrow/v35/tss5ApVBdCYD5Q7hcxTE1ArZ0Zz8oY2KRmwvKhhvLFGKpHOtFCQ76Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nanum Myeongjo",
-		"filename": "9Btx3DZF0dXLMZlywRbVRNhxy1LreHQ8juyl",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/nanummyeongjo/v31/9Btx3DZF0dXLMZlywRbVRNhxy1LreHQ8juyl.ttf",
-		"weight": 400
+		displayName: "Nanum Myeongjo",
+		filename: "9Btx3DZF0dXLMZlywRbVRNhxy1LreHQ8juyl",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/nanummyeongjo/v31/9Btx3DZF0dXLMZlywRbVRNhxy1LreHQ8juyl.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Serif",
-		"filename": "jizDREVNn1dOx-zrZ2X3pZvkThUY0TY7ikbI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexserif/v20/jizDREVNn1dOx-zrZ2X3pZvkThUY0TY7ikbI.ttf",
-		"weight": 400
+		displayName: "IBM Plex Serif",
+		filename: "jizDREVNn1dOx-zrZ2X3pZvkThUY0TY7ikbI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ibmplexserif/v20/jizDREVNn1dOx-zrZ2X3pZvkThUY0TY7ikbI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Exo",
-		"filename": "4UaZrEtFpBI4f1ZSIK9d4LjJ4lM3CwNsOl4p5Is",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/exo/v25/4UaZrEtFpBI4f1ZSIK9d4LjJ4lM3CwNsOl4p5Is.ttf",
-		"weight": 400
+		displayName: "Exo",
+		filename: "4UaZrEtFpBI4f1ZSIK9d4LjJ4lM3CwNsOl4p5Is",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/exo/v25/4UaZrEtFpBI4f1ZSIK9d4LjJ4lM3CwNsOl4p5Is.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Marcellus",
-		"filename": "wEO_EBrOk8hQLDvIAF8FUfAL3EsHiA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/marcellus/v14/wEO_EBrOk8hQLDvIAF8FUfAL3EsHiA.ttf",
-		"weight": 400
+		displayName: "Marcellus",
+		filename: "wEO_EBrOk8hQLDvIAF8FUfAL3EsHiA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/marcellus/v14/wEO_EBrOk8hQLDvIAF8FUfAL3EsHiA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Albert Sans",
-		"filename": "i7dZIFdwYjGaAMFtZd_QA3xXSKZqhr-TenSHq5P_rI32TxAj1g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/albertsans/v4/i7dZIFdwYjGaAMFtZd_QA3xXSKZqhr-TenSHq5P_rI32TxAj1g.ttf",
-		"weight": 400
+		displayName: "Albert Sans",
+		filename: "i7dZIFdwYjGaAMFtZd_QA3xXSKZqhr-TenSHq5P_rI32TxAj1g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/albertsans/v4/i7dZIFdwYjGaAMFtZd_QA3xXSKZqhr-TenSHq5P_rI32TxAj1g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "ABeeZee",
-		"filename": "esDR31xSG-6AGleN6tKukbcHCpE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/abeezee/v23/esDR31xSG-6AGleN6tKukbcHCpE.ttf",
-		"weight": 400
+		displayName: "ABeeZee",
+		filename: "esDR31xSG-6AGleN6tKukbcHCpE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/abeezee/v23/esDR31xSG-6AGleN6tKukbcHCpE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans Arabic",
-		"filename": "Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6bs61vSbfdlA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsansarabic/v14/Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6bs61vSbfdlA.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans Arabic",
+		filename: "Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6bs61vSbfdlA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsansarabic/v14/Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6bs61vSbfdlA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif KR",
-		"filename": "3JnoSDn90Gmq2mr3blnHaTZXbOtLJDvui3JOncjmeM524ZvTePRu",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifkr/v30/3JnoSDn90Gmq2mr3blnHaTZXbOtLJDvui3JOncjmeM524ZvTePRu.ttf",
-		"weight": 400
+		displayName: "Noto Serif KR",
+		filename: "3JnoSDn90Gmq2mr3blnHaTZXbOtLJDvui3JOncjmeM524ZvTePRu",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifkr/v30/3JnoSDn90Gmq2mr3blnHaTZXbOtLJDvui3JOncjmeM524ZvTePRu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Instrument Serif",
-		"filename": "jizBRFtNs2ka5fXjeivQ4LroWlx-2zIZj1bIkNo",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-2zIZj1bIkNo.ttf",
-		"weight": 400
+		displayName: "Instrument Serif",
+		filename: "jizBRFtNs2ka5fXjeivQ4LroWlx-2zIZj1bIkNo",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-2zIZj1bIkNo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Kaku Gothic New",
-		"filename": "gNMYW2drQpDw0GjzrVNFf_valaDBcznOkjtiTWz5UGA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zenkakugothicnew/v18/gNMYW2drQpDw0GjzrVNFf_valaDBcznOkjtiTWz5UGA.ttf",
-		"weight": 400
+		displayName: "Zen Kaku Gothic New",
+		filename: "gNMYW2drQpDw0GjzrVNFf_valaDBcznOkjtiTWz5UGA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zenkakugothicnew/v18/gNMYW2drQpDw0GjzrVNFf_valaDBcznOkjtiTWz5UGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fredoka",
-		"filename": "X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3O8SLMFuOLlNldbw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/fredoka/v17/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3O8SLMFuOLlNldbw.ttf",
-		"weight": 400
+		displayName: "Fredoka",
+		filename: "X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3O8SLMFuOLlNldbw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/fredoka/v17/X7nP4b87HvSqjb_WIi2yDCRwoQ_k7367_B-i2yQag0-mac3O8SLMFuOLlNldbw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Saira Condensed",
-		"filename": "EJROQgErUN8XuHNEtX81i9TmEkrfpeFE-IyCrw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sairacondensed/v12/EJROQgErUN8XuHNEtX81i9TmEkrfpeFE-IyCrw.ttf",
-		"weight": 400
+		displayName: "Saira Condensed",
+		filename: "EJROQgErUN8XuHNEtX81i9TmEkrfpeFE-IyCrw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sairacondensed/v12/EJROQgErUN8XuHNEtX81i9TmEkrfpeFE-IyCrw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lobster Two",
-		"filename": "BngMUXZGTXPUvIoyV6yN59fK7KSJ4ACD",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lobstertwo/v22/BngMUXZGTXPUvIoyV6yN59fK7KSJ4ACD.ttf",
-		"weight": 400
+		displayName: "Lobster Two",
+		filename: "BngMUXZGTXPUvIoyV6yN59fK7KSJ4ACD",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lobstertwo/v22/BngMUXZGTXPUvIoyV6yN59fK7KSJ4ACD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cormorant",
-		"filename": "H4c2BXOCl9bbnla_nHIA47NMUjsNbCVrFhFTQ7Rg7A2uwYs",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cormorant/v24/H4c2BXOCl9bbnla_nHIA47NMUjsNbCVrFhFTQ7Rg7A2uwYs.ttf",
-		"weight": 400
+		displayName: "Cormorant",
+		filename: "H4c2BXOCl9bbnla_nHIA47NMUjsNbCVrFhFTQ7Rg7A2uwYs",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cormorant/v24/H4c2BXOCl9bbnla_nHIA47NMUjsNbCVrFhFTQ7Rg7A2uwYs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Unbounded",
-		"filename": "Yq6F-LOTXCb04q32xlpat-6uR42XTqtG6xjx043HgP6LR0Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/unbounded/v12/Yq6F-LOTXCb04q32xlpat-6uR42XTqtG6xjx043HgP6LR0Y.ttf",
-		"weight": 400
+		displayName: "Unbounded",
+		filename: "Yq6F-LOTXCb04q32xlpat-6uR42XTqtG6xjx043HgP6LR0Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/unbounded/v12/Yq6F-LOTXCb04q32xlpat-6uR42XTqtG6xjx043HgP6LR0Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spectral",
-		"filename": "rnCr-xNNww_2s0amA-M-mHnOSOuk",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/spectral/v15/rnCr-xNNww_2s0amA-M-mHnOSOuk.ttf",
-		"weight": 400
+		displayName: "Spectral",
+		filename: "rnCr-xNNww_2s0amA-M-mHnOSOuk",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/spectral/v15/rnCr-xNNww_2s0amA-M-mHnOSOuk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Permanent Marker",
-		"filename": "Fh4uPib9Iyv2ucM6pGQMWimMp004HaqIfrT5nlk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/permanentmarker/v16/Fh4uPib9Iyv2ucM6pGQMWimMp004HaqIfrT5nlk.ttf",
-		"weight": 400
+		displayName: "Permanent Marker",
+		filename: "Fh4uPib9Iyv2ucM6pGQMWimMp004HaqIfrT5nlk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/permanentmarker/v16/Fh4uPib9Iyv2ucM6pGQMWimMp004HaqIfrT5nlk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vollkorn",
-		"filename": "0ybgGDoxxrvAnPhYGzMlQLzuMasz6Df2MHGuGWOdEbD63w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/vollkorn/v30/0ybgGDoxxrvAnPhYGzMlQLzuMasz6Df2MHGuGWOdEbD63w.ttf",
-		"weight": 400
+		displayName: "Vollkorn",
+		filename: "0ybgGDoxxrvAnPhYGzMlQLzuMasz6Df2MHGuGWOdEbD63w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/vollkorn/v30/0ybgGDoxxrvAnPhYGzMlQLzuMasz6Df2MHGuGWOdEbD63w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Frank Ruhl Libre",
-		"filename": "j8_96_fAw7jrcalD7oKYNX0QfAnPcbzNEEB7OoicBw7FYVqQPxR2EUR_",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/frankruhllibre/v23/j8_96_fAw7jrcalD7oKYNX0QfAnPcbzNEEB7OoicBw7FYVqQPxR2EUR_.ttf",
-		"weight": 400
+		displayName: "Frank Ruhl Libre",
+		filename: "j8_96_fAw7jrcalD7oKYNX0QfAnPcbzNEEB7OoicBw7FYVqQPxR2EUR_",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/frankruhllibre/v23/j8_96_fAw7jrcalD7oKYNX0QfAnPcbzNEEB7OoicBw7FYVqQPxR2EUR_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Instrument Sans",
-		"filename": "pximypc9vsFDm051Uf6KVwgkfoSxQ0GsQv8ToedPibnr-yp2JGEJOH9npSTF-Qf1mS0v3_7Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/instrumentsans/v4/pximypc9vsFDm051Uf6KVwgkfoSxQ0GsQv8ToedPibnr-yp2JGEJOH9npSTF-Qf1mS0v3_7Y.ttf",
-		"weight": 400
+		displayName: "Instrument Sans",
+		filename: "pximypc9vsFDm051Uf6KVwgkfoSxQ0GsQv8ToedPibnr-yp2JGEJOH9npSTF-Qf1mS0v3_7Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/instrumentsans/v4/pximypc9vsFDm051Uf6KVwgkfoSxQ0GsQv8ToedPibnr-yp2JGEJOH9npSTF-Qf1mS0v3_7Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geologica",
-		"filename": "oY1o8evIr7j9P3TN9YwNAdyjzUyDKkKdAGOJh1UlCDUIhAIdhCZOn1fLsig7jfvCCPHZckU8H3G11_z-_OZqDx_rQ-MYAXWnqFs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/geologica/v5/oY1o8evIr7j9P3TN9YwNAdyjzUyDKkKdAGOJh1UlCDUIhAIdhCZOn1fLsig7jfvCCPHZckU8H3G11_z-_OZqDx_rQ-MYAXWnqFs.ttf",
-		"weight": 400
+		displayName: "Geologica",
+		filename: "oY1o8evIr7j9P3TN9YwNAdyjzUyDKkKdAGOJh1UlCDUIhAIdhCZOn1fLsig7jfvCCPHZckU8H3G11_z-_OZqDx_rQ-MYAXWnqFs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/geologica/v5/oY1o8evIr7j9P3TN9YwNAdyjzUyDKkKdAGOJh1UlCDUIhAIdhCZOn1fLsig7jfvCCPHZckU8H3G11_z-_OZqDx_rQ-MYAXWnqFs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sanchez",
-		"filename": "Ycm2sZJORluHnXbITm5b_BwE1l0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sanchez/v17/Ycm2sZJORluHnXbITm5b_BwE1l0.ttf",
-		"weight": 400
+		displayName: "Sanchez",
+		filename: "Ycm2sZJORluHnXbITm5b_BwE1l0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sanchez/v17/Ycm2sZJORluHnXbITm5b_BwE1l0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rowdies",
-		"filename": "ptRJTieMYPNBAK21zrdJwObZNQo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rowdies/v19/ptRJTieMYPNBAK21zrdJwObZNQo.ttf",
-		"weight": 400
+		displayName: "Rowdies",
+		filename: "ptRJTieMYPNBAK21zrdJwObZNQo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rowdies/v19/ptRJTieMYPNBAK21zrdJwObZNQo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Catamaran",
-		"filename": "o-0bIpQoyXQa2RxT7-5B6Ryxs2E_6n1iPHjd1anXuluiLyw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/catamaran/v28/o-0bIpQoyXQa2RxT7-5B6Ryxs2E_6n1iPHjd1anXuluiLyw.ttf",
-		"weight": 400
+		displayName: "Catamaran",
+		filename: "o-0bIpQoyXQa2RxT7-5B6Ryxs2E_6n1iPHjd1anXuluiLyw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/catamaran/v28/o-0bIpQoyXQa2RxT7-5B6Ryxs2E_6n1iPHjd1anXuluiLyw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "League Spartan",
-		"filename": "kJEnBuEW6A0lliaV_m88ja5Twtx8BWhtkDVmjZvM_oTpBMdcFguczA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/leaguespartan/v15/kJEnBuEW6A0lliaV_m88ja5Twtx8BWhtkDVmjZvM_oTpBMdcFguczA.ttf",
-		"weight": 400
+		displayName: "League Spartan",
+		filename: "kJEnBuEW6A0lliaV_m88ja5Twtx8BWhtkDVmjZvM_oTpBMdcFguczA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/leaguespartan/v15/kJEnBuEW6A0lliaV_m88ja5Twtx8BWhtkDVmjZvM_oTpBMdcFguczA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sarabun",
-		"filename": "DtVjJx26TKEr37c9WBJDnlQN9gk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sarabun/v17/DtVjJx26TKEr37c9WBJDnlQN9gk.ttf",
-		"weight": 400
+		displayName: "Sarabun",
+		filename: "DtVjJx26TKEr37c9WBJDnlQN9gk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sarabun/v17/DtVjJx26TKEr37c9WBJDnlQN9gk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Creepster",
-		"filename": "AlZy_zVUqJz4yMrniH4hdXf4XB0Tow",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdXf4XB0Tow.ttf",
-		"weight": 400
+		displayName: "Creepster",
+		filename: "AlZy_zVUqJz4yMrniH4hdXf4XB0Tow",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/creepster/v13/AlZy_zVUqJz4yMrniH4hdXf4XB0Tow.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Signika",
-		"filename": "vEF72_JTCgwQ5ejvMV0Ox_Kg1UwJ0tKfX4zNpD8E4ASzH1r9gTuYzTMngt4xjw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/signika/v29/vEF72_JTCgwQ5ejvMV0Ox_Kg1UwJ0tKfX4zNpD8E4ASzH1r9gTuYzTMngt4xjw.ttf",
-		"weight": 400
+		displayName: "Signika",
+		filename: "vEF72_JTCgwQ5ejvMV0Ox_Kg1UwJ0tKfX4zNpD8E4ASzH1r9gTuYzTMngt4xjw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/signika/v29/vEF72_JTCgwQ5ejvMV0Ox_Kg1UwJ0tKfX4zNpD8E4ASzH1r9gTuYzTMngt4xjw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Unna",
-		"filename": "AYCEpXzofN0NCpgBlGHCWFM",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/unna/v25/AYCEpXzofN0NCpgBlGHCWFM.ttf",
-		"weight": 400
+		displayName: "Unna",
+		filename: "AYCEpXzofN0NCpgBlGHCWFM",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/unna/v25/AYCEpXzofN0NCpgBlGHCWFM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alegreya",
-		"filename": "4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hUI_KCisSGVrw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/alegreya/v39/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hUI_KCisSGVrw.ttf",
-		"weight": 400
+		displayName: "Alegreya",
+		filename: "4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hUI_KCisSGVrw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/alegreya/v39/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hUI_KCisSGVrw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Kufi Arabic",
-		"filename": "CSRp4ydQnPyaDxEXLFF6LZVLKrodhu8t57o1kDc5Wh5v34bPnLSmf5yD",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notokufiarabic/v27/CSRp4ydQnPyaDxEXLFF6LZVLKrodhu8t57o1kDc5Wh5v34bPnLSmf5yD.ttf",
-		"weight": 400
+		displayName: "Noto Kufi Arabic",
+		filename: "CSRp4ydQnPyaDxEXLFF6LZVLKrodhu8t57o1kDc5Wh5v34bPnLSmf5yD",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notokufiarabic/v27/CSRp4ydQnPyaDxEXLFF6LZVLKrodhu8t57o1kDc5Wh5v34bPnLSmf5yD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bree Serif",
-		"filename": "4UaHrEJCrhhnVA3DgluAx63j5pN1MwI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/breeserif/v18/4UaHrEJCrhhnVA3DgluAx63j5pN1MwI.ttf",
-		"weight": 400
+		displayName: "Bree Serif",
+		filename: "4UaHrEJCrhhnVA3DgluAx63j5pN1MwI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/breeserif/v18/4UaHrEJCrhhnVA3DgluAx63j5pN1MwI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rethink Sans",
-		"filename": "AMODz4SDuXOMCPfdoglY9JQuWHBGG0X45DmqkmFRCE7mma-aua4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rethinksans/v7/AMODz4SDuXOMCPfdoglY9JQuWHBGG0X45DmqkmFRCE7mma-aua4.ttf",
-		"weight": 400
+		displayName: "Rethink Sans",
+		filename: "AMODz4SDuXOMCPfdoglY9JQuWHBGG0X45DmqkmFRCE7mma-aua4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rethinksans/v7/AMODz4SDuXOMCPfdoglY9JQuWHBGG0X45DmqkmFRCE7mma-aua4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alegreya Sans",
-		"filename": "5aUz9_-1phKLFgshYDvh6Vwt3V1nvEVXlm4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alegreyasans/v26/5aUz9_-1phKLFgshYDvh6Vwt3V1nvEVXlm4.ttf",
-		"weight": 400
+		displayName: "Alegreya Sans",
+		filename: "5aUz9_-1phKLFgshYDvh6Vwt3V1nvEVXlm4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alegreyasans/v26/5aUz9_-1phKLFgshYDvh6Vwt3V1nvEVXlm4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Luckiest Guy",
-		"filename": "_gP_1RrxsjcxVyin9l9n_j2RStR3qDpraA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/luckiestguy/v25/_gP_1RrxsjcxVyin9l9n_j2RStR3qDpraA.ttf",
-		"weight": 400
+		displayName: "Luckiest Guy",
+		filename: "_gP_1RrxsjcxVyin9l9n_j2RStR3qDpraA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/luckiestguy/v25/_gP_1RrxsjcxVyin9l9n_j2RStR3qDpraA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif TC",
-		"filename": "XLYzIZb5bJNDGYxLBibeHZ0BnHwmuanx8cUaGX9aMOpDOWYMr2OM",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftc/v35/XLYzIZb5bJNDGYxLBibeHZ0BnHwmuanx8cUaGX9aMOpDOWYMr2OM.ttf",
-		"weight": 400
+		displayName: "Noto Serif TC",
+		filename: "XLYzIZb5bJNDGYxLBibeHZ0BnHwmuanx8cUaGX9aMOpDOWYMr2OM",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftc/v35/XLYzIZb5bJNDGYxLBibeHZ0BnHwmuanx8cUaGX9aMOpDOWYMr2OM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "JetBrains Mono",
-		"filename": "tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.ttf",
-		"weight": 400
+		displayName: "JetBrains Mono",
+		filename: "tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Display",
-		"filename": "RLpbK4fy6r6tOBEJg0IAKzqdFZVZxpMkXJMhnB9XjO1o90LuV-PT4Doq_AKp_3cKVTGQ2iHrvWM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansdisplay/v30/RLpbK4fy6r6tOBEJg0IAKzqdFZVZxpMkXJMhnB9XjO1o90LuV-PT4Doq_AKp_3cKVTGQ2iHrvWM.ttf",
-		"weight": 400
+		displayName: "Noto Sans Display",
+		filename: "RLpbK4fy6r6tOBEJg0IAKzqdFZVZxpMkXJMhnB9XjO1o90LuV-PT4Doq_AKp_3cKVTGQ2iHrvWM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansdisplay/v30/RLpbK4fy6r6tOBEJg0IAKzqdFZVZxpMkXJMhnB9XjO1o90LuV-PT4Doq_AKp_3cKVTGQ2iHrvWM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Google Sans Flex",
-		"filename": "t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwInycYAJzz0m7kJ4qFQOJBOjLvDSndo0SKMpKSTzwliVdHAy4bxTDHg_ugnAakp8ubyctqU4LBMUM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/googlesansflex/v16/t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwInycYAJzz0m7kJ4qFQOJBOjLvDSndo0SKMpKSTzwliVdHAy4bxTDHg_ugnAakp8ubyctqU4LBMUM.ttf",
-		"weight": 400
+		displayName: "Google Sans Flex",
+		filename:
+			"t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwInycYAJzz0m7kJ4qFQOJBOjLvDSndo0SKMpKSTzwliVdHAy4bxTDHg_ugnAakp8ubyctqU4LBMUM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/googlesansflex/v16/t5sJIQcYNIWbFgDgAAzZ34auoVyXkJCOvp3SFWJbN5hF8Ju1x6sKCyp0l9sI40swNJwInycYAJzz0m7kJ4qFQOJBOjLvDSndo0SKMpKSTzwliVdHAy4bxTDHg_ugnAakp8ubyctqU4LBMUM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Newsreader",
-		"filename": "cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438weI_ADOxEPjCggA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/newsreader/v26/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438weI_ADOxEPjCggA.ttf",
-		"weight": 400
+		displayName: "Newsreader",
+		filename: "cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438weI_ADOxEPjCggA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/newsreader/v26/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438weI_ADOxEPjCggA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "DM Mono",
-		"filename": "aFTU7PB1QTsUX8KYhh2aBYyMcKw",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/dmmono/v16/aFTU7PB1QTsUX8KYhh2aBYyMcKw.ttf",
-		"weight": 400
+		displayName: "DM Mono",
+		filename: "aFTU7PB1QTsUX8KYhh2aBYyMcKw",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/dmmono/v16/aFTU7PB1QTsUX8KYhh2aBYyMcKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oleo Script",
-		"filename": "rax5HieDvtMOe0iICsUccBhasU7Q8Cad",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/oleoscript/v15/rax5HieDvtMOe0iICsUccBhasU7Q8Cad.ttf",
-		"weight": 400
+		displayName: "Oleo Script",
+		filename: "rax5HieDvtMOe0iICsUccBhasU7Q8Cad",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/oleoscript/v15/rax5HieDvtMOe0iICsUccBhasU7Q8Cad.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amatic SC",
-		"filename": "TUZyzwprpvBS1izr_vO0De6ecZQf1A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/amaticsc/v28/TUZyzwprpvBS1izr_vO0De6ecZQf1A.ttf",
-		"weight": 400
+		displayName: "Amatic SC",
+		filename: "TUZyzwprpvBS1izr_vO0De6ecZQf1A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/amaticsc/v28/TUZyzwprpvBS1izr_vO0De6ecZQf1A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Advent Pro",
-		"filename": "V8mqoQfxVT4Dvddr_yOwrzaFxV7JtdQgFqXdUAQrGp_zgX5sWCpLQyNPTJoonw1aBA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/adventpro/v33/V8mqoQfxVT4Dvddr_yOwrzaFxV7JtdQgFqXdUAQrGp_zgX5sWCpLQyNPTJoonw1aBA.ttf",
-		"weight": 400
+		displayName: "Advent Pro",
+		filename: "V8mqoQfxVT4Dvddr_yOwrzaFxV7JtdQgFqXdUAQrGp_zgX5sWCpLQyNPTJoonw1aBA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/adventpro/v33/V8mqoQfxVT4Dvddr_yOwrzaFxV7JtdQgFqXdUAQrGp_zgX5sWCpLQyNPTJoonw1aBA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Montserrat Alternates",
-		"filename": "mFTvWacfw6zH4dthXcyms1lPpC8I_b0juU0J7K3RCJ1b0w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/montserratalternates/v18/mFTvWacfw6zH4dthXcyms1lPpC8I_b0juU0J7K3RCJ1b0w.ttf",
-		"weight": 400
+		displayName: "Montserrat Alternates",
+		filename: "mFTvWacfw6zH4dthXcyms1lPpC8I_b0juU0J7K3RCJ1b0w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/montserratalternates/v18/mFTvWacfw6zH4dthXcyms1lPpC8I_b0juU0J7K3RCJ1b0w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tinos",
-		"filename": "buE4poGnedXvwgX8dGVh8TI-",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tinos/v25/buE4poGnedXvwgX8dGVh8TI-.ttf",
-		"weight": 400
+		displayName: "Tinos",
+		filename: "buE4poGnedXvwgX8dGVh8TI-",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tinos/v25/buE4poGnedXvwgX8dGVh8TI-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Acme",
-		"filename": "RrQfboBx-C5_bx3Lb23lzLk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/acme/v27/RrQfboBx-C5_bx3Lb23lzLk.ttf",
-		"weight": 400
+		displayName: "Acme",
+		filename: "RrQfboBx-C5_bx3Lb23lzLk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/acme/v27/RrQfboBx-C5_bx3Lb23lzLk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chivo",
-		"filename": "va9b4kzIxd1KFppkaRKvDRPJVDf_vB_ul2DSFXjQiQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chivo/v21/va9b4kzIxd1KFppkaRKvDRPJVDf_vB_ul2DSFXjQiQ.ttf",
-		"weight": 400
+		displayName: "Chivo",
+		filename: "va9b4kzIxd1KFppkaRKvDRPJVDf_vB_ul2DSFXjQiQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chivo/v21/va9b4kzIxd1KFppkaRKvDRPJVDf_vB_ul2DSFXjQiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sofia Sans",
-		"filename": "Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69B6sK3trvKCXl8k",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sofiasans/v20/Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69B6sK3trvKCXl8k.ttf",
-		"weight": 400
+		displayName: "Sofia Sans",
+		filename: "Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69B6sK3trvKCXl8k",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sofiasans/v20/Yq6E-LCVXSLy9uPBwlAThu1SY8Cx8rlT69B6sK3trvKCXl8k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cardo",
-		"filename": "wlp_gwjKBV1pqiv_1oAZ2H5O",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cardo/v21/wlp_gwjKBV1pqiv_1oAZ2H5O.ttf",
-		"weight": 400
+		displayName: "Cardo",
+		filename: "wlp_gwjKBV1pqiv_1oAZ2H5O",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cardo/v21/wlp_gwjKBV1pqiv_1oAZ2H5O.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Google Sans Code",
-		"filename": "pxiSyogzv91QhV44Z_GQBHsGf5PuckJMXr41HfVaiXFhggF--rWcgmBz",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/googlesanscode/v14/pxiSyogzv91QhV44Z_GQBHsGf5PuckJMXr41HfVaiXFhggF--rWcgmBz.ttf",
-		"weight": 400
+		displayName: "Google Sans Code",
+		filename: "pxiSyogzv91QhV44Z_GQBHsGf5PuckJMXr41HfVaiXFhggF--rWcgmBz",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/googlesanscode/v14/pxiSyogzv91QhV44Z_GQBHsGf5PuckJMXr41HfVaiXFhggF--rWcgmBz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Maru Gothic",
-		"filename": "o-0SIpIxzW5b-RxT-6A8jWAtCp-k7UJmNLGG9A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0SIpIxzW5b-RxT-6A8jWAtCp-k7UJmNLGG9A.ttf",
-		"weight": 400
+		displayName: "Zen Maru Gothic",
+		filename: "o-0SIpIxzW5b-RxT-6A8jWAtCp-k7UJmNLGG9A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0SIpIxzW5b-RxT-6A8jWAtCp-k7UJmNLGG9A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Antic Slab",
-		"filename": "bWt97fPFfRzkCa9Jlp6IWcJWXW5p5Qo",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/anticslab/v17/bWt97fPFfRzkCa9Jlp6IWcJWXW5p5Qo.ttf",
-		"weight": 400
+		displayName: "Antic Slab",
+		filename: "bWt97fPFfRzkCa9Jlp6IWcJWXW5p5Qo",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/anticslab/v17/bWt97fPFfRzkCa9Jlp6IWcJWXW5p5Qo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nanum Gothic Coding",
-		"filename": "8QIVdjzHisX_8vv59_xMxtPFW4IXROwsy6QxVs1X7tc",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/nanumgothiccoding/v27/8QIVdjzHisX_8vv59_xMxtPFW4IXROwsy6QxVs1X7tc.ttf",
-		"weight": 400
+		displayName: "Nanum Gothic Coding",
+		filename: "8QIVdjzHisX_8vv59_xMxtPFW4IXROwsy6QxVs1X7tc",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/nanumgothiccoding/v27/8QIVdjzHisX_8vv59_xMxtPFW4IXROwsy6QxVs1X7tc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Encode Sans",
-		"filename": "LDIcapOFNxEwR-Bd1O9uYNmnUQomAgE25imKSbHhROjLsZBWTSrQGGHjZtWP7FJCt2c",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/encodesans/v23/LDIcapOFNxEwR-Bd1O9uYNmnUQomAgE25imKSbHhROjLsZBWTSrQGGHjZtWP7FJCt2c.ttf",
-		"weight": 400
+		displayName: "Encode Sans",
+		filename: "LDIcapOFNxEwR-Bd1O9uYNmnUQomAgE25imKSbHhROjLsZBWTSrQGGHjZtWP7FJCt2c",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/encodesans/v23/LDIcapOFNxEwR-Bd1O9uYNmnUQomAgE25imKSbHhROjLsZBWTSrQGGHjZtWP7FJCt2c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Onest",
-		"filename": "gNMZW3F-SZuj7zOT0IfSjTS16cPh9R-ZshFMQWXgSQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/onest/v9/gNMZW3F-SZuj7zOT0IfSjTS16cPh9R-ZshFMQWXgSQ.ttf",
-		"weight": 400
+		displayName: "Onest",
+		filename: "gNMZW3F-SZuj7zOT0IfSjTS16cPh9R-ZshFMQWXgSQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/onest/v9/gNMZW3F-SZuj7zOT0IfSjTS16cPh9R-ZshFMQWXgSQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hind Madurai",
-		"filename": "f0Xx0e2p98ZvDXdZQIOcpqjn8Y0DceA0OQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hindmadurai/v13/f0Xx0e2p98ZvDXdZQIOcpqjn8Y0DceA0OQ.ttf",
-		"weight": 400
+		displayName: "Hind Madurai",
+		filename: "f0Xx0e2p98ZvDXdZQIOcpqjn8Y0DceA0OQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hindmadurai/v13/f0Xx0e2p98ZvDXdZQIOcpqjn8Y0DceA0OQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Space Mono",
-		"filename": "i7dPIFZifjKcF5UAWdDRUEZ2RFq7AwU",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/spacemono/v17/i7dPIFZifjKcF5UAWdDRUEZ2RFq7AwU.ttf",
-		"weight": 400
+		displayName: "Space Mono",
+		filename: "i7dPIFZifjKcF5UAWdDRUEZ2RFq7AwU",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/spacemono/v17/i7dPIFZifjKcF5UAWdDRUEZ2RFq7AwU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amiri",
-		"filename": "J7aRnpd8CGxBHqUpvrIw74NL",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUpvrIw74NL.ttf",
-		"weight": 400
+		displayName: "Amiri",
+		filename: "J7aRnpd8CGxBHqUpvrIw74NL",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUpvrIw74NL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Prata",
-		"filename": "6xKhdSpbNNCT-vWIAG_5LWwJ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/prata/v22/6xKhdSpbNNCT-vWIAG_5LWwJ.ttf",
-		"weight": 400
+		displayName: "Prata",
+		filename: "6xKhdSpbNNCT-vWIAG_5LWwJ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/prata/v22/6xKhdSpbNNCT-vWIAG_5LWwJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geist",
-		"filename": "gyBhhwUxId8gMGYQMKR3pzfaWI_RnOM4nZPby1QNtA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/geist/v4/gyBhhwUxId8gMGYQMKR3pzfaWI_RnOM4nZPby1QNtA.ttf",
-		"weight": 400
+		displayName: "Geist",
+		filename: "gyBhhwUxId8gMGYQMKR3pzfaWI_RnOM4nZPby1QNtA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/geist/v4/gyBhhwUxId8gMGYQMKR3pzfaWI_RnOM4nZPby1QNtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Roboto Serif",
-		"filename": "R71RjywflP6FLr3gZx7K8UyuXDs9zVwDmXCb8lxYgmuii32UGoVldX6UgfjL4-3sMM_kB_qXSEXTJQCFLH5-_bcEliotp6d2Af5fR4k",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/robotoserif/v17/R71RjywflP6FLr3gZx7K8UyuXDs9zVwDmXCb8lxYgmuii32UGoVldX6UgfjL4-3sMM_kB_qXSEXTJQCFLH5-_bcEliotp6d2Af5fR4k.ttf",
-		"weight": 400
+		displayName: "Roboto Serif",
+		filename: "R71RjywflP6FLr3gZx7K8UyuXDs9zVwDmXCb8lxYgmuii32UGoVldX6UgfjL4-3sMM_kB_qXSEXTJQCFLH5-_bcEliotp6d2Af5fR4k",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/robotoserif/v17/R71RjywflP6FLr3gZx7K8UyuXDs9zVwDmXCb8lxYgmuii32UGoVldX6UgfjL4-3sMM_kB_qXSEXTJQCFLH5-_bcEliotp6d2Af5fR4k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Signika Negative",
-		"filename": "E21x_cfngu7HiRpPX3ZpNE4kY5zKSPmJXkF0VDD2RAqnS73st9hiuEq8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/signikanegative/v26/E21x_cfngu7HiRpPX3ZpNE4kY5zKSPmJXkF0VDD2RAqnS73st9hiuEq8.ttf",
-		"weight": 400
+		displayName: "Signika Negative",
+		filename: "E21x_cfngu7HiRpPX3ZpNE4kY5zKSPmJXkF0VDD2RAqnS73st9hiuEq8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/signikanegative/v26/E21x_cfngu7HiRpPX3ZpNE4kY5zKSPmJXkF0VDD2RAqnS73st9hiuEq8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yellowtail",
-		"filename": "OZpGg_pnoDtINPfRIlLotlzNwED-b4g",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLotlzNwED-b4g.ttf",
-		"weight": 400
+		displayName: "Yellowtail",
+		filename: "OZpGg_pnoDtINPfRIlLotlzNwED-b4g",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/yellowtail/v25/OZpGg_pnoDtINPfRIlLotlzNwED-b4g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kumbh Sans",
-		"filename": "c4mP1n92AsfhuCq6tVsaoIx1LQICk0boNoq0SjlDfnzKo-bF3mdQkZYA8bTuUkqaLg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kumbhsans/v27/c4mP1n92AsfhuCq6tVsaoIx1LQICk0boNoq0SjlDfnzKo-bF3mdQkZYA8bTuUkqaLg.ttf",
-		"weight": 400
+		displayName: "Kumbh Sans",
+		filename: "c4mP1n92AsfhuCq6tVsaoIx1LQICk0boNoq0SjlDfnzKo-bF3mdQkZYA8bTuUkqaLg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kumbhsans/v27/c4mP1n92AsfhuCq6tVsaoIx1LQICk0boNoq0SjlDfnzKo-bF3mdQkZYA8bTuUkqaLg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Russo One",
-		"filename": "Z9XUDmZRWg6M1LvRYsH-yMOInrib9Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yMOInrib9Q.ttf",
-		"weight": 400
+		displayName: "Russo One",
+		filename: "Z9XUDmZRWg6M1LvRYsH-yMOInrib9Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/russoone/v18/Z9XUDmZRWg6M1LvRYsH-yMOInrib9Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Righteous",
-		"filename": "1cXxaUPXBpj2rGoU7C9mj3uEicG01A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/righteous/v18/1cXxaUPXBpj2rGoU7C9mj3uEicG01A.ttf",
-		"weight": 400
+		displayName: "Righteous",
+		filename: "1cXxaUPXBpj2rGoU7C9mj3uEicG01A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/righteous/v18/1cXxaUPXBpj2rGoU7C9mj3uEicG01A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yanone Kaffeesatz",
-		"filename": "3y9I6aknfjLm_3lMKjiMgmUUYBs04aUXNxt9gW2LIfto9tWpcGuLCnXkVA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/yanonekaffeesatz/v32/3y9I6aknfjLm_3lMKjiMgmUUYBs04aUXNxt9gW2LIfto9tWpcGuLCnXkVA.ttf",
-		"weight": 400
+		displayName: "Yanone Kaffeesatz",
+		filename: "3y9I6aknfjLm_3lMKjiMgmUUYBs04aUXNxt9gW2LIfto9tWpcGuLCnXkVA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/yanonekaffeesatz/v32/3y9I6aknfjLm_3lMKjiMgmUUYBs04aUXNxt9gW2LIfto9tWpcGuLCnXkVA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Eczar",
-		"filename": "BXR2vF3Pi-DLmxcpJB-qbNTyTMDXHd6WqTIVKWJKWg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/eczar/v27/BXR2vF3Pi-DLmxcpJB-qbNTyTMDXHd6WqTIVKWJKWg.ttf",
-		"weight": 400
+		displayName: "Eczar",
+		filename: "BXR2vF3Pi-DLmxcpJB-qbNTyTMDXHd6WqTIVKWJKWg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/eczar/v27/BXR2vF3Pi-DLmxcpJB-qbNTyTMDXHd6WqTIVKWJKWg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Caslon Text",
-		"filename": "DdT878IGsGw1aF1JU10PUbTvNNaDMcq_3eNrHgO1",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/librecaslontext/v5/DdT878IGsGw1aF1JU10PUbTvNNaDMcq_3eNrHgO1.ttf",
-		"weight": 400
+		displayName: "Libre Caslon Text",
+		filename: "DdT878IGsGw1aF1JU10PUbTvNNaDMcq_3eNrHgO1",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/librecaslontext/v5/DdT878IGsGw1aF1JU10PUbTvNNaDMcq_3eNrHgO1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Delius",
-		"filename": "PN_xRfK0pW_9e1rtYcI-jT3L_w",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/delius/v21/PN_xRfK0pW_9e1rtYcI-jT3L_w.ttf",
-		"weight": 400
+		displayName: "Delius",
+		filename: "PN_xRfK0pW_9e1rtYcI-jT3L_w",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/delius/v21/PN_xRfK0pW_9e1rtYcI-jT3L_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asap Condensed",
-		"filename": "pxidypY1o9NHyXh3WvSbGSggdNeLYk1Mq3ap",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/asapcondensed/v18/pxidypY1o9NHyXh3WvSbGSggdNeLYk1Mq3ap.ttf",
-		"weight": 400
+		displayName: "Asap Condensed",
+		filename: "pxidypY1o9NHyXh3WvSbGSggdNeLYk1Mq3ap",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/asapcondensed/v18/pxidypY1o9NHyXh3WvSbGSggdNeLYk1Mq3ap.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Paytone One",
-		"filename": "0nksC9P7MfYHj2oFtYm2CiTqivr9iBq_",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/paytoneone/v25/0nksC9P7MfYHj2oFtYm2CiTqivr9iBq_.ttf",
-		"weight": 400
+		displayName: "Paytone One",
+		filename: "0nksC9P7MfYHj2oFtYm2CiTqivr9iBq_",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/paytoneone/v25/0nksC9P7MfYHj2oFtYm2CiTqivr9iBq_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "News Cycle",
-		"filename": "CSR64z1Qlv-GDxkbKVQ_TOcATNt_pOU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/newscycle/v26/CSR64z1Qlv-GDxkbKVQ_TOcATNt_pOU.ttf",
-		"weight": 400
+		displayName: "News Cycle",
+		filename: "CSR64z1Qlv-GDxkbKVQ_TOcATNt_pOU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/newscycle/v26/CSR64z1Qlv-GDxkbKVQ_TOcATNt_pOU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cantarell",
-		"filename": "B50NF7ZDq37KMUvlO01Ji6hqHK-CLA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cantarell/v18/B50NF7ZDq37KMUvlO01Ji6hqHK-CLA.ttf",
-		"weight": 400
+		displayName: "Cantarell",
+		filename: "B50NF7ZDq37KMUvlO01Ji6hqHK-CLA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cantarell/v18/B50NF7ZDq37KMUvlO01Ji6hqHK-CLA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fraunces",
-		"filename": "6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIctxujDvTShUtWNg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIctxujDvTShUtWNg.ttf",
-		"weight": 400
+		displayName: "Fraunces",
+		filename: "6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIctxujDvTShUtWNg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58nib1603gg7S2nfgRYIctxujDvTShUtWNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gothic A1",
-		"filename": "CSR94z5ZnPydRjlCCwl6bM0uQNJmvQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gothica1/v18/CSR94z5ZnPydRjlCCwl6bM0uQNJmvQ.ttf",
-		"weight": 400
+		displayName: "Gothic A1",
+		filename: "CSR94z5ZnPydRjlCCwl6bM0uQNJmvQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gothica1/v18/CSR94z5ZnPydRjlCCwl6bM0uQNJmvQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans HK",
-		"filename": "nKKF-GM_FYFRJvXzVXaAPe97P1KHynJFP716qHB--oWTiYjNvVA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanshk/v34/nKKF-GM_FYFRJvXzVXaAPe97P1KHynJFP716qHB--oWTiYjNvVA.ttf",
-		"weight": 400
+		displayName: "Noto Sans HK",
+		filename: "nKKF-GM_FYFRJvXzVXaAPe97P1KHynJFP716qHB--oWTiYjNvVA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanshk/v34/nKKF-GM_FYFRJvXzVXaAPe97P1KHynJFP716qHB--oWTiYjNvVA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hanken Grotesk",
-		"filename": "ieVq2YZDLWuGJpnzaiwFXS9tYvBRzyFLlZg_f_Ncs2Za4fpNzXhRKA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hankengrotesk/v12/ieVq2YZDLWuGJpnzaiwFXS9tYvBRzyFLlZg_f_Ncs2Za4fpNzXhRKA.ttf",
-		"weight": 400
+		displayName: "Hanken Grotesk",
+		filename: "ieVq2YZDLWuGJpnzaiwFXS9tYvBRzyFLlZg_f_Ncs2Za4fpNzXhRKA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hankengrotesk/v12/ieVq2YZDLWuGJpnzaiwFXS9tYvBRzyFLlZg_f_Ncs2Za4fpNzXhRKA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noticia Text",
-		"filename": "VuJ2dNDF2Yv9qppOePKYRP1GYTFZt0rNpQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/noticiatext/v16/VuJ2dNDF2Yv9qppOePKYRP1GYTFZt0rNpQ.ttf",
-		"weight": 400
+		displayName: "Noticia Text",
+		filename: "VuJ2dNDF2Yv9qppOePKYRP1GYTFZt0rNpQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/noticiatext/v16/VuJ2dNDF2Yv9qppOePKYRP1GYTFZt0rNpQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Courgette",
-		"filename": "wEO_EBrAnc9BLjLQAUkFUfAL3EsHiA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/courgette/v19/wEO_EBrAnc9BLjLQAUkFUfAL3EsHiA.ttf",
-		"weight": 400
+		displayName: "Courgette",
+		filename: "wEO_EBrAnc9BLjLQAUkFUfAL3EsHiA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/courgette/v19/wEO_EBrAnc9BLjLQAUkFUfAL3EsHiA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bangers",
-		"filename": "FeVQS0BTqb0h60ACL5la2bxii28",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bangers/v25/FeVQS0BTqb0h60ACL5la2bxii28.ttf",
-		"weight": 400
+		displayName: "Bangers",
+		filename: "FeVQS0BTqb0h60ACL5la2bxii28",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bangers/v25/FeVQS0BTqb0h60ACL5la2bxii28.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Patua One",
-		"filename": "ZXuke1cDvLCKLDcimxBI5PNvNA9LuA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/patuaone/v22/ZXuke1cDvLCKLDcimxBI5PNvNA9LuA.ttf",
-		"weight": 400
+		displayName: "Patua One",
+		filename: "ZXuke1cDvLCKLDcimxBI5PNvNA9LuA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/patuaone/v22/ZXuke1cDvLCKLDcimxBI5PNvNA9LuA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Crimson Pro",
-		"filename": "q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZzm18OJE_VNWoyQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/crimsonpro/v28/q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZzm18OJE_VNWoyQ.ttf",
-		"weight": 400
+		displayName: "Crimson Pro",
+		filename: "q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZzm18OJE_VNWoyQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/crimsonpro/v28/q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZzm18OJE_VNWoyQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Changa",
-		"filename": "2-c79JNi2YuVOUcOarRPgnNGooxCZ62xQjDp9htf1ZM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/changa/v29/2-c79JNi2YuVOUcOarRPgnNGooxCZ62xQjDp9htf1ZM.ttf",
-		"weight": 400
+		displayName: "Changa",
+		filename: "2-c79JNi2YuVOUcOarRPgnNGooxCZ62xQjDp9htf1ZM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/changa/v29/2-c79JNi2YuVOUcOarRPgnNGooxCZ62xQjDp9htf1ZM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Mono One",
-		"filename": "UqyJK8kPP3hjw6ANTdfRk9YSN-8wRqQrc_j9",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rubikmonoone/v20/UqyJK8kPP3hjw6ANTdfRk9YSN-8wRqQrc_j9.ttf",
-		"weight": 400
+		displayName: "Rubik Mono One",
+		filename: "UqyJK8kPP3hjw6ANTdfRk9YSN-8wRqQrc_j9",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rubikmonoone/v20/UqyJK8kPP3hjw6ANTdfRk9YSN-8wRqQrc_j9.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Crete Round",
-		"filename": "55xoey1sJNPjPiv1ZZZrxJ1827zAKnxN",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/creteround/v16/55xoey1sJNPjPiv1ZZZrxJ1827zAKnxN.ttf",
-		"weight": 400
+		displayName: "Crete Round",
+		filename: "55xoey1sJNPjPiv1ZZZrxJ1827zAKnxN",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/creteround/v16/55xoey1sJNPjPiv1ZZZrxJ1827zAKnxN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Andada Pro",
-		"filename": "HhyEU5Qi9-SuOEhPe4LtKoVCuWGURPcg3DPJBY8cFLzvIt2S",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/andadapro/v24/HhyEU5Qi9-SuOEhPe4LtKoVCuWGURPcg3DPJBY8cFLzvIt2S.ttf",
-		"weight": 400
+		displayName: "Andada Pro",
+		filename: "HhyEU5Qi9-SuOEhPe4LtKoVCuWGURPcg3DPJBY8cFLzvIt2S",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/andadapro/v24/HhyEU5Qi9-SuOEhPe4LtKoVCuWGURPcg3DPJBY8cFLzvIt2S.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "DM Serif Text",
-		"filename": "rnCu-xZa_krGokauCeNq1wWyafOPXHIJErY",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/dmseriftext/v13/rnCu-xZa_krGokauCeNq1wWyafOPXHIJErY.ttf",
-		"weight": 400
+		displayName: "DM Serif Text",
+		filename: "rnCu-xZa_krGokauCeNq1wWyafOPXHIJErY",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/dmseriftext/v13/rnCu-xZa_krGokauCeNq1wWyafOPXHIJErY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Courier Prime",
-		"filename": "u-450q2lgwslOqpF_6gQ8kELWwZjW-_-tvg",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/courierprime/v11/u-450q2lgwslOqpF_6gQ8kELWwZjW-_-tvg.ttf",
-		"weight": 400
+		displayName: "Courier Prime",
+		filename: "u-450q2lgwslOqpF_6gQ8kELWwZjW-_-tvg",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/courierprime/v11/u-450q2lgwslOqpF_6gQ8kELWwZjW-_-tvg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gruppo",
-		"filename": "WwkfxPmzE06v_ZWFWXDAOIEQUQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gruppo/v23/WwkfxPmzE06v_ZWFWXDAOIEQUQ.ttf",
-		"weight": 400
+		displayName: "Gruppo",
+		filename: "WwkfxPmzE06v_ZWFWXDAOIEQUQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gruppo/v23/WwkfxPmzE06v_ZWFWXDAOIEQUQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Readex Pro",
-		"filename": "SLXnc1bJ7HE5YDoGPuzj_dh8uc7wUy8ZQQyX2KY8TL0kGZN6blTC4USmgmsglvjkag",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/readexpro/v27/SLXnc1bJ7HE5YDoGPuzj_dh8uc7wUy8ZQQyX2KY8TL0kGZN6blTC4USmgmsglvjkag.ttf",
-		"weight": 400
+		displayName: "Readex Pro",
+		filename: "SLXnc1bJ7HE5YDoGPuzj_dh8uc7wUy8ZQQyX2KY8TL0kGZN6blTC4USmgmsglvjkag",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/readexpro/v27/SLXnc1bJ7HE5YDoGPuzj_dh8uc7wUy8ZQQyX2KY8TL0kGZN6blTC4USmgmsglvjkag.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gloria Hallelujah",
-		"filename": "LYjYdHv3kUk9BMV96EIswT9DIbW-MLSy3TKEvkCF",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/gloriahallelujah/v24/LYjYdHv3kUk9BMV96EIswT9DIbW-MLSy3TKEvkCF.ttf",
-		"weight": 400
+		displayName: "Gloria Hallelujah",
+		filename: "LYjYdHv3kUk9BMV96EIswT9DIbW-MLSy3TKEvkCF",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/gloriahallelujah/v24/LYjYdHv3kUk9BMV96EIswT9DIbW-MLSy3TKEvkCF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sawarabi Mincho",
-		"filename": "8QIRdiDaitzr7brc8ahpxt6GcIJTLahP46UDUw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sawarabimincho/v20/8QIRdiDaitzr7brc8ahpxt6GcIJTLahP46UDUw.ttf",
-		"weight": 400
+		displayName: "Sawarabi Mincho",
+		filename: "8QIRdiDaitzr7brc8ahpxt6GcIJTLahP46UDUw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sawarabimincho/v20/8QIRdiDaitzr7brc8ahpxt6GcIJTLahP46UDUw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sawarabi Gothic",
-		"filename": "x3d4ckfVaqqa-BEj-I9mE65u3k3NBSk3E2YljQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sawarabigothic/v16/x3d4ckfVaqqa-BEj-I9mE65u3k3NBSk3E2YljQ.ttf",
-		"weight": 400
+		displayName: "Sawarabi Gothic",
+		filename: "x3d4ckfVaqqa-BEj-I9mE65u3k3NBSk3E2YljQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sawarabigothic/v16/x3d4ckfVaqqa-BEj-I9mE65u3k3NBSk3E2YljQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Passion One",
-		"filename": "PbynFmL8HhTPqbjUzux3JHuW_Frg6YoV",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/passionone/v20/PbynFmL8HhTPqbjUzux3JHuW_Frg6YoV.ttf",
-		"weight": 400
+		displayName: "Passion One",
+		filename: "PbynFmL8HhTPqbjUzux3JHuW_Frg6YoV",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/passionone/v20/PbynFmL8HhTPqbjUzux3JHuW_Frg6YoV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rokkitt",
-		"filename": "qFdb35qfgYFjGy5hukqqhw5XeRgdi1ryd5DLE76HvN6n",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/rokkitt/v39/qFdb35qfgYFjGy5hukqqhw5XeRgdi1ryd5DLE76HvN6n.ttf",
-		"weight": 400
+		displayName: "Rokkitt",
+		filename: "qFdb35qfgYFjGy5hukqqhw5XeRgdi1ryd5DLE76HvN6n",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/rokkitt/v39/qFdb35qfgYFjGy5hukqqhw5XeRgdi1ryd5DLE76HvN6n.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Red Hat Text",
-		"filename": "RrQCbohi_ic6B3yVSzGBrMx6ZI_cy1A6Ok2ML7hwVrbacYVFtIY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/redhattext/v19/RrQCbohi_ic6B3yVSzGBrMx6ZI_cy1A6Ok2ML7hwVrbacYVFtIY.ttf",
-		"weight": 400
+		displayName: "Red Hat Text",
+		filename: "RrQCbohi_ic6B3yVSzGBrMx6ZI_cy1A6Ok2ML7hwVrbacYVFtIY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/redhattext/v19/RrQCbohi_ic6B3yVSzGBrMx6ZI_cy1A6Ok2ML7hwVrbacYVFtIY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Comic Neue",
-		"filename": "4UaHrEJDsxBrF37olUeDx63j5pN1MwI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/comicneue/v9/4UaHrEJDsxBrF37olUeDx63j5pN1MwI.ttf",
-		"weight": 400
+		displayName: "Comic Neue",
+		filename: "4UaHrEJDsxBrF37olUeDx63j5pN1MwI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/comicneue/v9/4UaHrEJDsxBrF37olUeDx63j5pN1MwI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Encode Sans Condensed",
-		"filename": "j8_16_LD37rqfuwxyIuaZhE6cRXOLtm2gfTGgaWNDw8VIw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/encodesanscondensed/v11/j8_16_LD37rqfuwxyIuaZhE6cRXOLtm2gfTGgaWNDw8VIw.ttf",
-		"weight": 400
+		displayName: "Encode Sans Condensed",
+		filename: "j8_16_LD37rqfuwxyIuaZhE6cRXOLtm2gfTGgaWNDw8VIw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/encodesanscondensed/v11/j8_16_LD37rqfuwxyIuaZhE6cRXOLtm2gfTGgaWNDw8VIw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tenor Sans",
-		"filename": "bx6ANxqUneKx06UkIXISr3JyC22IyqI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tenorsans/v21/bx6ANxqUneKx06UkIXISr3JyC22IyqI.ttf",
-		"weight": 400
+		displayName: "Tenor Sans",
+		filename: "bx6ANxqUneKx06UkIXISr3JyC22IyqI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tenorsans/v21/bx6ANxqUneKx06UkIXISr3JyC22IyqI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Macondo",
-		"filename": "RrQQboN9-iB1IXmOS2XO0LBBd4Y",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/macondo/v27/RrQQboN9-iB1IXmOS2XO0LBBd4Y.ttf",
-		"weight": 400
+		displayName: "Macondo",
+		filename: "RrQQboN9-iB1IXmOS2XO0LBBd4Y",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/macondo/v27/RrQQboN9-iB1IXmOS2XO0LBBd4Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fugaz One",
-		"filename": "rax_HiWKp9EAITukFslMBBJek0vA8A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fugazone/v21/rax_HiWKp9EAITukFslMBBJek0vA8A.ttf",
-		"weight": 400
+		displayName: "Fugaz One",
+		filename: "rax_HiWKp9EAITukFslMBBJek0vA8A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fugazone/v21/rax_HiWKp9EAITukFslMBBJek0vA8A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alata",
-		"filename": "PbytFmztEwbIofe6xKcRQEOX",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alata/v12/PbytFmztEwbIofe6xKcRQEOX.ttf",
-		"weight": 400
+		displayName: "Alata",
+		filename: "PbytFmztEwbIofe6xKcRQEOX",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alata/v12/PbytFmztEwbIofe6xKcRQEOX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baskervville",
-		"filename": "YA9Br0yU4l_XOrogbkun3kQ6vLFYXmpq8sRsYuDrugOydR1FLkw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/baskervville/v20/YA9Br0yU4l_XOrogbkun3kQ6vLFYXmpq8sRsYuDrugOydR1FLkw.ttf",
-		"weight": 400
+		displayName: "Baskervville",
+		filename: "YA9Br0yU4l_XOrogbkun3kQ6vLFYXmpq8sRsYuDrugOydR1FLkw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/baskervville/v20/YA9Br0yU4l_XOrogbkun3kQ6vLFYXmpq8sRsYuDrugOydR1FLkw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BIZ UDPGothic",
-		"filename": "hES36X5pHAIBjmS84VL0Bue83nUMQWkMUAk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bizudpgothic/v15/hES36X5pHAIBjmS84VL0Bue83nUMQWkMUAk.ttf",
-		"weight": 400
+		displayName: "BIZ UDPGothic",
+		filename: "hES36X5pHAIBjmS84VL0Bue83nUMQWkMUAk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bizudpgothic/v15/hES36X5pHAIBjmS84VL0Bue83nUMQWkMUAk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shippori Mincho",
-		"filename": "VdGGAZweH5EbgHY6YExcZfDoj0BA2_-C7LoS7g",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/shipporimincho/v17/VdGGAZweH5EbgHY6YExcZfDoj0BA2_-C7LoS7g.ttf",
-		"weight": 400
+		displayName: "Shippori Mincho",
+		filename: "VdGGAZweH5EbgHY6YExcZfDoj0BA2_-C7LoS7g",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/shipporimincho/v17/VdGGAZweH5EbgHY6YExcZfDoj0BA2_-C7LoS7g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Old Standard TT",
-		"filename": "MwQubh3o1vLImiwAVvYawgcf2eVurVC5RHdCZg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVurVC5RHdCZg.ttf",
-		"weight": 400
+		displayName: "Old Standard TT",
+		filename: "MwQubh3o1vLImiwAVvYawgcf2eVurVC5RHdCZg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVurVC5RHdCZg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aleo",
-		"filename": "c4m61nF8G8_s6gHhIOX0IYBo_KJ3GmP9HI4qCBtJ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/aleo/v16/c4m61nF8G8_s6gHhIOX0IYBo_KJ3GmP9HI4qCBtJ.ttf",
-		"weight": 400
+		displayName: "Aleo",
+		filename: "c4m61nF8G8_s6gHhIOX0IYBo_KJ3GmP9HI4qCBtJ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/aleo/v16/c4m61nF8G8_s6gHhIOX0IYBo_KJ3GmP9HI4qCBtJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Philosopher",
-		"filename": "vEFV2_5QCwIS4_Dhez5jcVBpRUwU08qe",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/philosopher/v21/vEFV2_5QCwIS4_Dhez5jcVBpRUwU08qe.ttf",
-		"weight": 400
+		displayName: "Philosopher",
+		filename: "vEFV2_5QCwIS4_Dhez5jcVBpRUwU08qe",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/philosopher/v21/vEFV2_5QCwIS4_Dhez5jcVBpRUwU08qe.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Allura",
-		"filename": "9oRPNYsQpS4zjuAPjAIXPtrrGA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/allura/v23/9oRPNYsQpS4zjuAPjAIXPtrrGA.ttf",
-		"weight": 400
+		displayName: "Allura",
+		filename: "9oRPNYsQpS4zjuAPjAIXPtrrGA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/allura/v23/9oRPNYsQpS4zjuAPjAIXPtrrGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "PT Sans Caption",
-		"filename": "0FlMVP6Hrxmt7-fsUFhlFXNIlpcqfQXwQy6yxg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ptsanscaption/v20/0FlMVP6Hrxmt7-fsUFhlFXNIlpcqfQXwQy6yxg.ttf",
-		"weight": 400
+		displayName: "PT Sans Caption",
+		filename: "0FlMVP6Hrxmt7-fsUFhlFXNIlpcqfQXwQy6yxg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ptsanscaption/v20/0FlMVP6Hrxmt7-fsUFhlFXNIlpcqfQXwQy6yxg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Literata",
-		"filename": "or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbBG_F_bcTWCWp8g",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/literata/v40/or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbBG_F_bcTWCWp8g.ttf",
-		"weight": 400
+		displayName: "Literata",
+		filename: "or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbBG_F_bcTWCWp8g",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/literata/v40/or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbBG_F_bcTWCWp8g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Atkinson Hyperlegible",
-		"filename": "9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5ZgpewSSbQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/atkinsonhyperlegible/v12/9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5ZgpewSSbQ.ttf",
-		"weight": 400
+		displayName: "Atkinson Hyperlegible",
+		filename: "9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5ZgpewSSbQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/atkinsonhyperlegible/v12/9Bt23C1KxNDXMspQ1lPyU89-1h6ONRlW45GE5ZgpewSSbQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans Condensed",
-		"filename": "Gg8lN4UfRSqiPg7Jn2ZI12V4DCEwkj1E4LVeHbauwq_jhJsM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsanscondensed/v15/Gg8lN4UfRSqiPg7Jn2ZI12V4DCEwkj1E4LVeHbauwq_jhJsM.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans Condensed",
+		filename: "Gg8lN4UfRSqiPg7Jn2ZI12V4DCEwkj1E4LVeHbauwq_jhJsM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsanscondensed/v15/Gg8lN4UfRSqiPg7Jn2ZI12V4DCEwkj1E4LVeHbauwq_jhJsM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alumni Sans",
-		"filename": "nwpHtKqkOwdO2aOIwhWudEWpx_zq_Xna-Xd9OO9QqFsJ3C8qng",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alumnisans/v20/nwpHtKqkOwdO2aOIwhWudEWpx_zq_Xna-Xd9OO9QqFsJ3C8qng.ttf",
-		"weight": 400
+		displayName: "Alumni Sans",
+		filename: "nwpHtKqkOwdO2aOIwhWudEWpx_zq_Xna-Xd9OO9QqFsJ3C8qng",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alumnisans/v20/nwpHtKqkOwdO2aOIwhWudEWpx_zq_Xna-Xd9OO9QqFsJ3C8qng.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Francois One",
-		"filename": "_Xmr-H4zszafZw3A-KPSZutNxgKQu_avAg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/francoisone/v22/_Xmr-H4zszafZw3A-KPSZutNxgKQu_avAg.ttf",
-		"weight": 400
+		displayName: "Francois One",
+		filename: "_Xmr-H4zszafZw3A-KPSZutNxgKQu_avAg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/francoisone/v22/_Xmr-H4zszafZw3A-KPSZutNxgKQu_avAg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hammersmith One",
-		"filename": "qWcyB624q4L_C4jGQ9IK0O_dFlnbshsks4MRXw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hammersmithone/v18/qWcyB624q4L_C4jGQ9IK0O_dFlnbshsks4MRXw.ttf",
-		"weight": 400
+		displayName: "Hammersmith One",
+		filename: "qWcyB624q4L_C4jGQ9IK0O_dFlnbshsks4MRXw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hammersmithone/v18/qWcyB624q4L_C4jGQ9IK0O_dFlnbshsks4MRXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kaushan Script",
-		"filename": "vm8vdRfvXFLG3OLnsO15WYS5DF7_ytN3M48a",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kaushanscript/v19/vm8vdRfvXFLG3OLnsO15WYS5DF7_ytN3M48a.ttf",
-		"weight": 400
+		displayName: "Kaushan Script",
+		filename: "vm8vdRfvXFLG3OLnsO15WYS5DF7_ytN3M48a",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kaushanscript/v19/vm8vdRfvXFLG3OLnsO15WYS5DF7_ytN3M48a.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Syne",
-		"filename": "8vIS7w4qzmVxsWxjBZRjr0FKM_04uT6kR47NCV5Z",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/syne/v24/8vIS7w4qzmVxsWxjBZRjr0FKM_04uT6kR47NCV5Z.ttf",
-		"weight": 400
+		displayName: "Syne",
+		filename: "8vIS7w4qzmVxsWxjBZRjr0FKM_04uT6kR47NCV5Z",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/syne/v24/8vIS7w4qzmVxsWxjBZRjr0FKM_04uT6kR47NCV5Z.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "El Messiri",
-		"filename": "K2FhfZBRmr9vQ1pHEey6GIGo8_pv3myYjuXwe65ghj3OoapG",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/elmessiri/v25/K2FhfZBRmr9vQ1pHEey6GIGo8_pv3myYjuXwe65ghj3OoapG.ttf",
-		"weight": 400
+		displayName: "El Messiri",
+		filename: "K2FhfZBRmr9vQ1pHEey6GIGo8_pv3myYjuXwe65ghj3OoapG",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/elmessiri/v25/K2FhfZBRmr9vQ1pHEey6GIGo8_pv3myYjuXwe65ghj3OoapG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Quattrocento",
-		"filename": "OZpEg_xvsDZQL_LKIF7q4jPHxGL7f4jFuA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/quattrocento/v24/OZpEg_xvsDZQL_LKIF7q4jPHxGL7f4jFuA.ttf",
-		"weight": 400
+		displayName: "Quattrocento",
+		filename: "OZpEg_xvsDZQL_LKIF7q4jPHxGL7f4jFuA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/quattrocento/v24/OZpEg_xvsDZQL_LKIF7q4jPHxGL7f4jFuA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sen",
-		"filename": "6xK0dSxYI9_dkN18-vZKK2EISCq5H47KlD9q78A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sen/v12/6xK0dSxYI9_dkN18-vZKK2EISCq5H47KlD9q78A.ttf",
-		"weight": 400
+		displayName: "Sen",
+		filename: "6xK0dSxYI9_dkN18-vZKK2EISCq5H47KlD9q78A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sen/v12/6xK0dSxYI9_dkN18-vZKK2EISCq5H47KlD9q78A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Press Start 2P",
-		"filename": "e3t4euO8T-267oIAQAu6jDQyK0nSgPJE4580",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pressstart2p/v16/e3t4euO8T-267oIAQAu6jDQyK0nSgPJE4580.ttf",
-		"weight": 400
+		displayName: "Press Start 2P",
+		filename: "e3t4euO8T-267oIAQAu6jDQyK0nSgPJE4580",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pressstart2p/v16/e3t4euO8T-267oIAQAu6jDQyK0nSgPJE4580.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Barcode 39",
-		"filename": "-nFnOHM08vwC6h8Li1eQnP_AHzI2K_d709jy92k",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcode39/v25/-nFnOHM08vwC6h8Li1eQnP_AHzI2K_d709jy92k.ttf",
-		"weight": 400
+		displayName: "Libre Barcode 39",
+		filename: "-nFnOHM08vwC6h8Li1eQnP_AHzI2K_d709jy92k",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcode39/v25/-nFnOHM08vwC6h8Li1eQnP_AHzI2K_d709jy92k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "STIX Two Text",
-		"filename": "YA9Gr02F12Xkf5whdwKf11l0jbKkeidMTtZ5Yihg2SOYWxFMN1WD",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/stixtwotext/v18/YA9Gr02F12Xkf5whdwKf11l0jbKkeidMTtZ5Yihg2SOYWxFMN1WD.ttf",
-		"weight": 400
+		displayName: "STIX Two Text",
+		filename: "YA9Gr02F12Xkf5whdwKf11l0jbKkeidMTtZ5Yihg2SOYWxFMN1WD",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/stixtwotext/v18/YA9Gr02F12Xkf5whdwKf11l0jbKkeidMTtZ5Yihg2SOYWxFMN1WD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Commissioner",
-		"filename": "tDaH2o2WnlgI0FNDgduEk4jAhwgumbU1SVfU5BD8OuRL8OstC6KOhgvBYWSFJ-Mgdrgiju6fF8meZm0rk4eF-ZugTMNdGPe7Fu0jUdk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/commissioner/v24/tDaH2o2WnlgI0FNDgduEk4jAhwgumbU1SVfU5BD8OuRL8OstC6KOhgvBYWSFJ-Mgdrgiju6fF8meZm0rk4eF-ZugTMNdGPe7Fu0jUdk.ttf",
-		"weight": 400
+		displayName: "Commissioner",
+		filename: "tDaH2o2WnlgI0FNDgduEk4jAhwgumbU1SVfU5BD8OuRL8OstC6KOhgvBYWSFJ-Mgdrgiju6fF8meZm0rk4eF-ZugTMNdGPe7Fu0jUdk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/commissioner/v24/tDaH2o2WnlgI0FNDgduEk4jAhwgumbU1SVfU5BD8OuRL8OstC6KOhgvBYWSFJ-Mgdrgiju6fF8meZm0rk4eF-ZugTMNdGPe7Fu0jUdk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Actor",
-		"filename": "wEOzEBbCkc5cO3ekXygtUMIO",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/actor/v18/wEOzEBbCkc5cO3ekXygtUMIO.ttf",
-		"weight": 400
+		displayName: "Actor",
+		filename: "wEOzEBbCkc5cO3ekXygtUMIO",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/actor/v18/wEOzEBbCkc5cO3ekXygtUMIO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Bodoni",
-		"filename": "_Xm--H45qDWDYULr5OfyZudXzSBgY2oMBGte6I1fwWzZcOb3U3s",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/librebodoni/v9/_Xm--H45qDWDYULr5OfyZudXzSBgY2oMBGte6I1fwWzZcOb3U3s.ttf",
-		"weight": 400
+		displayName: "Libre Bodoni",
+		filename: "_Xm--H45qDWDYULr5OfyZudXzSBgY2oMBGte6I1fwWzZcOb3U3s",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/librebodoni/v9/_Xm--H45qDWDYULr5OfyZudXzSBgY2oMBGte6I1fwWzZcOb3U3s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mitr",
-		"filename": "pxiLypw5ucZFyTsyMJj_b1o",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mitr/v13/pxiLypw5ucZFyTsyMJj_b1o.ttf",
-		"weight": 400
+		displayName: "Mitr",
+		filename: "pxiLypw5ucZFyTsyMJj_b1o",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mitr/v13/pxiLypw5ucZFyTsyMJj_b1o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Josefin Slab",
-		"filename": "lW-swjwOK3Ps5GSJlNNkMalNpiZe_ldbOR4W71msd3k3K6CcEyI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/josefinslab/v29/lW-swjwOK3Ps5GSJlNNkMalNpiZe_ldbOR4W71msd3k3K6CcEyI.ttf",
-		"weight": 400
+		displayName: "Josefin Slab",
+		filename: "lW-swjwOK3Ps5GSJlNNkMalNpiZe_ldbOR4W71msd3k3K6CcEyI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/josefinslab/v29/lW-swjwOK3Ps5GSJlNNkMalNpiZe_ldbOR4W71msd3k3K6CcEyI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ubuntu Condensed",
-		"filename": "u-4k0rCzjgs5J7oXnJcM_0kACGMtf-fVqvHoJXw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ubuntucondensed/v17/u-4k0rCzjgs5J7oXnJcM_0kACGMtf-fVqvHoJXw.ttf",
-		"weight": 400
+		displayName: "Ubuntu Condensed",
+		filename: "u-4k0rCzjgs5J7oXnJcM_0kACGMtf-fVqvHoJXw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ubuntucondensed/v17/u-4k0rCzjgs5J7oXnJcM_0kACGMtf-fVqvHoJXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif SC",
-		"filename": "H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7SCqyWv847hdDWC",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifsc/v34/H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7SCqyWv847hdDWC.ttf",
-		"weight": 400
+		displayName: "Noto Serif SC",
+		filename: "H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7SCqyWv847hdDWC",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifsc/v34/H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7SCqyWv847hdDWC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Taviraj",
-		"filename": "ahcZv8Cj3ylylTXzfO4hU-FwnU0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/taviraj/v15/ahcZv8Cj3ylylTXzfO4hU-FwnU0.ttf",
-		"weight": 400
+		displayName: "Taviraj",
+		filename: "ahcZv8Cj3ylylTXzfO4hU-FwnU0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/taviraj/v15/ahcZv8Cj3ylylTXzfO4hU-FwnU0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sacramento",
-		"filename": "buEzpo6gcdjy0EiZMBUG0CoV_NxLeiw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sacramento/v17/buEzpo6gcdjy0EiZMBUG0CoV_NxLeiw.ttf",
-		"weight": 400
+		displayName: "Sacramento",
+		filename: "buEzpo6gcdjy0EiZMBUG0CoV_NxLeiw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sacramento/v17/buEzpo6gcdjy0EiZMBUG0CoV_NxLeiw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Martel",
-		"filename": "PN_xRfK9oXHga0XtYcI-jT3L_w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/martel/v12/PN_xRfK9oXHga0XtYcI-jT3L_w.ttf",
-		"weight": 400
+		displayName: "Martel",
+		filename: "PN_xRfK9oXHga0XtYcI-jT3L_w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/martel/v12/PN_xRfK9oXHga0XtYcI-jT3L_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Didact Gothic",
-		"filename": "ahcfv8qz1zt6hCC5G4F_P4ASpUySp0LlcyQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/didactgothic/v21/ahcfv8qz1zt6hCC5G4F_P4ASpUySp0LlcyQ.ttf",
-		"weight": 400
+		displayName: "Didact Gothic",
+		filename: "ahcfv8qz1zt6hCC5G4F_P4ASpUySp0LlcyQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/didactgothic/v21/ahcfv8qz1zt6hCC5G4F_P4ASpUySp0LlcyQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rammetto One",
-		"filename": "LhWiMV3HOfMbMetJG3lQDpp9Mvuciu-_SQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rammettoone/v21/LhWiMV3HOfMbMetJG3lQDpp9Mvuciu-_SQ.ttf",
-		"weight": 400
+		displayName: "Rammetto One",
+		filename: "LhWiMV3HOfMbMetJG3lQDpp9Mvuciu-_SQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rammettoone/v21/LhWiMV3HOfMbMetJG3lQDpp9Mvuciu-_SQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "League Gothic",
-		"filename": "qFdR35CBi4tvBz81xy7WG7ep-BQAY7Krj7feObpH_-amidQ6Q9hn",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/leaguegothic/v13/qFdR35CBi4tvBz81xy7WG7ep-BQAY7Krj7feObpH_-amidQ6Q9hn.ttf",
-		"weight": 400
+		displayName: "League Gothic",
+		filename: "qFdR35CBi4tvBz81xy7WG7ep-BQAY7Krj7feObpH_-amidQ6Q9hn",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/leaguegothic/v13/qFdR35CBi4tvBz81xy7WG7ep-BQAY7Krj7feObpH_-amidQ6Q9hn.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pridi",
-		"filename": "2sDQZG5JnZLfkfWao2krbl29",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/pridi/v15/2sDQZG5JnZLfkfWao2krbl29.ttf",
-		"weight": 400
+		displayName: "Pridi",
+		filename: "2sDQZG5JnZLfkfWao2krbl29",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/pridi/v15/2sDQZG5JnZLfkfWao2krbl29.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BBH Bogle",
-		"filename": "GFDoWA58rVDJf-fOV9ALq5hcOA0hUA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bbhbogle/v1/GFDoWA58rVDJf-fOV9ALq5hcOA0hUA.ttf",
-		"weight": 400
+		displayName: "BBH Bogle",
+		filename: "GFDoWA58rVDJf-fOV9ALq5hcOA0hUA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bbhbogle/v1/GFDoWA58rVDJf-fOV9ALq5hcOA0hUA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Special Elite",
-		"filename": "XLYgIZbkc4JPUL5CVArUVL0nhncESXFtUsM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhncESXFtUsM.ttf",
-		"weight": 400
+		displayName: "Special Elite",
+		filename: "XLYgIZbkc4JPUL5CVArUVL0nhncESXFtUsM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhncESXFtUsM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Viga",
-		"filename": "xMQbuFFdSaiX_QIjD4e2OX8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/viga/v15/xMQbuFFdSaiX_QIjD4e2OX8.ttf",
-		"weight": 400
+		displayName: "Viga",
+		filename: "xMQbuFFdSaiX_QIjD4e2OX8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/viga/v15/xMQbuFFdSaiX_QIjD4e2OX8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Berkshire Swash",
-		"filename": "ptRRTi-cavZOGqCvnNJDl5m5XmNPrcQybX4pQA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/berkshireswash/v22/ptRRTi-cavZOGqCvnNJDl5m5XmNPrcQybX4pQA.ttf",
-		"weight": 400
+		displayName: "Berkshire Swash",
+		filename: "ptRRTi-cavZOGqCvnNJDl5m5XmNPrcQybX4pQA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/berkshireswash/v22/ptRRTi-cavZOGqCvnNJDl5m5XmNPrcQybX4pQA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Patrick Hand",
-		"filename": "LDI1apSQOAYtSuYWp8ZhfYeMWcjKm7sp8g",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYeMWcjKm7sp8g.ttf",
-		"weight": 400
+		displayName: "Patrick Hand",
+		filename: "LDI1apSQOAYtSuYWp8ZhfYeMWcjKm7sp8g",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYeMWcjKm7sp8g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yantramanav",
-		"filename": "flU8Rqu5zY00QEpyWJYWN6f0V-dRCQ41",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/yantramanav/v15/flU8Rqu5zY00QEpyWJYWN6f0V-dRCQ41.ttf",
-		"weight": 400
+		displayName: "Yantramanav",
+		filename: "flU8Rqu5zY00QEpyWJYWN6f0V-dRCQ41",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/yantramanav/v15/flU8Rqu5zY00QEpyWJYWN6f0V-dRCQ41.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Quattrocento Sans",
-		"filename": "va9c4lja2NVIDdIAAoMR5MfuElaRB3zOvU7eHGHJ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/quattrocentosans/v22/va9c4lja2NVIDdIAAoMR5MfuElaRB3zOvU7eHGHJ.ttf",
-		"weight": 400
+		displayName: "Quattrocento Sans",
+		filename: "va9c4lja2NVIDdIAAoMR5MfuElaRB3zOvU7eHGHJ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/quattrocentosans/v22/va9c4lja2NVIDdIAAoMR5MfuElaRB3zOvU7eHGHJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mono",
-		"filename": "BngrUXNETWXI6LwhGYvaxZikqZqK6fBq6kPvUce2oAZcdthSBUsYck4-_FNJ49rXVEQQL8Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmono/v37/BngrUXNETWXI6LwhGYvaxZikqZqK6fBq6kPvUce2oAZcdthSBUsYck4-_FNJ49rXVEQQL8Y.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mono",
+		filename: "BngrUXNETWXI6LwhGYvaxZikqZqK6fBq6kPvUce2oAZcdthSBUsYck4-_FNJ49rXVEQQL8Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmono/v37/BngrUXNETWXI6LwhGYvaxZikqZqK6fBq6kPvUce2oAZcdthSBUsYck4-_FNJ49rXVEQQL8Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo 2",
-		"filename": "wXK0E3kTposypRydzVT08TS3JnAmtdgazapv9Fat7WcN",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloo2/v23/wXK0E3kTposypRydzVT08TS3JnAmtdgazapv9Fat7WcN.ttf",
-		"weight": 400
+		displayName: "Baloo 2",
+		filename: "wXK0E3kTposypRydzVT08TS3JnAmtdgazapv9Fat7WcN",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloo2/v23/wXK0E3kTposypRydzVT08TS3JnAmtdgazapv9Fat7WcN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Khand",
-		"filename": "TwMA-IINQlQQ0YpVWHU_TBqO",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/khand/v22/TwMA-IINQlQQ0YpVWHU_TBqO.ttf",
-		"weight": 400
+		displayName: "Khand",
+		filename: "TwMA-IINQlQQ0YpVWHU_TBqO",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/khand/v22/TwMA-IINQlQQ0YpVWHU_TBqO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zeyada",
-		"filename": "11hAGpPTxVPUbgZDNGatWKaZ3g",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/zeyada/v22/11hAGpPTxVPUbgZDNGatWKaZ3g.ttf",
-		"weight": 400
+		displayName: "Zeyada",
+		filename: "11hAGpPTxVPUbgZDNGatWKaZ3g",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/zeyada/v22/11hAGpPTxVPUbgZDNGatWKaZ3g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Concert One",
-		"filename": "VEM1Ro9xs5PjtzCu-srDqRTlhv-CuVAQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/concertone/v24/VEM1Ro9xs5PjtzCu-srDqRTlhv-CuVAQ.ttf",
-		"weight": 400
+		displayName: "Concert One",
+		filename: "VEM1Ro9xs5PjtzCu-srDqRTlhv-CuVAQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/concertone/v24/VEM1Ro9xs5PjtzCu-srDqRTlhv-CuVAQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oxanium",
-		"filename": "RrQPboN_4yJ0JmiMUW7sIGjd1IA9G81JfniMBXQ7d67x",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/oxanium/v21/RrQPboN_4yJ0JmiMUW7sIGjd1IA9G81JfniMBXQ7d67x.ttf",
-		"weight": 400
+		displayName: "Oxanium",
+		filename: "RrQPboN_4yJ0JmiMUW7sIGjd1IA9G81JfniMBXQ7d67x",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/oxanium/v21/RrQPboN_4yJ0JmiMUW7sIGjd1IA9G81JfniMBXQ7d67x.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Epilogue",
-		"filename": "O4ZMFGj5hxF0EhjimngomvnCCtqb30OXMDPiDJXVigHPVA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/epilogue/v20/O4ZMFGj5hxF0EhjimngomvnCCtqb30OXMDPiDJXVigHPVA.ttf",
-		"weight": 400
+		displayName: "Epilogue",
+		filename: "O4ZMFGj5hxF0EhjimngomvnCCtqb30OXMDPiDJXVigHPVA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/epilogue/v20/O4ZMFGj5hxF0EhjimngomvnCCtqb30OXMDPiDJXVigHPVA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Neuton",
-		"filename": "UMBTrPtMoH62xUZyyII7civlBw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/neuton/v24/UMBTrPtMoH62xUZyyII7civlBw.ttf",
-		"weight": 400
+		displayName: "Neuton",
+		filename: "UMBTrPtMoH62xUZyyII7civlBw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/neuton/v24/UMBTrPtMoH62xUZyyII7civlBw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fira Code",
-		"filename": "uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVfxN87gsj0",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVfxN87gsj0.ttf",
-		"weight": 400
+		displayName: "Fira Code",
+		filename: "uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVfxN87gsj0",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVfxN87gsj0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poiret One",
-		"filename": "UqyVK80NJXN4zfRgbdfbk5lWVscxdKE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/poiretone/v18/UqyVK80NJXN4zfRgbdfbk5lWVscxdKE.ttf",
-		"weight": 400
+		displayName: "Poiret One",
+		filename: "UqyVK80NJXN4zfRgbdfbk5lWVscxdKE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/poiretone/v18/UqyVK80NJXN4zfRgbdfbk5lWVscxdKE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Black Han Sans",
-		"filename": "ea8Aad44WunzF9a-dL6toA8r8nqVIXSkH-Hc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/blackhansans/v24/ea8Aad44WunzF9a-dL6toA8r8nqVIXSkH-Hc.ttf",
-		"weight": 400
+		displayName: "Black Han Sans",
+		filename: "ea8Aad44WunzF9a-dL6toA8r8nqVIXSkH-Hc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/blackhansans/v24/ea8Aad44WunzF9a-dL6toA8r8nqVIXSkH-Hc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Antonio",
-		"filename": "gNMbW3NwSYq_9WD34ngK5F8vR8T0PVxx8RtIY2DwSXlM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/antonio/v22/gNMbW3NwSYq_9WD34ngK5F8vR8T0PVxx8RtIY2DwSXlM.ttf",
-		"weight": 400
+		displayName: "Antonio",
+		filename: "gNMbW3NwSYq_9WD34ngK5F8vR8T0PVxx8RtIY2DwSXlM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/antonio/v22/gNMbW3NwSYq_9WD34ngK5F8vR8T0PVxx8RtIY2DwSXlM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playfair",
-		"filename": "0nkQC9D7PO4KhmUJ5_zTZ_4MYQXznAK-TUcZXKO3UMnW6VNpe4-SiiZ4b8h5G3GutPkUetgdoSMw5ifm",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/playfair/v10/0nkQC9D7PO4KhmUJ5_zTZ_4MYQXznAK-TUcZXKO3UMnW6VNpe4-SiiZ4b8h5G3GutPkUetgdoSMw5ifm.ttf",
-		"weight": 400
+		displayName: "Playfair",
+		filename: "0nkQC9D7PO4KhmUJ5_zTZ_4MYQXznAK-TUcZXKO3UMnW6VNpe4-SiiZ4b8h5G3GutPkUetgdoSMw5ifm",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/playfair/v10/0nkQC9D7PO4KhmUJ5_zTZ_4MYQXznAK-TUcZXKO3UMnW6VNpe4-SiiZ4b8h5G3GutPkUetgdoSMw5ifm.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vazirmatn",
-		"filename": "Dxx78j6PP2D_kU2muijPEe1n2vVbfJRklWgzOReZ72DF_QY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/vazirmatn/v16/Dxx78j6PP2D_kU2muijPEe1n2vVbfJRklWgzOReZ72DF_QY.ttf",
-		"weight": 400
+		displayName: "Vazirmatn",
+		filename: "Dxx78j6PP2D_kU2muijPEe1n2vVbfJRklWgzOReZ72DF_QY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/vazirmatn/v16/Dxx78j6PP2D_kU2muijPEe1n2vVbfJRklWgzOReZ72DF_QY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Golos Text",
-		"filename": "q5uXsoe9Lv5t7Meb31EcOR9UdVTNs822plVRRQ5cEr8zXcyx",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/golostext/v7/q5uXsoe9Lv5t7Meb31EcOR9UdVTNs822plVRRQ5cEr8zXcyx.ttf",
-		"weight": 400
+		displayName: "Golos Text",
+		filename: "q5uXsoe9Lv5t7Meb31EcOR9UdVTNs822plVRRQ5cEr8zXcyx",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/golostext/v7/q5uXsoe9Lv5t7Meb31EcOR9UdVTNs822plVRRQ5cEr8zXcyx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Naskh Arabic",
-		"filename": "RrQ5bpV-9Dd1b1OAGA6M9PkyDuVBePeKNaxcsss0Y7bwvc5krK0z9_Mnuw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notonaskharabic/v43/RrQ5bpV-9Dd1b1OAGA6M9PkyDuVBePeKNaxcsss0Y7bwvc5krK0z9_Mnuw.ttf",
-		"weight": 400
+		displayName: "Noto Naskh Arabic",
+		filename: "RrQ5bpV-9Dd1b1OAGA6M9PkyDuVBePeKNaxcsss0Y7bwvc5krK0z9_Mnuw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notonaskharabic/v43/RrQ5bpV-9Dd1b1OAGA6M9PkyDuVBePeKNaxcsss0Y7bwvc5krK0z9_Mnuw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Architects Daughter",
-		"filename": "KtkxAKiDZI_td1Lkx62xHZHDtgO_Y-bvfY5q4szgE-Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/architectsdaughter/v20/KtkxAKiDZI_td1Lkx62xHZHDtgO_Y-bvfY5q4szgE-Q.ttf",
-		"weight": 400
+		displayName: "Architects Daughter",
+		filename: "KtkxAKiDZI_td1Lkx62xHZHDtgO_Y-bvfY5q4szgE-Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/architectsdaughter/v20/KtkxAKiDZI_td1Lkx62xHZHDtgO_Y-bvfY5q4szgE-Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caveat Brush",
-		"filename": "EYq0maZfwr9S9-ETZc3fKXtMW7mT03pdQw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/caveatbrush/v12/EYq0maZfwr9S9-ETZc3fKXtMW7mT03pdQw.ttf",
-		"weight": 400
+		displayName: "Caveat Brush",
+		filename: "EYq0maZfwr9S9-ETZc3fKXtMW7mT03pdQw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/caveatbrush/v12/EYq0maZfwr9S9-ETZc3fKXtMW7mT03pdQw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tamil",
-		"filename": "ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70RqKDt_EvT",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstamil/v31/ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70RqKDt_EvT.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tamil",
+		filename: "ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70RqKDt_EvT",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstamil/v31/ieVc2YdFI3GCY6SyQy1KfStzYKZgzN1z4LKDbeZce-0429tBManUktuex7vGo70RqKDt_EvT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bai Jamjuree",
-		"filename": "LDI1apSCOBt_aeQQ7ftydoaMWcjKm7sp8g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/baijamjuree/v13/LDI1apSCOBt_aeQQ7ftydoaMWcjKm7sp8g.ttf",
-		"weight": 400
+		displayName: "Bai Jamjuree",
+		filename: "LDI1apSCOBt_aeQQ7ftydoaMWcjKm7sp8g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/baijamjuree/v13/LDI1apSCOBt_aeQQ7ftydoaMWcjKm7sp8g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Parisienne",
-		"filename": "E21i_d3kivvAkxhLEVZpcy96DuKuavM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/parisienne/v14/E21i_d3kivvAkxhLEVZpcy96DuKuavM.ttf",
-		"weight": 400
+		displayName: "Parisienne",
+		filename: "E21i_d3kivvAkxhLEVZpcy96DuKuavM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/parisienne/v14/E21i_d3kivvAkxhLEVZpcy96DuKuavM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gilda Display",
-		"filename": "t5tmIRoYMoaYG0WEOh7HwMeR7TnFrpOHYh4",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gildadisplay/v20/t5tmIRoYMoaYG0WEOh7HwMeR7TnFrpOHYh4.ttf",
-		"weight": 400
+		displayName: "Gilda Display",
+		filename: "t5tmIRoYMoaYG0WEOh7HwMeR7TnFrpOHYh4",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gildadisplay/v20/t5tmIRoYMoaYG0WEOh7HwMeR7TnFrpOHYh4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cookie",
-		"filename": "syky-y18lb0tSbfNlQCT9tPdpw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/cookie/v23/syky-y18lb0tSbfNlQCT9tPdpw.ttf",
-		"weight": 400
+		displayName: "Cookie",
+		filename: "syky-y18lb0tSbfNlQCT9tPdpw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/cookie/v23/syky-y18lb0tSbfNlQCT9tPdpw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Forum",
-		"filename": "6aey4Ky-Vb8Ew_IWMJMa3mnT",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/forum/v19/6aey4Ky-Vb8Ew_IWMJMa3mnT.ttf",
-		"weight": 400
+		displayName: "Forum",
+		filename: "6aey4Ky-Vb8Ew_IWMJMa3mnT",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/forum/v19/6aey4Ky-Vb8Ew_IWMJMa3mnT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alexandria",
-		"filename": "UMBCrPdDqW66y0Y2usFeQCH18mulUxBvI9r7TqbHHJ8BRq0b",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alexandria/v6/UMBCrPdDqW66y0Y2usFeQCH18mulUxBvI9r7TqbHHJ8BRq0b.ttf",
-		"weight": 400
+		displayName: "Alexandria",
+		filename: "UMBCrPdDqW66y0Y2usFeQCH18mulUxBvI9r7TqbHHJ8BRq0b",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alexandria/v6/UMBCrPdDqW66y0Y2usFeQCH18mulUxBvI9r7TqbHHJ8BRq0b.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amaranth",
-		"filename": "KtkuALODe433f0j1zPnCF9GqwnzW",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/amaranth/v19/KtkuALODe433f0j1zPnCF9GqwnzW.ttf",
-		"weight": 400
+		displayName: "Amaranth",
+		filename: "KtkuALODe433f0j1zPnCF9GqwnzW",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/amaranth/v19/KtkuALODe433f0j1zPnCF9GqwnzW.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tangerine",
-		"filename": "IurY6Y5j_oScZZow4VOBDpxNhLBQ4Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/tangerine/v18/IurY6Y5j_oScZZow4VOBDpxNhLBQ4Q.ttf",
-		"weight": 400
+		displayName: "Tangerine",
+		filename: "IurY6Y5j_oScZZow4VOBDpxNhLBQ4Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/tangerine/v18/IurY6Y5j_oScZZow4VOBDpxNhLBQ4Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lustria",
-		"filename": "9oRONYodvDEyjuhOrCg5MtPyAcg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/lustria/v14/9oRONYodvDEyjuhOrCg5MtPyAcg.ttf",
-		"weight": 400
+		displayName: "Lustria",
+		filename: "9oRONYodvDEyjuhOrCg5MtPyAcg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/lustria/v14/9oRONYodvDEyjuhOrCg5MtPyAcg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gravitas One",
-		"filename": "5h1diZ4hJ3cblKy3LWakKQmaDWRNr3DzbQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gravitasone/v21/5h1diZ4hJ3cblKy3LWakKQmaDWRNr3DzbQ.ttf",
-		"weight": 400
+		displayName: "Gravitas One",
+		filename: "5h1diZ4hJ3cblKy3LWakKQmaDWRNr3DzbQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gravitasone/v21/5h1diZ4hJ3cblKy3LWakKQmaDWRNr3DzbQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Old Mincho",
-		"filename": "tss0ApVaYytLwxTqcxfMyBveyYb3g31S2s8p",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/zenoldmincho/v13/tss0ApVaYytLwxTqcxfMyBveyYb3g31S2s8p.ttf",
-		"weight": 400
+		displayName: "Zen Old Mincho",
+		filename: "tss0ApVaYytLwxTqcxfMyBveyYb3g31S2s8p",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/zenoldmincho/v13/tss0ApVaYytLwxTqcxfMyBveyYb3g31S2s8p.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rock Salt",
-		"filename": "MwQ0bhv11fWD6QsAVOZbsEk7hbBWrA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/rocksalt/v24/MwQ0bhv11fWD6QsAVOZbsEk7hbBWrA.ttf",
-		"weight": 400
+		displayName: "Rock Salt",
+		filename: "MwQ0bhv11fWD6QsAVOZbsEk7hbBWrA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/rocksalt/v24/MwQ0bhv11fWD6QsAVOZbsEk7hbBWrA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reenie Beanie",
-		"filename": "z7NSdR76eDkaJKZJFkkjuvWxbP2_qoOgf_w",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/reeniebeanie/v22/z7NSdR76eDkaJKZJFkkjuvWxbP2_qoOgf_w.ttf",
-		"weight": 400
+		displayName: "Reenie Beanie",
+		filename: "z7NSdR76eDkaJKZJFkkjuvWxbP2_qoOgf_w",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/reeniebeanie/v22/z7NSdR76eDkaJKZJFkkjuvWxbP2_qoOgf_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playfair Display SC",
-		"filename": "ke85OhoaMkR6-hSn7kbHVoFf7ZfgMPr_pb4GEcM2M4s",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/playfairdisplaysc/v18/ke85OhoaMkR6-hSn7kbHVoFf7ZfgMPr_pb4GEcM2M4s.ttf",
-		"weight": 400
+		displayName: "Playfair Display SC",
+		filename: "ke85OhoaMkR6-hSn7kbHVoFf7ZfgMPr_pb4GEcM2M4s",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/playfairdisplaysc/v18/ke85OhoaMkR6-hSn7kbHVoFf7ZfgMPr_pb4GEcM2M4s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kosugi Maru",
-		"filename": "0nksC9PgP_wGh21A2KeqGiTqivr9iBq_",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kosugimaru/v17/0nksC9PgP_wGh21A2KeqGiTqivr9iBq_.ttf",
-		"weight": 400
+		displayName: "Kosugi Maru",
+		filename: "0nksC9PgP_wGh21A2KeqGiTqivr9iBq_",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kosugimaru/v17/0nksC9PgP_wGh21A2KeqGiTqivr9iBq_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Krub",
-		"filename": "sZlLdRyC6CRYXkYQDLlTW6E",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/krub/v11/sZlLdRyC6CRYXkYQDLlTW6E.ttf",
-		"weight": 400
+		displayName: "Krub",
+		filename: "sZlLdRyC6CRYXkYQDLlTW6E",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/krub/v11/sZlLdRyC6CRYXkYQDLlTW6E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anuphan",
-		"filename": "2sDBZGxYgY7LkLT0s2Yrm5UhuLoIZCkY9Q4kGmW927Gu",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anuphan/v6/2sDBZGxYgY7LkLT0s2Yrm5UhuLoIZCkY9Q4kGmW927Gu.ttf",
-		"weight": 400
+		displayName: "Anuphan",
+		filename: "2sDBZGxYgY7LkLT0s2Yrm5UhuLoIZCkY9Q4kGmW927Gu",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anuphan/v6/2sDBZGxYgY7LkLT0s2Yrm5UhuLoIZCkY9Q4kGmW927Gu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jura",
-		"filename": "z7NOdRfiaC4Vd8hhoPzfb5vBTP1d7auhTfmrH_rt",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/jura/v34/z7NOdRfiaC4Vd8hhoPzfb5vBTP1d7auhTfmrH_rt.ttf",
-		"weight": 400
+		displayName: "Jura",
+		filename: "z7NOdRfiaC4Vd8hhoPzfb5vBTP1d7auhTfmrH_rt",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/jura/v34/z7NOdRfiaC4Vd8hhoPzfb5vBTP1d7auhTfmrH_rt.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sorts Mill Goudy",
-		"filename": "Qw3GZR9MED_6PSuS_50nEaVrfzgEXH0OjpM75PE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sortsmillgoudy/v16/Qw3GZR9MED_6PSuS_50nEaVrfzgEXH0OjpM75PE.ttf",
-		"weight": 400
+		displayName: "Sorts Mill Goudy",
+		filename: "Qw3GZR9MED_6PSuS_50nEaVrfzgEXH0OjpM75PE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sortsmillgoudy/v16/Qw3GZR9MED_6PSuS_50nEaVrfzgEXH0OjpM75PE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pathway Gothic One",
-		"filename": "MwQrbgD32-KAvjkYGNUUxAtW7pEBwx-dTFxeb80flQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/pathwaygothicone/v16/MwQrbgD32-KAvjkYGNUUxAtW7pEBwx-dTFxeb80flQ.ttf",
-		"weight": 400
+		displayName: "Pathway Gothic One",
+		filename: "MwQrbgD32-KAvjkYGNUUxAtW7pEBwx-dTFxeb80flQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/pathwaygothicone/v16/MwQrbgD32-KAvjkYGNUUxAtW7pEBwx-dTFxeb80flQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Monoton",
-		"filename": "5h1aiZUrOngCibe4fkbBQ2S7FU8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/monoton/v22/5h1aiZUrOngCibe4fkbBQ2S7FU8.ttf",
-		"weight": 400
+		displayName: "Monoton",
+		filename: "5h1aiZUrOngCibe4fkbBQ2S7FU8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/monoton/v22/5h1aiZUrOngCibe4fkbBQ2S7FU8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Homemade Apple",
-		"filename": "Qw3EZQFXECDrI2q789EKQZJob3x9Vnksi4M7",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/homemadeapple/v24/Qw3EZQFXECDrI2q789EKQZJob3x9Vnksi4M7.ttf",
-		"weight": 400
+		displayName: "Homemade Apple",
+		filename: "Qw3EZQFXECDrI2q789EKQZJob3x9Vnksi4M7",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/homemadeapple/v24/Qw3EZQFXECDrI2q789EKQZJob3x9Vnksi4M7.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Giga",
-		"filename": "PlIuFl67Mah5Y8yMHE7lkUZPlTBo4MWFfNRC2LiE68oo6eepYQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexendgiga/v27/PlIuFl67Mah5Y8yMHE7lkUZPlTBo4MWFfNRC2LiE68oo6eepYQ.ttf",
-		"weight": 400
+		displayName: "Lexend Giga",
+		filename: "PlIuFl67Mah5Y8yMHE7lkUZPlTBo4MWFfNRC2LiE68oo6eepYQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexendgiga/v27/PlIuFl67Mah5Y8yMHE7lkUZPlTBo4MWFfNRC2LiE68oo6eepYQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chango",
-		"filename": "2V0cKI0OB5U7WaJyz324TFUaAw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chango/v29/2V0cKI0OB5U7WaJyz324TFUaAw.ttf",
-		"weight": 400
+		displayName: "Chango",
+		filename: "2V0cKI0OB5U7WaJyz324TFUaAw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chango/v29/2V0cKI0OB5U7WaJyz324TFUaAw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Unica One",
-		"filename": "DPEuYwWHyAYGVTSmalshdtffuEY7FA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/unicaone/v20/DPEuYwWHyAYGVTSmalshdtffuEY7FA.ttf",
-		"weight": 400
+		displayName: "Unica One",
+		filename: "DPEuYwWHyAYGVTSmalshdtffuEY7FA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/unicaone/v20/DPEuYwWHyAYGVTSmalshdtffuEY7FA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ropa Sans",
-		"filename": "EYqxmaNOzLlWtsZSScyKWjloU5KP2g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ropasans/v16/EYqxmaNOzLlWtsZSScyKWjloU5KP2g.ttf",
-		"weight": 400
+		displayName: "Ropa Sans",
+		filename: "EYqxmaNOzLlWtsZSScyKWjloU5KP2g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ropasans/v16/EYqxmaNOzLlWtsZSScyKWjloU5KP2g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Bengali",
-		"filename": "Cn-SJsCGWQxOjaGwMQ6fIiMywrNJIky6nvd8BjzVMvJx2mcSPVFpVEqE-6KmsolLudCk8izI0lc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbengali/v32/Cn-SJsCGWQxOjaGwMQ6fIiMywrNJIky6nvd8BjzVMvJx2mcSPVFpVEqE-6KmsolLudCk8izI0lc.ttf",
-		"weight": 400
+		displayName: "Noto Sans Bengali",
+		filename: "Cn-SJsCGWQxOjaGwMQ6fIiMywrNJIky6nvd8BjzVMvJx2mcSPVFpVEqE-6KmsolLudCk8izI0lc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbengali/v32/Cn-SJsCGWQxOjaGwMQ6fIiMywrNJIky6nvd8BjzVMvJx2mcSPVFpVEqE-6KmsolLudCk8izI0lc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Staatliches",
-		"filename": "HI_OiY8KO6hCsQSoAPmtMbectJG9O9PS",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/staatliches/v15/HI_OiY8KO6hCsQSoAPmtMbectJG9O9PS.ttf",
-		"weight": 400
+		displayName: "Staatliches",
+		filename: "HI_OiY8KO6hCsQSoAPmtMbectJG9O9PS",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/staatliches/v15/HI_OiY8KO6hCsQSoAPmtMbectJG9O9PS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Audiowide",
-		"filename": "l7gdbjpo0cum0ckerWCtkQXPExpQBw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/audiowide/v22/l7gdbjpo0cum0ckerWCtkQXPExpQBw.ttf",
-		"weight": 400
+		displayName: "Audiowide",
+		filename: "l7gdbjpo0cum0ckerWCtkQXPExpQBw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/audiowide/v22/l7gdbjpo0cum0ckerWCtkQXPExpQBw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Blinker",
-		"filename": "cIf9MaFatEE-VTaPxCmrYGkHgIs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/blinker/v14/cIf9MaFatEE-VTaPxCmrYGkHgIs.ttf",
-		"weight": 400
+		displayName: "Blinker",
+		filename: "cIf9MaFatEE-VTaPxCmrYGkHgIs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/blinker/v14/cIf9MaFatEE-VTaPxCmrYGkHgIs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Eater",
-		"filename": "mtG04_FCK7bOvpu2u3FwsXsR",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/eater/v27/mtG04_FCK7bOvpu2u3FwsXsR.ttf",
-		"weight": 400
+		displayName: "Eater",
+		filename: "mtG04_FCK7bOvpu2u3FwsXsR",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/eater/v27/mtG04_FCK7bOvpu2u3FwsXsR.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Italianno",
-		"filename": "dg4n_p3sv6gCJkwzT6Rnj5YpQwM-gg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/italianno/v18/dg4n_p3sv6gCJkwzT6Rnj5YpQwM-gg.ttf",
-		"weight": 400
+		displayName: "Italianno",
+		filename: "dg4n_p3sv6gCJkwzT6Rnj5YpQwM-gg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/italianno/v18/dg4n_p3sv6gCJkwzT6Rnj5YpQwM-gg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Quantico",
-		"filename": "rax-HiSdp9cPL3KIF4xsLjxSmlLZ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/quantico/v19/rax-HiSdp9cPL3KIF4xsLjxSmlLZ.ttf",
-		"weight": 400
+		displayName: "Quantico",
+		filename: "rax-HiSdp9cPL3KIF4xsLjxSmlLZ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/quantico/v19/rax-HiSdp9cPL3KIF4xsLjxSmlLZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Radio Canada",
-		"filename": "XRX13ISXn0dBMcibU6jlAqr3ejLv5OLZYiYXik6db2P4jxxlsls-0nFMkQPIJOdSSfOT",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/radiocanada/v26/XRX13ISXn0dBMcibU6jlAqr3ejLv5OLZYiYXik6db2P4jxxlsls-0nFMkQPIJOdSSfOT.ttf",
-		"weight": 400
+		displayName: "Radio Canada",
+		filename: "XRX13ISXn0dBMcibU6jlAqr3ejLv5OLZYiYXik6db2P4jxxlsls-0nFMkQPIJOdSSfOT",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/radiocanada/v26/XRX13ISXn0dBMcibU6jlAqr3ejLv5OLZYiYXik6db2P4jxxlsls-0nFMkQPIJOdSSfOT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Handlee",
-		"filename": "-F6xfjBsISg9aMakDmr6oilJ3ik",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/handlee/v20/-F6xfjBsISg9aMakDmr6oilJ3ik.ttf",
-		"weight": 400
+		displayName: "Handlee",
+		filename: "-F6xfjBsISg9aMakDmr6oilJ3ik",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/handlee/v20/-F6xfjBsISg9aMakDmr6oilJ3ik.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alex Brush",
-		"filename": "SZc83FzrJKuqFbwMKk6EtUL57DtOmCc",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/alexbrush/v23/SZc83FzrJKuqFbwMKk6EtUL57DtOmCc.ttf",
-		"weight": 400
+		displayName: "Alex Brush",
+		filename: "SZc83FzrJKuqFbwMKk6EtUL57DtOmCc",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/alexbrush/v23/SZc83FzrJKuqFbwMKk6EtUL57DtOmCc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Merienda",
-		"filename": "gNMaW3x8Qoy5_mf8uUkJGHtiYXjmKFy5enhoSU78QGBV0A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/merienda/v22/gNMaW3x8Qoy5_mf8uUkJGHtiYXjmKFy5enhoSU78QGBV0A.ttf",
-		"weight": 400
+		displayName: "Merienda",
+		filename: "gNMaW3x8Qoy5_mf8uUkJGHtiYXjmKFy5enhoSU78QGBV0A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/merienda/v22/gNMaW3x8Qoy5_mf8uUkJGHtiYXjmKFy5enhoSU78QGBV0A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gelasio",
-		"filename": "cIfiMaFfvUQxTTqS3iKJkLGbI41wQL8Ilycs-TDO8Aba",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gelasio/v14/cIfiMaFfvUQxTTqS3iKJkLGbI41wQL8Ilycs-TDO8Aba.ttf",
-		"weight": 400
+		displayName: "Gelasio",
+		filename: "cIfiMaFfvUQxTTqS3iKJkLGbI41wQL8Ilycs-TDO8Aba",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gelasio/v14/cIfiMaFfvUQxTTqS3iKJkLGbI41wQL8Ilycs-TDO8Aba.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lusitana",
-		"filename": "CSR84z9ShvucWzsMKxhaRuMiSct_",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/lusitana/v14/CSR84z9ShvucWzsMKxhaRuMiSct_.ttf",
-		"weight": 400
+		displayName: "Lusitana",
+		filename: "CSR84z9ShvucWzsMKxhaRuMiSct_",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/lusitana/v14/CSR84z9ShvucWzsMKxhaRuMiSct_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sofia Sans Condensed",
-		"filename": "r05xGKVS5aVKd567NYXawnFKJaTtoAuLnK0EjiAN5s9CZwUqh-Gsl8QO3OfwQQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sofiasanscondensed/v6/r05xGKVS5aVKd567NYXawnFKJaTtoAuLnK0EjiAN5s9CZwUqh-Gsl8QO3OfwQQ.ttf",
-		"weight": 400
+		displayName: "Sofia Sans Condensed",
+		filename: "r05xGKVS5aVKd567NYXawnFKJaTtoAuLnK0EjiAN5s9CZwUqh-Gsl8QO3OfwQQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sofiasanscondensed/v6/r05xGKVS5aVKd567NYXawnFKJaTtoAuLnK0EjiAN5s9CZwUqh-Gsl8QO3OfwQQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arsenal",
-		"filename": "wXKrE3kQtZQ4pF3D11_WAewrhXY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/arsenal/v13/wXKrE3kQtZQ4pF3D11_WAewrhXY.ttf",
-		"weight": 400
+		displayName: "Arsenal",
+		filename: "wXKrE3kQtZQ4pF3D11_WAewrhXY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/arsenal/v13/wXKrE3kQtZQ4pF3D11_WAewrhXY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "VT323",
-		"filename": "pxiKyp0ihIEF2hsYHpT2dkNE",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/vt323/v18/pxiKyp0ihIEF2hsYHpT2dkNE.ttf",
-		"weight": 400
+		displayName: "VT323",
+		filename: "pxiKyp0ihIEF2hsYHpT2dkNE",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/vt323/v18/pxiKyp0ihIEF2hsYHpT2dkNE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ultra",
-		"filename": "zOLy4prXmrtY-tT6yLOD6NxF",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ultra/v25/zOLy4prXmrtY-tT6yLOD6NxF.ttf",
-		"weight": 400
+		displayName: "Ultra",
+		filename: "zOLy4prXmrtY-tT6yLOD6NxF",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ultra/v25/zOLy4prXmrtY-tT6yLOD6NxF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yeseva One",
-		"filename": "OpNJno4ck8vc-xYpwWWxpipfWhXD00c",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yesevaone/v24/OpNJno4ck8vc-xYpwWWxpipfWhXD00c.ttf",
-		"weight": 400
+		displayName: "Yeseva One",
+		filename: "OpNJno4ck8vc-xYpwWWxpipfWhXD00c",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yesevaone/v24/OpNJno4ck8vc-xYpwWWxpipfWhXD00c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Monda",
-		"filename": "TK3-WkYFABsmjuBtFuvTIFRAPpWsH3oMoWtGaA-Ijw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/monda/v19/TK3-WkYFABsmjuBtFuvTIFRAPpWsH3oMoWtGaA-Ijw.ttf",
-		"weight": 400
+		displayName: "Monda",
+		filename: "TK3-WkYFABsmjuBtFuvTIFRAPpWsH3oMoWtGaA-Ijw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/monda/v19/TK3-WkYFABsmjuBtFuvTIFRAPpWsH3oMoWtGaA-Ijw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "M PLUS 1",
-		"filename": "R70EjygA28ymD4HgBUGzkN5Eyoj-WpW5VSa78nZcsGGycA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mplus1/v15/R70EjygA28ymD4HgBUGzkN5Eyoj-WpW5VSa78nZcsGGycA.ttf",
-		"weight": 400
+		displayName: "M PLUS 1",
+		filename: "R70EjygA28ymD4HgBUGzkN5Eyoj-WpW5VSa78nZcsGGycA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mplus1/v15/R70EjygA28ymD4HgBUGzkN5Eyoj-WpW5VSa78nZcsGGycA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dela Gothic One",
-		"filename": "hESp6XxvMDRA-2eD0lXpDa6QkBAGRUsJQAlbUA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/delagothicone/v19/hESp6XxvMDRA-2eD0lXpDa6QkBAGRUsJQAlbUA.ttf",
-		"weight": 400
+		displayName: "Dela Gothic One",
+		filename: "hESp6XxvMDRA-2eD0lXpDa6QkBAGRUsJQAlbUA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/delagothicone/v19/hESp6XxvMDRA-2eD0lXpDa6QkBAGRUsJQAlbUA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geist Mono",
-		"filename": "or3yQ6H-1_WfwkMZI_qYPLs1a-t7PU0AbeE9KJ5T7ihaO_CS",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/geistmono/v4/or3yQ6H-1_WfwkMZI_qYPLs1a-t7PU0AbeE9KJ5T7ihaO_CS.ttf",
-		"weight": 400
+		displayName: "Geist Mono",
+		filename: "or3yQ6H-1_WfwkMZI_qYPLs1a-t7PU0AbeE9KJ5T7ihaO_CS",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/geistmono/v4/or3yQ6H-1_WfwkMZI_qYPLs1a-t7PU0AbeE9KJ5T7ihaO_CS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alice",
-		"filename": "OpNCnoEEmtHa6FcJpA_chzJ0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/alice/v21/OpNCnoEEmtHa6FcJpA_chzJ0.ttf",
-		"weight": 400
+		displayName: "Alice",
+		filename: "OpNCnoEEmtHa6FcJpA_chzJ0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/alice/v21/OpNCnoEEmtHa6FcJpA_chzJ0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anonymous Pro",
-		"filename": "rP2Bp2a15UIB7Un-bOeISG3pLlw89CH98Ko",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/anonymouspro/v22/rP2Bp2a15UIB7Un-bOeISG3pLlw89CH98Ko.ttf",
-		"weight": 400
+		displayName: "Anonymous Pro",
+		filename: "rP2Bp2a15UIB7Un-bOeISG3pLlw89CH98Ko",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/anonymouspro/v22/rP2Bp2a15UIB7Un-bOeISG3pLlw89CH98Ko.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Bengali",
-		"filename": "hYkuPvggTvnzO14VSXltirUdnnkt1pwmWrprmO7RjE0a5BtdATYU1crFaM_5JfcAHnqn4LjQH8yD",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifbengali/v31/hYkuPvggTvnzO14VSXltirUdnnkt1pwmWrprmO7RjE0a5BtdATYU1crFaM_5JfcAHnqn4LjQH8yD.ttf",
-		"weight": 400
+		displayName: "Noto Serif Bengali",
+		filename: "hYkuPvggTvnzO14VSXltirUdnnkt1pwmWrprmO7RjE0a5BtdATYU1crFaM_5JfcAHnqn4LjQH8yD",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifbengali/v31/hYkuPvggTvnzO14VSXltirUdnnkt1pwmWrprmO7RjE0a5BtdATYU1crFaM_5JfcAHnqn4LjQH8yD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Saira Extra Condensed",
-		"filename": "-nFiOHYr-vcC7h8MklGBkrvmUG9rbpkisrTT70L11Ct8sw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sairaextracondensed/v15/-nFiOHYr-vcC7h8MklGBkrvmUG9rbpkisrTT70L11Ct8sw.ttf",
-		"weight": 400
+		displayName: "Saira Extra Condensed",
+		filename: "-nFiOHYr-vcC7h8MklGBkrvmUG9rbpkisrTT70L11Ct8sw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sairaextracondensed/v15/-nFiOHYr-vcC7h8MklGBkrvmUG9rbpkisrTT70L11Ct8sw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Abhaya Libre",
-		"filename": "e3tmeuGtX-Co5MNzeAOqinEge0PWovdU4w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/abhayalibre/v18/e3tmeuGtX-Co5MNzeAOqinEge0PWovdU4w.ttf",
-		"weight": 400
+		displayName: "Abhaya Libre",
+		filename: "e3tmeuGtX-Co5MNzeAOqinEge0PWovdU4w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/abhayalibre/v18/e3tmeuGtX-Co5MNzeAOqinEge0PWovdU4w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fira Mono",
-		"filename": "N0bX2SlFPv1weGeLZDtQIfTTkdbJYA",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/firamono/v16/N0bX2SlFPv1weGeLZDtQIfTTkdbJYA.ttf",
-		"weight": 400
+		displayName: "Fira Mono",
+		filename: "N0bX2SlFPv1weGeLZDtQIfTTkdbJYA",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/firamono/v16/N0bX2SlFPv1weGeLZDtQIfTTkdbJYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Itim",
-		"filename": "0nknC9ziJOYewARKkc7ZdwU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/itim/v16/0nknC9ziJOYewARKkc7ZdwU.ttf",
-		"weight": 400
+		displayName: "Itim",
+		filename: "0nknC9ziJOYewARKkc7ZdwU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/itim/v16/0nknC9ziJOYewARKkc7ZdwU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cuprum",
-		"filename": "dg45_pLmvrkcOkBnKsOzXyGWTBcmg-X6ZjzSJjQjgnU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cuprum/v29/dg45_pLmvrkcOkBnKsOzXyGWTBcmg-X6ZjzSJjQjgnU.ttf",
-		"weight": 400
+		displayName: "Cuprum",
+		filename: "dg45_pLmvrkcOkBnKsOzXyGWTBcmg-X6ZjzSJjQjgnU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cuprum/v29/dg45_pLmvrkcOkBnKsOzXyGWTBcmg-X6ZjzSJjQjgnU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amita",
-		"filename": "HhyaU5si9Om7PQlvAfSKEZZL",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/amita/v20/HhyaU5si9Om7PQlvAfSKEZZL.ttf",
-		"weight": 400
+		displayName: "Amita",
+		filename: "HhyaU5si9Om7PQlvAfSKEZZL",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/amita/v20/HhyaU5si9Om7PQlvAfSKEZZL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Istok Web",
-		"filename": "3qTvojGmgSyUukBzKslZAWF-9kIIaQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/istokweb/v26/3qTvojGmgSyUukBzKslZAWF-9kIIaQ.ttf",
-		"weight": 400
+		displayName: "Istok Web",
+		filename: "3qTvojGmgSyUukBzKslZAWF-9kIIaQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/istokweb/v26/3qTvojGmgSyUukBzKslZAWF-9kIIaQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Faustina",
-		"filename": "XLY4IZPxYpJfTbZAFXWzNT2SO8wpWHlsgoEvGVWWe8tbEg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/faustina/v23/XLY4IZPxYpJfTbZAFXWzNT2SO8wpWHlsgoEvGVWWe8tbEg.ttf",
-		"weight": 400
+		displayName: "Faustina",
+		filename: "XLY4IZPxYpJfTbZAFXWzNT2SO8wpWHlsgoEvGVWWe8tbEg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/faustina/v23/XLY4IZPxYpJfTbZAFXWzNT2SO8wpWHlsgoEvGVWWe8tbEg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gabarito",
-		"filename": "QGYwz_0dZAGKJJ4t3FFkc3Q8AkNP9Pj248K0FgItq6bFIg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gabarito/v9/QGYwz_0dZAGKJJ4t3FFkc3Q8AkNP9Pj248K0FgItq6bFIg.ttf",
-		"weight": 400
+		displayName: "Gabarito",
+		filename: "QGYwz_0dZAGKJJ4t3FFkc3Q8AkNP9Pj248K0FgItq6bFIg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gabarito/v9/QGYwz_0dZAGKJJ4t3FFkc3Q8AkNP9Pj248K0FgItq6bFIg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mukta Malar",
-		"filename": "MCoXzAXyz8LOE2FpJMxZqLv4LfQJwHbn",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/muktamalar/v14/MCoXzAXyz8LOE2FpJMxZqLv4LfQJwHbn.ttf",
-		"weight": 400
+		displayName: "Mukta Malar",
+		filename: "MCoXzAXyz8LOE2FpJMxZqLv4LfQJwHbn",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/muktamalar/v14/MCoXzAXyz8LOE2FpJMxZqLv4LfQJwHbn.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Calistoga",
-		"filename": "6NUU8F2OJg6MeR7l4e0vtMYAwdRZfw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/calistoga/v18/6NUU8F2OJg6MeR7l4e0vtMYAwdRZfw.ttf",
-		"weight": 400
+		displayName: "Calistoga",
+		filename: "6NUU8F2OJg6MeR7l4e0vtMYAwdRZfw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/calistoga/v18/6NUU8F2OJg6MeR7l4e0vtMYAwdRZfw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Goldman",
-		"filename": "pe0uMIWbN4JFplR2LDJ4Bt-7G98",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/goldman/v21/pe0uMIWbN4JFplR2LDJ4Bt-7G98.ttf",
-		"weight": 400
+		displayName: "Goldman",
+		filename: "pe0uMIWbN4JFplR2LDJ4Bt-7G98",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/goldman/v21/pe0uMIWbN4JFplR2LDJ4Bt-7G98.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mada",
-		"filename": "7Aulp_0qnzeSVz7u3PJLcUMYOFnOkHkw2-m9x2iC",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mada/v21/7Aulp_0qnzeSVz7u3PJLcUMYOFnOkHkw2-m9x2iC.ttf",
-		"weight": 400
+		displayName: "Mada",
+		filename: "7Aulp_0qnzeSVz7u3PJLcUMYOFnOkHkw2-m9x2iC",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mada/v21/7Aulp_0qnzeSVz7u3PJLcUMYOFnOkHkw2-m9x2iC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Volkhov",
-		"filename": "SlGQmQieoJcKemNeQTIOhHxzcD0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/volkhov/v18/SlGQmQieoJcKemNeQTIOhHxzcD0.ttf",
-		"weight": 400
+		displayName: "Volkhov",
+		filename: "SlGQmQieoJcKemNeQTIOhHxzcD0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/volkhov/v18/SlGQmQieoJcKemNeQTIOhHxzcD0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yrsa",
-		"filename": "wlprgwnQFlxs_wD3CFSMYmFaaCieSNNV9rRPfrKu",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/yrsa/v25/wlprgwnQFlxs_wD3CFSMYmFaaCieSNNV9rRPfrKu.ttf",
-		"weight": 400
+		displayName: "Yrsa",
+		filename: "wlprgwnQFlxs_wD3CFSMYmFaaCieSNNV9rRPfrKu",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/yrsa/v25/wlprgwnQFlxs_wD3CFSMYmFaaCieSNNV9rRPfrKu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nanum Pen Script",
-		"filename": "daaDSSYiLGqEal3MvdA_FOL_3FkN2z7-aMFCcTU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/nanumpenscript/v25/daaDSSYiLGqEal3MvdA_FOL_3FkN2z7-aMFCcTU.ttf",
-		"weight": 400
+		displayName: "Nanum Pen Script",
+		filename: "daaDSSYiLGqEal3MvdA_FOL_3FkN2z7-aMFCcTU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/nanumpenscript/v25/daaDSSYiLGqEal3MvdA_FOL_3FkN2z7-aMFCcTU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pinyon Script",
-		"filename": "6xKpdSJbL9-e9LuoeQiDRQR8aOLQO4bhiDY",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/pinyonscript/v24/6xKpdSJbL9-e9LuoeQiDRQR8aOLQO4bhiDY.ttf",
-		"weight": 400
+		displayName: "Pinyon Script",
+		filename: "6xKpdSJbL9-e9LuoeQiDRQR8aOLQO4bhiDY",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/pinyonscript/v24/6xKpdSJbL9-e9LuoeQiDRQR8aOLQO4bhiDY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hind Guntur",
-		"filename": "wXKvE3UZrok56nvamSuJd8Qqt3M7tMDT",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hindguntur/v14/wXKvE3UZrok56nvamSuJd8Qqt3M7tMDT.ttf",
-		"weight": 400
+		displayName: "Hind Guntur",
+		filename: "wXKvE3UZrok56nvamSuJd8Qqt3M7tMDT",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hindguntur/v14/wXKvE3UZrok56nvamSuJd8Qqt3M7tMDT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Petrona",
-		"filename": "mtGl4_NXL7bZo9XXq35wRLONYyOjFk6NsQRBH452Mvds",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/petrona/v36/mtGl4_NXL7bZo9XXq35wRLONYyOjFk6NsQRBH452Mvds.ttf",
-		"weight": 400
+		displayName: "Petrona",
+		filename: "mtGl4_NXL7bZo9XXq35wRLONYyOjFk6NsQRBH452Mvds",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/petrona/v36/mtGl4_NXL7bZo9XXq35wRLONYyOjFk6NsQRBH452Mvds.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ubuntu Mono",
-		"filename": "KFOjCneDtsqEr0keqCMhbBc9AMX6lJBP",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/ubuntumono/v19/KFOjCneDtsqEr0keqCMhbBc9AMX6lJBP.ttf",
-		"weight": 400
+		displayName: "Ubuntu Mono",
+		filename: "KFOjCneDtsqEr0keqCMhbBc9AMX6lJBP",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/ubuntumono/v19/KFOjCneDtsqEr0keqCMhbBc9AMX6lJBP.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Saira Semi Condensed",
-		"filename": "U9MD6c-2-nnJkHxyCjRcnMHcWVWV1cWRRU8LYuceqGT-",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sairasemicondensed/v15/U9MD6c-2-nnJkHxyCjRcnMHcWVWV1cWRRU8LYuceqGT-.ttf",
-		"weight": 400
+		displayName: "Saira Semi Condensed",
+		filename: "U9MD6c-2-nnJkHxyCjRcnMHcWVWV1cWRRU8LYuceqGT-",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sairasemicondensed/v15/U9MD6c-2-nnJkHxyCjRcnMHcWVWV1cWRRU8LYuceqGT-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caladea",
-		"filename": "kJEzBugZ7AAjhybUjR93-9IztOc",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/caladea/v8/kJEzBugZ7AAjhybUjR93-9IztOc.ttf",
-		"weight": 400
+		displayName: "Caladea",
+		filename: "kJEzBugZ7AAjhybUjR93-9IztOc",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/caladea/v8/kJEzBugZ7AAjhybUjR93-9IztOc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "La Belle Aurore",
-		"filename": "RrQIbot8-mNYKnGNDkWlocovHeIIG-eFNVmULg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/labelleaurore/v23/RrQIbot8-mNYKnGNDkWlocovHeIIG-eFNVmULg.ttf",
-		"weight": 400
+		displayName: "La Belle Aurore",
+		filename: "RrQIbot8-mNYKnGNDkWlocovHeIIG-eFNVmULg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/labelleaurore/v23/RrQIbot8-mNYKnGNDkWlocovHeIIG-eFNVmULg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 10",
-		"filename": "GftH7vZKsggXMf9n_J5X-JLgy1wtSw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey10/v4/GftH7vZKsggXMf9n_J5X-JLgy1wtSw.ttf",
-		"weight": 400
+		displayName: "Jersey 10",
+		filename: "GftH7vZKsggXMf9n_J5X-JLgy1wtSw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey10/v4/GftH7vZKsggXMf9n_J5X-JLgy1wtSw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pangolin",
-		"filename": "cY9GfjGcW0FPpi-tWPfK5d3aiLBG",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/pangolin/v12/cY9GfjGcW0FPpi-tWPfK5d3aiLBG.ttf",
-		"weight": 400
+		displayName: "Pangolin",
+		filename: "cY9GfjGcW0FPpi-tWPfK5d3aiLBG",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/pangolin/v12/cY9GfjGcW0FPpi-tWPfK5d3aiLBG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nothing You Could Do",
-		"filename": "oY1B8fbBpaP5OX3DtrRYf_Q2BPB1SnfZb0OJl1ol2Ymo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/nothingyoucoulddo/v21/oY1B8fbBpaP5OX3DtrRYf_Q2BPB1SnfZb0OJl1ol2Ymo.ttf",
-		"weight": 400
+		displayName: "Nothing You Could Do",
+		filename: "oY1B8fbBpaP5OX3DtrRYf_Q2BPB1SnfZb0OJl1ol2Ymo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/nothingyoucoulddo/v21/oY1B8fbBpaP5OX3DtrRYf_Q2BPB1SnfZb0OJl1ol2Ymo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cinzel Decorative",
-		"filename": "daaCSScvJGqLYhG8nNt8KPPswUAPnh7URs1LaCyC",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cinzeldecorative/v19/daaCSScvJGqLYhG8nNt8KPPswUAPnh7URs1LaCyC.ttf",
-		"weight": 400
+		displayName: "Cinzel Decorative",
+		filename: "daaCSScvJGqLYhG8nNt8KPPswUAPnh7URs1LaCyC",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cinzeldecorative/v19/daaCSScvJGqLYhG8nNt8KPPswUAPnh7URs1LaCyC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Share Tech Mono",
-		"filename": "J7aHnp1uDWRBEqV98dVQztYldFc7pAsEIc3Xew",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/sharetechmono/v16/J7aHnp1uDWRBEqV98dVQztYldFc7pAsEIc3Xew.ttf",
-		"weight": 400
+		displayName: "Share Tech Mono",
+		filename: "J7aHnp1uDWRBEqV98dVQztYldFc7pAsEIc3Xew",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/sharetechmono/v16/J7aHnp1uDWRBEqV98dVQztYldFc7pAsEIc3Xew.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cormorant Infant",
-		"filename": "HhyCU44g9vKiM1sORYSiWeAsLN99xfs9KOOc_agJPrgvYOWThDlDkWSy",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cormorantinfant/v22/HhyCU44g9vKiM1sORYSiWeAsLN99xfs9KOOc_agJPrgvYOWThDlDkWSy.ttf",
-		"weight": 400
+		displayName: "Cormorant Infant",
+		filename: "HhyCU44g9vKiM1sORYSiWeAsLN99xfs9KOOc_agJPrgvYOWThDlDkWSy",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cormorantinfant/v22/HhyCU44g9vKiM1sORYSiWeAsLN99xfs9KOOc_agJPrgvYOWThDlDkWSy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hind Vadodara",
-		"filename": "neINzCKvrIcn5pbuuuriV9tTcJXfrXsfvSo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hindvadodara/v16/neINzCKvrIcn5pbuuuriV9tTcJXfrXsfvSo.ttf",
-		"weight": 400
+		displayName: "Hind Vadodara",
+		filename: "neINzCKvrIcn5pbuuuriV9tTcJXfrXsfvSo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hindvadodara/v16/neINzCKvrIcn5pbuuuriV9tTcJXfrXsfvSo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bad Script",
-		"filename": "6NUT8F6PJgbFWQn47_x7lOwuzd1AZtw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/badscript/v18/6NUT8F6PJgbFWQn47_x7lOwuzd1AZtw.ttf",
-		"weight": 400
+		displayName: "Bad Script",
+		filename: "6NUT8F6PJgbFWQn47_x7lOwuzd1AZtw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/badscript/v18/6NUT8F6PJgbFWQn47_x7lOwuzd1AZtw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vidaloka",
-		"filename": "7cHrv4c3ipenMKlEass8yn4hnCci",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/vidaloka/v19/7cHrv4c3ipenMKlEass8yn4hnCci.ttf",
-		"weight": 400
+		displayName: "Vidaloka",
+		filename: "7cHrv4c3ipenMKlEass8yn4hnCci",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/vidaloka/v19/7cHrv4c3ipenMKlEass8yn4hnCci.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Carter One",
-		"filename": "q5uCsoe5IOB2-pXv9UcNIxR2hYxREMs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/carterone/v18/q5uCsoe5IOB2-pXv9UcNIxR2hYxREMs.ttf",
-		"weight": 400
+		displayName: "Carter One",
+		filename: "q5uCsoe5IOB2-pXv9UcNIxR2hYxREMs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/carterone/v18/q5uCsoe5IOB2-pXv9UcNIxR2hYxREMs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mr Dafoe",
-		"filename": "lJwE-pIzkS5NXuMMrGiqg7MCxz_C",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mrdafoe/v15/lJwE-pIzkS5NXuMMrGiqg7MCxz_C.ttf",
-		"weight": 400
+		displayName: "Mr Dafoe",
+		filename: "lJwE-pIzkS5NXuMMrGiqg7MCxz_C",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mrdafoe/v15/lJwE-pIzkS5NXuMMrGiqg7MCxz_C.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Hebrew",
-		"filename": "or3HQ7v33eiDljA1IufXTtVf7V6RvEEdhQlk0LlGxCyaeNKYZC0sqk3xXGiXd4qtoiJltutR2g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanshebrew/v50/or3HQ7v33eiDljA1IufXTtVf7V6RvEEdhQlk0LlGxCyaeNKYZC0sqk3xXGiXd4qtoiJltutR2g.ttf",
-		"weight": 400
+		displayName: "Noto Sans Hebrew",
+		filename: "or3HQ7v33eiDljA1IufXTtVf7V6RvEEdhQlk0LlGxCyaeNKYZC0sqk3xXGiXd4qtoiJltutR2g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanshebrew/v50/or3HQ7v33eiDljA1IufXTtVf7V6RvEEdhQlk0LlGxCyaeNKYZC0sqk3xXGiXd4qtoiJltutR2g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "GFS Didot",
-		"filename": "Jqzh5TybZ9vZMWFssvwiF-fGFSCGAA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gfsdidot/v18/Jqzh5TybZ9vZMWFssvwiF-fGFSCGAA.ttf",
-		"weight": 400
+		displayName: "GFS Didot",
+		filename: "Jqzh5TybZ9vZMWFssvwiF-fGFSCGAA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gfsdidot/v18/Jqzh5TybZ9vZMWFssvwiF-fGFSCGAA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Andika",
-		"filename": "mem_Ya6iyW-LwqgAbbwRWrwGVA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/andika/v27/mem_Ya6iyW-LwqgAbbwRWrwGVA.ttf",
-		"weight": 400
+		displayName: "Andika",
+		filename: "mem_Ya6iyW-LwqgAbbwRWrwGVA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/andika/v27/mem_Ya6iyW-LwqgAbbwRWrwGVA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lateef",
-		"filename": "hESw6XVnNCxEvkbMpheEZo_H_w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/lateef/v35/hESw6XVnNCxEvkbMpheEZo_H_w.ttf",
-		"weight": 400
+		displayName: "Lateef",
+		filename: "hESw6XVnNCxEvkbMpheEZo_H_w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/lateef/v35/hESw6XVnNCxEvkbMpheEZo_H_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cousine",
-		"filename": "d6lIkaiiRdih4SpPzSMlzTbtz9k",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/cousine/v29/d6lIkaiiRdih4SpPzSMlzTbtz9k.ttf",
-		"weight": 400
+		displayName: "Cousine",
+		filename: "d6lIkaiiRdih4SpPzSMlzTbtz9k",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/cousine/v29/d6lIkaiiRdih4SpPzSMlzTbtz9k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Syncopate",
-		"filename": "pe0sMIuPIYBCpEV5eFdyAv2-C99ycg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/syncopate/v24/pe0sMIuPIYBCpEV5eFdyAv2-C99ycg.ttf",
-		"weight": 400
+		displayName: "Syncopate",
+		filename: "pe0sMIuPIYBCpEV5eFdyAv2-C99ycg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/syncopate/v24/pe0sMIuPIYBCpEV5eFdyAv2-C99ycg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sriracha",
-		"filename": "0nkrC9D4IuYBgWcI9ObYRQDioeb0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sriracha/v16/0nkrC9D4IuYBgWcI9ObYRQDioeb0.ttf",
-		"weight": 400
+		displayName: "Sriracha",
+		filename: "0nkrC9D4IuYBgWcI9ObYRQDioeb0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sriracha/v16/0nkrC9D4IuYBgWcI9ObYRQDioeb0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playball",
-		"filename": "TK3gWksYAxQ7jbsKcj8Dl-tPKo2t",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/playball/v22/TK3gWksYAxQ7jbsKcj8Dl-tPKo2t.ttf",
-		"weight": 400
+		displayName: "Playball",
+		filename: "TK3gWksYAxQ7jbsKcj8Dl-tPKo2t",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/playball/v22/TK3gWksYAxQ7jbsKcj8Dl-tPKo2t.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Belanosima",
-		"filename": "3y9k6bI8ejDo_3MfCDSLxABbF3JBg54",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/belanosima/v4/3y9k6bI8ejDo_3MfCDSLxABbF3JBg54.ttf",
-		"weight": 400
+		displayName: "Belanosima",
+		filename: "3y9k6bI8ejDo_3MfCDSLxABbF3JBg54",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/belanosima/v4/3y9k6bI8ejDo_3MfCDSLxABbF3JBg54.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mochiy Pop One",
-		"filename": "QdVPSTA9Jh-gg-5XZP2UmU4O9kwwD3s6ZKAi",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mochiypopone/v12/QdVPSTA9Jh-gg-5XZP2UmU4O9kwwD3s6ZKAi.ttf",
-		"weight": 400
+		displayName: "Mochiy Pop One",
+		filename: "QdVPSTA9Jh-gg-5XZP2UmU4O9kwwD3s6ZKAi",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mochiypopone/v12/QdVPSTA9Jh-gg-5XZP2UmU4O9kwwD3s6ZKAi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Racing Sans One",
-		"filename": "sykr-yRtm7EvTrXNxkv5jfKKyDCwL3rmWpIBtA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/racingsansone/v17/sykr-yRtm7EvTrXNxkv5jfKKyDCwL3rmWpIBtA.ttf",
-		"weight": 400
+		displayName: "Racing Sans One",
+		filename: "sykr-yRtm7EvTrXNxkv5jfKKyDCwL3rmWpIBtA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/racingsansone/v17/sykr-yRtm7EvTrXNxkv5jfKKyDCwL3rmWpIBtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cabin Condensed",
-		"filename": "nwpMtK6mNhBK2err_hqkYhHRqmwaYOjZ5HZl8Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cabincondensed/v21/nwpMtK6mNhBK2err_hqkYhHRqmwaYOjZ5HZl8Q.ttf",
-		"weight": 400
+		displayName: "Cabin Condensed",
+		filename: "nwpMtK6mNhBK2err_hqkYhHRqmwaYOjZ5HZl8Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cabincondensed/v21/nwpMtK6mNhBK2err_hqkYhHRqmwaYOjZ5HZl8Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Julius Sans One",
-		"filename": "1Pt2g8TAX_SGgBGUi0tGOYEga5W-xXEW6aGXHw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/juliussansone/v20/1Pt2g8TAX_SGgBGUi0tGOYEga5W-xXEW6aGXHw.ttf",
-		"weight": 400
+		displayName: "Julius Sans One",
+		filename: "1Pt2g8TAX_SGgBGUi0tGOYEga5W-xXEW6aGXHw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/juliussansone/v20/1Pt2g8TAX_SGgBGUi0tGOYEga5W-xXEW6aGXHw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Leckerli One",
-		"filename": "V8mCoQH8VCsNttEnxnGQ-1itLZxcBtItFw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/leckerlione/v22/V8mCoQH8VCsNttEnxnGQ-1itLZxcBtItFw.ttf",
-		"weight": 400
+		displayName: "Leckerli One",
+		filename: "V8mCoQH8VCsNttEnxnGQ-1itLZxcBtItFw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/leckerlione/v22/V8mCoQH8VCsNttEnxnGQ-1itLZxcBtItFw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fira Sans Extra Condensed",
-		"filename": "NaPKcYDaAO5dirw6IaFn7lPJFqXmS-M9Atn3wgda5fiku3efvE8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/firasansextracondensed/v11/NaPKcYDaAO5dirw6IaFn7lPJFqXmS-M9Atn3wgda5fiku3efvE8.ttf",
-		"weight": 400
+		displayName: "Fira Sans Extra Condensed",
+		filename: "NaPKcYDaAO5dirw6IaFn7lPJFqXmS-M9Atn3wgda5fiku3efvE8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/firasansextracondensed/v11/NaPKcYDaAO5dirw6IaFn7lPJFqXmS-M9Atn3wgda5fiku3efvE8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ruda",
-		"filename": "k3kKo8YQJOpFgHQ1mQ5VkEbUKaJFsi_-2KiSGg-H",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ruda/v30/k3kKo8YQJOpFgHQ1mQ5VkEbUKaJFsi_-2KiSGg-H.ttf",
-		"weight": 400
+		displayName: "Ruda",
+		filename: "k3kKo8YQJOpFgHQ1mQ5VkEbUKaJFsi_-2KiSGg-H",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ruda/v30/k3kKo8YQJOpFgHQ1mQ5VkEbUKaJFsi_-2KiSGg-H.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Balsamiq Sans",
-		"filename": "P5sEzZiAbNrN8SB3lQQX7Pnc8dkdIYdNHzs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/balsamiqsans/v15/P5sEzZiAbNrN8SB3lQQX7Pnc8dkdIYdNHzs.ttf",
-		"weight": 400
+		displayName: "Balsamiq Sans",
+		filename: "P5sEzZiAbNrN8SB3lQQX7Pnc8dkdIYdNHzs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/balsamiqsans/v15/P5sEzZiAbNrN8SB3lQQX7Pnc8dkdIYdNHzs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Marck Script",
-		"filename": "nwpTtK2oNgBA3Or78gapdwuCzyI-aMPF7Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/marckscript/v22/nwpTtK2oNgBA3Or78gapdwuCzyI-aMPF7Q.ttf",
-		"weight": 400
+		displayName: "Marck Script",
+		filename: "nwpTtK2oNgBA3Or78gapdwuCzyI-aMPF7Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/marckscript/v22/nwpTtK2oNgBA3Or78gapdwuCzyI-aMPF7Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gudea",
-		"filename": "neIFzCqgsI0mp-CP9IGON7Ez",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gudea/v16/neIFzCqgsI0mp-CP9IGON7Ez.ttf",
-		"weight": 400
+		displayName: "Gudea",
+		filename: "neIFzCqgsI0mp-CP9IGON7Ez",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gudea/v16/neIFzCqgsI0mp-CP9IGON7Ez.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Just Another Hand",
-		"filename": "845CNN4-AJyIGvIou-6yJKyptyOpOcr_BmmlS5aw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/justanotherhand/v21/845CNN4-AJyIGvIou-6yJKyptyOpOcr_BmmlS5aw.ttf",
-		"weight": 400
+		displayName: "Just Another Hand",
+		filename: "845CNN4-AJyIGvIou-6yJKyptyOpOcr_BmmlS5aw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/justanotherhand/v21/845CNN4-AJyIGvIou-6yJKyptyOpOcr_BmmlS5aw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mona Sans",
-		"filename": "o-0mIpQmx24alC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/monasans/v4/o-0mIpQmx24alC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY.ttf",
-		"weight": 400
+		displayName: "Mona Sans",
+		filename: "o-0mIpQmx24alC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/monasans/v4/o-0mIpQmx24alC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d41P6zHtY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Display",
-		"filename": "buERppa9f8_vkXaZLAgP0G5Wi6QmA1QaeYah2sovLCDq_ZgLyt3idQfktOG-PVpd4tgKaDU9hvzC",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifdisplay/v29/buERppa9f8_vkXaZLAgP0G5Wi6QmA1QaeYah2sovLCDq_ZgLyt3idQfktOG-PVpd4tgKaDU9hvzC.ttf",
-		"weight": 400
+		displayName: "Noto Serif Display",
+		filename: "buERppa9f8_vkXaZLAgP0G5Wi6QmA1QaeYah2sovLCDq_ZgLyt3idQfktOG-PVpd4tgKaDU9hvzC",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifdisplay/v29/buERppa9f8_vkXaZLAgP0G5Wi6QmA1QaeYah2sovLCDq_ZgLyt3idQfktOG-PVpd4tgKaDU9hvzC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Six Caps",
-		"filename": "6ae_4KGrU7VR7bNmabcS9XXaPCop",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sixcaps/v23/6ae_4KGrU7VR7bNmabcS9XXaPCop.ttf",
-		"weight": 400
+		displayName: "Six Caps",
+		filename: "6ae_4KGrU7VR7bNmabcS9XXaPCop",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sixcaps/v23/6ae_4KGrU7VR7bNmabcS9XXaPCop.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Belleza",
-		"filename": "0nkoC9_pNeMfhX4BtcbyawzruP8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/belleza/v18/0nkoC9_pNeMfhX4BtcbyawzruP8.ttf",
-		"weight": 400
+		displayName: "Belleza",
+		filename: "0nkoC9_pNeMfhX4BtcbyawzruP8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/belleza/v18/0nkoC9_pNeMfhX4BtcbyawzruP8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pontano Sans",
-		"filename": "qFdW35GdgYR8EzR6oBLDHa3wyRf8W8eBM6XLOXLMncaMp9gzWsE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/pontanosans/v19/qFdW35GdgYR8EzR6oBLDHa3wyRf8W8eBM6XLOXLMncaMp9gzWsE.ttf",
-		"weight": 400
+		displayName: "Pontano Sans",
+		filename: "qFdW35GdgYR8EzR6oBLDHa3wyRf8W8eBM6XLOXLMncaMp9gzWsE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/pontanosans/v19/qFdW35GdgYR8EzR6oBLDHa3wyRf8W8eBM6XLOXLMncaMp9gzWsE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sarala",
-		"filename": "uK_y4riEZv4o1w9RCh0TMv6EXw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sarala/v14/uK_y4riEZv4o1w9RCh0TMv6EXw.ttf",
-		"weight": 400
+		displayName: "Sarala",
+		filename: "uK_y4riEZv4o1w9RCh0TMv6EXw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sarala/v14/uK_y4riEZv4o1w9RCh0TMv6EXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Black Ops One",
-		"filename": "qWcsB6-ypo7xBdr6Xshe96H3WDzRtjkho4M",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/blackopsone/v21/qWcsB6-ypo7xBdr6Xshe96H3WDzRtjkho4M.ttf",
-		"weight": 400
+		displayName: "Black Ops One",
+		filename: "qWcsB6-ypo7xBdr6Xshe96H3WDzRtjkho4M",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/blackopsone/v21/qWcsB6-ypo7xBdr6Xshe96H3WDzRtjkho4M.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Boogaloo",
-		"filename": "kmK-Zq45GAvOdnaW6x1F_SrQo_1K",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/boogaloo/v25/kmK-Zq45GAvOdnaW6x1F_SrQo_1K.ttf",
-		"weight": 400
+		displayName: "Boogaloo",
+		filename: "kmK-Zq45GAvOdnaW6x1F_SrQo_1K",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/boogaloo/v25/kmK-Zq45GAvOdnaW6x1F_SrQo_1K.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Damion",
-		"filename": "hv-XlzJ3KEUe_YZUbWY3MTFgVg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/damion/v15/hv-XlzJ3KEUe_YZUbWY3MTFgVg.ttf",
-		"weight": 400
+		displayName: "Damion",
+		filename: "hv-XlzJ3KEUe_YZUbWY3MTFgVg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/damion/v15/hv-XlzJ3KEUe_YZUbWY3MTFgVg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wix Madefor Text",
-		"filename": "-W_oXI_oSymQ8Qj-Apx3HGN_Hu1RTCk5FtSDETgf0cK_NOeFgpRt9rN5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wixmadefortext/v17/-W_oXI_oSymQ8Qj-Apx3HGN_Hu1RTCk5FtSDETgf0cK_NOeFgpRt9rN5.ttf",
-		"weight": 400
+		displayName: "Wix Madefor Text",
+		filename: "-W_oXI_oSymQ8Qj-Apx3HGN_Hu1RTCk5FtSDETgf0cK_NOeFgpRt9rN5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wixmadefortext/v17/-W_oXI_oSymQ8Qj-Apx3HGN_Hu1RTCk5FtSDETgf0cK_NOeFgpRt9rN5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Varela",
-		"filename": "DPEtYwqExx0AWHXJBBQFfvzDsQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/varela/v17/DPEtYwqExx0AWHXJBBQFfvzDsQ.ttf",
-		"weight": 400
+		displayName: "Varela",
+		filename: "DPEtYwqExx0AWHXJBBQFfvzDsQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/varela/v17/DPEtYwqExx0AWHXJBBQFfvzDsQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sofia",
-		"filename": "8QIHdirahM3j_vu-sowsrqjk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sofia/v15/8QIHdirahM3j_vu-sowsrqjk.ttf",
-		"weight": 400
+		displayName: "Sofia",
+		filename: "8QIHdirahM3j_vu-sowsrqjk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sofia/v15/8QIHdirahM3j_vu-sowsrqjk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shippori Mincho B1",
-		"filename": "wXK2E2wCr44tulPdnn-xbIpJ9RgT9-nyjqBr1lO97Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/shipporiminchob1/v24/wXK2E2wCr44tulPdnn-xbIpJ9RgT9-nyjqBr1lO97Q.ttf",
-		"weight": 400
+		displayName: "Shippori Mincho B1",
+		filename: "wXK2E2wCr44tulPdnn-xbIpJ9RgT9-nyjqBr1lO97Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/shipporiminchob1/v24/wXK2E2wCr44tulPdnn-xbIpJ9RgT9-nyjqBr1lO97Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chewy",
-		"filename": "uK_94ruUb-k-wk5xIDMfO-ed",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chewy/v18/uK_94ruUb-k-wk5xIDMfO-ed.ttf",
-		"weight": 400
+		displayName: "Chewy",
+		filename: "uK_94ruUb-k-wk5xIDMfO-ed",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chewy/v18/uK_94ruUb-k-wk5xIDMfO-ed.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arapey",
-		"filename": "-W__XJn-UDDA2RC6Z9AcZkIzeg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/arapey/v17/-W__XJn-UDDA2RC6Z9AcZkIzeg.ttf",
-		"weight": 400
+		displayName: "Arapey",
+		filename: "-W__XJn-UDDA2RC6Z9AcZkIzeg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/arapey/v17/-W__XJn-UDDA2RC6Z9AcZkIzeg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bevan",
-		"filename": "4iCj6KZ0a9NXjF8aUir7tlSJ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bevan/v26/4iCj6KZ0a9NXjF8aUir7tlSJ.ttf",
-		"weight": 400
+		displayName: "Bevan",
+		filename: "4iCj6KZ0a9NXjF8aUir7tlSJ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bevan/v26/4iCj6KZ0a9NXjF8aUir7tlSJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gochi Hand",
-		"filename": "hES06XlsOjtJsgCkx1PkTo71-n0nXWA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/gochihand/v25/hES06XlsOjtJsgCkx1PkTo71-n0nXWA.ttf",
-		"weight": 400
+		displayName: "Gochi Hand",
+		filename: "hES06XlsOjtJsgCkx1PkTo71-n0nXWA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/gochihand/v25/hES06XlsOjtJsgCkx1PkTo71-n0nXWA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Martel Sans",
-		"filename": "h0GsssGi7VdzDgKjM-4d8ijfze-PPlUu",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/martelsans/v14/h0GsssGi7VdzDgKjM-4d8ijfze-PPlUu.ttf",
-		"weight": 400
+		displayName: "Martel Sans",
+		filename: "h0GsssGi7VdzDgKjM-4d8ijfze-PPlUu",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/martelsans/v14/h0GsssGi7VdzDgKjM-4d8ijfze-PPlUu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Biryani",
-		"filename": "hv-WlzNxIFoO84YdTUwZPTh5T-s",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/biryani/v15/hv-WlzNxIFoO84YdTUwZPTh5T-s.ttf",
-		"weight": 400
+		displayName: "Biryani",
+		filename: "hv-WlzNxIFoO84YdTUwZPTh5T-s",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/biryani/v15/hv-WlzNxIFoO84YdTUwZPTh5T-s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Afacad",
-		"filename": "6NUK8FKMIQOGaw6wjYT7ZHG_zsBBfhXtWmA08mCgdfM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/afacad/v3/6NUK8FKMIQOGaw6wjYT7ZHG_zsBBfhXtWmA08mCgdfM.ttf",
-		"weight": 400
+		displayName: "Afacad",
+		filename: "6NUK8FKMIQOGaw6wjYT7ZHG_zsBBfhXtWmA08mCgdfM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/afacad/v3/6NUK8FKMIQOGaw6wjYT7ZHG_zsBBfhXtWmA08mCgdfM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Michroma",
-		"filename": "PN_zRfy9qWD8fEagAMg6rzjb_-Da",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/michroma/v21/PN_zRfy9qWD8fEagAMg6rzjb_-Da.ttf",
-		"weight": 400
+		displayName: "Michroma",
+		filename: "PN_zRfy9qWD8fEagAMg6rzjb_-Da",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/michroma/v21/PN_zRfy9qWD8fEagAMg6rzjb_-Da.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Economica",
-		"filename": "Qw3fZQZaHCLgIWa29ZBrMcgAAl1lfQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/economica/v17/Qw3fZQZaHCLgIWa29ZBrMcgAAl1lfQ.ttf",
-		"weight": 400
+		displayName: "Economica",
+		filename: "Qw3fZQZaHCLgIWa29ZBrMcgAAl1lfQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/economica/v17/Qw3fZQZaHCLgIWa29ZBrMcgAAl1lfQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Niramit",
-		"filename": "I_uuMpWdvgLdNxVLbbRQkiCvs5Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/niramit/v12/I_uuMpWdvgLdNxVLbbRQkiCvs5Y.ttf",
-		"weight": 400
+		displayName: "Niramit",
+		filename: "I_uuMpWdvgLdNxVLbbRQkiCvs5Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/niramit/v12/I_uuMpWdvgLdNxVLbbRQkiCvs5Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans Thai",
-		"filename": "m8JPje1VVIzcq1HzJq2AEdo2Tj_qvLq8DtwhZcNaUg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsansthai/v11/m8JPje1VVIzcq1HzJq2AEdo2Tj_qvLq8DtwhZcNaUg.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans Thai",
+		filename: "m8JPje1VVIzcq1HzJq2AEdo2Tj_qvLq8DtwhZcNaUg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsansthai/v11/m8JPje1VVIzcq1HzJq2AEdo2Tj_qvLq8DtwhZcNaUg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mrs Saint Delafield",
-		"filename": "v6-IGZDIOVXH9xtmTZfRagunqBw5WC62cK4tLsubB2w",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mrssaintdelafield/v14/v6-IGZDIOVXH9xtmTZfRagunqBw5WC62cK4tLsubB2w.ttf",
-		"weight": 400
+		displayName: "Mrs Saint Delafield",
+		filename: "v6-IGZDIOVXH9xtmTZfRagunqBw5WC62cK4tLsubB2w",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mrssaintdelafield/v14/v6-IGZDIOVXH9xtmTZfRagunqBw5WC62cK4tLsubB2w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "MuseoModerno",
-		"filename": "zrf30HnU0_7wWdMrFcWqSEXPVyEaWJ55pTleMlZEuewajeKlCdo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/museomoderno/v29/zrf30HnU0_7wWdMrFcWqSEXPVyEaWJ55pTleMlZEuewajeKlCdo.ttf",
-		"weight": 400
+		displayName: "MuseoModerno",
+		filename: "zrf30HnU0_7wWdMrFcWqSEXPVyEaWJ55pTleMlZEuewajeKlCdo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/museomoderno/v29/zrf30HnU0_7wWdMrFcWqSEXPVyEaWJ55pTleMlZEuewajeKlCdo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tomorrow",
-		"filename": "WBLmrETNbFtZCeGqgSXVcWHALdio",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tomorrow/v19/WBLmrETNbFtZCeGqgSXVcWHALdio.ttf",
-		"weight": 400
+		displayName: "Tomorrow",
+		filename: "WBLmrETNbFtZCeGqgSXVcWHALdio",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tomorrow/v19/WBLmrETNbFtZCeGqgSXVcWHALdio.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cedarville Cursive",
-		"filename": "yYL00g_a2veiudhUmxjo5VKkoqA-B_neJbBxw8BeTg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/cedarvillecursive/v18/yYL00g_a2veiudhUmxjo5VKkoqA-B_neJbBxw8BeTg.ttf",
-		"weight": 400
+		displayName: "Cedarville Cursive",
+		filename: "yYL00g_a2veiudhUmxjo5VKkoqA-B_neJbBxw8BeTg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/cedarvillecursive/v18/yYL00g_a2veiudhUmxjo5VKkoqA-B_neJbBxw8BeTg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pragati Narrow",
-		"filename": "vm8vdRf0T0bS1ffgsPB7WZ-mD17_ytN3M48a",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/pragatinarrow/v15/vm8vdRf0T0bS1ffgsPB7WZ-mD17_ytN3M48a.ttf",
-		"weight": 400
+		displayName: "Pragati Narrow",
+		filename: "vm8vdRf0T0bS1ffgsPB7WZ-mD17_ytN3M48a",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/pragatinarrow/v15/vm8vdRf0T0bS1ffgsPB7WZ-mD17_ytN3M48a.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Squada One",
-		"filename": "BCasqZ8XsOrx4mcOk6MtWaA8WDBkHgs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/squadaone/v20/BCasqZ8XsOrx4mcOk6MtWaA8WDBkHgs.ttf",
-		"weight": 400
+		displayName: "Squada One",
+		filename: "BCasqZ8XsOrx4mcOk6MtWaA8WDBkHgs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/squadaone/v20/BCasqZ8XsOrx4mcOk6MtWaA8WDBkHgs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sofia Sans Extra Condensed",
-		"filename": "raxdHjafvdAIOju4GcIfJH0i7zi50X3zRtuLNiMS0d6iDr-MD5Si9NGLmmiEfzmM356GxA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sofiasansextracondensed/v6/raxdHjafvdAIOju4GcIfJH0i7zi50X3zRtuLNiMS0d6iDr-MD5Si9NGLmmiEfzmM356GxA.ttf",
-		"weight": 400
+		displayName: "Sofia Sans Extra Condensed",
+		filename: "raxdHjafvdAIOju4GcIfJH0i7zi50X3zRtuLNiMS0d6iDr-MD5Si9NGLmmiEfzmM356GxA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sofiasansextracondensed/v6/raxdHjafvdAIOju4GcIfJH0i7zi50X3zRtuLNiMS0d6iDr-MD5Si9NGLmmiEfzmM356GxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Averia Serif Libre",
-		"filename": "neIWzD2ms4wxr6GvjeD0X88SHPyX2xY-pQGOyYw2fw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/averiaseriflibre/v19/neIWzD2ms4wxr6GvjeD0X88SHPyX2xY-pQGOyYw2fw.ttf",
-		"weight": 400
+		displayName: "Averia Serif Libre",
+		filename: "neIWzD2ms4wxr6GvjeD0X88SHPyX2xY-pQGOyYw2fw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/averiaseriflibre/v19/neIWzD2ms4wxr6GvjeD0X88SHPyX2xY-pQGOyYw2fw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reddit Sans",
-		"filename": "EYqgmaFOxq1T_-ETdN7EKSlnU2dHRsBCV5uxbYxmAVfBiVMFlw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/redditsans/v6/EYqgmaFOxq1T_-ETdN7EKSlnU2dHRsBCV5uxbYxmAVfBiVMFlw.ttf",
-		"weight": 400
+		displayName: "Reddit Sans",
+		filename: "EYqgmaFOxq1T_-ETdN7EKSlnU2dHRsBCV5uxbYxmAVfBiVMFlw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/redditsans/v6/EYqgmaFOxq1T_-ETdN7EKSlnU2dHRsBCV5uxbYxmAVfBiVMFlw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cutive Mono",
-		"filename": "m8JWjfRfY7WVjVi2E-K9H5RFRG-K3Mud",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/cutivemono/v23/m8JWjfRfY7WVjVi2E-K9H5RFRG-K3Mud.ttf",
-		"weight": 400
+		displayName: "Cutive Mono",
+		filename: "m8JWjfRfY7WVjVi2E-K9H5RFRG-K3Mud",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/cutivemono/v23/m8JWjfRfY7WVjVi2E-K9H5RFRG-K3Mud.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Secular One",
-		"filename": "8QINdiTajsj_87rMuMdKypDlMul7LJpK",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/secularone/v14/8QINdiTajsj_87rMuMdKypDlMul7LJpK.ttf",
-		"weight": 400
+		displayName: "Secular One",
+		filename: "8QINdiTajsj_87rMuMdKypDlMul7LJpK",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/secularone/v14/8QINdiTajsj_87rMuMdKypDlMul7LJpK.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Do Hyeon",
-		"filename": "TwMN-I8CRRU2zM86HFE3ZwaH__-C",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dohyeon/v21/TwMN-I8CRRU2zM86HFE3ZwaH__-C.ttf",
-		"weight": 400
+		displayName: "Do Hyeon",
+		filename: "TwMN-I8CRRU2zM86HFE3ZwaH__-C",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dohyeon/v21/TwMN-I8CRRU2zM86HFE3ZwaH__-C.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sansita",
-		"filename": "QldONTRRphEb_-V7HBm7TXFf3qw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sansita/v12/QldONTRRphEb_-V7HBm7TXFf3qw.ttf",
-		"weight": 400
+		displayName: "Sansita",
+		filename: "QldONTRRphEb_-V7HBm7TXFf3qw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sansita/v12/QldONTRRphEb_-V7HBm7TXFf3qw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nixie One",
-		"filename": "lW-8wjkKLXjg5y2o2uUoUOFzpS-yLw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/nixieone/v17/lW-8wjkKLXjg5y2o2uUoUOFzpS-yLw.ttf",
-		"weight": 400
+		displayName: "Nixie One",
+		filename: "lW-8wjkKLXjg5y2o2uUoUOFzpS-yLw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/nixieone/v17/lW-8wjkKLXjg5y2o2uUoUOFzpS-yLw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Malayalam",
-		"filename": "sJoi3K5XjsSdcnzn071rL37lpAOsUThnDZIfPdbeSNzVakglNM-Qw8EaeB8Nss-_RuD9BFzEr6HxEA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmalayalam/v29/sJoi3K5XjsSdcnzn071rL37lpAOsUThnDZIfPdbeSNzVakglNM-Qw8EaeB8Nss-_RuD9BFzEr6HxEA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Malayalam",
+		filename: "sJoi3K5XjsSdcnzn071rL37lpAOsUThnDZIfPdbeSNzVakglNM-Qw8EaeB8Nss-_RuD9BFzEr6HxEA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmalayalam/v29/sJoi3K5XjsSdcnzn071rL37lpAOsUThnDZIfPdbeSNzVakglNM-Qw8EaeB8Nss-_RuD9BFzEr6HxEA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Akshar",
-		"filename": "Yq6I-LyHWTfz9rGoqDaUbHvhkAUsSXYFy9CY94XsnPc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/akshar/v17/Yq6I-LyHWTfz9rGoqDaUbHvhkAUsSXYFy9CY94XsnPc.ttf",
-		"weight": 400
+		displayName: "Akshar",
+		filename: "Yq6I-LyHWTfz9rGoqDaUbHvhkAUsSXYFy9CY94XsnPc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/akshar/v17/Yq6I-LyHWTfz9rGoqDaUbHvhkAUsSXYFy9CY94XsnPc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jua",
-		"filename": "co3KmW9ljjAjc-DZCsKgsg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/jua/v18/co3KmW9ljjAjc-DZCsKgsg.ttf",
-		"weight": 400
+		displayName: "Jua",
+		filename: "co3KmW9ljjAjc-DZCsKgsg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/jua/v18/co3KmW9ljjAjc-DZCsKgsg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lalezar",
-		"filename": "zrfl0HLVx-HwTP82UaDyIiL0RCg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lalezar/v16/zrfl0HLVx-HwTP82UaDyIiL0RCg.ttf",
-		"weight": 400
+		displayName: "Lalezar",
+		filename: "zrfl0HLVx-HwTP82UaDyIiL0RCg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lalezar/v16/zrfl0HLVx-HwTP82UaDyIiL0RCg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rufina",
-		"filename": "Yq6V-LyURyLy-aKyoxRktOdClg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/rufina/v17/Yq6V-LyURyLy-aKyoxRktOdClg.ttf",
-		"weight": 400
+		displayName: "Rufina",
+		filename: "Yq6V-LyURyLy-aKyoxRktOdClg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/rufina/v17/Yq6V-LyURyLy-aKyoxRktOdClg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ms Madi",
-		"filename": "HTxsL2UxNnOji5E1N-DPiI7QAYo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/msmadi/v2/HTxsL2UxNnOji5E1N-DPiI7QAYo.ttf",
-		"weight": 400
+		displayName: "Ms Madi",
+		filename: "HTxsL2UxNnOji5E1N-DPiI7QAYo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/msmadi/v2/HTxsL2UxNnOji5E1N-DPiI7QAYo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Charm",
-		"filename": "7cHmv4oii5K0MeYvIe804WIo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/charm/v14/7cHmv4oii5K0MeYvIe804WIo.ttf",
-		"weight": 400
+		displayName: "Charm",
+		filename: "7cHmv4oii5K0MeYvIe804WIo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/charm/v14/7cHmv4oii5K0MeYvIe804WIo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Basic",
-		"filename": "xfu_0WLxV2_XKQN34lDVyR7D",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/basic/v18/xfu_0WLxV2_XKQN34lDVyR7D.ttf",
-		"weight": 400
+		displayName: "Basic",
+		filename: "xfu_0WLxV2_XKQN34lDVyR7D",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/basic/v18/xfu_0WLxV2_XKQN34lDVyR7D.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Georama",
-		"filename": "MCo5zAn438bIEyxFf6swMnNpvPcUwW4u4yRcDh-ZjxApn9K5GvgtmQsL5_tgbg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/georama/v15/MCo5zAn438bIEyxFf6swMnNpvPcUwW4u4yRcDh-ZjxApn9K5GvgtmQsL5_tgbg.ttf",
-		"weight": 400
+		displayName: "Georama",
+		filename: "MCo5zAn438bIEyxFf6swMnNpvPcUwW4u4yRcDh-ZjxApn9K5GvgtmQsL5_tgbg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/georama/v15/MCo5zAn438bIEyxFf6swMnNpvPcUwW4u4yRcDh-ZjxApn9K5GvgtmQsL5_tgbg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Judson",
-		"filename": "FeVRS0Fbvbc14VxRD7N01bV7kg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/judson/v20/FeVRS0Fbvbc14VxRD7N01bV7kg.ttf",
-		"weight": 400
+		displayName: "Judson",
+		filename: "FeVRS0Fbvbc14VxRD7N01bV7kg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/judson/v20/FeVRS0Fbvbc14VxRD7N01bV7kg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Covered By Your Grace",
-		"filename": "QGYwz-AZahWOJJI9kykWW9mD6opopoqXSOS0FgItq6bFIg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/coveredbyyourgrace/v17/QGYwz-AZahWOJJI9kykWW9mD6opopoqXSOS0FgItq6bFIg.ttf",
-		"weight": 400
+		displayName: "Covered By Your Grace",
+		filename: "QGYwz-AZahWOJJI9kykWW9mD6opopoqXSOS0FgItq6bFIg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/coveredbyyourgrace/v17/QGYwz-AZahWOJJI9kykWW9mD6opopoqXSOS0FgItq6bFIg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Adamina",
-		"filename": "j8_r6-DH1bjoc-dwu-reETl4Bno",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/adamina/v22/j8_r6-DH1bjoc-dwu-reETl4Bno.ttf",
-		"weight": 400
+		displayName: "Adamina",
+		filename: "j8_r6-DH1bjoc-dwu-reETl4Bno",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/adamina/v22/j8_r6-DH1bjoc-dwu-reETl4Bno.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BenchNine",
-		"filename": "ahcbv8612zF4jxrwMosrV8N1jU2gog",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/benchnine/v17/ahcbv8612zF4jxrwMosrV8N1jU2gog.ttf",
-		"weight": 400
+		displayName: "BenchNine",
+		filename: "ahcbv8612zF4jxrwMosrV8N1jU2gog",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/benchnine/v17/ahcbv8612zF4jxrwMosrV8N1jU2gog.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Parkinsans",
-		"filename": "-W_uXJXvQyPb1QfpBpRrVEgjj0W4zSUk4gTW6R8K-8Z_dt-E",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/parkinsans/v3/-W_uXJXvQyPb1QfpBpRrVEgjj0W4zSUk4gTW6R8K-8Z_dt-E.ttf",
-		"weight": 400
+		displayName: "Parkinsans",
+		filename: "-W_uXJXvQyPb1QfpBpRrVEgjj0W4zSUk4gTW6R8K-8Z_dt-E",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/parkinsans/v3/-W_uXJXvQyPb1QfpBpRrVEgjj0W4zSUk4gTW6R8K-8Z_dt-E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kaisei Decol",
-		"filename": "bMrwmSqP45sidWf3QmfFW6iyW1EP22OjoA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kaiseidecol/v11/bMrwmSqP45sidWf3QmfFW6iyW1EP22OjoA.ttf",
-		"weight": 400
+		displayName: "Kaisei Decol",
+		filename: "bMrwmSqP45sidWf3QmfFW6iyW1EP22OjoA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kaiseidecol/v11/bMrwmSqP45sidWf3QmfFW6iyW1EP22OjoA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Londrina Solid",
-		"filename": "flUhRq6sw40kQEJxWNgkLuudGcNZIhI8tIHh",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/londrinasolid/v19/flUhRq6sw40kQEJxWNgkLuudGcNZIhI8tIHh.ttf",
-		"weight": 400
+		displayName: "Londrina Solid",
+		filename: "flUhRq6sw40kQEJxWNgkLuudGcNZIhI8tIHh",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/londrinasolid/v19/flUhRq6sw40kQEJxWNgkLuudGcNZIhI8tIHh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Overpass Mono",
-		"filename": "_Xm5-H86tzKDdAPa-KPQZ-AC_COcRycquHlL6EXUokzzXur-SmIr",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/overpassmono/v21/_Xm5-H86tzKDdAPa-KPQZ-AC_COcRycquHlL6EXUokzzXur-SmIr.ttf",
-		"weight": 400
+		displayName: "Overpass Mono",
+		filename: "_Xm5-H86tzKDdAPa-KPQZ-AC_COcRycquHlL6EXUokzzXur-SmIr",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/overpassmono/v21/_Xm5-H86tzKDdAPa-KPQZ-AC_COcRycquHlL6EXUokzzXur-SmIr.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grandstander",
-		"filename": "ga6fawtA-GpSsTWrnNHPCSIMZhhKpFjyNZIQD1--D3jWttFGmQk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/grandstander/v20/ga6fawtA-GpSsTWrnNHPCSIMZhhKpFjyNZIQD1--D3jWttFGmQk.ttf",
-		"weight": 400
+		displayName: "Grandstander",
+		filename: "ga6fawtA-GpSsTWrnNHPCSIMZhhKpFjyNZIQD1--D3jWttFGmQk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/grandstander/v20/ga6fawtA-GpSsTWrnNHPCSIMZhhKpFjyNZIQD1--D3jWttFGmQk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fredericka the Great",
-		"filename": "9Bt33CxNwt7aOctW2xjbCstzwVKsIBVV-9Skz7Ylch2L",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/frederickathegreat/v23/9Bt33CxNwt7aOctW2xjbCstzwVKsIBVV-9Skz7Ylch2L.ttf",
-		"weight": 400
+		displayName: "Fredericka the Great",
+		filename: "9Bt33CxNwt7aOctW2xjbCstzwVKsIBVV-9Skz7Ylch2L",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/frederickathegreat/v23/9Bt33CxNwt7aOctW2xjbCstzwVKsIBVV-9Skz7Ylch2L.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pirata One",
-		"filename": "I_urMpiDvgLdLh0fAtoftiiEr5_BdZ8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pirataone/v23/I_urMpiDvgLdLh0fAtoftiiEr5_BdZ8.ttf",
-		"weight": 400
+		displayName: "Pirata One",
+		filename: "I_urMpiDvgLdLh0fAtoftiiEr5_BdZ8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pirataone/v23/I_urMpiDvgLdLh0fAtoftiiEr5_BdZ8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wix Madefor Display",
-		"filename": "SZcS3EX9IbbyeJ8aOluD52KXgUA_7Ed1I13G853Cp9duUYFhYltkv_3HQKgh",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wixmadefordisplay/v12/SZcS3EX9IbbyeJ8aOluD52KXgUA_7Ed1I13G853Cp9duUYFhYltkv_3HQKgh.ttf",
-		"weight": 400
+		displayName: "Wix Madefor Display",
+		filename: "SZcS3EX9IbbyeJ8aOluD52KXgUA_7Ed1I13G853Cp9duUYFhYltkv_3HQKgh",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wixmadefordisplay/v12/SZcS3EX9IbbyeJ8aOluD52KXgUA_7Ed1I13G853Cp9duUYFhYltkv_3HQKgh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bona Nova SC",
-		"filename": "mem5YaShyGWDiYdPG_c1Af4-VeJoCqeDjg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bonanovasc/v1/mem5YaShyGWDiYdPG_c1Af4-VeJoCqeDjg.ttf",
-		"weight": 400
+		displayName: "Bona Nova SC",
+		filename: "mem5YaShyGWDiYdPG_c1Af4-VeJoCqeDjg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bonanovasc/v1/mem5YaShyGWDiYdPG_c1Af4-VeJoCqeDjg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rakkas",
-		"filename": "Qw3cZQlNHiblL3j_lttPOeMcCw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rakkas/v22/Qw3cZQlNHiblL3j_lttPOeMcCw.ttf",
-		"weight": 400
+		displayName: "Rakkas",
+		filename: "Qw3cZQlNHiblL3j_lttPOeMcCw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rakkas/v22/Qw3cZQlNHiblL3j_lttPOeMcCw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Khula",
-		"filename": "OpNCnoEOns3V7FcJpA_chzJ0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/khula/v17/OpNCnoEOns3V7FcJpA_chzJ0.ttf",
-		"weight": 400
+		displayName: "Khula",
+		filename: "OpNCnoEOns3V7FcJpA_chzJ0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/khula/v17/OpNCnoEOns3V7FcJpA_chzJ0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ma Shan Zheng",
-		"filename": "NaPecZTRCLxvwo41b4gvzkXaRMTsDIRSfr0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mashanzheng/v14/NaPecZTRCLxvwo41b4gvzkXaRMTsDIRSfr0.ttf",
-		"weight": 400
+		displayName: "Ma Shan Zheng",
+		filename: "NaPecZTRCLxvwo41b4gvzkXaRMTsDIRSfr0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mashanzheng/v14/NaPecZTRCLxvwo41b4gvzkXaRMTsDIRSfr0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Coda",
-		"filename": "SLXHc1jY5nQ8JUIMapaN39I",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/coda/v22/SLXHc1jY5nQ8JUIMapaN39I.ttf",
-		"weight": 400
+		displayName: "Coda",
+		filename: "SLXHc1jY5nQ8JUIMapaN39I",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/coda/v22/SLXHc1jY5nQ8JUIMapaN39I.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kreon",
-		"filename": "t5t9IRIUKY-TFF_LW5lnMR3v2DnvYtimejUfp2dWNg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kreon/v40/t5t9IRIUKY-TFF_LW5lnMR3v2DnvYtimejUfp2dWNg.ttf",
-		"weight": 400
+		displayName: "Kreon",
+		filename: "t5t9IRIUKY-TFF_LW5lnMR3v2DnvYtimejUfp2dWNg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kreon/v40/t5t9IRIUKY-TFF_LW5lnMR3v2DnvYtimejUfp2dWNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Palanquin Dark",
-		"filename": "xn75YHgl1nqmANMB-26xC7yuF_6OTEo9VtfE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/palanquindark/v17/xn75YHgl1nqmANMB-26xC7yuF_6OTEo9VtfE.ttf",
-		"weight": 400
+		displayName: "Palanquin Dark",
+		filename: "xn75YHgl1nqmANMB-26xC7yuF_6OTEo9VtfE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/palanquindark/v17/xn75YHgl1nqmANMB-26xC7yuF_6OTEo9VtfE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Electrolize",
-		"filename": "cIf5Ma1dtE0zSiGSiED7AUEGso5tQafB",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/electrolize/v20/cIf5Ma1dtE0zSiGSiED7AUEGso5tQafB.ttf",
-		"weight": 400
+		displayName: "Electrolize",
+		filename: "cIf5Ma1dtE0zSiGSiED7AUEGso5tQafB",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/electrolize/v20/cIf5Ma1dtE0zSiGSiED7AUEGso5tQafB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anton SC",
-		"filename": "4UaBrEBBsgltGn71sxLmzanB44N1",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/antonsc/v1/4UaBrEBBsgltGn71sxLmzanB44N1.ttf",
-		"weight": 400
+		displayName: "Anton SC",
+		filename: "4UaBrEBBsgltGn71sxLmzanB44N1",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/antonsc/v1/4UaBrEBBsgltGn71sxLmzanB44N1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reem Kufi",
-		"filename": "2sDPZGJLip7W2J7v7wQZZE1I0yCmYzzQtuZnEGGf3qGuvM4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/reemkufi/v28/2sDPZGJLip7W2J7v7wQZZE1I0yCmYzzQtuZnEGGf3qGuvM4.ttf",
-		"weight": 400
+		displayName: "Reem Kufi",
+		filename: "2sDPZGJLip7W2J7v7wQZZE1I0yCmYzzQtuZnEGGf3qGuvM4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/reemkufi/v28/2sDPZGJLip7W2J7v7wQZZE1I0yCmYzzQtuZnEGGf3qGuvM4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Kaku Gothic Antique",
-		"filename": "6qLQKYkHvh-nlUpKPAdoVFBtfxDzIn1eCzpB21-g3RKjc4d7",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zenkakugothicantique/v18/6qLQKYkHvh-nlUpKPAdoVFBtfxDzIn1eCzpB21-g3RKjc4d7.ttf",
-		"weight": 400
+		displayName: "Zen Kaku Gothic Antique",
+		filename: "6qLQKYkHvh-nlUpKPAdoVFBtfxDzIn1eCzpB21-g3RKjc4d7",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zenkakugothicantique/v18/6qLQKYkHvh-nlUpKPAdoVFBtfxDzIn1eCzpB21-g3RKjc4d7.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "PT Serif Caption",
-		"filename": "ieVl2ZhbGCW-JoW6S34pSDpqYKU059WxDCs5cvI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ptserifcaption/v18/ieVl2ZhbGCW-JoW6S34pSDpqYKU059WxDCs5cvI.ttf",
-		"weight": 400
+		displayName: "PT Serif Caption",
+		filename: "ieVl2ZhbGCW-JoW6S34pSDpqYKU059WxDCs5cvI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ptserifcaption/v18/ieVl2ZhbGCW-JoW6S34pSDpqYKU059WxDCs5cvI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Besley",
-		"filename": "PlIhFlO1MaNwaNGWUC92IOH_mtG4fbbBSdRoFPOl8-E",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/besley/v22/PlIhFlO1MaNwaNGWUC92IOH_mtG4fbbBSdRoFPOl8-E.ttf",
-		"weight": 400
+		displayName: "Besley",
+		filename: "PlIhFlO1MaNwaNGWUC92IOH_mtG4fbbBSdRoFPOl8-E",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/besley/v22/PlIhFlO1MaNwaNGWUC92IOH_mtG4fbbBSdRoFPOl8-E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lemonada",
-		"filename": "0QI-MXFD9oygTWy_R-FFlwV-bgfR7QJGeut2mfWc3Z2pTg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lemonada/v31/0QI-MXFD9oygTWy_R-FFlwV-bgfR7QJGeut2mfWc3Z2pTg.ttf",
-		"weight": 400
+		displayName: "Lemonada",
+		filename: "0QI-MXFD9oygTWy_R-FFlwV-bgfR7QJGeut2mfWc3Z2pTg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lemonada/v31/0QI-MXFD9oygTWy_R-FFlwV-bgfR7QJGeut2mfWc3Z2pTg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Syne Mono",
-		"filename": "K2FzfZNHj_FHBmRbFvHzIqCkDyvqZA",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/synemono/v16/K2FzfZNHj_FHBmRbFvHzIqCkDyvqZA.ttf",
-		"weight": 400
+		displayName: "Syne Mono",
+		filename: "K2FzfZNHj_FHBmRbFvHzIqCkDyvqZA",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/synemono/v16/K2FzfZNHj_FHBmRbFvHzIqCkDyvqZA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Glegoo",
-		"filename": "_Xmt-HQyrTKWaw2Ji6mZAI91xw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/glegoo/v17/_Xmt-HQyrTKWaw2Ji6mZAI91xw.ttf",
-		"weight": 400
+		displayName: "Glegoo",
+		filename: "_Xmt-HQyrTKWaw2Ji6mZAI91xw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/glegoo/v17/_Xmt-HQyrTKWaw2Ji6mZAI91xw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee Spice",
-		"filename": "nwpTtK2nIhxE0q-IwgSpZBqCzyI-aMPF7Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungeespice/v15/nwpTtK2nIhxE0q-IwgSpZBqCzyI-aMPF7Q.ttf",
-		"weight": 400
+		displayName: "Bungee Spice",
+		filename: "nwpTtK2nIhxE0q-IwgSpZBqCzyI-aMPF7Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungeespice/v15/nwpTtK2nIhxE0q-IwgSpZBqCzyI-aMPF7Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shrikhand",
-		"filename": "a8IbNovtLWfR7T7bMJwbBIiQ0zhMtA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/shrikhand/v17/a8IbNovtLWfR7T7bMJwbBIiQ0zhMtA.ttf",
-		"weight": 400
+		displayName: "Shrikhand",
+		filename: "a8IbNovtLWfR7T7bMJwbBIiQ0zhMtA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/shrikhand/v17/a8IbNovtLWfR7T7bMJwbBIiQ0zhMtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Palanquin",
-		"filename": "9XUnlJ90n1fBFg7ceXwsdlFMzLC2Zw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/palanquin/v17/9XUnlJ90n1fBFg7ceXwsdlFMzLC2Zw.ttf",
-		"weight": 400
+		displayName: "Palanquin",
+		filename: "9XUnlJ90n1fBFg7ceXwsdlFMzLC2Zw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/palanquin/v17/9XUnlJ90n1fBFg7ceXwsdlFMzLC2Zw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spline Sans",
-		"filename": "_6_sED73Uf-2WfU2LzycEZousNzn1a1lKWRpOFnYEtvlUfE2kw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/splinesans/v16/_6_sED73Uf-2WfU2LzycEZousNzn1a1lKWRpOFnYEtvlUfE2kw.ttf",
-		"weight": 400
+		displayName: "Spline Sans",
+		filename: "_6_sED73Uf-2WfU2LzycEZousNzn1a1lKWRpOFnYEtvlUfE2kw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/splinesans/v16/_6_sED73Uf-2WfU2LzycEZousNzn1a1lKWRpOFnYEtvlUfE2kw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Corben",
-		"filename": "LYjDdGzzklQtCMp9oAlEpVs3VQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/corben/v23/LYjDdGzzklQtCMp9oAlEpVs3VQ.ttf",
-		"weight": 400
+		displayName: "Corben",
+		filename: "LYjDdGzzklQtCMp9oAlEpVs3VQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/corben/v23/LYjDdGzzklQtCMp9oAlEpVs3VQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Neucha",
-		"filename": "q5uGsou0JOdh94bvugNsCxVEgA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/neucha/v18/q5uGsou0JOdh94bvugNsCxVEgA.ttf",
-		"weight": 400
+		displayName: "Neucha",
+		filename: "q5uGsou0JOdh94bvugNsCxVEgA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/neucha/v18/q5uGsou0JOdh94bvugNsCxVEgA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Bangla",
-		"filename": "_gPW1R38qTExHg-17BhM6n66QhabMYB0fBKONtHhRSIUIre5mq3Ofm9ZIocg56yyvt0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekbangla/v16/_gPW1R38qTExHg-17BhM6n66QhabMYB0fBKONtHhRSIUIre5mq3Ofm9ZIocg56yyvt0.ttf",
-		"weight": 400
+		displayName: "Anek Bangla",
+		filename: "_gPW1R38qTExHg-17BhM6n66QhabMYB0fBKONtHhRSIUIre5mq3Ofm9ZIocg56yyvt0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekbangla/v16/_gPW1R38qTExHg-17BhM6n66QhabMYB0fBKONtHhRSIUIre5mq3Ofm9ZIocg56yyvt0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caprasimo",
-		"filename": "esDT31JQOPuXIUGBp72klZUCGpG-GQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/caprasimo/v6/esDT31JQOPuXIUGBp72klZUCGpG-GQ.ttf",
-		"weight": 400
+		displayName: "Caprasimo",
+		filename: "esDT31JQOPuXIUGBp72klZUCGpG-GQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/caprasimo/v6/esDT31JQOPuXIUGBp72klZUCGpG-GQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tilt Warp",
-		"filename": "AlZc_zVDs5XpmO7yn3w7flUoytXJp3z29uEwmEMLEJljLXvT8UJSZTBxAVfMGOPb",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tiltwarp/v18/AlZc_zVDs5XpmO7yn3w7flUoytXJp3z29uEwmEMLEJljLXvT8UJSZTBxAVfMGOPb.ttf",
-		"weight": 400
+		displayName: "Tilt Warp",
+		filename: "AlZc_zVDs5XpmO7yn3w7flUoytXJp3z29uEwmEMLEJljLXvT8UJSZTBxAVfMGOPb",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tiltwarp/v18/AlZc_zVDs5XpmO7yn3w7flUoytXJp3z29uEwmEMLEJljLXvT8UJSZTBxAVfMGOPb.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alegreya Sans SC",
-		"filename": "mtGh4-RGJqfMvt7P8FUr0Q1j-Hf1Nk5v9ixALYs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alegreyasanssc/v24/mtGh4-RGJqfMvt7P8FUr0Q1j-Hf1Nk5v9ixALYs.ttf",
-		"weight": 400
+		displayName: "Alegreya Sans SC",
+		filename: "mtGh4-RGJqfMvt7P8FUr0Q1j-Hf1Nk5v9ixALYs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alegreyasanssc/v24/mtGh4-RGJqfMvt7P8FUr0Q1j-Hf1Nk5v9ixALYs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mandali",
-		"filename": "LhWlMVbYOfASNfNUVFk1ZPdcKtA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mandali/v16/LhWlMVbYOfASNfNUVFk1ZPdcKtA.ttf",
-		"weight": 400
+		displayName: "Mandali",
+		filename: "LhWlMVbYOfASNfNUVFk1ZPdcKtA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mandali/v16/LhWlMVbYOfASNfNUVFk1ZPdcKtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Days One",
-		"filename": "mem9YaCnxnKRiYZOCLYVeLkWVNBt",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/daysone/v19/mem9YaCnxnKRiYZOCLYVeLkWVNBt.ttf",
-		"weight": 400
+		displayName: "Days One",
+		filename: "mem9YaCnxnKRiYZOCLYVeLkWVNBt",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/daysone/v19/mem9YaCnxnKRiYZOCLYVeLkWVNBt.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Nastaliq Urdu",
-		"filename": "LhWNMUPbN-oZdNFcBy1-DJYsEoTq5pudQ9L940pGPkB3Qt_-DK2f2-_8mEw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhWNMUPbN-oZdNFcBy1-DJYsEoTq5pudQ9L940pGPkB3Qt_-DK2f2-_8mEw.ttf",
-		"weight": 400
+		displayName: "Noto Nastaliq Urdu",
+		filename: "LhWNMUPbN-oZdNFcBy1-DJYsEoTq5pudQ9L940pGPkB3Qt_-DK2f2-_8mEw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notonastaliqurdu/v23/LhWNMUPbN-oZdNFcBy1-DJYsEoTq5pudQ9L940pGPkB3Qt_-DK2f2-_8mEw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fustat",
-		"filename": "NaPEcZ_aHO9Iy5thRNqze7YGY9HGCEQQRryztWo_3fk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/fustat/v4/NaPEcZ_aHO9Iy5thRNqze7YGY9HGCEQQRryztWo_3fk.ttf",
-		"weight": 400
+		displayName: "Fustat",
+		filename: "NaPEcZ_aHO9Iy5thRNqze7YGY9HGCEQQRryztWo_3fk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/fustat/v4/NaPEcZ_aHO9Iy5thRNqze7YGY9HGCEQQRryztWo_3fk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Atkinson Hyperlegible Next",
-		"filename": "NaP4cYPdHfdVxJw0IfIP0lvYFqijb-UxCtm5_wdGscKFt4tOOfV4ZmW37LQhtNl93TwPEQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/atkinsonhyperlegiblenext/v7/NaP4cYPdHfdVxJw0IfIP0lvYFqijb-UxCtm5_wdGscKFt4tOOfV4ZmW37LQhtNl93TwPEQ.ttf",
-		"weight": 400
+		displayName: "Atkinson Hyperlegible Next",
+		filename: "NaP4cYPdHfdVxJw0IfIP0lvYFqijb-UxCtm5_wdGscKFt4tOOfV4ZmW37LQhtNl93TwPEQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/atkinsonhyperlegiblenext/v7/NaP4cYPdHfdVxJw0IfIP0lvYFqijb-UxCtm5_wdGscKFt4tOOfV4ZmW37LQhtNl93TwPEQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aboreto",
-		"filename": "5DCXAKLhwDDQ4N8blKTeA2yuxSY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/aboreto/v2/5DCXAKLhwDDQ4N8blKTeA2yuxSY.ttf",
-		"weight": 400
+		displayName: "Aboreto",
+		filename: "5DCXAKLhwDDQ4N8blKTeA2yuxSY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/aboreto/v2/5DCXAKLhwDDQ4N8blKTeA2yuxSY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hachi Maru Pop",
-		"filename": "HI_TiYoRLqpLrEiMAuO9Ysfz7rW1EM_btd8u",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/hachimarupop/v23/HI_TiYoRLqpLrEiMAuO9Ysfz7rW1EM_btd8u.ttf",
-		"weight": 400
+		displayName: "Hachi Maru Pop",
+		filename: "HI_TiYoRLqpLrEiMAuO9Ysfz7rW1EM_btd8u",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/hachimarupop/v23/HI_TiYoRLqpLrEiMAuO9Ysfz7rW1EM_btd8u.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chonburi",
-		"filename": "8AtqGs-wOpGRTBq66IWaFr3biAfZ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chonburi/v14/8AtqGs-wOpGRTBq66IWaFr3biAfZ.ttf",
-		"weight": 400
+		displayName: "Chonburi",
+		filename: "8AtqGs-wOpGRTBq66IWaFr3biAfZ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chonburi/v14/8AtqGs-wOpGRTBq66IWaFr3biAfZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kiwi Maru",
-		"filename": "R70YjykGkuuDep-hRg6YmACQXzLhTg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kiwimaru/v20/R70YjykGkuuDep-hRg6YmACQXzLhTg.ttf",
-		"weight": 400
+		displayName: "Kiwi Maru",
+		filename: "R70YjykGkuuDep-hRg6YmACQXzLhTg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kiwimaru/v20/R70YjykGkuuDep-hRg6YmACQXzLhTg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tektur",
-		"filename": "XoHN2YHtS7q969kXCjzlV0aSkS_o8OacmTe0TYlYFot8TrwuVYtOY8P7TWd0",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tektur/v6/XoHN2YHtS7q969kXCjzlV0aSkS_o8OacmTe0TYlYFot8TrwuVYtOY8P7TWd0.ttf",
-		"weight": 400
+		displayName: "Tektur",
+		filename: "XoHN2YHtS7q969kXCjzlV0aSkS_o8OacmTe0TYlYFot8TrwuVYtOY8P7TWd0",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tektur/v6/XoHN2YHtS7q969kXCjzlV0aSkS_o8OacmTe0TYlYFot8TrwuVYtOY8P7TWd0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Laila",
-		"filename": "LYjMdG_8nE8jDIRdiidIrEIu",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/laila/v20/LYjMdG_8nE8jDIRdiidIrEIu.ttf",
-		"weight": 400
+		displayName: "Laila",
+		filename: "LYjMdG_8nE8jDIRdiidIrEIu",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/laila/v20/LYjMdG_8nE8jDIRdiidIrEIu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alef",
-		"filename": "FeVfS0NQpLYgrjJbC5FxxbU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alef/v24/FeVfS0NQpLYgrjJbC5FxxbU.ttf",
-		"weight": 400
+		displayName: "Alef",
+		filename: "FeVfS0NQpLYgrjJbC5FxxbU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alef/v24/FeVfS0NQpLYgrjJbC5FxxbU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Marcellus SC",
-		"filename": "ke8iOgUHP1dg-Rmi6RWjbLEPgdydGKikhA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/marcellussc/v14/ke8iOgUHP1dg-Rmi6RWjbLEPgdydGKikhA.ttf",
-		"weight": 400
+		displayName: "Marcellus SC",
+		filename: "ke8iOgUHP1dg-Rmi6RWjbLEPgdydGKikhA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/marcellussc/v14/ke8iOgUHP1dg-Rmi6RWjbLEPgdydGKikhA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cabin Sketch",
-		"filename": "QGYpz_kZZAGCONcK2A4bGOjMn9JM6fnuKg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cabinsketch/v23/QGYpz_kZZAGCONcK2A4bGOjMn9JM6fnuKg.ttf",
-		"weight": 400
+		displayName: "Cabin Sketch",
+		filename: "QGYpz_kZZAGCONcK2A4bGOjMn9JM6fnuKg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cabinsketch/v23/QGYpz_kZZAGCONcK2A4bGOjMn9JM6fnuKg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aclonica",
-		"filename": "K2FyfZJVlfNNSEBXGb7TCI6oBjLz",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/aclonica/v25/K2FyfZJVlfNNSEBXGb7TCI6oBjLz.ttf",
-		"weight": 400
+		displayName: "Aclonica",
+		filename: "K2FyfZJVlfNNSEBXGb7TCI6oBjLz",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/aclonica/v25/K2FyfZJVlfNNSEBXGb7TCI6oBjLz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stardos Stencil",
-		"filename": "X7n94bcuGPC8hrvEOHXOgaKCc2TR71R3tiSx0g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/stardosstencil/v15/X7n94bcuGPC8hrvEOHXOgaKCc2TR71R3tiSx0g.ttf",
-		"weight": 400
+		displayName: "Stardos Stencil",
+		filename: "X7n94bcuGPC8hrvEOHXOgaKCc2TR71R3tiSx0g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/stardosstencil/v15/X7n94bcuGPC8hrvEOHXOgaKCc2TR71R3tiSx0g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Potta One",
-		"filename": "FeVSS05Bp6cy7xI-YfxQ3Z5nm29Gww",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pottaone/v19/FeVSS05Bp6cy7xI-YfxQ3Z5nm29Gww.ttf",
-		"weight": 400
+		displayName: "Potta One",
+		filename: "FeVSS05Bp6cy7xI-YfxQ3Z5nm29Gww",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pottaone/v19/FeVSS05Bp6cy7xI-YfxQ3Z5nm29Gww.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yatra One",
-		"filename": "C8ch4copsHzj8p7NaF0xw1OBbRDvXw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yatraone/v16/C8ch4copsHzj8p7NaF0xw1OBbRDvXw.ttf",
-		"weight": 400
+		displayName: "Yatra One",
+		filename: "C8ch4copsHzj8p7NaF0xw1OBbRDvXw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yatraone/v16/C8ch4copsHzj8p7NaF0xw1OBbRDvXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Allerta Stencil",
-		"filename": "HTx0L209KT-LmIE9N7OR6eiycOeF-zz313DuvQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/allertastencil/v24/HTx0L209KT-LmIE9N7OR6eiycOeF-zz313DuvQ.ttf",
-		"weight": 400
+		displayName: "Allerta Stencil",
+		filename: "HTx0L209KT-LmIE9N7OR6eiycOeF-zz313DuvQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/allertastencil/v24/HTx0L209KT-LmIE9N7OR6eiycOeF-zz313DuvQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "K2D",
-		"filename": "J7aTnpF2V0ETd68tnLcg7w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/k2d/v13/J7aTnpF2V0ETd68tnLcg7w.ttf",
-		"weight": 400
+		displayName: "K2D",
+		filename: "J7aTnpF2V0ETd68tnLcg7w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/k2d/v13/J7aTnpF2V0ETd68tnLcg7w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Darker Grotesque",
-		"filename": "U9MK6cuh-mLQlC4BKCtayOfARkSVgb381b-W8-QDqXw3qn7y-XFyZFUB",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/darkergrotesque/v10/U9MK6cuh-mLQlC4BKCtayOfARkSVgb381b-W8-QDqXw3qn7y-XFyZFUB.ttf",
-		"weight": 400
+		displayName: "Darker Grotesque",
+		filename: "U9MK6cuh-mLQlC4BKCtayOfARkSVgb381b-W8-QDqXw3qn7y-XFyZFUB",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/darkergrotesque/v10/U9MK6cuh-mLQlC4BKCtayOfARkSVgb381b-W8-QDqXw3qn7y-XFyZFUB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Karma",
-		"filename": "va9I4kzAzMZRGIBvS-J3kbDP",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/karma/v18/va9I4kzAzMZRGIBvS-J3kbDP.ttf",
-		"weight": 400
+		displayName: "Karma",
+		filename: "va9I4kzAzMZRGIBvS-J3kbDP",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/karma/v18/va9I4kzAzMZRGIBvS-J3kbDP.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "M PLUS 2",
-		"filename": "7Auhp_Eq3gO_OGbGGhjdwrDdpeIBxlkwOa6VxlqHrzNgAw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mplus2/v15/7Auhp_Eq3gO_OGbGGhjdwrDdpeIBxlkwOa6VxlqHrzNgAw.ttf",
-		"weight": 400
+		displayName: "M PLUS 2",
+		filename: "7Auhp_Eq3gO_OGbGGhjdwrDdpeIBxlkwOa6VxlqHrzNgAw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mplus2/v15/7Auhp_Eq3gO_OGbGGhjdwrDdpeIBxlkwOa6VxlqHrzNgAw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Symbols",
-		"filename": "rP2up3q65FkAtHfwd-eIS2brbDN6gxP34F9jRRCe4W3gfQ8gavVFRkzrbQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssymbols/v47/rP2up3q65FkAtHfwd-eIS2brbDN6gxP34F9jRRCe4W3gfQ8gavVFRkzrbQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Symbols",
+		filename: "rP2up3q65FkAtHfwd-eIS2brbDN6gxP34F9jRRCe4W3gfQ8gavVFRkzrbQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssymbols/v47/rP2up3q65FkAtHfwd-eIS2brbDN6gxP34F9jRRCe4W3gfQ8gavVFRkzrbQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shadows Into Light Two",
-		"filename": "4iC86LVlZsRSjQhpWGedwyOoW-0A6_kpsyNmlAvNGLNnIF0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/shadowsintolighttwo/v19/4iC86LVlZsRSjQhpWGedwyOoW-0A6_kpsyNmlAvNGLNnIF0.ttf",
-		"weight": 400
+		displayName: "Shadows Into Light Two",
+		filename: "4iC86LVlZsRSjQhpWGedwyOoW-0A6_kpsyNmlAvNGLNnIF0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/shadowsintolighttwo/v19/4iC86LVlZsRSjQhpWGedwyOoW-0A6_kpsyNmlAvNGLNnIF0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Contrail One",
-		"filename": "eLGbP-j_JA-kG0_Zo51noafdZUvt_c092w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/contrailone/v21/eLGbP-j_JA-kG0_Zo51noafdZUvt_c092w.ttf",
-		"weight": 400
+		displayName: "Contrail One",
+		filename: "eLGbP-j_JA-kG0_Zo51noafdZUvt_c092w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/contrailone/v21/eLGbP-j_JA-kG0_Zo51noafdZUvt_c092w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pattaya",
-		"filename": "ea8ZadcqV_zkHY-XNdCn92ZEmVs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/pattaya/v18/ea8ZadcqV_zkHY-XNdCn92ZEmVs.ttf",
-		"weight": 400
+		displayName: "Pattaya",
+		filename: "ea8ZadcqV_zkHY-XNdCn92ZEmVs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/pattaya/v18/ea8ZadcqV_zkHY-XNdCn92ZEmVs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Italiana",
-		"filename": "QldNNTtLsx4E__B0XTmRY31Wx7Vv",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/italiana/v21/QldNNTtLsx4E__B0XTmRY31Wx7Vv.ttf",
-		"weight": 400
+		displayName: "Italiana",
+		filename: "QldNNTtLsx4E__B0XTmRY31Wx7Vv",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/italiana/v21/QldNNTtLsx4E__B0XTmRY31Wx7Vv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Limelight",
-		"filename": "XLYkIZL7aopJVbZJHDuYPeNGrnY2TA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/limelight/v21/XLYkIZL7aopJVbZJHDuYPeNGrnY2TA.ttf",
-		"weight": 400
+		displayName: "Limelight",
+		filename: "XLYkIZL7aopJVbZJHDuYPeNGrnY2TA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/limelight/v21/XLYkIZL7aopJVbZJHDuYPeNGrnY2TA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Livvic",
-		"filename": "rnCp-x1S2hzjrlfnb-k6unzeSA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/livvic/v15/rnCp-x1S2hzjrlfnb-k6unzeSA.ttf",
-		"weight": 400
+		displayName: "Livvic",
+		filename: "rnCp-x1S2hzjrlfnb-k6unzeSA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/livvic/v15/rnCp-x1S2hzjrlfnb-k6unzeSA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Averia Libre",
-		"filename": "2V0aKIcMGZEnV6xygz7eNjEiAqPJZ2Xx8w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/averialibre/v16/2V0aKIcMGZEnV6xygz7eNjEiAqPJZ2Xx8w.ttf",
-		"weight": 400
+		displayName: "Averia Libre",
+		filename: "2V0aKIcMGZEnV6xygz7eNjEiAqPJZ2Xx8w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/averialibre/v16/2V0aKIcMGZEnV6xygz7eNjEiAqPJZ2Xx8w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fahkwang",
-		"filename": "Noax6Uj3zpmBOgbNpNqPsr1ZPTZ4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/fahkwang/v18/Noax6Uj3zpmBOgbNpNqPsr1ZPTZ4.ttf",
-		"weight": 400
+		displayName: "Fahkwang",
+		filename: "Noax6Uj3zpmBOgbNpNqPsr1ZPTZ4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/fahkwang/v18/Noax6Uj3zpmBOgbNpNqPsr1ZPTZ4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BIZ UDGothic",
-		"filename": "daafSTouBF7RUjnbt8p3LuKttQN98z_MbQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bizudgothic/v12/daafSTouBF7RUjnbt8p3LuKttQN98z_MbQ.ttf",
-		"weight": 400
+		displayName: "BIZ UDGothic",
+		filename: "daafSTouBF7RUjnbt8p3LuKttQN98z_MbQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bizudgothic/v12/daafSTouBF7RUjnbt8p3LuKttQN98z_MbQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fjord One",
-		"filename": "zOL-4pbEnKBY_9S1jNKr6e5As-FeiQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/fjordone/v22/zOL-4pbEnKBY_9S1jNKr6e5As-FeiQ.ttf",
-		"weight": 400
+		displayName: "Fjord One",
+		filename: "zOL-4pbEnKBY_9S1jNKr6e5As-FeiQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/fjordone/v22/zOL-4pbEnKBY_9S1jNKr6e5As-FeiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rozha One",
-		"filename": "AlZy_zVFtYP12Zncg2khdXf4XB0Tow",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/rozhaone/v17/AlZy_zVFtYP12Zncg2khdXf4XB0Tow.ttf",
-		"weight": 400
+		displayName: "Rozha One",
+		filename: "AlZy_zVFtYP12Zncg2khdXf4XB0Tow",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/rozhaone/v17/AlZy_zVFtYP12Zncg2khdXf4XB0Tow.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Funnel Display",
-		"filename": "B50bF7FGv37QNVWgE0ga--4PbZSRJXrOHcLHLoAYmmPXWMVwIZDKFA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/funneldisplay/v3/B50bF7FGv37QNVWgE0ga--4PbZSRJXrOHcLHLoAYmmPXWMVwIZDKFA.ttf",
-		"weight": 400
+		displayName: "Funnel Display",
+		filename: "B50bF7FGv37QNVWgE0ga--4PbZSRJXrOHcLHLoAYmmPXWMVwIZDKFA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/funneldisplay/v3/B50bF7FGv37QNVWgE0ga--4PbZSRJXrOHcLHLoAYmmPXWMVwIZDKFA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Share",
-		"filename": "i7dEIFliZjKNF5VNHLq2cV5d",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/share/v20/i7dEIFliZjKNF5VNHLq2cV5d.ttf",
-		"weight": 400
+		displayName: "Share",
+		filename: "i7dEIFliZjKNF5VNHLq2cV5d",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/share/v20/i7dEIFliZjKNF5VNHLq2cV5d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Castoro",
-		"filename": "1q2GY5yMCld3-O4cHYhEzOYenEU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/castoro/v20/1q2GY5yMCld3-O4cHYhEzOYenEU.ttf",
-		"weight": 400
+		displayName: "Castoro",
+		filename: "1q2GY5yMCld3-O4cHYhEzOYenEU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/castoro/v20/1q2GY5yMCld3-O4cHYhEzOYenEU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ovo",
-		"filename": "yYLl0h7Wyfzjy4Q5_3WVxA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ovo/v18/yYLl0h7Wyfzjy4Q5_3WVxA.ttf",
-		"weight": 400
+		displayName: "Ovo",
+		filename: "yYLl0h7Wyfzjy4Q5_3WVxA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ovo/v18/yYLl0h7Wyfzjy4Q5_3WVxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Athiti",
-		"filename": "pe0vMISdLIZIv1w4DBhWCtaiAg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/athiti/v14/pe0vMISdLIZIv1w4DBhWCtaiAg.ttf",
-		"weight": 400
+		displayName: "Athiti",
+		filename: "pe0vMISdLIZIv1w4DBhWCtaiAg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/athiti/v14/pe0vMISdLIZIv1w4DBhWCtaiAg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Barcode 39 Text",
-		"filename": "sJoa3KhViNKANw_E3LwoDXvs5Un0HQ1vT-031RRL-9rYaw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcode39text/v32/sJoa3KhViNKANw_E3LwoDXvs5Un0HQ1vT-031RRL-9rYaw.ttf",
-		"weight": 400
+		displayName: "Libre Barcode 39 Text",
+		filename: "sJoa3KhViNKANw_E3LwoDXvs5Un0HQ1vT-031RRL-9rYaw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcode39text/v32/sJoa3KhViNKANw_E3LwoDXvs5Un0HQ1vT-031RRL-9rYaw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rye",
-		"filename": "r05XGLJT86YDFpTsXOqx4w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rye/v17/r05XGLJT86YDFpTsXOqx4w.ttf",
-		"weight": 400
+		displayName: "Rye",
+		filename: "r05XGLJT86YDFpTsXOqx4w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rye/v17/r05XGLJT86YDFpTsXOqx4w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sintony",
-		"filename": "XoHm2YDqR7-98cVUITQnu98ojjs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sintony/v17/XoHm2YDqR7-98cVUITQnu98ojjs.ttf",
-		"weight": 400
+		displayName: "Sintony",
+		filename: "XoHm2YDqR7-98cVUITQnu98ojjs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sintony/v17/XoHm2YDqR7-98cVUITQnu98ojjs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mali",
-		"filename": "N0ba2SRONuN4eCrODlxxOd8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mali/v13/N0ba2SRONuN4eCrODlxxOd8.ttf",
-		"weight": 400
+		displayName: "Mali",
+		filename: "N0ba2SRONuN4eCrODlxxOd8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mali/v13/N0ba2SRONuN4eCrODlxxOd8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spinnaker",
-		"filename": "w8gYH2oyX-I0_rvR6Hmn3HwLqOqSBg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/spinnaker/v21/w8gYH2oyX-I0_rvR6Hmn3HwLqOqSBg.ttf",
-		"weight": 400
+		displayName: "Spinnaker",
+		filename: "w8gYH2oyX-I0_rvR6Hmn3HwLqOqSBg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/spinnaker/v21/w8gYH2oyX-I0_rvR6Hmn3HwLqOqSBg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kameron",
-		"filename": "vm8pdR7vXErQxuznqrUS3z1Uw3nq4Ne3cbcbvZPxCDLR",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kameron/v18/vm8pdR7vXErQxuznqrUS3z1Uw3nq4Ne3cbcbvZPxCDLR.ttf",
-		"weight": 400
+		displayName: "Kameron",
+		filename: "vm8pdR7vXErQxuznqrUS3z1Uw3nq4Ne3cbcbvZPxCDLR",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kameron/v18/vm8pdR7vXErQxuznqrUS3z1Uw3nq4Ne3cbcbvZPxCDLR.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rochester",
-		"filename": "6ae-4KCqVa4Zy6Fif-Uy31vWNTMwoQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/rochester/v24/6ae-4KCqVa4Zy6Fif-Uy31vWNTMwoQ.ttf",
-		"weight": 400
+		displayName: "Rochester",
+		filename: "6ae-4KCqVa4Zy6Fif-Uy31vWNTMwoQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/rochester/v24/6ae-4KCqVa4Zy6Fif-Uy31vWNTMwoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nanum Brush Script",
-		"filename": "wXK2E2wfpokopxzthSqPbcR5_gVaxazyjqBr1lO97Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/nanumbrushscript/v26/wXK2E2wfpokopxzthSqPbcR5_gVaxazyjqBr1lO97Q.ttf",
-		"weight": 400
+		displayName: "Nanum Brush Script",
+		filename: "wXK2E2wfpokopxzthSqPbcR5_gVaxazyjqBr1lO97Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/nanumbrushscript/v26/wXK2E2wfpokopxzthSqPbcR5_gVaxazyjqBr1lO97Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Proza Libre",
-		"filename": "LYjGdGHgj0k1DIQRyUEyyHovftvXWYyz",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/prozalibre/v9/LYjGdGHgj0k1DIQRyUEyyHovftvXWYyz.ttf",
-		"weight": 400
+		displayName: "Proza Libre",
+		filename: "LYjGdGHgj0k1DIQRyUEyyHovftvXWYyz",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/prozalibre/v9/LYjGdGHgj0k1DIQRyUEyyHovftvXWYyz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Square",
-		"filename": "RrQUbo9-9DV7b06QHgSWsZhARYMgGtWA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novasquare/v27/RrQUbo9-9DV7b06QHgSWsZhARYMgGtWA.ttf",
-		"weight": 400
+		displayName: "Nova Square",
+		filename: "RrQUbo9-9DV7b06QHgSWsZhARYMgGtWA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novasquare/v27/RrQUbo9-9DV7b06QHgSWsZhARYMgGtWA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mountains of Christmas",
-		"filename": "3y9w6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7ePNamMPNpJpc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/mountainsofchristmas/v24/3y9w6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7ePNamMPNpJpc.ttf",
-		"weight": 400
+		displayName: "Mountains of Christmas",
+		filename: "3y9w6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7ePNamMPNpJpc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/mountainsofchristmas/v24/3y9w6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7ePNamMPNpJpc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gloock",
-		"filename": "Iurb6YFw84WUY4N5jxylBrdRjQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gloock/v8/Iurb6YFw84WUY4N5jxylBrdRjQ.ttf",
-		"weight": 400
+		displayName: "Gloock",
+		filename: "Iurb6YFw84WUY4N5jxylBrdRjQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gloock/v8/Iurb6YFw84WUY4N5jxylBrdRjQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inria Serif",
-		"filename": "fC1lPYxPY3rXxEndZJAzN0SsfSzNr0Ck",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/inriaserif/v18/fC1lPYxPY3rXxEndZJAzN0SsfSzNr0Ck.ttf",
-		"weight": 400
+		displayName: "Inria Serif",
+		filename: "fC1lPYxPY3rXxEndZJAzN0SsfSzNr0Ck",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/inriaserif/v18/fC1lPYxPY3rXxEndZJAzN0SsfSzNr0Ck.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gowun Batang",
-		"filename": "ijwSs5nhRMIjYsdSgcMa3wRhXLH-yuAtLw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gowunbatang/v12/ijwSs5nhRMIjYsdSgcMa3wRhXLH-yuAtLw.ttf",
-		"weight": 400
+		displayName: "Gowun Batang",
+		filename: "ijwSs5nhRMIjYsdSgcMa3wRhXLH-yuAtLw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gowunbatang/v12/ijwSs5nhRMIjYsdSgcMa3wRhXLH-yuAtLw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Funnel Sans",
-		"filename": "OpNfno8Dg9bX6Bsp3Wq69RB-VukSVv3aISFAlXmEfm9NnDyL7w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/funnelsans/v3/OpNfno8Dg9bX6Bsp3Wq69RB-VukSVv3aISFAlXmEfm9NnDyL7w.ttf",
-		"weight": 400
+		displayName: "Funnel Sans",
+		filename: "OpNfno8Dg9bX6Bsp3Wq69RB-VukSVv3aISFAlXmEfm9NnDyL7w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/funnelsans/v3/OpNfno8Dg9bX6Bsp3Wq69RB-VukSVv3aISFAlXmEfm9NnDyL7w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Protest Revolution",
-		"filename": "11hcGofZ0kXBbxQXFB7MJsjtqnVw6Z2s8PIzTG1nQw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/protestrevolution/v2/11hcGofZ0kXBbxQXFB7MJsjtqnVw6Z2s8PIzTG1nQw.ttf",
-		"weight": 400
+		displayName: "Protest Revolution",
+		filename: "11hcGofZ0kXBbxQXFB7MJsjtqnVw6Z2s8PIzTG1nQw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/protestrevolution/v2/11hcGofZ0kXBbxQXFB7MJsjtqnVw6Z2s8PIzTG1nQw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Allison",
-		"filename": "X7nl4b88AP2nkbvZOCaQ4MTgAgk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/allison/v13/X7nl4b88AP2nkbvZOCaQ4MTgAgk.ttf",
-		"weight": 400
+		displayName: "Allison",
+		filename: "X7nl4b88AP2nkbvZOCaQ4MTgAgk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/allison/v13/X7nl4b88AP2nkbvZOCaQ4MTgAgk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oranienbaum",
-		"filename": "OZpHg_txtzZKMuXLIVrx-3zn7kz3dpHc",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/oranienbaum/v16/OZpHg_txtzZKMuXLIVrx-3zn7kz3dpHc.ttf",
-		"weight": 400
+		displayName: "Oranienbaum",
+		filename: "OZpHg_txtzZKMuXLIVrx-3zn7kz3dpHc",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/oranienbaum/v16/OZpHg_txtzZKMuXLIVrx-3zn7kz3dpHc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Armata",
-		"filename": "gokvH63_HV5jQ-E9lD53Q2u_mQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/armata/v21/gokvH63_HV5jQ-E9lD53Q2u_mQ.ttf",
-		"weight": 400
+		displayName: "Armata",
+		filename: "gokvH63_HV5jQ-E9lD53Q2u_mQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/armata/v21/gokvH63_HV5jQ-E9lD53Q2u_mQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cormorant Unicase",
-		"filename": "HI_QiZUaILtOqhqgDeXoF_n1_fTGX-vTnsMnx3C9",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cormorantunicase/v25/HI_QiZUaILtOqhqgDeXoF_n1_fTGX-vTnsMnx3C9.ttf",
-		"weight": 400
+		displayName: "Cormorant Unicase",
+		filename: "HI_QiZUaILtOqhqgDeXoF_n1_fTGX-vTnsMnx3C9",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cormorantunicase/v25/HI_QiZUaILtOqhqgDeXoF_n1_fTGX-vTnsMnx3C9.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yuji Mai",
-		"filename": "ZgNQjPxdJ7DEHrS0gC38hmHmNpCO",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/yujimai/v8/ZgNQjPxdJ7DEHrS0gC38hmHmNpCO.ttf",
-		"weight": 400
+		displayName: "Yuji Mai",
+		filename: "ZgNQjPxdJ7DEHrS0gC38hmHmNpCO",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/yujimai/v8/ZgNQjPxdJ7DEHrS0gC38hmHmNpCO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Host Grotesk",
-		"filename": "co3UmWBnlCJ3U42vbbfdwMjzqHAXOdFzqU5PuefOzhap-j94InI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hostgrotesk/v5/co3UmWBnlCJ3U42vbbfdwMjzqHAXOdFzqU5PuefOzhap-j94InI.ttf",
-		"weight": 400
+		displayName: "Host Grotesk",
+		filename: "co3UmWBnlCJ3U42vbbfdwMjzqHAXOdFzqU5PuefOzhap-j94InI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hostgrotesk/v5/co3UmWBnlCJ3U42vbbfdwMjzqHAXOdFzqU5PuefOzhap-j94InI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Candal",
-		"filename": "XoHn2YH6T7-t_8cNAR4Jt9Yxlw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/candal/v16/XoHn2YH6T7-t_8cNAR4Jt9Yxlw.ttf",
-		"weight": 400
+		displayName: "Candal",
+		filename: "XoHn2YH6T7-t_8cNAR4Jt9Yxlw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/candal/v16/XoHn2YH6T7-t_8cNAR4Jt9Yxlw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aldrich",
-		"filename": "MCoTzAn-1s3IGyJMZaAS3pP5H_E",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/aldrich/v22/MCoTzAn-1s3IGyJMZaAS3pP5H_E.ttf",
-		"weight": 400
+		displayName: "Aldrich",
+		filename: "MCoTzAn-1s3IGyJMZaAS3pP5H_E",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/aldrich/v22/MCoTzAn-1s3IGyJMZaAS3pP5H_E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Young Serif",
-		"filename": "3qTpojO2nS2VtkB3KtkQZ2t61EcYaQ7F",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/youngserif/v2/3qTpojO2nS2VtkB3KtkQZ2t61EcYaQ7F.ttf",
-		"weight": 400
+		displayName: "Young Serif",
+		filename: "3qTpojO2nS2VtkB3KtkQZ2t61EcYaQ7F",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/youngserif/v2/3qTpojO2nS2VtkB3KtkQZ2t61EcYaQ7F.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Radley",
-		"filename": "LYjDdGzinEIjCN19oAlEpVs3VQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/radley/v24/LYjDdGzinEIjCN19oAlEpVs3VQ.ttf",
-		"weight": 400
+		displayName: "Radley",
+		filename: "LYjDdGzinEIjCN19oAlEpVs3VQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/radley/v24/LYjDdGzinEIjCN19oAlEpVs3VQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Krona One",
-		"filename": "jAnEgHdjHcjgfIb1ZcUCMY-h3cWkWg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kronaone/v15/jAnEgHdjHcjgfIb1ZcUCMY-h3cWkWg.ttf",
-		"weight": 400
+		displayName: "Krona One",
+		filename: "jAnEgHdjHcjgfIb1ZcUCMY-h3cWkWg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kronaone/v15/jAnEgHdjHcjgfIb1ZcUCMY-h3cWkWg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Petit Formal Script",
-		"filename": "B50TF6xQr2TXJBnGOFME6u5OR83oRP5qoHnqP4gZSiE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/petitformalscript/v19/B50TF6xQr2TXJBnGOFME6u5OR83oRP5qoHnqP4gZSiE.ttf",
-		"weight": 400
+		displayName: "Petit Formal Script",
+		filename: "B50TF6xQr2TXJBnGOFME6u5OR83oRP5qoHnqP4gZSiE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/petitformalscript/v19/B50TF6xQr2TXJBnGOFME6u5OR83oRP5qoHnqP4gZSiE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bowlby One SC",
-		"filename": "DtVlJxerQqQm37tzN3wMug9Pzgj8owhNjuE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bowlbyonesc/v27/DtVlJxerQqQm37tzN3wMug9Pzgj8owhNjuE.ttf",
-		"weight": 400
+		displayName: "Bowlby One SC",
+		filename: "DtVlJxerQqQm37tzN3wMug9Pzgj8owhNjuE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bowlbyonesc/v27/DtVlJxerQqQm37tzN3wMug9Pzgj8owhNjuE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Koulen",
-		"filename": "AMOQz46as3KIBPeWgnA9kuYMUg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/koulen/v30/AMOQz46as3KIBPeWgnA9kuYMUg.ttf",
-		"weight": 400
+		displayName: "Koulen",
+		filename: "AMOQz46as3KIBPeWgnA9kuYMUg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/koulen/v30/AMOQz46as3KIBPeWgnA9kuYMUg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Brygada 1918",
-		"filename": "pe08MI6eKpdGqlF5LANrM--ACNaeo8mTUIR_y2-f-V8Wu5O3gbo",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/brygada1918/v27/pe08MI6eKpdGqlF5LANrM--ACNaeo8mTUIR_y2-f-V8Wu5O3gbo.ttf",
-		"weight": 400
+		displayName: "Brygada 1918",
+		filename: "pe08MI6eKpdGqlF5LANrM--ACNaeo8mTUIR_y2-f-V8Wu5O3gbo",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/brygada1918/v27/pe08MI6eKpdGqlF5LANrM--ACNaeo8mTUIR_y2-f-V8Wu5O3gbo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Herr Von Muellerhoff",
-		"filename": "WBL6rFjRZkREW8WqmCWYLgCkQKXb4CAft3c6_qJY3QPQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/herrvonmuellerhoff/v23/WBL6rFjRZkREW8WqmCWYLgCkQKXb4CAft3c6_qJY3QPQ.ttf",
-		"weight": 400
+		displayName: "Herr Von Muellerhoff",
+		filename: "WBL6rFjRZkREW8WqmCWYLgCkQKXb4CAft3c6_qJY3QPQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/herrvonmuellerhoff/v23/WBL6rFjRZkREW8WqmCWYLgCkQKXb4CAft3c6_qJY3QPQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alatsi",
-		"filename": "TK3iWkUJAxQ2nLNGHjUHte5fKg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alatsi/v14/TK3iWkUJAxQ2nLNGHjUHte5fKg.ttf",
-		"weight": 400
+		displayName: "Alatsi",
+		filename: "TK3iWkUJAxQ2nLNGHjUHte5fKg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alatsi/v14/TK3iWkUJAxQ2nLNGHjUHte5fKg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rosario",
-		"filename": "xfuu0WDhWW_fOEoY8l_VPNZfB7jPM68YCWczd-YnOzUD",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rosario/v35/xfuu0WDhWW_fOEoY8l_VPNZfB7jPM68YCWczd-YnOzUD.ttf",
-		"weight": 400
+		displayName: "Rosario",
+		filename: "xfuu0WDhWW_fOEoY8l_VPNZfB7jPM68YCWczd-YnOzUD",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rosario/v35/xfuu0WDhWW_fOEoY8l_VPNZfB7jPM68YCWczd-YnOzUD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Podkova",
-		"filename": "K2FufZ1EmftJSV9VQpXb1lo9vC3nZWtFzcU4EoporSHH",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/podkova/v33/K2FufZ1EmftJSV9VQpXb1lo9vC3nZWtFzcU4EoporSHH.ttf",
-		"weight": 400
+		displayName: "Podkova",
+		filename: "K2FufZ1EmftJSV9VQpXb1lo9vC3nZWtFzcU4EoporSHH",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/podkova/v33/K2FufZ1EmftJSV9VQpXb1lo9vC3nZWtFzcU4EoporSHH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu SA Beginner",
-		"filename": "rnC_-xRb1x-1lHXnLaZZ2xOoLIGfU3L82irpr_3C9989fo1yBydUEDs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/edusabeginner/v5/rnC_-xRb1x-1lHXnLaZZ2xOoLIGfU3L82irpr_3C9989fo1yBydUEDs.ttf",
-		"weight": 400
+		displayName: "Edu SA Beginner",
+		filename: "rnC_-xRb1x-1lHXnLaZZ2xOoLIGfU3L82irpr_3C9989fo1yBydUEDs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/edusabeginner/v5/rnC_-xRb1x-1lHXnLaZZ2xOoLIGfU3L82irpr_3C9989fo1yBydUEDs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nobile",
-		"filename": "m8JTjflSeaOVl1i2XqfXeLVdbw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nobile/v19/m8JTjflSeaOVl1i2XqfXeLVdbw.ttf",
-		"weight": 400
+		displayName: "Nobile",
+		filename: "m8JTjflSeaOVl1i2XqfXeLVdbw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nobile/v19/m8JTjflSeaOVl1i2XqfXeLVdbw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caudex",
-		"filename": "esDQ311QOP6BJUrIyviAnb4eEw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/caudex/v19/esDQ311QOP6BJUrIyviAnb4eEw.ttf",
-		"weight": 400
+		displayName: "Caudex",
+		filename: "esDQ311QOP6BJUrIyviAnb4eEw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/caudex/v19/esDQ311QOP6BJUrIyviAnb4eEw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Graduate",
-		"filename": "C8cg4cs3o2n15t_2YxgR6X2NZAn2",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/graduate/v19/C8cg4cs3o2n15t_2YxgR6X2NZAn2.ttf",
-		"weight": 400
+		displayName: "Graduate",
+		filename: "C8cg4cs3o2n15t_2YxgR6X2NZAn2",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/graduate/v19/C8cg4cs3o2n15t_2YxgR6X2NZAn2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Annie Use Your Telescope",
-		"filename": "daaLSS4tI2qYYl3Jq9s_Hu74xwktnlKxH6osGVGjlDfB3UUVZA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/annieuseyourtelescope/v20/daaLSS4tI2qYYl3Jq9s_Hu74xwktnlKxH6osGVGjlDfB3UUVZA.ttf",
-		"weight": 400
+		displayName: "Annie Use Your Telescope",
+		filename: "daaLSS4tI2qYYl3Jq9s_Hu74xwktnlKxH6osGVGjlDfB3UUVZA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/annieuseyourtelescope/v20/daaLSS4tI2qYYl3Jq9s_Hu74xwktnlKxH6osGVGjlDfB3UUVZA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Agbalumo",
-		"filename": "55xvey5uMdT2N37KZcMFirl08KDJ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/agbalumo/v6/55xvey5uMdT2N37KZcMFirl08KDJ.ttf",
-		"weight": 400
+		displayName: "Agbalumo",
+		filename: "55xvey5uMdT2N37KZcMFirl08KDJ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/agbalumo/v6/55xvey5uMdT2N37KZcMFirl08KDJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kosugi",
-		"filename": "pxiFyp4_v8FCjlI4NLr6f1pdEQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kosugi/v19/pxiFyp4_v8FCjlI4NLr6f1pdEQ.ttf",
-		"weight": 400
+		displayName: "Kosugi",
+		filename: "pxiFyp4_v8FCjlI4NLr6f1pdEQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kosugi/v19/pxiFyp4_v8FCjlI4NLr6f1pdEQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "REM",
-		"filename": "WnzgHAIoSDyHbRjfsYumpRvUPMLqrToUbIqIfBU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rem/v4/WnzgHAIoSDyHbRjfsYumpRvUPMLqrToUbIqIfBU.ttf",
-		"weight": 400
+		displayName: "REM",
+		filename: "WnzgHAIoSDyHbRjfsYumpRvUPMLqrToUbIqIfBU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rem/v4/WnzgHAIoSDyHbRjfsYumpRvUPMLqrToUbIqIfBU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "SUSE",
-		"filename": "MwQsbhb078Wt81NpzELmC2QqjbGG7lq9ZnJSZtQG",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/suse/v4/MwQsbhb078Wt81NpzELmC2QqjbGG7lq9ZnJSZtQG.ttf",
-		"weight": 400
+		displayName: "SUSE",
+		filename: "MwQsbhb078Wt81NpzELmC2QqjbGG7lq9ZnJSZtQG",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/suse/v4/MwQsbhb078Wt81NpzELmC2QqjbGG7lq9ZnJSZtQG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jockey One",
-		"filename": "HTxpL2g2KjCFj4x8WI6ArIb7HYOk4xc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/jockeyone/v23/HTxpL2g2KjCFj4x8WI6ArIb7HYOk4xc.ttf",
-		"weight": 400
+		displayName: "Jockey One",
+		filename: "HTxpL2g2KjCFj4x8WI6ArIb7HYOk4xc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/jockeyone/v23/HTxpL2g2KjCFj4x8WI6ArIb7HYOk4xc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sevillana",
-		"filename": "KFOlCnWFscmDt1Bfiy1vAx05IsDqlA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sevillana/v25/KFOlCnWFscmDt1Bfiy1vAx05IsDqlA.ttf",
-		"weight": 400
+		displayName: "Sevillana",
+		filename: "KFOlCnWFscmDt1Bfiy1vAx05IsDqlA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sevillana/v25/KFOlCnWFscmDt1Bfiy1vAx05IsDqlA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dongle",
-		"filename": "sJoF3Ltdjt6VPkqmveRPah6RxA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dongle/v16/sJoF3Ltdjt6VPkqmveRPah6RxA.ttf",
-		"weight": 400
+		displayName: "Dongle",
+		filename: "sJoF3Ltdjt6VPkqmveRPah6RxA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dongle/v16/sJoF3Ltdjt6VPkqmveRPah6RxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Caslon Display",
-		"filename": "TuGOUUFxWphYQ6YI6q9Xp61FQzxDRKmzr2lRdRhtCC4d",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/librecaslondisplay/v18/TuGOUUFxWphYQ6YI6q9Xp61FQzxDRKmzr2lRdRhtCC4d.ttf",
-		"weight": 400
+		displayName: "Libre Caslon Display",
+		filename: "TuGOUUFxWphYQ6YI6q9Xp61FQzxDRKmzr2lRdRhtCC4d",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/librecaslondisplay/v18/TuGOUUFxWphYQ6YI6q9Xp61FQzxDRKmzr2lRdRhtCC4d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Goudy Bookletter 1911",
-		"filename": "sykt-z54laciWfKv-kX8krex0jDiD2HbY6I5tRbXZ4IXAA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/goudybookletter1911/v21/sykt-z54laciWfKv-kX8krex0jDiD2HbY6I5tRbXZ4IXAA.ttf",
-		"weight": 400
+		displayName: "Goudy Bookletter 1911",
+		filename: "sykt-z54laciWfKv-kX8krex0jDiD2HbY6I5tRbXZ4IXAA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/goudybookletter1911/v21/sykt-z54laciWfKv-kX8krex0jDiD2HbY6I5tRbXZ4IXAA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amiko",
-		"filename": "WwkQxPq1DFK04tqlc17MMZgJ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/amiko/v15/WwkQxPq1DFK04tqlc17MMZgJ.ttf",
-		"weight": 400
+		displayName: "Amiko",
+		filename: "WwkQxPq1DFK04tqlc17MMZgJ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/amiko/v15/WwkQxPq1DFK04tqlc17MMZgJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Exa",
-		"filename": "UMBCrPdOoHOnxExyjdBeQCH18mulUxBvI9r7TqbHHJ8BRq0b",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexendexa/v35/UMBCrPdOoHOnxExyjdBeQCH18mulUxBvI9r7TqbHHJ8BRq0b.ttf",
-		"weight": 400
+		displayName: "Lexend Exa",
+		filename: "UMBCrPdOoHOnxExyjdBeQCH18mulUxBvI9r7TqbHHJ8BRq0b",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexendexa/v35/UMBCrPdOoHOnxExyjdBeQCH18mulUxBvI9r7TqbHHJ8BRq0b.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bellota Text",
-		"filename": "0FlTVP2VnlWS4f3-UE9hHXMB-dMOdS7sSg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bellotatext/v20/0FlTVP2VnlWS4f3-UE9hHXMB-dMOdS7sSg.ttf",
-		"weight": 400
+		displayName: "Bellota Text",
+		filename: "0FlTVP2VnlWS4f3-UE9hHXMB-dMOdS7sSg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bellotatext/v20/0FlTVP2VnlWS4f3-UE9hHXMB-dMOdS7sSg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oooh Baby",
-		"filename": "2sDcZGJWgJTT2Jf76xQDb2-4C7wFZQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/ooohbaby/v4/2sDcZGJWgJTT2Jf76xQDb2-4C7wFZQ.ttf",
-		"weight": 400
+		displayName: "Oooh Baby",
+		filename: "2sDcZGJWgJTT2Jf76xQDb2-4C7wFZQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/ooohbaby/v4/2sDcZGJWgJTT2Jf76xQDb2-4C7wFZQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "DotGothic16",
-		"filename": "v6-QGYjBJFKgyw5nSoDAGE7L435YPFrT",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dotgothic16/v21/v6-QGYjBJFKgyw5nSoDAGE7L435YPFrT.ttf",
-		"weight": 400
+		displayName: "DotGothic16",
+		filename: "v6-QGYjBJFKgyw5nSoDAGE7L435YPFrT",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dotgothic16/v21/v6-QGYjBJFKgyw5nSoDAGE7L435YPFrT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Red Rose",
-		"filename": "QdVISTYiLBjouPgEUajvsfWwDtc3MH8yrfsDcjSsYUVUjg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/redrose/v25/QdVISTYiLBjouPgEUajvsfWwDtc3MH8yrfsDcjSsYUVUjg.ttf",
-		"weight": 400
+		displayName: "Red Rose",
+		filename: "QdVISTYiLBjouPgEUajvsfWwDtc3MH8yrfsDcjSsYUVUjg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/redrose/v25/QdVISTYiLBjouPgEUajvsfWwDtc3MH8yrfsDcjSsYUVUjg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hepta Slab",
-		"filename": "ea8JadoyU_jkHdalebHvyWVNdYoIsHe5HvkV5zfbY5B0NBkz",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/heptaslab/v25/ea8JadoyU_jkHdalebHvyWVNdYoIsHe5HvkV5zfbY5B0NBkz.ttf",
-		"weight": 400
+		displayName: "Hepta Slab",
+		filename: "ea8JadoyU_jkHdalebHvyWVNdYoIsHe5HvkV5zfbY5B0NBkz",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/heptaslab/v25/ea8JadoyU_jkHdalebHvyWVNdYoIsHe5HvkV5zfbY5B0NBkz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Honk",
-		"filename": "m8J7jftUea-XwTaemClumrBQbmvynOmXBji9zFhHRr8WFgVLo7tNepQKvg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/honk/v6/m8J7jftUea-XwTaemClumrBQbmvynOmXBji9zFhHRr8WFgVLo7tNepQKvg.ttf",
-		"weight": 400
+		displayName: "Honk",
+		filename: "m8J7jftUea-XwTaemClumrBQbmvynOmXBji9zFhHRr8WFgVLo7tNepQKvg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/honk/v6/m8J7jftUea-XwTaemClumrBQbmvynOmXBji9zFhHRr8WFgVLo7tNepQKvg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fondamento",
-		"filename": "4UaHrEJGsxNmFTPDnkaJx63j5pN1MwI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/fondamento/v22/4UaHrEJGsxNmFTPDnkaJx63j5pN1MwI.ttf",
-		"weight": 400
+		displayName: "Fondamento",
+		filename: "4UaHrEJGsxNmFTPDnkaJx63j5pN1MwI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/fondamento/v22/4UaHrEJGsxNmFTPDnkaJx63j5pN1MwI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cormorant Upright",
-		"filename": "VuJrdM3I2Y35poFONtLdafkUCHw1y2vVjjTkeMnz",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cormorantupright/v19/VuJrdM3I2Y35poFONtLdafkUCHw1y2vVjjTkeMnz.ttf",
-		"weight": 400
+		displayName: "Cormorant Upright",
+		filename: "VuJrdM3I2Y35poFONtLdafkUCHw1y2vVjjTkeMnz",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cormorantupright/v19/VuJrdM3I2Y35poFONtLdafkUCHw1y2vVjjTkeMnz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Da 2",
-		"filename": "2-c39J9j0IaUMQZwAJyJaOX1UUnf3GLnYjALsTNe55aRa7UE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/balooda2/v26/2-c39J9j0IaUMQZwAJyJaOX1UUnf3GLnYjALsTNe55aRa7UE.ttf",
-		"weight": 400
+		displayName: "Baloo Da 2",
+		filename: "2-c39J9j0IaUMQZwAJyJaOX1UUnf3GLnYjALsTNe55aRa7UE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/balooda2/v26/2-c39J9j0IaUMQZwAJyJaOX1UUnf3GLnYjALsTNe55aRa7UE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Norican",
-		"filename": "MwQ2bhXp1eSBqjkPGJJRtGs-lbA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/norican/v16/MwQ2bhXp1eSBqjkPGJJRtGs-lbA.ttf",
-		"weight": 400
+		displayName: "Norican",
+		filename: "MwQ2bhXp1eSBqjkPGJJRtGs-lbA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/norican/v16/MwQ2bhXp1eSBqjkPGJJRtGs-lbA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Coming Soon",
-		"filename": "qWcuB6mzpYL7AJ2VfdQR1u-SUjjzsykh",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/comingsoon/v20/qWcuB6mzpYL7AJ2VfdQR1u-SUjjzsykh.ttf",
-		"weight": 400
+		displayName: "Coming Soon",
+		filename: "qWcuB6mzpYL7AJ2VfdQR1u-SUjjzsykh",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/comingsoon/v20/qWcuB6mzpYL7AJ2VfdQR1u-SUjjzsykh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Enriqueta",
-		"filename": "goksH6L7AUFrRvV44HVTS0CjkP1Yog",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/enriqueta/v19/goksH6L7AUFrRvV44HVTS0CjkP1Yog.ttf",
-		"weight": 400
+		displayName: "Enriqueta",
+		filename: "goksH6L7AUFrRvV44HVTS0CjkP1Yog",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/enriqueta/v19/goksH6L7AUFrRvV44HVTS0CjkP1Yog.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Schoolbell",
-		"filename": "92zQtBZWOrcgoe-fgnJIVxIQ6mRqfiQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/schoolbell/v18/92zQtBZWOrcgoe-fgnJIVxIQ6mRqfiQ.ttf",
-		"weight": 400
+		displayName: "Schoolbell",
+		filename: "92zQtBZWOrcgoe-fgnJIVxIQ6mRqfiQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/schoolbell/v18/92zQtBZWOrcgoe-fgnJIVxIQ6mRqfiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grand Hotel",
-		"filename": "7Au7p_IgjDKdCRWuR1azpmQNEl0O0kEx",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/grandhotel/v21/7Au7p_IgjDKdCRWuR1azpmQNEl0O0kEx.ttf",
-		"weight": 400
+		displayName: "Grand Hotel",
+		filename: "7Au7p_IgjDKdCRWuR1azpmQNEl0O0kEx",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/grandhotel/v21/7Au7p_IgjDKdCRWuR1azpmQNEl0O0kEx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Montagu Slab",
-		"filename": "6qLhKZIQtB_zv0xUaXRDWkY_HXsphdLRZF40vm_jzR2jhk_n3T6ACkDbEnP9Fs7bOSO7",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/montaguslab/v17/6qLhKZIQtB_zv0xUaXRDWkY_HXsphdLRZF40vm_jzR2jhk_n3T6ACkDbEnP9Fs7bOSO7.ttf",
-		"weight": 400
+		displayName: "Montagu Slab",
+		filename: "6qLhKZIQtB_zv0xUaXRDWkY_HXsphdLRZF40vm_jzR2jhk_n3T6ACkDbEnP9Fs7bOSO7",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/montaguslab/v17/6qLhKZIQtB_zv0xUaXRDWkY_HXsphdLRZF40vm_jzR2jhk_n3T6ACkDbEnP9Fs7bOSO7.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "UnifrakturMaguntia",
-		"filename": "WWXPlieVYwiGNomYU-ciRLRvEmK7oaVun2xNNgNa1A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/unifrakturmaguntia/v22/WWXPlieVYwiGNomYU-ciRLRvEmK7oaVun2xNNgNa1A.ttf",
-		"weight": 400
+		displayName: "UnifrakturMaguntia",
+		filename: "WWXPlieVYwiGNomYU-ciRLRvEmK7oaVun2xNNgNa1A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/unifrakturmaguntia/v22/WWXPlieVYwiGNomYU-ciRLRvEmK7oaVun2xNNgNa1A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Antic",
-		"filename": "TuGfUVB8XY5DRaZLodgzydtk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/antic/v20/TuGfUVB8XY5DRaZLodgzydtk.ttf",
-		"weight": 400
+		displayName: "Antic",
+		filename: "TuGfUVB8XY5DRaZLodgzydtk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/antic/v20/TuGfUVB8XY5DRaZLodgzydtk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mate",
-		"filename": "m8JdjftRd7WZ2z28WoXSaLU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/mate/v19/m8JdjftRd7WZ2z28WoXSaLU.ttf",
-		"weight": 400
+		displayName: "Mate",
+		filename: "m8JdjftRd7WZ2z28WoXSaLU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/mate/v19/m8JdjftRd7WZ2z28WoXSaLU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Metrophobic",
-		"filename": "sJoA3LZUhMSAPV_u0qwiAT-J737FPEEL",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/metrophobic/v24/sJoA3LZUhMSAPV_u0qwiAT-J737FPEEL.ttf",
-		"weight": 400
+		displayName: "Metrophobic",
+		filename: "sJoA3LZUhMSAPV_u0qwiAT-J737FPEEL",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/metrophobic/v24/sJoA3LZUhMSAPV_u0qwiAT-J737FPEEL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rancho",
-		"filename": "46kulbzmXjLaqZRlbWXgd0RY1g",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/rancho/v22/46kulbzmXjLaqZRlbWXgd0RY1g.ttf",
-		"weight": 400
+		displayName: "Rancho",
+		filename: "46kulbzmXjLaqZRlbWXgd0RY1g",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/rancho/v22/46kulbzmXjLaqZRlbWXgd0RY1g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bellefair",
-		"filename": "kJExBuYY6AAuhiXUxG19__A2pOdvDA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bellefair/v15/kJExBuYY6AAuhiXUxG19__A2pOdvDA.ttf",
-		"weight": 400
+		displayName: "Bellefair",
+		filename: "kJExBuYY6AAuhiXUxG19__A2pOdvDA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bellefair/v15/kJExBuYY6AAuhiXUxG19__A2pOdvDA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alegreya SC",
-		"filename": "taiOGmRtCJ62-O0HhNEa-a6o05E5abe_",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/alegreyasc/v26/taiOGmRtCJ62-O0HhNEa-a6o05E5abe_.ttf",
-		"weight": 400
+		displayName: "Alegreya SC",
+		filename: "taiOGmRtCJ62-O0HhNEa-a6o05E5abe_",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/alegreyasc/v26/taiOGmRtCJ62-O0HhNEa-a6o05E5abe_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Trirong",
-		"filename": "7r3GqXNgp8wxdOdOr4wi2aZg-ug",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/trirong/v17/7r3GqXNgp8wxdOdOr4wi2aZg-ug.ttf",
-		"weight": 400
+		displayName: "Trirong",
+		filename: "7r3GqXNgp8wxdOdOr4wi2aZg-ug",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/trirong/v17/7r3GqXNgp8wxdOdOr4wi2aZg-ug.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spectral SC",
-		"filename": "KtkpALCRZonmalTgyPmRfvWi6WDfFpuc",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/spectralsc/v15/KtkpALCRZonmalTgyPmRfvWi6WDfFpuc.ttf",
-		"weight": 400
+		displayName: "Spectral SC",
+		filename: "KtkpALCRZonmalTgyPmRfvWi6WDfFpuc",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/spectralsc/v15/KtkpALCRZonmalTgyPmRfvWi6WDfFpuc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Klee One",
-		"filename": "LDIxapCLNRc6A8oT4q4AOeekWPrP",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kleeone/v13/LDIxapCLNRc6A8oT4q4AOeekWPrP.ttf",
-		"weight": 400
+		displayName: "Klee One",
+		filename: "LDIxapCLNRc6A8oT4q4AOeekWPrP",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kleeone/v13/LDIxapCLNRc6A8oT4q4AOeekWPrP.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cantata One",
-		"filename": "PlI5Fl60Nb5obNzNe2jslVxEt8CwfGaD",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cantataone/v16/PlI5Fl60Nb5obNzNe2jslVxEt8CwfGaD.ttf",
-		"weight": 400
+		displayName: "Cantata One",
+		filename: "PlI5Fl60Nb5obNzNe2jslVxEt8CwfGaD",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cantataone/v16/PlI5Fl60Nb5obNzNe2jslVxEt8CwfGaD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gantari",
-		"filename": "jVyV7nvyB2HL8iZyDk4GVvSZ5MtC9g0gOj3wa5GD2qnm",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gantari/v4/jVyV7nvyB2HL8iZyDk4GVvSZ5MtC9g0gOj3wa5GD2qnm.ttf",
-		"weight": 400
+		displayName: "Gantari",
+		filename: "jVyV7nvyB2HL8iZyDk4GVvSZ5MtC9g0gOj3wa5GD2qnm",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gantari/v4/jVyV7nvyB2HL8iZyDk4GVvSZ5MtC9g0gOj3wa5GD2qnm.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Style Script",
-		"filename": "vm8xdRX3SV7Z0aPa88xzW5npeFT76NZnMw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/stylescript/v13/vm8xdRX3SV7Z0aPa88xzW5npeFT76NZnMw.ttf",
-		"weight": 400
+		displayName: "Style Script",
+		filename: "vm8xdRX3SV7Z0aPa88xzW5npeFT76NZnMw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/stylescript/v13/vm8xdRX3SV7Z0aPa88xzW5npeFT76NZnMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BioRhyme",
-		"filename": "1cXeaULHBpDMsHYW_GZNh7loEHurwOIGadI205trrbeBgQs4OjIimiaki-gkRDE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/biorhyme/v21/1cXeaULHBpDMsHYW_GZNh7loEHurwOIGadI205trrbeBgQs4OjIimiaki-gkRDE.ttf",
-		"weight": 400
+		displayName: "BioRhyme",
+		filename: "1cXeaULHBpDMsHYW_GZNh7loEHurwOIGadI205trrbeBgQs4OjIimiaki-gkRDE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/biorhyme/v21/1cXeaULHBpDMsHYW_GZNh7loEHurwOIGadI205trrbeBgQs4OjIimiaki-gkRDE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Knewave",
-		"filename": "sykz-yx0lLcxQaSItSq9-trEvlQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/knewave/v15/sykz-yx0lLcxQaSItSq9-trEvlQ.ttf",
-		"weight": 400
+		displayName: "Knewave",
+		filename: "sykz-yx0lLcxQaSItSq9-trEvlQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/knewave/v15/sykz-yx0lLcxQaSItSq9-trEvlQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Suez One",
-		"filename": "taiJGmd_EZ6rqscQgNFJkIqg-I0w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/suezone/v15/taiJGmd_EZ6rqscQgNFJkIqg-I0w.ttf",
-		"weight": 400
+		displayName: "Suez One",
+		filename: "taiJGmd_EZ6rqscQgNFJkIqg-I0w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/suezone/v15/taiJGmd_EZ6rqscQgNFJkIqg-I0w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geo",
-		"filename": "CSRz4zRZlufVL3BmQjlCbQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/geo/v23/CSRz4zRZlufVL3BmQjlCbQ.ttf",
-		"weight": 400
+		displayName: "Geo",
+		filename: "CSRz4zRZlufVL3BmQjlCbQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/geo/v23/CSRz4zRZlufVL3BmQjlCbQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dawning of a New Day",
-		"filename": "t5t_IQMbOp2SEwuncwLRjMfIg1yYit_nAz8bhWJGNoBE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/dawningofanewday/v22/t5t_IQMbOp2SEwuncwLRjMfIg1yYit_nAz8bhWJGNoBE.ttf",
-		"weight": 400
+		displayName: "Dawning of a New Day",
+		filename: "t5t_IQMbOp2SEwuncwLRjMfIg1yYit_nAz8bhWJGNoBE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/dawningofanewday/v22/t5t_IQMbOp2SEwuncwLRjMfIg1yYit_nAz8bhWJGNoBE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Hebrew",
-		"filename": "k3k0o9MMPvpLmixYH7euCwmkS9DohjX1-kRyiqyBqIxnoLbp93i9IKrXKF_qVAwSAG8_vlQxz24",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifhebrew/v30/k3k0o9MMPvpLmixYH7euCwmkS9DohjX1-kRyiqyBqIxnoLbp93i9IKrXKF_qVAwSAG8_vlQxz24.ttf",
-		"weight": 400
+		displayName: "Noto Serif Hebrew",
+		filename: "k3k0o9MMPvpLmixYH7euCwmkS9DohjX1-kRyiqyBqIxnoLbp93i9IKrXKF_qVAwSAG8_vlQxz24",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifhebrew/v30/k3k0o9MMPvpLmixYH7euCwmkS9DohjX1-kRyiqyBqIxnoLbp93i9IKrXKF_qVAwSAG8_vlQxz24.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Barcode 128",
-		"filename": "cIfnMbdUsUoiW3O_hVviCwVjuLtXeJ_A_gMk0izH",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcode128/v31/cIfnMbdUsUoiW3O_hVviCwVjuLtXeJ_A_gMk0izH.ttf",
-		"weight": 400
+		displayName: "Libre Barcode 128",
+		filename: "cIfnMbdUsUoiW3O_hVviCwVjuLtXeJ_A_gMk0izH",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcode128/v31/cIfnMbdUsUoiW3O_hVviCwVjuLtXeJ_A_gMk0izH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Azeret Mono",
-		"filename": "3XF5ErsiyJsY9O_Gepph-FvtTQgMQUdNekSfnPVh0raa-5s3AA",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/azeretmono/v21/3XF5ErsiyJsY9O_Gepph-FvtTQgMQUdNekSfnPVh0raa-5s3AA.ttf",
-		"weight": 400
+		displayName: "Azeret Mono",
+		filename: "3XF5ErsiyJsY9O_Gepph-FvtTQgMQUdNekSfnPVh0raa-5s3AA",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/azeretmono/v21/3XF5ErsiyJsY9O_Gepph-FvtTQgMQUdNekSfnPVh0raa-5s3AA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ubuntu Sans",
-		"filename": "co3omWd6mSRtB7_9UaLWwJnCq5ALePfPu1tPcW235R53LqrCPWbujzt6CfqLVLT9mgk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ubuntusans/v4/co3omWd6mSRtB7_9UaLWwJnCq5ALePfPu1tPcW235R53LqrCPWbujzt6CfqLVLT9mgk.ttf",
-		"weight": 400
+		displayName: "Ubuntu Sans",
+		filename: "co3omWd6mSRtB7_9UaLWwJnCq5ALePfPu1tPcW235R53LqrCPWbujzt6CfqLVLT9mgk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ubuntusans/v4/co3omWd6mSRtB7_9UaLWwJnCq5ALePfPu1tPcW235R53LqrCPWbujzt6CfqLVLT9mgk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Modak",
-		"filename": "EJRYQgs1XtIEsnMH8BVZ76KU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/modak/v21/EJRYQgs1XtIEsnMH8BVZ76KU.ttf",
-		"weight": 400
+		displayName: "Modak",
+		filename: "EJRYQgs1XtIEsnMH8BVZ76KU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/modak/v21/EJRYQgs1XtIEsnMH8BVZ76KU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Maitree",
-		"filename": "MjQGmil5tffhpBrkrtmmfJmDoL4",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/maitree/v11/MjQGmil5tffhpBrkrtmmfJmDoL4.ttf",
-		"weight": 400
+		displayName: "Maitree",
+		filename: "MjQGmil5tffhpBrkrtmmfJmDoL4",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/maitree/v11/MjQGmil5tffhpBrkrtmmfJmDoL4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Halant",
-		"filename": "u-4-0qaujRI2PbsX39Jmky12eg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/halant/v17/u-4-0qaujRI2PbsX39Jmky12eg.ttf",
-		"weight": 400
+		displayName: "Halant",
+		filename: "u-4-0qaujRI2PbsX39Jmky12eg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/halant/v17/u-4-0qaujRI2PbsX39Jmky12eg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Latin",
-		"filename": "co3pmWZulTRoU4a8dqrWiajBS5ByUkvdrluH-xWG5uJTY4x-L3PuR7AZKdClWL3kgw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/aneklatin/v11/co3pmWZulTRoU4a8dqrWiajBS5ByUkvdrluH-xWG5uJTY4x-L3PuR7AZKdClWL3kgw.ttf",
-		"weight": 400
+		displayName: "Anek Latin",
+		filename: "co3pmWZulTRoU4a8dqrWiajBS5ByUkvdrluH-xWG5uJTY4x-L3PuR7AZKdClWL3kgw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/aneklatin/v11/co3pmWZulTRoU4a8dqrWiajBS5ByUkvdrluH-xWG5uJTY4x-L3PuR7AZKdClWL3kgw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arizonia",
-		"filename": "neIIzCemt4A5qa7mv6WGHK06UY30",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/arizonia/v23/neIIzCemt4A5qa7mv6WGHK06UY30.ttf",
-		"weight": 400
+		displayName: "Arizonia",
+		filename: "neIIzCemt4A5qa7mv6WGHK06UY30",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/arizonia/v23/neIIzCemt4A5qa7mv6WGHK06UY30.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arbutus Slab",
-		"filename": "oY1Z8e7OuLXkJGbXtr5ba7ZVa68dJlaFAQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/arbutusslab/v17/oY1Z8e7OuLXkJGbXtr5ba7ZVa68dJlaFAQ.ttf",
-		"weight": 400
+		displayName: "Arbutus Slab",
+		filename: "oY1Z8e7OuLXkJGbXtr5ba7ZVa68dJlaFAQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/arbutusslab/v17/oY1Z8e7OuLXkJGbXtr5ba7ZVa68dJlaFAQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kristi",
-		"filename": "uK_y4ricdeU6zwdRCh0TMv6EXw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kristi/v23/uK_y4ricdeU6zwdRCh0TMv6EXw.ttf",
-		"weight": 400
+		displayName: "Kristi",
+		filename: "uK_y4ricdeU6zwdRCh0TMv6EXw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kristi/v23/uK_y4ricdeU6zwdRCh0TMv6EXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Silkscreen",
-		"filename": "m8JXjfVPf62XiF7kO-i9ULRvamODxdI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/silkscreen/v6/m8JXjfVPf62XiF7kO-i9ULRvamODxdI.ttf",
-		"weight": 400
+		displayName: "Silkscreen",
+		filename: "m8JXjfVPf62XiF7kO-i9ULRvamODxdI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/silkscreen/v6/m8JXjfVPf62XiF7kO-i9ULRvamODxdI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yesteryear",
-		"filename": "dg4g_p78rroaKl8kRKo1r7wHTwonmyw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/yesteryear/v21/dg4g_p78rroaKl8kRKo1r7wHTwonmyw.ttf",
-		"weight": 400
+		displayName: "Yesteryear",
+		filename: "dg4g_p78rroaKl8kRKo1r7wHTwonmyw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/yesteryear/v21/dg4g_p78rroaKl8kRKo1r7wHTwonmyw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Familjen Grotesk",
-		"filename": "Qw3LZR9ZHiDnImG6-NEMQ41wby8WRnYsfkunR_eGfMGJaSztc1jcEYq2",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/familjengrotesk/v11/Qw3LZR9ZHiDnImG6-NEMQ41wby8WRnYsfkunR_eGfMGJaSztc1jcEYq2.ttf",
-		"weight": 400
+		displayName: "Familjen Grotesk",
+		filename: "Qw3LZR9ZHiDnImG6-NEMQ41wby8WRnYsfkunR_eGfMGJaSztc1jcEYq2",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/familjengrotesk/v11/Qw3LZR9ZHiDnImG6-NEMQ41wby8WRnYsfkunR_eGfMGJaSztc1jcEYq2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bentham",
-		"filename": "VdGeAZQPEpYfmHglKWw7CJaK_y4",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bentham/v20/VdGeAZQPEpYfmHglKWw7CJaK_y4.ttf",
-		"weight": 400
+		displayName: "Bentham",
+		filename: "VdGeAZQPEpYfmHglKWw7CJaK_y4",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bentham/v20/VdGeAZQPEpYfmHglKWw7CJaK_y4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Manjari",
-		"filename": "k3kQo8UPMOBO2w1UTd7iL0nAMaM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/manjari/v14/k3kQo8UPMOBO2w1UTd7iL0nAMaM.ttf",
-		"weight": 400
+		displayName: "Manjari",
+		filename: "k3kQo8UPMOBO2w1UTd7iL0nAMaM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/manjari/v14/k3kQo8UPMOBO2w1UTd7iL0nAMaM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Glory",
-		"filename": "q5uasoi9Lf1w5t3Est24nq9blIRQwImDpn-dDi9EOQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/glory/v18/q5uasoi9Lf1w5t3Est24nq9blIRQwImDpn-dDi9EOQ.ttf",
-		"weight": 400
+		displayName: "Glory",
+		filename: "q5uasoi9Lf1w5t3Est24nq9blIRQwImDpn-dDi9EOQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/glory/v18/q5uasoi9Lf1w5t3Est24nq9blIRQwImDpn-dDi9EOQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Overlock",
-		"filename": "Z9XVDmdMWRiN1_T9Z4Te4u2El6GC",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/overlock/v19/Z9XVDmdMWRiN1_T9Z4Te4u2El6GC.ttf",
-		"weight": 400
+		displayName: "Overlock",
+		filename: "Z9XVDmdMWRiN1_T9Z4Te4u2El6GC",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/overlock/v19/Z9XVDmdMWRiN1_T9Z4Te4u2El6GC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cormorant SC",
-		"filename": "0yb5GD4kxqXBmOVLG30OGwserDow9Tbu-Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cormorantsc/v19/0yb5GD4kxqXBmOVLG30OGwserDow9Tbu-Q.ttf",
-		"weight": 400
+		displayName: "Cormorant SC",
+		filename: "0yb5GD4kxqXBmOVLG30OGwserDow9Tbu-Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cormorantsc/v19/0yb5GD4kxqXBmOVLG30OGwserDow9Tbu-Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Peta",
-		"filename": "BXR4vFPGjeLPh0kCfI4OkFX-UTQHSCaxvBgR6SByW1YuRTsnfw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexendpeta/v30/BXR4vFPGjeLPh0kCfI4OkFX-UTQHSCaxvBgR6SByW1YuRTsnfw.ttf",
-		"weight": 400
+		displayName: "Lexend Peta",
+		filename: "BXR4vFPGjeLPh0kCfI4OkFX-UTQHSCaxvBgR6SByW1YuRTsnfw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexendpeta/v30/BXR4vFPGjeLPh0kCfI4OkFX-UTQHSCaxvBgR6SByW1YuRTsnfw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Trocchi",
-		"filename": "qWcqB6WkuIDxDZLcDrtUvMeTYD0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/trocchi/v19/qWcqB6WkuIDxDZLcDrtUvMeTYD0.ttf",
-		"weight": 400
+		displayName: "Trocchi",
+		filename: "qWcqB6WkuIDxDZLcDrtUvMeTYD0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/trocchi/v19/qWcqB6WkuIDxDZLcDrtUvMeTYD0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Monsieur La Doulaise",
-		"filename": "_Xmz-GY4rjmCbQfc-aPRaa4pqV340p7EZl5ewkEU4HTy",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/monsieurladoulaise/v20/_Xmz-GY4rjmCbQfc-aPRaa4pqV340p7EZl5ewkEU4HTy.ttf",
-		"weight": 400
+		displayName: "Monsieur La Doulaise",
+		filename: "_Xmz-GY4rjmCbQfc-aPRaa4pqV340p7EZl5ewkEU4HTy",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/monsieurladoulaise/v20/_Xmz-GY4rjmCbQfc-aPRaa4pqV340p7EZl5ewkEU4HTy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Marmelad",
-		"filename": "Qw3eZQdSHj_jK2e-8tFLG-YMC0R8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/marmelad/v19/Qw3eZQdSHj_jK2e-8tFLG-YMC0R8.ttf",
-		"weight": 400
+		displayName: "Marmelad",
+		filename: "Qw3eZQdSHj_jK2e-8tFLG-YMC0R8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/marmelad/v19/Qw3eZQdSHj_jK2e-8tFLG-YMC0R8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Allerta",
-		"filename": "TwMO-IAHRlkbx940UnEdSQqO5uY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/allerta/v19/TwMO-IAHRlkbx940UnEdSQqO5uY.ttf",
-		"weight": 400
+		displayName: "Allerta",
+		filename: "TwMO-IAHRlkbx940UnEdSQqO5uY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/allerta/v19/TwMO-IAHRlkbx940UnEdSQqO5uY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Irish Grover",
-		"filename": "buExpoi6YtLz2QW7LA4flVgf-P5Oaiw4cw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/irishgrover/v23/buExpoi6YtLz2QW7LA4flVgf-P5Oaiw4cw.ttf",
-		"weight": 400
+		displayName: "Irish Grover",
+		filename: "buExpoi6YtLz2QW7LA4flVgf-P5Oaiw4cw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/irishgrover/v23/buExpoi6YtLz2QW7LA4flVgf-P5Oaiw4cw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wallpoet",
-		"filename": "f0X10em2_8RnXVVdUNbu7cXP8L8G",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/wallpoet/v21/f0X10em2_8RnXVVdUNbu7cXP8L8G.ttf",
-		"weight": 400
+		displayName: "Wallpoet",
+		filename: "f0X10em2_8RnXVVdUNbu7cXP8L8G",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/wallpoet/v21/f0X10em2_8RnXVVdUNbu7cXP8L8G.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Niconne",
-		"filename": "w8gaH2QvRug1_rTfrQut2F4OuOo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/niconne/v16/w8gaH2QvRug1_rTfrQut2F4OuOo.ttf",
-		"weight": 400
+		displayName: "Niconne",
+		filename: "w8gaH2QvRug1_rTfrQut2F4OuOo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/niconne/v16/w8gaH2QvRug1_rTfrQut2F4OuOo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Love Ya Like A Sister",
-		"filename": "R70EjzUBlOqPeouhFDfR80-0FhOqJubN-Be78nZcsGGycA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/loveyalikeasister/v23/R70EjzUBlOqPeouhFDfR80-0FhOqJubN-Be78nZcsGGycA.ttf",
-		"weight": 400
+		displayName: "Love Ya Like A Sister",
+		filename: "R70EjzUBlOqPeouhFDfR80-0FhOqJubN-Be78nZcsGGycA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/loveyalikeasister/v23/R70EjzUBlOqPeouhFDfR80-0FhOqJubN-Be78nZcsGGycA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chivo Mono",
-		"filename": "mFThWbgRxKvF_Z5eQMO9qRMrJJrnKNtC3D7hr6fVKphL03l4",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/chivomono/v11/mFThWbgRxKvF_Z5eQMO9qRMrJJrnKNtC3D7hr6fVKphL03l4.ttf",
-		"weight": 400
+		displayName: "Chivo Mono",
+		filename: "mFThWbgRxKvF_Z5eQMO9qRMrJJrnKNtC3D7hr6fVKphL03l4",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/chivomono/v11/mFThWbgRxKvF_Z5eQMO9qRMrJJrnKNtC3D7hr6fVKphL03l4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Average Sans",
-		"filename": "1Ptpg8fLXP2dlAXR-HlJJNJPBdqazVoK4A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/averagesans/v17/1Ptpg8fLXP2dlAXR-HlJJNJPBdqazVoK4A.ttf",
-		"weight": 400
+		displayName: "Average Sans",
+		filename: "1Ptpg8fLXP2dlAXR-HlJJNJPBdqazVoK4A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/averagesans/v17/1Ptpg8fLXP2dlAXR-HlJJNJPBdqazVoK4A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mansalva",
-		"filename": "aWB4m0aacbtDfvq5NJllI47vdyBg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mansalva/v16/aWB4m0aacbtDfvq5NJllI47vdyBg.ttf",
-		"weight": 400
+		displayName: "Mansalva",
+		filename: "aWB4m0aacbtDfvq5NJllI47vdyBg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mansalva/v16/aWB4m0aacbtDfvq5NJllI47vdyBg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Encode Sans Expanded",
-		"filename": "c4m_1mF4GcnstG_Jh1QH6ac4hNLeNyeYUqoiIwdAd5Ab",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/encodesansexpanded/v12/c4m_1mF4GcnstG_Jh1QH6ac4hNLeNyeYUqoiIwdAd5Ab.ttf",
-		"weight": 400
+		displayName: "Encode Sans Expanded",
+		filename: "c4m_1mF4GcnstG_Jh1QH6ac4hNLeNyeYUqoiIwdAd5Ab",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/encodesansexpanded/v12/c4m_1mF4GcnstG_Jh1QH6ac4hNLeNyeYUqoiIwdAd5Ab.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Waiting for the Sunrise",
-		"filename": "WBL1rFvOYl9CEv2i1mO6KUW8RKWJ2zoXoz5JsYZQ9h_ZYk5J",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/waitingforthesunrise/v23/WBL1rFvOYl9CEv2i1mO6KUW8RKWJ2zoXoz5JsYZQ9h_ZYk5J.ttf",
-		"weight": 400
+		displayName: "Waiting for the Sunrise",
+		filename: "WBL1rFvOYl9CEv2i1mO6KUW8RKWJ2zoXoz5JsYZQ9h_ZYk5J",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/waitingforthesunrise/v23/WBL1rFvOYl9CEv2i1mO6KUW8RKWJ2zoXoz5JsYZQ9h_ZYk5J.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hina Mincho",
-		"filename": "2sDaZGBRhpXa2Jjz5w5LAGW8KbkVZTHR",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/hinamincho/v16/2sDaZGBRhpXa2Jjz5w5LAGW8KbkVZTHR.ttf",
-		"weight": 400
+		displayName: "Hina Mincho",
+		filename: "2sDaZGBRhpXa2Jjz5w5LAGW8KbkVZTHR",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/hinamincho/v16/2sDaZGBRhpXa2Jjz5w5LAGW8KbkVZTHR.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Calligraffitti",
-		"filename": "46k2lbT3XjDVqJw3DCmCFjE0vnFZM5ZBpYN-",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/calligraffitti/v20/46k2lbT3XjDVqJw3DCmCFjE0vnFZM5ZBpYN-.ttf",
-		"weight": 400
+		displayName: "Calligraffitti",
+		filename: "46k2lbT3XjDVqJw3DCmCFjE0vnFZM5ZBpYN-",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/calligraffitti/v20/46k2lbT3XjDVqJw3DCmCFjE0vnFZM5ZBpYN-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Markazi Text",
-		"filename": "sykh-ydym6AtQaiEtX7yhqb_rV1k_81ZVYYZtfSQT4MlBekmJLo",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/markazitext/v28/sykh-ydym6AtQaiEtX7yhqb_rV1k_81ZVYYZtfSQT4MlBekmJLo.ttf",
-		"weight": 400
+		displayName: "Markazi Text",
+		filename: "sykh-ydym6AtQaiEtX7yhqb_rV1k_81ZVYYZtfSQT4MlBekmJLo",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/markazitext/v28/sykh-ydym6AtQaiEtX7yhqb_rV1k_81ZVYYZtfSQT4MlBekmJLo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sigmar One",
-		"filename": "co3DmWZ8kjZuErj9Ta3dk6Pjp3Di8U0",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sigmarone/v20/co3DmWZ8kjZuErj9Ta3dk6Pjp3Di8U0.ttf",
-		"weight": 400
+		displayName: "Sigmar One",
+		filename: "co3DmWZ8kjZuErj9Ta3dk6Pjp3Di8U0",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sigmarone/v20/co3DmWZ8kjZuErj9Ta3dk6Pjp3Di8U0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mouse Memoirs",
-		"filename": "t5tmIRoSNJ-PH0WNNgDYxdSb7TnFrpOHYh4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mousememoirs/v19/t5tmIRoSNJ-PH0WNNgDYxdSb7TnFrpOHYh4.ttf",
-		"weight": 400
+		displayName: "Mouse Memoirs",
+		filename: "t5tmIRoSNJ-PH0WNNgDYxdSb7TnFrpOHYh4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mousememoirs/v19/t5tmIRoSNJ-PH0WNNgDYxdSb7TnFrpOHYh4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tilt Neon",
-		"filename": "E21L_d7gguXdwD9LEFY2WCeElCNtd-eBqpHp1TzrkJSmwpj5ndxquXK9WualJ9DS",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tiltneon/v12/E21L_d7gguXdwD9LEFY2WCeElCNtd-eBqpHp1TzrkJSmwpj5ndxquXK9WualJ9DS.ttf",
-		"weight": 400
+		displayName: "Tilt Neon",
+		filename: "E21L_d7gguXdwD9LEFY2WCeElCNtd-eBqpHp1TzrkJSmwpj5ndxquXK9WualJ9DS",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tiltneon/v12/E21L_d7gguXdwD9LEFY2WCeElCNtd-eBqpHp1TzrkJSmwpj5ndxquXK9WualJ9DS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Telex",
-		"filename": "ieVw2Y1fKWmIO9fTB1piKFIf",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/telex/v18/ieVw2Y1fKWmIO9fTB1piKFIf.ttf",
-		"weight": 400
+		displayName: "Telex",
+		filename: "ieVw2Y1fKWmIO9fTB1piKFIf",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/telex/v18/ieVw2Y1fKWmIO9fTB1piKFIf.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asul",
-		"filename": "VuJ-dNjKxYr46fMFXK78JIg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/asul/v22/VuJ-dNjKxYr46fMFXK78JIg.ttf",
-		"weight": 400
+		displayName: "Asul",
+		filename: "VuJ-dNjKxYr46fMFXK78JIg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/asul/v22/VuJ-dNjKxYr46fMFXK78JIg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Murecho",
-		"filename": "q5uYsoq3NOBn_I-ggCJg98TBOoNFCMpr5XWZLCpUOaM6",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/murecho/v17/q5uYsoq3NOBn_I-ggCJg98TBOoNFCMpr5XWZLCpUOaM6.ttf",
-		"weight": 400
+		displayName: "Murecho",
+		filename: "q5uYsoq3NOBn_I-ggCJg98TBOoNFCMpr5XWZLCpUOaM6",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/murecho/v17/q5uYsoq3NOBn_I-ggCJg98TBOoNFCMpr5XWZLCpUOaM6.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Croissant One",
-		"filename": "3y9n6bU9bTPg4m8NDy3Kq24UM3pqn5cdJ-4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/croissantone/v28/3y9n6bU9bTPg4m8NDy3Kq24UM3pqn5cdJ-4.ttf",
-		"weight": 400
+		displayName: "Croissant One",
+		filename: "3y9n6bU9bTPg4m8NDy3Kq24UM3pqn5cdJ-4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/croissantone/v28/3y9n6bU9bTPg4m8NDy3Kq24UM3pqn5cdJ-4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Turret Road",
-		"filename": "pxiAypMgpcBFjE84Zv-fE3tFOvODSVFF",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/turretroad/v11/pxiAypMgpcBFjE84Zv-fE3tFOvODSVFF.ttf",
-		"weight": 400
+		displayName: "Turret Road",
+		filename: "pxiAypMgpcBFjE84Zv-fE3tFOvODSVFF",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/turretroad/v11/pxiAypMgpcBFjE84Zv-fE3tFOvODSVFF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Antic Didone",
-		"filename": "RWmPoKKX6u8sp8fIWdnDKqDiqYsGBGBzCw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/anticdidone/v17/RWmPoKKX6u8sp8fIWdnDKqDiqYsGBGBzCw.ttf",
-		"weight": 400
+		displayName: "Antic Didone",
+		filename: "RWmPoKKX6u8sp8fIWdnDKqDiqYsGBGBzCw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/anticdidone/v17/RWmPoKKX6u8sp8fIWdnDKqDiqYsGBGBzCw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Licorice",
-		"filename": "t5tjIR8TMomTCAyjNk23hqLgzCHu",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/licorice/v8/t5tjIR8TMomTCAyjNk23hqLgzCHu.ttf",
-		"weight": 400
+		displayName: "Licorice",
+		filename: "t5tjIR8TMomTCAyjNk23hqLgzCHu",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/licorice/v8/t5tjIR8TMomTCAyjNk23hqLgzCHu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rampart One",
-		"filename": "K2F1fZFGl_JSR1tAWNG9R6qgLS76ZHOM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rampartone/v13/K2F1fZFGl_JSR1tAWNG9R6qgLS76ZHOM.ttf",
-		"weight": 400
+		displayName: "Rampart One",
+		filename: "K2F1fZFGl_JSR1tAWNG9R6qgLS76ZHOM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rampartone/v13/K2F1fZFGl_JSR1tAWNG9R6qgLS76ZHOM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grenze Gotisch",
-		"filename": "Fh4hPjjqNDz1osh_jX9YfjudpBJBNV5y5wf_k1i5Lz9UcICdYPSd_w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/grenzegotisch/v20/Fh4hPjjqNDz1osh_jX9YfjudpBJBNV5y5wf_k1i5Lz9UcICdYPSd_w.ttf",
-		"weight": 400
+		displayName: "Grenze Gotisch",
+		filename: "Fh4hPjjqNDz1osh_jX9YfjudpBJBNV5y5wf_k1i5Lz9UcICdYPSd_w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/grenzegotisch/v20/Fh4hPjjqNDz1osh_jX9YfjudpBJBNV5y5wf_k1i5Lz9UcICdYPSd_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sofia Sans Semi Condensed",
-		"filename": "46kOlaPnUDrQoNsWDCGXXxYlujh5Wv0nwP4RwxURm28cA7YLHsIVvoobEe9TGahllIhN",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sofiasanssemicondensed/v8/46kOlaPnUDrQoNsWDCGXXxYlujh5Wv0nwP4RwxURm28cA7YLHsIVvoobEe9TGahllIhN.ttf",
-		"weight": 400
+		displayName: "Sofia Sans Semi Condensed",
+		filename: "46kOlaPnUDrQoNsWDCGXXxYlujh5Wv0nwP4RwxURm28cA7YLHsIVvoobEe9TGahllIhN",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sofiasanssemicondensed/v8/46kOlaPnUDrQoNsWDCGXXxYlujh5Wv0nwP4RwxURm28cA7YLHsIVvoobEe9TGahllIhN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vina Sans",
-		"filename": "m8JQjfZKf6-d2273MP7zcJ5BZmqa3A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/vinasans/v8/m8JQjfZKf6-d2273MP7zcJ5BZmqa3A.ttf",
-		"weight": 400
+		displayName: "Vina Sans",
+		filename: "m8JQjfZKf6-d2273MP7zcJ5BZmqa3A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/vinasans/v8/m8JQjfZKf6-d2273MP7zcJ5BZmqa3A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell English",
-		"filename": "Ktk1ALSLW8zDe0rthJysWrnLsAz3F6mZVY9Y5w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfellenglish/v14/Ktk1ALSLW8zDe0rthJysWrnLsAz3F6mZVY9Y5w.ttf",
-		"weight": 400
+		displayName: "IM Fell English",
+		filename: "Ktk1ALSLW8zDe0rthJysWrnLsAz3F6mZVY9Y5w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfellenglish/v14/Ktk1ALSLW8zDe0rthJysWrnLsAz3F6mZVY9Y5w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Bhaijaan 2",
-		"filename": "zYXwKUwuEqdVGqM8tPDdAA_Y-_bMKo1EhQd2tWxo8TyRSqP4L4ppfcyC",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloobhaijaan2/v21/zYXwKUwuEqdVGqM8tPDdAA_Y-_bMKo1EhQd2tWxo8TyRSqP4L4ppfcyC.ttf",
-		"weight": 400
+		displayName: "Baloo Bhaijaan 2",
+		filename: "zYXwKUwuEqdVGqM8tPDdAA_Y-_bMKo1EhQd2tWxo8TyRSqP4L4ppfcyC",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloobhaijaan2/v21/zYXwKUwuEqdVGqM8tPDdAA_Y-_bMKo1EhQd2tWxo8TyRSqP4L4ppfcyC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Encode Sans Semi Condensed",
-		"filename": "3qT4oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG2yR_sVPRsjp",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/encodesanssemicondensed/v11/3qT4oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG2yR_sVPRsjp.ttf",
-		"weight": 400
+		displayName: "Encode Sans Semi Condensed",
+		filename: "3qT4oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG2yR_sVPRsjp",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/encodesanssemicondensed/v11/3qT4oiKqnDuUtQUEHMoXcmspmy55SFWrXFRp9FTOG2yR_sVPRsjp.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Over the Rainbow",
-		"filename": "11haGoXG1k_HKhMLUWz7Mc7vvW5upvOm9NA2XG0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/overtherainbow/v23/11haGoXG1k_HKhMLUWz7Mc7vvW5upvOm9NA2XG0.ttf",
-		"weight": 400
+		displayName: "Over the Rainbow",
+		filename: "11haGoXG1k_HKhMLUWz7Mc7vvW5upvOm9NA2XG0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/overtherainbow/v23/11haGoXG1k_HKhMLUWz7Mc7vvW5upvOm9NA2XG0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Meddon",
-		"filename": "kmK8ZqA2EgDNeHTZhBdB3y_Aow",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/meddon/v27/kmK8ZqA2EgDNeHTZhBdB3y_Aow.ttf",
-		"weight": 400
+		displayName: "Meddon",
+		filename: "kmK8ZqA2EgDNeHTZhBdB3y_Aow",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/meddon/v27/kmK8ZqA2EgDNeHTZhBdB3y_Aow.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oxygen Mono",
-		"filename": "h0GsssGg9FxgDgCjLeAd7ijfze-PPlUu",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/oxygenmono/v15/h0GsssGg9FxgDgCjLeAd7ijfze-PPlUu.ttf",
-		"weight": 400
+		displayName: "Oxygen Mono",
+		filename: "h0GsssGg9FxgDgCjLeAd7ijfze-PPlUu",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/oxygenmono/v15/h0GsssGg9FxgDgCjLeAd7ijfze-PPlUu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Faster One",
-		"filename": "H4ciBXCHmdfClFb-vWhfyLuShq63czE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fasterone/v20/H4ciBXCHmdfClFb-vWhfyLuShq63czE.ttf",
-		"weight": 400
+		displayName: "Faster One",
+		filename: "H4ciBXCHmdfClFb-vWhfyLuShq63czE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fasterone/v20/H4ciBXCHmdfClFb-vWhfyLuShq63czE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee Inline",
-		"filename": "Gg8zN58UcgnlCweMrih332VuDGJ1-FEglsc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungeeinline/v19/Gg8zN58UcgnlCweMrih332VuDGJ1-FEglsc.ttf",
-		"weight": 400
+		displayName: "Bungee Inline",
+		filename: "Gg8zN58UcgnlCweMrih332VuDGJ1-FEglsc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungeeinline/v19/Gg8zN58UcgnlCweMrih332VuDGJ1-FEglsc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Scada",
-		"filename": "RLpxK5Pv5qumeWJoxzUobkvv",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/scada/v16/RLpxK5Pv5qumeWJoxzUobkvv.ttf",
-		"weight": 400
+		displayName: "Scada",
+		filename: "RLpxK5Pv5qumeWJoxzUobkvv",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/scada/v16/RLpxK5Pv5qumeWJoxzUobkvv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Marvel",
-		"filename": "nwpVtKeoNgBV0qaIkV7ED366zg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/marvel/v17/nwpVtKeoNgBV0qaIkV7ED366zg.ttf",
-		"weight": 400
+		displayName: "Marvel",
+		filename: "nwpVtKeoNgBV0qaIkV7ED366zg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/marvel/v17/nwpVtKeoNgBV0qaIkV7ED366zg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rambla",
-		"filename": "snfrs0ip98hx6mr0I7IONthkwQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rambla/v14/snfrs0ip98hx6mr0I7IONthkwQ.ttf",
-		"weight": 400
+		displayName: "Rambla",
+		filename: "snfrs0ip98hx6mr0I7IONthkwQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rambla/v14/snfrs0ip98hx6mr0I7IONthkwQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Carlito",
-		"filename": "3Jn9SDPw3m-pk039PDCLTXUETuE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/carlito/v4/3Jn9SDPw3m-pk039PDCLTXUETuE.ttf",
-		"weight": 400
+		displayName: "Carlito",
+		filename: "3Jn9SDPw3m-pk039PDCLTXUETuE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/carlito/v4/3Jn9SDPw3m-pk039PDCLTXUETuE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bowlby One",
-		"filename": "taiPGmVuC4y96PFeqp8smo6C_Z0wcK4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bowlbyone/v25/taiPGmVuC4y96PFeqp8smo6C_Z0wcK4.ttf",
-		"weight": 400
+		displayName: "Bowlby One",
+		filename: "taiPGmVuC4y96PFeqp8smo6C_Z0wcK4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bowlbyone/v25/taiPGmVuC4y96PFeqp8smo6C_Z0wcK4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yusei Magic",
-		"filename": "yYLt0hbAyuCmoo5wlhPkpjHR-tdfcIT_",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/yuseimagic/v16/yYLt0hbAyuCmoo5wlhPkpjHR-tdfcIT_.ttf",
-		"weight": 400
+		displayName: "Yusei Magic",
+		filename: "yYLt0hbAyuCmoo5wlhPkpjHR-tdfcIT_",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/yuseimagic/v16/yYLt0hbAyuCmoo5wlhPkpjHR-tdfcIT_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gabriela",
-		"filename": "qkBWXvsO6sreR8E-b_m-zrpHmRzC",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gabriela/v23/qkBWXvsO6sreR8E-b_m-zrpHmRzC.ttf",
-		"weight": 400
+		displayName: "Gabriela",
+		filename: "qkBWXvsO6sreR8E-b_m-zrpHmRzC",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gabriela/v23/qkBWXvsO6sreR8E-b_m-zrpHmRzC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amarante",
-		"filename": "xMQXuF1KTa6EvGx9bq-3C3rAmD-b",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/amarante/v30/xMQXuF1KTa6EvGx9bq-3C3rAmD-b.ttf",
-		"weight": 400
+		displayName: "Amarante",
+		filename: "xMQXuF1KTa6EvGx9bq-3C3rAmD-b",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/amarante/v30/xMQXuF1KTa6EvGx9bq-3C3rAmD-b.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fragment Mono",
-		"filename": "4iCr6K5wfMRRjxp0DA6-2CLnN4RNh4UI_1U",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/fragmentmono/v6/4iCr6K5wfMRRjxp0DA6-2CLnN4RNh4UI_1U.ttf",
-		"weight": 400
+		displayName: "Fragment Mono",
+		filename: "4iCr6K5wfMRRjxp0DA6-2CLnN4RNh4UI_1U",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/fragmentmono/v6/4iCr6K5wfMRRjxp0DA6-2CLnN4RNh4UI_1U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans KR",
-		"filename": "vEFK2-VJISZe3O_rc3ZVYh4aTwNO8tK1W77HtMo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsanskr/v11/vEFK2-VJISZe3O_rc3ZVYh4aTwNO8tK1W77HtMo.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans KR",
+		filename: "vEFK2-VJISZe3O_rc3ZVYh4aTwNO8tK1W77HtMo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsanskr/v11/vEFK2-VJISZe3O_rc3ZVYh4aTwNO8tK1W77HtMo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell English SC",
-		"filename": "a8IENpD3CDX-4zrWfr1VY879qFF05pZLO4gOg0shzA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfellenglishsc/v16/a8IENpD3CDX-4zrWfr1VY879qFF05pZLO4gOg0shzA.ttf",
-		"weight": 400
+		displayName: "IM Fell English SC",
+		filename: "a8IENpD3CDX-4zrWfr1VY879qFF05pZLO4gOg0shzA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfellenglishsc/v16/a8IENpD3CDX-4zrWfr1VY879qFF05pZLO4gOg0shzA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Prosto One",
-		"filename": "OpNJno4VhNfK-RgpwWWxpipfWhXD00c",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/prostoone/v21/OpNJno4VhNfK-RgpwWWxpipfWhXD00c.ttf",
-		"weight": 400
+		displayName: "Prosto One",
+		filename: "OpNJno4VhNfK-RgpwWWxpipfWhXD00c",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/prostoone/v21/OpNJno4VhNfK-RgpwWWxpipfWhXD00c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Major Mono Display",
-		"filename": "RWmVoLyb5fEqtsfBX9PDZIGr2tFubRhLCn2QIndPww",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/majormonodisplay/v18/RWmVoLyb5fEqtsfBX9PDZIGr2tFubRhLCn2QIndPww.ttf",
-		"weight": 400
+		displayName: "Major Mono Display",
+		filename: "RWmVoLyb5fEqtsfBX9PDZIGr2tFubRhLCn2QIndPww",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/majormonodisplay/v18/RWmVoLyb5fEqtsfBX9PDZIGr2tFubRhLCn2QIndPww.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sniglet",
-		"filename": "cIf9MaFLtkE3UjaJxCmrYGkHgIs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sniglet/v18/cIf9MaFLtkE3UjaJxCmrYGkHgIs.ttf",
-		"weight": 400
+		displayName: "Sniglet",
+		filename: "cIf9MaFLtkE3UjaJxCmrYGkHgIs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sniglet/v18/cIf9MaFLtkE3UjaJxCmrYGkHgIs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 25",
-		"filename": "ll8-K2eeXj2tAs6F9BXIJ4AMng8ChA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey25/v4/ll8-K2eeXj2tAs6F9BXIJ4AMng8ChA.ttf",
-		"weight": 400
+		displayName: "Jersey 25",
+		filename: "ll8-K2eeXj2tAs6F9BXIJ4AMng8ChA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey25/v4/ll8-K2eeXj2tAs6F9BXIJ4AMng8ChA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fauna One",
-		"filename": "wlpzgwTPBVpjpCuwkuEx2UxLYClOCg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/faunaone/v16/wlpzgwTPBVpjpCuwkuEx2UxLYClOCg.ttf",
-		"weight": 400
+		displayName: "Fauna One",
+		filename: "wlpzgwTPBVpjpCuwkuEx2UxLYClOCg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/faunaone/v16/wlpzgwTPBVpjpCuwkuEx2UxLYClOCg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Malayalam",
-		"filename": "6qLjKZActRTs_mZAJUZWWkhke0nYa_vC8_Azq3-gP1SReZeOtqQuDVUTUZu-HMr5PDO71Qs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekmalayalam/v18/6qLjKZActRTs_mZAJUZWWkhke0nYa_vC8_Azq3-gP1SReZeOtqQuDVUTUZu-HMr5PDO71Qs.ttf",
-		"weight": 400
+		displayName: "Anek Malayalam",
+		filename: "6qLjKZActRTs_mZAJUZWWkhke0nYa_vC8_Azq3-gP1SReZeOtqQuDVUTUZu-HMr5PDO71Qs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekmalayalam/v18/6qLjKZActRTs_mZAJUZWWkhke0nYa_vC8_Azq3-gP1SReZeOtqQuDVUTUZu-HMr5PDO71Qs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inria Sans",
-		"filename": "ptRMTiqXYfZMCOiVj9kQ5O7yKQNute8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/inriasans/v15/ptRMTiqXYfZMCOiVj9kQ5O7yKQNute8.ttf",
-		"weight": 400
+		displayName: "Inria Sans",
+		filename: "ptRMTiqXYfZMCOiVj9kQ5O7yKQNute8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/inriasans/v15/ptRMTiqXYfZMCOiVj9kQ5O7yKQNute8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bubblegum Sans",
-		"filename": "AYCSpXb_Z9EORv1M5QTjEzMEtdaHzoPPb7R4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bubblegumsans/v22/AYCSpXb_Z9EORv1M5QTjEzMEtdaHzoPPb7R4.ttf",
-		"weight": 400
+		displayName: "Bubblegum Sans",
+		filename: "AYCSpXb_Z9EORv1M5QTjEzMEtdaHzoPPb7R4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bubblegumsans/v22/AYCSpXb_Z9EORv1M5QTjEzMEtdaHzoPPb7R4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Thambi 2",
-		"filename": "cY9RfjeOW0NHpmOQXranrbDyu5JMJmNp-aDvUBbKzcIzaQRG_n4osQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloothambi2/v22/cY9RfjeOW0NHpmOQXranrbDyu5JMJmNp-aDvUBbKzcIzaQRG_n4osQ.ttf",
-		"weight": 400
+		displayName: "Baloo Thambi 2",
+		filename: "cY9RfjeOW0NHpmOQXranrbDyu5JMJmNp-aDvUBbKzcIzaQRG_n4osQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloothambi2/v22/cY9RfjeOW0NHpmOQXranrbDyu5JMJmNp-aDvUBbKzcIzaQRG_n4osQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "DynaPuff",
-		"filename": "z7N5dRvsZDIVHbYPMhZJ3HQ83UaSu4uhr7-ZFeoYkgAr1x8RSxYu6YjrSRs4wn8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/dynapuff/v9/z7N5dRvsZDIVHbYPMhZJ3HQ83UaSu4uhr7-ZFeoYkgAr1x8RSxYu6YjrSRs4wn8.ttf",
-		"weight": 400
+		displayName: "DynaPuff",
+		filename: "z7N5dRvsZDIVHbYPMhZJ3HQ83UaSu4uhr7-ZFeoYkgAr1x8RSxYu6YjrSRs4wn8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/dynapuff/v9/z7N5dRvsZDIVHbYPMhZJ3HQ83UaSu4uhr7-ZFeoYkgAr1x8RSxYu6YjrSRs4wn8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Della Respira",
-		"filename": "RLp5K5v44KaueWI6iEJQBiGPRfkSu6EuTHo",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/dellarespira/v24/RLp5K5v44KaueWI6iEJQBiGPRfkSu6EuTHo.ttf",
-		"weight": 400
+		displayName: "Della Respira",
+		filename: "RLp5K5v44KaueWI6iEJQBiGPRfkSu6EuTHo",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/dellarespira/v24/RLp5K5v44KaueWI6iEJQBiGPRfkSu6EuTHo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "ADLaM Display",
-		"filename": "KFOhCnGXkPOLlhx6jD8_b1ZECsHYkYBPY3o",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/adlamdisplay/v1/KFOhCnGXkPOLlhx6jD8_b1ZECsHYkYBPY3o.ttf",
-		"weight": 400
+		displayName: "ADLaM Display",
+		filename: "KFOhCnGXkPOLlhx6jD8_b1ZECsHYkYBPY3o",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/adlamdisplay/v1/KFOhCnGXkPOLlhx6jD8_b1ZECsHYkYBPY3o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Zetta",
-		"filename": "ll8uK2KYXje7CdOFnEWcU8synQbuVYjYB3BCy9bG0z5jbs8qbts",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexendzetta/v32/ll8uK2KYXje7CdOFnEWcU8synQbuVYjYB3BCy9bG0z5jbs8qbts.ttf",
-		"weight": 400
+		displayName: "Lexend Zetta",
+		filename: "ll8uK2KYXje7CdOFnEWcU8synQbuVYjYB3BCy9bG0z5jbs8qbts",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexendzetta/v32/ll8uK2KYXje7CdOFnEWcU8synQbuVYjYB3BCy9bG0z5jbs8qbts.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee Shade",
-		"filename": "DtVkJxarWL0t2KdzK3oI_jks7iLSrwFUlw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungeeshade/v17/DtVkJxarWL0t2KdzK3oI_jks7iLSrwFUlw.ttf",
-		"weight": 400
+		displayName: "Bungee Shade",
+		filename: "DtVkJxarWL0t2KdzK3oI_jks7iLSrwFUlw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungeeshade/v17/DtVkJxarWL0t2KdzK3oI_jks7iLSrwFUlw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "ZCOOL XiaoWei",
-		"filename": "i7dMIFFrTRywPpUVX9_RJyM1YFKQHwyVd3U",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zcoolxiaowei/v15/i7dMIFFrTRywPpUVX9_RJyM1YFKQHwyVd3U.ttf",
-		"weight": 400
+		displayName: "ZCOOL XiaoWei",
+		filename: "i7dMIFFrTRywPpUVX9_RJyM1YFKQHwyVd3U",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zcoolxiaowei/v15/i7dMIFFrTRywPpUVX9_RJyM1YFKQHwyVd3U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BIZ UDPMincho",
-		"filename": "ypvfbXOBrmYppy7oWWTg1_58nhhYtUb0gZk",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bizudpmincho/v11/ypvfbXOBrmYppy7oWWTg1_58nhhYtUb0gZk.ttf",
-		"weight": 400
+		displayName: "BIZ UDPMincho",
+		filename: "ypvfbXOBrmYppy7oWWTg1_58nhhYtUb0gZk",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bizudpmincho/v11/ypvfbXOBrmYppy7oWWTg1_58nhhYtUb0gZk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mallanna",
-		"filename": "hv-Vlzx-KEQb84YaDGwzEzRwVvJ-",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mallanna/v15/hv-Vlzx-KEQb84YaDGwzEzRwVvJ-.ttf",
-		"weight": 400
+		displayName: "Mallanna",
+		filename: "hv-Vlzx-KEQb84YaDGwzEzRwVvJ-",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mallanna/v15/hv-Vlzx-KEQb84YaDGwzEzRwVvJ-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bayon",
-		"filename": "9XUrlJNmn0LPFl-pOhYEd2NJ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bayon/v36/9XUrlJNmn0LPFl-pOhYEd2NJ.ttf",
-		"weight": 400
+		displayName: "Bayon",
+		filename: "9XUrlJNmn0LPFl-pOhYEd2NJ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bayon/v36/9XUrlJNmn0LPFl-pOhYEd2NJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Carrois Gothic",
-		"filename": "Z9XPDmFATg-N1PLtLOOxvIHl9ZmD3i7ajcJ-",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD3i7ajcJ-.ttf",
-		"weight": 400
+		displayName: "Carrois Gothic",
+		filename: "Z9XPDmFATg-N1PLtLOOxvIHl9ZmD3i7ajcJ-",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/carroisgothic/v17/Z9XPDmFATg-N1PLtLOOxvIHl9ZmD3i7ajcJ-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kantumruy Pro",
-		"filename": "1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg1urEs0M34dR6dW",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kantumruypro/v12/1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg1urEs0M34dR6dW.ttf",
-		"weight": 400
+		displayName: "Kantumruy Pro",
+		filename: "1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg1urEs0M34dR6dW",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kantumruypro/v12/1q2TY5aECkp34vEBSPFOmJxwvk_pilU8OGNfyg1urEs0M34dR6dW.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cairo Play",
-		"filename": "wXKEE3QSpo4vpRz_mz6FP-8iaauCLt_Hjopv3miu5IvcJo49mOo1knYq9yXa8GvzaA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cairoplay/v13/wXKEE3QSpo4vpRz_mz6FP-8iaauCLt_Hjopv3miu5IvcJo49mOo1knYq9yXa8GvzaA.ttf",
-		"weight": 400
+		displayName: "Cairo Play",
+		filename: "wXKEE3QSpo4vpRz_mz6FP-8iaauCLt_Hjopv3miu5IvcJo49mOo1knYq9yXa8GvzaA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cairoplay/v13/wXKEE3QSpo4vpRz_mz6FP-8iaauCLt_Hjopv3miu5IvcJo49mOo1knYq9yXa8GvzaA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Corinthia",
-		"filename": "wEO_EBrAnchaJyPMHE0FUfAL3EsHiA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/corinthia/v13/wEO_EBrAnchaJyPMHE0FUfAL3EsHiA.ttf",
-		"weight": 400
+		displayName: "Corinthia",
+		filename: "wEO_EBrAnchaJyPMHE0FUfAL3EsHiA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/corinthia/v13/wEO_EBrAnchaJyPMHE0FUfAL3EsHiA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Sinhala",
-		"filename": "yMJ2MJBya43H0SUF_WmcBEEf4rQVO2P524V5N_MxQzQtb-tf5dJbC30Fu9zUwg2a5lgLpJwbQRM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssinhala/v36/yMJ2MJBya43H0SUF_WmcBEEf4rQVO2P524V5N_MxQzQtb-tf5dJbC30Fu9zUwg2a5lgLpJwbQRM.ttf",
-		"weight": 400
+		displayName: "Noto Sans Sinhala",
+		filename: "yMJ2MJBya43H0SUF_WmcBEEf4rQVO2P524V5N_MxQzQtb-tf5dJbC30Fu9zUwg2a5lgLpJwbQRM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssinhala/v36/yMJ2MJBya43H0SUF_WmcBEEf4rQVO2P524V5N_MxQzQtb-tf5dJbC30Fu9zUwg2a5lgLpJwbQRM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Megrim",
-		"filename": "46kulbz5WjvLqJZlbWXgd0RY1g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/megrim/v18/46kulbz5WjvLqJZlbWXgd0RY1g.ttf",
-		"weight": 400
+		displayName: "Megrim",
+		filename: "46kulbz5WjvLqJZlbWXgd0RY1g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/megrim/v18/46kulbz5WjvLqJZlbWXgd0RY1g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Bangla",
-		"filename": "IFSgHe1Tm95E3O8b5i2V8MG9-UPeuz4i",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirobangla/v6/IFSgHe1Tm95E3O8b5i2V8MG9-UPeuz4i.ttf",
-		"weight": 400
+		displayName: "Tiro Bangla",
+		filename: "IFSgHe1Tm95E3O8b5i2V8MG9-UPeuz4i",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirobangla/v6/IFSgHe1Tm95E3O8b5i2V8MG9-UPeuz4i.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "RocknRoll One",
-		"filename": "kmK7ZqspGAfCeUiW6FFlmEC9guVhs7tfUxc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rocknrollone/v16/kmK7ZqspGAfCeUiW6FFlmEC9guVhs7tfUxc.ttf",
-		"weight": 400
+		displayName: "RocknRoll One",
+		filename: "kmK7ZqspGAfCeUiW6FFlmEC9guVhs7tfUxc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rocknrollone/v16/kmK7ZqspGAfCeUiW6FFlmEC9guVhs7tfUxc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pathway Extreme",
-		"filename": "neI6zCC3pJ0rsaH2_sD-QttXPfDPonvkQ-pxx5gufvP2VmLjiFyxGf8BLymNjYv2Oy6vkLmw4xak2N11Kyw3igP5eg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/pathwayextreme/v7/neI6zCC3pJ0rsaH2_sD-QttXPfDPonvkQ-pxx5gufvP2VmLjiFyxGf8BLymNjYv2Oy6vkLmw4xak2N11Kyw3igP5eg.ttf",
-		"weight": 400
+		displayName: "Pathway Extreme",
+		filename: "neI6zCC3pJ0rsaH2_sD-QttXPfDPonvkQ-pxx5gufvP2VmLjiFyxGf8BLymNjYv2Oy6vkLmw4xak2N11Kyw3igP5eg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/pathwayextreme/v7/neI6zCC3pJ0rsaH2_sD-QttXPfDPonvkQ-pxx5gufvP2VmLjiFyxGf8BLymNjYv2Oy6vkLmw4xak2N11Kyw3igP5eg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fanwood Text",
-		"filename": "3XFtErwl05Ad_vSCF6Fq7xXGRdbY1P1Sbg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/fanwoodtext/v17/3XFtErwl05Ad_vSCF6Fq7xXGRdbY1P1Sbg.ttf",
-		"weight": 400
+		displayName: "Fanwood Text",
+		filename: "3XFtErwl05Ad_vSCF6Fq7xXGRdbY1P1Sbg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/fanwoodtext/v17/3XFtErwl05Ad_vSCF6Fq7xXGRdbY1P1Sbg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jaldi",
-		"filename": "or3sQ67z0_CI30NUZpD_B6g8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/jaldi/v14/or3sQ67z0_CI30NUZpD_B6g8.ttf",
-		"weight": 400
+		displayName: "Jaldi",
+		filename: "or3sQ67z0_CI30NUZpD_B6g8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/jaldi/v14/or3sQ67z0_CI30NUZpD_B6g8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stack Sans Notch",
-		"filename": "TwMY-JcVXlQd3ooGEx9EbUzgioTr5BY5lEpidqlSR8fiuR2ZGGf6Bw3r",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/stacksansnotch/v5/TwMY-JcVXlQd3ooGEx9EbUzgioTr5BY5lEpidqlSR8fiuR2ZGGf6Bw3r.ttf",
-		"weight": 400
+		displayName: "Stack Sans Notch",
+		filename: "TwMY-JcVXlQd3ooGEx9EbUzgioTr5BY5lEpidqlSR8fiuR2ZGGf6Bw3r",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/stacksansnotch/v5/TwMY-JcVXlQd3ooGEx9EbUzgioTr5BY5lEpidqlSR8fiuR2ZGGf6Bw3r.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sansita Swashed",
-		"filename": "BXR8vFfZifTZgFlDDLgNkBydPKTt3pVCeYWqJnZSW7RpbToVehmEa4Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sansitaswashed/v23/BXR8vFfZifTZgFlDDLgNkBydPKTt3pVCeYWqJnZSW7RpbToVehmEa4Q.ttf",
-		"weight": 400
+		displayName: "Sansita Swashed",
+		filename: "BXR8vFfZifTZgFlDDLgNkBydPKTt3pVCeYWqJnZSW7RpbToVehmEa4Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sansitaswashed/v23/BXR8vFfZifTZgFlDDLgNkBydPKTt3pVCeYWqJnZSW7RpbToVehmEa4Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Euphoria Script",
-		"filename": "mFTpWb0X2bLb_cx6To2B8GpKoD5ak_ZT1D8x7Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/euphoriascript/v22/mFTpWb0X2bLb_cx6To2B8GpKoD5ak_ZT1D8x7Q.ttf",
-		"weight": 400
+		displayName: "Euphoria Script",
+		filename: "mFTpWb0X2bLb_cx6To2B8GpKoD5ak_ZT1D8x7Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/euphoriascript/v22/mFTpWb0X2bLb_cx6To2B8GpKoD5ak_ZT1D8x7Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hahmlet",
-		"filename": "BngXUXpCQ3nKpIo0TfPyfCdXfaeU4RhKONjobsO-aVxn",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/hahmlet/v21/BngXUXpCQ3nKpIo0TfPyfCdXfaeU4RhKONjobsO-aVxn.ttf",
-		"weight": 400
+		displayName: "Hahmlet",
+		filename: "BngXUXpCQ3nKpIo0TfPyfCdXfaeU4RhKONjobsO-aVxn",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/hahmlet/v21/BngXUXpCQ3nKpIo0TfPyfCdXfaeU4RhKONjobsO-aVxn.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Barriecito",
-		"filename": "WWXXlj-CbBOSLY2QTuY_KdUiYwTO0MU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/barriecito/v18/WWXXlj-CbBOSLY2QTuY_KdUiYwTO0MU.ttf",
-		"weight": 400
+		displayName: "Barriecito",
+		filename: "WWXXlj-CbBOSLY2QTuY_KdUiYwTO0MU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/barriecito/v18/WWXXlj-CbBOSLY2QTuY_KdUiYwTO0MU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Piazzolla",
-		"filename": "N0b52SlTPu5rIkWIZjVKKtYtfxYqZ4RJBFzFfYUjkSDdlqZgy7LYxnLy1AHfAAy5",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/piazzolla/v40/N0b52SlTPu5rIkWIZjVKKtYtfxYqZ4RJBFzFfYUjkSDdlqZgy7LYxnLy1AHfAAy5.ttf",
-		"weight": 400
+		displayName: "Piazzolla",
+		filename: "N0b52SlTPu5rIkWIZjVKKtYtfxYqZ4RJBFzFfYUjkSDdlqZgy7LYxnLy1AHfAAy5",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/piazzolla/v40/N0b52SlTPu5rIkWIZjVKKtYtfxYqZ4RJBFzFfYUjkSDdlqZgy7LYxnLy1AHfAAy5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Average",
-		"filename": "fC1hPYBHe23MxA7rIeJwVWytTyk",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/average/v19/fC1hPYBHe23MxA7rIeJwVWytTyk.ttf",
-		"weight": 400
+		displayName: "Average",
+		filename: "fC1hPYBHe23MxA7rIeJwVWytTyk",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/average/v19/fC1hPYBHe23MxA7rIeJwVWytTyk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lekton",
-		"filename": "SZc43FDmLaWmWpBeXxfonUPL6Q",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/lekton/v21/SZc43FDmLaWmWpBeXxfonUPL6Q.ttf",
-		"weight": 400
+		displayName: "Lekton",
+		filename: "SZc43FDmLaWmWpBeXxfonUPL6Q",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/lekton/v21/SZc43FDmLaWmWpBeXxfonUPL6Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pixelify Sans",
-		"filename": "CHy2V-3HFUT7aC4iv1TxGDR9DHEserHN25py2TTp0H1Yb5JagkmX",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pixelifysans/v3/CHy2V-3HFUT7aC4iv1TxGDR9DHEserHN25py2TTp0H1Yb5JagkmX.ttf",
-		"weight": 400
+		displayName: "Pixelify Sans",
+		filename: "CHy2V-3HFUT7aC4iv1TxGDR9DHEserHN25py2TTp0H1Yb5JagkmX",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pixelifysans/v3/CHy2V-3HFUT7aC4iv1TxGDR9DHEserHN25py2TTp0H1Yb5JagkmX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans Hebrew",
-		"filename": "BCa2qYENg9Kw1mpLpO0bGM5lfHAAZHhDXH2l8Fk3rSaM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsanshebrew/v12/BCa2qYENg9Kw1mpLpO0bGM5lfHAAZHhDXH2l8Fk3rSaM.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans Hebrew",
+		filename: "BCa2qYENg9Kw1mpLpO0bGM5lfHAAZHhDXH2l8Fk3rSaM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsanshebrew/v12/BCa2qYENg9Kw1mpLpO0bGM5lfHAAZHhDXH2l8Fk3rSaM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Magra",
-		"filename": "uK_94ruaZus72k5xIDMfO-ed",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/magra/v15/uK_94ruaZus72k5xIDMfO-ed.ttf",
-		"weight": 400
+		displayName: "Magra",
+		filename: "uK_94ruaZus72k5xIDMfO-ed",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/magra/v15/uK_94ruaZus72k5xIDMfO-ed.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Skranji",
-		"filename": "OZpDg_dtriVFNerMYzuuklTm3Ek",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/skranji/v14/OZpDg_dtriVFNerMYzuuklTm3Ek.ttf",
-		"weight": 400
+		displayName: "Skranji",
+		filename: "OZpDg_dtriVFNerMYzuuklTm3Ek",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/skranji/v14/OZpDg_dtriVFNerMYzuuklTm3Ek.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "ZCOOL KuaiLe",
-		"filename": "tssqApdaRQokwFjFJjvM6h2WpozzoXhC2g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zcoolkuaile/v20/tssqApdaRQokwFjFJjvM6h2WpozzoXhC2g.ttf",
-		"weight": 400
+		displayName: "ZCOOL KuaiLe",
+		filename: "tssqApdaRQokwFjFJjvM6h2WpozzoXhC2g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zcoolkuaile/v20/tssqApdaRQokwFjFJjvM6h2WpozzoXhC2g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stack Sans Text",
-		"filename": "kJEkBuAJ-Q0hiGPmzHEu345X1JJNBpRJ3RPan47MNg-KJO1yGgKF1a0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/stacksanstext/v1/kJEkBuAJ-Q0hiGPmzHEu345X1JJNBpRJ3RPan47MNg-KJO1yGgKF1a0.ttf",
-		"weight": 400
+		displayName: "Stack Sans Text",
+		filename: "kJEkBuAJ-Q0hiGPmzHEu345X1JJNBpRJ3RPan47MNg-KJO1yGgKF1a0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/stacksanstext/v1/kJEkBuAJ-Q0hiGPmzHEu345X1JJNBpRJ3RPan47MNg-KJO1yGgKF1a0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Radio Canada Big",
-		"filename": "LYjUdHrinEImAoQewU0hyTsPFra4Yp-6A-YRBF-RX6nNRY3p2pcheCsG",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/radiocanadabig/v3/LYjUdHrinEImAoQewU0hyTsPFra4Yp-6A-YRBF-RX6nNRY3p2pcheCsG.ttf",
-		"weight": 400
+		displayName: "Radio Canada Big",
+		filename: "LYjUdHrinEImAoQewU0hyTsPFra4Yp-6A-YRBF-RX6nNRY3p2pcheCsG",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/radiocanadabig/v3/LYjUdHrinEImAoQewU0hyTsPFra4Yp-6A-YRBF-RX6nNRY3p2pcheCsG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Birthstone",
-		"filename": "8AtsGs2xO4yLRhy87sv_HLn5jRfZHzM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/birthstone/v16/8AtsGs2xO4yLRhy87sv_HLn5jRfZHzM.ttf",
-		"weight": 400
+		displayName: "Birthstone",
+		filename: "8AtsGs2xO4yLRhy87sv_HLn5jRfZHzM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/birthstone/v16/8AtsGs2xO4yLRhy87sv_HLn5jRfZHzM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Copse",
-		"filename": "11hPGpDKz1rGb0djHkihUb-A",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/copse/v16/11hPGpDKz1rGb0djHkihUb-A.ttf",
-		"weight": 400
+		displayName: "Copse",
+		filename: "11hPGpDKz1rGb0djHkihUb-A",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/copse/v16/11hPGpDKz1rGb0djHkihUb-A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Saira Stencil One",
-		"filename": "SLXSc03I6HkvZGJ1GvvipLoYSTEL9AsMawif2YQ2",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sairastencilone/v18/SLXSc03I6HkvZGJ1GvvipLoYSTEL9AsMawif2YQ2.ttf",
-		"weight": 400
+		displayName: "Saira Stencil One",
+		filename: "SLXSc03I6HkvZGJ1GvvipLoYSTEL9AsMawif2YQ2",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sairastencilone/v18/SLXSc03I6HkvZGJ1GvvipLoYSTEL9AsMawif2YQ2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hurricane",
-		"filename": "pe0sMIuULZxTolZ5YldyAv2-C99ycg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/hurricane/v9/pe0sMIuULZxTolZ5YldyAv2-C99ycg.ttf",
-		"weight": 400
+		displayName: "Hurricane",
+		filename: "pe0sMIuULZxTolZ5YldyAv2-C99ycg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/hurricane/v9/pe0sMIuULZxTolZ5YldyAv2-C99ycg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Iceland",
-		"filename": "rax9HiuFsdMNOnWPWKxGADBbg0s",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/iceland/v22/rax9HiuFsdMNOnWPWKxGADBbg0s.ttf",
-		"weight": 400
+		displayName: "Iceland",
+		filename: "rax9HiuFsdMNOnWPWKxGADBbg0s",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/iceland/v22/rax9HiuFsdMNOnWPWKxGADBbg0s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Happy Monkey",
-		"filename": "K2F2fZZcl-9SXwl5F_C4R_OABwD2bWqVjw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/happymonkey/v15/K2F2fZZcl-9SXwl5F_C4R_OABwD2bWqVjw.ttf",
-		"weight": 400
+		displayName: "Happy Monkey",
+		filename: "K2F2fZZcl-9SXwl5F_C4R_OABwD2bWqVjw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/happymonkey/v15/K2F2fZZcl-9SXwl5F_C4R_OABwD2bWqVjw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nokora",
-		"filename": "hYkVPuwgTubzaWxKMBj_emrD9wtMuj1fcbKpdHdrk1k",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nokora/v34/hYkVPuwgTubzaWxKMBj_emrD9wtMuj1fcbKpdHdrk1k.ttf",
-		"weight": 400
+		displayName: "Nokora",
+		filename: "hYkVPuwgTubzaWxKMBj_emrD9wtMuj1fcbKpdHdrk1k",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nokora/v34/hYkVPuwgTubzaWxKMBj_emrD9wtMuj1fcbKpdHdrk1k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "KoHo",
-		"filename": "K2F-fZ5fmddNBikefJbSOos",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/koho/v18/K2F-fZ5fmddNBikefJbSOos.ttf",
-		"weight": 400
+		displayName: "KoHo",
+		filename: "K2F-fZ5fmddNBikefJbSOos",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/koho/v18/K2F-fZ5fmddNBikefJbSOos.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ibarra Real Nova",
-		"filename": "sZlSdQiA-DBIDCcaWtQzL4BZHoiDundw4ATyjed3EXdg5MDtVT9TWIvS",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ibarrarealnova/v30/sZlSdQiA-DBIDCcaWtQzL4BZHoiDundw4ATyjed3EXdg5MDtVT9TWIvS.ttf",
-		"weight": 400
+		displayName: "Ibarra Real Nova",
+		filename: "sZlSdQiA-DBIDCcaWtQzL4BZHoiDundw4ATyjed3EXdg5MDtVT9TWIvS",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ibarrarealnova/v30/sZlSdQiA-DBIDCcaWtQzL4BZHoiDundw4ATyjed3EXdg5MDtVT9TWIvS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kurale",
-		"filename": "4iCs6KV9e9dXjho6eAT3v02QFg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kurale/v14/4iCs6KV9e9dXjho6eAT3v02QFg.ttf",
-		"weight": 400
+		displayName: "Kurale",
+		filename: "4iCs6KV9e9dXjho6eAT3v02QFg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kurale/v14/4iCs6KV9e9dXjho6eAT3v02QFg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Antique",
-		"filename": "AYCPpXPnd91Ma_Zf-Ri2JXJq7PKP5Z_G",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/zenantique/v14/AYCPpXPnd91Ma_Zf-Ri2JXJq7PKP5Z_G.ttf",
-		"weight": 400
+		displayName: "Zen Antique",
+		filename: "AYCPpXPnd91Ma_Zf-Ri2JXJq7PKP5Z_G",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/zenantique/v14/AYCPpXPnd91Ma_Zf-Ri2JXJq7PKP5Z_G.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hi Melody",
-		"filename": "46ktlbP8Vnz0pJcqCTbEf29E31BBGA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/himelody/v19/46ktlbP8Vnz0pJcqCTbEf29E31BBGA.ttf",
-		"weight": 400
+		displayName: "Hi Melody",
+		filename: "46ktlbP8Vnz0pJcqCTbEf29E31BBGA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/himelody/v19/46ktlbP8Vnz0pJcqCTbEf29E31BBGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Quintessential",
-		"filename": "fdNn9sOGq31Yjnh3qWU14DdtjY5wS7kmAyxM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/quintessential/v24/fdNn9sOGq31Yjnh3qWU14DdtjY5wS7kmAyxM.ttf",
-		"weight": 400
+		displayName: "Quintessential",
+		filename: "fdNn9sOGq31Yjnh3qWU14DdtjY5wS7kmAyxM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/quintessential/v24/fdNn9sOGq31Yjnh3qWU14DdtjY5wS7kmAyxM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Recursive",
-		"filename": "8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018vwxjDJCL",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018vwxjDJCL.ttf",
-		"weight": 400
+		displayName: "Recursive",
+		filename: "8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018vwxjDJCL",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/recursive/v44/8vJN7wMr0mhh-RQChyHEH06TlXhq_gukbYrFMk1QuAIcyEwG_X-dpEfaE5YaERmK-CImKsvxvU-MXGX2fSqasNfUvz2xbXfn1uEQadCCk018vwxjDJCL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cambay",
-		"filename": "SLXJc1rY6H0_ZDsGbrSIz9JsaA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cambay/v14/SLXJc1rY6H0_ZDsGbrSIz9JsaA.ttf",
-		"weight": 400
+		displayName: "Cambay",
+		filename: "SLXJc1rY6H0_ZDsGbrSIz9JsaA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cambay/v14/SLXJc1rY6H0_ZDsGbrSIz9JsaA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Qwigley",
-		"filename": "1cXzaU3UGJb5tGoCuVxsi1mBmcE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/qwigley/v20/1cXzaU3UGJb5tGoCuVxsi1mBmcE.ttf",
-		"weight": 400
+		displayName: "Qwigley",
+		filename: "1cXzaU3UGJb5tGoCuVxsi1mBmcE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/qwigley/v20/1cXzaU3UGJb5tGoCuVxsi1mBmcE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kadwa",
-		"filename": "rnCm-x5V0g7iphTHRcc2s2XH",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kadwa/v13/rnCm-x5V0g7iphTHRcc2s2XH.ttf",
-		"weight": 400
+		displayName: "Kadwa",
+		filename: "rnCm-x5V0g7iphTHRcc2s2XH",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kadwa/v13/rnCm-x5V0g7iphTHRcc2s2XH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tienne",
-		"filename": "AYCKpX7pe9YCRP0LkEPHSFNyxw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tienne/v21/AYCKpX7pe9YCRP0LkEPHSFNyxw.ttf",
-		"weight": 400
+		displayName: "Tienne",
+		filename: "AYCKpX7pe9YCRP0LkEPHSFNyxw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tienne/v21/AYCKpX7pe9YCRP0LkEPHSFNyxw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Voltaire",
-		"filename": "1Pttg8PcRfSblAvGvQooYKVnBOif",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/voltaire/v23/1Pttg8PcRfSblAvGvQooYKVnBOif.ttf",
-		"weight": 400
+		displayName: "Voltaire",
+		filename: "1Pttg8PcRfSblAvGvQooYKVnBOif",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/voltaire/v23/1Pttg8PcRfSblAvGvQooYKVnBOif.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stack Sans Headline",
-		"filename": "1PtFg9jZXvmMnkLnuURbaukKZJTyrDV326uH6mSinjBIwc5tIgFHqgUA3ZCX",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/stacksansheadline/v1/1PtFg9jZXvmMnkLnuURbaukKZJTyrDV326uH6mSinjBIwc5tIgFHqgUA3ZCX.ttf",
-		"weight": 400
+		displayName: "Stack Sans Headline",
+		filename: "1PtFg9jZXvmMnkLnuURbaukKZJTyrDV326uH6mSinjBIwc5tIgFHqgUA3ZCX",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/stacksansheadline/v1/1PtFg9jZXvmMnkLnuURbaukKZJTyrDV326uH6mSinjBIwc5tIgFHqgUA3ZCX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Chettan 2",
-		"filename": "vm8hdRbmXEva26PK-NtuX4ynWEzF69-L4gqgkIL5CeKTO1oeH9xI2gc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloochettan2/v23/vm8hdRbmXEva26PK-NtuX4ynWEzF69-L4gqgkIL5CeKTO1oeH9xI2gc.ttf",
-		"weight": 400
+		displayName: "Baloo Chettan 2",
+		filename: "vm8hdRbmXEva26PK-NtuX4ynWEzF69-L4gqgkIL5CeKTO1oeH9xI2gc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloochettan2/v23/vm8hdRbmXEva26PK-NtuX4ynWEzF69-L4gqgkIL5CeKTO1oeH9xI2gc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gotu",
-		"filename": "o-0FIpksx3QOlH0Lioh6-hU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gotu/v18/o-0FIpksx3QOlH0Lioh6-hU.ttf",
-		"weight": 400
+		displayName: "Gotu",
+		filename: "o-0FIpksx3QOlH0Lioh6-hU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gotu/v18/o-0FIpksx3QOlH0Lioh6-hU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Whisper",
-		"filename": "q5uHsoqtKftx74K9milCBxxdmYU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/whisper/v7/q5uHsoqtKftx74K9milCBxxdmYU.ttf",
-		"weight": 400
+		displayName: "Whisper",
+		filename: "q5uHsoqtKftx74K9milCBxxdmYU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/whisper/v7/q5uHsoqtKftx74K9milCBxxdmYU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yomogi",
-		"filename": "VuJwdNrS2ZL7rpoPWIz5NIh-YA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/yomogi/v13/VuJwdNrS2ZL7rpoPWIz5NIh-YA.ttf",
-		"weight": 400
+		displayName: "Yomogi",
+		filename: "VuJwdNrS2ZL7rpoPWIz5NIh-YA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/yomogi/v13/VuJwdNrS2ZL7rpoPWIz5NIh-YA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "David Libre",
-		"filename": "snfus0W_99N64iuYSvp4W_l86p6TYS-Y",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/davidlibre/v17/snfus0W_99N64iuYSvp4W_l86p6TYS-Y.ttf",
-		"weight": 400
+		displayName: "David Libre",
+		filename: "snfus0W_99N64iuYSvp4W_l86p6TYS-Y",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/davidlibre/v17/snfus0W_99N64iuYSvp4W_l86p6TYS-Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Solway",
-		"filename": "AMOQz46Cs2uTAOCWgnA9kuYMUg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/solway/v19/AMOQz46Cs2uTAOCWgnA9kuYMUg.ttf",
-		"weight": 400
+		displayName: "Solway",
+		filename: "AMOQz46Cs2uTAOCWgnA9kuYMUg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/solway/v19/AMOQz46Cs2uTAOCWgnA9kuYMUg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Agdasima",
-		"filename": "PN_zRfyxp2f1fUCgAMg6rzjb_-Da",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/agdasima/v5/PN_zRfyxp2f1fUCgAMg6rzjb_-Da.ttf",
-		"weight": 400
+		displayName: "Agdasima",
+		filename: "PN_zRfyxp2f1fUCgAMg6rzjb_-Da",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/agdasima/v5/PN_zRfyxp2f1fUCgAMg6rzjb_-Da.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rasa",
-		"filename": "xn76YHIn1mWmVKl8ZtAM9NrJfN5GJW41fcvN2KT4",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/rasa/v27/xn76YHIn1mWmVKl8ZtAM9NrJfN5GJW41fcvN2KT4.ttf",
-		"weight": 400
+		displayName: "Rasa",
+		filename: "xn76YHIn1mWmVKl8ZtAM9NrJfN5GJW41fcvN2KT4",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/rasa/v27/xn76YHIn1mWmVKl8ZtAM9NrJfN5GJW41fcvN2KT4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alike",
-		"filename": "HI_EiYEYI6BIoEjBSZXAQ4-d",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/alike/v22/HI_EiYEYI6BIoEjBSZXAQ4-d.ttf",
-		"weight": 400
+		displayName: "Alike",
+		filename: "HI_EiYEYI6BIoEjBSZXAQ4-d",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/alike/v22/HI_EiYEYI6BIoEjBSZXAQ4-d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Mono",
-		"filename": "Cn-0JtiGWQ5Ajb--MRKfYGxYrdM9Sg",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/novamono/v23/Cn-0JtiGWQ5Ajb--MRKfYGxYrdM9Sg.ttf",
-		"weight": 400
+		displayName: "Nova Mono",
+		filename: "Cn-0JtiGWQ5Ajb--MRKfYGxYrdM9Sg",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/novamono/v23/Cn-0JtiGWQ5Ajb--MRKfYGxYrdM9Sg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Afacad Flux",
-		"filename": "9oRgNYYQryMlneUPykRmTuH4ET0fri4I5rJVT_CWHKDZnskVK5edsUwXZaRqQsJr67E",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/afacadflux/v4/9oRgNYYQryMlneUPykRmTuH4ET0fri4I5rJVT_CWHKDZnskVK5edsUwXZaRqQsJr67E.ttf",
-		"weight": 400
+		displayName: "Afacad Flux",
+		filename: "9oRgNYYQryMlneUPykRmTuH4ET0fri4I5rJVT_CWHKDZnskVK5edsUwXZaRqQsJr67E",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/afacadflux/v4/9oRgNYYQryMlneUPykRmTuH4ET0fri4I5rJVT_CWHKDZnskVK5edsUwXZaRqQsJr67E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sunflower",
-		"filename": "RWmPoKeF8fUjqIj7Vc-06MfiqYsGBGBzCw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sunflower/v18/RWmPoKeF8fUjqIj7Vc-06MfiqYsGBGBzCw.ttf",
-		"weight": 300
+		displayName: "Sunflower",
+		filename: "RWmPoKeF8fUjqIj7Vc-06MfiqYsGBGBzCw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sunflower/v18/RWmPoKeF8fUjqIj7Vc-06MfiqYsGBGBzCw.ttf",
+		weight: 300
 	},
 	{
-		"displayName": "Libre Barcode 39 Extended Text",
-		"filename": "eLG1P_rwIgOiDA7yrs9LoKaYRVLQ1YldrrOnnL7xPO4jNP68fLIiPopNNA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcode39extendedtext/v30/eLG1P_rwIgOiDA7yrs9LoKaYRVLQ1YldrrOnnL7xPO4jNP68fLIiPopNNA.ttf",
-		"weight": 400
+		displayName: "Libre Barcode 39 Extended Text",
+		filename: "eLG1P_rwIgOiDA7yrs9LoKaYRVLQ1YldrrOnnL7xPO4jNP68fLIiPopNNA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcode39extendedtext/v30/eLG1P_rwIgOiDA7yrs9LoKaYRVLQ1YldrrOnnL7xPO4jNP68fLIiPopNNA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Raleway Dots",
-		"filename": "6NUR8FifJg6AfQvzpshgwJ8kyf9Fdty2ew",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ralewaydots/v19/6NUR8FifJg6AfQvzpshgwJ8kyf9Fdty2ew.ttf",
-		"weight": 400
+		displayName: "Raleway Dots",
+		filename: "6NUR8FifJg6AfQvzpshgwJ8kyf9Fdty2ew",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ralewaydots/v19/6NUR8FifJg6AfQvzpshgwJ8kyf9Fdty2ew.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gurajada",
-		"filename": "FwZY7-Qx308m-l-0Kd6A4sijpFu_",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gurajada/v22/FwZY7-Qx308m-l-0Kd6A4sijpFu_.ttf",
-		"weight": 400
+		displayName: "Gurajada",
+		filename: "FwZY7-Qx308m-l-0Kd6A4sijpFu_",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gurajada/v22/FwZY7-Qx308m-l-0Kd6A4sijpFu_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "B612 Mono",
-		"filename": "kmK_Zq85QVWbN1eW6lJl1wTcquRTtg",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/b612mono/v16/kmK_Zq85QVWbN1eW6lJl1wTcquRTtg.ttf",
-		"weight": 400
+		displayName: "B612 Mono",
+		filename: "kmK_Zq85QVWbN1eW6lJl1wTcquRTtg",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/b612mono/v16/kmK_Zq85QVWbN1eW6lJl1wTcquRTtg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chelsea Market",
-		"filename": "BCawqZsHqfr89WNP_IApC8tzKBhlLA4uKkWk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chelseamarket/v14/BCawqZsHqfr89WNP_IApC8tzKBhlLA4uKkWk.ttf",
-		"weight": 400
+		displayName: "Chelsea Market",
+		filename: "BCawqZsHqfr89WNP_IApC8tzKBhlLA4uKkWk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chelseamarket/v14/BCawqZsHqfr89WNP_IApC8tzKBhlLA4uKkWk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "WindSong",
-		"filename": "KR1WBsyu-P-GFEW57r95HdG6vjH3",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/windsong/v13/KR1WBsyu-P-GFEW57r95HdG6vjH3.ttf",
-		"weight": 400
+		displayName: "WindSong",
+		filename: "KR1WBsyu-P-GFEW57r95HdG6vjH3",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/windsong/v13/KR1WBsyu-P-GFEW57r95HdG6vjH3.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell DW Pica",
-		"filename": "2sDGZGRQotv9nbn2qSl0TxXVYNw9ZAPUvi88MQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfelldwpica/v16/2sDGZGRQotv9nbn2qSl0TxXVYNw9ZAPUvi88MQ.ttf",
-		"weight": 400
+		displayName: "IM Fell DW Pica",
+		filename: "2sDGZGRQotv9nbn2qSl0TxXVYNw9ZAPUvi88MQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfelldwpica/v16/2sDGZGRQotv9nbn2qSl0TxXVYNw9ZAPUvi88MQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mr De Haviland",
-		"filename": "OpNVnooIhJj96FdB73296ksbOj3C4ULVNTlB",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mrdehaviland/v15/OpNVnooIhJj96FdB73296ksbOj3C4ULVNTlB.ttf",
-		"weight": 400
+		displayName: "Mr De Haviland",
+		filename: "OpNVnooIhJj96FdB73296ksbOj3C4ULVNTlB",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mrdehaviland/v15/OpNVnooIhJj96FdB73296ksbOj3C4ULVNTlB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "McLaren",
-		"filename": "2EbnL-ZuAXFqZFXISYYf8z2Yt_c",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/mclaren/v19/2EbnL-ZuAXFqZFXISYYf8z2Yt_c.ttf",
-		"weight": 400
+		displayName: "McLaren",
+		filename: "2EbnL-ZuAXFqZFXISYYf8z2Yt_c",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/mclaren/v19/2EbnL-ZuAXFqZFXISYYf8z2Yt_c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aref Ruqaa",
-		"filename": "WwkbxPW1E165rajQKDulEIAiVNo5xNY",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/arefruqaa/v26/WwkbxPW1E165rajQKDulEIAiVNo5xNY.ttf",
-		"weight": 400
+		displayName: "Aref Ruqaa",
+		filename: "WwkbxPW1E165rajQKDulEIAiVNo5xNY",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/arefruqaa/v26/WwkbxPW1E165rajQKDulEIAiVNo5xNY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poetsen One",
-		"filename": "ke8hOgIaMUB37xCgvCntWtIvq_KREbG9",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/poetsenone/v3/ke8hOgIaMUB37xCgvCntWtIvq_KREbG9.ttf",
-		"weight": 400
+		displayName: "Poetsen One",
+		filename: "ke8hOgIaMUB37xCgvCntWtIvq_KREbG9",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/poetsenone/v3/ke8hOgIaMUB37xCgvCntWtIvq_KREbG9.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bakbak One",
-		"filename": "zOL54pXAl6RI-p_ardnuycRuv-hHkOs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bakbakone/v11/zOL54pXAl6RI-p_ardnuycRuv-hHkOs.ttf",
-		"weight": 400
+		displayName: "Bakbak One",
+		filename: "zOL54pXAl6RI-p_ardnuycRuv-hHkOs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bakbakone/v11/zOL54pXAl6RI-p_ardnuycRuv-hHkOs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Miriam Libre",
-		"filename": "DdT0798HsHwubBAqfkcBTL_1a7sPlXcE8PJjH9P3k9vGL-8tY7Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/miriamlibre/v19/DdT0798HsHwubBAqfkcBTL_1a7sPlXcE8PJjH9P3k9vGL-8tY7Q.ttf",
-		"weight": 400
+		displayName: "Miriam Libre",
+		filename: "DdT0798HsHwubBAqfkcBTL_1a7sPlXcE8PJjH9P3k9vGL-8tY7Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/miriamlibre/v19/DdT0798HsHwubBAqfkcBTL_1a7sPlXcE8PJjH9P3k9vGL-8tY7Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Capriola",
-		"filename": "wXKoE3YSppcvo1PDln_8L-AinG8y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/capriola/v15/wXKoE3YSppcvo1PDln_8L-AinG8y.ttf",
-		"weight": 400
+		displayName: "Capriola",
+		filename: "wXKoE3YSppcvo1PDln_8L-AinG8y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/capriola/v15/wXKoE3YSppcvo1PDln_8L-AinG8y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kalnia",
-		"filename": "11hqGpPCwUbbYwZZP0RBuDY62BQZhjvOytM_sLzi-TFWAW9ilmxRGNcykIZc",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kalnia/v6/11hqGpPCwUbbYwZZP0RBuDY62BQZhjvOytM_sLzi-TFWAW9ilmxRGNcykIZc.ttf",
-		"weight": 400
+		displayName: "Kalnia",
+		filename: "11hqGpPCwUbbYwZZP0RBuDY62BQZhjvOytM_sLzi-TFWAW9ilmxRGNcykIZc",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kalnia/v6/11hqGpPCwUbbYwZZP0RBuDY62BQZhjvOytM_sLzi-TFWAW9ilmxRGNcykIZc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aguafina Script",
-		"filename": "If2QXTv_ZzSxGIO30LemWEOmt1bHqs4pgicOrg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/aguafinascript/v24/If2QXTv_ZzSxGIO30LemWEOmt1bHqs4pgicOrg.ttf",
-		"weight": 400
+		displayName: "Aguafina Script",
+		filename: "If2QXTv_ZzSxGIO30LemWEOmt1bHqs4pgicOrg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/aguafinascript/v24/If2QXTv_ZzSxGIO30LemWEOmt1bHqs4pgicOrg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Big Shoulders",
-		"filename": "qFdk35CPh40oITJ69S3GFqy5-BQAcbz7z7beObrv_PytqyTi33thrko9SOP9ANM1LlZAtA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bigshoulders/v4/qFdk35CPh40oITJ69S3GFqy5-BQAcbz7z7beObrv_PytqyTi33thrko9SOP9ANM1LlZAtA.ttf",
-		"weight": 400
+		displayName: "Big Shoulders",
+		filename: "qFdk35CPh40oITJ69S3GFqy5-BQAcbz7z7beObrv_PytqyTi33thrko9SOP9ANM1LlZAtA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bigshoulders/v4/qFdk35CPh40oITJ69S3GFqy5-BQAcbz7z7beObrv_PytqyTi33thrko9SOP9ANM1LlZAtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vibur",
-		"filename": "DPEiYwmEzw0QRjTpLjoJd-Xa",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/vibur/v24/DPEiYwmEzw0QRjTpLjoJd-Xa.ttf",
-		"weight": 400
+		displayName: "Vibur",
+		filename: "DPEiYwmEzw0QRjTpLjoJd-Xa",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/vibur/v24/DPEiYwmEzw0QRjTpLjoJd-Xa.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cherry Bomb One",
-		"filename": "y83DW4od1h6KlV3c6JJhRhGOdhrKDNpF41fr-w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cherrybombone/v11/y83DW4od1h6KlV3c6JJhRhGOdhrKDNpF41fr-w.ttf",
-		"weight": 400
+		displayName: "Cherry Bomb One",
+		filename: "y83DW4od1h6KlV3c6JJhRhGOdhrKDNpF41fr-w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cherrybombone/v11/y83DW4od1h6KlV3c6JJhRhGOdhrKDNpF41fr-w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Metamorphous",
-		"filename": "Wnz8HA03aAXcC39ZEX5y1330PCCthTsmaQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/metamorphous/v22/Wnz8HA03aAXcC39ZEX5y1330PCCthTsmaQ.ttf",
-		"weight": 400
+		displayName: "Metamorphous",
+		filename: "Wnz8HA03aAXcC39ZEX5y1330PCCthTsmaQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/metamorphous/v22/Wnz8HA03aAXcC39ZEX5y1330PCCthTsmaQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vast Shadow",
-		"filename": "pe0qMImKOZ1V62ZwbVY9dfe6Kdpickwp",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/vastshadow/v21/pe0qMImKOZ1V62ZwbVY9dfe6Kdpickwp.ttf",
-		"weight": 400
+		displayName: "Vast Shadow",
+		filename: "pe0qMImKOZ1V62ZwbVY9dfe6Kdpickwp",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/vastshadow/v21/pe0qMImKOZ1V62ZwbVY9dfe6Kdpickwp.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Farro",
-		"filename": "i7dEIFl3byGNHZVNHLq2cV5d",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/farro/v15/i7dEIFl3byGNHZVNHLq2cV5d.ttf",
-		"weight": 400
+		displayName: "Farro",
+		filename: "i7dEIFl3byGNHZVNHLq2cV5d",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/farro/v15/i7dEIFl3byGNHZVNHLq2cV5d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Meie Script",
-		"filename": "_LOImzDK7erRjhunIspaMjxn5IXg0WDz",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/meiescript/v22/_LOImzDK7erRjhunIspaMjxn5IXg0WDz.ttf",
-		"weight": 400
+		displayName: "Meie Script",
+		filename: "_LOImzDK7erRjhunIspaMjxn5IXg0WDz",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/meiescript/v22/_LOImzDK7erRjhunIspaMjxn5IXg0WDz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mukta Mahee",
-		"filename": "XRXQ3IOIi0hcP8iVU67hA-vNWz4PDWtj",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/muktamahee/v19/XRXQ3IOIi0hcP8iVU67hA-vNWz4PDWtj.ttf",
-		"weight": 400
+		displayName: "Mukta Mahee",
+		filename: "XRXQ3IOIi0hcP8iVU67hA-vNWz4PDWtj",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/muktamahee/v19/XRXQ3IOIi0hcP8iVU67hA-vNWz4PDWtj.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Encode Sans Semi Expanded",
-		"filename": "ke83OhAPMEZs-BDuzwftTNJ85JvwMOzE9d9Cca5TC4o_LyjgOXc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/encodesanssemiexpanded/v20/ke83OhAPMEZs-BDuzwftTNJ85JvwMOzE9d9Cca5TC4o_LyjgOXc.ttf",
-		"weight": 400
+		displayName: "Encode Sans Semi Expanded",
+		filename: "ke83OhAPMEZs-BDuzwftTNJ85JvwMOzE9d9Cca5TC4o_LyjgOXc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/encodesanssemiexpanded/v20/ke83OhAPMEZs-BDuzwftTNJ85JvwMOzE9d9Cca5TC4o_LyjgOXc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sue Ellen Francisco",
-		"filename": "wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9ropF2lqk9H4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sueellenfrancisco/v22/wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9ropF2lqk9H4.ttf",
-		"weight": 400
+		displayName: "Sue Ellen Francisco",
+		filename: "wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9ropF2lqk9H4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sueellenfrancisco/v22/wXK3E20CsoJ9j1DDkjHcQ5ZL8xRaxru9ropF2lqk9H4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poly",
-		"filename": "MQpb-W6wKNitRLCAq2Lpris",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/poly/v18/MQpb-W6wKNitRLCAq2Lpris.ttf",
-		"weight": 400
+		displayName: "Poly",
+		filename: "MQpb-W6wKNitRLCAq2Lpris",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/poly/v18/MQpb-W6wKNitRLCAq2Lpris.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Henny Penny",
-		"filename": "wXKvE3UZookzsxz_kjGSfMQqt3M7tMDT",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/hennypenny/v18/wXKvE3UZookzsxz_kjGSfMQqt3M7tMDT.ttf",
-		"weight": 400
+		displayName: "Henny Penny",
+		filename: "wXKvE3UZookzsxz_kjGSfMQqt3M7tMDT",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/hennypenny/v18/wXKvE3UZookzsxz_kjGSfMQqt3M7tMDT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif HK",
-		"filename": "BngdUXBETWXI6LwlBZGcqL-B_KuJFcgfwP_9RMd-K2RmV9Su1M6i",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifhk/v11/BngdUXBETWXI6LwlBZGcqL-B_KuJFcgfwP_9RMd-K2RmV9Su1M6i.ttf",
-		"weight": 400
+		displayName: "Noto Serif HK",
+		filename: "BngdUXBETWXI6LwlBZGcqL-B_KuJFcgfwP_9RMd-K2RmV9Su1M6i",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifhk/v11/BngdUXBETWXI6LwlBZGcqL-B_KuJFcgfwP_9RMd-K2RmV9Su1M6i.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "ZCOOL QingKe HuangYou",
-		"filename": "2Eb5L_R5IXJEWhD3AOhSvFC554MOOahI4mRIi_28c8bHWA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zcoolqingkehuangyou/v16/2Eb5L_R5IXJEWhD3AOhSvFC554MOOahI4mRIi_28c8bHWA.ttf",
-		"weight": 400
+		displayName: "ZCOOL QingKe HuangYou",
+		filename: "2Eb5L_R5IXJEWhD3AOhSvFC554MOOahI4mRIi_28c8bHWA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zcoolqingkehuangyou/v16/2Eb5L_R5IXJEWhD3AOhSvFC554MOOahI4mRIi_28c8bHWA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shantell Sans",
-		"filename": "FeUaS0pCoLIo-lcdY7kjvNoQqWVWB0qWpl29ajppTuUTu_kJKmHesPOL-maYi4xZeHCNQ09eBlmv2QcUzJ39-rAISYR8S2i2yPwxjyRN",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/shantellsans/v13/FeUaS0pCoLIo-lcdY7kjvNoQqWVWB0qWpl29ajppTuUTu_kJKmHesPOL-maYi4xZeHCNQ09eBlmv2QcUzJ39-rAISYR8S2i2yPwxjyRN.ttf",
-		"weight": 400
+		displayName: "Shantell Sans",
+		filename: "FeUaS0pCoLIo-lcdY7kjvNoQqWVWB0qWpl29ajppTuUTu_kJKmHesPOL-maYi4xZeHCNQ09eBlmv2QcUzJ39-rAISYR8S2i2yPwxjyRN",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/shantellsans/v13/FeUaS0pCoLIo-lcdY7kjvNoQqWVWB0qWpl29ajppTuUTu_kJKmHesPOL-maYi4xZeHCNQ09eBlmv2QcUzJ39-rAISYR8S2i2yPwxjyRN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "TikTok Sans",
-		"filename": "70kbu7g-Lm8OXGnh_Ow1sUfFMmlnhbRF425wxXH-UGeud7XItbaHtxhggMrrmAvSNAHtMV6x5PpBL2J5Rgbj-Bo7COH1pFroETJ6Rg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tiktoksans/v7/70kbu7g-Lm8OXGnh_Ow1sUfFMmlnhbRF425wxXH-UGeud7XItbaHtxhggMrrmAvSNAHtMV6x5PpBL2J5Rgbj-Bo7COH1pFroETJ6Rg.ttf",
-		"weight": 400
+		displayName: "TikTok Sans",
+		filename: "70kbu7g-Lm8OXGnh_Ow1sUfFMmlnhbRF425wxXH-UGeud7XItbaHtxhggMrrmAvSNAHtMV6x5PpBL2J5Rgbj-Bo7COH1pFroETJ6Rg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tiktoksans/v7/70kbu7g-Lm8OXGnh_Ow1sUfFMmlnhbRF425wxXH-UGeud7XItbaHtxhggMrrmAvSNAHtMV6x5PpBL2J5Rgbj-Bo7COH1pFroETJ6Rg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kelly Slab",
-		"filename": "-W_7XJX0Rz3cxUnJC5t6TkMBf50kbiM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kellyslab/v18/-W_7XJX0Rz3cxUnJC5t6TkMBf50kbiM.ttf",
-		"weight": 400
+		displayName: "Kelly Slab",
+		filename: "-W_7XJX0Rz3cxUnJC5t6TkMBf50kbiM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kellyslab/v18/-W_7XJX0Rz3cxUnJC5t6TkMBf50kbiM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amethysta",
-		"filename": "rP2Fp2K15kgb_F3ibfWIGDWCBl0O8Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/amethysta/v17/rP2Fp2K15kgb_F3ibfWIGDWCBl0O8Q.ttf",
-		"weight": 400
+		displayName: "Amethysta",
+		filename: "rP2Fp2K15kgb_F3ibfWIGDWCBl0O8Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/amethysta/v17/rP2Fp2K15kgb_F3ibfWIGDWCBl0O8Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Coustard",
-		"filename": "3XFpErgg3YsZ5fqUU9UPvWXuROTd",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/coustard/v17/3XFpErgg3YsZ5fqUU9UPvWXuROTd.ttf",
-		"weight": 400
+		displayName: "Coustard",
+		filename: "3XFpErgg3YsZ5fqUU9UPvWXuROTd",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/coustard/v17/3XFpErgg3YsZ5fqUU9UPvWXuROTd.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kaisei Opti",
-		"filename": "QldKNThJphYb8_g6c2nlIFle7KlmxuHx",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kaiseiopti/v11/QldKNThJphYb8_g6c2nlIFle7KlmxuHx.ttf",
-		"weight": 400
+		displayName: "Kaisei Opti",
+		filename: "QldKNThJphYb8_g6c2nlIFle7KlmxuHx",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kaiseiopti/v11/QldKNThJphYb8_g6c2nlIFle7KlmxuHx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fuzzy Bubbles",
-		"filename": "6qLGKZMbrgv9pwtjPEVNV0F2NnP5Zxsreko",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/fuzzybubbles/v9/6qLGKZMbrgv9pwtjPEVNV0F2NnP5Zxsreko.ttf",
-		"weight": 400
+		displayName: "Fuzzy Bubbles",
+		filename: "6qLGKZMbrgv9pwtjPEVNV0F2NnP5Zxsreko",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/fuzzybubbles/v9/6qLGKZMbrgv9pwtjPEVNV0F2NnP5Zxsreko.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Qwitcher Grypen",
-		"filename": "pxicypclp9tDilN9RrC5BSI1dZmrSGNAom-wpw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/qwitchergrypen/v8/pxicypclp9tDilN9RrC5BSI1dZmrSGNAom-wpw.ttf",
-		"weight": 400
+		displayName: "Qwitcher Grypen",
+		filename: "pxicypclp9tDilN9RrC5BSI1dZmrSGNAom-wpw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/qwitchergrypen/v8/pxicypclp9tDilN9RrC5BSI1dZmrSGNAom-wpw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Quando",
-		"filename": "xMQVuFNaVa6YuW0pC6WzKX_QmA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/quando/v18/xMQVuFNaVa6YuW0pC6WzKX_QmA.ttf",
-		"weight": 400
+		displayName: "Quando",
+		filename: "xMQVuFNaVa6YuW0pC6WzKX_QmA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/quando/v18/xMQVuFNaVa6YuW0pC6WzKX_QmA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Federo",
-		"filename": "iJWFBX-cbD_ETsbmjVOe2WTG7Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/federo/v20/iJWFBX-cbD_ETsbmjVOe2WTG7Q.ttf",
-		"weight": 400
+		displayName: "Federo",
+		filename: "iJWFBX-cbD_ETsbmjVOe2WTG7Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/federo/v20/iJWFBX-cbD_ETsbmjVOe2WTG7Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jomhuria",
-		"filename": "Dxxp8j-TMXf-llKur2b1MOGbC3Dh",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jomhuria/v22/Dxxp8j-TMXf-llKur2b1MOGbC3Dh.ttf",
-		"weight": 400
+		displayName: "Jomhuria",
+		filename: "Dxxp8j-TMXf-llKur2b1MOGbC3Dh",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jomhuria/v22/Dxxp8j-TMXf-llKur2b1MOGbC3Dh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Holtwood One SC",
-		"filename": "yYLx0hLR0P-3vMFSk1TCq3Txg5B3cbb6LZttyg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/holtwoodonesc/v23/yYLx0hLR0P-3vMFSk1TCq3Txg5B3cbb6LZttyg.ttf",
-		"weight": 400
+		displayName: "Holtwood One SC",
+		filename: "yYLx0hLR0P-3vMFSk1TCq3Txg5B3cbb6LZttyg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/holtwoodonesc/v23/yYLx0hLR0P-3vMFSk1TCq3Txg5B3cbb6LZttyg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vesper Libre",
-		"filename": "bx6CNxyWnf-uxPdXDHUD_Rd4D0-N2qIWVQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/vesperlibre/v21/bx6CNxyWnf-uxPdXDHUD_Rd4D0-N2qIWVQ.ttf",
-		"weight": 400
+		displayName: "Vesper Libre",
+		filename: "bx6CNxyWnf-uxPdXDHUD_Rd4D0-N2qIWVQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/vesperlibre/v21/bx6CNxyWnf-uxPdXDHUD_Rd4D0-N2qIWVQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Imprima",
-		"filename": "VEMxRoN7sY3yuy-7-oWHyDzktPo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/imprima/v19/VEMxRoN7sY3yuy-7-oWHyDzktPo.ttf",
-		"weight": 400
+		displayName: "Imprima",
+		filename: "VEMxRoN7sY3yuy-7-oWHyDzktPo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/imprima/v19/VEMxRoN7sY3yuy-7-oWHyDzktPo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fresca",
-		"filename": "6ae94K--SKgCzbM2Gr0W13DKPA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/fresca/v24/6ae94K--SKgCzbM2Gr0W13DKPA.ttf",
-		"weight": 400
+		displayName: "Fresca",
+		filename: "6ae94K--SKgCzbM2Gr0W13DKPA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/fresca/v24/6ae94K--SKgCzbM2Gr0W13DKPA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Grid Double",
-		"filename": "WBK7rFjbakJVFOargiWSKQysDITG_S0VtG0x3HD2FYHVdlZI-rLlahmEAPp8wjYMvkPq48MVQo5RQf2svjnxa5Anx8-Y-pHdkVb0ByRHaxzbXaLbA9wfZDxkeZEXi_Ul10k",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountgriddouble/v3/WBK7rFjbakJVFOargiWSKQysDITG_S0VtG0x3HD2FYHVdlZI-rLlahmEAPp8wjYMvkPq48MVQo5RQf2svjnxa5Anx8-Y-pHdkVb0ByRHaxzbXaLbA9wfZDxkeZEXi_Ul10k.ttf",
-		"weight": 400
+		displayName: "Bitcount Grid Double",
+		filename: "WBK7rFjbakJVFOargiWSKQysDITG_S0VtG0x3HD2FYHVdlZI-rLlahmEAPp8wjYMvkPq48MVQo5RQf2svjnxa5Anx8-Y-pHdkVb0ByRHaxzbXaLbA9wfZDxkeZEXi_Ul10k",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountgriddouble/v3/WBK7rFjbakJVFOargiWSKQysDITG_S0VtG0x3HD2FYHVdlZI-rLlahmEAPp8wjYMvkPq48MVQo5RQf2svjnxa5Anx8-Y-pHdkVb0ByRHaxzbXaLbA9wfZDxkeZEXi_Ul10k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Notable",
-		"filename": "gNMEW3N_SIqx-WX9-HMoFIez5MI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notable/v20/gNMEW3N_SIqx-WX9-HMoFIez5MI.ttf",
-		"weight": 400
+		displayName: "Notable",
+		filename: "gNMEW3N_SIqx-WX9-HMoFIez5MI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notable/v20/gNMEW3N_SIqx-WX9-HMoFIez5MI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jaro",
-		"filename": "ea8DadQwV_r_Rv3-7zZMCGhQgVr1SlCsNP3VpQ_a",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/jaro/v8/ea8DadQwV_r_Rv3-7zZMCGhQgVr1SlCsNP3VpQ_a.ttf",
-		"weight": 400
+		displayName: "Jaro",
+		filename: "ea8DadQwV_r_Rv3-7zZMCGhQgVr1SlCsNP3VpQ_a",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/jaro/v8/ea8DadQwV_r_Rv3-7zZMCGhQgVr1SlCsNP3VpQ_a.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "AR One Sans",
-		"filename": "TUZezwhrmbFp0Srr_tH6fv6RcUejHO_u7GF5aXfv-U2QzBLF6gslWn_9DW03no5mBF4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/aronesans/v6/TUZezwhrmbFp0Srr_tH6fv6RcUejHO_u7GF5aXfv-U2QzBLF6gslWn_9DW03no5mBF4.ttf",
-		"weight": 400
+		displayName: "AR One Sans",
+		filename: "TUZezwhrmbFp0Srr_tH6fv6RcUejHO_u7GF5aXfv-U2QzBLF6gslWn_9DW03no5mBF4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/aronesans/v6/TUZezwhrmbFp0Srr_tH6fv6RcUejHO_u7GF5aXfv-U2QzBLF6gslWn_9DW03no5mBF4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Charis SIL",
-		"filename": "oPWK_kV3l-s-Q8govXvKrPrmYjZ2Xn0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/charissil/v2/oPWK_kV3l-s-Q8govXvKrPrmYjZ2Xn0.ttf",
-		"weight": 400
+		displayName: "Charis SIL",
+		filename: "oPWK_kV3l-s-Q8govXvKrPrmYjZ2Xn0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/charissil/v2/oPWK_kV3l-s-Q8govXvKrPrmYjZ2Xn0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Battambang",
-		"filename": "uk-mEGe7raEw-HjkzZabDnWj4yxx7o8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/battambang/v26/uk-mEGe7raEw-HjkzZabDnWj4yxx7o8.ttf",
-		"weight": 400
+		displayName: "Battambang",
+		filename: "uk-mEGe7raEw-HjkzZabDnWj4yxx7o8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/battambang/v26/uk-mEGe7raEw-HjkzZabDnWj4yxx7o8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Tamma 2",
-		"filename": "vEFE2_hCAgcR46PaajtrYlBbVUMUJgIC5LHTrMscPp-0IF71SGC5",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/balootamma2/v20/vEFE2_hCAgcR46PaajtrYlBbVUMUJgIC5LHTrMscPp-0IF71SGC5.ttf",
-		"weight": 400
+		displayName: "Baloo Tamma 2",
+		filename: "vEFE2_hCAgcR46PaajtrYlBbVUMUJgIC5LHTrMscPp-0IF71SGC5",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/balootamma2/v20/vEFE2_hCAgcR46PaajtrYlBbVUMUJgIC5LHTrMscPp-0IF71SGC5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Julee",
-		"filename": "TuGfUVB3RpZPQ6ZLodgzydtk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/julee/v26/TuGfUVB3RpZPQ6ZLodgzydtk.ttf",
-		"weight": 400
+		displayName: "Julee",
+		filename: "TuGfUVB3RpZPQ6ZLodgzydtk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/julee/v26/TuGfUVB3RpZPQ6ZLodgzydtk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rouge Script",
-		"filename": "LYjFdGbiklMoCIQOw1Ep3S4PVPXbUJWq9g",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/rougescript/v20/LYjFdGbiklMoCIQOw1Ep3S4PVPXbUJWq9g.ttf",
-		"weight": 400
+		displayName: "Rouge Script",
+		filename: "LYjFdGbiklMoCIQOw1Ep3S4PVPXbUJWq9g",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/rougescript/v20/LYjFdGbiklMoCIQOw1Ep3S4PVPXbUJWq9g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vujahday Script",
-		"filename": "RWmQoKGA8fEkrIPtSZ3_J7er2dUiDEtvAlaMKw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/vujahdayscript/v10/RWmQoKGA8fEkrIPtSZ3_J7er2dUiDEtvAlaMKw.ttf",
-		"weight": 400
+		displayName: "Vujahday Script",
+		filename: "RWmQoKGA8fEkrIPtSZ3_J7er2dUiDEtvAlaMKw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/vujahdayscript/v10/RWmQoKGA8fEkrIPtSZ3_J7er2dUiDEtvAlaMKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Myanmar",
-		"filename": "AlZq_y1ZtY3ymOryg38hOCSdOnFq0En23OU4o1AC",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmyanmar/v21/AlZq_y1ZtY3ymOryg38hOCSdOnFq0En23OU4o1AC.ttf",
-		"weight": 400
+		displayName: "Noto Sans Myanmar",
+		filename: "AlZq_y1ZtY3ymOryg38hOCSdOnFq0En23OU4o1AC",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmyanmar/v21/AlZq_y1ZtY3ymOryg38hOCSdOnFq0En23OU4o1AC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Crafty Girls",
-		"filename": "va9B4kXI39VaDdlPJo8N_NvuQR37fF3Wlg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/craftygirls/v16/va9B4kXI39VaDdlPJo8N_NvuQR37fF3Wlg.ttf",
-		"weight": 400
+		displayName: "Crafty Girls",
+		filename: "va9B4kXI39VaDdlPJo8N_NvuQR37fF3Wlg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/craftygirls/v16/va9B4kXI39VaDdlPJo8N_NvuQR37fF3Wlg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Dots",
-		"filename": "XRXX3ICfm00IGoesQeaETM_FcCIG",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/zendots/v14/XRXX3ICfm00IGoesQeaETM_FcCIG.ttf",
-		"weight": 400
+		displayName: "Zen Dots",
+		filename: "XRXX3ICfm00IGoesQeaETM_FcCIG",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/zendots/v14/XRXX3ICfm00IGoesQeaETM_FcCIG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Molengo",
-		"filename": "I_uuMpWeuBzZNBtQbbRQkiCvs5Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/molengo/v17/I_uuMpWeuBzZNBtQbbRQkiCvs5Y.ttf",
-		"weight": 400
+		displayName: "Molengo",
+		filename: "I_uuMpWeuBzZNBtQbbRQkiCvs5Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/molengo/v17/I_uuMpWeuBzZNBtQbbRQkiCvs5Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Thasadith",
-		"filename": "mtG44_1TIqPYrd_f5R1YsEkU0CWuFw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/thasadith/v13/mtG44_1TIqPYrd_f5R1YsEkU0CWuFw.ttf",
-		"weight": 400
+		displayName: "Thasadith",
+		filename: "mtG44_1TIqPYrd_f5R1YsEkU0CWuFw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/thasadith/v13/mtG44_1TIqPYrd_f5R1YsEkU0CWuFw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hanuman",
-		"filename": "VuJudNvD15HhpJJBYq31yFn72hxIv0sd5xDsU9X6RPzQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/hanuman/v24/VuJudNvD15HhpJJBYq31yFn72hxIv0sd5xDsU9X6RPzQ.ttf",
-		"weight": 400
+		displayName: "Hanuman",
+		filename: "VuJudNvD15HhpJJBYq31yFn72hxIv0sd5xDsU9X6RPzQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/hanuman/v24/VuJudNvD15HhpJJBYq31yFn72hxIv0sd5xDsU9X6RPzQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Viaoda Libre",
-		"filename": "vEFW2_lWCgoR6OKuRz9kcRVJb2IY2tOHXg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/viaodalibre/v20/vEFW2_lWCgoR6OKuRz9kcRVJb2IY2tOHXg.ttf",
-		"weight": 400
+		displayName: "Viaoda Libre",
+		filename: "vEFW2_lWCgoR6OKuRz9kcRVJb2IY2tOHXg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/viaodalibre/v20/vEFW2_lWCgoR6OKuRz9kcRVJb2IY2tOHXg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Atma",
-		"filename": "uK_84rqWc-Eom25bDj8WIv4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/atma/v19/uK_84rqWc-Eom25bDj8WIv4.ttf",
-		"weight": 400
+		displayName: "Atma",
+		filename: "uK_84rqWc-Eom25bDj8WIv4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/atma/v19/uK_84rqWc-Eom25bDj8WIv4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kufam",
-		"filename": "C8c-4cY7pG7w_oSJDszBXsKCcBH3lqk7qQCJHvIwYg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kufam/v26/C8c-4cY7pG7w_oSJDszBXsKCcBH3lqk7qQCJHvIwYg.ttf",
-		"weight": 400
+		displayName: "Kufam",
+		filename: "C8c-4cY7pG7w_oSJDszBXsKCcBH3lqk7qQCJHvIwYg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kufam/v26/C8c-4cY7pG7w_oSJDszBXsKCcBH3lqk7qQCJHvIwYg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aladin",
-		"filename": "ZgNSjPJFPrvJV5f16Sf4pGT2Ng",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/aladin/v26/ZgNSjPJFPrvJV5f16Sf4pGT2Ng.ttf",
-		"weight": 400
+		displayName: "Aladin",
+		filename: "ZgNSjPJFPrvJV5f16Sf4pGT2Ng",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/aladin/v26/ZgNSjPJFPrvJV5f16Sf4pGT2Ng.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Paaji 2",
-		"filename": "i7dfIFFzbz-QHZUdV9_UGWZuelmy79QJ1HOSY9AX74fybRUz1r5t",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloopaaji2/v29/i7dfIFFzbz-QHZUdV9_UGWZuelmy79QJ1HOSY9AX74fybRUz1r5t.ttf",
-		"weight": 400
+		displayName: "Baloo Paaji 2",
+		filename: "i7dfIFFzbz-QHZUdV9_UGWZuelmy79QJ1HOSY9AX74fybRUz1r5t",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloopaaji2/v29/i7dfIFFzbz-QHZUdV9_UGWZuelmy79QJ1HOSY9AX74fybRUz1r5t.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mukta Vaani",
-		"filename": "3Jn5SD_-ynaxmxnEfVHPIF0FfORL0fNy",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/muktavaani/v15/3Jn5SD_-ynaxmxnEfVHPIF0FfORL0fNy.ttf",
-		"weight": 400
+		displayName: "Mukta Vaani",
+		filename: "3Jn5SD_-ynaxmxnEfVHPIF0FfORL0fNy",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/muktavaani/v15/3Jn5SD_-ynaxmxnEfVHPIF0FfORL0fNy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Madimi One",
-		"filename": "2V0YKIEADpA8U6RygDnZZFQoBoHMd2U",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/madimione/v1/2V0YKIEADpA8U6RygDnZZFQoBoHMd2U.ttf",
-		"weight": 400
+		displayName: "Madimi One",
+		filename: "2V0YKIEADpA8U6RygDnZZFQoBoHMd2U",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/madimione/v1/2V0YKIEADpA8U6RygDnZZFQoBoHMd2U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playpen Sans",
-		"filename": "dg43_pj1p6gXP0gzAZgm4c8XQArSU7ACQSn4IvRhunQ9Ffmme0w",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playpensans/v22/dg43_pj1p6gXP0gzAZgm4c8XQArSU7ACQSn4IvRhunQ9Ffmme0w.ttf",
-		"weight": 400
+		displayName: "Playpen Sans",
+		filename: "dg43_pj1p6gXP0gzAZgm4c8XQArSU7ACQSn4IvRhunQ9Ffmme0w",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playpensans/v22/dg43_pj1p6gXP0gzAZgm4c8XQArSU7ACQSn4IvRhunQ9Ffmme0w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wendy One",
-		"filename": "2sDcZGJOipXfgfXV5wgDb2-4C7wFZQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wendyone/v20/2sDcZGJOipXfgfXV5wgDb2-4C7wFZQ.ttf",
-		"weight": 400
+		displayName: "Wendy One",
+		filename: "2sDcZGJOipXfgfXV5wgDb2-4C7wFZQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wendyone/v20/2sDcZGJOipXfgfXV5wgDb2-4C7wFZQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Khmer",
-		"filename": "ijw3s5roRME5LLRxjsRb-gssOenAyendxrgV2c-Zw-9vbVUti_Z_dWgtWYuNAJz4kAbrddiA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskhmer/v29/ijw3s5roRME5LLRxjsRb-gssOenAyendxrgV2c-Zw-9vbVUti_Z_dWgtWYuNAJz4kAbrddiA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Khmer",
+		filename: "ijw3s5roRME5LLRxjsRb-gssOenAyendxrgV2c-Zw-9vbVUti_Z_dWgtWYuNAJz4kAbrddiA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskhmer/v29/ijw3s5roRME5LLRxjsRb-gssOenAyendxrgV2c-Zw-9vbVUti_Z_dWgtWYuNAJz4kAbrddiA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "B612",
-		"filename": "3JnySDDxiSz32jm4GDigUXw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/b612/v13/3JnySDDxiSz32jm4GDigUXw.ttf",
-		"weight": 400
+		displayName: "B612",
+		filename: "3JnySDDxiSz32jm4GDigUXw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/b612/v13/3JnySDDxiSz32jm4GDigUXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Expletus Sans",
-		"filename": "RLpqK5v5_bqufTYdnhFzDj2dX_IwS3my73zcDaSY2s1oFQTcXfMm",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/expletussans/v31/RLpqK5v5_bqufTYdnhFzDj2dX_IwS3my73zcDaSY2s1oFQTcXfMm.ttf",
-		"weight": 400
+		displayName: "Expletus Sans",
+		filename: "RLpqK5v5_bqufTYdnhFzDj2dX_IwS3my73zcDaSY2s1oFQTcXfMm",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/expletussans/v31/RLpqK5v5_bqufTYdnhFzDj2dX_IwS3my73zcDaSY2s1oFQTcXfMm.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Lao Looped",
-		"filename": "a8IgNpbwKmHXpgXbMIsbSMP7-3U72qUOX5gBg6LRXExhqHIX9YPTpvqkW4UthhjomPr3M-Zw5V_T71k",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslaolooped/v10/a8IgNpbwKmHXpgXbMIsbSMP7-3U72qUOX5gBg6LRXExhqHIX9YPTpvqkW4UthhjomPr3M-Zw5V_T71k.ttf",
-		"weight": 400
+		displayName: "Noto Sans Lao Looped",
+		filename: "a8IgNpbwKmHXpgXbMIsbSMP7-3U72qUOX5gBg6LRXExhqHIX9YPTpvqkW4UthhjomPr3M-Zw5V_T71k",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslaolooped/v10/a8IgNpbwKmHXpgXbMIsbSMP7-3U72qUOX5gBg6LRXExhqHIX9YPTpvqkW4UthhjomPr3M-Zw5V_T71k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Odibee Sans",
-		"filename": "neIPzCSooYAho6WvjeToRYkyepH9qGsf",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/odibeesans/v20/neIPzCSooYAho6WvjeToRYkyepH9qGsf.ttf",
-		"weight": 400
+		displayName: "Odibee Sans",
+		filename: "neIPzCSooYAho6WvjeToRYkyepH9qGsf",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/odibeesans/v20/neIPzCSooYAho6WvjeToRYkyepH9qGsf.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ephesis",
-		"filename": "uU9PCBUS8IerL2VG7xPb3vyHmlI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/ephesis/v11/uU9PCBUS8IerL2VG7xPb3vyHmlI.ttf",
-		"weight": 400
+		displayName: "Ephesis",
+		filename: "uU9PCBUS8IerL2VG7xPb3vyHmlI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/ephesis/v11/uU9PCBUS8IerL2VG7xPb3vyHmlI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gemunu Libre",
-		"filename": "X7n34bQ6Cfy7jKGXVE_YlqnbEQAFP-PIuTCp0xiJPvSLeMXPIWA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gemunulibre/v18/X7n34bQ6Cfy7jKGXVE_YlqnbEQAFP-PIuTCp0xiJPvSLeMXPIWA.ttf",
-		"weight": 400
+		displayName: "Gemunu Libre",
+		filename: "X7n34bQ6Cfy7jKGXVE_YlqnbEQAFP-PIuTCp0xiJPvSLeMXPIWA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gemunulibre/v18/X7n34bQ6Cfy7jKGXVE_YlqnbEQAFP-PIuTCp0xiJPvSLeMXPIWA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Esteban",
-		"filename": "r05bGLZE-bdGdN-GdOuD5jokU8E",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/esteban/v16/r05bGLZE-bdGdN-GdOuD5jokU8E.ttf",
-		"weight": 400
+		displayName: "Esteban",
+		filename: "r05bGLZE-bdGdN-GdOuD5jokU8E",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/esteban/v16/r05bGLZE-bdGdN-GdOuD5jokU8E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kodchasan",
-		"filename": "1cXxaUPOAJv9sG4I-DJmj3uEicG01A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kodchasan/v20/1cXxaUPOAJv9sG4I-DJmj3uEicG01A.ttf",
-		"weight": 400
+		displayName: "Kodchasan",
+		filename: "1cXxaUPOAJv9sG4I-DJmj3uEicG01A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kodchasan/v20/1cXxaUPOAJv9sG4I-DJmj3uEicG01A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Georgian",
-		"filename": "PlIaFke5O6RzLfvNNVSitxkr76PRHBC4Ytyq-Gof7PUs4S7zWn-8YDB09HFNdpvnzFj-f5WK0OQV",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansgeorgian/v48/PlIaFke5O6RzLfvNNVSitxkr76PRHBC4Ytyq-Gof7PUs4S7zWn-8YDB09HFNdpvnzFj-f5WK0OQV.ttf",
-		"weight": 400
+		displayName: "Noto Sans Georgian",
+		filename: "PlIaFke5O6RzLfvNNVSitxkr76PRHBC4Ytyq-Gof7PUs4S7zWn-8YDB09HFNdpvnzFj-f5WK0OQV",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansgeorgian/v48/PlIaFke5O6RzLfvNNVSitxkr76PRHBC4Ytyq-Gof7PUs4S7zWn-8YDB09HFNdpvnzFj-f5WK0OQV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Salsa",
-		"filename": "gNMKW3FiRpKj-imY8ncKEZez",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/salsa/v23/gNMKW3FiRpKj-imY8ncKEZez.ttf",
-		"weight": 400
+		displayName: "Salsa",
+		filename: "gNMKW3FiRpKj-imY8ncKEZez",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/salsa/v23/gNMKW3FiRpKj-imY8ncKEZez.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Slackey",
-		"filename": "N0bV2SdQO-5yM0-dKlRaJdbWgdY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/slackey/v29/N0bV2SdQO-5yM0-dKlRaJdbWgdY.ttf",
-		"weight": 400
+		displayName: "Slackey",
+		filename: "N0bV2SdQO-5yM0-dKlRaJdbWgdY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/slackey/v29/N0bV2SdQO-5yM0-dKlRaJdbWgdY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Coiny",
-		"filename": "gyByhwU1K989PXwbElSvO5Tc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/coiny/v17/gyByhwU1K989PXwbElSvO5Tc.ttf",
-		"weight": 400
+		displayName: "Coiny",
+		filename: "gyByhwU1K989PXwbElSvO5Tc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/coiny/v17/gyByhwU1K989PXwbElSvO5Tc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Monomaniac One",
-		"filename": "4iC06K17YctZjx50EU-QlwPmcqRnqYkB5kwI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/monomaniacone/v15/4iC06K17YctZjx50EU-QlwPmcqRnqYkB5kwI.ttf",
-		"weight": 400
+		displayName: "Monomaniac One",
+		filename: "4iC06K17YctZjx50EU-QlwPmcqRnqYkB5kwI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/monomaniacone/v15/4iC06K17YctZjx50EU-QlwPmcqRnqYkB5kwI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Allan",
-		"filename": "ea8XadU7WuTxEtb2P9SF8nZE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/allan/v26/ea8XadU7WuTxEtb2P9SF8nZE.ttf",
-		"weight": 400
+		displayName: "Allan",
+		filename: "ea8XadU7WuTxEtb2P9SF8nZE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/allan/v26/ea8XadU7WuTxEtb2P9SF8nZE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anybody",
-		"filename": "VuJbdNvK2Ib2ppdWYq311GH32hxIv0sd5grncSUi2F_Wim4J12DPrsXD_nBPpQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/anybody/v13/VuJbdNvK2Ib2ppdWYq311GH32hxIv0sd5grncSUi2F_Wim4J12DPrsXD_nBPpQ.ttf",
-		"weight": 400
+		displayName: "Anybody",
+		filename: "VuJbdNvK2Ib2ppdWYq311GH32hxIv0sd5grncSUi2F_Wim4J12DPrsXD_nBPpQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/anybody/v13/VuJbdNvK2Ib2ppdWYq311GH32hxIv0sd5grncSUi2F_Wim4J12DPrsXD_nBPpQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ruslan Display",
-		"filename": "Gw6jwczl81XcIZuckK_e3UpfdzxrldyFvm1n",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ruslandisplay/v27/Gw6jwczl81XcIZuckK_e3UpfdzxrldyFvm1n.ttf",
-		"weight": 400
+		displayName: "Ruslan Display",
+		filename: "Gw6jwczl81XcIZuckK_e3UpfdzxrldyFvm1n",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ruslandisplay/v27/Gw6jwczl81XcIZuckK_e3UpfdzxrldyFvm1n.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bigshot One",
-		"filename": "u-470qukhRkkO6BD_7cM_gxuUQJBXv_-",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bigshotone/v31/u-470qukhRkkO6BD_7cM_gxuUQJBXv_-.ttf",
-		"weight": 400
+		displayName: "Bigshot One",
+		filename: "u-470qukhRkkO6BD_7cM_gxuUQJBXv_-",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bigshotone/v31/u-470qukhRkkO6BD_7cM_gxuUQJBXv_-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Elsie",
-		"filename": "BCanqZABrez54yYu9slAeLgX",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/elsie/v26/BCanqZABrez54yYu9slAeLgX.ttf",
-		"weight": 400
+		displayName: "Elsie",
+		filename: "BCanqZABrez54yYu9slAeLgX",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/elsie/v26/BCanqZABrez54yYu9slAeLgX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Puritan",
-		"filename": "845YNMgkAJ2VTtIo9JrwRdaI50M",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/puritan/v25/845YNMgkAJ2VTtIo9JrwRdaI50M.ttf",
-		"weight": 400
+		displayName: "Puritan",
+		filename: "845YNMgkAJ2VTtIo9JrwRdaI50M",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/puritan/v25/845YNMgkAJ2VTtIo9JrwRdaI50M.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Give You Glory",
-		"filename": "8QIQdiHOgt3vv4LR7ahjw9-XYc1zB4ZD6rwa",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/giveyouglory/v17/8QIQdiHOgt3vv4LR7ahjw9-XYc1zB4ZD6rwa.ttf",
-		"weight": 400
+		displayName: "Give You Glory",
+		filename: "8QIQdiHOgt3vv4LR7ahjw9-XYc1zB4ZD6rwa",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/giveyouglory/v17/8QIQdiHOgt3vv4LR7ahjw9-XYc1zB4ZD6rwa.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Balthazar",
-		"filename": "d6lKkaajS8Gm4CVQjFEvyRTo39l8hw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/balthazar/v18/d6lKkaajS8Gm4CVQjFEvyRTo39l8hw.ttf",
-		"weight": 400
+		displayName: "Balthazar",
+		filename: "d6lKkaajS8Gm4CVQjFEvyRTo39l8hw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/balthazar/v18/d6lKkaajS8Gm4CVQjFEvyRTo39l8hw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inknut Antiqua",
-		"filename": "Y4GSYax7VC4ot_qNB4nYpBdaKXUD6pzxRwYB",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/inknutantiqua/v16/Y4GSYax7VC4ot_qNB4nYpBdaKXUD6pzxRwYB.ttf",
-		"weight": 400
+		displayName: "Inknut Antiqua",
+		filename: "Y4GSYax7VC4ot_qNB4nYpBdaKXUD6pzxRwYB",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/inknutantiqua/v16/Y4GSYax7VC4ot_qNB4nYpBdaKXUD6pzxRwYB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sarpanch",
-		"filename": "hESy6Xt4NCpRuk6Pzh2ARIrX_20n",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sarpanch/v15/hESy6Xt4NCpRuk6Pzh2ARIrX_20n.ttf",
-		"weight": 400
+		displayName: "Sarpanch",
+		filename: "hESy6Xt4NCpRuk6Pzh2ARIrX_20n",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sarpanch/v15/hESy6Xt4NCpRuk6Pzh2ARIrX_20n.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oregano",
-		"filename": "If2IXTPxciS3H4S2kZffPznO3yM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/oregano/v17/If2IXTPxciS3H4S2kZffPznO3yM.ttf",
-		"weight": 400
+		displayName: "Oregano",
+		filename: "If2IXTPxciS3H4S2kZffPznO3yM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/oregano/v17/If2IXTPxciS3H4S2kZffPznO3yM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poller One",
-		"filename": "ahccv82n0TN3gia5E4Bud-lbgUS5u0s",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pollerone/v25/ahccv82n0TN3gia5E4Bud-lbgUS5u0s.ttf",
-		"weight": 400
+		displayName: "Poller One",
+		filename: "ahccv82n0TN3gia5E4Bud-lbgUS5u0s",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pollerone/v25/ahccv82n0TN3gia5E4Bud-lbgUS5u0s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Original Surfer",
-		"filename": "RWmQoKGZ9vIirYntXJ3_MbekzNMiDEtvAlaMKw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/originalsurfer/v25/RWmQoKGZ9vIirYntXJ3_MbekzNMiDEtvAlaMKw.ttf",
-		"weight": 400
+		displayName: "Original Surfer",
+		filename: "RWmQoKGZ9vIirYntXJ3_MbekzNMiDEtvAlaMKw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/originalsurfer/v25/RWmQoKGZ9vIirYntXJ3_MbekzNMiDEtvAlaMKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Unkempt",
-		"filename": "2EbnL-Z2DFZue0DSSYYf8z2Yt_c",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/unkempt/v22/2EbnL-Z2DFZue0DSSYYf8z2Yt_c.ttf",
-		"weight": 400
+		displayName: "Unkempt",
+		filename: "2EbnL-Z2DFZue0DSSYYf8z2Yt_c",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/unkempt/v22/2EbnL-Z2DFZue0DSSYYf8z2Yt_c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cutive",
-		"filename": "NaPZcZ_fHOhV3Ip7T_hDoyqlZQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cutive/v24/NaPZcZ_fHOhV3Ip7T_hDoyqlZQ.ttf",
-		"weight": 400
+		displayName: "Cutive",
+		filename: "NaPZcZ_fHOhV3Ip7T_hDoyqlZQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cutive/v24/NaPZcZ_fHOhV3Ip7T_hDoyqlZQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nosifer",
-		"filename": "ZGjXol5JTp0g5bxZaC1RVDNdGDs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/nosifer/v23/ZGjXol5JTp0g5bxZaC1RVDNdGDs.ttf",
-		"weight": 400
+		displayName: "Nosifer",
+		filename: "ZGjXol5JTp0g5bxZaC1RVDNdGDs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/nosifer/v23/ZGjXol5JTp0g5bxZaC1RVDNdGDs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Supermercado One",
-		"filename": "OpNXnpQWg8jc_xps_Gi14kVVEXOn60b3MClBRTs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/supermercadoone/v29/OpNXnpQWg8jc_xps_Gi14kVVEXOn60b3MClBRTs.ttf",
-		"weight": 400
+		displayName: "Supermercado One",
+		filename: "OpNXnpQWg8jc_xps_Gi14kVVEXOn60b3MClBRTs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/supermercadoone/v29/OpNXnpQWg8jc_xps_Gi14kVVEXOn60b3MClBRTs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Buenard",
-		"filename": "OD5cuM6Cyma8FnnsJTzfWLAhv7i92sqpK0_3iBYVfsc4",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/buenard/v22/OD5cuM6Cyma8FnnsJTzfWLAhv7i92sqpK0_3iBYVfsc4.ttf",
-		"weight": 400
+		displayName: "Buenard",
+		filename: "OD5cuM6Cyma8FnnsJTzfWLAhv7i92sqpK0_3iBYVfsc4",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/buenard/v22/OD5cuM6Cyma8FnnsJTzfWLAhv7i92sqpK0_3iBYVfsc4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inder",
-		"filename": "w8gUH2YoQe8_4vq6pw-P3U4O",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/inder/v15/w8gUH2YoQe8_4vq6pw-P3U4O.ttf",
-		"weight": 400
+		displayName: "Inder",
+		filename: "w8gUH2YoQe8_4vq6pw-P3U4O",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/inder/v15/w8gUH2YoQe8_4vq6pw-P3U4O.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gamja Flower",
-		"filename": "6NUR8FiKJg-Pa0rM6uN40Z4kyf9Fdty2ew",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/gamjaflower/v26/6NUR8FiKJg-Pa0rM6uN40Z4kyf9Fdty2ew.ttf",
-		"weight": 400
+		displayName: "Gamja Flower",
+		filename: "6NUR8FiKJg-Pa0rM6uN40Z4kyf9Fdty2ew",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/gamjaflower/v26/6NUR8FiKJg-Pa0rM6uN40Z4kyf9Fdty2ew.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Seaweed Script",
-		"filename": "bx6cNx6Tne2pxOATYE8C_Rsoe0WJ-KcGVbLW",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/seaweedscript/v17/bx6cNx6Tne2pxOATYE8C_Rsoe0WJ-KcGVbLW.ttf",
-		"weight": 400
+		displayName: "Seaweed Script",
+		filename: "bx6cNx6Tne2pxOATYE8C_Rsoe0WJ-KcGVbLW",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/seaweedscript/v17/bx6cNx6Tne2pxOATYE8C_Rsoe0WJ-KcGVbLW.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kode Mono",
-		"filename": "A2BLn5pb0QgtVEPFnlYkkaoBgw4qv9odq5my9DqTaOW2A3k",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/kodemono/v4/A2BLn5pb0QgtVEPFnlYkkaoBgw4qv9odq5my9DqTaOW2A3k.ttf",
-		"weight": 400
+		displayName: "Kode Mono",
+		filename: "A2BLn5pb0QgtVEPFnlYkkaoBgw4qv9odq5my9DqTaOW2A3k",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/kodemono/v4/A2BLn5pb0QgtVEPFnlYkkaoBgw4qv9odq5my9DqTaOW2A3k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "League Script",
-		"filename": "CSR54zpSlumSWj9CGVsoBZdeaNNUuOwkC2s",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/leaguescript/v30/CSR54zpSlumSWj9CGVsoBZdeaNNUuOwkC2s.ttf",
-		"weight": 400
+		displayName: "League Script",
+		filename: "CSR54zpSlumSWj9CGVsoBZdeaNNUuOwkC2s",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/leaguescript/v30/CSR54zpSlumSWj9CGVsoBZdeaNNUuOwkC2s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lacquer",
-		"filename": "EYqzma1QwqpG4_BBB7-AXhttQ5I",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lacquer/v16/EYqzma1QwqpG4_BBB7-AXhttQ5I.ttf",
-		"weight": 400
+		displayName: "Lacquer",
+		filename: "EYqzma1QwqpG4_BBB7-AXhttQ5I",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lacquer/v16/EYqzma1QwqpG4_BBB7-AXhttQ5I.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mina",
-		"filename": "-nFzOGc18vARrz9j7i3y65o",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mina/v14/-nFzOGc18vARrz9j7i3y65o.ttf",
-		"weight": 400
+		displayName: "Mina",
+		filename: "-nFzOGc18vARrz9j7i3y65o",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mina/v14/-nFzOGc18vARrz9j7i3y65o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Trispace",
-		"filename": "Yq65-LKSQC3o56LxxgRrtA6yBqsrXL5GI5KI-IUZVGsxWFIlbH9roQl0zHugpt0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/trispace/v27/Yq65-LKSQC3o56LxxgRrtA6yBqsrXL5GI5KI-IUZVGsxWFIlbH9roQl0zHugpt0.ttf",
-		"weight": 400
+		displayName: "Trispace",
+		filename: "Yq65-LKSQC3o56LxxgRrtA6yBqsrXL5GI5KI-IUZVGsxWFIlbH9roQl0zHugpt0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/trispace/v27/Yq65-LKSQC3o56LxxgRrtA6yBqsrXL5GI5KI-IUZVGsxWFIlbH9roQl0zHugpt0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Bubbles",
-		"filename": "JIA1UVdwbHFJtwA7Us1BPFbRNTENfDxyRXI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikbubbles/v3/JIA1UVdwbHFJtwA7Us1BPFbRNTENfDxyRXI.ttf",
-		"weight": 400
+		displayName: "Rubik Bubbles",
+		filename: "JIA1UVdwbHFJtwA7Us1BPFbRNTENfDxyRXI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikbubbles/v3/JIA1UVdwbHFJtwA7Us1BPFbRNTENfDxyRXI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Devanagari",
-		"filename": "x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-HMUe1u_dv",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-HMUe1u_dv.ttf",
-		"weight": 400
+		displayName: "Noto Serif Devanagari",
+		filename: "x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-HMUe1u_dv",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-HMUe1u_dv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Delicious Handrawn",
-		"filename": "wlpsgx_NAUNkpmKQifcxkQchDFo3fJ113JpDd6u3AQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/delicioushandrawn/v10/wlpsgx_NAUNkpmKQifcxkQchDFo3fJ113JpDd6u3AQ.ttf",
-		"weight": 400
+		displayName: "Delicious Handrawn",
+		filename: "wlpsgx_NAUNkpmKQifcxkQchDFo3fJ113JpDd6u3AQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/delicioushandrawn/v10/wlpsgx_NAUNkpmKQifcxkQchDFo3fJ113JpDd6u3AQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sarina",
-		"filename": "-F6wfjF3ITQwasLhLkDUriBQxw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sarina/v25/-F6wfjF3ITQwasLhLkDUriBQxw.ttf",
-		"weight": 400
+		displayName: "Sarina",
+		filename: "-F6wfjF3ITQwasLhLkDUriBQxw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sarina/v25/-F6wfjF3ITQwasLhLkDUriBQxw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pompiere",
-		"filename": "VEMyRoxis5Dwuyeov6Wt5jDtreOL",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pompiere/v21/VEMyRoxis5Dwuyeov6Wt5jDtreOL.ttf",
-		"weight": 400
+		displayName: "Pompiere",
+		filename: "VEMyRoxis5Dwuyeov6Wt5jDtreOL",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pompiere/v21/VEMyRoxis5Dwuyeov6Wt5jDtreOL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Slabo 13px",
-		"filename": "11hEGp_azEvXZUdSBzzRcKer2wkYnvI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/slabo13px/v17/11hEGp_azEvXZUdSBzzRcKer2wkYnvI.ttf",
-		"weight": 400
+		displayName: "Slabo 13px",
+		filename: "11hEGp_azEvXZUdSBzzRcKer2wkYnvI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/slabo13px/v17/11hEGp_azEvXZUdSBzzRcKer2wkYnvI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Artifika",
-		"filename": "VEMyRoxzronptCuxu6Wt5jDtreOL",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/artifika/v22/VEMyRoxzronptCuxu6Wt5jDtreOL.ttf",
-		"weight": 400
+		displayName: "Artifika",
+		filename: "VEMyRoxzronptCuxu6Wt5jDtreOL",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/artifika/v22/VEMyRoxzronptCuxu6Wt5jDtreOL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Walter Turncoat",
-		"filename": "snfys0Gs98ln43n0d-14ULoToe67YB2dQ5ZPqQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/walterturncoat/v24/snfys0Gs98ln43n0d-14ULoToe67YB2dQ5ZPqQ.ttf",
-		"weight": 400
+		displayName: "Walter Turncoat",
+		filename: "snfys0Gs98ln43n0d-14ULoToe67YB2dQ5ZPqQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/walterturncoat/v24/snfys0Gs98ln43n0d-14ULoToe67YB2dQ5ZPqQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Xanh Mono",
-		"filename": "R70YjykVmvKCep-vWhSYmACQXzLhTg",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/xanhmono/v19/R70YjykVmvKCep-vWhSYmACQXzLhTg.ttf",
-		"weight": 400
+		displayName: "Xanh Mono",
+		filename: "R70YjykVmvKCep-vWhSYmACQXzLhTg",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/xanhmono/v19/R70YjykVmvKCep-vWhSYmACQXzLhTg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Train One",
-		"filename": "gyB-hwkiNtc6KnxUVjWHOqbZRY7JVQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/trainone/v16/gyB-hwkiNtc6KnxUVjWHOqbZRY7JVQ.ttf",
-		"weight": 400
+		displayName: "Train One",
+		filename: "gyB-hwkiNtc6KnxUVjWHOqbZRY7JVQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/trainone/v16/gyB-hwkiNtc6KnxUVjWHOqbZRY7JVQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cambo",
-		"filename": "IFSqHeNEk8FJk416ok7xkPm8",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cambo/v19/IFSqHeNEk8FJk416ok7xkPm8.ttf",
-		"weight": 400
+		displayName: "Cambo",
+		filename: "IFSqHeNEk8FJk416ok7xkPm8",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cambo/v19/IFSqHeNEk8FJk416ok7xkPm8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Short Stack",
-		"filename": "bMrzmS2X6p0jZC6EcmPFX-SScX8D0nq6",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/shortstack/v16/bMrzmS2X6p0jZC6EcmPFX-SScX8D0nq6.ttf",
-		"weight": 400
+		displayName: "Short Stack",
+		filename: "bMrzmS2X6p0jZC6EcmPFX-SScX8D0nq6",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/shortstack/v16/bMrzmS2X6p0jZC6EcmPFX-SScX8D0nq6.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arima",
-		"filename": "neIWzCqmt4Aup_qE1nFWqxI1RZX1YTA-pQGOyYw2fw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/arima/v7/neIWzCqmt4Aup_qE1nFWqxI1RZX1YTA-pQGOyYw2fw.ttf",
-		"weight": 400
+		displayName: "Arima",
+		filename: "neIWzCqmt4Aup_qE1nFWqxI1RZX1YTA-pQGOyYw2fw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/arima/v7/neIWzCqmt4Aup_qE1nFWqxI1RZX1YTA-pQGOyYw2fw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Goblin One",
-		"filename": "CSR64z1ZnOqZRjRCBVY_TOcATNt_pOU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/goblinone/v28/CSR64z1ZnOqZRjRCBVY_TOcATNt_pOU.ttf",
-		"weight": 400
+		displayName: "Goblin One",
+		filename: "CSR64z1ZnOqZRjRCBVY_TOcATNt_pOU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/goblinone/v28/CSR64z1ZnOqZRjRCBVY_TOcATNt_pOU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kablammo",
-		"filename": "bWtm7fHPcgrhC-J3lcXhcQTY5Ixs6Au9YgCjjx0Rf4YDKw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kablammo/v4/bWtm7fHPcgrhC-J3lcXhcQTY5Ixs6Au9YgCjjx0Rf4YDKw.ttf",
-		"weight": 400
+		displayName: "Kablammo",
+		filename: "bWtm7fHPcgrhC-J3lcXhcQTY5Ixs6Au9YgCjjx0Rf4YDKw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kablammo/v4/bWtm7fHPcgrhC-J3lcXhcQTY5Ixs6Au9YgCjjx0Rf4YDKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Iceberg",
-		"filename": "8QIJdijAiM7o-qnZuIgOq7jkAOw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/iceberg/v26/8QIJdijAiM7o-qnZuIgOq7jkAOw.ttf",
-		"weight": 400
+		displayName: "Iceberg",
+		filename: "8QIJdijAiM7o-qnZuIgOq7jkAOw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/iceberg/v26/8QIJdijAiM7o-qnZuIgOq7jkAOw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Codystar",
-		"filename": "FwZY7-Q1xVk-40qxOt6A4sijpFu_",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/codystar/v19/FwZY7-Q1xVk-40qxOt6A4sijpFu_.ttf",
-		"weight": 400
+		displayName: "Codystar",
+		filename: "FwZY7-Q1xVk-40qxOt6A4sijpFu_",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/codystar/v19/FwZY7-Q1xVk-40qxOt6A4sijpFu_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Red Hat Mono",
-		"filename": "jVyY7nDnA2uf2zVvFAhhzEs-VMSjJpBTfgjwQV3I-7HNuW4QuKI",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/redhatmono/v16/jVyY7nDnA2uf2zVvFAhhzEs-VMSjJpBTfgjwQV3I-7HNuW4QuKI.ttf",
-		"weight": 400
+		displayName: "Red Hat Mono",
+		filename: "jVyY7nDnA2uf2zVvFAhhzEs-VMSjJpBTfgjwQV3I-7HNuW4QuKI",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/redhatmono/v16/jVyY7nDnA2uf2zVvFAhhzEs-VMSjJpBTfgjwQV3I-7HNuW4QuKI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Antique Soft",
-		"filename": "DtV4JwqzSL1q_KwnEWMc_3xfgW6ihwBmkui5HNg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/zenantiquesoft/v14/DtV4JwqzSL1q_KwnEWMc_3xfgW6ihwBmkui5HNg.ttf",
-		"weight": 400
+		displayName: "Zen Antique Soft",
+		filename: "DtV4JwqzSL1q_KwnEWMc_3xfgW6ihwBmkui5HNg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/zenantiquesoft/v14/DtV4JwqzSL1q_KwnEWMc_3xfgW6ihwBmkui5HNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Square Peg",
-		"filename": "y83eW48Nzw6ZlUHc-phrBDHrHHfrFPE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/squarepeg/v7/y83eW48Nzw6ZlUHc-phrBDHrHHfrFPE.ttf",
-		"weight": 400
+		displayName: "Square Peg",
+		filename: "y83eW48Nzw6ZlUHc-phrBDHrHHfrFPE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/squarepeg/v7/y83eW48Nzw6ZlUHc-phrBDHrHHfrFPE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kenia",
-		"filename": "jizURE5PuHQH9qCONUGswfGM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kenia/v30/jizURE5PuHQH9qCONUGswfGM.ttf",
-		"weight": 400
+		displayName: "Kenia",
+		filename: "jizURE5PuHQH9qCONUGswfGM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kenia/v30/jizURE5PuHQH9qCONUGswfGM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gaegu",
-		"filename": "TuGfUVB6Up9NU6ZLodgzydtk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/gaegu/v23/TuGfUVB6Up9NU6ZLodgzydtk.ttf",
-		"weight": 400
+		displayName: "Gaegu",
+		filename: "TuGfUVB6Up9NU6ZLodgzydtk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/gaegu/v23/TuGfUVB6Up9NU6ZLodgzydtk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Meow Script",
-		"filename": "0FlQVPqanlaJrtr8AnJ0ESch0_0CfDf1",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/meowscript/v6/0FlQVPqanlaJrtr8AnJ0ESch0_0CfDf1.ttf",
-		"weight": 400
+		displayName: "Meow Script",
+		filename: "0FlQVPqanlaJrtr8AnJ0ESch0_0CfDf1",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/meowscript/v6/0FlQVPqanlaJrtr8AnJ0ESch0_0CfDf1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Numans",
-		"filename": "SlGRmQmGupYAfH8IYRggiHVqaQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/numans/v16/SlGRmQmGupYAfH8IYRggiHVqaQ.ttf",
-		"weight": 400
+		displayName: "Numans",
+		filename: "SlGRmQmGupYAfH8IYRggiHVqaQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/numans/v16/SlGRmQmGupYAfH8IYRggiHVqaQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cherry Swash",
-		"filename": "i7dNIFByZjaNAMxtZcnfAy58QHi-EwWMbg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cherryswash/v22/i7dNIFByZjaNAMxtZcnfAy58QHi-EwWMbg.ttf",
-		"weight": 400
+		displayName: "Cherry Swash",
+		filename: "i7dNIFByZjaNAMxtZcnfAy58QHi-EwWMbg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cherryswash/v22/i7dNIFByZjaNAMxtZcnfAy58QHi-EwWMbg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Brawler",
-		"filename": "xn7gYHE3xXewAscGsgC7S9XdZN8",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/brawler/v20/xn7gYHE3xXewAscGsgC7S9XdZN8.ttf",
-		"weight": 400
+		displayName: "Brawler",
+		filename: "xn7gYHE3xXewAscGsgC7S9XdZN8",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/brawler/v20/xn7gYHE3xXewAscGsgC7S9XdZN8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Kurenaido",
-		"filename": "3XFsEr0515BK2u6UUptu_gWJZfz22PRLd0U",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zenkurenaido/v19/3XFsEr0515BK2u6UUptu_gWJZfz22PRLd0U.ttf",
-		"weight": 400
+		displayName: "Zen Kurenaido",
+		filename: "3XFsEr0515BK2u6UUptu_gWJZfz22PRLd0U",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zenkurenaido/v19/3XFsEr0515BK2u6UUptu_gWJZfz22PRLd0U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grape Nuts",
-		"filename": "syk2-yF4iLM2RfKj4F7k3tLvol2RN1E",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/grapenuts/v7/syk2-yF4iLM2RfKj4F7k3tLvol2RN1E.ttf",
-		"weight": 400
+		displayName: "Grape Nuts",
+		filename: "syk2-yF4iLM2RfKj4F7k3tLvol2RN1E",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/grapenuts/v7/syk2-yF4iLM2RfKj4F7k3tLvol2RN1E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Doppio One",
-		"filename": "Gg8wN5gSaBfyBw2MqCh-lgshKGpe5Fg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/doppioone/v14/Gg8wN5gSaBfyBw2MqCh-lgshKGpe5Fg.ttf",
-		"weight": 400
+		displayName: "Doppio One",
+		filename: "Gg8wN5gSaBfyBw2MqCh-lgshKGpe5Fg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/doppioone/v14/Gg8wN5gSaBfyBw2MqCh-lgshKGpe5Fg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Truculenta",
-		"filename": "LhWfMVvBKusVIfNYGi1-WvRVyDdZeeiySNppcu32Mb2f06y6Oa21F6XHi0VYDX_PzOupMlAiswcFHnJMMhg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/truculenta/v27/LhWfMVvBKusVIfNYGi1-WvRVyDdZeeiySNppcu32Mb2f06y6Oa21F6XHi0VYDX_PzOupMlAiswcFHnJMMhg.ttf",
-		"weight": 400
+		displayName: "Truculenta",
+		filename: "LhWfMVvBKusVIfNYGi1-WvRVyDdZeeiySNppcu32Mb2f06y6Oa21F6XHi0VYDX_PzOupMlAiswcFHnJMMhg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/truculenta/v27/LhWfMVvBKusVIfNYGi1-WvRVyDdZeeiySNppcu32Mb2f06y6Oa21F6XHi0VYDX_PzOupMlAiswcFHnJMMhg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ribeye",
-		"filename": "L0x8DFMxk1MP9R3RvPCmRSlUig",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ribeye/v27/L0x8DFMxk1MP9R3RvPCmRSlUig.ttf",
-		"weight": 400
+		displayName: "Ribeye",
+		filename: "L0x8DFMxk1MP9R3RvPCmRSlUig",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ribeye/v27/L0x8DFMxk1MP9R3RvPCmRSlUig.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Barcode 128 Text",
-		"filename": "fdNv9tubt3ZEnz1Gu3I4-zppwZ9CWZ16Z0w5cV3Y6M90w4k",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcode128text/v31/fdNv9tubt3ZEnz1Gu3I4-zppwZ9CWZ16Z0w5cV3Y6M90w4k.ttf",
-		"weight": 400
+		displayName: "Libre Barcode 128 Text",
+		filename: "fdNv9tubt3ZEnz1Gu3I4-zppwZ9CWZ16Z0w5cV3Y6M90w4k",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcode128text/v31/fdNv9tubt3ZEnz1Gu3I4-zppwZ9CWZ16Z0w5cV3Y6M90w4k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lily Script One",
-		"filename": "LhW9MV7ZMfIPdMxeBjBvFN8SXLS4gsSjQNsRMg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lilyscriptone/v16/LhW9MV7ZMfIPdMxeBjBvFN8SXLS4gsSjQNsRMg.ttf",
-		"weight": 400
+		displayName: "Lily Script One",
+		filename: "LhW9MV7ZMfIPdMxeBjBvFN8SXLS4gsSjQNsRMg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lilyscriptone/v16/LhW9MV7ZMfIPdMxeBjBvFN8SXLS4gsSjQNsRMg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sometype Mono",
-		"filename": "70lGu745KGk_R3uxyq0WrROhAJiJsJ_eTWllpTAMGE9agQBbs7uG",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/sometypemono/v4/70lGu745KGk_R3uxyq0WrROhAJiJsJ_eTWllpTAMGE9agQBbs7uG.ttf",
-		"weight": 400
+		displayName: "Sometype Mono",
+		filename: "70lGu745KGk_R3uxyq0WrROhAJiJsJ_eTWllpTAMGE9agQBbs7uG",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/sometypemono/v4/70lGu745KGk_R3uxyq0WrROhAJiJsJ_eTWllpTAMGE9agQBbs7uG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Glitch",
-		"filename": "qkBSXv8b_srFRYQVYrDKh9ZvmC7HONiSFQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikglitch/v2/qkBSXv8b_srFRYQVYrDKh9ZvmC7HONiSFQ.ttf",
-		"weight": 400
+		displayName: "Rubik Glitch",
+		filename: "qkBSXv8b_srFRYQVYrDKh9ZvmC7HONiSFQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikglitch/v2/qkBSXv8b_srFRYQVYrDKh9ZvmC7HONiSFQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "MedievalSharp",
-		"filename": "EvOJzAlL3oU5AQl2mP5KdgptAq96MwvXLDk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/medievalsharp/v28/EvOJzAlL3oU5AQl2mP5KdgptAq96MwvXLDk.ttf",
-		"weight": 400
+		displayName: "MedievalSharp",
+		filename: "EvOJzAlL3oU5AQl2mP5KdgptAq96MwvXLDk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/medievalsharp/v28/EvOJzAlL3oU5AQl2mP5KdgptAq96MwvXLDk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arya",
-		"filename": "ga6CawNG-HJd9Ub1-beqdFE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/arya/v21/ga6CawNG-HJd9Ub1-beqdFE.ttf",
-		"weight": 400
+		displayName: "Arya",
+		filename: "ga6CawNG-HJd9Ub1-beqdFE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/arya/v21/ga6CawNG-HJd9Ub1-beqdFE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bokor",
-		"filename": "m8JcjfpeeaqTiR2WdInbcaxE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bokor/v32/m8JcjfpeeaqTiR2WdInbcaxE.ttf",
-		"weight": 400
+		displayName: "Bokor",
+		filename: "m8JcjfpeeaqTiR2WdInbcaxE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bokor/v32/m8JcjfpeeaqTiR2WdInbcaxE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kranky",
-		"filename": "hESw6XVgJzlPsFnMpheEZo_H_w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kranky/v29/hESw6XVgJzlPsFnMpheEZo_H_w.ttf",
-		"weight": 400
+		displayName: "Kranky",
+		filename: "hESw6XVgJzlPsFnMpheEZo_H_w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kranky/v29/hESw6XVgJzlPsFnMpheEZo_H_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sofadi One",
-		"filename": "JIA2UVBxdnVBuElZaMFGcDOIETkmYDU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sofadione/v22/JIA2UVBxdnVBuElZaMFGcDOIETkmYDU.ttf",
-		"weight": 400
+		displayName: "Sofadi One",
+		filename: "JIA2UVBxdnVBuElZaMFGcDOIETkmYDU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sofadione/v22/JIA2UVBxdnVBuElZaMFGcDOIETkmYDU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Devanagari",
-		"filename": "jVyo7nP0CGrUsxB-QiRgw0NlLaVt_QUAkYxLRoCL23mlh20ZVHOMAWbgHLDtku9nFk0LjZ7E",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekdevanagari/v17/jVyo7nP0CGrUsxB-QiRgw0NlLaVt_QUAkYxLRoCL23mlh20ZVHOMAWbgHLDtku9nFk0LjZ7E.ttf",
-		"weight": 400
+		displayName: "Anek Devanagari",
+		filename: "jVyo7nP0CGrUsxB-QiRgw0NlLaVt_QUAkYxLRoCL23mlh20ZVHOMAWbgHLDtku9nFk0LjZ7E",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekdevanagari/v17/jVyo7nP0CGrUsxB-QiRgw0NlLaVt_QUAkYxLRoCL23mlh20ZVHOMAWbgHLDtku9nFk0LjZ7E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Platypi",
-		"filename": "bMromSGU7pMlaX6-PAmuwBQP4Hwe02Jz4p9juxgnYP1P",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/platypi/v6/bMromSGU7pMlaX6-PAmuwBQP4Hwe02Jz4p9juxgnYP1P.ttf",
-		"weight": 400
+		displayName: "Platypi",
+		filename: "bMromSGU7pMlaX6-PAmuwBQP4Hwe02Jz4p9juxgnYP1P",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/platypi/v6/bMromSGU7pMlaX6-PAmuwBQP4Hwe02Jz4p9juxgnYP1P.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gentium Plus",
-		"filename": "Iurd6Ytw-oSPaZ00r2bNe8VpjJtM6G0t9w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gentiumplus/v2/Iurd6Ytw-oSPaZ00r2bNe8VpjJtM6G0t9w.ttf",
-		"weight": 400
+		displayName: "Gentium Plus",
+		filename: "Iurd6Ytw-oSPaZ00r2bNe8VpjJtM6G0t9w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gentiumplus/v2/Iurd6Ytw-oSPaZ00r2bNe8VpjJtM6G0t9w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gluten",
-		"filename": "Hhy_U5gk9fW7OUdVIPh2zD_RSqQJ__A15jgJsn-Bhb_yI8Vb7R1Luni7ciJh",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gluten/v18/Hhy_U5gk9fW7OUdVIPh2zD_RSqQJ__A15jgJsn-Bhb_yI8Vb7R1Luni7ciJh.ttf",
-		"weight": 400
+		displayName: "Gluten",
+		filename: "Hhy_U5gk9fW7OUdVIPh2zD_RSqQJ__A15jgJsn-Bhb_yI8Vb7R1Luni7ciJh",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gluten/v18/Hhy_U5gk9fW7OUdVIPh2zD_RSqQJ__A15jgJsn-Bhb_yI8Vb7R1Luni7ciJh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sunshiney",
-		"filename": "LDIwapGTLBwsS-wT4vcgE8moUePWkg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sunshiney/v24/LDIwapGTLBwsS-wT4vcgE8moUePWkg.ttf",
-		"weight": 400
+		displayName: "Sunshiney",
+		filename: "LDIwapGTLBwsS-wT4vcgE8moUePWkg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sunshiney/v24/LDIwapGTLBwsS-wT4vcgE8moUePWkg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anaheim",
-		"filename": "8vIX7w042Wp87g4Gy0_24JbCiPrl-h5sLqrFIkJQb7zU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anaheim/v17/8vIX7w042Wp87g4Gy0_24JbCiPrl-h5sLqrFIkJQb7zU.ttf",
-		"weight": 400
+		displayName: "Anaheim",
+		filename: "8vIX7w042Wp87g4Gy0_24JbCiPrl-h5sLqrFIkJQb7zU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anaheim/v17/8vIX7w042Wp87g4Gy0_24JbCiPrl-h5sLqrFIkJQb7zU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oleo Script Swash Caps",
-		"filename": "Noaj6Vb-w5SFbTTAsZP_7JkCS08K-jCzDn_HMXquSY0Hg90",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/oleoscriptswashcaps/v14/Noaj6Vb-w5SFbTTAsZP_7JkCS08K-jCzDn_HMXquSY0Hg90.ttf",
-		"weight": 400
+		displayName: "Oleo Script Swash Caps",
+		filename: "Noaj6Vb-w5SFbTTAsZP_7JkCS08K-jCzDn_HMXquSY0Hg90",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/oleoscriptswashcaps/v14/Noaj6Vb-w5SFbTTAsZP_7JkCS08K-jCzDn_HMXquSY0Hg90.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alike Angular",
-		"filename": "3qTrojWunjGQtEBlIcwMbSoI3kM6bB7FKjE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/alikeangular/v27/3qTrojWunjGQtEBlIcwMbSoI3kM6bB7FKjE.ttf",
-		"weight": 400
+		displayName: "Alike Angular",
+		filename: "3qTrojWunjGQtEBlIcwMbSoI3kM6bB7FKjE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/alikeangular/v27/3qTrojWunjGQtEBlIcwMbSoI3kM6bB7FKjE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rosarivo",
-		"filename": "PlI-Fl2lO6N9f8HaNAeC2nhMnNy5",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/rosarivo/v24/PlI-Fl2lO6N9f8HaNAeC2nhMnNy5.ttf",
-		"weight": 400
+		displayName: "Rosarivo",
+		filename: "PlI-Fl2lO6N9f8HaNAeC2nhMnNy5",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/rosarivo/v24/PlI-Fl2lO6N9f8HaNAeC2nhMnNy5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mako",
-		"filename": "H4coBX6Mmc_Z0ST09g478Lo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mako/v19/H4coBX6Mmc_Z0ST09g478Lo.ttf",
-		"weight": 400
+		displayName: "Mako",
+		filename: "H4coBX6Mmc_Z0ST09g478Lo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mako/v19/H4coBX6Mmc_Z0ST09g478Lo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bilbo Swash Caps",
-		"filename": "zrf-0GXbz-H3Wb4XBsGrTgq2PVmdqAPopiRfKp8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/bilboswashcaps/v23/zrf-0GXbz-H3Wb4XBsGrTgq2PVmdqAPopiRfKp8.ttf",
-		"weight": 400
+		displayName: "Bilbo Swash Caps",
+		filename: "zrf-0GXbz-H3Wb4XBsGrTgq2PVmdqAPopiRfKp8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/bilboswashcaps/v23/zrf-0GXbz-H3Wb4XBsGrTgq2PVmdqAPopiRfKp8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Uncial Antiqua",
-		"filename": "N0bM2S5WOex4OUbESzoESK-i-PfRS5VBBSSF",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/uncialantiqua/v22/N0bM2S5WOex4OUbESzoESK-i-PfRS5VBBSSF.ttf",
-		"weight": 400
+		displayName: "Uncial Antiqua",
+		filename: "N0bM2S5WOex4OUbESzoESK-i-PfRS5VBBSSF",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/uncialantiqua/v22/N0bM2S5WOex4OUbESzoESK-i-PfRS5VBBSSF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tenali Ramakrishna",
-		"filename": "raxgHj6Yt9gAN3LLKs0BZVMo8jmwn1-8KJXqUFFvtA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tenaliramakrishna/v14/raxgHj6Yt9gAN3LLKs0BZVMo8jmwn1-8KJXqUFFvtA.ttf",
-		"weight": 400
+		displayName: "Tenali Ramakrishna",
+		filename: "raxgHj6Yt9gAN3LLKs0BZVMo8jmwn1-8KJXqUFFvtA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tenaliramakrishna/v14/raxgHj6Yt9gAN3LLKs0BZVMo8jmwn1-8KJXqUFFvtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wire One",
-		"filename": "qFdH35Wah5htUhV75WGiWdrCwwcJ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wireone/v30/qFdH35Wah5htUhV75WGiWdrCwwcJ.ttf",
-		"weight": 400
+		displayName: "Wire One",
+		filename: "qFdH35Wah5htUhV75WGiWdrCwwcJ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wireone/v30/qFdH35Wah5htUhV75WGiWdrCwwcJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "The Girl Next Door",
-		"filename": "pe0zMJCIMIsBjFxqYBIcZ6_OI5oFHCYIV7t7w6bE2A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/thegirlnextdoor/v25/pe0zMJCIMIsBjFxqYBIcZ6_OI5oFHCYIV7t7w6bE2A.ttf",
-		"weight": 400
+		displayName: "The Girl Next Door",
+		filename: "pe0zMJCIMIsBjFxqYBIcZ6_OI5oFHCYIV7t7w6bE2A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/thegirlnextdoor/v25/pe0zMJCIMIsBjFxqYBIcZ6_OI5oFHCYIV7t7w6bE2A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baumans",
-		"filename": "-W_-XJj9QyTd3QfpR_oyaksqY5Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baumans/v18/-W_-XJj9QyTd3QfpR_oyaksqY5Q.ttf",
-		"weight": 400
+		displayName: "Baumans",
+		filename: "-W_-XJj9QyTd3QfpR_oyaksqY5Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baumans/v18/-W_-XJj9QyTd3QfpR_oyaksqY5Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Redressed",
-		"filename": "x3dickHUbrmJ7wMy9MsBfPACvy_1BA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/redressed/v32/x3dickHUbrmJ7wMy9MsBfPACvy_1BA.ttf",
-		"weight": 400
+		displayName: "Redressed",
+		filename: "x3dickHUbrmJ7wMy9MsBfPACvy_1BA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/redressed/v32/x3dickHUbrmJ7wMy9MsBfPACvy_1BA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shojumaru",
-		"filename": "rax_HiWfutkLLnaKCtlMBBJek0vA8A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/shojumaru/v16/rax_HiWfutkLLnaKCtlMBBJek0vA8A.ttf",
-		"weight": 400
+		displayName: "Shojumaru",
+		filename: "rax_HiWfutkLLnaKCtlMBBJek0vA8A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/shojumaru/v16/rax_HiWfutkLLnaKCtlMBBJek0vA8A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Just Me Again Down Here",
-		"filename": "MwQmbgXtz-Wc6RUEGNMc0QpRrfUh2hSdBBMoAuwHvqDwc_fg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/justmeagaindownhere/v25/MwQmbgXtz-Wc6RUEGNMc0QpRrfUh2hSdBBMoAuwHvqDwc_fg.ttf",
-		"weight": 400
+		displayName: "Just Me Again Down Here",
+		filename: "MwQmbgXtz-Wc6RUEGNMc0QpRrfUh2hSdBBMoAuwHvqDwc_fg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/justmeagaindownhere/v25/MwQmbgXtz-Wc6RUEGNMc0QpRrfUh2hSdBBMoAuwHvqDwc_fg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Averia Sans Libre",
-		"filename": "ga6XaxZG_G5OvCf_rt7FH3B6BHLMEeVJGIMYDo_8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/averiasanslibre/v20/ga6XaxZG_G5OvCf_rt7FH3B6BHLMEeVJGIMYDo_8.ttf",
-		"weight": 400
+		displayName: "Averia Sans Libre",
+		filename: "ga6XaxZG_G5OvCf_rt7FH3B6BHLMEeVJGIMYDo_8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/averiasanslibre/v20/ga6XaxZG_G5OvCf_rt7FH3B6BHLMEeVJGIMYDo_8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mohave",
-		"filename": "7cH0v4ksjJunKqMVAOPIMOeSmiojdnn_HvCQopLSvBk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mohave/v13/7cH0v4ksjJunKqMVAOPIMOeSmiojdnn_HvCQopLSvBk.ttf",
-		"weight": 400
+		displayName: "Mohave",
+		filename: "7cH0v4ksjJunKqMVAOPIMOeSmiojdnn_HvCQopLSvBk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mohave/v13/7cH0v4ksjJunKqMVAOPIMOeSmiojdnn_HvCQopLSvBk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Devanagari Hindi",
-		"filename": "55xyezN7P8T4e0_CfIJrwdodg9HoYw0i-M9fSOkOfG0Y3A",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirodevanagarihindi/v5/55xyezN7P8T4e0_CfIJrwdodg9HoYw0i-M9fSOkOfG0Y3A.ttf",
-		"weight": 400
+		displayName: "Tiro Devanagari Hindi",
+		filename: "55xyezN7P8T4e0_CfIJrwdodg9HoYw0i-M9fSOkOfG0Y3A",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirodevanagarihindi/v5/55xyezN7P8T4e0_CfIJrwdodg9HoYw0i-M9fSOkOfG0Y3A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fontdiner Swanky",
-		"filename": "ijwOs4XgRNsiaI5-hcVb4hQgMvCD4uEfKiGvxts",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fontdinerswanky/v24/ijwOs4XgRNsiaI5-hcVb4hQgMvCD4uEfKiGvxts.ttf",
-		"weight": 400
+		displayName: "Fontdiner Swanky",
+		filename: "ijwOs4XgRNsiaI5-hcVb4hQgMvCD4uEfKiGvxts",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fontdinerswanky/v24/ijwOs4XgRNsiaI5-hcVb4hQgMvCD4uEfKiGvxts.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Montez",
-		"filename": "845ZNMk5GoGIX8lm1LDeSd-R_g",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/montez/v25/845ZNMk5GoGIX8lm1LDeSd-R_g.ttf",
-		"weight": 400
+		displayName: "Montez",
+		filename: "845ZNMk5GoGIX8lm1LDeSd-R_g",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/montez/v25/845ZNMk5GoGIX8lm1LDeSd-R_g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fascinate",
-		"filename": "z7NWdRrufC8XJK0IIEli1LbQRPyNrw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fascinate/v23/z7NWdRrufC8XJK0IIEli1LbQRPyNrw.ttf",
-		"weight": 400
+		displayName: "Fascinate",
+		filename: "z7NWdRrufC8XJK0IIEli1LbQRPyNrw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fascinate/v23/z7NWdRrufC8XJK0IIEli1LbQRPyNrw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "New Rocker",
-		"filename": "MwQzbhjp3-HImzcCU_cJkGMViblPtXs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/newrocker/v17/MwQzbhjp3-HImzcCU_cJkGMViblPtXs.ttf",
-		"weight": 400
+		displayName: "New Rocker",
+		filename: "MwQzbhjp3-HImzcCU_cJkGMViblPtXs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/newrocker/v17/MwQzbhjp3-HImzcCU_cJkGMViblPtXs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Dirt",
-		"filename": "DtVmJxC7WLEj1uIXEWAdulwm6gDXvwE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikdirt/v2/DtVmJxC7WLEj1uIXEWAdulwm6gDXvwE.ttf",
-		"weight": 400
+		displayName: "Rubik Dirt",
+		filename: "DtVmJxC7WLEj1uIXEWAdulwm6gDXvwE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikdirt/v2/DtVmJxC7WLEj1uIXEWAdulwm6gDXvwE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Orelega One",
-		"filename": "3qTpojOggD2XtAdFb-QXZGt61EcYaQ7F",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/orelegaone/v14/3qTpojOggD2XtAdFb-QXZGt61EcYaQ7F.ttf",
-		"weight": 400
+		displayName: "Orelega One",
+		filename: "3qTpojOggD2XtAdFb-QXZGt61EcYaQ7F",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/orelegaone/v14/3qTpojOggD2XtAdFb-QXZGt61EcYaQ7F.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Freeman",
-		"filename": "S6u9w4NGQiLN8nh-ew-FGC_p9dw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/freeman/v1/S6u9w4NGQiLN8nh-ew-FGC_p9dw.ttf",
-		"weight": 400
+		displayName: "Freeman",
+		filename: "S6u9w4NGQiLN8nh-ew-FGC_p9dw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/freeman/v1/S6u9w4NGQiLN8nh-ew-FGC_p9dw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Charmonman",
-		"filename": "MjQDmiR3vP_nuxDv47jiWJGovLdh6OE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/charmonman/v20/MjQDmiR3vP_nuxDv47jiWJGovLdh6OE.ttf",
-		"weight": 400
+		displayName: "Charmonman",
+		filename: "MjQDmiR3vP_nuxDv47jiWJGovLdh6OE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/charmonman/v20/MjQDmiR3vP_nuxDv47jiWJGovLdh6OE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Angkor",
-		"filename": "H4cmBXyAlsPdnlb-8iw-4Lqggw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/angkor/v35/H4cmBXyAlsPdnlb-8iw-4Lqggw.ttf",
-		"weight": 400
+		displayName: "Angkor",
+		filename: "H4cmBXyAlsPdnlb-8iw-4Lqggw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/angkor/v35/H4cmBXyAlsPdnlb-8iw-4Lqggw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Miniver",
-		"filename": "eLGcP-PxIg-5H0vC770Cy8r8fWA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/miniver/v27/eLGcP-PxIg-5H0vC770Cy8r8fWA.ttf",
-		"weight": 400
+		displayName: "Miniver",
+		filename: "eLGcP-PxIg-5H0vC770Cy8r8fWA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/miniver/v27/eLGcP-PxIg-5H0vC770Cy8r8fWA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vampiro One",
-		"filename": "gokqH6DoDl5yXvJytFsdLkqnsvhIor3K",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/vampiroone/v19/gokqH6DoDl5yXvJytFsdLkqnsvhIor3K.ttf",
-		"weight": 400
+		displayName: "Vampiro One",
+		filename: "gokqH6DoDl5yXvJytFsdLkqnsvhIor3K",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/vampiroone/v19/gokqH6DoDl5yXvJytFsdLkqnsvhIor3K.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Armenian",
-		"filename": "ZgN0jOZKPa7CHqq0h37c7ReDUubm2SEdFXp7ig73qtTY5idb74R9UdM3y2nZLorxb60iYy6zF3Eg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansarmenian/v47/ZgN0jOZKPa7CHqq0h37c7ReDUubm2SEdFXp7ig73qtTY5idb74R9UdM3y2nZLorxb60iYy6zF3Eg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Armenian",
+		filename: "ZgN0jOZKPa7CHqq0h37c7ReDUubm2SEdFXp7ig73qtTY5idb74R9UdM3y2nZLorxb60iYy6zF3Eg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansarmenian/v47/ZgN0jOZKPa7CHqq0h37c7ReDUubm2SEdFXp7ig73qtTY5idb74R9UdM3y2nZLorxb60iYy6zF3Eg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Finger Paint",
-		"filename": "0QInMXVJ-o-oRn_7dron8YWO85bS8ANesw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fingerpaint/v21/0QInMXVJ-o-oRn_7dron8YWO85bS8ANesw.ttf",
-		"weight": 400
+		displayName: "Finger Paint",
+		filename: "0QInMXVJ-o-oRn_7dron8YWO85bS8ANesw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fingerpaint/v21/0QInMXVJ-o-oRn_7dron8YWO85bS8ANesw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Loved by the King",
-		"filename": "Gw6gwdP76VDVJNXerebZxUMeRXUF2PiNlXFu2R64",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lovedbytheking/v24/Gw6gwdP76VDVJNXerebZxUMeRXUF2PiNlXFu2R64.ttf",
-		"weight": 400
+		displayName: "Loved by the King",
+		filename: "Gw6gwdP76VDVJNXerebZxUMeRXUF2PiNlXFu2R64",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lovedbytheking/v24/Gw6gwdP76VDVJNXerebZxUMeRXUF2PiNlXFu2R64.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell Double Pica",
-		"filename": "3XF2EqMq_94s9PeKF7Fg4gOKINyMtZ8rT0S1UL5Ayp0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfelldoublepica/v14/3XF2EqMq_94s9PeKF7Fg4gOKINyMtZ8rT0S1UL5Ayp0.ttf",
-		"weight": 400
+		displayName: "IM Fell Double Pica",
+		filename: "3XF2EqMq_94s9PeKF7Fg4gOKINyMtZ8rT0S1UL5Ayp0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfelldoublepica/v14/3XF2EqMq_94s9PeKF7Fg4gOKINyMtZ8rT0S1UL5Ayp0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Flow Circular",
-		"filename": "lJwB-pc4j2F-H8YKuyvfxdZ45ifpWdr2rIg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/flowcircular/v15/lJwB-pc4j2F-H8YKuyvfxdZ45ifpWdr2rIg.ttf",
-		"weight": 400
+		displayName: "Flow Circular",
+		filename: "lJwB-pc4j2F-H8YKuyvfxdZ45ifpWdr2rIg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/flowcircular/v15/lJwB-pc4j2F-H8YKuyvfxdZ45ifpWdr2rIg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gowun Dodum",
-		"filename": "3Jn5SD_00GqwlBnWc1TUJF0FfORL0fNy",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gowundodum/v12/3Jn5SD_00GqwlBnWc1TUJF0FfORL0fNy.ttf",
-		"weight": 400
+		displayName: "Gowun Dodum",
+		filename: "3Jn5SD_00GqwlBnWc1TUJF0FfORL0fNy",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gowundodum/v12/3Jn5SD_00GqwlBnWc1TUJF0FfORL0fNy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mogra",
-		"filename": "f0X40eSs8c95TBo4DvLmxtnG",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/mogra/v22/f0X40eSs8c95TBo4DvLmxtnG.ttf",
-		"weight": 400
+		displayName: "Mogra",
+		filename: "f0X40eSs8c95TBo4DvLmxtnG",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/mogra/v22/f0X40eSs8c95TBo4DvLmxtnG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Moul",
-		"filename": "nuF2D__FSo_3E-RYiJCy-00",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/moul/v30/nuF2D__FSo_3E-RYiJCy-00.ttf",
-		"weight": 400
+		displayName: "Moul",
+		filename: "nuF2D__FSo_3E-RYiJCy-00",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/moul/v30/nuF2D__FSo_3E-RYiJCy-00.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Kannada",
-		"filename": "8vIs7xs32H97qzQKnzfeXycxXZyUmySvZWItmf1fe6TVmgop9ndpS-BqHEyGrDvNzSIMLsPKrkY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskannada/v31/8vIs7xs32H97qzQKnzfeXycxXZyUmySvZWItmf1fe6TVmgop9ndpS-BqHEyGrDvNzSIMLsPKrkY.ttf",
-		"weight": 400
+		displayName: "Noto Sans Kannada",
+		filename: "8vIs7xs32H97qzQKnzfeXycxXZyUmySvZWItmf1fe6TVmgop9ndpS-BqHEyGrDvNzSIMLsPKrkY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskannada/v31/8vIs7xs32H97qzQKnzfeXycxXZyUmySvZWItmf1fe6TVmgop9ndpS-BqHEyGrDvNzSIMLsPKrkY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kaisei Tokumin",
-		"filename": "Gg8sN5wdZg7xCwuMsylww2ZiQkJf1l0pj946",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kaiseitokumin/v11/Gg8sN5wdZg7xCwuMsylww2ZiQkJf1l0pj946.ttf",
-		"weight": 400
+		displayName: "Kaisei Tokumin",
+		filename: "Gg8sN5wdZg7xCwuMsylww2ZiQkJf1l0pj946",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kaiseitokumin/v11/Gg8sN5wdZg7xCwuMsylww2ZiQkJf1l0pj946.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vollkorn SC",
-		"filename": "j8_v6-zQ3rXpceZj9cqnVhF5NH-iSq_E",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/vollkornsc/v12/j8_v6-zQ3rXpceZj9cqnVhF5NH-iSq_E.ttf",
-		"weight": 400
+		displayName: "Vollkorn SC",
+		filename: "j8_v6-zQ3rXpceZj9cqnVhF5NH-iSq_E",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/vollkornsc/v12/j8_v6-zQ3rXpceZj9cqnVhF5NH-iSq_E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fenix",
-		"filename": "XoHo2YL_S7-g5ostKzAFvs8o",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/fenix/v21/XoHo2YL_S7-g5ostKzAFvs8o.ttf",
-		"weight": 400
+		displayName: "Fenix",
+		filename: "XoHo2YL_S7-g5ostKzAFvs8o",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/fenix/v21/XoHo2YL_S7-g5ostKzAFvs8o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cherry Cream Soda",
-		"filename": "UMBIrOxBrW6w2FFyi9paG0fdVdRciTd6Cd47DJ7G",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cherrycreamsoda/v21/UMBIrOxBrW6w2FFyi9paG0fdVdRciTd6Cd47DJ7G.ttf",
-		"weight": 400
+		displayName: "Cherry Cream Soda",
+		filename: "UMBIrOxBrW6w2FFyi9paG0fdVdRciTd6Cd47DJ7G",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cherrycreamsoda/v21/UMBIrOxBrW6w2FFyi9paG0fdVdRciTd6Cd47DJ7G.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Maiden Orange",
-		"filename": "kJE1BuIX7AUmhi2V4m08kb1XjOZdCZS8FY8",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/maidenorange/v32/kJE1BuIX7AUmhi2V4m08kb1XjOZdCZS8FY8.ttf",
-		"weight": 400
+		displayName: "Maiden Orange",
+		filename: "kJE1BuIX7AUmhi2V4m08kb1XjOZdCZS8FY8",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/maidenorange/v32/kJE1BuIX7AUmhi2V4m08kb1XjOZdCZS8FY8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shippori Antique",
-		"filename": "-F6qfid3KC8pdMyzR0qRyFUht11v8ldPg-IUDNg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/shipporiantique/v11/-F6qfid3KC8pdMyzR0qRyFUht11v8ldPg-IUDNg.ttf",
-		"weight": 400
+		displayName: "Shippori Antique",
+		filename: "-F6qfid3KC8pdMyzR0qRyFUht11v8ldPg-IUDNg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/shipporiantique/v11/-F6qfid3KC8pdMyzR0qRyFUht11v8ldPg-IUDNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Gujarati",
-		"filename": "wlpWgx_HC1ti5ViekvcxnhMlCVo3f5pv17ivlzsUB14gg1TMR2Gw4VceEl7MA_ypFwPM_OdiEH0s",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansgujarati/v27/wlpWgx_HC1ti5ViekvcxnhMlCVo3f5pv17ivlzsUB14gg1TMR2Gw4VceEl7MA_ypFwPM_OdiEH0s.ttf",
-		"weight": 400
+		displayName: "Noto Sans Gujarati",
+		filename: "wlpWgx_HC1ti5ViekvcxnhMlCVo3f5pv17ivlzsUB14gg1TMR2Gw4VceEl7MA_ypFwPM_OdiEH0s",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansgujarati/v27/wlpWgx_HC1ti5ViekvcxnhMlCVo3f5pv17ivlzsUB14gg1TMR2Gw4VceEl7MA_ypFwPM_OdiEH0s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sedgwick Ave Display",
-		"filename": "xfuu0XPgU3jZPUoUo3ScvmPi-NapQ8OxM2czd-YnOzUD",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sedgwickavedisplay/v23/xfuu0XPgU3jZPUoUo3ScvmPi-NapQ8OxM2czd-YnOzUD.ttf",
-		"weight": 400
+		displayName: "Sedgwick Ave Display",
+		filename: "xfuu0XPgU3jZPUoUo3ScvmPi-NapQ8OxM2czd-YnOzUD",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sedgwickavedisplay/v23/xfuu0XPgU3jZPUoUo3ScvmPi-NapQ8OxM2czd-YnOzUD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Clicker Script",
-		"filename": "raxkHiKPvt8CMH6ZWP8PdlEq72rY2zqUKafv",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/clickerscript/v14/raxkHiKPvt8CMH6ZWP8PdlEq72rY2zqUKafv.ttf",
-		"weight": 400
+		displayName: "Clicker Script",
+		filename: "raxkHiKPvt8CMH6ZWP8PdlEq72rY2zqUKafv",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/clickerscript/v14/raxkHiKPvt8CMH6ZWP8PdlEq72rY2zqUKafv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Martian Mono",
-		"filename": "2V08KIcADoYhV6w87xrTKjs4CYElh_VS9YA4TlTnQzaVMIE6j15dYY1qu86WD75kdpF2",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/martianmono/v6/2V08KIcADoYhV6w87xrTKjs4CYElh_VS9YA4TlTnQzaVMIE6j15dYY1qu86WD75kdpF2.ttf",
-		"weight": 400
+		displayName: "Martian Mono",
+		filename: "2V08KIcADoYhV6w87xrTKjs4CYElh_VS9YA4TlTnQzaVMIE6j15dYY1qu86WD75kdpF2",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/martianmono/v6/2V08KIcADoYhV6w87xrTKjs4CYElh_VS9YA4TlTnQzaVMIE6j15dYY1qu86WD75kdpF2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bellota",
-		"filename": "MwQ2bhXl3_qEpiwAGJJRtGs-lbA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bellota/v17/MwQ2bhXl3_qEpiwAGJJRtGs-lbA.ttf",
-		"weight": 400
+		displayName: "Bellota",
+		filename: "MwQ2bhXl3_qEpiwAGJJRtGs-lbA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bellota/v17/MwQ2bhXl3_qEpiwAGJJRtGs-lbA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Denk One",
-		"filename": "dg4m_pzhrqcFb2IzROtHpbglShon",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/denkone/v21/dg4m_pzhrqcFb2IzROtHpbglShon.ttf",
-		"weight": 400
+		displayName: "Denk One",
+		filename: "dg4m_pzhrqcFb2IzROtHpbglShon",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/denkone/v21/dg4m_pzhrqcFb2IzROtHpbglShon.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Meetei Mayek",
-		"filename": "HTxAL3QyKieByqY9eZPFweO0be7M21uSphSdhqILnmrRfJ8t_1TJ_vTW5PgeFYVa",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmeeteimayek/v20/HTxAL3QyKieByqY9eZPFweO0be7M21uSphSdhqILnmrRfJ8t_1TJ_vTW5PgeFYVa.ttf",
-		"weight": 400
+		displayName: "Noto Sans Meetei Mayek",
+		filename: "HTxAL3QyKieByqY9eZPFweO0be7M21uSphSdhqILnmrRfJ8t_1TJ_vTW5PgeFYVa",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmeeteimayek/v20/HTxAL3QyKieByqY9eZPFweO0be7M21uSphSdhqILnmrRfJ8t_1TJ_vTW5PgeFYVa.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spicy Rice",
-		"filename": "uK_24rSEd-Uqwk4jY1RyGv-2WkowRcc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/spicyrice/v28/uK_24rSEd-Uqwk4jY1RyGv-2WkowRcc.ttf",
-		"weight": 400
+		displayName: "Spicy Rice",
+		filename: "uK_24rSEd-Uqwk4jY1RyGv-2WkowRcc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/spicyrice/v28/uK_24rSEd-Uqwk4jY1RyGv-2WkowRcc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Modern Antiqua",
-		"filename": "NGStv5TIAUg6Iq_RLNo_2dp1sI1Ea2u0c3Gi",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/modernantiqua/v26/NGStv5TIAUg6Iq_RLNo_2dp1sI1Ea2u0c3Gi.ttf",
-		"weight": 400
+		displayName: "Modern Antiqua",
+		filename: "NGStv5TIAUg6Iq_RLNo_2dp1sI1Ea2u0c3Gi",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/modernantiqua/v26/NGStv5TIAUg6Iq_RLNo_2dp1sI1Ea2u0c3Gi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Round",
-		"filename": "flU9Rqquw5UhEnlwTJYTYYfeeetYEBc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novaround/v23/flU9Rqquw5UhEnlwTJYTYYfeeetYEBc.ttf",
-		"weight": 400
+		displayName: "Nova Round",
+		filename: "flU9Rqquw5UhEnlwTJYTYYfeeetYEBc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novaround/v23/flU9Rqquw5UhEnlwTJYTYYfeeetYEBc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cal Sans",
-		"filename": "fdN99sWUv3gWqXxqqSBbvloE4LZx",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/calsans/v2/fdN99sWUv3gWqXxqqSBbvloE4LZx.ttf",
-		"weight": 400
+		displayName: "Cal Sans",
+		filename: "fdN99sWUv3gWqXxqqSBbvloE4LZx",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/calsans/v2/fdN99sWUv3gWqXxqqSBbvloE4LZx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Khojki",
-		"filename": "I_uHMoOduATTei9aP90ctmPGxP2rBKTM4mcQ5M3z9QMY0ghvyZ0Qtc5HAQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifkhojki/v13/I_uHMoOduATTei9aP90ctmPGxP2rBKTM4mcQ5M3z9QMY0ghvyZ0Qtc5HAQ.ttf",
-		"weight": 400
+		displayName: "Noto Serif Khojki",
+		filename: "I_uHMoOduATTei9aP90ctmPGxP2rBKTM4mcQ5M3z9QMY0ghvyZ0Qtc5HAQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifkhojki/v13/I_uHMoOduATTei9aP90ctmPGxP2rBKTM4mcQ5M3z9QMY0ghvyZ0Qtc5HAQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Bhai 2",
-		"filename": "sZlWdRSL-z1VEWZ4YNA7Y5ItevYWUOHDE8FvNighMXeCo-jsZzo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloobhai2/v30/sZlWdRSL-z1VEWZ4YNA7Y5ItevYWUOHDE8FvNighMXeCo-jsZzo.ttf",
-		"weight": 400
+		displayName: "Baloo Bhai 2",
+		filename: "sZlWdRSL-z1VEWZ4YNA7Y5ItevYWUOHDE8FvNighMXeCo-jsZzo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloobhai2/v30/sZlWdRSL-z1VEWZ4YNA7Y5ItevYWUOHDE8FvNighMXeCo-jsZzo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Voces",
-		"filename": "-F6_fjJyLyU8d4PBBG7YpzlJ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/voces/v24/-F6_fjJyLyU8d4PBBG7YpzlJ.ttf",
-		"weight": 400
+		displayName: "Voces",
+		filename: "-F6_fjJyLyU8d4PBBG7YpzlJ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/voces/v24/-F6_fjJyLyU8d4PBBG7YpzlJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "NTR",
-		"filename": "RLpzK5Xy0ZjiGGhs5TA4bg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ntr/v19/RLpzK5Xy0ZjiGGhs5TA4bg.ttf",
-		"weight": 400
+		displayName: "NTR",
+		filename: "RLpzK5Xy0ZjiGGhs5TA4bg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ntr/v19/RLpzK5Xy0ZjiGGhs5TA4bg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Padauk",
-		"filename": "RrQRboJg-id7OnbBa0_g3LlYbg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/padauk/v17/RrQRboJg-id7OnbBa0_g3LlYbg.ttf",
-		"weight": 400
+		displayName: "Padauk",
+		filename: "RrQRboJg-id7OnbBa0_g3LlYbg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/padauk/v17/RrQRboJg-id7OnbBa0_g3LlYbg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grenze",
-		"filename": "O4ZTFGb7hR12Bxq3_2gnmgwKlg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/grenze/v16/O4ZTFGb7hR12Bxq3_2gnmgwKlg.ttf",
-		"weight": 400
+		displayName: "Grenze",
+		filename: "O4ZTFGb7hR12Bxq3_2gnmgwKlg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/grenze/v16/O4ZTFGb7hR12Bxq3_2gnmgwKlg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Special Gothic",
-		"filename": "1q2lY5WcG0Fg_v0fHc8BvIZ2537qdm1JEt9N3w2mJykOEnLhliLsitHN4bF8-SgLPIOkEp8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/specialgothic/v3/1q2lY5WcG0Fg_v0fHc8BvIZ2537qdm1JEt9N3w2mJykOEnLhliLsitHN4bF8-SgLPIOkEp8.ttf",
-		"weight": 400
+		displayName: "Special Gothic",
+		filename: "1q2lY5WcG0Fg_v0fHc8BvIZ2537qdm1JEt9N3w2mJykOEnLhliLsitHN4bF8-SgLPIOkEp8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/specialgothic/v3/1q2lY5WcG0Fg_v0fHc8BvIZ2537qdm1JEt9N3w2mJykOEnLhliLsitHN4bF8-SgLPIOkEp8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Road Rage",
-		"filename": "6NUU8F2fKAOBKjjr4ekvtMYAwdRZfw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/roadrage/v9/6NUU8F2fKAOBKjjr4ekvtMYAwdRZfw.ttf",
-		"weight": 400
+		displayName: "Road Rage",
+		filename: "6NUU8F2fKAOBKjjr4ekvtMYAwdRZfw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/roadrage/v9/6NUU8F2fKAOBKjjr4ekvtMYAwdRZfw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shanti",
-		"filename": "t5thIREMM4uSDgzgU0ezpKfwzA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/shanti/v25/t5thIREMM4uSDgzgU0ezpKfwzA.ttf",
-		"weight": 400
+		displayName: "Shanti",
+		filename: "t5thIREMM4uSDgzgU0ezpKfwzA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/shanti/v25/t5thIREMM4uSDgzgU0ezpKfwzA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sancreek",
-		"filename": "pxiHypAnsdxUm159X7D-XV9NEe-K",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sancreek/v27/pxiHypAnsdxUm159X7D-XV9NEe-K.ttf",
-		"weight": 400
+		displayName: "Sancreek",
+		filename: "pxiHypAnsdxUm159X7D-XV9NEe-K",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sancreek/v27/pxiHypAnsdxUm159X7D-XV9NEe-K.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zalando Sans",
-		"filename": "FwZ67-Asy1Em_lq_aK3hpr-RrktWHD54lnesO2lsVvrnhgw8zPbXoT87PzkTYUMEgzhp",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zalandosans/v2/FwZ67-Asy1Em_lq_aK3hpr-RrktWHD54lnesO2lsVvrnhgw8zPbXoT87PzkTYUMEgzhp.ttf",
-		"weight": 400
+		displayName: "Zalando Sans",
+		filename: "FwZ67-Asy1Em_lq_aK3hpr-RrktWHD54lnesO2lsVvrnhgw8zPbXoT87PzkTYUMEgzhp",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zalandosans/v2/FwZ67-Asy1Em_lq_aK3hpr-RrktWHD54lnesO2lsVvrnhgw8zPbXoT87PzkTYUMEgzhp.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Monofett",
-		"filename": "mFTyWbofw6zc9NtnW43SuRwr0VJ7",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/monofett/v24/mFTyWbofw6zc9NtnW43SuRwr0VJ7.ttf",
-		"weight": 400
+		displayName: "Monofett",
+		filename: "mFTyWbofw6zc9NtnW43SuRwr0VJ7",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/monofett/v24/mFTyWbofw6zc9NtnW43SuRwr0VJ7.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Warang Citi",
-		"filename": "EYqtmb9SzL1YtsZSScyKDXIeOv3w-zgsNvKRpeVCCXzdgA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanswarangciti/v18/EYqtmb9SzL1YtsZSScyKDXIeOv3w-zgsNvKRpeVCCXzdgA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Warang Citi",
+		filename: "EYqtmb9SzL1YtsZSScyKDXIeOv3w-zgsNvKRpeVCCXzdgA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanswarangciti/v18/EYqtmb9SzL1YtsZSScyKDXIeOv3w-zgsNvKRpeVCCXzdgA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reddit Sans Condensed",
-		"filename": "m8J_jepOc6WYkkm2Dey9A5QGAQXmuL3va5IfZsq2gyKtWVJro1kKUpU4u7XDIuc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/redditsanscondensed/v5/m8J_jepOc6WYkkm2Dey9A5QGAQXmuL3va5IfZsq2gyKtWVJro1kKUpU4u7XDIuc.ttf",
-		"weight": 400
+		displayName: "Reddit Sans Condensed",
+		filename: "m8J_jepOc6WYkkm2Dey9A5QGAQXmuL3va5IfZsq2gyKtWVJro1kKUpU4u7XDIuc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/redditsanscondensed/v5/m8J_jepOc6WYkkm2Dey9A5QGAQXmuL3va5IfZsq2gyKtWVJro1kKUpU4u7XDIuc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bona Nova",
-		"filename": "B50NF7ZCpX7fcHfvIUBJi6hqHK-CLA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bonanova/v12/B50NF7ZCpX7fcHfvIUBJi6hqHK-CLA.ttf",
-		"weight": 400
+		displayName: "Bona Nova",
+		filename: "B50NF7ZCpX7fcHfvIUBJi6hqHK-CLA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bonanova/v12/B50NF7ZCpX7fcHfvIUBJi6hqHK-CLA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tac One",
-		"filename": "ahcZv8Cj3zw7qDr8fO4hU-FwnU0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tacone/v5/ahcZv8Cj3zw7qDr8fO4hU-FwnU0.ttf",
-		"weight": 400
+		displayName: "Tac One",
+		filename: "ahcZv8Cj3zw7qDr8fO4hU-FwnU0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tacone/v5/ahcZv8Cj3zw7qDr8fO4hU-FwnU0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mochiy Pop P One",
-		"filename": "Ktk2AKuPeY_td1-h9LayHYWCjAqyN4O3WYZB_sU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mochiypoppone/v12/Ktk2AKuPeY_td1-h9LayHYWCjAqyN4O3WYZB_sU.ttf",
-		"weight": 400
+		displayName: "Mochiy Pop P One",
+		filename: "Ktk2AKuPeY_td1-h9LayHYWCjAqyN4O3WYZB_sU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mochiypoppone/v12/Ktk2AKuPeY_td1-h9LayHYWCjAqyN4O3WYZB_sU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Suranna",
-		"filename": "gokuH6ztGkFjWe58tBRZT2KmgP0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/suranna/v15/gokuH6ztGkFjWe58tBRZT2KmgP0.ttf",
-		"weight": 400
+		displayName: "Suranna",
+		filename: "gokuH6ztGkFjWe58tBRZT2KmgP0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/suranna/v15/gokuH6ztGkFjWe58tBRZT2KmgP0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Almendra",
-		"filename": "H4ckBXKAlMnTn0CskyY6wr-wg763",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/almendra/v28/H4ckBXKAlMnTn0CskyY6wr-wg763.ttf",
-		"weight": 400
+		displayName: "Almendra",
+		filename: "H4ckBXKAlMnTn0CskyY6wr-wg763",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/almendra/v28/H4ckBXKAlMnTn0CskyY6wr-wg763.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asar",
-		"filename": "sZlLdRyI6TBIXkYQDLlTW6E",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/asar/v24/sZlLdRyI6TBIXkYQDLlTW6E.ttf",
-		"weight": 400
+		displayName: "Asar",
+		filename: "sZlLdRyI6TBIXkYQDLlTW6E",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/asar/v24/sZlLdRyI6TBIXkYQDLlTW6E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zain",
-		"filename": "syk8-y9lm7soANLHkSKW5tM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zain/v4/syk8-y9lm7soANLHkSKW5tM.ttf",
-		"weight": 400
+		displayName: "Zain",
+		filename: "syk8-y9lm7soANLHkSKW5tM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zain/v4/syk8-y9lm7soANLHkSKW5tM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ysabeau Office",
-		"filename": "LDImapaZKhM9RuQIp8FmdYrPPNjFm07hbpKNlPPbh6MfYSfpQj7IGQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ysabeauoffice/v4/LDImapaZKhM9RuQIp8FmdYrPPNjFm07hbpKNlPPbh6MfYSfpQj7IGQ.ttf",
-		"weight": 400
+		displayName: "Ysabeau Office",
+		filename: "LDImapaZKhM9RuQIp8FmdYrPPNjFm07hbpKNlPPbh6MfYSfpQj7IGQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ysabeauoffice/v4/LDImapaZKhM9RuQIp8FmdYrPPNjFm07hbpKNlPPbh6MfYSfpQj7IGQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hedvig Letters Serif",
-		"filename": "OD5puN2I2mekHmyoU1Kj2AXOd5_7v7gIDlX8quj7viQ_N1HixEAZf7fcvSGpZg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/hedviglettersserif/v4/OD5puN2I2mekHmyoU1Kj2AXOd5_7v7gIDlX8quj7viQ_N1HixEAZf7fcvSGpZg.ttf",
-		"weight": 400
+		displayName: "Hedvig Letters Serif",
+		filename: "OD5puN2I2mekHmyoU1Kj2AXOd5_7v7gIDlX8quj7viQ_N1HixEAZf7fcvSGpZg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/hedviglettersserif/v4/OD5puN2I2mekHmyoU1Kj2AXOd5_7v7gIDlX8quj7viQ_N1HixEAZf7fcvSGpZg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chathura",
-		"filename": "_gP71R7-rzUuVjim418goUC5S-Zy",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chathura/v22/_gP71R7-rzUuVjim418goUC5S-Zy.ttf",
-		"weight": 400
+		displayName: "Chathura",
+		filename: "_gP71R7-rzUuVjim418goUC5S-Zy",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chathura/v22/_gP71R7-rzUuVjim418goUC5S-Zy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "UnifrakturCook",
-		"filename": "IurA6Yli8YOdcoky-0PTTdkm56n05Uw13ILXs-h6",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/unifrakturcook/v25/IurA6Yli8YOdcoky-0PTTdkm56n05Uw13ILXs-h6.ttf",
-		"weight": 700
+		displayName: "UnifrakturCook",
+		filename: "IurA6Yli8YOdcoky-0PTTdkm56n05Uw13ILXs-h6",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/unifrakturcook/v25/IurA6Yli8YOdcoky-0PTTdkm56n05Uw13ILXs-h6.ttf",
+		weight: 700
 	},
 	{
-		"displayName": "M PLUS 1 Code",
-		"filename": "ypvMbXOOx2xFpzmYJS3N2_J2hBN6RZ5oIp8m_7iN0HHpapwmdZhY",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/mplus1code/v16/ypvMbXOOx2xFpzmYJS3N2_J2hBN6RZ5oIp8m_7iN0HHpapwmdZhY.ttf",
-		"weight": 400
+		displayName: "M PLUS 1 Code",
+		filename: "ypvMbXOOx2xFpzmYJS3N2_J2hBN6RZ5oIp8m_7iN0HHpapwmdZhY",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/mplus1code/v16/ypvMbXOOx2xFpzmYJS3N2_J2hBN6RZ5oIp8m_7iN0HHpapwmdZhY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sedgwick Ave",
-		"filename": "uK_04rKEYuguzAcSYRdWTJq8Xmg1Vcf5JA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sedgwickave/v13/uK_04rKEYuguzAcSYRdWTJq8Xmg1Vcf5JA.ttf",
-		"weight": 400
+		displayName: "Sedgwick Ave",
+		filename: "uK_04rKEYuguzAcSYRdWTJq8Xmg1Vcf5JA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sedgwickave/v13/uK_04rKEYuguzAcSYRdWTJq8Xmg1Vcf5JA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Tammudu 2",
-		"filename": "1Pt5g8TIS_SAmkLguUdFP8UaJcKkzlPmMT00GaE_Jf8e4c6PZSlGmAA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/balootammudu2/v27/1Pt5g8TIS_SAmkLguUdFP8UaJcKkzlPmMT00GaE_Jf8e4c6PZSlGmAA.ttf",
-		"weight": 400
+		displayName: "Baloo Tammudu 2",
+		filename: "1Pt5g8TIS_SAmkLguUdFP8UaJcKkzlPmMT00GaE_Jf8e4c6PZSlGmAA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/balootammudu2/v27/1Pt5g8TIS_SAmkLguUdFP8UaJcKkzlPmMT00GaE_Jf8e4c6PZSlGmAA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baloo Bhaina 2",
-		"filename": "qWc-B6yyq4P9Adr3RtoX1q6ySgbwusXwJjkOS-XEssPvRfRLYWmZSA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/baloobhaina2/v29/qWc-B6yyq4P9Adr3RtoX1q6ySgbwusXwJjkOS-XEssPvRfRLYWmZSA.ttf",
-		"weight": 400
+		displayName: "Baloo Bhaina 2",
+		filename: "qWc-B6yyq4P9Adr3RtoX1q6ySgbwusXwJjkOS-XEssPvRfRLYWmZSA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/baloobhaina2/v29/qWc-B6yyq4P9Adr3RtoX1q6ySgbwusXwJjkOS-XEssPvRfRLYWmZSA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sigmar",
-		"filename": "hv-XlzJgIE8a85pUbWY3MTFgVg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sigmar/v9/hv-XlzJgIE8a85pUbWY3MTFgVg.ttf",
-		"weight": 400
+		displayName: "Sigmar",
+		filename: "hv-XlzJgIE8a85pUbWY3MTFgVg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sigmar/v9/hv-XlzJgIE8a85pUbWY3MTFgVg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Galada",
-		"filename": "H4cmBXyGmcjXlUX-8iw-4Lqggw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/galada/v21/H4cmBXyGmcjXlUX-8iw-4Lqggw.ttf",
-		"weight": 400
+		displayName: "Galada",
+		filename: "H4cmBXyGmcjXlUX-8iw-4Lqggw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/galada/v21/H4cmBXyGmcjXlUX-8iw-4Lqggw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mirza",
-		"filename": "co3ImWlikiN5EurdKMewsrvI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/mirza/v19/co3ImWlikiN5EurdKMewsrvI.ttf",
-		"weight": 400
+		displayName: "Mirza",
+		filename: "co3ImWlikiN5EurdKMewsrvI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/mirza/v19/co3ImWlikiN5EurdKMewsrvI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Thai Looped",
-		"filename": "B503F6pOpWTRcGrhOVJJ3-oPfY7WQuFu5R36MIjwurFMX_p0KVmQL3HnxYJ8hCVQ-_gtHhJiQo49kz2h",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansthailooped/v16/B503F6pOpWTRcGrhOVJJ3-oPfY7WQuFu5R36MIjwurFMX_p0KVmQL3HnxYJ8hCVQ-_gtHhJiQo49kz2h.ttf",
-		"weight": 400
+		displayName: "Noto Sans Thai Looped",
+		filename: "B503F6pOpWTRcGrhOVJJ3-oPfY7WQuFu5R36MIjwurFMX_p0KVmQL3HnxYJ8hCVQ-_gtHhJiQo49kz2h",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansthailooped/v16/B503F6pOpWTRcGrhOVJJ3-oPfY7WQuFu5R36MIjwurFMX_p0KVmQL3HnxYJ8hCVQ-_gtHhJiQo49kz2h.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Patrick Hand SC",
-		"filename": "0nkwC9f7MfsBiWcLtY65AWDK873ViSi6JQc7Vg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/patrickhandsc/v17/0nkwC9f7MfsBiWcLtY65AWDK873ViSi6JQc7Vg.ttf",
-		"weight": 400
+		displayName: "Patrick Hand SC",
+		filename: "0nkwC9f7MfsBiWcLtY65AWDK873ViSi6JQc7Vg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/patrickhandsc/v17/0nkwC9f7MfsBiWcLtY65AWDK873ViSi6JQc7Vg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Life Savers",
-		"filename": "ZXuie1UftKKabUQMgxAal_lrFgpbuNvB",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lifesavers/v23/ZXuie1UftKKabUQMgxAal_lrFgpbuNvB.ttf",
-		"weight": 400
+		displayName: "Life Savers",
+		filename: "ZXuie1UftKKabUQMgxAal_lrFgpbuNvB",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lifesavers/v23/ZXuie1UftKKabUQMgxAal_lrFgpbuNvB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "MonteCarlo",
-		"filename": "buEzpo6-f9X01GadLA0G0CoV_NxLeiw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/montecarlo/v13/buEzpo6-f9X01GadLA0G0CoV_NxLeiw.ttf",
-		"weight": 400
+		displayName: "MonteCarlo",
+		filename: "buEzpo6-f9X01GadLA0G0CoV_NxLeiw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/montecarlo/v13/buEzpo6-f9X01GadLA0G0CoV_NxLeiw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Freehand",
-		"filename": "cIf-Ma5eqk01VjKTgAmBTmUOmZJk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/freehand/v34/cIf-Ma5eqk01VjKTgAmBTmUOmZJk.ttf",
-		"weight": 400
+		displayName: "Freehand",
+		filename: "cIf-Ma5eqk01VjKTgAmBTmUOmZJk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/freehand/v34/cIf-Ma5eqk01VjKTgAmBTmUOmZJk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nerko One",
-		"filename": "m8JQjfZSc7OXlB3ZMOjzcJ5BZmqa3A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/nerkoone/v17/m8JQjfZSc7OXlB3ZMOjzcJ5BZmqa3A.ttf",
-		"weight": 400
+		displayName: "Nerko One",
+		filename: "m8JQjfZSc7OXlB3ZMOjzcJ5BZmqa3A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/nerkoone/v17/m8JQjfZSc7OXlB3ZMOjzcJ5BZmqa3A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Scheherazade New",
-		"filename": "4UaZrFhTvxVnHDvUkUiHg8jprP4DCwNsOl4p5Is",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/scheherazadenew/v20/4UaZrFhTvxVnHDvUkUiHg8jprP4DCwNsOl4p5Is.ttf",
-		"weight": 400
+		displayName: "Scheherazade New",
+		filename: "4UaZrFhTvxVnHDvUkUiHg8jprP4DCwNsOl4p5Is",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/scheherazadenew/v20/4UaZrFhTvxVnHDvUkUiHg8jprP4DCwNsOl4p5Is.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Carattere",
-		"filename": "4iCv6Kp1b9dXlgt_CkvTt2aMH4V_gg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/carattere/v8/4iCv6Kp1b9dXlgt_CkvTt2aMH4V_gg.ttf",
-		"weight": 400
+		displayName: "Carattere",
+		filename: "4iCv6Kp1b9dXlgt_CkvTt2aMH4V_gg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/carattere/v8/4iCv6Kp1b9dXlgt_CkvTt2aMH4V_gg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Metal Mania",
-		"filename": "RWmMoKWb4e8kqMfBUdPFJeXCg6UKDXlq",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/metalmania/v23/RWmMoKWb4e8kqMfBUdPFJeXCg6UKDXlq.ttf",
-		"weight": 400
+		displayName: "Metal Mania",
+		filename: "RWmMoKWb4e8kqMfBUdPFJeXCg6UKDXlq",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/metalmania/v23/RWmMoKWb4e8kqMfBUdPFJeXCg6UKDXlq.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fuggles",
-		"filename": "k3kQo8UEJOlD1hpOTd7iL0nAMaM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/fuggles/v14/k3kQo8UEJOlD1hpOTd7iL0nAMaM.ttf",
-		"weight": 400
+		displayName: "Fuggles",
+		filename: "k3kQo8UEJOlD1hpOTd7iL0nAMaM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/fuggles/v14/k3kQo8UEJOlD1hpOTd7iL0nAMaM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anta",
-		"filename": "gyBzhwQ3KsIyZFwxPFimIo0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anta/v1/gyBzhwQ3KsIyZFwxPFimIo0.ttf",
-		"weight": 400
+		displayName: "Anta",
+		filename: "gyBzhwQ3KsIyZFwxPFimIo0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anta/v1/gyBzhwQ3KsIyZFwxPFimIo0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Prociono",
-		"filename": "r05YGLlR-KxAf9GGO8upyDYtStiJ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/prociono/v28/r05YGLlR-KxAf9GGO8upyDYtStiJ.ttf",
-		"weight": 400
+		displayName: "Prociono",
+		filename: "r05YGLlR-KxAf9GGO8upyDYtStiJ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/prociono/v28/r05YGLlR-KxAf9GGO8upyDYtStiJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chicle",
-		"filename": "lJwG-pw9i2dqU-BDyWKuobYSxw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chicle/v27/lJwG-pw9i2dqU-BDyWKuobYSxw.ttf",
-		"weight": 400
+		displayName: "Chicle",
+		filename: "lJwG-pw9i2dqU-BDyWKuobYSxw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chicle/v27/lJwG-pw9i2dqU-BDyWKuobYSxw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Teachers",
-		"filename": "H4c5BXKVncXVmUGsgTwx4E9oHx2xfjBr3powY55O4AS32A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/teachers/v6/H4c5BXKVncXVmUGsgTwx4E9oHx2xfjBr3powY55O4AS32A.ttf",
-		"weight": 400
+		displayName: "Teachers",
+		filename: "H4c5BXKVncXVmUGsgTwx4E9oHx2xfjBr3powY55O4AS32A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/teachers/v6/H4c5BXKVncXVmUGsgTwx4E9oHx2xfjBr3powY55O4AS32A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Beth Ellen",
-		"filename": "WwkbxPW2BE-3rb_JNT-qEIAiVNo5xNY",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/bethellen/v22/WwkbxPW2BE-3rb_JNT-qEIAiVNo5xNY.ttf",
-		"weight": 400
+		displayName: "Beth Ellen",
+		filename: "WwkbxPW2BE-3rb_JNT-qEIAiVNo5xNY",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/bethellen/v22/WwkbxPW2BE-3rb_JNT-qEIAiVNo5xNY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Crushed",
-		"filename": "U9Mc6dym6WXImTlFT1kfuIqyLzA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/crushed/v32/U9Mc6dym6WXImTlFT1kfuIqyLzA.ttf",
-		"weight": 400
+		displayName: "Crushed",
+		filename: "U9Mc6dym6WXImTlFT1kfuIqyLzA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/crushed/v32/U9Mc6dym6WXImTlFT1kfuIqyLzA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sumana",
-		"filename": "4UaDrE5TqRBjGj-G8Bji76zR4w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sumana/v12/4UaDrE5TqRBjGj-G8Bji76zR4w.ttf",
-		"weight": 400
+		displayName: "Sumana",
+		filename: "4UaDrE5TqRBjGj-G8Bji76zR4w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sumana/v12/4UaDrE5TqRBjGj-G8Bji76zR4w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Math",
-		"filename": "7Aump_cpkSecTWaHRlH2hyV5UHkG-V048PW0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmath/v18/7Aump_cpkSecTWaHRlH2hyV5UHkG-V048PW0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Math",
+		filename: "7Aump_cpkSecTWaHRlH2hyV5UHkG-V048PW0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmath/v18/7Aump_cpkSecTWaHRlH2hyV5UHkG-V048PW0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dynalight",
-		"filename": "1Ptsg8LOU_aOmQvTsF4ISotrDfGGxA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/dynalight/v24/1Ptsg8LOU_aOmQvTsF4ISotrDfGGxA.ttf",
-		"weight": 400
+		displayName: "Dynalight",
+		filename: "1Ptsg8LOU_aOmQvTsF4ISotrDfGGxA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/dynalight/v24/1Ptsg8LOU_aOmQvTsF4ISotrDfGGxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiny5",
-		"filename": "KFOpCnmCvdGT7hw-z0hHAi88",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tiny5/v3/KFOpCnmCvdGT7hw-z0hHAi88.ttf",
-		"weight": 400
+		displayName: "Tiny5",
+		filename: "KFOpCnmCvdGT7hw-z0hHAi88",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tiny5/v3/KFOpCnmCvdGT7hw-z0hHAi88.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Swanky and Moo Moo",
-		"filename": "flUlRrKz24IuWVI_WJYTYcqbEsMUZ3kUtbPkR64SYQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/swankyandmoomoo/v24/flUlRrKz24IuWVI_WJYTYcqbEsMUZ3kUtbPkR64SYQ.ttf",
-		"weight": 400
+		displayName: "Swanky and Moo Moo",
+		filename: "flUlRrKz24IuWVI_WJYTYcqbEsMUZ3kUtbPkR64SYQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/swankyandmoomoo/v24/flUlRrKz24IuWVI_WJYTYcqbEsMUZ3kUtbPkR64SYQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dokdo",
-		"filename": "esDf315XNuCBLxLo4NaMlKcH",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/dokdo/v23/esDf315XNuCBLxLo4NaMlKcH.ttf",
-		"weight": 400
+		displayName: "Dokdo",
+		filename: "esDf315XNuCBLxLo4NaMlKcH",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/dokdo/v23/esDf315XNuCBLxLo4NaMlKcH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Waterfall",
-		"filename": "MCoRzAfo293fACdFKcwY2rH8D_EZwA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/waterfall/v8/MCoRzAfo293fACdFKcwY2rH8D_EZwA.ttf",
-		"weight": 400
+		displayName: "Waterfall",
+		filename: "MCoRzAfo293fACdFKcwY2rH8D_EZwA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/waterfall/v8/MCoRzAfo293fACdFKcwY2rH8D_EZwA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Convergence",
-		"filename": "rax5HiePvdgXPmmMHcIPYRhasU7Q8Cad",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/convergence/v16/rax5HiePvdgXPmmMHcIPYRhasU7Q8Cad.ttf",
-		"weight": 400
+		displayName: "Convergence",
+		filename: "rax5HiePvdgXPmmMHcIPYRhasU7Q8Cad",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/convergence/v16/rax5HiePvdgXPmmMHcIPYRhasU7Q8Cad.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Germania One",
-		"filename": "Fh4yPjrqIyv2ucM2qzBjeS3ezAJONau6ew",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/germaniaone/v21/Fh4yPjrqIyv2ucM2qzBjeS3ezAJONau6ew.ttf",
-		"weight": 400
+		displayName: "Germania One",
+		filename: "Fh4yPjrqIyv2ucM2qzBjeS3ezAJONau6ew",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/germaniaone/v21/Fh4yPjrqIyv2ucM2qzBjeS3ezAJONau6ew.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell Great Primer",
-		"filename": "bx6aNwSJtayYxOkbYFsT6hMsLzX7u85rJorXvDo3SQY1",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfellgreatprimer/v21/bx6aNwSJtayYxOkbYFsT6hMsLzX7u85rJorXvDo3SQY1.ttf",
-		"weight": 400
+		displayName: "IM Fell Great Primer",
+		filename: "bx6aNwSJtayYxOkbYFsT6hMsLzX7u85rJorXvDo3SQY1",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfellgreatprimer/v21/bx6aNwSJtayYxOkbYFsT6hMsLzX7u85rJorXvDo3SQY1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Special Gothic Condensed One",
-		"filename": "R70Njzwei_mJM7OsFDzX7EL9NBO6IPvd-Avolzh49w7PUZt_5YtxbX8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/specialgothiccondensedone/v2/R70Njzwei_mJM7OsFDzX7EL9NBO6IPvd-Avolzh49w7PUZt_5YtxbX8.ttf",
-		"weight": 400
+		displayName: "Special Gothic Condensed One",
+		filename: "R70Njzwei_mJM7OsFDzX7EL9NBO6IPvd-Avolzh49w7PUZt_5YtxbX8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/specialgothiccondensedone/v2/R70Njzwei_mJM7OsFDzX7EL9NBO6IPvd-Avolzh49w7PUZt_5YtxbX8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gwendolyn",
-		"filename": "qkBXXvoO_M3CSss-d7ee5JRLkAXbMQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/gwendolyn/v9/qkBXXvoO_M3CSss-d7ee5JRLkAXbMQ.ttf",
-		"weight": 400
+		displayName: "Gwendolyn",
+		filename: "qkBXXvoO_M3CSss-d7ee5JRLkAXbMQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/gwendolyn/v9/qkBXXvoO_M3CSss-d7ee5JRLkAXbMQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Macondo Swash Caps",
-		"filename": "6NUL8EaAJgGKZA7lpt941Z9s6ZYgDq6Oekoa_mm5bA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/macondoswashcaps/v26/6NUL8EaAJgGKZA7lpt941Z9s6ZYgDq6Oekoa_mm5bA.ttf",
-		"weight": 400
+		displayName: "Macondo Swash Caps",
+		filename: "6NUL8EaAJgGKZA7lpt941Z9s6ZYgDq6Oekoa_mm5bA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/macondoswashcaps/v26/6NUL8EaAJgGKZA7lpt941Z9s6ZYgDq6Oekoa_mm5bA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Eagle Lake",
-		"filename": "ptRMTiqbbuNJDOiKj9wG5O7yKQNute8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eaglelake/v26/ptRMTiqbbuNJDOiKj9wG5O7yKQNute8.ttf",
-		"weight": 400
+		displayName: "Eagle Lake",
+		filename: "ptRMTiqbbuNJDOiKj9wG5O7yKQNute8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eaglelake/v26/ptRMTiqbbuNJDOiKj9wG5O7yKQNute8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sour Gummy",
-		"filename": "8AtGGs2gPYuNDii97MjjBrLbYfdJvDU5AZfP5opPVCC4oC5ANR1N88NU91CMD2tcoQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sourgummy/v3/8AtGGs2gPYuNDii97MjjBrLbYfdJvDU5AZfP5opPVCC4oC5ANR1N88NU91CMD2tcoQ.ttf",
-		"weight": 400
+		displayName: "Sour Gummy",
+		filename: "8AtGGs2gPYuNDii97MjjBrLbYfdJvDU5AZfP5opPVCC4oC5ANR1N88NU91CMD2tcoQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sourgummy/v3/8AtGGs2gPYuNDii97MjjBrLbYfdJvDU5AZfP5opPVCC4oC5ANR1N88NU91CMD2tcoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gulzar",
-		"filename": "Wnz6HAc9eB3HB2ILYTwZqg_MPQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gulzar/v14/Wnz6HAc9eB3HB2ILYTwZqg_MPQ.ttf",
-		"weight": 400
+		displayName: "Gulzar",
+		filename: "Wnz6HAc9eB3HB2ILYTwZqg_MPQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gulzar/v14/Wnz6HAc9eB3HB2ILYTwZqg_MPQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Slim",
-		"filename": "Z9XUDmZNQAuem8jyZcn-yMOInrib9Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novaslim/v26/Z9XUDmZNQAuem8jyZcn-yMOInrib9Q.ttf",
-		"weight": 400
+		displayName: "Nova Slim",
+		filename: "Z9XUDmZNQAuem8jyZcn-yMOInrib9Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novaslim/v26/Z9XUDmZNQAuem8jyZcn-yMOInrib9Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cantora One",
-		"filename": "gyB4hws1JdgnKy56GB_JX6zdZ4vZVbgZ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cantoraone/v20/gyB4hws1JdgnKy56GB_JX6zdZ4vZVbgZ.ttf",
-		"weight": 400
+		displayName: "Cantora One",
+		filename: "gyB4hws1JdgnKy56GB_JX6zdZ4vZVbgZ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cantoraone/v20/gyB4hws1JdgnKy56GB_JX6zdZ4vZVbgZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "The Nautigal",
-		"filename": "VdGZAZ8ZH51Lvng9fQV2bfKr5wVk09Se5Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/thenautigal/v8/VdGZAZ8ZH51Lvng9fQV2bfKr5wVk09Se5Q.ttf",
-		"weight": 400
+		displayName: "The Nautigal",
+		filename: "VdGZAZ8ZH51Lvng9fQV2bfKr5wVk09Se5Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/thenautigal/v8/VdGZAZ8ZH51Lvng9fQV2bfKr5wVk09Se5Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stick No Bills",
-		"filename": "bWts7ffXZwHuAa9Uld-oEK4QKlxj9f9t_7uEmjcVv8Q7KriwKhcTKA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sticknobills/v17/bWts7ffXZwHuAa9Uld-oEK4QKlxj9f9t_7uEmjcVv8Q7KriwKhcTKA.ttf",
-		"weight": 400
+		displayName: "Stick No Bills",
+		filename: "bWts7ffXZwHuAa9Uld-oEK4QKlxj9f9t_7uEmjcVv8Q7KriwKhcTKA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sticknobills/v17/bWts7ffXZwHuAa9Uld-oEK4QKlxj9f9t_7uEmjcVv8Q7KriwKhcTKA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yuji Syuku",
-		"filename": "BngNUXdTV3vO6Lw5ApOPqPfgwqiA-Rk",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/yujisyuku/v8/BngNUXdTV3vO6Lw5ApOPqPfgwqiA-Rk.ttf",
-		"weight": 400
+		displayName: "Yuji Syuku",
+		filename: "BngNUXdTV3vO6Lw5ApOPqPfgwqiA-Rk",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/yujisyuku/v8/BngNUXdTV3vO6Lw5ApOPqPfgwqiA-Rk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reggae One",
-		"filename": "7r3DqX5msMIkeuwJwOJt_a5L5uH-mts",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/reggaeone/v19/7r3DqX5msMIkeuwJwOJt_a5L5uH-mts.ttf",
-		"weight": 400
+		displayName: "Reggae One",
+		filename: "7r3DqX5msMIkeuwJwOJt_a5L5uH-mts",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/reggaeone/v19/7r3DqX5msMIkeuwJwOJt_a5L5uH-mts.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gugi",
-		"filename": "A2BVn5dXywshVA6A9DEfgqM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gugi/v21/A2BVn5dXywshVA6A9DEfgqM.ttf",
-		"weight": 400
+		displayName: "Gugi",
+		filename: "A2BVn5dXywshVA6A9DEfgqM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gugi/v21/A2BVn5dXywshVA6A9DEfgqM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell French Canon",
-		"filename": "-F6ufiNtDWYfYc-tDiyiw08rrghJszkK6coVPt1ozoPz",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfellfrenchcanon/v21/-F6ufiNtDWYfYc-tDiyiw08rrghJszkK6coVPt1ozoPz.ttf",
-		"weight": 400
+		displayName: "IM Fell French Canon",
+		filename: "-F6ufiNtDWYfYc-tDiyiw08rrghJszkK6coVPt1ozoPz",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfellfrenchcanon/v21/-F6ufiNtDWYfYc-tDiyiw08rrghJszkK6coVPt1ozoPz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gupter",
-		"filename": "2-cm9JNmxJqPO1QUYZa_Wu_lpA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gupter/v18/2-cm9JNmxJqPO1QUYZa_Wu_lpA.ttf",
-		"weight": 400
+		displayName: "Gupter",
+		filename: "2-cm9JNmxJqPO1QUYZa_Wu_lpA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gupter/v18/2-cm9JNmxJqPO1QUYZa_Wu_lpA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lemon",
-		"filename": "HI_EiYEVKqRMq0jBSZXAQ4-d",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lemon/v19/HI_EiYEVKqRMq0jBSZXAQ4-d.ttf",
-		"weight": 400
+		displayName: "Lemon",
+		filename: "HI_EiYEVKqRMq0jBSZXAQ4-d",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lemon/v19/HI_EiYEVKqRMq0jBSZXAQ4-d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Georgian",
-		"filename": "VEMXRpd8s4nv8hG_qOzL7HOAw4nt0Sl_XxyaEduNMvi7T6Y4etRnmGhyLop-R3aSTvofdzTw-FgZxQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifgeorgian/v29/VEMXRpd8s4nv8hG_qOzL7HOAw4nt0Sl_XxyaEduNMvi7T6Y4etRnmGhyLop-R3aSTvofdzTw-FgZxQ.ttf",
-		"weight": 400
+		displayName: "Noto Serif Georgian",
+		filename: "VEMXRpd8s4nv8hG_qOzL7HOAw4nt0Sl_XxyaEduNMvi7T6Y4etRnmGhyLop-R3aSTvofdzTw-FgZxQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifgeorgian/v29/VEMXRpd8s4nv8hG_qOzL7HOAw4nt0Sl_XxyaEduNMvi7T6Y4etRnmGhyLop-R3aSTvofdzTw-FgZxQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 15",
-		"filename": "_6_9EDzuROGsUuk2TWjSYoohsCkvSQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey15/v4/_6_9EDzuROGsUuk2TWjSYoohsCkvSQ.ttf",
-		"weight": 400
+		displayName: "Jersey 15",
+		filename: "_6_9EDzuROGsUuk2TWjSYoohsCkvSQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey15/v4/_6_9EDzuROGsUuk2TWjSYoohsCkvSQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pavanam",
-		"filename": "BXRrvF_aiezLh0xPDOtQ9Wf0QcE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/pavanam/v13/BXRrvF_aiezLh0xPDOtQ9Wf0QcE.ttf",
-		"weight": 400
+		displayName: "Pavanam",
+		filename: "BXRrvF_aiezLh0xPDOtQ9Wf0QcE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/pavanam/v13/BXRrvF_aiezLh0xPDOtQ9Wf0QcE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Montaga",
-		"filename": "H4cnBX2Ml8rCkEO_0gYQ7LO5mqc",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/montaga/v14/H4cnBX2Ml8rCkEO_0gYQ7LO5mqc.ttf",
-		"weight": 400
+		displayName: "Montaga",
+		filename: "H4cnBX2Ml8rCkEO_0gYQ7LO5mqc",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/montaga/v14/H4cnBX2Ml8rCkEO_0gYQ7LO5mqc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Abyssinica SIL",
-		"filename": "oY1H8ezOqK7iI3rK_45WKoc8J6UZBFOVAXuI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/abyssinicasil/v9/oY1H8ezOqK7iI3rK_45WKoc8J6UZBFOVAXuI.ttf",
-		"weight": 400
+		displayName: "Abyssinica SIL",
+		filename: "oY1H8ezOqK7iI3rK_45WKoc8J6UZBFOVAXuI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/abyssinicasil/v9/oY1H8ezOqK7iI3rK_45WKoc8J6UZBFOVAXuI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Delius Unicase",
-		"filename": "845BNMEwEIOVT8BmgfSzIr_6mmLHd-73LXWs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/deliusunicase/v30/845BNMEwEIOVT8BmgfSzIr_6mmLHd-73LXWs.ttf",
-		"weight": 400
+		displayName: "Delius Unicase",
+		filename: "845BNMEwEIOVT8BmgfSzIr_6mmLHd-73LXWs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/deliusunicase/v30/845BNMEwEIOVT8BmgfSzIr_6mmLHd-73LXWs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rhodium Libre",
-		"filename": "1q2AY5adA0tn_ukeHcQHqpx6pETLeo2gm2U",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/rhodiumlibre/v21/1q2AY5adA0tn_ukeHcQHqpx6pETLeo2gm2U.ttf",
-		"weight": 400
+		displayName: "Rhodium Libre",
+		filename: "1q2AY5adA0tn_ukeHcQHqpx6pETLeo2gm2U",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/rhodiumlibre/v21/1q2AY5adA0tn_ukeHcQHqpx6pETLeo2gm2U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Uchen",
-		"filename": "nKKZ-GokGZ1baIaSEQGodLxA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/uchen/v11/nKKZ-GokGZ1baIaSEQGodLxA.ttf",
-		"weight": 400
+		displayName: "Uchen",
+		filename: "nKKZ-GokGZ1baIaSEQGodLxA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/uchen/v11/nKKZ-GokGZ1baIaSEQGodLxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Peralta",
-		"filename": "hYkJPu0-RP_9d3kRGxAhrv956B8",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/peralta/v21/hYkJPu0-RP_9d3kRGxAhrv956B8.ttf",
-		"weight": 400
+		displayName: "Peralta",
+		filename: "hYkJPu0-RP_9d3kRGxAhrv956B8",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/peralta/v21/hYkJPu0-RP_9d3kRGxAhrv956B8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Protest Strike",
-		"filename": "0QI5MXdf4Y67Rn6vBog67ZjFlpzW0gZOs7BX",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/proteststrike/v2/0QI5MXdf4Y67Rn6vBog67ZjFlpzW0gZOs7BX.ttf",
-		"weight": 400
+		displayName: "Protest Strike",
+		filename: "0QI5MXdf4Y67Rn6vBog67ZjFlpzW0gZOs7BX",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/proteststrike/v2/0QI5MXdf4Y67Rn6vBog67ZjFlpzW0gZOs7BX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Emilys Candy",
-		"filename": "2EbgL-1mD1Rnb0OGKudbk0y5r9xrX84JjA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/emilyscandy/v21/2EbgL-1mD1Rnb0OGKudbk0y5r9xrX84JjA.ttf",
-		"weight": 400
+		displayName: "Emilys Candy",
+		filename: "2EbgL-1mD1Rnb0OGKudbk0y5r9xrX84JjA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/emilyscandy/v21/2EbgL-1mD1Rnb0OGKudbk0y5r9xrX84JjA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Orienta",
-		"filename": "PlI9FlK4Jrl5Y9zNeyeo9HRFhcU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/orienta/v16/PlI9FlK4Jrl5Y9zNeyeo9HRFhcU.ttf",
-		"weight": 400
+		displayName: "Orienta",
+		filename: "PlI9FlK4Jrl5Y9zNeyeo9HRFhcU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/orienta/v16/PlI9FlK4Jrl5Y9zNeyeo9HRFhcU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mystery Quest",
-		"filename": "-nF6OG414u0E6k0wynSGlujRHwElD_9Qz9E",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/mysteryquest/v21/-nF6OG414u0E6k0wynSGlujRHwElD_9Qz9E.ttf",
-		"weight": 400
+		displayName: "Mystery Quest",
+		filename: "-nF6OG414u0E6k0wynSGlujRHwElD_9Qz9E",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/mysteryquest/v21/-nF6OG414u0E6k0wynSGlujRHwElD_9Qz9E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Carme",
-		"filename": "ptRHTiWdbvZIDOjGxLNrxfbZ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/carme/v17/ptRHTiWdbvZIDOjGxLNrxfbZ.ttf",
-		"weight": 400
+		displayName: "Carme",
+		filename: "ptRHTiWdbvZIDOjGxLNrxfbZ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/carme/v17/ptRHTiWdbvZIDOjGxLNrxfbZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Harmattan",
-		"filename": "goksH6L2DkFvVvRp9XpTS0CjkP1Yog",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/harmattan/v24/goksH6L2DkFvVvRp9XpTS0CjkP1Yog.ttf",
-		"weight": 400
+		displayName: "Harmattan",
+		filename: "goksH6L2DkFvVvRp9XpTS0CjkP1Yog",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/harmattan/v24/goksH6L2DkFvVvRp9XpTS0CjkP1Yog.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kdam Thmor Pro",
-		"filename": "EJRPQgAzVdcI-Qdvt34jzurnGA7_j89I8ZWb",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kdamthmorpro/v7/EJRPQgAzVdcI-Qdvt34jzurnGA7_j89I8ZWb.ttf",
-		"weight": 400
+		displayName: "Kdam Thmor Pro",
+		filename: "EJRPQgAzVdcI-Qdvt34jzurnGA7_j89I8ZWb",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kdamthmorpro/v7/EJRPQgAzVdcI-Qdvt34jzurnGA7_j89I8ZWb.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Frijole",
-		"filename": "uU9PCBUR8oakM2BQ7xPb3vyHmlI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/frijole/v15/uU9PCBUR8oakM2BQ7xPb3vyHmlI.ttf",
-		"weight": 400
+		displayName: "Frijole",
+		filename: "uU9PCBUR8oakM2BQ7xPb3vyHmlI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/frijole/v15/uU9PCBUR8oakM2BQ7xPb3vyHmlI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell DW Pica SC",
-		"filename": "0ybjGCAu5PfqkvtGVU15aBhXz3EUrnTW-BiKEUiBGA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfelldwpicasc/v21/0ybjGCAu5PfqkvtGVU15aBhXz3EUrnTW-BiKEUiBGA.ttf",
-		"weight": 400
+		displayName: "IM Fell DW Pica SC",
+		filename: "0ybjGCAu5PfqkvtGVU15aBhXz3EUrnTW-BiKEUiBGA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfelldwpicasc/v21/0ybjGCAu5PfqkvtGVU15aBhXz3EUrnTW-BiKEUiBGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Duru Sans",
-		"filename": "xn7iYH8xwmSyTvEV_HOxT_fYdN-WZw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/durusans/v21/xn7iYH8xwmSyTvEV_HOxT_fYdN-WZw.ttf",
-		"weight": 400
+		displayName: "Duru Sans",
+		filename: "xn7iYH8xwmSyTvEV_HOxT_fYdN-WZw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/durusans/v21/xn7iYH8xwmSyTvEV_HOxT_fYdN-WZw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sono",
-		"filename": "aFT97PNiY3U2Cqf_aYEN64CYaK18YWJEsV6u-QLiOsxVtkWdEnR4qYeB4Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sono/v12/aFT97PNiY3U2Cqf_aYEN64CYaK18YWJEsV6u-QLiOsxVtkWdEnR4qYeB4Q.ttf",
-		"weight": 400
+		displayName: "Sono",
+		filename: "aFT97PNiY3U2Cqf_aYEN64CYaK18YWJEsV6u-QLiOsxVtkWdEnR4qYeB4Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sono/v12/aFT97PNiY3U2Cqf_aYEN64CYaK18YWJEsV6u-QLiOsxVtkWdEnR4qYeB4Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stick",
-		"filename": "Qw3TZQpMCyTtJSvfvPVDMPoF",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/stick/v20/Qw3TZQpMCyTtJSvfvPVDMPoF.ttf",
-		"weight": 400
+		displayName: "Stick",
+		filename: "Qw3TZQpMCyTtJSvfvPVDMPoF",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/stick/v20/Qw3TZQpMCyTtJSvfvPVDMPoF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Phudu",
-		"filename": "0FlJVPSHk0ya-7OUeO_U-Lwm7PkKtWzUSwWuz38Tgg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/phudu/v6/0FlJVPSHk0ya-7OUeO_U-Lwm7PkKtWzUSwWuz38Tgg.ttf",
-		"weight": 400
+		displayName: "Phudu",
+		filename: "0FlJVPSHk0ya-7OUeO_U-Lwm7PkKtWzUSwWuz38Tgg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/phudu/v6/0FlJVPSHk0ya-7OUeO_U-Lwm7PkKtWzUSwWuz38Tgg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Manuale",
-		"filename": "f0Xp0eas_8Z-TFZdHv3mMxFaSqASeeHke7wD1TB_JHHY",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/manuale/v31/f0Xp0eas_8Z-TFZdHv3mMxFaSqASeeHke7wD1TB_JHHY.ttf",
-		"weight": 400
+		displayName: "Manuale",
+		filename: "f0Xp0eas_8Z-TFZdHv3mMxFaSqASeeHke7wD1TB_JHHY",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/manuale/v31/f0Xp0eas_8Z-TFZdHv3mMxFaSqASeeHke7wD1TB_JHHY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Thai",
-		"filename": "k3kyo80MPvpLmixYH7euCxWpSMu3-gcWGj0hHAKGvUQlUv_bCKDUSzB5L0oiF-RRCmsdu0Qx",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifthai/v28/k3kyo80MPvpLmixYH7euCxWpSMu3-gcWGj0hHAKGvUQlUv_bCKDUSzB5L0oiF-RRCmsdu0Qx.ttf",
-		"weight": 400
+		displayName: "Noto Serif Thai",
+		filename: "k3kyo80MPvpLmixYH7euCxWpSMu3-gcWGj0hHAKGvUQlUv_bCKDUSzB5L0oiF-RRCmsdu0Qx",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifthai/v28/k3kyo80MPvpLmixYH7euCxWpSMu3-gcWGj0hHAKGvUQlUv_bCKDUSzB5L0oiF-RRCmsdu0Qx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Homenaje",
-		"filename": "FwZY7-Q-xVAi_l-6Ld6A4sijpFu_",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/homenaje/v17/FwZY7-Q-xVAi_l-6Ld6A4sijpFu_.ttf",
-		"weight": 400
+		displayName: "Homenaje",
+		filename: "FwZY7-Q-xVAi_l-6Ld6A4sijpFu_",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/homenaje/v17/FwZY7-Q-xVAi_l-6Ld6A4sijpFu_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Genos",
-		"filename": "SlGNmQqPqpUOYTYjacb0Hc91fTwVqkjorUK6K7ZsAg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/genos/v16/SlGNmQqPqpUOYTYjacb0Hc91fTwVqkjorUK6K7ZsAg.ttf",
-		"weight": 400
+		displayName: "Genos",
+		filename: "SlGNmQqPqpUOYTYjacb0Hc91fTwVqkjorUK6K7ZsAg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/genos/v16/SlGNmQqPqpUOYTYjacb0Hc91fTwVqkjorUK6K7ZsAg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kavivanar",
-		"filename": "o-0IIpQgyXYSwhxP7_Jb4j5Ba_2c7A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kavivanar/v22/o-0IIpQgyXYSwhxP7_Jb4j5Ba_2c7A.ttf",
-		"weight": 400
+		displayName: "Kavivanar",
+		filename: "o-0IIpQgyXYSwhxP7_Jb4j5Ba_2c7A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kavivanar/v22/o-0IIpQgyXYSwhxP7_Jb4j5Ba_2c7A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Borel",
-		"filename": "6qLOKZsftAPisgshYyMnOjwE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/borel/v10/6qLOKZsftAPisgshYyMnOjwE.ttf",
-		"weight": 400
+		displayName: "Borel",
+		filename: "6qLOKZsftAPisgshYyMnOjwE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/borel/v10/6qLOKZsftAPisgshYyMnOjwE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ysabeau SC",
-		"filename": "Noai6Uro3JCIKAbW46nMorJZyP7kKRflbw98UlqEZ4EOmsT5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ysabeausc/v4/Noai6Uro3JCIKAbW46nMorJZyP7kKRflbw98UlqEZ4EOmsT5.ttf",
-		"weight": 400
+		displayName: "Ysabeau SC",
+		filename: "Noai6Uro3JCIKAbW46nMorJZyP7kKRflbw98UlqEZ4EOmsT5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ysabeausc/v4/Noai6Uro3JCIKAbW46nMorJZyP7kKRflbw98UlqEZ4EOmsT5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hubot Sans",
-		"filename": "pe0BMIiULYxOvxVLbVwhONyy6zb7yFM9V5G3iZ3X0avsIiCxjLsC57ZdgLDVwVqcXQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hubotsans/v5/pe0BMIiULYxOvxVLbVwhONyy6zb7yFM9V5G3iZ3X0avsIiCxjLsC57ZdgLDVwVqcXQ.ttf",
-		"weight": 400
+		displayName: "Hubot Sans",
+		filename: "pe0BMIiULYxOvxVLbVwhONyy6zb7yFM9V5G3iZ3X0avsIiCxjLsC57ZdgLDVwVqcXQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hubotsans/v5/pe0BMIiULYxOvxVLbVwhONyy6zb7yFM9V5G3iZ3X0avsIiCxjLsC57ZdgLDVwVqcXQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Song Myung",
-		"filename": "1cX2aUDWAJH5-EIC7DIhr1GqhcitzeM",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/songmyung/v22/1cX2aUDWAJH5-EIC7DIhr1GqhcitzeM.ttf",
-		"weight": 400
+		displayName: "Song Myung",
+		filename: "1cX2aUDWAJH5-EIC7DIhr1GqhcitzeM",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/songmyung/v22/1cX2aUDWAJH5-EIC7DIhr1GqhcitzeM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Freckle Face",
-		"filename": "AMOWz4SXrmKHCvXTohxY-YI0U1K2w9lb4g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/freckleface/v16/AMOWz4SXrmKHCvXTohxY-YI0U1K2w9lb4g.ttf",
-		"weight": 400
+		displayName: "Freckle Face",
+		filename: "AMOWz4SXrmKHCvXTohxY-YI0U1K2w9lb4g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/freckleface/v16/AMOWz4SXrmKHCvXTohxY-YI0U1K2w9lb4g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Delius Swash Caps",
-		"filename": "oY1E8fPLr7v4JWCExZpWebxVKORpXXedKmeBvEYs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/deliusswashcaps/v25/oY1E8fPLr7v4JWCExZpWebxVKORpXXedKmeBvEYs.ttf",
-		"weight": 400
+		displayName: "Delius Swash Caps",
+		filename: "oY1E8fPLr7v4JWCExZpWebxVKORpXXedKmeBvEYs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/deliusswashcaps/v25/oY1E8fPLr7v4JWCExZpWebxVKORpXXedKmeBvEYs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Comic Relief",
-		"filename": "BCauqZkHrvL55SZ8uaEhHMY2XBJhDgs-Kg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/comicrelief/v2/BCauqZkHrvL55SZ8uaEhHMY2XBJhDgs-Kg.ttf",
-		"weight": 400
+		displayName: "Comic Relief",
+		filename: "BCauqZkHrvL55SZ8uaEhHMY2XBJhDgs-Kg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/comicrelief/v2/BCauqZkHrvL55SZ8uaEhHMY2XBJhDgs-Kg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nata Sans",
-		"filename": "1q2XY5KBClBit88SU_tUw-brVNlaeZChg6wJ6g2M62M1AXs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/natasans/v1/1q2XY5KBClBit88SU_tUw-brVNlaeZChg6wJ6g2M62M1AXs.ttf",
-		"weight": 400
+		displayName: "Nata Sans",
+		filename: "1q2XY5KBClBit88SU_tUw-brVNlaeZChg6wJ6g2M62M1AXs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/natasans/v1/1q2XY5KBClBit88SU_tUw-brVNlaeZChg6wJ6g2M62M1AXs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Atomic Age",
-		"filename": "f0Xz0eug6sdmRFkYZZGL58Ht9a8GYeA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/atomicage/v29/f0Xz0eug6sdmRFkYZZGL58Ht9a8GYeA.ttf",
-		"weight": 400
+		displayName: "Atomic Age",
+		filename: "f0Xz0eug6sdmRFkYZZGL58Ht9a8GYeA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/atomicage/v29/f0Xz0eug6sdmRFkYZZGL58Ht9a8GYeA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BhuTuka Expanded One",
-		"filename": "SLXXc0jZ4WUJcClHTtv0t7IaDRsBsWRiJCyX8pg_RVH1",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bhutukaexpandedone/v9/SLXXc0jZ4WUJcClHTtv0t7IaDRsBsWRiJCyX8pg_RVH1.ttf",
-		"weight": 400
+		displayName: "BhuTuka Expanded One",
+		filename: "SLXXc0jZ4WUJcClHTtv0t7IaDRsBsWRiJCyX8pg_RVH1",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bhutukaexpandedone/v9/SLXXc0jZ4WUJcClHTtv0t7IaDRsBsWRiJCyX8pg_RVH1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Belgrano",
-		"filename": "55xvey5tM9rwKWrJZcMFirl08KDJ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/belgrano/v19/55xvey5tM9rwKWrJZcMFirl08KDJ.ttf",
-		"weight": 400
+		displayName: "Belgrano",
+		filename: "55xvey5tM9rwKWrJZcMFirl08KDJ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/belgrano/v19/55xvey5tM9rwKWrJZcMFirl08KDJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Scope One",
-		"filename": "WBLnrEXKYFlGHrOKmGD1W0_MJMGxiQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/scopeone/v15/WBLnrEXKYFlGHrOKmGD1W0_MJMGxiQ.ttf",
-		"weight": 400
+		displayName: "Scope One",
+		filename: "WBLnrEXKYFlGHrOKmGD1W0_MJMGxiQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/scopeone/v15/WBLnrEXKYFlGHrOKmGD1W0_MJMGxiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sulphur Point",
-		"filename": "RLp5K5vv8KaycDcazWFPBj2aRfkSu6EuTHo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sulphurpoint/v16/RLp5K5vv8KaycDcazWFPBj2aRfkSu6EuTHo.ttf",
-		"weight": 400
+		displayName: "Sulphur Point",
+		filename: "RLp5K5vv8KaycDcazWFPBj2aRfkSu6EuTHo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sulphurpoint/v16/RLp5K5vv8KaycDcazWFPBj2aRfkSu6EuTHo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Joan",
-		"filename": "ZXupe1oZsqWRbRdH8X1p_Ng",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/joan/v12/ZXupe1oZsqWRbRdH8X1p_Ng.ttf",
-		"weight": 400
+		displayName: "Joan",
+		filename: "ZXupe1oZsqWRbRdH8X1p_Ng",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/joan/v12/ZXupe1oZsqWRbRdH8X1p_Ng.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BBH Bartle",
-		"filename": "zYXjKVYuMYMaN-IMqP3RSm6Tkd7_CIc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bbhbartle/v1/zYXjKVYuMYMaN-IMqP3RSm6Tkd7_CIc.ttf",
-		"weight": 400
+		displayName: "BBH Bartle",
+		filename: "zYXjKVYuMYMaN-IMqP3RSm6Tkd7_CIc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bbhbartle/v1/zYXjKVYuMYMaN-IMqP3RSm6Tkd7_CIc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gayathri",
-		"filename": "MCoQzAb429DbBilWLIA48J_wBugA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gayathri/v20/MCoQzAb429DbBilWLIA48J_wBugA.ttf",
-		"weight": 400
+		displayName: "Gayathri",
+		filename: "MCoQzAb429DbBilWLIA48J_wBugA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gayathri/v20/MCoQzAb429DbBilWLIA48J_wBugA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Imbue",
-		"filename": "RLpXK5P16Ki3fXhj5cvGrqjocPk4n-gVX3M93TnrnvhoP8iXfOsNNK-Q4xY",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imbue/v29/RLpXK5P16Ki3fXhj5cvGrqjocPk4n-gVX3M93TnrnvhoP8iXfOsNNK-Q4xY.ttf",
-		"weight": 400
+		displayName: "Imbue",
+		filename: "RLpXK5P16Ki3fXhj5cvGrqjocPk4n-gVX3M93TnrnvhoP8iXfOsNNK-Q4xY",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imbue/v29/RLpXK5P16Ki3fXhj5cvGrqjocPk4n-gVX3M93TnrnvhoP8iXfOsNNK-Q4xY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Akatab",
-		"filename": "VuJwdNrK3Z7gqJEPWIz5NIh-YA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/akatab/v9/VuJwdNrK3Z7gqJEPWIz5NIh-YA.ttf",
-		"weight": 400
+		displayName: "Akatab",
+		filename: "VuJwdNrK3Z7gqJEPWIz5NIh-YA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/akatab/v9/VuJwdNrK3Z7gqJEPWIz5NIh-YA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zhi Mang Xing",
-		"filename": "f0Xw0ey79sErYFtWQ9a2rq-g0actfektIJ0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/zhimangxing/v19/f0Xw0ey79sErYFtWQ9a2rq-g0actfektIJ0.ttf",
-		"weight": 400
+		displayName: "Zhi Mang Xing",
+		filename: "f0Xw0ey79sErYFtWQ9a2rq-g0actfektIJ0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/zhimangxing/v19/f0Xw0ey79sErYFtWQ9a2rq-g0actfektIJ0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Moon Dance",
-		"filename": "WBLgrEbUbFlYW9ekmGawe2XiKMiokE4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/moondance/v8/WBLgrEbUbFlYW9ekmGawe2XiKMiokE4.ttf",
-		"weight": 400
+		displayName: "Moon Dance",
+		filename: "WBLgrEbUbFlYW9ekmGawe2XiKMiokE4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/moondance/v8/WBLgrEbUbFlYW9ekmGawe2XiKMiokE4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BBH Hegarty",
-		"filename": "yYLt0hbb_dvjg8talgb5vDHR-tdfcIT_",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bbhhegarty/v1/yYLt0hbb_dvjg8talgb5vDHR-tdfcIT_.ttf",
-		"weight": 400
+		displayName: "BBH Hegarty",
+		filename: "yYLt0hbb_dvjg8talgb5vDHR-tdfcIT_",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bbhhegarty/v1/yYLt0hbb_dvjg8talgb5vDHR-tdfcIT_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Special Gothic Expanded One",
-		"filename": "IurO6Zxk74-YaYk1r3HOet4g75ENmBxUmOK61tA0Iu5gn5t-KhUVvQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/specialgothicexpandedone/v2/IurO6Zxk74-YaYk1r3HOet4g75ENmBxUmOK61tA0Iu5gn5t-KhUVvQ.ttf",
-		"weight": 400
+		displayName: "Special Gothic Expanded One",
+		filename: "IurO6Zxk74-YaYk1r3HOet4g75ENmBxUmOK61tA0Iu5gn5t-KhUVvQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/specialgothicexpandedone/v2/IurO6Zxk74-YaYk1r3HOet4g75ENmBxUmOK61tA0Iu5gn5t-KhUVvQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Solitreo",
-		"filename": "r05YGLlS5a9KYsyNO8upyDYtStiJ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/solitreo/v2/r05YGLlS5a9KYsyNO8upyDYtStiJ.ttf",
-		"weight": 400
+		displayName: "Solitreo",
+		filename: "r05YGLlS5a9KYsyNO8upyDYtStiJ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/solitreo/v2/r05YGLlS5a9KYsyNO8upyDYtStiJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Script",
-		"filename": "7Au7p_IpkSWSTWaFWkumvmQNEl0O0kEx",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novascript/v27/7Au7p_IpkSWSTWaFWkumvmQNEl0O0kEx.ttf",
-		"weight": 400
+		displayName: "Nova Script",
+		filename: "7Au7p_IpkSWSTWaFWkumvmQNEl0O0kEx",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novascript/v27/7Au7p_IpkSWSTWaFWkumvmQNEl0O0kEx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Imperial Script",
-		"filename": "5DCPAKrpzy_H98IV2ISnZBbGrVNvPenlvttWNg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/imperialscript/v8/5DCPAKrpzy_H98IV2ISnZBbGrVNvPenlvttWNg.ttf",
-		"weight": 400
+		displayName: "Imperial Script",
+		filename: "5DCPAKrpzy_H98IV2ISnZBbGrVNvPenlvttWNg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/imperialscript/v8/5DCPAKrpzy_H98IV2ISnZBbGrVNvPenlvttWNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Timmana",
-		"filename": "6xKvdShfL9yK-rvpCmvbKHwJUOM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/timmana/v14/6xKvdShfL9yK-rvpCmvbKHwJUOM.ttf",
-		"weight": 400
+		displayName: "Timmana",
+		filename: "6xKvdShfL9yK-rvpCmvbKHwJUOM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/timmana/v14/6xKvdShfL9yK-rvpCmvbKHwJUOM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lavishly Yours",
-		"filename": "jizDREVIvGwH5OjiZmX9r5z_WxUY0TY7ikbI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lavishlyyours/v7/jizDREVIvGwH5OjiZmX9r5z_WxUY0TY7ikbI.ttf",
-		"weight": 400
+		displayName: "Lavishly Yours",
+		filename: "jizDREVIvGwH5OjiZmX9r5z_WxUY0TY7ikbI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lavishlyyours/v7/jizDREVIvGwH5OjiZmX9r5z_WxUY0TY7ikbI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Flat",
-		"filename": "QdVUSTc-JgqpytEbVebEuStkm20oJA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novaflat/v26/QdVUSTc-JgqpytEbVebEuStkm20oJA.ttf",
-		"weight": 400
+		displayName: "Nova Flat",
+		filename: "QdVUSTc-JgqpytEbVebEuStkm20oJA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novaflat/v26/QdVUSTc-JgqpytEbVebEuStkm20oJA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Akaya Kanadaka",
-		"filename": "N0bM2S5CPO5oOQqvazoRRb-8-PfRS5VBBSSF",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/akayakanadaka/v18/N0bM2S5CPO5oOQqvazoRRb-8-PfRS5VBBSSF.ttf",
-		"weight": 400
+		displayName: "Akaya Kanadaka",
+		filename: "N0bM2S5CPO5oOQqvazoRRb-8-PfRS5VBBSSF",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/akayakanadaka/v18/N0bM2S5CPO5oOQqvazoRRb-8-PfRS5VBBSSF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ceviche One",
-		"filename": "gyB4hws1IcA6JzR-GB_JX6zdZ4vZVbgZ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cevicheone/v17/gyB4hws1IcA6JzR-GB_JX6zdZ4vZVbgZ.ttf",
-		"weight": 400
+		displayName: "Ceviche One",
+		filename: "gyB4hws1IcA6JzR-GB_JX6zdZ4vZVbgZ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cevicheone/v17/gyB4hws1IcA6JzR-GB_JX6zdZ4vZVbgZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lumanosimo",
-		"filename": "K2F0fZBYg_JDSEZHEfO8AoqKAyLzfWo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lumanosimo/v5/K2F0fZBYg_JDSEZHEfO8AoqKAyLzfWo.ttf",
-		"weight": 400
+		displayName: "Lumanosimo",
+		filename: "K2F0fZBYg_JDSEZHEfO8AoqKAyLzfWo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lumanosimo/v5/K2F0fZBYg_JDSEZHEfO8AoqKAyLzfWo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Doto",
-		"filename": "t5tJIRMbNJ6TQG7Il_EKPqP9zTnvqqGNcuvLMt1JIphFOOKez0WSvrlpgw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/doto/v3/t5tJIRMbNJ6TQG7Il_EKPqP9zTnvqqGNcuvLMt1JIphFOOKez0WSvrlpgw.ttf",
-		"weight": 400
+		displayName: "Doto",
+		filename: "t5tJIRMbNJ6TQG7Il_EKPqP9zTnvqqGNcuvLMt1JIphFOOKez0WSvrlpgw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/doto/v3/t5tJIRMbNJ6TQG7Il_EKPqP9zTnvqqGNcuvLMt1JIphFOOKez0WSvrlpgw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aoboshi One",
-		"filename": "Gg8xN5kXaAXtHQrFxwl10ysLBmZX_UEg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/aoboshione/v13/Gg8xN5kXaAXtHQrFxwl10ysLBmZX_UEg.ttf",
-		"weight": 400
+		displayName: "Aoboshi One",
+		filename: "Gg8xN5kXaAXtHQrFxwl10ysLBmZX_UEg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/aoboshione/v13/Gg8xN5kXaAXtHQrFxwl10ysLBmZX_UEg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Karantina",
-		"filename": "buE0po24ccnh31GVMABJ8AA78NVSYw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/karantina/v13/buE0po24ccnh31GVMABJ8AA78NVSYw.ttf",
-		"weight": 400
+		displayName: "Karantina",
+		filename: "buE0po24ccnh31GVMABJ8AA78NVSYw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/karantina/v13/buE0po24ccnh31GVMABJ8AA78NVSYw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sail",
-		"filename": "DPEjYwiBxwYJFBTDADYAbvw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sail/v17/DPEjYwiBxwYJFBTDADYAbvw.ttf",
-		"weight": 400
+		displayName: "Sail",
+		filename: "DPEjYwiBxwYJFBTDADYAbvw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sail/v17/DPEjYwiBxwYJFBTDADYAbvw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell Double Pica SC",
-		"filename": "neIazDmuiMkFo6zj_sHpQ8teNbWlwBB_hXjJ4Y0Eeru2dGg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfelldoublepicasc/v21/neIazDmuiMkFo6zj_sHpQ8teNbWlwBB_hXjJ4Y0Eeru2dGg.ttf",
-		"weight": 400
+		displayName: "IM Fell Double Pica SC",
+		filename: "neIazDmuiMkFo6zj_sHpQ8teNbWlwBB_hXjJ4Y0Eeru2dGg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfelldoublepicasc/v21/neIazDmuiMkFo6zj_sHpQ8teNbWlwBB_hXjJ4Y0Eeru2dGg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gafata",
-		"filename": "XRXV3I6Cn0VJKon4MuyAbsrVcA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gafata/v22/XRXV3I6Cn0VJKon4MuyAbsrVcA.ttf",
-		"weight": 400
+		displayName: "Gafata",
+		filename: "XRXV3I6Cn0VJKon4MuyAbsrVcA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gafata/v22/XRXV3I6Cn0VJKon4MuyAbsrVcA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Birthstone Bounce",
-		"filename": "ga6XaxZF43lIvTWrktHOTBJZGH7dEeVJGIMYDo_8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/birthstonebounce/v13/ga6XaxZF43lIvTWrktHOTBJZGH7dEeVJGIMYDo_8.ttf",
-		"weight": 400
+		displayName: "Birthstone Bounce",
+		filename: "ga6XaxZF43lIvTWrktHOTBJZGH7dEeVJGIMYDo_8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/birthstonebounce/v13/ga6XaxZF43lIvTWrktHOTBJZGH7dEeVJGIMYDo_8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zilla Slab Highlight",
-		"filename": "gNMbW2BrTpK8-inLtBJgMMfbm6uNVDvRxhtIY2DwSXlM",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/zillaslabhighlight/v21/gNMbW2BrTpK8-inLtBJgMMfbm6uNVDvRxhtIY2DwSXlM.ttf",
-		"weight": 400
+		displayName: "Zilla Slab Highlight",
+		filename: "gNMbW2BrTpK8-inLtBJgMMfbm6uNVDvRxhtIY2DwSXlM",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/zillaslabhighlight/v21/gNMbW2BrTpK8-inLtBJgMMfbm6uNVDvRxhtIY2DwSXlM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Miltonian Tattoo",
-		"filename": "EvOUzBRL0o0kCxF-lcMCQxlpVsA_FwP8MDBku-s",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/miltoniantattoo/v34/EvOUzBRL0o0kCxF-lcMCQxlpVsA_FwP8MDBku-s.ttf",
-		"weight": 400
+		displayName: "Miltonian Tattoo",
+		filename: "EvOUzBRL0o0kCxF-lcMCQxlpVsA_FwP8MDBku-s",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/miltoniantattoo/v34/EvOUzBRL0o0kCxF-lcMCQxlpVsA_FwP8MDBku-s.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Trade Winds",
-		"filename": "AYCPpXPpYNIIT7h8-QenM3Jq7PKP5Z_G",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tradewinds/v18/AYCPpXPpYNIIT7h8-QenM3Jq7PKP5Z_G.ttf",
-		"weight": 400
+		displayName: "Trade Winds",
+		filename: "AYCPpXPpYNIIT7h8-QenM3Jq7PKP5Z_G",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tradewinds/v18/AYCPpXPpYNIIT7h8-QenM3Jq7PKP5Z_G.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bubbler One",
-		"filename": "f0Xy0eqj68ppQV9KBLmAouHH26MPePkt",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bubblerone/v22/f0Xy0eqj68ppQV9KBLmAouHH26MPePkt.ttf",
-		"weight": 400
+		displayName: "Bubbler One",
+		filename: "f0Xy0eqj68ppQV9KBLmAouHH26MPePkt",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bubblerone/v22/f0Xy0eqj68ppQV9KBLmAouHH26MPePkt.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ledger",
-		"filename": "j8_q6-HK1L3if_sxm8DwHTBhHw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ledger/v17/j8_q6-HK1L3if_sxm8DwHTBhHw.ttf",
-		"weight": 400
+		displayName: "Ledger",
+		filename: "j8_q6-HK1L3if_sxm8DwHTBhHw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ledger/v17/j8_q6-HK1L3if_sxm8DwHTBhHw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stylish",
-		"filename": "m8JSjfhPYriQkk7-fo35dLxEdmo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/stylish/v25/m8JSjfhPYriQkk7-fo35dLxEdmo.ttf",
-		"weight": 400
+		displayName: "Stylish",
+		filename: "m8JSjfhPYriQkk7-fo35dLxEdmo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/stylish/v25/m8JSjfhPYriQkk7-fo35dLxEdmo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alkalami",
-		"filename": "zOL_4pfDmqRL95WXi5eLw8BMuvhH",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/alkalami/v8/zOL_4pfDmqRL95WXi5eLw8BMuvhH.ttf",
-		"weight": 400
+		displayName: "Alkalami",
+		filename: "zOL_4pfDmqRL95WXi5eLw8BMuvhH",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/alkalami/v8/zOL_4pfDmqRL95WXi5eLw8BMuvhH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inclusive Sans",
-		"filename": "0nk8C9biPuwflXcJ46P4PGWE08T-gfZusL0kQqtfcBtN7mxtc0bIsQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/inclusivesans/v4/0nk8C9biPuwflXcJ46P4PGWE08T-gfZusL0kQqtfcBtN7mxtc0bIsQ.ttf",
-		"weight": 400
+		displayName: "Inclusive Sans",
+		filename: "0nk8C9biPuwflXcJ46P4PGWE08T-gfZusL0kQqtfcBtN7mxtc0bIsQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/inclusivesans/v4/0nk8C9biPuwflXcJ46P4PGWE08T-gfZusL0kQqtfcBtN7mxtc0bIsQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Katibeh",
-		"filename": "ZGjXol5MQJog4bxDaC1RVDNdGDs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/katibeh/v22/ZGjXol5MQJog4bxDaC1RVDNdGDs.ttf",
-		"weight": 400
+		displayName: "Katibeh",
+		filename: "ZGjXol5MQJog4bxDaC1RVDNdGDs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/katibeh/v22/ZGjXol5MQJog4bxDaC1RVDNdGDs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Smythe",
-		"filename": "MwQ3bhT01--coT1BOLh_uGInjA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/smythe/v24/MwQ3bhT01--coT1BOLh_uGInjA.ttf",
-		"weight": 400
+		displayName: "Smythe",
+		filename: "MwQ3bhT01--coT1BOLh_uGInjA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/smythe/v24/MwQ3bhT01--coT1BOLh_uGInjA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caesar Dressing",
-		"filename": "yYLx0hLa3vawqtwdswbotmK4vrR3cbb6LZttyg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/caesardressing/v22/yYLx0hLa3vawqtwdswbotmK4vrR3cbb6LZttyg.ttf",
-		"weight": 400
+		displayName: "Caesar Dressing",
+		filename: "yYLx0hLa3vawqtwdswbotmK4vrR3cbb6LZttyg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/caesardressing/v22/yYLx0hLa3vawqtwdswbotmK4vrR3cbb6LZttyg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alkatra",
-		"filename": "r05EGLZA5qhCYsyJbuChFuK48Medzngmu7cPrNDVemxE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/alkatra/v5/r05EGLZA5qhCYsyJbuChFuK48Medzngmu7cPrNDVemxE.ttf",
-		"weight": 400
+		displayName: "Alkatra",
+		filename: "r05EGLZA5qhCYsyJbuChFuK48Medzngmu7cPrNDVemxE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/alkatra/v5/r05EGLZA5qhCYsyJbuChFuK48Medzngmu7cPrNDVemxE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jolly Lodger",
-		"filename": "BXRsvFTAh_bGkA1uQ48dlB3VWerT3ZyuqA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jollylodger/v21/BXRsvFTAh_bGkA1uQ48dlB3VWerT3ZyuqA.ttf",
-		"weight": 400
+		displayName: "Jolly Lodger",
+		filename: "BXRsvFTAh_bGkA1uQ48dlB3VWerT3ZyuqA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jollylodger/v21/BXRsvFTAh_bGkA1uQ48dlB3VWerT3ZyuqA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asset",
-		"filename": "SLXGc1na-mM4cWImRJqExst1",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/asset/v30/SLXGc1na-mM4cWImRJqExst1.ttf",
-		"weight": 400
+		displayName: "Asset",
+		filename: "SLXGc1na-mM4cWImRJqExst1",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/asset/v30/SLXGc1na-mM4cWImRJqExst1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Medula One",
-		"filename": "YA9Wr0qb5kjJM6l2V0yukiEqs7GtlvY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/medulaone/v20/YA9Wr0qb5kjJM6l2V0yukiEqs7GtlvY.ttf",
-		"weight": 400
+		displayName: "Medula One",
+		filename: "YA9Wr0qb5kjJM6l2V0yukiEqs7GtlvY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/medulaone/v20/YA9Wr0qb5kjJM6l2V0yukiEqs7GtlvY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Underdog",
-		"filename": "CHygV-jCElj7diMroVSiU14GN2Il",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/underdog/v24/CHygV-jCElj7diMroVSiU14GN2Il.ttf",
-		"weight": 400
+		displayName: "Underdog",
+		filename: "CHygV-jCElj7diMroVSiU14GN2Il",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/underdog/v24/CHygV-jCElj7diMroVSiU14GN2Il.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Braah One",
-		"filename": "KFOlCnWUpt6LsxxxiylvAx05IsDqlA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/braahone/v8/KFOlCnWUpt6LsxxxiylvAx05IsDqlA.ttf",
-		"weight": 400
+		displayName: "Braah One",
+		filename: "KFOlCnWUpt6LsxxxiylvAx05IsDqlA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/braahone/v8/KFOlCnWUpt6LsxxxiylvAx05IsDqlA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Barrio",
-		"filename": "wEO8EBXBk8hBIDiEdQYhWdsX1Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/barrio/v20/wEO8EBXBk8hBIDiEdQYhWdsX1Q.ttf",
-		"weight": 400
+		displayName: "Barrio",
+		filename: "wEO8EBXBk8hBIDiEdQYhWdsX1Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/barrio/v20/wEO8EBXBk8hBIDiEdQYhWdsX1Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Comforter",
-		"filename": "H4clBXOCl8nQnlaql3Qa6JG8iqeuag",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/comforter/v9/H4clBXOCl8nQnlaql3Qa6JG8iqeuag.ttf",
-		"weight": 400
+		displayName: "Comforter",
+		filename: "H4clBXOCl8nQnlaql3Qa6JG8iqeuag",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/comforter/v9/H4clBXOCl8nQnlaql3Qa6JG8iqeuag.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Benne",
-		"filename": "L0xzDFAhn18E6Vjxlt6qTDBN",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/benne/v24/L0xzDFAhn18E6Vjxlt6qTDBN.ttf",
-		"weight": 400
+		displayName: "Benne",
+		filename: "L0xzDFAhn18E6Vjxlt6qTDBN",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/benne/v24/L0xzDFAhn18E6Vjxlt6qTDBN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Akronim",
-		"filename": "fdN-9sqWtWZZlHRp-gBxkFYN-a8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/akronim/v23/fdN-9sqWtWZZlHRp-gBxkFYN-a8.ttf",
-		"weight": 400
+		displayName: "Akronim",
+		filename: "fdN-9sqWtWZZlHRp-gBxkFYN-a8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/akronim/v23/fdN-9sqWtWZZlHRp-gBxkFYN-a8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Headland One",
-		"filename": "yYLu0hHR2vKnp89Tk1TCq3Tx0PlTeZ3mJA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/headlandone/v17/yYLu0hHR2vKnp89Tk1TCq3Tx0PlTeZ3mJA.ttf",
-		"weight": 400
+		displayName: "Headland One",
+		filename: "yYLu0hHR2vKnp89Tk1TCq3Tx0PlTeZ3mJA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/headlandone/v17/yYLu0hHR2vKnp89Tk1TCq3Tx0PlTeZ3mJA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Erica One",
-		"filename": "WBLnrEXccV9VGrOKmGD1W0_MJMGxiQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ericaone/v29/WBLnrEXccV9VGrOKmGD1W0_MJMGxiQ.ttf",
-		"weight": 400
+		displayName: "Erica One",
+		filename: "WBLnrEXccV9VGrOKmGD1W0_MJMGxiQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ericaone/v29/WBLnrEXccV9VGrOKmGD1W0_MJMGxiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chela One",
-		"filename": "6ae-4KC7Uqgdz_JZdPIy31vWNTMwoQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chelaone/v22/6ae-4KC7Uqgdz_JZdPIy31vWNTMwoQ.ttf",
-		"weight": 400
+		displayName: "Chela One",
+		filename: "6ae-4KC7Uqgdz_JZdPIy31vWNTMwoQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chelaone/v22/6ae-4KC7Uqgdz_JZdPIy31vWNTMwoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "East Sea Dokdo",
-		"filename": "xfuo0Wn2V2_KanASqXSZp22m05_aGavYS18y",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eastseadokdo/v26/xfuo0Wn2V2_KanASqXSZp22m05_aGavYS18y.ttf",
-		"weight": 400
+		displayName: "East Sea Dokdo",
+		filename: "xfuo0Wn2V2_KanASqXSZp22m05_aGavYS18y",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eastseadokdo/v26/xfuo0Wn2V2_KanASqXSZp22m05_aGavYS18y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tauri",
-		"filename": "TwMA-IISS0AM3IpVWHU_TBqO",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tauri/v20/TwMA-IISS0AM3IpVWHU_TBqO.ttf",
-		"weight": 400
+		displayName: "Tauri",
+		filename: "TwMA-IISS0AM3IpVWHU_TBqO",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tauri/v20/TwMA-IISS0AM3IpVWHU_TBqO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Keania One",
-		"filename": "zOL54pXJk65E8pXardnuycRuv-hHkOs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/keaniaone/v26/zOL54pXJk65E8pXardnuycRuv-hHkOs.ttf",
-		"weight": 400
+		displayName: "Keania One",
+		filename: "zOL54pXJk65E8pXardnuycRuv-hHkOs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/keaniaone/v26/zOL54pXJk65E8pXardnuycRuv-hHkOs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Varta",
-		"filename": "Qw3AZQpJHj_6LzHUngWbrFkDH1x9tD4EirE-9PGLfQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/varta/v25/Qw3AZQpJHj_6LzHUngWbrFkDH1x9tD4EirE-9PGLfQ.ttf",
-		"weight": 400
+		displayName: "Varta",
+		filename: "Qw3AZQpJHj_6LzHUngWbrFkDH1x9tD4EirE-9PGLfQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/varta/v25/Qw3AZQpJHj_6LzHUngWbrFkDH1x9tD4EirE-9PGLfQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Margarine",
-		"filename": "qkBXXvoE6trLT9Y7YLye5JRLkAXbMQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/margarine/v27/qkBXXvoE6trLT9Y7YLye5JRLkAXbMQ.ttf",
-		"weight": 400
+		displayName: "Margarine",
+		filename: "qkBXXvoE6trLT9Y7YLye5JRLkAXbMQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/margarine/v27/qkBXXvoE6trLT9Y7YLye5JRLkAXbMQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Tamil",
-		"filename": "XLYJIZH2bYJHGYtPGSbUB8JKTp-_9n55SsLHW0WZez6TjtkDu3uNQid6q4v4oegjOQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anektamil/v18/XLYJIZH2bYJHGYtPGSbUB8JKTp-_9n55SsLHW0WZez6TjtkDu3uNQid6q4v4oegjOQ.ttf",
-		"weight": 400
+		displayName: "Anek Tamil",
+		filename: "XLYJIZH2bYJHGYtPGSbUB8JKTp-_9n55SsLHW0WZez6TjtkDu3uNQid6q4v4oegjOQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anektamil/v18/XLYJIZH2bYJHGYtPGSbUB8JKTp-_9n55SsLHW0WZez6TjtkDu3uNQid6q4v4oegjOQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fascinate Inline",
-		"filename": "jVyR7mzzB3zc-jp6QCAu60poNqIy1g3CfRXxWZQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fascinateinline/v24/jVyR7mzzB3zc-jp6QCAu60poNqIy1g3CfRXxWZQ.ttf",
-		"weight": 400
+		displayName: "Fascinate Inline",
+		filename: "jVyR7mzzB3zc-jp6QCAu60poNqIy1g3CfRXxWZQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fascinateinline/v24/jVyR7mzzB3zc-jp6QCAu60poNqIy1g3CfRXxWZQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Srisakdi",
-		"filename": "yMJRMIlvdpDbkB0A-jq8fSx5i814",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/srisakdi/v18/yMJRMIlvdpDbkB0A-jq8fSx5i814.ttf",
-		"weight": 400
+		displayName: "Srisakdi",
+		filename: "yMJRMIlvdpDbkB0A-jq8fSx5i814",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/srisakdi/v18/yMJRMIlvdpDbkB0A-jq8fSx5i814.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Overlock SC",
-		"filename": "1cX3aUHKGZrstGAY8nwVzHGAq8Sk1PoH",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/overlocksc/v25/1cX3aUHKGZrstGAY8nwVzHGAq8Sk1PoH.ttf",
-		"weight": 400
+		displayName: "Overlock SC",
+		filename: "1cX3aUHKGZrstGAY8nwVzHGAq8Sk1PoH",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/overlocksc/v25/1cX3aUHKGZrstGAY8nwVzHGAq8Sk1PoH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Habibi",
-		"filename": "CSR-4zFWkuqcTTNCShJeZOYySQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/habibi/v22/CSR-4zFWkuqcTTNCShJeZOYySQ.ttf",
-		"weight": 400
+		displayName: "Habibi",
+		filename: "CSR-4zFWkuqcTTNCShJeZOYySQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/habibi/v22/CSR-4zFWkuqcTTNCShJeZOYySQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Comforter Brush",
-		"filename": "Y4GTYa1xVSggrfzZI5WMjxRaOz0jwLL9Th8YYA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/comforterbrush/v9/Y4GTYa1xVSggrfzZI5WMjxRaOz0jwLL9Th8YYA.ttf",
-		"weight": 400
+		displayName: "Comforter Brush",
+		filename: "Y4GTYa1xVSggrfzZI5WMjxRaOz0jwLL9Th8YYA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/comforterbrush/v9/Y4GTYa1xVSggrfzZI5WMjxRaOz0jwLL9Th8YYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Astloch",
-		"filename": "TuGRUVJ8QI5GSeUjq9wRzMtkH1Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/astloch/v27/TuGRUVJ8QI5GSeUjq9wRzMtkH1Q.ttf",
-		"weight": 400
+		displayName: "Astloch",
+		filename: "TuGRUVJ8QI5GSeUjq9wRzMtkH1Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/astloch/v27/TuGRUVJ8QI5GSeUjq9wRzMtkH1Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Englebert",
-		"filename": "xn7iYH8w2XGrC8AR4HSxT_fYdN-WZw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/englebert/v24/xn7iYH8w2XGrC8AR4HSxT_fYdN-WZw.ttf",
-		"weight": 400
+		displayName: "Englebert",
+		filename: "xn7iYH8w2XGrC8AR4HSxT_fYdN-WZw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/englebert/v24/xn7iYH8w2XGrC8AR4HSxT_fYdN-WZw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mooli",
-		"filename": "-F6_fjJpLyk1bYPBBG7YpzlJ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mooli/v1/-F6_fjJpLyk1bYPBBG7YpzlJ.ttf",
-		"weight": 400
+		displayName: "Mooli",
+		filename: "-F6_fjJpLyk1bYPBBG7YpzlJ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mooli/v1/-F6_fjJpLyk1bYPBBG7YpzlJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Comme",
-		"filename": "8QIUdirKhMbn-uG1kHz0MgviDe1z5cFr644fWsRO9w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/comme/v4/8QIUdirKhMbn-uG1kHz0MgviDe1z5cFr644fWsRO9w.ttf",
-		"weight": 400
+		displayName: "Comme",
+		filename: "8QIUdirKhMbn-uG1kHz0MgviDe1z5cFr644fWsRO9w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/comme/v4/8QIUdirKhMbn-uG1kHz0MgviDe1z5cFr644fWsRO9w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Khmer",
-		"filename": "MjQImit_vPPwpF-BpN2EeYmD",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/khmer/v38/MjQImit_vPPwpF-BpN2EeYmD.ttf",
-		"weight": 400
+		displayName: "Khmer",
+		filename: "MjQImit_vPPwpF-BpN2EeYmD",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/khmer/v38/MjQImit_vPPwpF-BpN2EeYmD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Long Cang",
-		"filename": "LYjAdGP8kkgoTec8zkRgrXArXN7HWQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/longcang/v21/LYjAdGP8kkgoTec8zkRgrXArXN7HWQ.ttf",
-		"weight": 400
+		displayName: "Long Cang",
+		filename: "LYjAdGP8kkgoTec8zkRgrXArXN7HWQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/longcang/v21/LYjAdGP8kkgoTec8zkRgrXArXN7HWQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Liu Jian Mao Cao",
-		"filename": "845DNN84HJrccNonurqXILGpvCOoferVKGWsUo8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/liujianmaocao/v24/845DNN84HJrccNonurqXILGpvCOoferVKGWsUo8.ttf",
-		"weight": 400
+		displayName: "Liu Jian Mao Cao",
+		filename: "845DNN84HJrccNonurqXILGpvCOoferVKGWsUo8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/liujianmaocao/v24/845DNN84HJrccNonurqXILGpvCOoferVKGWsUo8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Ethiopic",
-		"filename": "7cHPv50vjIepfJVOZZgcpQ5B9FBTH9KGNfhSTgtoow1KVnIvyBoMSzUMacb-T35OK6DjwmfeaY9u",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansethiopic/v50/7cHPv50vjIepfJVOZZgcpQ5B9FBTH9KGNfhSTgtoow1KVnIvyBoMSzUMacb-T35OK6DjwmfeaY9u.ttf",
-		"weight": 400
+		displayName: "Noto Sans Ethiopic",
+		filename: "7cHPv50vjIepfJVOZZgcpQ5B9FBTH9KGNfhSTgtoow1KVnIvyBoMSzUMacb-T35OK6DjwmfeaY9u",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansethiopic/v50/7cHPv50vjIepfJVOZZgcpQ5B9FBTH9KGNfhSTgtoow1KVnIvyBoMSzUMacb-T35OK6DjwmfeaY9u.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Thaana",
-		"filename": "C8c14dM-vnz-s-3jaEsxlxHkBH-WZOETXfoQrfQ9Y4XrbhLhnu4-tbNu",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansthaana/v26/C8c14dM-vnz-s-3jaEsxlxHkBH-WZOETXfoQrfQ9Y4XrbhLhnu4-tbNu.ttf",
-		"weight": 400
+		displayName: "Noto Sans Thaana",
+		filename: "C8c14dM-vnz-s-3jaEsxlxHkBH-WZOETXfoQrfQ9Y4XrbhLhnu4-tbNu",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansthaana/v26/C8c14dM-vnz-s-3jaEsxlxHkBH-WZOETXfoQrfQ9Y4XrbhLhnu4-tbNu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rationale",
-		"filename": "9XUnlJ92n0_JFxHIfHcsdlFMzLC2Zw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rationale/v30/9XUnlJ92n0_JFxHIfHcsdlFMzLC2Zw.ttf",
-		"weight": 400
+		displayName: "Rationale",
+		filename: "9XUnlJ92n0_JFxHIfHcsdlFMzLC2Zw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rationale/v30/9XUnlJ92n0_JFxHIfHcsdlFMzLC2Zw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Music",
-		"filename": "pe0rMIiSN5pO63htf1sxIteQB9Zra1U",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notomusic/v21/pe0rMIiSN5pO63htf1sxIteQB9Zra1U.ttf",
-		"weight": 400
+		displayName: "Noto Music",
+		filename: "pe0rMIiSN5pO63htf1sxIteQB9Zra1U",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notomusic/v21/pe0rMIiSN5pO63htf1sxIteQB9Zra1U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Risque",
-		"filename": "VdGfAZUfHosahXxoCUYVBJ-T5g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/risque/v24/VdGfAZUfHosahXxoCUYVBJ-T5g.ttf",
-		"weight": 400
+		displayName: "Risque",
+		filename: "VdGfAZUfHosahXxoCUYVBJ-T5g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/risque/v24/VdGfAZUfHosahXxoCUYVBJ-T5g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell French Canon SC",
-		"filename": "FBVmdCru5-ifcor2bgq9V89khWcmQghEURY7H3c0UBCVIVqH",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfellfrenchcanonsc/v23/FBVmdCru5-ifcor2bgq9V89khWcmQghEURY7H3c0UBCVIVqH.ttf",
-		"weight": 400
+		displayName: "IM Fell French Canon SC",
+		filename: "FBVmdCru5-ifcor2bgq9V89khWcmQghEURY7H3c0UBCVIVqH",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfellfrenchcanonsc/v23/FBVmdCru5-ifcor2bgq9V89khWcmQghEURY7H3c0UBCVIVqH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IM Fell Great Primer SC",
-		"filename": "ga6daxBOxyt6sCqz3fjZCTFCTUDMHagsQKdDTLf9BXz0s8FG",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/imfellgreatprimersc/v21/ga6daxBOxyt6sCqz3fjZCTFCTUDMHagsQKdDTLf9BXz0s8FG.ttf",
-		"weight": 400
+		displayName: "IM Fell Great Primer SC",
+		filename: "ga6daxBOxyt6sCqz3fjZCTFCTUDMHagsQKdDTLf9BXz0s8FG",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/imfellgreatprimersc/v21/ga6daxBOxyt6sCqz3fjZCTFCTUDMHagsQKdDTLf9BXz0s8FG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cute Font",
-		"filename": "Noaw6Uny2oWPbSHMrY6vmJNVNC9hkw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/cutefont/v28/Noaw6Uny2oWPbSHMrY6vmJNVNC9hkw.ttf",
-		"weight": 400
+		displayName: "Cute Font",
+		filename: "Noaw6Uny2oWPbSHMrY6vmJNVNC9hkw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/cutefont/v28/Noaw6Uny2oWPbSHMrY6vmJNVNC9hkw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Victor Mono",
-		"filename": "Yq6H-LGQWyfv-LGy7lEO09xRn-T81AVB_tCyO87NhNyOV0Y9bQ",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/victormono/v5/Yq6H-LGQWyfv-LGy7lEO09xRn-T81AVB_tCyO87NhNyOV0Y9bQ.ttf",
-		"weight": 400
+		displayName: "Victor Mono",
+		filename: "Yq6H-LGQWyfv-LGy7lEO09xRn-T81AVB_tCyO87NhNyOV0Y9bQ",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/victormono/v5/Yq6H-LGQWyfv-LGy7lEO09xRn-T81AVB_tCyO87NhNyOV0Y9bQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Cut",
-		"filename": "KFOkCnSYu8mL-39LkWxPKTM1K9nz",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novacut/v26/KFOkCnSYu8mL-39LkWxPKTM1K9nz.ttf",
-		"weight": 400
+		displayName: "Nova Cut",
+		filename: "KFOkCnSYu8mL-39LkWxPKTM1K9nz",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novacut/v26/KFOkCnSYu8mL-39LkWxPKTM1K9nz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spirax",
-		"filename": "buE3poKgYNLy0F3cXktt-Csn-Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/spirax/v22/buE3poKgYNLy0F3cXktt-Csn-Q.ttf",
-		"weight": 400
+		displayName: "Spirax",
+		filename: "buE3poKgYNLy0F3cXktt-Csn-Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/spirax/v22/buE3poKgYNLy0F3cXktt-Csn-Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Winky Sans",
-		"filename": "ll8sK2SDUiG1Hpf2p06bHaEAYt6HPhJ2AGWKiD6F2TpBa98q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/winkysans/v3/ll8sK2SDUiG1Hpf2p06bHaEAYt6HPhJ2AGWKiD6F2TpBa98q.ttf",
-		"weight": 400
+		displayName: "Winky Sans",
+		filename: "ll8sK2SDUiG1Hpf2p06bHaEAYt6HPhJ2AGWKiD6F2TpBa98q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/winkysans/v3/ll8sK2SDUiG1Hpf2p06bHaEAYt6HPhJ2AGWKiD6F2TpBa98q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gentium Book Plus",
-		"filename": "vEFL2-RHBgUK5fbjKxRpbBtJPyRpofKfdbLOrdPV",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/gentiumbookplus/v1/vEFL2-RHBgUK5fbjKxRpbBtJPyRpofKfdbLOrdPV.ttf",
-		"weight": 400
+		displayName: "Gentium Book Plus",
+		filename: "vEFL2-RHBgUK5fbjKxRpbBtJPyRpofKfdbLOrdPV",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/gentiumbookplus/v1/vEFL2-RHBgUK5fbjKxRpbBtJPyRpofKfdbLOrdPV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Spline Sans Mono",
-		"filename": "R70MjzAei_CDNLfgZxrW6wrZOF2WdZ6xabUGSVtNuGBiMrtVy4d4dGb1",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/splinesansmono/v13/R70MjzAei_CDNLfgZxrW6wrZOF2WdZ6xabUGSVtNuGBiMrtVy4d4dGb1.ttf",
-		"weight": 400
+		displayName: "Spline Sans Mono",
+		filename: "R70MjzAei_CDNLfgZxrW6wrZOF2WdZ6xabUGSVtNuGBiMrtVy4d4dGb1",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/splinesansmono/v13/R70MjzAei_CDNLfgZxrW6wrZOF2WdZ6xabUGSVtNuGBiMrtVy4d4dGb1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Redacted",
-		"filename": "Z9XVDmdRShme2O_7aITe4u2El6GC",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/redacted/v11/Z9XVDmdRShme2O_7aITe4u2El6GC.ttf",
-		"weight": 400
+		displayName: "Redacted",
+		filename: "Z9XVDmdRShme2O_7aITe4u2El6GC",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/redacted/v11/Z9XVDmdRShme2O_7aITe4u2El6GC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Almendra Display",
-		"filename": "0FlPVOGWl1Sb4O3tETtADHRRlZhzXS_eTyer338",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/almendradisplay/v33/0FlPVOGWl1Sb4O3tETtADHRRlZhzXS_eTyer338.ttf",
-		"weight": 400
+		displayName: "Almendra Display",
+		filename: "0FlPVOGWl1Sb4O3tETtADHRRlZhzXS_eTyer338",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/almendradisplay/v33/0FlPVOGWl1Sb4O3tETtADHRRlZhzXS_eTyer338.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stalemate",
-		"filename": "taiIGmZ_EJq97-UfkZRpuqSs8ZQpaQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/stalemate/v24/taiIGmZ_EJq97-UfkZRpuqSs8ZQpaQ.ttf",
-		"weight": 400
+		displayName: "Stalemate",
+		filename: "taiIGmZ_EJq97-UfkZRpuqSs8ZQpaQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/stalemate/v24/taiIGmZ_EJq97-UfkZRpuqSs8ZQpaQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chau Philomene One",
-		"filename": "55xxezRsPtfie1vPY49qzdgSlJiHRQFsnIx7QMISdQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chauphilomeneone/v16/55xxezRsPtfie1vPY49qzdgSlJiHRQFsnIx7QMISdQ.ttf",
-		"weight": 400
+		displayName: "Chau Philomene One",
+		filename: "55xxezRsPtfie1vPY49qzdgSlJiHRQFsnIx7QMISdQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chauphilomeneone/v16/55xxezRsPtfie1vPY49qzdgSlJiHRQFsnIx7QMISdQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Protest Riot",
-		"filename": "d6lPkaOxWMKm7TdezXFmpkrM1_JgjmRpOA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/protestriot/v2/d6lPkaOxWMKm7TdezXFmpkrM1_JgjmRpOA.ttf",
-		"weight": 400
+		displayName: "Protest Riot",
+		filename: "d6lPkaOxWMKm7TdezXFmpkrM1_JgjmRpOA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/protestriot/v2/d6lPkaOxWMKm7TdezXFmpkrM1_JgjmRpOA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kirang Haerang",
-		"filename": "E21-_dn_gvvIjhYON1lpIU4-bcqvWPaJq4no",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kiranghaerang/v22/E21-_dn_gvvIjhYON1lpIU4-bcqvWPaJq4no.ttf",
-		"weight": 400
+		displayName: "Kirang Haerang",
+		filename: "E21-_dn_gvvIjhYON1lpIU4-bcqvWPaJq4no",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kiranghaerang/v22/E21-_dn_gvvIjhYON1lpIU4-bcqvWPaJq4no.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sansation",
-		"filename": "LYjAdGPjnEg8DNA0z01grXArXN7HWQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sansation/v1/LYjAdGPjnEg8DNA0z01grXArXN7HWQ.ttf",
-		"weight": 400
+		displayName: "Sansation",
+		filename: "LYjAdGPjnEg8DNA0z01grXArXN7HWQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sansation/v1/LYjAdGPjnEg8DNA0z01grXArXN7HWQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Unlock",
-		"filename": "7Au-p_8ykD-cDl7GKAjSwkUVOQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/unlock/v28/7Au-p_8ykD-cDl7GKAjSwkUVOQ.ttf",
-		"weight": 400
+		displayName: "Unlock",
+		filename: "7Au-p_8ykD-cDl7GKAjSwkUVOQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/unlock/v28/7Au-p_8ykD-cDl7GKAjSwkUVOQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Doodle Shadow",
-		"filename": "rP2bp3im_k8G_wTVdvvMdHqmXTR3lEaLyKuZ3KOY7Gw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikdoodleshadow/v1/rP2bp3im_k8G_wTVdvvMdHqmXTR3lEaLyKuZ3KOY7Gw.ttf",
-		"weight": 400
+		displayName: "Rubik Doodle Shadow",
+		filename: "rP2bp3im_k8G_wTVdvvMdHqmXTR3lEaLyKuZ3KOY7Gw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikdoodleshadow/v1/rP2bp3im_k8G_wTVdvvMdHqmXTR3lEaLyKuZ3KOY7Gw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Symbols 2",
-		"filename": "I_uyMoGduATTei9eI8daxVHDyfisHr71ypPqfX71-AI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssymbols2/v25/I_uyMoGduATTei9eI8daxVHDyfisHr71ypPqfX71-AI.ttf",
-		"weight": 400
+		displayName: "Noto Sans Symbols 2",
+		filename: "I_uyMoGduATTei9eI8daxVHDyfisHr71ypPqfX71-AI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssymbols2/v25/I_uyMoGduATTei9eI8daxVHDyfisHr71ypPqfX71-AI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Strait",
-		"filename": "DtViJxy6WaEr1LZzeDhtkl0U7w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/strait/v19/DtViJxy6WaEr1LZzeDhtkl0U7w.ttf",
-		"weight": 400
+		displayName: "Strait",
+		filename: "DtViJxy6WaEr1LZzeDhtkl0U7w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/strait/v19/DtViJxy6WaEr1LZzeDhtkl0U7w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Federant",
-		"filename": "2sDdZGNfip_eirT0_U0jRUG0AqUc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/federant/v31/2sDdZGNfip_eirT0_U0jRUG0AqUc.ttf",
-		"weight": 400
+		displayName: "Federant",
+		filename: "2sDdZGNfip_eirT0_U0jRUG0AqUc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/federant/v31/2sDdZGNfip_eirT0_U0jRUG0AqUc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Twinkle Star",
-		"filename": "pe0pMI6IL4dPoFl9LGEmY6WaA_Rue1UwVg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/twinklestar/v8/pe0pMI6IL4dPoFl9LGEmY6WaA_Rue1UwVg.ttf",
-		"weight": 400
+		displayName: "Twinkle Star",
+		filename: "pe0pMI6IL4dPoFl9LGEmY6WaA_Rue1UwVg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/twinklestar/v8/pe0pMI6IL4dPoFl9LGEmY6WaA_Rue1UwVg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Engagement",
-		"filename": "x3dlckLDZbqa7RUs9MFVXNossybsHQI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/engagement/v29/x3dlckLDZbqa7RUs9MFVXNossybsHQI.ttf",
-		"weight": 400
+		displayName: "Engagement",
+		filename: "x3dlckLDZbqa7RUs9MFVXNossybsHQI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/engagement/v29/x3dlckLDZbqa7RUs9MFVXNossybsHQI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sree Krushnadevaraya",
-		"filename": "R70FjzQeifmPepmyQQjQ9kvwMkWYPfTA_EWb2FhQuXir",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sreekrushnadevaraya/v23/R70FjzQeifmPepmyQQjQ9kvwMkWYPfTA_EWb2FhQuXir.ttf",
-		"weight": 400
+		displayName: "Sree Krushnadevaraya",
+		filename: "R70FjzQeifmPepmyQQjQ9kvwMkWYPfTA_EWb2FhQuXir",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sreekrushnadevaraya/v23/R70FjzQeifmPepmyQQjQ9kvwMkWYPfTA_EWb2FhQuXir.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Single Day",
-		"filename": "LYjHdGDjlEgoAcF95EI5jVoFUNfeQJU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/singleday/v19/LYjHdGDjlEgoAcF95EI5jVoFUNfeQJU.ttf",
-		"weight": 400
+		displayName: "Single Day",
+		filename: "LYjHdGDjlEgoAcF95EI5jVoFUNfeQJU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/singleday/v19/LYjHdGDjlEgoAcF95EI5jVoFUNfeQJU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu TAS Beginner",
-		"filename": "ZXuwe04WubHfGVY-1TcNg7AFUmshg8jIUTzK3r34f_HwemkrBWRhvk02",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/edutasbeginner/v5/ZXuwe04WubHfGVY-1TcNg7AFUmshg8jIUTzK3r34f_HwemkrBWRhvk02.ttf",
-		"weight": 400
+		displayName: "Edu TAS Beginner",
+		filename: "ZXuwe04WubHfGVY-1TcNg7AFUmshg8jIUTzK3r34f_HwemkrBWRhvk02",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/edutasbeginner/v5/ZXuwe04WubHfGVY-1TcNg7AFUmshg8jIUTzK3r34f_HwemkrBWRhvk02.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stalinist One",
-		"filename": "MQpS-WezM9W4Dd7D3B7I-UT7eZ-UPyacPbo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/stalinistone/v58/MQpS-WezM9W4Dd7D3B7I-UT7eZ-UPyacPbo.ttf",
-		"weight": 400
+		displayName: "Stalinist One",
+		filename: "MQpS-WezM9W4Dd7D3B7I-UT7eZ-UPyacPbo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/stalinistone/v58/MQpS-WezM9W4Dd7D3B7I-UT7eZ-UPyacPbo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ruthie",
-		"filename": "gokvH63sGkdqXuU9lD53Q2u_mQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/ruthie/v28/gokvH63sGkdqXuU9lD53Q2u_mQ.ttf",
-		"weight": 400
+		displayName: "Ruthie",
+		filename: "gokvH63sGkdqXuU9lD53Q2u_mQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/ruthie/v28/gokvH63sGkdqXuU9lD53Q2u_mQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Handjet",
-		"filename": "oY1n8eXHq7n1OnbQrOY_2FrEwYEMLlcdP1mCtZaLaTutCwcIhGZ0lGU0akFcO3XFHTmaUkUsEHFAH2A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/handjet/v22/oY1n8eXHq7n1OnbQrOY_2FrEwYEMLlcdP1mCtZaLaTutCwcIhGZ0lGU0akFcO3XFHTmaUkUsEHFAH2A.ttf",
-		"weight": 400
+		displayName: "Handjet",
+		filename: "oY1n8eXHq7n1OnbQrOY_2FrEwYEMLlcdP1mCtZaLaTutCwcIhGZ0lGU0akFcO3XFHTmaUkUsEHFAH2A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/handjet/v22/oY1n8eXHq7n1OnbQrOY_2FrEwYEMLlcdP1mCtZaLaTutCwcIhGZ0lGU0akFcO3XFHTmaUkUsEHFAH2A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lovers Quarrel",
-		"filename": "Yq6N-LSKXTL-5bCy8ksBzpQ_-zAsY7pO6siz",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/loversquarrel/v25/Yq6N-LSKXTL-5bCy8ksBzpQ_-zAsY7pO6siz.ttf",
-		"weight": 400
+		displayName: "Lovers Quarrel",
+		filename: "Yq6N-LSKXTL-5bCy8ksBzpQ_-zAsY7pO6siz",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/loversquarrel/v25/Yq6N-LSKXTL-5bCy8ksBzpQ_-zAsY7pO6siz.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ruluko",
-		"filename": "xMQVuFNZVaODtm0pC6WzKX_QmA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ruluko/v22/xMQVuFNZVaODtm0pC6WzKX_QmA.ttf",
-		"weight": 400
+		displayName: "Ruluko",
+		filename: "xMQVuFNZVaODtm0pC6WzKX_QmA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ruluko/v22/xMQVuFNZVaODtm0pC6WzKX_QmA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Canadian Aboriginal",
-		"filename": "4C_TLjTuEqPj-8J01CwaGkiZ9os0iGVkezM1mUT-j_Lmlzda6uH_nnX1bzigWLn_yAsg0q0uhQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscanadianaboriginal/v28/4C_TLjTuEqPj-8J01CwaGkiZ9os0iGVkezM1mUT-j_Lmlzda6uH_nnX1bzigWLn_yAsg0q0uhQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Canadian Aboriginal",
+		filename: "4C_TLjTuEqPj-8J01CwaGkiZ9os0iGVkezM1mUT-j_Lmlzda6uH_nnX1bzigWLn_yAsg0q0uhQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscanadianaboriginal/v28/4C_TLjTuEqPj-8J01CwaGkiZ9os0iGVkezM1mUT-j_Lmlzda6uH_nnX1bzigWLn_yAsg0q0uhQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans Thai Looped",
-		"filename": "tss_AoJJRAhL3BTrK3r2xxbFhvKfyBB6l7hHT30LxBKAoFGoBCQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsansthailooped/v12/tss_AoJJRAhL3BTrK3r2xxbFhvKfyBB6l7hHT30LxBKAoFGoBCQ.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans Thai Looped",
+		filename: "tss_AoJJRAhL3BTrK3r2xxbFhvKfyBB6l7hHT30LxBKAoFGoBCQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsansthailooped/v12/tss_AoJJRAhL3BTrK3r2xxbFhvKfyBB6l7hHT30LxBKAoFGoBCQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kulim Park",
-		"filename": "fdN79secq3hflz1Uu3IwtF4m5aZxebw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kulimpark/v15/fdN79secq3hflz1Uu3IwtF4m5aZxebw.ttf",
-		"weight": 400
+		displayName: "Kulim Park",
+		filename: "fdN79secq3hflz1Uu3IwtF4m5aZxebw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kulimpark/v15/fdN79secq3hflz1Uu3IwtF4m5aZxebw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Miltonian",
-		"filename": "zOL-4pbPn6Ne9JqTg9mr6e5As-FeiQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/miltonian/v32/zOL-4pbPn6Ne9JqTg9mr6e5As-FeiQ.ttf",
-		"weight": 400
+		displayName: "Miltonian",
+		filename: "zOL-4pbPn6Ne9JqTg9mr6e5As-FeiQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/miltonian/v32/zOL-4pbPn6Ne9JqTg9mr6e5As-FeiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Oriya",
-		"filename": "AYCppXfzfccDCstK_hrjDyADv5e9748vhj3CJBLHIARtgD6TJQS0dJT5Ivj0f6_c6LhHBRe-",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoriya/v33/AYCppXfzfccDCstK_hrjDyADv5e9748vhj3CJBLHIARtgD6TJQS0dJT5Ivj0f6_c6LhHBRe-.ttf",
-		"weight": 400
+		displayName: "Noto Sans Oriya",
+		filename: "AYCppXfzfccDCstK_hrjDyADv5e9748vhj3CJBLHIARtgD6TJQS0dJT5Ivj0f6_c6LhHBRe-",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoriya/v33/AYCppXfzfccDCstK_hrjDyADv5e9748vhj3CJBLHIARtgD6TJQS0dJT5Ivj0f6_c6LhHBRe-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jomolhari",
-		"filename": "EvONzA1M1Iw_CBd2hsQCF1IZKq5INg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/jomolhari/v21/EvONzA1M1Iw_CBd2hsQCF1IZKq5INg.ttf",
-		"weight": 400
+		displayName: "Jomolhari",
+		filename: "EvONzA1M1Iw_CBd2hsQCF1IZKq5INg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/jomolhari/v21/EvONzA1M1Iw_CBd2hsQCF1IZKq5INg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Mega",
-		"filename": "qFdX35aBi5JtHD41zSTFEuTByuvYFuE9IbDL8fmvveyiq9EqQw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexendmega/v27/qFdX35aBi5JtHD41zSTFEuTByuvYFuE9IbDL8fmvveyiq9EqQw.ttf",
-		"weight": 400
+		displayName: "Lexend Mega",
+		filename: "qFdX35aBi5JtHD41zSTFEuTByuvYFuE9IbDL8fmvveyiq9EqQw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexendmega/v27/qFdX35aBi5JtHD41zSTFEuTByuvYFuE9IbDL8fmvveyiq9EqQw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Flamenco",
-		"filename": "neIIzCehqYguo67ssaWGHK06UY30",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/flamenco/v19/neIIzCehqYguo67ssaWGHK06UY30.ttf",
-		"weight": 400
+		displayName: "Flamenco",
+		filename: "neIIzCehqYguo67ssaWGHK06UY30",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/flamenco/v19/neIIzCehqYguo67ssaWGHK06UY30.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nova Oval",
-		"filename": "jAnEgHdmANHvPenMaswCMY-h3cWkWg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/novaoval/v26/jAnEgHdmANHvPenMaswCMY-h3cWkWg.ttf",
-		"weight": 400
+		displayName: "Nova Oval",
+		filename: "jAnEgHdmANHvPenMaswCMY-h3cWkWg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/novaoval/v26/jAnEgHdmANHvPenMaswCMY-h3cWkWg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ojuju",
-		"filename": "7r3bqXF7v9ApbrMih3jYQBVm9-n_Spk552FRLYeruQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ojuju/v5/7r3bqXF7v9ApbrMih3jYQBVm9-n_Spk552FRLYeruQ.ttf",
-		"weight": 400
+		displayName: "Ojuju",
+		filename: "7r3bqXF7v9ApbrMih3jYQBVm9-n_Spk552FRLYeruQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ojuju/v5/7r3bqXF7v9ApbrMih3jYQBVm9-n_Spk552FRLYeruQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mate SC",
-		"filename": "-nF8OGQ1-uoVr2wKyiXZ95OkJwA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/matesc/v23/-nF8OGQ1-uoVr2wKyiXZ95OkJwA.ttf",
-		"weight": 400
+		displayName: "Mate SC",
+		filename: "-nF8OGQ1-uoVr2wKyiXZ95OkJwA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/matesc/v23/-nF8OGQ1-uoVr2wKyiXZ95OkJwA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chocolate Classical Sans",
-		"filename": "nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdDPI2J9mHITw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chocolateclassicalsans/v14/nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdDPI2J9mHITw.ttf",
-		"weight": 400
+		displayName: "Chocolate Classical Sans",
+		filename: "nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdDPI2J9mHITw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chocolateclassicalsans/v14/nuFqD-PLTZX4XIgT-P2ToCDudWHHflqUpTpfjWdDPI2J9mHITw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shalimar",
-		"filename": "uU9MCBoE6I6iNWFUvTPx8PCOg0uX",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/shalimar/v9/uU9MCBoE6I6iNWFUvTPx8PCOg0uX.ttf",
-		"weight": 400
+		displayName: "Shalimar",
+		filename: "uU9MCBoE6I6iNWFUvTPx8PCOg0uX",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/shalimar/v9/uU9MCBoE6I6iNWFUvTPx8PCOg0uX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mynerve",
-		"filename": "P5sCzZKPdNjb4jt7xCRuiZ-uydg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mynerve/v8/P5sCzZKPdNjb4jt7xCRuiZ-uydg.ttf",
-		"weight": 400
+		displayName: "Mynerve",
+		filename: "P5sCzZKPdNjb4jt7xCRuiZ-uydg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mynerve/v8/P5sCzZKPdNjb4jt7xCRuiZ-uydg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vend Sans",
-		"filename": "E212_d7ijufNwCJPEUs2WCek2ncUdeeBqlmqzzfJQAJuEJw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/vendsans/v1/E212_d7ijufNwCJPEUs2WCek2ncUdeeBqlmqzzfJQAJuEJw.ttf",
-		"weight": 400
+		displayName: "Vend Sans",
+		filename: "E212_d7ijufNwCJPEUs2WCek2ncUdeeBqlmqzzfJQAJuEJw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/vendsans/v1/E212_d7ijufNwCJPEUs2WCek2ncUdeeBqlmqzzfJQAJuEJw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite US Trad",
-		"filename": "fdNX9tyHsnVPjW9trmV7wQ0stdwRBYclCsCdzOb1-cd1E8tgj6Kf5uBNig",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteustrad/v11/fdNX9tyHsnVPjW9trmV7wQ0stdwRBYclCsCdzOb1-cd1E8tgj6Kf5uBNig.ttf",
-		"weight": 400
+		displayName: "Playwrite US Trad",
+		filename: "fdNX9tyHsnVPjW9trmV7wQ0stdwRBYclCsCdzOb1-cd1E8tgj6Kf5uBNig",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteustrad/v11/fdNX9tyHsnVPjW9trmV7wQ0stdwRBYclCsCdzOb1-cd1E8tgj6Kf5uBNig.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poltawski Nowy",
-		"filename": "flUsRq6ww480U1xsUpFXD-iDBNlSAOLkKCLnWq8KqCWnDS6V5CzCoQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/poltawskinowy/v5/flUsRq6ww480U1xsUpFXD-iDBNlSAOLkKCLnWq8KqCWnDS6V5CzCoQ.ttf",
-		"weight": 400
+		displayName: "Poltawski Nowy",
+		filename: "flUsRq6ww480U1xsUpFXD-iDBNlSAOLkKCLnWq8KqCWnDS6V5CzCoQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/poltawskinowy/v5/flUsRq6ww480U1xsUpFXD-iDBNlSAOLkKCLnWq8KqCWnDS6V5CzCoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sonsie One",
-		"filename": "PbymFmP_EAnPqbKaoc18YVu80lbp8JM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sonsieone/v22/PbymFmP_EAnPqbKaoc18YVu80lbp8JM.ttf",
-		"weight": 400
+		displayName: "Sonsie One",
+		filename: "PbymFmP_EAnPqbKaoc18YVu80lbp8JM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sonsieone/v22/PbymFmP_EAnPqbKaoc18YVu80lbp8JM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Malayalam",
-		"filename": "JIAZUU5sdmdP_HMcVcZFcH7DeVBeGVgSMEk2cmVDq1ihUXL1t-xfnVwHpQVySg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifmalayalam/v32/JIAZUU5sdmdP_HMcVcZFcH7DeVBeGVgSMEk2cmVDq1ihUXL1t-xfnVwHpQVySg.ttf",
-		"weight": 400
+		displayName: "Noto Serif Malayalam",
+		filename: "JIAZUU5sdmdP_HMcVcZFcH7DeVBeGVgSMEk2cmVDq1ihUXL1t-xfnVwHpQVySg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifmalayalam/v32/JIAZUU5sdmdP_HMcVcZFcH7DeVBeGVgSMEk2cmVDq1ihUXL1t-xfnVwHpQVySg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rum Raisin",
-		"filename": "nwpRtKu3Ih8D5avB4h2uJ3-IywA7eMM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/rumraisin/v24/nwpRtKu3Ih8D5avB4h2uJ3-IywA7eMM.ttf",
-		"weight": 400
+		displayName: "Rum Raisin",
+		filename: "nwpRtKu3Ih8D5avB4h2uJ3-IywA7eMM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/rumraisin/v24/nwpRtKu3Ih8D5avB4h2uJ3-IywA7eMM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Akaya Telivigala",
-		"filename": "lJwc-oo_iG9wXqU3rCTD395tp0uifdLdsIH0YH8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/akayatelivigala/v28/lJwc-oo_iG9wXqU3rCTD395tp0uifdLdsIH0YH8.ttf",
-		"weight": 400
+		displayName: "Akaya Telivigala",
+		filename: "lJwc-oo_iG9wXqU3rCTD395tp0uifdLdsIH0YH8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/akayatelivigala/v28/lJwc-oo_iG9wXqU3rCTD395tp0uifdLdsIH0YH8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kavoon",
-		"filename": "pxiFyp4_scRYhlU4NLr6f1pdEQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kavoon/v25/pxiFyp4_scRYhlU4NLr6f1pdEQ.ttf",
-		"weight": 400
+		displayName: "Kavoon",
+		filename: "pxiFyp4_scRYhlU4NLr6f1pdEQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kavoon/v25/pxiFyp4_scRYhlU4NLr6f1pdEQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gorditas",
-		"filename": "ll8_K2aTVD26DsPEtQDoDa4AlxYb",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gorditas/v24/ll8_K2aTVD26DsPEtQDoDa4AlxYb.ttf",
-		"weight": 400
+		displayName: "Gorditas",
+		filename: "ll8_K2aTVD26DsPEtQDoDa4AlxYb",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gorditas/v24/ll8_K2aTVD26DsPEtQDoDa4AlxYb.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Texturina",
-		"filename": "c4mM1nxpEtL3pXiAulRTkY-HGmNEX1b9NspjMwhAgliHhVrXy2eYGvUg25riW1OD",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/texturina/v32/c4mM1nxpEtL3pXiAulRTkY-HGmNEX1b9NspjMwhAgliHhVrXy2eYGvUg25riW1OD.ttf",
-		"weight": 400
+		displayName: "Texturina",
+		filename: "c4mM1nxpEtL3pXiAulRTkY-HGmNEX1b9NspjMwhAgliHhVrXy2eYGvUg25riW1OD",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/texturina/v32/c4mM1nxpEtL3pXiAulRTkY-HGmNEX1b9NspjMwhAgliHhVrXy2eYGvUg25riW1OD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Island Moments",
-		"filename": "NaPBcZfVGvBdxIt7Ar0qzkXJF-TGIohbZ6SY",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/islandmoments/v8/NaPBcZfVGvBdxIt7Ar0qzkXJF-TGIohbZ6SY.ttf",
-		"weight": 400
+		displayName: "Island Moments",
+		filename: "NaPBcZfVGvBdxIt7Ar0qzkXJF-TGIohbZ6SY",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/islandmoments/v8/NaPBcZfVGvBdxIt7Ar0qzkXJF-TGIohbZ6SY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Junge",
-		"filename": "gokgH670Gl1lUqAdvhB7SnKm",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/junge/v26/gokgH670Gl1lUqAdvhB7SnKm.ttf",
-		"weight": 400
+		displayName: "Junge",
+		filename: "gokgH670Gl1lUqAdvhB7SnKm",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/junge/v26/gokgH670Gl1lUqAdvhB7SnKm.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Tokyo Zoo",
-		"filename": "NGSyv5ffC0J_BK6aFNtr6sRv8a1uRWe9amg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/zentokyozoo/v8/NGSyv5ffC0J_BK6aFNtr6sRv8a1uRWe9amg.ttf",
-		"weight": 400
+		displayName: "Zen Tokyo Zoo",
+		filename: "NGSyv5ffC0J_BK6aFNtr6sRv8a1uRWe9amg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/zentokyozoo/v8/NGSyv5ffC0J_BK6aFNtr6sRv8a1uRWe9amg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alan Sans",
-		"filename": "zOLt4pbDmq5Eu6ebjMSx4sywa339j__gfN_oxyB1jBwiRr0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alansans/v5/zOLt4pbDmq5Eu6ebjMSx4sywa339j__gfN_oxyB1jBwiRr0.ttf",
-		"weight": 400
+		displayName: "Alan Sans",
+		filename: "zOLt4pbDmq5Eu6ebjMSx4sywa339j__gfN_oxyB1jBwiRr0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alansans/v5/zOLt4pbDmq5Eu6ebjMSx4sywa339j__gfN_oxyB1jBwiRr0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Seymour One",
-		"filename": "4iCp6Khla9xbjQpoWGGd0myIPYBvgpUI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/seymourone/v25/4iCp6Khla9xbjQpoWGGd0myIPYBvgpUI.ttf",
-		"weight": 400
+		displayName: "Seymour One",
+		filename: "4iCp6Khla9xbjQpoWGGd0myIPYBvgpUI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/seymourone/v25/4iCp6Khla9xbjQpoWGGd0myIPYBvgpUI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BIZ UDMincho",
-		"filename": "EJRRQgI6eOxFjBdKs38yhtW1dwT7rcpY8Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bizudmincho/v11/EJRRQgI6eOxFjBdKs38yhtW1dwT7rcpY8Q.ttf",
-		"weight": 400
+		displayName: "BIZ UDMincho",
+		filename: "EJRRQgI6eOxFjBdKs38yhtW1dwT7rcpY8Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bizudmincho/v11/EJRRQgI6eOxFjBdKs38yhtW1dwT7rcpY8Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Beau Rivage",
-		"filename": "UcCi3FIgIG2bH4mMNWJUlmg3NZp8K2sL",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/beaurivage/v2/UcCi3FIgIG2bH4mMNWJUlmg3NZp8K2sL.ttf",
-		"weight": 400
+		displayName: "Beau Rivage",
+		filename: "UcCi3FIgIG2bH4mMNWJUlmg3NZp8K2sL",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/beaurivage/v2/UcCi3FIgIG2bH4mMNWJUlmg3NZp8K2sL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Boldonse",
-		"filename": "ZgNQjPxGPbbJUZemjC38hmHmNpCO",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/boldonse/v1/ZgNQjPxGPbbJUZemjC38hmHmNpCO.ttf",
-		"weight": 400
+		displayName: "Boldonse",
+		filename: "ZgNQjPxGPbbJUZemjC38hmHmNpCO",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/boldonse/v1/ZgNQjPxGPbbJUZemjC38hmHmNpCO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ranchers",
-		"filename": "zrfm0H3Lx-P2Xvs2AoDYDC79XTHv",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ranchers/v19/zrfm0H3Lx-P2Xvs2AoDYDC79XTHv.ttf",
-		"weight": 400
+		displayName: "Ranchers",
+		filename: "zrfm0H3Lx-P2Xvs2AoDYDC79XTHv",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ranchers/v19/zrfm0H3Lx-P2Xvs2AoDYDC79XTHv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Londrina Outline",
-		"filename": "C8c44dM8vmb14dfsZxhetg3pDH-SfuoxrSKMDvI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/londrinaoutline/v29/C8c44dM8vmb14dfsZxhetg3pDH-SfuoxrSKMDvI.ttf",
-		"weight": 400
+		displayName: "Londrina Outline",
+		filename: "C8c44dM8vmb14dfsZxhetg3pDH-SfuoxrSKMDvI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/londrinaoutline/v29/C8c44dM8vmb14dfsZxhetg3pDH-SfuoxrSKMDvI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Scribble",
-		"filename": "snfzs0Cp48d67SuHQOpjXLsQpbqbSjORSo9W",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikscribble/v1/snfzs0Cp48d67SuHQOpjXLsQpbqbSjORSo9W.ttf",
-		"weight": 400
+		displayName: "Rubik Scribble",
+		filename: "snfzs0Cp48d67SuHQOpjXLsQpbqbSjORSo9W",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikscribble/v1/snfzs0Cp48d67SuHQOpjXLsQpbqbSjORSo9W.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Passions Conflict",
-		"filename": "kmKnZrcrFhfafnWX9x0GuEC-zowow5NeYRI4CN2V",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/passionsconflict/v9/kmKnZrcrFhfafnWX9x0GuEC-zowow5NeYRI4CN2V.ttf",
-		"weight": 400
+		displayName: "Passions Conflict",
+		filename: "kmKnZrcrFhfafnWX9x0GuEC-zowow5NeYRI4CN2V",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/passionsconflict/v9/kmKnZrcrFhfafnWX9x0GuEC-zowow5NeYRI4CN2V.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kaisei HarunoUmi",
-		"filename": "HI_RiZQSLqBQoAHhK_C6N_nzy_jcGsv5sM8u3mk",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kaiseiharunoumi/v11/HI_RiZQSLqBQoAHhK_C6N_nzy_jcGsv5sM8u3mk.ttf",
-		"weight": 400
+		displayName: "Kaisei HarunoUmi",
+		filename: "HI_RiZQSLqBQoAHhK_C6N_nzy_jcGsv5sM8u3mk",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kaiseiharunoumi/v11/HI_RiZQSLqBQoAHhK_C6N_nzy_jcGsv5sM8u3mk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Gujarati",
-		"filename": "l7g_bj5oysqknvkCo2T_8FuiIRBA7lncQUmbIBEtPKiYYQhRwyBxCD-0F5C7w0KgB7Lm7g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekgujarati/v17/l7g_bj5oysqknvkCo2T_8FuiIRBA7lncQUmbIBEtPKiYYQhRwyBxCD-0F5C7w0KgB7Lm7g.ttf",
-		"weight": 400
+		displayName: "Anek Gujarati",
+		filename: "l7g_bj5oysqknvkCo2T_8FuiIRBA7lncQUmbIBEtPKiYYQhRwyBxCD-0F5C7w0KgB7Lm7g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekgujarati/v17/l7g_bj5oysqknvkCo2T_8FuiIRBA7lncQUmbIBEtPKiYYQhRwyBxCD-0F5C7w0KgB7Lm7g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stint Ultra Expanded",
-		"filename": "CSRg4yNNh-GbW3o3JkwoDcdvMKMf0oBAd0qoATQkWwam",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/stintultraexpanded/v24/CSRg4yNNh-GbW3o3JkwoDcdvMKMf0oBAd0qoATQkWwam.ttf",
-		"weight": 400
+		displayName: "Stint Ultra Expanded",
+		filename: "CSRg4yNNh-GbW3o3JkwoDcdvMKMf0oBAd0qoATQkWwam",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/stintultraexpanded/v24/CSRg4yNNh-GbW3o3JkwoDcdvMKMf0oBAd0qoATQkWwam.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zalando Sans SemiExpanded",
-		"filename": "6qLhKYcHuh3msE9OaXROVVclRRa-ClZSEipa2hrEzR2jhk_n3T6ACkDbEnP9Fs7bOSO7",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zalandosanssemiexpanded/v2/6qLhKYcHuh3msE9OaXROVVclRRa-ClZSEipa2hrEzR2jhk_n3T6ACkDbEnP9Fs7bOSO7.ttf",
-		"weight": 400
+		displayName: "Zalando Sans SemiExpanded",
+		filename: "6qLhKYcHuh3msE9OaXROVVclRRa-ClZSEipa2hrEzR2jhk_n3T6ACkDbEnP9Fs7bOSO7",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zalandosanssemiexpanded/v2/6qLhKYcHuh3msE9OaXROVVclRRa-ClZSEipa2hrEzR2jhk_n3T6ACkDbEnP9Fs7bOSO7.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Autour One",
-		"filename": "UqyVK80cP25l3fJgbdfbk5lWVscxdKE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/autourone/v25/UqyVK80cP25l3fJgbdfbk5lWVscxdKE.ttf",
-		"weight": 400
+		displayName: "Autour One",
+		filename: "UqyVK80cP25l3fJgbdfbk5lWVscxdKE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/autourone/v25/UqyVK80cP25l3fJgbdfbk5lWVscxdKE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Qahiri",
-		"filename": "tsssAp1RZy0C_hGuU3Chrnmupw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/qahiri/v11/tsssAp1RZy0C_hGuU3Chrnmupw.ttf",
-		"weight": 400
+		displayName: "Qahiri",
+		filename: "tsssAp1RZy0C_hGuU3Chrnmupw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/qahiri/v11/tsssAp1RZy0C_hGuU3Chrnmupw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Faculty Glyphic",
-		"filename": "RrQIbot2-iBvI2mYSyKIrcgoBuQIG-eFNVmULg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/facultyglyphic/v4/RrQIbot2-iBvI2mYSyKIrcgoBuQIG-eFNVmULg.ttf",
-		"weight": 400
+		displayName: "Faculty Glyphic",
+		filename: "RrQIbot2-iBvI2mYSyKIrcgoBuQIG-eFNVmULg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/facultyglyphic/v4/RrQIbot2-iBvI2mYSyKIrcgoBuQIG-eFNVmULg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Gemstones",
-		"filename": "zrf90HrL0-_8Xb4DFM2rUkWbOVrOiCnGqi1GMw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikgemstones/v1/zrf90HrL0-_8Xb4DFM2rUkWbOVrOiCnGqi1GMw.ttf",
-		"weight": 400
+		displayName: "Rubik Gemstones",
+		filename: "zrf90HrL0-_8Xb4DFM2rUkWbOVrOiCnGqi1GMw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikgemstones/v1/zrf90HrL0-_8Xb4DFM2rUkWbOVrOiCnGqi1GMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Girassol",
-		"filename": "JTUUjIo_-DK48laaNC9Nz2pJzxbi",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/girassol/v24/JTUUjIo_-DK48laaNC9Nz2pJzxbi.ttf",
-		"weight": 400
+		displayName: "Girassol",
+		filename: "JTUUjIo_-DK48laaNC9Nz2pJzxbi",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/girassol/v24/JTUUjIo_-DK48laaNC9Nz2pJzxbi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Odor Mean Chey",
-		"filename": "raxkHiKDttkTe1aOGcJMR1A_4mrY2zqUKafv",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/odormeanchey/v31/raxkHiKDttkTe1aOGcJMR1A_4mrY2zqUKafv.ttf",
-		"weight": 400
+		displayName: "Odor Mean Chey",
+		filename: "raxkHiKDttkTe1aOGcJMR1A_4mrY2zqUKafv",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/odormeanchey/v31/raxkHiKDttkTe1aOGcJMR1A_4mrY2zqUKafv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Devonshire",
-		"filename": "46kqlbDwWirWr4gtBD2BX0Vq01lYAZM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/devonshire/v29/46kqlbDwWirWr4gtBD2BX0Vq01lYAZM.ttf",
-		"weight": 400
+		displayName: "Devonshire",
+		filename: "46kqlbDwWirWr4gtBD2BX0Vq01lYAZM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/devonshire/v29/46kqlbDwWirWr4gtBD2BX0Vq01lYAZM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ysabeau Infant",
-		"filename": "hv-ClzpqOkkV94kBTQVdX1EWI9B0V-HEmd9JmTQYFo8HK5ChLwKH6A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ysabeauinfant/v4/hv-ClzpqOkkV94kBTQVdX1EWI9B0V-HEmd9JmTQYFo8HK5ChLwKH6A.ttf",
-		"weight": 400
+		displayName: "Ysabeau Infant",
+		filename: "hv-ClzpqOkkV94kBTQVdX1EWI9B0V-HEmd9JmTQYFo8HK5ChLwKH6A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ysabeauinfant/v4/hv-ClzpqOkkV94kBTQVdX1EWI9B0V-HEmd9JmTQYFo8HK5ChLwKH6A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kotta One",
-		"filename": "S6u_w41LXzPc_jlfNWqPHA3s5dwt7w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kottaone/v21/S6u_w41LXzPc_jlfNWqPHA3s5dwt7w.ttf",
-		"weight": 400
+		displayName: "Kotta One",
+		filename: "S6u_w41LXzPc_jlfNWqPHA3s5dwt7w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kottaone/v21/S6u_w41LXzPc_jlfNWqPHA3s5dwt7w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tillana",
-		"filename": "VuJxdNvf35P4qJ1OeKbXOIFneRo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tillana/v15/VuJxdNvf35P4qJ1OeKbXOIFneRo.ttf",
-		"weight": 400
+		displayName: "Tillana",
+		filename: "VuJxdNvf35P4qJ1OeKbXOIFneRo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tillana/v15/VuJxdNvf35P4qJ1OeKbXOIFneRo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fasthand",
-		"filename": "0yb9GDohyKTYn_ZEESkuYkw2rQg1",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fasthand/v33/0yb9GDohyKTYn_ZEESkuYkw2rQg1.ttf",
-		"weight": 400
+		displayName: "Fasthand",
+		filename: "0yb9GDohyKTYn_ZEESkuYkw2rQg1",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fasthand/v33/0yb9GDohyKTYn_ZEESkuYkw2rQg1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cactus Classical Serif",
-		"filename": "sZlVdQ6K-zJOCzUaS90zMNN-Ep-OoC8dZr0JFuBIFX-pv-E",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/cactusclassicalserif/v13/sZlVdQ6K-zJOCzUaS90zMNN-Ep-OoC8dZr0JFuBIFX-pv-E.ttf",
-		"weight": 400
+		displayName: "Cactus Classical Serif",
+		filename: "sZlVdQ6K-zJOCzUaS90zMNN-Ep-OoC8dZr0JFuBIFX-pv-E",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/cactusclassicalserif/v13/sZlVdQ6K-zJOCzUaS90zMNN-Ep-OoC8dZr0JFuBIFX-pv-E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Festive",
-		"filename": "cY9Ffj6KX1xcoDWhFtfgy9HTkak",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/festive/v11/cY9Ffj6KX1xcoDWhFtfgy9HTkak.ttf",
-		"weight": 400
+		displayName: "Festive",
+		filename: "cY9Ffj6KX1xcoDWhFtfgy9HTkak",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/festive/v11/cY9Ffj6KX1xcoDWhFtfgy9HTkak.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kapakana",
-		"filename": "sykt-yN0m6InS7OD9BCc9iYVO-6XOlDimtA5tRbXZ4IXAA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kapakana/v19/sykt-yN0m6InS7OD9BCc9iYVO-6XOlDimtA5tRbXZ4IXAA.ttf",
-		"weight": 400
+		displayName: "Kapakana",
+		filename: "sykt-yN0m6InS7OD9BCc9iYVO-6XOlDimtA5tRbXZ4IXAA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kapakana/v19/sykt-yN0m6InS7OD9BCc9iYVO-6XOlDimtA5tRbXZ4IXAA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stint Ultra Condensed",
-		"filename": "-W_gXIrsVjjeyEnPC45qD2NoFPtBE0xCh2A-qhUO2cNvdg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/stintultracondensed/v25/-W_gXIrsVjjeyEnPC45qD2NoFPtBE0xCh2A-qhUO2cNvdg.ttf",
-		"weight": 400
+		displayName: "Stint Ultra Condensed",
+		filename: "-W_gXIrsVjjeyEnPC45qD2NoFPtBE0xCh2A-qhUO2cNvdg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/stintultracondensed/v25/-W_gXIrsVjjeyEnPC45qD2NoFPtBE0xCh2A-qhUO2cNvdg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Meera Inimai",
-		"filename": "845fNMM5EIqOW5MPuvO3ILep_2jDVevnLQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/meerainimai/v14/845fNMM5EIqOW5MPuvO3ILep_2jDVevnLQ.ttf",
-		"weight": 400
+		displayName: "Meera Inimai",
+		filename: "845fNMM5EIqOW5MPuvO3ILep_2jDVevnLQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/meerainimai/v14/845fNMM5EIqOW5MPuvO3ILep_2jDVevnLQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dorsa",
-		"filename": "yYLn0hjd0OGwqo493XCFxAnQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dorsa/v29/yYLn0hjd0OGwqo493XCFxAnQ.ttf",
-		"weight": 400
+		displayName: "Dorsa",
+		filename: "yYLn0hjd0OGwqo493XCFxAnQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dorsa/v29/yYLn0hjd0OGwqo493XCFxAnQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Port Lligat Slab",
-		"filename": "LDIpaoiQNgArA8kR7ulhZ8P_NYOss7ob9yGLmfI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/portlligatslab/v27/LDIpaoiQNgArA8kR7ulhZ8P_NYOss7ob9yGLmfI.ttf",
-		"weight": 400
+		displayName: "Port Lligat Slab",
+		filename: "LDIpaoiQNgArA8kR7ulhZ8P_NYOss7ob9yGLmfI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/portlligatslab/v27/LDIpaoiQNgArA8kR7ulhZ8P_NYOss7ob9yGLmfI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Suwannaphum",
-		"filename": "jAnCgHV7GtDvc8jbe8hXXIWl_8C0Wg2V",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/suwannaphum/v33/jAnCgHV7GtDvc8jbe8hXXIWl_8C0Wg2V.ttf",
-		"weight": 400
+		displayName: "Suwannaphum",
+		filename: "jAnCgHV7GtDvc8jbe8hXXIWl_8C0Wg2V",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/suwannaphum/v33/jAnCgHV7GtDvc8jbe8hXXIWl_8C0Wg2V.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sura",
-		"filename": "SZc23FL5PbyzFf5UWzXtjUM",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sura/v21/SZc23FL5PbyzFf5UWzXtjUM.ttf",
-		"weight": 400
+		displayName: "Sura",
+		filename: "SZc23FL5PbyzFf5UWzXtjUM",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sura/v21/SZc23FL5PbyzFf5UWzXtjUM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Farsan",
-		"filename": "VEMwRoJ0vY_zsyz62q-pxDX9rQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/farsan/v24/VEMwRoJ0vY_zsyz62q-pxDX9rQ.ttf",
-		"weight": 400
+		displayName: "Farsan",
+		filename: "VEMwRoJ0vY_zsyz62q-pxDX9rQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/farsan/v24/VEMwRoJ0vY_zsyz62q-pxDX9rQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ballet",
-		"filename": "QGYyz_MYZA-HM4NjuGOVnUEXme1I4Xi3C4G-EiAou6Y",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/ballet/v30/QGYyz_MYZA-HM4NjuGOVnUEXme1I4Xi3C4G-EiAou6Y.ttf",
-		"weight": 400
+		displayName: "Ballet",
+		filename: "QGYyz_MYZA-HM4NjuGOVnUEXme1I4Xi3C4G-EiAou6Y",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/ballet/v30/QGYyz_MYZA-HM4NjuGOVnUEXme1I4Xi3C4G-EiAou6Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Moonrocks",
-		"filename": "845ANMAmAI2VUZMLu_W0M7HqlDHnXcD7JGy1Sw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikmoonrocks/v7/845ANMAmAI2VUZMLu_W0M7HqlDHnXcD7JGy1Sw.ttf",
-		"weight": 400
+		displayName: "Rubik Moonrocks",
+		filename: "845ANMAmAI2VUZMLu_W0M7HqlDHnXcD7JGy1Sw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikmoonrocks/v7/845ANMAmAI2VUZMLu_W0M7HqlDHnXcD7JGy1Sw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gideon Roman",
-		"filename": "e3tmeuGrVOys8sxzZgWlmXoge0PWovdU4w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gideonroman/v13/e3tmeuGrVOys8sxzZgWlmXoge0PWovdU4w.ttf",
-		"weight": 400
+		displayName: "Gideon Roman",
+		filename: "e3tmeuGrVOys8sxzZgWlmXoge0PWovdU4w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gideonroman/v13/e3tmeuGrVOys8sxzZgWlmXoge0PWovdU4w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Micro 5",
-		"filename": "H4cnBX2MkcfEngTr0gYQ7LO5mqc",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/micro5/v2/H4cnBX2MkcfEngTr0gYQ7LO5mqc.ttf",
-		"weight": 400
+		displayName: "Micro 5",
+		filename: "H4cnBX2MkcfEngTr0gYQ7LO5mqc",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/micro5/v2/H4cnBX2MkcfEngTr0gYQ7LO5mqc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Smooch",
-		"filename": "o-0LIps4xW8U1xUBjqp_6hVdYg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/smooch/v9/o-0LIps4xW8U1xUBjqp_6hVdYg.ttf",
-		"weight": 400
+		displayName: "Smooch",
+		filename: "o-0LIps4xW8U1xUBjqp_6hVdYg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/smooch/v9/o-0LIps4xW8U1xUBjqp_6hVdYg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Devanagari Sanskrit",
-		"filename": "MCoAzBbr09vVUgVBM8FWu_yZdZkhkg-I0nUlb59pEoEqgtOh0w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirodevanagarisanskrit/v5/MCoAzBbr09vVUgVBM8FWu_yZdZkhkg-I0nUlb59pEoEqgtOh0w.ttf",
-		"weight": 400
+		displayName: "Tiro Devanagari Sanskrit",
+		filename: "MCoAzBbr09vVUgVBM8FWu_yZdZkhkg-I0nUlb59pEoEqgtOh0w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirodevanagarisanskrit/v5/MCoAzBbr09vVUgVBM8FWu_yZdZkhkg-I0nUlb59pEoEqgtOh0w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tilt Prism",
-		"filename": "5h11iZgyPHoZ3YikNzWGfWey2dCAZXT-bH9V4VGn-FJ7tLI25oc_rIbwoTSrn86NKw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tiltprism/v16/5h11iZgyPHoZ3YikNzWGfWey2dCAZXT-bH9V4VGn-FJ7tLI25oc_rIbwoTSrn86NKw.ttf",
-		"weight": 400
+		displayName: "Tilt Prism",
+		filename: "5h11iZgyPHoZ3YikNzWGfWey2dCAZXT-bH9V4VGn-FJ7tLI25oc_rIbwoTSrn86NKw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tiltprism/v16/5h11iZgyPHoZ3YikNzWGfWey2dCAZXT-bH9V4VGn-FJ7tLI25oc_rIbwoTSrn86NKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Almendra SC",
-		"filename": "Iure6Yx284eebowr7hbyTZZJprVA4XQ0",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/almendrasc/v31/Iure6Yx284eebowr7hbyTZZJprVA4XQ0.ttf",
-		"weight": 400
+		displayName: "Almendra SC",
+		filename: "Iure6Yx284eebowr7hbyTZZJprVA4XQ0",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/almendrasc/v31/Iure6Yx284eebowr7hbyTZZJprVA4XQ0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Content",
-		"filename": "zrfl0HLayePhU_AwUaDyIiL0RCg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/content/v27/zrfl0HLayePhU_AwUaDyIiL0RCg.ttf",
-		"weight": 400
+		displayName: "Content",
+		filename: "zrfl0HLayePhU_AwUaDyIiL0RCg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/content/v27/zrfl0HLayePhU_AwUaDyIiL0RCg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dangrek",
-		"filename": "LYjCdG30nEgoH8E2gCNqqVIuTN4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/dangrek/v33/LYjCdG30nEgoH8E2gCNqqVIuTN4.ttf",
-		"weight": 400
+		displayName: "Dangrek",
+		filename: "LYjCdG30nEgoH8E2gCNqqVIuTN4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/dangrek/v33/LYjCdG30nEgoH8E2gCNqqVIuTN4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Milonga",
-		"filename": "SZc53FHnIaK9W5kffz3GkUrS8DI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/milonga/v24/SZc53FHnIaK9W5kffz3GkUrS8DI.ttf",
-		"weight": 400
+		displayName: "Milonga",
+		filename: "SZc53FHnIaK9W5kffz3GkUrS8DI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/milonga/v24/SZc53FHnIaK9W5kffz3GkUrS8DI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Galindo",
-		"filename": "HI_KiYMeLqVKqwyuQ5HiRp-dhpQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/galindo/v26/HI_KiYMeLqVKqwyuQ5HiRp-dhpQ.ttf",
-		"weight": 400
+		displayName: "Galindo",
+		filename: "HI_KiYMeLqVKqwyuQ5HiRp-dhpQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/galindo/v26/HI_KiYMeLqVKqwyuQ5HiRp-dhpQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bonheur Royale",
-		"filename": "c4m51nt_GMTrtX-b9GcG4-YRmYK_c0f1N5Ij",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/bonheurroyale/v15/c4m51nt_GMTrtX-b9GcG4-YRmYK_c0f1N5Ij.ttf",
-		"weight": 400
+		displayName: "Bonheur Royale",
+		filename: "c4m51nt_GMTrtX-b9GcG4-YRmYK_c0f1N5Ij",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/bonheurroyale/v15/c4m51nt_GMTrtX-b9GcG4-YRmYK_c0f1N5Ij.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Baskervville SC",
-		"filename": "X7ny4bc_DeKlh6bBbk_WiKnBSUvL5HaHbrgS1MXKHjziXM3kPWntDsg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/baskervvillesc/v4/X7ny4bc_DeKlh6bBbk_WiKnBSUvL5HaHbrgS1MXKHjziXM3kPWntDsg.ttf",
-		"weight": 400
+		displayName: "Baskervville SC",
+		filename: "X7ny4bc_DeKlh6bBbk_WiKnBSUvL5HaHbrgS1MXKHjziXM3kPWntDsg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/baskervvillesc/v4/X7ny4bc_DeKlh6bBbk_WiKnBSUvL5HaHbrgS1MXKHjziXM3kPWntDsg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Carrois Gothic SC",
-		"filename": "ZgNJjOVHM6jfUZCmyUqT2A2HVKjc-28nNHabY4dN",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/carroisgothicsc/v16/ZgNJjOVHM6jfUZCmyUqT2A2HVKjc-28nNHabY4dN.ttf",
-		"weight": 400
+		displayName: "Carrois Gothic SC",
+		filename: "ZgNJjOVHM6jfUZCmyUqT2A2HVKjc-28nNHabY4dN",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/carroisgothicsc/v16/ZgNJjOVHM6jfUZCmyUqT2A2HVKjc-28nNHabY4dN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Luxurious Script",
-		"filename": "ahcCv9e7yydulT32KZ0rBIoD7DzMg0rOby1JtYk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/luxuriousscript/v9/ahcCv9e7yydulT32KZ0rBIoD7DzMg0rOby1JtYk.ttf",
-		"weight": 400
+		displayName: "Luxurious Script",
+		filename: "ahcCv9e7yydulT32KZ0rBIoD7DzMg0rOby1JtYk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/luxuriousscript/v9/ahcCv9e7yydulT32KZ0rBIoD7DzMg0rOby1JtYk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kite One",
-		"filename": "70lQu7shLnA_E02vyq1b6HnGO4uA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kiteone/v23/70lQu7shLnA_E02vyq1b6HnGO4uA.ttf",
-		"weight": 400
+		displayName: "Kite One",
+		filename: "70lQu7shLnA_E02vyq1b6HnGO4uA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kiteone/v23/70lQu7shLnA_E02vyq1b6HnGO4uA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tagalog",
-		"filename": "J7aFnoNzCnFcV9ZI-sUYuvote1R0wwEAA8jHexnL",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstagalog/v23/J7aFnoNzCnFcV9ZI-sUYuvote1R0wwEAA8jHexnL.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tagalog",
+		filename: "J7aFnoNzCnFcV9ZI-sUYuvote1R0wwEAA8jHexnL",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstagalog/v23/J7aFnoNzCnFcV9ZI-sUYuvote1R0wwEAA8jHexnL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Simonetta",
-		"filename": "x3dickHVYrCU5BU15c4BfPACvy_1BA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/simonetta/v29/x3dickHVYrCU5BU15c4BfPACvy_1BA.ttf",
-		"weight": 400
+		displayName: "Simonetta",
+		filename: "x3dickHVYrCU5BU15c4BfPACvy_1BA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/simonetta/v29/x3dickHVYrCU5BU15c4BfPACvy_1BA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Paprika",
-		"filename": "8QIJdijZitv49rDfuIgOq7jkAOw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/paprika/v24/8QIJdijZitv49rDfuIgOq7jkAOw.ttf",
-		"weight": 400
+		displayName: "Paprika",
+		filename: "8QIJdijZitv49rDfuIgOq7jkAOw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/paprika/v24/8QIJdijZitv49rDfuIgOq7jkAOw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Text Me One",
-		"filename": "i7dOIFdlayuLUvgoFvHQFWZcalayGhyV",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/textmeone/v26/i7dOIFdlayuLUvgoFvHQFWZcalayGhyV.ttf",
-		"weight": 400
+		displayName: "Text Me One",
+		filename: "i7dOIFdlayuLUvgoFvHQFWZcalayGhyV",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/textmeone/v26/i7dOIFdlayuLUvgoFvHQFWZcalayGhyV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Climate Crisis",
-		"filename": "wEOpEB3AntNeKCPBVW9XOKlmp3AUgWFN1DvIvcM0gFp6jaUrGb7PsQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/climatecrisis/v14/wEOpEB3AntNeKCPBVW9XOKlmp3AUgWFN1DvIvcM0gFp6jaUrGb7PsQ.ttf",
-		"weight": 400
+		displayName: "Climate Crisis",
+		filename: "wEOpEB3AntNeKCPBVW9XOKlmp3AUgWFN1DvIvcM0gFp6jaUrGb7PsQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/climatecrisis/v14/wEOpEB3AntNeKCPBVW9XOKlmp3AUgWFN1DvIvcM0gFp6jaUrGb7PsQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Stoke",
-		"filename": "z7NadRb7aTMfKONpfihK1YTV",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/stoke/v26/z7NadRb7aTMfKONpfihK1YTV.ttf",
-		"weight": 400
+		displayName: "Stoke",
+		filename: "z7NadRb7aTMfKONpfihK1YTV",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/stoke/v26/z7NadRb7aTMfKONpfihK1YTV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ysabeau",
-		"filename": "kmKiZqEiBAXLcnuMvjZNI_5FGeJet7OWCDYwI8Gcw6Oi",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ysabeau/v5/kmKiZqEiBAXLcnuMvjZNI_5FGeJet7OWCDYwI8Gcw6Oi.ttf",
-		"weight": 400
+		displayName: "Ysabeau",
+		filename: "kmKiZqEiBAXLcnuMvjZNI_5FGeJet7OWCDYwI8Gcw6Oi",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ysabeau/v5/kmKiZqEiBAXLcnuMvjZNI_5FGeJet7OWCDYwI8Gcw6Oi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Lao",
-		"filename": "bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4ccbdf5MK3riB2w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4ccbdf5MK3riB2w.ttf",
-		"weight": 400
+		displayName: "Noto Sans Lao",
+		filename: "bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4ccbdf5MK3riB2w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslao/v33/bx6lNx2Ol_ixgdYWLm9BwxM3NW6BOkuf763Clj73CiQ_J1Djx9pidOt4ccbdf5MK3riB2w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Osmanya",
-		"filename": "8vIS7xs32H97qzQKnzfeWzUyUpOJmz6kR47NCV5Z",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansosmanya/v19/8vIS7xs32H97qzQKnzfeWzUyUpOJmz6kR47NCV5Z.ttf",
-		"weight": 400
+		displayName: "Noto Sans Osmanya",
+		filename: "8vIS7xs32H97qzQKnzfeWzUyUpOJmz6kR47NCV5Z",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansosmanya/v19/8vIS7xs32H97qzQKnzfeWzUyUpOJmz6kR47NCV5Z.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bodoni Moda SC",
-		"filename": "LYjhdGTykkIgA8197UwkzHp8F-XUUG5UNs2KqliEb-g_DaUdIA6SfiYHbA7uXJyb9N7yr8E",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bodonimodasc/v3/LYjhdGTykkIgA8197UwkzHp8F-XUUG5UNs2KqliEb-g_DaUdIA6SfiYHbA7uXJyb9N7yr8E.ttf",
-		"weight": 400
+		displayName: "Bodoni Moda SC",
+		filename: "LYjhdGTykkIgA8197UwkzHp8F-XUUG5UNs2KqliEb-g_DaUdIA6SfiYHbA7uXJyb9N7yr8E",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bodonimodasc/v3/LYjhdGTykkIgA8197UwkzHp8F-XUUG5UNs2KqliEb-g_DaUdIA6SfiYHbA7uXJyb9N7yr8E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Glass Antiqua",
-		"filename": "xfu30Wr0Wn3NOQM2piC0uXOjnL_wN6fRUkY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/glassantiqua/v26/xfu30Wr0Wn3NOQM2piC0uXOjnL_wN6fRUkY.ttf",
-		"weight": 400
+		displayName: "Glass Antiqua",
+		filename: "xfu30Wr0Wn3NOQM2piC0uXOjnL_wN6fRUkY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/glassantiqua/v26/xfu30Wr0Wn3NOQM2piC0uXOjnL_wN6fRUkY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Buhid",
-		"filename": "Dxxy8jiXMW75w3OmoDXVWJD7YwzAe6tgnaFoGA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbuhid/v23/Dxxy8jiXMW75w3OmoDXVWJD7YwzAe6tgnaFoGA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Buhid",
+		filename: "Dxxy8jiXMW75w3OmoDXVWJD7YwzAe6tgnaFoGA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbuhid/v23/Dxxy8jiXMW75w3OmoDXVWJD7YwzAe6tgnaFoGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tai Viet",
-		"filename": "8QIUdj3HhN_lv4jf9vsE-9GMOLsaSPZr644fWsRO9w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstaiviet/v20/8QIUdj3HhN_lv4jf9vsE-9GMOLsaSPZr644fWsRO9w.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tai Viet",
+		filename: "8QIUdj3HhN_lv4jf9vsE-9GMOLsaSPZr644fWsRO9w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstaiviet/v20/8QIUdj3HhN_lv4jf9vsE-9GMOLsaSPZr644fWsRO9w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Kannada",
-		"filename": "raxcHiCNvNMKe1CKFsINYFlgkEIwGa8nL6ruWJg1j--h8pvBKSiw4dFDEQukVReA1oef",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekkannada/v15/raxcHiCNvNMKe1CKFsINYFlgkEIwGa8nL6ruWJg1j--h8pvBKSiw4dFDEQukVReA1oef.ttf",
-		"weight": 400
+		displayName: "Anek Kannada",
+		filename: "raxcHiCNvNMKe1CKFsINYFlgkEIwGa8nL6ruWJg1j--h8pvBKSiw4dFDEQukVReA1oef",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekkannada/v15/raxcHiCNvNMKe1CKFsINYFlgkEIwGa8nL6ruWJg1j--h8pvBKSiw4dFDEQukVReA1oef.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Lao",
-		"filename": "3y9C6bYwcCjmsU8JEzCMxEwQfEBLk3f0rlSqCdaM_LlSNZ59oNw0BWH8VeMKrvOjlmyhHHQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriflao/v29/3y9C6bYwcCjmsU8JEzCMxEwQfEBLk3f0rlSqCdaM_LlSNZ59oNw0BWH8VeMKrvOjlmyhHHQ.ttf",
-		"weight": 400
+		displayName: "Noto Serif Lao",
+		filename: "3y9C6bYwcCjmsU8JEzCMxEwQfEBLk3f0rlSqCdaM_LlSNZ59oNw0BWH8VeMKrvOjlmyhHHQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriflao/v29/3y9C6bYwcCjmsU8JEzCMxEwQfEBLk3f0rlSqCdaM_LlSNZ59oNw0BWH8VeMKrvOjlmyhHHQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shippori Antique B1",
-		"filename": "2Eb7L_JwClR7Zl_UAKZ0mUHw3oMKd40grRFCj9-5Y8Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/shipporiantiqueb1/v11/2Eb7L_JwClR7Zl_UAKZ0mUHw3oMKd40grRFCj9-5Y8Y.ttf",
-		"weight": 400
+		displayName: "Shippori Antique B1",
+		filename: "2Eb7L_JwClR7Zl_UAKZ0mUHw3oMKd40grRFCj9-5Y8Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/shipporiantiqueb1/v11/2Eb7L_JwClR7Zl_UAKZ0mUHw3oMKd40grRFCj9-5Y8Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bagel Fat One",
-		"filename": "hYkPPucsQOr5dy02WmQr5Zkd0B5mvv0dSbM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bagelfatone/v2/hYkPPucsQOr5dy02WmQr5Zkd0B5mvv0dSbM.ttf",
-		"weight": 400
+		displayName: "Bagel Fat One",
+		filename: "hYkPPucsQOr5dy02WmQr5Zkd0B5mvv0dSbM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bagelfatone/v2/hYkPPucsQOr5dy02WmQr5Zkd0B5mvv0dSbM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mea Culpa",
-		"filename": "AMOTz4GcuWbEIuza8jsZms0QW3mqyg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/meaculpa/v8/AMOTz4GcuWbEIuza8jsZms0QW3mqyg.ttf",
-		"weight": 400
+		displayName: "Mea Culpa",
+		filename: "AMOTz4GcuWbEIuza8jsZms0QW3mqyg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/meaculpa/v8/AMOTz4GcuWbEIuza8jsZms0QW3mqyg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Barcode 39 Extended",
-		"filename": "8At7Gt6_O5yNS0-K4Nf5U922qSzhJ3dUdfJpwNUgfNRCOZ1GOBw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcode39extended/v30/8At7Gt6_O5yNS0-K4Nf5U922qSzhJ3dUdfJpwNUgfNRCOZ1GOBw.ttf",
-		"weight": 400
+		displayName: "Libre Barcode 39 Extended",
+		filename: "8At7Gt6_O5yNS0-K4Nf5U922qSzhJ3dUdfJpwNUgfNRCOZ1GOBw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcode39extended/v30/8At7Gt6_O5yNS0-K4Nf5U922qSzhJ3dUdfJpwNUgfNRCOZ1GOBw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tourney",
-		"filename": "AlZa_ztDtYzv1tzq1wcJnbVt7xseomk-tNs7qrzTWbyt8n7GOQFyZTp1I1LcGA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tourney/v16/AlZa_ztDtYzv1tzq1wcJnbVt7xseomk-tNs7qrzTWbyt8n7GOQFyZTp1I1LcGA.ttf",
-		"weight": 400
+		displayName: "Tourney",
+		filename: "AlZa_ztDtYzv1tzq1wcJnbVt7xseomk-tNs7qrzTWbyt8n7GOQFyZTp1I1LcGA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tourney/v16/AlZa_ztDtYzv1tzq1wcJnbVt7xseomk-tNs7qrzTWbyt8n7GOQFyZTp1I1LcGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacques Francois Shadow",
-		"filename": "KR1FBtOz8PKTMk-kqdkLVrvR0ECFrB6Pin-2_q8VsHuV5ULS",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquesfrancoisshadow/v27/KR1FBtOz8PKTMk-kqdkLVrvR0ECFrB6Pin-2_q8VsHuV5ULS.ttf",
-		"weight": 400
+		displayName: "Jacques Francois Shadow",
+		filename: "KR1FBtOz8PKTMk-kqdkLVrvR0ECFrB6Pin-2_q8VsHuV5ULS",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquesfrancoisshadow/v27/KR1FBtOz8PKTMk-kqdkLVrvR0ECFrB6Pin-2_q8VsHuV5ULS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ramaraja",
-		"filename": "SlGTmQearpYAYG1CABIkqnB6aSQU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ramaraja/v17/SlGTmQearpYAYG1CABIkqnB6aSQU.ttf",
-		"weight": 400
+		displayName: "Ramaraja",
+		filename: "SlGTmQearpYAYG1CABIkqnB6aSQU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ramaraja/v17/SlGTmQearpYAYG1CABIkqnB6aSQU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dekko",
-		"filename": "46khlb_wWjfSrttFR0vsfl1B",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/dekko/v23/46khlb_wWjfSrttFR0vsfl1B.ttf",
-		"weight": 400
+		displayName: "Dekko",
+		filename: "46khlb_wWjfSrttFR0vsfl1B",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/dekko/v23/46khlb_wWjfSrttFR0vsfl1B.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Trykker",
-		"filename": "KtktALyWZJXudUPzhNnoOd2j22U",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/trykker/v22/KtktALyWZJXudUPzhNnoOd2j22U.ttf",
-		"weight": 400
+		displayName: "Trykker",
+		filename: "KtktALyWZJXudUPzhNnoOd2j22U",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/trykker/v22/KtktALyWZJXudUPzhNnoOd2j22U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu AU VIC WA NT Hand",
-		"filename": "C8cO4dY1tX2x0uuiUHFS4y7ERV-jfqJ6x063HfvcsxiYKifhtCJ1lKtFbYfTEUU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduauvicwanthand/v3/C8cO4dY1tX2x0uuiUHFS4y7ERV-jfqJ6x063HfvcsxiYKifhtCJ1lKtFbYfTEUU.ttf",
-		"weight": 400
+		displayName: "Edu AU VIC WA NT Hand",
+		filename: "C8cO4dY1tX2x0uuiUHFS4y7ERV-jfqJ6x063HfvcsxiYKifhtCJ1lKtFbYfTEUU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduauvicwanthand/v3/C8cO4dY1tX2x0uuiUHFS4y7ERV-jfqJ6x063HfvcsxiYKifhtCJ1lKtFbYfTEUU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Wet Paint",
-		"filename": "HTx0L20uMDGHgdULcpTF3Oe4d_-F-zz313DuvQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikwetpaint/v2/HTx0L20uMDGHgdULcpTF3Oe4d_-F-zz313DuvQ.ttf",
-		"weight": 400
+		displayName: "Rubik Wet Paint",
+		filename: "HTx0L20uMDGHgdULcpTF3Oe4d_-F-zz313DuvQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikwetpaint/v2/HTx0L20uMDGHgdULcpTF3Oe4d_-F-zz313DuvQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Londrina Shadow",
-		"filename": "oPWX_kB4kOQoWNJmjxLV5JuoCUlXRlaSxkrMCQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/londrinashadow/v28/oPWX_kB4kOQoWNJmjxLV5JuoCUlXRlaSxkrMCQ.ttf",
-		"weight": 400
+		displayName: "Londrina Shadow",
+		filename: "oPWX_kB4kOQoWNJmjxLV5JuoCUlXRlaSxkrMCQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/londrinashadow/v28/oPWX_kB4kOQoWNJmjxLV5JuoCUlXRlaSxkrMCQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Plaster",
-		"filename": "DdTm79QatW80eRh4Ei5JOtLOeLI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/plaster/v25/DdTm79QatW80eRh4Ei5JOtLOeLI.ttf",
-		"weight": 400
+		displayName: "Plaster",
+		filename: "DdTm79QatW80eRh4Ei5JOtLOeLI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/plaster/v25/DdTm79QatW80eRh4Ei5JOtLOeLI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "My Soul",
-		"filename": "3XFqErcuy945_u6KF_Ulk2nnXf0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mysoul/v7/3XFqErcuy945_u6KF_Ulk2nnXf0.ttf",
-		"weight": 400
+		displayName: "My Soul",
+		filename: "3XFqErcuy945_u6KF_Ulk2nnXf0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mysoul/v7/3XFqErcuy945_u6KF_Ulk2nnXf0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bilbo",
-		"filename": "o-0EIpgpwWwZ210hpIRz4wxE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/bilbo/v21/o-0EIpgpwWwZ210hpIRz4wxE.ttf",
-		"weight": 400
+		displayName: "Bilbo",
+		filename: "o-0EIpgpwWwZ210hpIRz4wxE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/bilbo/v21/o-0EIpgpwWwZ210hpIRz4wxE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Gothic",
-		"filename": "TuGKUUVzXI5FBtUq5a8bj6wRbzxTFMX40kFQRx0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansgothic/v17/TuGKUUVzXI5FBtUq5a8bj6wRbzxTFMX40kFQRx0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Gothic",
+		filename: "TuGKUUVzXI5FBtUq5a8bj6wRbzxTFMX40kFQRx0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansgothic/v17/TuGKUUVzXI5FBtUq5a8bj6wRbzxTFMX40kFQRx0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ewert",
-		"filename": "va9I4kzO2tFODYBvS-J3kbDP",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ewert/v27/va9I4kzO2tFODYBvS-J3kbDP.ttf",
-		"weight": 400
+		displayName: "Ewert",
+		filename: "va9I4kzO2tFODYBvS-J3kbDP",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ewert/v27/va9I4kzO2tFODYBvS-J3kbDP.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Offside",
-		"filename": "HI_KiYMWKa9QrAykQ5HiRp-dhpQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/offside/v26/HI_KiYMWKa9QrAykQ5HiRp-dhpQ.ttf",
-		"weight": 400
+		displayName: "Offside",
+		filename: "HI_KiYMWKa9QrAykQ5HiRp-dhpQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/offside/v26/HI_KiYMWKa9QrAykQ5HiRp-dhpQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Marhey",
-		"filename": "x3d8ck7Laq-T7wl7mqfVrEe9sDvtBctwO2cXiGevOMw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/marhey/v8/x3d8ck7Laq-T7wl7mqfVrEe9sDvtBctwO2cXiGevOMw.ttf",
-		"weight": 400
+		displayName: "Marhey",
+		filename: "x3d8ck7Laq-T7wl7mqfVrEe9sDvtBctwO2cXiGevOMw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/marhey/v8/x3d8ck7Laq-T7wl7mqfVrEe9sDvtBctwO2cXiGevOMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Linden Hill",
-		"filename": "-F61fjxoKSg9Yc3hZgO8ygFI7CwC009k",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/lindenhill/v27/-F61fjxoKSg9Yc3hZgO8ygFI7CwC009k.ttf",
-		"weight": 400
+		displayName: "Linden Hill",
+		filename: "-F61fjxoKSg9Yc3hZgO8ygFI7CwC009k",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/lindenhill/v27/-F61fjxoKSg9Yc3hZgO8ygFI7CwC009k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Gurmukhi",
-		"filename": "w8g9H3EvQP81sInb43inmyN9zZ7hb7ATbSWo4q8dJ74a3cVrYFQ_bogT0-gPeG1OenbxZ_trdp7h",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansgurmukhi/v29/w8g9H3EvQP81sInb43inmyN9zZ7hb7ATbSWo4q8dJ74a3cVrYFQ_bogT0-gPeG1OenbxZ_trdp7h.ttf",
-		"weight": 400
+		displayName: "Noto Sans Gurmukhi",
+		filename: "w8g9H3EvQP81sInb43inmyN9zZ7hb7ATbSWo4q8dJ74a3cVrYFQ_bogT0-gPeG1OenbxZ_trdp7h",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansgurmukhi/v29/w8g9H3EvQP81sInb43inmyN9zZ7hb7ATbSWo4q8dJ74a3cVrYFQ_bogT0-gPeG1OenbxZ_trdp7h.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "New Tegomin",
-		"filename": "SLXMc1fV7Gd9USdBAfPlqfN0Q3ptkDMN",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/newtegomin/v13/SLXMc1fV7Gd9USdBAfPlqfN0Q3ptkDMN.ttf",
-		"weight": 400
+		displayName: "New Tegomin",
+		filename: "SLXMc1fV7Gd9USdBAfPlqfN0Q3ptkDMN",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/newtegomin/v13/SLXMc1fV7Gd9USdBAfPlqfN0Q3ptkDMN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Water Brush",
-		"filename": "AYCPpXPqc8cJWLhp4hywKHJq7PKP5Z_G",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/waterbrush/v6/AYCPpXPqc8cJWLhp4hywKHJq7PKP5Z_G.ttf",
-		"weight": 400
+		displayName: "Water Brush",
+		filename: "AYCPpXPqc8cJWLhp4hywKHJq7PKP5Z_G",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/waterbrush/v6/AYCPpXPqc8cJWLhp4hywKHJq7PKP5Z_G.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Kannada",
-		"filename": "v6-8GZHLJFKIhClqUYqXDiWqpxQxWSPoW6bz-l4hGHiNgcYDceRJ71svgcI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifkannada/v30/v6-8GZHLJFKIhClqUYqXDiWqpxQxWSPoW6bz-l4hGHiNgcYDceRJ71svgcI.ttf",
-		"weight": 400
+		displayName: "Noto Serif Kannada",
+		filename: "v6-8GZHLJFKIhClqUYqXDiWqpxQxWSPoW6bz-l4hGHiNgcYDceRJ71svgcI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifkannada/v30/v6-8GZHLJFKIhClqUYqXDiWqpxQxWSPoW6bz-l4hGHiNgcYDceRJ71svgcI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Romanesco",
-		"filename": "w8gYH2ozQOY7_r_J7mSn3HwLqOqSBg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/romanesco/v22/w8gYH2ozQOY7_r_J7mSn3HwLqOqSBg.ttf",
-		"weight": 400
+		displayName: "Romanesco",
+		filename: "w8gYH2ozQOY7_r_J7mSn3HwLqOqSBg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/romanesco/v22/w8gYH2ozQOY7_r_J7mSn3HwLqOqSBg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cagliostro",
-		"filename": "ZgNWjP5HM73BV5amnX-TjGXEM4COoE4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cagliostro/v22/ZgNWjP5HM73BV5amnX-TjGXEM4COoE4.ttf",
-		"weight": 400
+		displayName: "Cagliostro",
+		filename: "ZgNWjP5HM73BV5amnX-TjGXEM4COoE4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cagliostro/v22/ZgNWjP5HM73BV5amnX-TjGXEM4COoE4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Koh Santepheap",
-		"filename": "gNMdW3p6SJbwyGj2rBZyeOrTjOPhF1ixsyNJ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kohsantepheap/v15/gNMdW3p6SJbwyGj2rBZyeOrTjOPhF1ixsyNJ.ttf",
-		"weight": 400
+		displayName: "Koh Santepheap",
+		filename: "gNMdW3p6SJbwyGj2rBZyeOrTjOPhF1ixsyNJ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kohsantepheap/v15/gNMdW3p6SJbwyGj2rBZyeOrTjOPhF1ixsyNJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chilanka",
-		"filename": "WWXRlj2DZQiMJYaYRrJQI9EAZhTO",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/chilanka/v23/WWXRlj2DZQiMJYaYRrJQI9EAZhTO.ttf",
-		"weight": 400
+		displayName: "Chilanka",
+		filename: "WWXRlj2DZQiMJYaYRrJQI9EAZhTO",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/chilanka/v23/WWXRlj2DZQiMJYaYRrJQI9EAZhTO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lexend Tera",
-		"filename": "RrQDbo98_jt_IXnBPwCWtYJLZ3P4hnaGKFiM5zMTdpz0fYxcrQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lexendtera/v29/RrQDbo98_jt_IXnBPwCWtYJLZ3P4hnaGKFiM5zMTdpz0fYxcrQ.ttf",
-		"weight": 400
+		displayName: "Lexend Tera",
+		filename: "RrQDbo98_jt_IXnBPwCWtYJLZ3P4hnaGKFiM5zMTdpz0fYxcrQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lexendtera/v29/RrQDbo98_jt_IXnBPwCWtYJLZ3P4hnaGKFiM5zMTdpz0fYxcrQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Averia Gruesa Libre",
-		"filename": "NGSov4nEGEktOaDRKsY-1dhh8eEtIx3ZUmmJw0SLRA8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/averiagruesalibre/v22/NGSov4nEGEktOaDRKsY-1dhh8eEtIx3ZUmmJw0SLRA8.ttf",
-		"weight": 400
+		displayName: "Averia Gruesa Libre",
+		filename: "NGSov4nEGEktOaDRKsY-1dhh8eEtIx3ZUmmJw0SLRA8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/averiagruesalibre/v22/NGSov4nEGEktOaDRKsY-1dhh8eEtIx3ZUmmJw0SLRA8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "IBM Plex Sans Devanagari",
-		"filename": "XRXH3JCMvG4IDoS9SubXB6W-UX5iehIMBFR2-O__VUL0c83gCA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ibmplexsansdevanagari/v12/XRXH3JCMvG4IDoS9SubXB6W-UX5iehIMBFR2-O__VUL0c83gCA.ttf",
-		"weight": 400
+		displayName: "IBM Plex Sans Devanagari",
+		filename: "XRXH3JCMvG4IDoS9SubXB6W-UX5iehIMBFR2-O__VUL0c83gCA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ibmplexsansdevanagari/v12/XRXH3JCMvG4IDoS9SubXB6W-UX5iehIMBFR2-O__VUL0c83gCA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hedvig Letters Sans",
-		"filename": "CHy_V_PfGVjobSBkihHWDT98RVp37w8jQJ1N3Twgi1w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hedvigletterssans/v2/CHy_V_PfGVjobSBkihHWDT98RVp37w8jQJ1N3Twgi1w.ttf",
-		"weight": 400
+		displayName: "Hedvig Letters Sans",
+		filename: "CHy_V_PfGVjobSBkihHWDT98RVp37w8jQJ1N3Twgi1w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hedvigletterssans/v2/CHy_V_PfGVjobSBkihHWDT98RVp37w8jQJ1N3Twgi1w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Elsie Swash Caps",
-		"filename": "845DNN8xGZyVX5MVo_upKf7KnjK0ferVKGWsUo8",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/elsieswashcaps/v25/845DNN8xGZyVX5MVo_upKf7KnjK0ferVKGWsUo8.ttf",
-		"weight": 400
+		displayName: "Elsie Swash Caps",
+		filename: "845DNN8xGZyVX5MVo_upKf7KnjK0ferVKGWsUo8",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/elsieswashcaps/v25/845DNN8xGZyVX5MVo_upKf7KnjK0ferVKGWsUo8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacques Francois",
-		"filename": "ZXu9e04ZvKeOOHIe1TMahbcIU2cgmcPqoeRWfbs",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/jacquesfrancois/v26/ZXu9e04ZvKeOOHIe1TMahbcIU2cgmcPqoeRWfbs.ttf",
-		"weight": 400
+		displayName: "Jacques Francois",
+		filename: "ZXu9e04ZvKeOOHIe1TMahbcIU2cgmcPqoeRWfbs",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/jacquesfrancois/v26/ZXu9e04ZvKeOOHIe1TMahbcIU2cgmcPqoeRWfbs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reddit Mono",
-		"filename": "oPWc_kRmmu4oQ88oo13o48DHbsqn28eR20vUwCYacnnYz7yQYA",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/redditmono/v5/oPWc_kRmmu4oQ88oo13o48DHbsqn28eR20vUwCYacnnYz7yQYA.ttf",
-		"weight": 400
+		displayName: "Reddit Mono",
+		filename: "oPWc_kRmmu4oQ88oo13o48DHbsqn28eR20vUwCYacnnYz7yQYA",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/redditmono/v5/oPWc_kRmmu4oQ88oo13o48DHbsqn28eR20vUwCYacnnYz7yQYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Caramel",
-		"filename": "P5sCzZKBbMTf_ShyxCRuiZ-uydg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/caramel/v8/P5sCzZKBbMTf_ShyxCRuiZ-uydg.ttf",
-		"weight": 400
+		displayName: "Caramel",
+		filename: "P5sCzZKBbMTf_ShyxCRuiZ-uydg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/caramel/v8/P5sCzZKBbMTf_ShyxCRuiZ-uydg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arbutus",
-		"filename": "NaPYcZ7dG_5J3poob9JtryO8fMU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/arbutus/v30/NaPYcZ7dG_5J3poob9JtryO8fMU.ttf",
-		"weight": 400
+		displayName: "Arbutus",
+		filename: "NaPYcZ7dG_5J3poob9JtryO8fMU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/arbutus/v30/NaPYcZ7dG_5J3poob9JtryO8fMU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yeon Sung",
-		"filename": "QldMNTpbohAGtsJvUn6xSVNazqx2xg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yeonsung/v22/QldMNTpbohAGtsJvUn6xSVNazqx2xg.ttf",
-		"weight": 400
+		displayName: "Yeon Sung",
+		filename: "QldMNTpbohAGtsJvUn6xSVNazqx2xg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yeonsung/v22/QldMNTpbohAGtsJvUn6xSVNazqx2xg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu NSW ACT Cursive",
-		"filename": "xn7LYGUw02PnIPEjskHSG_2fCaz9DzhQbcTNLWxkwsHVCrd5giiVjXBs6BMb",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/edunswactcursive/v3/xn7LYGUw02PnIPEjskHSG_2fCaz9DzhQbcTNLWxkwsHVCrd5giiVjXBs6BMb.ttf",
-		"weight": 400
+		displayName: "Edu NSW ACT Cursive",
+		filename: "xn7LYGUw02PnIPEjskHSG_2fCaz9DzhQbcTNLWxkwsHVCrd5giiVjXBs6BMb",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/edunswactcursive/v3/xn7LYGUw02PnIPEjskHSG_2fCaz9DzhQbcTNLWxkwsHVCrd5giiVjXBs6BMb.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IS",
-		"filename": "JTUFjI4o_SGg9lecLGptrD17xQYXK0vOoz6jq6R9aX9-p7K5ILg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteis/v10/JTUFjI4o_SGg9lecLGptrD17xQYXK0vOoz6jq6R9aX9-p7K5ILg.ttf",
-		"weight": 400
+		displayName: "Playwrite IS",
+		filename: "JTUFjI4o_SGg9lecLGptrD17xQYXK0vOoz6jq6R9aX9-p7K5ILg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteis/v10/JTUFjI4o_SGg9lecLGptrD17xQYXK0vOoz6jq6R9aX9-p7K5ILg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Samaritan",
-		"filename": "buEqppe9f8_vkXadMBJJo0tSmaYjFkxOUo5jNlOVMzQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssamaritan/v17/buEqppe9f8_vkXadMBJJo0tSmaYjFkxOUo5jNlOVMzQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Samaritan",
+		filename: "buEqppe9f8_vkXadMBJJo0tSmaYjFkxOUo5jNlOVMzQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssamaritan/v17/buEqppe9f8_vkXadMBJJo0tSmaYjFkxOUo5jNlOVMzQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CU",
-		"filename": "VuJjdNDb2p7tvoFGLMPdf9xcahOpb9ZuoyXseRmxZeT7m2YIByI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritecu/v6/VuJjdNDb2p7tvoFGLMPdf9xcahOpb9ZuoyXseRmxZeT7m2YIByI.ttf",
-		"weight": 400
+		displayName: "Playwrite CU",
+		filename: "VuJjdNDb2p7tvoFGLMPdf9xcahOpb9ZuoyXseRmxZeT7m2YIByI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritecu/v6/VuJjdNDb2p7tvoFGLMPdf9xcahOpb9ZuoyXseRmxZeT7m2YIByI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IN",
-		"filename": "uk-xEGGpoLQ97mfv2J3cZzuz7CyEJhPw65lkM7mMMR8n3_Ag1kU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritein/v11/uk-xEGGpoLQ97mfv2J3cZzuz7CyEJhPw65lkM7mMMR8n3_Ag1kU.ttf",
-		"weight": 400
+		displayName: "Playwrite IN",
+		filename: "uk-xEGGpoLQ97mfv2J3cZzuz7CyEJhPw65lkM7mMMR8n3_Ag1kU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritein/v11/uk-xEGGpoLQ97mfv2J3cZzuz7CyEJhPw65lkM7mMMR8n3_Ag1kU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Gurmukhi",
-		"filename": "0QIAMXRO_YSkA0quVLY79JnHybfeEOrXCa9Dmd9Ql6a6R_vEMc5TaLkbd5tpXK41H6DjbA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekgurmukhi/v13/0QIAMXRO_YSkA0quVLY79JnHybfeEOrXCa9Dmd9Ql6a6R_vEMc5TaLkbd5tpXK41H6DjbA.ttf",
-		"weight": 400
+		displayName: "Anek Gurmukhi",
+		filename: "0QIAMXRO_YSkA0quVLY79JnHybfeEOrXCa9Dmd9Ql6a6R_vEMc5TaLkbd5tpXK41H6DjbA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekgurmukhi/v13/0QIAMXRO_YSkA0quVLY79JnHybfeEOrXCa9Dmd9Ql6a6R_vEMc5TaLkbd5tpXK41H6DjbA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Poor Story",
-		"filename": "jizfREFUsnUct9P6cDfd4OmnLD0Z4zM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/poorstory/v24/jizfREFUsnUct9P6cDfd4OmnLD0Z4zM.ttf",
-		"weight": 400
+		displayName: "Poor Story",
+		filename: "jizfREFUsnUct9P6cDfd4OmnLD0Z4zM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/poorstory/v24/jizfREFUsnUct9P6cDfd4OmnLD0Z4zM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ribeye Marrow",
-		"filename": "GFDsWApshnqMRO2JdtRZ2d0vEAwTVWgKdtw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ribeyemarrow/v26/GFDsWApshnqMRO2JdtRZ2d0vEAwTVWgKdtw.ttf",
-		"weight": 400
+		displayName: "Ribeye Marrow",
+		filename: "GFDsWApshnqMRO2JdtRZ2d0vEAwTVWgKdtw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ribeyemarrow/v26/GFDsWApshnqMRO2JdtRZ2d0vEAwTVWgKdtw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alumni Sans Pinstripe",
-		"filename": "ZgNNjOFFPq_AUJD1umyS30W-Xub8zD1ObhezYrVIpcDA5w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alumnisanspinstripe/v8/ZgNNjOFFPq_AUJD1umyS30W-Xub8zD1ObhezYrVIpcDA5w.ttf",
-		"weight": 400
+		displayName: "Alumni Sans Pinstripe",
+		filename: "ZgNNjOFFPq_AUJD1umyS30W-Xub8zD1ObhezYrVIpcDA5w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alumnisanspinstripe/v8/ZgNNjOFFPq_AUJD1umyS30W-Xub8zD1ObhezYrVIpcDA5w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Liter",
-		"filename": "SLXGc1nX4GQ4d2ImRJqExst1",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/liter/v4/SLXGc1nX4GQ4d2ImRJqExst1.ttf",
-		"weight": 400
+		displayName: "Liter",
+		filename: "SLXGc1nX4GQ4d2ImRJqExst1",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/liter/v4/SLXGc1nX4GQ4d2ImRJqExst1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Siemreap",
-		"filename": "Gg82N5oFbgLvHAfNl2YbnA8DLXpe",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/siemreap/v30/Gg82N5oFbgLvHAfNl2YbnA8DLXpe.ttf",
-		"weight": 400
+		displayName: "Siemreap",
+		filename: "Gg82N5oFbgLvHAfNl2YbnA8DLXpe",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/siemreap/v30/Gg82N5oFbgLvHAfNl2YbnA8DLXpe.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite VN Guides",
-		"filename": "JIAvUUlydXJZq1IQU8oDBn2CUkROHFEAfXMXfpmSLuI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritevnguides/v1/JIAvUUlydXJZq1IQU8oDBn2CUkROHFEAfXMXfpmSLuI.ttf",
-		"weight": 400
+		displayName: "Playwrite VN Guides",
+		filename: "JIAvUUlydXJZq1IQU8oDBn2CUkROHFEAfXMXfpmSLuI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritevnguides/v1/JIAvUUlydXJZq1IQU8oDBn2CUkROHFEAfXMXfpmSLuI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ga Maamli",
-		"filename": "uU9NCBsQ4c-DPW1Yo3rR2t6CilKOdQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gamaamli/v3/uU9NCBsQ4c-DPW1Yo3rR2t6CilKOdQ.ttf",
-		"weight": 400
+		displayName: "Ga Maamli",
+		filename: "uU9NCBsQ4c-DPW1Yo3rR2t6CilKOdQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gamaamli/v3/uU9NCBsQ4c-DPW1Yo3rR2t6CilKOdQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacquard 12",
-		"filename": "vm8ydRLuXETEweL79J4rGc3JUnr34c9-",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquard12/v8/vm8ydRLuXETEweL79J4rGc3JUnr34c9-.ttf",
-		"weight": 400
+		displayName: "Jacquard 12",
+		filename: "vm8ydRLuXETEweL79J4rGc3JUnr34c9-",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquard12/v8/vm8ydRLuXETEweL79J4rGc3JUnr34c9-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oi",
-		"filename": "w8gXH2EuRqtaut6yjBOG",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/oi/v21/w8gXH2EuRqtaut6yjBOG.ttf",
-		"weight": 400
+		displayName: "Oi",
+		filename: "w8gXH2EuRqtaut6yjBOG",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/oi/v21/w8gXH2EuRqtaut6yjBOG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Sora Sompeng",
-		"filename": "PlIRFkO5O6RzLfvNNVSioxM2_OTrEhPyDLolKvCsHzCxWuGkYHR818DpZXJQd4Mu",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssorasompeng/v26/PlIRFkO5O6RzLfvNNVSioxM2_OTrEhPyDLolKvCsHzCxWuGkYHR818DpZXJQd4Mu.ttf",
-		"weight": 400
+		displayName: "Noto Sans Sora Sompeng",
+		filename: "PlIRFkO5O6RzLfvNNVSioxM2_OTrEhPyDLolKvCsHzCxWuGkYHR818DpZXJQd4Mu",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssorasompeng/v26/PlIRFkO5O6RzLfvNNVSioxM2_OTrEhPyDLolKvCsHzCxWuGkYHR818DpZXJQd4Mu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inika",
-		"filename": "rnCm-x5X3QP-phTHRcc2s2XH",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/inika/v22/rnCm-x5X3QP-phTHRcc2s2XH.ttf",
-		"weight": 400
+		displayName: "Inika",
+		filename: "rnCm-x5X3QP-phTHRcc2s2XH",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/inika/v22/rnCm-x5X3QP-phTHRcc2s2XH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Metal",
-		"filename": "lW-wwjUJIXTo7i3nnoQAUdN2",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/metal/v32/lW-wwjUJIXTo7i3nnoQAUdN2.ttf",
-		"weight": 400
+		displayName: "Metal",
+		filename: "lW-wwjUJIXTo7i3nnoQAUdN2",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/metal/v32/lW-wwjUJIXTo7i3nnoQAUdN2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU NSW",
-		"filename": "6qLWKY4NtxD-qVlIPUIPenElWCCEWRgilpupBXi19xZjMb96TD2dC1gS",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteaunsw/v11/6qLWKY4NtxD-qVlIPUIPenElWCCEWRgilpupBXi19xZjMb96TD2dC1gS.ttf",
-		"weight": 400
+		displayName: "Playwrite AU NSW",
+		filename: "6qLWKY4NtxD-qVlIPUIPenElWCCEWRgilpupBXi19xZjMb96TD2dC1gS",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteaunsw/v11/6qLWKY4NtxD-qVlIPUIPenElWCCEWRgilpupBXi19xZjMb96TD2dC1gS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nabla",
-		"filename": "j8_D6-LI0Lvpe7Makz5UhJt9C3uqg_X_75gyGS4jAxsNIjrRNRBUFFR_198",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/nabla/v17/j8_D6-LI0Lvpe7Makz5UhJt9C3uqg_X_75gyGS4jAxsNIjrRNRBUFFR_198.ttf",
-		"weight": 400
+		displayName: "Nabla",
+		filename: "j8_D6-LI0Lvpe7Makz5UhJt9C3uqg_X_75gyGS4jAxsNIjrRNRBUFFR_198",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/nabla/v17/j8_D6-LI0Lvpe7Makz5UhJt9C3uqg_X_75gyGS4jAxsNIjrRNRBUFFR_198.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Condiment",
-		"filename": "pONk1hggFNmwvXALyH6Sq4n4o1vyCQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/condiment/v26/pONk1hggFNmwvXALyH6Sq4n4o1vyCQ.ttf",
-		"weight": 400
+		displayName: "Condiment",
+		filename: "pONk1hggFNmwvXALyH6Sq4n4o1vyCQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/condiment/v26/pONk1hggFNmwvXALyH6Sq4n4o1vyCQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE Grund",
-		"filename": "EJR-QhwoXdccriFurnRxqv-1MFyKy696-4VufrEGGbTZz2qHZwCUOfSwZTM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedegrund/v11/EJR-QhwoXdccriFurnRxqv-1MFyKy696-4VufrEGGbTZz2qHZwCUOfSwZTM.ttf",
-		"weight": 400
+		displayName: "Playwrite DE Grund",
+		filename: "EJR-QhwoXdccriFurnRxqv-1MFyKy696-4VufrEGGbTZz2qHZwCUOfSwZTM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedegrund/v11/EJR-QhwoXdccriFurnRxqv-1MFyKy696-4VufrEGGbTZz2qHZwCUOfSwZTM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Donegal One",
-		"filename": "m8JWjfRYea-ZnFz6fsK9FZRFRG-K3Mud",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/donegalone/v22/m8JWjfRYea-ZnFz6fsK9FZRFRG-K3Mud.ttf",
-		"weight": 400
+		displayName: "Donegal One",
+		filename: "m8JWjfRYea-ZnFz6fsK9FZRFRG-K3Mud",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/donegalone/v22/m8JWjfRYea-ZnFz6fsK9FZRFRG-K3Mud.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Inspiration",
-		"filename": "x3dkckPPZa6L4wIg5cZOEvoGnSrlBBsy",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/inspiration/v7/x3dkckPPZa6L4wIg5cZOEvoGnSrlBBsy.ttf",
-		"weight": 400
+		displayName: "Inspiration",
+		filename: "x3dkckPPZa6L4wIg5cZOEvoGnSrlBBsy",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/inspiration/v7/x3dkckPPZa6L4wIg5cZOEvoGnSrlBBsy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bruno Ace",
-		"filename": "WwkcxPa2E06x4trkOj_kMKoMWNMg3Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/brunoace/v7/WwkcxPa2E06x4trkOj_kMKoMWNMg3Q.ttf",
-		"weight": 400
+		displayName: "Bruno Ace",
+		filename: "WwkcxPa2E06x4trkOj_kMKoMWNMg3Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/brunoace/v7/WwkcxPa2E06x4trkOj_kMKoMWNMg3Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Piedra",
-		"filename": "ke8kOg8aN0Bn7hTunEyHN_M3gA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/piedra/v27/ke8kOg8aN0Bn7hTunEyHN_M3gA.ttf",
-		"weight": 400
+		displayName: "Piedra",
+		filename: "ke8kOg8aN0Bn7hTunEyHN_M3gA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/piedra/v27/ke8kOg8aN0Bn7hTunEyHN_M3gA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Buda",
-		"filename": "GFDqWAN8mnyIJSSrG7UBr7pZKA0",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/buda/v31/GFDqWAN8mnyIJSSrG7UBr7pZKA0.ttf",
-		"weight": 300
+		displayName: "Buda",
+		filename: "GFDqWAN8mnyIJSSrG7UBr7pZKA0",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/buda/v31/GFDqWAN8mnyIJSSrG7UBr7pZKA0.ttf",
+		weight: 300
 	},
 	{
-		"displayName": "Marko One",
-		"filename": "9Btq3DFG0cnVM5lw1haaKpUfrHPzUw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/markoone/v24/9Btq3DFG0cnVM5lw1haaKpUfrHPzUw.ttf",
-		"weight": 400
+		displayName: "Marko One",
+		filename: "9Btq3DFG0cnVM5lw1haaKpUfrHPzUw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/markoone/v24/9Btq3DFG0cnVM5lw1haaKpUfrHPzUw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Beiruti",
-		"filename": "JTUIjIU69Cmr9FGcYgRFEb7cdQn2-9a95wujgWg2SGdV",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/beiruti/v5/JTUIjIU69Cmr9FGcYgRFEb7cdQn2-9a95wujgWg2SGdV.ttf",
-		"weight": 400
+		displayName: "Beiruti",
+		filename: "JTUIjIU69Cmr9FGcYgRFEb7cdQn2-9a95wujgWg2SGdV",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/beiruti/v5/JTUIjIU69Cmr9FGcYgRFEb7cdQn2-9a95wujgWg2SGdV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Purple Purse",
-		"filename": "qWctB66gv53iAp-Vfs4My6qyeBb_ujA4ug",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/purplepurse/v25/qWctB66gv53iAp-Vfs4My6qyeBb_ujA4ug.ttf",
-		"weight": 400
+		displayName: "Purple Purse",
+		filename: "qWctB66gv53iAp-Vfs4My6qyeBb_ujA4ug",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/purplepurse/v25/qWctB66gv53iAp-Vfs4My6qyeBb_ujA4ug.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Preahvihear",
-		"filename": "6NUS8F-dNQeEYhzj7uluxswE49FJf8Wv",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/preahvihear/v32/6NUS8F-dNQeEYhzj7uluxswE49FJf8Wv.ttf",
-		"weight": 400
+		displayName: "Preahvihear",
+		filename: "6NUS8F-dNQeEYhzj7uluxswE49FJf8Wv",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/preahvihear/v32/6NUS8F-dNQeEYhzj7uluxswE49FJf8Wv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee Hairline",
-		"filename": "snfys0G548t04270a_ljTLUVrv-7YB2dQ5ZPqQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungeehairline/v26/snfys0G548t04270a_ljTLUVrv-7YB2dQ5ZPqQ.ttf",
-		"weight": 400
+		displayName: "Bungee Hairline",
+		filename: "snfys0G548t04270a_ljTLUVrv-7YB2dQ5ZPqQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungeehairline/v26/snfys0G548t04270a_ljTLUVrv-7YB2dQ5ZPqQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Castoro Titling",
-		"filename": "buEupouwccj03leTfjUAhEZWlrNqYgckeo9RMw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/castorotitling/v10/buEupouwccj03leTfjUAhEZWlrNqYgckeo9RMw.ttf",
-		"weight": 400
+		displayName: "Castoro Titling",
+		filename: "buEupouwccj03leTfjUAhEZWlrNqYgckeo9RMw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/castorotitling/v10/buEupouwccj03leTfjUAhEZWlrNqYgckeo9RMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Princess Sofia",
-		"filename": "qWczB6yguIb8DZ_GXZst16n7GRz7mDUoupoI",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/princesssofia/v27/qWczB6yguIb8DZ_GXZst16n7GRz7mDUoupoI.ttf",
-		"weight": 400
+		displayName: "Princess Sofia",
+		filename: "qWczB6yguIb8DZ_GXZst16n7GRz7mDUoupoI",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/princesssofia/v27/qWczB6yguIb8DZ_GXZst16n7GRz7mDUoupoI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Big Shoulders Stencil",
-		"filename": "TwM2-JIEQ1Je5sI6Bx1TKHD83rT3u3NSCfbFxqa9oQbR_CiZMgOzPB7iSLKdsgE9Sp2x5eZJnqtwIp4I",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bigshouldersstencil/v4/TwM2-JIEQ1Je5sI6Bx1TKHD83rT3u3NSCfbFxqa9oQbR_CiZMgOzPB7iSLKdsgE9Sp2x5eZJnqtwIp4I.ttf",
-		"weight": 400
+		displayName: "Big Shoulders Stencil",
+		filename: "TwM2-JIEQ1Je5sI6Bx1TKHD83rT3u3NSCfbFxqa9oQbR_CiZMgOzPB7iSLKdsgE9Sp2x5eZJnqtwIp4I",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bigshouldersstencil/v4/TwM2-JIEQ1Je5sI6Bx1TKHD83rT3u3NSCfbFxqa9oQbR_CiZMgOzPB7iSLKdsgE9Sp2x5eZJnqtwIp4I.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Darumadrop One",
-		"filename": "cY9cfjeIW11dpCKgRLi675a87IhHBJOxZQPp",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/darumadropone/v14/cY9cfjeIW11dpCKgRLi675a87IhHBJOxZQPp.ttf",
-		"weight": 400
+		displayName: "Darumadrop One",
+		filename: "cY9cfjeIW11dpCKgRLi675a87IhHBJOxZQPp",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/darumadropone/v14/cY9cfjeIW11dpCKgRLi675a87IhHBJOxZQPp.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Ahom",
-		"filename": "FeVIS0hfp6cprmEUffAW_fUL_AN-wuYrPFiwaw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifahom/v21/FeVIS0hfp6cprmEUffAW_fUL_AN-wuYrPFiwaw.ttf",
-		"weight": 400
+		displayName: "Noto Serif Ahom",
+		filename: "FeVIS0hfp6cprmEUffAW_fUL_AN-wuYrPFiwaw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifahom/v21/FeVIS0hfp6cprmEUffAW_fUL_AN-wuYrPFiwaw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Joti One",
-		"filename": "Z9XVDmdJQAmWm9TwaYTe4u2El6GC",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jotione/v28/Z9XVDmdJQAmWm9TwaYTe4u2El6GC.ttf",
-		"weight": 400
+		displayName: "Joti One",
+		filename: "Z9XVDmdJQAmWm9TwaYTe4u2El6GC",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jotione/v28/Z9XVDmdJQAmWm9TwaYTe4u2El6GC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "LXGW WenKai TC",
-		"filename": "w8gDH20td8wNsI3f40DmtXZb48uKLd0hZzVB",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lxgwwenkaitc/v9/w8gDH20td8wNsI3f40DmtXZb48uKLd0hZzVB.ttf",
-		"weight": 400
+		displayName: "LXGW WenKai TC",
+		filename: "w8gDH20td8wNsI3f40DmtXZb48uKLd0hZzVB",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lxgwwenkaitc/v9/w8gDH20td8wNsI3f40DmtXZb48uKLd0hZzVB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU QLD",
-		"filename": "SlGGmR-Yo5oYZX5BFVcEwSFSOXBRWADAWbgjmLBhA6-yMI2fqm1BV-XS",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteauqld/v11/SlGGmR-Yo5oYZX5BFVcEwSFSOXBRWADAWbgjmLBhA6-yMI2fqm1BV-XS.ttf",
-		"weight": 400
+		displayName: "Playwrite AU QLD",
+		filename: "SlGGmR-Yo5oYZX5BFVcEwSFSOXBRWADAWbgjmLBhA6-yMI2fqm1BV-XS",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteauqld/v11/SlGGmR-Yo5oYZX5BFVcEwSFSOXBRWADAWbgjmLBhA6-yMI2fqm1BV-XS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Molle",
-		"filename": "E21n_dL5hOXFhWEsXzgmVydREus",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/molle/v25/E21n_dL5hOXFhWEsXzgmVydREus.ttf",
-		"weight": 400
+		displayName: "Molle",
+		filename: "E21n_dL5hOXFhWEsXzgmVydREus",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/molle/v25/E21n_dL5hOXFhWEsXzgmVydREus.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kumar One",
-		"filename": "bMr1mS-P958wYi6YaGeGNO6WU3oT0g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kumarone/v25/bMr1mS-P958wYi6YaGeGNO6WU3oT0g.ttf",
-		"weight": 400
+		displayName: "Kumar One",
+		filename: "bMr1mS-P958wYi6YaGeGNO6WU3oT0g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kumarone/v25/bMr1mS-P958wYi6YaGeGNO6WU3oT0g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "New Amsterdam",
-		"filename": "YA9Vr02Y5lucHqUlbEe51kBtl7mGiv_Q7dA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/newamsterdam/v1/YA9Vr02Y5lucHqUlbEe51kBtl7mGiv_Q7dA.ttf",
-		"weight": 400
+		displayName: "New Amsterdam",
+		filename: "YA9Vr02Y5lucHqUlbEe51kBtl7mGiv_Q7dA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/newamsterdam/v1/YA9Vr02Y5lucHqUlbEe51kBtl7mGiv_Q7dA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite PL",
-		"filename": "0QIyMXVf_4C2VH-yUr5uz72U-LQiKJ_9tb1WmRfb9ZybSwcVtHQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritepl/v10/0QIyMXVf_4C2VH-yUr5uz72U-LQiKJ_9tb1WmRfb9ZybSwcVtHQ.ttf",
-		"weight": 400
+		displayName: "Playwrite PL",
+		filename: "0QIyMXVf_4C2VH-yUr5uz72U-LQiKJ_9tb1WmRfb9ZybSwcVtHQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritepl/v10/0QIyMXVf_4C2VH-yUr5uz72U-LQiKJ_9tb1WmRfb9ZybSwcVtHQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Iso",
-		"filename": "x3dickHUfr-S4VAI4sABfPACvy_1BA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikiso/v2/x3dickHUfr-S4VAI4sABfPACvy_1BA.ttf",
-		"weight": 400
+		displayName: "Rubik Iso",
+		filename: "x3dickHUfr-S4VAI4sABfPACvy_1BA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikiso/v2/x3dickHUfr-S4VAI4sABfPACvy_1BA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Monomakh",
-		"filename": "Wnz4HAk3Yh_SC3FACTYdiArcPRKo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/monomakh/v1/Wnz4HAk3Yh_SC3FACTYdiArcPRKo.ttf",
-		"weight": 400
+		displayName: "Monomakh",
+		filename: "Wnz4HAk3Yh_SC3FACTYdiArcPRKo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/monomakh/v1/Wnz4HAk3Yh_SC3FACTYdiArcPRKo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Rashi Hebrew",
-		"filename": "EJR_Qh82XsIK-QFmqXk4zvLwFVya0vFL-HlKM5e6C6HZB-HkRyq6Nf2pfA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notorashihebrew/v28/EJR_Qh82XsIK-QFmqXk4zvLwFVya0vFL-HlKM5e6C6HZB-HkRyq6Nf2pfA.ttf",
-		"weight": 400
+		displayName: "Noto Rashi Hebrew",
+		filename: "EJR_Qh82XsIK-QFmqXk4zvLwFVya0vFL-HlKM5e6C6HZB-HkRyq6Nf2pfA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notorashihebrew/v28/EJR_Qh82XsIK-QFmqXk4zvLwFVya0vFL-HlKM5e6C6HZB-HkRyq6Nf2pfA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lancelot",
-		"filename": "J7acnppxBGtQEulG4JY4xJ9CGyAa",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/lancelot/v28/J7acnppxBGtQEulG4JY4xJ9CGyAa.ttf",
-		"weight": 400
+		displayName: "Lancelot",
+		filename: "J7acnppxBGtQEulG4JY4xJ9CGyAa",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/lancelot/v28/J7acnppxBGtQEulG4JY4xJ9CGyAa.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yaldevi",
-		"filename": "cY9afj6VW0NMrDWtDNzCOwlPMq9SLpdxJzvobxLCBJkS",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/yaldevi/v17/cY9afj6VW0NMrDWtDNzCOwlPMq9SLpdxJzvobxLCBJkS.ttf",
-		"weight": 400
+		displayName: "Yaldevi",
+		filename: "cY9afj6VW0NMrDWtDNzCOwlPMq9SLpdxJzvobxLCBJkS",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/yaldevi/v17/cY9afj6VW0NMrDWtDNzCOwlPMq9SLpdxJzvobxLCBJkS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dr Sugiyama",
-		"filename": "HTxoL2k4N3O9n5I1boGI7abRM4-t-g7y",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/drsugiyama/v30/HTxoL2k4N3O9n5I1boGI7abRM4-t-g7y.ttf",
-		"weight": 400
+		displayName: "Dr Sugiyama",
+		filename: "HTxoL2k4N3O9n5I1boGI7abRM4-t-g7y",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/drsugiyama/v30/HTxoL2k4N3O9n5I1boGI7abRM4-t-g7y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fruktur",
-		"filename": "SZc53FHsOru5QYsMfz3GkUrS8DI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/fruktur/v28/SZc53FHsOru5QYsMfz3GkUrS8DI.ttf",
-		"weight": 400
+		displayName: "Fruktur",
+		filename: "SZc53FHsOru5QYsMfz3GkUrS8DI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/fruktur/v28/SZc53FHsOru5QYsMfz3GkUrS8DI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Moderustic",
-		"filename": "2-c39J9s3o6eLFNHFdXYaOX1UUnf3GLnYjALsTNe55aRa7UE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/moderustic/v3/2-c39J9s3o6eLFNHFdXYaOX1UUnf3GLnYjALsTNe55aRa7UE.ttf",
-		"weight": 400
+		displayName: "Moderustic",
+		filename: "2-c39J9s3o6eLFNHFdXYaOX1UUnf3GLnYjALsTNe55aRa7UE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/moderustic/v3/2-c39J9s3o6eLFNHFdXYaOX1UUnf3GLnYjALsTNe55aRa7UE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Badeen Display",
-		"filename": "pxidypY2sdZSjFU4cPmNBzckadeLYk1Mq3ap",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/badeendisplay/v1/pxidypY2sdZSjFU4cPmNBzckadeLYk1Mq3ap.ttf",
-		"weight": 400
+		displayName: "Badeen Display",
+		filename: "pxidypY2sdZSjFU4cPmNBzckadeLYk1Mq3ap",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/badeendisplay/v1/pxidypY2sdZSjFU4cPmNBzckadeLYk1Mq3ap.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Smokum",
-		"filename": "TK3iWkUbAhopmrdGHjUHte5fKg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/smokum/v30/TK3iWkUbAhopmrdGHjUHte5fKg.ttf",
-		"weight": 400
+		displayName: "Smokum",
+		filename: "TK3iWkUbAhopmrdGHjUHte5fKg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/smokum/v30/TK3iWkUbAhopmrdGHjUHte5fKg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lugrasimo",
-		"filename": "qkBXXvoF_s_eT9c7Y7ae5JRLkAXbMQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lugrasimo/v5/qkBXXvoF_s_eT9c7Y7ae5JRLkAXbMQ.ttf",
-		"weight": 400
+		displayName: "Lugrasimo",
+		filename: "qkBXXvoF_s_eT9c7Y7ae5JRLkAXbMQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lugrasimo/v5/qkBXXvoF_s_eT9c7Y7ae5JRLkAXbMQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sedan SC",
-		"filename": "yMJRMIlvYZ3Jn1Y30Dq8fSx5i814",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sedansc/v2/yMJRMIlvYZ3Jn1Y30Dq8fSx5i814.ttf",
-		"weight": 400
+		displayName: "Sedan SC",
+		filename: "yMJRMIlvYZ3Jn1Y30Dq8fSx5i814",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sedansc/v2/yMJRMIlvYZ3Jn1Y30Dq8fSx5i814.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Luxurious Roman",
-		"filename": "buEupou_ZcP1w0yTKxJJokVSmbpqYgckeo9RMw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/luxuriousroman/v10/buEupou_ZcP1w0yTKxJJokVSmbpqYgckeo9RMw.ttf",
-		"weight": 400
+		displayName: "Luxurious Roman",
+		filename: "buEupou_ZcP1w0yTKxJJokVSmbpqYgckeo9RMw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/luxuriousroman/v10/buEupou_ZcP1w0yTKxJJokVSmbpqYgckeo9RMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gidugu",
-		"filename": "L0x8DFMkk1Uf6w3RvPCmRSlUig",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gidugu/v28/L0x8DFMkk1Uf6w3RvPCmRSlUig.ttf",
-		"weight": 400
+		displayName: "Gidugu",
+		filename: "L0x8DFMkk1Uf6w3RvPCmRSlUig",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gidugu/v28/L0x8DFMkk1Uf6w3RvPCmRSlUig.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Finlandica",
-		"filename": "-nFsOGk-8vAc7lEtg0aSyZCty9GSsPBE19A7rEjx9i5ss3a3",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/finlandica/v10/-nFsOGk-8vAc7lEtg0aSyZCty9GSsPBE19A7rEjx9i5ss3a3.ttf",
-		"weight": 400
+		displayName: "Finlandica",
+		filename: "-nFsOGk-8vAc7lEtg0aSyZCty9GSsPBE19A7rEjx9i5ss3a3",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/finlandica/v10/-nFsOGk-8vAc7lEtg0aSyZCty9GSsPBE19A7rEjx9i5ss3a3.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bruno Ace SC",
-		"filename": "ptROTiycffFLBuiHjdJDl634LSFrpe8uZA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/brunoacesc/v7/ptROTiycffFLBuiHjdJDl634LSFrpe8uZA.ttf",
-		"weight": 400
+		displayName: "Bruno Ace SC",
+		filename: "ptROTiycffFLBuiHjdJDl634LSFrpe8uZA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/brunoacesc/v7/ptROTiycffFLBuiHjdJDl634LSFrpe8uZA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hubballi",
-		"filename": "o-0JIpUj3WIZ1RFN56B7yBBNYuSF",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hubballi/v10/o-0JIpUj3WIZ1RFN56B7yBBNYuSF.ttf",
-		"weight": 400
+		displayName: "Hubballi",
+		filename: "o-0JIpUj3WIZ1RFN56B7yBBNYuSF",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hubballi/v10/o-0JIpUj3WIZ1RFN56B7yBBNYuSF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Port Lligat Sans",
-		"filename": "kmKmZrYrGBbdN1aV7Vokow6Lw4s4l7N0Tx4xEcQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/portlligatsans/v24/kmKmZrYrGBbdN1aV7Vokow6Lw4s4l7N0Tx4xEcQ.ttf",
-		"weight": 400
+		displayName: "Port Lligat Sans",
+		filename: "kmKmZrYrGBbdN1aV7Vokow6Lw4s4l7N0Tx4xEcQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/portlligatsans/v24/kmKmZrYrGBbdN1aV7Vokow6Lw4s4l7N0Tx4xEcQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grey Qo",
-		"filename": "BXRrvF_Nmv_TyXxNDOtQ9Wf0QcE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/greyqo/v11/BXRrvF_Nmv_TyXxNDOtQ9Wf0QcE.ttf",
-		"weight": 400
+		displayName: "Grey Qo",
+		filename: "BXRrvF_Nmv_TyXxNDOtQ9Wf0QcE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/greyqo/v11/BXRrvF_Nmv_TyXxNDOtQ9Wf0QcE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Updock",
-		"filename": "nuF4D_3dVZ70UI9SjLK3602XBw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/updock/v7/nuF4D_3dVZ70UI9SjLK3602XBw.ttf",
-		"weight": 400
+		displayName: "Updock",
+		filename: "nuF4D_3dVZ70UI9SjLK3602XBw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/updock/v7/nuF4D_3dVZ70UI9SjLK3602XBw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libre Barcode EAN13 Text",
-		"filename": "wlpigxXFDU1_oCu9nfZytgIqSG0XRcJm_OQiB96PAGEki52WfA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/librebarcodeean13text/v25/wlpigxXFDU1_oCu9nfZytgIqSG0XRcJm_OQiB96PAGEki52WfA.ttf",
-		"weight": 400
+		displayName: "Libre Barcode EAN13 Text",
+		filename: "wlpigxXFDU1_oCu9nfZytgIqSG0XRcJm_OQiB96PAGEki52WfA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/librebarcodeean13text/v25/wlpigxXFDU1_oCu9nfZytgIqSG0XRcJm_OQiB96PAGEki52WfA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Butcherman",
-		"filename": "2EbiL-thF0loflXUBOdb1zWzq_5uT84",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/butcherman/v25/2EbiL-thF0loflXUBOdb1zWzq_5uT84.ttf",
-		"weight": 400
+		displayName: "Butcherman",
+		filename: "2EbiL-thF0loflXUBOdb1zWzq_5uT84",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/butcherman/v25/2EbiL-thF0loflXUBOdb1zWzq_5uT84.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sahitya",
-		"filename": "6qLAKZkOuhnuqlJAaScFPywEDnI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sahitya/v20/6qLAKZkOuhnuqlJAaScFPywEDnI.ttf",
-		"weight": 400
+		displayName: "Sahitya",
+		filename: "6qLAKZkOuhnuqlJAaScFPywEDnI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sahitya/v20/6qLAKZkOuhnuqlJAaScFPywEDnI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Passero One",
-		"filename": "JTUTjIko8DOq5FeaeEAjgE5B5Arr-s50",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/passeroone/v28/JTUTjIko8DOq5FeaeEAjgE5B5Arr-s50.ttf",
-		"weight": 400
+		displayName: "Passero One",
+		filename: "JTUTjIko8DOq5FeaeEAjgE5B5Arr-s50",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/passeroone/v28/JTUTjIko8DOq5FeaeEAjgE5B5Arr-s50.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Nuosu SIL",
-		"filename": "8vIK7wM3wmRn_kc4uAjeFGxbO_zo-w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nuosusil/v12/8vIK7wM3wmRn_kc4uAjeFGxbO_zo-w.ttf",
-		"weight": 400
+		displayName: "Nuosu SIL",
+		filename: "8vIK7wM3wmRn_kc4uAjeFGxbO_zo-w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nuosusil/v12/8vIK7wM3wmRn_kc4uAjeFGxbO_zo-w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Distressed",
-		"filename": "GFDxWBdsmnqAVqjtUsZf2dcrQ2ldcWAhatVBaGM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikdistressed/v1/GFDxWBdsmnqAVqjtUsZf2dcrQ2ldcWAhatVBaGM.ttf",
-		"weight": 400
+		displayName: "Rubik Distressed",
+		filename: "GFDxWBdsmnqAVqjtUsZf2dcrQ2ldcWAhatVBaGM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikdistressed/v1/GFDxWBdsmnqAVqjtUsZf2dcrQ2ldcWAhatVBaGM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geostar Fill",
-		"filename": "AMOWz4SWuWiXFfjEohxQ9os0U1K2w9lb4g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/geostarfill/v27/AMOWz4SWuWiXFfjEohxQ9os0U1K2w9lb4g.ttf",
-		"weight": 400
+		displayName: "Geostar Fill",
+		filename: "AMOWz4SWuWiXFfjEohxQ9os0U1K2w9lb4g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/geostarfill/v27/AMOWz4SWuWiXFfjEohxQ9os0U1K2w9lb4g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Telugu",
-		"filename": "tDbl2pCbnkEKmXNVmt2M1q6f4HWbbj6MRbYEeav7Fe9D9TCwuY2fjgrZYA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftelugu/v29/tDbl2pCbnkEKmXNVmt2M1q6f4HWbbj6MRbYEeav7Fe9D9TCwuY2fjgrZYA.ttf",
-		"weight": 400
+		displayName: "Noto Serif Telugu",
+		filename: "tDbl2pCbnkEKmXNVmt2M1q6f4HWbbj6MRbYEeav7Fe9D9TCwuY2fjgrZYA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftelugu/v29/tDbl2pCbnkEKmXNVmt2M1q6f4HWbbj6MRbYEeav7Fe9D9TCwuY2fjgrZYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amiri Quran",
-		"filename": "_Xmo-Hk0rD6DbUL4_vH8Zq5t7Cycsu-2",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/amiriquran/v19/_Xmo-Hk0rD6DbUL4_vH8Zq5t7Cycsu-2.ttf",
-		"weight": 400
+		displayName: "Amiri Quran",
+		filename: "_Xmo-Hk0rD6DbUL4_vH8Zq5t7Cycsu-2",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/amiriquran/v19/_Xmo-Hk0rD6DbUL4_vH8Zq5t7Cycsu-2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Praise",
-		"filename": "qkBUXvUZ-cnFXcFyDvO67L9XmQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/praise/v9/qkBUXvUZ-cnFXcFyDvO67L9XmQ.ttf",
-		"weight": 400
+		displayName: "Praise",
+		filename: "qkBUXvUZ-cnFXcFyDvO67L9XmQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/praise/v9/qkBUXvUZ-cnFXcFyDvO67L9XmQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 20",
-		"filename": "ZgNRjP1ON6jeW4D12z3crE_qP4mXuQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey20/v4/ZgNRjP1ON6jeW4D12z3crE_qP4mXuQ.ttf",
-		"weight": 400
+		displayName: "Jersey 20",
+		filename: "ZgNRjP1ON6jeW4D12z3crE_qP4mXuQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey20/v4/ZgNRjP1ON6jeW4D12z3crE_qP4mXuQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reem Kufi Ink",
-		"filename": "oPWJ_kJmmu8hCvB9iFumxZSnRj5dQnSX1ko",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/reemkufiink/v11/oPWJ_kJmmu8hCvB9iFumxZSnRj5dQnSX1ko.ttf",
-		"weight": 400
+		displayName: "Reem Kufi Ink",
+		filename: "oPWJ_kJmmu8hCvB9iFumxZSnRj5dQnSX1ko",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/reemkufiink/v11/oPWJ_kJmmu8hCvB9iFumxZSnRj5dQnSX1ko.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Montserrat Underline",
-		"filename": "mFTbWaYfw6zH4dthXcyms01NtC8I_7U5uQQi5HMFnSdEx2F5Wih8ubbffHtmMw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/montserratunderline/v3/mFTbWaYfw6zH4dthXcyms01NtC8I_7U5uQQi5HMFnSdEx2F5Wih8ubbffHtmMw.ttf",
-		"weight": 400
+		displayName: "Montserrat Underline",
+		filename: "mFTbWaYfw6zH4dthXcyms01NtC8I_7U5uQQi5HMFnSdEx2F5Wih8ubbffHtmMw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/montserratunderline/v3/mFTbWaYfw6zH4dthXcyms01NtC8I_7U5uQQi5HMFnSdEx2F5Wih8ubbffHtmMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Encode Sans SC",
-		"filename": "jVyp7nLwCGzQ9zE7ZyRg0QRXHPZc_uUA6Kb3VJWLE_Pdtm7lcD6qvXT1HHhm8c9NOEEClIc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/encodesanssc/v14/jVyp7nLwCGzQ9zE7ZyRg0QRXHPZc_uUA6Kb3VJWLE_Pdtm7lcD6qvXT1HHhm8c9NOEEClIc.ttf",
-		"weight": 400
+		displayName: "Encode Sans SC",
+		filename: "jVyp7nLwCGzQ9zE7ZyRg0QRXHPZc_uUA6Kb3VJWLE_Pdtm7lcD6qvXT1HHhm8c9NOEEClIc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/encodesanssc/v14/jVyp7nLwCGzQ9zE7ZyRg0QRXHPZc_uUA6Kb3VJWLE_Pdtm7lcD6qvXT1HHhm8c9NOEEClIc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Felipa",
-		"filename": "FwZa7-owz1Eu4F_wSNSEwM2zpA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/felipa/v27/FwZa7-owz1Eu4F_wSNSEwM2zpA.ttf",
-		"weight": 400
+		displayName: "Felipa",
+		filename: "FwZa7-owz1Eu4F_wSNSEwM2zpA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/felipa/v27/FwZa7-owz1Eu4F_wSNSEwM2zpA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bigelow Rules",
-		"filename": "RrQWboly8iR_I3KWSzeRuN0zT4cCH8WAJVk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bigelowrules/v31/RrQWboly8iR_I3KWSzeRuN0zT4cCH8WAJVk.ttf",
-		"weight": 400
+		displayName: "Bigelow Rules",
+		filename: "RrQWboly8iR_I3KWSzeRuN0zT4cCH8WAJVk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bigelowrules/v31/RrQWboly8iR_I3KWSzeRuN0zT4cCH8WAJVk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Galdeano",
-		"filename": "uU9MCBoQ4YOqOW1boDPx8PCOg0uX",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/galdeano/v23/uU9MCBoQ4YOqOW1boDPx8PCOg0uX.ttf",
-		"weight": 400
+		displayName: "Galdeano",
+		filename: "uU9MCBoQ4YOqOW1boDPx8PCOg0uX",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/galdeano/v23/uU9MCBoQ4YOqOW1boDPx8PCOg0uX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asta Sans",
-		"filename": "XoH32Y74XaWovvhMb0c3tN_dRqdT9zveo_T_mVnvqYRoVr0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/astasans/v3/XoH32Y74XaWovvhMb0c3tN_dRqdT9zveo_T_mVnvqYRoVr0.ttf",
-		"weight": 400
+		displayName: "Asta Sans",
+		filename: "XoH32Y74XaWovvhMb0c3tN_dRqdT9zveo_T_mVnvqYRoVr0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/astasans/v3/XoH32Y74XaWovvhMb0c3tN_dRqdT9zveo_T_mVnvqYRoVr0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tulpen One",
-		"filename": "dFa6ZfeC474skLgesc0CWj0w_HyIRlE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tulpenone/v26/dFa6ZfeC474skLgesc0CWj0w_HyIRlE.ttf",
-		"weight": 400
+		displayName: "Tulpen One",
+		filename: "dFa6ZfeC474skLgesc0CWj0w_HyIRlE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tulpenone/v26/dFa6ZfeC474skLgesc0CWj0w_HyIRlE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Miss Fajardose",
-		"filename": "E21-_dn5gvrawDdPFVl-N0Ajb8qvWPaJq4no",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/missfajardose/v23/E21-_dn5gvrawDdPFVl-N0Ajb8qvWPaJq4no.ttf",
-		"weight": 400
+		displayName: "Miss Fajardose",
+		filename: "E21-_dn5gvrawDdPFVl-N0Ajb8qvWPaJq4no",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/missfajardose/v23/E21-_dn5gvrawDdPFVl-N0Ajb8qvWPaJq4no.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee Outline",
-		"filename": "_6_mEDvmVP24UvU2MyiGDslL3Qg3YhJqPXxo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungeeoutline/v24/_6_mEDvmVP24UvU2MyiGDslL3Qg3YhJqPXxo.ttf",
-		"weight": 400
+		displayName: "Bungee Outline",
+		filename: "_6_mEDvmVP24UvU2MyiGDslL3Qg3YhJqPXxo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungeeoutline/v24/_6_mEDvmVP24UvU2MyiGDslL3Qg3YhJqPXxo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alumni Sans Collegiate One",
-		"filename": "MQpB-XChK8G5CtmK_AuGxQrdNvPSXkn0RM-XqjWWhjdayDiPw2ta",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alumnisanscollegiateone/v7/MQpB-XChK8G5CtmK_AuGxQrdNvPSXkn0RM-XqjWWhjdayDiPw2ta.ttf",
-		"weight": 400
+		displayName: "Alumni Sans Collegiate One",
+		filename: "MQpB-XChK8G5CtmK_AuGxQrdNvPSXkn0RM-XqjWWhjdayDiPw2ta",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alumnisanscollegiateone/v7/MQpB-XChK8G5CtmK_AuGxQrdNvPSXkn0RM-XqjWWhjdayDiPw2ta.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mrs Sheppards",
-		"filename": "PN_2Rfm9snC0XUGoEZhb91ig3vjxynMix4Y",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mrssheppards/v25/PN_2Rfm9snC0XUGoEZhb91ig3vjxynMix4Y.ttf",
-		"weight": 400
+		displayName: "Mrs Sheppards",
+		filename: "PN_2Rfm9snC0XUGoEZhb91ig3vjxynMix4Y",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mrssheppards/v25/PN_2Rfm9snC0XUGoEZhb91ig3vjxynMix4Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Devanagari Marathi",
-		"filename": "fC1xPZBSZHrRhS3rd4M0MAPNJUHl4znXCxAkotDrDJYM2lAZ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirodevanagarimarathi/v5/fC1xPZBSZHrRhS3rd4M0MAPNJUHl4znXCxAkotDrDJYM2lAZ.ttf",
-		"weight": 400
+		displayName: "Tiro Devanagari Marathi",
+		filename: "fC1xPZBSZHrRhS3rd4M0MAPNJUHl4znXCxAkotDrDJYM2lAZ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirodevanagarimarathi/v5/fC1xPZBSZHrRhS3rd4M0MAPNJUHl4znXCxAkotDrDJYM2lAZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Peddana",
-		"filename": "aFTU7PBhaX89UcKWhh2aBYyMcKw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/peddana/v24/aFTU7PBhaX89UcKWhh2aBYyMcKw.ttf",
-		"weight": 400
+		displayName: "Peddana",
+		filename: "aFTU7PBhaX89UcKWhh2aBYyMcKw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/peddana/v24/aFTU7PBhaX89UcKWhh2aBYyMcKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yuji Boku",
-		"filename": "P5sAzZybeNzXsA9xj1Fkjb2r2dgvJA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/yujiboku/v8/P5sAzZybeNzXsA9xj1Fkjb2r2dgvJA.ttf",
-		"weight": 400
+		displayName: "Yuji Boku",
+		filename: "P5sAzZybeNzXsA9xj1Fkjb2r2dgvJA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/yujiboku/v8/P5sAzZybeNzXsA9xj1Fkjb2r2dgvJA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Griffy",
-		"filename": "FwZa7-ox2FQh9kfwSNSEwM2zpA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/griffy/v23/FwZa7-ox2FQh9kfwSNSEwM2zpA.ttf",
-		"weight": 400
+		displayName: "Griffy",
+		filename: "FwZa7-ox2FQh9kfwSNSEwM2zpA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/griffy/v23/FwZa7-ox2FQh9kfwSNSEwM2zpA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lakki Reddy",
-		"filename": "S6u5w49MUSzD9jlCPmvLZQfox9k97-xZ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lakkireddy/v25/S6u5w49MUSzD9jlCPmvLZQfox9k97-xZ.ttf",
-		"weight": 400
+		displayName: "Lakki Reddy",
+		filename: "S6u5w49MUSzD9jlCPmvLZQfox9k97-xZ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lakkireddy/v25/S6u5w49MUSzD9jlCPmvLZQfox9k97-xZ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gasoek One",
-		"filename": "EJRTQgQ_UMUKvDgnlX80zrq_cyb-vco",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gasoekone/v3/EJRTQgQ_UMUKvDgnlX80zrq_cyb-vco.ttf",
-		"weight": 400
+		displayName: "Gasoek One",
+		filename: "EJRTQgQ_UMUKvDgnlX80zrq_cyb-vco",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gasoekone/v3/EJRTQgQ_UMUKvDgnlX80zrq_cyb-vco.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "TASA Orbiter",
-		"filename": "3XF4Erw3860rsdSUVZx78hPcTvQoDGHxaFGfVH4C8py095IuGcc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tasaorbiter/v2/3XF4Erw3860rsdSUVZx78hPcTvQoDGHxaFGfVH4C8py095IuGcc.ttf",
-		"weight": 400
+		displayName: "TASA Orbiter",
+		filename: "3XF4Erw3860rsdSUVZx78hPcTvQoDGHxaFGfVH4C8py095IuGcc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tasaorbiter/v2/3XF4Erw3860rsdSUVZx78hPcTvQoDGHxaFGfVH4C8py095IuGcc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ruwudu",
-		"filename": "syky-y1tj6UzRKfNlQCT9tPdpw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ruwudu/v4/syky-y1tj6UzRKfNlQCT9tPdpw.ttf",
-		"weight": 400
+		displayName: "Ruwudu",
+		filename: "syky-y1tj6UzRKfNlQCT9tPdpw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ruwudu/v4/syky-y1tj6UzRKfNlQCT9tPdpw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Flow Rounded",
-		"filename": "-zki91mtwsU9qlLiGwD4oQX3oZX-Xup87g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/flowrounded/v15/-zki91mtwsU9qlLiGwD4oQX3oZX-Xup87g.ttf",
-		"weight": 400
+		displayName: "Flow Rounded",
+		filename: "-zki91mtwsU9qlLiGwD4oQX3oZX-Xup87g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/flowrounded/v15/-zki91mtwsU9qlLiGwD4oQX3oZX-Xup87g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Babylonica",
-		"filename": "5aUw9_i2qxWVCAE2aHjTqDJ0-VVMoEw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/babylonica/v7/5aUw9_i2qxWVCAE2aHjTqDJ0-VVMoEw.ttf",
-		"weight": 400
+		displayName: "Babylonica",
+		filename: "5aUw9_i2qxWVCAE2aHjTqDJ0-VVMoEw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/babylonica/v7/5aUw9_i2qxWVCAE2aHjTqDJ0-VVMoEw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Trochut",
-		"filename": "CHyjV-fDDlP9bDIw5nSIfVIPLns",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/trochut/v24/CHyjV-fDDlP9bDIw5nSIfVIPLns.ttf",
-		"weight": 400
+		displayName: "Trochut",
+		filename: "CHyjV-fDDlP9bDIw5nSIfVIPLns",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/trochut/v24/CHyjV-fDDlP9bDIw5nSIfVIPLns.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ranga",
-		"filename": "C8ct4cYisGb28p6CLDwZwmGE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ranga/v22/C8ct4cYisGb28p6CLDwZwmGE.ttf",
-		"weight": 400
+		displayName: "Ranga",
+		filename: "C8ct4cYisGb28p6CLDwZwmGE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ranga/v22/C8ct4cYisGb28p6CLDwZwmGE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mr Bedfort",
-		"filename": "MQpR-WCtNZSWAdTMwBicliq0XZe_Iy8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/mrbedfort/v23/MQpR-WCtNZSWAdTMwBicliq0XZe_Iy8.ttf",
-		"weight": 400
+		displayName: "Mr Bedfort",
+		filename: "MQpR-WCtNZSWAdTMwBicliq0XZe_Iy8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/mrbedfort/v23/MQpR-WCtNZSWAdTMwBicliq0XZe_Iy8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Grid Single",
-		"filename": "cY8bfi2OU1tLpjaqQveNvbC2qfsuQPDVASHjTcBszBsXfC5C9kAKu8QoqnfqMiS4gVij5yxO41San7UnNMBH-Y9u33JUGFdHpUYahAAdbgvnnHmmgUGanohrZUINrmJ9z94",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountgridsingle/v3/cY8bfi2OU1tLpjaqQveNvbC2qfsuQPDVASHjTcBszBsXfC5C9kAKu8QoqnfqMiS4gVij5yxO41San7UnNMBH-Y9u33JUGFdHpUYahAAdbgvnnHmmgUGanohrZUINrmJ9z94.ttf",
-		"weight": 400
+		displayName: "Bitcount Grid Single",
+		filename: "cY8bfi2OU1tLpjaqQveNvbC2qfsuQPDVASHjTcBszBsXfC5C9kAKu8QoqnfqMiS4gVij5yxO41San7UnNMBH-Y9u33JUGFdHpUYahAAdbgvnnHmmgUGanohrZUINrmJ9z94",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountgridsingle/v3/cY8bfi2OU1tLpjaqQveNvbC2qfsuQPDVASHjTcBszBsXfC5C9kAKu8QoqnfqMiS4gVij5yxO41San7UnNMBH-Y9u33JUGFdHpUYahAAdbgvnnHmmgUGanohrZUINrmJ9z94.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sirin Stencil",
-		"filename": "mem4YaWwznmLx-lzGfN7MdRydchGBq6al6o",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sirinstencil/v27/mem4YaWwznmLx-lzGfN7MdRydchGBq6al6o.ttf",
-		"weight": 400
+		displayName: "Sirin Stencil",
+		filename: "mem4YaWwznmLx-lzGfN7MdRydchGBq6al6o",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sirinstencil/v27/mem4YaWwznmLx-lzGfN7MdRydchGBq6al6o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite HR",
-		"filename": "WWXAljmQYQCZM5qaU_dwQYcybAQ7GFn1mFNJPsoB9YHXAHC7tvg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritehr/v6/WWXAljmQYQCZM5qaU_dwQYcybAQ7GFn1mFNJPsoB9YHXAHC7tvg.ttf",
-		"weight": 400
+		displayName: "Playwrite HR",
+		filename: "WWXAljmQYQCZM5qaU_dwQYcybAQ7GFn1mFNJPsoB9YHXAHC7tvg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritehr/v6/WWXAljmQYQCZM5qaU_dwQYcybAQ7GFn1mFNJPsoB9YHXAHC7tvg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Reem Kufi Fun",
-		"filename": "uK_m4rOFYukkmyUEbF43fIryZEk5qRZ8nrKChoYj3nCgrvqZzZXq",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/reemkufifun/v13/uK_m4rOFYukkmyUEbF43fIryZEk5qRZ8nrKChoYj3nCgrvqZzZXq.ttf",
-		"weight": 400
+		displayName: "Reem Kufi Fun",
+		filename: "uK_m4rOFYukkmyUEbF43fIryZEk5qRZ8nrKChoYj3nCgrvqZzZXq",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/reemkufifun/v13/uK_m4rOFYukkmyUEbF43fIryZEk5qRZ8nrKChoYj3nCgrvqZzZXq.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wellfleet",
-		"filename": "nuF7D_LfQJb3VYgX6eyT42aLDhO2HA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/wellfleet/v25/nuF7D_LfQJb3VYgX6eyT42aLDhO2HA.ttf",
-		"weight": 400
+		displayName: "Wellfleet",
+		filename: "nuF7D_LfQJb3VYgX6eyT42aLDhO2HA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/wellfleet/v25/nuF7D_LfQJb3VYgX6eyT42aLDhO2HA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Anek Odia",
-		"filename": "TK3PWkoJARApz5UCd345tuevwwQX0CwsoYkAWgWYevAauivBUnmZfq3mXZAtm_es",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/anekodia/v17/TK3PWkoJARApz5UCd345tuevwwQX0CwsoYkAWgWYevAauivBUnmZfq3mXZAtm_es.ttf",
-		"weight": 400
+		displayName: "Anek Odia",
+		filename: "TK3PWkoJARApz5UCd345tuevwwQX0CwsoYkAWgWYevAauivBUnmZfq3mXZAtm_es",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/anekodia/v17/TK3PWkoJARApz5UCd345tuevwwQX0CwsoYkAWgWYevAauivBUnmZfq3mXZAtm_es.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Arsenal SC",
-		"filename": "x3dlckLHea6e5BEtsfxiXNossybsHQI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/arsenalsc/v1/x3dlckLHea6e5BEtsfxiXNossybsHQI.ttf",
-		"weight": 400
+		displayName: "Arsenal SC",
+		filename: "x3dlckLHea6e5BEtsfxiXNossybsHQI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/arsenalsc/v1/x3dlckLHea6e5BEtsfxiXNossybsHQI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "National Park",
-		"filename": "GftQ7vJOtg4NO-gmoY4nmcqP-VY9vs1ixcqgHfJ_b5XMdoayNUNf",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nationalpark/v4/GftQ7vJOtg4NO-gmoY4nmcqP-VY9vs1ixcqgHfJ_b5XMdoayNUNf.ttf",
-		"weight": 400
+		displayName: "National Park",
+		filename: "GftQ7vJOtg4NO-gmoY4nmcqP-VY9vs1ixcqgHfJ_b5XMdoayNUNf",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nationalpark/v4/GftQ7vJOtg4NO-gmoY4nmcqP-VY9vs1ixcqgHfJ_b5XMdoayNUNf.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bacasime Antique",
-		"filename": "tDbX2pGXkFYEykldjZSrmI6T_XWZOwStSUrV_BE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/bacasimeantique/v1/tDbX2pGXkFYEykldjZSrmI6T_XWZOwStSUrV_BE.ttf",
-		"weight": 400
+		displayName: "Bacasime Antique",
+		filename: "tDbX2pGXkFYEykldjZSrmI6T_XWZOwStSUrV_BE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/bacasimeantique/v1/tDbX2pGXkFYEykldjZSrmI6T_XWZOwStSUrV_BE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Sinhala",
-		"filename": "DtVEJwinQqclnZE2CnsPug9lgGC3y2F2nehQ7Eg4EdBKWxPiDxMivFLgRXs_-pGxR1MsxaLRn3W-",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifsinhala/v30/DtVEJwinQqclnZE2CnsPug9lgGC3y2F2nehQ7Eg4EdBKWxPiDxMivFLgRXs_-pGxR1MsxaLRn3W-.ttf",
-		"weight": 400
+		displayName: "Noto Serif Sinhala",
+		filename: "DtVEJwinQqclnZE2CnsPug9lgGC3y2F2nehQ7Eg4EdBKWxPiDxMivFLgRXs_-pGxR1MsxaLRn3W-",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifsinhala/v30/DtVEJwinQqclnZE2CnsPug9lgGC3y2F2nehQ7Eg4EdBKWxPiDxMivFLgRXs_-pGxR1MsxaLRn3W-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Revalia",
-		"filename": "WwkexPimBE2-4ZPEeVruNIgJSNM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/revalia/v24/WwkexPimBE2-4ZPEeVruNIgJSNM.ttf",
-		"weight": 400
+		displayName: "Revalia",
+		filename: "WwkexPimBE2-4ZPEeVruNIgJSNM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/revalia/v24/WwkexPimBE2-4ZPEeVruNIgJSNM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hanalei Fill",
-		"filename": "fC1mPYtObGbfyQznIaQzPQiMVwLBplm9aw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/hanaleifill/v23/fC1mPYtObGbfyQznIaQzPQiMVwLBplm9aw.ttf",
-		"weight": 400
+		displayName: "Hanalei Fill",
+		filename: "fC1mPYtObGbfyQznIaQzPQiMVwLBplm9aw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/hanaleifill/v23/fC1mPYtObGbfyQznIaQzPQiMVwLBplm9aw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Diplomata SC",
-		"filename": "buExpoi3ecvs3kidKgBJo2kf-P5Oaiw4cw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/diplomatasc/v30/buExpoi3ecvs3kidKgBJo2kf-P5Oaiw4cw.ttf",
-		"weight": 400
+		displayName: "Diplomata SC",
+		filename: "buExpoi3ecvs3kidKgBJo2kf-P5Oaiw4cw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/diplomatasc/v30/buExpoi3ecvs3kidKgBJo2kf-P5Oaiw4cw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bahiana",
-		"filename": "uU9PCBUV4YenPWJU7xPb3vyHmlI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bahiana/v25/uU9PCBUV4YenPWJU7xPb3vyHmlI.ttf",
-		"weight": 400
+		displayName: "Bahiana",
+		filename: "uU9PCBUV4YenPWJU7xPb3vyHmlI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bahiana/v25/uU9PCBUV4YenPWJU7xPb3vyHmlI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Neonderthaw",
-		"filename": "Iure6Yx5-oWVZI0r-17AeZZJprVA4XQ0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/neonderthaw/v8/Iure6Yx5-oWVZI0r-17AeZZJprVA4XQ0.ttf",
-		"weight": 400
+		displayName: "Neonderthaw",
+		filename: "Iure6Yx5-oWVZI0r-17AeZZJprVA4XQ0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/neonderthaw/v8/Iure6Yx5-oWVZI0r-17AeZZJprVA4XQ0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Explora",
-		"filename": "tsstApxFfjUH4wrvc1qPonC3vqc",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/explora/v11/tsstApxFfjUH4wrvc1qPonC3vqc.ttf",
-		"weight": 400
+		displayName: "Explora",
+		filename: "tsstApxFfjUH4wrvc1qPonC3vqc",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/explora/v11/tsstApxFfjUH4wrvc1qPonC3vqc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Vinyl",
-		"filename": "iJWABXKIfDnIV4mQ5BfjvUXexox2ztOU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikvinyl/v1/iJWABXKIfDnIV4mQ5BfjvUXexox2ztOU.ttf",
-		"weight": 400
+		displayName: "Rubik Vinyl",
+		filename: "iJWABXKIfDnIV4mQ5BfjvUXexox2ztOU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikvinyl/v1/iJWABXKIfDnIV4mQ5BfjvUXexox2ztOU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Fleur De Leah",
-		"filename": "AYCNpXX7ftYZWLhv9UmPJTMC5vat4I_Gdq0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/fleurdeleah/v11/AYCNpXX7ftYZWLhv9UmPJTMC5vat4I_Gdq0.ttf",
-		"weight": 400
+		displayName: "Fleur De Leah",
+		filename: "AYCNpXX7ftYZWLhv9UmPJTMC5vat4I_Gdq0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/fleurdeleah/v11/AYCNpXX7ftYZWLhv9UmPJTMC5vat4I_Gdq0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Science Gothic",
-		"filename": "CHzuV-7EH1X7aiQh5jPNDTJnVUAvhrL0sQdjzDQhk11iTp6mX-ANuf1d_83dPfZJ7Lvcvg8EGYzcW57mXiXiVX33c92fNgio9KvjVVuc-A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sciencegothic/v5/CHzuV-7EH1X7aiQh5jPNDTJnVUAvhrL0sQdjzDQhk11iTp6mX-ANuf1d_83dPfZJ7Lvcvg8EGYzcW57mXiXiVX33c92fNgio9KvjVVuc-A.ttf",
-		"weight": 400
+		displayName: "Science Gothic",
+		filename: "CHzuV-7EH1X7aiQh5jPNDTJnVUAvhrL0sQdjzDQhk11iTp6mX-ANuf1d_83dPfZJ7Lvcvg8EGYzcW57mXiXiVX33c92fNgio9KvjVVuc-A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sciencegothic/v5/CHzuV-7EH1X7aiQh5jPNDTJnVUAvhrL0sQdjzDQhk11iTp6mX-ANuf1d_83dPfZJ7Lvcvg8EGYzcW57mXiXiVX33c92fNgio9KvjVVuc-A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kumar One Outline",
-		"filename": "Noao6VH62pyLP0fsrZ-v18wlUEcX9zDwRQu8EGKF",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kumaroneoutline/v20/Noao6VH62pyLP0fsrZ-v18wlUEcX9zDwRQu8EGKF.ttf",
-		"weight": 400
+		displayName: "Kumar One Outline",
+		filename: "Noao6VH62pyLP0fsrZ-v18wlUEcX9zDwRQu8EGKF",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kumaroneoutline/v20/Noao6VH62pyLP0fsrZ-v18wlUEcX9zDwRQu8EGKF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu AU VIC WA NT Pre",
-		"filename": "f0Xc0fWk-t0rbG8Ycr-t55aG0elTWbFeXaYI98CnuNLeosIyJmkwr6MhKkg6nw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduauvicwantpre/v3/f0Xc0fWk-t0rbG8Ycr-t55aG0elTWbFeXaYI98CnuNLeosIyJmkwr6MhKkg6nw.ttf",
-		"weight": 400
+		displayName: "Edu AU VIC WA NT Pre",
+		filename: "f0Xc0fWk-t0rbG8Ycr-t55aG0elTWbFeXaYI98CnuNLeosIyJmkwr6MhKkg6nw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduauvicwantpre/v3/f0Xc0fWk-t0rbG8Ycr-t55aG0elTWbFeXaYI98CnuNLeosIyJmkwr6MhKkg6nw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Langar",
-		"filename": "kJEyBukW7AIlgjGVrTVZ99sqrQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/langar/v30/kJEyBukW7AIlgjGVrTVZ99sqrQ.ttf",
-		"weight": 400
+		displayName: "Langar",
+		filename: "kJEyBukW7AIlgjGVrTVZ99sqrQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/langar/v30/kJEyBukW7AIlgjGVrTVZ99sqrQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wittgenstein",
-		"filename": "WBL3rEDOakJCHParhXGwMgvyJ8hdWNLC1kI61G4T_Bv7Z15J4ow",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/wittgenstein/v4/WBL3rEDOakJCHParhXGwMgvyJ8hdWNLC1kI61G4T_Bv7Z15J4ow.ttf",
-		"weight": 400
+		displayName: "Wittgenstein",
+		filename: "WBL3rEDOakJCHParhXGwMgvyJ8hdWNLC1kI61G4T_Bv7Z15J4ow",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/wittgenstein/v4/WBL3rEDOakJCHParhXGwMgvyJ8hdWNLC1kI61G4T_Bv7Z15J4ow.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Gujarati",
-		"filename": "hESa6WBlOixO-3OJ1FTmTsmqlBRUJBVkcgNLpdsspzP2HuYycIzuM1Kf-OJu",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifgujarati/v29/hESa6WBlOixO-3OJ1FTmTsmqlBRUJBVkcgNLpdsspzP2HuYycIzuM1Kf-OJu.ttf",
-		"weight": 400
+		displayName: "Noto Serif Gujarati",
+		filename: "hESa6WBlOixO-3OJ1FTmTsmqlBRUJBVkcgNLpdsspzP2HuYycIzuM1Kf-OJu",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifgujarati/v29/hESa6WBlOixO-3OJ1FTmTsmqlBRUJBVkcgNLpdsspzP2HuYycIzuM1Kf-OJu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Manufacturing Consent",
-		"filename": "N0bL2TVONuFkPkuHfiECSLCwuZS-D-IsakikR6QvbfFYLA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/manufacturingconsent/v1/N0bL2TVONuFkPkuHfiECSLCwuZS-D-IsakikR6QvbfFYLA.ttf",
-		"weight": 400
+		displayName: "Manufacturing Consent",
+		filename: "N0bL2TVONuFkPkuHfiECSLCwuZS-D-IsakikR6QvbfFYLA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/manufacturingconsent/v1/N0bL2TVONuFkPkuHfiECSLCwuZS-D-IsakikR6QvbfFYLA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ponomar",
-		"filename": "or3iQ6zp3fKD2wImbJTdArg8hzo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ponomar/v5/or3iQ6zp3fKD2wImbJTdArg8hzo.ttf",
-		"weight": 400
+		displayName: "Ponomar",
+		filename: "or3iQ6zp3fKD2wImbJTdArg8hzo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ponomar/v5/or3iQ6zp3fKD2wImbJTdArg8hzo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU SA",
-		"filename": "YcmhsZpNS1SdgmHbGgtRuUElnR3CmSC5bVQVlrclpZgRcuVjCoV0bbE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteausa/v11/YcmhsZpNS1SdgmHbGgtRuUElnR3CmSC5bVQVlrclpZgRcuVjCoV0bbE.ttf",
-		"weight": 400
+		displayName: "Playwrite AU SA",
+		filename: "YcmhsZpNS1SdgmHbGgtRuUElnR3CmSC5bVQVlrclpZgRcuVjCoV0bbE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteausa/v11/YcmhsZpNS1SdgmHbGgtRuUElnR3CmSC5bVQVlrclpZgRcuVjCoV0bbE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chenla",
-		"filename": "SZc43FDpIKu8WZ9eXxfonUPL6Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chenla/v25/SZc43FDpIKu8WZ9eXxfonUPL6Q.ttf",
-		"weight": 400
+		displayName: "Chenla",
+		filename: "SZc43FDpIKu8WZ9eXxfonUPL6Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chenla/v25/SZc43FDpIKu8WZ9eXxfonUPL6Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Iansui",
-		"filename": "w8gbH2UoTuUp5bOajSGD1FcXoQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/iansui/v8/w8gbH2UoTuUp5bOajSGD1FcXoQ.ttf",
-		"weight": 400
+		displayName: "Iansui",
+		filename: "w8gbH2UoTuUp5bOajSGD1FcXoQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/iansui/v8/w8gbH2UoTuUp5bOajSGD1FcXoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Telugu",
-		"filename": "aFTQ7PxlZWk2EPiSymjXdKSNQqn0X0BO",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirotelugu/v7/aFTQ7PxlZWk2EPiSymjXdKSNQqn0X0BO.ttf",
-		"weight": 400
+		displayName: "Tiro Telugu",
+		filename: "aFTQ7PxlZWk2EPiSymjXdKSNQqn0X0BO",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirotelugu/v7/aFTQ7PxlZWk2EPiSymjXdKSNQqn0X0BO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Epunda Sans",
-		"filename": "ea8Kads_Rv3-GJfWRrHjgFROia5FlsurC_ndbFT7Sb54PQAqcA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/epundasans/v5/ea8Kads_Rv3-GJfWRrHjgFROia5FlsurC_ndbFT7Sb54PQAqcA.ttf",
-		"weight": 400
+		displayName: "Epunda Sans",
+		filename: "ea8Kads_Rv3-GJfWRrHjgFROia5FlsurC_ndbFT7Sb54PQAqcA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/epundasans/v5/ea8Kads_Rv3-GJfWRrHjgFROia5FlsurC_ndbFT7Sb54PQAqcA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lunasima",
-		"filename": "wEO-EBvPh9RSOj7JFAwle94H1VIe",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lunasima/v1/wEO-EBvPh9RSOj7JFAwle94H1VIe.ttf",
-		"weight": 400
+		displayName: "Lunasima",
+		filename: "wEO-EBvPh9RSOj7JFAwle94H1VIe",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lunasima/v1/wEO-EBvPh9RSOj7JFAwle94H1VIe.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Londrina Sketch",
-		"filename": "c4m41npxGMTnomOHtRU68eIJn8qfWWn5Pos6CA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/londrinasketch/v27/c4m41npxGMTnomOHtRU68eIJn8qfWWn5Pos6CA.ttf",
-		"weight": 400
+		displayName: "Londrina Sketch",
+		filename: "c4m41npxGMTnomOHtRU68eIJn8qfWWn5Pos6CA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/londrinasketch/v27/c4m41npxGMTnomOHtRU68eIJn8qfWWn5Pos6CA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Orbit",
-		"filename": "_LOCmz7I-uHd2mjEeqciRwRm",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/orbit/v1/_LOCmz7I-uHd2mjEeqciRwRm.ttf",
-		"weight": 400
+		displayName: "Orbit",
+		filename: "_LOCmz7I-uHd2mjEeqciRwRm",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/orbit/v1/_LOCmz7I-uHd2mjEeqciRwRm.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Armenian",
-		"filename": "3XFMEqMt3YoFsciDRZxptyCUKJmytZ0kVU-XvF7QaZuL85rnQ_zDNzDe5xNnKxyZi8KbxvXagGdkbg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifarmenian/v30/3XFMEqMt3YoFsciDRZxptyCUKJmytZ0kVU-XvF7QaZuL85rnQ_zDNzDe5xNnKxyZi8KbxvXagGdkbg.ttf",
-		"weight": 400
+		displayName: "Noto Serif Armenian",
+		filename: "3XFMEqMt3YoFsciDRZxptyCUKJmytZ0kVU-XvF7QaZuL85rnQ_zDNzDe5xNnKxyZi8KbxvXagGdkbg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifarmenian/v30/3XFMEqMt3YoFsciDRZxptyCUKJmytZ0kVU-XvF7QaZuL85rnQ_zDNzDe5xNnKxyZi8KbxvXagGdkbg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Momo Signature",
-		"filename": "RrQJbop99C51b06IDAuFoM0yCqcoMcmJPECN",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/momosignature/v2/RrQJbop99C51b06IDAuFoM0yCqcoMcmJPECN.ttf",
-		"weight": 400
+		displayName: "Momo Signature",
+		filename: "RrQJbop99C51b06IDAuFoM0yCqcoMcmJPECN",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/momosignature/v2/RrQJbop99C51b06IDAuFoM0yCqcoMcmJPECN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Blaka",
-		"filename": "8vIG7w8722p_6kdr20D2FV5e",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/blaka/v8/8vIG7w8722p_6kdr20D2FV5e.ttf",
-		"weight": 400
+		displayName: "Blaka",
+		filename: "8vIG7w8722p_6kdr20D2FV5e",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/blaka/v8/8vIG7w8722p_6kdr20D2FV5e.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Tamil",
-		"filename": "LYjndHr-klIgTfc40komjQ5OObazYp-6H94dBF-RX6nNRJfi-Gf55IgAecattN-R8Pz3v8Etew",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftamil/v31/LYjndHr-klIgTfc40komjQ5OObazYp-6H94dBF-RX6nNRJfi-Gf55IgAecattN-R8Pz3v8Etew.ttf",
-		"weight": 400
+		displayName: "Noto Serif Tamil",
+		filename: "LYjndHr-klIgTfc40komjQ5OObazYp-6H94dBF-RX6nNRJfi-Gf55IgAecattN-R8Pz3v8Etew",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftamil/v31/LYjndHr-klIgTfc40komjQ5OObazYp-6H94dBF-RX6nNRJfi-Gf55IgAecattN-R8Pz3v8Etew.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ravi Prakash",
-		"filename": "gokpH6fsDkVrF9Bv9X8SOAKHmNZEq6TTFw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/raviprakash/v21/gokpH6fsDkVrF9Bv9X8SOAKHmNZEq6TTFw.ttf",
-		"weight": 400
+		displayName: "Ravi Prakash",
+		filename: "gokpH6fsDkVrF9Bv9X8SOAKHmNZEq6TTFw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/raviprakash/v21/gokpH6fsDkVrF9Bv9X8SOAKHmNZEq6TTFw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sixtyfour",
-		"filename": "OD5vuMCT1numDm3nakXtp2h4jg463t9haG_3mBkVsV20uFT3BAE5f73YnyS5ZuOV",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/sixtyfour/v3/OD5vuMCT1numDm3nakXtp2h4jg463t9haG_3mBkVsV20uFT3BAE5f73YnyS5ZuOV.ttf",
-		"weight": 400
+		displayName: "Sixtyfour",
+		filename: "OD5vuMCT1numDm3nakXtp2h4jg463t9haG_3mBkVsV20uFT3BAE5f73YnyS5ZuOV",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/sixtyfour/v3/OD5vuMCT1numDm3nakXtp2h4jg463t9haG_3mBkVsV20uFT3BAE5f73YnyS5ZuOV.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geom",
-		"filename": "X7n_4bw6Cf6j2N-_7PYnX8v0Ggg5rF5zlCGh0sjL",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/geom/v1/X7n_4bw6Cf6j2N-_7PYnX8v0Ggg5rF5zlCGh0sjL.ttf",
-		"weight": 400
+		displayName: "Geom",
+		filename: "X7n_4bw6Cf6j2N-_7PYnX8v0Ggg5rF5zlCGh0sjL",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/geom/v1/X7n_4bw6Cf6j2N-_7PYnX8v0Ggg5rF5zlCGh0sjL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "LXGW WenKai Mono TC",
-		"filename": "pxiYyos4iPVgyWx9WtufHnsIf5nkaB0Him6CovpOkXA",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/lxgwwenkaimonotc/v9/pxiYyos4iPVgyWx9WtufHnsIf5nkaB0Him6CovpOkXA.ttf",
-		"weight": 400
+		displayName: "LXGW WenKai Mono TC",
+		filename: "pxiYyos4iPVgyWx9WtufHnsIf5nkaB0Him6CovpOkXA",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/lxgwwenkaimonotc/v9/pxiYyos4iPVgyWx9WtufHnsIf5nkaB0Him6CovpOkXA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Konkhmer Sleokchher",
-		"filename": "_Xmw-GE-rjmabA_M-aPOZOsCrUv825LFI3507E0d-W0",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/konkhmersleokchher/v3/_Xmw-GE-rjmabA_M-aPOZOsCrUv825LFI3507E0d-W0.ttf",
-		"weight": 400
+		displayName: "Konkhmer Sleokchher",
+		filename: "_Xmw-GE-rjmabA_M-aPOZOsCrUv825LFI3507E0d-W0",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/konkhmersleokchher/v3/_Xmw-GE-rjmabA_M-aPOZOsCrUv825LFI3507E0d-W0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dai Banna SIL",
-		"filename": "lW-4wj0AJWmpwGyJ2uEoA4I7jS6AKsLhJgo",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/daibannasil/v2/lW-4wj0AJWmpwGyJ2uEoA4I7jS6AKsLhJgo.ttf",
-		"weight": 400
+		displayName: "Dai Banna SIL",
+		filename: "lW-4wj0AJWmpwGyJ2uEoA4I7jS6AKsLhJgo",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/daibannasil/v2/lW-4wj0AJWmpwGyJ2uEoA4I7jS6AKsLhJgo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Diphylleia",
-		"filename": "DtVmJxCtRKMixK4_HXsIulwm6gDXvwE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/diphylleia/v2/DtVmJxCtRKMixK4_HXsIulwm6gDXvwE.ttf",
-		"weight": 400
+		displayName: "Diphylleia",
+		filename: "DtVmJxCtRKMixK4_HXsIulwm6gDXvwE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/diphylleia/v2/DtVmJxCtRKMixK4_HXsIulwm6gDXvwE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bonbon",
-		"filename": "0FlVVPeVlFec4ee_cDEAbQY5-A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/bonbon/v32/0FlVVPeVlFec4ee_cDEAbQY5-A.ttf",
-		"weight": 400
+		displayName: "Bonbon",
+		filename: "0FlVVPeVlFec4ee_cDEAbQY5-A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/bonbon/v32/0FlVVPeVlFec4ee_cDEAbQY5-A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu VIC WA NT Beginner",
-		"filename": "jiz2RF1BuW9OwcnNPxLl4KfZCHd9nFtd5Tu7stCpElYpvPfZZ-OXlPmFXwnpkeGR",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduvicwantbeginner/v6/jiz2RF1BuW9OwcnNPxLl4KfZCHd9nFtd5Tu7stCpElYpvPfZZ-OXlPmFXwnpkeGR.ttf",
-		"weight": 400
+		displayName: "Edu VIC WA NT Beginner",
+		filename: "jiz2RF1BuW9OwcnNPxLl4KfZCHd9nFtd5Tu7stCpElYpvPfZZ-OXlPmFXwnpkeGR",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduvicwantbeginner/v6/jiz2RF1BuW9OwcnNPxLl4KfZCHd9nFtd5Tu7stCpElYpvPfZZ-OXlPmFXwnpkeGR.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Flavors",
-		"filename": "FBV2dDrhxqmveJTpbkzlNqkG9UY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/flavors/v28/FBV2dDrhxqmveJTpbkzlNqkG9UY.ttf",
-		"weight": 400
+		displayName: "Flavors",
+		filename: "FBV2dDrhxqmveJTpbkzlNqkG9UY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/flavors/v28/FBV2dDrhxqmveJTpbkzlNqkG9UY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aref Ruqaa Ink",
-		"filename": "1q2fY5WOGUFlt84GTOkP6Kdx72ThVIGpgnxL",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/arefruqaaink/v11/1q2fY5WOGUFlt84GTOkP6Kdx72ThVIGpgnxL.ttf",
-		"weight": 400
+		displayName: "Aref Ruqaa Ink",
+		filename: "1q2fY5WOGUFlt84GTOkP6Kdx72ThVIGpgnxL",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/arefruqaaink/v11/1q2fY5WOGUFlt84GTOkP6Kdx72ThVIGpgnxL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Kannada",
-		"filename": "CSR44ztKmvqaDxEDJFY7CIYKSPl6tOU9Eg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirokannada/v6/CSR44ztKmvqaDxEDJFY7CIYKSPl6tOU9Eg.ttf",
-		"weight": 400
+		displayName: "Tiro Kannada",
+		filename: "CSR44ztKmvqaDxEDJFY7CIYKSPl6tOU9Eg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirokannada/v6/CSR44ztKmvqaDxEDJFY7CIYKSPl6tOU9Eg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jim Nightshade",
-		"filename": "PlIkFlu9Pb08Q8HLM1PxmB0g-OS4V3qKaMxD",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/jimnightshade/v21/PlIkFlu9Pb08Q8HLM1PxmB0g-OS4V3qKaMxD.ttf",
-		"weight": 400
+		displayName: "Jim Nightshade",
+		filename: "PlIkFlu9Pb08Q8HLM1PxmB0g-OS4V3qKaMxD",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/jimnightshade/v21/PlIkFlu9Pb08Q8HLM1PxmB0g-OS4V3qKaMxD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grechen Fuemen",
-		"filename": "vEFI2_tHEQ4d5ObgKxBzZh0MAWgc-NaXXq7H",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/grechenfuemen/v11/vEFI2_tHEQ4d5ObgKxBzZh0MAWgc-NaXXq7H.ttf",
-		"weight": 400
+		displayName: "Grechen Fuemen",
+		filename: "vEFI2_tHEQ4d5ObgKxBzZh0MAWgc-NaXXq7H",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/grechenfuemen/v11/vEFI2_tHEQ4d5ObgKxBzZh0MAWgc-NaXXq7H.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Glitch Pop",
-		"filename": "tDbX2pGHhFcM0gB3hN2elZLa3G-MOwStSUrV_BE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikglitchpop/v1/tDbX2pGHhFcM0gB3hN2elZLa3G-MOwStSUrV_BE.ttf",
-		"weight": 400
+		displayName: "Rubik Glitch Pop",
+		filename: "tDbX2pGHhFcM0gB3hN2elZLa3G-MOwStSUrV_BE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikglitchpop/v1/tDbX2pGHhFcM0gB3hN2elZLa3G-MOwStSUrV_BE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "BioRhyme Expanded",
-		"filename": "i7dQIE1zZzytGswgU577CDY9LjbffySURXCPYsje",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/biorhymeexpanded/v23/i7dQIE1zZzytGswgU577CDY9LjbffySURXCPYsje.ttf",
-		"weight": 400
+		displayName: "BioRhyme Expanded",
+		filename: "i7dQIE1zZzytGswgU577CDY9LjbffySURXCPYsje",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/biorhymeexpanded/v23/i7dQIE1zZzytGswgU577CDY9LjbffySURXCPYsje.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Snippet",
-		"filename": "bWt47f7XfQH9Gupu2v_Afcp9QWc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/snippet/v21/bWt47f7XfQH9Gupu2v_Afcp9QWc.ttf",
-		"weight": 400
+		displayName: "Snippet",
+		filename: "bWt47f7XfQH9Gupu2v_Afcp9QWc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/snippet/v21/bWt47f7XfQH9Gupu2v_Afcp9QWc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ole",
-		"filename": "dFazZf6Z-rd89fw69qJ_ew",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/ole/v3/dFazZf6Z-rd89fw69qJ_ew.ttf",
-		"weight": 400
+		displayName: "Ole",
+		filename: "dFazZf6Z-rd89fw69qJ_ew",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/ole/v3/dFazZf6Z-rd89fw69qJ_ew.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cascadia Code",
-		"filename": "qWc_B6-zq5zxD57cT5s916v3QjfzRuG9AIUcXuUMOaDPb9pHaHCA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cascadiacode/v5/qWc_B6-zq5zxD57cT5s916v3QjfzRuG9AIUcXuUMOaDPb9pHaHCA.ttf",
-		"weight": 400
+		displayName: "Cascadia Code",
+		filename: "qWc_B6-zq5zxD57cT5s916v3QjfzRuG9AIUcXuUMOaDPb9pHaHCA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cascadiacode/v5/qWc_B6-zq5zxD57cT5s916v3QjfzRuG9AIUcXuUMOaDPb9pHaHCA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Khmer",
-		"filename": "-F6UfidqLzI2JPCkXAO2hmogq0146FxtbwKEr951z5s6lI40sDRH_AVhUKdN6B8wXEZK9Xo4xg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifkhmer/v29/-F6UfidqLzI2JPCkXAO2hmogq0146FxtbwKEr951z5s6lI40sDRH_AVhUKdN6B8wXEZK9Xo4xg.ttf",
-		"weight": 400
+		displayName: "Noto Serif Khmer",
+		filename: "-F6UfidqLzI2JPCkXAO2hmogq0146FxtbwKEr951z5s6lI40sDRH_AVhUKdN6B8wXEZK9Xo4xg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifkhmer/v29/-F6UfidqLzI2JPCkXAO2hmogq0146FxtbwKEr951z5s6lI40sDRH_AVhUKdN6B8wXEZK9Xo4xg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zalando Sans Expanded",
-		"filename": "JTU6jJci8Cy470GaeFwsix1hi3aTmrgRwU-ZoGTKmeLvpK-4OHGIl41hcxm2zLI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/zalandosansexpanded/v2/JTU6jJci8Cy470GaeFwsix1hi3aTmrgRwU-ZoGTKmeLvpK-4OHGIl41hcxm2zLI.ttf",
-		"weight": 400
+		displayName: "Zalando Sans Expanded",
+		filename: "JTU6jJci8Cy470GaeFwsix1hi3aTmrgRwU-ZoGTKmeLvpK-4OHGIl41hcxm2zLI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/zalandosansexpanded/v2/JTU6jJci8Cy470GaeFwsix1hi3aTmrgRwU-ZoGTKmeLvpK-4OHGIl41hcxm2zLI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Gurmukhi",
-		"filename": "x3dmckXSYq-Uqjc048JUF7Jvly7HAQsyA2Y",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirogurmukhi/v6/x3dmckXSYq-Uqjc048JUF7Jvly7HAQsyA2Y.ttf",
-		"weight": 400
+		displayName: "Tiro Gurmukhi",
+		filename: "x3dmckXSYq-Uqjc048JUF7Jvly7HAQsyA2Y",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirogurmukhi/v6/x3dmckXSYq-Uqjc048JUF7Jvly7HAQsyA2Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Diplomata",
-		"filename": "Cn-0JtiMXwhNwp-wKxyfYGxYrdM9Sg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/diplomata/v33/Cn-0JtiMXwhNwp-wKxyfYGxYrdM9Sg.ttf",
-		"weight": 400
+		displayName: "Diplomata",
+		filename: "Cn-0JtiMXwhNwp-wKxyfYGxYrdM9Sg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/diplomata/v33/Cn-0JtiMXwhNwp-wKxyfYGxYrdM9Sg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "GFS Neohellenic",
-		"filename": "8QIRdiDOrfiq0b7R8O1Iw9WLcY5TLahP46UDUw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gfsneohellenic/v27/8QIRdiDOrfiq0b7R8O1Iw9WLcY5TLahP46UDUw.ttf",
-		"weight": 400
+		displayName: "GFS Neohellenic",
+		filename: "8QIRdiDOrfiq0b7R8O1Iw9WLcY5TLahP46UDUw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gfsneohellenic/v27/8QIRdiDOrfiq0b7R8O1Iw9WLcY5TLahP46UDUw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chiron GoRound TC",
-		"filename": "tssEAopDbiwZ4xauFDX3yQ3Ywoaj6kNR0yP4oqNo8RKqbBqJHA8n4CeB1Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chirongoroundtc/v2/tssEAopDbiwZ4xauFDX3yQ3Ywoaj6kNR0yP4oqNo8RKqbBqJHA8n4CeB1Q.ttf",
-		"weight": 400
+		displayName: "Chiron GoRound TC",
+		filename: "tssEAopDbiwZ4xauFDX3yQ3Ywoaj6kNR0yP4oqNo8RKqbBqJHA8n4CeB1Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chirongoroundtc/v2/tssEAopDbiwZ4xauFDX3yQ3Ywoaj6kNR0yP4oqNo8RKqbBqJHA8n4CeB1Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mozilla Text",
-		"filename": "SZcr3FrnJ7S7WZIff2mJ7Tbp4zu7ULu3HkPOB4UcPNBRVYmoOXo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mozillatext/v1/SZcr3FrnJ7S7WZIff2mJ7Tbp4zu7ULu3HkPOB4UcPNBRVYmoOXo.ttf",
-		"weight": 400
+		displayName: "Mozilla Text",
+		filename: "SZcr3FrnJ7S7WZIff2mJ7Tbp4zu7ULu3HkPOB4UcPNBRVYmoOXo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mozillatext/v1/SZcr3FrnJ7S7WZIff2mJ7Tbp4zu7ULu3HkPOB4UcPNBRVYmoOXo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Splash",
-		"filename": "KtksAL2RZoDkbU6hpPPGNdS6wg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/splash/v8/KtksAL2RZoDkbU6hpPPGNdS6wg.ttf",
-		"weight": 400
+		displayName: "Splash",
+		filename: "KtksAL2RZoDkbU6hpPPGNdS6wg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/splash/v8/KtksAL2RZoDkbU6hpPPGNdS6wg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Momo Trust Display",
-		"filename": "WWXPlieNYgyPZLyBUuEkKZFhFHyjqb1un2xNNgNa1A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/momotrustdisplay/v2/WWXPlieNYgyPZLyBUuEkKZFhFHyjqb1un2xNNgNa1A.ttf",
-		"weight": 400
+		displayName: "Momo Trust Display",
+		filename: "WWXPlieNYgyPZLyBUuEkKZFhFHyjqb1un2xNNgNa1A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/momotrustdisplay/v2/WWXPlieNYgyPZLyBUuEkKZFhFHyjqb1un2xNNgNa1A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite US Modern",
-		"filename": "H4cMBWmRlMXPhla3hmMaveiYz8nSDkIFLNIYl2TXUwK62YohNg2Da0LCgUPK",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteusmodern/v11/H4cMBWmRlMXPhla3hmMaveiYz8nSDkIFLNIYl2TXUwK62YohNg2Da0LCgUPK.ttf",
-		"weight": 400
+		displayName: "Playwrite US Modern",
+		filename: "H4cMBWmRlMXPhla3hmMaveiYz8nSDkIFLNIYl2TXUwK62YohNg2Da0LCgUPK",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteusmodern/v11/H4cMBWmRlMXPhla3hmMaveiYz8nSDkIFLNIYl2TXUwK62YohNg2Da0LCgUPK.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Oldenburg",
-		"filename": "fC1jPY5JYWzbywv7c4V6UU6oXyndrw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/oldenburg/v24/fC1jPY5JYWzbywv7c4V6UU6oXyndrw.ttf",
-		"weight": 400
+		displayName: "Oldenburg",
+		filename: "fC1jPY5JYWzbywv7c4V6UU6oXyndrw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/oldenburg/v24/fC1jPY5JYWzbywv7c4V6UU6oXyndrw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ancizar Sans",
-		"filename": "fC1zPYtHY2vX3wj8IbE7PxeWXCAxfsUebXFMyzioBpIu30AZbUY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/ancizarsans/v8/fC1zPYtHY2vX3wj8IbE7PxeWXCAxfsUebXFMyzioBpIu30AZbUY.ttf",
-		"weight": 400
+		displayName: "Ancizar Sans",
+		filename: "fC1zPYtHY2vX3wj8IbE7PxeWXCAxfsUebXFMyzioBpIu30AZbUY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/ancizarsans/v8/fC1zPYtHY2vX3wj8IbE7PxeWXCAxfsUebXFMyzioBpIu30AZbUY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libertinus Sans",
-		"filename": "YA9Lr0-a6k7ZLbw_dle4knJh2cqMjt3V_dB0Yw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/libertinussans/v1/YA9Lr0-a6k7ZLbw_dle4knJh2cqMjt3V_dB0Yw.ttf",
-		"weight": 400
+		displayName: "Libertinus Sans",
+		filename: "YA9Lr0-a6k7ZLbw_dle4knJh2cqMjt3V_dB0Yw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/libertinussans/v1/YA9Lr0-a6k7ZLbw_dle4knJh2cqMjt3V_dB0Yw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Send Flowers",
-		"filename": "If2PXTjtZS-0Xqy13uCQSULvxwjjouU1iw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sendflowers/v7/If2PXTjtZS-0Xqy13uCQSULvxwjjouU1iw.ttf",
-		"weight": 400
+		displayName: "Send Flowers",
+		filename: "If2PXTjtZS-0Xqy13uCQSULvxwjjouU1iw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sendflowers/v7/If2PXTjtZS-0Xqy13uCQSULvxwjjouU1iw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Javanese",
-		"filename": "2V01KJkDAIA6Hp4zoSScDjV0Y-eoHAHT-Z3MngEefiidxJnkFFliZYWj4O8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansjavanese/v25/2V01KJkDAIA6Hp4zoSScDjV0Y-eoHAHT-Z3MngEefiidxJnkFFliZYWj4O8.ttf",
-		"weight": 400
+		displayName: "Noto Sans Javanese",
+		filename: "2V01KJkDAIA6Hp4zoSScDjV0Y-eoHAHT-Z3MngEefiidxJnkFFliZYWj4O8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansjavanese/v25/2V01KJkDAIA6Hp4zoSScDjV0Y-eoHAHT-Z3MngEefiidxJnkFFliZYWj4O8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Story Script",
-		"filename": "mem5YaSw02SQ0OlzDuR8Isk-VeJoCqeDjg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/storyscript/v3/mem5YaSw02SQ0OlzDuR8Isk-VeJoCqeDjg.ttf",
-		"weight": 400
+		displayName: "Story Script",
+		filename: "mem5YaSw02SQ0OlzDuR8Isk-VeJoCqeDjg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/storyscript/v3/mem5YaSw02SQ0OlzDuR8Isk-VeJoCqeDjg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu NSW ACT Foundation",
-		"filename": "raxRHjqJtsNBFUi8WO0vUBgc9D-2lV_oQdCAYlt_QTQ0vUxJki9tovGLeC-sfguJ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/edunswactfoundation/v5/raxRHjqJtsNBFUi8WO0vUBgc9D-2lV_oQdCAYlt_QTQ0vUxJki9tovGLeC-sfguJ.ttf",
-		"weight": 400
+		displayName: "Edu NSW ACT Foundation",
+		filename: "raxRHjqJtsNBFUi8WO0vUBgc9D-2lV_oQdCAYlt_QTQ0vUxJki9tovGLeC-sfguJ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/edunswactfoundation/v5/raxRHjqJtsNBFUi8WO0vUBgc9D-2lV_oQdCAYlt_QTQ0vUxJki9tovGLeC-sfguJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Winky Rough",
-		"filename": "t5tzIRwIMoSXA0WSPBjQxJzjxc0_NyCBbx8bZyVuN7JB-KCmzg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/winkyrough/v4/t5tzIRwIMoSXA0WSPBjQxJzjxc0_NyCBbx8bZyVuN7JB-KCmzg.ttf",
-		"weight": 400
+		displayName: "Winky Rough",
+		filename: "t5tzIRwIMoSXA0WSPBjQxJzjxc0_NyCBbx8bZyVuN7JB-KCmzg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/winkyrough/v4/t5tzIRwIMoSXA0WSPBjQxJzjxc0_NyCBbx8bZyVuN7JB-KCmzg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tsukimi Rounded",
-		"filename": "sJoc3LJNksWZO0LvnZwkF3HtoB7tPXMOP5gP1A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tsukimirounded/v14/sJoc3LJNksWZO0LvnZwkF3HtoB7tPXMOP5gP1A.ttf",
-		"weight": 400
+		displayName: "Tsukimi Rounded",
+		filename: "sJoc3LJNksWZO0LvnZwkF3HtoB7tPXMOP5gP1A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tsukimirounded/v14/sJoc3LJNksWZO0LvnZwkF3HtoB7tPXMOP5gP1A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Love Light",
-		"filename": "t5tlIR0TNJyZWimpNAXDjKbCyTHuspo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/lovelight/v8/t5tlIR0TNJyZWimpNAXDjKbCyTHuspo.ttf",
-		"weight": 400
+		displayName: "Love Light",
+		filename: "t5tlIR0TNJyZWimpNAXDjKbCyTHuspo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/lovelight/v8/t5tlIR0TNJyZWimpNAXDjKbCyTHuspo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Butterfly Kids",
-		"filename": "ll8lK2CWTjuqAsXDqlnIbMNs5S4arxFrAX1D",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/butterflykids/v27/ll8lK2CWTjuqAsXDqlnIbMNs5S4arxFrAX1D.ttf",
-		"weight": 400
+		displayName: "Butterfly Kids",
+		filename: "ll8lK2CWTjuqAsXDqlnIbMNs5S4arxFrAX1D",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/butterflykids/v27/ll8lK2CWTjuqAsXDqlnIbMNs5S4arxFrAX1D.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Syloti Nagri",
-		"filename": "uU9eCAQZ75uhfF9UoWDRiY3q7Sf_VFV3m4dGFVfxN87gsj0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssylotinagri/v25/uU9eCAQZ75uhfF9UoWDRiY3q7Sf_VFV3m4dGFVfxN87gsj0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Syloti Nagri",
+		filename: "uU9eCAQZ75uhfF9UoWDRiY3q7Sf_VFV3m4dGFVfxN87gsj0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssylotinagri/v25/uU9eCAQZ75uhfF9UoWDRiY3q7Sf_VFV3m4dGFVfxN87gsj0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik 80s Fade",
-		"filename": "U9MF6dW37nLSmnwZXyoV-uPXUhHwkbL8IHcK",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubik80sfade/v2/U9MF6dW37nLSmnwZXyoV-uPXUhHwkbL8IHcK.ttf",
-		"weight": 400
+		displayName: "Rubik 80s Fade",
+		filename: "U9MF6dW37nLSmnwZXyoV-uPXUhHwkbL8IHcK",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubik80sfade/v2/U9MF6dW37nLSmnwZXyoV-uPXUhHwkbL8IHcK.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Emblema One",
-		"filename": "nKKT-GQ0F5dSY8vzG0rOEIRBHl57G_f_",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/emblemaone/v22/nKKT-GQ0F5dSY8vzG0rOEIRBHl57G_f_.ttf",
-		"weight": 400
+		displayName: "Emblema One",
+		filename: "nKKT-GQ0F5dSY8vzG0rOEIRBHl57G_f_",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/emblemaone/v22/nKKT-GQ0F5dSY8vzG0rOEIRBHl57G_f_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Taprom",
-		"filename": "UcCn3F82JHycULbFQyk3-0kvHg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/taprom/v29/UcCn3F82JHycULbFQyk3-0kvHg.ttf",
-		"weight": 400
+		displayName: "Taprom",
+		filename: "UcCn3F82JHycULbFQyk3-0kvHg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/taprom/v29/UcCn3F82JHycULbFQyk3-0kvHg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Atkinson Hyperlegible Mono",
-		"filename": "tssNAoFBci4C4gvhPXrt3wjT1MqSzhA4t7IIcncBiyihrK15gZ4k_SaZHNeiDSkb2qzelw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/atkinsonhyperlegiblemono/v8/tssNAoFBci4C4gvhPXrt3wjT1MqSzhA4t7IIcncBiyihrK15gZ4k_SaZHNeiDSkb2qzelw.ttf",
-		"weight": 400
+		displayName: "Atkinson Hyperlegible Mono",
+		filename: "tssNAoFBci4C4gvhPXrt3wjT1MqSzhA4t7IIcncBiyihrK15gZ4k_SaZHNeiDSkb2qzelw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/atkinsonhyperlegiblemono/v8/tssNAoFBci4C4gvhPXrt3wjT1MqSzhA4t7IIcncBiyihrK15gZ4k_SaZHNeiDSkb2qzelw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Huninn",
-		"filename": "OpNNnoINg9bQ4xkpjiHQjittXw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/huninn/v2/OpNNnoINg9bQ4xkpjiHQjittXw.ttf",
-		"weight": 400
+		displayName: "Huninn",
+		filename: "OpNNnoINg9bQ4xkpjiHQjittXw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/huninn/v2/OpNNnoINg9bQ4xkpjiHQjittXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Dhurjati",
-		"filename": "_6_8ED3gSeatXfFiFX3ySKQtuTA2",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/dhurjati/v27/_6_8ED3gSeatXfFiFX3ySKQtuTA2.ttf",
-		"weight": 400
+		displayName: "Dhurjati",
+		filename: "_6_8ED3gSeatXfFiFX3ySKQtuTA2",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/dhurjati/v27/_6_8ED3gSeatXfFiFX3ySKQtuTA2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cascadia Mono",
-		"filename": "TUZlzw5pquJF3iuizJDZYqr1Q54PIbV3QmZsSTYdsWVkNot27AYk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cascadiamono/v5/TUZlzw5pquJF3iuizJDZYqr1Q54PIbV3QmZsSTYdsWVkNot27AYk.ttf",
-		"weight": 400
+		displayName: "Cascadia Mono",
+		filename: "TUZlzw5pquJF3iuizJDZYqr1Q54PIbV3QmZsSTYdsWVkNot27AYk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cascadiamono/v5/TUZlzw5pquJF3iuizJDZYqr1Q54PIbV3QmZsSTYdsWVkNot27AYk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Burned",
-		"filename": "Jqzk5TmOVOqQHihKqPpscqniHQuaCY5ZSg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikburned/v1/Jqzk5TmOVOqQHihKqPpscqniHQuaCY5ZSg.ttf",
-		"weight": 400
+		displayName: "Rubik Burned",
+		filename: "Jqzk5TmOVOqQHihKqPpscqniHQuaCY5ZSg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikburned/v1/Jqzk5TmOVOqQHihKqPpscqniHQuaCY5ZSg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Triodion",
-		"filename": "IFSnHe5TgMVEmMQV5mr5u-W10l_X",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/triodion/v3/IFSnHe5TgMVEmMQV5mr5u-W10l_X.ttf",
-		"weight": 400
+		displayName: "Triodion",
+		filename: "IFSnHe5TgMVEmMQV5mr5u-W10l_X",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/triodion/v3/IFSnHe5TgMVEmMQV5mr5u-W10l_X.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Suravaram",
-		"filename": "_gP61R_usiY7SCym4xIAi261Qv9roQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/suravaram/v23/_gP61R_usiY7SCym4xIAi261Qv9roQ.ttf",
-		"weight": 400
+		displayName: "Suravaram",
+		filename: "_gP61R_usiY7SCym4xIAi261Qv9roQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/suravaram/v23/_gP61R_usiY7SCym4xIAi261Qv9roQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Anatolian Hieroglyphs",
-		"filename": "ijw9s4roRME5LLRxjsRb8A0gKPSWq4BbDmHHu6j2pEtUJzZWXybIymc5QYo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansanatolianhieroglyphs/v17/ijw9s4roRME5LLRxjsRb8A0gKPSWq4BbDmHHu6j2pEtUJzZWXybIymc5QYo.ttf",
-		"weight": 400
+		displayName: "Noto Sans Anatolian Hieroglyphs",
+		filename: "ijw9s4roRME5LLRxjsRb8A0gKPSWq4BbDmHHu6j2pEtUJzZWXybIymc5QYo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansanatolianhieroglyphs/v17/ijw9s4roRME5LLRxjsRb8A0gKPSWq4BbDmHHu6j2pEtUJzZWXybIymc5QYo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Foldit",
-		"filename": "aFTI7PF3Y3c9WdjNrRVE0Rk2b7j8XpAMmapUYLHkN80",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/foldit/v8/aFTI7PF3Y3c9WdjNrRVE0Rk2b7j8XpAMmapUYLHkN80.ttf",
-		"weight": 400
+		displayName: "Foldit",
+		filename: "aFTI7PF3Y3c9WdjNrRVE0Rk2b7j8XpAMmapUYLHkN80",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/foldit/v8/aFTI7PF3Y3c9WdjNrRVE0Rk2b7j8XpAMmapUYLHkN80.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alumni Sans Inline One",
-		"filename": "RrQBbpJx9zZ3IXTBOASKp5gJAetBdaihcjbpD3AZcr7xbYw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/alumnisansinlineone/v7/RrQBbpJx9zZ3IXTBOASKp5gJAetBdaihcjbpD3AZcr7xbYw.ttf",
-		"weight": 400
+		displayName: "Alumni Sans Inline One",
+		filename: "RrQBbpJx9zZ3IXTBOASKp5gJAetBdaihcjbpD3AZcr7xbYw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/alumnisansinlineone/v7/RrQBbpJx9zZ3IXTBOASKp5gJAetBdaihcjbpD3AZcr7xbYw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Zen Loop",
-		"filename": "h0GrssK16UsnJwHsEK9zqwzX5vOG",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/zenloop/v11/h0GrssK16UsnJwHsEK9zqwzX5vOG.ttf",
-		"weight": 400
+		displayName: "Zen Loop",
+		filename: "h0GrssK16UsnJwHsEK9zqwzX5vOG",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/zenloop/v11/h0GrssK16UsnJwHsEK9zqwzX5vOG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Agu Display",
-		"filename": "iJWXBXKbbi6BeMC1_RX7qF_V5E7aciGRRWUwX4ftka9LM6y8Zg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/agudisplay/v3/iJWXBXKbbi6BeMC1_RX7qF_V5E7aciGRRWUwX4ftka9LM6y8Zg.ttf",
-		"weight": 400
+		displayName: "Agu Display",
+		filename: "iJWXBXKbbi6BeMC1_RX7qF_V5E7aciGRRWUwX4ftka9LM6y8Zg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/agudisplay/v3/iJWXBXKbbi6BeMC1_RX7qF_V5E7aciGRRWUwX4ftka9LM6y8Zg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Labrada",
-		"filename": "ieVh2Y9HLWefIpOyF1Vi3ZqDss1Px9VTSwM4QPdUej17",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/labrada/v4/ieVh2Y9HLWefIpOyF1Vi3ZqDss1Px9VTSwM4QPdUej17.ttf",
-		"weight": 400
+		displayName: "Labrada",
+		filename: "ieVh2Y9HLWefIpOyF1Vi3ZqDss1Px9VTSwM4QPdUej17",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/labrada/v4/ieVh2Y9HLWefIpOyF1Vi3ZqDss1Px9VTSwM4QPdUej17.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Nandinagari",
-		"filename": "or38Q7733eiDljA1IufXSNFT-1KI5y10H4jVa5RXzC1KOw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnandinagari/v4/or38Q7733eiDljA1IufXSNFT-1KI5y10H4jVa5RXzC1KOw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Nandinagari",
+		filename: "or38Q7733eiDljA1IufXSNFT-1KI5y10H4jVa5RXzC1KOw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnandinagari/v4/or38Q7733eiDljA1IufXSNFT-1KI5y10H4jVa5RXzC1KOw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Annapurna SIL",
-		"filename": "yYLv0hDY0f2iu9tPmRWtllid8NN9dZT_PZs",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/annapurnasil/v2/yYLv0hDY0f2iu9tPmRWtllid8NN9dZT_PZs.ttf",
-		"weight": 400
+		displayName: "Annapurna SIL",
+		filename: "yYLv0hDY0f2iu9tPmRWtllid8NN9dZT_PZs",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/annapurnasil/v2/yYLv0hDY0f2iu9tPmRWtllid8NN9dZT_PZs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "WDXL Lubrifont JP N",
-		"filename": "8At1GtSkFqazDiO949fzWta9_T-SVxJiIZctoLhFRNU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wdxllubrifontjpn/v1/8At1GtSkFqazDiO949fzWta9_T-SVxJiIZctoLhFRNU.ttf",
-		"weight": 400
+		displayName: "WDXL Lubrifont JP N",
+		filename: "8At1GtSkFqazDiO949fzWta9_T-SVxJiIZctoLhFRNU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wdxllubrifontjpn/v1/8At1GtSkFqazDiO949fzWta9_T-SVxJiIZctoLhFRNU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Momo Trust Sans",
-		"filename": "BXR8vFfHh_fFyXlQWZgO0TyUN7Pt3pVCeYWqJnZSW7RpbToVehmEa4Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/momotrustsans/v4/BXR8vFfHh_fFyXlQWZgO0TyUN7Pt3pVCeYWqJnZSW7RpbToVehmEa4Q.ttf",
-		"weight": 400
+		displayName: "Momo Trust Sans",
+		filename: "BXR8vFfHh_fFyXlQWZgO0TyUN7Pt3pVCeYWqJnZSW7RpbToVehmEa4Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/momotrustsans/v4/BXR8vFfHh_fFyXlQWZgO0TyUN7Pt3pVCeYWqJnZSW7RpbToVehmEa4Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sedan",
-		"filename": "Yq6a-L-VVyD6-eOSiTpovf5b",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/sedan/v1/Yq6a-L-VVyD6-eOSiTpovf5b.ttf",
-		"weight": 400
+		displayName: "Sedan",
+		filename: "Yq6a-L-VVyD6-eOSiTpovf5b",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/sedan/v1/Yq6a-L-VVyD6-eOSiTpovf5b.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libertinus Serif",
-		"filename": "RLpkK4bw7KinajYBg0RTTwCLF5Ben6kFUHPIFaU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/libertinusserif/v1/RLpkK4bw7KinajYBg0RTTwCLF5Ben6kFUHPIFaU.ttf",
-		"weight": 400
+		displayName: "Libertinus Serif",
+		filename: "RLpkK4bw7KinajYBg0RTTwCLF5Ben6kFUHPIFaU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/libertinusserif/v1/RLpkK4bw7KinajYBg0RTTwCLF5Ben6kFUHPIFaU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacquard 24",
-		"filename": "jVyO7nf_B2zO5jVpUGU8lgQEdchf9xXp",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquard24/v4/jVyO7nf_B2zO5jVpUGU8lgQEdchf9xXp.ttf",
-		"weight": 400
+		displayName: "Jacquard 24",
+		filename: "jVyO7nf_B2zO5jVpUGU8lgQEdchf9xXp",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquard24/v4/jVyO7nf_B2zO5jVpUGU8lgQEdchf9xXp.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lilex",
-		"filename": "DPExYwmezwMATC7iDMrR60bcpUcj3ezUW0W31vDSYQ",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/lilex/v1/DPExYwmezwMATC7iDMrR60bcpUcj3ezUW0W31vDSYQ.ttf",
-		"weight": 400
+		displayName: "Lilex",
+		filename: "DPExYwmezwMATC7iDMrR60bcpUcj3ezUW0W31vDSYQ",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/lilex/v1/DPExYwmezwMATC7iDMrR60bcpUcj3ezUW0W31vDSYQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bungee Tint",
-		"filename": "J7abnpl_EGtUEuAJwN9WmrtKMDwTpTkB",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bungeetint/v3/J7abnpl_EGtUEuAJwN9WmrtKMDwTpTkB.ttf",
-		"weight": 400
+		displayName: "Bungee Tint",
+		filename: "J7abnpl_EGtUEuAJwN9WmrtKMDwTpTkB",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bungeetint/v3/J7abnpl_EGtUEuAJwN9WmrtKMDwTpTkB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Snowburst One",
-		"filename": "MQpS-WezKdujBsXY3B7I-UT7eZ-UPyacPbo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/snowburstone/v21/MQpS-WezKdujBsXY3B7I-UT7eZ-UPyacPbo.ttf",
-		"weight": 400
+		displayName: "Snowburst One",
+		filename: "MQpS-WezKdujBsXY3B7I-UT7eZ-UPyacPbo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/snowburstone/v21/MQpS-WezKdujBsXY3B7I-UT7eZ-UPyacPbo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sassy Frass",
-		"filename": "LhWhMVrGOe0FLb97BjhsE99dGNWQg_am",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/sassyfrass/v9/LhWhMVrGOe0FLb97BjhsE99dGNWQg_am.ttf",
-		"weight": 400
+		displayName: "Sassy Frass",
+		filename: "LhWhMVrGOe0FLb97BjhsE99dGNWQg_am",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/sassyfrass/v9/LhWhMVrGOe0FLb97BjhsE99dGNWQg_am.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Vithkuqi",
-		"filename": "YA94r1OY7FjTf5szakutkndpw9HH-4a4z9pklvg1IQSNcRWMdW2Cqy9A4teH",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifvithkuqi/v3/YA94r1OY7FjTf5szakutkndpw9HH-4a4z9pklvg1IQSNcRWMdW2Cqy9A4teH.ttf",
-		"weight": 400
+		displayName: "Noto Serif Vithkuqi",
+		filename: "YA94r1OY7FjTf5szakutkndpw9HH-4a4z9pklvg1IQSNcRWMdW2Cqy9A4teH",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifvithkuqi/v3/YA94r1OY7FjTf5szakutkndpw9HH-4a4z9pklvg1IQSNcRWMdW2Cqy9A4teH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Flow Block",
-		"filename": "wlp0gwfPCEB65UmTk-d6-WZlbCBXE_I",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/flowblock/v15/wlp0gwfPCEB65UmTk-d6-WZlbCBXE_I.ttf",
-		"weight": 400
+		displayName: "Flow Block",
+		filename: "wlp0gwfPCEB65UmTk-d6-WZlbCBXE_I",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/flowblock/v15/wlp0gwfPCEB65UmTk-d6-WZlbCBXE_I.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Combo",
-		"filename": "BXRlvF3Jh_fIhg0iBu9y8Hf0",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/combo/v22/BXRlvF3Jh_fIhg0iBu9y8Hf0.ttf",
-		"weight": 400
+		displayName: "Combo",
+		filename: "BXRlvF3Jh_fIhg0iBu9y8Hf0",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/combo/v22/BXRlvF3Jh_fIhg0iBu9y8Hf0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "WDXL Lubrifont SC",
-		"filename": "gNMeW2VmY6acu0XtugFrduDciOOyfny5mD9ASHz5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wdxllubrifontsc/v1/gNMeW2VmY6acu0XtugFrduDciOOyfny5mD9ASHz5.ttf",
-		"weight": 400
+		displayName: "WDXL Lubrifont SC",
+		filename: "gNMeW2VmY6acu0XtugFrduDciOOyfny5mD9ASHz5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wdxllubrifontsc/v1/gNMeW2VmY6acu0XtugFrduDciOOyfny5mD9ASHz5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Tangut",
-		"filename": "xn76YGc72GKoTvER4Gn3b4m9Ern7Em41fcvN2KT4",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftangut/v19/xn76YGc72GKoTvER4Gn3b4m9Ern7Em41fcvN2KT4.ttf",
-		"weight": 400
+		displayName: "Noto Serif Tangut",
+		filename: "xn76YGc72GKoTvER4Gn3b4m9Ern7Em41fcvN2KT4",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftangut/v19/xn76YGc72GKoTvER4Gn3b4m9Ern7Em41fcvN2KT4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ubuntu Sans Mono",
-		"filename": "jVyc7mzgBHrR5yE7ZyRg0QRJMKI4zAbgjc1t-pKe27Ev_kYRiqcZu3n0",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/ubuntusansmono/v3/jVyc7mzgBHrR5yE7ZyRg0QRJMKI4zAbgjc1t-pKe27Ev_kYRiqcZu3n0.ttf",
-		"weight": 400
+		displayName: "Ubuntu Sans Mono",
+		filename: "jVyc7mzgBHrR5yE7ZyRg0QRJMKI4zAbgjc1t-pKe27Ev_kYRiqcZu3n0",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/ubuntusansmono/v3/jVyc7mzgBHrR5yE7ZyRg0QRJMKI4zAbgjc1t-pKe27Ev_kYRiqcZu3n0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Balinese",
-		"filename": "QdVKSS0-JginysQSRvuCmUMB_wVeQAxXRbgJdhapcUU",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifbalinese/v21/QdVKSS0-JginysQSRvuCmUMB_wVeQAxXRbgJdhapcUU.ttf",
-		"weight": 400
+		displayName: "Noto Serif Balinese",
+		filename: "QdVKSS0-JginysQSRvuCmUMB_wVeQAxXRbgJdhapcUU",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifbalinese/v21/QdVKSS0-JginysQSRvuCmUMB_wVeQAxXRbgJdhapcUU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ancizar Serif",
-		"filename": "PN_lRfmxrmD9dEi_Qbtf91W1xPPTOqu-ZIAJUN3Z_fAQtYfaQ_ao",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/ancizarserif/v8/PN_lRfmxrmD9dEi_Qbtf91W1xPPTOqu-ZIAJUN3Z_fAQtYfaQ_ao.ttf",
-		"weight": 400
+		displayName: "Ancizar Serif",
+		filename: "PN_lRfmxrmD9dEi_Qbtf91W1xPPTOqu-ZIAJUN3Z_fAQtYfaQ_ao",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/ancizarserif/v8/PN_lRfmxrmD9dEi_Qbtf91W1xPPTOqu-ZIAJUN3Z_fAQtYfaQ_ao.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NO",
-		"filename": "nuFrD_fYSZviRJYb-P2TrQO1DRpazaZDgnw-49wgHKen-mjRVtc",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteno/v10/nuFrD_fYSZviRJYb-P2TrQO1DRpazaZDgnw-49wgHKen-mjRVtc.ttf",
-		"weight": 400
+		displayName: "Playwrite NO",
+		filename: "nuFrD_fYSZviRJYb-P2TrQO1DRpazaZDgnw-49wgHKen-mjRVtc",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteno/v10/nuFrD_fYSZviRJYb-P2TrQO1DRpazaZDgnw-49wgHKen-mjRVtc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playpen Sans Arabic",
-		"filename": "KtkGAKiSeo38bkPvhIqjU6aCgha2der-Z4VIEhR8sOKet-ZBoLPcBO1L0EHE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playpensansarabic/v8/KtkGAKiSeo38bkPvhIqjU6aCgha2der-Z4VIEhR8sOKet-ZBoLPcBO1L0EHE.ttf",
-		"weight": 400
+		displayName: "Playpen Sans Arabic",
+		filename: "KtkGAKiSeo38bkPvhIqjU6aCgha2der-Z4VIEhR8sOKet-ZBoLPcBO1L0EHE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playpensansarabic/v8/KtkGAKiSeo38bkPvhIqjU6aCgha2der-Z4VIEhR8sOKet-ZBoLPcBO1L0EHE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tai Heritage Pro",
-		"filename": "sZlfdQid-zgaNiNIYcUzJMU3IYyNoHxSENxuLuE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/taiheritagepro/v9/sZlfdQid-zgaNiNIYcUzJMU3IYyNoHxSENxuLuE.ttf",
-		"weight": 400
+		displayName: "Tai Heritage Pro",
+		filename: "sZlfdQid-zgaNiNIYcUzJMU3IYyNoHxSENxuLuE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/taiheritagepro/v9/sZlfdQid-zgaNiNIYcUzJMU3IYyNoHxSENxuLuE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Beastly",
-		"filename": "0QImMXRd5oOmSC2ZQ7o9653X07z8_ApHqqk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikbeastly/v11/0QImMXRd5oOmSC2ZQ7o9653X07z8_ApHqqk.ttf",
-		"weight": 400
+		displayName: "Rubik Beastly",
+		filename: "0QImMXRd5oOmSC2ZQ7o9653X07z8_ApHqqk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikbeastly/v11/0QImMXRd5oOmSC2ZQ7o9653X07z8_ApHqqk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Microbe",
-		"filename": "UqyWK8oPP3hjw6ANS9rM3PsZcs8aaKgiauE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikmicrobe/v2/UqyWK8oPP3hjw6ANS9rM3PsZcs8aaKgiauE.ttf",
-		"weight": 400
+		displayName: "Rubik Microbe",
+		filename: "UqyWK8oPP3hjw6ANS9rM3PsZcs8aaKgiauE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikmicrobe/v2/UqyWK8oPP3hjw6ANS9rM3PsZcs8aaKgiauE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu AU VIC WA NT Dots",
-		"filename": "S6uQw5FFVDKI3kwwDUbsPHCpzZNhzrA3or3_B4dZ6MmTX8QNLvtYEtmT2SB3_5U",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduauvicwantdots/v4/S6uQw5FFVDKI3kwwDUbsPHCpzZNhzrA3or3_B4dZ6MmTX8QNLvtYEtmT2SB3_5U.ttf",
-		"weight": 400
+		displayName: "Edu AU VIC WA NT Dots",
+		filename: "S6uQw5FFVDKI3kwwDUbsPHCpzZNhzrA3or3_B4dZ6MmTX8QNLvtYEtmT2SB3_5U",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduauvicwantdots/v4/S6uQw5FFVDKI3kwwDUbsPHCpzZNhzrA3or3_B4dZ6MmTX8QNLvtYEtmT2SB3_5U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bahianita",
-		"filename": "yYLr0hTb3vuqqsBUgxWtxTvV2NJPcA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bahianita/v23/yYLr0hTb3vuqqsBUgxWtxTvV2NJPcA.ttf",
-		"weight": 400
+		displayName: "Bahianita",
+		filename: "yYLr0hTb3vuqqsBUgxWtxTvV2NJPcA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bahianita/v23/yYLr0hTb3vuqqsBUgxWtxTvV2NJPcA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tiro Tamil",
-		"filename": "m8JXjfVIf7OT22n3M-S_ULRvamODxdI",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/tirotamil/v11/m8JXjfVIf7OT22n3M-S_ULRvamODxdI.ttf",
-		"weight": 400
+		displayName: "Tiro Tamil",
+		filename: "m8JXjfVIf7OT22n3M-S_ULRvamODxdI",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/tirotamil/v11/m8JXjfVIf7OT22n3M-S_ULRvamODxdI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sekuya",
-		"filename": "fdN_9suEu39Dg3wk2ipfnF8U4A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/sekuya/v1/fdN_9suEu39Dg3wk2ipfnF8U4A.ttf",
-		"weight": 400
+		displayName: "Sekuya",
+		filename: "fdN_9suEu39Dg3wk2ipfnF8U4A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/sekuya/v1/fdN_9suEu39Dg3wk2ipfnF8U4A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Coptic",
-		"filename": "iJWfBWmUZi_OHPqn4wq6kgqumOEd78u_VG0xR4Y",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscoptic/v22/iJWfBWmUZi_OHPqn4wq6kgqumOEd78u_VG0xR4Y.ttf",
-		"weight": 400
+		displayName: "Noto Sans Coptic",
+		filename: "iJWfBWmUZi_OHPqn4wq6kgqumOEd78u_VG0xR4Y",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscoptic/v22/iJWfBWmUZi_OHPqn4wq6kgqumOEd78u_VG0xR4Y.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Aubrey",
-		"filename": "q5uGsou7NPBw-p7vugNsCxVEgA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/aubrey/v29/q5uGsou7NPBw-p7vugNsCxVEgA.ttf",
-		"weight": 400
+		displayName: "Aubrey",
+		filename: "q5uGsou7NPBw-p7vugNsCxVEgA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/aubrey/v29/q5uGsou7NPBw-p7vugNsCxVEgA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Are You Serious",
-		"filename": "ll8kK2GVSSr-PtjQ5nONVcNn4306hT9nCGRayg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/areyouserious/v14/ll8kK2GVSSr-PtjQ5nONVcNn4306hT9nCGRayg.ttf",
-		"weight": 400
+		displayName: "Are You Serious",
+		filename: "ll8kK2GVSSr-PtjQ5nONVcNn4306hT9nCGRayg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/areyouserious/v14/ll8kK2GVSSr-PtjQ5nONVcNn4306hT9nCGRayg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ruge Boogie",
-		"filename": "JIA3UVFwbHRF_GIWSMhKNROiPzUveSxy",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/rugeboogie/v30/JIA3UVFwbHRF_GIWSMhKNROiPzUveSxy.ttf",
-		"weight": 400
+		displayName: "Ruge Boogie",
+		filename: "JIA3UVFwbHRF_GIWSMhKNROiPzUveSxy",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/rugeboogie/v30/JIA3UVFwbHRF_GIWSMhKNROiPzUveSxy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Estonia",
-		"filename": "7Au_p_4ijSecA1yHCCL8zkwMIFg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/estonia/v13/7Au_p_4ijSecA1yHCCL8zkwMIFg.ttf",
-		"weight": 400
+		displayName: "Estonia",
+		filename: "7Au_p_4ijSecA1yHCCL8zkwMIFg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/estonia/v13/7Au_p_4ijSecA1yHCCL8zkwMIFg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chiron Hei HK",
-		"filename": "wXK-E3MSr44vpVKPvzqVJaxhp3w7QQhPNY163lJtr18MkTEyjPI0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/chironheihk/v3/wXK-E3MSr44vpVKPvzqVJaxhp3w7QQhPNY163lJtr18MkTEyjPI0.ttf",
-		"weight": 400
+		displayName: "Chiron Hei HK",
+		filename: "wXK-E3MSr44vpVKPvzqVJaxhp3w7QQhPNY163lJtr18MkTEyjPI0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/chironheihk/v3/wXK-E3MSr44vpVKPvzqVJaxhp3w7QQhPNY163lJtr18MkTEyjPI0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Redacted Script",
-		"filename": "ypvBbXGRglhokR7dcC3d1-R6zmxSsWTxkZkr_g",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/redactedscript/v12/ypvBbXGRglhokR7dcC3d1-R6zmxSsWTxkZkr_g.ttf",
-		"weight": 400
+		displayName: "Redacted Script",
+		filename: "ypvBbXGRglhokR7dcC3d1-R6zmxSsWTxkZkr_g",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/redactedscript/v12/ypvBbXGRglhokR7dcC3d1-R6zmxSsWTxkZkr_g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gidole",
-		"filename": "sZlFdR6O8zVVEiMaCJtWS6EPcA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/gidole/v24/sZlFdR6O8zVVEiMaCJtWS6EPcA.ttf",
-		"weight": 400
+		displayName: "Gidole",
+		filename: "sZlFdR6O8zVVEiMaCJtWS6EPcA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/gidole/v24/sZlFdR6O8zVVEiMaCJtWS6EPcA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "M PLUS Code Latin",
-		"filename": "hv-ylyV-aXg7x7tULiNXXBA0Np4WMS8fDIymHY8fy8wn4_ifLAtrObKDO0Xf1EbA6i5MqF9TRwg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mpluscodelatin/v16/hv-ylyV-aXg7x7tULiNXXBA0Np4WMS8fDIymHY8fy8wn4_ifLAtrObKDO0Xf1EbA6i5MqF9TRwg.ttf",
-		"weight": 400
+		displayName: "M PLUS Code Latin",
+		filename: "hv-ylyV-aXg7x7tULiNXXBA0Np4WMS8fDIymHY8fy8wn4_ifLAtrObKDO0Xf1EbA6i5MqF9TRwg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mpluscodelatin/v16/hv-ylyV-aXg7x7tULiNXXBA0Np4WMS8fDIymHY8fy8wn4_ifLAtrObKDO0Xf1EbA6i5MqF9TRwg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kings",
-		"filename": "8AtnGsK4O5CYXU_Iq6GSPaHS",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kings/v9/8AtnGsK4O5CYXU_Iq6GSPaHS.ttf",
-		"weight": 400
+		displayName: "Kings",
+		filename: "8AtnGsK4O5CYXU_Iq6GSPaHS",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kings/v9/8AtnGsK4O5CYXU_Iq6GSPaHS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Geostar",
-		"filename": "sykz-yx4n701VLOftSq9-trEvlQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/geostar/v27/sykz-yx4n701VLOftSq9-trEvlQ.ttf",
-		"weight": 400
+		displayName: "Geostar",
+		filename: "sykz-yx4n701VLOftSq9-trEvlQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/geostar/v27/sykz-yx4n701VLOftSq9-trEvlQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Amarna",
-		"filename": "MCoPzAj-18jIHCAeTqjMCgZDAOUBwaalgR59AuNICqo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/amarna/v1/MCoPzAj-18jIHCAeTqjMCgZDAOUBwaalgR59AuNICqo.ttf",
-		"weight": 400
+		displayName: "Amarna",
+		filename: "MCoPzAj-18jIHCAeTqjMCgZDAOUBwaalgR59AuNICqo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/amarna/v1/MCoPzAj-18jIHCAeTqjMCgZDAOUBwaalgR59AuNICqo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Elms Sans",
-		"filename": "q5uWsoS_Lf9xv7Su1FpSCByoURnrD9-jpp3aJi52PLM6RNU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/elmssans/v7/q5uWsoS_Lf9xv7Su1FpSCByoURnrD9-jpp3aJi52PLM6RNU.ttf",
-		"weight": 400
+		displayName: "Elms Sans",
+		filename: "q5uWsoS_Lf9xv7Su1FpSCByoURnrD9-jpp3aJi52PLM6RNU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/elmssans/v7/q5uWsoS_Lf9xv7Su1FpSCByoURnrD9-jpp3aJi52PLM6RNU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tapestry",
-		"filename": "SlGTmQecrosEYXhaGBIkqnB6aSQU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/tapestry/v6/SlGTmQecrosEYXhaGBIkqnB6aSQU.ttf",
-		"weight": 400
+		displayName: "Tapestry",
+		filename: "SlGTmQecrosEYXhaGBIkqnB6aSQU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/tapestry/v6/SlGTmQecrosEYXhaGBIkqnB6aSQU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite HU",
-		"filename": "A2BIn59A0g0xA3zDhFw-0vfPWJtlaFKmrETx1PL6TO2dH3B2Xx4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritehu/v6/A2BIn59A0g0xA3zDhFw-0vfPWJtlaFKmrETx1PL6TO2dH3B2Xx4.ttf",
-		"weight": 400
+		displayName: "Playwrite HU",
+		filename: "A2BIn59A0g0xA3zDhFw-0vfPWJtlaFKmrETx1PL6TO2dH3B2Xx4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritehu/v6/A2BIn59A0g0xA3zDhFw-0vfPWJtlaFKmrETx1PL6TO2dH3B2Xx4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "TASA Explorer",
-		"filename": "K2FkfZdAt8xjBmxMCPK8UO_SPSH6kbsQNeItOI6o7xnGirZPlnP-",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tasaexplorer/v2/K2FkfZdAt8xjBmxMCPK8UO_SPSH6kbsQNeItOI6o7xnGirZPlnP-.ttf",
-		"weight": 400
+		displayName: "TASA Explorer",
+		filename: "K2FkfZdAt8xjBmxMCPK8UO_SPSH6kbsQNeItOI6o7xnGirZPlnP-",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tasaexplorer/v2/K2FkfZdAt8xjBmxMCPK8UO_SPSH6kbsQNeItOI6o7xnGirZPlnP-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Alumni Sans SC",
-		"filename": "Y4GfYaxzVjArrOeNFYbCvkZ8C28IyGwp26UHdIteaL1WgMKfbBlLNQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/alumnisanssc/v3/Y4GfYaxzVjArrOeNFYbCvkZ8C28IyGwp26UHdIteaL1WgMKfbBlLNQ.ttf",
-		"weight": 400
+		displayName: "Alumni Sans SC",
+		filename: "Y4GfYaxzVjArrOeNFYbCvkZ8C28IyGwp26UHdIteaL1WgMKfbBlLNQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/alumnisanssc/v3/Y4GfYaxzVjArrOeNFYbCvkZ8C28IyGwp26UHdIteaL1WgMKfbBlLNQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Cypro Minoan",
-		"filename": "2Eb2L_dtDUlkNmPHB_UVtEzp3ZlPGqZ_4nAGq9eSf8_eQSE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscyprominoan/v1/2Eb2L_dtDUlkNmPHB_UVtEzp3ZlPGqZ_4nAGq9eSf8_eQSE.ttf",
-		"weight": 400
+		displayName: "Noto Sans Cypro Minoan",
+		filename: "2Eb2L_dtDUlkNmPHB_UVtEzp3ZlPGqZ_4nAGq9eSf8_eQSE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscyprominoan/v1/2Eb2L_dtDUlkNmPHB_UVtEzp3ZlPGqZ_4nAGq9eSf8_eQSE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Danfo",
-		"filename": "snf3s0u_98t16THfK1Csj3N41ZqbYDe5S71ToPrNKQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/danfo/v5/snf3s0u_98t16THfK1Csj3N41ZqbYDe5S71ToPrNKQ.ttf",
-		"weight": 400
+		displayName: "Danfo",
+		filename: "snf3s0u_98t16THfK1Csj3N41ZqbYDe5S71ToPrNKQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/danfo/v5/snf3s0u_98t16THfK1Csj3N41ZqbYDe5S71ToPrNKQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Spray Paint",
-		"filename": "WnzhHBAoeBPUDTB4EWR82y6EXWPH-Ro-QoaBZQxP",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikspraypaint/v1/WnzhHBAoeBPUDTB4EWR82y6EXWPH-Ro-QoaBZQxP.ttf",
-		"weight": 400
+		displayName: "Rubik Spray Paint",
+		filename: "WnzhHBAoeBPUDTB4EWR82y6EXWPH-Ro-QoaBZQxP",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikspraypaint/v1/WnzhHBAoeBPUDTB4EWR82y6EXWPH-Ro-QoaBZQxP.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Matemasie",
-		"filename": "OD5BuMCN3ne3Gmr7dlL3rEq4DL6w2w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/matemasie/v4/OD5BuMCN3ne3Gmr7dlL3rEq4DL6w2w.ttf",
-		"weight": 400
+		displayName: "Matemasie",
+		filename: "OD5BuMCN3ne3Gmr7dlL3rEq4DL6w2w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/matemasie/v4/OD5BuMCN3ne3Gmr7dlL3rEq4DL6w2w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE SAS",
-		"filename": "1Pt4g9vaRvmWghDdrE8IDuRPVrHN_1AaFXASpbMqJTeVgu6lSyVPgRkJ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedesas/v11/1Pt4g9vaRvmWghDdrE8IDuRPVrHN_1AaFXASpbMqJTeVgu6lSyVPgRkJ.ttf",
-		"weight": 400
+		displayName: "Playwrite DE SAS",
+		filename: "1Pt4g9vaRvmWghDdrE8IDuRPVrHN_1AaFXASpbMqJTeVgu6lSyVPgRkJ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedesas/v11/1Pt4g9vaRvmWghDdrE8IDuRPVrHN_1AaFXASpbMqJTeVgu6lSyVPgRkJ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cherish",
-		"filename": "ll88K2mXUyqsDsTN5iDCI6IJjg8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/cherish/v9/ll88K2mXUyqsDsTN5iDCI6IJjg8.ttf",
-		"weight": 400
+		displayName: "Cherish",
+		filename: "ll88K2mXUyqsDsTN5iDCI6IJjg8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/cherish/v9/ll88K2mXUyqsDsTN5iDCI6IJjg8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite GB S",
-		"filename": "oPWb_kFkk-s1Xclhmlemy7jsNQR8TohGU_DTHWU6uhD8x5eMaTk8AQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritegbs/v12/oPWb_kFkk-s1Xclhmlemy7jsNQR8TohGU_DTHWU6uhD8x5eMaTk8AQ.ttf",
-		"weight": 400
+		displayName: "Playwrite GB S",
+		filename: "oPWb_kFkk-s1Xclhmlemy7jsNQR8TohGU_DTHWU6uhD8x5eMaTk8AQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritegbs/v12/oPWb_kFkk-s1Xclhmlemy7jsNQR8TohGU_DTHWU6uhD8x5eMaTk8AQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ponnala",
-		"filename": "w8gaH2QxQOU08bbbrQut2F4OuOo",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/ponnala/v3/w8gaH2QxQOU08bbbrQut2F4OuOo.ttf",
-		"weight": 400
+		displayName: "Ponnala",
+		filename: "w8gaH2QxQOU08bbbrQut2F4OuOo",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/ponnala/v3/w8gaH2QxQOU08bbbrQut2F4OuOo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite HR Lijeva",
-		"filename": "gNMvW2dhS5-p7HvxrBYiWN2SsKqLWCrYiDBAvbRl82ZY0d4zBsaUy4_lxmKl",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritehrlijeva/v6/gNMvW2dhS5-p7HvxrBYiWN2SsKqLWCrYiDBAvbRl82ZY0d4zBsaUy4_lxmKl.ttf",
-		"weight": 400
+		displayName: "Playwrite HR Lijeva",
+		filename: "gNMvW2dhS5-p7HvxrBYiWN2SsKqLWCrYiDBAvbRl82ZY0d4zBsaUy4_lxmKl",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritehrlijeva/v6/gNMvW2dhS5-p7HvxrBYiWN2SsKqLWCrYiDBAvbRl82ZY0d4zBsaUy4_lxmKl.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Protest Guerrilla",
-		"filename": "Qw3HZR5PDSL6K3irtrY-VJB2YzARHV0koJ8y_eiS",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/protestguerrilla/v2/Qw3HZR5PDSL6K3irtrY-VJB2YzARHV0koJ8y_eiS.ttf",
-		"weight": 400
+		displayName: "Protest Guerrilla",
+		filename: "Qw3HZR5PDSL6K3irtrY-VJB2YzARHV0koJ8y_eiS",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/protestguerrilla/v2/Qw3HZR5PDSL6K3irtrY-VJB2YzARHV0koJ8y_eiS.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Tibetan",
-		"filename": "gokGH7nwAEdtF9N45n0Vaz7O-pk0wsvxHeDXMfqguoCmIrYcPS7rdSy_32c",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftibetan/v24/gokGH7nwAEdtF9N45n0Vaz7O-pk0wsvxHeDXMfqguoCmIrYcPS7rdSy_32c.ttf",
-		"weight": 400
+		displayName: "Noto Serif Tibetan",
+		filename: "gokGH7nwAEdtF9N45n0Vaz7O-pk0wsvxHeDXMfqguoCmIrYcPS7rdSy_32c",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftibetan/v24/gokGH7nwAEdtF9N45n0Vaz7O-pk0wsvxHeDXMfqguoCmIrYcPS7rdSy_32c.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hind Mysuru",
-		"filename": "syk3-yB3k7wiAJ-U5l_li_LFjFGYLkjj",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/hindmysuru/v1/syk3-yB3k7wiAJ-U5l_li_LFjFGYLkjj.ttf",
-		"weight": 400
+		displayName: "Hind Mysuru",
+		filename: "syk3-yB3k7wiAJ-U5l_li_LFjFGYLkjj",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/hindmysuru/v1/syk3-yB3k7wiAJ-U5l_li_LFjFGYLkjj.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Black And White Picture",
-		"filename": "TwMe-JAERlQd3ooUHBUXGmrmioKjjnRSFO-NqI5HbcMi-yWY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/blackandwhitepicture/v30/TwMe-JAERlQd3ooUHBUXGmrmioKjjnRSFO-NqI5HbcMi-yWY.ttf",
-		"weight": 400
+		displayName: "Black And White Picture",
+		filename: "TwMe-JAERlQd3ooUHBUXGmrmioKjjnRSFO-NqI5HbcMi-yWY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/blackandwhitepicture/v30/TwMe-JAERlQd3ooUHBUXGmrmioKjjnRSFO-NqI5HbcMi-yWY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Puddles",
-		"filename": "1Ptog8bYX_qGnkLkrU5MJsQcJfC0wVMT-aE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikpuddles/v2/1Ptog8bYX_qGnkLkrU5MJsQcJfC0wVMT-aE.ttf",
-		"weight": 400
+		displayName: "Rubik Puddles",
+		filename: "1Ptog8bYX_qGnkLkrU5MJsQcJfC0wVMT-aE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikpuddles/v2/1Ptog8bYX_qGnkLkrU5MJsQcJfC0wVMT-aE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cause",
-		"filename": "or3_Q6760-mf01lfRGAnmws6ijvmTgk1bcvxY79LxQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/cause/v1/or3_Q6760-mf01lfRGAnmws6ijvmTgk1bcvxY79LxQ.ttf",
-		"weight": 400
+		displayName: "Cause",
+		filename: "or3_Q6760-mf01lfRGAnmws6ijvmTgk1bcvxY79LxQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/cause/v1/or3_Q6760-mf01lfRGAnmws6ijvmTgk1bcvxY79LxQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NL",
-		"filename": "k3kCo84SPe9dzQ1UGbvoZQ37Iqp5IZJF9bmaG9_FnYxNbPzS5HE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritenl/v10/k3kCo84SPe9dzQ1UGbvoZQ37Iqp5IZJF9bmaG9_FnYxNbPzS5HE.ttf",
-		"weight": 400
+		displayName: "Playwrite NL",
+		filename: "k3kCo84SPe9dzQ1UGbvoZQ37Iqp5IZJF9bmaG9_FnYxNbPzS5HE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritenl/v10/k3kCo84SPe9dzQ1UGbvoZQ37Iqp5IZJF9bmaG9_FnYxNbPzS5HE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Prop Single",
-		"filename": "-W-gXIv9SyXT0xz0E9pIHCxbW8ZMGEVdhz4VoumsGFhzYseFqK9f_KOwYjYsHSocfu1DlxztzQH877SgJ2SUzQ4SJdODLz0JoLU3vXFrqXQooCdbs921GXZlLGUYg0NjZiU",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountpropsingle/v3/-W-gXIv9SyXT0xz0E9pIHCxbW8ZMGEVdhz4VoumsGFhzYseFqK9f_KOwYjYsHSocfu1DlxztzQH877SgJ2SUzQ4SJdODLz0JoLU3vXFrqXQooCdbs921GXZlLGUYg0NjZiU.ttf",
-		"weight": 400
+		displayName: "Bitcount Prop Single",
+		filename: "-W-gXIv9SyXT0xz0E9pIHCxbW8ZMGEVdhz4VoumsGFhzYseFqK9f_KOwYjYsHSocfu1DlxztzQH877SgJ2SUzQ4SJdODLz0JoLU3vXFrqXQooCdbs921GXZlLGUYg0NjZiU",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountpropsingle/v3/-W-gXIv9SyXT0xz0E9pIHCxbW8ZMGEVdhz4VoumsGFhzYseFqK9f_KOwYjYsHSocfu1DlxztzQH877SgJ2SUzQ4SJdODLz0JoLU3vXFrqXQooCdbs921GXZlLGUYg0NjZiU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CZ",
-		"filename": "8vIa7wYp22pt_BUChSHeVxxlOPUEKoMfap_FCI4bTqT_VkAS5X4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritecz/v6/8vIa7wYp22pt_BUChSHeVxxlOPUEKoMfap_FCI4bTqT_VkAS5X4.ttf",
-		"weight": 400
+		displayName: "Playwrite CZ",
+		filename: "8vIa7wYp22pt_BUChSHeVxxlOPUEKoMfap_FCI4bTqT_VkAS5X4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritecz/v6/8vIa7wYp22pt_BUChSHeVxxlOPUEKoMfap_FCI4bTqT_VkAS5X4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Vibes",
-		"filename": "QdVYSTsmIB6tmbd3HpbsuBlh",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/vibes/v16/QdVYSTsmIB6tmbd3HpbsuBlh.ttf",
-		"weight": 400
+		displayName: "Vibes",
+		filename: "QdVYSTsmIB6tmbd3HpbsuBlh",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/vibes/v16/QdVYSTsmIB6tmbd3HpbsuBlh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Adlam",
-		"filename": "neIczCCpqp0s5pPusPamd81eMfjPonvqdbYxxpgufnv0TGnBZLwhuvk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansadlam/v27/neIczCCpqp0s5pPusPamd81eMfjPonvqdbYxxpgufnv0TGnBZLwhuvk.ttf",
-		"weight": 400
+		displayName: "Noto Sans Adlam",
+		filename: "neIczCCpqp0s5pPusPamd81eMfjPonvqdbYxxpgufnv0TGnBZLwhuvk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansadlam/v27/neIczCCpqp0s5pPusPamd81eMfjPonvqdbYxxpgufnv0TGnBZLwhuvk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cossette Titre",
-		"filename": "11hYGpvKz1nGbxMXUWz9OdPzuiEZrPeE8cA2",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cossettetitre/v3/11hYGpvKz1nGbxMXUWz9OdPzuiEZrPeE8cA2.ttf",
-		"weight": 400
+		displayName: "Cossette Titre",
+		filename: "11hYGpvKz1nGbxMXUWz9OdPzuiEZrPeE8cA2",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cossettetitre/v3/11hYGpvKz1nGbxMXUWz9OdPzuiEZrPeE8cA2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chokokutai",
-		"filename": "kmK4Zqw4HwvCeHGM8Fws9y7ypu1Kr7I",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/chokokutai/v12/kmK4Zqw4HwvCeHGM8Fws9y7ypu1Kr7I.ttf",
-		"weight": 400
+		displayName: "Chokokutai",
+		filename: "kmK4Zqw4HwvCeHGM8Fws9y7ypu1Kr7I",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/chokokutai/v12/kmK4Zqw4HwvCeHGM8Fws9y7ypu1Kr7I.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mozilla Headline",
-		"filename": "QGYLz-UXahmCOps4kyMKGuSA9pYt2_P-w2kFrS88o6cVYRvBSDSOuerB_FOB4IYVZRxvtcorUQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mozillaheadline/v1/QGYLz-UXahmCOps4kyMKGuSA9pYt2_P-w2kFrS88o6cVYRvBSDSOuerB_FOB4IYVZRxvtcorUQ.ttf",
-		"weight": 400
+		displayName: "Mozilla Headline",
+		filename: "QGYLz-UXahmCOps4kyMKGuSA9pYt2_P-w2kFrS88o6cVYRvBSDSOuerB_FOB4IYVZRxvtcorUQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mozillaheadline/v1/QGYLz-UXahmCOps4kyMKGuSA9pYt2_P-w2kFrS88o6cVYRvBSDSOuerB_FOB4IYVZRxvtcorUQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Workbench",
-		"filename": "FeV8S05Gp6Et7FcfbPFK1rynGd_MxtkvNFmoUDFhgF2VKTGQk6vapdOL0GKqgZyb",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/workbench/v3/FeV8S05Gp6Et7FcfbPFK1rynGd_MxtkvNFmoUDFhgF2VKTGQk6vapdOL0GKqgZyb.ttf",
-		"weight": 400
+		displayName: "Workbench",
+		filename: "FeV8S05Gp6Et7FcfbPFK1rynGd_MxtkvNFmoUDFhgF2VKTGQk6vapdOL0GKqgZyb",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/workbench/v3/FeV8S05Gp6Et7FcfbPFK1rynGd_MxtkvNFmoUDFhgF2VKTGQk6vapdOL0GKqgZyb.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Carian",
-		"filename": "LDIpaoiONgYwA9Yc6f0gUILeMIOgs7ob9yGLmfI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscarian/v17/LDIpaoiONgYwA9Yc6f0gUILeMIOgs7ob9yGLmfI.ttf",
-		"weight": 400
+		displayName: "Noto Sans Carian",
+		filename: "LDIpaoiONgYwA9Yc6f0gUILeMIOgs7ob9yGLmfI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscarian/v17/LDIpaoiONgYwA9Yc6f0gUILeMIOgs7ob9yGLmfI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount",
-		"filename": "ijxXs53kQsE1Y5J-lI1wubXnlQH-1-E1LhaU1dJRZZaHU0slfybi9GQwiTv06bjtugLjdPqK3d9XKDqRc2jrJlC4ZRsgxqxP-aVoJVvq06JyZBdg54o",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcount/v3/ijxXs53kQsE1Y5J-lI1wubXnlQH-1-E1LhaU1dJRZZaHU0slfybi9GQwiTv06bjtugLjdPqK3d9XKDqRc2jrJlC4ZRsgxqxP-aVoJVvq06JyZBdg54o.ttf",
-		"weight": 400
+		displayName: "Bitcount",
+		filename: "ijxXs53kQsE1Y5J-lI1wubXnlQH-1-E1LhaU1dJRZZaHU0slfybi9GQwiTv06bjtugLjdPqK3d9XKDqRc2jrJlC4ZRsgxqxP-aVoJVvq06JyZBdg54o",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcount/v3/ijxXs53kQsE1Y5J-lI1wubXnlQH-1-E1LhaU1dJRZZaHU0slfybi9GQwiTv06bjtugLjdPqK3d9XKDqRc2jrJlC4ZRsgxqxP-aVoJVvq06JyZBdg54o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DK Loopet",
-		"filename": "memVYbuzy2qb3rtJGfM1FvY-GacDcsPvtaDfqfgbBWmV75JJwegRuQovSE8_",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedkloopet/v6/memVYbuzy2qb3rtJGfM1FvY-GacDcsPvtaDfqfgbBWmV75JJwegRuQovSE8_.ttf",
-		"weight": 400
+		displayName: "Playwrite DK Loopet",
+		filename: "memVYbuzy2qb3rtJGfM1FvY-GacDcsPvtaDfqfgbBWmV75JJwegRuQovSE8_",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedkloopet/v6/memVYbuzy2qb3rtJGfM1FvY-GacDcsPvtaDfqfgbBWmV75JJwegRuQovSE8_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shizuru",
-		"filename": "O4ZSFGfvnxFiCA3i30IJlgUTj2A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/shizuru/v13/O4ZSFGfvnxFiCA3i30IJlgUTj2A.ttf",
-		"weight": 400
+		displayName: "Shizuru",
+		filename: "O4ZSFGfvnxFiCA3i30IJlgUTj2A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/shizuru/v13/O4ZSFGfvnxFiCA3i30IJlgUTj2A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Hanunoo",
-		"filename": "f0Xs0fCv8dxkDWlZSoXOj6CphMloFsEsEpgL_ix2",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanshanunoo/v22/f0Xs0fCv8dxkDWlZSoXOj6CphMloFsEsEpgL_ix2.ttf",
-		"weight": 400
+		displayName: "Noto Sans Hanunoo",
+		filename: "f0Xs0fCv8dxkDWlZSoXOj6CphMloFsEsEpgL_ix2",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanshanunoo/v22/f0Xs0fCv8dxkDWlZSoXOj6CphMloFsEsEpgL_ix2.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Moo Lah Lah",
-		"filename": "dg4h_p_opKZOA0w1AYcm55wtYQYugjW4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/moolahlah/v8/dg4h_p_opKZOA0w1AYcm55wtYQYugjW4.ttf",
-		"weight": 400
+		displayName: "Moo Lah Lah",
+		filename: "dg4h_p_opKZOA0w1AYcm55wtYQYugjW4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/moolahlah/v8/dg4h_p_opKZOA0w1AYcm55wtYQYugjW4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Marker Hatch",
-		"filename": "QldTNSFQsh0B_bFXXWv6LAt-jswapJHQDL4iw0H6zw",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikmarkerhatch/v1/QldTNSFQsh0B_bFXXWv6LAt-jswapJHQDL4iw0H6zw.ttf",
-		"weight": 400
+		displayName: "Rubik Marker Hatch",
+		filename: "QldTNSFQsh0B_bFXXWv6LAt-jswapJHQDL4iw0H6zw",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikmarkerhatch/v1/QldTNSFQsh0B_bFXXWv6LAt-jswapJHQDL4iw0H6zw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "LXGW Marker Gothic",
-		"filename": "Gg8oN4AaXyDVTi_NlS1-xCtMQxY3lToBjuw_cZe26Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/lxgwmarkergothic/v1/Gg8oN4AaXyDVTi_NlS1-xCtMQxY3lToBjuw_cZe26Q.ttf",
-		"weight": 400
+		displayName: "LXGW Marker Gothic",
+		filename: "Gg8oN4AaXyDVTi_NlS1-xCtMQxY3lToBjuw_cZe26Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/lxgwmarkergothic/v1/Gg8oN4AaXyDVTi_NlS1-xCtMQxY3lToBjuw_cZe26Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Grandiflora One",
-		"filename": "0ybmGD0g27bCk_5MGWZcKWhxwnUU_R3y8DOWGA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/grandifloraone/v3/0ybmGD0g27bCk_5MGWZcKWhxwnUU_R3y8DOWGA.ttf",
-		"weight": 400
+		displayName: "Grandiflora One",
+		filename: "0ybmGD0g27bCk_5MGWZcKWhxwnUU_R3y8DOWGA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/grandifloraone/v3/0ybmGD0g27bCk_5MGWZcKWhxwnUU_R3y8DOWGA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite BE VLG",
-		"filename": "GFD8WBdug3mQSvrAT9AL6fd4ZkB-a2sDmg3dy2W0blL8vPCMMiyBIkNg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritebevlg/v6/GFD8WBdug3mQSvrAT9AL6fd4ZkB-a2sDmg3dy2W0blL8vPCMMiyBIkNg.ttf",
-		"weight": 400
+		displayName: "Playwrite BE VLG",
+		filename: "GFD8WBdug3mQSvrAT9AL6fd4ZkB-a2sDmg3dy2W0blL8vPCMMiyBIkNg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritebevlg/v6/GFD8WBdug3mQSvrAT9AL6fd4ZkB-a2sDmg3dy2W0blL8vPCMMiyBIkNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Khitan Small Script",
-		"filename": "jizzRFVKsm4Bt9PrbSzC4KLlQUF5lRJg5j-l5PvyhfTdd4TsZ8lb39iddA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifkhitansmallscript/v4/jizzRFVKsm4Bt9PrbSzC4KLlQUF5lRJg5j-l5PvyhfTdd4TsZ8lb39iddA.ttf",
-		"weight": 400
+		displayName: "Noto Serif Khitan Small Script",
+		filename: "jizzRFVKsm4Bt9PrbSzC4KLlQUF5lRJg5j-l5PvyhfTdd4TsZ8lb39iddA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifkhitansmallscript/v4/jizzRFVKsm4Bt9PrbSzC4KLlQUF5lRJg5j-l5PvyhfTdd4TsZ8lb39iddA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old Italic",
-		"filename": "TuGOUUFzXI5FBtUq5a8bh68BJxxEVam7tWlRdRhtCC4d",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansolditalic/v18/TuGOUUFzXI5FBtUq5a8bh68BJxxEVam7tWlRdRhtCC4d.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old Italic",
+		filename: "TuGOUUFzXI5FBtUq5a8bh68BJxxEVam7tWlRdRhtCC4d",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansolditalic/v18/TuGOUUFzXI5FBtUq5a8bh68BJxxEVam7tWlRdRhtCC4d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "WDXL Lubrifont TC",
-		"filename": "nKKN-H4mPq1yJurnWXfJE8svQHonWc_-EqxyqaA8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/wdxllubrifonttc/v4/nKKN-H4mPq1yJurnWXfJE8svQHonWc_-EqxyqaA8.ttf",
-		"weight": 400
+		displayName: "WDXL Lubrifont TC",
+		filename: "nKKN-H4mPq1yJurnWXfJE8svQHonWc_-EqxyqaA8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/wdxllubrifonttc/v4/nKKN-H4mPq1yJurnWXfJE8svQHonWc_-EqxyqaA8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Chiron Sung HK",
-		"filename": "nuFtD_XLTZPpXIpS3-3dhGzHTSilFc8oGNI59hRj9OSt_krURtf4_Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/chironsunghk/v1/nuFtD_XLTZPpXIpS3-3dhGzHTSilFc8oGNI59hRj9OSt_krURtf4_Q.ttf",
-		"weight": 400
+		displayName: "Chiron Sung HK",
+		filename: "nuFtD_XLTZPpXIpS3-3dhGzHTSilFc8oGNI59hRj9OSt_krURtf4_Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/chironsunghk/v1/nuFtD_XLTZPpXIpS3-3dhGzHTSilFc8oGNI59hRj9OSt_krURtf4_Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Moulpali",
-		"filename": "H4ckBXKMl9HagUWymyY6wr-wg763",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/moulpali/v33/H4ckBXKMl9HagUWymyY6wr-wg763.ttf",
-		"weight": 400
+		displayName: "Moulpali",
+		filename: "H4ckBXKMl9HagUWymyY6wr-wg763",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/moulpali/v33/H4ckBXKMl9HagUWymyY6wr-wg763.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu QLD Beginner",
-		"filename": "AMOHz5iUuHLEMNXyohhc_Y56PR3A8dNLF_w3Ka4HKE4E3oebi6vyVWCN",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduqldbeginner/v5/AMOHz5iUuHLEMNXyohhc_Y56PR3A8dNLF_w3Ka4HKE4E3oebi6vyVWCN.ttf",
-		"weight": 400
+		displayName: "Edu QLD Beginner",
+		filename: "AMOHz5iUuHLEMNXyohhc_Y56PR3A8dNLF_w3Ka4HKE4E3oebi6vyVWCN",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduqldbeginner/v5/AMOHz5iUuHLEMNXyohhc_Y56PR3A8dNLF_w3Ka4HKE4E3oebi6vyVWCN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rock 3D",
-		"filename": "yYLp0hrL0PCo651513SnwRnQyNI",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rock3d/v13/yYLp0hrL0PCo651513SnwRnQyNI.ttf",
-		"weight": 400
+		displayName: "Rock 3D",
+		filename: "yYLp0hrL0PCo651513SnwRnQyNI",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rock3d/v13/yYLp0hrL0PCo651513SnwRnQyNI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Batak",
-		"filename": "gok2H6TwAEdtF9N8-mdTCQvT-Zdgo4_PHuk74A",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbatak/v23/gok2H6TwAEdtF9N8-mdTCQvT-Zdgo4_PHuk74A.ttf",
-		"weight": 400
+		displayName: "Noto Sans Batak",
+		filename: "gok2H6TwAEdtF9N8-mdTCQvT-Zdgo4_PHuk74A",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbatak/v23/gok2H6TwAEdtF9N8-mdTCQvT-Zdgo4_PHuk74A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Petemoss",
-		"filename": "A2BZn5tA2xgtGWHZgxkesKb9UouQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/petemoss/v9/A2BZn5tA2xgtGWHZgxkesKb9UouQ.ttf",
-		"weight": 400
+		displayName: "Petemoss",
+		filename: "A2BZn5tA2xgtGWHZgxkesKb9UouQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/petemoss/v9/A2BZn5tA2xgtGWHZgxkesKb9UouQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Cherokee",
-		"filename": "KFOPCm6Yu8uF-29fiz9vQF9YWK6Z8O10cHNA0cSkZCHYWi5PDkm5rAffjl0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscherokee/v25/KFOPCm6Yu8uF-29fiz9vQF9YWK6Z8O10cHNA0cSkZCHYWi5PDkm5rAffjl0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Cherokee",
+		filename: "KFOPCm6Yu8uF-29fiz9vQF9YWK6Z8O10cHNA0cSkZCHYWi5PDkm5rAffjl0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscherokee/v25/KFOPCm6Yu8uF-29fiz9vQF9YWK6Z8O10cHNA0cSkZCHYWi5PDkm5rAffjl0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kolker Brush",
-		"filename": "iJWDBXWRZjfKWdvmzwvvog3-7KJ6x8qNUQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/kolkerbrush/v8/iJWDBXWRZjfKWdvmzwvvog3-7KJ6x8qNUQ.ttf",
-		"weight": 400
+		displayName: "Kolker Brush",
+		filename: "iJWDBXWRZjfKWdvmzwvvog3-7KJ6x8qNUQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/kolkerbrush/v8/iJWDBXWRZjfKWdvmzwvvog3-7KJ6x8qNUQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Syne Tactile",
-		"filename": "11hGGpna2UTQKjMCVzjAPMKh3ysdjvKU8Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/synetactile/v16/11hGGpna2UTQKjMCVzjAPMKh3ysdjvKU8Q.ttf",
-		"weight": 400
+		displayName: "Syne Tactile",
+		filename: "11hGGpna2UTQKjMCVzjAPMKh3ysdjvKU8Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/synetactile/v16/11hGGpna2UTQKjMCVzjAPMKh3ysdjvKU8Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Prop Single Ink",
-		"filename": "wXILGHRJhY4pqVPamSvcVZZF7Vdg3La14u9PlzzO1nQEbZPzF-4gWjUKyDXV8KJN2EmG9tnR1UwPVIktRU7KfRvK49YKhcKoqpd0qENrktXGo3hmFUX9oJiQ_cI3D53uhksE9rntl1PkS1IjdhAg77zMwnnLO7zJ5bZKR5MO8LRFFwWr-XrNplyw2CuD3tEnNissrzK7ZCnsz5HReNrx9v6MX009gC5TFm4u37DDRGOJzIi0xg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountpropsingleink/v4/wXILGHRJhY4pqVPamSvcVZZF7Vdg3La14u9PlzzO1nQEbZPzF-4gWjUKyDXV8KJN2EmG9tnR1UwPVIktRU7KfRvK49YKhcKoqpd0qENrktXGo3hmFUX9oJiQ_cI3D53uhksE9rntl1PkS1IjdhAg77zMwnnLO7zJ5bZKR5MO8LRFFwWr-XrNplyw2CuD3tEnNissrzK7ZCnsz5HReNrx9v6MX009gC5TFm4u37DDRGOJzIi0xg.ttf",
-		"weight": 400
+		displayName: "Bitcount Prop Single Ink",
+		filename:
+			"wXILGHRJhY4pqVPamSvcVZZF7Vdg3La14u9PlzzO1nQEbZPzF-4gWjUKyDXV8KJN2EmG9tnR1UwPVIktRU7KfRvK49YKhcKoqpd0qENrktXGo3hmFUX9oJiQ_cI3D53uhksE9rntl1PkS1IjdhAg77zMwnnLO7zJ5bZKR5MO8LRFFwWr-XrNplyw2CuD3tEnNissrzK7ZCnsz5HReNrx9v6MX009gC5TFm4u37DDRGOJzIi0xg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountpropsingleink/v4/wXILGHRJhY4pqVPamSvcVZZF7Vdg3La14u9PlzzO1nQEbZPzF-4gWjUKyDXV8KJN2EmG9tnR1UwPVIktRU7KfRvK49YKhcKoqpd0qENrktXGo3hmFUX9oJiQ_cI3D53uhksE9rntl1PkS1IjdhAg77zMwnnLO7zJ5bZKR5MO8LRFFwWr-XrNplyw2CuD3tEnNissrzK7ZCnsz5HReNrx9v6MX009gC5TFm4u37DDRGOJzIi0xg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Glagolitic",
-		"filename": "1q2ZY4-BBFBst88SU_tOj4J-4yuNF_HI4ERK4Amu7nM1",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansglagolitic/v19/1q2ZY4-BBFBst88SU_tOj4J-4yuNF_HI4ERK4Amu7nM1.ttf",
-		"weight": 400
+		displayName: "Noto Sans Glagolitic",
+		filename: "1q2ZY4-BBFBst88SU_tOj4J-4yuNF_HI4ERK4Amu7nM1",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansglagolitic/v19/1q2ZY4-BBFBst88SU_tOj4J-4yuNF_HI4ERK4Amu7nM1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Ethiopic",
-		"filename": "V8mjoR7-XjwJ8_Au3Ti5tXj5Rd83frpWLK4d-taxqWw2HMWjDxBAg5S_0QsrggxCzSUjkaO9UVLyiw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifethiopic/v32/V8mjoR7-XjwJ8_Au3Ti5tXj5Rd83frpWLK4d-taxqWw2HMWjDxBAg5S_0QsrggxCzSUjkaO9UVLyiw.ttf",
-		"weight": 400
+		displayName: "Noto Serif Ethiopic",
+		filename: "V8mjoR7-XjwJ8_Au3Ti5tXj5Rd83frpWLK4d-taxqWw2HMWjDxBAg5S_0QsrggxCzSUjkaO9UVLyiw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifethiopic/v32/V8mjoR7-XjwJ8_Au3Ti5tXj5Rd83frpWLK4d-taxqWw2HMWjDxBAg5S_0QsrggxCzSUjkaO9UVLyiw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacquarda Bastarda 9",
-		"filename": "f0Xp0fWr_8t6WFtKQJfOhaC0hcZ1HYAMAbwD1TB_JHHY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquardabastarda9/v6/f0Xp0fWr_8t6WFtKQJfOhaC0hcZ1HYAMAbwD1TB_JHHY.ttf",
-		"weight": 400
+		displayName: "Jacquarda Bastarda 9",
+		filename: "f0Xp0fWr_8t6WFtKQJfOhaC0hcZ1HYAMAbwD1TB_JHHY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquardabastarda9/v6/f0Xp0fWr_8t6WFtKQJfOhaC0hcZ1HYAMAbwD1TB_JHHY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sixtyfour Convergence",
-		"filename": "m8IQjepPf7mIglv5K__zM9srGA7wurbybZMfZsqG2Q6EWlJro5FJSJ4acT9PoOPwGgieaK7zkSpdXP-GrR9Yw9Tg7E4HGLbUKPlOh102hotkk3grz3g",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/sixtyfourconvergence/v5/m8IQjepPf7mIglv5K__zM9srGA7wurbybZMfZsqG2Q6EWlJro5FJSJ4acT9PoOPwGgieaK7zkSpdXP-GrR9Yw9Tg7E4HGLbUKPlOh102hotkk3grz3g.ttf",
-		"weight": 400
+		displayName: "Sixtyfour Convergence",
+		filename: "m8IQjepPf7mIglv5K__zM9srGA7wurbybZMfZsqG2Q6EWlJro5FJSJ4acT9PoOPwGgieaK7zkSpdXP-GrR9Yw9Tg7E4HGLbUKPlOh102hotkk3grz3g",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/sixtyfourconvergence/v5/m8IQjepPf7mIglv5K__zM9srGA7wurbybZMfZsqG2Q6EWlJro5FJSJ4acT9PoOPwGgieaK7zkSpdXP-GrR9Yw9Tg7E4HGLbUKPlOh102hotkk3grz3g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libertinus Mono",
-		"filename": "_gPg1RnxrjY_TDm97ApTqwneJJFToBF3YROW_w",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/libertinusmono/v1/_gPg1RnxrjY_TDm97ApTqwneJJFToBF3YROW_w.ttf",
-		"weight": 400
+		displayName: "Libertinus Mono",
+		filename: "_gPg1RnxrjY_TDm97ApTqwneJJFToBF3YROW_w",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/libertinusmono/v1/_gPg1RnxrjY_TDm97ApTqwneJJFToBF3YROW_w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Mingzat",
-		"filename": "0QIgMX5C-o-oWWyvBttkm_mv670",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/mingzat/v11/0QIgMX5C-o-oWWyvBttkm_mv670.ttf",
-		"weight": 400
+		displayName: "Mingzat",
+		filename: "0QIgMX5C-o-oWWyvBttkm_mv670",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/mingzat/v11/0QIgMX5C-o-oWWyvBttkm_mv670.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Yi",
-		"filename": "sJoD3LFXjsSdcnzn071rO3apxVDJNVgSNg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansyi/v20/sJoD3LFXjsSdcnzn071rO3apxVDJNVgSNg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Yi",
+		filename: "sJoD3LFXjsSdcnzn071rO3apxVDJNVgSNg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansyi/v20/sJoD3LFXjsSdcnzn071rO3apxVDJNVgSNg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Prop Double Ink",
-		"filename": "Y4EraqgqeCwyoeHYKJOMnRRAOHVHr-2bKnsgKOU1mvV-Vk5S_hxGNApRqvOsLjMS7TL7U6J7vsT0x86f1E_MhJ7Fc8CNp0DtWIOPIdLKGVtyw2WU1OmnzDEO5QVqngZewgsX32-qkruHpLpXeSB4hOOrFaY6I-9oLQWBuD4CtdBkkmqV6mdr8M41Shcr_DYnIqojkFlhekgcGiaIMOm7DY3-ibiJFY5uuJUAz56-C4pTNcOH4A",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountpropdoubleink/v2/Y4EraqgqeCwyoeHYKJOMnRRAOHVHr-2bKnsgKOU1mvV-Vk5S_hxGNApRqvOsLjMS7TL7U6J7vsT0x86f1E_MhJ7Fc8CNp0DtWIOPIdLKGVtyw2WU1OmnzDEO5QVqngZewgsX32-qkruHpLpXeSB4hOOrFaY6I-9oLQWBuD4CtdBkkmqV6mdr8M41Shcr_DYnIqojkFlhekgcGiaIMOm7DY3-ibiJFY5uuJUAz56-C4pTNcOH4A.ttf",
-		"weight": 400
+		displayName: "Bitcount Prop Double Ink",
+		filename:
+			"Y4EraqgqeCwyoeHYKJOMnRRAOHVHr-2bKnsgKOU1mvV-Vk5S_hxGNApRqvOsLjMS7TL7U6J7vsT0x86f1E_MhJ7Fc8CNp0DtWIOPIdLKGVtyw2WU1OmnzDEO5QVqngZewgsX32-qkruHpLpXeSB4hOOrFaY6I-9oLQWBuD4CtdBkkmqV6mdr8M41Shcr_DYnIqojkFlhekgcGiaIMOm7DY3-ibiJFY5uuJUAz56-C4pTNcOH4A",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountpropdoubleink/v2/Y4EraqgqeCwyoeHYKJOMnRRAOHVHr-2bKnsgKOU1mvV-Vk5S_hxGNApRqvOsLjMS7TL7U6J7vsT0x86f1E_MhJ7Fc8CNp0DtWIOPIdLKGVtyw2WU1OmnzDEO5QVqngZewgsX32-qkruHpLpXeSB4hOOrFaY6I-9oLQWBuD4CtdBkkmqV6mdr8M41Shcr_DYnIqojkFlhekgcGiaIMOm7DY3-ibiJFY5uuJUAz56-C4pTNcOH4A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tangsa",
-		"filename": "z7NCdQPmcigbbZAIOl9igP26K470lICpky0-peX5Qp1YkyoRYdplyJDA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstangsa/v9/z7NCdQPmcigbbZAIOl9igP26K470lICpky0-peX5Qp1YkyoRYdplyJDA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tangsa",
+		filename: "z7NCdQPmcigbbZAIOl9igP26K470lICpky0-peX5Qp1YkyoRYdplyJDA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstangsa/v9/z7NCdQPmcigbbZAIOl9igP26K470lICpky0-peX5Qp1YkyoRYdplyJDA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CA",
-		"filename": "z7NGdR_4cT0NOrEAIElil93uR_VhfhYaYOijHiqvYp261AIQU98",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteca/v11/z7NGdR_4cT0NOrEAIElil93uR_VhfhYaYOijHiqvYp261AIQU98.ttf",
-		"weight": 400
+		displayName: "Playwrite CA",
+		filename: "z7NGdR_4cT0NOrEAIElil93uR_VhfhYaYOijHiqvYp261AIQU98",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteca/v11/z7NGdR_4cT0NOrEAIElil93uR_VhfhYaYOijHiqvYp261AIQU98.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ZA",
-		"filename": "Noag6Uzhw5CTOhXKt5-vwvhrNyaNQo1LaBq0EbLHbYUsn9T5dt0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteza/v11/Noag6Uzhw5CTOhXKt5-vwvhrNyaNQo1LaBq0EbLHbYUsn9T5dt0.ttf",
-		"weight": 400
+		displayName: "Playwrite ZA",
+		filename: "Noag6Uzhw5CTOhXKt5-vwvhrNyaNQo1LaBq0EbLHbYUsn9T5dt0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteza/v11/Noag6Uzhw5CTOhXKt5-vwvhrNyaNQo1LaBq0EbLHbYUsn9T5dt0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Palmyrene",
-		"filename": "ZgNPjOdKPa7CHqq0h37c_ASCWvH93SFCPnK5ZpdNtcA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanspalmyrene/v17/ZgNPjOdKPa7CHqq0h37c_ASCWvH93SFCPnK5ZpdNtcA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Palmyrene",
+		filename: "ZgNPjOdKPa7CHqq0h37c_ASCWvH93SFCPnK5ZpdNtcA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanspalmyrene/v17/ZgNPjOdKPa7CHqq0h37c_ASCWvH93SFCPnK5ZpdNtcA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old Hungarian",
-		"filename": "E213_cD6hP3GwCJPEUssHEM0KqLaHJXg2PiIgRfjbg5nCYXt",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldhungarian/v19/E213_cD6hP3GwCJPEUssHEM0KqLaHJXg2PiIgRfjbg5nCYXt.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old Hungarian",
+		filename: "E213_cD6hP3GwCJPEUssHEM0KqLaHJXg2PiIgRfjbg5nCYXt",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldhungarian/v19/E213_cD6hP3GwCJPEUssHEM0KqLaHJXg2PiIgRfjbg5nCYXt.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tagesschrift",
-		"filename": "pe0pMI6IOYlEuEZ7ZEA7ZKOaA_Rue1UwVg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/tagesschrift/v2/pe0pMI6IOYlEuEZ7ZEA7ZKOaA_Rue1UwVg.ttf",
-		"weight": 400
+		displayName: "Tagesschrift",
+		filename: "pe0pMI6IOYlEuEZ7ZEA7ZKOaA_Rue1UwVg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/tagesschrift/v2/pe0pMI6IOYlEuEZ7ZEA7ZKOaA_Rue1UwVg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Phetsarath",
-		"filename": "N0bQ2SpTP-plK0uWayAYAd79nd_QeZA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/phetsarath/v3/N0bQ2SpTP-plK0uWayAYAd79nd_QeZA.ttf",
-		"weight": 400
+		displayName: "Phetsarath",
+		filename: "N0bQ2SpTP-plK0uWayAYAd79nd_QeZA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/phetsarath/v3/N0bQ2SpTP-plK0uWayAYAd79nd_QeZA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Duployan",
-		"filename": "gokzH7nwAEdtF9N8-mdTDx_X9JM5wsvrFsIn6WYDvA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansduployan/v19/gokzH7nwAEdtF9N8-mdTDx_X9JM5wsvrFsIn6WYDvA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Duployan",
+		filename: "gokzH7nwAEdtF9N8-mdTDx_X9JM5wsvrFsIn6WYDvA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansduployan/v19/gokzH7nwAEdtF9N8-mdTDx_X9JM5wsvrFsIn6WYDvA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Slackside One",
-		"filename": "EJRQQgMrXdcGsiBuvnRxodTwVy7VocNB6Iw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/slacksideone/v14/EJRQQgMrXdcGsiBuvnRxodTwVy7VocNB6Iw.ttf",
-		"weight": 400
+		displayName: "Slackside One",
+		filename: "EJRQQgMrXdcGsiBuvnRxodTwVy7VocNB6Iw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/slacksideone/v14/EJRQQgMrXdcGsiBuvnRxodTwVy7VocNB6Iw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Warnes",
-		"filename": "pONn1hc0GsW6sW5OpiC2o6Lkqg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/warnes/v29/pONn1hc0GsW6sW5OpiC2o6Lkqg.ttf",
-		"weight": 400
+		displayName: "Warnes",
+		filename: "pONn1hc0GsW6sW5OpiC2o6Lkqg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/warnes/v29/pONn1hc0GsW6sW5OpiC2o6Lkqg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite FR Moderne",
-		"filename": "3y9L6awucz3w5m4FFTzKolJRXhUk_u1yWtWmFCJcqUBvK5aJuAKvAl74XSpRjw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritefrmoderne/v11/3y9L6awucz3w5m4FFTzKolJRXhUk_u1yWtWmFCJcqUBvK5aJuAKvAl74XSpRjw.ttf",
-		"weight": 400
+		displayName: "Playwrite FR Moderne",
+		filename: "3y9L6awucz3w5m4FFTzKolJRXhUk_u1yWtWmFCJcqUBvK5aJuAKvAl74XSpRjw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritefrmoderne/v11/3y9L6awucz3w5m4FFTzKolJRXhUk_u1yWtWmFCJcqUBvK5aJuAKvAl74XSpRjw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mongolian",
-		"filename": "VdGCAYADGIwE0EopZx8xQfHlgEAMsrToxLsg6-av1x0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmongolian/v23/VdGCAYADGIwE0EopZx8xQfHlgEAMsrToxLsg6-av1x0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mongolian",
+		filename: "VdGCAYADGIwE0EopZx8xQfHlgEAMsrToxLsg6-av1x0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmongolian/v23/VdGCAYADGIwE0EopZx8xQfHlgEAMsrToxLsg6-av1x0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Doodle Triangles",
-		"filename": "esDA301BLOmMKxKspb3g-domRuLPeaSn2bTzdLi_slZxgWE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikdoodletriangles/v1/esDA301BLOmMKxKspb3g-domRuLPeaSn2bTzdLi_slZxgWE.ttf",
-		"weight": 400
+		displayName: "Rubik Doodle Triangles",
+		filename: "esDA301BLOmMKxKspb3g-domRuLPeaSn2bTzdLi_slZxgWE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikdoodletriangles/v1/esDA301BLOmMKxKspb3g-domRuLPeaSn2bTzdLi_slZxgWE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libertinus Math",
-		"filename": "Gw6iwc3770TVMoHVurPejWtfenRLv_KJt3R-2Q",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/libertinusmath/v1/Gw6iwc3770TVMoHVurPejWtfenRLv_KJt3R-2Q.ttf",
-		"weight": 400
+		displayName: "Libertinus Math",
+		filename: "Gw6iwc3770TVMoHVurPejWtfenRLv_KJt3R-2Q",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/libertinusmath/v1/Gw6iwc3770TVMoHVurPejWtfenRLv_KJt3R-2Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Broken Fax",
-		"filename": "NGSvv4rXG042O-GzH9sg1cUgl8w8YW-WdmGi300",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikbrokenfax/v1/NGSvv4rXG042O-GzH9sg1cUgl8w8YW-WdmGi300.ttf",
-		"weight": 400
+		displayName: "Rubik Broken Fax",
+		filename: "NGSvv4rXG042O-GzH9sg1cUgl8w8YW-WdmGi300",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikbrokenfax/v1/NGSvv4rXG042O-GzH9sg1cUgl8w8YW-WdmGi300.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kalnia Glaze",
-		"filename": "wlpQgwHCBUNjrGrfu-hwowN1YyC-42Lu26VHf2LtOkAod0wTxm2tFYdL6nnZKfhpVTvN",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/kalniaglaze/v5/wlpQgwHCBUNjrGrfu-hwowN1YyC-42Lu26VHf2LtOkAod0wTxm2tFYdL6nnZKfhpVTvN.ttf",
-		"weight": 400
+		displayName: "Kalnia Glaze",
+		filename: "wlpQgwHCBUNjrGrfu-hwowN1YyC-42Lu26VHf2LtOkAod0wTxm2tFYdL6nnZKfhpVTvN",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/kalniaglaze/v5/wlpQgwHCBUNjrGrfu-hwowN1YyC-42Lu26VHf2LtOkAod0wTxm2tFYdL6nnZKfhpVTvN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libertinus Serif Display",
-		"filename": "0FlHVOmbklub_P32Hm53RVREi5BsXWudOF_Gpgcrg81gHhVOxQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/libertinusserifdisplay/v2/0FlHVOmbklub_P32Hm53RVREi5BsXWudOF_Gpgcrg81gHhVOxQ.ttf",
-		"weight": 400
+		displayName: "Libertinus Serif Display",
+		filename: "0FlHVOmbklub_P32Hm53RVREi5BsXWudOF_Gpgcrg81gHhVOxQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/libertinusserifdisplay/v2/0FlHVOmbklub_P32Hm53RVREi5BsXWudOF_Gpgcrg81gHhVOxQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Shafarik",
-		"filename": "RWmLoKaF7PojpZXlW52sbsHKqLkD",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/shafarik/v3/RWmLoKaF7PojpZXlW52sbsHKqLkD.ttf",
-		"weight": 400
+		displayName: "Shafarik",
+		filename: "RWmLoKaF7PojpZXlW52sbsHKqLkD",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/shafarik/v3/RWmLoKaF7PojpZXlW52sbsHKqLkD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Asimovian",
-		"filename": "oY1c8evOub78P2XN94MXCv5xY4QBLw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/asimovian/v2/oY1c8evOub78P2XN94MXCv5xY4QBLw.ttf",
-		"weight": 400
+		displayName: "Asimovian",
+		filename: "oY1c8evOub78P2XN94MXCv5xY4QBLw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/asimovian/v2/oY1c8evOub78P2XN94MXCv5xY4QBLw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Puppies Play",
-		"filename": "wlp2gwHZEV99rG6M3NR9uB9vaAJSA_JN3Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/puppiesplay/v11/wlp2gwHZEV99rG6M3NR9uB9vaAJSA_JN3Q.ttf",
-		"weight": 400
+		displayName: "Puppies Play",
+		filename: "wlp2gwHZEV99rG6M3NR9uB9vaAJSA_JN3Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/puppiesplay/v11/wlp2gwHZEV99rG6M3NR9uB9vaAJSA_JN3Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Palette Mosaic",
-		"filename": "AMOIz4aBvWuBFe3TohdW6YZ9MFiy4dxL4jSr",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/palettemosaic/v13/AMOIz4aBvWuBFe3TohdW6YZ9MFiy4dxL4jSr.ttf",
-		"weight": 400
+		displayName: "Palette Mosaic",
+		filename: "AMOIz4aBvWuBFe3TohdW6YZ9MFiy4dxL4jSr",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/palettemosaic/v13/AMOIz4aBvWuBFe3TohdW6YZ9MFiy4dxL4jSr.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tuffy",
-		"filename": "1q2IY56bHkJl7rxzF4xmyfYe",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tuffy/v1/1q2IY56bHkJl7rxzF4xmyfYe.ttf",
-		"weight": 400
+		displayName: "Tuffy",
+		filename: "1q2IY56bHkJl7rxzF4xmyfYe",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tuffy/v1/1q2IY56bHkJl7rxzF4xmyfYe.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Moirai One",
-		"filename": "2sDbZGFUgJLJmby6xgNGT0WWB7UcfCg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/moiraione/v1/2sDbZGFUgJLJmby6xgNGT0WWB7UcfCg.ttf",
-		"weight": 400
+		displayName: "Moirai One",
+		filename: "2sDbZGFUgJLJmby6xgNGT0WWB7UcfCg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/moiraione/v1/2sDbZGFUgJLJmby6xgNGT0WWB7UcfCg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Parastoo",
-		"filename": "-F6vfj90ITQ4d9euQVDbrtWYW5MNx1dlT6k1FPNkx5rq1w",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/parastoo/v3/-F6vfj90ITQ4d9euQVDbrtWYW5MNx1dlT6k1FPNkx5rq1w.ttf",
-		"weight": 400
+		displayName: "Parastoo",
+		filename: "-F6vfj90ITQ4d9euQVDbrtWYW5MNx1dlT6k1FPNkx5rq1w",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/parastoo/v3/-F6vfj90ITQ4d9euQVDbrtWYW5MNx1dlT6k1FPNkx5rq1w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Intel One Mono",
-		"filename": "P5sWzZuLY8Lb_G1RikFkwPjBvuM8LXucmoHDSAMgofcRnD9TMr2nYA",
-		"category": "monospace",
-		"url": "https://fonts.gstatic.com/s/intelonemono/v2/P5sWzZuLY8Lb_G1RikFkwPjBvuM8LXucmoHDSAMgofcRnD9TMr2nYA.ttf",
-		"weight": 400
+		displayName: "Intel One Mono",
+		filename: "P5sWzZuLY8Lb_G1RikFkwPjBvuM8LXucmoHDSAMgofcRnD9TMr2nYA",
+		category: "monospace",
+		url: "https://fonts.gstatic.com/s/intelonemono/v2/P5sWzZuLY8Lb_G1RikFkwPjBvuM8LXucmoHDSAMgofcRnD9TMr2nYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yuji Hentaigana Akari",
-		"filename": "cY9bfiyVT0VB6QuhWKOrpr6z58lnb_zYFnLIRTzODYALaA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/yujihentaiganaakari/v14/cY9bfiyVT0VB6QuhWKOrpr6z58lnb_zYFnLIRTzODYALaA.ttf",
-		"weight": 400
+		displayName: "Yuji Hentaigana Akari",
+		filename: "cY9bfiyVT0VB6QuhWKOrpr6z58lnb_zYFnLIRTzODYALaA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/yujihentaiganaakari/v14/cY9bfiyVT0VB6QuhWKOrpr6z58lnb_zYFnLIRTzODYALaA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Hanalei",
-		"filename": "E21n_dD8iufIjBRHXzgmVydREus",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/hanalei/v24/E21n_dD8iufIjBRHXzgmVydREus.ttf",
-		"weight": 400
+		displayName: "Hanalei",
+		filename: "E21n_dD8iufIjBRHXzgmVydREus",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/hanalei/v24/E21n_dD8iufIjBRHXzgmVydREus.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Cham",
-		"filename": "pe06MIySN5pO62Z5YkFyQb_bbuRhe6D4yip43qfcERwcv7GykboaLg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscham/v33/pe06MIySN5pO62Z5YkFyQb_bbuRhe6D4yip43qfcERwcv7GykboaLg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Cham",
+		filename: "pe06MIySN5pO62Z5YkFyQb_bbuRhe6D4yip43qfcERwcv7GykboaLg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscham/v33/pe06MIySN5pO62Z5YkFyQb_bbuRhe6D4yip43qfcERwcv7GykboaLg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Traditional Nushu",
-		"filename": "SZcV3EDkJ7q9FaoMPlmF4Su8hlIjoGh5aj67PUZX6ADm6oa8IXus1tnPa7QoqirI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/nototraditionalnushu/v23/SZcV3EDkJ7q9FaoMPlmF4Su8hlIjoGh5aj67PUZX6ADm6oa8IXus1tnPa7QoqirI.ttf",
-		"weight": 400
+		displayName: "Noto Traditional Nushu",
+		filename: "SZcV3EDkJ7q9FaoMPlmF4Su8hlIjoGh5aj67PUZX6ADm6oa8IXus1tnPa7QoqirI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/nototraditionalnushu/v23/SZcV3EDkJ7q9FaoMPlmF4Su8hlIjoGh5aj67PUZX6ADm6oa8IXus1tnPa7QoqirI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kedebideri",
-		"filename": "t5tlIR0UPo6ZGAykNh_ejKbCyTHuspo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kedebideri/v2/t5tlIR0UPo6ZGAykNh_ejKbCyTHuspo.ttf",
-		"weight": 400
+		displayName: "Kedebideri",
+		filename: "t5tlIR0UPo6ZGAykNh_ejKbCyTHuspo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kedebideri/v2/t5tlIR0UPo6ZGAykNh_ejKbCyTHuspo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Myanmar",
-		"filename": "VuJsdM7F2Yv76aBKKs-bHMQfAHUw3jn1pBrocdDqRA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifmyanmar/v14/VuJsdM7F2Yv76aBKKs-bHMQfAHUw3jn1pBrocdDqRA.ttf",
-		"weight": 400
+		displayName: "Noto Serif Myanmar",
+		filename: "VuJsdM7F2Yv76aBKKs-bHMQfAHUw3jn1pBrocdDqRA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifmyanmar/v14/VuJsdM7F2Yv76aBKKs-bHMQfAHUw3jn1pBrocdDqRA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Gajraj One",
-		"filename": "1cX2aUDCDpXsuWVb1jIjr1GqhcitzeM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/gajrajone/v7/1cX2aUDCDpXsuWVb1jIjr1GqhcitzeM.ttf",
-		"weight": 400
+		displayName: "Gajraj One",
+		filename: "1cX2aUDCDpXsuWVb1jIjr1GqhcitzeM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/gajrajone/v7/1cX2aUDCDpXsuWVb1jIjr1GqhcitzeM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IT Moderna",
-		"filename": "mFTbWaYCwKPK5cx6W8jy2kwDnSUe9q45vQQi5HMFnSdEx2F5Wih8ubbffHtmMw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteitmoderna/v11/mFTbWaYCwKPK5cx6W8jy2kwDnSUe9q45vQQi5HMFnSdEx2F5Wih8ubbffHtmMw.ttf",
-		"weight": 400
+		displayName: "Playwrite IT Moderna",
+		filename: "mFTbWaYCwKPK5cx6W8jy2kwDnSUe9q45vQQi5HMFnSdEx2F5Wih8ubbffHtmMw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteitmoderna/v11/mFTbWaYCwKPK5cx6W8jy2kwDnSUe9q45vQQi5HMFnSdEx2F5Wih8ubbffHtmMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Balinese",
-		"filename": "NaPwcYvSBuhTirw6IaFn6UrRDaqje-lpbbRtYf-Fwu2Ov7fdhE5Vd222PPY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbalinese/v27/NaPwcYvSBuhTirw6IaFn6UrRDaqje-lpbbRtYf-Fwu2Ov7fdhE5Vd222PPY.ttf",
-		"weight": 400
+		displayName: "Noto Sans Balinese",
+		filename: "NaPwcYvSBuhTirw6IaFn6UrRDaqje-lpbbRtYf-Fwu2Ov7fdhE5Vd222PPY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbalinese/v27/NaPwcYvSBuhTirw6IaFn6UrRDaqje-lpbbRtYf-Fwu2Ov7fdhE5Vd222PPY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE LA",
-		"filename": "oY1J8e3fprboJ2HN4ogXTpFVJ8QjJV9p0P4yukst2FnqPgcigC5Ph2w",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedela/v11/oY1J8e3fprboJ2HN4ogXTpFVJ8QjJV9p0P4yukst2FnqPgcigC5Ph2w.ttf",
-		"weight": 400
+		displayName: "Playwrite DE LA",
+		filename: "oY1J8e3fprboJ2HN4ogXTpFVJ8QjJV9p0P4yukst2FnqPgcigC5Ph2w",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedela/v11/oY1J8e3fprboJ2HN4ogXTpFVJ8QjJV9p0P4yukst2FnqPgcigC5Ph2w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Avestan",
-		"filename": "bWti7ejKfBziStx7lIzKOLQZKhIJkyu9SASLji8U",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansavestan/v22/bWti7ejKfBziStx7lIzKOLQZKhIJkyu9SASLji8U.ttf",
-		"weight": 400
+		displayName: "Noto Sans Avestan",
+		filename: "bWti7ejKfBziStx7lIzKOLQZKhIJkyu9SASLji8U",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansavestan/v22/bWti7ejKfBziStx7lIzKOLQZKhIJkyu9SASLji8U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Toto",
-		"filename": "Ktk6ALSMeZjqPnXk1rCkHYHNtwvtHItpjRP74dHhCy3Il-aj55vdNug",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftoto/v7/Ktk6ALSMeZjqPnXk1rCkHYHNtwvtHItpjRP74dHhCy3Il-aj55vdNug.ttf",
-		"weight": 400
+		displayName: "Noto Serif Toto",
+		filename: "Ktk6ALSMeZjqPnXk1rCkHYHNtwvtHItpjRP74dHhCy3Il-aj55vdNug",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftoto/v7/Ktk6ALSMeZjqPnXk1rCkHYHNtwvtHItpjRP74dHhCy3Il-aj55vdNug.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sirivennela",
-		"filename": "kmK5Zq0oHhbAYX-X6lgptg7YiOFDtqtf",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sirivennela/v2/kmK5Zq0oHhbAYX-X6lgptg7YiOFDtqtf.ttf",
-		"weight": 400
+		displayName: "Sirivennela",
+		filename: "kmK5Zq0oHhbAYX-X6lgptg7YiOFDtqtf",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sirivennela/v2/kmK5Zq0oHhbAYX-X6lgptg7YiOFDtqtf.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Syriac Eastern",
-		"filename": "Noac6Vj_wIWFbTTCrYmvy8AjVU8aslWRHHvRYxS-Ro3yS0FDacnHPi-fszCL5ep1QPQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssyriaceastern/v3/Noac6Vj_wIWFbTTCrYmvy8AjVU8aslWRHHvRYxS-Ro3yS0FDacnHPi-fszCL5ep1QPQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Syriac Eastern",
+		filename: "Noac6Vj_wIWFbTTCrYmvy8AjVU8aslWRHHvRYxS-Ro3yS0FDacnHPi-fszCL5ep1QPQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssyriaceastern/v3/Noac6Vj_wIWFbTTCrYmvy8AjVU8aslWRHHvRYxS-Ro3yS0FDacnHPi-fszCL5ep1QPQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "SUSE Mono",
-		"filename": "y83KW4wN6yi9x2mTxJI2Lzk1yOJRC-VB656w2gtcobW_gE0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/susemono/v1/y83KW4wN6yi9x2mTxJI2Lzk1yOJRC-VB656w2gtcobW_gE0.ttf",
-		"weight": 400
+		displayName: "SUSE Mono",
+		filename: "y83KW4wN6yi9x2mTxJI2Lzk1yOJRC-VB656w2gtcobW_gE0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/susemono/v1/y83KW4wN6yi9x2mTxJI2Lzk1yOJRC-VB656w2gtcobW_gE0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Multani",
-		"filename": "9Bty3ClF38_RfOpe1gCaZ8p30BOFO1A0pfCs5Kos",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmultani/v21/9Bty3ClF38_RfOpe1gCaZ8p30BOFO1A0pfCs5Kos.ttf",
-		"weight": 400
+		displayName: "Noto Sans Multani",
+		filename: "9Bty3ClF38_RfOpe1gCaZ8p30BOFO1A0pfCs5Kos",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmultani/v21/9Bty3ClF38_RfOpe1gCaZ8p30BOFO1A0pfCs5Kos.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite MX Guides",
-		"filename": "k3kMo9ESPe9dzQ1UGbvoZhnhbtfklWqN0qywHx-HpY0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritemxguides/v1/k3kMo9ESPe9dzQ1UGbvoZhnhbtfklWqN0qywHx-HpY0.ttf",
-		"weight": 400
+		displayName: "Playwrite MX Guides",
+		filename: "k3kMo9ESPe9dzQ1UGbvoZhnhbtfklWqN0qywHx-HpY0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritemxguides/v1/k3kMo9ESPe9dzQ1UGbvoZhnhbtfklWqN0qywHx-HpY0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Epunda Slab",
-		"filename": "46k8lbHxTynXpZplPiOFHX9L36WJhClOsZt_eDNVoU4Q_2eOpA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/epundaslab/v2/46k8lbHxTynXpZplPiOFHX9L36WJhClOsZt_eDNVoU4Q_2eOpA.ttf",
-		"weight": 400
+		displayName: "Epunda Slab",
+		filename: "46k8lbHxTynXpZplPiOFHX9L36WJhClOsZt_eDNVoU4Q_2eOpA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/epundaslab/v2/46k8lbHxTynXpZplPiOFHX9L36WJhClOsZt_eDNVoU4Q_2eOpA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu AU VIC WA NT Guides",
-		"filename": "TuG-UUJ4V48KZ9Nr3ZV46JQkJxtkFIKnvy00LCZuAcLMeb8FnyPdK1ZazoF08FsYlA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduauvicwantguides/v3/TuG-UUJ4V48KZ9Nr3ZV46JQkJxtkFIKnvy00LCZuAcLMeb8FnyPdK1ZazoF08FsYlA.ttf",
-		"weight": 400
+		displayName: "Edu AU VIC WA NT Guides",
+		filename: "TuG-UUJ4V48KZ9Nr3ZV46JQkJxtkFIKnvy00LCZuAcLMeb8FnyPdK1ZazoF08FsYlA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduauvicwantguides/v3/TuG-UUJ4V48KZ9Nr3ZV46JQkJxtkFIKnvy00LCZuAcLMeb8FnyPdK1ZazoF08FsYlA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Yezidi",
-		"filename": "XLYPIYr5bJNDGYxLBibeHZAn3B5KJENnQjbfhMSVZspD2yEkrlGJgmVCqg",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifyezidi/v23/XLYPIYr5bJNDGYxLBibeHZAn3B5KJENnQjbfhMSVZspD2yEkrlGJgmVCqg.ttf",
-		"weight": 400
+		displayName: "Noto Serif Yezidi",
+		filename: "XLYPIYr5bJNDGYxLBibeHZAn3B5KJENnQjbfhMSVZspD2yEkrlGJgmVCqg",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifyezidi/v23/XLYPIYr5bJNDGYxLBibeHZAn3B5KJENnQjbfhMSVZspD2yEkrlGJgmVCqg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Pixels",
-		"filename": "SlGXmQOaupkIeSx4CEpB7AdSaBYRagrQrA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikpixels/v3/SlGXmQOaupkIeSx4CEpB7AdSaBYRagrQrA.ttf",
-		"weight": 400
+		displayName: "Rubik Pixels",
+		filename: "SlGXmQOaupkIeSx4CEpB7AdSaBYRagrQrA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikpixels/v3/SlGXmQOaupkIeSx4CEpB7AdSaBYRagrQrA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Maps",
-		"filename": "Gw6_wcjl80TZK9XxtbbejSYUChRqp9k",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikmaps/v1/Gw6_wcjl80TZK9XxtbbejSYUChRqp9k.ttf",
-		"weight": 400
+		displayName: "Rubik Maps",
+		filename: "Gw6_wcjl80TZK9XxtbbejSYUChRqp9k",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikmaps/v1/Gw6_wcjl80TZK9XxtbbejSYUChRqp9k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Nag Mundari",
-		"filename": "3qTAoi2hnSyU8TNFIdhZTyod3g5lBnKlQFk2kS9fr9Eq09RHRxirbUGA0whP19M",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnagmundari/v4/3qTAoi2hnSyU8TNFIdhZTyod3g5lBnKlQFk2kS9fr9Eq09RHRxirbUGA0whP19M.ttf",
-		"weight": 400
+		displayName: "Noto Sans Nag Mundari",
+		filename: "3qTAoi2hnSyU8TNFIdhZTyod3g5lBnKlQFk2kS9fr9Eq09RHRxirbUGA0whP19M",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnagmundari/v4/3qTAoi2hnSyU8TNFIdhZTyod3g5lBnKlQFk2kS9fr9Eq09RHRxirbUGA0whP19M.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite MX",
-		"filename": "6xK9dSNbKtCe7KfhXg7RYSwyQ-oO7xNblyJr9wnd5xYfXDWXDu8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritemx/v13/6xK9dSNbKtCe7KfhXg7RYSwyQ-oO7xNblyJr9wnd5xYfXDWXDu8.ttf",
-		"weight": 400
+		displayName: "Playwrite MX",
+		filename: "6xK9dSNbKtCe7KfhXg7RYSwyQ-oO7xNblyJr9wnd5xYfXDWXDu8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritemx/v13/6xK9dSNbKtCe7KfhXg7RYSwyQ-oO7xNblyJr9wnd5xYfXDWXDu8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "UoqMunThenKhung",
-		"filename": "Y4GTYa1nVTQLt-D5LoLChg5aJjIjwLL9Th8YYA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/uoqmunthenkhung/v1/Y4GTYa1nVTQLt-D5LoLChg5aJjIjwLL9Th8YYA.ttf",
-		"weight": 400
+		displayName: "UoqMunThenKhung",
+		filename: "Y4GTYa1nVTQLt-D5LoLChg5aJjIjwLL9Th8YYA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/uoqmunthenkhung/v1/Y4GTYa1nVTQLt-D5LoLChg5aJjIjwLL9Th8YYA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Takri",
-		"filename": "TuGJUVpzXI5FBtUq5a8bnKIOdTwQNO_W3khJXg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstakri/v25/TuGJUVpzXI5FBtUq5a8bnKIOdTwQNO_W3khJXg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Takri",
+		filename: "TuGJUVpzXI5FBtUq5a8bnKIOdTwQNO_W3khJXg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstakri/v25/TuGJUVpzXI5FBtUq5a8bnKIOdTwQNO_W3khJXg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Indic Siyaq Numbers",
-		"filename": "6xK5dTJFKcWIu4bpRBjRZRpsIYHabOeZ8UZLubTzpXNHKx2WPOpVd5Iu",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansindicsiyaqnumbers/v17/6xK5dTJFKcWIu4bpRBjRZRpsIYHabOeZ8UZLubTzpXNHKx2WPOpVd5Iu.ttf",
-		"weight": 400
+		displayName: "Noto Sans Indic Siyaq Numbers",
+		filename: "6xK5dTJFKcWIu4bpRBjRZRpsIYHabOeZ8UZLubTzpXNHKx2WPOpVd5Iu",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansindicsiyaqnumbers/v17/6xK5dTJFKcWIu4bpRBjRZRpsIYHabOeZ8UZLubTzpXNHKx2WPOpVd5Iu.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Coral Pixels",
-		"filename": "qWctB66zpZ3zAtrlR8Mb1LyyeBb_ujA4ug",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/coralpixels/v1/qWctB66zpZ3zAtrlR8Mb1LyyeBb_ujA4ug.ttf",
-		"weight": 400
+		displayName: "Coral Pixels",
+		filename: "qWctB66zpZ3zAtrlR8Mb1LyyeBb_ujA4ug",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/coralpixels/v1/qWctB66zpZ3zAtrlR8Mb1LyyeBb_ujA4ug.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Dogra",
-		"filename": "MQpP-XquKMC7ROPP3QOOlm7xPu3fGy63IbPzkns",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifdogra/v24/MQpP-XquKMC7ROPP3QOOlm7xPu3fGy63IbPzkns.ttf",
-		"weight": 400
+		displayName: "Noto Serif Dogra",
+		filename: "MQpP-XquKMC7ROPP3QOOlm7xPu3fGy63IbPzkns",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifdogra/v24/MQpP-XquKMC7ROPP3QOOlm7xPu3fGy63IbPzkns.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Newa",
-		"filename": "7r3fqXp6utEsO9pI4f8ok8sWg8n_qN4R5lNU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnewa/v17/7r3fqXp6utEsO9pI4f8ok8sWg8n_qN4R5lNU.ttf",
-		"weight": 400
+		displayName: "Noto Sans Newa",
+		filename: "7r3fqXp6utEsO9pI4f8ok8sWg8n_qN4R5lNU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnewa/v17/7r3fqXp6utEsO9pI4f8ok8sWg8n_qN4R5lNU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Ingrid Darling",
-		"filename": "LDIrapaJNxUtSuFdw-9yf4rCPsLOub458jGL",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/ingriddarling/v7/LDIrapaJNxUtSuFdw-9yf4rCPsLOub458jGL.ttf",
-		"weight": 400
+		displayName: "Ingrid Darling",
+		filename: "LDIrapaJNxUtSuFdw-9yf4rCPsLOub458jGL",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/ingriddarling/v7/LDIrapaJNxUtSuFdw-9yf4rCPsLOub458jGL.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old North Arabian",
-		"filename": "esDF30BdNv-KYGGJpKGk2tNiMt7Jar6olZDyNdr81zBQmUo_xw4ABw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldnortharabian/v17/esDF30BdNv-KYGGJpKGk2tNiMt7Jar6olZDyNdr81zBQmUo_xw4ABw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old North Arabian",
+		filename: "esDF30BdNv-KYGGJpKGk2tNiMt7Jar6olZDyNdr81zBQmUo_xw4ABw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldnortharabian/v17/esDF30BdNv-KYGGJpKGk2tNiMt7Jar6olZDyNdr81zBQmUo_xw4ABw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DK Uloopet",
-		"filename": "bWtS7e3Ufwn0Hf1zjprKPYlcDAoHknvYFjqIh8PF6jwcP5K06lUrKeng6LUzAA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedkuloopet/v6/bWtS7e3Ufwn0Hf1zjprKPYlcDAoHknvYFjqIh8PF6jwcP5K06lUrKeng6LUzAA.ttf",
-		"weight": 400
+		displayName: "Playwrite DK Uloopet",
+		filename: "bWtS7e3Ufwn0Hf1zjprKPYlcDAoHknvYFjqIh8PF6jwcP5K06lUrKeng6LUzAA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedkuloopet/v6/bWtS7e3Ufwn0Hf1zjprKPYlcDAoHknvYFjqIh8PF6jwcP5K06lUrKeng6LUzAA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Syriac",
-		"filename": "Ktk7AKuMeZjqPnXgyqribqzQqgW0LYiVqV7dXcP0C-VD9MaJyZfUL_FC",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssyriac/v18/Ktk7AKuMeZjqPnXgyqribqzQqgW0LYiVqV7dXcP0C-VD9MaJyZfUL_FC.ttf",
-		"weight": 400
+		displayName: "Noto Sans Syriac",
+		filename: "Ktk7AKuMeZjqPnXgyqribqzQqgW0LYiVqV7dXcP0C-VD9MaJyZfUL_FC",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssyriac/v18/Ktk7AKuMeZjqPnXgyqribqzQqgW0LYiVqV7dXcP0C-VD9MaJyZfUL_FC.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Linear A",
-		"filename": "oPWS_l16kP4jCuhpgEGmwJOiA18FZj22zmHQAGQicw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslineara/v19/oPWS_l16kP4jCuhpgEGmwJOiA18FZj22zmHQAGQicw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Linear A",
+		filename: "oPWS_l16kP4jCuhpgEGmwJOiA18FZj22zmHQAGQicw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslineara/v19/oPWS_l16kP4jCuhpgEGmwJOiA18FZj22zmHQAGQicw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite BE WAL",
-		"filename": "DtV1Jwq5QbIzyrA6DHdJ2BksuUmanQtEYjAlv96WFsWCGPugHxwiSZp8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritebewal/v7/DtV1Jwq5QbIzyrA6DHdJ2BksuUmanQtEYjAlv96WFsWCGPugHxwiSZp8.ttf",
-		"weight": 400
+		displayName: "Playwrite BE WAL",
+		filename: "DtV1Jwq5QbIzyrA6DHdJ2BksuUmanQtEYjAlv96WFsWCGPugHxwiSZp8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritebewal/v7/DtV1Jwq5QbIzyrA6DHdJ2BksuUmanQtEYjAlv96WFsWCGPugHxwiSZp8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NZ",
-		"filename": "d6lakaOxRsyr_zZDmUYvh2TW3NCQVvjKPjPjngAUeRt5gGCzkrs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritenz/v11/d6lakaOxRsyr_zZDmUYvh2TW3NCQVvjKPjPjngAUeRt5gGCzkrs.ttf",
-		"weight": 400
+		displayName: "Playwrite NZ",
+		filename: "d6lakaOxRsyr_zZDmUYvh2TW3NCQVvjKPjPjngAUeRt5gGCzkrs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritenz/v11/d6lakaOxRsyr_zZDmUYvh2TW3NCQVvjKPjPjngAUeRt5gGCzkrs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playpen Sans Thai",
-		"filename": "VdG3AYIdG5kSgHwmKT9wYu2rs0cBsu-N7E_aclWp2hxLghCPoxxAISLTzA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playpensansthai/v8/VdG3AYIdG5kSgHwmKT9wYu2rs0cBsu-N7E_aclWp2hxLghCPoxxAISLTzA.ttf",
-		"weight": 400
+		displayName: "Playpen Sans Thai",
+		filename: "VdG3AYIdG5kSgHwmKT9wYu2rs0cBsu-N7E_aclWp2hxLghCPoxxAISLTzA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playpensansthai/v8/VdG3AYIdG5kSgHwmKT9wYu2rs0cBsu-N7E_aclWp2hxLghCPoxxAISLTzA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Menbere",
-		"filename": "lJwY-p0zhmBrWvcG80OiXWeXfSDWXdI_96n1UnpeWOQ5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/menbere/v1/lJwY-p0zhmBrWvcG80OiXWeXfSDWXdI_96n1UnpeWOQ5.ttf",
-		"weight": 400
+		displayName: "Menbere",
+		filename: "lJwY-p0zhmBrWvcG80OiXWeXfSDWXdI_96n1UnpeWOQ5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/menbere/v1/lJwY-p0zhmBrWvcG80OiXWeXfSDWXdI_96n1UnpeWOQ5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playpen Sans Hebrew",
-		"filename": "lJws-okuj29wT-AN6RvLx8QqjkKhL7eAjoL9jK7L4vstDnnp55C63VFfsRss",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playpensanshebrew/v8/lJws-okuj29wT-AN6RvLx8QqjkKhL7eAjoL9jK7L4vstDnnp55C63VFfsRss.ttf",
-		"weight": 400
+		displayName: "Playpen Sans Hebrew",
+		filename: "lJws-okuj29wT-AN6RvLx8QqjkKhL7eAjoL9jK7L4vstDnnp55C63VFfsRss",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playpensanshebrew/v8/lJws-okuj29wT-AN6RvLx8QqjkKhL7eAjoL9jK7L4vstDnnp55C63VFfsRss.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Linefont",
-		"filename": "dg4I_pzpoqcLKUIzVfFMh1TF2rkhli25jn7CKTTWSumsFuSnY4UMbu7tmdXux3U",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/linefont/v10/dg4I_pzpoqcLKUIzVfFMh1TF2rkhli25jn7CKTTWSumsFuSnY4UMbu7tmdXux3U.ttf",
-		"weight": 400
+		displayName: "Linefont",
+		filename: "dg4I_pzpoqcLKUIzVfFMh1TF2rkhli25jn7CKTTWSumsFuSnY4UMbu7tmdXux3U",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/linefont/v10/dg4I_pzpoqcLKUIzVfFMh1TF2rkhli25jn7CKTTWSumsFuSnY4UMbu7tmdXux3U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu SA Hand",
-		"filename": "memtYaOmw37C-ogAJfd7NocVXTy8nx2cmqvXlWumvkSE55OZgw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/edusahand/v3/memtYaOmw37C-ogAJfd7NocVXTy8nx2cmqvXlWumvkSE55OZgw.ttf",
-		"weight": 400
+		displayName: "Edu SA Hand",
+		filename: "memtYaOmw37C-ogAJfd7NocVXTy8nx2cmqvXlWumvkSE55OZgw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/edusahand/v3/memtYaOmw37C-ogAJfd7NocVXTy8nx2cmqvXlWumvkSE55OZgw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu AU VIC WA NT Arrows",
-		"filename": "z7N7dQTteSlUDJZJAmUB9MuVbLPBjsrTFZLUbdjnSmlATbEWXt5tAcvhTTk90n91Vw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduauvicwantarrows/v4/z7N7dQTteSlUDJZJAmUB9MuVbLPBjsrTFZLUbdjnSmlATbEWXt5tAcvhTTk90n91Vw.ttf",
-		"weight": 400
+		displayName: "Edu AU VIC WA NT Arrows",
+		filename: "z7N7dQTteSlUDJZJAmUB9MuVbLPBjsrTFZLUbdjnSmlATbEWXt5tAcvhTTk90n91Vw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduauvicwantarrows/v4/z7N7dQTteSlUDJZJAmUB9MuVbLPBjsrTFZLUbdjnSmlATbEWXt5tAcvhTTk90n91Vw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Marchen",
-		"filename": "aFTO7OZ_Y282EP-WyG6QTOX_C8WZMHhPk652ZaHk",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmarchen/v21/aFTO7OZ_Y282EP-WyG6QTOX_C8WZMHhPk652ZaHk.ttf",
-		"weight": 400
+		displayName: "Noto Sans Marchen",
+		filename: "aFTO7OZ_Y282EP-WyG6QTOX_C8WZMHhPk652ZaHk",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmarchen/v21/aFTO7OZ_Y282EP-WyG6QTOX_C8WZMHhPk652ZaHk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bytesized",
-		"filename": "goksH6L8FkdnROln8XBTS0CjkP1Yog",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/bytesized/v1/goksH6L8FkdnROln8XBTS0CjkP1Yog.ttf",
-		"weight": 400
+		displayName: "Bytesized",
+		filename: "goksH6L8FkdnROln8XBTS0CjkP1Yog",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/bytesized/v1/goksH6L8FkdnROln8XBTS0CjkP1Yog.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Adlam Unjoined",
-		"filename": "P5sszY2MYsLRsB5_ildkzPPDsLQXcOEmaFOqOGcaYrzFTIjsPam_Ye35PMEe-E3slUg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansadlamunjoined/v28/P5sszY2MYsLRsB5_ildkzPPDsLQXcOEmaFOqOGcaYrzFTIjsPam_Ye35PMEe-E3slUg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Adlam Unjoined",
+		filename: "P5sszY2MYsLRsB5_ildkzPPDsLQXcOEmaFOqOGcaYrzFTIjsPam_Ye35PMEe-E3slUg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansadlamunjoined/v28/P5sszY2MYsLRsB5_ildkzPPDsLQXcOEmaFOqOGcaYrzFTIjsPam_Ye35PMEe-E3slUg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Old Uyghur",
-		"filename": "v6-KGZbLJFKIhClqUYqXDiGnrVoFRCW6JdwnKumeF2yVgA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifolduyghur/v4/v6-KGZbLJFKIhClqUYqXDiGnrVoFRCW6JdwnKumeF2yVgA.ttf",
-		"weight": 400
+		displayName: "Noto Serif Old Uyghur",
+		filename: "v6-KGZbLJFKIhClqUYqXDiGnrVoFRCW6JdwnKumeF2yVgA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifolduyghur/v4/v6-KGZbLJFKIhClqUYqXDiGnrVoFRCW6JdwnKumeF2yVgA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Oriya",
-		"filename": "MjQQmj56u-r69izk_LDqWN7w0cYByutv9qeWYrvLaxrc_Hy-v039MF1j",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriforiya/v6/MjQQmj56u-r69izk_LDqWN7w0cYByutv9qeWYrvLaxrc_Hy-v039MF1j.ttf",
-		"weight": 400
+		displayName: "Noto Serif Oriya",
+		filename: "MjQQmj56u-r69izk_LDqWN7w0cYByutv9qeWYrvLaxrc_Hy-v039MF1j",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriforiya/v6/MjQQmj56u-r69izk_LDqWN7w0cYByutv9qeWYrvLaxrc_Hy-v039MF1j.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Maze",
-		"filename": "xMQRuF9ZVa2ftiJEavXSAX7inS-bxV4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikmaze/v2/xMQRuF9ZVa2ftiJEavXSAX7inS-bxV4.ttf",
-		"weight": 400
+		displayName: "Rubik Maze",
+		filename: "xMQRuF9ZVa2ftiJEavXSAX7inS-bxV4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikmaze/v2/xMQRuF9ZVa2ftiJEavXSAX7inS-bxV4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Shavian",
-		"filename": "CHy5V_HZE0jxJBQlqAeCKjJvQBNF4EFQSplv2Cwg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansshavian/v18/CHy5V_HZE0jxJBQlqAeCKjJvQBNF4EFQSplv2Cwg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Shavian",
+		filename: "CHy5V_HZE0jxJBQlqAeCKjJvQBNF4EFQSplv2Cwg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansshavian/v18/CHy5V_HZE0jxJBQlqAeCKjJvQBNF4EFQSplv2Cwg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Gunjala Gondi",
-		"filename": "bWtX7e7KfBziStx7lIzKPrcSMwcEnCv6DW7n5g0ef3PLtymzNxYL4YDE4J4vCTxEJQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansgunjalagondi/v21/bWtX7e7KfBziStx7lIzKPrcSMwcEnCv6DW7n5g0ef3PLtymzNxYL4YDE4J4vCTxEJQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Gunjala Gondi",
+		filename: "bWtX7e7KfBziStx7lIzKPrcSMwcEnCv6DW7n5g0ef3PLtymzNxYL4YDE4J4vCTxEJQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansgunjalagondi/v21/bWtX7e7KfBziStx7lIzKPrcSMwcEnCv6DW7n5g0ef3PLtymzNxYL4YDE4J4vCTxEJQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Bamum",
-		"filename": "uk-0EGK3o6EruUbnwovcbBTkkklK_Ya_PBHfNGTPEddO-_gLykxEkxA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbamum/v35/uk-0EGK3o6EruUbnwovcbBTkkklK_Ya_PBHfNGTPEddO-_gLykxEkxA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Bamum",
+		filename: "uk-0EGK3o6EruUbnwovcbBTkkklK_Ya_PBHfNGTPEddO-_gLykxEkxA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbamum/v35/uk-0EGK3o6EruUbnwovcbBTkkklK_Ya_PBHfNGTPEddO-_gLykxEkxA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Blaka Hollow",
-		"filename": "MCoUzAL91sjRE2FsKsxUtezYB9oFyW_-oA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/blakahollow/v8/MCoUzAL91sjRE2FsKsxUtezYB9oFyW_-oA.ttf",
-		"weight": 400
+		displayName: "Blaka Hollow",
+		filename: "MCoUzAL91sjRE2FsKsxUtezYB9oFyW_-oA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/blakahollow/v8/MCoUzAL91sjRE2FsKsxUtezYB9oFyW_-oA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU TAS",
-		"filename": "GftT7u9QuxsdI_QuuctXue3ElxxmcBb3ih0opvWiLLUEH6K6Hl9WrXm4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteautas/v11/GftT7u9QuxsdI_QuuctXue3ElxxmcBb3ih0opvWiLLUEH6K6Hl9WrXm4.ttf",
-		"weight": 400
+		displayName: "Playwrite AU TAS",
+		filename: "GftT7u9QuxsdI_QuuctXue3ElxxmcBb3ih0opvWiLLUEH6K6Hl9WrXm4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteautas/v11/GftT7u9QuxsdI_QuuctXue3ElxxmcBb3ih0opvWiLLUEH6K6Hl9WrXm4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite US Trad Guides",
-		"filename": "-zk29027wssz_XLkGgu8kTL39c2bMssjmiZPNnk5nJCZAyrUdw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteustradguides/v1/-zk29027wssz_XLkGgu8kTL39c2bMssjmiZPNnk5nJCZAyrUdw.ttf",
-		"weight": 400
+		displayName: "Playwrite US Trad Guides",
+		filename: "-zk29027wssz_XLkGgu8kTL39c2bMssjmiZPNnk5nJCZAyrUdw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteustradguides/v1/-zk29027wssz_XLkGgu8kTL39c2bMssjmiZPNnk5nJCZAyrUdw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Karla Tamil Upright",
-		"filename": "IFS4HfVMk95HnY0u6SeQ_cHoozW_3U5XoBJ9hK8kMK4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/karlatamilupright/v2/IFS4HfVMk95HnY0u6SeQ_cHoozW_3U5XoBJ9hK8kMK4.ttf",
-		"weight": 400
+		displayName: "Karla Tamil Upright",
+		filename: "IFS4HfVMk95HnY0u6SeQ_cHoozW_3U5XoBJ9hK8kMK4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/karlatamilupright/v2/IFS4HfVMk95HnY0u6SeQ_cHoozW_3U5XoBJ9hK8kMK4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif NP Hmong",
-		"filename": "pONN1gItFMO79E4L1GPUi-2sixKHZyFj9Jy6_KhXPwzdvbjPhFLp3u0rVO-d",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifnphmong/v5/pONN1gItFMO79E4L1GPUi-2sixKHZyFj9Jy6_KhXPwzdvbjPhFLp3u0rVO-d.ttf",
-		"weight": 400
+		displayName: "Noto Serif NP Hmong",
+		filename: "pONN1gItFMO79E4L1GPUi-2sixKHZyFj9Jy6_KhXPwzdvbjPhFLp3u0rVO-d",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifnphmong/v5/pONN1gItFMO79E4L1GPUi-2sixKHZyFj9Jy6_KhXPwzdvbjPhFLp3u0rVO-d.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jaini",
-		"filename": "fC1vPYJMbGHQzEmOK-ZSUHyt",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jaini/v1/fC1vPYJMbGHQzEmOK-ZSUHyt.ttf",
-		"weight": 400
+		displayName: "Jaini",
+		filename: "fC1vPYJMbGHQzEmOK-ZSUHyt",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jaini/v1/fC1vPYJMbGHQzEmOK-ZSUHyt.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Medefaidrin",
-		"filename": "WwkzxOq6Dk-wranENynkfeVsNbRZtbOIdLb1exeM4ZeuabBfmErWlT318e5A3rw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmedefaidrin/v29/WwkzxOq6Dk-wranENynkfeVsNbRZtbOIdLb1exeM4ZeuabBfmErWlT318e5A3rw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Medefaidrin",
+		filename: "WwkzxOq6Dk-wranENynkfeVsNbRZtbOIdLb1exeM4ZeuabBfmErWlT318e5A3rw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmedefaidrin/v29/WwkzxOq6Dk-wranENynkfeVsNbRZtbOIdLb1exeM4ZeuabBfmErWlT318e5A3rw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ES",
-		"filename": "kJEhBuMK4Q07lDHc2Xp9uokIp-6D3QEGCpthmFOPFsfjAOVZBgs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritees/v11/kJEhBuMK4Q07lDHc2Xp9uokIp-6D3QEGCpthmFOPFsfjAOVZBgs.ttf",
-		"weight": 400
+		displayName: "Playwrite ES",
+		filename: "kJEhBuMK4Q07lDHc2Xp9uokIp-6D3QEGCpthmFOPFsfjAOVZBgs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritees/v11/kJEhBuMK4Q07lDHc2Xp9uokIp-6D3QEGCpthmFOPFsfjAOVZBgs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tai Le",
-		"filename": "vEFK2-VODB8RrNDvZSUmVxEATwR58tK1W77HtMo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstaile/v18/vEFK2-VODB8RrNDvZSUmVxEATwR58tK1W77HtMo.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tai Le",
+		filename: "vEFK2-VODB8RrNDvZSUmVxEATwR58tK1W77HtMo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstaile/v18/vEFK2-VODB8RrNDvZSUmVxEATwR58tK1W77HtMo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacquard 12 Charted",
-		"filename": "i7dWIE97bzCOB9Q_Up6PQmYfKDPIb2HwT3StZ9jetKY",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquard12charted/v4/i7dWIE97bzCOB9Q_Up6PQmYfKDPIb2HwT3StZ9jetKY.ttf",
-		"weight": 400
+		displayName: "Jacquard 12 Charted",
+		filename: "i7dWIE97bzCOB9Q_Up6PQmYfKDPIb2HwT3StZ9jetKY",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquard12charted/v4/i7dWIE97bzCOB9Q_Up6PQmYfKDPIb2HwT3StZ9jetKY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Vithkuqi",
-		"filename": "jVyi7m77CXvQswd6WjYu9E1wN6cih2TSchUEkQgw3KTnva5SgKM7vmn0BLE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansvithkuqi/v3/jVyi7m77CXvQswd6WjYu9E1wN6cih2TSchUEkQgw3KTnva5SgKM7vmn0BLE.ttf",
-		"weight": 400
+		displayName: "Noto Sans Vithkuqi",
+		filename: "jVyi7m77CXvQswd6WjYu9E1wN6cih2TSchUEkQgw3KTnva5SgKM7vmn0BLE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansvithkuqi/v3/jVyi7m77CXvQswd6WjYu9E1wN6cih2TSchUEkQgw3KTnva5SgKM7vmn0BLE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Egyptian Hieroglyphs",
-		"filename": "vEF42-tODB8RrNDvZSUmRhcQHzx1s7y_F9-j3qSzEcbEYindSVK8xRg7iw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansegyptianhieroglyphs/v30/vEF42-tODB8RrNDvZSUmRhcQHzx1s7y_F9-j3qSzEcbEYindSVK8xRg7iw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Egyptian Hieroglyphs",
+		filename: "vEF42-tODB8RrNDvZSUmRhcQHzx1s7y_F9-j3qSzEcbEYindSVK8xRg7iw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansegyptianhieroglyphs/v30/vEF42-tODB8RrNDvZSUmRhcQHzx1s7y_F9-j3qSzEcbEYindSVK8xRg7iw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Sogdian",
-		"filename": "taiQGn5iC4--qtsfi4Jp6eHPnfxQBo--Pm6KHidM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssogdian/v17/taiQGn5iC4--qtsfi4Jp6eHPnfxQBo--Pm6KHidM.ttf",
-		"weight": 400
+		displayName: "Noto Sans Sogdian",
+		filename: "taiQGn5iC4--qtsfi4Jp6eHPnfxQBo--Pm6KHidM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssogdian/v17/taiQGn5iC4--qtsfi4Jp6eHPnfxQBo--Pm6KHidM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ID",
-		"filename": "Cn-kJt2YWhlY2oC4KxifKQJmrtrRm-sKkQqUl0-RB_JbFi0pLlg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteid/v11/Cn-kJt2YWhlY2oC4KxifKQJmrtrRm-sKkQqUl0-RB_JbFi0pLlg.ttf",
-		"weight": 400
+		displayName: "Playwrite ID",
+		filename: "Cn-kJt2YWhlY2oC4KxifKQJmrtrRm-sKkQqUl0-RB_JbFi0pLlg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteid/v11/Cn-kJt2YWhlY2oC4KxifKQJmrtrRm-sKkQqUl0-RB_JbFi0pLlg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AR",
-		"filename": "VEMjRohisJz5pTCzruCNjWbfp_N-aNWqYgKS-ftfqf-ES67xIO8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritear/v6/VEMjRohisJz5pTCzruCNjWbfp_N-aNWqYgKS-ftfqf-ES67xIO8.ttf",
-		"weight": 400
+		displayName: "Playwrite AR",
+		filename: "VEMjRohisJz5pTCzruCNjWbfp_N-aNWqYgKS-ftfqf-ES67xIO8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritear/v6/VEMjRohisJz5pTCzruCNjWbfp_N-aNWqYgKS-ftfqf-ES67xIO8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Makasar",
-		"filename": "memjYbqtyH-NiZpFH_9zcvB_PqkfY9S7j4HTVSmevw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifmakasar/v1/memjYbqtyH-NiZpFH_9zcvB_PqkfY9S7j4HTVSmevw.ttf",
-		"weight": 400
+		displayName: "Noto Serif Makasar",
+		filename: "memjYbqtyH-NiZpFH_9zcvB_PqkfY9S7j4HTVSmevw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifmakasar/v1/memjYbqtyH-NiZpFH_9zcvB_PqkfY9S7j4HTVSmevw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Ottoman Siyaq",
-		"filename": "fC1yPZ9IYnzRhTrrc4s8cSvYI0eozzaFOQ01qoHLJrgA00kAdA",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifottomansiyaq/v2/fC1yPZ9IYnzRhTrrc4s8cSvYI0eozzaFOQ01qoHLJrgA00kAdA.ttf",
-		"weight": 400
+		displayName: "Noto Serif Ottoman Siyaq",
+		filename: "fC1yPZ9IYnzRhTrrc4s8cSvYI0eozzaFOQ01qoHLJrgA00kAdA",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifottomansiyaq/v2/fC1yPZ9IYnzRhTrrc4s8cSvYI0eozzaFOQ01qoHLJrgA00kAdA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Exile",
-		"filename": "pxiKyp0xqNtbjBsYHpT2dkNE",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/exile/v1/pxiKyp0xqNtbjBsYHpT2dkNE.ttf",
-		"weight": 400
+		displayName: "Exile",
+		filename: "pxiKyp0xqNtbjBsYHpT2dkNE",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/exile/v1/pxiKyp0xqNtbjBsYHpT2dkNE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Ol Chiki",
-		"filename": "N0b92TJNOPt-eHmFZCdQbrL32r-4CvhzDzRwlxOQYuVALWk267I6gVrz5gQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansolchiki/v31/N0b92TJNOPt-eHmFZCdQbrL32r-4CvhzDzRwlxOQYuVALWk267I6gVrz5gQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Ol Chiki",
+		filename: "N0b92TJNOPt-eHmFZCdQbrL32r-4CvhzDzRwlxOQYuVALWk267I6gVrz5gQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansolchiki/v31/N0b92TJNOPt-eHmFZCdQbrL32r-4CvhzDzRwlxOQYuVALWk267I6gVrz5gQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tifinagh",
-		"filename": "I_uzMoCduATTei9eI8dawkHIwvmhCvbn6rnEcXfs4Q",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstifinagh/v21/I_uzMoCduATTei9eI8dawkHIwvmhCvbn6rnEcXfs4Q.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tifinagh",
+		filename: "I_uzMoCduATTei9eI8dawkHIwvmhCvbn6rnEcXfs4Q",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstifinagh/v21/I_uzMoCduATTei9eI8dawkHIwvmhCvbn6rnEcXfs4Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playpen Sans Deva",
-		"filename": "vm8fdQj0UUbMxObnsO17RZ7pPBuJge10OmPLCiz-HCrQ0xkUG_5NygdkiQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playpensansdeva/v4/vm8fdQj0UUbMxObnsO17RZ7pPBuJge10OmPLCiz-HCrQ0xkUG_5NygdkiQ.ttf",
-		"weight": 400
+		displayName: "Playpen Sans Deva",
+		filename: "vm8fdQj0UUbMxObnsO17RZ7pPBuJge10OmPLCiz-HCrQ0xkUG_5NygdkiQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playpensansdeva/v4/vm8fdQj0UUbMxObnsO17RZ7pPBuJge10OmPLCiz-HCrQ0xkUG_5NygdkiQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Osage",
-		"filename": "oPWX_kB6kP4jCuhpgEGmw4mtAVtXRlaSxkrMCQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansosage/v19/oPWX_kB6kP4jCuhpgEGmw4mtAVtXRlaSxkrMCQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Osage",
+		filename: "oPWX_kB6kP4jCuhpgEGmw4mtAVtXRlaSxkrMCQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansosage/v19/oPWX_kB6kP4jCuhpgEGmw4mtAVtXRlaSxkrMCQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite PT",
-		"filename": "6NUE8FidKwOcfRjj8ukv5Lg-wt21rkAVfXUe9qDiTfJtvlo3Qaw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritept/v10/6NUE8FidKwOcfRjj8ukv5Lg-wt21rkAVfXUe9qDiTfJtvlo3Qaw.ttf",
-		"weight": 400
+		displayName: "Playwrite PT",
+		filename: "6NUE8FidKwOcfRjj8ukv5Lg-wt21rkAVfXUe9qDiTfJtvlo3Qaw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritept/v10/6NUE8FidKwOcfRjj8ukv5Lg-wt21rkAVfXUe9qDiTfJtvlo3Qaw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Savate",
-		"filename": "QdVKSTgjKAqpnvJNP5oQaZzblHkwJbdxRbgJdhapcUU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/savate/v5/QdVKSTgjKAqpnvJNP5oQaZzblHkwJbdxRbgJdhapcUU.ttf",
-		"weight": 400
+		displayName: "Savate",
+		filename: "QdVKSTgjKAqpnvJNP5oQaZzblHkwJbdxRbgJdhapcUU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/savate/v5/QdVKSTgjKAqpnvJNP5oQaZzblHkwJbdxRbgJdhapcUU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Lisu",
-		"filename": "uk-3EGO3o6EruUbnwovcYhz6kh57_nqbcTdjJnHP2Vwt29IlxkVdig",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslisu/v27/uk-3EGO3o6EruUbnwovcYhz6kh57_nqbcTdjJnHP2Vwt29IlxkVdig.ttf",
-		"weight": 400
+		displayName: "Noto Sans Lisu",
+		filename: "uk-3EGO3o6EruUbnwovcYhz6kh57_nqbcTdjJnHP2Vwt29IlxkVdig",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslisu/v27/uk-3EGO3o6EruUbnwovcYhz6kh57_nqbcTdjJnHP2Vwt29IlxkVdig.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Big Shoulders Inline",
-		"filename": "bx68NwSCkev-8u0YNXAF6gArLyznvspgMZDcnsTZieUyOqQzOiBfauOMaRhGeKwO1nHa-oUTA-kSKkM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bigshouldersinline/v4/bx68NwSCkev-8u0YNXAF6gArLyznvspgMZDcnsTZieUyOqQzOiBfauOMaRhGeKwO1nHa-oUTA-kSKkM.ttf",
-		"weight": 400
+		displayName: "Big Shoulders Inline",
+		filename: "bx68NwSCkev-8u0YNXAF6gArLyznvspgMZDcnsTZieUyOqQzOiBfauOMaRhGeKwO1nHa-oUTA-kSKkM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bigshouldersinline/v4/bx68NwSCkev-8u0YNXAF6gArLyznvspgMZDcnsTZieUyOqQzOiBfauOMaRhGeKwO1nHa-oUTA-kSKkM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CO",
-		"filename": "0FlGVP2Hl1iH-fv2BH4kJkgb8vH-rbJPTDqqx7ZIo-dOEhxX3Iw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteco/v13/0FlGVP2Hl1iH-fv2BH4kJkgb8vH-rbJPTDqqx7ZIo-dOEhxX3Iw.ttf",
-		"weight": 400
+		displayName: "Playwrite CO",
+		filename: "0FlGVP2Hl1iH-fv2BH4kJkgb8vH-rbJPTDqqx7ZIo-dOEhxX3Iw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteco/v13/0FlGVP2Hl1iH-fv2BH4kJkgb8vH-rbJPTDqqx7ZIo-dOEhxX3Iw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu NSW ACT Hand Pre",
-		"filename": "kmKXZrI-ExGJWUmupHwGgw6Qw4svl-MsLiw7ATFEXwCkLE0ywWBqtsjedKEHuQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/edunswacthandpre/v3/kmKXZrI-ExGJWUmupHwGgw6Qw4svl-MsLiw7ATFEXwCkLE0ywWBqtsjedKEHuQ.ttf",
-		"weight": 400
+		displayName: "Edu NSW ACT Hand Pre",
+		filename: "kmKXZrI-ExGJWUmupHwGgw6Qw4svl-MsLiw7ATFEXwCkLE0ywWBqtsjedKEHuQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/edunswacthandpre/v3/kmKXZrI-ExGJWUmupHwGgw6Qw4svl-MsLiw7ATFEXwCkLE0ywWBqtsjedKEHuQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ES Deco",
-		"filename": "7AuWp-g3kjKKGkePXEf2jxctfDxlvGM7-RllW8uEsjJ4yrdxOQ9p5Cljpw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteesdeco/v11/7AuWp-g3kjKKGkePXEf2jxctfDxlvGM7-RllW8uEsjJ4yrdxOQ9p5Cljpw.ttf",
-		"weight": 400
+		displayName: "Playwrite ES Deco",
+		filename: "7AuWp-g3kjKKGkePXEf2jxctfDxlvGM7-RllW8uEsjJ4yrdxOQ9p5Cljpw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteesdeco/v11/7AuWp-g3kjKKGkePXEf2jxctfDxlvGM7-RllW8uEsjJ4yrdxOQ9p5Cljpw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Lisu Bosa",
-		"filename": "3XFoErkv240fsdmJRJQvl0viTf3E3Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/lisubosa/v2/3XFoErkv240fsdmJRJQvl0viTf3E3Q.ttf",
-		"weight": 400
+		displayName: "Lisu Bosa",
+		filename: "3XFoErkv240fsdmJRJQvl0viTf3E3Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/lisubosa/v2/3XFoErkv240fsdmJRJQvl0viTf3E3Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite VN",
-		"filename": "mtGo4_hXJqPSu8nf5RBY5i0q0yxCxtP-9TFBNUI9E-9HPWIQtD0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritevn/v11/mtGo4_hXJqPSu8nf5RBY5i0q0yxCxtP-9TFBNUI9E-9HPWIQtD0.ttf",
-		"weight": 400
+		displayName: "Playwrite VN",
+		filename: "mtGo4_hXJqPSu8nf5RBY5i0q0yxCxtP-9TFBNUI9E-9HPWIQtD0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritevn/v11/mtGo4_hXJqPSu8nf5RBY5i0q0yxCxtP-9TFBNUI9E-9HPWIQtD0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Gurmukhi",
-		"filename": "92z-tA9LNqsg7tCYlXdCV1VPnAEeDU0vLoYMbylXk0xTCr6-eRTNmqVU7y6l",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifgurmukhi/v22/92z-tA9LNqsg7tCYlXdCV1VPnAEeDU0vLoYMbylXk0xTCr6-eRTNmqVU7y6l.ttf",
-		"weight": 400
+		displayName: "Noto Serif Gurmukhi",
+		filename: "92z-tA9LNqsg7tCYlXdCV1VPnAEeDU0vLoYMbylXk0xTCr6-eRTNmqVU7y6l",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifgurmukhi/v22/92z-tA9LNqsg7tCYlXdCV1VPnAEeDU0vLoYMbylXk0xTCr6-eRTNmqVU7y6l.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Elbasan",
-		"filename": "-F6rfiZqLzI2JPCgQBnw400qp1trvHdlre4dFcFh",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanselbasan/v17/-F6rfiZqLzI2JPCgQBnw400qp1trvHdlre4dFcFh.ttf",
-		"weight": 400
+		displayName: "Noto Sans Elbasan",
+		filename: "-F6rfiZqLzI2JPCgQBnw400qp1trvHdlre4dFcFh",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanselbasan/v17/-F6rfiZqLzI2JPCgQBnw400qp1trvHdlre4dFcFh.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Namdhinggo",
-		"filename": "uk-mEGe3rbgg8Xzoy5-TDnWj4yxx7o8",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/namdhinggo/v2/uk-mEGe3rbgg8Xzoy5-TDnWj4yxx7o8.ttf",
-		"weight": 400
+		displayName: "Namdhinggo",
+		filename: "uk-mEGe3rbgg8Xzoy5-TDnWj4yxx7o8",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/namdhinggo/v2/uk-mEGe3rbgg8Xzoy5-TDnWj4yxx7o8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Brahmi",
-		"filename": "vEFK2-VODB8RrNDvZSUmQQIIByV18tK1W77HtMo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbrahmi/v20/vEFK2-VODB8RrNDvZSUmQQIIByV18tK1W77HtMo.ttf",
-		"weight": 400
+		displayName: "Noto Sans Brahmi",
+		filename: "vEFK2-VODB8RrNDvZSUmQQIIByV18tK1W77HtMo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbrahmi/v20/vEFK2-VODB8RrNDvZSUmQQIIByV18tK1W77HtMo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU VIC",
-		"filename": "bWtu7enUfwn0Hf1zjprKOJdcDy8rxwC1ltAeNDAAd4fTabK0CBIDKNvl",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteauvic/v11/bWtu7enUfwn0Hf1zjprKOJdcDy8rxwC1ltAeNDAAd4fTabK0CBIDKNvl.ttf",
-		"weight": 400
+		displayName: "Playwrite AU VIC",
+		filename: "bWtu7enUfwn0Hf1zjprKOJdcDy8rxwC1ltAeNDAAd4fTabK0CBIDKNvl",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteauvic/v11/bWtu7enUfwn0Hf1zjprKOJdcDy8rxwC1ltAeNDAAd4fTabK0CBIDKNvl.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite RO",
-		"filename": "gok8H6fuA1J7QPJ04HFTGSWdk_S0czhwEf0j4a9YnZWMJnZeBS8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritero/v10/gok8H6fuA1J7QPJ04HFTGSWdk_S0czhwEf0j4a9YnZWMJnZeBS8.ttf",
-		"weight": 400
+		displayName: "Playwrite RO",
+		filename: "gok8H6fuA1J7QPJ04HFTGSWdk_S0czhwEf0j4a9YnZWMJnZeBS8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritero/v10/gok8H6fuA1J7QPJ04HFTGSWdk_S0czhwEf0j4a9YnZWMJnZeBS8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Lines",
-		"filename": "_gP81R3vsjYzVW2Y6xFF-GSxYPp7oSNy",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubiklines/v1/_gP81R3vsjYzVW2Y6xFF-GSxYPp7oSNy.ttf",
-		"weight": 400
+		displayName: "Rubik Lines",
+		filename: "_gP81R3vsjYzVW2Y6xFF-GSxYPp7oSNy",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubiklines/v1/_gP81R3vsjYzVW2Y6xFF-GSxYPp7oSNy.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Znamenny Musical Notation",
-		"filename": "CSRW4ylQnPyaDwAMK1U_AolTaJ4Lz41GcgaIZV9YO2rO88jvtpqqdoWa7g",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notoznamennymusicalnotation/v7/CSRW4ylQnPyaDwAMK1U_AolTaJ4Lz41GcgaIZV9YO2rO88jvtpqqdoWa7g.ttf",
-		"weight": 400
+		displayName: "Noto Znamenny Musical Notation",
+		filename: "CSRW4ylQnPyaDwAMK1U_AolTaJ4Lz41GcgaIZV9YO2rO88jvtpqqdoWa7g",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notoznamennymusicalnotation/v7/CSRW4ylQnPyaDwAMK1U_AolTaJ4Lz41GcgaIZV9YO2rO88jvtpqqdoWa7g.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Matangi",
-		"filename": "kmKiZqE2FhDIeX2QvjZNI_5FGeJet7OWCDYwI8Gcw6Oi",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/matangi/v5/kmKiZqE2FhDIeX2QvjZNI_5FGeJet7OWCDYwI8Gcw6Oi.ttf",
-		"weight": 400
+		displayName: "Matangi",
+		filename: "kmKiZqE2FhDIeX2QvjZNI_5FGeJet7OWCDYwI8Gcw6Oi",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/matangi/v5/kmKiZqE2FhDIeX2QvjZNI_5FGeJet7OWCDYwI8Gcw6Oi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Blaka Ink",
-		"filename": "AlZy_zVVtpj22Znag2chdXf4XB0Tow",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/blakaink/v10/AlZy_zVVtpj22Znag2chdXf4XB0Tow.ttf",
-		"weight": 400
+		displayName: "Blaka Ink",
+		filename: "AlZy_zVVtpj22Znag2chdXf4XB0Tow",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/blakaink/v10/AlZy_zVVtpj22Znag2chdXf4XB0Tow.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Khojki",
-		"filename": "-nFnOHM29Oofr2wohFbTuPPKVWpmK_d709jy92k",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskhojki/v20/-nFnOHM29Oofr2wohFbTuPPKVWpmK_d709jy92k.ttf",
-		"weight": 400
+		displayName: "Noto Sans Khojki",
+		filename: "-nFnOHM29Oofr2wohFbTuPPKVWpmK_d709jy92k",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskhojki/v20/-nFnOHM29Oofr2wohFbTuPPKVWpmK_d709jy92k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Miao",
-		"filename": "Dxxz8jmXMW75w3OmoDXVV4zyZUjgUYVslLhx",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmiao/v18/Dxxz8jmXMW75w3OmoDXVV4zyZUjgUYVslLhx.ttf",
-		"weight": 400
+		displayName: "Noto Sans Miao",
+		filename: "Dxxz8jmXMW75w3OmoDXVV4zyZUjgUYVslLhx",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmiao/v18/Dxxz8jmXMW75w3OmoDXVV4zyZUjgUYVslLhx.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Grantha",
-		"filename": "qkBIXuEH5NzDDvc3fLDYxPk9-Wq3WLiqFENLR7fHGw",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifgrantha/v22/qkBIXuEH5NzDDvc3fLDYxPk9-Wq3WLiqFENLR7fHGw.ttf",
-		"weight": 400
+		displayName: "Noto Serif Grantha",
+		filename: "qkBIXuEH5NzDDvc3fLDYxPk9-Wq3WLiqFENLR7fHGw",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifgrantha/v22/qkBIXuEH5NzDDvc3fLDYxPk9-Wq3WLiqFENLR7fHGw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old Persian",
-		"filename": "wEOjEAbNnc5caQTFG18FHrZr9Bp6-8CmIJ_tqOlQfx9CjA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldpersian/v17/wEOjEAbNnc5caQTFG18FHrZr9Bp6-8CmIJ_tqOlQfx9CjA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old Persian",
+		filename: "wEOjEAbNnc5caQTFG18FHrZr9Bp6-8CmIJ_tqOlQfx9CjA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldpersian/v17/wEOjEAbNnc5caQTFG18FHrZr9Bp6-8CmIJ_tqOlQfx9CjA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CL",
-		"filename": "-zk391m7wssz_XLkGgu8hy3tqrcOhnbf6ForU8JavLq3DyPNbus",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritecl/v6/-zk391m7wssz_XLkGgu8hy3tqrcOhnbf6ForU8JavLq3DyPNbus.ttf",
-		"weight": 400
+		displayName: "Playwrite CL",
+		filename: "-zk391m7wssz_XLkGgu8hy3tqrcOhnbf6ForU8JavLq3DyPNbus",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritecl/v6/-zk391m7wssz_XLkGgu8hy3tqrcOhnbf6ForU8JavLq3DyPNbus.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Libertinus Keyboard",
-		"filename": "NaPEcYrQAP5Z2JsyIac0i2DYHaapaf43RryztWo_3fk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/libertinuskeyboard/v2/NaPEcYrQAP5Z2JsyIac0i2DYHaapaf43RryztWo_3fk.ttf",
-		"weight": 400
+		displayName: "Libertinus Keyboard",
+		filename: "NaPEcYrQAP5Z2JsyIac0i2DYHaapaf43RryztWo_3fk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/libertinuskeyboard/v2/NaPEcYrQAP5Z2JsyIac0i2DYHaapaf43RryztWo_3fk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Narnoor",
-		"filename": "cIf9MaFWuVo-UTyPxCmrYGkHgIs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/narnoor/v10/cIf9MaFWuVo-UTyPxCmrYGkHgIs.ttf",
-		"weight": 400
+		displayName: "Narnoor",
+		filename: "cIf9MaFWuVo-UTyPxCmrYGkHgIs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/narnoor/v10/cIf9MaFWuVo-UTyPxCmrYGkHgIs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tai Tham",
-		"filename": "kJEbBv0U4hgtwxDUw2x9q7tbjLIfbPGHBoaVSAZ3MdLJBCUbPgquyaRGKMw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstaitham/v25/kJEbBv0U4hgtwxDUw2x9q7tbjLIfbPGHBoaVSAZ3MdLJBCUbPgquyaRGKMw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tai Tham",
+		filename: "kJEbBv0U4hgtwxDUw2x9q7tbjLIfbPGHBoaVSAZ3MdLJBCUbPgquyaRGKMw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstaitham/v25/kJEbBv0U4hgtwxDUw2x9q7tbjLIfbPGHBoaVSAZ3MdLJBCUbPgquyaRGKMw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Rubik Storm",
-		"filename": "eLGYP-_uPgO5Ag7ju9JaouL9T2Xh9NQk",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/rubikstorm/v1/eLGYP-_uPgO5Ag7ju9JaouL9T2Xh9NQk.ttf",
-		"weight": 400
+		displayName: "Rubik Storm",
+		filename: "eLGYP-_uPgO5Ag7ju9JaouL9T2Xh9NQk",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/rubikstorm/v1/eLGYP-_uPgO5Ag7ju9JaouL9T2Xh9NQk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Cuneiform",
-		"filename": "bMrrmTWK7YY-MF22aHGGd7H8PhJtvBDWgb9JlRQueeQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscuneiform/v18/bMrrmTWK7YY-MF22aHGGd7H8PhJtvBDWgb9JlRQueeQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Cuneiform",
+		filename: "bMrrmTWK7YY-MF22aHGGd7H8PhJtvBDWgb9JlRQueeQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscuneiform/v18/bMrrmTWK7YY-MF22aHGGd7H8PhJtvBDWgb9JlRQueeQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans PhagsPa",
-		"filename": "XLY8IYr5bJNDGYxPGjyYbaEjwQR-LFlsYMYHGGeT",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansphagspa/v24/XLY8IYr5bJNDGYxPGjyYbaEjwQR-LFlsYMYHGGeT.ttf",
-		"weight": 400
+		displayName: "Noto Sans PhagsPa",
+		filename: "XLY8IYr5bJNDGYxPGjyYbaEjwQR-LFlsYMYHGGeT",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansphagspa/v24/XLY8IYr5bJNDGYxPGjyYbaEjwQR-LFlsYMYHGGeT.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jaini Purva",
-		"filename": "CHynV-vdHVXwbWcUswbUGHoOHH4sj3lR",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jainipurva/v1/CHynV-vdHVXwbWcUswbUGHoOHH4sj3lR.ttf",
-		"weight": 400
+		displayName: "Jaini Purva",
+		filename: "CHynV-vdHVXwbWcUswbUGHoOHH4sj3lR",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jainipurva/v1/CHynV-vdHVXwbWcUswbUGHoOHH4sj3lR.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AT",
-		"filename": "Gw6owc7n6kfJN4fVoKON7HIEBRSfb0U2uGBm2M76d03MLIHJ-rk",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteat/v6/Gw6owc7n6kfJN4fVoKON7HIEBRSfb0U2uGBm2M76d03MLIHJ-rk.ttf",
-		"weight": 400
+		displayName: "Playwrite AT",
+		filename: "Gw6owc7n6kfJN4fVoKON7HIEBRSfb0U2uGBm2M76d03MLIHJ-rk",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteat/v6/Gw6owc7n6kfJN4fVoKON7HIEBRSfb0U2uGBm2M76d03MLIHJ-rk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 20 Charted",
-		"filename": "JTUNjJMy9DKq5FzVaj9tpgYgvHqGn_Z1ji-rqnQ_",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey20charted/v4/JTUNjJMy9DKq5FzVaj9tpgYgvHqGn_Z1ji-rqnQ_.ttf",
-		"weight": 400
+		displayName: "Jersey 20 Charted",
+		filename: "JTUNjJMy9DKq5FzVaj9tpgYgvHqGn_Z1ji-rqnQ_",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey20charted/v4/JTUNjJMy9DKq5FzVaj9tpgYgvHqGn_Z1ji-rqnQ_.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NG Modern",
-		"filename": "ijw-s4b2R9Qve5V5lNJb_yRhEfSep5NbFCKmKgoEeCA4V17tPAbi5GswWJNE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritengmodern/v11/ijw-s4b2R9Qve5V5lNJb_yRhEfSep5NbFCKmKgoEeCA4V17tPAbi5GswWJNE.ttf",
-		"weight": 400
+		displayName: "Playwrite NG Modern",
+		filename: "ijw-s4b2R9Qve5V5lNJb_yRhEfSep5NbFCKmKgoEeCA4V17tPAbi5GswWJNE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritengmodern/v11/ijw-s4b2R9Qve5V5lNJb_yRhEfSep5NbFCKmKgoEeCA4V17tPAbi5GswWJNE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mahajani",
-		"filename": "-F6sfiVqLzI2JPCgQBnw60Agp0JrvD5Fh8ARHNh4zg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmahajani/v20/-F6sfiVqLzI2JPCgQBnw60Agp0JrvD5Fh8ARHNh4zg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mahajani",
+		filename: "-F6sfiVqLzI2JPCgQBnw60Agp0JrvD5Fh8ARHNh4zg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmahajani/v20/-F6sfiVqLzI2JPCgQBnw60Agp0JrvD5Fh8ARHNh4zg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Todhri",
-		"filename": "dFalZeyY-aYz1YVbjMoBWml1nBz7N3ByX6n0fnNk",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoseriftodhri/v3/dFalZeyY-aYz1YVbjMoBWml1nBz7N3ByX6n0fnNk.ttf",
-		"weight": 400
+		displayName: "Noto Serif Todhri",
+		filename: "dFalZeyY-aYz1YVbjMoBWml1nBz7N3ByX6n0fnNk",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoseriftodhri/v3/dFalZeyY-aYz1YVbjMoBWml1nBz7N3ByX6n0fnNk.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Wancho",
-		"filename": "zrf-0GXXyfn6Fs0lH9P4cUubP0GBqAPopiRfKp8",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanswancho/v18/zrf-0GXXyfn6Fs0lH9P4cUubP0GBqAPopiRfKp8.ttf",
-		"weight": 400
+		displayName: "Noto Sans Wancho",
+		filename: "zrf-0GXXyfn6Fs0lH9P4cUubP0GBqAPopiRfKp8",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanswancho/v18/zrf-0GXXyfn6Fs0lH9P4cUubP0GBqAPopiRfKp8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Sundanese",
-		"filename": "FwZw7_84xUkosG2xJo2gm7nFwSLQkdymq2mkz3Gz1_b6ctxpNNHCizv7fQES",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssundanese/v28/FwZw7_84xUkosG2xJo2gm7nFwSLQkdymq2mkz3Gz1_b6ctxpNNHCizv7fQES.ttf",
-		"weight": 400
+		displayName: "Noto Sans Sundanese",
+		filename: "FwZw7_84xUkosG2xJo2gm7nFwSLQkdymq2mkz3Gz1_b6ctxpNNHCizv7fQES",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssundanese/v28/FwZw7_84xUkosG2xJo2gm7nFwSLQkdymq2mkz3Gz1_b6ctxpNNHCizv7fQES.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu QLD Hand",
-		"filename": "d6lakaOkTtjy2QhuzWtup1rW3NCQVvjKPjPjngAUeRt5gGCzkrs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduqldhand/v3/d6lakaOkTtjy2QhuzWtup1rW3NCQVvjKPjPjngAUeRt5gGCzkrs.ttf",
-		"weight": 400
+		displayName: "Edu QLD Hand",
+		filename: "d6lakaOkTtjy2QhuzWtup1rW3NCQVvjKPjPjngAUeRt5gGCzkrs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduqldhand/v3/d6lakaOkTtjy2QhuzWtup1rW3NCQVvjKPjPjngAUeRt5gGCzkrs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Padyakke Expanded One",
-		"filename": "K2FvfY9El_tbR0JfHb6WWvrBaU6XAUvC4IAYOKRkpDjeoQ",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/padyakkeexpandedone/v8/K2FvfY9El_tbR0JfHb6WWvrBaU6XAUvC4IAYOKRkpDjeoQ.ttf",
-		"weight": 400
+		displayName: "Padyakke Expanded One",
+		filename: "K2FvfY9El_tbR0JfHb6WWvrBaU6XAUvC4IAYOKRkpDjeoQ",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/padyakkeexpandedone/v8/K2FvfY9El_tbR0JfHb6WWvrBaU6XAUvC4IAYOKRkpDjeoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Bhaiksuki",
-		"filename": "UcC63EosKniBH4iELXATsSBWdvUHXxhj8rLUdU4wh9U",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbhaiksuki/v18/UcC63EosKniBH4iELXATsSBWdvUHXxhj8rLUdU4wh9U.ttf",
-		"weight": 400
+		displayName: "Noto Sans Bhaiksuki",
+		filename: "UcC63EosKniBH4iELXATsSBWdvUHXxhj8rLUdU4wh9U",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbhaiksuki/v18/UcC63EosKniBH4iELXATsSBWdvUHXxhj8rLUdU4wh9U.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite GB J",
-		"filename": "k3kEo8wSPe9dzQ1UGbvobAPhY5iG-fsubxedDheGdc9HaN7X9HFR8Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritegbj/v11/k3kEo8wSPe9dzQ1UGbvobAPhY5iG-fsubxedDheGdc9HaN7X9HFR8Q.ttf",
-		"weight": 400
+		displayName: "Playwrite GB J",
+		filename: "k3kEo8wSPe9dzQ1UGbvobAPhY5iG-fsubxedDheGdc9HaN7X9HFR8Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritegbj/v11/k3kEo8wSPe9dzQ1UGbvobAPhY5iG-fsubxedDheGdc9HaN7X9HFR8Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Hentaigana",
-		"filename": "uk-OEHi3o6EruUbj3pGaDj3siVARn-kqgu1eOHk7wYK23O0hzowGqxEZWEARdDE",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifhentaigana/v17/uk-OEHi3o6EruUbj3pGaDj3siVARn-kqgu1eOHk7wYK23O0hzowGqxEZWEARdDE.ttf",
-		"weight": 400
+		displayName: "Noto Serif Hentaigana",
+		filename: "uk-OEHi3o6EruUbj3pGaDj3siVARn-kqgu1eOHk7wYK23O0hzowGqxEZWEARdDE",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifhentaigana/v17/uk-OEHi3o6EruUbj3pGaDj3siVARn-kqgu1eOHk7wYK23O0hzowGqxEZWEARdDE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Zanabazar Square",
-		"filename": "Cn-jJsuGWQxOjaGwMQ6fOicyxLBEMRfDtkzl4uagQtJxOCEgN0Gc",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanszanabazarsquare/v20/Cn-jJsuGWQxOjaGwMQ6fOicyxLBEMRfDtkzl4uagQtJxOCEgN0Gc.ttf",
-		"weight": 400
+		displayName: "Noto Sans Zanabazar Square",
+		filename: "Cn-jJsuGWQxOjaGwMQ6fOicyxLBEMRfDtkzl4uagQtJxOCEgN0Gc",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanszanabazarsquare/v20/Cn-jJsuGWQxOjaGwMQ6fOicyxLBEMRfDtkzl4uagQtJxOCEgN0Gc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tagbanwa",
-		"filename": "Y4GWYbB8VTEp4t3MKJSMmQdIKjRtt_nZRjQEaYpGoQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstagbanwa/v19/Y4GWYbB8VTEp4t3MKJSMmQdIKjRtt_nZRjQEaYpGoQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tagbanwa",
+		filename: "Y4GWYbB8VTEp4t3MKJSMmQdIKjRtt_nZRjQEaYpGoQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstagbanwa/v19/Y4GWYbB8VTEp4t3MKJSMmQdIKjRtt_nZRjQEaYpGoQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Single",
-		"filename": "or25Q6T72-iP2RY6OLSkb95a817cjULDyyhvb6tTxCxtAOObpH9NnfLjSWiXv_OGqtjRD0BNzrItMZWC-9SK8R6EpA2l9RAyOs8BbxT7gd3xw8jKCotYzXjwevWm",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountsingle/v3/or25Q6T72-iP2RY6OLSkb95a817cjULDyyhvb6tTxCxtAOObpH9NnfLjSWiXv_OGqtjRD0BNzrItMZWC-9SK8R6EpA2l9RAyOs8BbxT7gd3xw8jKCotYzXjwevWm.ttf",
-		"weight": 400
+		displayName: "Bitcount Single",
+		filename: "or25Q6T72-iP2RY6OLSkb95a817cjULDyyhvb6tTxCxtAOObpH9NnfLjSWiXv_OGqtjRD0BNzrItMZWC-9SK8R6EpA2l9RAyOs8BbxT7gd3xw8jKCotYzXjwevWm",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountsingle/v3/or25Q6T72-iP2RY6OLSkb95a817cjULDyyhvb6tTxCxtAOObpH9NnfLjSWiXv_OGqtjRD0BNzrItMZWC-9SK8R6EpA2l9RAyOs8BbxT7gd3xw8jKCotYzXjwevWm.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Single Ink",
-		"filename": "Fwb25OZl6FQz81GlJoqgm6XFwi_b1Oat-linM3eIpWvrZ9yhd874qjc72qi5T1IMgiBoydD3bDjJgnXIJ9Cr_oGr36FB5R5iKLRfpSXGN3dP9opQwU38v-r6dJk-vDaziAhRxAxKG59HJAjcNGNBlalyPEmoi939mIWU-GaeCu-JxR9Tn0k2TuKy0CJqQ-Jyh2beggR6Zmt0ewICe5TepUFVly3QN0T9ugz0rbvZS6k",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountsingleink/v4/Fwb25OZl6FQz81GlJoqgm6XFwi_b1Oat-linM3eIpWvrZ9yhd874qjc72qi5T1IMgiBoydD3bDjJgnXIJ9Cr_oGr36FB5R5iKLRfpSXGN3dP9opQwU38v-r6dJk-vDaziAhRxAxKG59HJAjcNGNBlalyPEmoi939mIWU-GaeCu-JxR9Tn0k2TuKy0CJqQ-Jyh2beggR6Zmt0ewICe5TepUFVly3QN0T9ugz0rbvZS6k.ttf",
-		"weight": 400
+		displayName: "Bitcount Single Ink",
+		filename:
+			"Fwb25OZl6FQz81GlJoqgm6XFwi_b1Oat-linM3eIpWvrZ9yhd874qjc72qi5T1IMgiBoydD3bDjJgnXIJ9Cr_oGr36FB5R5iKLRfpSXGN3dP9opQwU38v-r6dJk-vDaziAhRxAxKG59HJAjcNGNBlalyPEmoi939mIWU-GaeCu-JxR9Tn0k2TuKy0CJqQ-Jyh2beggR6Zmt0ewICe5TepUFVly3QN0T9ugz0rbvZS6k",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountsingleink/v4/Fwb25OZl6FQz81GlJoqgm6XFwi_b1Oat-linM3eIpWvrZ9yhd874qjc72qi5T1IMgiBoydD3bDjJgnXIJ9Cr_oGr36FB5R5iKLRfpSXGN3dP9opQwU38v-r6dJk-vDaziAhRxAxKG59HJAjcNGNBlalyPEmoi939mIWU-GaeCu-JxR9Tn0k2TuKy0CJqQ-Jyh2beggR6Zmt0ewICe5TepUFVly3QN0T9ugz0rbvZS6k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite PE",
-		"filename": "FwZJ7-Amxlw-50y5PJugmImRrktKJDJ4lnesO2ltTPHFdtSgb_A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritepe/v6/FwZJ7-Amxlw-50y5PJugmImRrktKJDJ4lnesO2ltTPHFdtSgb_A.ttf",
-		"weight": 400
+		displayName: "Playwrite PE",
+		filename: "FwZJ7-Amxlw-50y5PJugmImRrktKJDJ4lnesO2ltTPHFdtSgb_A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritepe/v6/FwZJ7-Amxlw-50y5PJugmImRrktKJDJ4lnesO2ltTPHFdtSgb_A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Inscriptional Parthian",
-		"filename": "k3k7o-IMPvpLmixcA63oYi-yStDkgXuXncL7dzfW3P4TAJ2yklBJ2jNkLlLr",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansinscriptionalparthian/v18/k3k7o-IMPvpLmixcA63oYi-yStDkgXuXncL7dzfW3P4TAJ2yklBJ2jNkLlLr.ttf",
-		"weight": 400
+		displayName: "Noto Sans Inscriptional Parthian",
+		filename: "k3k7o-IMPvpLmixcA63oYi-yStDkgXuXncL7dzfW3P4TAJ2yklBJ2jNkLlLr",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansinscriptionalparthian/v18/k3k7o-IMPvpLmixcA63oYi-yStDkgXuXncL7dzfW3P4TAJ2yklBJ2jNkLlLr.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Syriac Western",
-		"filename": "ke8LOhEEMVFsvCav8hWjbItd6Jf6MP7Z9spJZ6UNIILh-71aJmOWEaw-X8uP2jTYyH0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssyriacwestern/v2/ke8LOhEEMVFsvCav8hWjbItd6Jf6MP7Z9spJZ6UNIILh-71aJmOWEaw-X8uP2jTYyH0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Syriac Western",
+		filename: "ke8LOhEEMVFsvCav8hWjbItd6Jf6MP7Z9spJZ6UNIILh-71aJmOWEaw-X8uP2jTYyH0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssyriacwestern/v2/ke8LOhEEMVFsvCav8hWjbItd6Jf6MP7Z9spJZ6UNIILh-71aJmOWEaw-X8uP2jTYyH0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Vai",
-		"filename": "NaPecZTSBuhTirw6IaFn_UrURMTsDIRSfr0",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansvai/v18/NaPecZTSBuhTirw6IaFn_UrURMTsDIRSfr0.ttf",
-		"weight": 400
+		displayName: "Noto Sans Vai",
+		filename: "NaPecZTSBuhTirw6IaFn_UrURMTsDIRSfr0",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansvai/v18/NaPecZTSBuhTirw6IaFn_UrURMTsDIRSfr0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu VIC WA NT Hand",
-		"filename": "UcCO3EsnIXnOaZKmY1Ry0wZjP9YVRBcw2boKoduKmMEVuLyfMZhrib2Bg-4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduvicwanthand/v3/UcCO3EsnIXnOaZKmY1Ry0wZjP9YVRBcw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf",
-		"weight": 400
+		displayName: "Edu VIC WA NT Hand",
+		filename: "UcCO3EsnIXnOaZKmY1Ry0wZjP9YVRBcw2boKoduKmMEVuLyfMZhrib2Bg-4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduvicwanthand/v3/UcCO3EsnIXnOaZKmY1Ry0wZjP9YVRBcw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Wavefont",
-		"filename": "L0xFDF00m0cP6hefyOCpRezQNuizSrqDyx8FHbFu21B3L4m0SEzuQYwq-f_JJ8I1WI3V07DHXKtOXOg4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/wavefont/v19/L0xFDF00m0cP6hefyOCpRezQNuizSrqDyx8FHbFu21B3L4m0SEzuQYwq-f_JJ8I1WI3V07DHXKtOXOg4.ttf",
-		"weight": 400
+		displayName: "Wavefont",
+		filename: "L0xFDF00m0cP6hefyOCpRezQNuizSrqDyx8FHbFu21B3L4m0SEzuQYwq-f_JJ8I1WI3V07DHXKtOXOg4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/wavefont/v19/L0xFDF00m0cP6hefyOCpRezQNuizSrqDyx8FHbFu21B3L4m0SEzuQYwq-f_JJ8I1WI3V07DHXKtOXOg4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Cypriot",
-		"filename": "8AtzGta9PYqQDjyp79a6f8Cj-3a3cxIsK5MPpahF",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscypriot/v20/8AtzGta9PYqQDjyp79a6f8Cj-3a3cxIsK5MPpahF.ttf",
-		"weight": 400
+		displayName: "Noto Sans Cypriot",
+		filename: "8AtzGta9PYqQDjyp79a6f8Cj-3a3cxIsK5MPpahF",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscypriot/v20/8AtzGta9PYqQDjyp79a6f8Cj-3a3cxIsK5MPpahF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Edu VIC WA NT Hand Pre",
-		"filename": "neInzDmioZxjkInM_tLHFudmcN2Uxxc-9Vnv-4YmimMq127-YLTo4dgUBS1Nzqn8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/eduvicwanthandpre/v3/neInzDmioZxjkInM_tLHFudmcN2Uxxc-9Vnv-4YmimMq127-YLTo4dgUBS1Nzqn8.ttf",
-		"weight": 400
+		displayName: "Edu VIC WA NT Hand Pre",
+		filename: "neInzDmioZxjkInM_tLHFudmcN2Uxxc-9Vnv-4YmimMq127-YLTo4dgUBS1Nzqn8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/eduvicwanthandpre/v3/neInzDmioZxjkInM_tLHFudmcN2Uxxc-9Vnv-4YmimMq127-YLTo4dgUBS1Nzqn8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Maname",
-		"filename": "gNMFW3J8RpCx9my42FkGGI6q_Q",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/maname/v2/gNMFW3J8RpCx9my42FkGGI6q_Q.ttf",
-		"weight": 400
+		displayName: "Maname",
+		filename: "gNMFW3J8RpCx9my42FkGGI6q_Q",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/maname/v2/gNMFW3J8RpCx9my42FkGGI6q_Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans NKo Unjoined",
-		"filename": "MCo_zBjx1d3VUhJFK9MYlNCXJ6VvqwGPz3szPOBB5nuzMdWs0rvF2gEPxf5wbh3T",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnkounjoined/v4/MCo_zBjx1d3VUhJFK9MYlNCXJ6VvqwGPz3szPOBB5nuzMdWs0rvF2gEPxf5wbh3T.ttf",
-		"weight": 400
+		displayName: "Noto Sans NKo Unjoined",
+		filename: "MCo_zBjx1d3VUhJFK9MYlNCXJ6VvqwGPz3szPOBB5nuzMdWs0rvF2gEPxf5wbh3T",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnkounjoined/v4/MCo_zBjx1d3VUhJFK9MYlNCXJ6VvqwGPz3szPOBB5nuzMdWs0rvF2gEPxf5wbh3T.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans New Tai Lue",
-		"filename": "H4cKBW-Pl9DZ0Xe_nHUapt7PovLXAhAnY7wqaLy-OJgU3p_pdeXAYUbghFPKzeY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnewtailue/v24/H4cKBW-Pl9DZ0Xe_nHUapt7PovLXAhAnY7wqaLy-OJgU3p_pdeXAYUbghFPKzeY.ttf",
-		"weight": 400
+		displayName: "Noto Sans New Tai Lue",
+		filename: "H4cKBW-Pl9DZ0Xe_nHUapt7PovLXAhAnY7wqaLy-OJgU3p_pdeXAYUbghFPKzeY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnewtailue/v24/H4cKBW-Pl9DZ0Xe_nHUapt7PovLXAhAnY7wqaLy-OJgU3p_pdeXAYUbghFPKzeY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Sankofa Display",
-		"filename": "Ktk1ALSRd4LucUDghJ2rTqXOoh33F6mZVY9Y5w",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/sankofadisplay/v2/Ktk1ALSRd4LucUDghJ2rTqXOoh33F6mZVY9Y5w.ttf",
-		"weight": 400
+		displayName: "Sankofa Display",
+		filename: "Ktk1ALSRd4LucUDghJ2rTqXOoh33F6mZVY9Y5w",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/sankofadisplay/v2/Ktk1ALSRd4LucUDghJ2rTqXOoh33F6mZVY9Y5w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans SignWriting",
-		"filename": "Noas6VX_wIWFbTTCrYmvy9A2UnkL-2SZAWiUEVCARYQemg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssignwriting/v5/Noas6VX_wIWFbTTCrYmvy9A2UnkL-2SZAWiUEVCARYQemg.ttf",
-		"weight": 400
+		displayName: "Noto Sans SignWriting",
+		filename: "Noas6VX_wIWFbTTCrYmvy9A2UnkL-2SZAWiUEVCARYQemg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssignwriting/v5/Noas6VX_wIWFbTTCrYmvy9A2UnkL-2SZAWiUEVCARYQemg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mro",
-		"filename": "qWcsB6--pZv9TqnUQMhe9b39WDzRtjkho4M",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmro/v19/qWcsB6--pZv9TqnUQMhe9b39WDzRtjkho4M.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mro",
+		filename: "qWcsB6--pZv9TqnUQMhe9b39WDzRtjkho4M",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmro/v19/qWcsB6--pZv9TqnUQMhe9b39WDzRtjkho4M.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Imperial Aramaic",
-		"filename": "a8IMNpjwKmHXpgXbMIsbTc_kvks91LlLetBr5itQrtdml3YfPNno",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansimperialaramaic/v18/a8IMNpjwKmHXpgXbMIsbTc_kvks91LlLetBr5itQrtdml3YfPNno.ttf",
-		"weight": 400
+		displayName: "Noto Sans Imperial Aramaic",
+		filename: "a8IMNpjwKmHXpgXbMIsbTc_kvks91LlLetBr5itQrtdml3YfPNno",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansimperialaramaic/v18/a8IMNpjwKmHXpgXbMIsbTc_kvks91LlLetBr5itQrtdml3YfPNno.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Grid Single Ink",
-		"filename": "NaN4epOEK_VIyYAuIaZn7FnUAOSVYeI0Ctm5-AxV__OGadlXPkpqc2W3G80KvDvfZJcTBZtOWSEifRuVdQ9MPZtUsYBBEK6cMpFmAx9Xgbn8m7Ha_CUon9Fm0PP1zM05Dnsuyw04ZGzhvlKxYNMYWI3t91IQXOwJRiUJVTErJ5YUW4O8LJCoXjD9tXQjarshNDUf3e0O5j3ZjrZCu23Qd4G0EACUTNK-QKavMlxGIY8dxef0jQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountgridsingleink/v2/NaN4epOEK_VIyYAuIaZn7FnUAOSVYeI0Ctm5-AxV__OGadlXPkpqc2W3G80KvDvfZJcTBZtOWSEifRuVdQ9MPZtUsYBBEK6cMpFmAx9Xgbn8m7Ha_CUon9Fm0PP1zM05Dnsuyw04ZGzhvlKxYNMYWI3t91IQXOwJRiUJVTErJ5YUW4O8LJCoXjD9tXQjarshNDUf3e0O5j3ZjrZCu23Qd4G0EACUTNK-QKavMlxGIY8dxef0jQ.ttf",
-		"weight": 400
+		displayName: "Bitcount Grid Single Ink",
+		filename:
+			"NaN4epOEK_VIyYAuIaZn7FnUAOSVYeI0Ctm5-AxV__OGadlXPkpqc2W3G80KvDvfZJcTBZtOWSEifRuVdQ9MPZtUsYBBEK6cMpFmAx9Xgbn8m7Ha_CUon9Fm0PP1zM05Dnsuyw04ZGzhvlKxYNMYWI3t91IQXOwJRiUJVTErJ5YUW4O8LJCoXjD9tXQjarshNDUf3e0O5j3ZjrZCu23Qd4G0EACUTNK-QKavMlxGIY8dxef0jQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountgridsingleink/v2/NaN4epOEK_VIyYAuIaZn7FnUAOSVYeI0Ctm5-AxV__OGadlXPkpqc2W3G80KvDvfZJcTBZtOWSEifRuVdQ9MPZtUsYBBEK6cMpFmAx9Xgbn8m7Ha_CUon9Fm0PP1zM05Dnsuyw04ZGzhvlKxYNMYWI3t91IQXOwJRiUJVTErJ5YUW4O8LJCoXjD9tXQjarshNDUf3e0O5j3ZjrZCu23Qd4G0EACUTNK-QKavMlxGIY8dxef0jQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kay Pho Du",
-		"filename": "jizfREFPvGNOx-jhPwHR4OmnLD0Z4zM",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/kayphodu/v2/jizfREFPvGNOx-jhPwHR4OmnLD0Z4zM.ttf",
-		"weight": 400
+		displayName: "Kay Pho Du",
+		filename: "jizfREFPvGNOx-jhPwHR4OmnLD0Z4zM",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/kayphodu/v2/jizfREFPvGNOx-jhPwHR4OmnLD0Z4zM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Sharada",
-		"filename": "gok0H7rwAEdtF9N8-mdTGALG6p0kwoXLPOwr4H8a",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssharada/v17/gok0H7rwAEdtF9N8-mdTGALG6p0kwoXLPOwr4H8a.ttf",
-		"weight": 400
+		displayName: "Noto Sans Sharada",
+		filename: "gok0H7rwAEdtF9N8-mdTGALG6p0kwoXLPOwr4H8a",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssharada/v17/gok0H7rwAEdtF9N8-mdTGALG6p0kwoXLPOwr4H8a.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacquard 24 Charted",
-		"filename": "mtGm4-dNK6HaudrE9VVKhENTsEXEYish0iRrMYJ_K-4",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquard24charted/v5/mtGm4-dNK6HaudrE9VVKhENTsEXEYish0iRrMYJ_K-4.ttf",
-		"weight": 400
+		displayName: "Jacquard 24 Charted",
+		filename: "mtGm4-dNK6HaudrE9VVKhENTsEXEYish0iRrMYJ_K-4",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquard24charted/v5/mtGm4-dNK6HaudrE9VVKhENTsEXEYish0iRrMYJ_K-4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Rejang",
-		"filename": "Ktk2AKuMeZjqPnXgyqrib7DIogqwN4O3WYZB_sU",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansrejang/v23/Ktk2AKuMeZjqPnXgyqrib7DIogqwN4O3WYZB_sU.ttf",
-		"weight": 400
+		displayName: "Noto Sans Rejang",
+		filename: "Ktk2AKuMeZjqPnXgyqrib7DIogqwN4O3WYZB_sU",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansrejang/v23/Ktk2AKuMeZjqPnXgyqrib7DIogqwN4O3WYZB_sU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 15 Charted",
-		"filename": "nuFjD-rCQIjoVp1Sva2ToCTudGbLeRv4r2024gxi",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey15charted/v4/nuFjD-rCQIjoVp1Sva2ToCTudGbLeRv4r2024gxi.ttf",
-		"weight": 400
+		displayName: "Jersey 15 Charted",
+		filename: "nuFjD-rCQIjoVp1Sva2ToCTudGbLeRv4r2024gxi",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey15charted/v4/nuFjD-rCQIjoVp1Sva2ToCTudGbLeRv4r2024gxi.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Pochaevsk",
-		"filename": "55xuey9_OdX_Om7ReYgloJd4-bnQKg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/pochaevsk/v5/55xuey9_OdX_Om7ReYgloJd4-bnQKg.ttf",
-		"weight": 400
+		displayName: "Pochaevsk",
+		filename: "55xuey9_OdX_Om7ReYgloJd4-bnQKg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/pochaevsk/v5/55xuey9_OdX_Om7ReYgloJd4-bnQKg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Kawi",
-		"filename": "92zBtBJLNqsg7tCciW0EPHNNh1ZgbtGWiTYDjvnK4AhmCpRyMjXVsQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskawi/v5/92zBtBJLNqsg7tCciW0EPHNNh1ZgbtGWiTYDjvnK4AhmCpRyMjXVsQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Kawi",
+		filename: "92zBtBJLNqsg7tCciW0EPHNNh1ZgbtGWiTYDjvnK4AhmCpRyMjXVsQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskawi/v5/92zBtBJLNqsg7tCciW0EPHNNh1ZgbtGWiTYDjvnK4AhmCpRyMjXVsQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tamil Supplement",
-		"filename": "DdTz78kEtnooLS5rXF1DaruiCd_bFp_Ph4sGcn7ax_vsAeMkeq1x",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstamilsupplement/v23/DdTz78kEtnooLS5rXF1DaruiCd_bFp_Ph4sGcn7ax_vsAeMkeq1x.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tamil Supplement",
+		filename: "DdTz78kEtnooLS5rXF1DaruiCd_bFp_Ph4sGcn7ax_vsAeMkeq1x",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstamilsupplement/v23/DdTz78kEtnooLS5rXF1DaruiCd_bFp_Ph4sGcn7ax_vsAeMkeq1x.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Pahawh Hmong",
-		"filename": "bWtp7e_KfBziStx7lIzKKaMUOBEA3UPQDW7krzc_c48aMpM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanspahawhhmong/v19/bWtp7e_KfBziStx7lIzKKaMUOBEA3UPQDW7krzc_c48aMpM.ttf",
-		"weight": 400
+		displayName: "Noto Sans Pahawh Hmong",
+		filename: "bWtp7e_KfBziStx7lIzKKaMUOBEA3UPQDW7krzc_c48aMpM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanspahawhhmong/v19/bWtp7e_KfBziStx7lIzKKaMUOBEA3UPQDW7krzc_c48aMpM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Lydian",
-		"filename": "c4m71mVzGN7s8FmIukZJ1v4ZlcPReUPXMoIjEQI",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslydian/v19/c4m71mVzGN7s8FmIukZJ1v4ZlcPReUPXMoIjEQI.ttf",
-		"weight": 400
+		displayName: "Noto Sans Lydian",
+		filename: "c4m71mVzGN7s8FmIukZJ1v4ZlcPReUPXMoIjEQI",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslydian/v19/c4m71mVzGN7s8FmIukZJ1v4ZlcPReUPXMoIjEQI.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old South Arabian",
-		"filename": "3qT5oiOhnSyU8TNFIdhZTice3hB_HWKsEnF--0XCHiKx1OtDT9HwTA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldsoutharabian/v17/3qT5oiOhnSyU8TNFIdhZTice3hB_HWKsEnF--0XCHiKx1OtDT9HwTA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old South Arabian",
+		filename: "3qT5oiOhnSyU8TNFIdhZTice3hB_HWKsEnF--0XCHiKx1OtDT9HwTA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldsoutharabian/v17/3qT5oiOhnSyU8TNFIdhZTice3hB_HWKsEnF--0XCHiKx1OtDT9HwTA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CO Guides",
-		"filename": "AYCXpWvtftIVXepC5AzjAx1KgYPugOK0TqxTJw_GOM0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritecoguides/v5/AYCXpWvtftIVXepC5AzjAx1KgYPugOK0TqxTJw_GOM0.ttf",
-		"weight": 400
+		displayName: "Playwrite CO Guides",
+		filename: "AYCXpWvtftIVXepC5AzjAx1KgYPugOK0TqxTJw_GOM0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritecoguides/v5/AYCXpWvtftIVXepC5AzjAx1KgYPugOK0TqxTJw_GOM0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Elymaic",
-		"filename": "UqyKK9YTJW5liNMhTMqe9vUFP65ZD4AjWOT0zi2V",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanselymaic/v18/UqyKK9YTJW5liNMhTMqe9vUFP65ZD4AjWOT0zi2V.ttf",
-		"weight": 400
+		displayName: "Noto Sans Elymaic",
+		filename: "UqyKK9YTJW5liNMhTMqe9vUFP65ZD4AjWOT0zi2V",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanselymaic/v18/UqyKK9YTJW5liNMhTMqe9vUFP65ZD4AjWOT0zi2V.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Kanchenjunga",
-		"filename": "RWmPoKKd5fUmrILiWsjCI6TiqYsGBGBzCw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/kanchenjunga/v2/RWmPoKKd5fUmrILiWsjCI6TiqYsGBGBzCw.ttf",
-		"weight": 400
+		displayName: "Kanchenjunga",
+		filename: "RWmPoKKd5fUmrILiWsjCI6TiqYsGBGBzCw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/kanchenjunga/v2/RWmPoKKd5fUmrILiWsjCI6TiqYsGBGBzCw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Sunuwar",
-		"filename": "FwZB7_04xUkosG2xJo2gm7nF0DTfho_Du2akOrkv",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssunuwar/v1/FwZB7_04xUkosG2xJo2gm7nF0DTfho_Du2akOrkv.ttf",
-		"weight": 400
+		displayName: "Noto Sans Sunuwar",
+		filename: "FwZB7_04xUkosG2xJo2gm7nF0DTfho_Du2akOrkv",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssunuwar/v1/FwZB7_04xUkosG2xJo2gm7nF0DTfho_Du2akOrkv.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IE",
-		"filename": "fC1zPYtWYWnH0hvndYd6GCGWXCAxfsUebXFMyzioBpIu30AZbUY",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteie/v11/fC1zPYtWYWnH0hvndYd6GCGWXCAxfsUebXFMyzioBpIu30AZbUY.ttf",
-		"weight": 400
+		displayName: "Playwrite IE",
+		filename: "fC1zPYtWYWnH0hvndYd6GCGWXCAxfsUebXFMyzioBpIu30AZbUY",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteie/v11/fC1zPYtWYWnH0hvndYd6GCGWXCAxfsUebXFMyzioBpIu30AZbUY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Runic",
-		"filename": "H4c_BXWPl9DZ0Xe_nHUaus7W68WWaxpvHtgIYg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansrunic/v18/H4c_BXWPl9DZ0Xe_nHUaus7W68WWaxpvHtgIYg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Runic",
+		filename: "H4c_BXWPl9DZ0Xe_nHUaus7W68WWaxpvHtgIYg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansrunic/v18/H4c_BXWPl9DZ0Xe_nHUaus7W68WWaxpvHtgIYg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Inscriptional Pahlavi",
-		"filename": "ll8UK3GaVDuxR-TEqFPIbsR79Xxz9WEKbwsjpz7VklYlC7FCVtqVOAYK0QA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansinscriptionalpahlavi/v18/ll8UK3GaVDuxR-TEqFPIbsR79Xxz9WEKbwsjpz7VklYlC7FCVtqVOAYK0QA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Inscriptional Pahlavi",
+		filename: "ll8UK3GaVDuxR-TEqFPIbsR79Xxz9WEKbwsjpz7VklYlC7FCVtqVOAYK0QA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansinscriptionalpahlavi/v18/ll8UK3GaVDuxR-TEqFPIbsR79Xxz9WEKbwsjpz7VklYlC7FCVtqVOAYK0QA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans NKo",
-		"filename": "esDX31ZdNv-KYGGJpKGk2_RpMpCMHMLBrdA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnko/v7/esDX31ZdNv-KYGGJpKGk2_RpMpCMHMLBrdA.ttf",
-		"weight": 400
+		displayName: "Noto Sans NKo",
+		filename: "esDX31ZdNv-KYGGJpKGk2_RpMpCMHMLBrdA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnko/v7/esDX31ZdNv-KYGGJpKGk2_RpMpCMHMLBrdA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE Grund Guides",
-		"filename": "OD5RuNCQ02KrAHnha1L36CWcQ83dtK5BLxqexnduX98TJlnjHAA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedegrundguides/v1/OD5RuNCQ02KrAHnha1L36CWcQ83dtK5BLxqexnduX98TJlnjHAA.ttf",
-		"weight": 400
+		displayName: "Playwrite DE Grund Guides",
+		filename: "OD5RuNCQ02KrAHnha1L36CWcQ83dtK5BLxqexnduX98TJlnjHAA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedegrundguides/v1/OD5RuNCQ02KrAHnha1L36CWcQ83dtK5BLxqexnduX98TJlnjHAA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite TZ",
-		"filename": "RLptK5rs6au7bzABmVQAOwnUbvHMbzSUU27JDWwTue1COwjVROo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritetz/v11/RLptK5rs6au7bzABmVQAOwnUbvHMbzSUU27JDWwTue1COwjVROo.ttf",
-		"weight": 400
+		displayName: "Playwrite TZ",
+		filename: "RLptK5rs6au7bzABmVQAOwnUbvHMbzSUU27JDWwTue1COwjVROo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritetz/v11/RLptK5rs6au7bzABmVQAOwnUbvHMbzSUU27JDWwTue1COwjVROo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old Permic",
-		"filename": "snf1s1q1-dF8pli1TesqcbUY4Mr-ElrwKLdXgv_dKYB5",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldpermic/v18/snf1s1q1-dF8pli1TesqcbUY4Mr-ElrwKLdXgv_dKYB5.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old Permic",
+		filename: "snf1s1q1-dF8pli1TesqcbUY4Mr-ElrwKLdXgv_dKYB5",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldpermic/v18/snf1s1q1-dF8pli1TesqcbUY4Mr-ElrwKLdXgv_dKYB5.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite SK",
-		"filename": "9XU3lJp0klrZDw3AZHcsJTByz7latrF9yDIlf-2cvsOzdK9OF68",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritesk/v10/9XU3lJp0klrZDw3AZHcsJTByz7latrF9yDIlf-2cvsOzdK9OF68.ttf",
-		"weight": 400
+		displayName: "Playwrite SK",
+		filename: "9XU3lJp0klrZDw3AZHcsJTByz7latrF9yDIlf-2cvsOzdK9OF68",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritesk/v10/9XU3lJp0klrZDw3AZHcsJTByz7latrF9yDIlf-2cvsOzdK9OF68.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mayan Numerals",
-		"filename": "PlIuFk25O6RzLfvNNVSivR09_KqYMwvvDKYjfIiE68oo6eepYQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmayannumerals/v17/PlIuFk25O6RzLfvNNVSivR09_KqYMwvvDKYjfIiE68oo6eepYQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mayan Numerals",
+		filename: "PlIuFk25O6RzLfvNNVSivR09_KqYMwvvDKYjfIiE68oo6eepYQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmayannumerals/v17/PlIuFk25O6RzLfvNNVSivR09_KqYMwvvDKYjfIiE68oo6eepYQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Buginese",
-		"filename": "esDM30ldNv-KYGGJpKGk18phe_7Da6_gtfuEXLmNtw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbuginese/v19/esDM30ldNv-KYGGJpKGk18phe_7Da6_gtfuEXLmNtw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Buginese",
+		filename: "esDM30ldNv-KYGGJpKGk18phe_7Da6_gtfuEXLmNtw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbuginese/v19/esDM30ldNv-KYGGJpKGk18phe_7Da6_gtfuEXLmNtw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Karla Tamil Inclined",
-		"filename": "vm8pdQ3vXFXZ1aPd8dNzR82AFh2TibkaVrcbvZPxCDLR",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/karlatamilinclined/v2/vm8pdQ3vXFXZ1aPd8dNzR82AFh2TibkaVrcbvZPxCDLR.ttf",
-		"weight": 400
+		displayName: "Karla Tamil Inclined",
+		filename: "vm8pdQ3vXFXZ1aPd8dNzR82AFh2TibkaVrcbvZPxCDLR",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/karlatamilinclined/v2/vm8pdQ3vXFXZ1aPd8dNzR82AFh2TibkaVrcbvZPxCDLR.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Linear B",
-		"filename": "HhyJU4wt9vSgfHoORYOiXOckKNB737IV3BkFTq4EPw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslinearb/v18/HhyJU4wt9vSgfHoORYOiXOckKNB737IV3BkFTq4EPw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Linear B",
+		filename: "HhyJU4wt9vSgfHoORYOiXOckKNB737IV3BkFTq4EPw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslinearb/v18/HhyJU4wt9vSgfHoORYOiXOckKNB737IV3BkFTq4EPw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 25 Charted",
-		"filename": "6NUM8EWHIhCWbxOqtLkv94Rlu6EkGv2uUGQW93Cg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey25charted/v3/6NUM8EWHIhCWbxOqtLkv94Rlu6EkGv2uUGQW93Cg.ttf",
-		"weight": 400
+		displayName: "Jersey 25 Charted",
+		filename: "6NUM8EWHIhCWbxOqtLkv94Rlu6EkGv2uUGQW93Cg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey25charted/v3/6NUM8EWHIhCWbxOqtLkv94Rlu6EkGv2uUGQW93Cg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Chakma",
-		"filename": "Y4GQYbJ8VTEp4t3MKJSMjg5OIzhi4JjTQhYBeYo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanschakma/v18/Y4GQYbJ8VTEp4t3MKJSMjg5OIzhi4JjTQhYBeYo.ttf",
-		"weight": 400
+		displayName: "Noto Sans Chakma",
+		filename: "Y4GQYbJ8VTEp4t3MKJSMjg5OIzhi4JjTQhYBeYo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanschakma/v18/Y4GQYbJ8VTEp4t3MKJSMjg5OIzhi4JjTQhYBeYo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Masaram Gondi",
-		"filename": "6xK_dThFKcWIu4bpRBjRYRV7KZCbUq6n_1kPnuGe7RI9WSWX",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmasaramgondi/v18/6xK_dThFKcWIu4bpRBjRYRV7KZCbUq6n_1kPnuGe7RI9WSWX.ttf",
-		"weight": 400
+		displayName: "Noto Sans Masaram Gondi",
+		filename: "6xK_dThFKcWIu4bpRBjRYRV7KZCbUq6n_1kPnuGe7RI9WSWX",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmasaramgondi/v18/6xK_dThFKcWIu4bpRBjRYRV7KZCbUq6n_1kPnuGe7RI9WSWX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Kaithi",
-		"filename": "buEtppS9f8_vkXadMBJJu0tWjLwjQi0KdoZIKlo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskaithi/v23/buEtppS9f8_vkXadMBJJu0tWjLwjQi0KdoZIKlo.ttf",
-		"weight": 400
+		displayName: "Noto Sans Kaithi",
+		filename: "buEtppS9f8_vkXadMBJJu0tWjLwjQi0KdoZIKlo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskaithi/v23/buEtppS9f8_vkXadMBJJu0tWjLwjQi0KdoZIKlo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Modi",
-		"filename": "pe03MIySN5pO62Z5YkFyT7jeav5qWVAgVol-",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmodi/v25/pe03MIySN5pO62Z5YkFyT7jeav5qWVAgVol-.ttf",
-		"weight": 400
+		displayName: "Noto Sans Modi",
+		filename: "pe03MIySN5pO62Z5YkFyT7jeav5qWVAgVol-",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmodi/v25/pe03MIySN5pO62Z5YkFyT7jeav5qWVAgVol-.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Nabataean",
-		"filename": "IFS4HfVJndhE3P4b5jnZ34DfsjO330dNoBJ9hK8kMK4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnabataean/v17/IFS4HfVJndhE3P4b5jnZ34DfsjO330dNoBJ9hK8kMK4.ttf",
-		"weight": 400
+		displayName: "Noto Sans Nabataean",
+		filename: "IFS4HfVJndhE3P4b5jnZ34DfsjO330dNoBJ9hK8kMK4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnabataean/v17/IFS4HfVJndhE3P4b5jnZ34DfsjO330dNoBJ9hK8kMK4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Caucasian Albanian",
-		"filename": "nKKA-HM_FYFRJvXzVXaANsU0VzsAc46QGOkWytlTs-TXrYDmoVmRSZo",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanscaucasianalbanian/v19/nKKA-HM_FYFRJvXzVXaANsU0VzsAc46QGOkWytlTs-TXrYDmoVmRSZo.ttf",
-		"weight": 400
+		displayName: "Noto Sans Caucasian Albanian",
+		filename: "nKKA-HM_FYFRJvXzVXaANsU0VzsAc46QGOkWytlTs-TXrYDmoVmRSZo",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanscaucasianalbanian/v19/nKKA-HM_FYFRJvXzVXaANsU0VzsAc46QGOkWytlTs-TXrYDmoVmRSZo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Ink",
-		"filename": "CHw3XOqbPlXqZygxqACCMDRlDHEsWMeZ-ply2TQhrGdTTV70MvuSq-hd_83nDPWRtOLnAR0RGYwUI6_l53HbUsPlZt2f_nGD_DNHtMCB7B9hQwZ0b5o6F6iN-beb4rZZL0lJiDukrkTdyFcJaMYOfDmhx95p-j2BlGfR752-BOzpyNMOV-otpEi0LP8lkm2L_v1iV4b0vZlRFNojp-LpjyYCL3BeDtAVdA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountink/v2/CHw3XOqbPlXqZygxqACCMDRlDHEsWMeZ-ply2TQhrGdTTV70MvuSq-hd_83nDPWRtOLnAR0RGYwUI6_l53HbUsPlZt2f_nGD_DNHtMCB7B9hQwZ0b5o6F6iN-beb4rZZL0lJiDukrkTdyFcJaMYOfDmhx95p-j2BlGfR752-BOzpyNMOV-otpEi0LP8lkm2L_v1iV4b0vZlRFNojp-LpjyYCL3BeDtAVdA.ttf",
-		"weight": 400
+		displayName: "Bitcount Ink",
+		filename:
+			"CHw3XOqbPlXqZygxqACCMDRlDHEsWMeZ-ply2TQhrGdTTV70MvuSq-hd_83nDPWRtOLnAR0RGYwUI6_l53HbUsPlZt2f_nGD_DNHtMCB7B9hQwZ0b5o6F6iN-beb4rZZL0lJiDukrkTdyFcJaMYOfDmhx95p-j2BlGfR752-BOzpyNMOV-otpEi0LP8lkm2L_v1iV4b0vZlRFNojp-LpjyYCL3BeDtAVdA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountink/v2/CHw3XOqbPlXqZygxqACCMDRlDHEsWMeZ-ply2TQhrGdTTV70MvuSq-hd_83nDPWRtOLnAR0RGYwUI6_l53HbUsPlZt2f_nGD_DNHtMCB7B9hQwZ0b5o6F6iN-beb4rZZL0lJiDukrkTdyFcJaMYOfDmhx95p-j2BlGfR752-BOzpyNMOV-otpEi0LP8lkm2L_v1iV4b0vZlRFNojp-LpjyYCL3BeDtAVdA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Limbu",
-		"filename": "3JnlSDv90Gmq2mrzckOBBRRoNJVj0MF3OHRDnA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslimbu/v26/3JnlSDv90Gmq2mrzckOBBRRoNJVj0MF3OHRDnA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Limbu",
+		filename: "3JnlSDv90Gmq2mrzckOBBRRoNJVj0MF3OHRDnA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslimbu/v26/3JnlSDv90Gmq2mrzckOBBRRoNJVj0MF3OHRDnA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Hatran",
-		"filename": "A2BBn4Ne0RgnVF3Lnko-0sOBIfL_mM83r1nwzDs",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanshatran/v17/A2BBn4Ne0RgnVF3Lnko-0sOBIfL_mM83r1nwzDs.ttf",
-		"weight": 400
+		displayName: "Noto Sans Hatran",
+		filename: "A2BBn4Ne0RgnVF3Lnko-0sOBIfL_mM83r1nwzDs",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanshatran/v17/A2BBn4Ne0RgnVF3Lnko-0sOBIfL_mM83r1nwzDs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Micro 5 Charted",
-		"filename": "hESp6XxmPDtTtADZhn7oD_yrmxEGRUsJQAlbUA",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/micro5charted/v2/hESp6XxmPDtTtADZhn7oD_yrmxEGRUsJQAlbUA.ttf",
-		"weight": 400
+		displayName: "Micro 5 Charted",
+		filename: "hESp6XxmPDtTtADZhn7oD_yrmxEGRUsJQAlbUA",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/micro5charted/v2/hESp6XxmPDtTtADZhn7oD_yrmxEGRUsJQAlbUA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Prop Double",
-		"filename": "K2EvfY5Wn-tBSVxaDL6DUOXQJ26dEAnh698zMFjGZaPCtbJHl1TFmDKfGe4_bKUh3sC1Q7DxZ5-3PQRHsSZEX9ctiFN1ZosZvKyl3LzeFmQvK5hIm0nBWck4Kx91m1YFsiM",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountpropdouble/v3/K2EvfY5Wn-tBSVxaDL6DUOXQJ26dEAnh698zMFjGZaPCtbJHl1TFmDKfGe4_bKUh3sC1Q7DxZ5-3PQRHsSZEX9ctiFN1ZosZvKyl3LzeFmQvK5hIm0nBWck4Kx91m1YFsiM.ttf",
-		"weight": 400
+		displayName: "Bitcount Prop Double",
+		filename: "K2EvfY5Wn-tBSVxaDL6DUOXQJ26dEAnh698zMFjGZaPCtbJHl1TFmDKfGe4_bKUh3sC1Q7DxZ5-3PQRHsSZEX9ctiFN1ZosZvKyl3LzeFmQvK5hIm0nBWck4Kx91m1YFsiM",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountpropdouble/v3/K2EvfY5Wn-tBSVxaDL6DUOXQJ26dEAnh698zMFjGZaPCtbJHl1TFmDKfGe4_bKUh3sC1Q7DxZ5-3PQRHsSZEX9ctiFN1ZosZvKyl3LzeFmQvK5hIm0nBWck4Kx91m1YFsiM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Saurashtra",
-		"filename": "ea8GacQ0Wfz_XKWXe6OtoA8w8zvmYwTef9ndjhPTSIx9",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssaurashtra/v24/ea8GacQ0Wfz_XKWXe6OtoA8w8zvmYwTef9ndjhPTSIx9.ttf",
-		"weight": 400
+		displayName: "Noto Sans Saurashtra",
+		filename: "ea8GacQ0Wfz_XKWXe6OtoA8w8zvmYwTef9ndjhPTSIx9",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssaurashtra/v24/ea8GacQ0Wfz_XKWXe6OtoA8w8zvmYwTef9ndjhPTSIx9.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Ugaritic",
-		"filename": "3qTwoiqhnSyU8TNFIdhZVCwbjCpkAXXkMhoIkiazfg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansugaritic/v17/3qTwoiqhnSyU8TNFIdhZVCwbjCpkAXXkMhoIkiazfg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Ugaritic",
+		filename: "3qTwoiqhnSyU8TNFIdhZVCwbjCpkAXXkMhoIkiazfg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansugaritic/v17/3qTwoiqhnSyU8TNFIdhZVCwbjCpkAXXkMhoIkiazfg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE VA",
-		"filename": "VuJmdNPb2p7tvoFGLMPdeMxGN1pntEMhdK1XfsTyRSySv24jGyvutu4",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedeva/v11/VuJmdNPb2p7tvoFGLMPdeMxGN1pntEMhdK1XfsTyRSySv24jGyvutu4.ttf",
-		"weight": 400
+		displayName: "Playwrite DE VA",
+		filename: "VuJmdNPb2p7tvoFGLMPdeMxGN1pntEMhdK1XfsTyRSySv24jGyvutu4",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedeva/v11/VuJmdNPb2p7tvoFGLMPdeMxGN1pntEMhdK1XfsTyRSySv24jGyvutu4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IT Trad",
-		"filename": "SlG5mR6Yo5oYZX5BFVcEySBSPE50BjHDpZxuvgxzFq96u-6_gENNXvzL2Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteittrad/v11/SlG5mR6Yo5oYZX5BFVcEySBSPE50BjHDpZxuvgxzFq96u-6_gENNXvzL2Q.ttf",
-		"weight": 400
+		displayName: "Playwrite IT Trad",
+		filename: "SlG5mR6Yo5oYZX5BFVcEySBSPE50BjHDpZxuvgxzFq96u-6_gENNXvzL2Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteittrad/v11/SlG5mR6Yo5oYZX5BFVcEySBSPE50BjHDpZxuvgxzFq96u-6_gENNXvzL2Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jersey 10 Charted",
-		"filename": "oY1E8fPFr6XiNWqEp90XSbwUGfF8SnedKmeBvEYs",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jersey10charted/v4/oY1E8fPFr6XiNWqEp90XSbwUGfF8SnedKmeBvEYs.ttf",
-		"weight": 400
+		displayName: "Jersey 10 Charted",
+		filename: "oY1E8fPFr6XiNWqEp90XSbwUGfF8SnedKmeBvEYs",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jersey10charted/v4/oY1E8fPFr6XiNWqEp90XSbwUGfF8SnedKmeBvEYs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Hanifi Rohingya",
-		"filename": "5h17iYsoOmIC3Yu3MDXLDw3UZCgghyOEBBY7hhLNyo3tiaiuSIAqrIYY4j6vvcudK8rN",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanshanifirohingya/v30/5h17iYsoOmIC3Yu3MDXLDw3UZCgghyOEBBY7hhLNyo3tiaiuSIAqrIYY4j6vvcudK8rN.ttf",
-		"weight": 400
+		displayName: "Noto Sans Hanifi Rohingya",
+		filename: "5h17iYsoOmIC3Yu3MDXLDw3UZCgghyOEBBY7hhLNyo3tiaiuSIAqrIYY4j6vvcudK8rN",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanshanifirohingya/v30/5h17iYsoOmIC3Yu3MDXLDw3UZCgghyOEBBY7hhLNyo3tiaiuSIAqrIYY4j6vvcudK8rN.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yuji Hentaigana Akebono",
-		"filename": "EJRGQhkhRNwM-RtitGUwh930GU_f5KAlkuL0wQy9NKXRzrrF",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/yujihentaiganaakebono/v15/EJRGQhkhRNwM-RtitGUwh930GU_f5KAlkuL0wQy9NKXRzrrF.ttf",
-		"weight": 400
+		displayName: "Yuji Hentaigana Akebono",
+		filename: "EJRGQhkhRNwM-RtitGUwh930GU_f5KAlkuL0wQy9NKXRzrrF",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/yujihentaiganaakebono/v15/EJRGQhkhRNwM-RtitGUwh930GU_f5KAlkuL0wQy9NKXRzrrF.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Grantha",
-		"filename": "3y976akwcCjmsU8NDyrKo3IQfQ4o-r8cFeulHc6N",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansgrantha/v20/3y976akwcCjmsU8NDyrKo3IQfQ4o-r8cFeulHc6N.ttf",
-		"weight": 400
+		displayName: "Noto Sans Grantha",
+		filename: "3y976akwcCjmsU8NDyrKo3IQfQ4o-r8cFeulHc6N",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansgrantha/v20/3y976akwcCjmsU8NDyrKo3IQfQ4o-r8cFeulHc6N.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yarndings 20",
-		"filename": "TuGWUVlkUohEQu8l7K8b-vNFB380PMTK1w",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yarndings20/v4/TuGWUVlkUohEQu8l7K8b-vNFB380PMTK1w.ttf",
-		"weight": 400
+		displayName: "Yarndings 20",
+		filename: "TuGWUVlkUohEQu8l7K8b-vNFB380PMTK1w",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yarndings20/v4/TuGWUVlkUohEQu8l7K8b-vNFB380PMTK1w.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite PL Guides",
-		"filename": "jVyW7m_lCm7G5CZyQCAu8mgkGLk-kmibWR3aRZ2Kw7A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteplguides/v1/jVyW7m_lCm7G5CZyQCAu8mgkGLk-kmibWR3aRZ2Kw7A.ttf",
-		"weight": 400
+		displayName: "Playwrite PL Guides",
+		filename: "jVyW7m_lCm7G5CZyQCAu8mgkGLk-kmibWR3aRZ2Kw7A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteplguides/v1/jVyW7m_lCm7G5CZyQCAu8mgkGLk-kmibWR3aRZ2Kw7A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Psalter Pahlavi",
-		"filename": "rP2Vp3K65FkAtHfwd-eISGznYihzggmsicPfud3w1G3KsUQBct4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanspsalterpahlavi/v18/rP2Vp3K65FkAtHfwd-eISGznYihzggmsicPfud3w1G3KsUQBct4.ttf",
-		"weight": 400
+		displayName: "Noto Sans Psalter Pahlavi",
+		filename: "rP2Vp3K65FkAtHfwd-eISGznYihzggmsicPfud3w1G3KsUQBct4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanspsalterpahlavi/v18/rP2Vp3K65FkAtHfwd-eISGznYihzggmsicPfud3w1G3KsUQBct4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NZ Guides",
-		"filename": "t5t8IQQPN4uFDRepJwiX4vzIikyGzv71Wh8xq25PL5k",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritenzguides/v1/t5t8IQQPN4uFDRepJwiX4vzIikyGzv71Wh8xq25PL5k.ttf",
-		"weight": 400
+		displayName: "Playwrite NZ Guides",
+		filename: "t5t8IQQPN4uFDRepJwiX4vzIikyGzv71Wh8xq25PL5k",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritenzguides/v1/t5t8IQQPN4uFDRepJwiX4vzIikyGzv71Wh8xq25PL5k.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite BR",
-		"filename": "kJEhBuMK4Q07lDHc2Xp9vYgIp-6D3QEGCpthmFOPFsfjAOVZBgs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritebr/v11/kJEhBuMK4Q07lDHc2Xp9vYgIp-6D3QEGCpthmFOPFsfjAOVZBgs.ttf",
-		"weight": 400
+		displayName: "Playwrite BR",
+		filename: "kJEhBuMK4Q07lDHc2Xp9vYgIp-6D3QEGCpthmFOPFsfjAOVZBgs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritebr/v11/kJEhBuMK4Q07lDHc2Xp9vYgIp-6D3QEGCpthmFOPFsfjAOVZBgs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yarndings 12",
-		"filename": "55xreyp2N8T5P2LJbZAlkY9c8ZLMI2VUnQ",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yarndings12/v4/55xreyp2N8T5P2LJbZAlkY9c8ZLMI2VUnQ.ttf",
-		"weight": 400
+		displayName: "Yarndings 12",
+		filename: "55xreyp2N8T5P2LJbZAlkY9c8ZLMI2VUnQ",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yarndings12/v4/55xreyp2N8T5P2LJbZAlkY9c8ZLMI2VUnQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite PT Guides",
-		"filename": "sJoY3K5JjdGLJV3vyatrMkupgg-kWTx5F5k90TZO69o",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteptguides/v2/sJoY3K5JjdGLJV3vyatrMkupgg-kWTx5F5k90TZO69o.ttf",
-		"weight": 400
+		displayName: "Playwrite PT Guides",
+		filename: "sJoY3K5JjdGLJV3vyatrMkupgg-kWTx5F5k90TZO69o",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteptguides/v2/sJoY3K5JjdGLJV3vyatrMkupgg-kWTx5F5k90TZO69o.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Bassa Vah",
-		"filename": "PN_bRee-r3f7LnqsD5sax12gjZn7mBpL5YwUpA2MBdcFn4MaAc6p34gH-GD7",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansbassavah/v21/PN_bRee-r3f7LnqsD5sax12gjZn7mBpL5YwUpA2MBdcFn4MaAc6p34gH-GD7.ttf",
-		"weight": 400
+		displayName: "Noto Sans Bassa Vah",
+		filename: "PN_bRee-r3f7LnqsD5sax12gjZn7mBpL5YwUpA2MBdcFn4MaAc6p34gH-GD7",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansbassavah/v21/PN_bRee-r3f7LnqsD5sax12gjZn7mBpL5YwUpA2MBdcFn4MaAc6p34gH-GD7.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Bitcount Grid Double Ink",
-		"filename": "55zMcCw3FN_jOGTSZJcl588VlZiMRBEu8MNfAa1hTmcIC-EgZzYwMlaO_awRPudtyc3Y6uQYyaHkeKGSq8TU4RVR7xpYN_MnWZejEGOGrT-NcapoFhvUOhVjLNJ2XCLrbMxtAR6SYY1mL-OvDnjOVsnRj34-p6VMvv549Lg7J4HRX7TqUxwskRMxVR7_3L-QRhDtbv8kM-EDNmBQr1-hsC1tMPJC0vkO2JhzR0_bFhBRdj-elg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/bitcountgriddoubleink/v2/55zMcCw3FN_jOGTSZJcl588VlZiMRBEu8MNfAa1hTmcIC-EgZzYwMlaO_awRPudtyc3Y6uQYyaHkeKGSq8TU4RVR7xpYN_MnWZejEGOGrT-NcapoFhvUOhVjLNJ2XCLrbMxtAR6SYY1mL-OvDnjOVsnRj34-p6VMvv549Lg7J4HRX7TqUxwskRMxVR7_3L-QRhDtbv8kM-EDNmBQr1-hsC1tMPJC0vkO2JhzR0_bFhBRdj-elg.ttf",
-		"weight": 400
+		displayName: "Bitcount Grid Double Ink",
+		filename:
+			"55zMcCw3FN_jOGTSZJcl588VlZiMRBEu8MNfAa1hTmcIC-EgZzYwMlaO_awRPudtyc3Y6uQYyaHkeKGSq8TU4RVR7xpYN_MnWZejEGOGrT-NcapoFhvUOhVjLNJ2XCLrbMxtAR6SYY1mL-OvDnjOVsnRj34-p6VMvv549Lg7J4HRX7TqUxwskRMxVR7_3L-QRhDtbv8kM-EDNmBQr1-hsC1tMPJC0vkO2JhzR0_bFhBRdj-elg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/bitcountgriddoubleink/v2/55zMcCw3FN_jOGTSZJcl588VlZiMRBEu8MNfAa1hTmcIC-EgZzYwMlaO_awRPudtyc3Y6uQYyaHkeKGSq8TU4RVR7xpYN_MnWZejEGOGrT-NcapoFhvUOhVjLNJ2XCLrbMxtAR6SYY1mL-OvDnjOVsnRj34-p6VMvv549Lg7J4HRX7TqUxwskRMxVR7_3L-QRhDtbv8kM-EDNmBQr1-hsC1tMPJC0vkO2JhzR0_bFhBRdj-elg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old Turkic",
-		"filename": "yMJNMJVya43H0SUF_WmcGEQVqoEMKDKbsE2RjEw-Vyws",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldturkic/v19/yMJNMJVya43H0SUF_WmcGEQVqoEMKDKbsE2RjEw-Vyws.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old Turkic",
+		filename: "yMJNMJVya43H0SUF_WmcGEQVqoEMKDKbsE2RjEw-Vyws",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldturkic/v19/yMJNMJVya43H0SUF_WmcGEQVqoEMKDKbsE2RjEw-Vyws.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mandaic",
-		"filename": "cIfnMbdWt1w_HgCcilqhKQBo_OsMI5_A_gMk0izH",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmandaic/v18/cIfnMbdWt1w_HgCcilqhKQBo_OsMI5_A_gMk0izH.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mandaic",
+		filename: "cIfnMbdWt1w_HgCcilqhKQBo_OsMI5_A_gMk0izH",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmandaic/v18/cIfnMbdWt1w_HgCcilqhKQBo_OsMI5_A_gMk0izH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Nushu",
-		"filename": "rnCw-xRQ3B7652emAbAe_Ai1IYaFWFAMArZKqQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansnushu/v20/rnCw-xRQ3B7652emAbAe_Ai1IYaFWFAMArZKqQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Nushu",
+		filename: "rnCw-xRQ3B7652emAbAe_Ai1IYaFWFAMArZKqQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansnushu/v20/rnCw-xRQ3B7652emAbAe_Ai1IYaFWFAMArZKqQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Tirhuta",
-		"filename": "t5t6IQYRNJ6TWjahPR6X-M-apUyby7uGUBsTrn5P",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanstirhuta/v17/t5t6IQYRNJ6TWjahPR6X-M-apUyby7uGUBsTrn5P.ttf",
-		"weight": 400
+		displayName: "Noto Sans Tirhuta",
+		filename: "t5t6IQYRNJ6TWjahPR6X-M-apUyby7uGUBsTrn5P",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanstirhuta/v17/t5t6IQYRNJ6TWjahPR6X-M-apUyby7uGUBsTrn5P.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Serif Dives Akuru",
-		"filename": "QldfNSVMqAsHtsJ_TnD3aT03sMgd57ibeeZT60DIyoV9Ejs",
-		"category": "serif",
-		"url": "https://fonts.gstatic.com/s/notoserifdivesakuru/v8/QldfNSVMqAsHtsJ_TnD3aT03sMgd57ibeeZT60DIyoV9Ejs.ttf",
-		"weight": 400
+		displayName: "Noto Serif Dives Akuru",
+		filename: "QldfNSVMqAsHtsJ_TnD3aT03sMgd57ibeeZT60DIyoV9Ejs",
+		category: "serif",
+		url: "https://fonts.gstatic.com/s/notoserifdivesakuru/v8/QldfNSVMqAsHtsJ_TnD3aT03sMgd57ibeeZT60DIyoV9Ejs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Khudawadi",
-		"filename": "fdNi9t6ZsWBZ2k5ltHN73zZ5hc8HANlHIjRnVVXz9MY",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskhudawadi/v23/fdNi9t6ZsWBZ2k5ltHN73zZ5hc8HANlHIjRnVVXz9MY.ttf",
-		"weight": 400
+		displayName: "Noto Sans Khudawadi",
+		filename: "fdNi9t6ZsWBZ2k5ltHN73zZ5hc8HANlHIjRnVVXz9MY",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskhudawadi/v23/fdNi9t6ZsWBZ2k5ltHN73zZ5hc8HANlHIjRnVVXz9MY.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite PE Guides",
-		"filename": "AMONz5uBsGadFuvf9j8ZyqI0FA3br70wwyyAlqETME8",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritepeguides/v1/AMONz5uBsGadFuvf9j8ZyqI0FA3br70wwyyAlqETME8.ttf",
-		"weight": 400
+		displayName: "Playwrite PE Guides",
+		filename: "AMONz5uBsGadFuvf9j8ZyqI0FA3br70wwyyAlqETME8",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritepeguides/v1/AMONz5uBsGadFuvf9j8ZyqI0FA3br70wwyyAlqETME8.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Deseret",
-		"filename": "MwQsbgPp1eKH6QsAVuFb9AZM6MMr2Vq9ZnJSZtQG",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansdeseret/v18/MwQsbgPp1eKH6QsAVuFb9AZM6MMr2Vq9ZnJSZtQG.ttf",
-		"weight": 400
+		displayName: "Noto Sans Deseret",
+		filename: "MwQsbgPp1eKH6QsAVuFb9AZM6MMr2Vq9ZnJSZtQG",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansdeseret/v18/MwQsbgPp1eKH6QsAVuFb9AZM6MMr2Vq9ZnJSZtQG.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Soyombo",
-		"filename": "RWmSoL-Y6-8q5LTtXs6MF6q7xsxgY0FrIFOcK25W",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssoyombo/v18/RWmSoL-Y6-8q5LTtXs6MF6q7xsxgY0FrIFOcK25W.ttf",
-		"weight": 400
+		displayName: "Noto Sans Soyombo",
+		filename: "RWmSoL-Y6-8q5LTtXs6MF6q7xsxgY0FrIFOcK25W",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssoyombo/v18/RWmSoL-Y6-8q5LTtXs6MF6q7xsxgY0FrIFOcK25W.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Kayah Li",
-		"filename": "B50nF61OpWTRcGrhOVJJwOMXdca6Yecki3E06x2jVTX3WCc3CZH4EXLuKVM",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskayahli/v26/B50nF61OpWTRcGrhOVJJwOMXdca6Yecki3E06x2jVTX3WCc3CZH4EXLuKVM.ttf",
-		"weight": 400
+		displayName: "Noto Sans Kayah Li",
+		filename: "B50nF61OpWTRcGrhOVJJwOMXdca6Yecki3E06x2jVTX3WCc3CZH4EXLuKVM",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskayahli/v26/B50nF61OpWTRcGrhOVJJwOMXdca6Yecki3E06x2jVTX3WCc3CZH4EXLuKVM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Pau Cin Hau",
-		"filename": "x3d-cl3IZKmUqiMg_9wBLLtzl22EayN7ehIdjEWqKMxsKw",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanspaucinhau/v21/x3d-cl3IZKmUqiMg_9wBLLtzl22EayN7ehIdjEWqKMxsKw.ttf",
-		"weight": 400
+		displayName: "Noto Sans Pau Cin Hau",
+		filename: "x3d-cl3IZKmUqiMg_9wBLLtzl22EayN7ehIdjEWqKMxsKw",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanspaucinhau/v21/x3d-cl3IZKmUqiMg_9wBLLtzl22EayN7ehIdjEWqKMxsKw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Tirra",
-		"filename": "WBLrrEnNakREGrPF3AHdWn3J",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/tirra/v2/WBLrrEnNakREGrPF3AHdWn3J.ttf",
-		"weight": 400
+		displayName: "Tirra",
+		filename: "WBLrrEnNakREGrPF3AHdWn3J",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/tirra/v2/WBLrrEnNakREGrPF3AHdWn3J.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Phoenician",
-		"filename": "jizFRF9Ksm4Bt9PvcTaEkIHiTVtxmFtS5X7Jot-p5561",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansphoenician/v18/jizFRF9Ksm4Bt9PvcTaEkIHiTVtxmFtS5X7Jot-p5561.ttf",
-		"weight": 400
+		displayName: "Noto Sans Phoenician",
+		filename: "jizFRF9Ksm4Bt9PvcTaEkIHiTVtxmFtS5X7Jot-p5561",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansphoenician/v18/jizFRF9Ksm4Bt9PvcTaEkIHiTVtxmFtS5X7Jot-p5561.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Ogham",
-		"filename": "kmKlZqk1GBDGN0mY6k5lmEmww4hrt5laQxcoCA",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansogham/v18/kmKlZqk1GBDGN0mY6k5lmEmww4hrt5laQxcoCA.ttf",
-		"weight": 400
+		displayName: "Noto Sans Ogham",
+		filename: "kmKlZqk1GBDGN0mY6k5lmEmww4hrt5laQxcoCA",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansogham/v18/kmKlZqk1GBDGN0mY6k5lmEmww4hrt5laQxcoCA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Chorasmian",
-		"filename": "MQpL-X6uKMC7ROPLwRnI9ULxK_7NVkf8S5vyoH7w4g9b",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanschorasmian/v3/MQpL-X6uKMC7ROPLwRnI9ULxK_7NVkf8S5vyoH7w4g9b.ttf",
-		"weight": 400
+		displayName: "Noto Sans Chorasmian",
+		filename: "MQpL-X6uKMC7ROPLwRnI9ULxK_7NVkf8S5vyoH7w4g9b",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanschorasmian/v3/MQpL-X6uKMC7ROPLwRnI9ULxK_7NVkf8S5vyoH7w4g9b.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite FR Trad",
-		"filename": "sJot3KxJjdGLJV3vyatrJE2pkQisWWMBP23HSIVI5tvAogvNdt-fwzTS5A",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritefrtrad/v13/sJot3KxJjdGLJV3vyatrJE2pkQisWWMBP23HSIVI5tvAogvNdt-fwzTS5A.ttf",
-		"weight": 400
+		displayName: "Playwrite FR Trad",
+		filename: "sJot3KxJjdGLJV3vyatrJE2pkQisWWMBP23HSIVI5tvAogvNdt-fwzTS5A",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritefrtrad/v13/sJot3KxJjdGLJV3vyatrJE2pkQisWWMBP23HSIVI5tvAogvNdt-fwzTS5A.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite TZ Guides",
-		"filename": "SLXUc0_L5XEkcjBPGvusk4lULgsM9U5_YQy93JQ2XEg",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritetzguides/v1/SLXUc0_L5XEkcjBPGvusk4lULgsM9U5_YQy93JQ2XEg.ttf",
-		"weight": 400
+		displayName: "Playwrite TZ Guides",
+		filename: "SLXUc0_L5XEkcjBPGvusk4lULgsM9U5_YQy93JQ2XEg",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritetzguides/v1/SLXUc0_L5XEkcjBPGvusk4lULgsM9U5_YQy93JQ2XEg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Mende Kikakui",
-		"filename": "11hRGoLHz17aKjQCWj-JHcLvu2Q5zZrnkbNCLUx_aDJLAHer",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmendekikakui/v29/11hRGoLHz17aKjQCWj-JHcLvu2Q5zZrnkbNCLUx_aDJLAHer.ttf",
-		"weight": 400
+		displayName: "Noto Sans Mende Kikakui",
+		filename: "11hRGoLHz17aKjQCWj-JHcLvu2Q5zZrnkbNCLUx_aDJLAHer",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmendekikakui/v29/11hRGoLHz17aKjQCWj-JHcLvu2Q5zZrnkbNCLUx_aDJLAHer.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Meroitic",
-		"filename": "IFS5HfRJndhE3P4b5jnZ3ITPvC6i00UDgDhTiKY9KQ",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmeroitic/v19/IFS5HfRJndhE3P4b5jnZ3ITPvC6i00UDgDhTiKY9KQ.ttf",
-		"weight": 400
+		displayName: "Noto Sans Meroitic",
+		filename: "IFS5HfRJndhE3P4b5jnZ3ITPvC6i00UDgDhTiKY9KQ",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmeroitic/v19/IFS5HfRJndhE3P4b5jnZ3ITPvC6i00UDgDhTiKY9KQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Old Sogdian",
-		"filename": "3JnjSCH90Gmq2mrzckOBBhFhdrMst48aURt7neIqM-9uyg",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansoldsogdian/v18/3JnjSCH90Gmq2mrzckOBBhFhdrMst48aURt7neIqM-9uyg.ttf",
-		"weight": 400
+		displayName: "Noto Sans Old Sogdian",
+		filename: "3JnjSCH90Gmq2mrzckOBBhFhdrMst48aURt7neIqM-9uyg",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansoldsogdian/v18/3JnjSCH90Gmq2mrzckOBBhFhdrMst48aURt7neIqM-9uyg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Lepcha",
-		"filename": "0QI7MWlB_JWgA166SKhu05TekNS32AJstqBXgd4",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslepcha/v20/0QI7MWlB_JWgA166SKhu05TekNS32AJstqBXgd4.ttf",
-		"weight": 400
+		displayName: "Noto Sans Lepcha",
+		filename: "0QI7MWlB_JWgA166SKhu05TekNS32AJstqBXgd4",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslepcha/v20/0QI7MWlB_JWgA166SKhu05TekNS32AJstqBXgd4.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Manichaean",
-		"filename": "taiVGntiC4--qtsfi4Jp9-_GkPZZCcrfekqCNTtFCtdX",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosansmanichaean/v19/taiVGntiC4--qtsfi4Jp9-_GkPZZCcrfekqCNTtFCtdX.ttf",
-		"weight": 400
+		displayName: "Noto Sans Manichaean",
+		filename: "taiVGntiC4--qtsfi4Jp9-_GkPZZCcrfekqCNTtFCtdX",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosansmanichaean/v19/taiVGntiC4--qtsfi4Jp9-_GkPZZCcrfekqCNTtFCtdX.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Jacquarda Bastarda 9 Charted",
-		"filename": "Yq6D-KaMUyfq4qLgx19A_ocp43FeLd9m0vDxm-yf8JPuf0cPaL8pmQg",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/jacquardabastarda9charted/v4/Yq6D-KaMUyfq4qLgx19A_ocp43FeLd9m0vDxm-yf8JPuf0cPaL8pmQg.ttf",
-		"weight": 400
+		displayName: "Jacquarda Bastarda 9 Charted",
+		filename: "Yq6D-KaMUyfq4qLgx19A_ocp43FeLd9m0vDxm-yf8JPuf0cPaL8pmQg",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/jacquardabastarda9charted/v4/Yq6D-KaMUyfq4qLgx19A_ocp43FeLd9m0vDxm-yf8JPuf0cPaL8pmQg.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite GB J Guides",
-		"filename": "CSRh4yJOn-mMWCgLPl16K6UKAvM5yY1BdhmIKxooUh-_nQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritegbjguides/v2/CSRh4yJOn-mMWCgLPl16K6UKAvM5yY1BdhmIKxooUh-_nQ.ttf",
-		"weight": 400
+		displayName: "Playwrite GB J Guides",
+		filename: "CSRh4yJOn-mMWCgLPl16K6UKAvM5yY1BdhmIKxooUh-_nQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritegbjguides/v2/CSRh4yJOn-mMWCgLPl16K6UKAvM5yY1BdhmIKxooUh-_nQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Siddham",
-		"filename": "OZpZg-FwqiNLe9PELUikxTWDoCCeGqndk3Ic92ZH",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanssiddham/v21/OZpZg-FwqiNLe9PELUikxTWDoCCeGqndk3Ic92ZH.ttf",
-		"weight": 400
+		displayName: "Noto Sans Siddham",
+		filename: "OZpZg-FwqiNLe9PELUikxTWDoCCeGqndk3Ic92ZH",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanssiddham/v21/OZpZg-FwqiNLe9PELUikxTWDoCCeGqndk3Ic92ZH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Kharoshthi",
-		"filename": "Fh4qPiLjKS30-P4-pGMMXCCfvkc5Vd7KE5z4rFyx5mR1",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanskharoshthi/v17/Fh4qPiLjKS30-P4-pGMMXCCfvkc5Vd7KE5z4rFyx5mR1.ttf",
-		"weight": 400
+		displayName: "Noto Sans Kharoshthi",
+		filename: "Fh4qPiLjKS30-P4-pGMMXCCfvkc5Vd7KE5z4rFyx5mR1",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanskharoshthi/v17/Fh4qPiLjKS30-P4-pGMMXCCfvkc5Vd7KE5z4rFyx5mR1.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yarndings 12 Charted",
-		"filename": "eLGDP_DlKhO-DUfeqM4I_vDdJgmIh7hAvvbJ0t-dHaJH",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yarndings12charted/v4/eLGDP_DlKhO-DUfeqM4I_vDdJgmIh7hAvvbJ0t-dHaJH.ttf",
-		"weight": 400
+		displayName: "Yarndings 12 Charted",
+		filename: "eLGDP_DlKhO-DUfeqM4I_vDdJgmIh7hAvvbJ0t-dHaJH",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yarndings12charted/v4/eLGDP_DlKhO-DUfeqM4I_vDdJgmIh7hAvvbJ0t-dHaJH.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Cossette Texte",
-		"filename": "S6ukw4pDXzTb-m1kPi_7eV-ciP01xPBQ19bE",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/cossettetexte/v3/S6ukw4pDXzTb-m1kPi_7eV-ciP01xPBQ19bE.ttf",
-		"weight": 400
+		displayName: "Cossette Texte",
+		filename: "S6ukw4pDXzTb-m1kPi_7eV-ciP01xPBQ19bE",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/cossettetexte/v3/S6ukw4pDXzTb-m1kPi_7eV-ciP01xPBQ19bE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Noto Sans Lycian",
-		"filename": "QldVNSNMqAsHtsJ7UmqxBQA9r8wA5_naCJwn00E",
-		"category": "sans-serif",
-		"url": "https://fonts.gstatic.com/s/notosanslycian/v16/QldVNSNMqAsHtsJ7UmqxBQA9r8wA5_naCJwn00E.ttf",
-		"weight": 400
+		displayName: "Noto Sans Lycian",
+		filename: "QldVNSNMqAsHtsJ7UmqxBQA9r8wA5_naCJwn00E",
+		category: "sans-serif",
+		url: "https://fonts.gstatic.com/s/notosanslycian/v16/QldVNSNMqAsHtsJ7UmqxBQA9r8wA5_naCJwn00E.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE VA Guides",
-		"filename": "WwkPxOmkDVqm-ojMLT_kdMUoBpMYm6KTeb28UB9SNQIUdqQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedevaguides/v1/WwkPxOmkDVqm-ojMLT_kdMUoBpMYm6KTeb28UB9SNQIUdqQ.ttf",
-		"weight": 400
+		displayName: "Playwrite DE VA Guides",
+		filename: "WwkPxOmkDVqm-ojMLT_kdMUoBpMYm6KTeb28UB9SNQIUdqQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedevaguides/v1/WwkPxOmkDVqm-ojMLT_kdMUoBpMYm6KTeb28UB9SNQIUdqQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU VIC Guides",
-		"filename": "ll8sK3mEVy6nEMXMskXIZv8owEdZpVIWaQEnuD6F2TpBa98q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteauvicguides/v1/ll8sK3mEVy6nEMXMskXIZv8owEdZpVIWaQEnuD6F2TpBa98q.ttf",
-		"weight": 400
+		displayName: "Playwrite AU VIC Guides",
+		filename: "ll8sK3mEVy6nEMXMskXIZv8owEdZpVIWaQEnuD6F2TpBa98q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteauvicguides/v1/ll8sK3mEVy6nEMXMskXIZv8owEdZpVIWaQEnuD6F2TpBa98q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Yarndings 20 Charted",
-		"filename": "QldRNSdbpg0G8vh0W2qxe0l-hcUPtY2VaLQm4UTqz5V9",
-		"category": "display",
-		"url": "https://fonts.gstatic.com/s/yarndings20charted/v4/QldRNSdbpg0G8vh0W2qxe0l-hcUPtY2VaLQm4UTqz5V9.ttf",
-		"weight": 400
+		displayName: "Yarndings 20 Charted",
+		filename: "QldRNSdbpg0G8vh0W2qxe0l-hcUPtY2VaLQm4UTqz5V9",
+		category: "display",
+		url: "https://fonts.gstatic.com/s/yarndings20charted/v4/QldRNSdbpg0G8vh0W2qxe0l-hcUPtY2VaLQm4UTqz5V9.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ZA Guides",
-		"filename": "O4ZOFHPsmxlhCg3-iycDyEwy0BT1ribk2HDoCLfQmgE",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritezaguides/v1/O4ZOFHPsmxlhCg3-iycDyEwy0BT1ribk2HDoCLfQmgE.ttf",
-		"weight": 400
+		displayName: "Playwrite ZA Guides",
+		filename: "O4ZOFHPsmxlhCg3-iycDyEwy0BT1ribk2HDoCLfQmgE",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritezaguides/v1/O4ZOFHPsmxlhCg3-iycDyEwy0BT1ribk2HDoCLfQmgE.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite BE WAL Guides",
-		"filename": "l7gPbiR5yM62ycwevWCt02rrTFoEJvY4kyrrUzHlVJabaOSA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritebewalguides/v1/l7gPbiR5yM62ycwevWCt02rrTFoEJvY4kyrrUzHlVJabaOSA.ttf",
-		"weight": 400
+		displayName: "Playwrite BE WAL Guides",
+		filename: "l7gPbiR5yM62ycwevWCt02rrTFoEJvY4kyrrUzHlVJabaOSA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritebewalguides/v1/l7gPbiR5yM62ycwevWCt02rrTFoEJvY4kyrrUzHlVJabaOSA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IE Guides",
-		"filename": "LhW5MULFNP8PI-1UADw_Kbp9daTx5ovUaNojN9_8IVQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteieguides/v1/LhW5MULFNP8PI-1UADw_Kbp9daTx5ovUaNojN9_8IVQ.ttf",
-		"weight": 400
+		displayName: "Playwrite IE Guides",
+		filename: "LhW5MULFNP8PI-1UADw_Kbp9daTx5ovUaNojN9_8IVQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteieguides/v1/LhW5MULFNP8PI-1UADw_Kbp9daTx5ovUaNojN9_8IVQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NL Guides",
-		"filename": "FwZH7_8mxlw-50y5PJughoCL4jbXkMqwsWKGP6kvdPA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritenlguides/v1/FwZH7_8mxlw-50y5PJughoCL4jbXkMqwsWKGP6kvdPA.ttf",
-		"weight": 400
+		displayName: "Playwrite NL Guides",
+		filename: "FwZH7_8mxlw-50y5PJughoCL4jbXkMqwsWKGP6kvdPA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritenlguides/v1/FwZH7_8mxlw-50y5PJughoCL4jbXkMqwsWKGP6kvdPA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ES Deco Guides",
-		"filename": "flUrRriwwII5RVl2TZ1XBNTUOYY6ZzZzwPCEKtwqYEyDBQWJ7Q",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteesdecoguides/v1/flUrRriwwII5RVl2TZ1XBNTUOYY6ZzZzwPCEKtwqYEyDBQWJ7Q.ttf",
-		"weight": 400
+		displayName: "Playwrite ES Deco Guides",
+		filename: "flUrRriwwII5RVl2TZ1XBNTUOYY6ZzZzwPCEKtwqYEyDBQWJ7Q",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteesdecoguides/v1/flUrRriwwII5RVl2TZ1XBNTUOYY6ZzZzwPCEKtwqYEyDBQWJ7Q.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IT Moderna Guides",
-		"filename": "2sDKZHBJg5rCj6fz_QgDJhGcTtJ5AVu-1w5jRQjRv9qPpOVtBhB5gQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteitmodernaguides/v1/2sDKZHBJg5rCj6fz_QgDJhGcTtJ5AVu-1w5jRQjRv9qPpOVtBhB5gQ.ttf",
-		"weight": 400
+		displayName: "Playwrite IT Moderna Guides",
+		filename: "2sDKZHBJg5rCj6fz_QgDJhGcTtJ5AVu-1w5jRQjRv9qPpOVtBhB5gQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteitmodernaguides/v1/2sDKZHBJg5rCj6fz_QgDJhGcTtJ5AVu-1w5jRQjRv9qPpOVtBhB5gQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite HR Guides",
-		"filename": "6NUK8EedKwOcfRjj8ukv_L4kjqAoGrjdWmA08mCgdfM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritehrguides/v1/6NUK8EedKwOcfRjj8ukv_L4kjqAoGrjdWmA08mCgdfM.ttf",
-		"weight": 400
+		displayName: "Playwrite HR Guides",
+		filename: "6NUK8EedKwOcfRjj8ukv_L4kjqAoGrjdWmA08mCgdfM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritehrguides/v1/6NUK8EedKwOcfRjj8ukv_L4kjqAoGrjdWmA08mCgdfM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite FR Moderne Guides",
-		"filename": "CSRr4yxOn-mMWCgLPl16KrUKBbwa2ZZLdkrvXllIP22HnIzLvrG2fw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritefrmoderneguides/v2/CSRr4yxOn-mMWCgLPl16KrUKBbwa2ZZLdkrvXllIP22HnIzLvrG2fw.ttf",
-		"weight": 400
+		displayName: "Playwrite FR Moderne Guides",
+		filename: "CSRr4yxOn-mMWCgLPl16KrUKBbwa2ZZLdkrvXllIP22HnIzLvrG2fw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritefrmoderneguides/v2/CSRr4yxOn-mMWCgLPl16KrUKBbwa2ZZLdkrvXllIP22HnIzLvrG2fw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IT Trad Guides",
-		"filename": "SlGDmReYo5oYZX5BFVcEySBSPE50BiuP2AHaRsRUA4V-e6yHgQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteittradguides/v2/SlGDmReYo5oYZX5BFVcEySBSPE50BiuP2AHaRsRUA4V-e6yHgQ.ttf",
-		"weight": 400
+		displayName: "Playwrite IT Trad Guides",
+		filename: "SlGDmReYo5oYZX5BFVcEySBSPE50BiuP2AHaRsRUA4V-e6yHgQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteittradguides/v2/SlGDmReYo5oYZX5BFVcEySBSPE50BiuP2AHaRsRUA4V-e6yHgQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite FR Trad Guides",
-		"filename": "l7gMbit5yM62ycwevWCt133rT2kpYpEKjyfqRWLFfriXYf2ZXw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritefrtradguides/v1/l7gMbit5yM62ycwevWCt133rT2kpYpEKjyfqRWLFfriXYf2ZXw.ttf",
-		"weight": 400
+		displayName: "Playwrite FR Trad Guides",
+		filename: "l7gMbit5yM62ycwevWCt133rT2kpYpEKjyfqRWLFfriXYf2ZXw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritefrtradguides/v1/l7gMbit5yM62ycwevWCt133rT2kpYpEKjyfqRWLFfriXYf2ZXw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite BR Guides",
-		"filename": "tssxAohQaiQS-wrnJz-F5CqW4dOezRwp-9cCOxBu_BM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritebrguides/v1/tssxAohQaiQS-wrnJz-F5CqW4dOezRwp-9cCOxBu_BM.ttf",
-		"weight": 400
+		displayName: "Playwrite BR Guides",
+		filename: "tssxAohQaiQS-wrnJz-F5CqW4dOezRwp-9cCOxBu_BM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritebrguides/v1/tssxAohQaiQS-wrnJz-F5CqW4dOezRwp-9cCOxBu_BM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite US Modern Guides",
-		"filename": "0QI1MWNf_4C2VH-yUr5uyqKOvtOynXAoku8j8Lv9pryxZQscrW1V",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteusmodernguides/v1/0QI1MWNf_4C2VH-yUr5uyqKOvtOynXAoku8j8Lv9pryxZQscrW1V.ttf",
-		"weight": 400
+		displayName: "Playwrite US Modern Guides",
+		filename: "0QI1MWNf_4C2VH-yUr5uyqKOvtOynXAoku8j8Lv9pryxZQscrW1V",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteusmodernguides/v1/0QI1MWNf_4C2VH-yUr5uyqKOvtOynXAoku8j8Lv9pryxZQscrW1V.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CU Guides",
-		"filename": "c4m81mZtG8v6p3iAoFBJ2dJdu9fWPSaOFooIDQtJbok",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritecuguides/v1/c4m81mZtG8v6p3iAoFBJ2dJdu9fWPSaOFooIDQtJbok.ttf",
-		"weight": 400
+		displayName: "Playwrite CU Guides",
+		filename: "c4m81mZtG8v6p3iAoFBJ2dJdu9fWPSaOFooIDQtJbok",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritecuguides/v1/c4m81mZtG8v6p3iAoFBJ2dJdu9fWPSaOFooIDQtJbok.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DK Uloopet Guides",
-		"filename": "WwkKxOSkDVqm-ojMLT_kdMsoBb5Xs6efafiIBXYcVHk1bo9bkIONtA",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedkuloopetguides/v1/WwkKxOSkDVqm-ojMLT_kdMsoBb5Xs6efafiIBXYcVHk1bo9bkIONtA.ttf",
-		"weight": 400
+		displayName: "Playwrite DK Uloopet Guides",
+		filename: "WwkKxOSkDVqm-ojMLT_kdMsoBb5Xs6efafiIBXYcVHk1bo9bkIONtA",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedkuloopetguides/v1/WwkKxOSkDVqm-ojMLT_kdMsoBb5Xs6efafiIBXYcVHk1bo9bkIONtA.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DK Loopet Guides",
-		"filename": "4iC46LlmYsRPlQ1zDEvT8weoW-sI8-h9xxN83W-Cb5tmElj-b0nB",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedkloopetguides/v1/4iC46LlmYsRPlQ1zDEvT8weoW-sI8-h9xxN83W-Cb5tmElj-b0nB.ttf",
-		"weight": 400
+		displayName: "Playwrite DK Loopet Guides",
+		filename: "4iC46LlmYsRPlQ1zDEvT8weoW-sI8-h9xxN83W-Cb5tmElj-b0nB",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedkloopetguides/v1/4iC46LlmYsRPlQ1zDEvT8weoW-sI8-h9xxN83W-Cb5tmElj-b0nB.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CL Guides",
-		"filename": "Z9XKDnxTQxyGzOn3eMH-i6Ws0czqkE-hrNpVuw5_BAM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteclguides/v2/Z9XKDnxTQxyGzOn3eMH-i6Ws0czqkE-hrNpVuw5_BAM.ttf",
-		"weight": 400
+		displayName: "Playwrite CL Guides",
+		filename: "Z9XKDnxTQxyGzOn3eMH-i6Ws0czqkE-hrNpVuw5_BAM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteclguides/v2/Z9XKDnxTQxyGzOn3eMH-i6Ws0czqkE-hrNpVuw5_BAM.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU QLD Guides",
-		"filename": "TuGBUUJtX5tTUfQi_7kbiZZFVhl0FIKnvy00LDxlIzIU5RwD",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteauqldguides/v1/TuGBUUJtX5tTUfQi_7kbiZZFVhl0FIKnvy00LDxlIzIU5RwD.ttf",
-		"weight": 400
+		displayName: "Playwrite AU QLD Guides",
+		filename: "TuGBUUJtX5tTUfQi_7kbiZZFVhl0FIKnvy00LDxlIzIU5RwD",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteauqldguides/v1/TuGBUUJtX5tTUfQi_7kbiZZFVhl0FIKnvy00LDxlIzIU5RwD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AT Guides",
-		"filename": "QdVKSS0gJR2xneUeQPfE-FVA1BlZQRpBRbgJdhapcUU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteatguides/v1/QdVKSS0gJR2xneUeQPfE-FVA1BlZQRpBRbgJdhapcUU.ttf",
-		"weight": 400
+		displayName: "Playwrite AT Guides",
+		filename: "QdVKSS0gJR2xneUeQPfE-FVA1BlZQRpBRbgJdhapcUU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteatguides/v1/QdVKSS0gJR2xneUeQPfE-FVA1BlZQRpBRbgJdhapcUU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite GB S Guides",
-		"filename": "0FlKVOSHl1iH-fv2BH4kIkUBqtlNCEaQLlyKx1QPi-Z8Fw",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritegbsguides/v1/0FlKVOSHl1iH-fv2BH4kIkUBqtlNCEaQLlyKx1QPi-Z8Fw.ttf",
-		"weight": 400
+		displayName: "Playwrite GB S Guides",
+		filename: "0FlKVOSHl1iH-fv2BH4kIkUBqtlNCEaQLlyKx1QPi-Z8Fw",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritegbsguides/v1/0FlKVOSHl1iH-fv2BH4kIkUBqtlNCEaQLlyKx1QPi-Z8Fw.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NG Modern Guides",
-		"filename": "6qLVKYQNtxD-qVlIPUIPdWMlWxy3BmFEQgxB1xvFhDarWJtyZyGU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritengmodernguides/v1/6qLVKYQNtxD-qVlIPUIPdWMlWxy3BmFEQgxB1xvFhDarWJtyZyGU.ttf",
-		"weight": 400
+		displayName: "Playwrite NG Modern Guides",
+		filename: "6qLVKYQNtxD-qVlIPUIPdWMlWxy3BmFEQgxB1xvFhDarWJtyZyGU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritengmodernguides/v1/6qLVKYQNtxD-qVlIPUIPdWMlWxy3BmFEQgxB1xvFhDarWJtyZyGU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ES Guides",
-		"filename": "VuJtdM_b2p7tvoFGLMPdedpGJm402y6mhDDGfdnzXeU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteesguides/v1/VuJtdM_b2p7tvoFGLMPdedpGJm402y6mhDDGfdnzXeU.ttf",
-		"weight": 400
+		displayName: "Playwrite ES Guides",
+		filename: "VuJtdM_b2p7tvoFGLMPdedpGJm402y6mhDDGfdnzXeU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteesguides/v1/VuJtdM_b2p7tvoFGLMPdedpGJm402y6mhDDGfdnzXeU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE LA Guides",
-		"filename": "1q2XY42fB0V64O4aSe1OjKs_yAXBOfDI5wE56g2M62M1AXs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedelaguides/v2/1q2XY42fB0V64O4aSe1OjKs_yAXBOfDI5wE56g2M62M1AXs.ttf",
-		"weight": 400
+		displayName: "Playwrite DE LA Guides",
+		filename: "1q2XY42fB0V64O4aSe1OjKs_yAXBOfDI5wE56g2M62M1AXs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedelaguides/v2/1q2XY42fB0V64O4aSe1OjKs_yAXBOfDI5wE56g2M62M1AXs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU NSW Guides",
-		"filename": "LDIiao-QNRMmVPcU8-sgUraMF7GZs_1Emk3v8tPbZeQ3YBXs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteaunswguides/v1/LDIiao-QNRMmVPcU8-sgUraMF7GZs_1Emk3v8tPbZeQ3YBXs.ttf",
-		"weight": 400
+		displayName: "Playwrite AU NSW Guides",
+		filename: "LDIiao-QNRMmVPcU8-sgUraMF7GZs_1Emk3v8tPbZeQ3YBXs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteaunswguides/v1/LDIiao-QNRMmVPcU8-sgUraMF7GZs_1Emk3v8tPbZeQ3YBXs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite ID Guides",
-		"filename": "MjQamj1kuP_soQ3o-rysMdWi_8oJlIUUInch3bTfcxs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteidguides/v1/MjQamj1kuP_soQ3o-rysMdWi_8oJlIUUInch3bTfcxs.ttf",
-		"weight": 400
+		displayName: "Playwrite ID Guides",
+		filename: "MjQamj1kuP_soQ3o-rysMdWi_8oJlIUUInch3bTfcxs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteidguides/v1/MjQamj1kuP_soQ3o-rysMdWi_8oJlIUUInch3bTfcxs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU SA Guides",
-		"filename": "3JnsSCLj03y8jUv7aFWBCCglBaFjl54aVBAovcgEP-Z3054",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteausaguides/v1/3JnsSCLj03y8jUv7aFWBCCglBaFjl54aVBAovcgEP-Z3054.ttf",
-		"weight": 400
+		displayName: "Playwrite AU SA Guides",
+		filename: "3JnsSCLj03y8jUv7aFWBCCglBaFjl54aVBAovcgEP-Z3054",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteausaguides/v1/3JnsSCLj03y8jUv7aFWBCCglBaFjl54aVBAovcgEP-Z3054.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite HU Guides",
-		"filename": "AYCXpWvtftIVXepC5AzjCAdKgYPugOK0TqxTJw_GOM0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritehuguides/v1/AYCXpWvtftIVXepC5AzjCAdKgYPugOK0TqxTJw_GOM0.ttf",
-		"weight": 400
+		displayName: "Playwrite HU Guides",
+		filename: "AYCXpWvtftIVXepC5AzjCAdKgYPugOK0TqxTJw_GOM0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritehuguides/v1/AYCXpWvtftIVXepC5AzjCAdKgYPugOK0TqxTJw_GOM0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite HR Lijeva Guides",
-		"filename": "uU9aCAgH7I63K35cu3bRkqamzjr8EW133LJaXDO-QObhgDgMKYJO",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritehrlijevaguides/v1/uU9aCAgH7I63K35cu3bRkqamzjr8EW133LJaXDO-QObhgDgMKYJO.ttf",
-		"weight": 400
+		displayName: "Playwrite HR Lijeva Guides",
+		filename: "uU9aCAgH7I63K35cu3bRkqamzjr8EW133LJaXDO-QObhgDgMKYJO",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritehrlijevaguides/v1/uU9aCAgH7I63K35cu3bRkqamzjr8EW133LJaXDO-QObhgDgMKYJO.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite NO Guides",
-		"filename": "DPEwYx-Cyg4cQ2aAcFshOLL79zJKccqHe2-Z2vnLeAs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritenoguides/v1/DPEwYx-Cyg4cQ2aAcFshOLL79zJKccqHe2-Z2vnLeAs.ttf",
-		"weight": 400
+		displayName: "Playwrite NO Guides",
+		filename: "DPEwYx-Cyg4cQ2aAcFshOLL79zJKccqHe2-Z2vnLeAs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritenoguides/v1/DPEwYx-Cyg4cQ2aAcFshOLL79zJKccqHe2-Z2vnLeAs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite BE VLG Guides",
-		"filename": "EYqjmb1Mz6hO4edaU9qKGFZMDd_Q-zwwK__U1u9GK3nNgEoc",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritebevlgguides/v2/EYqjmb1Mz6hO4edaU9qKGFZMDd_Q-zwwK__U1u9GK3nNgEoc.ttf",
-		"weight": 400
+		displayName: "Playwrite BE VLG Guides",
+		filename: "EYqjmb1Mz6hO4edaU9qKGFZMDd_Q-zwwK__U1u9GK3nNgEoc",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritebevlgguides/v2/EYqjmb1Mz6hO4edaU9qKGFZMDd_Q-zwwK__U1u9GK3nNgEoc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CA Guides",
-		"filename": "MjQamj1kuP_soQ3o-rysO9Ci_8oJlIUUInch3bTfcxs",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritecaguides/v1/MjQamj1kuP_soQ3o-rysO9Ci_8oJlIUUInch3bTfcxs.ttf",
-		"weight": 400
+		displayName: "Playwrite CA Guides",
+		filename: "MjQamj1kuP_soQ3o-rysO9Ci_8oJlIUUInch3bTfcxs",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritecaguides/v1/MjQamj1kuP_soQ3o-rysO9Ci_8oJlIUUInch3bTfcxs.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite DE SAS Guides",
-		"filename": "8At5GtCjPp-GWR2h9cC6ePzz2l6LJ3VZaPNi15BEdtBgPI1G",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritedesasguides/v1/8At5GtCjPp-GWR2h9cC6ePzz2l6LJ3VZaPNi15BEdtBgPI1G.ttf",
-		"weight": 400
+		displayName: "Playwrite DE SAS Guides",
+		filename: "8At5GtCjPp-GWR2h9cC6ePzz2l6LJ3VZaPNi15BEdtBgPI1G",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritedesasguides/v1/8At5GtCjPp-GWR2h9cC6ePzz2l6LJ3VZaPNi15BEdtBgPI1G.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite CZ Guides",
-		"filename": "6qLcKY0NtxD-qVlIPUIPeH4lUQa6B3ZZQkseuneh7xc",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteczguides/v1/6qLcKY0NtxD-qVlIPUIPeH4lUQa6B3ZZQkseuneh7xc.ttf",
-		"weight": 400
+		displayName: "Playwrite CZ Guides",
+		filename: "6qLcKY0NtxD-qVlIPUIPeH4lUQa6B3ZZQkseuneh7xc",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteczguides/v1/6qLcKY0NtxD-qVlIPUIPeH4lUQa6B3ZZQkseuneh7xc.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite RO Guides",
-		"filename": "wlptgx7ZCE50snmWiOExiylvL10_b5Ym_LBte6KuGEo",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteroguides/v1/wlptgx7ZCE50snmWiOExiylvL10_b5Ym_LBte6KuGEo.ttf",
-		"weight": 400
+		displayName: "Playwrite RO Guides",
+		filename: "wlptgx7ZCE50snmWiOExiylvL10_b5Ym_LBte6KuGEo",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteroguides/v1/wlptgx7ZCE50snmWiOExiylvL10_b5Ym_LBte6KuGEo.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite SK Guides",
-		"filename": "P5sezYaSYdfH5z93kEFk3tyPlqxeQeo_JzruWQshcbU",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteskguides/v1/P5sezYaSYdfH5z93kEFk3tyPlqxeQeo_JzruWQshcbU.ttf",
-		"weight": 400
+		displayName: "Playwrite SK Guides",
+		filename: "P5sezYaSYdfH5z93kEFk3tyPlqxeQeo_JzruWQshcbU",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteskguides/v1/P5sezYaSYdfH5z93kEFk3tyPlqxeQeo_JzruWQshcbU.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AR Guides",
-		"filename": "iJWYBWqKZTrYS9uv-Ry6kDf-q_0Xq67mcGUaW4_MiYQ",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwritearguides/v5/iJWYBWqKZTrYS9uv-Ry6kDf-q_0Xq67mcGUaW4_MiYQ.ttf",
-		"weight": 400
+		displayName: "Playwrite AR Guides",
+		filename: "iJWYBWqKZTrYS9uv-Ry6kDf-q_0Xq67mcGUaW4_MiYQ",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwritearguides/v5/iJWYBWqKZTrYS9uv-Ry6kDf-q_0Xq67mcGUaW4_MiYQ.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite AU TAS Guides",
-		"filename": "cY9Vfi6cVk5RvjGtQrLqjozy3ekUDtDMDX-NNjbKL4UbaDZD",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteautasguides/v1/cY9Vfi6cVk5RvjGtQrLqjozy3ekUDtDMDX-NNjbKL4UbaDZD.ttf",
-		"weight": 400
+		displayName: "Playwrite AU TAS Guides",
+		filename: "cY9Vfi6cVk5RvjGtQrLqjozy3ekUDtDMDX-NNjbKL4UbaDZD",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteautasguides/v1/cY9Vfi6cVk5RvjGtQrLqjozy3ekUDtDMDX-NNjbKL4UbaDZD.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IS Guides",
-		"filename": "5aUp9-GkphaVExwxdX6SwWF-uigk3Cglrm9ptxu7HZ0",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteisguides/v1/5aUp9-GkphaVExwxdX6SwWF-uigk3Cglrm9ptxu7HZ0.ttf",
-		"weight": 400
+		displayName: "Playwrite IS Guides",
+		filename: "5aUp9-GkphaVExwxdX6SwWF-uigk3Cglrm9ptxu7HZ0",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteisguides/v1/5aUp9-GkphaVExwxdX6SwWF-uigk3Cglrm9ptxu7HZ0.ttf",
+		weight: 400
 	},
 	{
-		"displayName": "Playwrite IN Guides",
-		"filename": "GFD2WBRug3mQSvrAT9AL4vx4d3lQNQV4Tt1qdGqgdlM",
-		"category": "handwriting",
-		"url": "https://fonts.gstatic.com/s/playwriteinguides/v1/GFD2WBRug3mQSvrAT9AL4vx4d3lQNQV4Tt1qdGqgdlM.ttf",
-		"weight": 400
+		displayName: "Playwrite IN Guides",
+		filename: "GFD2WBRug3mQSvrAT9AL4vx4d3lQNQV4Tt1qdGqgdlM",
+		category: "handwriting",
+		url: "https://fonts.gstatic.com/s/playwriteinguides/v1/GFD2WBRug3mQSvrAT9AL4vx4d3lQNQV4Tt1qdGqgdlM.ttf",
+		weight: 400
 	}
 ];
 
 /** Map from filename to font for reverse lookup */
-export const GOOGLE_FONTS_BY_FILENAME = new Map<string, GoogleFont>(
-	GOOGLE_FONTS.map((font) => [font.filename, font])
-);
+export const GOOGLE_FONTS_BY_FILENAME = new Map<string, GoogleFont>(GOOGLE_FONTS.map(font => [font.filename, font]));
 
 /** Map from display name to font */
-export const GOOGLE_FONTS_BY_NAME = new Map<string, GoogleFont>(
-	GOOGLE_FONTS.map((font) => [font.displayName, font])
-);
+export const GOOGLE_FONTS_BY_NAME = new Map<string, GoogleFont>(GOOGLE_FONTS.map(font => [font.displayName, font]));
 
 /** Font categories */
 export const GOOGLE_FONT_CATEGORIES = ["sans-serif", "serif", "display", "handwriting", "monospace"] as const;

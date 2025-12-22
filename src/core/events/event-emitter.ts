@@ -11,10 +11,7 @@ export class EventEmitter<TEventPayloadMap extends EventPayloadMap = EventPayloa
 		this.events = {};
 	}
 
-	public on<TEventName extends keyof TEventPayloadMap>(
-		name: TEventName,
-		listener: Listener<TEventPayloadMap[TEventName]>
-	): () => void {
+	public on<TEventName extends keyof TEventPayloadMap>(name: TEventName, listener: Listener<TEventPayloadMap[TEventName]>): () => void {
 		if (!this.events[name]) {
 			this.events[name] = new Set();
 		}
@@ -24,10 +21,7 @@ export class EventEmitter<TEventPayloadMap extends EventPayloadMap = EventPayloa
 		return () => this.off(name, listener);
 	}
 
-	public once<TEventName extends keyof TEventPayloadMap>(
-		name: TEventName,
-		listener: Listener<TEventPayloadMap[TEventName]>
-	): () => void {
+	public once<TEventName extends keyof TEventPayloadMap>(name: TEventName, listener: Listener<TEventPayloadMap[TEventName]>): () => void {
 		const wrappedListener = ((payload: TEventPayloadMap[TEventName]) => {
 			this.off(name, wrappedListener);
 			listener(payload);

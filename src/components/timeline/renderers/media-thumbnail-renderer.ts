@@ -11,8 +11,9 @@
 import type { ResolvedClip } from "@schemas/clip";
 import type { ImageAsset } from "@schemas/image-asset";
 import type { VideoAsset } from "@schemas/video-asset";
-import type { ClipRenderer } from "../timeline.types";
+
 import type { ThumbnailGenerator } from "../services/thumbnail-generator";
+import type { ClipRenderer } from "../timeline.types";
 
 interface ThumbnailState {
 	loading: boolean;
@@ -32,16 +33,13 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	private clipStates = new WeakMap<HTMLElement, ThumbnailState>();
 	private clipRequestKeys = new WeakMap<HTMLElement, string>();
 
-	constructor(
-		generator: ThumbnailGenerator,
-		onRendered: () => void = () => {}
-	) {
+	constructor(generator: ThumbnailGenerator, onRendered: () => void = () => {}) {
 		this.generator = generator;
 		this.onRendered = onRendered;
 	}
 
 	render(clip: ResolvedClip, element: HTMLElement): void {
-		const asset = clip.asset;
+		const { asset } = clip;
 		if (!asset || !("src" in asset) || !asset.src) {
 			return;
 		}
@@ -92,18 +90,12 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		}
 	}
 
-	private async generateAndApplyVideo(
-		element: HTMLElement,
-		asset: VideoAsset
-	): Promise<void> {
+	private async generateAndApplyVideo(element: HTMLElement, asset: VideoAsset): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(element, state);
 
 		try {
-			const result = await this.generator.generateThumbnail(
-				asset.src,
-				asset.trim ?? 0
-			);
+			const result = await this.generator.generateThumbnail(asset.src, asset.trim ?? 0);
 
 			// Check if element is still in DOM (might have been disposed)
 			if (!element.isConnected) return;
@@ -126,10 +118,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		}
 	}
 
-	private async generateAndApplyImage(
-		element: HTMLElement,
-		asset: ImageAsset
-	): Promise<void> {
+	private async generateAndApplyImage(element: HTMLElement, asset: ImageAsset): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(element, state);
 
@@ -171,31 +160,39 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		});
 	}
 
-	private applyThumbnail(element: HTMLElement, url: string, thumbnailWidth: number): void {
-		element.classList.add("ss-clip--thumbnails");
-		this.setLoadingState(element, false);
+	private applyThumbnail(el: HTMLElement, url: string, thumbnailWidth: number): void {
+		el.classList.add("ss-clip--thumbnails");
+		this.setLoadingState(el, false);
 
 		// Single thumbnail with CSS repeat-x tiles across clip width
-		element.style.backgroundImage = `url("${url}")`;
-		element.style.backgroundSize = `${thumbnailWidth}px 100%`;
-		element.style.backgroundRepeat = "repeat-x";
-		element.style.backgroundPosition = "left center";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
+		el.style.backgroundImage = `url("${url}")`;
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
+		el.style.backgroundSize = `${thumbnailWidth}px 100%`;
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
+		el.style.backgroundRepeat = "repeat-x";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
+		el.style.backgroundPosition = "left center";
 	}
 
 	private setLoadingState(element: HTMLElement, loading: boolean): void {
 		element.classList.toggle("ss-clip--loading-thumbnails", loading);
 	}
 
-	dispose(element: HTMLElement): void {
+	dispose(el: HTMLElement): void {
 		// Clean up state
-		this.clipStates.delete(element);
-		this.clipRequestKeys.delete(element);
+		this.clipStates.delete(el);
+		this.clipRequestKeys.delete(el);
 
 		// Remove thumbnail styles
-		element.classList.remove("ss-clip--thumbnails", "ss-clip--loading-thumbnails");
-		element.style.backgroundImage = "";
-		element.style.backgroundPosition = "";
-		element.style.backgroundSize = "";
-		element.style.backgroundRepeat = "";
+		el.classList.remove("ss-clip--thumbnails", "ss-clip--loading-thumbnails");
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundImage = "";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundPosition = "";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundSize = "";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundRepeat = "";
 	}
 }

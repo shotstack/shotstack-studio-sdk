@@ -44,11 +44,7 @@ export class AudioPlayer extends Player {
 
 		// Create volume keyframes after timing is resolved (not in constructor)
 		const baseVolume = typeof audioClipConfiguration.volume === "number" ? audioClipConfiguration.volume : 1;
-		this.volumeKeyframeBuilder = new KeyframeBuilder(
-			this.createVolumeKeyframes(audioClipConfiguration, baseVolume),
-			this.getLength(),
-			baseVolume
-		);
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioClipConfiguration, baseVolume), this.getLength(), baseVolume);
 
 		this.configureKeyframes();
 	}
@@ -117,11 +113,7 @@ export class AudioPlayer extends Player {
 		// Rebuild volume keyframes with updated timing
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
 		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
-		this.volumeKeyframeBuilder = new KeyframeBuilder(
-			this.createVolumeKeyframes(audioAsset, baseVolume),
-			this.getLength(),
-			baseVolume
-		);
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
 	}
 
 	public override getSize(): Size {

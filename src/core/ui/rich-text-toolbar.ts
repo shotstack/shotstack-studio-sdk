@@ -4,14 +4,15 @@ import type { ResolvedClip } from "@schemas/clip";
 import type { RichTextAsset } from "@schemas/rich-text-asset";
 import { injectShotstackStyles } from "@styles/inject";
 
+import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
+
 import { BackgroundColorPicker } from "./background-color-picker";
-import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES } from "./base-toolbar";
+import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { FontColorPicker } from "./font-color-picker";
-import { FontPicker, getFontDisplayName, type GoogleFont } from "./font-picker";
-import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
+import { FontPicker, type GoogleFont } from "./font-picker";
 
 export class RichTextToolbar extends BaseToolbar {
 	private fontPopup: HTMLDivElement | null = null;
@@ -1112,7 +1113,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.fontPicker = new FontPicker({
 			selectedFilename: currentFilename,
-			onSelect: (font) => this.selectGoogleFont(font),
+			onSelect: font => this.selectGoogleFont(font),
 			onClose: () => this.closeAllPopups()
 		});
 
@@ -1422,10 +1423,7 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		// Sync spacing panel
-		this.spacingPanel?.setState(
-			asset.style?.letterSpacing ?? 0,
-			asset.style?.lineHeight ?? 1.2
-		);
+		this.spacingPanel?.setState(asset.style?.letterSpacing ?? 0, asset.style?.lineHeight ?? 1.2);
 
 		const verticalAlign = asset.align?.vertical ?? "middle";
 		this.setButtonActive(this.anchorTopBtn, verticalAlign === "top");

@@ -5,13 +5,7 @@
  * These are regression tests to ensure refactoring doesn't break fit/scale behavior.
  */
 
-import {
-	calculateFitScale,
-	calculateContainerScale,
-	calculateSpriteTransform,
-	FIT_MODES,
-	type FitMode
-} from "@core/layout/fit-system";
+import { calculateFitScale, calculateContainerScale, calculateSpriteTransform, FIT_MODES, type FitMode } from "@core/layout/fit-system";
 
 describe("FitSystem", () => {
 	// ─── Constants Tests ──────────────────────────────────────────────────────

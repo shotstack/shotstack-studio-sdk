@@ -63,11 +63,13 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 	private speedIncreaseBtn: HTMLButtonElement | null = null;
 
 	render(): string {
-		const effectButtons = TransitionPanel.EFFECTS.map(e => `<button class="ss-transition-effect" data-effect="${e}">${e || "None"}</button>`).join("");
-
-		const directionButtons = TransitionPanel.DIRECTIONS.map(d => `<button class="ss-transition-dir" data-dir="${d}">${this.directionIcon(d)}</button>`).join(
+		const effectButtons = TransitionPanel.EFFECTS.map(e => `<button class="ss-transition-effect" data-effect="${e}">${e || "None"}</button>`).join(
 			""
 		);
+
+		const directionButtons = TransitionPanel.DIRECTIONS.map(
+			d => `<button class="ss-transition-dir" data-dir="${d}">${this.directionIcon(d)}</button>`
+		).join("");
 
 		return `
 			<div class="ss-transition-tabs">

@@ -90,12 +90,7 @@ const CORNER_NAMES: ScaleDirection[] = ["topLeft", "topRight", "bottomRight", "b
  * @param handleRadius - Radius of scale handles (inner boundary)
  * @param rotationZone - Size of rotation detection zone (outer boundary)
  */
-export function detectCornerZone(
-	point: Vector,
-	corners: Vector[],
-	handleRadius: number,
-	rotationZone: number
-): ScaleDirection | null {
+export function detectCornerZone(point: Vector, corners: Vector[], handleRadius: number, rotationZone: number): ScaleDirection | null {
 	for (let i = 0; i < corners.length; i += 1) {
 		const corner = corners[i];
 		const dx = point.x - corner.x;
@@ -122,12 +117,7 @@ export function detectCornerZone(
  * @param original - Original dimensions at drag start
  * @param canvasSize - Canvas size for offset normalization
  */
-export function calculateCornerScale(
-	direction: ScaleDirection,
-	delta: Vector,
-	original: OriginalDimensions,
-	canvasSize: Size
-): ResizeResult {
+export function calculateCornerScale(direction: ScaleDirection, delta: Vector, original: OriginalDimensions, canvasSize: Size): ResizeResult {
 	let newWidth = original.width;
 	let newHeight = original.height;
 	let newOffsetX = original.offsetX;
@@ -185,12 +175,7 @@ export function calculateCornerScale(
  * @param original - Original dimensions at drag start
  * @param canvasSize - Canvas size for offset normalization
  */
-export function calculateEdgeResize(
-	direction: EdgeDirection,
-	delta: Vector,
-	original: OriginalDimensions,
-	canvasSize: Size
-): ResizeResult {
+export function calculateEdgeResize(direction: EdgeDirection, delta: Vector, original: OriginalDimensions, canvasSize: Size): ResizeResult {
 	let newWidth = original.width;
 	let newHeight = original.height;
 	let newOffsetX = original.offsetX;

@@ -262,7 +262,7 @@ export class EditDocument {
 		if (!this.data.timeline.fonts) {
 			this.data.timeline.fonts = [];
 		}
-		if (!this.data.timeline.fonts.some((f) => f.src === src)) {
+		if (!this.data.timeline.fonts.some(f => f.src === src)) {
 			this.data.timeline.fonts.push({ src });
 		}
 	}
@@ -272,7 +272,7 @@ export class EditDocument {
 	 */
 	removeFont(src: string): void {
 		if (this.data.timeline.fonts) {
-			this.data.timeline.fonts = this.data.timeline.fonts.filter((f) => f.src !== src);
+			this.data.timeline.fonts = this.data.timeline.fonts.filter(f => f.src !== src);
 		}
 	}
 

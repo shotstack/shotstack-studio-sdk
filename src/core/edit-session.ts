@@ -1244,7 +1244,7 @@ export class Edit extends Entity {
 		// Collect all font filenames currently used by RichText clips
 		const usedFilenames = new Set<string>();
 		for (const clip of this.clips) {
-			const asset = clip.clipConfiguration.asset;
+			const { asset } = clip.clipConfiguration;
 			if (asset && asset.type === "rich-text" && asset.font?.family) {
 				usedFilenames.add(asset.font.family);
 			}
@@ -1265,7 +1265,7 @@ export class Edit extends Entity {
 	 */
 	private extractFilenameFromUrl(url: string): string | null {
 		try {
-			const pathname = new URL(url).pathname;
+			const { pathname } = new URL(url);
 			const filename = pathname.split("/").pop();
 			if (!filename) return null;
 			// Remove extension (.ttf, .woff2, etc.)

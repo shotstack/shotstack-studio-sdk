@@ -65,7 +65,9 @@
 	font-size: 13px;
 	color: #1a1a1a;
 	outline: none;
-	transition: background 0.15s ease, box-shadow 0.15s ease;
+	transition:
+		background 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
 .ss-font-picker-search-input::placeholder {
@@ -106,7 +108,9 @@
 	color: #666;
 	cursor: pointer;
 	white-space: nowrap;
-	transition: background 0.15s ease, color 0.15s ease;
+	transition:
+		background 0.15s ease,
+		color 0.15s ease;
 }
 
 .ss-font-picker-category:hover {
@@ -174,7 +178,10 @@
 	cursor: pointer;
 	opacity: 0.7;
 	white-space: nowrap;
-	transition: background 0.15s ease, opacity 0.2s ease, transform 0.1s ease;
+	transition:
+		background 0.15s ease,
+		opacity 0.2s ease,
+		transform 0.1s ease;
 }
 
 .ss-font-picker-recent-chip--loaded {
@@ -259,7 +266,9 @@
 	padding: 0 12px;
 	cursor: pointer;
 	opacity: 0.5;
-	transition: background 0.1s ease, opacity 0.25s ease;
+	transition:
+		background 0.1s ease,
+		opacity 0.25s ease;
 }
 
 .ss-font-item--loaded {
@@ -336,12 +345,7 @@
 }
 
 .ss-font-item:not(.ss-font-item--loaded) .ss-font-item-name {
-	background: linear-gradient(
-		90deg,
-		#e0e0e0 25%,
-		#f0f0f0 50%,
-		#e0e0e0 75%
-	);
+	background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
 	background-size: 200% 100%;
 	-webkit-background-clip: text;
 	background-clip: text;

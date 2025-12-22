@@ -33,10 +33,7 @@ export type CommandContext = {
 	setUpdatedClip(clip: Player): void;
 	restoreClipConfiguration(clip: Player, previousConfig: ClipType): void;
 	updateDuration(): void;
-	emitEvent<T extends EditEventName>(
-		name: T,
-		...args: EditEventMap[T] extends void ? [] : [EditEventMap[T]]
-	): void;
+	emitEvent<T extends EditEventName>(name: T, ...args: EditEventMap[T] extends void ? [] : [EditEventMap[T]]): void;
 	findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null;
 	getClipAt(trackIndex: number, clipIndex: number): Player | null;
 	getSelectedClip(): Player | null;

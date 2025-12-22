@@ -71,7 +71,9 @@
 	border-radius: 6px;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.15s ease, visibility 0.15s ease;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
 	pointer-events: none;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -86,7 +88,9 @@
 	border-left-color: rgba(24, 24, 27, 0.95);
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.15s ease, visibility 0.15s ease;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
 }
 
 .ss-canvas-toolbar-btn:hover::after,
@@ -302,7 +306,9 @@
 	border-radius: 50%;
 	border: 2px solid transparent;
 	cursor: pointer;
-	transition: transform 0.15s ease, border-color 0.15s ease;
+	transition:
+		transform 0.15s ease,
+		border-color 0.15s ease;
 }
 
 .ss-canvas-toolbar-color-swatch:hover {
@@ -442,7 +448,9 @@
 	font-size: 13px;
 	color: #1a1a1a;
 	outline: none;
-	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
 .ss-variable-value:focus {

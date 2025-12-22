@@ -134,7 +134,7 @@ async function main() {
 		}
 
 		// Determine weight from the variant we got
-		const variantKey = Object.keys(item.files).find((k) => item.files[k] === url) ?? "regular";
+		const variantKey = Object.keys(item.files).find(k => item.files[k] === url) ?? "regular";
 		const weight = getWeightFromVariant(variantKey);
 
 		fonts.push({

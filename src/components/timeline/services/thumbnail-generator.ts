@@ -105,10 +105,7 @@ export class ThumbnailGenerator {
 				return;
 			}
 
-			const timeout = setTimeout(() => {
-				video.removeEventListener("seeked", onSeeked);
-				reject(new Error("Seek timeout"));
-			}, 5000);
+			let timeout: ReturnType<typeof setTimeout>;
 
 			const onSeeked = (): void => {
 				clearTimeout(timeout);
@@ -117,7 +114,13 @@ export class ThumbnailGenerator {
 				setTimeout(resolve, 10);
 			};
 
+			timeout = setTimeout(() => {
+				video.removeEventListener("seeked", onSeeked);
+				reject(new Error("Seek timeout"));
+			}, 5000);
+
 			video.addEventListener("seeked", onSeeked);
+			// eslint-disable-next-line no-param-reassign -- Intentional video element seek
 			video.currentTime = clampedTime;
 		});
 	}
@@ -137,8 +140,36 @@ export class ThumbnailGenerator {
 			video.muted = true;
 			video.playsInline = true;
 
+			let timeout: ReturnType<typeof setTimeout>;
+			let cleanedUp = false;
+			let cleanup: () => void;
+
+			const onLoaded = (): void => {
+				if (cleanedUp) return;
+				cleanedUp = true;
+				cleanup();
+				this.videoPool.set(src, video);
+				resolve(video);
+			};
+
+			const onError = (): void => {
+				if (cleanedUp) return;
+				cleanedUp = true;
+				cleanup();
+				resolve(null);
+			};
+
+			// Define cleanup after handlers are declared to avoid use-before-define
+			cleanup = (): void => {
+				clearTimeout(timeout);
+				video.removeEventListener("loadeddata", onLoaded);
+				video.removeEventListener("error", onError);
+			};
+
 			// Timeout fallback for streaming videos that may not fire loadeddata quickly
-			const timeout = setTimeout(() => {
+			timeout = setTimeout(() => {
+				if (cleanedUp) return;
+				cleanedUp = true;
 				cleanup();
 				if (video.readyState >= 2) {
 					this.videoPool.set(src, video);
@@ -147,23 +178,6 @@ export class ThumbnailGenerator {
 					resolve(null);
 				}
 			}, 10000);
-
-			const cleanup = (): void => {
-				clearTimeout(timeout);
-				video.removeEventListener("loadeddata", onLoaded);
-				video.removeEventListener("error", onError);
-			};
-
-			const onLoaded = (): void => {
-				cleanup();
-				this.videoPool.set(src, video);
-				resolve(video);
-			};
-
-			const onError = (): void => {
-				cleanup();
-				resolve(null);
-			};
 
 			video.addEventListener("loadeddata", onLoaded);
 			video.addEventListener("error", onError);
@@ -176,7 +190,7 @@ export class ThumbnailGenerator {
 		if (this.cache.size >= this.maxCacheSize) {
 			// Remove oldest entries (first 10)
 			const keys = Array.from(this.cache.keys());
-			for (let i = 0; i < 10 && i < keys.length; i++) {
+			for (let i = 0; i < 10 && i < keys.length; i += 1) {
 				this.cache.delete(keys[i]);
 			}
 		}

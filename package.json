@@ -5,7 +5,7 @@
 		"cpuccino",
 		"dazzatron"
 	],
-	"version": "2.0.0-beta.1",
+	"version": "2.0.0-beta.2",
 	"description": "A video editing library for creating and editing videos with Shotstack",
 	"type": "module",
 	"main": "dist/shotstack-studio.umd.js",
