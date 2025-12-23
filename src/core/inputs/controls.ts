@@ -60,8 +60,6 @@ export class Controls {
 					event.preventDefault();
 					const delta = event.shiftKey ? 10 : 1;
 					this.edit.moveSelectedClip(-delta, 0);
-				} else if (event.metaKey) {
-					this.edit.seek(0);
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
 					this.edit.seek(this.edit.playbackTime - seekAmount);
@@ -74,8 +72,6 @@ export class Controls {
 					event.preventDefault();
 					const delta = event.shiftKey ? 10 : 1;
 					this.edit.moveSelectedClip(delta, 0);
-				} else if (event.metaKey) {
-					this.edit.seek(this.edit.getTotalDuration());
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
 					this.edit.seek(this.edit.playbackTime + seekAmount);
@@ -120,6 +116,30 @@ export class Controls {
 			case "Period": {
 				// Frame step forward
 				this.edit.seek(this.edit.playbackTime + this.frameTime);
+				break;
+			}
+			case "Home": {
+				event.preventDefault();
+				const selected = this.edit.getSelectedClipInfo();
+				if (event.shiftKey && selected) {
+					// Go to selected clip start
+					this.edit.seek(selected.player.getStart());
+				} else {
+					// Go to timeline start
+					this.edit.seek(0);
+				}
+				break;
+			}
+			case "End": {
+				event.preventDefault();
+				const selected = this.edit.getSelectedClipInfo();
+				if (event.shiftKey && selected) {
+					// Go to selected clip end
+					this.edit.seek(selected.player.getEnd());
+				} else {
+					// Go to timeline end
+					this.edit.seek(this.edit.getTotalDuration());
+				}
 				break;
 			}
 			case "KeyZ": {
