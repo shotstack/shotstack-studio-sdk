@@ -100,7 +100,7 @@ jest.mock("pixi.js", () => {
 			destroy: jest.fn()
 		})),
 		Texture: { from: jest.fn() },
-		Assets: { load: jest.fn().mockResolvedValue({}), unload: jest.fn() },
+		Assets: { load: jest.fn().mockResolvedValue({}), unload: jest.fn(), cache: { has: jest.fn().mockReturnValue(false) } },
 		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() })),
 		Rectangle: jest.fn()
 	};
@@ -111,6 +111,8 @@ const mockAssetLoader = {
 	load: jest.fn().mockResolvedValue({}),
 	unload: jest.fn(),
 	getProgress: jest.fn().mockReturnValue(100),
+	incrementRef: jest.fn(),
+	decrementRef: jest.fn().mockReturnValue(true),
 	loadTracker: { on: jest.fn(), off: jest.fn() }
 };
 

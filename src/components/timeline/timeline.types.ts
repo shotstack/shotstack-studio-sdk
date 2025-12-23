@@ -36,6 +36,8 @@ export interface TimelineInteractionConfig {
 	snapThreshold?: number;
 	/** Width of resize zone at clip edges */
 	resizeZone?: number;
+	/** Callback to request timeline re-render */
+	onRequestRender?: () => void;
 }
 
 /** Internal state for a clip */
@@ -116,8 +118,8 @@ export const DEFAULT_FEATURES: Required<TimelineFeatures> = {
 	multiSelect: true
 };
 
-/** Default interaction settings */
-export const DEFAULT_INTERACTION: Required<TimelineInteractionConfig> = {
+/** Default interaction settings (excludes optional callback) */
+export const DEFAULT_INTERACTION: Omit<Required<TimelineInteractionConfig>, "onRequestRender"> = {
 	dragThreshold: 3,
 	snapThreshold: 10,
 	resizeZone: 12

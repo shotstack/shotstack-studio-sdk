@@ -1,26 +1,33 @@
 {
-	"output": {
-		"format": "mp4",
-		"size": {
-			"width": 1920,
-			"height": 1080
-		}
-	},
 	"timeline": {
-		"background": "#000000",
 		"tracks": [
 			{
 				"clips": [
 					{
 						"asset": {
-							"type": "video",
-							"src": "https://shotstack-assets.s3.amazonaws.com/footage/night-sky.mp4"
+							"type": "image",
+							"src": "https://shotstack-assets.s3-ap-southeast-2.amazonaws.com/luma-mattes/static/circle-sd.jpg"
 						},
 						"start": 0,
-						"length": 10
+						"length": 5
+					},
+					{
+						"asset": {
+							"type": "video",
+							"src": "https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/footage/cat.hd.mp4"
+						},
+						"start": 7,
+						"length": 5
 					}
 				]
 			}
 		]
+	},
+	"output": {
+		"format": "mp4",
+		"size": {
+			"width": 1280,
+			"height": 720
+		}
 	}
 }

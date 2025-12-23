@@ -19,6 +19,7 @@ import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
+import { TransformClipAssetCommand } from "@core/commands/transform-clip-asset-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
@@ -498,10 +499,9 @@ export class Edit extends Entity {
 		return this.executeCommand(command);
 	}
 	public getClip(trackIdx: number, clipIdx: number): ResolvedClip | null {
-		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
-		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
-
-		return clipsByTrack[clipIdx].clipConfiguration;
+		const track = this.tracks[trackIdx];
+		if (!track || clipIdx < 0 || clipIdx >= track.length) return null;
+		return track[clipIdx].clipConfiguration;
 	}
 
 	/**
@@ -537,10 +537,9 @@ export class Edit extends Entity {
 	}
 
 	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
-		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
-		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
-
-		return clipsByTrack[clipIdx];
+		const track = this.tracks[trackIdx];
+		if (!track || clipIdx < 0 || clipIdx >= track.length) return null;
+		return track[clipIdx];
 	}
 
 	/** Get the exportable asset for a clip, preserving merge field templates */
@@ -1343,10 +1342,9 @@ export class Edit extends Entity {
 	private unloadClipAssets(clip: Player): void {
 		const { asset } = clip.clipConfiguration;
 		if (asset && "src" in asset && typeof asset.src === "string") {
-			try {
+			const safeToUnload = this.assetLoader.decrementRef(asset.src);
+			if (safeToUnload && pixi.Assets.cache.has(asset.src)) {
 				pixi.Assets.unload(asset.src);
-			} catch (error) {
-				console.warn(`Failed to unload asset: ${asset.src}`, error);
 			}
 		}
 	}
@@ -2234,6 +2232,288 @@ export class Edit extends Entity {
 				this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath);
 			}
 		}
+	}
+
+	// ─── Luma Mask API ──────────────────────────────────────────────────────────
+
+	/** Map of content player → luma player for attachment tracking */
+	private lumaAttachments = new Map<Player, Player>();
+
+	/** Map of asset src → original asset type (for reliable luma detachment) */
+	private originalAssetTypes = new Map<string, "image" | "video">();
+
+	/**
+	 * Attach a luma mask to a specific clip.
+	 * Creates a luma clip on the same track with synchronized timing.
+	 *
+	 * @param trackIndex - Track index of the content clip
+	 * @param clipIndex - Clip index of the content clip
+	 * @param lumaSrc - URL of the luma mask asset (video or image)
+	 */
+	public async attachLumaToClip(trackIndex: number, clipIndex: number, lumaSrc: string): Promise<void> {
+		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
+		if (!contentPlayer) return;
+
+		// Don't attach luma to another luma
+		if (contentPlayer.playerType === PlayerType.Luma) return;
+
+		// Check if already has a luma attached
+		if (this.lumaAttachments.has(contentPlayer)) {
+			// Detach existing luma first
+			await this.detachLumaFromClip(trackIndex, clipIndex);
+		}
+
+		// Create luma clip config with synced timing
+		const contentConfig = contentPlayer.clipConfiguration;
+		const lumaClip: ResolvedClip = {
+			asset: {
+				type: "luma",
+				src: lumaSrc
+			},
+			start: contentConfig.start,
+			length: contentConfig.length,
+			fit: "crop" // Required by schema transform, not visually relevant for luma masks
+		};
+
+		// Add the luma clip to the same track
+		await this.addClip(trackIndex, lumaClip);
+
+		// Find the newly added luma player
+		const track = this.tracks[trackIndex];
+		const lumaPlayer = track.find(
+			p => p.playerType === PlayerType.Luma && p.clipConfiguration.start === contentConfig.start
+		);
+
+		if (lumaPlayer) {
+			// Store the attachment
+			this.lumaAttachments.set(contentPlayer, lumaPlayer);
+
+			// Emit event
+			const lumaClipIndex = track.indexOf(lumaPlayer);
+			this.events.emit(EditEvent.LumaAttached, {
+				trackIndex,
+				clipIndex,
+				lumaSrc,
+				lumaClipIndex
+			});
+		}
+	}
+
+	/**
+	 * Detach the luma mask from a clip.
+	 * Removes the luma clip from the track.
+	 *
+	 * @param trackIndex - Track index of the content clip
+	 * @param clipIndex - Clip index of the content clip
+	 */
+	public async detachLumaFromClip(trackIndex: number, clipIndex: number): Promise<void> {
+		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
+		if (!contentPlayer) return;
+
+		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
+		if (!lumaPlayer) return;
+
+		// Find the luma clip index
+		const lumaIndices = this.findClipIndices(lumaPlayer);
+		if (lumaIndices) {
+			// Remove the attachment first
+			this.lumaAttachments.delete(contentPlayer);
+
+			// Delete the luma clip
+			const command = new DeleteClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex);
+			this.executeCommand(command);
+
+			// Emit event
+			this.events.emit(EditEvent.LumaDetached, { trackIndex, clipIndex });
+		}
+	}
+
+	/**
+	 * Get the luma mask attached to a clip, if any.
+	 *
+	 * @param trackIndex - Track index of the content clip
+	 * @param clipIndex - Clip index of the content clip
+	 * @returns Luma info or null if no luma attached
+	 */
+	public getClipLuma(trackIndex: number, clipIndex: number): { src: string; clipIndex: number } | null {
+		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
+		if (!contentPlayer) return null;
+
+		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
+		if (!lumaPlayer) return null;
+
+		const lumaIndices = this.findClipIndices(lumaPlayer);
+		if (!lumaIndices) return null;
+
+		const lumaSrc = (lumaPlayer.clipConfiguration.asset as { src?: string })?.src;
+		if (!lumaSrc) return null;
+
+		return { src: lumaSrc, clipIndex: lumaIndices.clipIndex };
+	}
+
+	/**
+	 * Check if a clip has a luma mask attached.
+	 *
+	 * @param trackIndex - Track index of the content clip
+	 * @param clipIndex - Clip index of the content clip
+	 */
+	public hasLumaMask(trackIndex: number, clipIndex: number): boolean {
+		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
+		if (!contentPlayer) return false;
+		return this.lumaAttachments.has(contentPlayer);
+	}
+
+	/**
+	 * Register a luma attachment in the Edit Session's map.
+	 * This is called when a luma is attached to a content clip (e.g., during drag-drop).
+	 * The map is used by syncAttachedLuma() to coordinate timing between attached clips.
+	 */
+	public registerLumaAttachment(contentTrackIndex: number, contentClipIndex: number, lumaTrackIndex: number, lumaClipIndex: number): void {
+		const contentPlayer = this.getClipAt(contentTrackIndex, contentClipIndex);
+		const lumaPlayer = this.getClipAt(lumaTrackIndex, lumaClipIndex);
+		if (contentPlayer && lumaPlayer) {
+			this.lumaAttachments.set(contentPlayer, lumaPlayer);
+		}
+	}
+
+	/**
+	 * Synchronize attached luma timing with content clip.
+	 * Called internally when content clip is moved or resized.
+	 * @internal
+	 */
+	public syncAttachedLuma(contentTrackIndex: number, contentClipIndex: number): void {
+		const contentPlayer = this.getClipAt(contentTrackIndex, contentClipIndex);
+		if (!contentPlayer) return;
+
+		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
+		if (!lumaPlayer) return;
+
+		// Sync timing from content to luma
+		const contentConfig = contentPlayer.clipConfiguration;
+		lumaPlayer.clipConfiguration.start = contentConfig.start;
+		lumaPlayer.clipConfiguration.length = contentConfig.length;
+
+		// Update resolved timing to match content player
+		lumaPlayer.setResolvedTiming({
+			start: contentPlayer.getStart(),
+			length: contentPlayer.getLength()
+		});
+
+		// Visually apply the position change
+		lumaPlayer.reconfigureAfterRestore();
+		lumaPlayer.draw();
+
+		// Also update in document layer
+		const lumaIndices = this.findClipIndices(lumaPlayer);
+		if (lumaIndices) {
+			this.document.updateClip(lumaIndices.trackIndex, lumaIndices.clipIndex, {
+				start: contentConfig.start,
+				length: contentConfig.length
+			});
+		}
+	}
+
+	/**
+	 * Get the luma player attached to a content player.
+	 * @internal
+	 */
+	public getAttachedLumaPlayer(contentPlayer: Player): Player | null {
+		return this.lumaAttachments.get(contentPlayer) ?? null;
+	}
+
+	/**
+	 * Rebuild luma attachments from track state.
+	 * Called after loading or undo/redo to restore attachment map.
+	 * @internal
+	 */
+	public rebuildLumaAttachments(): void {
+		this.lumaAttachments.clear();
+
+		for (const track of this.tracks) {
+			const lumaPlayer = track.find(p => p.playerType === PlayerType.Luma);
+			const contentClips = track.filter(p => p.playerType !== PlayerType.Luma);
+
+			if (lumaPlayer && contentClips.length > 0) {
+				// Find content clip with matching timing
+				const matchingContent = contentClips.find(
+					c =>
+						c.clipConfiguration.start === lumaPlayer.clipConfiguration.start &&
+						c.clipConfiguration.length === lumaPlayer.clipConfiguration.length
+				);
+
+				if (matchingContent) {
+					this.lumaAttachments.set(matchingContent, lumaPlayer);
+				} else if (contentClips.length === 1) {
+					// Fallback: if only one content clip, attach to it
+					this.lumaAttachments.set(contentClips[0], lumaPlayer);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Transform a clip to luma type (for attachment).
+	 * Recreates the player with luma asset type while preserving the src.
+	 *
+	 * @param trackIndex - Track index of the clip
+	 * @param clipIndex - Clip index of the clip
+	 */
+	public transformToLuma(trackIndex: number, clipIndex: number): void {
+		const player = this.getClipAt(trackIndex, clipIndex);
+		if (!player?.clipConfiguration?.asset) return;
+
+		const asset = player.clipConfiguration.asset as { type?: string; src?: string };
+		const originalType = asset.type as "image" | "video" | undefined;
+		const src = asset.src;
+
+		// Store original type for reliable restoration later
+		if (src && (originalType === "image" || originalType === "video")) {
+			this.originalAssetTypes.set(src, originalType);
+		}
+
+		const command = new TransformClipAssetCommand(trackIndex, clipIndex, "luma");
+		this.executeCommand(command);
+	}
+
+	/**
+	 * Transform a luma clip back to its original type (for detachment).
+	 * Uses stored original type for reliability, with URL extension fallback.
+	 *
+	 * @param trackIndex - Track index of the luma clip
+	 * @param clipIndex - Clip index of the luma clip
+	 */
+	public transformFromLuma(trackIndex: number, clipIndex: number): void {
+		const player = this.getClipAt(trackIndex, clipIndex);
+		if (!player?.clipConfiguration?.asset) return;
+
+		const { src } = player.clipConfiguration.asset as { src?: string };
+		if (!src) return;
+
+		// Use stored original type if available (most reliable)
+		let originalType = this.originalAssetTypes.get(src);
+
+		// Fallback: infer from URL extension
+		if (!originalType) {
+			originalType = this.inferAssetTypeFromUrl(src);
+		}
+
+		const command = new TransformClipAssetCommand(trackIndex, clipIndex, originalType);
+		this.executeCommand(command);
+	}
+
+	/**
+	 * Infer asset type from URL extension.
+	 * Used as fallback when original type isn't stored.
+	 * @internal
+	 */
+	private inferAssetTypeFromUrl(src: string): "image" | "video" {
+		const url = src.toLowerCase().split("?")[0];
+		const videoExtensions = [".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv", ".ogv", ".ogg"];
+
+		if (videoExtensions.some(ext => url.endsWith(ext))) {
+			return "video";
+		}
+		return "image";
 	}
 
 	// ─── Intent Listeners ────────────────────────────────────────────────────────

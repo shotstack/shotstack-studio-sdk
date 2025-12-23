@@ -165,10 +165,9 @@ export class VideoPlayer extends Player {
 			this.sprite.destroy();
 			this.sprite = null;
 		}
-		if (this.texture) {
-			this.texture.destroy();
-			this.texture = null;
-		}
+		// DON'T destroy the texture - it's managed by Assets
+		// The unloadClipAssets() method handles proper cleanup via Assets.unload()
+		this.texture = null;
 	}
 
 	public getVolume(): number {

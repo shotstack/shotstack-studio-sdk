@@ -53,11 +53,16 @@ type InteractionState =
 			originalStyles: { position: string; left: string; top: string; zIndex: string; pointerEvents: string };
 			draggedClipLength: number; // Length of the clip being dragged
 			collisionResult: CollisionResult; // Current collision resolution
+			altKeyHeld: boolean; // Alt/Option key held for mask attachment mode
 	  }
 	| { type: "resizing"; clipRef: ClipRef; edge: "left" | "right"; originalStart: number; originalLength: number };
 
+/** Resolved config type - numeric properties required, callback optional */
+type ResolvedConfig = Required<Omit<TimelineInteractionConfig, "onRequestRender">> &
+	Pick<TimelineInteractionConfig, "onRequestRender">;
+
 /** Configuration defaults */
-const DEFAULT_CONFIG: Required<TimelineInteractionConfig> = {
+const DEFAULT_CONFIG: ResolvedConfig = {
 	dragThreshold: 3,
 	snapThreshold: 10,
 	resizeZone: 12
@@ -66,7 +71,7 @@ const DEFAULT_CONFIG: Required<TimelineInteractionConfig> = {
 /** Controller for timeline interactions (drag, resize, selection) */
 export class InteractionController {
 	private state: InteractionState = { type: "idle" };
-	private readonly config: Required<TimelineInteractionConfig>;
+	private readonly config: ResolvedConfig;
 	private snapPoints: SnapPoint[] = [];
 
 	// DOM references
@@ -75,6 +80,10 @@ export class InteractionController {
 	private dragGhost: HTMLElement | null = null;
 	private dropZone: HTMLElement | null = null;
 	private dragTimeTooltip: HTMLElement | null = null;
+
+	// Luma drag state
+	private lumaTargetClipElement: HTMLElement | null = null;
+	private lumaConnectionLine: HTMLElement | null = null;
 
 	// Bound handlers for cleanup
 	private readonly handlePointerMove: (e: PointerEvent) => void;
@@ -249,7 +258,8 @@ export class InteractionController {
 			dragOffsetY,
 			originalStyles,
 			draggedClipLength: clip.config.length,
-			collisionResult: { newStartTime: originalTime, pushOffset: 0 }
+			collisionResult: { newStartTime: originalTime, pushOffset: 0 },
+			altKeyHeld: e.altKey
 		};
 
 		// Position ghost at current clip position initially
@@ -314,14 +324,42 @@ export class InteractionController {
 			this.hideSnapLine();
 		}
 
-		// Apply collision detection for track targets (skip for luma assets - they overlay)
+		// Get offset for positioning in feedback layer (accounts for ruler height)
+		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
+
+		// Apply collision detection for track targets (skip for luma/image/video when attaching)
 		if (dragTarget.type === "track") {
 			const draggedClip = this.stateManager.getClipAt(this.state.clipRef.trackIndex, this.state.clipRef.clipIndex);
 			const draggedAssetType = draggedClip?.config.asset?.type;
+			const canAttachAsLuma = draggedAssetType === "luma" || draggedAssetType === "image" || draggedAssetType === "video";
 
-			if (draggedAssetType === "luma") {
-				// Luma assets can overlay other clips - skip collision detection
-				this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+			if (canAttachAsLuma) {
+				// Update Alt key state during drag (user can press/release Alt while dragging)
+				this.state.altKeyHeld = e.altKey;
+
+				// Find target content clip (excluding self for image/video)
+				const targetClip = this.findContentClipAtPosition(dragTarget.trackIndex, clipTime, this.state.clipRef);
+
+				// Alt key enables mask attachment mode
+				if (targetClip && e.altKey) {
+					// Mask mode: show UI and snap to target
+					this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+					this.updateLumaTargetHighlight(targetClip, dragTarget.trackIndex, tracksOffset);
+					clipTime = targetClip.config.start;
+					this.state.collisionResult.newStartTime = clipTime;
+				} else {
+					// Normal mode: clear feedback and use collision detection
+					this.clearLumaDragFeedback();
+					if (draggedAssetType === "luma") {
+						// Luma clips overlay freely (no collision)
+						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+					} else {
+						// Image/video use normal collision detection
+						const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
+						clipTime = collisionResult.newStartTime;
+						this.state.collisionResult = collisionResult;
+					}
+				}
 			} else {
 				const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
 				clipTime = collisionResult.newStartTime;
@@ -330,10 +368,9 @@ export class InteractionController {
 		} else {
 			// No collision for insertion targets (new track)
 			this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+			// Clear luma target highlight when not over a track
+			this.clearLumaDragFeedback();
 		}
-
-		// Get offset for positioning in feedback layer (accounts for ruler height)
-		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
 
 		// Position ghost and drop zone based on target type
 		if (dragTarget.type === "track") {
@@ -427,7 +464,7 @@ export class InteractionController {
 	private completeDrag(_e: PointerEvent): void {
 		if (this.state.type !== "dragging") return;
 
-		const { clipRef, clipElement, ghost, startTime, originalTrack, dragTarget, originalStyles, collisionResult } = this.state;
+		const { clipRef, clipElement, ghost, startTime, originalTrack, dragTarget, originalStyles, collisionResult, altKeyHeld } = this.state;
 
 		// Restore clip element to normal flow before executing command
 		clipElement.style.position = originalStyles.position;
@@ -446,12 +483,47 @@ export class InteractionController {
 		// Use the collision-resolved time from the last drag move
 		let newTime = collisionResult.newStartTime;
 
-		// Handle luma clip drop - must attach to a content clip
-		if (draggedAssetType === "luma" && dragTarget.type === "track") {
-			const targetContentClip = this.findContentClipAtPosition(dragTarget.trackIndex, newTime);
+		// Handle luma/image/video attachment and detachment
+		// Attachment only happens if Alt key was held (deliberate action required)
+		const attachMaskMode = altKeyHeld;
 
-			if (!targetContentClip) {
-				// No valid target content clip - cancel drop
+		if (dragTarget.type === "track") {
+			const targetContentClip = this.findContentClipAtPosition(dragTarget.trackIndex, newTime, clipRef);
+
+			// Image/video dropped on a content clip → transform to luma and attach (only if Alt held)
+			if ((draggedAssetType === "image" || draggedAssetType === "video") && targetContentClip && attachMaskMode) {
+				// Move clip to target track first (if different)
+				if (dragTarget.trackIndex !== originalTrack) {
+					const moveCmd = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(targetContentClip.config.start));
+					this.edit.executeEditCommand(moveCmd);
+				}
+
+				// Transform to luma - indices may have changed after move
+				const newClipIndex = dragTarget.trackIndex !== originalTrack ? this.findClipIndexAfterMove(dragTarget.trackIndex, targetContentClip.config.start) : clipRef.clipIndex;
+				this.edit.transformToLuma(dragTarget.trackIndex, newClipIndex);
+
+				// Register attachment in both timeline-state (UI) and edit-session (runtime sync)
+				this.stateManager.attachLuma(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, newClipIndex);
+				this.edit.registerLumaAttachment(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, newClipIndex);
+
+				// Sync timing to target clip (now works because edit-session map is populated)
+				this.edit.syncAttachedLuma(targetContentClip.trackIndex, targetContentClip.clipIndex);
+
+				// Play success animation on target clip before clearing
+				if (this.lumaTargetClipElement) {
+					const targetElement = this.lumaTargetClipElement;
+					targetElement.classList.remove("ss-clip-luma-target");
+					targetElement.classList.add("ss-clip-luma-attached");
+					setTimeout(() => targetElement.classList.remove("ss-clip-luma-attached"), 600);
+					this.lumaTargetClipElement = null;
+				}
+				this.hideLumaConnectionLine();
+
+				// Force timeline to rebuild state and show updated attachment
+				this.stateManager.detectAndAttachLumas();
+				this.config.onRequestRender?.();
+
+				// Cleanup
 				ghost.remove();
 				this.hideSnapLine();
 				this.hideDropZone();
@@ -460,25 +532,40 @@ export class InteractionController {
 				return;
 			}
 
-			// Snap luma timing to content clip
-			newTime = targetContentClip.config.start;
+			// Luma handling
+			if (draggedAssetType === "luma") {
+				// Only attach if Alt key was held (deliberate action required)
+				if (targetContentClip && attachMaskMode) {
+					// Luma dropped on content clip → re-attach to new target
+					newTime = targetContentClip.config.start;
 
-			// Move luma to target position
-			if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
-				const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
-				this.edit.executeEditCommand(command);
+					if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
+						const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
+						this.edit.executeEditCommand(command);
+					}
+
+					this.stateManager.attachLuma(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
+
+					ghost.remove();
+					this.hideSnapLine();
+					this.hideDropZone();
+					this.hideDragTimeTooltip();
+					this.clearLumaDragFeedback();
+					this.state = { type: "idle" };
+					return;
+				}
+
+				// Luma dropped on empty space → transform back and place at drop location
+				this.edit.transformFromLuma(clipRef.trackIndex, clipRef.clipIndex);
+
+				// Clear any existing attachment
+				const contentClipRef = this.stateManager.getContentClipForLuma(clipRef.trackIndex, clipRef.clipIndex);
+				if (contentClipRef) {
+					this.stateManager.detachLuma(contentClipRef.trackIndex, contentClipRef.clipIndex);
+				}
+
+				// Move to drop location - fall through to normal move handling
 			}
-
-			// Register attachment in state manager
-			this.stateManager.attachLuma(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
-
-			// Cleanup and return early
-			ghost.remove();
-			this.hideSnapLine();
-			this.hideDropZone();
-			this.hideDragTimeTooltip();
-			this.state = { type: "idle" };
-			return;
 		}
 
 		// Get attached luma Player reference BEFORE any move (stable across index changes)
@@ -537,6 +624,7 @@ export class InteractionController {
 		this.hideSnapLine();
 		this.hideDropZone();
 		this.hideDragTimeTooltip();
+		this.clearLumaDragFeedback();
 		this.state = { type: "idle" };
 	}
 
@@ -712,13 +800,16 @@ export class InteractionController {
 	}
 
 	/** Find a non-luma content clip at the given position on a track */
-	private findContentClipAtPosition(trackIndex: number, time: number): ClipState | null {
+	private findContentClipAtPosition(trackIndex: number, time: number, excludeClipRef?: ClipRef): ClipState | null {
 		const track = this.stateManager.getTracks()[trackIndex];
 		if (!track) return null;
 
 		for (const clip of track.clips) {
-			// Only consider non-luma content clips
-			if (clip.config.asset?.type !== "luma") {
+			// Skip excluded clip (can't attach to self)
+			const isExcluded = excludeClipRef && clip.trackIndex === excludeClipRef.trackIndex && clip.clipIndex === excludeClipRef.clipIndex;
+
+			// Only consider non-luma content clips that aren't excluded
+			if (!isExcluded && clip.config.asset?.type !== "luma") {
 				const clipStart = clip.config.start;
 				const clipEnd = clipStart + clip.config.length;
 
@@ -729,6 +820,15 @@ export class InteractionController {
 			}
 		}
 		return null;
+	}
+
+	/** Find clip index on a track by start time (used after move to get updated index) */
+	private findClipIndexAfterMove(trackIndex: number, startTime: number): number {
+		const track = this.stateManager.getTracks()[trackIndex];
+		if (!track) return 0;
+
+		const index = track.clips.findIndex(clip => Math.abs(clip.config.start - startTime) < 0.001);
+		return index === -1 ? 0 : index;
 	}
 
 	private buildSnapPoints(excludeClip: ClipRef): void {
@@ -851,6 +951,90 @@ export class InteractionController {
 		}
 	}
 
+	// ========== Luma Target Highlighting ==========
+
+	/** Update luma target highlight during drag */
+	private updateLumaTargetHighlight(targetClip: ClipState | null, trackIndex: number, tracksOffset: number): void {
+		// Clear previous highlight
+		if (this.lumaTargetClipElement) {
+			this.lumaTargetClipElement.classList.remove("ss-clip-luma-target");
+			this.lumaTargetClipElement = null;
+		}
+
+		// Get the dragging clip element
+		const draggingClipElement = this.state?.type === "dragging" ? this.state.clipElement : null;
+
+		// Hide connection line and clear dragging clip indicator if no target
+		if (!targetClip) {
+			this.hideLumaConnectionLine();
+			if (draggingClipElement) {
+				draggingClipElement.classList.remove("ss-clip-luma-has-target");
+			}
+			return;
+		}
+
+		// Find and highlight new target
+		const clipElement = this.tracksContainer.querySelector(
+			`[data-track-index="${trackIndex}"][data-clip-index="${targetClip.clipIndex}"]`
+		) as HTMLElement | null;
+
+		if (clipElement) {
+			clipElement.classList.add("ss-clip-luma-target");
+			this.lumaTargetClipElement = clipElement;
+
+			// Add indicator to dragging clip (shows mask icon via ::after)
+			if (draggingClipElement) {
+				draggingClipElement.classList.add("ss-clip-luma-has-target");
+			}
+
+			// Show connection line from ghost to target
+			this.showLumaConnectionLine(targetClip, trackIndex, tracksOffset);
+		}
+	}
+
+	/** Show magnetic connection line between luma ghost and target clip */
+	private showLumaConnectionLine(targetClip: ClipState, trackIndex: number, tracksOffset: number): void {
+		if (!this.lumaConnectionLine) {
+			this.lumaConnectionLine = document.createElement("div");
+			this.lumaConnectionLine.className = "ss-luma-connection-line";
+			this.feedbackLayer.appendChild(this.lumaConnectionLine);
+		}
+
+		const pps = this.stateManager.getViewport().pixelsPerSecond;
+		const tracks = this.stateManager.getTracks();
+		const track = tracks[trackIndex];
+		const trackY = this.getTrackYPosition(trackIndex);
+		const trackHeight = getTrackHeight(track?.primaryAssetType ?? "default");
+
+		// Position connection indicator at target clip's left edge
+		const clipX = targetClip.config.start * pps;
+		this.lumaConnectionLine.style.left = `${clipX}px`;
+		this.lumaConnectionLine.style.top = `${trackY + tracksOffset}px`;
+		this.lumaConnectionLine.style.height = `${trackHeight}px`;
+		this.lumaConnectionLine.classList.add("active");
+	}
+
+	/** Hide luma connection line */
+	private hideLumaConnectionLine(): void {
+		if (this.lumaConnectionLine) {
+			this.lumaConnectionLine.classList.remove("active");
+		}
+	}
+
+	/** Clear all luma drag visual feedback */
+	private clearLumaDragFeedback(): void {
+		if (this.lumaTargetClipElement) {
+			this.lumaTargetClipElement.classList.remove("ss-clip-luma-target");
+			this.lumaTargetClipElement = null;
+		}
+		// Clear dragging clip indicator
+		const draggingClipElement = this.state?.type === "dragging" ? this.state.clipElement : null;
+		if (draggingClipElement) {
+			draggingClipElement.classList.remove("ss-clip-luma-has-target");
+		}
+		this.hideLumaConnectionLine();
+	}
+
 	/** Get drag target at Y position - either an existing track or an insertion point between tracks */
 	private getDragTargetAtY(y: number): DragTarget {
 		const tracks = this.stateManager.getTracks();
@@ -920,5 +1104,12 @@ export class InteractionController {
 			this.dragTimeTooltip.remove();
 			this.dragTimeTooltip = null;
 		}
+
+		if (this.lumaConnectionLine) {
+			this.lumaConnectionLine.remove();
+			this.lumaConnectionLine = null;
+		}
+
+		this.clearLumaDragFeedback();
 	}
 }

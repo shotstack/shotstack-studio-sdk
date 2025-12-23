@@ -293,4 +293,25 @@ export class ClipComponent extends TimelineEntity {
 	public getState(): ClipState | null {
 		return this.currentState;
 	}
+
+	// ========== Luma Drop Target State ==========
+
+	/** Set this clip as a luma drop target (during luma drag) */
+	public setLumaDropTarget(active: boolean): void {
+		this.element.classList.toggle("ss-clip-luma-target", active);
+	}
+
+	/** Play attachment animation when luma is successfully attached */
+	public playLumaAttachAnimation(): void {
+		// Add animation class and remove after animation completes
+		this.element.classList.add("ss-clip-luma-attached");
+		setTimeout(() => {
+			this.element.classList.remove("ss-clip-luma-attached");
+		}, 600); // Match CSS animation duration
+	}
+
+	/** Check if this clip has an attached luma mask */
+	public hasLumaMask(): boolean {
+		return this.currentLumaRef !== undefined;
+	}
 }

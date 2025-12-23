@@ -697,3 +697,316 @@
 .ss-clip.ss-clip--error.ss-clip--thumbnails {
 	background-image: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMA MASK ATTACHMENT UX - Precision Luminescence
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CSS Variables - Luma Attachment Theme
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+	/* Core attachment colors */
+	--luma-accent: #00d4aa;
+	--luma-accent-dim: rgba(0, 212, 170, 0.15);
+	--luma-accent-glow: rgba(0, 212, 170, 0.4);
+
+	/* Badge colors */
+	--luma-badge-bg: linear-gradient(135deg, rgba(0, 212, 170, 0.9) 0%, rgba(0, 180, 150, 0.95) 100%);
+	--luma-badge-shadow: 0 2px 8px rgba(0, 212, 170, 0.3), 0 0 1px rgba(0, 0, 0, 0.5);
+
+	/* Animation timing */
+	--luma-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--luma-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. VALID DROP TARGET - Hover State
+   When luma clip hovers over a content clip
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-target {
+	/* Solid border + soft outer glow */
+	box-shadow:
+		0 0 0 3px var(--luma-accent),
+		0 0 12px var(--luma-accent-glow);
+
+	/* Subtle breathing animation */
+	animation: luma-target-breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes luma-target-breathe {
+	0%,
+	100% {
+		box-shadow:
+			0 0 0 3px var(--luma-accent),
+			0 0 12px var(--luma-accent-glow);
+	}
+	50% {
+		box-shadow:
+			0 0 0 3px var(--luma-accent),
+			0 0 20px var(--luma-accent-glow);
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1b. DRAGGING LUMA CLIP - Shows mask icon when dwell timer ready
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-has-target::after {
+	content: "◐";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+
+	/* Compact pill shape */
+	padding: 4px 10px;
+	background: rgba(0, 212, 170, 0.9);
+	border-radius: 12px;
+
+	/* Typography */
+	font-size: 14px;
+	color: #0a1a15;
+	font-weight: 600;
+
+	/* Subtle shadow for depth */
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+	pointer-events: none;
+	z-index: 10;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. ATTACHMENT ANIMATION - Drop Effect
+   Triggered when luma is dropped onto target
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-attaching {
+	animation: luma-attach-snap 0.4s var(--luma-ease-snap) forwards;
+}
+
+@keyframes luma-attach-snap {
+	0% {
+		transform: scale(1.02);
+		box-shadow:
+			0 0 0 2px var(--luma-accent),
+			0 0 30px var(--luma-accent-glow);
+	}
+	40% {
+		transform: scale(0.98);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: none;
+	}
+}
+
+/* Successful attachment animation (after drop) */
+.ss-clip.ss-clip-luma-attached {
+	animation: luma-attached-success 0.6s var(--luma-ease-snap) forwards;
+}
+
+@keyframes luma-attached-success {
+	0% {
+		box-shadow:
+			0 0 0 3px var(--luma-accent),
+			0 0 40px var(--luma-accent-glow);
+	}
+	30% {
+		transform: scale(1.02);
+	}
+	60% {
+		transform: scale(0.99);
+		box-shadow:
+			0 0 0 1px var(--luma-accent),
+			0 0 15px var(--luma-accent-glow);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: none;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. MASK BADGE - Premium Attached Indicator
+   Shows on clips with luma masks attached
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip-mask-badge {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+
+	/* Size and shape */
+	width: 20px;
+	height: 20px;
+	border-radius: 5px;
+
+	/* Visual styling */
+	background: var(--luma-badge-bg);
+	box-shadow: var(--luma-badge-shadow);
+
+	/* Icon */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 11px;
+	font-weight: 600;
+	color: #0a1a15;
+	font-family: system-ui, -apple-system, sans-serif;
+
+	/* Interaction */
+	cursor: pointer;
+	transition:
+		transform 0.15s var(--luma-ease-out),
+		box-shadow 0.15s var(--luma-ease-out),
+		background 0.15s ease;
+
+	/* Subtle inner highlight */
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	z-index: 5;
+}
+
+.ss-clip-mask-badge:hover {
+	transform: scale(1.1);
+	box-shadow:
+		var(--luma-badge-shadow),
+		0 0 12px var(--luma-accent-glow);
+}
+
+.ss-clip-mask-badge:active {
+	transform: scale(0.95);
+	background: linear-gradient(135deg, rgba(0, 180, 150, 1) 0%, rgba(0, 160, 130, 1) 100%);
+}
+
+/* Badge entrance animation */
+.ss-clip-mask-badge.ss-badge-entering {
+	animation: badge-enter 0.35s var(--luma-ease-snap) forwards;
+}
+
+@keyframes badge-enter {
+	0% {
+		opacity: 0;
+		transform: scale(0) rotate(-90deg);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) rotate(0deg);
+	}
+}
+
+/* Subtle idle breathing for visibility */
+.ss-clip-mask-badge::after {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: 7px;
+	border: 1px solid var(--luma-accent-dim);
+	opacity: 0;
+	animation: badge-breathe 3s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes badge-breathe {
+	0%,
+	100% {
+		opacity: 0;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. LUMA CLIP GHOST - During Drag
+   The dragged luma clip styling
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-dragging {
+	opacity: 0.85;
+	box-shadow:
+		0 0 0 1px var(--luma-accent),
+		0 8px 32px rgba(0, 0, 0, 0.4),
+		0 0 24px var(--luma-accent-dim);
+
+	/* Subtle magnetic wobble during drag */
+	animation: luma-drag-float 0.8s ease-in-out infinite;
+}
+
+@keyframes luma-drag-float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-2px);
+	}
+}
+
+/* Snap-to-target transition */
+.ss-clip.ss-clip-luma-snapping {
+	transition:
+		transform 0.2s var(--luma-ease-magnetic),
+		left 0.2s var(--luma-ease-magnetic),
+		top 0.2s var(--luma-ease-magnetic);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. CONNECTION LINE - Magnetic Link Visual
+   Optional: Line connecting luma to target during hover
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-luma-connection-line {
+	position: absolute;
+	pointer-events: none;
+	z-index: 5;
+
+	/* Line styling */
+	height: 2px;
+	background: linear-gradient(90deg, var(--luma-accent) 0%, var(--luma-accent-glow) 50%, var(--luma-accent) 100%);
+	border-radius: 1px;
+
+	/* Glow effect */
+	box-shadow: 0 0 8px var(--luma-accent-glow);
+
+	/* Animated dash pattern */
+	background-size: 200% 100%;
+	animation: luma-line-flow 1s linear infinite;
+
+	/* Smooth entry */
+	opacity: 0;
+	transform-origin: left center;
+	transition: opacity 0.2s ease;
+}
+
+.ss-luma-connection-line.active {
+	opacity: 1;
+}
+
+@keyframes luma-line-flow {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: 0% 0;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. DETACH STATE - Remove Mask Hover
+   When hovering badge with intent to remove
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip-mask-badge.ss-badge-removing {
+	background: linear-gradient(135deg, rgba(255, 90, 90, 0.9) 0%, rgba(200, 60, 60, 0.95) 100%);
+	animation: badge-shake 0.4s ease;
+}
+
+@keyframes badge-shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20%,
+	60% {
+		transform: translateX(-2px);
+	}
+	40%,
+	80% {
+		transform: translateX(2px);
+	}
+}

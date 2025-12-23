@@ -67,7 +67,7 @@ export class ImagePlayer extends Player {
 		if (!(texture?.source instanceof pixi.ImageSource)) {
 			if (texture) {
 				texture.destroy(true);
-				pixi.Assets.unload(src);
+				// Asset unloading handled by ref counting in edit-session.unloadClipAssets()
 			}
 			throw new Error(`Invalid image source '${src}'.`);
 		}
@@ -87,10 +87,9 @@ export class ImagePlayer extends Player {
 			this.sprite.destroy();
 			this.sprite = null;
 		}
-		if (this.texture) {
-			this.texture.destroy();
-			this.texture = null;
-		}
+		// DON'T destroy the texture - it's managed by Assets
+		// The unloadClipAssets() method handles proper cleanup via Assets.unload()
+		this.texture = null;
 	}
 
 	protected override supportsEdgeResize(): boolean {

@@ -32,6 +32,11 @@ export class LumaPlayer extends Player {
 
 		const isValidLumaSource = texture?.source instanceof pixi.ImageSource || texture?.source instanceof pixi.VideoSource;
 		if (!isValidLumaSource) {
+			// Clean up ref if texture loaded but has invalid source type
+			// (if texture was null, AssetLoader already decremented on failure)
+			if (texture) {
+				this.edit.assetLoader.decrementRef(identifier);
+			}
 			throw new Error(`Invalid luma source '${lumaAsset.src}'.`);
 		}
 

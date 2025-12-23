@@ -13,12 +13,38 @@ export class AssetLoader {
 	};
 	public readonly loadTracker = new AssetLoadTracker();
 
+	/** Reference counts for loaded assets - prevents premature unloading during transforms */
+	private refCounts = new Map<string, number>();
+
+	/**
+	 * Increment reference count for an asset.
+	 * Called when a player starts loading an asset.
+	 */
+	public incrementRef(src: string): void {
+		this.refCounts.set(src, (this.refCounts.get(src) ?? 0) + 1);
+	}
+
+	/**
+	 * Decrement reference count for an asset.
+	 * @returns true if asset can be safely unloaded (count reached zero)
+	 */
+	public decrementRef(src: string): boolean {
+		const count = this.refCounts.get(src) ?? 0;
+		if (count <= 1) {
+			this.refCounts.delete(src);
+			return true; // Safe to unload
+		}
+		this.refCounts.set(src, count - 1);
+		return false; // Still in use
+	}
+
 	constructor() {
 		pixi.Assets.setPreferences({ crossOrigin: "anonymous" });
 	}
 
 	public async load<TResolvedAsset>(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<TResolvedAsset | null> {
 		this.updateAssetLoadMetadata(identifier, "pending", 0);
+		this.incrementRef(identifier);
 
 		try {
 			if (await this.shouldUseSafariVideoLoader(loadOptions)) {
@@ -32,6 +58,7 @@ export class AssetLoader {
 			return resolvedAsset;
 		} catch (_error) {
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
+			this.decrementRef(identifier);
 			return null;
 		}
 	}

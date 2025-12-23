@@ -71,7 +71,11 @@ export const EditEvent = {
 	// Transcription (captions)
 	TranscriptionProgress: "transcription:progress",
 	TranscriptionCompleted: "transcription:completed",
-	TranscriptionFailed: "transcription:failed"
+	TranscriptionFailed: "transcription:failed",
+
+	// Luma masking
+	LumaAttached: "luma:attached",
+	LumaDetached: "luma:detached"
 } as const;
 
 export type EditEventName = (typeof EditEvent)[keyof typeof EditEvent];
@@ -150,6 +154,10 @@ export type EditEventMap = {
 	[EditEvent.TranscriptionProgress]: { clipAlias: string; message?: string };
 	[EditEvent.TranscriptionCompleted]: { clipAlias: string; cueCount: number };
 	[EditEvent.TranscriptionFailed]: { clipAlias: string; error: string };
+
+	// Luma masking
+	[EditEvent.LumaAttached]: ClipLocation & { lumaSrc: string; lumaClipIndex: number };
+	[EditEvent.LumaDetached]: ClipLocation;
 };
 
 // Internal event payloads - not part of public API

@@ -402,7 +402,8 @@ export class Timeline extends TimelineEntity {
 
 		// Initialize interaction controller
 		this.interactionController = new InteractionController(this.edit, this.stateManager, this.trackList.element, this.feedbackLayer, {
-			snapThreshold: this.features.snap ? 10 : 0
+			snapThreshold: this.features.snap ? 10 : 0,
+			onRequestRender: () => this.requestRender()
 		});
 
 		// Auto-detect luma attachments from existing clips (e.g., on template load)

@@ -9,6 +9,7 @@
 import { Edit } from "@core/edit-session";
 import type { EditCommand, CommandContext } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
+import { sec } from "@core/timing/types";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
 jest.mock("pixi-filters", () => ({
@@ -69,7 +70,7 @@ jest.mock("pixi.js", () => {
 			destroy: jest.fn()
 		})),
 		Texture: { from: jest.fn() },
-		Assets: { load: jest.fn(), unload: jest.fn() },
+		Assets: { load: jest.fn(), unload: jest.fn(), cache: { has: jest.fn().mockReturnValue(false) } },
 		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() }))
 	};
 });
@@ -80,6 +81,8 @@ jest.mock("@loaders/asset-loader", () => ({
 		load: jest.fn().mockResolvedValue({}),
 		unload: jest.fn(),
 		getProgress: jest.fn().mockReturnValue(100),
+		incrementRef: jest.fn(),
+		decrementRef: jest.fn().mockReturnValue(true),
 		loadTracker: {
 			on: jest.fn(),
 			off: jest.fn()
@@ -760,5 +763,339 @@ describe("Edit Command History", () => {
 			const redoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:redo");
 			expect(redoEvents.length).toBe(0);
 		});
+	});
+});
+
+/**
+ * Regression Tests for getPlayerClip/getClip
+ *
+ * These tests verify that clip lookups return the correct clip based on
+ * positional order (as stored in tracks[]) rather than insertion order.
+ *
+ * Bug: getPlayerClip() was filtering this.clips (insertion order) instead
+ * of using this.tracks[][] (position order), causing wrong clips to be
+ * returned after move operations.
+ */
+describe("Edit getPlayerClip regression", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		// Create edit with two clips on a single track
+		// Clip A starts at 0, Clip B starts at 5
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ start: 0, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/clip-a.jpg" } },
+							{ start: 5, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/clip-b.jpg" } }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("returns clips in position order after move reorders them", async () => {
+		// Verify initial state - clips should be [A at 0, B at 5]
+		const clipA = edit.getClip(0, 0);
+		const clipB = edit.getClip(0, 1);
+
+		expect(clipA?.asset).toMatchObject({ src: "https://example.com/clip-a.jpg" });
+		expect(clipB?.asset).toMatchObject({ src: "https://example.com/clip-b.jpg" });
+
+		// Store references to the actual Player objects
+		const playerA = edit.getPlayerClip(0, 0);
+		const playerB = edit.getPlayerClip(0, 1);
+
+		expect(playerA).not.toBeNull();
+		expect(playerB).not.toBeNull();
+		expect(playerA).not.toBe(playerB);
+
+		// Now move Clip A from start=0 to start=10 (after Clip B)
+		// This should reorder the track array so B is at index 0, A is at index 1
+		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
+		const moveCommand = new MoveClipCommand(0, 0, 0, sec(10)); // Same track, from index 0, to start=10
+		edit.executeEditCommand(moveCommand);
+
+		// After the move, the track order should now be [B at 5, A at 10]
+		// getClip(0, 0) should now return clip B
+		// getClip(0, 1) should now return clip A
+		const newClip0 = edit.getClip(0, 0);
+		const newClip1 = edit.getClip(0, 1);
+
+		expect(newClip0?.asset).toMatchObject({ src: "https://example.com/clip-b.jpg" });
+		expect(newClip1?.asset).toMatchObject({ src: "https://example.com/clip-a.jpg" });
+
+		// getPlayerClip should also return the correct players by position
+		const newPlayer0 = edit.getPlayerClip(0, 0);
+		const newPlayer1 = edit.getPlayerClip(0, 1);
+
+		// Player references should swap - B is now at index 0, A is now at index 1
+		expect(newPlayer0).toBe(playerB);
+		expect(newPlayer1).toBe(playerA);
+	});
+
+	it("returns correct clips when multiple moves reorder repeatedly", async () => {
+		// Add a third clip
+		await edit.addClip(0, { start: 10, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/clip-c.jpg" } });
+
+		// Initial order: [A at 0, B at 5, C at 10]
+		const playerA = edit.getPlayerClip(0, 0);
+		const playerB = edit.getPlayerClip(0, 1);
+		const playerC = edit.getPlayerClip(0, 2);
+
+		expect(edit.getClip(0, 0)?.asset).toMatchObject({ src: "https://example.com/clip-a.jpg" });
+		expect(edit.getClip(0, 1)?.asset).toMatchObject({ src: "https://example.com/clip-b.jpg" });
+		expect(edit.getClip(0, 2)?.asset).toMatchObject({ src: "https://example.com/clip-c.jpg" });
+
+		// Move A to start=15 (after C) → order becomes [B, C, A]
+		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
+		edit.executeEditCommand(new MoveClipCommand(0, 0, 0, sec(15)));
+
+		expect(edit.getPlayerClip(0, 0)).toBe(playerB);
+		expect(edit.getPlayerClip(0, 1)).toBe(playerC);
+		expect(edit.getPlayerClip(0, 2)).toBe(playerA);
+
+		// Move C to start=1 (between original B position) → order becomes [C, B, A]
+		edit.executeEditCommand(new MoveClipCommand(0, 1, 0, sec(1)));
+
+		expect(edit.getPlayerClip(0, 0)).toBe(playerC);
+		expect(edit.getPlayerClip(0, 1)).toBe(playerB);
+		expect(edit.getPlayerClip(0, 2)).toBe(playerA);
+	});
+});
+
+describe("Luma Attachment Registration", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		// Create edit with a video clip on track 0, luma clip on track 1
+		// Using separate tracks to avoid the image-to-luma transform complexity
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } }]
+					},
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "luma", src: "https://example.com/luma.mp4" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("registerLumaAttachment populates the attachment map", () => {
+		// Get initial state - video at track 0 index 0, luma at track 1 index 0
+		const videoPlayer = edit.getPlayerClip(0, 0);
+		expect(videoPlayer).toBeDefined();
+
+		const lumaPlayer = edit.getPlayerClip(1, 0);
+		expect(lumaPlayer).toBeDefined();
+
+		// Initially no luma attached to video
+		expect(edit.hasLumaMask(0, 0)).toBe(false);
+
+		// Register the luma attachment
+		edit.registerLumaAttachment(0, 0, 1, 0);
+
+		// Now hasLumaMask should return true
+		expect(edit.hasLumaMask(0, 0)).toBe(true);
+
+		// And getAttachedLumaPlayer should find the luma player
+		const attachedLuma = edit.getAttachedLumaPlayer(videoPlayer!);
+		expect(attachedLuma).toBe(lumaPlayer);
+	});
+
+	it("syncAttachedLuma syncs timing after registerLumaAttachment", () => {
+		// Register the attachment
+		edit.registerLumaAttachment(0, 0, 1, 0);
+
+		// Change video clip start time directly
+		const videoClipBefore = edit.getClip(0, 0);
+		expect(videoClipBefore?.start).toBe(0);
+
+		// Update video start (simulating what happens after a move)
+		const videoPlayer = edit.getPlayerClip(0, 0);
+		if (videoPlayer?.clipConfiguration) {
+			videoPlayer.clipConfiguration.start = 2;
+		}
+
+		// Sync luma to content clip
+		edit.syncAttachedLuma(0, 0);
+
+		// Verify luma timing matches video
+		const lumaPlayer = edit.getPlayerClip(1, 0);
+		expect(lumaPlayer?.clipConfiguration.start).toBe(2);
+	});
+
+	it("syncAttachedLuma returns early if attachment not registered", () => {
+		// DON'T register attachment
+		expect(edit.hasLumaMask(0, 0)).toBe(false);
+
+		// Get luma initial timing
+		const lumaPlayer = edit.getPlayerClip(1, 0);
+		const initialStart = lumaPlayer?.clipConfiguration.start;
+
+		// Update video start
+		const videoPlayer = edit.getPlayerClip(0, 0);
+		if (videoPlayer?.clipConfiguration) {
+			videoPlayer.clipConfiguration.start = 2;
+		}
+
+		// Try to sync - should do nothing since attachment not registered
+		edit.syncAttachedLuma(0, 0);
+
+		// Luma timing should be unchanged (sync was skipped)
+		expect(lumaPlayer?.clipConfiguration.start).toBe(initialStart);
+	});
+});
+
+/**
+ * TransformClipAssetCommand Tests
+ *
+ * Tests for the clip asset type transformation command used for luma attachment/detachment.
+ * Verifies async load handling and original type preservation.
+ */
+describe("TransformClipAssetCommand", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } },
+							{ start: 5, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("transformToLuma changes asset type to luma", () => {
+		const clipBefore = edit.getClip(0, 0);
+		expect(clipBefore?.asset?.type).toBe("video");
+
+		edit.transformToLuma(0, 0);
+
+		const clipAfter = edit.getClip(0, 0);
+		expect(clipAfter?.asset?.type).toBe("luma");
+		// Source URL should be preserved
+		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
+	});
+
+	it("transformFromLuma restores original video type", () => {
+		// First transform to luma
+		edit.transformToLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		// Now transform back
+		edit.transformFromLuma(0, 0);
+
+		const clipAfter = edit.getClip(0, 0);
+		expect(clipAfter?.asset?.type).toBe("video");
+		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
+	});
+
+	it("transformFromLuma restores original image type", () => {
+		// First transform image to luma
+		edit.transformToLuma(0, 1);
+		expect(edit.getClip(0, 1)?.asset?.type).toBe("luma");
+
+		// Now transform back
+		edit.transformFromLuma(0, 1);
+
+		const clipAfter = edit.getClip(0, 1);
+		expect(clipAfter?.asset?.type).toBe("image");
+		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/image.jpg");
+	});
+
+	it("undo during transform is safe", () => {
+		const originalPlayer = edit.getPlayerClip(0, 0);
+		expect(originalPlayer).toBeDefined();
+
+		// Transform to luma (async load starts)
+		edit.transformToLuma(0, 0);
+
+		// Immediately undo (while load may still be in progress)
+		// This should NOT crash even though the new player may not be fully loaded
+		expect(() => {
+			edit.undo();
+		}).not.toThrow();
+
+		// Original player should be restored
+		const restoredPlayer = edit.getPlayerClip(0, 0);
+		expect(restoredPlayer).toBe(originalPlayer);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
+	});
+
+	it("preserves asset type through multiple transform cycles", () => {
+		// Video → luma → video
+		edit.transformToLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		edit.transformFromLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
+
+		// Another cycle
+		edit.transformToLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		edit.transformFromLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
+	});
+
+	it("handles CDN URLs without extensions via stored type", async () => {
+		// Dispose existing edit and create new one with CDN URL
+		edit.dispose();
+
+		// Create a clip with a CDN URL (no extension)
+		// This tests that we use stored original type, not URL inference
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://cdn.example.com/media/abc123" } }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+
+		// Transform to luma - stores original type
+		edit.transformToLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		// Transform back - should use stored type (video), not URL inference (would be image)
+		edit.transformFromLuma(0, 0);
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 });
