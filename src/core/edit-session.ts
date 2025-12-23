@@ -1774,7 +1774,7 @@ export class Edit extends Entity {
 	public setOutputSize(width: number, height: number): void {
 		const result = OutputSizeSchema.safeParse({ width, height });
 		if (!result.success) {
-			throw new Error(`Invalid size: ${result.error.errors[0]?.message}`);
+			throw new Error(`Invalid size: ${result.error.issues[0]?.message}`);
 		}
 
 		this.size = result.data;
@@ -1806,7 +1806,7 @@ export class Edit extends Entity {
 	public setOutputFps(fps: number): void {
 		const result = OutputFpsSchema.safeParse(fps);
 		if (!result.success) {
-			throw new Error(`Invalid fps: ${result.error.errors[0]?.message}`);
+			throw new Error(`Invalid fps: ${result.error.issues[0]?.message}`);
 		}
 
 		if (this.edit) {
@@ -1830,7 +1830,7 @@ export class Edit extends Entity {
 	public setOutputFormat(format: string): void {
 		const result = OutputFormatSchema.safeParse(format);
 		if (!result.success) {
-			throw new Error(`Invalid format: ${result.error.errors[0]?.message}`);
+			throw new Error(`Invalid format: ${result.error.issues[0]?.message}`);
 		}
 
 		if (this.edit) {
@@ -1887,7 +1887,7 @@ export class Edit extends Entity {
 	public setTimelineBackground(color: string): void {
 		const result = HexColorSchema.safeParse(color);
 		if (!result.success) {
-			throw new Error(`Invalid color: ${result.error.errors[0]?.message}`);
+			throw new Error(`Invalid color: ${result.error.issues[0]?.message}`);
 		}
 
 		this.backgroundColor = result.data;

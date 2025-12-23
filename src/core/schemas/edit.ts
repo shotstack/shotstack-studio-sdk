@@ -132,7 +132,7 @@ export const DestinationSchema = zod.union([
 ]);
 
 export const OutputFormatSchema = zod.enum(["mp4", "gif", "mp3", "jpg", "png", "bmp"], {
-	errorMap: () => ({ message: "Must be one of mp4, gif, mp3, jpg, png, bmp" })
+	error: "Must be one of mp4, gif, mp3, jpg, png, bmp"
 });
 
 const VALID_FPS = [12, 15, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60] as const;
