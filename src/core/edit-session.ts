@@ -512,6 +512,30 @@ export class Edit extends Entity {
 		return this.clipErrors.get(`${trackIdx}-${clipIdx}`) ?? null;
 	}
 
+	/**
+	 * Clear the error for a deleted clip and shift indices for remaining errors.
+	 * Called when a clip is deleted to keep error indices in sync.
+	 */
+	private clearClipErrorAndShift(trackIdx: number, clipIdx: number): void {
+		// Remove the error for the deleted clip
+		this.clipErrors.delete(`${trackIdx}-${clipIdx}`);
+
+		// Shift errors for clips after the deleted one (their indices decrease by 1)
+		const keysToUpdate: Array<{ oldKey: string; newKey: string; value: { error: string; assetType: string } }> = [];
+
+		for (const [key, value] of this.clipErrors) {
+			const [t, c] = key.split("-").map(Number);
+			if (t === trackIdx && c > clipIdx) {
+				keysToUpdate.push({ oldKey: key, newKey: `${t}-${c - 1}`, value });
+			}
+		}
+
+		for (const { oldKey, newKey, value } of keysToUpdate) {
+			this.clipErrors.delete(oldKey);
+			this.clipErrors.set(newKey, value);
+		}
+	}
+
 	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
 		const clipsByTrack = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
 		if (clipIdx < 0 || clipIdx >= clipsByTrack.length) return null;
@@ -1119,6 +1143,7 @@ export class Edit extends Entity {
 			createPlayerFromAssetType: clipConfiguration => this.createPlayerFromAssetType(clipConfiguration),
 			queueDisposeClip: player => this.queueDisposeClip(player),
 			disposeClips: () => this.disposeClips(),
+			clearClipError: (trackIdx, clipIdx) => this.clearClipErrorAndShift(trackIdx, clipIdx),
 			undeleteClip: (trackIdx, clip) => {
 				this.clips.push(clip);
 
@@ -1143,7 +1168,18 @@ export class Edit extends Entity {
 
 				this.addPlayerToContainer(trackIdx, clip);
 
-				clip.load().catch(err => console.warn("Clip load failed:", err));
+				clip.load().catch(error => {
+					// Capture load errors for restored clips (same pattern as initial load)
+					const assetType = (clip.clipConfiguration?.asset as { type?: string })?.type ?? "unknown";
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					this.clipErrors.set(`${trackIdx}-${insertIdx}`, { error: errorMessage, assetType });
+					this.events.emit(EditEvent.ClipLoadFailed, {
+						trackIndex: trackIdx,
+						clipIndex: insertIdx,
+						error: errorMessage,
+						assetType
+					});
+				});
 
 				this.updateTotalDuration();
 			},

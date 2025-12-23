@@ -29,6 +29,7 @@ export type CommandContext = {
 	createPlayerFromAssetType(clipConfiguration: ClipType): Player;
 	queueDisposeClip(player: Player): void;
 	disposeClips(): void;
+	clearClipError(trackIdx: number, clipIdx: number): void;
 	undeleteClip(trackIdx: number, clip: Player): void;
 	setUpdatedClip(clip: Player): void;
 	restoreClipConfiguration(clip: Player, previousConfig: ClipType): void;

@@ -22,6 +22,9 @@ export class DeleteClipCommand implements EditCommand {
 		const trackClips = clips.filter((c: Player) => c.layer === this.trackIdx + 1);
 		this.deletedClip = trackClips[this.clipIdx];
 
+		// Clear any error associated with this clip before deletion
+		context.clearClipError(this.trackIdx, this.clipIdx);
+
 		if (this.deletedClip) {
 			context.queueDisposeClip(this.deletedClip);
 			context.disposeClips();
