@@ -99,6 +99,24 @@ export class MediaToolbar extends BaseToolbar {
 		this.container.className = "ss-media-toolbar";
 
 		this.container.innerHTML = `
+			<!-- Mode Toggle -->
+			<div class="ss-toolbar-mode-toggle" data-mode="asset">
+				<button class="ss-toolbar-mode-btn active" data-mode="asset" title="Asset properties (Tab)">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<rect x="2" y="2" width="12" height="12" rx="1.5"/>
+						<path d="M2 6h12M6 6v8"/>
+					</svg>
+				</button>
+				<button class="ss-toolbar-mode-btn" data-mode="clip" title="Clip timing (Tab)">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<circle cx="8" cy="8" r="6"/>
+						<path d="M8 5v3l2 2"/>
+					</svg>
+				</button>
+				<span class="ss-toolbar-mode-indicator"></span>
+			</div>
+			<div class="ss-toolbar-mode-divider"></div>
+
 			<!-- Visual controls (hidden for audio) -->
 			<div class="ss-media-toolbar-visual" data-visual-section>
 				<!-- Fit Dropdown -->

@@ -20,6 +20,7 @@ import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { TransformClipAssetCommand } from "@core/commands/transform-clip-asset-command";
+import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands/update-clip-timing-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
@@ -920,6 +921,24 @@ export class Edit extends Entity {
 			trackIndex: trackIdx,
 			clipIndex: clipIdx
 		});
+		this.executeCommand(command);
+	}
+
+	/**
+	 * Update clip timing mode and/or values.
+	 * Supports manual values, "auto", and "end" timing modes.
+	 * @param trackIdx - Track index
+	 * @param clipIdx - Clip index within track
+	 * @param params - Timing update parameters (start and/or length in milliseconds)
+	 */
+	public updateClipTiming(trackIdx: number, clipIdx: number, params: TimingUpdateParams): void {
+		const clip = this.getPlayerClip(trackIdx, clipIdx);
+		if (!clip) {
+			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
+			return;
+		}
+
+		const command = new UpdateClipTimingCommand(trackIdx, clipIdx, params);
 		this.executeCommand(command);
 	}
 
@@ -2280,9 +2299,7 @@ export class Edit extends Entity {
 
 		// Find the newly added luma player
 		const track = this.tracks[trackIndex];
-		const lumaPlayer = track.find(
-			p => p.playerType === PlayerType.Luma && p.clipConfiguration.start === contentConfig.start
-		);
+		const lumaPlayer = track.find(p => p.playerType === PlayerType.Luma && p.clipConfiguration.start === contentConfig.start);
 
 		if (lumaPlayer) {
 			// Store the attachment
@@ -2436,9 +2453,7 @@ export class Edit extends Entity {
 			if (lumaPlayer && contentClips.length > 0) {
 				// Find content clip with matching timing
 				const matchingContent = contentClips.find(
-					c =>
-						c.clipConfiguration.start === lumaPlayer.clipConfiguration.start &&
-						c.clipConfiguration.length === lumaPlayer.clipConfiguration.length
+					c => c.clipConfiguration.start === lumaPlayer.clipConfiguration.start && c.clipConfiguration.length === lumaPlayer.clipConfiguration.length
 				);
 
 				if (matchingContent) {
@@ -2464,7 +2479,7 @@ export class Edit extends Entity {
 
 		const asset = player.clipConfiguration.asset as { type?: string; src?: string };
 		const originalType = asset.type as "image" | "video" | undefined;
-		const src = asset.src;
+		const { src } = asset;
 
 		// Store original type for reliable restoration later
 		if (src && (originalType === "image" || originalType === "video")) {

@@ -1,0 +1,279 @@
+/* ─── Clip Toolbar ─────────────────────────────────────────────────────────── */
+
+.ss-clip-toolbar {
+	display: none;
+	position: absolute;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: fit-content;
+	background: rgba(24, 24, 27, 0.95);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	padding: 6px 12px;
+	gap: 2px;
+	z-index: 100;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	align-items: center;
+	box-shadow:
+		0 4px 24px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(0, 0, 0, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ss-clip-toolbar.visible {
+	display: flex;
+}
+
+.ss-clip-toolbar-section {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+}
+
+/* Subtle divider between timing controls */
+.ss-clip-toolbar-divider {
+	width: 1px;
+	height: 16px;
+	background: rgba(255, 255, 255, 0.06);
+	margin: 0 6px;
+}
+
+/* ─── Timing Control (Unified Field) ───────────────────────────────────────── */
+
+.ss-timing-control {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	height: 26px;
+	padding: 0 6px 0 5px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 6px;
+	gap: 4px;
+	cursor: ew-resize;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+	width: fit-content;
+}
+
+/* ─── Micro-Labels (IN / DUR) ──────────────────────────────────────────────── */
+
+.ss-timing-label {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px 3px;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 3px;
+	font-size: 8px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	flex-shrink: 0;
+	user-select: none;
+	cursor: pointer;
+	transition: color 0.15s ease, background 0.15s ease;
+}
+
+/* Color-coded labels for visual distinction */
+.ss-timing-control[data-type="start"] .ss-timing-label {
+	background: rgba(34, 197, 94, 0.12);
+	color: rgba(34, 197, 94, 0.75);
+}
+
+.ss-timing-control[data-type="length"] .ss-timing-label {
+	background: rgba(99, 102, 241, 0.12);
+	color: rgba(129, 140, 248, 0.75);
+}
+
+/* Hover: entire field highlights */
+.ss-timing-control:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Active/dragging state */
+.ss-timing-control.dragging {
+	background: rgba(99, 102, 241, 0.12);
+	border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Edit mode: show text cursor */
+.ss-timing-control.editing {
+	background: rgba(0, 0, 0, 0.3);
+	border-color: rgba(99, 102, 241, 0.4);
+	cursor: text;
+}
+
+/* ─── Mode Icon (Integrated, no background) ─────────────────────────────────── */
+
+.ss-timing-mode {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	color: rgba(255, 255, 255, 0.45);
+	transition: color 0.15s ease;
+	flex-shrink: 0;
+}
+
+.ss-timing-mode:hover {
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.ss-timing-mode:hover .ss-timing-label {
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.ss-timing-mode svg {
+	width: 12px;
+	height: 12px;
+	flex-shrink: 0;
+}
+
+/* ─── Value Display (Inline, no background) ─────────────────────────────────── */
+
+.ss-timing-value {
+	width: 6ch;
+	height: 100%;
+	padding: 0;
+	background: transparent;
+	border: none;
+	color: rgba(255, 255, 255, 0.85);
+	font-size: 11px;
+	font-family: "SF Mono", Monaco, Consolas, monospace;
+	font-weight: 500;
+	text-align: left;
+	cursor: inherit;
+	user-select: none;
+	transition: color 0.15s ease;
+}
+
+.ss-timing-value:focus {
+	outline: none;
+}
+
+/* Edit mode: text cursor */
+.ss-timing-control.editing .ss-timing-value {
+	cursor: text;
+	user-select: text;
+	color: rgba(255, 255, 255, 0.95);
+}
+
+/* Auto/End mode: muted italic */
+.ss-timing-value.auto-mode {
+	color: rgba(255, 255, 255, 0.4);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	font-style: italic;
+	font-weight: 400;
+}
+
+/* ─── Tooltip (refined) ─────────────────────────────────────────────────────── */
+
+.ss-timing-tooltip {
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 0;
+	padding: 5px 8px;
+	background: rgba(0, 0, 0, 0.9);
+	border-radius: 4px;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.2px;
+	white-space: nowrap;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.15s ease, visibility 0.15s ease;
+	pointer-events: none;
+	z-index: 300;
+}
+
+.ss-timing-tooltip.visible {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* Dragging cursor override */
+.ss-timing-control.dragging,
+.ss-timing-control.dragging * {
+	cursor: ew-resize !important;
+}
+
+/* ─── Integrated Mode Toggle (Inside Toolbar) ──────────────────────────────── */
+
+.ss-toolbar-mode-toggle {
+	position: relative;
+	display: flex;
+	gap: 2px;
+	padding: 2px;
+	background: rgba(0, 0, 0, 0.25);
+	border-radius: 6px;
+	margin-right: 4px;
+}
+
+.ss-toolbar-mode-btn {
+	position: relative;
+	width: 28px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	color: rgba(255, 255, 255, 0.4);
+	transition: color 0.15s ease;
+	z-index: 1;
+}
+
+.ss-toolbar-mode-btn:hover {
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.ss-toolbar-mode-btn.active {
+	color: rgba(255, 255, 255, 0.95);
+}
+
+.ss-toolbar-mode-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* Sliding indicator */
+.ss-toolbar-mode-indicator {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 28px;
+	height: 24px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	pointer-events: none;
+}
+
+.ss-toolbar-mode-toggle[data-mode="clip"] .ss-toolbar-mode-indicator {
+	transform: translateX(calc(100% + 2px));
+}
+
+/* Divider between toggle and content */
+.ss-toolbar-mode-divider {
+	width: 1px;
+	height: 20px;
+	background: rgba(255, 255, 255, 0.1);
+	margin: 0 8px 0 4px;
+	flex-shrink: 0;
+}
+
+/* Hide deprecated separate container */
+.ss-toolbar-mode-container {
+	display: none !important;
+}

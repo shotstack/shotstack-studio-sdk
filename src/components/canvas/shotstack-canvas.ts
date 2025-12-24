@@ -4,6 +4,7 @@ import { Edit } from "@core/edit-session";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { AssetToolbar } from "@core/ui/asset-toolbar";
 import { CanvasToolbar } from "@core/ui/canvas-toolbar";
+import { ClipToolbar } from "@core/ui/clip-toolbar";
 import { MediaToolbar } from "@core/ui/media-toolbar";
 import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
 import { TextToolbar } from "@core/ui/text-toolbar";
@@ -32,8 +33,15 @@ export class Canvas {
 	private readonly richTextToolbar: RichTextToolbar;
 	private readonly textToolbar: TextToolbar;
 	private readonly mediaToolbar: MediaToolbar;
+	private readonly clipToolbar: ClipToolbar;
 	private readonly canvasToolbar: CanvasToolbar;
 	private readonly assetToolbar: AssetToolbar;
+
+	// Toolbar mode switching
+	private toolbarMode: "asset" | "clip" = "asset";
+	private currentAssetType: string | null = null;
+	private currentTrackIndex = -1;
+	private currentClipIndex = -1;
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
@@ -60,6 +68,7 @@ export class Canvas {
 		this.richTextToolbar = new RichTextToolbar(edit);
 		this.textToolbar = new TextToolbar(edit);
 		this.mediaToolbar = new MediaToolbar(edit);
+		this.clipToolbar = new ClipToolbar(edit);
 		this.canvasToolbar = new CanvasToolbar(edit);
 		this.assetToolbar = new AssetToolbar(edit);
 		this.onTickBound = this.onTick.bind(this);
@@ -109,6 +118,8 @@ export class Canvas {
 		this.richTextToolbar.mount(root);
 		this.textToolbar.mount(root);
 		this.mediaToolbar.mount(root);
+		this.clipToolbar.mount(root);
+		this.createModeTabsContainer(root);
 		this.setupClipToolbarListeners();
 
 		this.canvasToolbar.mount(root);
@@ -373,29 +384,154 @@ export class Canvas {
 		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
 		const assetType = player?.clipConfiguration.asset.type;
 
-		if (assetType === "rich-text") {
-			this.mediaToolbar.hide();
-			this.textToolbar.hide();
-			this.richTextToolbar.show(trackIndex, clipIndex);
-		} else if (assetType === "text") {
-			this.mediaToolbar.hide();
-			this.richTextToolbar.hide();
-			this.textToolbar.show(trackIndex, clipIndex);
-		} else if (assetType === "video" || assetType === "image" || assetType === "audio") {
-			this.richTextToolbar.hide();
-			this.textToolbar.hide();
-			this.mediaToolbar.showMedia(trackIndex, clipIndex, assetType);
-		} else {
-			this.richTextToolbar.hide();
-			this.textToolbar.hide();
-			this.mediaToolbar.hide();
-		}
+		// Store current selection for mode switching
+		this.currentAssetType = assetType ?? null;
+		this.currentTrackIndex = trackIndex;
+		this.currentClipIndex = clipIndex;
+
+		// Show appropriate toolbar based on current mode
+		this.updateToolbarVisibility();
 	}
 
 	private onSelectionCleared(): void {
 		this.richTextToolbar.hide();
 		this.textToolbar.hide();
 		this.mediaToolbar.hide();
+		this.clipToolbar.hide();
+		this.hideModeTabs();
+
+		this.currentAssetType = null;
+		this.currentTrackIndex = -1;
+		this.currentClipIndex = -1;
+	}
+
+	/**
+	 * Setup integrated mode toggle event handlers across all toolbars.
+	 * The toggle is now embedded in each toolbar, not a separate container.
+	 */
+	private createModeTabsContainer(parent: HTMLElement): void {
+		// Set up click handlers for all toggle buttons across all toolbars
+		// These are added after toolbars mount, so we need to wait for them
+		requestAnimationFrame(() => {
+			const allToggleButtons = parent.querySelectorAll(".ss-toolbar-mode-btn");
+			allToggleButtons.forEach(btn => {
+				btn.addEventListener("click", () => {
+					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
+					this.setToolbarMode(mode);
+				});
+			});
+		});
+
+		// Add Tab keyboard shortcut
+		this.setupModeToggleKeyboardShortcut();
+	}
+
+	/**
+	 * Setup Tab key to toggle between Asset and Clip modes.
+	 */
+	private setupModeToggleKeyboardShortcut(): void {
+		document.addEventListener("keydown", (e: KeyboardEvent) => {
+			// Only handle Tab when a toolbar is visible and no input is focused
+			if (
+				e.key === "Tab" &&
+				this.hasVisibleToolbar() &&
+				!this.isInputFocused()
+			) {
+				e.preventDefault();
+				const newMode = this.toolbarMode === "asset" ? "clip" : "asset";
+				this.setToolbarMode(newMode);
+			}
+		});
+	}
+
+	/**
+	 * Check if any toolbar is currently visible.
+	 */
+	private hasVisibleToolbar(): boolean {
+		return (
+			this.currentTrackIndex >= 0 &&
+			this.currentClipIndex >= 0 &&
+			this.currentAssetType !== null
+		);
+	}
+
+	/**
+	 * Check if an input element is currently focused.
+	 */
+	private isInputFocused(): boolean {
+		const activeEl = document.activeElement;
+		return (
+			activeEl instanceof HTMLInputElement ||
+			activeEl instanceof HTMLTextAreaElement ||
+			(activeEl as HTMLElement)?.isContentEditable === true
+		);
+	}
+
+	/**
+	 * Set the active toolbar mode.
+	 */
+	private setToolbarMode(mode: "asset" | "clip"): void {
+		this.toolbarMode = mode;
+
+		// Update all toggle UIs across all toolbars
+		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
+		if (root) {
+			const allToggles = root.querySelectorAll(".ss-toolbar-mode-toggle");
+			allToggles.forEach((toggle: Element) => {
+				toggle.setAttribute("data-mode", mode);
+				toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn: Element) => {
+					btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === mode);
+				});
+			});
+		}
+
+		// Update toolbar visibility
+		this.updateToolbarVisibility();
+	}
+
+	/**
+	 * Update which toolbar is visible based on current mode and asset type.
+	 */
+	private updateToolbarVisibility(): void {
+		// Hide all toolbars first
+		this.richTextToolbar.hide();
+		this.textToolbar.hide();
+		this.mediaToolbar.hide();
+		this.clipToolbar.hide();
+
+		if (this.currentTrackIndex < 0 || this.currentClipIndex < 0) return;
+
+		if (this.toolbarMode === "clip") {
+			// Show clip toolbar for timing controls
+			this.clipToolbar.show(this.currentTrackIndex, this.currentClipIndex);
+		} else if (this.currentAssetType === "rich-text") {
+			// Show asset-specific toolbar
+			this.richTextToolbar.show(this.currentTrackIndex, this.currentClipIndex);
+		} else if (this.currentAssetType === "text") {
+			this.textToolbar.show(this.currentTrackIndex, this.currentClipIndex);
+		} else if (this.currentAssetType === "video" || this.currentAssetType === "image" || this.currentAssetType === "audio") {
+			this.mediaToolbar.showMedia(this.currentTrackIndex, this.currentClipIndex, this.currentAssetType);
+		}
+	}
+
+	/**
+	 * Hide mode tabs and reset to asset mode.
+	 */
+	private hideModeTabs(): void {
+		// Reset to asset mode when selection is cleared
+		this.toolbarMode = "asset";
+
+		// Reset all toggle UIs to asset mode
+		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
+		if (root) {
+			const allToggles = root.querySelectorAll(".ss-toolbar-mode-toggle");
+			allToggles.forEach((toggle: Element) => {
+				toggle.setAttribute("data-mode", "asset");
+				toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn: Element) => {
+					btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === "asset");
+				});
+			});
+		}
 	}
 
 	private setupCanvasToolbarListeners(): void {
@@ -461,6 +597,7 @@ export class Canvas {
 		this.richTextToolbar.dispose();
 		this.textToolbar.dispose();
 		this.mediaToolbar.dispose();
+		this.clipToolbar.dispose();
 		this.canvasToolbar.dispose();
 		this.assetToolbar.dispose();
 
