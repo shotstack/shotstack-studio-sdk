@@ -1,5 +1,6 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
+import { toSec } from "@core/timing/types";
 
 import type { AudioAsset } from "../schemas/audio-asset";
 import type { ResolvedClip } from "../schemas/clip";
@@ -29,7 +30,7 @@ export class SplitClipCommand implements EditCommand {
 
 		const clipConfig = player.clipConfiguration;
 		const clipStart = typeof clipConfig.start === "number" ? clipConfig.start : 0;
-		const clipLength = typeof clipConfig.length === "number" ? clipConfig.length : player.getLength() / 1000;
+		const clipLength = typeof clipConfig.length === "number" ? clipConfig.length : toSec(player.getLength());
 
 		// Validate split point
 		const MIN_CLIP_LENGTH = 0.1;

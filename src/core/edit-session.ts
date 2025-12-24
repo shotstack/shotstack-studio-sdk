@@ -417,7 +417,7 @@ export class Edit extends Entity {
 			},
 			fit: "crop",
 			start: 0,
-			length: this.totalDuration / 1000
+			length: toSec(ms(this.totalDuration))
 		};
 
 		const player = new AudioPlayer(this, clip);
@@ -462,8 +462,8 @@ export class Edit extends Entity {
 				.filter(player => player && !this.clipsToDispose.includes(player))
 				.map(player => ({
 					...player.clipConfiguration,
-					start: player.getStart() / 1000,
-					length: player.getLength() / 1000
+					start: toSec(player.getStart()),
+					length: toSec(player.getLength())
 				}))
 		}));
 
@@ -1698,7 +1698,7 @@ export class Edit extends Entity {
 		if (!this.copiedClip) return;
 
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
-		pastedClip.start = this.playbackTime / 1000; // Paste at playhead position
+		pastedClip.start = toSec(ms(this.playbackTime)); // Paste at playhead position
 
 		this.addClip(this.copiedClip.trackIndex, pastedClip);
 	}

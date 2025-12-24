@@ -194,8 +194,8 @@ export abstract class Player extends Entity {
 		// Build resolved clip config for preset builders
 		const resolvedClipConfig: ResolvedClip = {
 			...config,
-			start: this.getStart() / 1000,
-			length: length / 1000
+			start: toSec(this.getStart()),
+			length: toSec(length)
 		};
 
 		// Build relative effect keyframes (factors/deltas)
