@@ -112,6 +112,12 @@ export class LumaPlayer extends Player {
 	}
 
 	public override getSize(): Size {
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			return {
+				width: this.clipConfiguration.width,
+				height: this.clipConfiguration.height
+			};
+		}
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 

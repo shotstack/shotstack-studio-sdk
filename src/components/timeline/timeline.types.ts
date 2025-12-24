@@ -141,7 +141,7 @@ export const TRACK_HEIGHTS: Record<string, number> = {
 	shape: 36,
 	caption: 36,
 	html: 48,
-	luma: 48,
+	luma: 72,
 	default: 48
 };
 
