@@ -29,7 +29,7 @@ import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "
 import { Entity } from "@core/shared/entity";
 import { deepMerge, getNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type Milliseconds, ms, toMs } from "@core/timing/types";
+import { type Milliseconds, ms, toMs, toSec } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -1447,7 +1447,8 @@ export class Edit extends Entity {
 		const track = this.tracks[trackIndex];
 		if (!track) return;
 
-		for (let i = Math.max(0, startFromClipIndex + 1); i < track.length; i += 1) {
+		// Include the clip itself (not just subsequent clips) so auto start on first clip resolves to 0
+		for (let i = Math.max(0, startFromClipIndex); i < track.length; i += 1) {
 			const clip = track[i];
 			if (clip.getTimingIntent().start === "auto") {
 				const newStart = resolveAutoStart(trackIndex, i, this.tracks);
@@ -1472,6 +1473,9 @@ export class Edit extends Entity {
 						start: clip.getStart(),
 						length: newLength
 					});
+					// Sync clipConfiguration with resolved value
+					// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
+					clip.clipConfiguration.length = toSec(newLength);
 					clip.reconfigureAfterRestore();
 				}
 			}
@@ -1489,14 +1493,27 @@ export class Edit extends Entity {
 		const intent = clip.getTimingIntent();
 		if (intent.length !== "auto") return;
 
+		// Find clip indices first (needed if start is also auto)
+		const indices = this.findClipIndices(clip);
+
+		// Resolve auto start if needed, otherwise use current start
+		let resolvedStart = clip.getStart();
+		if (intent.start === "auto" && indices) {
+			resolvedStart = resolveAutoStart(indices.trackIndex, indices.clipIndex, this.tracks);
+		}
+
 		const newLength = await resolveAutoLength(clip.clipConfiguration.asset);
 		clip.setResolvedTiming({
-			start: clip.getStart(),
+			start: resolvedStart,
 			length: newLength
 		});
+
+		// Sync clipConfiguration with resolved value
+		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
+		clip.clipConfiguration.length = toSec(newLength);
+
 		clip.reconfigureAfterRestore();
 
-		const indices = this.findClipIndices(clip);
 		if (indices) {
 			this.propagateTimingChanges(indices.trackIndex, indices.clipIndex);
 		}

@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { calculateTimelineEnd } from "@core/timing/resolver";
+import { calculateTimelineEnd, resolveAutoStart } from "@core/timing/resolver";
 import { type Seconds, type TimingIntent, ms, sec, toMs } from "@core/timing/types";
 
 import type { CommandContext, EditCommand } from "./types";
@@ -42,7 +42,8 @@ export class UpdateClipTimingCommand implements EditCommand {
 
 		this.player = track[this.clipIndex];
 		this.originalIntent = this.player.getTimingIntent();
-		this.previousConfig = { ...this.player.clipConfiguration };
+		// Deep clone to preserve original state (shallow copy shares nested object references)
+		this.previousConfig = JSON.parse(JSON.stringify(this.player.clipConfiguration));
 
 		// Build new timing intent
 		const newIntent: TimingIntent = {
@@ -70,43 +71,57 @@ export class UpdateClipTimingCommand implements EditCommand {
 		// Update clip configuration to reflect the intent
 		this.updateClipConfiguration(this.player, newIntent);
 
-		// If length is "auto", resolve it
+		// STEP 1: Resolve start FIRST (needed for correct length calculations)
+		const resolvedStart =
+			newIntent.start === "auto"
+				? resolveAutoStart(this.trackIndex, this.clipIndex, context.getTracks())
+				: toMs(newIntent.start);
+
+		// STEP 2: Resolve length using the correct resolved start
 		if (newIntent.length === "auto") {
+			// Set start immediately, length will be resolved async
+			this.player.setResolvedTiming({
+				start: resolvedStart,
+				length: this.player.getLength() // Temporary, will be updated
+			});
+
 			context.resolveClipAutoLength(this.player).then(() => {
 				this.player?.reconfigureAfterRestore();
 				this.player?.draw();
 				context.updateDuration();
 				context.propagateTimingChanges(this.trackIndex, this.clipIndex);
 			});
+
+			// Still need to reconfigure and emit event for the start change
+			this.player.reconfigureAfterRestore();
+			this.player.draw();
 		} else if (newIntent.length === "end") {
 			// Track this clip for end-length updates
 			context.trackEndLengthClip(this.player);
-			// Resolve immediately based on current timeline end
+
+			// Resolve based on current timeline end using correct start
 			const timelineEnd = calculateTimelineEnd(context.getTracks());
-			const resolvedLength = ms(Math.max(timelineEnd - this.player.getStart(), 100)); // Minimum 100ms
+			const resolvedLength = ms(Math.max(timelineEnd - resolvedStart, 100)); // Minimum 100ms
+
 			this.player.setResolvedTiming({
-				start: this.player.getStart(),
+				start: resolvedStart,
 				length: resolvedLength
 			});
+
+			this.player.reconfigureAfterRestore();
+			this.player.draw();
 		} else {
 			// Fixed length - resolve immediately
 			context.untrackEndLengthClip(this.player);
+
 			this.player.setResolvedTiming({
-				start: typeof newIntent.start === "number" ? toMs(newIntent.start) : this.player.getStart(),
+				start: resolvedStart,
 				length: toMs(newIntent.length as Seconds)
 			});
-		}
 
-		// Handle start timing
-		if (newIntent.start !== "auto") {
-			this.player.setResolvedTiming({
-				start: toMs(newIntent.start),
-				length: this.player.getLength()
-			});
+			this.player.reconfigureAfterRestore();
+			this.player.draw();
 		}
-
-		this.player.reconfigureAfterRestore();
-		this.player.draw();
 
 		context.updateDuration();
 		context.emitEvent(EditEvent.ClipUpdated, {
