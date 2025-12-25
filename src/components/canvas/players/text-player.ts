@@ -131,7 +131,7 @@ export class TextPlayer extends Player {
 		return { x: scale, y: scale };
 	}
 
-	protected override supportsEdgeResize(): boolean {
+	public override supportsEdgeResize(): boolean {
 		return true;
 	}
 

@@ -4,15 +4,6 @@ import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
-import { calculateCornerScale, calculateEdgeResize, clampDimensions, detectCornerZone, detectEdgeZone } from "@core/interaction/clip-interaction";
-import {
-	SELECTION_CONSTANTS,
-	CURSOR_BASE_ANGLES,
-	type CornerName,
-	buildRotationCursor,
-	buildResizeCursor
-} from "@core/interaction/selection-overlay";
-import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
 import { getNestedValue, setNestedValue } from "@core/shared/utils";
 import { type Milliseconds, type ResolvedTiming, type TimingIntent, ms, sec, toSec } from "@core/timing/types";
@@ -48,9 +39,19 @@ export enum PlayerType {
 	Caption = "caption"
 }
 
+/**
+ * Base class for all visual content players in the canvas.
+ *
+ * Player is responsible for rendering clip content (video, image, text, etc.)
+ * and applying keyframe animations. It does NOT handle selection UI or
+ * drag/resize/rotate interactions - those are handled by SelectionHandles
+ * when registered via UIController.
+ *
+ * This separation allows Canvas to be used as a pure preview renderer
+ * without any interactive overlays.
+ */
 export abstract class Player extends Entity {
 	private static readonly DiscardedFrameCount = 0;
-	private static readonly ExpandedHitArea = 10000;
 
 	public layer: number;
 	public shouldDispose: boolean;
@@ -68,32 +69,9 @@ export abstract class Player extends Entity {
 	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
 	private opacityKeyframeBuilder?: ComposedKeyframeBuilder;
 	private rotationKeyframeBuilder?: ComposedKeyframeBuilder;
-	private maskXKeyframeBuilder?: KeyframeBuilder; // maskX doesn't need composition
+	private maskXKeyframeBuilder?: KeyframeBuilder;
 
 	private wipeMask: pixi.Graphics | null;
-
-	private outline: pixi.Graphics | null;
-	private topLeftScaleHandle: pixi.Graphics | null;
-	private topRightScaleHandle: pixi.Graphics | null;
-	private bottomLeftScaleHandle: pixi.Graphics | null;
-	private bottomRightScaleHandle: pixi.Graphics | null;
-
-	private isHovering: boolean;
-	private isDragging: boolean;
-	private dragOffset: Vector;
-
-	private scaleDirection: "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | null;
-
-	private edgeDragDirection: "left" | "right" | "top" | "bottom" | null;
-	private edgeDragStart: Vector;
-	private originalDimensions: { width: number; height: number; offsetX: number; offsetY: number } | null;
-
-	private isRotating: boolean;
-	private rotationStart: number | null;
-	private initialRotation: number;
-	private rotationCorner: CornerName | null;
-
-	private initialClipConfiguration: ResolvedClip | null;
 	protected contentContainer: pixi.Container;
 
 	/**
@@ -123,30 +101,6 @@ export abstract class Player extends Entity {
 		this.resolvedTiming = { start: startValue, length: lengthValue };
 
 		this.wipeMask = null;
-
-		this.outline = null;
-		this.topLeftScaleHandle = null;
-		this.topRightScaleHandle = null;
-		this.bottomRightScaleHandle = null;
-		this.bottomLeftScaleHandle = null;
-
-		this.isHovering = false;
-
-		this.isDragging = false;
-		this.dragOffset = { x: 0, y: 0 };
-
-		this.scaleDirection = null;
-
-		this.edgeDragDirection = null;
-		this.edgeDragStart = { x: 0, y: 0 };
-		this.originalDimensions = null;
-
-		this.isRotating = false;
-		this.rotationStart = null;
-		this.initialRotation = 0;
-		this.rotationCorner = null;
-
-		this.initialClipConfiguration = null;
 
 		this.contentContainer = new pixi.Container();
 		this.getContainer().addChild(this.contentContainer);
@@ -238,71 +192,12 @@ export abstract class Player extends Entity {
 			this.getContainer().addChild(this.contentContainer);
 		}
 
-		if (this.outline) {
-			this.outline.destroy();
-			this.outline = null;
-		}
-		if (this.topLeftScaleHandle) {
-			this.topLeftScaleHandle.destroy();
-			this.topLeftScaleHandle = null;
-		}
-		if (this.topRightScaleHandle) {
-			this.topRightScaleHandle.destroy();
-			this.topRightScaleHandle = null;
-		}
-		if (this.bottomRightScaleHandle) {
-			this.bottomRightScaleHandle.destroy();
-			this.bottomRightScaleHandle = null;
-		}
-		if (this.bottomLeftScaleHandle) {
-			this.bottomLeftScaleHandle.destroy();
-			this.bottomLeftScaleHandle = null;
-		}
-
-		this.outline = new pixi.Graphics();
-		this.getContainer().addChild(this.outline);
-
-		// Create corner resize handles for assets that support edge resize
-		if (this.supportsEdgeResize()) {
-			this.topLeftScaleHandle = new pixi.Graphics();
-			this.topRightScaleHandle = new pixi.Graphics();
-			this.bottomRightScaleHandle = new pixi.Graphics();
-			this.bottomLeftScaleHandle = new pixi.Graphics();
-
-			this.topLeftScaleHandle.zIndex = 1000;
-			this.topRightScaleHandle.zIndex = 1000;
-			this.bottomRightScaleHandle.zIndex = 1000;
-			this.bottomLeftScaleHandle.zIndex = 1000;
-
-			// Set resize cursors for corner handles (dynamic based on rotation)
-			this.topLeftScaleHandle.eventMode = "static";
-			this.topLeftScaleHandle.cursor = this.getCornerResizeCursor("topLeft");
-			this.topRightScaleHandle.eventMode = "static";
-			this.topRightScaleHandle.cursor = this.getCornerResizeCursor("topRight");
-			this.bottomRightScaleHandle.eventMode = "static";
-			this.bottomRightScaleHandle.cursor = this.getCornerResizeCursor("bottomRight");
-			this.bottomLeftScaleHandle.eventMode = "static";
-			this.bottomLeftScaleHandle.cursor = this.getCornerResizeCursor("bottomLeft");
-
-			this.getContainer().addChild(this.topLeftScaleHandle);
-			this.getContainer().addChild(this.topRightScaleHandle);
-			this.getContainer().addChild(this.bottomRightScaleHandle);
-			this.getContainer().addChild(this.bottomLeftScaleHandle);
-		}
-
 		this.getContainer().sortableChildren = true;
 
+		// Enable pointer events for click-to-select (handled by edit-session)
 		this.getContainer().cursor = "pointer";
 		this.getContainer().eventMode = "static";
-
-		this.getContainer().on("pointerdown", this.onPointerStart.bind(this));
-		this.getContainer().on("pointermove", this.onPointerMove.bind(this));
-		this.getContainer().on("globalpointermove", this.onPointerMove.bind(this));
-		this.getContainer().on("pointerup", this.onPointerUp.bind(this));
-		this.getContainer().on("pointerupoutside", this.onPointerUp.bind(this));
-
-		this.getContainer().on("pointerover", this.onPointerOver.bind(this));
-		this.getContainer().on("pointerout", this.onPointerOut.bind(this));
+		this.getContainer().on("pointerdown", this.onPointerDown.bind(this));
 	}
 
 	public override update(_: number, __: number): void {
@@ -368,87 +263,11 @@ export abstract class Player extends Entity {
 	}
 
 	public override draw(): void {
-		if (!this.outline) {
-			return;
-		}
-
-		const isSelected = this.edit.isPlayerSelected(this);
-
-		const isExporting = this.edit.isInExportMode();
-
-		if (((!this.isActive() || !isSelected) && !this.isHovering) || isExporting) {
-			this.outline.clear();
-			this.topLeftScaleHandle?.clear();
-			this.topRightScaleHandle?.clear();
-			this.bottomRightScaleHandle?.clear();
-			this.bottomLeftScaleHandle?.clear();
-			return;
-		}
-
-		const color = this.isHovering || this.isDragging ? 0x00ffff : 0x0d99ff;
-		const size = this.getSize();
-
-		const uiScale = this.getUIScale();
-
-		// Expand hit area to include rotation zones outside corners
-		// During drag operations, keep the expanded hit area to capture mouse events anywhere
-		const isDraggingHandle = this.isRotating || this.scaleDirection !== null || this.edgeDragDirection !== null;
-		if (!isDraggingHandle) {
-			const hitMargin = (SELECTION_CONSTANTS.ROTATION_HIT_ZONE + SELECTION_CONSTANTS.SCALE_HANDLE_RADIUS) / uiScale;
-			this.getContainer().hitArea = new pixi.Rectangle(-hitMargin, -hitMargin, size.width + hitMargin * 2, size.height + hitMargin * 2);
-		}
-
-		this.outline.clear();
-		this.outline.strokeStyle = { width: SELECTION_CONSTANTS.OUTLINE_WIDTH / uiScale, color };
-		this.outline.rect(0, 0, size.width, size.height);
-		this.outline.stroke();
-
-		if (!this.isActive() || !isSelected) {
-			return;
-		}
-
-		// Draw corner scale handles (only for assets that don't support edge resize)
-		if (this.topLeftScaleHandle && this.topRightScaleHandle && this.bottomRightScaleHandle && this.bottomLeftScaleHandle) {
-			const handleSize = (SELECTION_CONSTANTS.SCALE_HANDLE_RADIUS * 2) / uiScale;
-
-			this.topLeftScaleHandle.fillStyle = { color };
-			this.topLeftScaleHandle.clear();
-			this.topLeftScaleHandle.rect(-handleSize / 2, -handleSize / 2, handleSize, handleSize);
-			this.topLeftScaleHandle.fill();
-
-			this.topRightScaleHandle.fillStyle = { color };
-			this.topRightScaleHandle.clear();
-			this.topRightScaleHandle.rect(size.width - handleSize / 2, -handleSize / 2, handleSize, handleSize);
-			this.topRightScaleHandle.fill();
-
-			this.bottomRightScaleHandle.fillStyle = { color };
-			this.bottomRightScaleHandle.clear();
-			this.bottomRightScaleHandle.rect(size.width - handleSize / 2, size.height - handleSize / 2, handleSize, handleSize);
-			this.bottomRightScaleHandle.fill();
-
-			this.bottomLeftScaleHandle.fillStyle = { color };
-			this.bottomLeftScaleHandle.clear();
-			this.bottomLeftScaleHandle.rect(-handleSize / 2, size.height - handleSize / 2, handleSize, handleSize);
-			this.bottomLeftScaleHandle.fill();
-		}
+		// Base class does nothing - subclasses can override if needed
+		// Selection UI (outline + handles) is now handled by SelectionHandles
 	}
 
 	public override dispose(): void {
-		this.outline?.destroy();
-		this.outline = null;
-
-		this.topLeftScaleHandle?.destroy();
-		this.topLeftScaleHandle = null;
-
-		this.topRightScaleHandle?.destroy();
-		this.topRightScaleHandle = null;
-
-		this.bottomLeftScaleHandle?.destroy();
-		this.bottomLeftScaleHandle = null;
-
-		this.bottomRightScaleHandle?.destroy();
-		this.bottomRightScaleHandle = null;
-
 		this.wipeMask?.destroy();
 		this.wipeMask = null;
 
@@ -639,10 +458,6 @@ export abstract class Player extends Entity {
 		return (this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1) * this.getFitScale();
 	}
 
-	private getUIScale(): number {
-		return this.getScale() * this.edit.getCanvasZoom();
-	}
-
 	protected getContainerScale(): Vector {
 		const baseScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 		const contentSize = this.getContentSize();
@@ -664,412 +479,16 @@ export abstract class Player extends Entity {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
 
-	private getRotationCorner(event: pixi.FederatedPointerEvent): CornerName | null {
-		const localPoint = event.getLocalPosition(this.getContainer());
-		const size = this.getSize();
-
-		// Rotation zones only active when pointer is outside the content bounds
-		const isOutsideContent = localPoint.x < 0 || localPoint.x > size.width || localPoint.y < 0 || localPoint.y > size.height;
-		if (!isOutsideContent) return null;
-
-		const uiScale = this.getUIScale();
-		const handleRadius = SELECTION_CONSTANTS.SCALE_HANDLE_RADIUS / uiScale;
-		const rotationZone = SELECTION_CONSTANTS.ROTATION_HIT_ZONE / uiScale;
-
-		// Build corner coordinates array
-		const corners = [
-			{ x: 0, y: 0 },
-			{ x: size.width, y: 0 },
-			{ x: size.width, y: size.height },
-			{ x: 0, y: size.height }
-		];
-
-		// Use pure function for corner zone detection
-		return detectCornerZone(localPoint, corners, handleRadius, rotationZone);
-	}
-
-	private getContentCenter(): Vector {
-		const bounds = this.contentContainer.getBounds();
-		return {
-			x: bounds.x + bounds.width / 2,
-			y: bounds.y + bounds.height / 2
-		};
-	}
-
-	private getRotationCursor(corner: string): string {
-		const baseAngle = CURSOR_BASE_ANGLES[corner] ?? 0;
-		return buildRotationCursor(baseAngle + this.getRotation());
-	}
-
-	private getCornerResizeCursor(corner: string): string {
-		const baseAngle = CURSOR_BASE_ANGLES[`${corner}Resize`] ?? 45;
-		return buildResizeCursor(baseAngle + this.getRotation());
-	}
-
-	private getEdgeResizeCursor(edge: "left" | "right" | "top" | "bottom"): string {
-		const baseAngle = CURSOR_BASE_ANGLES[edge] ?? 0;
-		return buildResizeCursor(baseAngle + this.getRotation());
-	}
-
-	private onPointerStart(event: pixi.FederatedPointerEvent): void {
+	/**
+	 * Handle pointer down - emit click event for selection handling.
+	 * All drag/resize/rotate interaction is handled by SelectionHandles.
+	 */
+	private onPointerDown(event: pixi.FederatedPointerEvent): void {
 		if (event.button !== Pointer.ButtonLeftClick) {
 			return;
 		}
 
 		this.edit.events.emit(InternalEvent.CanvasClipClicked, { player: this });
-
-		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
-
-		if (this.clipHasKeyframes()) {
-			return;
-		}
-
-		this.scaleDirection = null;
-
-		// Check for rotation zone click (outside corners)
-		const rotationCorner = this.getRotationCorner(event);
-		if (rotationCorner) {
-			this.isRotating = true;
-			this.rotationCorner = rotationCorner;
-			const center = this.getContentCenter();
-			this.rotationStart = Math.atan2(event.globalY - center.y, event.globalX - center.x);
-			this.initialRotation = this.getRotation();
-
-			// Expand hit area to capture pointer events anywhere during rotation drag
-			const size = Player.ExpandedHitArea;
-			this.getContainer().hitArea = new pixi.Rectangle(-size, -size, size * 2, size * 2);
-			return;
-		}
-
-		const isTopLeftScaling = this.topLeftScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isTopLeftScaling) {
-			this.scaleDirection = "topLeft";
-		}
-
-		const isTopRightScaling = this.topRightScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isTopRightScaling) {
-			this.scaleDirection = "topRight";
-		}
-
-		const isBottomRightScaling = this.bottomRightScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isBottomRightScaling) {
-			this.scaleDirection = "bottomRight";
-		}
-
-		const isBottomLeftScaling = this.bottomLeftScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isBottomLeftScaling) {
-			this.scaleDirection = "bottomLeft";
-		}
-
-		if (this.scaleDirection !== null) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-			this.edgeDragStart = timelinePoint;
-
-			// Get current offset values
-			const currentOffsetX = this.offsetXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
-			const currentOffsetY = this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
-
-			// Use existing dimensions if set, otherwise calculate visual size
-			let width: number;
-			let height: number;
-			if (this.clipConfiguration.width && this.clipConfiguration.height) {
-				width = this.clipConfiguration.width;
-				height = this.clipConfiguration.height;
-			} else {
-				const contentSize = this.getContentSize();
-				const fitScale = this.getFitScale();
-				const userScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
-				width = contentSize.width * fitScale * userScale;
-				height = contentSize.height * fitScale * userScale;
-
-				if (this.clipConfiguration.scale !== undefined) {
-					this.clipConfiguration.width = width;
-					this.clipConfiguration.height = height;
-					delete this.clipConfiguration.scale;
-					this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(1, this.getLength(), "multiplicative");
-				}
-			}
-
-			this.originalDimensions = {
-				width,
-				height,
-				offsetX: currentOffsetX,
-				offsetY: currentOffsetY
-			};
-
-			// Expand hit area to capture pointer events anywhere during resize drag
-			const hitSize = Player.ExpandedHitArea;
-			this.getContainer().hitArea = new pixi.Rectangle(-hitSize, -hitSize, hitSize * 2, hitSize * 2);
-			return;
-		}
-
-		// Check for edge resize interactions (for assets that support edge resize)
-		if (this.supportsEdgeResize()) {
-			const localPoint = event.getLocalPosition(this.getContainer());
-			const size = this.getSize();
-			const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
-
-			// Use pure function for edge zone detection
-			this.edgeDragDirection = detectEdgeZone(localPoint, size, hitZone);
-
-			if (this.edgeDragDirection !== null) {
-				const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-				this.edgeDragStart = timelinePoint;
-
-				// Get current offset values from keyframe builders (handles both numeric and keyframe array cases)
-				const currentOffsetX = this.offsetXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
-				const currentOffsetY = this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
-
-				// Use existing dimensions if set, otherwise calculate visual size from content + fit scaling
-				let width: number;
-				let height: number;
-				if (this.clipConfiguration.width && this.clipConfiguration.height) {
-					width = this.clipConfiguration.width;
-					height = this.clipConfiguration.height;
-				} else {
-					const contentSize = this.getContentSize();
-					const fitScale = this.getFitScale();
-					const userScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
-					width = contentSize.width * fitScale * userScale;
-					height = contentSize.height * fitScale * userScale;
-
-					if (this.clipConfiguration.scale !== undefined) {
-						this.clipConfiguration.width = width;
-						this.clipConfiguration.height = height;
-						delete this.clipConfiguration.scale;
-						this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(1, this.getLength(), "multiplicative");
-					}
-				}
-
-				this.originalDimensions = {
-					width,
-					height,
-					offsetX: currentOffsetX,
-					offsetY: currentOffsetY
-				};
-
-				// Expand hit area to capture pointer events anywhere during resize drag
-				const hitSize = Player.ExpandedHitArea;
-				this.getContainer().hitArea = new pixi.Rectangle(-hitSize, -hitSize, hitSize * 2, hitSize * 2);
-				return;
-			}
-		}
-
-		this.isDragging = true;
-
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-		this.dragOffset = {
-			x: timelinePoint.x - this.getContainer().position.x,
-			y: timelinePoint.y - this.getContainer().position.y
-		};
-	}
-
-	private onPointerMove(event: pixi.FederatedPointerEvent): void {
-		// Handle corner resize dragging (two-axis resize)
-		if (this.scaleDirection !== null && this.originalDimensions !== null) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-			const delta = {
-				x: timelinePoint.x - this.edgeDragStart.x,
-				y: timelinePoint.y - this.edgeDragStart.y
-			};
-
-			// Use pure function for corner scale calculation
-			const result = calculateCornerScale(this.scaleDirection, delta, this.originalDimensions, this.edit.size);
-
-			// Clamp dimensions using pure function
-			const clamped = clampDimensions(result.width, result.height);
-			const newWidth = clamped.width;
-			const newHeight = clamped.height;
-			const newOffsetX = result.offsetX;
-			const newOffsetY = result.offsetY;
-
-			// Apply dimensions
-			this.clipConfiguration.width = newWidth;
-			this.clipConfiguration.height = newHeight;
-
-			// Apply offset
-			if (!this.clipConfiguration.offset) {
-				this.clipConfiguration.offset = { x: 0, y: 0 };
-			}
-			this.clipConfiguration.offset.x = newOffsetX;
-			this.clipConfiguration.offset.y = newOffsetY;
-
-			// Update keyframe builders
-			this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.x, this.getLength(), "additive");
-			this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.y, this.getLength(), "additive");
-
-			// Notify subclass about dimension change
-			this.onDimensionsChanged();
-
-			return;
-		}
-
-		// Handle edge resize dragging
-		if (this.edgeDragDirection !== null && this.originalDimensions !== null) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-			const delta = {
-				x: timelinePoint.x - this.edgeDragStart.x,
-				y: timelinePoint.y - this.edgeDragStart.y
-			};
-
-			// Use pure function for edge resize calculation
-			const result = calculateEdgeResize(this.edgeDragDirection, delta, this.originalDimensions, this.edit.size);
-
-			// Clamp dimensions using pure function
-			const clamped = clampDimensions(result.width, result.height);
-			const newWidth = clamped.width;
-			const newHeight = clamped.height;
-			const newOffsetX = result.offsetX;
-			const newOffsetY = result.offsetY;
-
-			// Update clip configuration
-			this.clipConfiguration.width = Math.round(newWidth);
-			this.clipConfiguration.height = Math.round(newHeight);
-
-			if (!this.clipConfiguration.offset) {
-				this.clipConfiguration.offset = { x: 0, y: 0 };
-			}
-			this.clipConfiguration.offset.x = newOffsetX;
-			this.clipConfiguration.offset.y = newOffsetY;
-
-			// Update keyframe builders for position
-			this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.x, this.getLength(), "additive");
-			this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.y, this.getLength(), "additive");
-
-			// Notify subclass about dimension change for re-rendering
-			this.onDimensionsChanged();
-
-			return;
-		}
-
-		// Handle rotation dragging
-		if (this.isRotating && this.rotationStart !== null) {
-			const center = this.getContentCenter();
-			const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
-			const deltaAngle = (currentAngle - this.rotationStart) * (180 / Math.PI);
-
-			const rawRotation = this.initialRotation + deltaAngle;
-
-			// Snap to fixed angles using pure snap function
-			const { angle: newRotation } = snapRotation(rawRotation);
-
-			this.clipConfiguration.transform = {
-				...this.clipConfiguration.transform,
-				rotate: { angle: newRotation }
-			};
-
-			this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(newRotation, this.getLength(), "additive");
-
-			// Update cursor to follow the rotation
-			if (this.rotationCorner) {
-				this.getContainer().cursor = this.getRotationCursor(this.rotationCorner);
-			}
-			return;
-		}
-
-		if (this.isDragging) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-
-			const pivot = this.getPivot();
-
-			const cursorPosition: Vector = { x: timelinePoint.x - this.dragOffset.x, y: timelinePoint.y - this.dragOffset.y };
-			const rawPosition: Vector = { x: cursorPosition.x - pivot.x, y: cursorPosition.y - pivot.y };
-
-			// Clear guides before drawing new ones
-			this.edit.clearAlignmentGuides();
-
-			// Get bounds of other clips for snap calculations
-			const otherPlayers = this.edit.getActivePlayersExcept(this);
-			const otherClipBounds: ClipBounds[] = otherPlayers.map(other => {
-				const pos = other.getContainer().position;
-				const size = other.getSize();
-				return createClipBounds({ x: pos.x, y: pos.y }, size);
-			});
-
-			// Perform snapping using pure snap functions
-			const snapContext = createSnapContext(this.getSize(), this.edit.size, otherClipBounds);
-			const snapResult = snap(rawPosition, snapContext);
-
-			// Apply snapped position
-			const updatedPosition = snapResult.position;
-
-			// Draw alignment guides for active snaps
-			for (const guide of snapResult.guides) {
-				this.edit.showAlignmentGuide(guide.type, guide.axis, guide.position, guide.bounds);
-			}
-
-			const updatedRelativePosition = this.positionBuilder.absoluteToRelative(
-				this.getSize(),
-				this.clipConfiguration.position ?? "center",
-				updatedPosition
-			);
-
-			if (!this.clipConfiguration.offset) {
-				this.clipConfiguration.offset = { x: 0, y: 0 };
-			}
-			this.clipConfiguration.offset.x = updatedRelativePosition.x;
-			this.clipConfiguration.offset.y = updatedRelativePosition.y;
-
-			this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.x, this.getLength(), "additive");
-			this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(this.clipConfiguration.offset.y, this.getLength(), "additive");
-			return;
-		}
-
-		// Update cursor based on proximity when not dragging
-		if (!this.isDragging && !this.scaleDirection && !this.edgeDragDirection && !this.isRotating) {
-			// Check for rotation cursor (outside corners)
-			const rotationCorner = this.getRotationCorner(event);
-			if (rotationCorner) {
-				this.getContainer().cursor = this.getRotationCursor(rotationCorner);
-				return;
-			}
-
-			// Check for edge resize cursor using pure function
-			if (this.supportsEdgeResize()) {
-				const localPoint = event.getLocalPosition(this.getContainer());
-				const size = this.getSize();
-				const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
-
-				const edge = detectEdgeZone(localPoint, size, hitZone);
-				if (edge) {
-					this.getContainer().cursor = this.getEdgeResizeCursor(edge);
-				} else {
-					this.getContainer().cursor = "pointer";
-				}
-			} else {
-				this.getContainer().cursor = "pointer";
-			}
-		}
-	}
-
-	private onPointerUp(): void {
-		if ((this.isDragging || this.scaleDirection !== null || this.edgeDragDirection !== null || this.isRotating) && this.hasStateChanged()) {
-			this.edit.setUpdatedClip(this, this.initialClipConfiguration, structuredClone(this.clipConfiguration));
-		}
-
-		this.isDragging = false;
-		this.dragOffset = { x: 0, y: 0 };
-		this.edit.clearAlignmentGuides();
-
-		this.scaleDirection = null;
-
-		this.edgeDragDirection = null;
-		this.edgeDragStart = { x: 0, y: 0 };
-		this.originalDimensions = null;
-
-		this.isRotating = false;
-		this.rotationStart = null;
-		this.rotationCorner = null;
-
-		this.initialClipConfiguration = null;
-	}
-
-	private onPointerOver(): void {
-		this.isHovering = true;
-	}
-
-	private onPointerOut(): void {
-		this.isHovering = false;
 	}
 
 	private clipHasKeyframes(): boolean {
@@ -1079,33 +498,6 @@ export abstract class Player extends Entity {
 			this.clipConfiguration.offset?.y,
 			this.clipConfiguration.transform?.rotate?.angle
 		].some(property => property && typeof property !== "number");
-	}
-
-	private hasStateChanged(): boolean {
-		if (!this.initialClipConfiguration) return false;
-
-		const currentOffsetX = this.clipConfiguration.offset?.x as number;
-		const currentOffsetY = this.clipConfiguration.offset?.y as number;
-		const currentScale = this.clipConfiguration.scale as number;
-		const currentRotation = Number(this.clipConfiguration.transform?.rotate?.angle ?? 0);
-		const currentWidth = this.clipConfiguration.width;
-		const currentHeight = this.clipConfiguration.height;
-
-		const initialOffsetX = this.initialClipConfiguration.offset?.x as number;
-		const initialOffsetY = this.initialClipConfiguration.offset?.y as number;
-		const initialScale = this.initialClipConfiguration.scale as number;
-		const initialRotation = Number(this.initialClipConfiguration.transform?.rotate?.angle ?? 0);
-		const initialWidth = this.initialClipConfiguration.width;
-		const initialHeight = this.initialClipConfiguration.height;
-
-		return (
-			(initialOffsetX !== undefined && currentOffsetX !== initialOffsetX) ||
-			(initialOffsetY !== undefined && currentOffsetY !== initialOffsetY) ||
-			(initialScale !== undefined && currentScale !== initialScale) ||
-			currentRotation !== initialRotation ||
-			currentWidth !== initialWidth ||
-			currentHeight !== initialHeight
-		);
 	}
 
 	protected applyFixedDimensions(): void {
@@ -1190,7 +582,7 @@ export abstract class Player extends Entity {
 	 * Override in subclasses to enable edge resize handles for dimension changes.
 	 * When true, edge handles will be shown instead of corner scale handles.
 	 */
-	protected supportsEdgeResize(): boolean {
+	public supportsEdgeResize(): boolean {
 		return false;
 	}
 
@@ -1199,5 +591,13 @@ export abstract class Player extends Entity {
 	 */
 	protected onDimensionsChanged(): void {
 		// Default implementation does nothing - subclasses override this
+	}
+
+	/**
+	 * Public wrapper for notifying dimension changes.
+	 * Called by SelectionHandles after edge resize operations.
+	 */
+	public notifyDimensionsChanged(): void {
+		this.onDimensionsChanged();
 	}
 }

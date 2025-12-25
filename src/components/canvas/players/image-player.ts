@@ -92,7 +92,7 @@ export class ImagePlayer extends Player {
 		this.texture = null;
 	}
 
-	protected override supportsEdgeResize(): boolean {
+	public override supportsEdgeResize(): boolean {
 		return true;
 	}
 

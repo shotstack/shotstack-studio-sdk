@@ -1,14 +1,7 @@
-import { Inspector } from "@canvas/system/inspector";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
-import { EditEvent, InternalEvent } from "@core/events/edit-events";
-import { AssetToolbar } from "@core/ui/asset-toolbar";
-import { CanvasToolbar } from "@core/ui/canvas-toolbar";
-import { ClipToolbar } from "@core/ui/clip-toolbar";
-import { MediaToolbar } from "@core/ui/media-toolbar";
-import { RichTextToolbar } from "@core/ui/rich-text-toolbar";
-import { TextToolbar } from "@core/ui/text-toolbar";
-import { TranscriptionIndicator } from "@core/ui/transcription-indicator";
+import { InternalEvent } from "@core/events/edit-events";
+import type { UIController } from "@core/ui/ui-controller";
 import { checkWebGLSupport } from "@core/webgl-support";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
@@ -28,24 +21,14 @@ export class Canvas {
 	public readonly application: pixi.Application;
 
 	private readonly edit: Edit;
-	private readonly inspector: Inspector;
-	private readonly transcriptionIndicator: TranscriptionIndicator;
-	private readonly richTextToolbar: RichTextToolbar;
-	private readonly textToolbar: TextToolbar;
-	private readonly mediaToolbar: MediaToolbar;
-	private readonly clipToolbar: ClipToolbar;
-	private readonly canvasToolbar: CanvasToolbar;
-	private readonly assetToolbar: AssetToolbar;
 
-	// Toolbar mode switching
-	private toolbarMode: "asset" | "clip" = "asset";
-	private currentAssetType: string | null = null;
-	private currentTrackIndex = -1;
-	private currentClipIndex = -1;
+	/** Container for interactive overlays (handles, guides). Renders above content. */
+	public readonly overlayContainer: pixi.Container;
 
 	private container?: pixi.Container;
 	private background?: pixi.Graphics;
 	private timeline?: Timeline;
+	private uiController: UIController | null = null;
 
 	private minZoom = 0.1;
 	private maxZoom = 4;
@@ -53,33 +36,24 @@ export class Canvas {
 
 	private onTickBound: (ticker: pixi.Ticker) => void;
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
-	private onTranscriptionProgressBound: (payload: { clipAlias: string; message?: string }) => void;
-	private onTranscriptionCompletedBound: () => void;
-	private onTranscriptionFailedBound: () => void;
-	private onClipSelectedBound: (payload: { trackIndex: number; clipIndex: number }) => void;
-	private onSelectionClearedBound: () => void;
-	private lastInspectorUpdate: number = 0;
 
 	constructor(edit: Edit) {
 		this.application = new pixi.Application();
 		this.edit = edit;
-		this.inspector = new Inspector();
-		this.transcriptionIndicator = new TranscriptionIndicator();
-		this.richTextToolbar = new RichTextToolbar(edit);
-		this.textToolbar = new TextToolbar(edit);
-		this.mediaToolbar = new MediaToolbar(edit);
-		this.clipToolbar = new ClipToolbar(edit);
-		this.canvasToolbar = new CanvasToolbar(edit);
-		this.assetToolbar = new AssetToolbar(edit);
+		this.overlayContainer = new pixi.Container();
+		this.overlayContainer.sortableChildren = true;
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
-		this.onTranscriptionProgressBound = this.onTranscriptionProgress.bind(this);
-		this.onTranscriptionCompletedBound = this.onTranscriptionCompleted.bind(this);
-		this.onTranscriptionFailedBound = this.onTranscriptionFailed.bind(this);
-		this.onClipSelectedBound = this.onClipSelected.bind(this);
-		this.onSelectionClearedBound = this.onSelectionCleared.bind(this);
 
 		edit.setCanvas(this);
+	}
+
+	/**
+	 * Register a UIController to receive tick updates for canvas overlays.
+	 * Call this after creating the UIController with this Canvas instance.
+	 */
+	registerUIController(controller: UIController): void {
+		this.uiController = controller;
 	}
 
 	public async load(): Promise<void> {
@@ -108,27 +82,11 @@ export class Canvas {
 		this.background.fill();
 
 		await this.configureApplication();
-		await this.transcriptionIndicator.load();
 		this.configureStage();
 		this.setupTouchHandling(root);
 		this.zoomToFit();
 
 		root.appendChild(this.application.canvas);
-
-		this.richTextToolbar.mount(root);
-		this.textToolbar.mount(root);
-		this.mediaToolbar.mount(root);
-		this.clipToolbar.mount(root);
-		this.createModeTabsContainer(root);
-		this.setupClipToolbarListeners();
-
-		this.canvasToolbar.mount(root);
-		this.setupCanvasToolbarListeners();
-		this.syncCanvasToolbarState();
-		this.updateCanvasToolbarPosition();
-
-		this.assetToolbar.mount(root);
-		this.updateAssetToolbarPosition();
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {
@@ -210,8 +168,6 @@ export class Canvas {
 		edit.scale.y = this.currentZoom;
 
 		this.centerEdit();
-		this.updateAssetToolbarPosition();
-		this.updateCanvasToolbarPosition();
 	}
 
 	public resize(): void {
@@ -238,17 +194,6 @@ export class Canvas {
 
 		// Reposition content and UI elements
 		this.zoomToFit();
-	}
-
-	private updateAssetToolbarPosition(): void {
-		const editContainer = this.edit.getContainer();
-		this.assetToolbar.setPosition(editContainer.position.x);
-	}
-
-	private updateCanvasToolbarPosition(): void {
-		const editContainer = this.edit.getContainer();
-		const editRightEdge = editContainer.position.x + this.edit.size.width * this.currentZoom;
-		this.canvasToolbar.setPosition(this.viewportSize.width, editRightEdge);
 	}
 
 	public setZoom(zoom: number): void {
@@ -294,37 +239,8 @@ export class Canvas {
 		this.edit.update(ticker.deltaTime, ticker.deltaMS);
 		this.edit.draw();
 
-		this.inspector.fps = Math.ceil(ticker.FPS);
-		this.inspector.playbackTime = this.edit.playbackTime;
-		this.inspector.playbackDuration = this.edit.totalDuration;
-		this.inspector.isPlaying = this.edit.isPlaying;
-
-		// Pass stats to inspector (throttled - every 500ms)
-		const now = performance.now();
-		if (now - this.lastInspectorUpdate > 500) {
-			this.lastInspectorUpdate = now;
-
-			// Get clip and system stats
-			const comprehensiveStats = this.edit.getComprehensiveMemoryStats();
-			this.inspector.clipStats = {
-				videos: comprehensiveStats.textureStats.videos.count,
-				images: comprehensiveStats.textureStats.images.count,
-				text: comprehensiveStats.textureStats.text.count,
-				richText: comprehensiveStats.textureStats.richText.count,
-				luma: comprehensiveStats.textureStats.luma.count,
-				animatedClips: comprehensiveStats.textureStats.animated.count,
-				cachedFrames: comprehensiveStats.textureStats.animated.frames
-			};
-			this.inspector.systemStats = comprehensiveStats.systemStats;
-
-			// Pass playback health stats
-			this.inspector.playbackHealth = this.edit.getPlaybackHealth();
-		}
-
-		this.inspector.update(ticker.deltaTime, ticker.deltaMS);
-		this.inspector.draw();
-
-		this.transcriptionIndicator.update(ticker.deltaTime, ticker.deltaMS);
+		// Update canvas overlays (selection handles, guides, etc.)
+		this.uiController?.updateOverlays(ticker.deltaTime, ticker.deltaMS);
 
 		if (this.timeline) {
 			this.timeline.update(ticker.deltaTime, ticker.deltaMS);
@@ -339,10 +255,7 @@ export class Canvas {
 
 		this.container.addChild(this.background);
 		this.container.addChild(this.edit.getContainer());
-		this.container.addChild(this.inspector.getContainer());
-		this.container.addChild(this.transcriptionIndicator.getContainer());
-
-		this.transcriptionIndicator.setPosition(this.viewportSize.width - 10, 10);
+		this.container.addChild(this.overlayContainer); // Above content for handles/guides
 
 		this.application.stage.addChild(this.container);
 
@@ -351,212 +264,6 @@ export class Canvas {
 
 		this.background.eventMode = "static";
 		this.background.on("pointerdown", this.onBackgroundClickBound);
-
-		this.setupTranscriptionEventListeners();
-	}
-
-	private setupTranscriptionEventListeners(): void {
-		this.edit.events.on(EditEvent.TranscriptionProgress, this.onTranscriptionProgressBound);
-		this.edit.events.on(EditEvent.TranscriptionCompleted, this.onTranscriptionCompletedBound);
-		this.edit.events.on(EditEvent.TranscriptionFailed, this.onTranscriptionFailedBound);
-	}
-
-	private onTranscriptionProgress(payload: { clipAlias: string; message?: string }): void {
-		const message = payload.message ?? "Transcribing...";
-		this.transcriptionIndicator.show(message);
-		this.transcriptionIndicator.setPosition(this.viewportSize.width - this.transcriptionIndicator.getWidth() - 10, 10);
-	}
-
-	private onTranscriptionCompleted(): void {
-		this.transcriptionIndicator.hide();
-	}
-
-	private onTranscriptionFailed(): void {
-		this.transcriptionIndicator.hide();
-	}
-
-	private setupClipToolbarListeners(): void {
-		this.edit.events.on(EditEvent.ClipSelected, this.onClipSelectedBound);
-		this.edit.events.on(EditEvent.SelectionCleared, this.onSelectionClearedBound);
-	}
-
-	private onClipSelected({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
-		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-		const assetType = player?.clipConfiguration.asset.type;
-
-		// Store current selection for mode switching
-		this.currentAssetType = assetType ?? null;
-		this.currentTrackIndex = trackIndex;
-		this.currentClipIndex = clipIndex;
-
-		// Show appropriate toolbar based on current mode
-		this.updateToolbarVisibility();
-	}
-
-	private onSelectionCleared(): void {
-		this.richTextToolbar.hide();
-		this.textToolbar.hide();
-		this.mediaToolbar.hide();
-		this.clipToolbar.hide();
-		this.hideModeTabs();
-
-		this.currentAssetType = null;
-		this.currentTrackIndex = -1;
-		this.currentClipIndex = -1;
-	}
-
-	/**
-	 * Setup integrated mode toggle event handlers across all toolbars.
-	 * The toggle is now embedded in each toolbar, not a separate container.
-	 */
-	private createModeTabsContainer(parent: HTMLElement): void {
-		// Set up click handlers for all toggle buttons across all toolbars
-		// These are added after toolbars mount, so we need to wait for them
-		requestAnimationFrame(() => {
-			const allToggleButtons = parent.querySelectorAll(".ss-toolbar-mode-btn");
-			allToggleButtons.forEach(btn => {
-				btn.addEventListener("click", () => {
-					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
-					this.setToolbarMode(mode);
-				});
-			});
-		});
-
-		// Add Tab keyboard shortcut
-		this.setupModeToggleKeyboardShortcut();
-	}
-
-	/**
-	 * Setup Tab key to toggle between Asset and Clip modes.
-	 */
-	private setupModeToggleKeyboardShortcut(): void {
-		document.addEventListener("keydown", (e: KeyboardEvent) => {
-			// Only handle Tab when a toolbar is visible and no input is focused
-			if (
-				e.key === "Tab" &&
-				this.hasVisibleToolbar() &&
-				!this.isInputFocused()
-			) {
-				e.preventDefault();
-				const newMode = this.toolbarMode === "asset" ? "clip" : "asset";
-				this.setToolbarMode(newMode);
-			}
-		});
-	}
-
-	/**
-	 * Check if any toolbar is currently visible.
-	 */
-	private hasVisibleToolbar(): boolean {
-		return (
-			this.currentTrackIndex >= 0 &&
-			this.currentClipIndex >= 0 &&
-			this.currentAssetType !== null
-		);
-	}
-
-	/**
-	 * Check if an input element is currently focused.
-	 */
-	private isInputFocused(): boolean {
-		const activeEl = document.activeElement;
-		return (
-			activeEl instanceof HTMLInputElement ||
-			activeEl instanceof HTMLTextAreaElement ||
-			(activeEl as HTMLElement)?.isContentEditable === true
-		);
-	}
-
-	/**
-	 * Set the active toolbar mode.
-	 */
-	private setToolbarMode(mode: "asset" | "clip"): void {
-		this.toolbarMode = mode;
-
-		// Update all toggle UIs across all toolbars
-		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
-		if (root) {
-			const allToggles = root.querySelectorAll(".ss-toolbar-mode-toggle");
-			allToggles.forEach((toggle: Element) => {
-				toggle.setAttribute("data-mode", mode);
-				toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn: Element) => {
-					btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === mode);
-				});
-			});
-		}
-
-		// Update toolbar visibility
-		this.updateToolbarVisibility();
-	}
-
-	/**
-	 * Update which toolbar is visible based on current mode and asset type.
-	 */
-	private updateToolbarVisibility(): void {
-		// Hide all toolbars first
-		this.richTextToolbar.hide();
-		this.textToolbar.hide();
-		this.mediaToolbar.hide();
-		this.clipToolbar.hide();
-
-		if (this.currentTrackIndex < 0 || this.currentClipIndex < 0) return;
-
-		if (this.toolbarMode === "clip") {
-			// Show clip toolbar for timing controls
-			this.clipToolbar.show(this.currentTrackIndex, this.currentClipIndex);
-		} else if (this.currentAssetType === "rich-text") {
-			// Show asset-specific toolbar
-			this.richTextToolbar.show(this.currentTrackIndex, this.currentClipIndex);
-		} else if (this.currentAssetType === "text") {
-			this.textToolbar.show(this.currentTrackIndex, this.currentClipIndex);
-		} else if (this.currentAssetType === "video" || this.currentAssetType === "image" || this.currentAssetType === "audio") {
-			this.mediaToolbar.showMedia(this.currentTrackIndex, this.currentClipIndex, this.currentAssetType);
-		}
-	}
-
-	/**
-	 * Hide mode tabs and reset to asset mode.
-	 */
-	private hideModeTabs(): void {
-		// Reset to asset mode when selection is cleared
-		this.toolbarMode = "asset";
-
-		// Reset all toggle UIs to asset mode
-		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
-		if (root) {
-			const allToggles = root.querySelectorAll(".ss-toolbar-mode-toggle");
-			allToggles.forEach((toggle: Element) => {
-				toggle.setAttribute("data-mode", "asset");
-				toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn: Element) => {
-					btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === "asset");
-				});
-			});
-		}
-	}
-
-	private setupCanvasToolbarListeners(): void {
-		this.canvasToolbar.onResolutionChange((width, height) => {
-			this.edit.setOutputSize(width, height);
-		});
-
-		this.canvasToolbar.onFpsChange(fps => {
-			this.edit.setOutputFps(fps);
-		});
-
-		this.canvasToolbar.onBackgroundChange(color => {
-			this.edit.setTimelineBackground(color);
-		});
-	}
-
-	private syncCanvasToolbarState(): void {
-		const { size } = this.edit;
-		this.canvasToolbar.setResolution(size.width, size.height);
-
-		const fps = this.edit.getOutputFps();
-		this.canvasToolbar.setFps(fps);
-
-		const background = this.edit.getTimelineBackground();
-		this.canvasToolbar.setBackground(background);
 	}
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
@@ -582,25 +289,11 @@ export class Canvas {
 		this.application.ticker.remove(this.onTickBound);
 		this.background?.off("pointerdown", this.onBackgroundClickBound);
 
-		// Remove event listeners
-		this.edit.events.off(EditEvent.TranscriptionProgress, this.onTranscriptionProgressBound);
-		this.edit.events.off(EditEvent.TranscriptionCompleted, this.onTranscriptionCompletedBound);
-		this.edit.events.off(EditEvent.TranscriptionFailed, this.onTranscriptionFailedBound);
-		this.edit.events.off(EditEvent.ClipSelected, this.onClipSelectedBound);
-		this.edit.events.off(EditEvent.SelectionCleared, this.onSelectionClearedBound);
-
 		this.background?.destroy();
+		this.overlayContainer.destroy();
 		this.container?.destroy();
 
-		this.inspector.dispose();
-		this.transcriptionIndicator.dispose();
-		this.richTextToolbar.dispose();
-		this.textToolbar.dispose();
-		this.mediaToolbar.dispose();
-		this.clipToolbar.dispose();
-		this.canvasToolbar.dispose();
-		this.assetToolbar.dispose();
-
+		this.uiController = null;
 		this.application.destroy(true, { children: true, texture: true });
 	}
 }

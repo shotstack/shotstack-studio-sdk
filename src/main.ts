@@ -1,6 +1,6 @@
 import { Timeline } from "@timeline/index";
 
-import { Edit, Canvas, Controls, VideoExporter } from "./index";
+import { Edit, Canvas, Controls, VideoExporter, UIController } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide
@@ -15,6 +15,11 @@ async function main() {
 		// 2. Create Edit from template and load it
 		const edit = new Edit(template);
 		const canvas = new Canvas(edit);
+
+		// 2a. Create UI controller (selection handles enabled by default)
+		const ui = new UIController(edit, canvas);
+		canvas.registerUIController(ui);
+
 		await canvas.load(); // Renders to [data-shotstack-studio] element
 		await edit.load();
 
