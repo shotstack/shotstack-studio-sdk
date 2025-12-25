@@ -1,3 +1,4 @@
+import type { Edit } from "@core/edit-session";
 import { validateAssetUrl } from "@core/shared/utils";
 import { injectShotstackStyles } from "@styles/inject";
 
@@ -40,8 +41,18 @@ const ICONS = {
 
 type MediaAssetType = "video" | "image" | "audio";
 
+export interface MediaToolbarOptions {
+	mergeFields?: boolean;
+}
+
 export class MediaToolbar extends BaseToolbar {
+	private showMergeFields: boolean;
 	private assetType: MediaAssetType = "image";
+
+	constructor(edit: Edit, options: MediaToolbarOptions = {}) {
+		super(edit);
+		this.showMergeFields = options.mergeFields ?? false;
+	}
 
 	// Current values
 	private currentFit: FitValue = "crop";
@@ -244,9 +255,10 @@ export class MediaToolbar extends BaseToolbar {
 				</div>
 			</div>
 
+			${this.showMergeFields ? `
 			<div class="ss-media-toolbar-divider" data-divider-before-advanced></div>
 
-			<!-- Advanced Menu -->
+			<!-- Advanced Menu (Dynamic Source for merge fields) -->
 			<div class="ss-media-toolbar-dropdown">
 				<button class="ss-media-toolbar-btn ss-media-toolbar-btn--icon" data-action="advanced" data-tooltip="Advanced">
 					${ICONS.moreVertical}
@@ -267,6 +279,7 @@ export class MediaToolbar extends BaseToolbar {
 					</div>
 				</div>
 			</div>
+			` : ""}
 		`;
 
 		parent.insertBefore(this.container, parent.firstChild);

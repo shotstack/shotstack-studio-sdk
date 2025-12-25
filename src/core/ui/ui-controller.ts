@@ -209,8 +209,8 @@ export class UIController {
 		// Asset-specific toolbars
 		this.registerToolbar("text", new TextToolbar(this.edit));
 		this.registerToolbar("rich-text", new RichTextToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
-		this.registerToolbar(["video", "image"], new MediaToolbar(this.edit));
-		this.registerToolbar("audio", new MediaToolbar(this.edit));
+		this.registerToolbar(["video", "image"], new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
+		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 
 		// Utilities
 		this.registerUtility(new CanvasToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
