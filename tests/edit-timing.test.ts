@@ -632,7 +632,9 @@ describe("Edit Timing Integration", () => {
 			edit.updateClipTiming(0, 0, { length: "auto" });
 
 			// Wait for async resolution
-			await new Promise(resolve => setTimeout(resolve, 50));
+			await new Promise(resolve => {
+				setTimeout(resolve, 50);
+			});
 
 			// clipConfiguration.length should now be 3 (default for text)
 			const clip = edit.getPlayerClip(0, 0);

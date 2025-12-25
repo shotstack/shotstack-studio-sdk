@@ -197,7 +197,7 @@ export abstract class Player extends Entity {
 		// Enable pointer events for click-to-select (handled by edit-session)
 		this.getContainer().cursor = "pointer";
 		this.getContainer().eventMode = "static";
-		this.getContainer().on("pointerdown", this.onPointerDown.bind(this));
+		this.getContainer().on?.("pointerdown", this.onPointerDown.bind(this));
 	}
 
 	public override update(_: number, __: number): void {
