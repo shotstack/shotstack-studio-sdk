@@ -1,9 +1,46 @@
 import type { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { EventEmitter } from "@core/events/event-emitter";
 import type * as pixi from "pixi.js";
 
+import { AssetToolbar } from "./asset-toolbar";
+import { CanvasToolbar } from "./canvas-toolbar";
+import { ClipToolbar } from "./clip-toolbar";
+import { MediaToolbar } from "./media-toolbar";
+import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
+import { TextToolbar } from "./text-toolbar";
+
+/**
+ * Configuration for a toolbar button.
+ */
+export interface ToolbarButtonConfig {
+	/** Unique identifier for the button (used in event names) */
+	id: string;
+	/** SVG icon markup */
+	icon: string;
+	/** Tooltip text shown on hover */
+	tooltip: string;
+	/** Whether to show a divider before this button */
+	dividerBefore?: boolean;
+}
+
+/**
+ * Payload passed to button click handlers.
+ */
+export interface ButtonClickPayload {
+	/** Current playback position in seconds */
+	position: number;
+	/** Currently selected clip, if any */
+	selectedClip: { trackIndex: number; clipIndex: number } | null;
+}
+
+/**
+ * Event map for UIController button events.
+ * Events are typed as `button:${buttonId}`.
+ */
+export type UIButtonEventMap = Record<`button:${string}`, ButtonClickPayload>;
 
 /**
  * Interface for HTML/DOM UI components that can be registered with UIController.
@@ -41,6 +78,8 @@ export interface CanvasOverlayRegistration {
 export interface UIControllerOptions {
 	/** Enable selection handles for drag/resize/rotate interactions. Default: true */
 	selectionHandles?: boolean;
+	/** Enable merge fields UI (Variables panel, autocomplete). Default: false (vanilla video editor) */
+	mergeFields?: boolean;
 }
 
 /**
@@ -53,16 +92,12 @@ export interface UIControllerOptions {
  *
  * @example
  * ```typescript
- * // Pure preview (no UI)
- * const edit = new Edit(template);
- * const canvas = new Canvas(edit);
- * await canvas.load();
+ * // Standard setup with all toolbars
+ * const ui = UIController.create(edit, canvas, { mergeFields: true });
  *
- * // With UI
- * const ui = new UIController(edit)
- *   .registerToolbar('text', new TextToolbar(edit))
- *   .registerToolbar(['video', 'image'], new MediaToolbar(edit));
- * ui.mount(container);
+ * // Minimal setup for custom toolbars
+ * const ui = UIController.minimal(edit, canvas);
+ * ui.registerToolbar('text', new CustomTextToolbar(edit));
  * ```
  */
 export class UIController {
@@ -73,21 +108,120 @@ export class UIController {
 	private canvas: Canvas | null = null;
 	private isDisposed = false;
 
-	constructor(
-		private edit: Edit,
-		canvas?: Canvas,
-		options: UIControllerOptions = {}
-	) {
-		this.canvas = canvas ?? null;
+	/** Whether merge fields UI is enabled (Variables panel, autocomplete) */
+	readonly mergeFieldsEnabled: boolean;
+	/** Whether selection handles are enabled for drag/resize/rotate */
+	private readonly selectionHandlesEnabled: boolean;
+
+	// Toolbar mode switching
+	private clipToolbar: ClipToolbar | null = null;
+	private toolbarMode: "asset" | "clip" = "asset";
+	private currentAssetType: string | null = null;
+	private currentTrackIndex = -1;
+	private currentClipIndex = -1;
+	private onKeyDownBound: (e: KeyboardEvent) => void;
+
+	// Button registry
+	private buttonRegistry: ToolbarButtonConfig[] = [];
+	private buttonEvents = new EventEmitter<UIButtonEventMap & { "buttons:changed": void }>();
+	private assetToolbar: AssetToolbar | null = null;
+
+	// ─── Static Factory Methods ─────────────────────────────────────────────────
+
+	/**
+	 * Create a UIController with all standard toolbars pre-registered.
+	 * This is the recommended way to create a UIController for most use cases.
+	 *
+	 * @param edit - The Edit instance
+	 * @param canvas - The Canvas instance
+	 * @param options - Configuration options
+	 * @returns A fully configured UIController
+	 *
+	 * @example
+	 * ```typescript
+	 * const ui = UIController.create(edit, canvas, { mergeFields: true });
+	 * ui.registerButton({ id: "text", icon: "...", tooltip: "Add Text" });
+	 * ui.on("button:text", ({ position }) => { ... });
+	 * ```
+	 */
+	static create(edit: Edit, canvas: Canvas, options: UIControllerOptions = {}): UIController {
+		const ui = new UIController(edit, canvas, options);
+		ui.subscribeToEvents();
+		canvas.setUIController(ui);
+		ui.registerStandardToolbars();
+		return ui;
+	}
+
+	/**
+	 * Create a minimal UIController without pre-registered toolbars.
+	 * Use this when you want full control over which toolbars are registered.
+	 *
+	 * @param edit - The Edit instance
+	 * @param canvas - Optional Canvas instance
+	 * @returns A minimal UIController ready for custom configuration
+	 *
+	 * @example
+	 * ```typescript
+	 * const ui = UIController.minimal(edit, canvas);
+	 * ui.registerToolbar('text', new CustomTextToolbar(edit));
+	 * ui.registerToolbar('video', new CustomVideoToolbar(edit));
+	 * ```
+	 */
+	static minimal(edit: Edit, canvas?: Canvas): UIController {
+		const ui = new UIController(edit, canvas ?? null, {});
+		ui.subscribeToEvents();
+		if (canvas) canvas.setUIController(ui);
+		return ui;
+	}
+
+	// ─── Private Constructor ────────────────────────────────────────────────────
+
+	/**
+	 * Private constructor - use UIController.create() or UIController.minimal() instead.
+	 */
+	private constructor(edit: Edit, canvas: Canvas | null, options: UIControllerOptions) {
+		this.edit = edit;
+		this.canvas = canvas;
+		this.mergeFieldsEnabled = options.mergeFields ?? false;
+		this.selectionHandlesEnabled = options.selectionHandles ?? true;
+		this.onKeyDownBound = this.onKeyDown.bind(this);
+	}
+
+	private readonly edit: Edit;
+
+	/**
+	 * Subscribe to edit events. Called by factory methods.
+	 */
+	private subscribeToEvents(): void {
 		this.edit.events.on(EditEvent.ClipSelected, this.onClipSelected);
 		this.edit.events.on(EditEvent.SelectionCleared, this.onSelectionCleared);
+	}
 
-		// Auto-register SelectionHandles unless opted out
-		const { selectionHandles = true } = options;
-		if (selectionHandles) {
+	/**
+	 * Register all standard toolbars. Called by create() factory.
+	 */
+	private registerStandardToolbars(): void {
+		// Selection handles
+		if (this.selectionHandlesEnabled) {
 			this.registerCanvasOverlay(new SelectionHandles(this.edit));
 		}
+
+		// Asset-specific toolbars
+		this.registerToolbar("text", new TextToolbar(this.edit));
+		this.registerToolbar("rich-text", new RichTextToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
+		this.registerToolbar(["video", "image"], new MediaToolbar(this.edit));
+		this.registerToolbar("audio", new MediaToolbar(this.edit));
+
+		// Utilities
+		this.registerUtility(new CanvasToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
+		this.assetToolbar = new AssetToolbar(this);
+		this.registerUtility(this.assetToolbar);
+
+		// ClipToolbar - managed separately for mode toggle
+		this.clipToolbar = new ClipToolbar(this.edit);
 	}
+
+	// ─── Public API ─────────────────────────────────────────────────────────────
 
 	/**
 	 * Register a toolbar for one or more asset types.
@@ -147,6 +281,9 @@ export class UIController {
 			}
 		}
 
+		// Mount ClipToolbar (managed separately for mode toggle)
+		this.clipToolbar?.mount(container);
+
 		// Mount utilities
 		for (const utility of this.utilities) {
 			utility.mount(container);
@@ -158,6 +295,21 @@ export class UIController {
 				overlay.mount(this.canvas.overlayContainer, this.canvas.application);
 			}
 		}
+
+		// Wire up mode toggle buttons (after DOM is ready)
+		requestAnimationFrame(() => {
+			this.container?.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
+					if (mode) {
+						this.setToolbarMode(mode);
+					}
+				});
+			});
+		});
+
+		// Backtick key shortcut for mode toggle
+		document.addEventListener("keydown", this.onKeyDownBound);
 	}
 
 	/**
@@ -180,6 +332,9 @@ export class UIController {
 		this.edit.events.off(EditEvent.ClipSelected, this.onClipSelected);
 		this.edit.events.off(EditEvent.SelectionCleared, this.onSelectionCleared);
 
+		// Remove keyboard listener
+		document.removeEventListener("keydown", this.onKeyDownBound);
+
 		// Dispose toolbars (avoid double-dispose for shared instances)
 		const disposedToolbars = new Set<UIRegistration>();
 		for (const toolbar of this.toolbars.values()) {
@@ -188,6 +343,9 @@ export class UIController {
 				disposedToolbars.add(toolbar);
 			}
 		}
+
+		// Dispose ClipToolbar (managed separately)
+		this.clipToolbar?.dispose();
 
 		// Dispose utilities
 		for (const utility of this.utilities) {
@@ -220,35 +378,224 @@ export class UIController {
 		return this.toolbars.has(assetType);
 	}
 
+	// ─── Button Registry ─────────────────────────────────────────────────────────
+
+	/**
+	 * Register a toolbar button.
+	 * Buttons appear in the left toolbar and trigger events when clicked.
+	 *
+	 * @example
+	 * ```typescript
+	 * ui.registerButton({
+	 *   id: "text",
+	 *   icon: `<svg>...</svg>`,
+	 *   tooltip: "Add Text"
+	 * });
+	 *
+	 * ui.on("button:text", ({ position }) => {
+	 *   edit.addTrack(0, { clips: [{ ... }] });
+	 * });
+	 * ```
+	 *
+	 * @param config - Button configuration
+	 * @returns this (for chaining)
+	 */
+	registerButton(config: ToolbarButtonConfig): this {
+		const existing = this.buttonRegistry.findIndex((b) => b.id === config.id);
+		if (existing >= 0) {
+			this.buttonRegistry[existing] = config;
+		} else {
+			this.buttonRegistry.push(config);
+		}
+		this.buttonEvents.emit("buttons:changed");
+		return this;
+	}
+
+	/**
+	 * Unregister a toolbar button.
+	 *
+	 * @param id - Button ID to remove
+	 * @returns this (for chaining)
+	 */
+	unregisterButton(id: string): this {
+		const index = this.buttonRegistry.findIndex((b) => b.id === id);
+		if (index >= 0) {
+			this.buttonRegistry.splice(index, 1);
+			this.buttonEvents.emit("buttons:changed");
+		}
+		return this;
+	}
+
+	/**
+	 * Get all registered toolbar buttons.
+	 */
+	getButtons(): ToolbarButtonConfig[] {
+		return [...this.buttonRegistry];
+	}
+
+	/**
+	 * Subscribe to a button click event.
+	 *
+	 * @example
+	 * ```typescript
+	 * ui.on("button:text", ({ position, selectedClip }) => {
+	 *   console.log("Text button clicked at position:", position);
+	 * });
+	 * ```
+	 *
+	 * @param event - Event name in format `button:${buttonId}`
+	 * @param handler - Callback function
+	 * @returns Unsubscribe function
+	 */
+	on<K extends `button:${string}`>(event: K, handler: (payload: ButtonClickPayload) => void): () => void {
+		return this.buttonEvents.on(event as keyof UIButtonEventMap, handler);
+	}
+
+	/**
+	 * Unsubscribe from a button click event.
+	 */
+	off<K extends `button:${string}`>(event: K, handler: (payload: ButtonClickPayload) => void): void {
+		this.buttonEvents.off(event as keyof UIButtonEventMap, handler);
+	}
+
+	/**
+	 * Subscribe to button registry changes.
+	 * Called when buttons are added or removed.
+	 *
+	 * @internal Used by AssetToolbar
+	 */
+	onButtonsChanged(handler: () => void): () => void {
+		return this.buttonEvents.on("buttons:changed", handler);
+	}
+
+	/**
+	 * Emit a button click event.
+	 * @internal Called by AssetToolbar when a button is clicked.
+	 */
+	emitButtonClick(buttonId: string): void {
+		const payload: ButtonClickPayload = {
+			position: this.edit.playbackTime / 1000,
+			selectedClip: this.edit.getSelectedClipInfo()
+		};
+		this.buttonEvents.emit(`button:${buttonId}`, payload);
+	}
+
+	/**
+	 * Get the current playback time in seconds.
+	 * @internal Used by AssetToolbar
+	 */
+	getPlaybackTime(): number {
+		return this.edit.playbackTime / 1000;
+	}
+
+	/**
+	 * Get the currently selected clip info.
+	 * @internal Used by AssetToolbar
+	 */
+	getSelectedClip(): { trackIndex: number; clipIndex: number } | null {
+		return this.edit.getSelectedClipInfo();
+	}
+
+	// ─── Mode Toggle ────────────────────────────────────────────────────────────
+
+	/**
+	 * Set the toolbar mode and update visibility accordingly.
+	 * @param mode - "asset" shows asset-specific toolbar, "clip" shows ClipToolbar
+	 */
+	private setToolbarMode(mode: "asset" | "clip"): void {
+		this.toolbarMode = mode;
+
+		// Update all toggle UIs
+		this.container?.querySelectorAll(".ss-toolbar-mode-toggle").forEach((toggle) => {
+			toggle.setAttribute("data-mode", mode);
+			toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn) => {
+				btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === mode);
+			});
+		});
+
+		this.updateToolbarVisibility();
+	}
+
+	/**
+	 * Hide all registered toolbars.
+	 */
+	private hideAllToolbars(): void {
+		const hidden = new Set<UIRegistration>();
+		for (const toolbar of this.toolbars.values()) {
+			if (!hidden.has(toolbar)) {
+				toolbar.hide?.();
+				hidden.add(toolbar);
+			}
+		}
+		this.clipToolbar?.hide?.();
+	}
+
+	/**
+	 * Update toolbar visibility based on current mode and selection.
+	 */
+	private updateToolbarVisibility(): void {
+		this.hideAllToolbars();
+
+		// No selection = nothing to show
+		if (this.currentTrackIndex < 0 || this.currentClipIndex < 0) return;
+
+		if (this.toolbarMode === "clip") {
+			this.clipToolbar?.show?.(this.currentTrackIndex, this.currentClipIndex);
+		} else if (this.currentAssetType) {
+			const toolbar = this.toolbars.get(this.currentAssetType);
+			toolbar?.show?.(this.currentTrackIndex, this.currentClipIndex);
+		}
+	}
+
+	/**
+	 * Check if any toolbar is currently visible (clip is selected).
+	 */
+	private hasVisibleToolbar(): boolean {
+		return this.currentTrackIndex >= 0 && this.currentClipIndex >= 0;
+	}
+
+	/**
+	 * Check if an input element is focused (to avoid intercepting typing).
+	 */
+	private isInputFocused(): boolean {
+		const el = document.activeElement;
+		return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || (el as HTMLElement)?.isContentEditable;
+	}
+
+	/**
+	 * Handle backtick (`) key to toggle between asset and clip mode.
+	 * Backtick is the video editor convention for mode/view toggling (Premiere, After Effects).
+	 */
+	private onKeyDown(e: KeyboardEvent): void {
+		const isBacktick = e.key === "`" || e.code === "Backquote";
+		if (isBacktick && this.hasVisibleToolbar() && !this.isInputFocused()) {
+			e.preventDefault();
+			this.setToolbarMode(this.toolbarMode === "asset" ? "clip" : "asset");
+		}
+	}
+
 	// ─── Event Handlers ─────────────────────────────────────────────────────────
 
 	private onClipSelected = ({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void => {
 		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
 		const assetType = player?.clipConfiguration.asset?.type;
 
-		// Hide all toolbars first
-		const hiddenToolbars = new Set<UIRegistration>();
-		for (const toolbar of this.toolbars.values()) {
-			if (!hiddenToolbars.has(toolbar)) {
-				toolbar.hide?.();
-				hiddenToolbars.add(toolbar);
-			}
-		}
+		// Track current selection for mode toggle
+		this.currentAssetType = assetType ?? null;
+		this.currentTrackIndex = trackIndex;
+		this.currentClipIndex = clipIndex;
 
-		// Show the matching toolbar
-		if (assetType) {
-			const toolbar = this.toolbars.get(assetType);
-			toolbar?.show?.(trackIndex, clipIndex);
-		}
+		// Update visibility based on mode
+		this.updateToolbarVisibility();
 	};
 
 	private onSelectionCleared = (): void => {
-		const hiddenToolbars = new Set<UIRegistration>();
-		for (const toolbar of this.toolbars.values()) {
-			if (!hiddenToolbars.has(toolbar)) {
-				toolbar.hide?.();
-				hiddenToolbars.add(toolbar);
-			}
-		}
+		// Reset selection state
+		this.currentAssetType = null;
+		this.currentTrackIndex = -1;
+		this.currentClipIndex = -1;
+
+		// Hide all toolbars
+		this.hideAllToolbars();
 	};
 }

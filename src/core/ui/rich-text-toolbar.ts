@@ -1,3 +1,4 @@
+import type { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
 import type { ResolvedClip } from "@schemas/clip";
@@ -14,7 +15,12 @@ import { TransitionPanel } from "./composites/TransitionPanel";
 import { FontColorPicker } from "./font-color-picker";
 import { FontPicker, type GoogleFont } from "./font-picker";
 
+export interface RichTextToolbarOptions {
+	mergeFields?: boolean;
+}
+
 export class RichTextToolbar extends BaseToolbar {
+	private showMergeFields: boolean;
 	private fontPopup: HTMLDivElement | null = null;
 	private fontPreview: HTMLSpanElement | null = null;
 	private fontPicker: FontPicker | null = null;
@@ -93,6 +99,11 @@ export class RichTextToolbar extends BaseToolbar {
 
 	// Bound handler for proper cleanup
 	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
+
+	constructor(edit: Edit, options: RichTextToolbarOptions = {}) {
+		super(edit);
+		this.showMergeFields = options.mergeFields ?? false;
+	}
 
 	override mount(parent: HTMLElement): void {
 		injectShotstackStyles();
@@ -995,6 +1006,7 @@ export class RichTextToolbar extends BaseToolbar {
 	// ─── Autocomplete for Merge Field Variables ─────────────────────────────────
 
 	private checkAutocomplete(): void {
+		if (!this.showMergeFields) return;
 		if (!this.textEditArea) return;
 
 		const pos = this.textEditArea.selectionStart;

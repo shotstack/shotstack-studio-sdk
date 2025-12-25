@@ -95,8 +95,12 @@ export class CanvasToolbar {
 	// Positioning
 	private padding = 12;
 
-	constructor(edit?: Edit) {
+	// Feature flags
+	private showMergeFields: boolean;
+
+	constructor(edit?: Edit, options: { mergeFields?: boolean } = {}) {
 		this.edit = edit ?? null;
+		this.showMergeFields = options.mergeFields ?? false;
 		injectShotstackStyles();
 	}
 
@@ -183,6 +187,9 @@ export class CanvasToolbar {
 				</div>
 			</div>
 
+			${
+				this.showMergeFields
+					? `
 			<div class="ss-canvas-toolbar-divider"></div>
 
 			<!-- Variables -->
@@ -199,6 +206,9 @@ export class CanvasToolbar {
 					<div class="ss-variables-empty" data-variables-empty>No merge fields defined</div>
 				</div>
 			</div>
+			`
+					: ""
+			}
 		`;
 
 		parent.appendChild(this.container);

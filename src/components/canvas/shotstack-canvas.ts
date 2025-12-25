@@ -50,9 +50,22 @@ export class Canvas {
 
 	/**
 	 * Register a UIController to receive tick updates for canvas overlays.
-	 * Call this after creating the UIController with this Canvas instance.
+	 * @deprecated Use `new UIController(edit, canvas)` instead - auto-registers.
 	 */
 	registerUIController(controller: UIController): void {
+		console.warn(
+			"[Shotstack] canvas.registerUIController() is deprecated. " +
+				"UIController now auto-registers when you pass canvas to the constructor: " +
+				"new UIController(edit, canvas)"
+		);
+		this.uiController = controller;
+	}
+
+	/**
+	 * Set the UIController for this canvas.
+	 * @internal Called by UIController constructor for auto-registration.
+	 */
+	setUIController(controller: UIController): void {
 		this.uiController = controller;
 	}
 
@@ -87,6 +100,11 @@ export class Canvas {
 		this.zoomToFit();
 
 		root.appendChild(this.application.canvas);
+
+		// Auto-mount UIController to canvas root (toolbars sit inside canvas)
+		if (this.uiController) {
+			this.uiController.mount(root);
+		}
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {

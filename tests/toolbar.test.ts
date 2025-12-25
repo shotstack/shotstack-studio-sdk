@@ -50,8 +50,7 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 import { AssetToolbar } from "../src/core/ui/asset-toolbar";
 import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
 import { BUILT_IN_FONTS, FONT_SIZES } from "../src/core/ui/base-toolbar";
-import { InternalEvent } from "../src/core/events/edit-events";
-import type { ToolbarButtonConfig } from "../src/core/ui/toolbar-button.types";
+import type { ToolbarButtonConfig } from "../src/core/ui/ui-controller";
 
 type MockPlayer = {
 	clipConfiguration: Record<string, unknown>;
@@ -80,6 +79,41 @@ function createMockEventEmitter() {
 				listeners[event].forEach(cb => cb(...args));
 			}
 		}
+	};
+}
+
+function createMockUIController() {
+	const buttonListeners: Array<() => void> = [];
+	const buttonClickListeners: Record<string, Array<(payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void>> = {};
+	let buttons: ToolbarButtonConfig[] = [];
+
+	return {
+		getButtons: jest.fn(() => buttons),
+		setButtons: (newButtons: ToolbarButtonConfig[]) => {
+			buttons = newButtons;
+		},
+		onButtonsChanged: jest.fn((handler: () => void) => {
+			buttonListeners.push(handler);
+			return () => {
+				const idx = buttonListeners.indexOf(handler);
+				if (idx >= 0) buttonListeners.splice(idx, 1);
+			};
+		}),
+		emitButtonClick: jest.fn((buttonId: string) => {
+			const listeners = buttonClickListeners[`button:${buttonId}`] || [];
+			listeners.forEach((cb) => cb({ position: 0, selectedClip: null }));
+		}),
+		triggerButtonsChanged: () => {
+			buttonListeners.forEach((cb) => cb());
+		},
+		on: jest.fn((event: string, handler: (payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void) => {
+			if (!buttonClickListeners[event]) buttonClickListeners[event] = [];
+			buttonClickListeners[event].push(handler);
+			return () => {
+				const idx = buttonClickListeners[event].indexOf(handler);
+				if (idx >= 0) buttonClickListeners[event].splice(idx, 1);
+			};
+		})
 	};
 }
 
@@ -211,12 +245,12 @@ function simulateChange(element: HTMLInputElement | null, value: string | number
 
 describe("AssetToolbar", () => {
 	let toolbar: AssetToolbar;
-	let mockEdit: ReturnType<typeof createMockEdit>;
+	let mockUI: ReturnType<typeof createMockUIController>;
 	let container: HTMLDivElement;
 
 	beforeEach(() => {
-		mockEdit = createMockEdit();
-		toolbar = new AssetToolbar(mockEdit as never);
+		mockUI = createMockUIController();
+		toolbar = new AssetToolbar(mockUI as never);
 		container = createTestContainer();
 	});
 
@@ -234,7 +268,7 @@ describe("AssetToolbar", () => {
 		});
 
 		it("hides toolbar when no buttons registered", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([]);
+			mockUI.setButtons([]);
 			toolbar.mount(container);
 
 			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
@@ -242,17 +276,17 @@ describe("AssetToolbar", () => {
 		});
 
 		it("shows toolbar when buttons exist", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:click" }]);
+			mockUI.setButtons([{ id: "test", icon: "<svg></svg>", tooltip: "Test" }]);
 			toolbar.mount(container);
 
 			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
 			expect(toolbarEl?.style.display).toBe("flex");
 		});
 
-		it("renders buttons from getToolbarButtons()", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "btn1", icon: "<svg>1</svg>", tooltip: "Button 1", event: "btn1:click" },
-				{ id: "btn2", icon: "<svg>2</svg>", tooltip: "Button 2", event: "btn2:click" }
+		it("renders buttons from getButtons()", () => {
+			mockUI.setButtons([
+				{ id: "btn1", icon: "<svg>1</svg>", tooltip: "Button 1" },
+				{ id: "btn2", icon: "<svg>2</svg>", tooltip: "Button 2" }
 			]);
 			toolbar.mount(container);
 
@@ -263,7 +297,7 @@ describe("AssetToolbar", () => {
 
 	describe("button rendering", () => {
 		it("renders button with correct id and tooltip", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "my-btn", icon: "<svg></svg>", tooltip: "My Button", event: "my:event" }]);
+			mockUI.setButtons([{ id: "my-btn", icon: "<svg></svg>", tooltip: "My Button" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="my-btn"]');
@@ -272,9 +306,9 @@ describe("AssetToolbar", () => {
 		});
 
 		it("renders divider before button when dividerBefore is true", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([
-				{ id: "btn1", icon: "<svg></svg>", tooltip: "Btn1", event: "e1" },
-				{ id: "btn2", icon: "<svg></svg>", tooltip: "Btn2", event: "e2", dividerBefore: true }
+			mockUI.setButtons([
+				{ id: "btn1", icon: "<svg></svg>", tooltip: "Btn1" },
+				{ id: "btn2", icon: "<svg></svg>", tooltip: "Btn2", dividerBefore: true }
 			]);
 			toolbar.mount(container);
 
@@ -284,65 +318,27 @@ describe("AssetToolbar", () => {
 	});
 
 	describe("event emission", () => {
-		it("clicking button emits configured event name", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "custom:event" }]);
+		it("clicking button calls emitButtonClick with button id", () => {
+			mockUI.setButtons([{ id: "test", icon: "<svg></svg>", tooltip: "Test" }]);
 			toolbar.mount(container);
 
 			const btn = container.querySelector('[data-button-id="test"]');
 			simulateClick(btn);
 
-			expect(mockEdit.events.emit).toHaveBeenCalledWith("custom:event", expect.any(Object));
-		});
-
-		it("event payload includes position in seconds", () => {
-			mockEdit.playbackTime = 5000; // 5 seconds in ms
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }]);
-			toolbar.mount(container);
-
-			const btn = container.querySelector('[data-button-id="test"]');
-			simulateClick(btn);
-
-			expect(mockEdit.events.emit).toHaveBeenCalledWith("test:event", expect.objectContaining({ position: 5 }));
-		});
-
-		it("event payload includes selectedClip when clip is selected", () => {
-			mockEdit.getSelectedClipInfo.mockReturnValue({ trackIndex: 1, clipIndex: 2 });
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }]);
-			toolbar.mount(container);
-
-			const btn = container.querySelector('[data-button-id="test"]');
-			simulateClick(btn);
-
-			expect(mockEdit.events.emit).toHaveBeenCalledWith(
-				"test:event",
-				expect.objectContaining({
-					selectedClip: { trackIndex: 1, clipIndex: 2 }
-				})
-			);
-		});
-
-		it("event payload has null selectedClip when no clip selected", () => {
-			mockEdit.getSelectedClipInfo.mockReturnValue(null);
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "test", icon: "<svg></svg>", tooltip: "Test", event: "test:event" }]);
-			toolbar.mount(container);
-
-			const btn = container.querySelector('[data-button-id="test"]');
-			simulateClick(btn);
-
-			expect(mockEdit.events.emit).toHaveBeenCalledWith("test:event", expect.objectContaining({ selectedClip: null }));
+			expect(mockUI.emitButtonClick).toHaveBeenCalledWith("test");
 		});
 	});
 
 	describe("dynamic updates", () => {
-		it("re-renders when ToolbarButtonsChanged event fires", () => {
-			mockEdit.getToolbarButtons.mockReturnValue([]);
+		it("re-renders when onButtonsChanged callback fires", () => {
+			mockUI.setButtons([]);
 			toolbar.mount(container);
 
 			expect(container.querySelectorAll(".ss-asset-toolbar-btn").length).toBe(0);
 
-			// Update buttons and trigger event
-			mockEdit.getToolbarButtons.mockReturnValue([{ id: "new", icon: "<svg></svg>", tooltip: "New", event: "new:event" }]);
-			mockEdit.events.trigger(InternalEvent.ToolbarButtonsChanged);
+			// Update buttons and trigger callback
+			mockUI.setButtons([{ id: "new", icon: "<svg></svg>", tooltip: "New" }]);
+			mockUI.triggerButtonsChanged();
 
 			expect(container.querySelectorAll(".ss-asset-toolbar-btn").length).toBe(1);
 		});

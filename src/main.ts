@@ -12,43 +12,38 @@ async function main() {
 		const templateModule = await import("./templates/hello.json");
 		const template = templateModule.default as any;
 
-		// 2. Create Edit from template and load it
+		// 2. Create core components
 		const edit = new Edit(template);
 		const canvas = new Canvas(edit);
+		const ui = UIController.create(edit, canvas, { mergeFields: true });
 
-		// 2a. Create UI controller (selection handles enabled by default)
-		const ui = new UIController(edit, canvas);
-		canvas.registerUIController(ui);
-
-		await canvas.load(); // Renders to [data-shotstack-studio] element
+		// 3. Load canvas and edit
+		await canvas.load();
 		await edit.load();
 
-		// 2b. Register toolbar buttons
-		edit.registerToolbarButton({
+		// 4. Register toolbar buttons (on UIController)
+		ui.registerButton({
 			id: "text",
 			icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H13"/><path d="M8 3V13"/><path d="M5 13H11"/></svg>`,
-			tooltip: "Add Text",
-			event: "text:requested"
+			tooltip: "Add Text"
 		});
 
-		edit.registerToolbarButton({
+		ui.registerButton({
 			id: "media",
 			icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1"/><circle cx="5.5" cy="5.5" r="1.5"/><path d="M14 10L11 7L4 14"/></svg>`,
 			tooltip: "Add Media",
-			dividerBefore: true,
-			event: "upload:requested"
+			dividerBefore: true
 		});
 
-		edit.registerToolbarButton({
+		ui.registerButton({
 			id: "code",
 			icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1L6 15"/><path d="M12.5 11.5L11 10L13 8L11 6L12.5 4.5L16 8L12.5 11.5Z"/><path d="M3 8L5 10L3.5 11.5L0 8L3.5 4.5L5 6L3 8Z"/></svg>`,
 			tooltip: "Add Code",
-			dividerBefore: true,
-			event: "code:requested"
+			dividerBefore: true
 		});
 
-		// Handle text:requested event - adds a text clip (custom toolbar event)
-		(edit.events.on as (name: string, listener: (payload: { position: number }) => void) => void)("text:requested", ({ position }) => {
+		// 5. Handle button clicks (typed events on UIController)
+		ui.on("button:text", ({ position }) => {
 			edit.addTrack(0, {
 				clips: [
 					{
@@ -66,7 +61,7 @@ async function main() {
 			});
 		});
 
-		// 4. Initialize the Timeline
+		// 6. Initialize the Timeline
 		const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
 		if (timelineContainer) {
 			const timeline = new Timeline(edit, timelineContainer, {
@@ -83,16 +78,15 @@ async function main() {
 			console.log("Timeline loaded!");
 		}
 
-		// 5. Add keyboard controls
+		// 7. Add keyboard controls
 		const controls = new Controls(edit);
 		await controls.load();
 
-		// 6. Enable video export (Cmd/Ctrl+E)
+		// 8. Enable video export (Cmd/Ctrl+E)
 		// eslint-disable-next-line no-new
 		new VideoExporter(edit, canvas);
 
-		// 7. Add event handlers
-
+		// 9. Add event handlers
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);
 		});

@@ -1,14 +1,15 @@
-import type { Edit } from "@core/edit-session";
-import { InternalEvent } from "@core/events/edit-events";
 import { injectShotstackStyles } from "@styles/inject";
+
+import type { UIController } from "./ui-controller";
 
 export class AssetToolbar {
 	private container: HTMLDivElement | null = null;
-	private edit: Edit;
+	private ui: UIController;
 	private padding = 12;
+	private unsubscribe: (() => void) | null = null;
 
-	constructor(edit: Edit) {
-		this.edit = edit;
+	constructor(ui: UIController) {
+		this.ui = ui;
 		injectShotstackStyles();
 	}
 
@@ -28,20 +29,21 @@ export class AssetToolbar {
 
 		parent.appendChild(this.container);
 
-		this.edit.events.on(InternalEvent.ToolbarButtonsChanged, () => this.render());
+		// Listen to UIController for button changes
+		this.unsubscribe = this.ui.onButtonsChanged(() => this.render());
 	}
 
 	private render(): void {
 		if (!this.container) return;
 
-		const buttons = this.edit.getToolbarButtons();
+		const buttons = this.ui.getButtons();
 
 		// Hide toolbar if no buttons registered
 		this.container.style.display = buttons.length === 0 ? "none" : "flex";
 
 		this.container.innerHTML = buttons
 			.map(
-				btn => `
+				(btn) => `
 			${btn.dividerBefore ? '<div class="ss-asset-toolbar-divider"></div>' : ""}
 			<button class="ss-asset-toolbar-btn" data-button-id="${btn.id}" data-tooltip="${btn.tooltip}">
 				${btn.icon}
@@ -54,23 +56,20 @@ export class AssetToolbar {
 	}
 
 	private setupEventListeners(): void {
-		this.container?.querySelectorAll("[data-button-id]").forEach(btn => {
+		this.container?.querySelectorAll("[data-button-id]").forEach((btn) => {
 			btn.addEventListener("click", () => {
 				const id = (btn as HTMLElement).dataset["buttonId"];
-				const config = this.edit.getToolbarButtons().find(b => b.id === id);
-				if (!config) return;
-
-				const selectedClip = this.edit.getSelectedClipInfo();
-				// Toolbar buttons emit custom events registered by SDK consumers
-				(this.edit.events.emit as (name: string, payload: unknown) => void)(config.event, {
-					position: this.edit.playbackTime / 1000,
-					selectedClip: selectedClip ? { trackIndex: selectedClip.trackIndex, clipIndex: selectedClip.clipIndex } : null
-				});
+				if (id) {
+					// Emit button click through UIController
+					this.ui.emitButtonClick(id);
+				}
 			});
 		});
 	}
 
 	dispose(): void {
+		this.unsubscribe?.();
+		this.unsubscribe = null;
 		this.container?.remove();
 		this.container = null;
 	}
