@@ -263,8 +263,10 @@ export abstract class Player extends Entity {
 	}
 
 	public override draw(): void {
-		// Base class does nothing - subclasses can override if needed
-		// Selection UI (outline + handles) is now handled by SelectionHandles
+		// Re-apply fixed dimensions when config changes (e.g., fit property updated)
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
 	}
 
 	public override dispose(): void {

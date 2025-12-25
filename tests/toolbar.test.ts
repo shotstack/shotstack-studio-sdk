@@ -704,20 +704,20 @@ describe("MediaToolbar", () => {
 	});
 
 	describe("asset type visibility", () => {
-		it("showMedia() with 'image' hides volume section", () => {
+		it("show() with image clip hides volume section", () => {
 			mockEdit.getPlayerClip.mockReturnValue(createMockClip("image"));
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "image");
+			toolbar.show(0, 0);
 
 			const volumeSection = container.querySelector("[data-volume-section]") as HTMLElement;
 			// MediaToolbar uses CSS class 'hidden' to toggle visibility, not style.display
 			expect(volumeSection?.classList.contains("hidden")).toBe(true);
 		});
 
-		it("showMedia() with 'video' shows both visual and volume sections", () => {
+		it("show() with video clip shows both visual and volume sections", () => {
 			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			const visualSection = container.querySelector("[data-visual-section]") as HTMLElement;
 			const volumeSection = container.querySelector("[data-volume-section]") as HTMLElement;
@@ -728,10 +728,10 @@ describe("MediaToolbar", () => {
 			expect(volumeSection?.classList.contains("hidden")).toBe(false);
 		});
 
-		it("showMedia() with 'audio' hides visual section", () => {
+		it("show() with audio clip hides visual section", () => {
 			mockEdit.getPlayerClip.mockReturnValue(createMockClip("audio"));
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "audio");
+			toolbar.show(0, 0);
 
 			const visualSection = container.querySelector("[data-visual-section]") as HTMLElement;
 			// MediaToolbar uses CSS class 'hidden' to toggle visibility, not style.display
@@ -746,7 +746,7 @@ describe("MediaToolbar", () => {
 
 		it("clicking fit option calls updateClip with fit value", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			// Open fit popup
 			const fitBtn = container.querySelector('[data-action="fit"]');
@@ -762,7 +762,7 @@ describe("MediaToolbar", () => {
 
 		it("fit label displays current selection", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			const fitLabel = container.querySelector("[data-fit-label]");
 			expect(fitLabel?.textContent).toBeTruthy();
@@ -776,7 +776,7 @@ describe("MediaToolbar", () => {
 
 		it("opacity slider calls updateClip", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			// Open opacity popup
 			const opacityBtn = container.querySelector('[data-action="opacity"]');
@@ -799,7 +799,7 @@ describe("MediaToolbar", () => {
 
 		it("scale slider calls updateClip", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			// Open scale popup
 			const scaleBtn = container.querySelector('[data-action="scale"]');
@@ -822,7 +822,7 @@ describe("MediaToolbar", () => {
 
 		it("volume slider calls updateClip", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			// Open volume popup
 			const volumeBtn = container.querySelector('[data-action="volume"]');
@@ -863,7 +863,7 @@ describe("MediaToolbar", () => {
 
 		it("TransitionPanel renders content inside existing popup without wrapper class conflict", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			// Open transition popup
 			const transitionBtn = container.querySelector('[data-action="transition"]');
@@ -882,7 +882,7 @@ describe("MediaToolbar", () => {
 
 		it("EffectPanel renders content inside existing popup without wrapper class conflict", () => {
 			toolbar.mount(container);
-			toolbar.showMedia(0, 0, "video");
+			toolbar.show(0, 0);
 
 			// Open effect popup
 			const effectBtn = container.querySelector('[data-action="effect"]');

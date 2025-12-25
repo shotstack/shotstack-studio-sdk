@@ -784,9 +784,11 @@ export class MediaToolbar extends BaseToolbar {
 
 	/**
 	 * Show the toolbar for a specific clip.
+	 * Derives assetType from the clip's asset configuration.
 	 */
-	showMedia(trackIndex: number, clipIndex: number, assetType: MediaAssetType = "image"): void {
-		this.assetType = assetType;
+	override show(trackIndex: number, clipIndex: number): void {
+		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
+		this.assetType = (player?.clipConfiguration.asset?.type ?? "image") as MediaAssetType;
 		super.show(trackIndex, clipIndex);
 	}
 
