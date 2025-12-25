@@ -127,6 +127,12 @@ export class Canvas {
 
 					edit.scale.x = this.currentZoom;
 					edit.scale.y = this.currentZoom;
+
+					// Sync overlay container to match edit transforms
+					this.overlayContainer.scale.x = this.currentZoom;
+					this.overlayContainer.scale.y = this.currentZoom;
+					this.overlayContainer.position.x = edit.position.x;
+					this.overlayContainer.position.y = edit.position.y;
 				}
 			},
 			{
@@ -146,6 +152,10 @@ export class Canvas {
 			x: this.application.canvas.width / 2 - (this.edit.size.width * this.currentZoom) / 2,
 			y: this.application.canvas.height / 2 - (this.edit.size.height * this.currentZoom) / 2
 		};
+
+		// Sync overlay container position to match edit
+		this.overlayContainer.position.x = edit.position.x;
+		this.overlayContainer.position.y = edit.position.y;
 	}
 
 	public zoomToFit(padding: number = 40): void {
@@ -166,6 +176,10 @@ export class Canvas {
 		const edit = this.edit.getContainer();
 		edit.scale.x = this.currentZoom;
 		edit.scale.y = this.currentZoom;
+
+		// Sync overlay container scale to match edit
+		this.overlayContainer.scale.x = this.currentZoom;
+		this.overlayContainer.scale.y = this.currentZoom;
 
 		this.centerEdit();
 	}
@@ -201,6 +215,12 @@ export class Canvas {
 		const edit = this.edit.getContainer();
 		edit.scale.x = this.currentZoom;
 		edit.scale.y = this.currentZoom;
+
+		// Sync overlay container transforms to match edit
+		this.overlayContainer.scale.x = this.currentZoom;
+		this.overlayContainer.scale.y = this.currentZoom;
+		this.overlayContainer.position.x = edit.position.x;
+		this.overlayContainer.position.y = edit.position.y;
 	}
 
 	public getZoom(): number {
