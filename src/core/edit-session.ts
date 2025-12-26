@@ -1558,6 +1558,9 @@ export class Edit extends Entity {
 			fromTrackContainer.removeChild(player.getContainer());
 		}
 		toTrackContainer.addChild(player.getContainer());
+
+		// Force parent container to re-sort children by zIndex
+		this.getContainer().sortDirty = true;
 	}
 	private createPlayerFromAssetType(clipConfiguration: ResolvedClip): Player {
 		if (!clipConfiguration.asset?.type) {

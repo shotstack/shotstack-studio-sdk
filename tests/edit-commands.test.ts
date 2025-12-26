@@ -27,6 +27,7 @@ jest.mock("pixi.js", () => {
 		return {
 			children,
 			sortableChildren: true,
+			sortDirty: false,
 			parent: null as unknown,
 			label: null as string | null,
 			zIndex: 0,
@@ -1080,9 +1081,7 @@ describe("TransformClipAssetCommand", () => {
 			timeline: {
 				tracks: [
 					{
-						clips: [
-							{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://cdn.example.com/media/abc123" } }
-						]
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://cdn.example.com/media/abc123" } }]
 					}
 				]
 			},
@@ -1097,5 +1096,193 @@ describe("TransformClipAssetCommand", () => {
 		// Transform back - should use stored type (video), not URL inference (would be image)
 		edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
+	});
+});
+
+/**
+ * Track Reordering Z-Index Regression Tests
+ *
+ * These tests verify that when clips are moved between tracks, the canvas
+ * container's sortDirty flag is set to trigger PixiJS z-index re-sorting.
+ *
+ */
+describe("Track Reordering Z-Index", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		// Create edit with clips on two different tracks
+		// Track 0 (top): image clip
+		// Track 1 (bottom): video clip
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+					},
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("sets sortDirty when moving clip to different track", async () => {
+		// Get the main container and verify sortDirty starts false
+		const container = edit.getContainer();
+		expect(container.sortDirty).toBe(false);
+
+		// Move clip from track 1 to track 0
+		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
+		const moveCommand = new MoveClipCommand(1, 0, 0, sec(0)); // From track 1, index 0 → track 0
+		edit.executeEditCommand(moveCommand);
+
+		// After moving between tracks, sortDirty should be set to true
+		expect(container.sortDirty).toBe(true);
+	});
+
+	it("player layer updates correctly when moving between tracks", async () => {
+		// Get initial player on track 1
+		const player = edit.getPlayerClip(1, 0);
+		expect(player).toBeDefined();
+		expect(player?.layer).toBe(2); // Track 1 = layer 2 (trackIdx + 1)
+
+		// Move clip from track 1 to track 0
+		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
+		const moveCommand = new MoveClipCommand(1, 0, 0, sec(6)); // Move to track 0, after existing clip
+		edit.executeEditCommand(moveCommand);
+
+		// Player should now have layer 1 (track 0 = layer 1)
+		expect(player?.layer).toBe(1);
+	});
+
+	it("sets sortDirty on undo when moving clip back to original track", async () => {
+		// Move clip from track 1 to track 0
+		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
+		const moveCommand = new MoveClipCommand(1, 0, 0, sec(6));
+		edit.executeEditCommand(moveCommand);
+
+		// Reset sortDirty to verify undo sets it again
+		const container = edit.getContainer();
+		container.sortDirty = false;
+
+		// Undo the move (MoveClipCommand.undo is async, wait for it)
+		edit.undo();
+		await new Promise(resolve => setTimeout(resolve, 0));
+
+		// sortDirty should be set again during undo
+		expect(container.sortDirty).toBe(true);
+	});
+});
+
+/**
+ * AddTrackCommand Z-Index Regression Tests
+ *
+ * These tests verify that when a new track is inserted between existing tracks,
+ * only clips AFTER the insertion point have their layers shifted.
+ *
+ * Bug: AddTrackCommand.execute() used `clip.layer >= this.trackIdx` which shifted
+ * ALL clips including those at the insertion point. Since layer = trackIndex + 1,
+ * Track 0 clips (layer=1) were incorrectly shifted when inserting at index 1.
+ *
+ * Fix: Changed condition to `clip.layer > this.trackIdx` so clips on tracks
+ * BEFORE the insertion point are not affected.
+ */
+describe("AddTrackCommand Z-Index", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		// Create edit with clips on two tracks
+		// Track 0 (top): image clip
+		// Track 1 (bottom): video clip
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+					},
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("does not shift Track 0 layer when inserting at index 1", async () => {
+		// Get initial layers
+		const track0Player = edit.getPlayerClip(0, 0);
+		const track1Player = edit.getPlayerClip(1, 0);
+
+		expect(track0Player?.layer).toBe(1); // Track 0 = layer 1
+		expect(track1Player?.layer).toBe(2); // Track 1 = layer 2
+
+		// Insert new track at index 1 (between Track 0 and Track 1)
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
+		const addTrackCommand = new AddTrackCommand(1);
+		edit.executeEditCommand(addTrackCommand);
+
+		// Track 0 should NOT be affected (layer stays 1)
+		expect(track0Player?.layer).toBe(1);
+
+		// Old Track 1 is now Track 2 (layer becomes 3)
+		expect(track1Player?.layer).toBe(3);
+	});
+
+	it("sets sortDirty when adding track", async () => {
+		const container = edit.getContainer();
+		container.sortDirty = false;
+
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
+		const addTrackCommand = new AddTrackCommand(1);
+		edit.executeEditCommand(addTrackCommand);
+
+		expect(container.sortDirty).toBe(true);
+	});
+
+	it("sets sortDirty on undo", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
+		const addTrackCommand = new AddTrackCommand(1);
+		edit.executeEditCommand(addTrackCommand);
+
+		const container = edit.getContainer();
+		container.sortDirty = false;
+
+		edit.undo();
+
+		expect(container.sortDirty).toBe(true);
+	});
+
+	it("restores layers correctly on undo", async () => {
+		const track0Player = edit.getPlayerClip(0, 0);
+		const track1Player = edit.getPlayerClip(1, 0);
+
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
+		const addTrackCommand = new AddTrackCommand(1);
+		edit.executeEditCommand(addTrackCommand);
+
+		// After add: Track 0 stays layer 1, old Track 1 becomes layer 3
+		expect(track0Player?.layer).toBe(1);
+		expect(track1Player?.layer).toBe(3);
+
+		// Undo should restore original layers
+		edit.undo();
+
+		expect(track0Player?.layer).toBe(1);
+		expect(track1Player?.layer).toBe(2);
 	});
 });
