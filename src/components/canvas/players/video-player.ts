@@ -138,9 +138,12 @@ export class VideoPlayer extends Player {
 		}
 
 		const loadOptions: pixi.UnresolvedAsset = { src, data: { autoPlay: false, muted: false } };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.VideoSource>>(src, loadOptions);
 
-		if (!(texture?.source instanceof pixi.VideoSource)) {
+		// Use unique loader to create independent video element per player
+		// This prevents conflicts when multiple clips use the same video source
+		const texture = await this.edit.assetLoader.loadVideoUnique(src, loadOptions);
+
+		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
 		}
 
@@ -159,15 +162,20 @@ export class VideoPlayer extends Player {
 	private disposeVideo(): void {
 		if (this.texture?.source?.resource) {
 			this.texture.source.resource.pause();
+			// Release video resource - each player owns its own video element
+			this.texture.source.resource.src = "";
+			this.texture.source.resource.load();
 		}
 		if (this.sprite) {
 			this.contentContainer.removeChild(this.sprite);
 			this.sprite.destroy();
 			this.sprite = null;
 		}
-		// DON'T destroy the texture - it's managed by Assets
-		// The unloadClipAssets() method handles proper cleanup via Assets.unload()
-		this.texture = null;
+		// Destroy the texture since we own it (created via loadVideoUnique)
+		if (this.texture) {
+			this.texture.destroy(true);
+			this.texture = null;
+		}
 	}
 
 	public getVolume(): number {

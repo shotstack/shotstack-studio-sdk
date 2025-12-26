@@ -1175,7 +1175,9 @@ describe("Track Reordering Z-Index", () => {
 
 		// Undo the move (MoveClipCommand.undo is async, wait for it)
 		edit.undo();
-		await new Promise(resolve => setTimeout(resolve, 0));
+		await new Promise(resolve => {
+			setTimeout(resolve, 0);
+		});
 
 		// sortDirty should be set again during undo
 		expect(container.sortDirty).toBe(true);

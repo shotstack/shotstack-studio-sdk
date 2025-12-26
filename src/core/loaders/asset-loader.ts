@@ -63,6 +63,61 @@ export class AssetLoader {
 		}
 	}
 
+	/**
+	 * Load a video with a unique HTMLVideoElement (not cached).
+	 * Each call creates an independent video element, allowing multiple VideoPlayers
+	 * to control playback independently even when using the same video URL.
+	 */
+	public async loadVideoUnique(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<pixi.Texture<pixi.VideoSource> | null> {
+		this.updateAssetLoadMetadata(identifier, "pending", 0);
+		// Note: Don't increment ref count - each unique video manages its own lifecycle
+
+		try {
+			const url = this.extractUrl(loadOptions);
+			if (!url) {
+				throw new Error("No URL provided for video loading");
+			}
+
+			const data = typeof loadOptions === "object" ? (loadOptions.data ?? {}) : {};
+
+			const texture = await new Promise<pixi.Texture<pixi.VideoSource>>((resolve, reject) => {
+				const video = document.createElement("video");
+				video.crossOrigin = "anonymous";
+				video.playsInline = true;
+				video.muted = data.muted ?? false;
+				video.preload = "auto"; // Preload for smooth seeking
+
+				video.addEventListener(
+					"loadedmetadata",
+					() => {
+						try {
+							const source = new pixi.VideoSource({
+								resource: video,
+								autoPlay: data.autoPlay ?? false,
+								...data
+							});
+							resolve(new pixi.Texture({ source }));
+						} catch (error) {
+							reject(error);
+						}
+					},
+					{ once: true }
+				);
+
+				video.addEventListener("error", () => reject(new Error("Video loading failed")), { once: true });
+
+				this.updateAssetLoadMetadata(identifier, "loading", 0.5);
+				video.src = url;
+			});
+
+			this.updateAssetLoadMetadata(identifier, "success", 1);
+			return texture;
+		} catch (_error) {
+			this.updateAssetLoadMetadata(identifier, "failed", 1);
+			return null;
+		}
+	}
+
 	public getProgress(): number {
 		const identifiers = Object.keys(this.loadTracker.registry);
 		if (identifiers.length === 0) return 0;
