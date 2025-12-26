@@ -8,13 +8,7 @@ export { Timeline } from "@timeline/index";
 
 // UI Controller for registering toolbars and utilities
 export { UIController } from "@core/ui/ui-controller";
-export type {
-	UIRegistration,
-	CanvasOverlayRegistration,
-	UIControllerOptions,
-	ToolbarButtonConfig,
-	ButtonClickPayload
-} from "@core/ui/ui-controller";
+export type { UIRegistration, CanvasOverlayRegistration, UIControllerOptions, ToolbarButtonConfig, ButtonClickPayload } from "@core/ui/ui-controller";
 
 // Canvas overlays (optional - register via UIController)
 export { SelectionHandles } from "@core/ui/selection-handles";

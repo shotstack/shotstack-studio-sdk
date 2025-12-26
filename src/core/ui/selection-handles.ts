@@ -2,12 +2,7 @@ import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { calculateCornerScale, calculateEdgeResize, clampDimensions, detectCornerZone, detectEdgeZone } from "@core/interaction/clip-interaction";
-import {
-	SELECTION_CONSTANTS,
-	CURSOR_BASE_ANGLES,
-	type CornerName,
-	buildResizeCursor
-} from "@core/interaction/selection-overlay";
+import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
 import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
 import { Pointer } from "@inputs/pointer";
 import type { Vector } from "@layouts/geometry";
@@ -299,11 +294,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		const hasChanged = this.hasStateChanged();
 		if ((this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) && hasChanged) {
-			this.edit.setUpdatedClip(
-				this.selectedPlayer,
-				this.initialClipConfiguration,
-				structuredClone(this.selectedPlayer.clipConfiguration)
-			);
+			this.edit.setUpdatedClip(this.selectedPlayer, this.initialClipConfiguration, structuredClone(this.selectedPlayer.clipConfiguration));
 		}
 
 		this.resetDragState();
@@ -547,8 +538,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const localPoint = event.getLocalPosition(playerContainer);
 		const size = this.selectedPlayer.getSize();
 
-		this.isHovering =
-			localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height;
+		this.isHovering = localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height;
 	}
 
 	private resetDragState(): void {

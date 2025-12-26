@@ -33,7 +33,7 @@ export class TransformClipAssetCommand implements EditCommand {
 		// Store for undo - including original asset type for reliable restoration
 		this.originalPlayer = player;
 		this.originalConfig = { ...player.clipConfiguration };
-		this.originalAssetType = (this.originalConfig.asset as { type?: string })?.type as "image" | "video" | "luma" ?? null;
+		this.originalAssetType = ((this.originalConfig.asset as { type?: string })?.type as "image" | "video" | "luma") ?? null;
 		this.originalBindings = new Map(player.getMergeFieldBindings());
 		this.loadCompleted = false;
 

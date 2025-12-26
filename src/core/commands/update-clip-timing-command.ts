@@ -72,10 +72,7 @@ export class UpdateClipTimingCommand implements EditCommand {
 		this.updateClipConfiguration(this.player, newIntent);
 
 		// STEP 1: Resolve start FIRST (needed for correct length calculations)
-		const resolvedStart =
-			newIntent.start === "auto"
-				? resolveAutoStart(this.trackIndex, this.clipIndex, context.getTracks())
-				: toMs(newIntent.start);
+		const resolvedStart = newIntent.start === "auto" ? resolveAutoStart(this.trackIndex, this.clipIndex, context.getTracks()) : toMs(newIntent.start);
 
 		// STEP 2: Resolve length using the correct resolved start
 		if (newIntent.length === "auto") {

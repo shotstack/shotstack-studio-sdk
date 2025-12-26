@@ -43,7 +43,7 @@ export class AssetToolbar {
 
 		this.container.innerHTML = buttons
 			.map(
-				(btn) => `
+				btn => `
 			${btn.dividerBefore ? '<div class="ss-asset-toolbar-divider"></div>' : ""}
 			<button class="ss-asset-toolbar-btn" data-button-id="${btn.id}" data-tooltip="${btn.tooltip}">
 				${btn.icon}
@@ -56,7 +56,7 @@ export class AssetToolbar {
 	}
 
 	private setupEventListeners(): void {
-		this.container?.querySelectorAll("[data-button-id]").forEach((btn) => {
+		this.container?.querySelectorAll("[data-button-id]").forEach(btn => {
 			btn.addEventListener("click", () => {
 				const id = (btn as HTMLElement).dataset["buttonId"];
 				if (id) {

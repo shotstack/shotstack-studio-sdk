@@ -84,7 +84,10 @@ function createMockEventEmitter() {
 
 function createMockUIController() {
 	const buttonListeners: Array<() => void> = [];
-	const buttonClickListeners: Record<string, Array<(payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void>> = {};
+	const buttonClickListeners: Record<
+		string,
+		Array<(payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void>
+	> = {};
 	let buttons: ToolbarButtonConfig[] = [];
 
 	return {
@@ -101,10 +104,10 @@ function createMockUIController() {
 		}),
 		emitButtonClick: jest.fn((buttonId: string) => {
 			const listeners = buttonClickListeners[`button:${buttonId}`] || [];
-			listeners.forEach((cb) => cb({ position: 0, selectedClip: null }));
+			listeners.forEach(cb => cb({ position: 0, selectedClip: null }));
 		}),
 		triggerButtonsChanged: () => {
-			buttonListeners.forEach((cb) => cb());
+			buttonListeners.forEach(cb => cb());
 		},
 		on: jest.fn((event: string, handler: (payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void) => {
 			if (!buttonClickListeners[event]) buttonClickListeners[event] = [];

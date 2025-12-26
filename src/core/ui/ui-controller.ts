@@ -298,7 +298,7 @@ export class UIController {
 
 		// Wire up mode toggle buttons (after DOM is ready)
 		requestAnimationFrame(() => {
-			this.container?.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn) => {
+			this.container?.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
 				btn.addEventListener("click", () => {
 					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
 					if (mode) {
@@ -401,7 +401,7 @@ export class UIController {
 	 * @returns this (for chaining)
 	 */
 	registerButton(config: ToolbarButtonConfig): this {
-		const existing = this.buttonRegistry.findIndex((b) => b.id === config.id);
+		const existing = this.buttonRegistry.findIndex(b => b.id === config.id);
 		if (existing >= 0) {
 			this.buttonRegistry[existing] = config;
 		} else {
@@ -418,7 +418,7 @@ export class UIController {
 	 * @returns this (for chaining)
 	 */
 	unregisterButton(id: string): this {
-		const index = this.buttonRegistry.findIndex((b) => b.id === id);
+		const index = this.buttonRegistry.findIndex(b => b.id === id);
 		if (index >= 0) {
 			this.buttonRegistry.splice(index, 1);
 			this.buttonEvents.emit("buttons:changed");
@@ -506,9 +506,9 @@ export class UIController {
 		this.toolbarMode = mode;
 
 		// Update all toggle UIs
-		this.container?.querySelectorAll(".ss-toolbar-mode-toggle").forEach((toggle) => {
+		this.container?.querySelectorAll(".ss-toolbar-mode-toggle").forEach(toggle => {
 			toggle.setAttribute("data-mode", mode);
-			toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach((btn) => {
+			toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
 				btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === mode);
 			});
 		});

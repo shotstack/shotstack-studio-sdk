@@ -255,7 +255,9 @@ export class MediaToolbar extends BaseToolbar {
 				</div>
 			</div>
 
-			${this.showMergeFields ? `
+			${
+				this.showMergeFields
+					? `
 			<div class="ss-media-toolbar-divider" data-divider-before-advanced></div>
 
 			<!-- Advanced Menu (Dynamic Source for merge fields) -->
@@ -279,7 +281,9 @@ export class MediaToolbar extends BaseToolbar {
 					</div>
 				</div>
 			</div>
-			` : ""}
+			`
+					: ""
+			}
 		`;
 
 		parent.insertBefore(this.container, parent.firstChild);

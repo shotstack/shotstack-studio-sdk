@@ -62,10 +62,7 @@ describe("AssetLoader", () => {
 			});
 
 			// Load same video twice
-			const [texture1, texture2] = await Promise.all([
-				loader.loadVideoUnique(url, loadOptions),
-				loader.loadVideoUnique(url, loadOptions)
-			]);
+			const [texture1, texture2] = await Promise.all([loader.loadVideoUnique(url, loadOptions), loader.loadVideoUnique(url, loadOptions)]);
 
 			// Should create 2 distinct video elements
 			expect(createdVideos.length).toBe(2);

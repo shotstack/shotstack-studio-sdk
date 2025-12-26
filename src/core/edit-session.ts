@@ -1965,7 +1965,7 @@ export class Edit extends Entity {
 				"Use ui.registerButton() instead for typed events: " +
 				'ui.registerButton({ id: "text", ... }); ui.on("button:text", handler);'
 		);
-		const existing = this.toolbarButtons.findIndex((b) => b.id === config.id);
+		const existing = this.toolbarButtons.findIndex(b => b.id === config.id);
 		if (existing >= 0) {
 			this.toolbarButtons[existing] = config;
 		} else {
@@ -1979,7 +1979,7 @@ export class Edit extends Entity {
 	 */
 	public unregisterToolbarButton(id: string): void {
 		console.warn("[Shotstack] edit.unregisterToolbarButton() is deprecated. Use ui.unregisterButton() instead.");
-		const index = this.toolbarButtons.findIndex((b) => b.id === id);
+		const index = this.toolbarButtons.findIndex(b => b.id === id);
 		if (index >= 0) {
 			this.toolbarButtons.splice(index, 1);
 			this.events.emit(InternalEvent.ToolbarButtonsChanged, { buttons: this.toolbarButtons });

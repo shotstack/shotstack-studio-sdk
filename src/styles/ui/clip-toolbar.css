@@ -75,7 +75,9 @@
 	flex-shrink: 0;
 	user-select: none;
 	cursor: pointer;
-	transition: color 0.15s ease, background 0.15s ease;
+	transition:
+		color 0.15s ease,
+		background 0.15s ease;
 }
 
 /* Color-coded labels for visual distinction */
@@ -190,7 +192,9 @@
 	white-space: nowrap;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.15s ease, visibility 0.15s ease;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
 	pointer-events: none;
 	z-index: 300;
 }

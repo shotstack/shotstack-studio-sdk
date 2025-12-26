@@ -58,8 +58,7 @@ type InteractionState =
 	| { type: "resizing"; clipRef: ClipRef; edge: "left" | "right"; originalStart: number; originalLength: number };
 
 /** Resolved config type - numeric properties required, callback optional */
-type ResolvedConfig = Required<Omit<TimelineInteractionConfig, "onRequestRender">> &
-	Pick<TimelineInteractionConfig, "onRequestRender">;
+type ResolvedConfig = Required<Omit<TimelineInteractionConfig, "onRequestRender">> & Pick<TimelineInteractionConfig, "onRequestRender">;
 
 /** Configuration defaults */
 const DEFAULT_CONFIG: ResolvedConfig = {
@@ -499,7 +498,10 @@ export class InteractionController {
 				}
 
 				// Transform to luma - indices may have changed after move
-				const newClipIndex = dragTarget.trackIndex !== originalTrack ? this.findClipIndexAfterMove(dragTarget.trackIndex, targetContentClip.config.start) : clipRef.clipIndex;
+				const newClipIndex =
+					dragTarget.trackIndex !== originalTrack
+						? this.findClipIndexAfterMove(dragTarget.trackIndex, targetContentClip.config.start)
+						: clipRef.clipIndex;
 				this.edit.transformToLuma(dragTarget.trackIndex, newClipIndex);
 
 				// Register attachment in both timeline-state (UI) and edit-session (runtime sync)
