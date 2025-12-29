@@ -11,7 +11,8 @@
 import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
+import { sec } from "@core/timing/types";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -304,8 +305,8 @@ function getEditState(edit: Edit): {
 function createImageClip(start: number, length: number, src: string = "https://example.com/image.jpg"): ResolvedClip {
 	return {
 		asset: { type: "image", src },
-		start,
-		length,
+		start: sec(start),
+		length: sec(length),
 		fit: "crop"
 	};
 }
@@ -316,8 +317,8 @@ function createImageClip(start: number, length: number, src: string = "https://e
 function createTextClip(start: number, length: number, text: string = "Hello World"): ResolvedClip {
 	return {
 		asset: { type: "text", text },
-		start,
-		length,
+		start: sec(start),
+		length: sec(length),
 		fit: "none"
 	};
 }
@@ -986,7 +987,7 @@ describe("Edit Merge Fields", () => {
 				timeline: {
 					tracks: [
 						{
-							clips: [{ asset: { type: "video", src: "{{ VIDEO_URL }}" }, start: 0, length: 5, fit: "crop" }]
+							clips: [{ asset: { type: "video", src: "{{ VIDEO_URL }}", transcode: false }, start: 0, length: 5, fit: "crop" }]
 						}
 					]
 				},

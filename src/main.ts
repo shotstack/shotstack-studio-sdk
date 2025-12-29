@@ -1,4 +1,6 @@
+import { sec } from "@core/timing/types";
 import { Timeline } from "@timeline/index";
+
 
 import { Edit, Canvas, Controls, VideoExporter, UIController } from "./index";
 
@@ -36,11 +38,11 @@ async function main() {
 						asset: {
 							type: "rich-text",
 							text: "Title",
-							font: { family: "Open Sans Bold", size: 72, weight: 700, color: "#ffffff", opacity: 1 },
+							font: { family: "Open Sans Bold", size: 72, weight: 700, style: "normal", color: "#ffffff", opacity: 1 },
 							align: { horizontal: "center", vertical: "middle" }
 						},
-						start: position,
-						length: 5,
+						start: sec(position),
+						length: sec(5),
 						fit: "none"
 					}
 				]

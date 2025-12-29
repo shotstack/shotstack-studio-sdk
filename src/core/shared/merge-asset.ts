@@ -1,4 +1,4 @@
-import type { Asset } from "@schemas/asset";
+import type { Asset } from "@schemas";
 
 /**
  * Merges original asset (with merge field templates) with current asset (with runtime changes).

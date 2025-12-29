@@ -1,8 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import type { EditEventMap, EditEventName } from "@core/events/edit-events";
 import type { MergeFieldService } from "@core/merge";
-import type { ResolvedClip } from "@schemas/clip";
-import type { ResolvedEdit } from "@schemas/edit";
+import type { ResolvedClip , ResolvedEdit } from "@schemas";
 import type { Container } from "pixi.js";
 
 type ClipType = ResolvedClip;

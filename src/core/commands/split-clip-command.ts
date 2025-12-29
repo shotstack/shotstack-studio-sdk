@@ -1,10 +1,7 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { toSec } from "@core/timing/types";
-
-import type { AudioAsset } from "../schemas/audio-asset";
-import type { ResolvedClip } from "../schemas/clip";
-import type { VideoAsset } from "../schemas/video-asset";
+import { sec, type Seconds } from "@core/timing/types";
+import type { AudioAsset , ResolvedClip , VideoAsset } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 
@@ -29,8 +26,9 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		const clipConfig = player.clipConfiguration;
-		const clipStart = typeof clipConfig.start === "number" ? clipConfig.start : 0;
-		const clipLength = typeof clipConfig.length === "number" ? clipConfig.length : toSec(player.getLength());
+		// clipConfig.start/length are Seconds branded types
+		const clipStart: Seconds = clipConfig.start;
+		const clipLength: Seconds = clipConfig.length;
 
 		// Validate split point
 		const MIN_CLIP_LENGTH = 0.1;
@@ -44,16 +42,16 @@ export class SplitClipCommand implements EditCommand {
 		this.originalClipConfig = { ...clipConfig };
 		this.originalBindings = new Map(player.getMergeFieldBindings());
 
-		// Calculate left and right clip configurations
+		// Calculate left and right clip configurations (use sec() for branded Seconds type)
 		const leftClip: ResolvedClip = {
 			...clipConfig,
-			length: splitPoint
+			length: sec(splitPoint)
 		};
 
 		const rightClip: ResolvedClip = {
 			...clipConfig,
-			start: clipStart + splitPoint,
-			length: clipLength - splitPoint
+			start: sec(clipStart + splitPoint),
+			length: sec(clipLength - splitPoint)
 		};
 
 		// Deep clone assets to avoid shared references

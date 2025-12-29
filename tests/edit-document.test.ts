@@ -6,8 +6,7 @@
  */
 
 import { EditDocument } from "@core/edit-document";
-import type { Edit } from "@core/schemas/edit";
-import type { Clip } from "@core/schemas";
+import type { Edit, Clip } from "@core/schemas";
 
 // ─── Test Fixtures ────────────────────────────────────────────────────────────
 
@@ -47,7 +46,7 @@ function createEditWithTracks(): Edit {
 				{
 					clips: [
 						{
-							asset: { type: "video", src: "https://example.com/video.mp4" },
+							asset: { type: "video", src: "https://example.com/video.mp4", transcode: false },
 							start: 0,
 							length: "end",
 							fit: "crop"

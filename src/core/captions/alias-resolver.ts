@@ -3,7 +3,7 @@
  * Extracts audio from referenced clips and transcribes to VTT.
  */
 
-import type { ResolvedEdit } from "@schemas/edit";
+import type { ResolvedEdit } from "@schemas";
 
 import type { TranscriptionProgress } from "./transcription-service";
 import { TranscriptionService } from "./transcription-service";

@@ -8,7 +8,8 @@
 import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
+import { sec } from "@core/timing/types";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -140,10 +141,12 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const container = createMockPlayerContainer();
 	const contentContainer = createMockPlayerContainer();
 
-	const startMs = typeof config.start === "number" ? config.start * 1000 : 0;
-	const lengthMs = typeof config.length === "number" ? config.length * 1000 : 3000;
+	// Calculate initial resolved values in SECONDS (not milliseconds)
+	// The timing system now operates in seconds internally
+	const startSec = typeof config.start === "number" ? config.start : 0;
+	const lengthSec = typeof config.length === "number" ? config.length : 3;
 
-	let resolvedTiming = { start: startMs, length: lengthMs };
+	let resolvedTiming = { start: startSec, length: lengthSec };
 	const timingIntent: { start: number | string; length: number | string } = { start: config.start, length: config.length };
 
 	// Merge field bindings support
@@ -195,8 +198,8 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getExportableClip: () => {
 			const exported = structuredClone(config);
 			// Apply timing intent (cast needed as timingIntent can be string for "auto")
-			if (timingIntent.start !== undefined) exported.start = timingIntent.start as number;
-			if (timingIntent.length !== undefined) exported.length = timingIntent.length as number;
+			if (timingIntent.start !== undefined) (exported as { start: unknown }).start = timingIntent.start;
+			if (timingIntent.length !== undefined) (exported as { length: unknown }).length = timingIntent.length;
 			return exported;
 		}
 	};
@@ -267,9 +270,9 @@ function getEditState(edit: Edit): {
  */
 function createVideoClip(start: number, length: number): ResolvedClip {
 	return {
-		asset: { type: "video", src: "https://example.com/video.mp4" },
-		start,
-		length,
+		asset: { type: "video", src: "https://example.com/video.mp4", transcode: false },
+		start: sec(start),
+		length: sec(length),
 		fit: "crop"
 	};
 }
@@ -280,8 +283,8 @@ function createVideoClip(start: number, length: number): ResolvedClip {
 function createImageClip(start: number, length: number): ResolvedClip {
 	return {
 		asset: { type: "image", src: "https://example.com/image.jpg" },
-		start,
-		length,
+		start: sec(start),
+		length: sec(length),
 		fit: "crop"
 	};
 }
@@ -292,8 +295,8 @@ function createImageClip(start: number, length: number): ResolvedClip {
 function createTextClip(start: number, length: number, text: string = "Hello"): ResolvedClip {
 	return {
 		asset: { type: "text", text },
-		start,
-		length,
+		start: sec(start),
+		length: sec(length),
 		fit: "none"
 	};
 }

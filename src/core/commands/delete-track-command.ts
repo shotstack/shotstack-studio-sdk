@@ -1,6 +1,6 @@
 import type { MergeFieldBinding } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import type { EditCommand, CommandContext } from "./types";

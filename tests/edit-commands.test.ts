@@ -846,7 +846,7 @@ describe("Edit getPlayerClip regression", () => {
 
 	it("returns correct clips when multiple moves reorder repeatedly", async () => {
 		// Add a third clip
-		await edit.addClip(0, { start: 10, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/clip-c.jpg" } });
+		await edit.addClip(0, { start: sec(10), length: sec(3), fit: "cover", asset: { type: "image", src: "https://example.com/clip-c.jpg" } });
 
 		// Initial order: [A at 0, B at 5, C at 10]
 		const playerA = edit.getPlayerClip(0, 0);
@@ -884,7 +884,7 @@ describe("Luma Attachment Registration", () => {
 			timeline: {
 				tracks: [
 					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } }]
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } }]
 					},
 					{
 						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "luma", src: "https://example.com/luma.mp4" } }]
@@ -934,7 +934,7 @@ describe("Luma Attachment Registration", () => {
 		// Update video start (simulating what happens after a move)
 		const videoPlayer = edit.getPlayerClip(0, 0);
 		if (videoPlayer?.clipConfiguration) {
-			videoPlayer.clipConfiguration.start = 2;
+			videoPlayer.clipConfiguration.start = sec(2);
 		}
 
 		// Sync luma to content clip
@@ -956,7 +956,7 @@ describe("Luma Attachment Registration", () => {
 		// Update video start
 		const videoPlayer = edit.getPlayerClip(0, 0);
 		if (videoPlayer?.clipConfiguration) {
-			videoPlayer.clipConfiguration.start = 2;
+			videoPlayer.clipConfiguration.start = sec(2);
 		}
 
 		// Try to sync - should do nothing since attachment not registered
@@ -982,7 +982,7 @@ describe("TransformClipAssetCommand", () => {
 				tracks: [
 					{
 						clips: [
-							{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } },
+							{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } },
 							{ start: 5, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }
 						]
 					}
@@ -1081,7 +1081,7 @@ describe("TransformClipAssetCommand", () => {
 			timeline: {
 				tracks: [
 					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://cdn.example.com/media/abc123" } }]
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://cdn.example.com/media/abc123", transcode: false } }]
 					}
 				]
 			},
@@ -1120,7 +1120,7 @@ describe("Track Reordering Z-Index", () => {
 						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
 					},
 					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } }]
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } }]
 					}
 				]
 			},
@@ -1211,7 +1211,7 @@ describe("AddTrackCommand Z-Index", () => {
 						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
 					},
 					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4" } }]
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } }]
 					}
 				]
 			},

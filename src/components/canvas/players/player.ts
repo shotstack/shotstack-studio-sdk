@@ -6,12 +6,11 @@ import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
 import { getNestedValue, setNestedValue } from "@core/shared/utils";
-import { type Milliseconds, type ResolvedTiming, type TimingIntent, ms, sec, toSec } from "@core/timing/types";
+import { type ResolvedTiming, type Seconds, type TimingIntent, sec } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import { type Clip, type ResolvedClip } from "@schemas/clip";
-import { type Keyframe } from "@schemas/keyframe";
+import { type Clip, type ResolvedClip , type Keyframe } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
@@ -92,13 +91,12 @@ export abstract class Player extends Entity {
 		this.positionBuilder = new PositionBuilder(edit.size);
 
 		this.timingIntent = {
-			start: sec(clipConfiguration.start),
-			length: sec(clipConfiguration.length)
+			start: clipConfiguration.start,
+			length: clipConfiguration.length
 		};
 
-		const startValue = typeof clipConfiguration.start === "number" ? ms(clipConfiguration.start * 1000) : ms(0);
-		const lengthValue = typeof clipConfiguration.length === "number" ? ms(clipConfiguration.length * 1000) : ms(3000);
-		this.resolvedTiming = { start: startValue, length: lengthValue };
+		// ResolvedClip.start/length are already Seconds branded types
+		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
 
 		this.wipeMask = null;
 
@@ -146,10 +144,11 @@ export abstract class Player extends Entity {
 		}
 
 		// Build resolved clip config for preset builders
+		// getStart() and length are already in Seconds
 		const resolvedClipConfig: ResolvedClip = {
 			...config,
-			start: toSec(this.getStart()),
-			length: toSec(length)
+			start: this.getStart(),
+			length
 		};
 
 		// Build relative effect keyframes (factors/deltas)
@@ -276,16 +275,16 @@ export abstract class Player extends Entity {
 		this.contentContainer?.destroy();
 	}
 
-	public getStart(): Milliseconds {
+	public getStart(): Seconds {
 		return this.resolvedTiming.start;
 	}
 
-	public getLength(): Milliseconds {
+	public getLength(): Seconds {
 		return this.resolvedTiming.length;
 	}
 
-	public getEnd(): Milliseconds {
-		return ms(this.resolvedTiming.start + this.resolvedTiming.length);
+	public getEnd(): Seconds {
+		return sec(this.resolvedTiming.start + this.resolvedTiming.length);
 	}
 
 	public getTimingIntent(): TimingIntent {
@@ -310,9 +309,10 @@ export abstract class Player extends Entity {
 	}
 
 	public convertToFixedTiming(): void {
+		// resolvedTiming is already in Seconds, just copy it
 		this.timingIntent = {
-			start: toSec(this.resolvedTiming.start),
-			length: toSec(this.resolvedTiming.length)
+			start: this.resolvedTiming.start,
+			length: this.resolvedTiming.length
 		};
 	}
 
@@ -382,8 +382,14 @@ export abstract class Player extends Entity {
 
 	// ─────────────────────────────────────────────────────────────────────────────
 
+	/**
+	 * Get the playback time relative to clip start, in seconds.
+	 * Used for keyframe animation calculations.
+	 */
 	public getPlaybackTime(): number {
-		const clipTime = this.edit.playbackTime - this.getStart();
+		// Convert edit.playbackTime (ms) to seconds for comparison with clip timing
+		const playbackTimeSeconds = this.edit.playbackTime / 1000;
+		const clipTime = playbackTimeSeconds - this.getStart();
 
 		if (clipTime < 0) return 0;
 		if (clipTime > this.getLength()) return this.getLength();
@@ -474,7 +480,9 @@ export abstract class Player extends Entity {
 	}
 
 	public isActive(): boolean {
-		return this.edit.playbackTime >= this.getStart() && this.edit.playbackTime < this.getEnd();
+		// Convert edit.playbackTime (ms) to seconds for comparison
+		const playbackTimeSeconds = this.edit.playbackTime / 1000;
+		return playbackTimeSeconds >= this.getStart() && playbackTimeSeconds < this.getEnd();
 	}
 
 	public shouldDiscardFrame(): boolean {

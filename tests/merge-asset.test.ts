@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { mergeAssetForExport } from "../src/core/shared/merge-asset";
-import type { Asset } from "../src/core/schemas/asset";
+import type { Asset } from "../src/core/schemas";
 
 describe("mergeAssetForExport", () => {
 	it("returns current asset when no original exists", () => {
@@ -68,15 +68,15 @@ describe("mergeAssetForExport", () => {
 	});
 
 	it("handles video asset with src merge field", () => {
-		const originalAsset: Asset = {
+		const originalAsset = {
 			type: "video",
 			src: "{{videoUrl}}"
-		};
-		const currentAsset: Asset = {
+		} as Asset;
+		const currentAsset = {
 			type: "video",
 			src: "https://example.com/video.mp4",
 			volume: 0.8
-		};
+		} as Asset;
 
 		const result = mergeAssetForExport(originalAsset, currentAsset);
 

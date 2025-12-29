@@ -21,11 +21,11 @@ export interface MergeField {
 
 /**
  * Serialized format for JSON export (matches Shotstack API).
- * Conversion happens at serialization boundary only.
+ * The replace value can be any type - strings, numbers, booleans, objects.
  */
 export interface SerializedMergeField {
 	find: string;
-	replace: string;
+	replace: unknown;
 }
 
 /** Convert internal MergeField to serialized API format */
@@ -35,5 +35,7 @@ export function toSerialized(field: MergeField): SerializedMergeField {
 
 /** Convert serialized API format to internal MergeField */
 export function fromSerialized(field: SerializedMergeField): MergeField {
-	return { name: field.find, defaultValue: field.replace };
+	// Coerce unknown replace value to string for internal SDK use
+	const replaceValue = typeof field.replace === "string" ? field.replace : JSON.stringify(field.replace);
+	return { name: field.find, defaultValue: replaceValue };
 }

@@ -7,7 +7,7 @@ import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotatio
 import { Pointer } from "@inputs/pointer";
 import type { Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import type { CanvasOverlayRegistration } from "./ui-controller";

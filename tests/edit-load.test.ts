@@ -28,8 +28,7 @@
 import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip } from "@schemas/clip";
-import type { ResolvedEdit } from "@schemas/edit";
+import type { ResolvedClip, EditConfig } from "@schemas";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -226,8 +225,8 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getExportableClip: () => {
 			const exported = structuredClone(config);
 			// Apply timing intent (cast needed as timingIntent can be string for "auto")
-			if (timingIntent.start !== undefined) exported.start = timingIntent.start as number;
-			if (timingIntent.length !== undefined) exported.length = timingIntent.length as number;
+			if (timingIntent.start !== undefined) (exported as { start: unknown }).start = timingIntent.start;
+			if (timingIntent.length !== undefined) (exported as { length: unknown }).length = timingIntent.length;
 			return exported;
 		}
 	};
@@ -309,19 +308,22 @@ function getEditState(edit: Edit): {
 	};
 }
 
-// Clip type that allows "auto" values for timing (used in tests before resolution)
-type TestClip = Omit<ResolvedClip, "start" | "length"> & {
+// Clip type that allows "auto" values and simplified assets for testing
+type TestClip = {
+	asset: { type: string; [key: string]: unknown };
 	start: number | "auto";
 	length: number | "auto" | "end";
+	fit?: string;
+	[key: string]: unknown;
 };
 
 /**
  * Create a minimal valid edit configuration.
  */
-function createMinimalEdit(tracks: { clips: TestClip[] }[] = []): ResolvedEdit {
+function createMinimalEdit(tracks: { clips: TestClip[] }[] = []): EditConfig {
 	return {
 		timeline: {
-			tracks: tracks as { clips: ResolvedClip[] }[]
+			tracks: tracks as EditConfig["timeline"]["tracks"]
 		},
 		output: {
 			size: { width: 1920, height: 1080 },
@@ -368,7 +370,13 @@ describe("Edit loadEdit()", () => {
 			await edit.loadEdit(editConfig);
 
 			expect(VideoPlayer).toHaveBeenCalledTimes(1);
-			expect(VideoPlayer).toHaveBeenCalledWith(edit, expect.objectContaining({ asset: { type: "video", src: "https://example.com/video.mp4" } }));
+			// Use nested objectContaining since schema adds default properties like transcode
+			expect(VideoPlayer).toHaveBeenCalledWith(
+				edit,
+				expect.objectContaining({
+					asset: expect.objectContaining({ type: "video", src: "https://example.com/video.mp4" })
+				})
+			);
 		});
 
 		it("creates ImagePlayer for image assets", async () => {
@@ -571,9 +579,9 @@ describe("Edit loadEdit()", () => {
 
 			await edit.loadEdit(editConfig);
 
-			// Second clip should start at 3000ms (end of first clip)
+			// Second clip should start at 3s (end of first clip)
 			const player2 = edit.getPlayerClip(0, 1);
-			expect(player2?.getStart()).toBe(3000);
+			expect(player2?.getStart()).toBe(3);
 		});
 
 		it("resolves length: 'auto' with default value", async () => {
@@ -586,8 +594,8 @@ describe("Edit loadEdit()", () => {
 			await edit.loadEdit(editConfig);
 
 			const player = edit.getPlayerClip(0, 0);
-			// Default auto length for non-media assets is 3000ms
-			expect(player?.getLength()).toBe(3000);
+			// Default auto length for non-media assets is 3s
+			expect(player?.getLength()).toBe(3);
 		});
 
 		it("sets totalDuration to max clip end time", async () => {
@@ -631,7 +639,7 @@ describe("Edit loadEdit()", () => {
 
 	describe("merge field handling", () => {
 		it("stores merge field bindings on player", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [
 						{
@@ -657,7 +665,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("loads merge fields into service from edit.merge array", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: { tracks: [] },
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
 				merge: [
@@ -673,7 +681,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("substitutes merge field values in resolved edit", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [
 						{
@@ -707,7 +715,7 @@ describe("Edit loadEdit()", () => {
 
 	describe("fonts", () => {
 		it("loads all fonts from timeline.fonts array", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [],
 					fonts: [{ src: "https://example.com/font1.ttf" }, { src: "https://example.com/font2.woff2" }]
@@ -723,7 +731,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("handles empty fonts array", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [],
 					fonts: []
@@ -759,7 +767,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("sets background color from timeline.background", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [],
 					background: "#FF5500"
@@ -777,7 +785,7 @@ describe("Edit loadEdit()", () => {
 			// Start with default size
 			expect(getEditState(edit).size).toEqual({ width: 1920, height: 1080 });
 
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: { tracks: [] },
 				output: { size: { width: 1280, height: 720 }, format: "mp4" }
 			};
@@ -837,7 +845,7 @@ describe("Edit loadEdit()", () => {
 
 	describe("soundtrack", () => {
 		it("loads soundtrack as AudioPlayer on last track", async () => {
-			const editConfig: ResolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 5, fit: "crop" }] }],
 					soundtrack: { src: "https://example.com/music.mp3", effect: "fadeIn" }
@@ -978,7 +986,7 @@ describe("Edit loadEdit()", () => {
 
 			it("updates output settings via granular path", async () => {
 				// Load initial edit
-				const edit1: ResolvedEdit = {
+				const edit1: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }]
 					},
@@ -988,7 +996,7 @@ describe("Edit loadEdit()", () => {
 				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Change fps only
-				const edit2: ResolvedEdit = {
+				const edit2: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }]
 					},
@@ -1004,7 +1012,7 @@ describe("Edit loadEdit()", () => {
 
 			it("updates background color via granular path", async () => {
 				// Load initial edit
-				const edit1: ResolvedEdit = {
+				const edit1: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }],
 						background: "#000000"
@@ -1015,7 +1023,7 @@ describe("Edit loadEdit()", () => {
 				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Change background only
-				const edit2: ResolvedEdit = {
+				const edit2: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }],
 						background: "#ff0000"

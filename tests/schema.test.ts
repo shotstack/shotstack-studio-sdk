@@ -1,13 +1,17 @@
 import { describe, it, expect } from "@jest/globals";
-import { ClipSchema } from "../src/core/schemas/clip";
-import { EditSchema, TimelineSchema, OutputSchema } from "../src/core/schemas/edit";
-import { TrackSchema } from "../src/core/schemas/track";
-import { VideoAssetSchema } from "../src/core/schemas/video-asset";
-import { AudioAssetSchema } from "../src/core/schemas/audio-asset";
-import { TextAssetSchema } from "../src/core/schemas/text-asset";
-import { ImageAssetSchema } from "../src/core/schemas/image-asset";
-import { ShapeAssetSchema } from "../src/core/schemas/shape-asset";
-import { HtmlAssetSchema } from "../src/core/schemas/html-asset";
+import {
+	ClipSchema,
+	EditSchema,
+	TimelineSchema,
+	OutputSchema,
+	TrackSchema,
+	VideoAssetSchema,
+	AudioAssetSchema,
+	TextAssetSchema,
+	ImageAssetSchema,
+	ShapeAssetSchema,
+	HtmlAssetSchema
+} from "../src/core/schemas";
 
 describe("Schema Imports", () => {
 	it("should import all schemas without WASM errors", () => {
@@ -40,8 +44,9 @@ describe("ClipSchema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("should reject invalid clip with negative start", () => {
-		const invalidClip = {
+	it("accepts clip with negative start (backend validates)", () => {
+		// Note: External schema allows negative start; backend performs semantic validation
+		const clip = {
 			asset: {
 				type: "video",
 				src: "https://example.com/video.mp4"
@@ -50,12 +55,13 @@ describe("ClipSchema Validation", () => {
 			length: 5
 		};
 
-		const result = ClipSchema.safeParse(invalidClip);
-		expect(result.success).toBe(false);
+		const result = ClipSchema.safeParse(clip);
+		expect(result.success).toBe(true);
 	});
 
-	it("should reject invalid clip with zero length", () => {
-		const invalidClip = {
+	it("accepts clip with zero length (backend validates)", () => {
+		// Note: External schema allows zero length; backend performs semantic validation
+		const clip = {
 			asset: {
 				type: "video",
 				src: "https://example.com/video.mp4"
@@ -64,8 +70,8 @@ describe("ClipSchema Validation", () => {
 			length: 0
 		};
 
-		const result = ClipSchema.safeParse(invalidClip);
-		expect(result.success).toBe(false);
+		const result = ClipSchema.safeParse(clip);
+		expect(result.success).toBe(true);
 	});
 
 	it("should validate clip with all optional properties", () => {
@@ -226,11 +232,12 @@ describe("Asset Schema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("should validate text asset without text property (background-only text boxes)", () => {
-		// Regression test: text assets without text should be valid
-		// Previously displayed "[object Object]" in canvas when text was undefined
-		const textAssetWithoutText = {
+	it("validates text asset with empty string for background-only text boxes", () => {
+		// External schema requires text property; use empty string for background-only boxes
+		// SDK TextPlayer handles empty strings gracefully for visual text boxes
+		const textAssetWithEmptyText = {
 			type: "text",
+			text: "", // Required by external schema, but can be empty
 			width: 1080,
 			height: 325,
 			font: {
@@ -248,7 +255,7 @@ describe("Asset Schema Validation", () => {
 			}
 		};
 
-		const result = TextAssetSchema.safeParse(textAssetWithoutText);
+		const result = TextAssetSchema.safeParse(textAssetWithEmptyText);
 		expect(result.success).toBe(true);
 	});
 

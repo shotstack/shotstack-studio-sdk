@@ -126,7 +126,7 @@ export class EditDocument {
 	 * @throws Error if size is not defined
 	 */
 	getSize(): Size {
-		const size = this.data.output.size;
+		const {size} = this.data.output;
 		if (!size?.width || !size?.height) {
 			throw new Error("Output size is not defined");
 		}

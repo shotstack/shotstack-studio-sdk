@@ -29,12 +29,11 @@ import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "
 import { Entity } from "@core/shared/entity";
 import { deepMerge, getNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type Milliseconds, ms, toMs, toSec } from "@core/timing/types";
+import { type Seconds, ms, sec, toSec } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
-import type { ResolvedClip } from "@schemas/clip";
 import {
 	DestinationSchema,
 	EditSchema,
@@ -46,8 +45,7 @@ import {
 	type Edit as EditConfig,
 	type ResolvedEdit,
 	type Soundtrack
-} from "@schemas/edit";
-import type { ResolvedTrack } from "@schemas/track";
+, ResolvedClip , ResolvedTrack } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
@@ -219,9 +217,9 @@ export class Edit extends Entity {
 		// Apply merge field substitutions for initial load
 		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(rawEdit as ResolvedEdit, serializedMergeFields) : rawEdit;
 
-		const parsedEdit = EditSchema.parse(mergedEdit);
-		resolveAliasReferences(parsedEdit);
-		this.edit = parsedEdit as ResolvedEdit;
+		const parsedEdit = EditSchema.parse(mergedEdit) as EditConfig as ResolvedEdit;
+		resolveAliasReferences(parsedEdit as unknown as EditConfig);
+		this.edit = parsedEdit;
 
 		// Load fonts
 		await Promise.all(
@@ -368,11 +366,11 @@ export class Edit extends Entity {
 	 *
 	 * @param edit - The new Edit configuration to load
 	 */
-	public async loadEdit(edit: ResolvedEdit): Promise<void> {
+	public async loadEdit(edit: EditConfig): Promise<void> {
 		// Smart diff: only do full reload when structure changes (track/clip count, asset type)
 		if (this.edit && !this.hasStructuralChanges(edit)) {
 			// Update document with new edit (preserves "auto", "end", placeholders)
-			this.document = new EditDocument(edit as unknown as EditConfig);
+			this.document = new EditDocument(edit);
 			this.isBatchingEvents = true;
 			this.applyGranularChanges(edit);
 			this.isBatchingEvents = false;
@@ -381,7 +379,7 @@ export class Edit extends Entity {
 		}
 
 		// Full reload - replace document and reinitialize
-		this.document = new EditDocument(edit as unknown as EditConfig);
+		this.document = new EditDocument(edit);
 
 		// Handle size changes
 		const newSize = this.document.getSize();
@@ -416,8 +414,8 @@ export class Edit extends Entity {
 				volume: soundtrack.volume ?? 1
 			},
 			fit: "crop",
-			start: 0,
-			length: toSec(ms(this.totalDuration))
+			start: sec(0),
+			length: sec(this.totalDuration / 1000) // totalDuration is in ms
 		};
 
 		const player = new AudioPlayer(this, clip);
@@ -462,8 +460,8 @@ export class Edit extends Entity {
 				.filter(player => player && !this.clipsToDispose.includes(player))
 				.map(player => ({
 					...player.clipConfiguration,
-					start: toSec(player.getStart()),
-					length: toSec(player.getLength())
+					start: player.getStart(),
+					length: player.getLength()
 				}))
 		}));
 
@@ -989,7 +987,9 @@ export class Edit extends Entity {
 		// Build lookup map: FIELD_NAME -> replacement value
 		const fieldValues = new Map<string, string>();
 		for (const { find, replace } of mergeFields) {
-			fieldValues.set(find.toUpperCase(), replace);
+			// Convert unknown replace value to string for placeholder matching
+			const replaceStr = typeof replace === "string" ? replace : JSON.stringify(replace);
+			fieldValues.set(find.toUpperCase(), replaceStr);
 		}
 
 		// Walk each clip and detect placeholder strings
@@ -1058,7 +1058,7 @@ export class Edit extends Entity {
 	 * Checks if edit has structural changes requiring full reload.
 	 * Structural = track count, clip count, or asset type changed.
 	 */
-	private hasStructuralChanges(newEdit: ResolvedEdit): boolean {
+	private hasStructuralChanges(newEdit: EditConfig): boolean {
 		if (!this.edit) return true;
 
 		const currentTracks = this.edit.timeline.tracks;
@@ -1097,13 +1097,15 @@ export class Edit extends Entity {
 	 * Applies granular changes without full reload (preserves undo history, no flash).
 	 * Only called when structure is unchanged (same track/clip counts).
 	 */
-	private applyGranularChanges(newEdit: ResolvedEdit): void {
+	private applyGranularChanges(newEdit: EditConfig): void {
 		const currentOutput = this.edit?.output;
 		const newOutput = newEdit.output;
 
 		// 1. Apply output changes
 		if (newOutput?.size && (currentOutput?.size?.width !== newOutput.size.width || currentOutput?.size?.height !== newOutput.size.height)) {
-			this.setOutputSize(newOutput.size.width, newOutput.size.height);
+			const width = newOutput.size.width ?? this.size.width;
+			const height = newOutput.size.height ?? this.size.height;
+			this.setOutputSize(width, height);
 		}
 
 		if (newOutput?.fps !== undefined && currentOutput?.fps !== newOutput.fps) {
@@ -1137,7 +1139,8 @@ export class Edit extends Entity {
 
 				// Only update if clip changed
 				if (JSON.stringify(currentClip) !== JSON.stringify(newClip)) {
-					this.updateClip(trackIdx, clipIdx, newClip);
+					// Cast since newClip may have "auto"/"end" strings; updateClip handles resolution
+					this.updateClip(trackIdx, clipIdx, newClip as unknown as Partial<ResolvedClip>);
 				}
 			}
 		}
@@ -1380,16 +1383,18 @@ export class Edit extends Entity {
 		this.updateTotalDuration();
 	}
 	private updateTotalDuration(): void {
-		let maxDuration = 0;
+		let maxDurationSeconds = 0;
 
 		for (const track of this.tracks) {
 			for (const clip of track) {
-				maxDuration = Math.max(maxDuration, clip.getEnd());
+				// clip.getEnd() returns Seconds
+				maxDurationSeconds = Math.max(maxDurationSeconds, clip.getEnd());
 			}
 		}
 
+		// Convert to milliseconds for playbackTime compatibility
 		const previousDuration = this.totalDuration;
-		this.totalDuration = maxDuration;
+		this.totalDuration = maxDurationSeconds * 1000;
 
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {
@@ -1403,20 +1408,20 @@ export class Edit extends Entity {
 				const clip = this.tracks[trackIdx][clipIdx];
 				const intent = clip.getTimingIntent();
 
-				let resolvedStart: Milliseconds;
+				let resolvedStart: Seconds;
 				if (intent.start === "auto") {
 					resolvedStart = resolveAutoStart(trackIdx, clipIdx, this.tracks);
 				} else {
-					resolvedStart = toMs(intent.start);
+					resolvedStart = intent.start;
 				}
 
-				let resolvedLength: Milliseconds;
+				let resolvedLength: Seconds;
 				if (intent.length === "auto") {
 					resolvedLength = await resolveAutoLength(clip.clipConfiguration.asset);
 				} else if (intent.length === "end") {
-					resolvedLength = ms(0);
+					resolvedLength = sec(0);
 				} else {
-					resolvedLength = toMs(intent.length);
+					resolvedLength = intent.length;
 				}
 
 				clip.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
@@ -1468,14 +1473,14 @@ export class Edit extends Entity {
 				const newLength = resolveEndLength(clip.getStart(), newTimelineEnd);
 				const currentLength = clip.getLength();
 
-				if (Math.abs(newLength - currentLength) > 1) {
+				if (Math.abs(newLength - currentLength) > 0.001) {
 					clip.setResolvedTiming({
 						start: clip.getStart(),
 						length: newLength
 					});
 					// Sync clipConfiguration with resolved value
 					// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
-					clip.clipConfiguration.length = toSec(newLength);
+					clip.clipConfiguration.length = newLength;
 					clip.reconfigureAfterRestore();
 				}
 			}
@@ -1510,7 +1515,7 @@ export class Edit extends Entity {
 
 		// Sync clipConfiguration with resolved value
 		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
-		clip.clipConfiguration.length = toSec(newLength);
+		clip.clipConfiguration.length = newLength;
 
 		clip.reconfigureAfterRestore();
 
@@ -1814,17 +1819,19 @@ export class Edit extends Entity {
 			throw new Error(`Invalid size: ${result.error.issues[0]?.message}`);
 		}
 
-		this.size = result.data;
+		// We validated with required width/height so we can safely cast
+		const size: Size = { width, height };
+		this.size = size;
 
 		if (this.edit) {
 			this.edit.output = {
 				...this.edit.output,
-				size: result.data
+				size
 			};
 		}
 
 		// Sync with document layer
-		this.document?.setSize(result.data);
+		this.document?.setSize(size);
 
 		this.updateViewportMask();
 		this.canvas?.zoomToFit();
@@ -1832,11 +1839,11 @@ export class Edit extends Entity {
 		if (this.background) {
 			this.background.clear();
 			this.background.fillStyle = { color: this.backgroundColor };
-			this.background.rect(0, 0, result.data.width, result.data.height);
+			this.background.rect(0, 0, width, height);
 			this.background.fill();
 		}
 
-		this.events.emit(EditEvent.OutputResized, result.data);
+		this.events.emit(EditEvent.OutputResized, size);
 		this.emitEditChanged("output:size");
 	}
 

@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { type Seconds, type TimingIntent, sec, toMs, toSec } from "@core/timing/types";
+import { type Seconds, type TimingIntent, sec } from "@core/timing/types";
 
 import { DeleteTrackCommand } from "./delete-track-command";
 import type { EditCommand, CommandContext } from "./types";
@@ -70,7 +70,7 @@ export class MoveClipCommand implements EditCommand {
 			let insertIndex = 0;
 			for (let i = 0; i < toTrack.length; i += 1) {
 				const clip = toTrack[i];
-				const clipStart = toSec(clip.getStart()); // Use resolved start time in seconds
+				const clipStart = clip.getStart(); // getStart() now returns Seconds
 				if (this.newStart < clipStart) {
 					break;
 				}
@@ -106,7 +106,7 @@ export class MoveClipCommand implements EditCommand {
 			let insertIndex = 0;
 			for (let i = 0; i < track.length; i += 1) {
 				const clip = track[i];
-				const clipStart = toSec(clip.getStart());
+				const clipStart = clip.getStart();
 				if (this.newStart < clipStart) {
 					break;
 				}
@@ -123,9 +123,9 @@ export class MoveClipCommand implements EditCommand {
 		// Update the clip position
 		this.player.clipConfiguration.start = this.newStart;
 
-		// Update resolved timing to match the new position
+		// Update resolved timing to match the new position (now in Seconds)
 		this.player.setResolvedTiming({
-			start: toMs(this.newStart),
+			start: this.newStart,
 			length: this.player.getLength()
 		});
 
@@ -251,10 +251,10 @@ export class MoveClipCommand implements EditCommand {
 		// Restore original timing intent
 		if (this.originalTimingIntent) {
 			this.player.setTimingIntent(this.originalTimingIntent);
-			// Update resolved timing to match
+			// Update resolved timing to match (now in Seconds)
 			this.player.setResolvedTiming({
-				start: typeof this.originalTimingIntent.start === "number" ? toMs(this.originalTimingIntent.start) : this.player.getStart(),
-				length: typeof this.originalTimingIntent.length === "number" ? toMs(this.originalTimingIntent.length) : this.player.getLength()
+				start: typeof this.originalTimingIntent.start === "number" ? this.originalTimingIntent.start : this.player.getStart(),
+				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length : this.player.getLength()
 			});
 
 			// If restoring "end" length, re-track in endLengthClips Set

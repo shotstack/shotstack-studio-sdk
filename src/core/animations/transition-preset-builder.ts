@@ -1,5 +1,4 @@
-import { type ResolvedClip } from "../schemas/clip";
-import { type Keyframe } from "../schemas/keyframe";
+import { type ResolvedClip , type Keyframe } from "@schemas";
 
 export type TransitionKeyframeSet = {
 	offsetXKeyframes: Keyframe[];
@@ -62,7 +61,7 @@ export class TransitionPresetBuilder {
 		switch (transitionName) {
 			case "fade": {
 				// Opacity factor: 0 (invisible) → 1 (fully visible)
-				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "zoom": {
@@ -75,25 +74,25 @@ export class TransitionPresetBuilder {
 			case "slideLeft": {
 				// Offset delta: +0.025 → 0 (slides from right to center)
 				offsetXKeyframes.push({ from: 0.025, to: 0, start, length, interpolation: "linear" });
-				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "slideRight": {
 				// Offset delta: -0.025 → 0 (slides from left to center)
 				offsetXKeyframes.push({ from: -0.025, to: 0, start, length, interpolation: "linear" });
-				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "slideUp": {
 				// Offset delta: +0.025 → 0 (slides from bottom to center)
 				offsetYKeyframes.push({ from: 0.025, to: 0, start, length, interpolation: "linear" });
-				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "slideDown": {
 				// Offset delta: -0.025 → 0 (slides from top to center)
 				offsetYKeyframes.push({ from: -0.025, to: 0, start, length, interpolation: "linear" });
-				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				opacityKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "carouselLeft": {
@@ -118,11 +117,11 @@ export class TransitionPresetBuilder {
 			}
 			case "reveal":
 			case "wipeRight": {
-				maskXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				maskXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "wipeLeft": {
-				maskXKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				maskXKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			default:
@@ -151,7 +150,7 @@ export class TransitionPresetBuilder {
 		switch (transitionName) {
 			case "fade": {
 				// Opacity factor: 1 (visible) → 0 (invisible)
-				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "zoom": {
@@ -163,55 +162,55 @@ export class TransitionPresetBuilder {
 			}
 			case "slideLeft": {
 				// Offset delta: 0 → -0.025 (slides from center to left)
-				offsetXKeyframes.push({ from: 0, to: -0.025, start, length, interpolation: "bezier", easing: "smooth" });
-				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetXKeyframes.push({ from: 0, to: -0.025, start, length, interpolation: "bezier", easing: "ease" });
+				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "slideRight": {
 				// Offset delta: 0 → +0.025 (slides from center to right)
-				offsetXKeyframes.push({ from: 0, to: 0.025, start, length, interpolation: "bezier", easing: "smooth" });
-				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetXKeyframes.push({ from: 0, to: 0.025, start, length, interpolation: "bezier", easing: "ease" });
+				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "slideUp": {
 				// Offset delta: 0 → -0.025 (slides from center to top)
-				offsetYKeyframes.push({ from: 0, to: -0.025, start, length, interpolation: "bezier", easing: "smooth" });
-				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetYKeyframes.push({ from: 0, to: -0.025, start, length, interpolation: "bezier", easing: "ease" });
+				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "slideDown": {
 				// Offset delta: 0 → +0.025 (slides from center to bottom)
-				offsetYKeyframes.push({ from: 0, to: 0.025, start, length, interpolation: "bezier", easing: "smooth" });
-				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetYKeyframes.push({ from: 0, to: 0.025, start, length, interpolation: "bezier", easing: "ease" });
+				opacityKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "carouselLeft": {
 				// Offset delta: 0 → -1 (slides from center to far left)
-				offsetXKeyframes.push({ from: 0, to: -1, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetXKeyframes.push({ from: 0, to: -1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "carouselRight": {
 				// Offset delta: 0 → +1 (slides from center to far right)
-				offsetXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "carouselUp": {
 				// Offset delta: 0 → +1.1 (slides from center to bottom)
-				offsetYKeyframes.push({ from: 0, to: 1.1, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetYKeyframes.push({ from: 0, to: 1.1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "carouselDown": {
 				// Offset delta: 0 → -1.1 (slides from center to top)
-				offsetYKeyframes.push({ from: 0, to: -1.1, start, length, interpolation: "bezier", easing: "smooth" });
+				offsetYKeyframes.push({ from: 0, to: -1.1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "reveal":
 			case "wipeRight": {
-				maskXKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "smooth" });
+				maskXKeyframes.push({ from: 1, to: 0, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "wipeLeft": {
-				maskXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "smooth" });
+				maskXKeyframes.push({ from: 0, to: 1, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			default:

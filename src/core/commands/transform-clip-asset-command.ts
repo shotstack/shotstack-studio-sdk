@@ -1,6 +1,6 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 
@@ -43,9 +43,11 @@ export class TransformClipAssetCommand implements EditCommand {
 			throw new Error("Cannot transform clip: asset has no src property");
 		}
 
+		// Create minimal asset with new type - full properties will be resolved by player
+		const newAsset = { type: this.targetAssetType, src: originalAsset.src } as ResolvedClip["asset"];
 		const newConfig: ResolvedClip = {
 			...this.originalConfig,
-			asset: { type: this.targetAssetType, src: originalAsset.src }
+			asset: newAsset
 		};
 
 		// Create new player

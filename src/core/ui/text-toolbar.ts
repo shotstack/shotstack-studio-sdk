@@ -1,4 +1,4 @@
-import type { TextAsset } from "@schemas/text-asset";
+import type { TextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar, BUILT_IN_FONTS, FONT_SIZES, TOOLBAR_ICONS } from "./base-toolbar";

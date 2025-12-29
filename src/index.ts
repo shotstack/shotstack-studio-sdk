@@ -33,7 +33,74 @@ export type { EditEventMap, EditEventName, ClipLocation, ClipReference } from "@
 export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types";
 export type { TimelineOptions, TimelineFeatures } from "@timeline/index";
 
-// Export Zod schemas for library users
-export * from "./core/schemas";
+// Export schema types and Zod schemas for library users
+// Note: Edit and Timeline types are intentionally not re-exported here
+// to avoid conflict with the Edit and Timeline classes exported above.
+// Use EditConfig for the schema type, or import from @schemas directly.
+export type { EditConfig } from "./core/schemas";
+export {
+	// Zod schemas
+	EditSchema,
+	TimelineSchema,
+	TrackSchema,
+	ClipSchema,
+	OutputSchema,
+	VideoAssetSchema,
+	AudioAssetSchema,
+	ImageAssetSchema,
+	TextAssetSchema,
+	RichTextAssetSchema,
+	HtmlAssetSchema,
+	CaptionAssetSchema,
+	ShapeAssetSchema,
+	LumaAssetSchema,
+	AssetSchema,
+	TweenSchema,
+	KeyframeSchema,
+	CropSchema,
+	OffsetSchema,
+	TransitionSchema,
+	TransformationSchema,
+	DestinationSchema,
+	OutputSizeSchema,
+	OutputFormatSchema,
+	OutputFpsSchema,
+	HexColorSchema
+} from "./core/schemas";
+export type {
+	// Types (excluding Edit and Timeline to avoid conflicts)
+	Track,
+	Clip,
+	Output,
+	Asset,
+	MergeField,
+	Soundtrack,
+	Font,
+	VideoAsset,
+	AudioAsset,
+	ImageAsset,
+	TextAsset,
+	RichTextAsset,
+	HtmlAsset,
+	CaptionAsset,
+	ShapeAsset,
+	LumaAsset,
+	TitleAsset,
+	Crop,
+	Offset,
+	Transition,
+	Transformation,
+	ChromaKey,
+	Tween,
+	Destination,
+	ResolvedClip,
+	ResolvedTrack,
+	ResolvedEdit,
+	ClipAnchor,
+	HtmlAssetPosition,
+	Keyframe,
+	ExtendedCaptionAsset,
+	NumericKeyframe
+} from "./core/schemas";
 
 export const VERSION = pkg.version;

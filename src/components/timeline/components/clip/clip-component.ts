@@ -1,4 +1,4 @@
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 
 import { TimelineEntity } from "../../core/timeline-entity";
 import type { ClipState, ClipRenderer } from "../../timeline.types";

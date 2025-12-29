@@ -5,8 +5,7 @@ import { EditEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
-import { type CaptionAsset } from "@schemas/caption-asset";
-import { type ResolvedClip } from "@schemas/clip";
+import { type ExtendedCaptionAsset, type ResolvedClip } from "@schemas";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
@@ -34,7 +33,7 @@ export class CaptionPlayer extends Player {
 	public override async load(): Promise<void> {
 		await super.load();
 
-		const captionAsset = this.clipConfiguration.asset as CaptionAsset;
+		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
 
 		const fontFamily = captionAsset.font?.family ?? "Open Sans";
 		await this.loadFont(fontFamily);
@@ -122,7 +121,7 @@ export class CaptionPlayer extends Player {
 
 		if (!this.text) return;
 
-		const captionAsset = this.clipConfiguration.asset as CaptionAsset;
+		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
 		const trim = captionAsset.trim ?? 0;
 
 		const time = this.getPlaybackTime() / 1000 + trim;
@@ -154,7 +153,7 @@ export class CaptionPlayer extends Player {
 	}
 
 	public override getSize(): Size {
-		const captionAsset = this.clipConfiguration.asset as CaptionAsset;
+		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
 
 		return {
 			width: this.clipConfiguration.width ?? captionAsset.width ?? this.edit.size.width,
@@ -191,7 +190,7 @@ export class CaptionPlayer extends Player {
 		}
 	}
 
-	private createTextStyle(captionAsset: CaptionAsset): pixi.TextStyle {
+	private createTextStyle(captionAsset: ExtendedCaptionAsset): pixi.TextStyle {
 		const fontFamily = captionAsset.font?.family ?? "Open Sans";
 		const { baseFontFamily, fontWeight } = parseFontFamily(fontFamily);
 		const fontSize = captionAsset.font?.size ?? 32;
@@ -209,7 +208,7 @@ export class CaptionPlayer extends Player {
 		});
 	}
 
-	private updateDisplay(cue: Cue | null, captionAsset: CaptionAsset): void {
+	private updateDisplay(cue: Cue | null, captionAsset: ExtendedCaptionAsset): void {
 		if (!this.text || !this.background) return;
 
 		if (!cue) {
@@ -226,7 +225,7 @@ export class CaptionPlayer extends Player {
 		this.drawBackground(captionAsset);
 	}
 
-	private positionText(captionAsset: CaptionAsset): void {
+	private positionText(captionAsset: ExtendedCaptionAsset): void {
 		if (!this.text) return;
 
 		const horizontalAlign = captionAsset.alignment?.horizontal ?? "center";
@@ -251,7 +250,7 @@ export class CaptionPlayer extends Player {
 		this.text.position.set(textX, textY);
 	}
 
-	private drawBackground(captionAsset: CaptionAsset): void {
+	private drawBackground(captionAsset: ExtendedCaptionAsset): void {
 		if (!this.background || !this.text || !this.text.visible) {
 			this.background?.clear();
 			return;

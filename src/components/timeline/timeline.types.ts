@@ -1,4 +1,4 @@
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 
 /** Configuration options for Timeline */
 export interface TimelineOptions {

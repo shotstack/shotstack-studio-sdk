@@ -17,7 +17,9 @@ function replaceMergeFieldsRecursive<T>(obj: T, fields: SerializedMergeField[]):
 	if (typeof obj === "string") {
 		let result: string = obj;
 		for (const { find, replace } of fields) {
-			result = result.replace(new RegExp(`\\{\\{\\s*${escapeRegExp(find)}\\s*\\}\\}`, "gi"), replace);
+			// Convert replace value to string (handles unknown type from external schema)
+			const replaceStr = typeof replace === "string" ? replace : JSON.stringify(replace);
+			result = result.replace(new RegExp(`\\{\\{\\s*${escapeRegExp(find)}\\s*\\}\\}`, "gi"), replaceStr);
 		}
 		return result as unknown as T;
 	}

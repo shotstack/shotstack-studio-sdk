@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 

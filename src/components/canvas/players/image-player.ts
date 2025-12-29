@@ -1,7 +1,6 @@
 import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type ResolvedClip } from "@schemas/clip";
-import { type ImageAsset } from "@schemas/image-asset";
+import { type ResolvedClip , type ImageAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Player, PlayerType } from "./player";

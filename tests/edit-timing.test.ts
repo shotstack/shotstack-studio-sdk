@@ -1,16 +1,16 @@
 /**
  * Edit Class Timing Resolution Tests
  *
- * Tests the timing system that resolves "auto" and "end" values to numeric milliseconds.
+ * Tests the timing system that resolves "auto" and "end" values to numeric seconds.
  * Covers pure resolver functions and Edit class integration for propagation.
  */
 
 import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip } from "@schemas/clip";
+import type { ResolvedClip } from "@schemas";
 import { resolveAutoStart, resolveAutoLength, resolveEndLength, calculateTimelineEnd } from "@core/timing/resolver";
-import { ms } from "@core/timing/types";
+import { sec } from "@core/timing/types";
 
 // Mock probeMediaDuration since document.createElement doesn't work in Node
 jest.mock("@core/timing/resolver", () => ({
@@ -152,11 +152,12 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const startIntent = config.start;
 	const lengthIntent = config.length;
 
-	// Calculate initial resolved values
-	const startMs = typeof startIntent === "number" ? startIntent * 1000 : 0;
-	const lengthMs = typeof lengthIntent === "number" ? lengthIntent * 1000 : 3000;
+	// Calculate initial resolved values in SECONDS (not milliseconds)
+	// The timing system now operates in seconds internally
+	const startSec = typeof startIntent === "number" ? startIntent : 0;
+	const lengthSec = typeof lengthIntent === "number" ? lengthIntent : 3;
 
-	let resolvedTiming = { start: startMs, length: lengthMs };
+	let resolvedTiming = { start: startSec, length: lengthSec };
 	const timingIntent: { start: number | string; length: number | string } = { start: startIntent, length: lengthIntent };
 
 	// Merge field bindings support
@@ -208,8 +209,8 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getExportableClip: () => {
 			const exported = structuredClone(config);
 			// Apply timing intent (cast needed as timingIntent can be string for "auto")
-			if (timingIntent.start !== undefined) exported.start = timingIntent.start as number;
-			if (timingIntent.length !== undefined) exported.length = timingIntent.length as number;
+			if (timingIntent.start !== undefined) (exported as { start: unknown }).start = timingIntent.start;
+			if (timingIntent.length !== undefined) (exported as { length: unknown }).length = timingIntent.length;
 			return exported;
 		}
 	};
@@ -254,12 +255,12 @@ jest.mock("@canvas/players/caption-player", () => ({
 /**
  * Create a mock player-like object for unit testing resolver functions.
  */
-function createMockPlayerForResolver(startMs: number, lengthMs: number, lengthIntent: number | "auto" | "end" = lengthMs / 1000) {
+function createMockPlayerForResolver(startSec: number, lengthSec: number, lengthIntent: number | "auto" | "end" = lengthSec) {
 	return {
-		getStart: () => startMs,
-		getLength: () => lengthMs,
-		getEnd: () => startMs + lengthMs,
-		getTimingIntent: () => ({ start: startMs / 1000, length: lengthIntent })
+		getStart: () => startSec,
+		getLength: () => lengthSec,
+		getEnd: () => startSec + lengthSec,
+		getTimingIntent: () => ({ start: startSec, length: lengthIntent })
 	};
 }
 
@@ -307,7 +308,7 @@ function createTextClip(start: number | "auto", length: number | "auto" | "end",
 		start,
 		length,
 		fit: "none"
-	} as ResolvedClip;
+	} as unknown as ResolvedClip;
 }
 
 // ============================================================================
@@ -317,7 +318,7 @@ function createTextClip(start: number | "auto", length: number | "auto" | "end",
 describe("Timing Resolver Functions", () => {
 	describe("resolveAutoStart()", () => {
 		it("returns 0 for first clip on track", () => {
-			const tracks = [[createMockPlayerForResolver(0, 5000)]];
+			const tracks = [[createMockPlayerForResolver(0, 5)]];
 
 			const result = resolveAutoStart(0, 0, tracks as never);
 
@@ -325,29 +326,29 @@ describe("Timing Resolver Functions", () => {
 		});
 
 		it("returns previous clip end for subsequent clips", () => {
-			const tracks = [[createMockPlayerForResolver(0, 5000), createMockPlayerForResolver(5000, 3000)]];
+			const tracks = [[createMockPlayerForResolver(0, 5), createMockPlayerForResolver(5, 3)]];
 
 			const result = resolveAutoStart(0, 1, tracks as never);
 
-			expect(result).toBe(5000); // Previous clip ends at 5000ms
+			expect(result).toBe(5); // Previous clip ends at 5s
 		});
 
 		it("handles non-contiguous clips (with gaps)", () => {
 			const tracks = [
 				[
-					createMockPlayerForResolver(0, 2000),
-					createMockPlayerForResolver(5000, 3000) // Gap from 2000 to 5000
+					createMockPlayerForResolver(0, 2),
+					createMockPlayerForResolver(5, 3) // Gap from 2s to 5s
 				]
 			];
 
 			const result = resolveAutoStart(0, 1, tracks as never);
 
 			// Returns previous clip's END, not its actual position
-			expect(result).toBe(2000);
+			expect(result).toBe(2);
 		});
 
 		it("works independently across tracks", () => {
-			const tracks = [[createMockPlayerForResolver(0, 10000)], [createMockPlayerForResolver(0, 3000)]];
+			const tracks = [[createMockPlayerForResolver(0, 10)], [createMockPlayerForResolver(0, 3)]];
 
 			const resultTrack0 = resolveAutoStart(0, 0, tracks as never);
 			const resultTrack1 = resolveAutoStart(1, 0, tracks as never);
@@ -358,68 +359,68 @@ describe("Timing Resolver Functions", () => {
 	});
 
 	describe("resolveAutoLength()", () => {
-		it("falls back to 3000ms for non-media assets", async () => {
+		it("falls back to 3s for non-media assets", async () => {
 			const asset = { type: "text" as const, text: "Hello" };
 
 			const result = await resolveAutoLength(asset);
 
-			expect(result).toBe(3000);
+			expect(result).toBe(3);
 		});
 
-		it("falls back to 3000ms for assets without src", async () => {
-			// Use video asset without src - cast needed as schema expects src
-			const asset = { type: "video" as const } as { type: "video"; src: string };
+		it("falls back to 3s for assets without src", async () => {
+			// Use video asset without src - cast to Asset for testing
+			const asset = { type: "video" } as unknown as Parameters<typeof resolveAutoLength>[0];
 
 			const result = await resolveAutoLength(asset);
 
-			expect(result).toBe(3000);
+			expect(result).toBe(3);
 		});
 	});
 
 	describe("resolveEndLength()", () => {
 		it("returns timeline end minus clip start", () => {
-			const result = resolveEndLength(ms(2000), ms(10000));
+			const result = resolveEndLength(sec(2), sec(10));
 
-			expect(result).toBe(8000);
+			expect(result).toBe(8);
 		});
 
 		it("never returns negative value", () => {
-			const result = resolveEndLength(ms(15000), ms(10000));
+			const result = resolveEndLength(sec(15), sec(10));
 
 			expect(result).toBe(0);
 		});
 
 		it("returns 0 when clip starts at timeline end", () => {
-			const result = resolveEndLength(ms(10000), ms(10000));
+			const result = resolveEndLength(sec(10), sec(10));
 
 			expect(result).toBe(0);
 		});
 
 		it("handles clip starting at 0", () => {
-			const result = resolveEndLength(ms(0), ms(5000));
+			const result = resolveEndLength(sec(0), sec(5));
 
-			expect(result).toBe(5000);
+			expect(result).toBe(5);
 		});
 	});
 
 	describe("calculateTimelineEnd()", () => {
 		it("returns max end time of all clips", () => {
-			const tracks = [[createMockPlayerForResolver(0, 5000)], [createMockPlayerForResolver(0, 8000)], [createMockPlayerForResolver(2000, 3000)]];
+			const tracks = [[createMockPlayerForResolver(0, 5)], [createMockPlayerForResolver(0, 8)], [createMockPlayerForResolver(2, 3)]];
 
 			const result = calculateTimelineEnd(tracks as never);
 
-			expect(result).toBe(8000);
+			expect(result).toBe(8);
 		});
 
 		it("excludes clips with length: 'end' to prevent circular dependency", () => {
 			const tracks = [
-				[createMockPlayerForResolver(0, 5000)],
-				[createMockPlayerForResolver(0, 15000, "end")] // Should be excluded
+				[createMockPlayerForResolver(0, 5)],
+				[createMockPlayerForResolver(0, 15, "end")] // Should be excluded
 			];
 
 			const result = calculateTimelineEnd(tracks as never);
 
-			expect(result).toBe(5000); // Only the first clip counts
+			expect(result).toBe(5); // Only the first clip counts
 		});
 
 		it("returns 0 for empty tracks", () => {
@@ -431,7 +432,7 @@ describe("Timing Resolver Functions", () => {
 		});
 
 		it("returns 0 when all clips have length: 'end'", () => {
-			const tracks = [[createMockPlayerForResolver(0, 10000, "end")]];
+			const tracks = [[createMockPlayerForResolver(0, 10, "end")]];
 
 			const result = calculateTimelineEnd(tracks as never);
 
@@ -490,11 +491,11 @@ describe("Edit Timing Integration", () => {
 	});
 
 	describe("length: 'auto' resolution", () => {
-		it("defaults to 3000ms for text assets without duration", async () => {
+		it("defaults to 3s for text assets without duration", async () => {
 			await edit.addClip(0, createTextClip(0, "auto"));
 
 			const clip = edit.getPlayerClip(0, 0);
-			expect(clip?.getLength()).toBe(3000);
+			expect(clip?.getLength()).toBe(3);
 		});
 
 		it("preserves timing intent for auto length clips", async () => {
@@ -554,7 +555,7 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			emitSpy.mockClear();
 
-			edit.updateClip(0, 0, { start: 1 });
+			edit.updateClip(0, 0, { start: sec(1) });
 
 			expect(emitSpy).toHaveBeenCalledWith("clip:updated", expect.anything());
 		});
@@ -571,11 +572,11 @@ describe("Edit Timing Integration", () => {
 	});
 
 	describe("duration calculations with timing", () => {
-		it("totalDuration reflects max clip end", async () => {
+		it("totalDuration reflects max clip end (in ms)", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			await edit.addClip(1, createVideoClip(0, 8));
 
-			expect(edit.getTotalDuration()).toBe(8000);
+			expect(edit.getTotalDuration()).toBe(8000); // in milliseconds
 		});
 
 		it("duration is 0 with no clips", () => {
@@ -601,7 +602,7 @@ describe("Edit Timing Integration", () => {
 		it("first clip with auto start resolves to 0 after updateClipTiming", async () => {
 			// Add clip with manual start at 5s
 			await edit.addClip(0, createVideoClip(5, 3));
-			expect(edit.getPlayerClip(0, 0)?.getStart()).toBe(5000);
+			expect(edit.getPlayerClip(0, 0)?.getStart()).toBe(5);
 
 			// Change to auto start via updateClipTiming
 			edit.updateClipTiming(0, 0, { start: "auto" });
@@ -617,8 +618,8 @@ describe("Edit Timing Integration", () => {
 			// Change second clip to auto start
 			edit.updateClipTiming(0, 1, { start: "auto" });
 
-			// Should resolve to 5000 (end of first clip)
-			expect(edit.getPlayerClip(0, 1)?.getStart()).toBe(5000);
+			// Should resolve to 5 (end of first clip)
+			expect(edit.getPlayerClip(0, 1)?.getStart()).toBe(5);
 		});
 	});
 
@@ -705,10 +706,10 @@ describe("Edit Timing Integration", () => {
 			// Change to auto start
 			edit.updateClipTiming(0, 1, { start: "auto" });
 
-			// Should now be at 5000 (after first clip)
+			// Should now be at 5s (after first clip)
 			const secondClip = edit.getPlayerClip(0, 1);
-			expect(secondClip?.getStart()).toBe(5000);
-			expect(secondClip?.getEnd()).toBe(8000);
+			expect(secondClip?.getStart()).toBe(5);
+			expect(secondClip?.getEnd()).toBe(8);
 		});
 
 		it("end-length calculation uses resolved start not stale value", async () => {
@@ -723,9 +724,9 @@ describe("Edit Timing Integration", () => {
 
 			const endClip = edit.getPlayerClip(0, 1);
 
-			// KEY TEST: Start should be 5000 (after first clip)
+			// KEY TEST: Start should be 5s (after first clip)
 			// This verifies that start is resolved BEFORE length calculations
-			expect(endClip?.getStart()).toBe(5000);
+			expect(endClip?.getStart()).toBe(5);
 
 			// Verify intent is correctly set to "end"
 			expect(endClip?.getTimingIntent().length).toBe("end");

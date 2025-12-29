@@ -32,6 +32,7 @@ export default defineConfig({
 			"@timeline": resolve(__dirname, "src/components/timeline"),
 			"@shared": resolve(__dirname, "src/core/shared"),
 			"@schemas": resolve(__dirname, "src/core/schemas"),
+			"@timing": resolve(__dirname, "src/core/timing"),
 			"@layouts": resolve(__dirname, "src/core/layouts"),
 			"@animations": resolve(__dirname, "src/core/animations"),
 			"@events": resolve(__dirname, "src/core/events"),

@@ -9,6 +9,33 @@
  */
 
 import type { components } from "@shotstack/schemas";
+import {
+	editSchema,
+	timelineSchema,
+	trackSchema,
+	clipSchema,
+	outputSchema,
+	videoAssetSchema,
+	audioAssetSchema,
+	imageAssetSchema,
+	textAssetSchema,
+	richTextAssetSchema,
+	htmlAssetSchema,
+	captionAssetSchema,
+	shapeAssetSchema,
+	lumaAssetSchema,
+	assetSchema,
+	tweenSchema,
+	cropSchema,
+	offsetSchema,
+	transitionSchema,
+	transformationSchema,
+	destinationsSchema,
+	sizeSchema
+} from "@shotstack/schemas/zod";
+import type { Seconds } from "@timing/types";
+import { z } from "zod";
+
 
 // ─── Primary Types (from external package) ─────────────────────────────────
 
@@ -49,8 +76,8 @@ export type Destination = components["schemas"]["Destinations"];
 // Runtime types where "auto", "end", and aliases are resolved to concrete values
 
 export type ResolvedClip = Omit<Clip, "start" | "length"> & {
-	start: number;
-	length: number;
+	start: Seconds;
+	length: Seconds;
 };
 
 export type ResolvedTrack = {
@@ -65,12 +92,38 @@ export type ResolvedEdit = Omit<Edit, "timeline"> & {
 
 // ─── Backward Compatibility Aliases ────────────────────────────────────────
 
+/** Alias for Edit type to avoid conflicts with SDK's Edit class */
+export type EditConfig = Edit;
 export type ClipAnchor = Clip["position"];
 export type HtmlAssetPosition = NonNullable<HtmlAsset["position"]>;
 export type Keyframe = Tween; // SDK previously called Tween "Keyframe"
 
+// ─── SDK-Extended Asset Types ───────────────────────────────────────────────
+// Extended types with additional SDK-specific properties not in external schema
+
+/** SDK-extended CaptionAsset with stroke, width, height, alignment */
+export type ExtendedCaptionAsset = CaptionAsset & {
+	stroke?: { width: number; color: string };
+	width?: number;
+	height?: number;
+	alignment?: { horizontal?: "left" | "center" | "right"; vertical?: "top" | "center" | "bottom" };
+};
+
+// ─── Internal Animation Types ───────────────────────────────────────────────
+// Keyframes with all required fields and numeric values for animation interpolation
+
+export interface NumericKeyframe {
+	start: number;
+	length: number;
+	from: number;
+	to: number;
+	interpolation?: Tween["interpolation"];
+	easing?: Tween["easing"];
+}
+
 // ─── Zod Schemas (for validation) ──────────────────────────────────────────
 
+// Re-export external schemas with SDK naming convention
 export {
 	editSchema as EditSchema,
 	timelineSchema as TimelineSchema,
@@ -93,4 +146,11 @@ export {
 	offsetSchema as OffsetSchema,
 	transitionSchema as TransitionSchema,
 	transformationSchema as TransformationSchema
-} from "@shotstack/schemas/zod";
+};
+
+// SDK-specific validation schemas (derived from external schemas)
+export const DestinationSchema = destinationsSchema;
+export const OutputSizeSchema = sizeSchema;
+export const OutputFormatSchema = outputSchema.shape.format;
+export const OutputFpsSchema = outputSchema.shape.fps.unwrap(); // unwrap optional
+export const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{8}$/);

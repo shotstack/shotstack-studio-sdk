@@ -1,8 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
-import type { ResolvedClip } from "@schemas/clip";
-import type { RichTextAsset } from "@schemas/rich-text-asset";
+import type { ResolvedClip , RichTextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
@@ -946,8 +945,10 @@ export class RichTextToolbar extends BaseToolbar {
 				} else {
 					this.fontColorPicker.setMode("color");
 					this.fontColorPicker.setColor(font?.color || "#000000", font?.opacity ?? 1);
-					if (font?.background) {
-						this.fontColorPicker.setHighlight(font.background);
+					// Check for SDK-extended background property (not in external schema)
+					const fontExt = font as typeof font & { background?: string };
+					if (fontExt?.background) {
+						this.fontColorPicker.setHighlight(fontExt.background);
 					}
 				}
 			}

@@ -1,6 +1,6 @@
 import { AudioPlayer } from "@canvas/players/audio-player";
 import { PlayerType } from "@canvas/players/player";
-import type { AudioAsset } from "@schemas/audio-asset";
+import type { AudioAsset } from "@schemas";
 import { Output, AudioSampleSource, AudioSample } from "mediabunny";
 
 export class AudioProcessor {

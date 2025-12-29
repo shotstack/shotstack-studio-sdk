@@ -1,8 +1,8 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import { getNestedValue } from "@core/shared/utils";
-import { type Seconds, ms, sec, toMs, toSec } from "@core/timing/types";
-import type { ResolvedClip } from "@schemas/clip";
+import type { Seconds } from "@core/timing/types";
+import type { ResolvedClip } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 
@@ -49,20 +49,21 @@ export class SetUpdatedClipCommand implements EditCommand {
 		const lengthChanged = this.storedFinalConfig.length !== this.storedInitialConfig?.length;
 
 		if (startChanged || lengthChanged) {
-			// Store initial timing for undo
+			// Store initial timing for undo (already in Seconds)
 			this.storedInitialTiming = {
-				start: toSec(this.clip.getStart()),
-				length: toSec(this.clip.getLength())
+				start: this.clip.getStart(),
+				length: this.clip.getLength()
 			};
 
+			// ResolvedClip.start/length are already Seconds
 			this.clip.setTimingIntent({
-				start: sec(this.storedFinalConfig.start),
-				length: sec(this.storedFinalConfig.length)
+				start: this.storedFinalConfig.start,
+				length: this.storedFinalConfig.length
 			});
 
 			this.clip.setResolvedTiming({
-				start: ms(this.storedFinalConfig.start * 1000),
-				length: ms(this.storedFinalConfig.length * 1000)
+				start: this.storedFinalConfig.start,
+				length: this.storedFinalConfig.length
 			});
 		}
 
@@ -106,15 +107,15 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		context.restoreClipConfiguration(this.clip, this.storedInitialConfig);
 
-		// Restore timing state if we modified it
+		// Restore timing state if we modified it (already in Seconds)
 		if (this.storedInitialTiming) {
 			this.clip.setTimingIntent({
 				start: this.storedInitialTiming.start,
 				length: this.storedInitialTiming.length
 			});
 			this.clip.setResolvedTiming({
-				start: toMs(this.storedInitialTiming.start),
-				length: toMs(this.storedInitialTiming.length)
+				start: this.storedInitialTiming.start,
+				length: this.storedInitialTiming.length
 			});
 		}
 

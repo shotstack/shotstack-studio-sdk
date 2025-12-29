@@ -1,6 +1,6 @@
+import { type ResolvedClip , type Keyframe } from "@schemas";
+
 import { type Size } from "../layouts/geometry";
-import { type ResolvedClip } from "../schemas/clip";
-import { type Keyframe } from "../schemas/keyframe";
 
 export type EffectKeyframeSet = {
 	offsetXKeyframes: Keyframe[];

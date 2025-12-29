@@ -177,7 +177,8 @@ export class ExportCoordinator {
 	}
 
 	private prepareConfig(fps: number): ExportConfig {
-		const size = this.edit.getEdit().output?.size || { width: 1920, height: 1080 };
+		const outputSize = this.edit.getEdit().output?.size;
+		const size = { width: outputSize?.width ?? 1920, height: outputSize?.height ?? 1080 };
 		const durationSec = this.edit.totalDuration / 1000;
 		return {
 			fps,

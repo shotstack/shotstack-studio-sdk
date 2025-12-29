@@ -1,9 +1,14 @@
-import { type Keyframe } from "../schemas/keyframe";
+import { type Keyframe, type NumericKeyframe } from "@schemas";
 
 import { CurveInterpolator } from "./curve-interpolator";
 
+/**
+ * Builds interpolatable keyframe sequences from external Keyframe data.
+ * Converts the external schema's optional/unknown typed keyframes into
+ * a normalized internal representation with guaranteed numeric values.
+ */
 export class KeyframeBuilder {
-	private readonly property: Keyframe[];
+	private readonly property: NumericKeyframe[];
 	private readonly length: number;
 
 	private readonly cubicBuilder: CurveInterpolator;
@@ -37,7 +42,7 @@ export class KeyframeBuilder {
 		}
 	}
 
-	private createKeyframes(value: Keyframe[] | number, length: number, initialValue = 0): Keyframe[] {
+	private createKeyframes(value: Keyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {
 		if (typeof value === "number") {
 			return [{ start: 0, length, from: value, to: value }];
 		}
@@ -57,13 +62,27 @@ export class KeyframeBuilder {
 		return this.insertFillerKeyframes(normalizedKeyframes, length, initialValue);
 	}
 
-	private createNormalizedKeyframes(keyframes: Keyframe[]): Keyframe[] {
+	/**
+	 * Converts external Keyframe[] to internal NumericKeyframe[].
+	 * - Filters out keyframes without required start/length
+	 * - Coerces from/to to numbers (defaults to 0 if not numeric)
+	 * - Converts seconds to milliseconds for internal timing
+	 */
+	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
 		return keyframes
+			.filter((kf): kf is Keyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
 			.toSorted((a, b) => a.start - b.start)
-			.map(keyframe => ({ ...keyframe, start: keyframe.start * 1000, length: keyframe.length * 1000 }));
+			.map(keyframe => ({
+				start: keyframe.start * 1000,
+				length: keyframe.length * 1000,
+				from: typeof keyframe.from === "number" ? keyframe.from : 0,
+				to: typeof keyframe.to === "number" ? keyframe.to : 0,
+				interpolation: keyframe.interpolation,
+				easing: keyframe.easing
+			}));
 	}
 
-	private validateKeyframes(keyframes: Keyframe[]): void {
+	private validateKeyframes(keyframes: NumericKeyframe[]): void {
 		for (let i = 0; i < keyframes.length; i += 1) {
 			const current = keyframes[i];
 			const next = keyframes[i + 1];
@@ -82,8 +101,8 @@ export class KeyframeBuilder {
 		}
 	}
 
-	private insertFillerKeyframes(keyframes: Keyframe[], length: number, initialValue = 0): Keyframe[] {
-		const updatedKeyframes: Keyframe[] = [];
+	private insertFillerKeyframes(keyframes: NumericKeyframe[], length: number, initialValue = 0): NumericKeyframe[] {
+		const updatedKeyframes: NumericKeyframe[] = [];
 
 		for (let i = 0; i < keyframes.length; i += 1) {
 			const current = keyframes[i];
@@ -91,7 +110,7 @@ export class KeyframeBuilder {
 
 			const shouldFillStart = i === 0 && current.start !== 0;
 			if (shouldFillStart) {
-				const fillerKeyframe: Keyframe = { start: 0, length: current.start, from: initialValue, to: current.from };
+				const fillerKeyframe: NumericKeyframe = { start: 0, length: current.start, from: initialValue, to: current.from };
 				updatedKeyframes.push(fillerKeyframe);
 			}
 
@@ -101,7 +120,7 @@ export class KeyframeBuilder {
 				const shouldFillEnd = current.start + current.length < length;
 				if (shouldFillEnd) {
 					const currentStart = current.start + current.length;
-					const fillerKeyframe: Keyframe = { start: currentStart, length: length - currentStart, from: current.to, to: current.to };
+					const fillerKeyframe: NumericKeyframe = { start: currentStart, length: length - currentStart, from: current.to, to: current.to };
 
 					updatedKeyframes.push(fillerKeyframe);
 				}
@@ -113,7 +132,7 @@ export class KeyframeBuilder {
 			if (shouldFillMiddle) {
 				const fillerStart = current.start + current.length;
 				const fillerLength = next.start - fillerStart;
-				const fillerKeyframe: Keyframe = { start: fillerStart, length: fillerLength, from: current.to, to: next.from };
+				const fillerKeyframe: NumericKeyframe = { start: fillerStart, length: fillerLength, from: current.to, to: next.from };
 				updatedKeyframes.push(fillerKeyframe);
 			}
 		}

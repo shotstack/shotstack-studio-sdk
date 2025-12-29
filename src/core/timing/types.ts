@@ -74,10 +74,11 @@ export interface TimingIntent {
 }
 
 /**
- * Resolved timing values in milliseconds.
- * Used for rendering and playback.
+ * Resolved timing values in seconds.
+ * Matches the external @shotstack/schemas unit convention.
+ * Conversion to milliseconds happens only in the Player layer for pixi rendering.
  */
 export interface ResolvedTiming {
-	start: Milliseconds;
-	length: Milliseconds;
+	start: Seconds;
+	length: Seconds;
 }

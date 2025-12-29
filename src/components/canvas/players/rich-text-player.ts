@@ -2,7 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { InternalEvent } from "@core/events/edit-events";
 import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
-import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
+import { RichTextAssetSchema, type RichTextAsset } from "@schemas";
 import { createTextEngine, type DrawOp } from "@shotstack/shotstack-canvas";
 import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
@@ -89,8 +89,10 @@ export class RichTextPlayer extends Player {
 		// Use explicit font.weight if set, otherwise fall back to parsed weight from family name
 		const explicitWeight = richTextAsset.font?.weight;
 		let fontWeight = parsedWeight;
-		if (explicitWeight) {
-			fontWeight = typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || parsedWeight : explicitWeight;
+		if (typeof explicitWeight === "string") {
+			fontWeight = parseInt(explicitWeight, 10) || parsedWeight;
+		} else if (typeof explicitWeight === "number") {
+			fontWeight = explicitWeight;
 		}
 
 		// Find matching timeline font for customFonts payload
@@ -226,8 +228,10 @@ export class RichTextPlayer extends Player {
 		// Use explicit weight from asset if set, otherwise use parsed weight from family name
 		const explicitWeight = richTextAsset.font?.weight;
 		let { fontWeight } = resolved;
-		if (explicitWeight) {
-			fontWeight = typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || resolved.fontWeight : explicitWeight;
+		if (typeof explicitWeight === "string") {
+			fontWeight = parseInt(explicitWeight, 10) || resolved.fontWeight;
+		} else if (typeof explicitWeight === "number") {
+			fontWeight = explicitWeight;
 		}
 
 		await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
@@ -275,8 +279,10 @@ export class RichTextPlayer extends Player {
 					// Use explicit weight from asset if set, otherwise use parsed weight from family name
 					const explicitWeight = richTextAsset.font?.weight;
 					let { fontWeight } = resolved;
-					if (explicitWeight) {
-						fontWeight = typeof explicitWeight === "string" ? parseInt(explicitWeight, 10) || resolved.fontWeight : explicitWeight;
+					if (typeof explicitWeight === "string") {
+						fontWeight = parseInt(explicitWeight, 10) || resolved.fontWeight;
+					} else if (typeof explicitWeight === "number") {
+						fontWeight = explicitWeight;
 					}
 					await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
 					await this.checkFontCapabilities(resolved.url);

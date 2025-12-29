@@ -1,7 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import { calculateTimelineEnd, resolveAutoStart } from "@core/timing/resolver";
-import { type Seconds, type TimingIntent, ms, sec, toMs } from "@core/timing/types";
+import { type Seconds, type TimingIntent, sec } from "@core/timing/types";
 
 import type { CommandContext, EditCommand } from "./types";
 
@@ -72,7 +72,8 @@ export class UpdateClipTimingCommand implements EditCommand {
 		this.updateClipConfiguration(this.player, newIntent);
 
 		// STEP 1: Resolve start FIRST (needed for correct length calculations)
-		const resolvedStart = newIntent.start === "auto" ? resolveAutoStart(this.trackIndex, this.clipIndex, context.getTracks()) : toMs(newIntent.start);
+		// resolveAutoStart now returns Seconds, newIntent.start is already Seconds
+		const resolvedStart: Seconds = newIntent.start === "auto" ? resolveAutoStart(this.trackIndex, this.clipIndex, context.getTracks()) : newIntent.start;
 
 		// STEP 2: Resolve length using the correct resolved start
 		if (newIntent.length === "auto") {
@@ -96,9 +97,9 @@ export class UpdateClipTimingCommand implements EditCommand {
 			// Track this clip for end-length updates
 			context.trackEndLengthClip(this.player);
 
-			// Resolve based on current timeline end using correct start
+			// Resolve based on current timeline end using correct start (all in Seconds)
 			const timelineEnd = calculateTimelineEnd(context.getTracks());
-			const resolvedLength = ms(Math.max(timelineEnd - resolvedStart, 100)); // Minimum 100ms
+			const resolvedLength = sec(Math.max(timelineEnd - resolvedStart, 0.1)); // Minimum 0.1 seconds
 
 			this.player.setResolvedTiming({
 				start: resolvedStart,
@@ -108,12 +109,12 @@ export class UpdateClipTimingCommand implements EditCommand {
 			this.player.reconfigureAfterRestore();
 			this.player.draw();
 		} else {
-			// Fixed length - resolve immediately
+			// Fixed length - resolve immediately (newIntent.length is already Seconds)
 			context.untrackEndLengthClip(this.player);
 
 			this.player.setResolvedTiming({
 				start: resolvedStart,
-				length: toMs(newIntent.length as Seconds)
+				length: newIntent.length
 			});
 
 			this.player.reconfigureAfterRestore();
@@ -169,11 +170,12 @@ export class UpdateClipTimingCommand implements EditCommand {
 		const config = player.clipConfiguration;
 
 		// Update config with explicit values (auto/end keep resolved numeric values)
+		// intent.start/length are already Seconds when numeric
 		if (intent.start !== "auto") {
-			config.start = intent.start as number;
+			config.start = intent.start;
 		}
 		if (intent.length !== "auto" && intent.length !== "end") {
-			config.length = intent.length as number;
+			config.length = intent.length;
 		}
 	}
 }

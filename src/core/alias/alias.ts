@@ -1,5 +1,4 @@
-import type { Clip } from "@schemas/clip";
-import type { Edit } from "@schemas/edit";
+import type { Clip , Edit } from "@schemas";
 
 const ALIAS_REFERENCE_REGEX = /^alias:\/\/([a-zA-Z0-9_-]+)$/;
 

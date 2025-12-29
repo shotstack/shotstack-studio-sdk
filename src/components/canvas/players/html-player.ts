@@ -1,7 +1,6 @@
 import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type ResolvedClip } from "@schemas/clip";
-import { type HtmlAsset, HtmlAssetPosition } from "@schemas/html-asset";
+import { type ResolvedClip , type HtmlAsset, HtmlAssetPosition } from "@schemas";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
@@ -163,7 +162,7 @@ export class HtmlPlayer extends Player {
 
 	private async parseDocument(): Promise<HtmlDocumentParseResult | null> {
 		const htmlAsset = this.clipConfiguration.asset as HtmlAsset;
-		const { html, css, position } = htmlAsset;
+		const { html, css = "", position } = htmlAsset;
 
 		if (!html.includes('data-html-type="text"')) {
 			console.warn("Unsupported html format.");

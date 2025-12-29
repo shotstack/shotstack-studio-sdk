@@ -1,4 +1,4 @@
-import { type Keyframe } from "../schemas/keyframe";
+import { type Keyframe } from "@schemas";
 
 import { KeyframeBuilder } from "./keyframe-builder";
 

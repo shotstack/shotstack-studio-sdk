@@ -1,7 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { serializeClipForExport, serializeEditForExport, type ClipExportData } from "../src/core/shared/serialize-edit";
-import { EditSchema } from "../src/core/schemas/edit";
-import type { ResolvedClip, Clip } from "../src/core/schemas/clip";
+import { EditSchema, type ResolvedClip, type Clip } from "../src/core/schemas";
 
 describe("serializeClipForExport", () => {
 	it("preserves timing intent string 'auto' for start", () => {

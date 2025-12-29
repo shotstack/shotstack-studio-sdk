@@ -1,5 +1,5 @@
 import type { Player } from "@canvas/players/player";
-import { type Seconds, sec, toMs } from "@core/timing/types";
+import { type Seconds, sec } from "@core/timing/types";
 
 import { MoveClipCommand } from "./move-clip-command";
 import type { EditCommand, CommandContext } from "./types";
@@ -59,7 +59,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 	private updateClipStart(clip: Player, newStart: Seconds): void {
 		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
 		clip.clipConfiguration.start = newStart;
-		clip.setResolvedTiming({ start: toMs(newStart), length: clip.getLength() });
+		clip.setResolvedTiming({ start: newStart, length: clip.getLength() });
 		clip.setTimingIntent({ start: newStart, length: clip.getTimingIntent().length });
 		clip.reconfigureAfterRestore();
 		clip.draw();
