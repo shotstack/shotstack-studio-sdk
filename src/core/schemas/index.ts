@@ -1,76 +1,96 @@
-// Asset
-export { AssetSchema } from "./asset";
-export type { Asset } from "./asset";
+/**
+ * Shotstack Schema Types
+ *
+ * This module exports types from @shotstack/schemas as the canonical source of truth
+ * for the Shotstack data model. SDK-specific "Resolved" types are defined locally
+ * for runtime values where "auto", "end", and aliases are resolved to concrete values.
+ *
+ * @see https://github.com/shotstack/oas-api-definition
+ */
 
-// Audio Asset
-export { AudioAssetUrlSchema, AudioAssetVolumeSchema, AudioAssetSchema } from "./audio-asset";
-export type { AudioAsset } from "./audio-asset";
+import type { components } from "@shotstack/schemas";
 
-// Caption Asset
+// ─── Primary Types (from external package) ─────────────────────────────────
+
+export type Edit = components["schemas"]["Edit"];
+export type Timeline = components["schemas"]["Timeline"];
+export type Track = components["schemas"]["Track"];
+export type Clip = components["schemas"]["Clip"];
+export type Output = components["schemas"]["Output"];
+export type Asset = components["schemas"]["Asset"];
+export type MergeField = components["schemas"]["MergeField"];
+export type Soundtrack = components["schemas"]["Soundtrack"];
+export type Font = components["schemas"]["Font"];
+
+// Asset types
+export type VideoAsset = components["schemas"]["VideoAsset"];
+export type AudioAsset = components["schemas"]["AudioAsset"];
+export type ImageAsset = components["schemas"]["ImageAsset"];
+export type TextAsset = components["schemas"]["TextAsset"];
+export type RichTextAsset = components["schemas"]["RichTextAsset"];
+export type HtmlAsset = components["schemas"]["HtmlAsset"];
+export type CaptionAsset = components["schemas"]["CaptionAsset"];
+export type ShapeAsset = components["schemas"]["ShapeAsset"];
+export type LumaAsset = components["schemas"]["LumaAsset"];
+export type TitleAsset = components["schemas"]["TitleAsset"];
+
+// Sub-types
+export type Crop = components["schemas"]["Crop"];
+export type Offset = components["schemas"]["Offset"];
+export type Transition = components["schemas"]["Transition"];
+export type Transformation = components["schemas"]["Transformation"];
+export type ChromaKey = components["schemas"]["ChromaKey"];
+export type Tween = components["schemas"]["Tween"];
+
+// Destination types (camelCase from external)
+export type Destination = components["schemas"]["Destinations"];
+
+// ─── SDK-Specific Resolved Types ───────────────────────────────────────────
+// Runtime types where "auto", "end", and aliases are resolved to concrete values
+
+export type ResolvedClip = Omit<Clip, "start" | "length"> & {
+	start: number;
+	length: number;
+};
+
+export type ResolvedTrack = {
+	clips: ResolvedClip[];
+};
+
+export type ResolvedEdit = Omit<Edit, "timeline"> & {
+	timeline: Omit<Edit["timeline"], "tracks"> & {
+		tracks: ResolvedTrack[];
+	};
+};
+
+// ─── Backward Compatibility Aliases ────────────────────────────────────────
+
+export type ClipAnchor = Clip["position"];
+export type HtmlAssetPosition = NonNullable<HtmlAsset["position"]>;
+export type Keyframe = Tween; // SDK previously called Tween "Keyframe"
+
+// ─── Zod Schemas (for validation) ──────────────────────────────────────────
+
 export {
-	CaptionAssetColorSchema,
-	CaptionAssetFontSchema,
-	CaptionAssetStrokeSchema,
-	CaptionAssetBackgroundSchema,
-	CaptionAssetAlignmentSchema,
-	CaptionAssetSchema
-} from "./caption-asset";
-export type { CaptionAsset } from "./caption-asset";
-
-// Clip
-export { ClipSchema } from "./clip";
-export type { Clip, ClipAnchor } from "./clip";
-
-// Edit, Timeline, Output, Fonts
-export { FontSourceUrlSchema, FontSourceSchema, TimelineSchema, OutputSchema, EditSchema } from "./edit";
-
-// HTML Asset
-export { HtmlAssetSchema } from "./html-asset";
-export type { HtmlAsset, HtmlAssetPosition } from "./html-asset";
-
-// Image Asset
-export { ImageAssetUrlSchema, ImageAssetCropSchema, ImageAssetSchema } from "./image-asset";
-export type { ImageAsset } from "./image-asset";
-
-// Keyframe
-export { KeyframeInterpolationSchema, KeyframeEasingSchema, KeyframeSchema } from "./keyframe";
-export type { Keyframe } from "./keyframe";
-
-// Luma Asset
-export { LumaAssetUrlSchema, LumaAssetSchema } from "./luma-asset";
-export type { LumaAsset } from "./luma-asset";
-
-// Rich Text Asset
-export { RichTextAssetSchema } from "./rich-text-asset";
-export type { RichTextAsset } from "./rich-text-asset";
-
-// Shape Asset
-export {
-	ShapeAssetColorSchema,
-	ShapeAssetRectangleSchema,
-	ShapeAssetCircleSchema,
-	ShapeAssetLineSchema,
-	ShapeAssetFillSchema,
-	ShapeAssetStrokeSchema,
-	ShapeAssetSchema
-} from "./shape-asset";
-export type { ShapeAsset } from "./shape-asset";
-
-// Text Asset
-export {
-	TextAssetColorSchema,
-	TextAssetFontSchema,
-	TextAssetAlignmentSchema,
-	TextAssetBackgroundSchema,
-	TextAssetStrokeSchema,
-	TextAssetSchema
-} from "./text-asset";
-export type { TextAsset } from "./text-asset";
-
-// Track
-export { TrackSchema } from "./track";
-export type { Track } from "./track";
-
-// Video Asset
-export { VideoAssetUrlSchema, VideoAssetCropSchema, VideoAssetVolumeSchema, VideoAssetSchema } from "./video-asset";
-export type { VideoAsset } from "./video-asset";
+	editSchema as EditSchema,
+	timelineSchema as TimelineSchema,
+	trackSchema as TrackSchema,
+	clipSchema as ClipSchema,
+	outputSchema as OutputSchema,
+	videoAssetSchema as VideoAssetSchema,
+	audioAssetSchema as AudioAssetSchema,
+	imageAssetSchema as ImageAssetSchema,
+	textAssetSchema as TextAssetSchema,
+	richTextAssetSchema as RichTextAssetSchema,
+	htmlAssetSchema as HtmlAssetSchema,
+	captionAssetSchema as CaptionAssetSchema,
+	shapeAssetSchema as ShapeAssetSchema,
+	lumaAssetSchema as LumaAssetSchema,
+	assetSchema as AssetSchema,
+	tweenSchema as TweenSchema,
+	tweenSchema as KeyframeSchema,
+	cropSchema as CropSchema,
+	offsetSchema as OffsetSchema,
+	transitionSchema as TransitionSchema,
+	transformationSchema as TransformationSchema
+} from "@shotstack/schemas/zod";

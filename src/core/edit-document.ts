@@ -15,8 +15,7 @@
 
 import type { Size } from "@layouts/geometry";
 
-import type { Clip, Track } from "./schemas";
-import type { Edit, Soundtrack } from "./schemas/edit";
+import type { Clip, Track, Edit, Soundtrack } from "./schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,9 +123,14 @@ export class EditDocument {
 
 	/**
 	 * Get output size (width/height)
+	 * @throws Error if size is not defined
 	 */
 	getSize(): Size {
-		return this.data.output.size;
+		const size = this.data.output.size;
+		if (!size?.width || !size?.height) {
+			throw new Error("Output size is not defined");
+		}
+		return { width: size.width, height: size.height };
 	}
 
 	/**
