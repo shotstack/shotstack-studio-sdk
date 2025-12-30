@@ -164,14 +164,23 @@ function createMockClip(assetType: string, overrides: Record<string, unknown> = 
 	let clipConfiguration: Record<string, unknown>;
 
 	if (assetType === "rich-text" || assetType === "text") {
+		// RichTextToolbar uses nested font object: asset.font.size, asset.font.weight, etc.
+		const fontOverrides = {
+			size: overrides.fontSize ?? 48,
+			weight: overrides.fontWeight ?? 400,
+			family: overrides.fontFamily ?? "Open Sans",
+			color: overrides.fontColor ?? "#ffffff"
+		};
 		clipConfiguration = {
 			asset: {
 				...baseAsset,
 				text: "Test text",
-				fontFamily: "Open Sans",
-				fontSize: 48,
-				fontWeight: 400,
-				fontColor: "#ffffff",
+				font: fontOverrides,
+				// Keep flat properties for backward compatibility with TextToolbar tests
+				fontFamily: overrides.fontFamily ?? "Open Sans",
+				fontSize: overrides.fontSize ?? 48,
+				fontWeight: overrides.fontWeight ?? 400,
+				fontColor: overrides.fontColor ?? "#ffffff",
 				...overrides
 			}
 		};
@@ -1019,17 +1028,51 @@ describe("RichTextToolbar", () => {
 		});
 	});
 
-	describe("bold toggle", () => {
+	describe("font weight dropdown", () => {
 		beforeEach(() => {
 			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: 400 }));
 		});
 
-		it("clicking bold toggles fontWeight", () => {
+		it("should render weight dropdown with current weight name", () => {
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
-			const boldBtn = container.querySelector('[data-action="bold"]');
-			simulateClick(boldBtn);
+			const weightPreview = container.querySelector("[data-weight-preview]");
+			expect(weightPreview?.textContent).toBe("Regular");
+		});
+
+		it("should display weight name for different weights", () => {
+			// Test with Bold weight (700)
+			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: 700 }));
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const weightPreview = container.querySelector("[data-weight-preview]");
+			expect(weightPreview?.textContent).toBe("Bold");
+		});
+
+		it("should open weight popup on dropdown click", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			const popup = container.querySelector("[data-weight-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should update clip weight when option selected", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			// Click Bold option (700)
+			const boldOption = container.querySelector('[data-weight="700"]');
+			simulateClick(boldOption);
 
 			// RichTextToolbar uses nested font object structure
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
@@ -1037,10 +1080,57 @@ describe("RichTextToolbar", () => {
 				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
-						font: expect.objectContaining({ weight: expect.any(String) })
+						font: expect.objectContaining({ weight: 700 })
 					})
 				})
 			);
+		});
+
+		it("should close popup after selection", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			const popup = container.querySelector("[data-weight-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+
+			// Select an option
+			const option = container.querySelector('[data-weight="500"]');
+			simulateClick(option);
+
+			expect(popup?.classList.contains("visible")).toBe(false);
+		});
+
+		it("should show checkmark on current weight", () => {
+			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: 500 }));
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			// Medium (500) should have active class
+			const mediumOption = container.querySelector('[data-weight="500"]');
+			expect(mediumOption?.classList.contains("active")).toBe(true);
+
+			// Regular (400) should not have active class
+			const regularOption = container.querySelector('[data-weight="400"]');
+			expect(regularOption?.classList.contains("active")).toBe(false);
+		});
+
+		it("should handle string weight values from clip", () => {
+			// Some clips may have weight as string "700" instead of number
+			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: "700" }));
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Should normalize and display correctly
+			const weightPreview = container.querySelector("[data-weight-preview]");
+			expect(weightPreview?.textContent).toBe("Bold");
 		});
 	});
 

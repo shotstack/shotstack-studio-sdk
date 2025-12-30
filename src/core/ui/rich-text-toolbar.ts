@@ -10,6 +10,7 @@ import { BackgroundColorPicker } from "./background-color-picker";
 import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
+import { StylePanel } from "./composites/StylePanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { FontColorPicker } from "./font-color-picker";
 import { FontPicker, type GoogleFont } from "./font-picker";
@@ -25,7 +26,6 @@ export class RichTextToolbar extends BaseToolbar {
 	private fontPicker: FontPicker | null = null;
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
-	private weightBtn: HTMLButtonElement | null = null;
 	private weightPopup: HTMLDivElement | null = null;
 	private weightPreview: HTMLSpanElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
@@ -73,19 +73,6 @@ export class RichTextToolbar extends BaseToolbar {
 	private fontColorPicker: FontColorPicker | null = null;
 	private colorDisplay: HTMLButtonElement | null = null;
 
-	private shadowPopup: HTMLDivElement | null = null;
-	private shadowToggle: HTMLInputElement | null = null;
-	private shadowOffsetXSlider: HTMLInputElement | null = null;
-	private shadowOffsetXValue: HTMLSpanElement | null = null;
-	private shadowOffsetYSlider: HTMLInputElement | null = null;
-	private shadowOffsetYValue: HTMLSpanElement | null = null;
-	private shadowBlurSlider: HTMLInputElement | null = null;
-	private shadowBlurValue: HTMLSpanElement | null = null;
-	private shadowColorInput: HTMLInputElement | null = null;
-	private shadowOpacitySlider: HTMLInputElement | null = null;
-	private shadowOpacityValue: HTMLSpanElement | null = null;
-	private lastShadowConfig: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number } | null = null;
-
 	private animationPopup: HTMLDivElement | null = null;
 	private animationDurationSlider: HTMLInputElement | null = null;
 	private animationDurationValue: HTMLSpanElement | null = null;
@@ -97,6 +84,8 @@ export class RichTextToolbar extends BaseToolbar {
 	private transitionPanel: TransitionPanel | null = null;
 	private effectPopup: HTMLDivElement | null = null;
 	private effectPanel: EffectPanel | null = null;
+	private stylePopup: HTMLDivElement | null = null;
+	private stylePanel: StylePanel | null = null;
 
 	// Bound handler for proper cleanup
 	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
@@ -132,12 +121,7 @@ export class RichTextToolbar extends BaseToolbar {
 			<div class="ss-toolbar-mode-divider"></div>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-					</svg>
-					<span>Text</span>
-				</button>
+				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">Text</button>
 				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
 					<div class="ss-toolbar-popup-header">Edit Text</div>
 					<div class="ss-toolbar-text-area-wrapper">
@@ -195,61 +179,6 @@ export class RichTextToolbar extends BaseToolbar {
 			</div>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="background-toggle" class="ss-toolbar-btn" title="Background Fill">
-					<svg width="16" height="16" viewBox="0 0 491.879 491.879" fill="currentColor">
-						<path d="M462.089,151.673h-88.967c2.115,10.658,2.743,21.353,1.806,31.918h85.05v247.93H212.051v-59.488l-11.615,11.609 c-5.921,5.733-12.882,10.113-20.304,13.591v36.4c0,16.423,13.363,29.79,29.791,29.79h252.166c16.425,0,29.79-13.367,29.79-29.79 V181.467C491.879,165.039,478.514,151.673,462.089,151.673z"/>
-						<path d="M333.156,201.627c-1.527-3.799-0.837-6.296,0.225-10.065c0.311-1.124,0.613-2.205,0.855-3.3 c3.189-14.43,1.178-31.357-5.57-46.378c-8.859-19.715-24.563-41.406-44.258-61.103c-32.759-32.773-67.686-52.324-93.457-52.324 c-9.418,0-16.406,2.624-21.658,6.136L9.937,192.753c-26.248,27.201,3.542,81.343,42.343,120.142 c32.738,32.738,67.667,52.289,93.419,52.289c13.563,0,22.081-5.506,26.943-10.192l109.896-109.863 c-0.998,3.653-1.478,6.683-1.478,9.243c0,20.097,16.359,36.459,36.475,36.459c20.115,0,36.494-16.362,36.494-36.459 C354.029,250.907,354.029,240.375,333.156,201.627z M146.649,326.792c-10.341-0.163-37.364-11.113-67.284-40.984 c-32.884-32.902-42.807-61.614-42.084-66.191L160.646,96.242c0.289,0.676,0.561,1.335,0.885,2.011 c8.842,19.712,24.559,41.422,44.256,61.118c20.645,20.645,43.046,36.556,63.225,45.079L146.649,326.792z M281.898,149.465 c-10.629,0-27.218-5.104-46.128-14.46l-2.88-2.723c-16.508-16.523-29.439-34.173-36.412-49.717c-3.4-7.634-4.445-12.88-4.622-15.75 c10.724,0.614,36.153,11.76,65.464,41.069c13.045,13.061,24.074,27.23,31.551,40.551 C287.005,149.127,284.632,149.465,281.898,149.465z"/>
-					</svg>
-				</button>
-				<div data-background-popup class="ss-toolbar-popup ss-toolbar-popup--background">
-					<div data-background-color-picker></div>
-				</div>
-			</div>
-
-			<div class="ss-toolbar-dropdown">
-				<button data-action="padding-toggle" class="ss-toolbar-btn" title="Padding">
-					<svg width="16" height="16" viewBox="0 0 15 15" fill="none">
-						<path fill-rule="evenodd" clip-rule="evenodd" d="M2.85714 2H12.1429C12.6162 2 13 2.38376 13 2.85714V12.1429C13 12.6162 12.6162 13 12.1429 13H2.85714C2.38376 13 2 12.6162 2 12.1429V2.85714C2 2.38376 2.38376 2 2.85714 2ZM1 2.85714C1 1.83147 1.83147 1 2.85714 1H12.1429C13.1685 1 14 1.83147 14 2.85714V12.1429C14 13.1685 13.1685 14 12.1429 14H2.85714C1.83147 14 1 13.1685 1 12.1429V2.85714ZM7.49988 5.00012C7.77602 5.00012 7.99988 4.77626 7.99988 4.50012C7.99988 4.22398 7.77602 4.00012 7.49988 4.00012C7.22374 4.00012 6.99988 4.22398 6.99988 4.50012C6.99988 4.77626 7.22374 5.00012 7.49988 5.00012ZM4.49988 11.0001C4.77602 11.0001 4.99988 10.7763 4.99988 10.5001C4.99988 10.224 4.77602 10.0001 4.49988 10.0001C4.22374 10.0001 3.99988 10.224 3.99988 10.5001C3.99988 10.7763 4.22374 11.0001 4.49988 11.0001ZM4.99988 7.50012C4.99988 7.77626 4.77602 8.00012 4.49988 8.00012C4.22374 8.00012 3.99988 7.77626 3.99988 7.50012C3.99988 7.22398 4.22374 7.00012 4.49988 7.00012C4.77602 7.00012 4.99988 7.22398 4.99988 7.50012ZM4.49988 5.00012C4.77602 5.00012 4.99988 4.77626 4.99988 4.50012C4.99988 4.22398 4.77602 4.00012 4.49988 4.00012C4.22374 4.00012 3.99988 4.22398 3.99988 4.50012C3.99988 4.77626 4.22374 5.00012 4.49988 5.00012ZM10.9999 10.5001C10.9999 10.7763 10.776 11.0001 10.4999 11.0001C10.2237 11.0001 9.99988 10.7763 9.99988 10.5001C9.99988 10.224 10.2237 10.0001 10.4999 10.0001C10.776 10.0001 10.9999 10.224 10.9999 10.5001ZM10.4999 8.00012C10.776 8.00012 10.9999 7.77626 10.9999 7.50012C10.9999 7.22398 10.776 7.00012 10.4999 7.00012C10.2237 7.00012 9.99988 7.22398 9.99988 7.50012C9.99988 7.77626 10.2237 8.00012 10.4999 8.00012ZM10.9999 4.50012C10.9999 4.77626 10.776 5.00012 10.4999 5.00012C10.2237 5.00012 9.99988 4.77626 9.99988 4.50012C9.99988 4.22398 10.2237 4.00012 10.4999 4.00012C10.776 4.00012 10.9999 4.22398 10.9999 4.50012ZM7.49988 11.0001C7.77602 11.0001 7.99988 10.7763 7.99988 10.5001C7.99988 10.224 7.77602 10.0001 7.49988 10.0001C7.22374 10.0001 6.99988 10.224 6.99988 10.5001C6.99988 10.7763 7.22374 11.0001 7.49988 11.0001Z" fill="currentColor"/>
-					</svg>
-				</button>
-				<div data-padding-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-					<div class="ss-toolbar-popup-header">Padding</div>
-
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Top</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-padding-top-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
-							<span data-padding-top-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Right</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-padding-right-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
-							<span data-padding-right-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Bottom</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-padding-bottom-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
-							<span data-padding-bottom-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Left</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-padding-left-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
-							<span data-padding-left-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="ss-toolbar-dropdown">
 				<button data-action="spacing-toggle" class="ss-toolbar-btn" title="Spacing">
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 						<path d="M17.952 15.75a.75.75 0 0 1 .535.238l2.147 2.146a1.255 1.255 0 0 1 0 1.77l-2.147 2.145a.75.75 0 0 1-1.06-1.06l1.22-1.22H5.352l1.22 1.22a.753.753 0 0 1 .019 1.078.752.752 0 0 1-1.08-.018l-2.146-2.146a1.255 1.255 0 0 1-.342-.64 1.253 1.253 0 0 1-.02-.225L3 19.018c0-.02.002-.041.004-.062a1.25 1.25 0 0 1 .09-.416 1.25 1.25 0 0 1 .27-.406l2.147-2.146a.751.751 0 0 1 1.279.53c0 .2-.08.39-.22.53l-1.22 1.22h13.298l-1.22-1.22a.752.752 0 0 1-.02-1.078.752.752 0 0 1 .544-.22ZM15.854 3c.725 0 1.313.588 1.313 1.313v1.31a.782.782 0 0 1-1.563 0v-.956a.104.104 0 0 0-.104-.104l-2.754.005.007 8.245c0 .252.206.457.459.457h.996a.782.782 0 0 1 0 1.563H9.736a.781.781 0 0 1 0-1.563h.996a.458.458 0 0 0 .458-.457l-.006-8.245-2.767-.005a.104.104 0 0 0-.104.104v.976a.781.781 0 0 1-1.563 0v-1.33C6.75 3.587 7.338 3 8.063 3h7.791Z"/>
@@ -285,93 +214,35 @@ export class RichTextToolbar extends BaseToolbar {
 				</div>
 			</div>
 
+			<div class="ss-toolbar-divider"></div>
+
+			<!-- Formatting Group -->
+			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
+				<svg data-align-icon width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/>
+				</svg>
+			</button>
+			<button data-action="transform" class="ss-toolbar-btn ss-toolbar-btn--text" title="Text transform">Aa</button>
+			<button data-action="underline" class="ss-toolbar-btn ss-toolbar-btn--text ss-toolbar-btn--underline" title="Underline">U</button>
+			<button data-action="linethrough" class="ss-toolbar-btn" title="Strikethrough">
+				<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+					<path d="M7.349 15.508c0 1.263.43 2.249 1.292 2.957.861.708 2.01 1.063 3.445 1.063 1.436 0 2.571-.355 3.407-1.063.836-.708 1.254-1.636 1.254-2.785 0-.885-.205-1.611-.614-2.18H18V12H6.432v1.5h7.175c.388.185.688.367.9.544.492.408.737.957.737 1.646 0 .753-.27 1.362-.813 1.828-.542.46-1.324.689-2.345.689-1.02 0-1.815-.227-2.383-.68-.561-.453-.842-1.126-.842-2.019v-.23H7.349v.23ZM8.351 11h2.918c-.667-.268-1.147-.523-1.441-.765-.473-.396-.709-.916-.709-1.56 0-.715.233-1.28.699-1.694.466-.415 1.193-.622 2.182-.622.983 0 1.723.242 2.22.727.498.485.747 1.117.747 1.895v.21h1.512v-.21c0-1.148-.405-2.093-1.215-2.833-.804-.74-1.892-1.11-3.264-1.11-1.372 0-2.447.348-3.225 1.043-.772.69-1.158 1.573-1.158 2.651 0 .948.245 1.704.734 2.268Z"/>
+				</svg>
+			</button>
+
+			<div class="ss-toolbar-divider"></div>
+
+			<!-- Box Styling Group - Consolidated Style Panel -->
 			<div class="ss-toolbar-dropdown">
-				<button data-action="border-toggle" class="ss-toolbar-btn" title="Border">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect x="5" y="5" width="14" height="14" rx="2.5"/>
-					</svg>
-				</button>
-				<div data-border-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Width</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-border-width-slider class="ss-toolbar-slider" min="0" max="20" step="1" value="0" />
-							<span data-border-width-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Color & Opacity</div>
-						<div class="ss-toolbar-popup-row">
-							<div class="ss-toolbar-color-wrap">
-								<input type="color" data-border-color class="ss-toolbar-color" value="#000000" />
-							</div>
-							<input type="range" data-border-opacity-slider class="ss-toolbar-slider" min="0" max="100" value="100" />
-							<span data-border-opacity-value class="ss-toolbar-popup-value">100</span>
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Corner Rounding</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-border-radius-slider class="ss-toolbar-slider" min="0" max="100" step="1" value="0" />
-							<span data-border-radius-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-				</div>
+				<button data-action="style-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Style">Style</button>
+				<div data-style-popup class="ss-toolbar-popup ss-toolbar-popup--style"></div>
 			</div>
 
-			<div class="ss-toolbar-dropdown">
-				<button data-action="shadow-toggle" class="ss-toolbar-btn" title="Text Shadow">
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-						<circle cx="6" cy="10" r="5.5" fill="currentColor" stroke="currentColor" fill-opacity="0.15"></circle>
-						<path stroke="currentColor" stroke-opacity="0.5" d="m3.68 14.973 6.594-6.594M2.26 13.722l6.233-6.233m-7.45 4.779 9.231-9.231M.479 10.16l7.124-7.123m-1.776 12.46 5.661-5.661"></path>
-						<circle cx="10" cy="6" r="5.5" fill="#18181b" stroke="currentColor"></circle>
-					</svg>
-				</button>
-				<div data-shadow-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-row">
-							<span class="ss-toolbar-popup-label">Enable Shadow</span>
-							<input type="checkbox" data-shadow-toggle class="ss-toolbar-checkbox" />
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Offset X</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-shadow-offset-x class="ss-toolbar-slider" min="-20" max="20" value="0" />
-							<span data-shadow-offset-x-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Offset Y</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-shadow-offset-y class="ss-toolbar-slider" min="-20" max="20" value="0" />
-							<span data-shadow-offset-y-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Blur</div>
-						<div class="ss-toolbar-popup-row">
-							<input type="range" data-shadow-blur class="ss-toolbar-slider" min="0" max="100" value="0" />
-							<span data-shadow-blur-value class="ss-toolbar-popup-value">0</span>
-						</div>
-					</div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Color & Opacity</div>
-						<div class="ss-toolbar-popup-row">
-							<div class="ss-toolbar-color-wrap">
-								<input type="color" data-shadow-color class="ss-toolbar-color" value="#000000" />
-							</div>
-							<input type="range" data-shadow-opacity class="ss-toolbar-slider" min="0" max="100" value="50" />
-							<span data-shadow-opacity-value class="ss-toolbar-popup-value">50</span>
-						</div>
-					</div>
-				</div>
-			</div>
+			<div class="ss-toolbar-divider"></div>
 
+			<!-- Animation & Effects Group -->
 			<div class="ss-toolbar-dropdown">
-				<button data-action="animation-toggle" class="ss-toolbar-btn ss-toolbar-btn--text" title="Animation" style="width: auto; padding: 0 8px;">
-					Animate
-				</button>
+				<button data-action="animation-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Animation">Animate</button>
 				<div data-animation-popup class="ss-toolbar-popup ss-toolbar-popup--animation">
 					<div class="ss-toolbar-popup-section">
 						<div class="ss-toolbar-popup-label">Preset</div>
@@ -412,45 +283,18 @@ export class RichTextToolbar extends BaseToolbar {
 			</div>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="transition-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Transition">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/>
-					</svg>
-					<span>Transition</span>
-				</button>
+				<button data-action="transition-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Transition">Transition</button>
 				<div data-transition-popup class="ss-toolbar-popup ss-toolbar-popup--transition"></div>
 			</div>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="effect-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Effect">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-					</svg>
-					<span>Effect</span>
-				</button>
+				<button data-action="effect-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Effect">Effect</button>
 				<div data-effect-popup class="ss-toolbar-popup ss-toolbar-popup--effect"></div>
 			</div>
-
-			<div class="ss-toolbar-divider"></div>
-
-			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
-				<svg data-align-icon width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/>
-				</svg>
-			</button>
-
-			<button data-action="transform" class="ss-toolbar-btn ss-toolbar-btn--text" title="Text transform">Aa</button>
-			<button data-action="underline" class="ss-toolbar-btn ss-toolbar-btn--text ss-toolbar-btn--underline" title="Underline">U</button>
-			<button data-action="linethrough" class="ss-toolbar-btn" title="Strikethrough">
-				<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-					<path d="M7.349 15.508c0 1.263.43 2.249 1.292 2.957.861.708 2.01 1.063 3.445 1.063 1.436 0 2.571-.355 3.407-1.063.836-.708 1.254-1.636 1.254-2.785 0-.885-.205-1.611-.614-2.18H18V12H6.432v1.5h7.175c.388.185.688.367.9.544.492.408.737.957.737 1.646 0 .753-.27 1.362-.813 1.828-.542.46-1.324.689-2.345.689-1.02 0-1.815-.227-2.383-.68-.561-.453-.842-1.126-.842-2.019v-.23H7.349v.23ZM8.351 11h2.918c-.667-.268-1.147-.523-1.441-.765-.473-.396-.709-.916-.709-1.56 0-.715.233-1.28.699-1.694.466-.415 1.193-.622 2.182-.622.983 0 1.723.242 2.22.727.498.485.747 1.117.747 1.895v.21h1.512v-.21c0-1.148-.405-2.093-1.215-2.833-.804-.74-1.892-1.11-3.264-1.11-1.372 0-2.447.348-3.225 1.043-.772.69-1.158 1.573-1.158 2.651 0 .948.245 1.704.734 2.268Z"/>
-				</svg>
-			</button>
 		`;
 
 		this.sizeInput = this.container.querySelector("[data-size-input]");
 		this.sizePopup = this.container.querySelector("[data-size-popup]");
-		this.weightBtn = this.container.querySelector("[data-action='weight-toggle']");
 		this.weightPopup = this.container.querySelector("[data-weight-popup]");
 		this.weightPreview = this.container.querySelector("[data-weight-preview]");
 		this.buildWeightPopup();
@@ -552,63 +396,6 @@ export class RichTextToolbar extends BaseToolbar {
 			this.updateBorderProperty({ radius });
 		});
 
-		// Shadow controls
-		this.shadowPopup = this.container.querySelector("[data-shadow-popup]");
-		this.shadowToggle = this.container.querySelector("[data-shadow-toggle]");
-		this.shadowOffsetXSlider = this.container.querySelector("[data-shadow-offset-x]");
-		this.shadowOffsetXValue = this.container.querySelector("[data-shadow-offset-x-value]");
-		this.shadowOffsetYSlider = this.container.querySelector("[data-shadow-offset-y]");
-		this.shadowOffsetYValue = this.container.querySelector("[data-shadow-offset-y-value]");
-		this.shadowBlurSlider = this.container.querySelector("[data-shadow-blur]");
-		this.shadowBlurValue = this.container.querySelector("[data-shadow-blur-value]");
-		this.shadowColorInput = this.container.querySelector("[data-shadow-color]");
-		this.shadowOpacitySlider = this.container.querySelector("[data-shadow-opacity]");
-		this.shadowOpacityValue = this.container.querySelector("[data-shadow-opacity-value]");
-
-		this.shadowToggle?.addEventListener("change", e => {
-			const enabled = (e.target as HTMLInputElement).checked;
-			if (enabled) {
-				// Restore previous config or use defaults
-				const config = this.lastShadowConfig || { offsetX: 2, offsetY: 2, blur: 4, color: "#000000", opacity: 0.5 };
-				this.updateShadowProperty(config);
-			} else {
-				// Store current config before disabling
-				const asset = this.getCurrentAsset();
-				if (asset?.shadow) {
-					this.lastShadowConfig = { ...asset.shadow };
-				}
-				this.updateClipProperty({ shadow: undefined });
-			}
-		});
-
-		this.shadowOffsetXSlider?.addEventListener("input", e => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.shadowOffsetXValue) this.shadowOffsetXValue.textContent = String(value);
-			this.updateShadowProperty({ offsetX: value });
-		});
-
-		this.shadowOffsetYSlider?.addEventListener("input", e => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.shadowOffsetYValue) this.shadowOffsetYValue.textContent = String(value);
-			this.updateShadowProperty({ offsetY: value });
-		});
-
-		this.shadowBlurSlider?.addEventListener("input", e => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.shadowBlurValue) this.shadowBlurValue.textContent = String(value);
-			this.updateShadowProperty({ blur: value });
-		});
-
-		this.shadowColorInput?.addEventListener("input", e => {
-			this.updateShadowProperty({ color: (e.target as HTMLInputElement).value });
-		});
-
-		this.shadowOpacitySlider?.addEventListener("input", e => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.shadowOpacityValue) this.shadowOpacityValue.textContent = String(value);
-			this.updateShadowProperty({ opacity: value / 100 });
-		});
-
 		// Animation controls
 		this.animationPopup = this.container.querySelector("[data-animation-popup]");
 		this.animationDurationSlider = this.container.querySelector("[data-animation-duration]");
@@ -671,15 +458,45 @@ export class RichTextToolbar extends BaseToolbar {
 			});
 		});
 
-		this.backgroundPopup = this.container.querySelector("[data-background-popup]");
-		const backgroundPickerContainer = this.container.querySelector("[data-background-color-picker]");
-
-		if (backgroundPickerContainer) {
-			this.backgroundColorPicker = new BackgroundColorPicker();
-			this.backgroundColorPicker.mount(backgroundPickerContainer as HTMLElement);
-			this.backgroundColorPicker.onChange((color, opacity) => {
-				this.updateBackgroundProperty({ color, opacity });
+		// Mount StylePanel composite (consolidated fill/border/padding/shadow)
+		this.stylePopup = this.container.querySelector("[data-style-popup]");
+		if (this.stylePopup) {
+			this.stylePanel = new StylePanel();
+			this.stylePanel.onBorderChange(border => {
+				this.updateBorderProperty({
+					width: border.width,
+					color: border.color,
+					opacity: border.opacity / 100,
+					radius: border.radius
+				});
 			});
+			this.stylePanel.onPaddingChange(padding => {
+				this.updatePaddingProperty(padding);
+			});
+			this.stylePanel.onShadowChange(shadow => {
+				if (shadow.enabled) {
+					this.updateShadowProperty({
+						offsetX: shadow.offsetX,
+						offsetY: shadow.offsetY,
+						blur: shadow.blur,
+						color: shadow.color,
+						opacity: shadow.opacity / 100
+					});
+				} else {
+					this.updateClipProperty({ shadow: undefined });
+				}
+			});
+			this.stylePanel.mount(this.stylePopup);
+
+			// Mount BackgroundColorPicker inside StylePanel's fill tab
+			const fillMount = this.stylePanel.getFillColorPickerMount();
+			if (fillMount) {
+				this.backgroundColorPicker = new BackgroundColorPicker();
+				this.backgroundColorPicker.mount(fillMount);
+				this.backgroundColorPicker.onChange((color, opacity) => {
+					this.updateBackgroundProperty({ color, opacity });
+				});
+			}
 		}
 
 		// Padding controls
@@ -810,17 +627,8 @@ export class RichTextToolbar extends BaseToolbar {
 			case "spacing-toggle":
 				this.toggleSpacingPopup();
 				break;
-			case "border-toggle":
-				this.toggleBorderPopup();
-				break;
-			case "shadow-toggle":
-				this.toggleShadowPopup();
-				break;
-			case "background-toggle":
-				this.toggleBackgroundPopup();
-				break;
-			case "padding-toggle":
-				this.togglePaddingPopup();
+			case "style-toggle":
+				this.togglePopup(this.stylePopup);
 				break;
 			case "font-color-toggle":
 				this.toggleFontColorPopup();
@@ -990,34 +798,11 @@ export class RichTextToolbar extends BaseToolbar {
 		this.togglePopup(this.spacingPopup);
 	}
 
-	private toggleBorderPopup(): void {
-		this.togglePopup(this.borderPopup);
-	}
-
-	private toggleShadowPopup(): void {
-		this.togglePopup(this.shadowPopup);
-	}
-
 	private toggleAnimationPopup(): void {
 		this.togglePopup(this.animationPopup, () => {
 			const asset = this.getCurrentAsset();
 			this.updateAnimationSections(asset?.animation?.preset);
 		});
-	}
-
-	private toggleBackgroundPopup(): void {
-		this.togglePopup(this.backgroundPopup, () => {
-			if (this.backgroundColorPicker) {
-				const asset = this.getCurrentAsset();
-				const background = asset?.background;
-				this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
-				this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
-			}
-		});
-	}
-
-	private togglePaddingPopup(): void {
-		this.togglePopup(this.paddingPopup);
 	}
 
 	private toggleFontColorPopup(): void {
@@ -1502,10 +1287,7 @@ export class RichTextToolbar extends BaseToolbar {
 			this.sizePopup,
 			this.weightPopup,
 			this.spacingPopup,
-			this.borderPopup,
-			this.shadowPopup,
-			this.backgroundPopup,
-			this.paddingPopup,
+			this.stylePopup,
 			this.fontPopup,
 			this.textEditPopup,
 			this.fontColorPopup,
@@ -1568,50 +1350,36 @@ export class RichTextToolbar extends BaseToolbar {
 		const isLinethrough = asset.style?.textDecoration === "line-through";
 		this.setButtonActive(this.linethroughBtn, isLinethrough);
 
-		const border = asset.border || { width: 0, color: "#000000", opacity: 1, radius: 0 };
-		if (this.borderWidthSlider && this.borderWidthValue) {
-			this.borderWidthSlider.value = String(border.width);
-			this.borderWidthValue.textContent = String(border.width);
-		}
-		if (this.borderColorInput) {
-			this.borderColorInput.value = border.color;
-		}
-		if (this.borderOpacitySlider && this.borderOpacityValue) {
-			const opacityPercent = Math.round(border.opacity * 100);
-			this.borderOpacitySlider.value = String(opacityPercent);
-			this.borderOpacityValue.textContent = String(opacityPercent);
-		}
-		if (this.borderRadiusSlider && this.borderRadiusValue) {
-			this.borderRadiusSlider.value = String(border.radius);
-			this.borderRadiusValue.textContent = String(border.radius);
+		// Sync StylePanel (consolidated border/padding/shadow/fill)
+		if (this.stylePanel) {
+			// Border
+			const border = asset.border || { width: 0, color: "#000000", opacity: 1, radius: 0 };
+			this.stylePanel.setBorderState({
+				width: border.width,
+				color: border.color,
+				opacity: Math.round(border.opacity * 100),
+				radius: border.radius
+			});
+
+			// Shadow (blur fixed at 4 - canvas only checks blur > 0, doesn't implement actual blur)
+			const { shadow } = asset;
+			this.stylePanel.setShadowState({
+				enabled: !!shadow,
+				offsetX: shadow?.offsetX ?? 0,
+				offsetY: shadow?.offsetY ?? 0,
+				blur: shadow?.blur ?? 4,
+				color: shadow?.color ?? "#000000",
+				opacity: shadow ? Math.round(shadow.opacity * 100) : 50
+			});
+
+			// Padding (handled below, needs special normalization)
 		}
 
-		// Shadow
-		const { shadow } = asset;
-		if (this.shadowToggle) {
-			this.shadowToggle.checked = !!shadow;
-		}
-		if (shadow) {
-			if (this.shadowOffsetXSlider && this.shadowOffsetXValue) {
-				this.shadowOffsetXSlider.value = String(shadow.offsetX);
-				this.shadowOffsetXValue.textContent = String(shadow.offsetX);
-			}
-			if (this.shadowOffsetYSlider && this.shadowOffsetYValue) {
-				this.shadowOffsetYSlider.value = String(shadow.offsetY);
-				this.shadowOffsetYValue.textContent = String(shadow.offsetY);
-			}
-			if (this.shadowBlurSlider && this.shadowBlurValue) {
-				this.shadowBlurSlider.value = String(shadow.blur);
-				this.shadowBlurValue.textContent = String(shadow.blur);
-			}
-			if (this.shadowColorInput) {
-				this.shadowColorInput.value = shadow.color;
-			}
-			if (this.shadowOpacitySlider && this.shadowOpacityValue) {
-				const opacityPercent = Math.round(shadow.opacity * 100);
-				this.shadowOpacitySlider.value = String(opacityPercent);
-				this.shadowOpacityValue.textContent = String(opacityPercent);
-			}
+		// Background fill sync
+		if (this.backgroundColorPicker) {
+			const { background } = asset;
+			this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
+			this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
 		}
 
 		// Animation
@@ -1632,38 +1400,17 @@ export class RichTextToolbar extends BaseToolbar {
 		});
 		this.updateAnimationSections(animation?.preset);
 
-		// Padding
-		if (this.paddingTopSlider && this.paddingRightSlider && this.paddingBottomSlider && this.paddingLeftSlider) {
-			let top = 0;
-			let right = 0;
-			let bottom = 0;
-			let left = 0;
-
-			if (typeof asset.padding === "number") {
-				// Uniform padding
-				top = asset.padding;
-				right = asset.padding;
-				bottom = asset.padding;
-				left = asset.padding;
-			} else if (asset.padding) {
-				// Object padding
-				top = asset.padding.top ?? 0;
-				right = asset.padding.right ?? 0;
-				bottom = asset.padding.bottom ?? 0;
-				left = asset.padding.left ?? 0;
-			}
-
-			this.paddingTopSlider.value = String(top);
-			if (this.paddingTopValue) this.paddingTopValue.textContent = String(top);
-
-			this.paddingRightSlider.value = String(right);
-			if (this.paddingRightValue) this.paddingRightValue.textContent = String(right);
-
-			this.paddingBottomSlider.value = String(bottom);
-			if (this.paddingBottomValue) this.paddingBottomValue.textContent = String(bottom);
-
-			this.paddingLeftSlider.value = String(left);
-			if (this.paddingLeftValue) this.paddingLeftValue.textContent = String(left);
+		// Padding - sync with StylePanel
+		if (this.stylePanel) {
+			const padding = typeof asset.padding === "number"
+				? { top: asset.padding, right: asset.padding, bottom: asset.padding, left: asset.padding }
+				: {
+					top: asset.padding?.top ?? 0,
+					right: asset.padding?.right ?? 0,
+					bottom: asset.padding?.bottom ?? 0,
+					left: asset.padding?.left ?? 0
+				};
+			this.stylePanel.setPaddingState(padding);
 		}
 
 		// Get clip for transition and effect values
@@ -1683,7 +1430,6 @@ export class RichTextToolbar extends BaseToolbar {
 		super.dispose();
 		this.sizeInput = null;
 		this.sizePopup = null;
-		this.weightBtn = null;
 		this.weightPopup = null;
 		this.weightPreview = null;
 		this.fontPopup = null;
@@ -1699,6 +1445,9 @@ export class RichTextToolbar extends BaseToolbar {
 		this.spacingPopup = null;
 		this.spacingPanel?.dispose();
 		this.spacingPanel = null;
+		this.stylePopup = null;
+		this.stylePanel?.dispose();
+		this.stylePanel = null;
 		this.anchorTopBtn = null;
 		this.anchorMiddleBtn = null;
 		this.anchorBottomBtn = null;
@@ -1720,19 +1469,6 @@ export class RichTextToolbar extends BaseToolbar {
 		this.borderOpacityValue = null;
 		this.borderRadiusSlider = null;
 		this.borderRadiusValue = null;
-
-		this.shadowPopup = null;
-		this.shadowToggle = null;
-		this.shadowOffsetXSlider = null;
-		this.shadowOffsetXValue = null;
-		this.shadowOffsetYSlider = null;
-		this.shadowOffsetYValue = null;
-		this.shadowBlurSlider = null;
-		this.shadowBlurValue = null;
-		this.shadowColorInput = null;
-		this.shadowOpacitySlider = null;
-		this.shadowOpacityValue = null;
-		this.lastShadowConfig = null;
 
 		this.animationPopup = null;
 		this.animationDurationSlider = null;
