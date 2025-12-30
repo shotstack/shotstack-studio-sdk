@@ -3,49 +3,12 @@ import { InternalEvent } from "@core/events/edit-events";
 import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas";
-import { createTextEngine, type DrawOp } from "@shotstack/shotstack-canvas";
+import { createTextEngine, type CanvasRichTextAsset, type DrawOp } from "@shotstack/shotstack-canvas";
 import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
 
-// Types for the text engine from @shotstack/shotstack-canvas
-type FontDescriptor = { family: string; weight: string | number };
-type TextRenderer = { render: (ops: DrawOp[]) => Promise<void> };
-type TextEngine = {
-	validate: (asset: unknown) => { value: ValidatedRichTextAsset; error?: unknown };
-	renderFrame: (asset: ValidatedRichTextAsset, time: number) => Promise<DrawOp[]>;
-	createRenderer: (canvas: HTMLCanvasElement) => TextRenderer;
-	registerFontFromUrl: (url: string, desc: FontDescriptor) => Promise<void>;
-	registerFontFromFile: (path: string, desc: FontDescriptor) => Promise<void>;
-	destroy: () => void;
-};
-type ValidatedRichTextAsset = {
-	type: "rich-text";
-	text: string;
-	width: number;
-	height: number;
-	font: { family: string; size: number; weight: string | number; color: string; opacity: number };
-	style: {
-		letterSpacing: number;
-		lineHeight: number;
-		textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
-		textDecoration: "none" | "underline" | "line-through";
-		gradient?: { type: "linear" | "radial"; angle: number; stops: { offset: number; color: string }[] };
-	};
-	stroke: { width: number; color: string; opacity: number };
-	shadow: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
-	background: { color?: string; opacity: number; borderRadius: number };
-	border: { width: number; color: string; opacity: number; radius: number };
-	padding?: number | { top: number; right: number; bottom: number; left: number };
-	align: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };
-	animation: {
-		preset: "fadeIn" | "slideIn" | "typewriter" | "shift" | "ascend" | "movingLetters";
-		speed: number;
-		duration?: number;
-		style?: "character" | "word";
-		direction?: "left" | "right" | "up" | "down";
-	};
-	customFonts: { src: string; family: string; weight?: string | number; originalFamily?: string }[];
-};
+// Derive TextEngine type from createTextEngine return type
+type TextEngine = Awaited<ReturnType<typeof createTextEngine>>;
 
 const extractFontNames = (url: string): { full: string; base: string } => {
 	const filename = url.split("/").pop() || "";
@@ -61,14 +24,14 @@ const extractFontNames = (url: string): { full: string; base: string } => {
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
 	private textEngine: TextEngine | null = null;
-	private renderer: TextRenderer | null = null;
+	private renderer: ReturnType<TextEngine["createRenderer"]> | null = null;
 	private canvas: HTMLCanvasElement | null = null;
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
 	private lastRenderedTime: number = -1;
 	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
-	private validatedAsset: ValidatedRichTextAsset | null = null;
+	private validatedAsset: CanvasRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
 
 	constructor(edit: any, clipConfiguration: any) {
