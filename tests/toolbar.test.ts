@@ -1181,3 +1181,52 @@ describe("TextToolbar", () => {
 		});
 	});
 });
+
+// ============================================================================
+// Mode Toggle Regression Tests
+// ============================================================================
+
+describe("Mode Toggle (Regression)", () => {
+	/**
+	 * REGRESSION TEST: Mode toggle buttons must be findable via document.querySelectorAll
+	 *
+	 * Bug: Click handlers in ui-controller.ts queried this.container but toolbars
+	 * were mounted to canvasContainer, causing buttons to not be found.
+	 * Fix: Changed query to use document.querySelectorAll instead of this.container
+	 */
+	describe("button discoverability for click handling", () => {
+		it("mode toggle buttons are discoverable via document.querySelectorAll after mount", async () => {
+			const mockEdit = createMockEdit();
+			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+			const toolbar = new MediaToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			// This simulates what ui-controller.ts does to find buttons
+			const buttons = document.querySelectorAll(".ss-toolbar-mode-btn");
+			expect(buttons.length).toBeGreaterThan(0);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("mode toggle buttons have data-mode attribute for click handling", async () => {
+			const mockEdit = createMockEdit();
+			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+			const toolbar = new MediaToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			const buttons = container.querySelectorAll(".ss-toolbar-mode-btn");
+			buttons.forEach(btn => {
+				const mode = (btn as HTMLElement).dataset["mode"];
+				expect(mode === "asset" || mode === "clip").toBe(true);
+			});
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+});

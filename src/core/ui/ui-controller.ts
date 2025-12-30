@@ -315,8 +315,9 @@ export class UIController {
 		}
 
 		// Wire up mode toggle buttons (after DOM is ready)
+		// Use document.querySelectorAll since toolbars are mounted to canvasContainer, not this.container
 		requestAnimationFrame(() => {
-			this.container?.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
+			document.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
 				btn.addEventListener("click", () => {
 					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
 					if (mode) {
