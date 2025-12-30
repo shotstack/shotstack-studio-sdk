@@ -29,10 +29,7 @@ export const FONT_PATHS: Record<string, string> = {
 	"Roboto Light": `${FONT_CDN}/roboto-light.ttf`,
 	"Roboto Medium": `${FONT_CDN}/roboto-medium.ttf`,
 	"Sue Ellen Francisco": `${FONT_CDN}/sueellenfrancisco-regular.ttf`,
-	"Work Sans": `${FONT_CDN}/worksans-regular.ttf`,
-	"Work Sans Bold": `${FONT_CDN}/worksans-bold.ttf`,
-	"Work Sans Light": `${FONT_CDN}/worksans-light.ttf`,
-	"Work Sans SemiBold": `${FONT_CDN}/worksans-semibold.ttf`
+	"Work Sans": `${FONT_CDN}/worksans.ttf`
 };
 
 /** Alternative names (camelCase, etc.) mapped to canonical names */
@@ -79,13 +76,6 @@ export function parseFontFamily(fontFamily: string): { baseFontFamily: string; f
 
 /**
  * Resolve a font family name to its file path
- * Handles Google Fonts (by filename hash or display name), built-in fonts, aliases, and weight modifiers
- *
- * Priority order:
- * 1. Google Fonts by filename hash (e.g., "UcC73FwrK3iLTeHuS_fvQtMwCp50KnMw")
- * 2. Google Fonts by display name (e.g., "Inter")
- * 3. Built-in fonts by exact name
- * 4. Built-in fonts by alias or base name
  */
 export function resolveFontPath(fontFamily: string): string | undefined {
 	// Try Google Fonts by filename hash (from FontPicker selection)
@@ -94,21 +84,25 @@ export function resolveFontPath(fontFamily: string): string | undefined {
 		return googleFontByFilename.url;
 	}
 
-	// Try Google Fonts by display name (for backward compatibility)
-	const googleFontByName = GOOGLE_FONTS_BY_NAME.get(fontFamily);
-	if (googleFontByName) {
-		return googleFontByName.url;
-	}
-
 	// Try built-in fonts by exact match (e.g., "Montserrat ExtraBold")
 	if (FONT_PATHS[fontFamily]) {
 		return FONT_PATHS[fontFamily];
 	}
 
-	// Fall back to base family name for built-in fonts
+	// Try built-in fonts by alias or base name
 	const { baseFontFamily } = parseFontFamily(fontFamily);
 	const resolvedName = FONT_ALIASES[baseFontFamily] ?? baseFontFamily;
-	return FONT_PATHS[resolvedName];
+	if (FONT_PATHS[resolvedName]) {
+		return FONT_PATHS[resolvedName];
+	}
+
+	// Fall back to Google Fonts by display name (for fonts not in built-in list)
+	const googleFontByName = GOOGLE_FONTS_BY_NAME.get(fontFamily);
+	if (googleFontByName) {
+		return googleFontByName.url;
+	}
+
+	return undefined;
 }
 
 /**

@@ -1,4 +1,3 @@
-import { sec } from "@core/timing/types";
 import { Timeline } from "@timeline/index";
 
 import { Edit, Canvas, Controls, VideoExporter, UIController } from "./index";

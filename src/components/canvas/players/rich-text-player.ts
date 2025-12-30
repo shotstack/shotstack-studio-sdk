@@ -3,7 +3,7 @@ import { InternalEvent } from "@core/events/edit-events";
 import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas";
-import { createTextEngine, type CanvasRichTextAsset, type DrawOp } from "@shotstack/shotstack-canvas";
+import { createTextEngine, type CanvasRichTextAsset } from "@shotstack/shotstack-canvas";
 import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
 
