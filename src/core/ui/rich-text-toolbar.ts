@@ -25,7 +25,9 @@ export class RichTextToolbar extends BaseToolbar {
 	private fontPicker: FontPicker | null = null;
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
-	private boldBtn: HTMLButtonElement | null = null;
+	private weightBtn: HTMLButtonElement | null = null;
+	private weightPopup: HTMLDivElement | null = null;
+	private weightPreview: HTMLSpanElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
 	private spacingPanel: SpacingPanel | null = null;
 	private anchorTopBtn: HTMLButtonElement | null = null;
@@ -165,7 +167,15 @@ export class RichTextToolbar extends BaseToolbar {
 				</button>
 			</div>
 
-			<button data-action="bold" class="ss-toolbar-btn ss-toolbar-btn--text" title="Bold">B</button>
+			<div class="ss-toolbar-dropdown ss-toolbar-dropdown--weight">
+				<button data-action="weight-toggle" class="ss-toolbar-font-btn ss-toolbar-font-btn--weight" title="Font weight">
+					<span data-weight-preview>Regular</span>
+					<svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5;">
+						<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+					</svg>
+				</button>
+				<div data-weight-popup class="ss-toolbar-popup ss-toolbar-popup--weight"></div>
+			</div>
 
 			<div class="ss-toolbar-dropdown">
 				<button data-action="font-toggle" class="ss-toolbar-font-btn" title="Font">
@@ -440,7 +450,10 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.sizeInput = this.container.querySelector("[data-size-input]");
 		this.sizePopup = this.container.querySelector("[data-size-popup]");
-		this.boldBtn = this.container.querySelector("[data-action='bold']");
+		this.weightBtn = this.container.querySelector("[data-action='weight-toggle']");
+		this.weightPopup = this.container.querySelector("[data-weight-popup]");
+		this.weightPreview = this.container.querySelector("[data-weight-preview]");
+		this.buildWeightPopup();
 		this.fontPopup = this.container.querySelector("[data-font-popup]");
 		this.fontPreview = this.container.querySelector("[data-font-preview]");
 		this.alignIcon = this.container.querySelector("[data-align-icon]");
@@ -785,8 +798,8 @@ export class RichTextToolbar extends BaseToolbar {
 			case "size-up":
 				this.updateSize((asset.font?.size ?? 48) + 4);
 				break;
-			case "bold":
-				this.toggleBold(asset);
+			case "weight-toggle":
+				this.toggleWeightPopup();
 				break;
 			case "font-toggle":
 				this.toggleFontPopup();
@@ -862,10 +875,84 @@ export class RichTextToolbar extends BaseToolbar {
 		this.updateClipProperty({ font: { size: clampedSize } });
 	}
 
-	private toggleBold(asset: RichTextAsset): void {
-		const currentWeight = String(asset.font?.weight ?? "400");
-		const isBold = currentWeight === "700" || currentWeight === "bold";
-		this.updateClipProperty({ font: { weight: isBold ? "400" : "700" } });
+	// Font weight options: name → numeric value
+	private static readonly FONT_WEIGHTS: Array<{ name: string; value: number }> = [
+		{ name: "Light", value: 300 },
+		{ name: "Regular", value: 400 },
+		{ name: "Medium", value: 500 },
+		{ name: "Bold", value: 700 },
+		{ name: "Black", value: 900 }
+	];
+
+	// Checkmark SVG (constant to avoid rebuilding string)
+	private static readonly CHECKMARK_SVG =
+		'<svg class="ss-toolbar-weight-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+
+	/** Single source of truth for weight normalization - handles string, number, or object */
+	private normalizeWeight(raw: unknown): number {
+		if (typeof raw === "number") return raw;
+		if (typeof raw === "string") return parseInt(raw, 10) || 400;
+		return 400;
+	}
+
+	private getWeightName(weight: unknown): string {
+		const numWeight = this.normalizeWeight(weight);
+		const found = RichTextToolbar.FONT_WEIGHTS.find(w => w.value === numWeight);
+		return found?.name ?? "Regular";
+	}
+
+	private toggleWeightPopup(): void {
+		this.togglePopup(this.weightPopup, () => this.updateWeightPopupState());
+	}
+
+	/** Build popup once at mount - uses event delegation (no per-item listeners) */
+	private buildWeightPopup(): void {
+		if (!this.weightPopup) return;
+
+		// Build static HTML once
+		this.weightPopup.innerHTML = RichTextToolbar.FONT_WEIGHTS.map(
+			({ name, value }) => `
+				<div class="ss-toolbar-weight-item" data-weight="${value}">
+					<span class="ss-toolbar-weight-name" style="font-weight: ${value}">${name}</span>
+					<span class="ss-toolbar-weight-check-slot"></span>
+				</div>
+			`
+		).join("");
+
+		// Single delegated click handler (no leak on repeated opens)
+		this.weightPopup.addEventListener("click", (e: MouseEvent) => {
+			const item = (e.target as HTMLElement).closest("[data-weight]") as HTMLElement | null;
+			if (!item) return;
+			const weight = parseInt(item.dataset["weight"]!, 10);
+			this.setFontWeight(weight);
+			this.closeAllPopups();
+		});
+
+		this.updateWeightPopupState();
+	}
+
+	/** Update active state without rebuilding DOM */
+	private updateWeightPopupState(): void {
+		if (!this.weightPopup) return;
+		const asset = this.getCurrentAsset();
+		const currentWeight = this.normalizeWeight(asset?.font?.weight);
+
+		this.weightPopup.querySelectorAll("[data-weight]").forEach(item => {
+			const el = item as HTMLElement;
+			const value = parseInt(el.dataset["weight"]!, 10);
+			const isActive = value === currentWeight;
+			el.classList.toggle("active", isActive);
+
+			// Update checkmark slot
+			const slot = el.querySelector(".ss-toolbar-weight-check-slot");
+			if (slot) {
+				slot.innerHTML = isActive ? RichTextToolbar.CHECKMARK_SVG : "";
+			}
+		});
+	}
+
+	private setFontWeight(weight: number): void {
+		this.updateClipProperty({ font: { weight } });
 	}
 
 	private toggleSizePopup(): void {
@@ -1413,6 +1500,7 @@ export class RichTextToolbar extends BaseToolbar {
 	protected override getPopupList(): (HTMLElement | null)[] {
 		return [
 			this.sizePopup,
+			this.weightPopup,
 			this.spacingPopup,
 			this.borderPopup,
 			this.shadowPopup,
@@ -1431,11 +1519,9 @@ export class RichTextToolbar extends BaseToolbar {
 		const asset = this.getCurrentAsset();
 		if (!asset) return;
 
-		// Check if bold is supported by the current font
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const supportsBold = (player as { supportsBold?: () => boolean })?.supportsBold?.() ?? true;
-		if (this.boldBtn) {
-			this.boldBtn.style.display = supportsBold ? "" : "none";
+		// Update weight preview to show current weight name
+		if (this.weightPreview) {
+			this.weightPreview.textContent = this.getWeightName(asset.font?.weight);
 		}
 
 		if (this.sizeInput) {
@@ -1460,9 +1546,6 @@ export class RichTextToolbar extends BaseToolbar {
 		this.setButtonActive(this.anchorTopBtn, verticalAlign === "top");
 		this.setButtonActive(this.anchorMiddleBtn, verticalAlign === "middle");
 		this.setButtonActive(this.anchorBottomBtn, verticalAlign === "bottom");
-
-		const isBold = String(asset.font?.weight ?? "400") === "700" || String(asset.font?.weight ?? "400") === "bold";
-		this.setButtonActive(this.boldBtn, isBold);
 
 		const align = asset.align?.horizontal ?? "center";
 		this.updateAlignIcon(align as "left" | "center" | "right");
@@ -1600,7 +1683,9 @@ export class RichTextToolbar extends BaseToolbar {
 		super.dispose();
 		this.sizeInput = null;
 		this.sizePopup = null;
-		this.boldBtn = null;
+		this.weightBtn = null;
+		this.weightPopup = null;
+		this.weightPreview = null;
 		this.fontPopup = null;
 		this.fontPreview = null;
 		this.fontPicker?.destroy();
