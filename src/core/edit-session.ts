@@ -41,12 +41,14 @@ import {
 	OutputFormatSchema,
 	OutputFpsSchema,
 	OutputSizeSchema,
+	type Clip,
 	type Destination,
 	type Edit as EditConfig,
+	type ResolvedClip,
 	type ResolvedEdit,
+	type ResolvedTrack,
 	type Soundtrack,
-	ResolvedClip,
-	ResolvedTrack
+	type Track
 } from "@schemas";
 import * as pixi from "pixi.js";
 
@@ -495,14 +497,17 @@ export class Edit extends Entity {
 		return this.document;
 	}
 
-	public addClip(trackIdx: number, clip: ResolvedClip): void | Promise<void> {
-		const command = new AddClipCommand(trackIdx, clip);
+	public addClip(trackIdx: number, clip: Clip): void | Promise<void> {
+		// Cast to ResolvedClip - the Player and timing resolver handle "auto"/"end" at runtime
+		const command = new AddClipCommand(trackIdx, clip as unknown as ResolvedClip);
 		return this.executeCommand(command);
 	}
-	public getClip(trackIdx: number, clipIdx: number): ResolvedClip | null {
+	public getClip(trackIdx: number, clipIdx: number): Clip | null {
+		// Return from Player array for position-based ordering (matches Player behavior)
+		// Cast to Clip since clipConfiguration is ResolvedClip internally but compatible at runtime
 		const track = this.tracks[trackIdx];
 		if (!track || clipIdx < 0 || clipIdx >= track.length) return null;
-		return track[clipIdx].clipConfiguration;
+		return track[clipIdx].clipConfiguration as unknown as Clip;
 	}
 
 	/**
@@ -590,7 +595,7 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
-	public async addTrack(trackIdx: number, track: ResolvedTrack): Promise<void> {
+	public async addTrack(trackIdx: number, track: Track): Promise<void> {
 		// Sync document FIRST, before any async operations that yield to event loop
 		if (this.document && !this.isLoadingEdit) {
 			this.document.addTrack(trackIdx);
@@ -603,12 +608,14 @@ export class Edit extends Entity {
 			await this.addClip(trackIdx, clip);
 		}
 	}
-	public getTrack(trackIdx: number): ResolvedTrack | null {
+
+	public getTrack(trackIdx: number): Track | null {
+		// Return from Player array for position-based ordering (matches Player behavior)
 		const trackClips = this.clips.filter((clip: Player) => clip.layer === trackIdx + 1);
 		if (trackClips.length === 0) return null;
 
 		return {
-			clips: trackClips.map((clip: Player) => clip.clipConfiguration)
+			clips: trackClips.map((clip: Player) => clip.clipConfiguration as unknown as Clip)
 		};
 	}
 	public deleteTrack(trackIdx: number): void {
@@ -906,7 +913,7 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
-	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<ResolvedClip>): void {
+	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<Clip>): void {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
 		if (!clip) {
 			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
@@ -915,7 +922,8 @@ export class Edit extends Entity {
 
 		const initialConfig = structuredClone(clip.clipConfiguration);
 		const currentConfig = structuredClone(clip.clipConfiguration);
-		const mergedConfig = deepMerge(currentConfig, updates);
+		// Cast to ResolvedClip - the timing resolver handles "auto"/"end" at runtime
+		const mergedConfig = deepMerge(currentConfig, updates as unknown as Partial<ResolvedClip>);
 
 		const command = new SetUpdatedClipCommand(clip, initialConfig, mergedConfig, {
 			trackIndex: trackIdx,
