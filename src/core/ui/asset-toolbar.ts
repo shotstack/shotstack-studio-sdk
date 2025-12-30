@@ -5,7 +5,6 @@ import type { UIController } from "./ui-controller";
 export class AssetToolbar {
 	private container: HTMLDivElement | null = null;
 	private ui: UIController;
-	private padding = 12;
 	private unsubscribe: (() => void) | null = null;
 
 	constructor(ui: UIController) {
@@ -13,9 +12,10 @@ export class AssetToolbar {
 		injectShotstackStyles();
 	}
 
-	setPosition(leftOffset: number): void {
+	setPosition(screenX: number, screenY: number): void {
 		if (this.container) {
-			this.container.style.left = `${Math.max(this.padding, leftOffset - 48 - this.padding)}px`;
+			this.container.style.left = `${screenX}px`;
+			this.container.style.top = `${screenY}px`;
 		}
 	}
 

@@ -1,4 +1,4 @@
-import type { Canvas } from "@canvas/shotstack-canvas";
+import { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
@@ -11,6 +11,11 @@ import { MediaToolbar } from "./media-toolbar";
 import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
 import { TextToolbar } from "./text-toolbar";
+
+// Toolbar positioning constants
+const TOOLBAR_WIDTH = 48;
+const TOOLBAR_PADDING = 12;
+const TOOLBAR_MIN_Y = 80; // Minimum Y to avoid overlapping with top navigation
 
 /**
  * Configuration for a toolbar button.
@@ -125,6 +130,7 @@ export class UIController {
 	private buttonRegistry: ToolbarButtonConfig[] = [];
 	private buttonEvents = new EventEmitter<UIButtonEventMap & { "buttons:changed": void }>();
 	private assetToolbar: AssetToolbar | null = null;
+	private canvasToolbar: CanvasToolbar | null = null;
 
 	// ─── Static Factory Methods ─────────────────────────────────────────────────
 
@@ -149,6 +155,14 @@ export class UIController {
 		ui.subscribeToEvents();
 		canvas.setUIController(ui);
 		ui.registerStandardToolbars();
+
+		// Auto-mount if canvas is already loaded (element exists in DOM)
+		// This handles the case where UIController is created after canvas.load()
+		const root = document.querySelector<HTMLElement>(Canvas.CanvasSelector);
+		if (root && root.querySelector("canvas")) {
+			ui.mount(root); // mount() handles deferred positioning via double rAF
+		}
+
 		return ui;
 	}
 
@@ -213,7 +227,8 @@ export class UIController {
 		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 
 		// Utilities
-		this.registerUtility(new CanvasToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
+		this.canvasToolbar = new CanvasToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled });
+		this.registerUtility(this.canvasToolbar);
 		this.assetToolbar = new AssetToolbar(this);
 		this.registerUtility(this.assetToolbar);
 
@@ -272,21 +287,24 @@ export class UIController {
 	mount(container: HTMLElement): void {
 		this.container = container;
 
-		// Mount all toolbars (they manage their own visibility)
+		// Find the canvas container - toolbars need to mount here for correct positioning
+		const canvasContainer = document.querySelector<HTMLElement>(Canvas.CanvasSelector) ?? container;
+
+		// Mount all toolbars to canvas container
 		const mountedToolbars = new Set<UIRegistration>();
 		for (const toolbar of this.toolbars.values()) {
 			if (!mountedToolbars.has(toolbar)) {
-				toolbar.mount(container);
+				toolbar.mount(canvasContainer);
 				mountedToolbars.add(toolbar);
 			}
 		}
 
-		// Mount ClipToolbar (managed separately for mode toggle)
-		this.clipToolbar?.mount(container);
+		// Mount ClipToolbar to canvas container (managed separately for mode toggle)
+		this.clipToolbar?.mount(canvasContainer);
 
-		// Mount utilities
+		// Mount utilities (asset/canvas toolbars)
 		for (const utility of this.utilities) {
-			utility.mount(container);
+			utility.mount(canvasContainer);
 		}
 
 		// Mount canvas overlays to the PixiJS overlay container
@@ -310,6 +328,14 @@ export class UIController {
 
 		// Backtick key shortcut for mode toggle
 		document.addEventListener("keydown", this.onKeyDownBound);
+
+		// Position toolbars after DOM is ready
+		// Using nested rAF to ensure layout is complete before measuring
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				this.updateToolbarPositions();
+			});
+		});
 	}
 
 	/**
@@ -320,6 +346,38 @@ export class UIController {
 			overlay.update(deltaTime, elapsed);
 			overlay.draw();
 		}
+	}
+
+	/**
+	 * Update toolbar positions to be adjacent to the canvas content.
+	 * Uses position: fixed with screen coordinates for complete independence from parent CSS.
+	 * Called by Canvas after zoom, pan, or resize operations.
+	 */
+	updateToolbarPositions(): void {
+		if (!this.canvas) return;
+
+		const canvasRect = this.canvas.application.canvas.getBoundingClientRect();
+		const bounds = this.canvas.getContentBounds();
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+
+		// Calculate raw screen coordinates
+		const videoLeftScreen = canvasRect.left + bounds.left;
+		const videoRightScreen = canvasRect.left + bounds.right;
+		const videoCenterYScreen = canvasRect.top + (bounds.top + bounds.bottom) / 2;
+
+		// Clamp Y to stay within viewport (avoiding top nav and bottom timeline)
+		const clampedY = Math.max(TOOLBAR_MIN_Y, Math.min(viewportHeight - TOOLBAR_MIN_Y, videoCenterYScreen));
+
+		// Left toolbar: position to the left of video, clamped to viewport
+		const leftX = Math.max(TOOLBAR_PADDING, videoLeftScreen - TOOLBAR_WIDTH - TOOLBAR_PADDING);
+
+		// Right toolbar: position to the right of video, clamped to viewport
+		const maxRightX = viewportWidth - TOOLBAR_WIDTH - TOOLBAR_PADDING;
+		const rightX = Math.min(maxRightX, videoRightScreen + TOOLBAR_PADDING);
+
+		this.assetToolbar?.setPosition(leftX, clampedY);
+		this.canvasToolbar?.setPosition(rightX, clampedY);
 	}
 
 	/**

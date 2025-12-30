@@ -92,9 +92,6 @@ export class CanvasToolbar {
 	// Click outside handler
 	private clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
 
-	// Positioning
-	private padding = 12;
-
 	// Feature flags
 	private showMergeFields: boolean;
 
@@ -104,11 +101,10 @@ export class CanvasToolbar {
 		injectShotstackStyles();
 	}
 
-	setPosition(viewportWidth: number, editRightEdge: number): void {
+	setPosition(screenX: number, screenY: number): void {
 		if (this.container) {
-			const toolbarWidth = this.container.offsetWidth || 48;
-			const rightOffset = viewportWidth - editRightEdge;
-			this.container.style.right = `${Math.max(this.padding, rightOffset - toolbarWidth - this.padding)}px`;
+			this.container.style.left = `${screenX}px`;
+			this.container.style.top = `${screenY}px`;
 		}
 	}
 

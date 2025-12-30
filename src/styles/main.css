@@ -6,6 +6,7 @@ body {
 	overscroll-behavior: none;
 }
 
+/* SDK demo styles - only used by index.html */
 .c-shotstack-studio {
 	width: 100%;
 	height: calc(100vh - 300px);

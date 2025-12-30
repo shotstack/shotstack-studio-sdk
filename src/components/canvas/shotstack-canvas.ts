@@ -102,9 +102,8 @@ export class Canvas {
 		root.appendChild(this.application.canvas);
 
 		// Auto-mount UIController to canvas root (toolbars sit inside canvas)
-		if (this.uiController) {
-			this.uiController.mount(root);
-		}
+		// mount() handles deferred positioning via double rAF
+		this.uiController?.mount(root);
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {
@@ -146,11 +145,7 @@ export class Canvas {
 					edit.scale.x = this.currentZoom;
 					edit.scale.y = this.currentZoom;
 
-					// Sync overlay container to match edit transforms
-					this.overlayContainer.scale.x = this.currentZoom;
-					this.overlayContainer.scale.y = this.currentZoom;
-					this.overlayContainer.position.x = edit.position.x;
-					this.overlayContainer.position.y = edit.position.y;
+					this.syncContentTransforms();
 				}
 			},
 			{
@@ -171,9 +166,7 @@ export class Canvas {
 			y: this.application.canvas.height / 2 - (this.edit.size.height * this.currentZoom) / 2
 		};
 
-		// Sync overlay container position to match edit
-		this.overlayContainer.position.x = edit.position.x;
-		this.overlayContainer.position.y = edit.position.y;
+		this.syncContentTransforms();
 	}
 
 	public zoomToFit(padding: number = 40): void {
@@ -195,11 +188,7 @@ export class Canvas {
 		edit.scale.x = this.currentZoom;
 		edit.scale.y = this.currentZoom;
 
-		// Sync overlay container scale to match edit
-		this.overlayContainer.scale.x = this.currentZoom;
-		this.overlayContainer.scale.y = this.currentZoom;
-
-		this.centerEdit();
+		this.centerEdit(); // Also syncs overlay and toolbar positions
 	}
 
 	public resize(): void {
@@ -234,15 +223,41 @@ export class Canvas {
 		edit.scale.x = this.currentZoom;
 		edit.scale.y = this.currentZoom;
 
-		// Sync overlay container transforms to match edit
-		this.overlayContainer.scale.x = this.currentZoom;
-		this.overlayContainer.scale.y = this.currentZoom;
-		this.overlayContainer.position.x = edit.position.x;
-		this.overlayContainer.position.y = edit.position.y;
+		this.syncContentTransforms();
 	}
 
 	public getZoom(): number {
 		return this.currentZoom;
+	}
+
+	/**
+	 * Sync overlay container and toolbar positions after content transforms change.
+	 * Single point of update for all position-dependent UI elements.
+	 */
+	private syncContentTransforms(): void {
+		const edit = this.edit.getContainer();
+		this.overlayContainer.scale.x = this.currentZoom;
+		this.overlayContainer.scale.y = this.currentZoom;
+		this.overlayContainer.position.x = edit.position.x;
+		this.overlayContainer.position.y = edit.position.y;
+		this.uiController?.updateToolbarPositions();
+	}
+
+	/**
+	 * Get the pixel bounds of the canvas content (edit area) within the viewport.
+	 * Used for positioning toolbars adjacent to the canvas content.
+	 */
+	public getContentBounds(): { left: number; right: number; top: number; bottom: number } {
+		const edit = this.edit.getContainer();
+		const scaledWidth = this.edit.size.width * this.currentZoom;
+		const scaledHeight = this.edit.size.height * this.currentZoom;
+
+		return {
+			left: edit.position.x,
+			right: edit.position.x + scaledWidth,
+			top: edit.position.y,
+			bottom: edit.position.y + scaledHeight
+		};
 	}
 
 	public registerTimeline(timeline: Timeline): void {
