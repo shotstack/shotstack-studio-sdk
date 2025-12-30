@@ -48,6 +48,13 @@ export class DeleteClipCommand implements EditCommand {
 				trackIndex: this.trackIdx,
 				clipIndex: this.clipIdx
 			});
+
+			// Clear selection if the deleted clip was selected
+			const selectedClip = context.getSelectedClip();
+			if (selectedClip === this.deletedClip) {
+				context.setSelectedClip(null);
+				context.emitEvent(EditEvent.SelectionCleared);
+			}
 		}
 	}
 
