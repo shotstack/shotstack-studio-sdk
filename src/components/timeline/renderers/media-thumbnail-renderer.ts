@@ -8,7 +8,7 @@
  * - Image: Loads image directly and uses original URL
  */
 
-import type { ResolvedClip , ImageAsset , VideoAsset } from "@schemas";
+import type { ResolvedClip, ImageAsset, VideoAsset } from "@schemas";
 
 import type { ThumbnailGenerator } from "../services/thumbnail-generator";
 import type { ClipRenderer } from "../timeline.types";

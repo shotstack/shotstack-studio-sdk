@@ -1,4 +1,4 @@
-import type { Clip, ResolvedClip , Edit as EditConfig, ResolvedEdit } from "@schemas";
+import type { Clip, ResolvedClip, Edit as EditConfig, ResolvedEdit } from "@schemas";
 
 import { mergeAssetForExport } from "./merge-asset";
 

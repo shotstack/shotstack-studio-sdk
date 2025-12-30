@@ -1,7 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
-import type { ResolvedClip , RichTextAsset } from "@schemas";
+import type { ResolvedClip, RichTextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";

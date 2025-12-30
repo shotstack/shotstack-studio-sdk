@@ -1,7 +1,7 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import { sec, type Seconds } from "@core/timing/types";
-import type { AudioAsset , ResolvedClip , VideoAsset } from "@schemas";
+import type { AudioAsset, ResolvedClip, VideoAsset } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 

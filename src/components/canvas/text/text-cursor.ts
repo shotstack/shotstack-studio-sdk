@@ -1,4 +1,4 @@
-import { type Clip , type TextAsset } from "@schemas";
+import { type Clip, type TextAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
 type TextCursorOptions = {

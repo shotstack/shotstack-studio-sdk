@@ -1,4 +1,4 @@
-import { type ResolvedClip , type Keyframe } from "@schemas";
+import { type ResolvedClip, type Keyframe } from "@schemas";
 
 export type TransitionKeyframeSet = {
 	offsetXKeyframes: Keyframe[];

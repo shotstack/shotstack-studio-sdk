@@ -3,7 +3,7 @@ import { TextEditor } from "@canvas/text/text-editor";
 import type { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
-import { type ResolvedClip , type TextAsset } from "@schemas";
+import { type ResolvedClip, type TextAsset } from "@schemas";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 

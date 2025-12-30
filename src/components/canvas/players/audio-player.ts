@@ -2,7 +2,7 @@ import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
-import { type AudioAsset , type ResolvedClip , type Keyframe } from "@schemas";
+import { type AudioAsset, type ResolvedClip, type Keyframe } from "@schemas";
 import * as howler from "howler";
 import * as pixi from "pixi.js";
 

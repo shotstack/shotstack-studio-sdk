@@ -10,7 +10,7 @@ import { type ResolvedTiming, type Seconds, type TimingIntent, sec } from "@core
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import { type Clip, type ResolvedClip , type Keyframe } from "@schemas";
+import { type Clip, type ResolvedClip, type Keyframe } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";

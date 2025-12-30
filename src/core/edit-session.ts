@@ -44,8 +44,10 @@ import {
 	type Destination,
 	type Edit as EditConfig,
 	type ResolvedEdit,
-	type Soundtrack
-, ResolvedClip , ResolvedTrack } from "@schemas";
+	type Soundtrack,
+	ResolvedClip,
+	ResolvedTrack
+} from "@schemas";
 import * as pixi from "pixi.js";
 
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";

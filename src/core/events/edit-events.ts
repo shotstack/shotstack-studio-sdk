@@ -1,7 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import type { MergeField } from "@core/merge/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
-import type { ResolvedClip , ResolvedEdit } from "@schemas";
+import type { ResolvedClip, ResolvedEdit } from "@schemas";
 
 // ─────────────────────────────────────────────────────────────
 // Shared Payload Types

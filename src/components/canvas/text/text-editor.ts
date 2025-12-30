@@ -1,5 +1,5 @@
 import type { TextPlayer } from "@canvas/players/text-player";
-import { type ResolvedClip , type TextAsset } from "@schemas";
+import { type ResolvedClip, type TextAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { TextCursor } from "./text-cursor";
