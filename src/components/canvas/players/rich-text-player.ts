@@ -33,7 +33,7 @@ type ValidatedRichTextAsset = {
 	};
 	stroke: { width: number; color: string; opacity: number };
 	shadow: { offsetX: number; offsetY: number; blur: number; color: string; opacity: number };
-	background: { color?: string; opacity: number };
+	background: { color?: string; opacity: number; borderRadius: number };
 	border: { width: number; color: string; opacity: number; radius: number };
 	padding?: number | { top: number; right: number; bottom: number; left: number };
 	align: { horizontal: "left" | "center" | "right"; vertical: "top" | "middle" | "bottom" };

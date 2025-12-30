@@ -348,12 +348,13 @@ describe("AssetToolbar", () => {
 	});
 
 	describe("positioning", () => {
-		it("setPosition() updates container left offset", () => {
+		it("setPosition() updates container left and top offsets", () => {
 			toolbar.mount(container);
-			toolbar.setPosition(200);
+			toolbar.setPosition(200, 300);
 
 			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
-			expect(toolbarEl?.style.left).toMatch(/\d+px/);
+			expect(toolbarEl?.style.left).toBe("200px");
+			expect(toolbarEl?.style.top).toBe("300px");
 		});
 	});
 
@@ -618,12 +619,13 @@ describe("CanvasToolbar", () => {
 	});
 
 	describe("positioning", () => {
-		it("setPosition() updates container right offset", () => {
+		it("setPosition() updates container left and top offsets", () => {
 			toolbar.mount(container);
-			toolbar.setPosition(1920, 1800);
+			toolbar.setPosition(1920, 540);
 
 			const toolbarEl = container.querySelector(".ss-canvas-toolbar") as HTMLElement;
-			expect(toolbarEl?.style.right).toMatch(/\d+px/);
+			expect(toolbarEl?.style.left).toBe("1920px");
+			expect(toolbarEl?.style.top).toBe("540px");
 		});
 	});
 
