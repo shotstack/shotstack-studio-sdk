@@ -166,10 +166,10 @@ function createMockClip(assetType: string, overrides: Record<string, unknown> = 
 	if (assetType === "rich-text" || assetType === "text") {
 		// RichTextToolbar uses nested font object: asset.font.size, asset.font.weight, etc.
 		const fontOverrides = {
-			size: overrides.fontSize ?? 48,
-			weight: overrides.fontWeight ?? 400,
-			family: overrides.fontFamily ?? "Open Sans",
-			color: overrides.fontColor ?? "#ffffff"
+			size: overrides["fontSize"] ?? 48,
+			weight: overrides["fontWeight"] ?? 400,
+			family: overrides["fontFamily"] ?? "Open Sans",
+			color: overrides["fontColor"] ?? "#ffffff"
 		};
 		clipConfiguration = {
 			asset: {
@@ -177,10 +177,10 @@ function createMockClip(assetType: string, overrides: Record<string, unknown> = 
 				text: "Test text",
 				font: fontOverrides,
 				// Keep flat properties for backward compatibility with TextToolbar tests
-				fontFamily: overrides.fontFamily ?? "Open Sans",
-				fontSize: overrides.fontSize ?? 48,
-				fontWeight: overrides.fontWeight ?? 400,
-				fontColor: overrides.fontColor ?? "#ffffff",
+				fontFamily: overrides["fontFamily"] ?? "Open Sans",
+				fontSize: overrides["fontSize"] ?? 48,
+				fontWeight: overrides["fontWeight"] ?? 400,
+				fontColor: overrides["fontColor"] ?? "#ffffff",
 				...overrides
 			}
 		};
@@ -1311,7 +1311,7 @@ describe("Mode Toggle (Regression)", () => {
 
 			const buttons = container.querySelectorAll(".ss-toolbar-mode-btn");
 			buttons.forEach(btn => {
-				const mode = (btn as HTMLElement).dataset["mode"];
+				const { mode } = (btn as HTMLElement).dataset;
 				expect(mode === "asset" || mode === "clip").toBe(true);
 			});
 

@@ -1402,14 +1402,15 @@ export class RichTextToolbar extends BaseToolbar {
 
 		// Padding - sync with StylePanel
 		if (this.stylePanel) {
-			const padding = typeof asset.padding === "number"
-				? { top: asset.padding, right: asset.padding, bottom: asset.padding, left: asset.padding }
-				: {
-					top: asset.padding?.top ?? 0,
-					right: asset.padding?.right ?? 0,
-					bottom: asset.padding?.bottom ?? 0,
-					left: asset.padding?.left ?? 0
-				};
+			const padding =
+				typeof asset.padding === "number"
+					? { top: asset.padding, right: asset.padding, bottom: asset.padding, left: asset.padding }
+					: {
+							top: asset.padding?.top ?? 0,
+							right: asset.padding?.right ?? 0,
+							bottom: asset.padding?.bottom ?? 0,
+							left: asset.padding?.left ?? 0
+						};
 			this.stylePanel.setPaddingState(padding);
 		}
 

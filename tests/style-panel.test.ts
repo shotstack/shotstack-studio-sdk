@@ -26,14 +26,14 @@ function simulateClick(element: Element | null): void {
 
 function simulateInput(element: HTMLInputElement | null, value: string | number): void {
 	if (element) {
-		element.value = String(value);
+		element.value = String(value); // eslint-disable-line no-param-reassign -- DOM manipulation
 		element.dispatchEvent(new Event("input", { bubbles: true }));
 	}
 }
 
 function simulateChange(element: HTMLInputElement | null, value: boolean): void {
 	if (element) {
-		element.checked = value;
+		element.checked = value; // eslint-disable-line no-param-reassign -- DOM manipulation
 		element.dispatchEvent(new Event("change", { bubbles: true }));
 	}
 }
@@ -125,9 +125,7 @@ describe("StylePanel", () => {
 			const slider = container.querySelector("[data-border-width-slider]") as HTMLInputElement;
 			simulateInput(slider, 5);
 
-			expect(callback).toHaveBeenCalledWith(
-				expect.objectContaining({ width: 5 })
-			);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ width: 5 }));
 		});
 
 		it("should update display value when slider moves", () => {
@@ -177,9 +175,7 @@ describe("StylePanel", () => {
 			const slider = container.querySelector("[data-padding-top-slider]") as HTMLInputElement;
 			simulateInput(slider, 20);
 
-			expect(callback).toHaveBeenCalledWith(
-				expect.objectContaining({ top: 20 })
-			);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ top: 20 }));
 		});
 
 		it("should sync state from setPaddingState()", () => {
@@ -235,9 +231,7 @@ describe("StylePanel", () => {
 			expect(toggle?.checked).toBe(true);
 
 			// Callback should receive enabled: true
-			expect(callback).toHaveBeenCalledWith(
-				expect.objectContaining({ enabled: true, offsetX: 5 })
-			);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ enabled: true, offsetX: 5 }));
 		});
 
 		it("should apply default offsets when toggle enabled with zeroed values", () => {
@@ -271,9 +265,7 @@ describe("StylePanel", () => {
 			simulateChange(toggle, true);
 
 			// Verify blur is always 4 (required for canvas to render shadow)
-			expect(callback).toHaveBeenCalledWith(
-				expect.objectContaining({ blur: 4 })
-			);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ blur: 4 }));
 		});
 
 		it("should sync state from setShadowState()", () => {
@@ -309,9 +301,7 @@ describe("StylePanel", () => {
 			simulateChange(toggle, true);
 
 			// Blur should be 4, not 0
-			expect(callback).toHaveBeenCalledWith(
-				expect.objectContaining({ blur: 4 })
-			);
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ blur: 4 }));
 		});
 	});
 
