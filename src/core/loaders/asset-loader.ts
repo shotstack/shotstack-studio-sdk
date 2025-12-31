@@ -59,7 +59,8 @@ export class AssetLoader {
 
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return resolvedAsset;
-		} catch (_error) {
+		} catch (error) {
+			console.warn(`[AssetLoader] Failed to load asset "${identifier}":`, error);
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			this.decrementRef(identifier);
 			return null;

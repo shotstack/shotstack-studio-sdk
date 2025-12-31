@@ -60,8 +60,9 @@ export class ImagePlayer extends Player {
 		const imageAsset = this.clipConfiguration.asset as ImageAsset;
 		const { src } = imageAsset;
 
-		const loadOptions: pixi.UnresolvedAsset = { src, crossorigin: "anonymous", data: {} };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(src, loadOptions);
+		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
+		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
+		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
 
 		if (!(texture?.source instanceof pixi.ImageSource)) {
 			if (texture) {
