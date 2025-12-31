@@ -199,7 +199,7 @@ export class TextPlayer extends Player {
 		this.background.clear();
 		this.background.fillStyle = {
 			color: textAsset.background.color,
-			alpha: textAsset.background.opacity
+			alpha: textAsset.background.opacity ?? 1
 		};
 		this.background.rect(0, 0, width, height);
 		this.background.fill();
