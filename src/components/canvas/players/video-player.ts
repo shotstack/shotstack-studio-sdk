@@ -155,12 +155,23 @@ export class VideoPlayer extends Player {
 		texture.source.alphaMode = "no-premultiply-alpha";
 
 		this.texture = this.createCroppedTexture(texture);
+
+		// Ensure the video has at least one decoded frame before adding to render tree
+		// This prevents WebGL errors when GPU tries to upload uninitialized texture data
+		const video = (this.texture.source as pixi.VideoSource).resource;
+		if (video instanceof HTMLVideoElement && video.readyState < 2) {
+			await new Promise<void>(resolve => {
+				const onReady = () => {
+					video.removeEventListener("loadeddata", onReady);
+					resolve();
+				};
+				video.addEventListener("loadeddata", onReady);
+				if (video.readyState >= 2) resolve();
+			});
+		}
+
 		this.sprite = new pixi.Sprite(this.texture);
 		this.contentContainer.addChild(this.sprite);
-
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			this.applyFixedDimensions();
-		}
 	}
 
 	private disposeVideo(): void {
@@ -204,6 +215,11 @@ export class VideoPlayer extends Player {
 
 		const originalWidth = texture.width;
 		const originalHeight = texture.height;
+
+		// Guard against uninitialized textures - skip cropping until GPU upload completes
+		if (originalWidth <= 0 || originalHeight <= 0) {
+			return texture;
+		}
 
 		const left = Math.floor((videoAsset.crop?.left ?? 0) * originalWidth);
 		const right = Math.floor((videoAsset.crop?.right ?? 0) * originalWidth);
