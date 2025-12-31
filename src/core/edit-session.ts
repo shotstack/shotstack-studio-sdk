@@ -1450,11 +1450,10 @@ export class Edit extends Entity {
 			});
 		}
 
-		// After timing is resolved, reconfigure audio players to rebuild effect keyframes
-		for (const clip of this.clips) {
-			if (clip.playerType === PlayerType.Audio) {
-				clip.reconfigureAfterRestore();
-			}
+		// After timing is resolved, reconfigure ALL "end" clips to rebuild keyframes
+		// This applies to Text, Image, Video, Shape, HTML, Caption - any player type with length: "end"
+		for (const clip of this.endLengthClips) {
+			clip.reconfigureAfterRestore();
 		}
 	}
 
