@@ -53,6 +53,7 @@ export class VideoPlayer extends Player {
 			return;
 		}
 
+		// getPlaybackTime() returns seconds
 		const playbackTime = this.getPlaybackTime();
 		const shouldClipPlay = this.edit.isPlaying && this.isActive();
 
@@ -60,7 +61,8 @@ export class VideoPlayer extends Player {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
 				this.activeSyncTimer = 0;
-				this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+				// playbackTime is already in seconds
+				this.texture.source.resource.currentTime = playbackTime + trim;
 				this.texture.source.resource.play().catch(console.error);
 			}
 
@@ -72,10 +74,12 @@ export class VideoPlayer extends Player {
 			this.activeSyncTimer += elapsed;
 			if (this.activeSyncTimer > 1000) {
 				this.activeSyncTimer = 0;
-				const desyncThreshold = 300;
-				const drift = Math.abs((this.texture.source.resource.currentTime - trim) * 1000 - playbackTime);
+				// Desync threshold: 0.3 seconds (300ms)
+				const desyncThreshold = 0.3;
+				// Both currentTime and playbackTime are in seconds
+				const drift = Math.abs(this.texture.source.resource.currentTime - trim - playbackTime);
 				if (drift > desyncThreshold) {
-					this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+					this.texture.source.resource.currentTime = playbackTime + trim;
 					this.edit.recordSyncCorrection();
 				}
 			}
@@ -86,10 +90,11 @@ export class VideoPlayer extends Player {
 			this.texture.source.resource.pause();
 		}
 
+		// When paused, sync every 100ms for scrubbing
 		const shouldSync = this.syncTimer > 100;
 		if (!this.edit.isPlaying && this.isActive() && shouldSync) {
 			this.syncTimer = 0;
-			this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+			this.texture.source.resource.currentTime = playbackTime + trim;
 		}
 	}
 
@@ -185,8 +190,9 @@ export class VideoPlayer extends Player {
 		if (!this.texture?.source?.resource) return 0;
 		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
 		const videoTime = this.texture.source.resource.currentTime;
+		// getPlaybackTime() returns seconds, videoTime is also seconds
 		const playbackTime = this.getPlaybackTime();
-		return Math.abs((videoTime - trim) * 1000 - playbackTime);
+		return Math.abs(videoTime - trim - playbackTime);
 	}
 
 	private createCroppedTexture(texture: pixi.Texture<pixi.VideoSource>): pixi.Texture<pixi.VideoSource> {

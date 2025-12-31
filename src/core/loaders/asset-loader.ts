@@ -47,13 +47,16 @@ export class AssetLoader {
 		this.incrementRef(identifier);
 
 		try {
-			if (await this.shouldUseSafariVideoLoader(loadOptions)) {
+			const useSafari = await this.shouldUseSafariVideoLoader(loadOptions);
+
+			if (useSafari) {
 				return await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions);
 			}
 
 			const resolvedAsset = await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
 				this.updateAssetLoadMetadata(identifier, "loading", progress);
 			});
+
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return resolvedAsset;
 		} catch (_error) {

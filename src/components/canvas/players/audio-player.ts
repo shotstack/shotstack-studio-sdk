@@ -61,13 +61,14 @@ export class AudioPlayer extends Player {
 		}
 
 		const shouldClipPlay = this.edit.isPlaying && this.isActive();
+		// getPlaybackTime() returns seconds
 		const playbackTime = this.getPlaybackTime();
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-
-				this.audioResource.seek(playbackTime / 1000 + trim);
+				// playbackTime is already in seconds
+				this.audioResource.seek(playbackTime + trim);
 				this.audioResource.play();
 			}
 
@@ -75,11 +76,13 @@ export class AudioPlayer extends Player {
 				this.audioResource.volume(this.getVolume());
 			}
 
-			const desyncThreshold = 100;
-			const shouldSync = Math.abs((this.audioResource.seek() - trim) * 1000 - playbackTime) > desyncThreshold;
+			// Desync threshold: 0.1 seconds (100ms)
+			const desyncThreshold = 0.1;
+			// Both audioResource.seek() and playbackTime are in seconds
+			const shouldSync = Math.abs(this.audioResource.seek() - trim - playbackTime) > desyncThreshold;
 
 			if (shouldSync) {
-				this.audioResource.seek(playbackTime / 1000 + trim);
+				this.audioResource.seek(playbackTime + trim);
 				this.edit.recordSyncCorrection();
 			}
 		}
@@ -89,10 +92,11 @@ export class AudioPlayer extends Player {
 			this.audioResource.pause();
 		}
 
+		// When paused, sync every 100ms for scrubbing
 		const shouldSync = this.syncTimer > 100;
 		if (!this.edit.isPlaying && this.isActive() && shouldSync) {
 			this.syncTimer = 0;
-			this.audioResource.seek(playbackTime / 1000 + trim);
+			this.audioResource.seek(playbackTime + trim);
 		}
 	}
 
@@ -126,8 +130,9 @@ export class AudioPlayer extends Player {
 		if (!this.audioResource) return 0;
 		const { trim = 0 } = this.clipConfiguration.asset as AudioAsset;
 		const audioTime = this.audioResource.seek() as number;
+		// getPlaybackTime() returns seconds, audioTime is also seconds
 		const playbackTime = this.getPlaybackTime();
-		return Math.abs((audioTime - trim) * 1000 - playbackTime);
+		return Math.abs(audioTime - trim - playbackTime);
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {

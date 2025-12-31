@@ -124,7 +124,8 @@ export class CaptionPlayer extends Player {
 		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
 		const trim = captionAsset.trim ?? 0;
 
-		const time = this.getPlaybackTime() / 1000 + trim;
+		// getPlaybackTime() already returns seconds
+		const time = this.getPlaybackTime() + trim;
 
 		const activeCue = findActiveCue(this.cues, time);
 
