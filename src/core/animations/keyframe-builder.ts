@@ -66,15 +66,15 @@ export class KeyframeBuilder {
 	 * Converts external Keyframe[] to internal NumericKeyframe[].
 	 * - Filters out keyframes without required start/length
 	 * - Coerces from/to to numbers (defaults to 0 if not numeric)
-	 * - Converts seconds to milliseconds for internal timing
+	 * - Timing values are kept in seconds (consistent with getPlaybackTime())
 	 */
 	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
 		return keyframes
 			.filter((kf): kf is Keyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
 			.toSorted((a, b) => a.start - b.start)
 			.map(keyframe => ({
-				start: keyframe.start * 1000,
-				length: keyframe.length * 1000,
+				start: keyframe.start,
+				length: keyframe.length,
 				from: typeof keyframe.from === "number" ? keyframe.from : 0,
 				to: typeof keyframe.to === "number" ? keyframe.to : 0,
 				interpolation: keyframe.interpolation,
