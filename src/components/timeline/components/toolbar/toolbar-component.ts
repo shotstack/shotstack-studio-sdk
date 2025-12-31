@@ -155,28 +155,28 @@ export class ToolbarComponent extends TimelineEntity {
 		return `${minutes.toString().padStart(2, "0")}:${seconds.toFixed(1).padStart(4, "0")}`;
 	}
 
-	// Icon SVGs
+	// Icon SVGs - pointer-events:none ensures clicks pass through to button
 	private getPlayIcon(): string {
-		return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="currentColor" style="pointer-events:none"><path d="M8 5v14l11-7z"/></svg>`;
 	}
 
 	private getPauseIcon(): string {
-		return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="currentColor" style="pointer-events:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
 	}
 
 	private getZoomInIcon(): string {
-		return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>`;
 	}
 
 	private getZoomOutIcon(): string {
-		return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M8 11h6"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M8 11h6"/></svg>`;
 	}
 
 	private getSkipBackIcon(): string {
-		return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="currentColor" style="pointer-events:none"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>`;
 	}
 
 	private getSkipForwardIcon(): string {
-		return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>`;
+		return `<svg viewBox="0 0 24 24" fill="currentColor" style="pointer-events:none"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>`;
 	}
 }
