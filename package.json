@@ -5,7 +5,7 @@
 		"cpuccino",
 		"dazzatron"
 	],
-	"version": "2.0.0-beta.7",
+	"version": "2.0.0-beta.8",
 	"description": "A video editing library for creating and editing videos with Shotstack",
 	"type": "module",
 	"main": "dist/shotstack-studio.umd.js",
@@ -81,7 +81,7 @@
 	},
 	"dependencies": {
 		"@huggingface/transformers": "^3.0.0",
-		"@shotstack/schemas": "^1.3.5",
+		"@shotstack/schemas": "^1.3.9",
 		"@shotstack/shotstack-canvas": "^1.8.0",
 		"fast-deep-equal": "^3.1.3",
 		"howler": "^2.2.4",
