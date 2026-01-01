@@ -79,7 +79,9 @@ jest.mock("pixi.js", () => {
 		},
 		VideoSource: class MockVideoSource {
 			resource: HTMLVideoElement;
+
 			alphaMode = "premultiply-alpha-on-upload";
+
 			constructor(opts: { resource: HTMLVideoElement }) {
 				this.resource = opts.resource;
 			}
