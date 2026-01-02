@@ -56,29 +56,6 @@ import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import type { EditCommand, CommandContext } from "./commands/types";
 import { EditDocument } from "./edit-document";
 
-/**
- * TODO: Remove this workaround once @shotstack/schemas properly coerces string numbers in Zod 4.
- * Issue: z.preprocess() coercion in @shotstack/schemas doesn't work correctly with Vite dev mode.
- * The schema package uses z.preprocess() for string-to-number coercion, but this fails in Vite's
- * ESM dev environment while working in Next.js bundled builds (dashboard-v2).
- * @see https://github.com/shotstack/oas-api-definition - fix coercion there, then remove this.
- */
-function coerceStringNumbers<T>(obj: T): T {
-	if (obj === null || obj === undefined) return obj;
-	if (Array.isArray(obj)) return obj.map(coerceStringNumbers) as T;
-	if (typeof obj === "object") {
-		const result: Record<string, unknown> = {};
-		for (const [key, value] of Object.entries(obj)) {
-			result[key] = coerceStringNumbers(value);
-		}
-		return result as T;
-	}
-	if (typeof obj === "string" && obj !== "" && !Number.isNaN(Number(obj))) {
-		return Number(obj) as T;
-	}
-	return obj;
-}
-
 export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
 
@@ -244,7 +221,7 @@ export class Edit extends Entity {
 		// Apply merge field substitutions for initial load
 		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(rawEdit as ResolvedEdit, serializedMergeFields) : rawEdit;
 
-		const parsedEdit = EditSchema.parse(coerceStringNumbers(mergedEdit)) as EditConfig as ResolvedEdit;
+		const parsedEdit = EditSchema.parse(mergedEdit) as EditConfig as ResolvedEdit;
 		resolveAliasReferences(parsedEdit as unknown as EditConfig);
 		this.edit = parsedEdit;
 
