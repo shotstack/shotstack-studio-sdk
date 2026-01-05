@@ -35,7 +35,8 @@ export enum PlayerType {
 	Luma = "luma",
 	Html = "html",
 	Shape = "shape",
-	Caption = "caption"
+	Caption = "caption",
+	Svg = "svg"
 }
 
 /**

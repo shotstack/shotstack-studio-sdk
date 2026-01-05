@@ -267,7 +267,8 @@ export class ClipComponent extends TimelineEntity {
 			shape: "◇",
 			caption: "≡",
 			html: "<>",
-			luma: "◐"
+			luma: "◐",
+			svg: "◇"
 		};
 		return icons[type] ?? "•";
 	}
