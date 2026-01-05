@@ -21,10 +21,15 @@ type EdgeDirection = "left" | "right" | "top" | "bottom";
  *
  * This class decouples interaction logic from Player, allowing Canvas to work as a pure renderer.
  */
+// Edge handle dimensions - refined for Canva-like elegance
+const EDGE_HANDLE_LENGTH = 20;
+const EDGE_HANDLE_THICKNESS = 4;
+
 export class SelectionHandles implements CanvasOverlayRegistration {
 	private container: pixi.Container;
 	private outline: pixi.Graphics;
 	private handles: Map<CornerName, pixi.Graphics>;
+	private edgeHandles: Map<EdgeDirection, pixi.Graphics>;
 	private app: pixi.Application | null = null;
 	private positionBuilder: PositionBuilder;
 
@@ -64,6 +69,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		this.outline = new pixi.Graphics();
 		this.handles = new Map();
+		this.edgeHandles = new Map();
 
 		this.positionBuilder = new PositionBuilder(edit.size);
 
@@ -92,6 +98,16 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			handle.zIndex = 1001;
 			handle.eventMode = "static";
 			this.handles.set(corner, handle);
+			this.container.addChild(handle);
+		}
+
+		// Create edge handles (for players that support edge resize)
+		const edges: EdgeDirection[] = ["top", "bottom", "left", "right"];
+		for (const edge of edges) {
+			const handle = new pixi.Graphics();
+			handle.zIndex = 1001;
+			handle.eventMode = "static";
+			this.edgeHandles.set(edge, handle);
 			this.container.addChild(handle);
 		}
 
@@ -135,6 +151,9 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		this.outline.destroy();
 		for (const handle of this.handles.values()) {
+			handle.destroy();
+		}
+		for (const handle of this.edgeHandles.values()) {
 			handle.destroy();
 		}
 		this.container.destroy();
@@ -198,15 +217,72 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			bottomLeft: { x: 0, y: size.height }
 		};
 
+		const cornerRadius = 1 / uiScale; // Subtle softening
+
 		for (const [corner, handle] of this.handles) {
 			const pos = positions[corner];
 			handle.clear();
 			handle.fillStyle = { color };
-			handle.rect(pos.x - handleSize / 2, pos.y - handleSize / 2, handleSize, handleSize);
+			handle.roundRect(pos.x - handleSize / 2, pos.y - handleSize / 2, handleSize, handleSize, cornerRadius);
 			handle.fill();
 
 			// Set cursor
 			handle.cursor = this.getCornerResizeCursor(corner);
+		}
+
+		// Draw edge handles for players that support edge resize
+		this.drawEdgeHandles(size, uiScale, color);
+	}
+
+	private drawEdgeHandles(size: { width: number; height: number }, uiScale: number, color: number): void {
+		const supportsEdge = this.selectedPlayer?.supportsEdgeResize() ?? false;
+
+		// Edge handle dimensions scaled for current zoom
+		const barLength = EDGE_HANDLE_LENGTH / uiScale;
+		const barThickness = EDGE_HANDLE_THICKNESS / uiScale;
+		const borderRadius = barThickness / 2; // Pill-shaped rounded corners
+
+		// Edge midpoint positions
+		const edgePositions: Record<EdgeDirection, { x: number; y: number; isHorizontal: boolean }> = {
+			top: { x: size.width / 2, y: 0, isHorizontal: true },
+			bottom: { x: size.width / 2, y: size.height, isHorizontal: true },
+			left: { x: 0, y: size.height / 2, isHorizontal: false },
+			right: { x: size.width, y: size.height / 2, isHorizontal: false }
+		};
+
+		for (const [edge, handle] of this.edgeHandles) {
+			handle.clear();
+
+			// Hide edge handles if player doesn't support edge resize
+			if (!supportsEdge) {
+				handle.visible = false;
+			} else {
+				handle.visible = true;
+				const pos = edgePositions[edge];
+
+				if (pos.isHorizontal) {
+					// Horizontal pill (top/bottom edges)
+					const x = pos.x - barLength / 2;
+					const y = pos.y - barThickness / 2;
+
+					handle.fillStyle = { color };
+					handle.roundRect(x, y, barLength, barThickness, borderRadius);
+					handle.fill();
+				} else {
+					// Vertical pill (left/right edges)
+					const x = pos.x - barThickness / 2;
+					const y = pos.y - barLength / 2;
+
+					handle.fillStyle = { color };
+					handle.roundRect(x, y, barThickness, barLength, borderRadius);
+					handle.fill();
+				}
+
+				// Set resize cursor
+				const rotation = this.selectedPlayer?.getRotation() ?? 0;
+				const baseAngle = CURSOR_BASE_ANGLES[edge] ?? 0;
+				handle.cursor = buildResizeCursor(baseAngle + rotation);
+			}
 		}
 	}
 
@@ -539,6 +615,22 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const size = this.selectedPlayer.getSize();
 
 		this.isHovering = localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height;
+
+		// Update cursor for edge resize zones
+		if (this.selectedPlayer.supportsEdgeResize()) {
+			const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
+			const edge = detectEdgeZone(localPoint, size, hitZone);
+
+			if (edge) {
+				const rotation = this.selectedPlayer.getRotation() ?? 0;
+				const baseAngle = CURSOR_BASE_ANGLES[edge] ?? 0;
+				this.outline.cursor = buildResizeCursor(baseAngle + rotation);
+				return;
+			}
+		}
+
+		// Reset cursor when not over an edge
+		this.outline.cursor = this.isHovering ? "move" : "default";
 	}
 
 	private resetDragState(): void {

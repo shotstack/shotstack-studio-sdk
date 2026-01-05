@@ -23,8 +23,8 @@ export const SELECTION_CONSTANTS = {
 	ROTATION_HIT_ZONE: 15,
 	/** Default selection outline color (blue) */
 	DEFAULT_COLOR: 0x0d99ff,
-	/** Active/hover selection color (cyan) */
-	ACTIVE_COLOR: 0x00ffff
+	/** Active/hover selection color (soft cyan) */
+	ACTIVE_COLOR: 0x40e0ff
 } as const;
 
 /**
