@@ -6,6 +6,7 @@ import { LumaPlayer } from "@canvas/players/luma-player";
 import { type MergeFieldBinding, type Player, PlayerType } from "@canvas/players/player";
 import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
+import { SvgPlayer } from "@canvas/players/svg-player";
 import { TextPlayer } from "@canvas/players/text-player";
 import { VideoPlayer } from "@canvas/players/video-player";
 import type { Canvas } from "@canvas/shotstack-canvas";
@@ -1618,6 +1619,10 @@ export class Edit extends Entity {
 			}
 			case "caption": {
 				player = new CaptionPlayer(this, clipConfiguration);
+				break;
+			}
+			case "svg": {
+				player = new SvgPlayer(this, clipConfiguration);
 				break;
 			}
 			default:
