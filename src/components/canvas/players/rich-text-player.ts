@@ -129,7 +129,14 @@ export class RichTextPlayer extends Player {
 	private resolveFont(family: string): { url: string; baseFontFamily: string; fontWeight: number } | null {
 		const { baseFontFamily, fontWeight } = parseFontFamily(family);
 
-		// Check timeline fonts first (for Google Fonts added via FontPicker)
+		// Check stored font metadata first (for template fonts with UUID-based URLs)
+		// Uses normalized base family + weight to match the correct font file
+		const metadataUrl = this.edit.getFontUrlByFamilyAndWeight(baseFontFamily, fontWeight);
+		if (metadataUrl) {
+			return { url: metadataUrl, baseFontFamily, fontWeight };
+		}
+
+		// Check timeline fonts by filename matching (legacy fallback)
 		const editData = this.edit.getEdit();
 		const timelineFonts = editData?.timeline?.fonts || [];
 		const matchingFont = timelineFonts.find(font => {

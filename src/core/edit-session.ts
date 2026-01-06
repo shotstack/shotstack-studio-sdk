@@ -25,6 +25,7 @@ import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
+import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { Entity } from "@core/shared/entity";
@@ -125,6 +126,9 @@ export class Edit extends Entity {
 
 	// Clip load errors - persisted so Timeline can query them after subscribing
 	private clipErrors = new Map<string, { error: string; assetType: string }>();
+
+	// Font metadata storage - maps URL to normalized base family + weight for rich-text font resolution
+	private fontMetadata = new Map<string, { baseFamilyName: string; weight: number }>();
 
 	/**
 	 * Create an Edit instance from a template configuration.
@@ -228,13 +232,21 @@ export class Edit extends Entity {
 		resolveAliasReferences(parsedEdit as unknown as EditConfig);
 		this.edit = parsedEdit;
 
-		// Load fonts
+		// Load fonts and store metadata for rich-text font resolution
 		await Promise.all(
 			(this.edit.timeline.fonts ?? []).map(async font => {
 				const identifier = font.src;
 				const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
 
-				return this.assetLoader.load<FontFace>(identifier, loadOptions);
+				const fontFace = await this.assetLoader.load<FontFace>(identifier, loadOptions);
+
+				// Store normalized base family + weight (TTF might report "Lato Light" or "Lato")
+				if (fontFace?.family) {
+					const { baseFontFamily, fontWeight } = parseFontFamily(fontFace.family);
+					this.fontMetadata.set(identifier, { baseFamilyName: baseFontFamily, weight: fontWeight });
+				}
+
+				return fontFace;
 			})
 		);
 
@@ -1938,6 +1950,37 @@ export class Edit extends Entity {
 
 	public getTimelineFonts(): Array<{ src: string }> {
 		return this.edit?.timeline?.fonts ?? [];
+	}
+
+	/**
+	 * Look up a font URL by family name and weight.
+	 * Uses normalized metadata extracted from TTF files during font loading.
+	 * This enables rich-text font resolution for template fonts with UUID-based URLs.
+	 *
+	 * @param familyName - The font family name (e.g., "Lato", "Lato Light")
+	 * @param weight - The font weight (e.g., 300 for Light, 900 for Black)
+	 * @returns The font URL if found, null otherwise
+	 */
+	public getFontUrlByFamilyAndWeight(familyName: string, weight: number): string | null {
+		// Extract base family name (e.g., "Lato Light" → "Lato")
+		const { baseFontFamily } = parseFontFamily(familyName);
+		const lowerBase = baseFontFamily.toLowerCase();
+
+		// First try exact family + weight match
+		for (const [url, meta] of this.fontMetadata) {
+			if (meta.baseFamilyName.toLowerCase() === lowerBase && meta.weight === weight) {
+				return url;
+			}
+		}
+
+		// Fallback: match just family (for single-weight fonts or variable fonts)
+		for (const [url, meta] of this.fontMetadata) {
+			if (meta.baseFamilyName.toLowerCase() === lowerBase) {
+				return url;
+			}
+		}
+
+		return null;
 	}
 
 	/**
