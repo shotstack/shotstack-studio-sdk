@@ -28,6 +28,12 @@ async function main() {
 			tooltip: "Add Text"
 		});
 
+		ui.registerButton({
+			id: "upgrade-text",
+			icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><path d="M17 8l3 4-3 4"/></svg>`,
+			tooltip: "Convert all text to rich text"
+		});
+
 		// 5. Handle button clicks (typed events on UIController)
 		ui.on("button:text", ({ position }) => {
 			edit.addTrack(0, {
@@ -46,6 +52,11 @@ async function main() {
 					}
 				]
 			});
+		});
+
+		ui.on("button:upgrade-text", async () => {
+			const count = await edit.convertAllTextToRichText();
+			console.log(`Converted ${count} text clips to rich text`);
 		});
 
 		// 6. Initialize the Timeline
