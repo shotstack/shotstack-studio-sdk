@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-/* eslint-disable import/first */
+/* eslint-disable import/first, max-classes-per-file */
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import type { Mock } from "jest-mock";
 
@@ -18,19 +18,33 @@ jest.mock("pixi.js", () => ({
 	Texture: jest.fn()
 }));
 
-// Mock player module
-jest.mock("../src/components/canvas/players/player", () => ({
-	PlayerType: {
-		Video: "video",
-		Image: "image",
-		Audio: "audio",
-		Text: "text",
-		Html: "html",
-		Shape: "shape",
-		Caption: "caption",
-		Luma: "luma",
-		RichText: "rich-text"
+// Mock player module with actual Player class for extends
+jest.mock("../src/components/canvas/players/player", () => {
+	class MockPlayer {
+		clipConfiguration = {};
+
+		getMergeFieldBinding = jest.fn(() => null);
 	}
+	return {
+		Player: MockPlayer,
+		PlayerType: {
+			Video: "video",
+			Image: "image",
+			Audio: "audio",
+			Text: "text",
+			Html: "html",
+			Shape: "shape",
+			Caption: "caption",
+			Luma: "luma",
+			RichText: "rich-text",
+			Svg: "svg"
+		}
+	};
+});
+
+// Mock ShotstackEdit to prevent circular dependency issues
+jest.mock("../src/core/shotstack-edit", () => ({
+	ShotstackEdit: class MockShotstackEdit {}
 }));
 
 // Mock IntersectionObserver (not provided by jsdom)

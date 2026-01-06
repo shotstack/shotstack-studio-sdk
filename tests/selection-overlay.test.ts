@@ -264,7 +264,7 @@ describe("SelectionOverlay", () => {
 		});
 
 		it("defines hover/drag color", () => {
-			expect(SELECTION_CONSTANTS.ACTIVE_COLOR).toBe(0x00ffff);
+			expect(SELECTION_CONSTANTS.ACTIVE_COLOR).toBe(0x40e0ff);
 		});
 	});
 

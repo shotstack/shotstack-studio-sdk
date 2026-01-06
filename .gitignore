@@ -24,3 +24,7 @@ dist-ssr
 .taskmaster/
 .claude/
 .cursor/
+
+# Internal Shotstack files
+shotstack.html
+src/shotstack-main.ts

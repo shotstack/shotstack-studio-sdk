@@ -1,3 +1,4 @@
+import { ShotstackEdit } from "@core/shotstack-edit";
 import type { TextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
@@ -68,6 +69,10 @@ export class TextToolbar extends BaseToolbar {
 
 	// Stored bound handler for proper cleanup
 	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
+
+	private getShotstackEdit(): ShotstackEdit | null {
+		return this.edit instanceof ShotstackEdit ? this.edit : null;
+	}
 
 	override mount(parent: HTMLElement): void {
 		injectShotstackStyles();
@@ -535,11 +540,12 @@ export class TextToolbar extends BaseToolbar {
 		}
 		this.textEditDebounceTimer = setTimeout(() => {
 			const rawText = this.textEditArea?.value ?? "";
-			const resolvedText = this.edit.mergeFields.resolve(rawText);
+			const shotstackEdit = this.getShotstackEdit();
+			const resolvedText = shotstackEdit?.mergeFields.resolve(rawText) ?? rawText;
 
 			// Update merge field binding
 			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-			if (player && this.edit.mergeFields.isMergeFieldTemplate(rawText)) {
+			if (player && shotstackEdit?.mergeFields.isMergeFieldTemplate(rawText)) {
 				player.setMergeFieldBinding("asset.text", {
 					placeholder: rawText,
 					resolvedValue: resolvedText

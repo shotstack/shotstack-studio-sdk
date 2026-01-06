@@ -26,6 +26,7 @@
  */
 
 import { Edit } from "@core/edit-session";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip, EditConfig } from "@schemas";
@@ -665,6 +666,13 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("loads merge fields into service from edit.merge array", async () => {
+			// Use ShotstackEdit to access mergeFields API
+			const shotstackEdit = new ShotstackEdit({
+				timeline: { tracks: [] },
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await shotstackEdit.load();
+
 			const editConfig: EditConfig = {
 				timeline: { tracks: [] },
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
@@ -674,10 +682,10 @@ describe("Edit loadEdit()", () => {
 				]
 			};
 
-			await edit.loadEdit(editConfig);
+			await shotstackEdit.loadEdit(editConfig);
 
-			expect(edit.mergeFields.get("FIELD_A")).toBeDefined();
-			expect(edit.mergeFields.get("FIELD_B")).toBeDefined();
+			expect(shotstackEdit.mergeFields.get("FIELD_A")).toBeDefined();
+			expect(shotstackEdit.mergeFields.get("FIELD_B")).toBeDefined();
 		});
 
 		it("substitutes merge field values in resolved edit", async () => {

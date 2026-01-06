@@ -8,7 +8,7 @@
  * The system uses dual storage: originalEdit stores templates, clipConfiguration stores resolved values.
  */
 
-import { Edit } from "@core/edit-session";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas";
@@ -140,7 +140,7 @@ const createMockPlayerContainer = () => {
 };
 
 // Mock player factory - create functional mock players
-const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) => {
+const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: PlayerType) => {
 	const container = createMockPlayerContainer();
 	const contentContainer = createMockPlayerContainer();
 
@@ -282,7 +282,7 @@ jest.mock("@canvas/players/caption-player", () => ({
 /**
  * Helper to access private Edit state for testing.
  */
-function getEditState(edit: Edit): {
+function getEditState(edit: ShotstackEdit): {
 	tracks: unknown[][];
 	commandHistory: unknown[];
 	commandIndex: number;
@@ -324,12 +324,12 @@ function createTextClip(start: number, length: number, text: string = "Hello Wor
 }
 
 describe("Edit Merge Fields", () => {
-	let edit: Edit;
+	let edit: ShotstackEdit;
 	let events: EventEmitter;
 	let emitSpy: jest.SpyInstance;
 
 	beforeEach(async () => {
-		edit = new Edit({
+		edit = new ShotstackEdit({
 			timeline: { tracks: [] },
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});

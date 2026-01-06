@@ -42,6 +42,6 @@
 			"@templates/*": ["templates/*"]
 		}
 	},
-	"include": ["src", "vite.config.ts", "vite.config.schema.ts"],
+	"include": ["src", "vite.config.ts", "vite.config.schema.ts", "vite.config.internal.ts"],
 	"exclude": ["tests", "**/*.test.ts", "**/*.spec.ts"]
 }

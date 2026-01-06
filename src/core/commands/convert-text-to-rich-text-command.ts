@@ -18,9 +18,7 @@ function isTextAsset(asset: unknown): asset is TextAsset {
  * Width/height are returned as clip updates to move them to clip.fit.
  * @param textAsset The text asset to convert
  */
-function convertTextToRichText(
-	textAsset: TextAsset
-): { richTextAsset: RichTextAsset; clipUpdates: Partial<ResolvedClip> } {
+function convertTextToRichText(textAsset: TextAsset): { richTextAsset: RichTextAsset; clipUpdates: Partial<ResolvedClip> } {
 	// Extract weight from font family suffix (e.g., "Montserrat ExtraBold" → 800)
 	// Keep original family name for RichTextPlayer to resolve via resolveFontPath()
 	const fontFamily = textAsset.font?.family ?? "Open Sans";
@@ -115,11 +113,7 @@ function convertTextToRichText(
  * Execute text-to-rich-text conversion.
  * One-way transformation without undo support.
  */
-export async function executeTextToRichTextConversion(
-	trackIndex: number,
-	clipIndex: number,
-	context: CommandContext
-): Promise<void> {
+export async function executeTextToRichTextConversion(trackIndex: number, clipIndex: number, context: CommandContext): Promise<void> {
 	const player = context.getClipAt(trackIndex, clipIndex);
 	if (!player?.clipConfiguration) {
 		throw new Error("Cannot convert clip: invalid player");

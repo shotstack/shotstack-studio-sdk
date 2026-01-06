@@ -1,5 +1,6 @@
 import type { Edit } from "@core/edit-session";
 import { validateAssetUrl } from "@core/shared/utils";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -52,6 +53,11 @@ export class MediaToolbar extends BaseToolbar {
 	constructor(edit: Edit, options: MediaToolbarOptions = {}) {
 		super(edit);
 		this.showMergeFields = options.mergeFields ?? false;
+	}
+
+	/** Get the edit as ShotstackEdit if it has merge field capabilities */
+	private getShotstackEdit(): ShotstackEdit | null {
+		return this.edit instanceof ShotstackEdit ? this.edit : null;
 	}
 
 	// Current values
@@ -688,8 +694,11 @@ export class MediaToolbar extends BaseToolbar {
 
 		this.clearUrlError();
 
+		const shotstackEdit = this.getShotstackEdit();
+		if (!shotstackEdit) return;
+
 		if (this.dynamicFieldName) {
-			this.edit.updateMergeFieldValueLive(this.dynamicFieldName, url);
+			shotstackEdit.updateMergeFieldValueLive(this.dynamicFieldName, url);
 			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 			if (player) {
 				player.reloadAsset();
@@ -697,8 +706,8 @@ export class MediaToolbar extends BaseToolbar {
 			return;
 		}
 
-		const fieldName = this.edit.mergeFields.generateUniqueName("MEDIA");
-		this.edit.applyMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", fieldName, url, this.originalSrc);
+		const fieldName = shotstackEdit.mergeFields.generateUniqueName("MEDIA");
+		shotstackEdit.applyMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", fieldName, url, this.originalSrc);
 		this.dynamicFieldName = fieldName;
 	}
 
@@ -719,7 +728,7 @@ export class MediaToolbar extends BaseToolbar {
 	private clearDynamicSource(): void {
 		if (!this.dynamicFieldName) return;
 
-		this.edit.removeMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", this.originalSrc);
+		this.getShotstackEdit()?.removeMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", this.originalSrc);
 		this.dynamicFieldName = "";
 		if (this.dynamicInput) {
 			this.dynamicInput.value = "";
@@ -730,7 +739,8 @@ export class MediaToolbar extends BaseToolbar {
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!player) return;
 
-		const fieldName = this.edit.getMergeFieldForProperty(this.selectedTrackIdx, this.selectedClipIdx, "asset.src");
+		const shotstackEdit = this.getShotstackEdit();
+		const fieldName = shotstackEdit?.getMergeFieldForProperty(this.selectedTrackIdx, this.selectedClipIdx, "asset.src") ?? null;
 
 		if (fieldName) {
 			this.isDynamicSource = true;
@@ -738,7 +748,7 @@ export class MediaToolbar extends BaseToolbar {
 			if (this.dynamicToggle) this.dynamicToggle.checked = true;
 			if (this.dynamicPanel) this.dynamicPanel.style.display = "block";
 
-			const mergeField = this.edit.mergeFields.get(fieldName);
+			const mergeField = shotstackEdit?.mergeFields.get(fieldName);
 			if (this.dynamicInput) {
 				this.dynamicInput.value = mergeField?.defaultValue || "";
 			}

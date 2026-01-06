@@ -2,6 +2,7 @@ import { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import type * as pixi from "pixi.js";
 
 import { AssetToolbar } from "./asset-toolbar";
@@ -196,7 +197,8 @@ export class UIController {
 	private constructor(edit: Edit, canvas: Canvas | null, options: UIControllerOptions) {
 		this.edit = edit;
 		this.canvas = canvas;
-		this.mergeFieldsEnabled = options.mergeFields ?? false;
+		// Auto-detect Shotstack mode unless explicitly overridden
+		this.mergeFieldsEnabled = options.mergeFields ?? edit instanceof ShotstackEdit;
 		this.selectionHandlesEnabled = options.selectionHandles ?? true;
 		this.onKeyDownBound = this.onKeyDown.bind(this);
 	}

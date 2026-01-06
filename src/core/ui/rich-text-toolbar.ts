@@ -1,6 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip, RichTextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
@@ -93,6 +94,10 @@ export class RichTextToolbar extends BaseToolbar {
 	constructor(edit: Edit, options: RichTextToolbarOptions = {}) {
 		super(edit);
 		this.showMergeFields = options.mergeFields ?? false;
+	}
+
+	private getShotstackEdit(): ShotstackEdit | null {
+		return this.edit instanceof ShotstackEdit ? this.edit : null;
 	}
 
 	override mount(parent: HTMLElement): void {
@@ -856,12 +861,14 @@ export class RichTextToolbar extends BaseToolbar {
 		if (!this.textEditArea) return;
 		const templateText = this.textEditArea.value;
 
+		const shotstackEdit = this.getShotstackEdit();
+
 		// Resolve any merge field templates in the text for canvas rendering
-		const resolvedText = this.edit.mergeFields.resolve(templateText);
+		const resolvedText = shotstackEdit?.mergeFields.resolve(templateText) ?? templateText;
 
 		// Update merge field binding for export to preserve templates
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (player && this.edit.mergeFields.isMergeFieldTemplate(templateText)) {
+		if (player && shotstackEdit?.mergeFields.isMergeFieldTemplate(templateText)) {
 			player.setMergeFieldBinding("asset.text", {
 				placeholder: templateText,
 				resolvedValue: resolvedText
@@ -898,7 +905,7 @@ export class RichTextToolbar extends BaseToolbar {
 	private showAutocomplete(): void {
 		if (!this.autocompletePopup || !this.autocompleteItems) return;
 
-		const fields = this.edit.mergeFields.getAll();
+		const fields = this.getShotstackEdit()?.mergeFields.getAll() ?? [];
 		const filtered = fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter));
 
 		if (filtered.length === 0) {
@@ -957,7 +964,7 @@ export class RichTextToolbar extends BaseToolbar {
 		const templateText = `${before}{{ ${varName} }}${after}`;
 
 		// Resolve for clipConfiguration (canvas rendering)
-		const field = this.edit.mergeFields.get(varName);
+		const field = this.getShotstackEdit()?.mergeFields.get(varName);
 		const resolvedValue = field?.defaultValue ?? `{{ ${varName} }}`;
 		const resolvedText = `${before}${resolvedValue}${after}`;
 
@@ -998,7 +1005,7 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private getFilteredFieldCount(): number {
-		const fields = this.edit.mergeFields.getAll();
+		const fields = this.getShotstackEdit()?.mergeFields.getAll() ?? [];
 		return fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter)).length;
 	}
 
