@@ -6,13 +6,13 @@
  * virtual scrolling for smooth performance with 200+ fonts.
  */
 
-import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME, type GoogleFont, type GoogleFontCategory } from "../fonts/google-fonts";
+import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME, type FontInfo, type GoogleFontCategory } from "../fonts/google-fonts";
 
 import { getFontPreviewLoader } from "./font-preview-loader";
 import { VirtualFontList } from "./virtual-font-list";
 
 // Re-export for convenience
-export type { GoogleFont } from "../fonts/google-fonts";
+export type { FontInfo } from "../fonts/google-fonts";
 
 /** LocalStorage key for recently used fonts */
 const RECENT_FONTS_KEY = "ss-recent-fonts";
@@ -45,7 +45,7 @@ export interface FontPickerOptions {
 	/** Currently selected font filename */
 	selectedFilename?: string;
 	/** Callback when a font is selected */
-	onSelect?: (font: GoogleFont) => void;
+	onSelect?: (font: FontInfo) => void;
 	/** Callback when picker is closed */
 	onClose?: () => void;
 	/** Timeline fonts for detecting custom fonts */
@@ -66,7 +66,7 @@ export class FontPicker {
 	private listContainer: HTMLElement;
 	private virtualList: VirtualFontList;
 	private selectedFilename?: string;
-	private onSelect?: (font: GoogleFont) => void;
+	private onSelect?: (font: FontInfo) => void;
 	private onClose?: () => void;
 	private activeCategory?: GoogleFontCategory;
 	private searchQuery = "";
@@ -256,7 +256,7 @@ export class FontPicker {
 	/**
 	 * Handle font selection.
 	 */
-	private handleFontSelect(font: GoogleFont): void {
+	private handleFontSelect(font: FontInfo): void {
 		this.selectedFilename = font.filename;
 		this.addToRecentFonts(font.displayName);
 		this.onSelect?.(font);
@@ -329,7 +329,7 @@ export class FontPicker {
 		const validFonts = this.recentFonts
 			.filter(fontName => !ICON_FONT_NAMES.has(fontName))
 			.map(fontName => ({ fontName, font: GOOGLE_FONTS_BY_NAME.get(fontName) }))
-			.filter((entry): entry is { fontName: string; font: GoogleFont } => entry.font !== undefined);
+			.filter((entry): entry is { fontName: string; font: FontInfo } => entry.font !== undefined);
 
 		for (const { fontName, font } of validFonts) {
 			const chip = document.createElement("button");
@@ -465,13 +465,15 @@ export class FontPicker {
 	 * Handle custom font selection.
 	 */
 	private handleCustomFontSelect(src: string, displayName: string): void {
-		// Create a GoogleFont-compatible object for consistency
-		const customFont: GoogleFont = {
+		// Create a FontInfo object for consistency
+		// Custom fonts are assumed to support variable weights (user controls the font file)
+		const customFont: FontInfo = {
 			displayName,
 			filename: extractFontDisplayName(src),
 			category: "sans-serif", // Default category for custom fonts
 			url: src,
-			weight: 400
+			weight: 400,
+			isVariable: true
 		};
 
 		this.selectedFilename = customFont.filename;
@@ -498,15 +500,15 @@ export function getFontDisplayName(filename: string): string {
 }
 
 /**
- * Get a GoogleFont by its filename.
+ * Get a FontInfo by its filename.
  */
-export function getFontByFilename(filename: string): GoogleFont | undefined {
+export function getFontByFilename(filename: string): FontInfo | undefined {
 	return GOOGLE_FONTS_BY_FILENAME.get(filename);
 }
 
 /**
- * Get a GoogleFont by its display name.
+ * Get a FontInfo by its display name.
  */
-export function getFontByName(name: string): GoogleFont | undefined {
+export function getFontByName(name: string): FontInfo | undefined {
 	return GOOGLE_FONTS_BY_NAME.get(name);
 }

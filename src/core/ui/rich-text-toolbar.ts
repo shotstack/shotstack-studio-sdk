@@ -14,7 +14,7 @@ import { SpacingPanel } from "./composites/SpacingPanel";
 import { StylePanel } from "./composites/StylePanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { FontColorPicker } from "./font-color-picker";
-import { FontPicker, type GoogleFont } from "./font-picker";
+import { FontPicker, type FontInfo } from "./font-picker";
 
 export interface RichTextToolbarOptions {
 	mergeFields?: boolean;
@@ -27,6 +27,7 @@ export class RichTextToolbar extends BaseToolbar {
 	private fontPicker: FontPicker | null = null;
 	private sizeInput: HTMLInputElement | null = null;
 	private sizePopup: HTMLDivElement | null = null;
+	private weightDropdown: HTMLElement | null = null;
 	private weightPopup: HTMLDivElement | null = null;
 	private weightPreview: HTMLSpanElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
@@ -300,6 +301,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.sizeInput = this.container.querySelector("[data-size-input]");
 		this.sizePopup = this.container.querySelector("[data-size-popup]");
+		this.weightDropdown = this.container.querySelector(".ss-toolbar-dropdown--weight");
 		this.weightPopup = this.container.querySelector("[data-weight-popup]");
 		this.weightPreview = this.container.querySelector("[data-weight-preview]");
 		this.buildWeightPopup();
@@ -1028,7 +1030,7 @@ export class RichTextToolbar extends BaseToolbar {
 		this.fontPicker = new FontPicker({
 			selectedFilename: currentFilename,
 			timelineFonts,
-			onSelect: font => this.selectGoogleFont(font),
+			onSelect: font => this.selectFont(font),
 			onClose: () => this.closeAllPopups()
 		});
 
@@ -1046,7 +1048,7 @@ export class RichTextToolbar extends BaseToolbar {
 		return fontFamily.replace(/-VariableFont$/i, "").replace(/-/g, " ");
 	}
 
-	private selectGoogleFont(font: GoogleFont): void {
+	private selectFont(font: FontInfo): void {
 		// Add font URL to timeline.fonts via document layer (persists properly)
 		const document = this.edit.getDocument();
 		if (document) {
@@ -1316,6 +1318,14 @@ export class RichTextToolbar extends BaseToolbar {
 		// Update weight preview to show current weight name
 		if (this.weightPreview) {
 			this.weightPreview.textContent = this.getWeightName(asset.font?.weight);
+		}
+
+		// Hide weight dropdown for non-variable fonts (they only support one weight)
+		if (this.weightDropdown) {
+			const currentFont = GOOGLE_FONTS_BY_FILENAME.get(asset.font?.family ?? "");
+			// Show for variable fonts, custom fonts (no match = assume variable), or when no font info
+			const supportsWeights = !currentFont || currentFont.isVariable;
+			this.weightDropdown.style.display = supportsWeights ? "" : "none";
 		}
 
 		if (this.sizeInput) {
