@@ -28,7 +28,7 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { Entity } from "@core/shared/entity";
-import { deepMerge, getNestedValue } from "@core/shared/utils";
+import { deepMerge } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type Seconds, ms, sec, toSec } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
@@ -53,7 +53,6 @@ import {
 } from "@schemas";
 import * as pixi from "pixi.js";
 
-import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import type { EditCommand, CommandContext } from "./commands/types";
 import { EditDocument } from "./edit-document";
 
@@ -112,8 +111,11 @@ export class Edit extends Entity {
 	// Toolbar button registry
 	private toolbarButtons: ToolbarButtonConfig[] = [];
 
-	/** Merge field service for managing dynamic content placeholders */
-	public mergeFields: MergeFieldService;
+	/**
+	 * Merge field service for internal template resolution.
+	 * @internal Use ShotstackEdit.mergeFields for public API access.
+	 */
+	protected mergeFieldService: MergeFieldService;
 
 	private canvas: Canvas | null = null;
 
@@ -156,7 +158,7 @@ export class Edit extends Entity {
 		this.clips = [];
 
 		this.events = new EventEmitter();
-		this.mergeFields = new MergeFieldService(this.events);
+		this.mergeFieldService = new MergeFieldService(this.events);
 		this.lumaMaskController = new LumaMaskController(
 			() => this.canvas,
 			() => this.tracks,
@@ -214,7 +216,7 @@ export class Edit extends Entity {
 
 		// Load merge fields from edit payload into service
 		const serializedMergeFields = rawEdit.merge ?? [];
-		this.mergeFields.loadFromSerialized(serializedMergeFields);
+		this.mergeFieldService.loadFromSerialized(serializedMergeFields);
 
 		// Detect merge field bindings BEFORE substitution (preserves placeholder info)
 		const bindingsPerClip = this.detectMergeFieldBindings(rawEdit as ResolvedEdit, serializedMergeFields);
@@ -431,7 +433,7 @@ export class Edit extends Entity {
 		// Delegate to document layer - preserves "auto"/"end" values
 		const doc = this.document.toJSON();
 		// Overlay current merge field state (may have changed via setMergeField)
-		const mergeFields = this.mergeFields.toSerializedArray();
+		const mergeFields = this.mergeFieldService.toSerializedArray();
 		if (mergeFields.length > 0) {
 			doc.merge = mergeFields;
 		}
@@ -961,7 +963,7 @@ export class Edit extends Entity {
 		return this.executeCommand(command);
 	}
 
-	private executeCommand(command: EditCommand): void | Promise<void> {
+	protected executeCommand(command: EditCommand): void | Promise<void> {
 		const context = this.createCommandContext();
 		const result = command.execute(context);
 		this.commandHistory = this.commandHistory.slice(0, this.commandIndex + 1);
@@ -980,7 +982,7 @@ export class Edit extends Entity {
 	 * Emits a unified `edit:changed` event after any state mutation.
 	 * Consumers can subscribe to this single event instead of tracking 31+ granular events.
 	 */
-	private emitEditChanged(source: string): void {
+	protected emitEditChanged(source: string): void {
 		if (this.isBatchingEvents) return;
 		this.events.emit(EditEvent.EditChanged, { source, timestamp: Date.now() });
 	}
@@ -1157,7 +1159,7 @@ export class Edit extends Entity {
 		}
 	}
 
-	private createCommandContext(): CommandContext {
+	protected createCommandContext(): CommandContext {
 		return {
 			getClips: () => this.clips,
 			getTracks: () => this.tracks,
@@ -1252,7 +1254,7 @@ export class Edit extends Entity {
 			untrackEndLengthClip: clip => this.endLengthClips.delete(clip),
 			trackEndLengthClip: clip => this.endLengthClips.add(clip),
 			// Merge field context
-			getMergeFields: () => this.mergeFields
+			getMergeFields: () => this.mergeFieldService
 		};
 	}
 
@@ -1319,10 +1321,14 @@ export class Edit extends Entity {
 		}
 
 		// Check each font URL and remove if its filename is not used
+		// Only prune Google fonts - preserve custom fonts for template integrity
 		for (const font of fonts) {
-			const filename = this.extractFilenameFromUrl(font.src);
-			if (filename && !usedFilenames.has(filename)) {
-				this.document.removeFont(font.src);
+			const isGoogleFont = font.src.includes("fonts.gstatic.com");
+			if (isGoogleFont) {
+				const filename = this.extractFilenameFromUrl(font.src);
+				if (filename && !usedFilenames.has(filename)) {
+					this.document.removeFont(font.src);
+				}
 			}
 		}
 	}
@@ -2017,7 +2023,7 @@ export class Edit extends Entity {
 	// ─── Template Edit Access (via player bindings) ───────────────────────────
 
 	/** Get the exportable clip (with merge field placeholders restored) */
-	private getTemplateClip(trackIndex: number, clipIndex: number): ResolvedClip | null {
+	protected getTemplateClip(trackIndex: number, clipIndex: number): ResolvedClip | null {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
 		if (!player) return null;
 		return player.getExportableClip() as ResolvedClip;
@@ -2029,284 +2035,6 @@ export class Edit extends Entity {
 		if (!templateClip) return null;
 		const asset = templateClip.asset as { text?: string } | undefined;
 		return asset?.text ?? null;
-	}
-
-	// ─── Merge Field API (command-based) ───────────────────────────────────────
-
-	/**
-	 * Apply a merge field to a clip property.
-	 * Creates a command for undo/redo support.
-	 *
-	 * @param trackIndex - Track index
-	 * @param clipIndex - Clip index within the track
-	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src", "asset.color")
-	 * @param fieldName - Name of the merge field (e.g., "MEDIA_URL")
-	 * @param value - The resolved value to apply
-	 * @param originalValue - Optional: the original value before merge field (for undo)
-	 */
-	public applyMergeField(
-		trackIndex: number,
-		clipIndex: number,
-		propertyPath: string,
-		fieldName: string,
-		value: string,
-		originalValue?: string
-	): void {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player) return;
-
-		// Get current value from player for undo
-		const currentValue = getNestedValue(player.clipConfiguration, propertyPath);
-		const previousValue = originalValue ?? (typeof currentValue === "string" ? currentValue : "");
-
-		// Check if there's already a merge field on this property
-		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
-		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
-		const previousFieldName = typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
-
-		const command = new SetMergeFieldCommand(player, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
-		this.executeCommand(command);
-	}
-
-	/**
-	 * Remove a merge field from a clip property, restoring the original value.
-	 *
-	 * @param trackIndex - Track index
-	 * @param clipIndex - Clip index within the track
-	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src")
-	 * @param restoreValue - The value to restore (original pre-merge-field value)
-	 */
-	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player) return;
-
-		// Get current merge field name
-		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
-		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
-		const currentFieldName = typeof templateValue === "string" ? this.mergeFields.extractFieldName(templateValue) : null;
-
-		if (!currentFieldName) return; // No merge field to remove
-
-		const command = new SetMergeFieldCommand(
-			player,
-			propertyPath,
-			null, // Removing merge field
-			currentFieldName,
-			restoreValue,
-			restoreValue, // New value is the restore value
-			trackIndex,
-			clipIndex
-		);
-		this.executeCommand(command);
-	}
-
-	/**
-	 * Get the merge field name for a clip property, if any.
-	 *
-	 * @returns The field name if a merge field is applied, null otherwise
-	 */
-	public getMergeFieldForProperty(trackIndex: number, clipIndex: number, propertyPath: string): string | null {
-		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
-		if (!templateClip) return null;
-
-		const value = getNestedValue(templateClip, propertyPath);
-		return typeof value === "string" ? this.mergeFields.extractFieldName(value) : null;
-	}
-
-	/**
-	 * Update the value of a merge field. Updates all clips using this field in-place.
-	 * This does NOT use the command pattern (no undo) - it's for live preview updates.
-	 */
-	public updateMergeFieldValueLive(fieldName: string, newValue: string): void {
-		// Update the field in the service
-		const field = this.mergeFields.get(fieldName);
-		if (!field) return;
-		this.mergeFields.register({ ...field, defaultValue: newValue }, { silent: true });
-
-		// Find and update all clips using this field
-		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
-			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
-				const player = this.tracks[trackIdx][clipIdx];
-				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
-				if (templateClip) {
-					// Update clipConfiguration with new resolved value (for rendering)
-					this.updateMergeFieldInObject(player.clipConfiguration, templateClip, fieldName, newValue);
-
-					// Also update the binding's resolvedValue so getExportableClip() can match correctly
-					this.updateMergeFieldBindings(player, fieldName, newValue);
-				}
-			}
-		}
-	}
-
-	/** Helper: Update merge field binding resolvedValues for a player */
-	private updateMergeFieldBindings(player: Player, fieldName: string, _newValue: string): void {
-		for (const [path, binding] of player.getMergeFieldBindings()) {
-			// Check if this binding's placeholder contains this field
-			const extractedField = this.mergeFields.extractFieldName(binding.placeholder);
-			if (extractedField === fieldName) {
-				// Recompute the resolved value from the placeholder with the new field value
-				const newResolvedValue = this.mergeFields.resolve(binding.placeholder);
-				player.setMergeFieldBinding(path, {
-					placeholder: binding.placeholder,
-					resolvedValue: newResolvedValue
-				});
-			}
-		}
-	}
-
-	/** Helper: Update merge field occurrences in an object */
-	private updateMergeFieldInObject(target: unknown, template: unknown, fieldName: string, newValue: string): void {
-		if (!target || !template || typeof target !== "object" || typeof template !== "object") return;
-
-		for (const key of Object.keys(template as Record<string, unknown>)) {
-			const templateVal = (template as Record<string, unknown>)[key];
-			const targetObj = target as Record<string, unknown>;
-
-			if (typeof templateVal === "string") {
-				const extractedField = this.mergeFields.extractFieldName(templateVal);
-				if (extractedField === fieldName) {
-					// Replace {{ FIELD }} with newValue in the resolved clipConfiguration
-					targetObj[key] = templateVal.replace(new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"), newValue);
-				}
-			} else if (templateVal && typeof templateVal === "object") {
-				this.updateMergeFieldInObject(targetObj[key], templateVal, fieldName, newValue);
-			}
-		}
-	}
-
-	/**
-	 * Redraw all clips that use a specific merge field.
-	 * Call this after updateMergeFieldValueLive() to refresh the canvas.
-	 * Handles both text redraws and asset reloads for URL changes.
-	 */
-	public redrawMergeFieldClips(fieldName: string): void {
-		for (const track of this.tracks) {
-			for (const player of track) {
-				const indices = this.findClipIndices(player);
-				if (indices) {
-					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
-					if (templateClip) {
-						// Check if this clip uses the merge field and where
-						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
-						if (usageInfo.used) {
-							// If the merge field is used for asset.src, reload the asset
-							if (usageInfo.isSrcField) {
-								player.reloadAsset();
-							}
-							player.reconfigureAfterRestore();
-							player.draw();
-						}
-					}
-				}
-			}
-		}
-	}
-
-	/** Helper: Check if and how a clip uses a specific merge field */
-	private getMergeFieldUsage(clip: unknown, fieldName: string, path: string = ""): { used: boolean; isSrcField: boolean } {
-		if (!clip || typeof clip !== "object") return { used: false, isSrcField: false };
-
-		for (const [key, value] of Object.entries(clip as Record<string, unknown>)) {
-			const currentPath = path ? `${path}.${key}` : key;
-
-			if (typeof value === "string") {
-				const extractedField = this.mergeFields.extractFieldName(value);
-				if (extractedField === fieldName) {
-					// Check if this is an asset.src property
-					const isSrcField = currentPath === "asset.src" || currentPath.endsWith(".src");
-					return { used: true, isSrcField };
-				}
-			} else if (typeof value === "object" && value !== null) {
-				const nested = this.getMergeFieldUsage(value, fieldName, currentPath);
-				if (nested.used) return nested;
-			}
-		}
-		return { used: false, isSrcField: false };
-	}
-
-	/**
-	 * Check if a merge field is used for asset.src in any clip.
-	 * Used by UI to determine if URL validation should be applied.
-	 */
-	public isSrcMergeField(fieldName: string): boolean {
-		for (const track of this.tracks) {
-			for (const player of track) {
-				const indices = this.findClipIndices(player);
-				if (indices) {
-					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
-					if (templateClip) {
-						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
-						if (usageInfo.used && usageInfo.isSrcField) {
-							return true;
-						}
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	// ─── Global Merge Field Operations ──────────────────────────────────────────
-
-	/**
-	 * Remove a merge field globally from all clips and the registry.
-	 * Restores all affected clip properties to the merge field's default value.
-	 *
-	 * @param fieldName - The merge field name to remove
-	 */
-	public deleteMergeFieldGlobally(fieldName: string): void {
-		const field = this.mergeFields.get(fieldName);
-		if (!field) return;
-
-		const template = this.mergeFields.createTemplate(fieldName);
-		const restoreValue = field.defaultValue;
-
-		// Find and restore all clips using this merge field
-		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
-			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
-				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
-				if (templateClip) {
-					// Find properties with this template and restore them
-					this.restoreMergeFieldInClip(trackIdx, clipIdx, templateClip, template, restoreValue);
-				}
-			}
-		}
-
-		// Remove from registry
-		this.mergeFields.remove(fieldName);
-	}
-
-	/**
-	 * Helper: Find and restore merge field occurrences in a clip
-	 */
-	private restoreMergeFieldInClip(
-		trackIdx: number,
-		clipIdx: number,
-		templateClip: unknown,
-		template: string,
-		restoreValue: string,
-		path: string = ""
-	): void {
-		if (!templateClip || typeof templateClip !== "object") return;
-
-		for (const key of Object.keys(templateClip as Record<string, unknown>)) {
-			const value = (templateClip as Record<string, unknown>)[key];
-			const propertyPath = path ? `${path}.${key}` : key;
-
-			if (typeof value === "string") {
-				const extractedField = this.mergeFields.extractFieldName(value);
-				const templateFieldName = this.mergeFields.extractFieldName(template);
-				if (extractedField && templateFieldName && extractedField === templateFieldName) {
-					// Apply proper substitution - replace {{ FIELD }} with restoreValue, preserving surrounding text
-					const substitutedValue = value.replace(new RegExp(`\\{\\{\\s*${extractedField}\\s*\\}\\}`, "gi"), restoreValue);
-					this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue);
-				}
-			} else if (typeof value === "object" && value !== null) {
-				// Recurse into nested objects
-				this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath);
-			}
-		}
 	}
 
 	// ─── Luma Mask API ──────────────────────────────────────────────────────────
@@ -2597,5 +2325,22 @@ export class Edit extends Entity {
 		this.events.on(InternalEvent.CanvasBackgroundClicked, () => {
 			this.clearSelection();
 		});
+	}
+
+	// ─── Protected Accessors for Subclasses ─────────────────────────────────────
+
+	/** @internal Get the tracks array for subclass access */
+	protected getTracks(): Player[][] {
+		return this.tracks;
+	}
+
+	/** @internal Get the number of tracks */
+	protected getTrackCount(): number {
+		return this.document.getTrackCount();
+	}
+
+	/** @internal Get the number of clips in a track */
+	protected getClipCountInTrack(trackIndex: number): number {
+		return this.document.getClipCountInTrack(trackIndex);
 	}
 }

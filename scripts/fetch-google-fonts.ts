@@ -37,18 +37,20 @@ interface GoogleFontsApiItem {
 	subsets: string[];
 	category: string;
 	files: Record<string, string>; // variant -> TTF URL (e.g., "regular" -> "https://fonts.gstatic.com/s/.../file.ttf")
+	axes?: Array<{ tag: string; start: number; end: number }>; // Variable font axes (e.g., wght: 100-900)
 }
 
 interface GoogleFontsApiResponse {
 	items: GoogleFontsApiItem[];
 }
 
-interface GoogleFont {
+interface FontInfo {
 	displayName: string;
 	filename: string;
 	category: string;
 	url: string;
 	weight: number;
+	isVariable: boolean; // True if font supports variable weights (100-900)
 }
 
 /**
@@ -86,6 +88,51 @@ function getWeightFromVariant(variant: string): number {
 	return isNaN(num) ? 400 : num;
 }
 
+/**
+ * Check if a font has variable weight support (wght axis)
+ */
+function hasVariableWeight(item: GoogleFontsApiItem): boolean {
+	return item.axes?.some(axis => axis.tag === "wght") ?? false;
+}
+
+/**
+ * Get the best font URL, preferring variable fonts when available.
+ * Variable fonts contain all weights in a single file.
+ *
+ * Returns { url, isVariable } or null if no suitable URL found.
+ */
+function getBestFontUrl(item: GoogleFontsApiItem): { url: string; isVariable: boolean } | null {
+	const isVariable = hasVariableWeight(item);
+
+	if (isVariable) {
+		// Variable fonts have special variant keys like "wght" or ranges like "100..900"
+		// Look for variant keys that indicate variable font files
+		for (const [variant, url] of Object.entries(item.files)) {
+			// Variable fonts may have variant keys with ranges or axis tags
+			if (variant.includes("..") || variant === "wght") {
+				if (url.endsWith(".ttf")) {
+					return { url, isVariable: true };
+				}
+			}
+		}
+
+		// Some variable fonts use standard variant names but are still variable
+		// (the axes data tells us it's variable, so any file should work)
+		const regularUrl = getRegularUrl(item.files);
+		if (regularUrl?.endsWith(".ttf")) {
+			return { url: regularUrl, isVariable: true };
+		}
+	}
+
+	// Fall back to static font (regular weight)
+	const staticUrl = getRegularUrl(item.files);
+	if (staticUrl?.endsWith(".ttf")) {
+		return { url: staticUrl, isVariable: false };
+	}
+
+	return null;
+}
+
 async function main() {
 	if (!API_KEY) {
 		console.error("Error: GOOGLE_FONTS_API_KEY environment variable is required");
@@ -93,8 +140,9 @@ async function main() {
 		process.exit(1);
 	}
 
-	console.log("Fetching Google Fonts API...");
-	const response = await fetch(`${GOOGLE_FONTS_API}?key=${API_KEY}&sort=popularity`);
+	console.log("Fetching Google Fonts API (with variable font support)...");
+	// capability=VF enables variable font data (axes field) in the response
+	const response = await fetch(`${GOOGLE_FONTS_API}?key=${API_KEY}&sort=popularity&capability=VF`);
 
 	if (!response.ok) {
 		console.error(`API request failed: ${response.status} ${response.statusText}`);
@@ -104,8 +152,10 @@ async function main() {
 	const data = (await response.json()) as GoogleFontsApiResponse;
 	console.log(`Found ${data.items.length} fonts from API`);
 
-	const fonts: GoogleFont[] = [];
+	const fonts: FontInfo[] = [];
 	let skipped = 0;
+
+	let variableCount = 0;
 
 	for (const item of data.items) {
 		// Skip icon/symbol fonts that don't render as text
@@ -114,18 +164,14 @@ async function main() {
 			continue;
 		}
 
-		// Get the regular weight URL (the API returns direct TTF URLs)
-		const url = getRegularUrl(item.files);
-		if (!url) {
+		// Get the best font URL (preferring variable fonts)
+		const result = getBestFontUrl(item);
+		if (!result) {
 			skipped++;
 			continue;
 		}
 
-		// Ensure it's a TTF URL
-		if (!url.endsWith(".ttf")) {
-			skipped++;
-			continue;
-		}
+		const { url, isVariable } = result;
 
 		const filename = extractFilename(url);
 		if (!filename) {
@@ -137,16 +183,19 @@ async function main() {
 		const variantKey = Object.keys(item.files).find(k => item.files[k] === url) ?? "regular";
 		const weight = getWeightFromVariant(variantKey);
 
+		if (isVariable) variableCount++;
+
 		fonts.push({
 			displayName: item.family,
 			filename,
 			category: item.category,
 			url,
-			weight
+			weight,
+			isVariable
 		});
 	}
 
-	console.log(`Successfully processed ${fonts.length} fonts (${skipped} skipped)`);
+	console.log(`Successfully processed ${fonts.length} fonts (${variableCount} variable, ${fonts.length - variableCount} static, ${skipped} skipped)`);
 
 	// Generate TypeScript file
 	const output = `/**
@@ -159,7 +208,7 @@ async function main() {
  * Generated: ${new Date().toISOString()}
  */
 
-export interface GoogleFont {
+export interface FontInfo {
 	/** Human-readable font name (e.g., "Inter") */
 	displayName: string;
 	/** Filename hash from gstatic URL - stored in asset.font.family */
@@ -170,17 +219,19 @@ export interface GoogleFont {
 	url: string;
 	/** Primary weight for this font file */
 	weight: number;
+	/** True if font supports variable weights (100-900 range) */
+	isVariable: boolean;
 }
 
-export const GOOGLE_FONTS: GoogleFont[] = ${JSON.stringify(fonts, null, "\t")};
+export const GOOGLE_FONTS: FontInfo[] = ${JSON.stringify(fonts, null, "\t")};
 
 /** Map from filename to font for reverse lookup */
-export const GOOGLE_FONTS_BY_FILENAME = new Map<string, GoogleFont>(
+export const GOOGLE_FONTS_BY_FILENAME = new Map<string, FontInfo>(
 	GOOGLE_FONTS.map((font) => [font.filename, font])
 );
 
 /** Map from display name to font */
-export const GOOGLE_FONTS_BY_NAME = new Map<string, GoogleFont>(
+export const GOOGLE_FONTS_BY_NAME = new Map<string, FontInfo>(
 	GOOGLE_FONTS.map((font) => [font.displayName, font])
 );
 

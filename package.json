@@ -18,6 +18,12 @@
 			"require": "./dist/shotstack-studio.umd.js",
 			"default": "./dist/shotstack-studio.es.js"
 		},
+		"./internal": {
+			"types": "./dist/internal.d.ts",
+			"import": "./dist/internal.es.js",
+			"require": "./dist/internal.umd.js",
+			"default": "./dist/internal.es.js"
+		},
 		"./schema": {
 			"types": "./dist/schema/index.d.ts",
 			"import": "./dist/schema/index.mjs",
@@ -28,6 +34,8 @@
 	"files": [
 		"dist/shotstack-studio.umd.js",
 		"dist/shotstack-studio.es.js",
+		"dist/internal.umd.js",
+		"dist/internal.es.js",
 		"dist/schema/**",
 		"dist/**/*.d.ts"
 	],
@@ -44,9 +52,11 @@
 	},
 	"scripts": {
 		"dev": "vite",
+		"dev:shotstack": "vite --open /shotstack.html",
 		"start": "npm run build && vite preview",
-		"build": "npm run build:main && npm run build:schema",
+		"build": "npm run build:main && npm run build:internal && npm run build:schema",
 		"build:main": "vite build",
+		"build:internal": "vite build --config vite.config.internal.ts",
 		"build:schema": "vite build --config vite.config.schema.ts",
 		"test": "jest",
 		"test:watch": "jest --watch",

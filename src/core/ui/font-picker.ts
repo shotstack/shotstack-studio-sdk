@@ -6,13 +6,13 @@
  * virtual scrolling for smooth performance with 200+ fonts.
  */
 
-import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME, type GoogleFont, type GoogleFontCategory } from "../fonts/google-fonts";
+import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME, type FontInfo, type GoogleFontCategory } from "../fonts/google-fonts";
 
 import { getFontPreviewLoader } from "./font-preview-loader";
 import { VirtualFontList } from "./virtual-font-list";
 
 // Re-export for convenience
-export type { GoogleFont } from "../fonts/google-fonts";
+export type { FontInfo } from "../fonts/google-fonts";
 
 /** LocalStorage key for recently used fonts */
 const RECENT_FONTS_KEY = "ss-recent-fonts";
@@ -23,13 +23,33 @@ const MAX_RECENT_FONTS = 6;
 /** Icon fonts that should not appear in recently used (they don't render as text) */
 const ICON_FONT_NAMES = new Set(["Material Icons", "Material Symbols Outlined", "Material Symbols Rounded", "Material Symbols Sharp"]);
 
+/** Check if a font URL is from Google Fonts */
+const isGoogleFont = (src: string): boolean => src.includes("fonts.gstatic.com");
+
+/** Check if a font URL is a built-in Shotstack font */
+const isBuiltInFont = (src: string): boolean => src.includes("templates.shotstack.io");
+
+/** Check if a font URL is a custom font (not Google or built-in) */
+const isCustomFont = (src: string): boolean => !isGoogleFont(src) && !isBuiltInFont(src);
+
+/** Extract display name from a font URL */
+const extractFontDisplayName = (url: string): string => {
+	const filename = url.split("/").pop() ?? "";
+	const withoutExtension = filename.replace(/\.(ttf|otf|woff|woff2)$/i, "");
+	// Remove weight suffixes like -Bold, -Regular, etc.
+	const baseFamily = withoutExtension.replace(/-(Bold|Light|Regular|Italic|Medium|SemiBold|Black|Thin|ExtraLight|ExtraBold|Heavy)$/i, "");
+	return baseFamily;
+};
+
 export interface FontPickerOptions {
 	/** Currently selected font filename */
 	selectedFilename?: string;
 	/** Callback when a font is selected */
-	onSelect?: (font: GoogleFont) => void;
+	onSelect?: (font: FontInfo) => void;
 	/** Callback when picker is closed */
 	onClose?: () => void;
+	/** Timeline fonts for detecting custom fonts */
+	timelineFonts?: Array<{ src: string }>;
 }
 
 /**
@@ -41,26 +61,32 @@ export class FontPicker {
 	private searchInput: HTMLInputElement;
 	private categoryTabs: HTMLElement;
 	private recentSection: HTMLElement;
+	private customSection: HTMLElement;
+	private customDivider: HTMLElement;
 	private listContainer: HTMLElement;
 	private virtualList: VirtualFontList;
 	private selectedFilename?: string;
-	private onSelect?: (font: GoogleFont) => void;
+	private onSelect?: (font: FontInfo) => void;
 	private onClose?: () => void;
 	private activeCategory?: GoogleFontCategory;
 	private searchQuery = "";
 	private recentFonts: string[] = [];
+	private timelineFonts: Array<{ src: string }> = [];
 	private fontLoader = getFontPreviewLoader();
 
 	constructor(options: FontPickerOptions) {
 		this.selectedFilename = options.selectedFilename;
 		this.onSelect = options.onSelect;
 		this.onClose = options.onClose;
+		this.timelineFonts = options.timelineFonts ?? [];
 
 		this.loadRecentFonts();
 		this.element = this.createElement();
 		this.searchInput = this.element.querySelector(".ss-font-picker-search-input") as HTMLInputElement;
 		this.categoryTabs = this.element.querySelector(".ss-font-picker-categories") as HTMLElement;
 		this.recentSection = this.element.querySelector(".ss-font-picker-recent") as HTMLElement;
+		this.customSection = this.element.querySelector(".ss-font-picker-custom") as HTMLElement;
+		this.customDivider = this.element.querySelector(".ss-font-picker-custom-divider") as HTMLElement;
 		this.listContainer = this.element.querySelector(".ss-font-picker-list") as HTMLElement;
 
 		// Create virtual list
@@ -70,8 +96,9 @@ export class FontPicker {
 			onSelect: font => this.handleFontSelect(font)
 		});
 
-		// Update recent section
+		// Update sections
 		this.updateRecentSection();
+		this.updateCustomSection();
 
 		// Focus search on open
 		requestAnimationFrame(() => {
@@ -131,6 +158,8 @@ export class FontPicker {
 			</div>
 			<div class="ss-font-picker-recent"></div>
 			<div class="ss-font-picker-divider"></div>
+			<div class="ss-font-picker-custom"></div>
+			<div class="ss-font-picker-custom-divider"></div>
 			<div class="ss-font-picker-list"></div>
 			<div class="ss-font-picker-footer">
 				<span class="ss-font-picker-count"></span>
@@ -201,13 +230,17 @@ export class FontPicker {
 		this.virtualList.setFilter(this.searchQuery, this.activeCategory);
 		this.updateFooter();
 
-		// Hide recent section when searching
+		// Hide sections when searching
 		if (this.searchQuery) {
 			this.recentSection.style.display = "none";
+			this.customSection.style.display = "none";
 			(this.element.querySelector(".ss-font-picker-divider") as HTMLElement).style.display = "none";
+			this.customDivider.style.display = "none";
 		} else {
 			this.recentSection.style.display = "";
 			(this.element.querySelector(".ss-font-picker-divider") as HTMLElement).style.display = "";
+			// Re-evaluate custom section visibility
+			this.updateCustomSection();
 		}
 	}
 
@@ -223,7 +256,7 @@ export class FontPicker {
 	/**
 	 * Handle font selection.
 	 */
-	private handleFontSelect(font: GoogleFont): void {
+	private handleFontSelect(font: FontInfo): void {
 		this.selectedFilename = font.filename;
 		this.addToRecentFonts(font.displayName);
 		this.onSelect?.(font);
@@ -296,7 +329,7 @@ export class FontPicker {
 		const validFonts = this.recentFonts
 			.filter(fontName => !ICON_FONT_NAMES.has(fontName))
 			.map(fontName => ({ fontName, font: GOOGLE_FONTS_BY_NAME.get(fontName) }))
-			.filter((entry): entry is { fontName: string; font: GoogleFont } => entry.font !== undefined);
+			.filter((entry): entry is { fontName: string; font: FontInfo } => entry.font !== undefined);
 
 		for (const { fontName, font } of validFonts) {
 			const chip = document.createElement("button");
@@ -325,6 +358,130 @@ export class FontPicker {
 	}
 
 	/**
+	 * Update the custom fonts section.
+	 * Shows non-Google fonts from timeline.fonts.
+	 */
+	private updateCustomSection(): void {
+		// Get custom fonts from timeline (non-Google, non-built-in)
+		const customFonts = this.timelineFonts.filter(font => isCustomFont(font.src));
+
+		// Hide section if no custom fonts
+		if (customFonts.length === 0) {
+			this.customSection.style.display = "none";
+			this.customDivider.style.display = "none";
+			return;
+		}
+
+		this.customSection.style.display = "";
+		this.customDivider.style.display = "";
+
+		this.customSection.innerHTML = `
+			<div class="ss-font-picker-custom-label">Custom Fonts</div>
+			<div class="ss-font-picker-custom-list"></div>
+		`;
+
+		const list = this.customSection.querySelector(".ss-font-picker-custom-list") as HTMLElement;
+
+		for (const font of customFonts) {
+			const displayName = extractFontDisplayName(font.src);
+			const item = this.createCustomFontItem(font.src, displayName);
+			list.appendChild(item);
+		}
+	}
+
+	/**
+	 * Create a custom font item element.
+	 */
+	private createCustomFontItem(src: string, displayName: string): HTMLElement {
+		const item = document.createElement("div");
+		item.className = "ss-font-picker-custom-item";
+		item.dataset["fontSrc"] = src;
+
+		// Font name preview (shows text in the font itself)
+		const name = document.createElement("span");
+		name.className = "ss-font-picker-custom-item-name";
+		name.textContent = displayName;
+		name.style.fontFamily = `"${displayName}", system-ui, sans-serif`;
+		item.appendChild(name);
+
+		// "Custom" badge
+		const badge = document.createElement("span");
+		badge.className = "ss-font-picker-custom-item-badge";
+		badge.textContent = "Custom";
+		item.appendChild(badge);
+
+		// Check if this is the selected font
+		if (this.selectedFilename && this.isMatchingCustomFont(src, this.selectedFilename)) {
+			item.classList.add("ss-font-picker-custom-item--selected");
+		}
+
+		// Load font for preview
+		this.loadCustomFontForPreview(src, displayName, item);
+
+		// Click handler
+		item.addEventListener("click", () => {
+			this.handleCustomFontSelect(src, displayName);
+		});
+
+		return item;
+	}
+
+	/**
+	 * Check if a font URL matches the selected filename.
+	 */
+	private isMatchingCustomFont(src: string, selectedFilename: string): boolean {
+		const urlFilename = src.split("/").pop()?.replace(/\.(ttf|otf|woff|woff2)$/i, "") ?? "";
+		const displayName = extractFontDisplayName(src);
+		return urlFilename === selectedFilename || displayName === selectedFilename;
+	}
+
+	/**
+	 * Load a custom font for preview using the FontFace API.
+	 */
+	private async loadCustomFontForPreview(src: string, displayName: string, item: HTMLElement): Promise<void> {
+		try {
+			// Check if font is already loaded
+			if (document.fonts.check(`16px "${displayName}"`)) {
+				item.classList.add("ss-font-picker-custom-item--loaded");
+				return;
+			}
+
+			// Load the font via FontFace API
+			const fontFace = new FontFace(displayName, `url(${src})`, {
+				weight: "400",
+				style: "normal"
+			});
+
+			await fontFace.load();
+			document.fonts.add(fontFace);
+			item.classList.add("ss-font-picker-custom-item--loaded");
+		} catch {
+			// Failed to load - still show but without font preview
+			item.classList.add("ss-font-picker-custom-item--loaded");
+		}
+	}
+
+	/**
+	 * Handle custom font selection.
+	 */
+	private handleCustomFontSelect(src: string, displayName: string): void {
+		// Create a FontInfo object for consistency
+		// Custom fonts are assumed to support variable weights (user controls the font file)
+		const customFont: FontInfo = {
+			displayName,
+			filename: extractFontDisplayName(src),
+			category: "sans-serif", // Default category for custom fonts
+			url: src,
+			weight: 400,
+			isVariable: true
+		};
+
+		this.selectedFilename = customFont.filename;
+		// Don't add to recent fonts (custom fonts are already special)
+		this.onSelect?.(customFont);
+	}
+
+	/**
 	 * Clean up resources.
 	 */
 	destroy(): void {
@@ -343,15 +500,15 @@ export function getFontDisplayName(filename: string): string {
 }
 
 /**
- * Get a GoogleFont by its filename.
+ * Get a FontInfo by its filename.
  */
-export function getFontByFilename(filename: string): GoogleFont | undefined {
+export function getFontByFilename(filename: string): FontInfo | undefined {
 	return GOOGLE_FONTS_BY_FILENAME.get(filename);
 }
 
 /**
- * Get a GoogleFont by its display name.
+ * Get a FontInfo by its display name.
  */
-export function getFontByName(name: string): GoogleFont | undefined {
+export function getFontByName(name: string): FontInfo | undefined {
 	return GOOGLE_FONTS_BY_NAME.get(name);
 }

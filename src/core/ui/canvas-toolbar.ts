@@ -1,6 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import type { MergeField } from "@core/merge";
 import { validateAssetUrl } from "@core/shared/utils";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import { injectShotstackStyles } from "@styles/inject";
 
 type ResolutionChangeCallback = (width: number, height: number) => void;
@@ -99,6 +100,11 @@ export class CanvasToolbar {
 		this.edit = edit ?? null;
 		this.showMergeFields = options.mergeFields ?? false;
 		injectShotstackStyles();
+	}
+
+	/** Get the edit as ShotstackEdit if it has merge field capabilities */
+	private getShotstackEdit(): ShotstackEdit | null {
+		return this.edit instanceof ShotstackEdit ? this.edit : null;
 	}
 
 	setPosition(screenX: number, screenY: number): void {
@@ -446,7 +452,10 @@ export class CanvasToolbar {
 	private renderVariablesList(): void {
 		if (!this.variablesList || !this.variablesEmpty || !this.edit) return;
 
-		const fields = this.edit.mergeFields.getAll();
+		const shotstackEdit = this.getShotstackEdit();
+		if (!shotstackEdit) return;
+
+		const fields = shotstackEdit.mergeFields.getAll();
 
 		if (fields.length === 0) {
 			this.variablesList.innerHTML = "";
@@ -476,9 +485,10 @@ export class CanvasToolbar {
 			input.addEventListener("change", async e => {
 				const el = e.target as HTMLInputElement;
 				const name = el.dataset["varInput"];
-				if (name && this.edit) {
+				const ssEdit = this.getShotstackEdit();
+				if (name && ssEdit) {
 					// Validate URL if this is a src-type merge field
-					if (this.edit.isSrcMergeField(name)) {
+					if (ssEdit.isSrcMergeField(name)) {
 						const validation = await validateAssetUrl(el.value);
 						if (!validation.valid) {
 							el.classList.add("error");
@@ -490,8 +500,8 @@ export class CanvasToolbar {
 					}
 
 					// Update the merge field value and refresh affected clips
-					this.edit.updateMergeFieldValueLive(name, el.value);
-					this.edit.redrawMergeFieldClips(name);
+					ssEdit.updateMergeFieldValueLive(name, el.value);
+					ssEdit.redrawMergeFieldClips(name);
 				}
 			});
 		});
@@ -501,8 +511,9 @@ export class CanvasToolbar {
 				e.stopPropagation();
 				const el = e.target as HTMLElement;
 				const name = el.dataset["deleteVar"];
-				if (name) {
-					this.edit?.deleteMergeFieldGlobally(name);
+				const ssEdit = this.getShotstackEdit();
+				if (name && ssEdit) {
+					ssEdit.deleteMergeFieldGlobally(name);
 					this.renderVariablesList();
 				}
 			});
@@ -510,14 +521,15 @@ export class CanvasToolbar {
 	}
 
 	private addVariable(): void {
-		if (!this.edit) return;
+		const ssEdit = this.getShotstackEdit();
+		if (!ssEdit) return;
 
 		// eslint-disable-next-line no-alert -- Intentional use of prompt for quick variable name input
 		const name = prompt("Variable name:");
 		if (!name || !name.trim()) return;
 
 		const sanitizedName = name.trim().toUpperCase().replace(/\s+/g, "_");
-		this.edit.mergeFields.register({ name: sanitizedName, defaultValue: "" });
+		ssEdit.mergeFields.register({ name: sanitizedName, defaultValue: "" });
 		this.renderVariablesList();
 	}
 
