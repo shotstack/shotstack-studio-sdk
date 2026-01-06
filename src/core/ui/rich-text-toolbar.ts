@@ -1021,8 +1021,13 @@ export class RichTextToolbar extends BaseToolbar {
 		const asset = this.getCurrentAsset();
 		const currentFilename = asset?.font?.family;
 
+		// Get timeline fonts for custom fonts section
+		const document = this.edit.getDocument();
+		const timelineFonts = document?.getFonts() ?? [];
+
 		this.fontPicker = new FontPicker({
 			selectedFilename: currentFilename,
+			timelineFonts,
 			onSelect: font => this.selectGoogleFont(font),
 			onClose: () => this.closeAllPopups()
 		});

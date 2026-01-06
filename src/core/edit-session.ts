@@ -1321,10 +1321,14 @@ export class Edit extends Entity {
 		}
 
 		// Check each font URL and remove if its filename is not used
+		// Only prune Google fonts - preserve custom fonts for template integrity
 		for (const font of fonts) {
-			const filename = this.extractFilenameFromUrl(font.src);
-			if (filename && !usedFilenames.has(filename)) {
-				this.document.removeFont(font.src);
+			const isGoogleFont = font.src.includes("fonts.gstatic.com");
+			if (isGoogleFont) {
+				const filename = this.extractFilenameFromUrl(font.src);
+				if (filename && !usedFilenames.has(filename)) {
+					this.document.removeFont(font.src);
+				}
 			}
 		}
 	}
