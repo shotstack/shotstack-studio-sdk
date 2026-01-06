@@ -321,13 +321,7 @@
 .ss-font-picker-custom-divider {
 	height: 1px;
 	margin: 0 12px;
-	background: linear-gradient(
-		to right,
-		transparent 0%,
-		rgba(0, 0, 0, 0.06) 20%,
-		rgba(0, 0, 0, 0.06) 80%,
-		transparent 100%
-	);
+	background: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.06) 20%, rgba(0, 0, 0, 0.06) 80%, transparent 100%);
 }
 
 /* ─────────────────────────────────────────────────────────────

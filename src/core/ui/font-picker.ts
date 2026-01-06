@@ -430,7 +430,11 @@ export class FontPicker {
 	 * Check if a font URL matches the selected filename.
 	 */
 	private isMatchingCustomFont(src: string, selectedFilename: string): boolean {
-		const urlFilename = src.split("/").pop()?.replace(/\.(ttf|otf|woff|woff2)$/i, "") ?? "";
+		const urlFilename =
+			src
+				.split("/")
+				.pop()
+				?.replace(/\.(ttf|otf|woff|woff2)$/i, "") ?? "";
 		const displayName = extractFontDisplayName(src);
 		return urlFilename === selectedFilename || displayName === selectedFilename;
 	}
