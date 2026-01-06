@@ -15,7 +15,6 @@ import { resolveAliasReferences } from "@core/alias";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
-import { executeTextToRichTextConversion } from "@core/commands/convert-text-to-rich-text-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { SelectClipCommand } from "@core/commands/select-clip-command";
@@ -2299,62 +2298,6 @@ export class Edit extends Entity {
 
 		const command = new TransformClipAssetCommand(trackIndex, clipIndex, originalType);
 		this.executeCommand(command);
-	}
-
-	/**
-	 * Convert a TextAsset clip to a RichTextAsset clip.
-	 * This is a one-way conversion that preserves styling.
-	 * Width/height properties are moved to clip.fit.
-	 * Not added to undo history (one-way upgrade).
-	 *
-	 * @param trackIndex - Track index of the text clip
-	 * @param clipIndex - Clip index of the text clip
-	 */
-	public async convertTextToRichText(trackIndex: number, clipIndex: number): Promise<void> {
-		const player = this.getClipAt(trackIndex, clipIndex);
-		if (!player?.clipConfiguration?.asset) return;
-
-		const asset = player.clipConfiguration.asset as { type?: string };
-		if (asset.type !== "text") return;
-
-		// Execute directly (NOT via executeCommand - no undo for one-way upgrade)
-		const context = this.createCommandContext();
-		await executeTextToRichTextConversion(trackIndex, clipIndex, context);
-
-		this.emitEditChanged("ConvertTextToRichText");
-
-		// Re-select the clip to trigger toolbar switch
-		this.selectClip(trackIndex, clipIndex);
-	}
-
-	/**
-	 * Convert all TextAsset clips to RichTextAsset clips.
-	 * Skips text assets with empty text (used as shapes).
-	 * One-way conversion, not added to undo history.
-	 *
-	 * @returns Number of clips converted
-	 */
-	public async convertAllTextToRichText(): Promise<number> {
-		const trackCount = this.document.getTrackCount();
-		let converted = 0;
-
-		// Iterate backwards to avoid index shifting issues when clips are replaced
-		for (let trackIdx = 0; trackIdx < trackCount; trackIdx += 1) {
-			const clipCount = this.document.getClipCountInTrack(trackIdx);
-			for (let clipIdx = clipCount - 1; clipIdx >= 0; clipIdx -= 1) {
-				const player = this.getClipAt(trackIdx, clipIdx);
-				const asset = player?.clipConfiguration?.asset as { type?: string; text?: string };
-
-				// Only convert text assets with non-empty text
-				// Empty text assets are used as shapes and need different handling
-				if (asset?.type === "text" && asset.text && asset.text.trim() !== "") {
-					await this.convertTextToRichText(trackIdx, clipIdx);
-					converted += 1;
-				}
-			}
-		}
-
-		return converted;
 	}
 
 	/**
