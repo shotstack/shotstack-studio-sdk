@@ -45,6 +45,7 @@ export default defineConfig({
 	},
 	build: {
 		target: "esnext",
+		emptyOutDir: false,
 		lib: {
 			entry: resolve(__dirname, "src/internal.ts"),
 			name: "ShotstackStudioInternal",
