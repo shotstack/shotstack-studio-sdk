@@ -277,7 +277,10 @@ export class ClipComponent extends TimelineEntity {
 		const { asset } = clip;
 		if (!asset) return "Clip";
 
-		// Try to get a meaningful label
+		if (asset.type === "svg") {
+			return "Shape";
+		}
+
 		if ("src" in asset && typeof asset.src === "string") {
 			const { src } = asset;
 			const filename = src.split("/").pop() || src;

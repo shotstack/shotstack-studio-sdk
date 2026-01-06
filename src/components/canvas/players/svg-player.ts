@@ -25,7 +25,8 @@ export class SvgPlayer extends Player {
 		}
 
 		if (SvgPlayer.resvgInitPromise) {
-			return SvgPlayer.resvgInitPromise;
+			await SvgPlayer.resvgInitPromise;
+			return;
 		}
 
 		SvgPlayer.resvgInitPromise = (async () => {
@@ -35,7 +36,7 @@ export class SvgPlayer extends Player {
 			SvgPlayer.resvgInitialized = true;
 		})();
 
-		return SvgPlayer.resvgInitPromise;
+		await SvgPlayer.resvgInitPromise;
 	}
 
 	public override async load(): Promise<void> {
