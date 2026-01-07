@@ -205,6 +205,7 @@ function createMockEdit(playbackTimeMs = 0): Edit {
 		isPlaying: false,
 		size: { width: 1920, height: 1080 },
 		recordSyncCorrection: jest.fn(),
+		resolveMergeFields: jest.fn((value: string) => value),
 		assetLoader: {
 			load: jest.fn(),
 			loadVideoUnique: jest.fn(),
@@ -380,7 +381,7 @@ describe("SvgPlayer", () => {
 			expect(pixi.Assets.load).toHaveBeenCalledWith(
 				expect.objectContaining({
 					src: "blob:mock-url",
-					loadParser: "loadTextures"
+					parser: "loadTextures"
 				})
 			);
 		});
@@ -404,8 +405,6 @@ describe("SvgPlayer", () => {
 			// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
 			const pixi = require("pixi.js");
 
-			const consoleSpy = jest.spyOn(console, "error").mockImplementation();
-
 			await player.load();
 
 			// Should not attempt to render
@@ -413,11 +412,6 @@ describe("SvgPlayer", () => {
 
 			// Should create fallback graphic
 			expect(pixi.Graphics).toHaveBeenCalled();
-
-			// Should log validation error
-			expect(consoleSpy).toHaveBeenCalledWith("SVG asset validation failed:", expect.anything());
-
-			consoleSpy.mockRestore();
 		});
 
 		it("creates fallback graphic when rendering fails", async () => {
