@@ -42,12 +42,18 @@ export class SvgPlayer extends Player {
 	public override async load(): Promise<void> {
 		await super.load();
 
-		const svgAsset = this.clipConfiguration.asset as SvgAsset;
+		let svgAsset = this.clipConfiguration.asset as SvgAsset;
+
+		if (svgAsset.src) {
+			const resolvedSrc = this.edit.resolveMergeFields(svgAsset.src);
+			if (resolvedSrc !== svgAsset.src) {
+				svgAsset = { ...svgAsset, src: resolvedSrc };
+			}
+		}
 
 		try {
 			const validationResult = SvgAssetSchema.safeParse(svgAsset);
 			if (!validationResult.success) {
-				console.error("SVG asset validation failed:", validationResult.error);
 				this.createFallbackGraphic();
 				return;
 			}
@@ -71,7 +77,7 @@ export class SvgPlayer extends Player {
 			try {
 				this.texture = await pixi.Assets.load<pixi.Texture>({
 					src: imageUrl,
-					loadParser: "loadTextures"
+					parser: "loadTextures"
 				});
 
 				this.sprite = new pixi.Sprite(this.texture);

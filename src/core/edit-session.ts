@@ -2024,6 +2024,17 @@ export class Edit extends Entity {
 		return this.backgroundColor;
 	}
 
+	/**
+	 * Resolve merge field placeholders in a string.
+	 * Replaces {{ FIELD_NAME }} patterns with their current values.
+	 *
+	 * @param input - String potentially containing merge field placeholders
+	 * @returns String with all merge fields resolved to their values
+	 */
+	public resolveMergeFields(input: string): string {
+		return this.mergeFieldService.resolve(input);
+	}
+
 	// ─── Toolbar Button Registry ─────────────────────────────────────────────────
 
 	/**
