@@ -21,6 +21,9 @@ const extractFontNames = (url: string): { full: string; base: string } => {
 	};
 };
 
+/** Check if a font URL is from Google Fonts CDN */
+const isGoogleFontUrl = (url: string): boolean => url.includes("fonts.gstatic.com");
+
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
 	private textEngine: TextEngine | null = null;
@@ -69,9 +72,25 @@ export class RichTextPlayer extends Player {
 				})
 			: undefined;
 
-		const customFonts = matchingFont
-			? [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }]
-			: undefined;
+		// Build customFonts array for the text engine
+		// If we found a matching font by filename, use it
+		// Otherwise, include ALL non-Google timeline fonts so the text engine can match by font metadata
+		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
+		if (matchingFont && requestedFamily) {
+			customFonts = [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }];
+		} else if (requestedFamily) {
+			// Filename matching failed - include all non-Google fonts
+			// The text engine will parse font files and match by actual family name
+			const nonGoogleFonts = timelineFonts.filter(font => !isGoogleFontUrl(font.src));
+			if (nonGoogleFonts.length > 0) {
+				// Use the requested family name - the text engine will match it to the correct font file
+				customFonts = nonGoogleFonts.map(font => ({
+					src: font.src,
+					family: baseFontFamily || requestedFamily,
+					weight: fontWeight.toString()
+				}));
+			}
+		}
 
 		return {
 			...richTextAsset,

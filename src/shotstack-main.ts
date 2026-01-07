@@ -63,10 +63,10 @@ async function main() {
 			});
 		});
 
-		// Shotstack-specific: Convert legacy text assets to rich text
+		// Shotstack-specific: Convert legacy text assets to rich text and SVG
 		ui.on("button:upgrade-text", async () => {
-			const count = await edit.convertAllTextToRichText();
-			console.log(`Converted ${count} text clips to rich text`);
+			const { richText, svg } = await edit.convertAllTextAssets();
+			console.log(`Converted ${richText} text clips to rich text, ${svg} to SVG`);
 		});
 
 		// 6. Demonstrate merge field API (Shotstack-specific)

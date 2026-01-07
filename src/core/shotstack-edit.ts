@@ -2,7 +2,81 @@ import { executeTextToRichTextConversion } from "./commands/convert-text-to-rich
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import { Edit } from "./edit-session";
 import type { MergeFieldService } from "./merge";
+import type { Clip, TextAsset } from "./schemas";
 import { getNestedValue } from "./shared/utils";
+
+/**
+ * Type guard for empty TextAsset (used as shape).
+ */
+function isEmptyTextAsset(asset: unknown): asset is TextAsset {
+	if (typeof asset !== "object" || asset === null) return false;
+	const a = asset as { type?: string; text?: string };
+	return a.type === "text" && (!a.text || a.text.trim() === "");
+}
+
+/**
+ * Escape a string for use in XML/SVG attribute values.
+ */
+function escapeXmlAttr(value: string): string {
+	return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+/**
+ * Build raw SVG markup from empty text asset properties.
+ */
+function buildSvgMarkup(textAsset: TextAsset): string {
+	const width = textAsset.width ?? 100;
+	const height = textAsset.height ?? 100;
+	const fillColor = escapeXmlAttr(textAsset.background?.color ?? "#000000");
+	const fillOpacity = textAsset.background?.opacity ?? 1;
+	const borderRadius = textAsset.background?.borderRadius ?? 0;
+
+	const rectAttrs: string[] = [`width="${width}"`, `height="${height}"`, `fill="${fillColor}"`];
+
+	if (fillOpacity !== 1) {
+		rectAttrs.push(`fill-opacity="${fillOpacity}"`);
+	}
+
+	if (borderRadius > 0) {
+		rectAttrs.push(`rx="${borderRadius}"`, `ry="${borderRadius}"`);
+	}
+
+	if (textAsset.stroke?.width && textAsset.stroke.width > 0) {
+		const strokeColor = escapeXmlAttr(textAsset.stroke.color ?? "#000000");
+		rectAttrs.push(`stroke="${strokeColor}"`);
+		rectAttrs.push(`stroke-width="${textAsset.stroke.width}"`);
+	}
+
+	return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><rect ${rectAttrs.join(" ")}/></svg>`;
+}
+
+/**
+ * Convert an empty TextAsset clip to an SvgAsset clip (on raw JSON).
+ */
+function convertEmptyTextClipToSvg(clip: Clip): Clip {
+	const textAsset = clip.asset as TextAsset;
+	const svgMarkup = buildSvgMarkup(textAsset);
+
+	// Build new clip with SVG asset
+	const newClip: Clip = {
+		...clip,
+		asset: {
+			type: "svg",
+			src: svgMarkup,
+			opacity: 1
+		}
+	};
+
+	// Move width/height from asset to clip level
+	if (textAsset.width !== undefined && newClip.width === undefined) {
+		newClip.width = textAsset.width;
+	}
+	if (textAsset.height !== undefined && newClip.height === undefined) {
+		newClip.height = textAsset.height;
+	}
+
+	return newClip;
+}
 
 /**
  * Extended Edit with Shotstack-specific capabilities.
@@ -284,6 +358,117 @@ export class ShotstackEdit extends Edit {
 		}
 
 		return converted;
+	}
+
+	/**
+	 * Convert all text assets and log the resulting template JSON to console.
+	 *
+	 * This performs a pure JSON transformation (no live player updates):
+	 * - Text assets with content → RichText assets
+	 * - Empty text assets (shapes) → SVG assets
+	 *
+	 * The converted template is logged to console for manual copying.
+	 *
+	 * @returns Conversion counts
+	 */
+	public async convertAllTextAssets(): Promise<{ richText: number; svg: number }> {
+		const document = this.getDocument();
+		if (!document) {
+			console.error("No document available for conversion");
+			return { richText: 0, svg: 0 };
+		}
+
+		// Deep clone the current document state (preserves "auto"/"end" keywords)
+		const template = JSON.parse(JSON.stringify(document.toJSON())) as { timeline?: { tracks?: { clips?: Clip[] }[] } };
+
+		let richTextCount = 0;
+		let svgCount = 0;
+
+		// Transform tracks
+		const tracks = template.timeline?.tracks;
+		if (tracks) {
+			for (const track of tracks) {
+				if (!track.clips) continue;
+
+				for (let clipIdx = 0; clipIdx < track.clips.length; clipIdx += 1) {
+					const clip = track.clips[clipIdx];
+					const asset = clip.asset as { type?: string; text?: string } | undefined;
+
+					if (asset?.type === "text") {
+						if (isEmptyTextAsset(asset)) {
+							// Convert empty text to SVG
+							track.clips[clipIdx] = convertEmptyTextClipToSvg(clip);
+							svgCount += 1;
+						} else {
+							// Convert text with content to rich-text
+							track.clips[clipIdx] = this.convertTextClipToRichText(clip);
+							richTextCount += 1;
+						}
+					}
+				}
+			}
+		}
+
+		// Note: We skip strict Zod validation here because templates contain
+		// merge field placeholders (e.g., "{{ FONT_COLOR_1 }}") that don't pass
+		// strict schema validation until resolved at runtime.
+
+		// Log the converted template to console
+		console.log("CONVERTED TEMPLATE - Copy the JSON below:");
+		console.log(JSON.stringify(template, null, "\t"));
+
+		return { richText: richTextCount, svg: svgCount };
+	}
+
+	/**
+	 * Map TextAsset vertical alignment to RichTextAsset vertical alignment.
+	 * TextAsset uses "center", RichTextAsset uses "middle".
+	 */
+	private mapVerticalAlign(textAlign: string | undefined): "top" | "middle" | "bottom" {
+		if (textAlign === "center") return "middle";
+		if (textAlign === "top" || textAlign === "bottom") return textAlign;
+		return "middle"; // default
+	}
+
+	/**
+	 * Convert a text clip to rich-text format (pure JSON transformation).
+	 */
+	private convertTextClipToRichText(clip: Clip): Clip {
+		const textAsset = clip.asset as TextAsset;
+
+		// Map TextAsset properties to RichTextAsset
+		const richTextAsset = {
+			type: "rich-text" as const,
+			text: textAsset.text || "",
+			font: {
+				family: textAsset.font?.family || "Open Sans",
+				size: typeof textAsset.font?.size === "string" ? Number(textAsset.font.size) : (textAsset.font?.size ?? 48),
+				color: textAsset.font?.color || "#ffffff",
+				opacity: textAsset.font?.opacity ?? 1,
+				weight: 400,
+				style: "normal" as const,
+				lineHeight: textAsset.font?.lineHeight ?? 1
+			},
+			align: {
+				horizontal: (textAsset.alignment?.horizontal || "center") as "left" | "center" | "right",
+				vertical: this.mapVerticalAlign(textAsset.alignment?.vertical)
+			}
+		};
+
+		const newClip: Clip = {
+			...clip,
+			asset: richTextAsset
+		};
+
+		// Move width/height to clip level
+		if (textAsset.width !== undefined && newClip.width === undefined) {
+			newClip.width = textAsset.width;
+		}
+		if (textAsset.height !== undefined && newClip.height === undefined) {
+			newClip.height = textAsset.height;
+		}
+
+		return newClip;
 	}
 
 	// ─── Private Helpers ───────────────────────────────────────────────────────
