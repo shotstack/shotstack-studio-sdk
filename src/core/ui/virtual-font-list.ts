@@ -6,7 +6,7 @@
  * scrolling of 1500+ fonts without DOM bloat.
  */
 
-import { GOOGLE_FONTS, type GoogleFont, type GoogleFontCategory } from "../fonts/google-fonts";
+import { GOOGLE_FONTS, type FontInfo, type GoogleFontCategory } from "../fonts/google-fonts";
 
 import { getFontPreviewLoader } from "./font-preview-loader";
 
@@ -22,7 +22,7 @@ export interface VirtualFontListOptions {
 	/** Currently selected font filename */
 	selectedFilename?: string;
 	/** Callback when a font is selected */
-	onSelect?: (font: GoogleFont) => void;
+	onSelect?: (font: FontInfo) => void;
 }
 
 /**
@@ -34,9 +34,9 @@ export class VirtualFontList {
 	private viewport: HTMLElement;
 	private content: HTMLElement;
 	private items = new Map<number, HTMLElement>();
-	private filteredFonts: GoogleFont[] = [...GOOGLE_FONTS];
+	private filteredFonts: FontInfo[] = [...GOOGLE_FONTS];
 	private selectedFilename?: string;
-	private onSelect?: (font: GoogleFont) => void;
+	private onSelect?: (font: FontInfo) => void;
 	private scrollTop = 0;
 	private viewportHeight = 0;
 	private resizeObserver: ResizeObserver;
@@ -214,7 +214,7 @@ export class VirtualFontList {
 	/**
 	 * Create a font item element.
 	 */
-	private createFontItem(font: GoogleFont, index: number): HTMLElement {
+	private createFontItem(font: FontInfo, index: number): HTMLElement {
 		const item = document.createElement("div");
 		item.className = "ss-font-item";
 		item.dataset["fontFamily"] = font.displayName;

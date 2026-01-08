@@ -1,6 +1,6 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import { InternalEvent } from "@core/events/edit-events";
-import { FONT_PATHS, parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset } from "@schemas";
 import { createTextEngine, type CanvasRichTextAsset } from "@shotstack/shotstack-canvas";
@@ -21,6 +21,9 @@ const extractFontNames = (url: string): { full: string; base: string } => {
 	};
 };
 
+/** Check if a font URL is from Google Fonts CDN */
+const isGoogleFontUrl = (url: string): boolean => url.includes("fonts.gstatic.com");
+
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
 	private textEngine: TextEngine | null = null;
@@ -33,6 +36,7 @@ export class RichTextPlayer extends Player {
 	private isRendering: boolean = false;
 	private validatedAsset: CanvasRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
+	private loadComplete: boolean = false;
 
 	constructor(edit: any, clipConfiguration: any) {
 		// Default fit to "cover" for rich-text assets if not provided
@@ -68,9 +72,25 @@ export class RichTextPlayer extends Player {
 				})
 			: undefined;
 
-		const customFonts = matchingFont
-			? [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }]
-			: undefined;
+		// Build customFonts array for the text engine
+		// If we found a matching font by filename, use it
+		// Otherwise, include ALL non-Google timeline fonts so the text engine can match by font metadata
+		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
+		if (matchingFont && requestedFamily) {
+			customFonts = [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }];
+		} else if (requestedFamily) {
+			// Filename matching failed - include all non-Google fonts
+			// The text engine will parse font files and match by actual family name
+			const nonGoogleFonts = timelineFonts.filter(font => !isGoogleFontUrl(font.src));
+			if (nonGoogleFonts.length > 0) {
+				// Use the requested family name - the text engine will match it to the correct font file
+				customFonts = nonGoogleFonts.map(font => ({
+					src: font.src,
+					family: baseFontFamily || requestedFamily,
+					weight: fontWeight.toString()
+				}));
+			}
+		}
 
 		return {
 			...richTextAsset,
@@ -96,8 +116,7 @@ export class RichTextPlayer extends Player {
 				await this.textEngine.registerFontFromFile(source.path, fontDesc);
 			}
 			return true;
-		} catch (error) {
-			console.warn(`Failed to load font ${family}:`, error);
+		} catch {
 			return false;
 		}
 	}
@@ -128,9 +147,17 @@ export class RichTextPlayer extends Player {
 
 	private resolveFont(family: string): { url: string; baseFontFamily: string; fontWeight: number } | null {
 		const { baseFontFamily, fontWeight } = parseFontFamily(family);
+
+		// Check stored font metadata first (for template fonts with UUID-based URLs)
+		// Uses normalized base family + weight to match the correct font file
+		const metadataUrl = this.edit.getFontUrlByFamilyAndWeight(baseFontFamily, fontWeight);
+		if (metadataUrl) {
+			return { url: metadataUrl, baseFontFamily, fontWeight };
+		}
+
+		// Check timeline fonts by filename matching (legacy fallback)
 		const editData = this.edit.getEdit();
 		const timelineFonts = editData?.timeline?.fonts || [];
-
 		const matchingFont = timelineFonts.find(font => {
 			const { full, base } = extractFontNames(font.src);
 			const requested = family.toLowerCase();
@@ -141,6 +168,7 @@ export class RichTextPlayer extends Player {
 			return { url: matchingFont.src, baseFontFamily, fontWeight };
 		}
 
+		// Fall back to built-in fonts from FONT_PATHS
 		const builtInPath = resolveFontPath(family);
 		if (builtInPath) {
 			return { url: builtInPath, baseFontFamily, fontWeight };
@@ -209,7 +237,6 @@ export class RichTextPlayer extends Player {
 		try {
 			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
 			if (!validationResult.success) {
-				console.error("Rich-text asset validation failed:", validationResult.error);
 				this.createFallbackText(richTextAsset);
 				return;
 			}
@@ -217,7 +244,6 @@ export class RichTextPlayer extends Player {
 			// Parse font info once, reuse throughout
 			const requestedFamily = richTextAsset.font?.family;
 			const fontInfo = requestedFamily ? parseFontFamily(requestedFamily) : undefined;
-
 			const canvasPayload = this.buildCanvasPayload(richTextAsset, fontInfo);
 
 			this.textEngine = (await createTextEngine({
@@ -249,15 +275,13 @@ export class RichTextPlayer extends Player {
 					}
 					await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
 					await this.checkFontCapabilities(resolved.url);
-				} else {
-					console.warn(`Font ${requestedFamily} not found. Available:`, Object.keys(FONT_PATHS));
 				}
 			}
 
 			await this.renderFrame(0);
 			this.configureKeyframes();
-		} catch (error) {
-			console.error("Failed to initialize rich text player:", error);
+			this.loadComplete = true;
+		} catch {
 			this.cleanupResources();
 			this.createFallbackText(richTextAsset);
 		}
@@ -401,6 +425,11 @@ export class RichTextPlayer extends Player {
 			return;
 		}
 
+		// Guard against rendering before load() completes (font may not be registered yet)
+		if (!this.loadComplete) {
+			return;
+		}
+
 		if (this.textEngine && this.renderer && !this.isRendering) {
 			const currentTimeSeconds = this.getCurrentTime() / 1000;
 			const frameInterval = 1 / 60; // Always render at 60fps for smooth preview
@@ -413,6 +442,7 @@ export class RichTextPlayer extends Player {
 
 	public override dispose(): void {
 		super.dispose();
+		this.loadComplete = false;
 
 		for (const texture of this.cachedFrames.values()) {
 			texture.destroy();

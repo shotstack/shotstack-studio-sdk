@@ -35,7 +35,8 @@ export enum PlayerType {
 	Luma = "luma",
 	Html = "html",
 	Shape = "shape",
-	Caption = "caption"
+	Caption = "caption",
+	Svg = "svg"
 }
 
 /**
@@ -523,18 +524,25 @@ export abstract class Player extends Entity {
 		const nativeHeight = sprite.texture.height;
 		const fit = this.clipConfiguration.fit || "crop";
 
-		// Get or create the mask
-		let clipMask = this.contentContainer.mask as pixi.Graphics;
-		if (!clipMask) {
+		// Get or create the mask - only if it's a Graphics mask or doesn't exist
+		// Luma masks are Sprites and should not be replaced
+		const existingMask = this.contentContainer.mask;
+		let clipMask: pixi.Graphics | null = null;
+
+		if (existingMask instanceof pixi.Graphics) {
+			clipMask = existingMask;
+		} else if (!existingMask) {
 			clipMask = new pixi.Graphics();
 			this.contentContainer.addChild(clipMask);
 			this.contentContainer.mask = clipMask;
 		}
 
-		// Update mask to current dimensions
-		clipMask.clear();
-		clipMask.rect(0, 0, clipWidth, clipHeight);
-		clipMask.fill(0xffffff);
+		// Update Graphics mask to current dimensions (skip if it's a luma Sprite mask)
+		if (clipMask) {
+			clipMask.clear();
+			clipMask.rect(0, 0, clipWidth, clipHeight);
+			clipMask.fill(0xffffff);
+		}
 
 		// keep animation code exactly as-is
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;

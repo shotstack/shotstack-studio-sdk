@@ -204,6 +204,127 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Custom Fonts Section
+   A curated collection aesthetic - warm, refined, intentional
+   ───────────────────────────────────────────────────────────── */
+
+.ss-font-picker-custom {
+	flex-shrink: 0;
+	padding: 12px;
+	background: linear-gradient(to bottom, #fefdfb 0%, #fafafa 100%);
+}
+
+.ss-font-picker-custom-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #777;
+}
+
+/* Refined accent indicator - subtle left bar on label */
+.ss-font-picker-custom-label::before {
+	content: "";
+	width: 3px;
+	height: 12px;
+	background: #d4a574;
+	border-radius: 1.5px;
+}
+
+.ss-font-picker-custom-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+/* Individual custom font item */
+.ss-font-picker-custom-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 44px;
+	padding: 0 12px;
+	margin: 0 -12px;
+	border-radius: 8px;
+	cursor: pointer;
+	opacity: 0.6;
+	transition:
+		background 0.15s ease,
+		opacity 0.3s ease,
+		transform 0.15s ease;
+}
+
+.ss-font-picker-custom-item--loaded {
+	opacity: 1;
+}
+
+.ss-font-picker-custom-item:hover {
+	background: rgba(212, 165, 116, 0.08);
+	transform: translateX(2px);
+}
+
+.ss-font-picker-custom-item:active {
+	transform: translateX(2px) scale(0.995);
+}
+
+.ss-font-picker-custom-item--selected {
+	background: rgba(37, 99, 235, 0.08);
+}
+
+.ss-font-picker-custom-item--selected:hover {
+	background: rgba(37, 99, 235, 0.12);
+}
+
+/* Font name - rendered in its own typeface */
+.ss-font-picker-custom-item-name {
+	flex: 1;
+	font-size: 16px;
+	color: #1a1a1a;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ss-font-picker-custom-item--selected .ss-font-picker-custom-item-name {
+	color: #2563eb;
+	font-weight: 500;
+}
+
+/* "Custom" badge - refined, warm accent */
+.ss-font-picker-custom-item-badge {
+	flex-shrink: 0;
+	margin-left: 10px;
+	padding: 3px 7px;
+	background: rgba(212, 165, 116, 0.15);
+	border: 1px solid rgba(212, 165, 116, 0.25);
+	border-radius: 4px;
+	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+	font-size: 9px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #a67c4a;
+}
+
+/* Selected state - badge adapts to blue theme */
+.ss-font-picker-custom-item--selected .ss-font-picker-custom-item-badge {
+	background: rgba(37, 99, 235, 0.1);
+	border-color: rgba(37, 99, 235, 0.2);
+	color: #2563eb;
+}
+
+/* Elegant fade-in/out divider after custom section */
+.ss-font-picker-custom-divider {
+	height: 1px;
+	margin: 0 12px;
+	background: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.06) 20%, rgba(0, 0, 0, 0.06) 80%, transparent 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────
    Divider
    ───────────────────────────────────────────────────────────── */
 

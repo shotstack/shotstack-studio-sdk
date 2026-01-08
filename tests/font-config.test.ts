@@ -29,7 +29,7 @@ describe("Font Configuration", () => {
 		it("resolves Google Fonts by filename hash (highest priority for FontPicker)", () => {
 			// When a user explicitly selects a font via FontPicker, the filename hash is used
 			// This should have highest priority as it's an explicit user choice
-			const filenameHash = "QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA";
+			const filenameHash = "QGYsz_wNahGAdqQ43RhPe6rol_lQ4A";
 			const resolvedUrl = resolveFontPath(filenameHash);
 
 			// Should resolve to Google Fonts URL
@@ -116,7 +116,7 @@ describe("Font Configuration", () => {
 	describe("isGoogleFont", () => {
 		it("identifies Google Fonts by filename hash", () => {
 			// Work Sans filename hash from FontPicker
-			expect(isGoogleFont("QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA")).toBe(true);
+			expect(isGoogleFont("QGYsz_wNahGAdqQ43RhPe6rol_lQ4A")).toBe(true);
 		});
 
 		it("identifies Google Fonts by display name", () => {
@@ -132,7 +132,7 @@ describe("Font Configuration", () => {
 
 	describe("getFontDisplayName", () => {
 		it("resolves filename hash to display name", () => {
-			expect(getFontDisplayName("QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA")).toBe("Work Sans");
+			expect(getFontDisplayName("QGYsz_wNahGAdqQ43RhPe6rol_lQ4A")).toBe("Work Sans");
 		});
 
 		it("returns input unchanged for non-hash names", () => {
@@ -182,7 +182,7 @@ describe("Font Resolution Regression Tests", () => {
 			// This test documents the expected behavior
 			const priorities = [
 				{
-					input: "QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNigDp6_cOyA",
+					input: "QGYsz_wNahGAdqQ43RhPe6rol_lQ4A",
 					source: "Google Fonts by filename hash",
 					expectedPattern: /gstatic/
 				},

@@ -24,6 +24,7 @@ import {
 	captionAssetSchema,
 	shapeAssetSchema,
 	lumaAssetSchema,
+	svgAssetSchema,
 	assetSchema,
 	tweenSchema,
 	cropSchema,
@@ -59,6 +60,7 @@ export type CaptionAsset = components["schemas"]["CaptionAsset"];
 export type ShapeAsset = components["schemas"]["ShapeAsset"];
 export type LumaAsset = components["schemas"]["LumaAsset"];
 export type TitleAsset = components["schemas"]["TitleAsset"];
+export type SvgAsset = components["schemas"]["SvgAsset"];
 
 // Sub-types
 export type Crop = components["schemas"]["Crop"];
@@ -138,6 +140,7 @@ export {
 	captionAssetSchema as CaptionAssetSchema,
 	shapeAssetSchema as ShapeAssetSchema,
 	lumaAssetSchema as LumaAssetSchema,
+	svgAssetSchema as SvgAssetSchema,
 	assetSchema as AssetSchema,
 	tweenSchema as TweenSchema,
 	tweenSchema as KeyframeSchema,
@@ -152,4 +155,6 @@ export const DestinationSchema = destinationsSchema;
 export const OutputSizeSchema = sizeSchema;
 export const OutputFormatSchema = outputSchema.shape.format;
 export const OutputFpsSchema = outputSchema.shape.fps.unwrap(); // unwrap optional
+export const OutputResolutionSchema = outputSchema.shape.resolution;
+export const OutputAspectRatioSchema = outputSchema.shape.aspectRatio;
 export const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{8}$/);

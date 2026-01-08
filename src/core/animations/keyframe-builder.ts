@@ -13,6 +13,13 @@ export class KeyframeBuilder {
 
 	private readonly cubicBuilder: CurveInterpolator;
 
+	/**
+	 * Cached index for temporal coherence optimization.
+	 * During sequential playback, time increases monotonically,
+	 * so checking the last-used index first is O(1) for ~99% of calls.
+	 */
+	private cachedIndex = 0;
+
 	constructor(value: Keyframe[] | number, length: number, initialValue = 0) {
 		this.property = this.createKeyframes(value, length, initialValue);
 		this.length = length;
@@ -21,7 +28,7 @@ export class KeyframeBuilder {
 	}
 
 	public getValue(time: number): number {
-		const keyframe = this.property.find(value => time >= value.start && time < value.start + value.length);
+		const keyframe = this.findKeyframe(time);
 		if (!keyframe) {
 			if (this.property.length > 0) {
 				if (time >= this.length) return this.property[this.property.length - 1].to;
@@ -40,6 +47,91 @@ export class KeyframeBuilder {
 			default:
 				return keyframe.from + (keyframe.to - keyframe.from) * progress;
 		}
+	}
+
+	/**
+	 * Find keyframe containing the given time using temporal coherence + binary search.
+	 * Optimized for sequential playback (O(1)) with binary search fallback (O(log n)).
+	 */
+	private findKeyframe(time: number): NumericKeyframe | undefined {
+		const props = this.property;
+		if (props.length === 0) return undefined;
+
+		// Fast path: check cached index first (O(1) for sequential playback)
+		const cached = props[this.cachedIndex];
+		if (cached) {
+			const cachedEnd = cached.start + cached.length;
+			// Guard against NaN: must be finite to be a valid match
+			if (Number.isFinite(cachedEnd) && time >= cached.start && time < cachedEnd) {
+				return cached;
+			}
+		}
+
+		// Check next index (time moved forward slightly)
+		const nextIdx = this.cachedIndex + 1;
+		if (nextIdx < props.length) {
+			const next = props[nextIdx];
+			const nextEnd = next.start + next.length;
+			if (Number.isFinite(nextEnd) && time >= next.start && time < nextEnd) {
+				this.cachedIndex = nextIdx;
+				return next;
+			}
+		}
+
+		// Check previous index (scrubbing backward)
+		const prevIdx = this.cachedIndex - 1;
+		if (prevIdx >= 0) {
+			const prev = props[prevIdx];
+			const prevEnd = prev.start + prev.length;
+			if (Number.isFinite(prevEnd) && time >= prev.start && time < prevEnd) {
+				this.cachedIndex = prevIdx;
+				return prev;
+			}
+		}
+
+		// Fallback: binary search (O(log n) for random seeks)
+		const idx = this.binarySearchKeyframe(time);
+		if (idx !== -1) {
+			this.cachedIndex = idx;
+			return props[idx];
+		}
+
+		return undefined;
+	}
+
+	/**
+	 * Binary search for keyframe containing the given time.
+	 * Returns index or -1 if not found.
+	 * Handles NaN lengths by skipping invalid keyframes (matching original .find() behavior).
+	 */
+	private binarySearchKeyframe(time: number): number {
+		const props = this.property;
+		let low = 0;
+		let high = props.length - 1;
+
+		while (low <= high) {
+			const mid = Math.floor((low + high) / 2);
+			const kf = props[mid];
+			const end = kf.start + kf.length;
+
+			// Guard against NaN: if end is not finite, skip this keyframe
+			// This matches original .find() behavior where `time < NaN` returns false
+			if (!Number.isFinite(end)) {
+				low = mid + 1;
+				continue;
+			}
+
+			if (time < kf.start) {
+				high = mid - 1;
+			} else if (time >= end) {
+				low = mid + 1;
+			} else {
+				// Found: time >= kf.start && time < end
+				return mid;
+			}
+		}
+
+		return -1; // Not found
 	}
 
 	private createKeyframes(value: Keyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {

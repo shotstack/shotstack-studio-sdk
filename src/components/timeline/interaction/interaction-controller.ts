@@ -85,6 +85,7 @@ export class InteractionController {
 	private lumaConnectionLine: HTMLElement | null = null;
 
 	// Bound handlers for cleanup
+	private readonly handlePointerDown: (e: PointerEvent) => void;
 	private readonly handlePointerMove: (e: PointerEvent) => void;
 	private readonly handlePointerUp: (e: PointerEvent) => void;
 
@@ -99,6 +100,7 @@ export class InteractionController {
 		this.config = { ...DEFAULT_CONFIG, ...config };
 
 		// Bind handlers
+		this.handlePointerDown = this.onPointerDown.bind(this);
 		this.handlePointerMove = this.onPointerMove.bind(this);
 		this.handlePointerUp = this.onPointerUp.bind(this);
 
@@ -106,7 +108,7 @@ export class InteractionController {
 	}
 
 	private setupEventListeners(): void {
-		this.tracksContainer.addEventListener("pointerdown", this.onPointerDown.bind(this));
+		this.tracksContainer.addEventListener("pointerdown", this.handlePointerDown);
 		document.addEventListener("pointermove", this.handlePointerMove);
 		document.addEventListener("pointerup", this.handlePointerUp);
 	}
@@ -1084,6 +1086,7 @@ export class InteractionController {
 	}
 
 	public dispose(): void {
+		this.tracksContainer.removeEventListener("pointerdown", this.handlePointerDown);
 		document.removeEventListener("pointermove", this.handlePointerMove);
 		document.removeEventListener("pointerup", this.handlePointerUp);
 

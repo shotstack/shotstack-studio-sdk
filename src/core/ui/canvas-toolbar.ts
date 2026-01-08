@@ -1,7 +1,14 @@
 import type { Edit } from "@core/edit-session";
 import type { MergeField } from "@core/merge";
 import { validateAssetUrl } from "@core/shared/utils";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import { injectShotstackStyles } from "@styles/inject";
+
+interface CanvasToolbarOptions {
+	mergeFields?: boolean;
+	/** Maximum total pixels allowed for custom resolution input. Omit for unlimited. */
+	maxPixels?: number;
+}
 
 type ResolutionChangeCallback = (width: number, height: number) => void;
 type FpsChangeCallback = (fps: number) => void;
@@ -95,10 +102,25 @@ export class CanvasToolbar {
 	// Feature flags
 	private showMergeFields: boolean;
 
-	constructor(edit?: Edit, options: { mergeFields?: boolean } = {}) {
+	// Constraint configuration
+	private maxPixels?: number;
+
+	constructor(edit?: Edit, options: CanvasToolbarOptions = {}) {
 		this.edit = edit ?? null;
 		this.showMergeFields = options.mergeFields ?? false;
+		this.maxPixels = options.maxPixels;
 		injectShotstackStyles();
+	}
+
+	/** Check if given dimensions exceed the configured pixel limit */
+	private isOverLimit(width: number, height: number): boolean {
+		if (!this.maxPixels) return false;
+		return width * height > this.maxPixels;
+	}
+
+	/** Get the edit as ShotstackEdit if it has merge field capabilities */
+	private getShotstackEdit(): ShotstackEdit | null {
+		return this.edit instanceof ShotstackEdit ? this.edit : null;
 	}
 
 	setPosition(screenX: number, screenY: number): void {
@@ -233,7 +255,11 @@ export class CanvasToolbar {
 
 		// Setup event listeners
 		this.setupEventListeners();
-		this.updateActiveStates();
+
+		// Sync toolbar state with actual edit size
+		if (this.edit) {
+			this.setResolution(this.edit.size.width, this.edit.size.height);
+		}
 	}
 
 	private setupEventListeners(): void {
@@ -352,6 +378,7 @@ export class CanvasToolbar {
 		this.currentHeight = height;
 		this.updateResolutionLabel();
 		this.updateActiveStates();
+		this.updateConstraintWarning();
 		this.closeAllPopups();
 
 		if (this.resolutionChangeCallback) {
@@ -363,7 +390,24 @@ export class CanvasToolbar {
 		if (this.customWidthInput && this.customHeightInput) {
 			const width = parseInt(this.customWidthInput.value, 10);
 			const height = parseInt(this.customHeightInput.value, 10);
+
 			if (!Number.isNaN(width) && !Number.isNaN(height) && width > 0 && height > 0) {
+				// Check pixel limit before applying (only if configured)
+				if (this.isOverLimit(width, height)) {
+					this.customWidthInput.classList.add("error");
+					this.customHeightInput.classList.add("error");
+					const errorMsg = `Exceeds limit (${this.maxPixels!.toLocaleString()} pixels)`;
+					this.customWidthInput.title = errorMsg;
+					this.customHeightInput.title = errorMsg;
+					return;
+				}
+
+				// Clear error/warning state
+				this.customWidthInput.classList.remove("error", "warning");
+				this.customHeightInput.classList.remove("error", "warning");
+				this.customWidthInput.title = "";
+				this.customHeightInput.title = "";
+
 				this.currentWidth = width;
 				this.currentHeight = height;
 				this.updateResolutionLabel();
@@ -446,7 +490,10 @@ export class CanvasToolbar {
 	private renderVariablesList(): void {
 		if (!this.variablesList || !this.variablesEmpty || !this.edit) return;
 
-		const fields = this.edit.mergeFields.getAll();
+		const shotstackEdit = this.getShotstackEdit();
+		if (!shotstackEdit) return;
+
+		const fields = shotstackEdit.mergeFields.getAll();
 
 		if (fields.length === 0) {
 			this.variablesList.innerHTML = "";
@@ -476,9 +523,10 @@ export class CanvasToolbar {
 			input.addEventListener("change", async e => {
 				const el = e.target as HTMLInputElement;
 				const name = el.dataset["varInput"];
-				if (name && this.edit) {
+				const ssEdit = this.getShotstackEdit();
+				if (name && ssEdit) {
 					// Validate URL if this is a src-type merge field
-					if (this.edit.isSrcMergeField(name)) {
+					if (ssEdit.isSrcMergeField(name)) {
 						const validation = await validateAssetUrl(el.value);
 						if (!validation.valid) {
 							el.classList.add("error");
@@ -490,8 +538,8 @@ export class CanvasToolbar {
 					}
 
 					// Update the merge field value and refresh affected clips
-					this.edit.updateMergeFieldValueLive(name, el.value);
-					this.edit.redrawMergeFieldClips(name);
+					ssEdit.updateMergeFieldValueLive(name, el.value);
+					ssEdit.redrawMergeFieldClips(name);
 				}
 			});
 		});
@@ -501,8 +549,9 @@ export class CanvasToolbar {
 				e.stopPropagation();
 				const el = e.target as HTMLElement;
 				const name = el.dataset["deleteVar"];
-				if (name) {
-					this.edit?.deleteMergeFieldGlobally(name);
+				const ssEdit = this.getShotstackEdit();
+				if (name && ssEdit) {
+					ssEdit.deleteMergeFieldGlobally(name);
 					this.renderVariablesList();
 				}
 			});
@@ -510,14 +559,15 @@ export class CanvasToolbar {
 	}
 
 	private addVariable(): void {
-		if (!this.edit) return;
+		const ssEdit = this.getShotstackEdit();
+		if (!ssEdit) return;
 
 		// eslint-disable-next-line no-alert -- Intentional use of prompt for quick variable name input
 		const name = prompt("Variable name:");
 		if (!name || !name.trim()) return;
 
 		const sanitizedName = name.trim().toUpperCase().replace(/\s+/g, "_");
-		this.edit.mergeFields.register({ name: sanitizedName, defaultValue: "" });
+		ssEdit.mergeFields.register({ name: sanitizedName, defaultValue: "" });
 		this.renderVariablesList();
 	}
 
@@ -526,9 +576,25 @@ export class CanvasToolbar {
 		this.currentHeight = Math.round(height);
 		this.updateResolutionLabel();
 		this.updateActiveStates();
+		this.updateConstraintWarning();
 
 		if (this.customWidthInput) this.customWidthInput.value = String(this.currentWidth);
 		if (this.customHeightInput) this.customHeightInput.value = String(this.currentHeight);
+	}
+
+	/** Update warning state for inputs when loaded resolution exceeds configured limit */
+	private updateConstraintWarning(): void {
+		const isOver = this.isOverLimit(this.currentWidth, this.currentHeight);
+
+		if (isOver) {
+			// Template loaded with over-limit resolution - show visual warning
+			// Inputs remain editable so users can reduce to valid values
+			this.customWidthInput?.classList.add("warning");
+			this.customHeightInput?.classList.add("warning");
+		} else {
+			this.customWidthInput?.classList.remove("warning");
+			this.customHeightInput?.classList.remove("warning");
+		}
 	}
 
 	setFps(fps: number): void {

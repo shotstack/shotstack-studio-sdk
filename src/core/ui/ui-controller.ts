@@ -2,6 +2,7 @@ import { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
+import { ShotstackEdit } from "@core/shotstack-edit";
 import type * as pixi from "pixi.js";
 
 import { AssetToolbar } from "./asset-toolbar";
@@ -85,6 +86,8 @@ export interface UIControllerOptions {
 	selectionHandles?: boolean;
 	/** Enable merge fields UI (Variables panel, autocomplete). Default: false (vanilla video editor) */
 	mergeFields?: boolean;
+	/** Maximum total pixels allowed for resolution picker input. Omit for unlimited. */
+	maxPixels?: number;
 }
 
 /**
@@ -117,6 +120,8 @@ export class UIController {
 	readonly mergeFieldsEnabled: boolean;
 	/** Whether selection handles are enabled for drag/resize/rotate */
 	private readonly selectionHandlesEnabled: boolean;
+	/** Maximum total pixels for resolution picker (undefined = unlimited) */
+	private readonly maxPixels?: number;
 
 	// Toolbar mode switching
 	private clipToolbar: ClipToolbar | null = null;
@@ -196,8 +201,10 @@ export class UIController {
 	private constructor(edit: Edit, canvas: Canvas | null, options: UIControllerOptions) {
 		this.edit = edit;
 		this.canvas = canvas;
-		this.mergeFieldsEnabled = options.mergeFields ?? false;
+		// Auto-detect Shotstack mode unless explicitly overridden
+		this.mergeFieldsEnabled = options.mergeFields ?? edit instanceof ShotstackEdit;
 		this.selectionHandlesEnabled = options.selectionHandles ?? true;
+		this.maxPixels = options.maxPixels;
 		this.onKeyDownBound = this.onKeyDown.bind(this);
 	}
 
@@ -227,8 +234,17 @@ export class UIController {
 		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 
 		// Utilities
-		this.canvasToolbar = new CanvasToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled });
+		this.canvasToolbar = new CanvasToolbar(this.edit, {
+			mergeFields: this.mergeFieldsEnabled,
+			maxPixels: this.maxPixels
+		});
 		this.registerUtility(this.canvasToolbar);
+
+		// Wire up toolbar callbacks to Edit methods
+		this.canvasToolbar.onResolutionChange((w, h) => this.edit.setOutputSize(w, h));
+		this.canvasToolbar.onFpsChange(fps => this.edit.setOutputFps(fps));
+		this.canvasToolbar.onBackgroundChange(color => this.edit.setTimelineBackground(color));
+
 		this.assetToolbar = new AssetToolbar(this);
 		this.registerUtility(this.assetToolbar);
 

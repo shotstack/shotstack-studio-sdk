@@ -15,7 +15,7 @@ async function main() {
 		// 2. Create core components
 		const edit = new Edit(template);
 		const canvas = new Canvas(edit);
-		const ui = UIController.create(edit, canvas, { mergeFields: true });
+		const ui = UIController.create(edit, canvas);
 
 		// 3. Load canvas and edit
 		await canvas.load();

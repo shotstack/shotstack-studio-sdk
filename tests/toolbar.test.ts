@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-/* eslint-disable import/first */
+/* eslint-disable import/first, max-classes-per-file */
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import type { Mock } from "jest-mock";
 
@@ -18,20 +18,37 @@ jest.mock("pixi.js", () => ({
 	Texture: jest.fn()
 }));
 
-// Mock player module
-jest.mock("../src/components/canvas/players/player", () => ({
-	PlayerType: {
-		Video: "video",
-		Image: "image",
-		Audio: "audio",
-		Text: "text",
-		Html: "html",
-		Shape: "shape",
-		Caption: "caption",
-		Luma: "luma",
-		RichText: "rich-text"
+// Mock player module with actual Player class for extends
+jest.mock("../src/components/canvas/players/player", () => {
+	class MockPlayer {
+		clipConfiguration = {};
+
+		getMergeFieldBinding = jest.fn(() => null);
 	}
+	return {
+		Player: MockPlayer,
+		PlayerType: {
+			Video: "video",
+			Image: "image",
+			Audio: "audio",
+			Text: "text",
+			Html: "html",
+			Shape: "shape",
+			Caption: "caption",
+			Luma: "luma",
+			RichText: "rich-text",
+			Svg: "svg"
+		}
+	};
+});
+
+// Mock ShotstackEdit to prevent circular dependency issues
+jest.mock("../src/core/shotstack-edit", () => ({
+	ShotstackEdit: class MockShotstackEdit {}
 }));
+
+// Mock edit-session (no longer exports MAX_PIXELS - constraint is now in toolbar options)
+jest.mock("../src/core/edit-session", () => ({}));
 
 // Mock IntersectionObserver (not provided by jsdom)
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
@@ -130,6 +147,9 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 				fonts: [],
 				tracks: []
 			}
+		})),
+		getDocument: jest.fn(() => ({
+			getFonts: jest.fn(() => [])
 		})),
 		getMergeFieldForProperty: jest.fn(() => null),
 		updateClip: jest.fn(),
@@ -1275,6 +1295,115 @@ describe("TextToolbar", () => {
 // ============================================================================
 // Mode Toggle Regression Tests
 // ============================================================================
+
+// ============================================================================
+// UIController Callback Wiring Tests (Regression)
+// ============================================================================
+
+describe("UIController Callback Wiring (Regression)", () => {
+	/**
+	 * REGRESSION TEST: UIController must wire up CanvasToolbar callbacks to Edit methods
+	 *
+	 * Bug: CanvasToolbar had callback methods (onResolutionChange, onFpsChange,
+	 * onBackgroundChange) but UIController never registered them. Clicking presets
+	 * updated toolbar state but never changed the canvas.
+	 *
+	 * Fix: UIController.registerStandardToolbars() now wires callbacks to Edit methods.
+	 */
+	describe("resolution callback wiring", () => {
+		it("clicking resolution preset should call edit.setOutputSize when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Simulate what UIController does - wire up the callback
+			toolbar.onResolutionChange((w, h) => mockEdit.setOutputSize(w, h));
+			toolbar.mount(container);
+
+			// Open resolution popup
+			const resBtn = container.querySelector('[data-action="resolution"]');
+			simulateClick(resBtn);
+
+			// Click a preset
+			const preset = container.querySelector('[data-width="1280"][data-height="720"]');
+			simulateClick(preset);
+
+			// Edit.setOutputSize should have been called
+			expect(mockEdit.setOutputSize).toHaveBeenCalledWith(1280, 720);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("custom width/height inputs should call edit.setOutputSize when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.onResolutionChange((w, h) => mockEdit.setOutputSize(w, h));
+			toolbar.mount(container);
+
+			const widthInput = container.querySelector("[data-custom-width]") as HTMLInputElement;
+			const heightInput = container.querySelector("[data-custom-height]") as HTMLInputElement;
+
+			simulateChange(widthInput, 800);
+			simulateChange(heightInput, 600);
+
+			expect(mockEdit.setOutputSize).toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	describe("FPS callback wiring", () => {
+		it("clicking FPS option should call edit.setOutputFps when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.onFpsChange(fps => mockEdit.setOutputFps(fps));
+			toolbar.mount(container);
+
+			// Open FPS popup
+			const fpsBtn = container.querySelector('[data-action="fps"]');
+			simulateClick(fpsBtn);
+
+			// Click FPS option
+			const fpsOption = container.querySelector('[data-fps="30"]');
+			simulateClick(fpsOption);
+
+			expect(mockEdit.setOutputFps).toHaveBeenCalledWith(30);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	describe("background callback wiring", () => {
+		it("clicking color swatch should call edit.setTimelineBackground when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.onBackgroundChange(color => mockEdit.setTimelineBackground(color));
+			toolbar.mount(container);
+
+			// Open background popup
+			const bgBtn = container.querySelector('[data-action="background"]');
+			simulateClick(bgBtn);
+
+			// Click a swatch
+			const swatch = container.querySelector('[data-swatch-color="#FFFFFF"]');
+			simulateClick(swatch);
+
+			expect(mockEdit.setTimelineBackground).toHaveBeenCalledWith("#FFFFFF");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+});
 
 describe("Mode Toggle (Regression)", () => {
 	/**

@@ -15,6 +15,11 @@ export interface TimelineUpdatedEvent {
 export type EditCommand = {
 	execute(context?: CommandContext): void | Promise<void>;
 	undo?(context?: CommandContext): void | Promise<void>;
+	/**
+	 * Optional cleanup when command is pruned from history.
+	 * Called when command is removed to free memory (e.g., Player references, deep-cloned configs).
+	 */
+	dispose?(): void;
 	readonly name: string;
 };
 
@@ -46,4 +51,12 @@ export type CommandContext = {
 	trackEndLengthClip(clip: Player): void;
 	// Merge field context
 	getMergeFields(): MergeFieldService;
+
+	// Output settings
+	getOutputSize(): { width: number; height: number };
+	setOutputSize(width: number, height: number): void;
+	getOutputFps(): number;
+	setOutputFps(fps: number): void;
+	getTimelineBackground(): string;
+	setTimelineBackground(color: string): void;
 };
