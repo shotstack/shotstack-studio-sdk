@@ -1,5 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
+import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, ResolvedTrack } from "@schemas";
 
 import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../timeline.types";
@@ -18,6 +19,12 @@ export class TimelineStateManager {
 	// Track which content Players have visible lumas for editing
 	private lumaEditingVisible = new Set<Player>();
 
+	/**
+	 * Cached tracks state to avoid recreating objects every frame.
+	 * Invalidated on timeline changes, selection changes, and visual state changes.
+	 */
+	private cachedTracks: TrackState[] | null = null;
+
 	constructor(
 		private readonly edit: Edit,
 		initialViewport: Partial<ViewportState> = {}
@@ -29,15 +36,29 @@ export class TimelineStateManager {
 			width: initialViewport.width ?? 800,
 			height: initialViewport.height ?? 400
 		};
+
+		// Subscribe to events that require cache invalidation
+		this.edit.events.on(EditEvent.TimelineUpdated, this.invalidateCache);
+		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
+		this.edit.events.on(EditEvent.SelectionCleared, this.invalidateCache);
 	}
 
-	// ========== Derived from Edit (no caching) ==========
+	/** Invalidate the tracks cache - called on timeline/selection changes */
+	private invalidateCache = (): void => {
+		this.cachedTracks = null;
+	};
+
+	// ========== Derived from Edit (memoized) ==========
 
 	public getTracks(): TrackState[] {
+		if (this.cachedTracks) {
+			return this.cachedTracks;
+		}
+
 		const resolvedEdit = this.edit.getResolvedEdit();
 		if (!resolvedEdit?.timeline?.tracks) return [];
 
-		return resolvedEdit.timeline.tracks.map((track: ResolvedTrack, trackIndex: number) => {
+		this.cachedTracks = resolvedEdit.timeline.tracks.map((track: ResolvedTrack, trackIndex: number) => {
 			const clips = (track.clips || []).map((clip: ResolvedClip, clipIndex: number) => this.createClipState(clip, trackIndex, clipIndex));
 
 			// Derive primary asset type from first clip
@@ -49,6 +70,8 @@ export class TimelineStateManager {
 				primaryAssetType
 			};
 		});
+
+		return this.cachedTracks;
 	}
 
 	public getPlayback(): PlaybackState {
@@ -85,6 +108,7 @@ export class TimelineStateManager {
 
 	public setClipVisualState(trackIndex: number, clipIndex: number, state: ClipVisualState): void {
 		this.clipVisualStates.set(`${trackIndex}-${clipIndex}`, state);
+		this.invalidateCache();
 	}
 
 	public getClipVisualState(trackIndex: number, clipIndex: number): ClipVisualState {
@@ -93,6 +117,7 @@ export class TimelineStateManager {
 
 	public clearVisualStates(): void {
 		this.clipVisualStates.clear();
+		this.invalidateCache();
 	}
 
 	// ========== Selection (delegate to Edit) ==========
@@ -261,6 +286,13 @@ export class TimelineStateManager {
 	}
 
 	public dispose(): void {
+		// Remove event listeners
+		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
+		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
+		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
+
+		// Clear state
+		this.cachedTracks = null;
 		this.clipVisualStates.clear();
 		this.lumaAttachments.clear();
 		this.lumaEditingVisible.clear();
