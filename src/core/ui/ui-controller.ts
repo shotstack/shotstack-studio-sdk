@@ -86,6 +86,8 @@ export interface UIControllerOptions {
 	selectionHandles?: boolean;
 	/** Enable merge fields UI (Variables panel, autocomplete). Default: false (vanilla video editor) */
 	mergeFields?: boolean;
+	/** Maximum total pixels (width × height) allowed in resolution picker. Default: unlimited */
+	maxPixels?: number;
 }
 
 /**
