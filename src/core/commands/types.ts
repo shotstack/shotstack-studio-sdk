@@ -46,4 +46,12 @@ export type CommandContext = {
 	trackEndLengthClip(clip: Player): void;
 	// Merge field context
 	getMergeFields(): MergeFieldService;
+
+	// Output settings
+	getOutputSize(): { width: number; height: number };
+	setOutputSize(width: number, height: number): void;
+	getOutputFps(): number;
+	setOutputFps(fps: number): void;
+	getTimelineBackground(): string;
+	setTimelineBackground(color: string): void;
 };

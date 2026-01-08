@@ -18,6 +18,9 @@ import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { SelectClipCommand } from "@core/commands/select-clip-command";
+import { SetOutputFpsCommand } from "@core/commands/set-output-fps-command";
+import { SetOutputSizeCommand } from "@core/commands/set-output-size-command";
+import { SetTimelineBackgroundCommand } from "@core/commands/set-timeline-background-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { TransformClipAssetCommand } from "@core/commands/transform-clip-asset-command";
@@ -40,8 +43,10 @@ import {
 	DestinationSchema,
 	EditSchema,
 	HexColorSchema,
+	OutputAspectRatioSchema,
 	OutputFormatSchema,
 	OutputFpsSchema,
+	OutputResolutionSchema,
 	OutputSizeSchema,
 	type Clip,
 	type Destination,
@@ -56,6 +61,54 @@ import * as pixi from "pixi.js";
 
 import type { EditCommand, CommandContext } from "./commands/types";
 import { EditDocument } from "./edit-document";
+
+// ─── Resolution Preset Dimensions ─────────────────────────────────────────────
+
+/**
+ * Base dimensions for each resolution preset (16:9 aspect ratio)
+ */
+const RESOLUTION_DIMENSIONS: Record<string, { width: number; height: number }> = {
+	preview: { width: 512, height: 288 },
+	mobile: { width: 640, height: 360 },
+	sd: { width: 1024, height: 576 },
+	hd: { width: 1280, height: 720 },
+	"1080": { width: 1920, height: 1080 },
+	"4k": { width: 3840, height: 2160 }
+};
+
+/**
+ * Calculate output size from resolution preset and aspect ratio.
+ * Resolution defines the base dimensions (16:9), aspectRatio transforms them.
+ */
+function calculateSizeFromPreset(resolution: string, aspectRatio: string = "16:9"): Size {
+	const base = RESOLUTION_DIMENSIONS[resolution];
+	if (!base) {
+		throw new Error(`Unknown resolution: ${resolution}`);
+	}
+
+	// Apply aspect ratio transformation
+	// Base dimensions are 16:9, so we transform to the target aspect ratio
+	switch (aspectRatio) {
+		case "16:9":
+			return { width: base.width, height: base.height };
+		case "9:16":
+			// Flip width and height for vertical orientation
+			return { width: base.height, height: base.width };
+		case "1:1":
+			// Square - use height as base dimension
+			return { width: base.height, height: base.height };
+		case "4:5":
+			// Short vertical - maintain height, adjust width to 4:5 ratio
+			return { width: Math.round((base.height * 4) / 5), height: base.height };
+		case "4:3":
+			// Legacy TV - maintain height, adjust width to 4:3 ratio
+			return { width: Math.round((base.height * 4) / 3), height: base.height };
+		default:
+			throw new Error(`Unknown aspectRatio: ${aspectRatio}`);
+	}
+}
+
+// ─── Edit Session Class ───────────────────────────────────────────────────────
 
 export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
@@ -151,7 +204,14 @@ export class Edit extends Entity {
 		this.document = new EditDocument(template);
 
 		// Extract configuration from document
-		this.size = this.document.getSize();
+		// Calculate size from resolution preset, or use explicit size
+		const resolution = this.document.getResolution();
+		if (resolution) {
+			const aspectRatio = this.document.getAspectRatio();
+			this.size = calculateSizeFromPreset(resolution, aspectRatio);
+		} else {
+			this.size = this.document.getSize();
+		}
 		this.backgroundColor = this.document.getBackground() ?? "#000000";
 
 		// Initialize runtime state
@@ -352,6 +412,18 @@ export class Edit extends Entity {
 			this.viewportMask.rect(0, 0, this.size.width, this.size.height);
 			this.viewportMask.fill(0xffffff);
 		}
+	}
+
+	/** Update canvas visuals after size change (viewport mask, background, zoom) */
+	private updateCanvasForSize(): void {
+		this.updateViewportMask();
+		if (this.background) {
+			this.background.clear();
+			this.background.fillStyle = { color: this.backgroundColor };
+			this.background.rect(0, 0, this.size.width, this.size.height);
+			this.background.fill();
+		}
+		this.canvas?.zoomToFit();
 	}
 
 	public play(): void {
@@ -1145,6 +1217,14 @@ export class Edit extends Entity {
 			this.setOutputDestinations(newOutput.destinations);
 		}
 
+		if (newOutput?.resolution !== undefined && currentOutput?.resolution !== newOutput.resolution) {
+			this.setOutputResolution(newOutput.resolution);
+		}
+
+		if (newOutput?.aspectRatio !== undefined && currentOutput?.aspectRatio !== newOutput.aspectRatio) {
+			this.setOutputAspectRatio(newOutput.aspectRatio);
+		}
+
 		const newBg = newEdit.timeline?.background;
 		if (newBg && this.backgroundColor !== newBg) {
 			this.setTimelineBackground(newBg);
@@ -1266,7 +1346,14 @@ export class Edit extends Entity {
 			untrackEndLengthClip: clip => this.endLengthClips.delete(clip),
 			trackEndLengthClip: clip => this.endLengthClips.add(clip),
 			// Merge field context
-			getMergeFields: () => this.mergeFieldService
+			getMergeFields: () => this.mergeFieldService,
+			// Output settings
+			getOutputSize: () => ({ width: this.size.width, height: this.size.height }),
+			setOutputSize: (width, height) => this.setOutputSizeInternal(width, height),
+			getOutputFps: () => this.getOutputFps(),
+			setOutputFps: fps => this.setOutputFpsInternal(fps),
+			getTimelineBackground: () => this.getTimelineBackground(),
+			setTimelineBackground: color => this.setTimelineBackgroundInternal(color)
 		};
 	}
 
@@ -1846,6 +1933,12 @@ export class Edit extends Entity {
 	}
 
 	public setOutputSize(width: number, height: number): void {
+		const command = new SetOutputSizeCommand(width, height);
+		this.executeCommand(command);
+	}
+
+	/** @internal Called by SetOutputSizeCommand */
+	private setOutputSizeInternal(width: number, height: number): void {
 		const result = OutputSizeSchema.safeParse({ width, height });
 		if (!result.success) {
 			throw new Error(`Invalid size: ${result.error.issues[0]?.message}`);
@@ -1860,26 +1953,29 @@ export class Edit extends Entity {
 				...this.edit.output,
 				size
 			};
+			// Clear resolution/aspectRatio (mutually exclusive with custom size)
+			delete this.edit.output.resolution;
+			delete this.edit.output.aspectRatio;
 		}
 
 		// Sync with document layer
 		this.document?.setSize(size);
+		this.document?.clearResolution();
+		this.document?.clearAspectRatio();
 
-		this.updateViewportMask();
-		this.canvas?.zoomToFit();
-
-		if (this.background) {
-			this.background.clear();
-			this.background.fillStyle = { color: this.backgroundColor };
-			this.background.rect(0, 0, width, height);
-			this.background.fill();
-		}
+		this.updateCanvasForSize();
 
 		this.events.emit(EditEvent.OutputResized, size);
-		this.emitEditChanged("output:size");
+		// Note: emitEditChanged is handled by executeCommand
 	}
 
 	public setOutputFps(fps: number): void {
+		const command = new SetOutputFpsCommand(fps);
+		this.executeCommand(command);
+	}
+
+	/** @internal Called by SetOutputFpsCommand */
+	private setOutputFpsInternal(fps: number): void {
 		const result = OutputFpsSchema.safeParse(fps);
 		if (!result.success) {
 			throw new Error(`Invalid fps: ${result.error.issues[0]?.message}`);
@@ -1896,7 +1992,7 @@ export class Edit extends Entity {
 		this.document?.setFps(result.data);
 
 		this.events.emit(EditEvent.OutputFpsChanged, { fps });
-		this.emitEditChanged("output:fps");
+		// Note: emitEditChanged is handled by executeCommand
 	}
 
 	public getOutputFps(): number {
@@ -1948,6 +2044,95 @@ export class Edit extends Entity {
 		return this.edit?.output?.destinations ?? [];
 	}
 
+	public setOutputResolution(resolution: string): void {
+		const result = OutputResolutionSchema.safeParse(resolution);
+		if (!result.success || !result.data) {
+			throw new Error(`Invalid resolution: ${result.success ? "resolution is required" : result.error.issues[0]?.message}`);
+		}
+
+		const validatedResolution = result.data;
+		const aspectRatio = this.edit?.output?.aspectRatio ?? "16:9";
+		const newSize = calculateSizeFromPreset(validatedResolution, aspectRatio);
+
+		// Update runtime state
+		this.size = newSize;
+
+		if (this.edit) {
+			this.edit.output = {
+				...this.edit.output,
+				resolution: validatedResolution
+			};
+			// Clear custom size (mutually exclusive with resolution/aspectRatio)
+			delete this.edit.output.size;
+		}
+
+		// Sync with document layer (size is cleared for mutual exclusivity)
+		this.document?.setResolution(validatedResolution);
+		this.document?.clearSize();
+
+		this.updateCanvasForSize();
+
+		this.events.emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
+		this.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
+		this.emitEditChanged("output:resolution");
+	}
+
+	public getOutputResolution(): string | undefined {
+		return this.edit?.output?.resolution;
+	}
+
+	public setOutputAspectRatio(aspectRatio: string): void {
+		const result = OutputAspectRatioSchema.safeParse(aspectRatio);
+		if (!result.success || !result.data) {
+			throw new Error(`Invalid aspectRatio: ${result.success ? "aspectRatio is required" : result.error.issues[0]?.message}`);
+		}
+
+		const validatedAspectRatio = result.data;
+		const resolution = this.edit?.output?.resolution;
+		if (!resolution) {
+			// If no resolution is set, just store the aspectRatio without recalculating size
+			if (this.edit) {
+				this.edit.output = {
+					...this.edit.output,
+					aspectRatio: validatedAspectRatio
+				};
+			}
+			this.document?.setAspectRatio(validatedAspectRatio);
+			this.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
+			this.emitEditChanged("output:aspectRatio");
+			return;
+		}
+
+		// Recalculate size based on current resolution and new aspectRatio
+		const newSize = calculateSizeFromPreset(resolution, validatedAspectRatio);
+
+		// Update runtime state
+		this.size = newSize;
+
+		if (this.edit) {
+			this.edit.output = {
+				...this.edit.output,
+				aspectRatio: validatedAspectRatio
+			};
+			// Clear custom size (mutually exclusive with resolution/aspectRatio)
+			delete this.edit.output.size;
+		}
+
+		// Sync with document layer (size is cleared for mutual exclusivity)
+		this.document?.setAspectRatio(validatedAspectRatio);
+		this.document?.clearSize();
+
+		this.updateCanvasForSize();
+
+		this.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
+		this.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
+		this.emitEditChanged("output:aspectRatio");
+	}
+
+	public getOutputAspectRatio(): string | undefined {
+		return this.edit?.output?.aspectRatio;
+	}
+
 	public getTimelineFonts(): Array<{ src: string }> {
 		return this.edit?.timeline?.fonts ?? [];
 	}
@@ -1992,6 +2177,12 @@ export class Edit extends Entity {
 	}
 
 	public setTimelineBackground(color: string): void {
+		const command = new SetTimelineBackgroundCommand(color);
+		this.executeCommand(command);
+	}
+
+	/** @internal Called by SetTimelineBackgroundCommand */
+	private setTimelineBackgroundInternal(color: string): void {
 		const result = HexColorSchema.safeParse(color);
 		if (!result.success) {
 			throw new Error(`Invalid color: ${result.error.issues[0]?.message}`);
@@ -2017,7 +2208,7 @@ export class Edit extends Entity {
 		}
 
 		this.events.emit(EditEvent.TimelineBackgroundChanged, { color: result.data });
-		this.emitEditChanged("timeline:background");
+		// Note: emitEditChanged is handled by executeCommand
 	}
 
 	public getTimelineBackground(): string {
