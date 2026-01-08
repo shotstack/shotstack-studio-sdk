@@ -4,6 +4,12 @@ import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import { injectShotstackStyles } from "@styles/inject";
 
+interface CanvasToolbarOptions {
+	mergeFields?: boolean;
+	/** Maximum total pixels allowed for custom resolution input. Omit for unlimited. */
+	maxPixels?: number;
+}
+
 type ResolutionChangeCallback = (width: number, height: number) => void;
 type FpsChangeCallback = (fps: number) => void;
 type BackgroundChangeCallback = (color: string) => void;
@@ -96,10 +102,20 @@ export class CanvasToolbar {
 	// Feature flags
 	private showMergeFields: boolean;
 
-	constructor(edit?: Edit, options: { mergeFields?: boolean } = {}) {
+	// Constraint configuration
+	private maxPixels?: number;
+
+	constructor(edit?: Edit, options: CanvasToolbarOptions = {}) {
 		this.edit = edit ?? null;
 		this.showMergeFields = options.mergeFields ?? false;
+		this.maxPixels = options.maxPixels;
 		injectShotstackStyles();
+	}
+
+	/** Check if given dimensions exceed the configured pixel limit */
+	private isOverLimit(width: number, height: number): boolean {
+		if (!this.maxPixels) return false;
+		return width * height > this.maxPixels;
 	}
 
 	/** Get the edit as ShotstackEdit if it has merge field capabilities */
@@ -239,7 +255,11 @@ export class CanvasToolbar {
 
 		// Setup event listeners
 		this.setupEventListeners();
-		this.updateActiveStates();
+
+		// Sync toolbar state with actual edit size
+		if (this.edit) {
+			this.setResolution(this.edit.size.width, this.edit.size.height);
+		}
 	}
 
 	private setupEventListeners(): void {
@@ -358,6 +378,7 @@ export class CanvasToolbar {
 		this.currentHeight = height;
 		this.updateResolutionLabel();
 		this.updateActiveStates();
+		this.updateConstraintWarning();
 		this.closeAllPopups();
 
 		if (this.resolutionChangeCallback) {
@@ -369,7 +390,24 @@ export class CanvasToolbar {
 		if (this.customWidthInput && this.customHeightInput) {
 			const width = parseInt(this.customWidthInput.value, 10);
 			const height = parseInt(this.customHeightInput.value, 10);
+
 			if (!Number.isNaN(width) && !Number.isNaN(height) && width > 0 && height > 0) {
+				// Check pixel limit before applying (only if configured)
+				if (this.isOverLimit(width, height)) {
+					this.customWidthInput.classList.add("error");
+					this.customHeightInput.classList.add("error");
+					const errorMsg = `Exceeds limit (${this.maxPixels!.toLocaleString()} pixels)`;
+					this.customWidthInput.title = errorMsg;
+					this.customHeightInput.title = errorMsg;
+					return;
+				}
+
+				// Clear error/warning state
+				this.customWidthInput.classList.remove("error", "warning");
+				this.customHeightInput.classList.remove("error", "warning");
+				this.customWidthInput.title = "";
+				this.customHeightInput.title = "";
+
 				this.currentWidth = width;
 				this.currentHeight = height;
 				this.updateResolutionLabel();
@@ -538,9 +576,25 @@ export class CanvasToolbar {
 		this.currentHeight = Math.round(height);
 		this.updateResolutionLabel();
 		this.updateActiveStates();
+		this.updateConstraintWarning();
 
 		if (this.customWidthInput) this.customWidthInput.value = String(this.currentWidth);
 		if (this.customHeightInput) this.customHeightInput.value = String(this.currentHeight);
+	}
+
+	/** Update warning state for inputs when loaded resolution exceeds configured limit */
+	private updateConstraintWarning(): void {
+		const isOver = this.isOverLimit(this.currentWidth, this.currentHeight);
+
+		if (isOver) {
+			// Template loaded with over-limit resolution - show visual warning
+			// Inputs remain editable so users can reduce to valid values
+			this.customWidthInput?.classList.add("warning");
+			this.customHeightInput?.classList.add("warning");
+		} else {
+			this.customWidthInput?.classList.remove("warning");
+			this.customHeightInput?.classList.remove("warning");
+		}
 	}
 
 	setFps(fps: number): void {

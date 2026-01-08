@@ -147,6 +147,20 @@ export class EditDocument {
 		return this.data.output.fps;
 	}
 
+	/**
+	 * Get output resolution preset
+	 */
+	getResolution(): Edit["output"]["resolution"] {
+		return this.data.output.resolution;
+	}
+
+	/**
+	 * Get output aspect ratio
+	 */
+	getAspectRatio(): Edit["output"]["aspectRatio"] {
+		return this.data.output.aspectRatio;
+	}
+
 	// ─── Merge Fields ─────────────────────────────────────────────────────────
 
 	/**
@@ -308,6 +322,41 @@ export class EditDocument {
 	 */
 	setFps(fps: Edit["output"]["fps"]): void {
 		this.data.output.fps = fps;
+	}
+
+	/**
+	 * Set output resolution preset
+	 */
+	setResolution(resolution: Edit["output"]["resolution"]): void {
+		this.data.output.resolution = resolution;
+	}
+
+	/**
+	 * Clear output resolution preset
+	 */
+	clearResolution(): void {
+		delete this.data.output.resolution;
+	}
+
+	/**
+	 * Set output aspect ratio
+	 */
+	setAspectRatio(aspectRatio: Edit["output"]["aspectRatio"]): void {
+		this.data.output.aspectRatio = aspectRatio;
+	}
+
+	/**
+	 * Clear output aspect ratio
+	 */
+	clearAspectRatio(): void {
+		delete this.data.output.aspectRatio;
+	}
+
+	/**
+	 * Clear output size (for use when setting resolution/aspectRatio)
+	 */
+	clearSize(): void {
+		delete this.data.output.size;
 	}
 
 	// ─── Merge Field Mutations ────────────────────────────────────────────────
