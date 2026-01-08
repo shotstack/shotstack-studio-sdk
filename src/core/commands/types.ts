@@ -15,6 +15,11 @@ export interface TimelineUpdatedEvent {
 export type EditCommand = {
 	execute(context?: CommandContext): void | Promise<void>;
 	undo?(context?: CommandContext): void | Promise<void>;
+	/**
+	 * Optional cleanup when command is pruned from history.
+	 * Called when command is removed to free memory (e.g., Player references, deep-cloned configs).
+	 */
+	dispose?(): void;
 	readonly name: string;
 };
 

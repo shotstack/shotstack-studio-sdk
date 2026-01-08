@@ -51,6 +51,7 @@ export class Timeline extends TimelineEntity {
 	private readonly handlePlaybackPause: () => void;
 	private readonly handleClipSelected: () => void;
 	private readonly handleClipLoadFailed: () => void;
+	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
 
 	constructor(
 		private readonly edit: Edit,
@@ -101,6 +102,13 @@ export class Timeline extends TimelineEntity {
 		};
 		this.handleClipSelected = () => this.requestRender();
 		this.handleClipLoadFailed = () => this.requestRender();
+		this.handleRulerMouseMove = (e: MouseEvent) => {
+			if (!this.playheadGhost || !this.rulerTracksWrapper) return;
+			const rect = this.rulerTracksWrapper.getBoundingClientRect();
+			const scrollX = this.trackList?.element.scrollLeft ?? 0;
+			const x = e.clientX - rect.left + scrollX;
+			this.playheadGhost.style.left = `${x}px`;
+		};
 	}
 
 	/** Initialize and mount the timeline */
@@ -386,13 +394,7 @@ export class Timeline extends TimelineEntity {
 			this.playheadGhost.className = "ss-playhead-ghost";
 			this.rulerTracksWrapper.appendChild(this.playheadGhost);
 
-			this.rulerTracksWrapper.addEventListener("mousemove", e => {
-				if (!this.playheadGhost || !this.rulerTracksWrapper) return;
-				const rect = this.rulerTracksWrapper.getBoundingClientRect();
-				const scrollX = this.trackList?.element.scrollLeft ?? 0;
-				const x = e.clientX - rect.left + scrollX;
-				this.playheadGhost.style.left = `${x}px`;
-			});
+			this.rulerTracksWrapper.addEventListener("mousemove", this.handleRulerMouseMove);
 		}
 
 		// Build feedback layer (inside rulerTracksWrapper so coordinates align with tracks)
@@ -426,6 +428,8 @@ export class Timeline extends TimelineEntity {
 		this.trackList?.dispose();
 		this.trackList = null;
 
+		// Remove mousemove listener before removing element
+		this.rulerTracksWrapper?.removeEventListener("mousemove", this.handleRulerMouseMove);
 		this.rulerTracksWrapper?.remove();
 		this.rulerTracksWrapper = null;
 

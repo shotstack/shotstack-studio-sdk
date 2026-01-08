@@ -112,6 +112,12 @@ function calculateSizeFromPreset(resolution: string, aspectRatio: string = "16:9
 
 export class Edit extends Entity {
 	private static readonly ZIndexPadding = 100;
+	/**
+	 * Maximum number of commands to keep in undo history.
+	 * Prevents unbounded memory growth in long editing sessions.
+	 * Each command may hold Player references and deep-cloned configs.
+	 */
+	private static readonly MAX_HISTORY_SIZE = 100;
 
 	public assetLoader: AssetLoader;
 	public events: EventEmitter<EditEventMap & InternalEventMap>;
@@ -392,6 +398,13 @@ export class Edit extends Entity {
 	public override dispose(): void {
 		this.clearClips();
 		this.lumaMaskController.dispose();
+
+		// Dispose all commands in history to free memory
+		for (const cmd of this.commandHistory) {
+			cmd.dispose?.();
+		}
+		this.commandHistory = [];
+		this.commandIndex = -1;
 
 		if (this.viewportMask) {
 			try {
@@ -1050,9 +1063,23 @@ export class Edit extends Entity {
 	protected executeCommand(command: EditCommand): void | Promise<void> {
 		const context = this.createCommandContext();
 		const result = command.execute(context);
+
+		// Dispose any commands we're about to overwrite (redo history)
+		const discarded = this.commandHistory.slice(this.commandIndex + 1);
+		for (const cmd of discarded) {
+			cmd.dispose?.();
+		}
+
 		this.commandHistory = this.commandHistory.slice(0, this.commandIndex + 1);
 		this.commandHistory.push(command);
 		this.commandIndex += 1;
+
+		// Prune old commands to prevent unbounded memory growth
+		while (this.commandHistory.length > Edit.MAX_HISTORY_SIZE) {
+			const pruned = this.commandHistory.shift();
+			pruned?.dispose?.();
+			this.commandIndex -= 1;
+		}
 
 		// Handle both sync and async commands
 		if (result instanceof Promise) {
