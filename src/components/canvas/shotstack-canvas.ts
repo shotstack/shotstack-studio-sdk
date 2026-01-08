@@ -36,6 +36,8 @@ export class Canvas {
 
 	private onTickBound: (ticker: pixi.Ticker) => void;
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
+	private onWheelBound: (e: WheelEvent) => void;
+	private canvasRoot: HTMLDivElement | null = null;
 
 	constructor(edit: Edit) {
 		this.application = new pixi.Application();
@@ -44,6 +46,7 @@ export class Canvas {
 		this.overlayContainer.sortableChildren = true;
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
+		this.onWheelBound = this.onWheel.bind(this);
 
 		edit.setCanvas(this);
 	}
@@ -107,52 +110,47 @@ export class Canvas {
 	}
 
 	private setupTouchHandling(root: HTMLDivElement): void {
-		const edit = this.edit.getContainer();
+		this.canvasRoot = root;
+		root.addEventListener("wheel", this.onWheelBound, { passive: false, capture: true });
+	}
 
-		root.addEventListener(
-			"wheel",
-			(e: WheelEvent) => {
-				// Allow scrolling in toolbar popups
-				const target = e.target as HTMLElement;
-				if (target.closest(".ss-toolbar-popup") || target.closest(".ss-canvas-toolbar-popup")) {
-					return;
-				}
+	private onWheel(e: WheelEvent): void {
+		// Allow scrolling in toolbar popups
+		const target = e.target as HTMLElement;
+		if (target.closest(".ss-toolbar-popup") || target.closest(".ss-canvas-toolbar-popup")) {
+			return;
+		}
 
-				e.preventDefault();
-				e.stopPropagation();
+		e.preventDefault();
+		e.stopPropagation();
 
-				if (e.ctrlKey) {
-					const scaleFactor = Math.exp(-e.deltaY / 100);
-					const newZoom = this.currentZoom * scaleFactor;
-					const oldZoom = this.currentZoom;
-					this.currentZoom = Math.min(Math.max(newZoom, this.minZoom), this.maxZoom);
+		if (e.ctrlKey) {
+			const edit = this.edit.getContainer();
+			const scaleFactor = Math.exp(-e.deltaY / 100);
+			const newZoom = this.currentZoom * scaleFactor;
+			const oldZoom = this.currentZoom;
+			this.currentZoom = Math.min(Math.max(newZoom, this.minZoom), this.maxZoom);
 
-					const stageCenter = {
-						x: this.application.canvas.width / 2,
-						y: this.application.canvas.height / 2
-					};
+			const stageCenter = {
+				x: this.application.canvas.width / 2,
+				y: this.application.canvas.height / 2
+			};
 
-					const distanceFromCenter = {
-						x: edit.position.x - stageCenter.x,
-						y: edit.position.y - stageCenter.y
-					};
+			const distanceFromCenter = {
+				x: edit.position.x - stageCenter.x,
+				y: edit.position.y - stageCenter.y
+			};
 
-					const zoomRatio = this.currentZoom / oldZoom;
+			const zoomRatio = this.currentZoom / oldZoom;
 
-					edit.position.x = stageCenter.x + distanceFromCenter.x * zoomRatio;
-					edit.position.y = stageCenter.y + distanceFromCenter.y * zoomRatio;
+			edit.position.x = stageCenter.x + distanceFromCenter.x * zoomRatio;
+			edit.position.y = stageCenter.y + distanceFromCenter.y * zoomRatio;
 
-					edit.scale.x = this.currentZoom;
-					edit.scale.y = this.currentZoom;
+			edit.scale.x = this.currentZoom;
+			edit.scale.y = this.currentZoom;
 
-					this.syncContentTransforms();
-				}
-			},
-			{
-				passive: false,
-				capture: true
-			}
-		);
+			this.syncContentTransforms();
+		}
 	}
 
 	public centerEdit(): void {
@@ -341,6 +339,10 @@ export class Canvas {
 
 		this.application.ticker.remove(this.onTickBound);
 		this.background?.off("pointerdown", this.onBackgroundClickBound);
+
+		// Remove wheel listener from canvas root
+		this.canvasRoot?.removeEventListener("wheel", this.onWheelBound, { capture: true });
+		this.canvasRoot = null;
 
 		this.background?.destroy();
 		this.overlayContainer.destroy();

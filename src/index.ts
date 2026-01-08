@@ -65,6 +65,8 @@ export {
 	OutputSizeSchema,
 	OutputFormatSchema,
 	OutputFpsSchema,
+	OutputResolutionSchema,
+	OutputAspectRatioSchema,
 	HexColorSchema
 } from "./core/schemas";
 export type {

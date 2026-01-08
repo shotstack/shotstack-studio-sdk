@@ -1288,3 +1288,32 @@ describe("AddTrackCommand Z-Index", () => {
 		expect(track1Player?.layer).toBe(2);
 	});
 });
+
+/**
+ * Output Settings Command Fail-Fast Tests
+ *
+ * Verifies that output settings commands throw on missing context
+ * rather than silently failing (fail-fast principle).
+ */
+describe("Output Settings Commands fail-fast", () => {
+	it("SetOutputSizeCommand throws when context is undefined", async () => {
+		const { SetOutputSizeCommand } = await import("@core/commands/set-output-size-command");
+		const cmd = new SetOutputSizeCommand(800, 600);
+		expect(() => cmd.execute(undefined)).toThrow("requires context");
+		expect(() => cmd.undo(undefined)).toThrow("requires context");
+	});
+
+	it("SetOutputFpsCommand throws when context is undefined", async () => {
+		const { SetOutputFpsCommand } = await import("@core/commands/set-output-fps-command");
+		const cmd = new SetOutputFpsCommand(24);
+		expect(() => cmd.execute(undefined)).toThrow("requires context");
+		expect(() => cmd.undo(undefined)).toThrow("requires context");
+	});
+
+	it("SetTimelineBackgroundCommand throws when context is undefined", async () => {
+		const { SetTimelineBackgroundCommand } = await import("@core/commands/set-timeline-background-command");
+		const cmd = new SetTimelineBackgroundCommand("#ff0000");
+		expect(() => cmd.execute(undefined)).toThrow("requires context");
+		expect(() => cmd.undo(undefined)).toThrow("requires context");
+	});
+});

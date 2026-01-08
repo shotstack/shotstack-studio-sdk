@@ -258,6 +258,30 @@
 	background: rgba(0, 0, 0, 0.02);
 }
 
+/* Warning state - template loaded over limit, user can edit to fix */
+.ss-canvas-toolbar-custom-input.warning {
+	border-color: rgba(217, 119, 6, 0.5);
+	background: rgba(217, 119, 6, 0.06);
+	color: rgba(180, 83, 9, 1);
+}
+
+.ss-canvas-toolbar-custom-input.warning:focus {
+	border-color: rgba(217, 119, 6, 0.7);
+	box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+/* Error state - user entered invalid value exceeding limit */
+.ss-canvas-toolbar-custom-input.error {
+	border-color: rgba(239, 68, 68, 0.5);
+	background: rgba(239, 68, 68, 0.06);
+	color: rgba(220, 38, 38, 1);
+}
+
+.ss-canvas-toolbar-custom-input.error:focus {
+	border-color: rgba(239, 68, 68, 0.7);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
 .ss-canvas-toolbar-custom-separator {
 	color: rgba(0, 0, 0, 0.3);
 	font-size: 13px;

@@ -155,4 +155,6 @@ export const DestinationSchema = destinationsSchema;
 export const OutputSizeSchema = sizeSchema;
 export const OutputFormatSchema = outputSchema.shape.format;
 export const OutputFpsSchema = outputSchema.shape.fps.unwrap(); // unwrap optional
+export const OutputResolutionSchema = outputSchema.shape.resolution;
+export const OutputAspectRatioSchema = outputSchema.shape.aspectRatio;
 export const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{8}$/);

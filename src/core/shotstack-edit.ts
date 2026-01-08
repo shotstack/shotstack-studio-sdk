@@ -388,21 +388,21 @@ export class ShotstackEdit extends Edit {
 		const tracks = template.timeline?.tracks;
 		if (tracks) {
 			for (const track of tracks) {
-				if (!track.clips) continue;
+				if (track.clips) {
+					for (let clipIdx = 0; clipIdx < track.clips.length; clipIdx += 1) {
+						const clip = track.clips[clipIdx];
+						const asset = clip.asset as { type?: string; text?: string } | undefined;
 
-				for (let clipIdx = 0; clipIdx < track.clips.length; clipIdx += 1) {
-					const clip = track.clips[clipIdx];
-					const asset = clip.asset as { type?: string; text?: string } | undefined;
-
-					if (asset?.type === "text") {
-						if (isEmptyTextAsset(asset)) {
-							// Convert empty text to SVG
-							track.clips[clipIdx] = convertEmptyTextClipToSvg(clip);
-							svgCount += 1;
-						} else {
-							// Convert text with content to rich-text
-							track.clips[clipIdx] = this.convertTextClipToRichText(clip);
-							richTextCount += 1;
+						if (asset?.type === "text") {
+							if (isEmptyTextAsset(asset)) {
+								// Convert empty text to SVG
+								track.clips[clipIdx] = convertEmptyTextClipToSvg(clip);
+								svgCount += 1;
+							} else {
+								// Convert text with content to rich-text
+								track.clips[clipIdx] = this.convertTextClipToRichText(clip);
+								richTextCount += 1;
+							}
 						}
 					}
 				}

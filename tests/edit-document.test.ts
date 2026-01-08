@@ -275,6 +275,64 @@ describe("EditDocument", () => {
 			const docWithoutFps = new EditDocument(createMinimalEdit());
 			expect(docWithoutFps.getFps()).toBeUndefined();
 		});
+
+		it("getResolution returns resolution or undefined", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			expect(doc.getResolution()).toBeUndefined();
+
+			doc.setResolution("hd");
+			expect(doc.getResolution()).toBe("hd");
+		});
+
+		it("getAspectRatio returns aspectRatio or undefined", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			expect(doc.getAspectRatio()).toBeUndefined();
+
+			doc.setAspectRatio("9:16");
+			expect(doc.getAspectRatio()).toBe("9:16");
+		});
+
+		it("setResolution sets resolution value", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			doc.setResolution("1080");
+
+			const output = doc.getOutput();
+			expect(output.resolution).toBe("1080");
+		});
+
+		it("clearResolution removes resolution from output", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			doc.setResolution("hd");
+			expect(doc.getResolution()).toBe("hd");
+
+			doc.clearResolution();
+			expect(doc.getResolution()).toBeUndefined();
+		});
+
+		it("setAspectRatio sets aspectRatio value", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			doc.setAspectRatio("1:1");
+
+			const output = doc.getOutput();
+			expect(output.aspectRatio).toBe("1:1");
+		});
+
+		it("clearAspectRatio removes aspectRatio from output", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			doc.setAspectRatio("4:3");
+			expect(doc.getAspectRatio()).toBe("4:3");
+
+			doc.clearAspectRatio();
+			expect(doc.getAspectRatio()).toBeUndefined();
+		});
+
+		it("clearSize removes size from output", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			expect(doc.getOutput().size).toBeDefined();
+
+			doc.clearSize();
+			expect(doc.getOutput().size).toBeUndefined();
+		});
 	});
 
 	// ─── Merge Field Tests ────────────────────────────────────────────────────

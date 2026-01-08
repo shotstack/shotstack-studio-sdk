@@ -56,6 +56,8 @@ export const EditEvent = {
 
 	// Output configuration
 	OutputResized: "output:resized",
+	OutputResolutionChanged: "output:resolutionChanged",
+	OutputAspectRatioChanged: "output:aspectRatioChanged",
 	OutputFpsChanged: "output:fpsChanged",
 	OutputFormatChanged: "output:formatChanged",
 	OutputDestinationsChanged: "output:destinationsChanged",
@@ -138,6 +140,8 @@ export type EditEventMap = {
 
 	// Output
 	[EditEvent.OutputResized]: { width: number; height: number };
+	[EditEvent.OutputResolutionChanged]: { resolution: string | undefined };
+	[EditEvent.OutputAspectRatioChanged]: { aspectRatio: string | undefined };
 	[EditEvent.OutputFpsChanged]: { fps: number };
 	[EditEvent.OutputFormatChanged]: { format: string };
 	[EditEvent.OutputDestinationsChanged]: { destinations: unknown[] };
