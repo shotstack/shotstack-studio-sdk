@@ -34,7 +34,7 @@ jest.mock("pixi.js", () => {
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
-					child.parent = self;
+					Object.assign(child, { parent: self });
 				}
 				return child;
 			}),
