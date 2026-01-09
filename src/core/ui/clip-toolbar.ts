@@ -1,3 +1,5 @@
+import { EditEvent } from "@core/events/edit-events";
+import { toMs } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -14,6 +16,7 @@ export class ClipToolbar extends BaseToolbar {
 	// Timing controls
 	private startControl: TimingControl | null = null;
 	private lengthControl: TimingControl | null = null;
+	private editChangedListener: (() => void) | null = null;
 
 	override mount(parent: HTMLElement): void {
 		injectShotstackStyles();
@@ -48,6 +51,16 @@ export class ClipToolbar extends BaseToolbar {
 
 		this.mountComponents();
 		this.setupOutsideClickHandler();
+		this.setupEventListeners();
+	}
+
+	private setupEventListeners(): void {
+		this.editChangedListener = () => {
+			if (this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0) {
+				this.syncState();
+			}
+		};
+		this.edit.events.on(EditEvent.EditChanged, this.editChangedListener);
 	}
 
 	private mountComponents(): void {
@@ -83,15 +96,16 @@ export class ClipToolbar extends BaseToolbar {
 
 	protected override syncState(): void {
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player?.clipConfiguration) return;
+		if (!player) return;
 
-		const clip = player.clipConfiguration;
+		// Use timing INTENT to preserve "auto"/"end" modes for display
+		const intent = player.getTimingIntent();
 
 		// Sync start timing
-		this.startControl?.setFromClip(clip.start);
+		this.startControl?.setFromClip(typeof intent.start === "number" ? toMs(intent.start) : intent.start);
 
 		// Sync length timing
-		this.lengthControl?.setFromClip(clip.length);
+		this.lengthControl?.setFromClip(typeof intent.length === "number" ? toMs(intent.length) : intent.length);
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
@@ -99,6 +113,11 @@ export class ClipToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
+		if (this.editChangedListener) {
+			this.edit.events.off(EditEvent.EditChanged, this.editChangedListener);
+			this.editChangedListener = null;
+		}
+
 		this.startControl?.dispose();
 		this.lengthControl?.dispose();
 
