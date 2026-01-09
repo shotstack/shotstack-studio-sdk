@@ -261,12 +261,32 @@
 }
 
 .ss-media-toolbar-slider-value {
-	min-width: 42px;
+	min-width: 44px;
+	max-width: 52px;
 	text-align: right;
 	font-size: 13px;
 	font-weight: 500;
 	color: rgba(255, 255, 255, 0.9);
 	font-variant-numeric: tabular-nums;
+	/* Input reset for editable field */
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	padding: 2px 4px;
+	outline: none;
+	font-family: inherit;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.ss-media-toolbar-slider-value:hover {
+	border-color: rgba(255, 255, 255, 0.2);
+}
+.ss-media-toolbar-slider-value:focus {
+	border-color: rgba(255, 255, 255, 0.4);
+	background: rgba(255, 255, 255, 0.1);
+}
+.ss-media-toolbar-slider-value:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 /* Preset buttons */

@@ -94,6 +94,7 @@ export class MediaToolbar extends BaseToolbar {
 	private fitLabel: HTMLSpanElement | null = null;
 	private volumeSlider: HTMLInputElement | null = null;
 	private volumeValue: HTMLSpanElement | null = null;
+	private volumeDisplayInput: HTMLInputElement | null = null;
 	private volumeSection: HTMLDivElement | null = null;
 	private visualSection: HTMLDivElement | null = null;
 	private audioSection: HTMLDivElement | null = null;
@@ -223,7 +224,7 @@ export class MediaToolbar extends BaseToolbar {
 						<div class="ss-media-toolbar-popup-header">Volume</div>
 						<div class="ss-media-toolbar-slider-row">
 							<input type="range" class="ss-media-toolbar-slider" data-volume-slider min="0" max="100" value="100" />
-							<span class="ss-media-toolbar-slider-value" data-volume-display>100%</span>
+							<input type="text" class="ss-media-toolbar-slider-value" data-volume-display value="100%" />
 						</div>
 					</div>
 				</div>
@@ -316,6 +317,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.fitLabel = this.container.querySelector("[data-fit-label]");
 		this.volumeValue = this.container.querySelector("[data-volume-value]");
 		this.volumeSlider = this.container.querySelector("[data-volume-slider]");
+		this.volumeDisplayInput = this.container.querySelector("[data-volume-display]");
 		this.volumeSection = this.container.querySelector("[data-volume-section]");
 		this.visualSection = this.container.querySelector("[data-visual-section]");
 		this.audioSection = this.container.querySelector("[data-audio-section]");
@@ -431,6 +433,23 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeSlider?.addEventListener("input", () => {
 			const value = parseInt(this.volumeSlider!.value, 10);
 			this.handleVolumeChange(value);
+		});
+
+		// Volume display input: commit on blur or Enter, revert on Escape
+		this.volumeDisplayInput?.addEventListener("blur", () => this.commitVolumeInputValue());
+		this.volumeDisplayInput?.addEventListener("keydown", (e: KeyboardEvent) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				this.commitVolumeInputValue();
+				this.volumeDisplayInput?.blur();
+			} else if (e.key === "Escape") {
+				e.preventDefault();
+				this.revertVolumeInputValue();
+				this.volumeDisplayInput?.blur();
+			}
+		});
+		this.volumeDisplayInput?.addEventListener("focus", () => {
+			this.volumeDisplayInput?.select();
 		});
 
 		// Audio fade options
@@ -585,6 +604,33 @@ export class MediaToolbar extends BaseToolbar {
 				}
 			});
 		}
+	}
+
+	/**
+	 * Parse and commit the value from the volume text input.
+	 */
+	private commitVolumeInputValue(): void {
+		if (!this.volumeDisplayInput) return;
+
+		const parsed = this.parseVolumeInputValue(this.volumeDisplayInput.value);
+		this.handleVolumeChange(parsed);
+	}
+
+	/**
+	 * Revert the volume text input to match the current slider value.
+	 */
+	private revertVolumeInputValue(): void {
+		this.updateVolumeDisplay();
+	}
+
+	/**
+	 * Parse user input, strip non-numeric chars, clamp to 0-100.
+	 */
+	private parseVolumeInputValue(input: string): number {
+		const stripped = input.replace(/[^0-9]/g, "");
+		const num = parseInt(stripped, 10);
+		if (Number.isNaN(num)) return this.currentVolume;
+		return Math.max(0, Math.min(100, num));
 	}
 
 	// ─── Transition (using composite) ────────────────────────────────────────────
@@ -792,9 +838,7 @@ export class MediaToolbar extends BaseToolbar {
 		const text = `${this.currentVolume}%`;
 		if (this.volumeValue) this.volumeValue.textContent = text;
 		if (this.volumeSlider) this.volumeSlider.value = String(this.currentVolume);
-
-		const display = this.volumePopup?.querySelector("[data-volume-display]");
-		if (display) display.textContent = text;
+		if (this.volumeDisplayInput) this.volumeDisplayInput.value = text;
 
 		const iconContainer = this.container?.querySelector("[data-volume-icon]");
 		if (iconContainer) {
@@ -854,6 +898,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.fitLabel = null;
 		this.volumeSlider = null;
 		this.volumeValue = null;
+		this.volumeDisplayInput = null;
 		this.volumeSection = null;
 		this.visualSection = null;
 		this.audioSection = null;
