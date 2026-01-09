@@ -26,6 +26,8 @@ export class DeleteClipCommand implements EditCommand {
 		context.clearClipError(this.trackIdx, this.clipIdx);
 
 		if (this.deletedClip) {
+			context.documentRemoveClip(this.trackIdx, this.clipIdx);
+
 			context.queueDisposeClip(this.deletedClip);
 			context.disposeClips();
 			context.updateDuration();
@@ -68,6 +70,9 @@ export class DeleteClipCommand implements EditCommand {
 		}
 
 		context.undeleteClip(this.trackIdx, this.deletedClip);
+
+		const exportableClip = this.deletedClip.getExportableClip();
+		context.documentAddClip(this.trackIdx, exportableClip, this.clipIdx);
 
 		// Propagate timing changes after restoring the clip
 		context.propagateTimingChanges(this.trackIdx, this.clipIdx);

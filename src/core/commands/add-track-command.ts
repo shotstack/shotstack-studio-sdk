@@ -15,6 +15,12 @@ export class AddTrackCommand implements EditCommand {
 
 		tracks.splice(this.trackIdx, 0, []);
 
+		const doc = context.getDocument();
+		if (!doc) {
+			throw new Error(`AddTrackCommand.execute: Document not initialized - cannot sync track ${this.trackIdx}`);
+		}
+		doc.addTrack(this.trackIdx);
+
 		// Update layers for all clips that are on tracks AFTER the insertion point
 		// Since we're inserting a track, all tracks after trackIdx shift down
 		// Note: layer = trackIndex + 1, so clips with layer > trackIdx are affected
@@ -60,6 +66,13 @@ export class AddTrackCommand implements EditCommand {
 
 		// Remove inserted track
 		tracks.splice(this.trackIdx, 1);
+
+		// Sync with document layer (explicit error - no silent failures)
+		const doc = context.getDocument();
+		if (!doc) {
+			throw new Error(`AddTrackCommand.undo: Document not initialized - cannot sync track ${this.trackIdx}`);
+		}
+		doc.removeTrack(this.trackIdx);
 
 		// Update layers AND move to correct containers (mirror of execute)
 		clips.forEach(clip => {

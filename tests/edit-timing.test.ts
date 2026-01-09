@@ -182,6 +182,11 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getResolvedTiming: () => ({ ...resolvedTiming }),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
+			// Sync clipConfiguration to match real Player behavior (Option B)
+			// eslint-disable-next-line no-param-reassign
+			config.start = timing.start;
+			// eslint-disable-next-line no-param-reassign
+			config.length = timing.length;
 		}),
 		load: jest.fn().mockResolvedValue(undefined),
 		draw: jest.fn(),
@@ -190,7 +195,6 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		convertToFixedTiming: jest.fn(),
 		// Merge field binding methods
 		getMergeFieldBindings: () => mergeFieldBindings,
 		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),

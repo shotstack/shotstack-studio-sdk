@@ -37,6 +37,9 @@ export class UpdateTextContentCommand implements EditCommand {
 			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 			const clipIndex = clipsByTrack.indexOf(this.clip);
 
+			// Sync text content to document (source of truth)
+			context.documentUpdateClip(trackIndex, clipIndex, { asset: this.clip.clipConfiguration.asset });
+
 			context.emitEvent(EditEvent.ClipUpdated, {
 				previous: { clip: this.initialConfig, trackIndex, clipIndex },
 				current: { clip: this.clip.clipConfiguration, trackIndex, clipIndex }
@@ -61,6 +64,9 @@ export class UpdateTextContentCommand implements EditCommand {
 			const clips = context.getClips();
 			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 			const clipIndex = clipsByTrack.indexOf(this.clip);
+
+			// Sync restored text to document (source of truth)
+			context.documentUpdateClip(trackIndex, clipIndex, { asset: this.clip.clipConfiguration.asset });
 
 			context.emitEvent(EditEvent.ClipUpdated, {
 				previous: { clip: this.clip.clipConfiguration, trackIndex, clipIndex },

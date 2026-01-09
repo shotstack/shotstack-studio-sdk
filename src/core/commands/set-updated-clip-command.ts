@@ -83,6 +83,13 @@ export class SetUpdatedClipCommand implements EditCommand {
 		const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : clipsByTrack.indexOf(this.clip);
 
+		if (startChanged || lengthChanged) {
+			context.documentUpdateClip(trackIndex, clipIndex, {
+				start: this.storedFinalConfig.start,
+				length: this.storedFinalConfig.length
+			});
+		}
+
 		// Check if asset src changed
 		const previousAsset = this.storedInitialConfig?.asset as { src?: string } | undefined;
 		const currentAsset = this.storedFinalConfig?.asset as { src?: string } | undefined;
@@ -129,6 +136,13 @@ export class SetUpdatedClipCommand implements EditCommand {
 		const clips = context.getClips();
 		const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
 		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : clipsByTrack.indexOf(this.clip);
+
+		if (this.storedInitialTiming) {
+			context.documentUpdateClip(trackIndex, clipIndex, {
+				start: this.storedInitialTiming.start,
+				length: this.storedInitialTiming.length
+			});
+		}
 
 		// Check if asset src changed (reverse direction)
 		const previousAsset = this.storedFinalConfig?.asset as { src?: string } | undefined;

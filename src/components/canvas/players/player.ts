@@ -307,14 +307,8 @@ export abstract class Player extends Entity {
 
 	public setResolvedTiming(timing: ResolvedTiming): void {
 		this.resolvedTiming = { ...timing };
-	}
-
-	public convertToFixedTiming(): void {
-		// resolvedTiming is already in Seconds, just copy it
-		this.timingIntent = {
-			start: this.resolvedTiming.start,
-			length: this.resolvedTiming.length
-		};
+		this.clipConfiguration.start = timing.start;
+		this.clipConfiguration.length = timing.length;
 	}
 
 	// ─── Merge Field Binding Methods ─────────────────────────────────────────────

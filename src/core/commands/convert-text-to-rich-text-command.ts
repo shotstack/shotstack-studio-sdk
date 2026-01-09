@@ -192,6 +192,9 @@ export async function executeTextToRichTextConversion(trackIndex: number, clipIn
 	// Update total duration
 	context.updateDuration();
 
+	const exportableClip = newPlayer.getExportableClip();
+	context.getDocument()?.replaceClip(trackIndex, clipIndex, exportableClip);
+
 	// Configure keyframes with correct resolved timing
 	newPlayer.reconfigureAfterRestore();
 

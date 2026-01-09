@@ -101,8 +101,6 @@ export class KeyframeBuilder {
 
 	/**
 	 * Binary search for keyframe containing the given time.
-	 * Returns index or -1 if not found.
-	 * Handles NaN lengths by skipping invalid keyframes (matching original .find() behavior).
 	 */
 	private binarySearchKeyframe(time: number): number {
 		const props = this.property;
@@ -114,24 +112,16 @@ export class KeyframeBuilder {
 			const kf = props[mid];
 			const end = kf.start + kf.length;
 
-			// Guard against NaN: if end is not finite, skip this keyframe
-			// This matches original .find() behavior where `time < NaN` returns false
-			if (!Number.isFinite(end)) {
+			if (!Number.isFinite(end) || time >= end) {
 				low = mid + 1;
-				continue;
-			}
-
-			if (time < kf.start) {
+			} else if (time < kf.start) {
 				high = mid - 1;
-			} else if (time >= end) {
-				low = mid + 1;
 			} else {
-				// Found: time >= kf.start && time < end
 				return mid;
 			}
 		}
 
-		return -1; // Not found
+		return -1;
 	}
 
 	private createKeyframes(value: Keyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {

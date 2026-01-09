@@ -927,14 +927,14 @@ describe("Luma Attachment Registration", () => {
 		// Register the attachment
 		edit.registerLumaAttachment(0, 0, 1, 0);
 
-		// Change video clip start time directly
+		// Change video clip start time
 		const videoClipBefore = edit.getClip(0, 0);
 		expect(videoClipBefore?.start).toBe(0);
 
-		// Update video start (simulating what happens after a move)
+		// Update video start using setResolvedTiming (the proper mutation path under Option B)
 		const videoPlayer = edit.getPlayerClip(0, 0);
-		if (videoPlayer?.clipConfiguration) {
-			videoPlayer.clipConfiguration.start = sec(2);
+		if (videoPlayer) {
+			videoPlayer.setResolvedTiming({ start: sec(2), length: videoPlayer.getLength() });
 		}
 
 		// Sync luma to content clip

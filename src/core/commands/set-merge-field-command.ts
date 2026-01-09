@@ -27,8 +27,8 @@ export class SetMergeFieldCommand implements EditCommand {
 		private propertyPath: string,
 		private fieldName: string | null,
 		private previousFieldName: string | null,
-		private previousValue: string,
-		private newValue: string,
+		previousValue: string,
+		newValue: string,
 		trackIndex: number,
 		clipIndex: number
 	) {
@@ -77,7 +77,13 @@ export class SetMergeFieldCommand implements EditCommand {
 		this.clip.reconfigureAfterRestore();
 		this.clip.draw();
 
-		// 5. Emit event
+		// 5. Sync to document (source of truth)
+		// Merge field properties are typically on the asset, so sync the full asset
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, {
+			asset: this.clip.clipConfiguration.asset
+		});
+
+		// 6. Emit event
 		context.emitEvent(EditEvent.MergeFieldApplied, {
 			propertyPath: this.propertyPath,
 			fieldName: this.fieldName ?? "",
@@ -116,7 +122,12 @@ export class SetMergeFieldCommand implements EditCommand {
 		this.clip.reconfigureAfterRestore();
 		this.clip.draw();
 
-		// 5. Emit event
+		// 5. Sync restored value to document (source of truth)
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, {
+			asset: this.clip.clipConfiguration.asset
+		});
+
+		// 6. Emit event
 		context.emitEvent(EditEvent.MergeFieldRemoved, {
 			propertyPath: this.propertyPath,
 			fieldName: this.previousFieldName,

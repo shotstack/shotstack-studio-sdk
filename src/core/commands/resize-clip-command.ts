@@ -2,6 +2,7 @@ import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import { type Seconds, type TimingIntent, sec } from "@core/timing/types";
 
+import { commitTimingChange } from "./helpers/commit-timing-change";
 import type { EditCommand, CommandContext } from "./types";
 
 export class ResizeClipCommand implements EditCommand {
@@ -37,18 +38,12 @@ export class ResizeClipCommand implements EditCommand {
 		// Store original timing intent for undo
 		this.originalTimingIntent = this.player.getTimingIntent();
 
-		// Convert to fixed timing when manually resized
-		this.player.convertToFixedTiming();
-
-		this.player.clipConfiguration.length = this.newLength;
-
-		// Update resolved timing (now in Seconds)
-		this.player.setResolvedTiming({
-			start: this.player.getStart(),
+		const currentStart = this.player.getStart();
+		commitTimingChange(context, this.trackIndex, this.clipIndex, {
+			start: currentStart,
 			length: this.newLength
 		});
 
-		this.player.reconfigureAfterRestore();
 		this.player.draw();
 
 		context.updateDuration();
@@ -62,21 +57,24 @@ export class ResizeClipCommand implements EditCommand {
 	}
 
 	undo(context?: CommandContext): void {
-		if (!context || !this.player || this.originalLength === undefined) return;
+		if (!context) {
+			throw new Error("ResizeClipCommand.undo: No context provided");
+		}
+		if (!this.player) {
+			throw new Error("ResizeClipCommand.undo: No player - was execute() called?");
+		}
+		if (this.originalLength === undefined) {
+			throw new Error("ResizeClipCommand.undo: No original length - was execute() called?");
+		}
 
-		this.player.clipConfiguration.length = this.originalLength;
-
-		// Restore original timing intent
+		// Single mutation path: restore original timing intent
 		if (this.originalTimingIntent) {
-			this.player.setTimingIntent(this.originalTimingIntent);
-			// Update resolved timing to match (now in Seconds)
-			this.player.setResolvedTiming({
-				start: this.player.getStart(),
-				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length : this.player.getLength()
+			commitTimingChange(context, this.trackIndex, this.clipIndex, {
+				start: this.originalTimingIntent.start,
+				length: this.originalTimingIntent.length
 			});
 		}
 
-		this.player.reconfigureAfterRestore();
 		this.player.draw();
 
 		context.updateDuration();

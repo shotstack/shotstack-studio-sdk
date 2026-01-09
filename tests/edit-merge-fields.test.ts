@@ -180,7 +180,6 @@ const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: Playe
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		convertToFixedTiming: jest.fn(),
 		// Merge field binding methods
 		getMergeFieldBindings: () => mergeFieldBindings,
 		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),

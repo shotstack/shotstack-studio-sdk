@@ -46,7 +46,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 				// Push clips that start before our new end position and would overlap
 				if (clipStart >= this.newStart && clipStart < newEnd) {
 					this.pushedClips.push({ player, originalStart: clipStart });
-					this.updateClipStart(player, sec(clipStart + this.pushOffset));
+					this.updateClipStart(player, sec(clipStart + this.pushOffset), context);
 				}
 			}
 		}
@@ -56,11 +56,21 @@ export class MoveClipWithPushCommand implements EditCommand {
 		context.propagateTimingChanges(this.toTrackIndex, 0);
 	}
 
-	private updateClipStart(clip: Player, newStart: Seconds): void {
-		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
-		clip.clipConfiguration.start = newStart;
+	private updateClipStart(clip: Player, newStart: Seconds, context?: CommandContext): void {
 		clip.setResolvedTiming({ start: newStart, length: clip.getLength() });
 		clip.setTimingIntent({ start: newStart, length: clip.getTimingIntent().length });
+
+		if (context) {
+			const tracks = context.getTracks();
+			const trackIdx = tracks.findIndex(t => t.includes(clip));
+			if (trackIdx >= 0) {
+				const clipIdx = tracks[trackIdx].indexOf(clip);
+				if (clipIdx >= 0) {
+					context.documentUpdateClip(trackIdx, clipIdx, { start: newStart });
+				}
+			}
+		}
+
 		clip.reconfigureAfterRestore();
 		clip.draw();
 	}
@@ -72,7 +82,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 
 		// Restore pushed clips
 		for (const { player, originalStart } of this.pushedClips) {
-			this.updateClipStart(player, originalStart);
+			this.updateClipStart(player, originalStart, context);
 		}
 
 		context.propagateTimingChanges(this.toTrackIndex, 0);

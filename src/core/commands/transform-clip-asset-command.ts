@@ -87,6 +87,10 @@ export class TransformClipAssetCommand implements EditCommand {
 				if (this.newPlayer) {
 					this.newPlayer.draw();
 				}
+
+				// Sync transformed asset to document (source of truth)
+				context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: newConfig.asset });
+
 				context.emitEvent(EditEvent.ClipUpdated, {
 					previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.originalConfig! },
 					current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: newConfig }
@@ -127,6 +131,9 @@ export class TransformClipAssetCommand implements EditCommand {
 		if (this.newPlayer) {
 			context.queueDisposeClip(this.newPlayer);
 		}
+
+		// Sync restored asset to document (source of truth)
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: this.originalConfig.asset });
 
 		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.newPlayer?.clipConfiguration! },

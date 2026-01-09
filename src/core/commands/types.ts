@@ -1,11 +1,15 @@
 import type { Player } from "@canvas/players/player";
+import type { EditDocument } from "@core/edit-document";
 import type { EditEventMap, EditEventName } from "@core/events/edit-events";
 import type { MergeFieldService } from "@core/merge";
-import type { ResolvedClip, ResolvedEdit } from "@schemas";
+import type { ResolutionContext } from "@core/timing/types";
+import type { Clip, ResolvedClip, ResolvedEdit } from "@schemas";
 import type { Container } from "pixi.js";
 
 type ClipType = ResolvedClip;
 type EditType = ResolvedEdit;
+// Document clip type (allows "auto"/"end" for timing)
+type DocumentClipType = Clip;
 
 export interface TimelineUpdatedEvent {
 	previous: { timeline: EditType };
@@ -59,4 +63,28 @@ export type CommandContext = {
 	setOutputFps(fps: number): void;
 	getTimelineBackground(): string;
 	setTimelineBackground(color: string): void;
+
+	// Document access (single source of truth)
+	getDocument(): EditDocument | null;
+
+	// Document-first mutations (Phase 3)
+	// These methods establish document as the source of truth - mutations flow through document first
+	/** Update a clip's properties in the document (source of truth) */
+	documentUpdateClip(trackIdx: number, clipIdx: number, updates: Partial<DocumentClipType>): void;
+	/** Add a clip to the document, returns the added clip */
+	documentAddClip(trackIdx: number, clip: DocumentClipType, clipIdx?: number): DocumentClipType;
+	/** Remove a clip from the document, returns the removed clip or null */
+	documentRemoveClip(trackIdx: number, clipIdx: number): DocumentClipType | null;
+	/** Derive runtime Player state from document clip (applies document data to Player) */
+	derivePlayerFromDocument(trackIdx: number, clipIdx: number): void;
+
+	/**
+	 * Build resolution context for a clip at the given position.
+	 * Extracts all dependencies upfront so resolution can be pure.
+	 *
+	 * @param trackIdx - Track index
+	 * @param clipIdx - Clip index on that track
+	 * @returns Context with previousClipEnd, timelineEnd, intrinsicDuration
+	 */
+	buildResolutionContext(trackIdx: number, clipIdx: number): ResolutionContext;
 };

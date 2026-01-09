@@ -1,8 +1,8 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { calculateTimelineEnd, resolveAutoStart } from "@core/timing/resolver";
-import { type Seconds, type TimingIntent, sec } from "@core/timing/types";
+import { type TimingIntent, sec } from "@core/timing/types";
 
+import { commitTimingChange } from "./helpers/commit-timing-change";
 import type { CommandContext, EditCommand } from "./types";
 
 /**
@@ -45,84 +45,40 @@ export class UpdateClipTimingCommand implements EditCommand {
 		// Deep clone to preserve original state (shallow copy shares nested object references)
 		this.previousConfig = JSON.parse(JSON.stringify(this.player.clipConfiguration));
 
-		// Build new timing intent
-		const newIntent: TimingIntent = {
-			start: this.originalIntent.start,
-			length: this.originalIntent.length
-		};
+		// Build new timing intent from params
+		const intentUpdates: Partial<TimingIntent> = {};
 
-		// Update start if provided
 		if (this.params.start !== undefined) {
-			newIntent.start = this.params.start === "auto" ? "auto" : sec(this.params.start / 1000);
+			intentUpdates.start = this.params.start === "auto" ? "auto" : sec(this.params.start / 1000);
 		}
 
-		// Update length if provided
 		if (this.params.length !== undefined) {
 			if (this.params.length === "auto" || this.params.length === "end") {
-				newIntent.length = this.params.length;
+				intentUpdates.length = this.params.length;
 			} else {
-				newIntent.length = sec(this.params.length / 1000);
+				intentUpdates.length = sec(this.params.length / 1000);
 			}
 		}
 
-		// Apply the new timing intent
-		this.player.setTimingIntent(newIntent);
+		// Single mutation path: update timing through helper
+		// This handles document update, intent, end-tracking, resolution, and assertions
+		commitTimingChange(context, this.trackIndex, this.clipIndex, intentUpdates);
 
-		// Update clip configuration to reflect the intent
-		this.updateClipConfiguration(this.player, newIntent);
-
-		// STEP 1: Resolve start FIRST (needed for correct length calculations)
-		// resolveAutoStart now returns Seconds, newIntent.start is already Seconds
-		const resolvedStart: Seconds =
-			newIntent.start === "auto" ? resolveAutoStart(this.trackIndex, this.clipIndex, context.getTracks()) : newIntent.start;
-
-		// STEP 2: Resolve length using the correct resolved start
+		// Special handling for "auto" length: trigger async resolution
+		// The helper used a fallback; async resolution will update with real duration
+		const newIntent = this.player.getTimingIntent();
 		if (newIntent.length === "auto") {
-			// Set start immediately, length will be resolved async
-			this.player.setResolvedTiming({
-				start: resolvedStart,
-				length: this.player.getLength() // Temporary, will be updated
-			});
-
 			context.resolveClipAutoLength(this.player).then(() => {
 				this.player?.reconfigureAfterRestore();
 				this.player?.draw();
 				context.updateDuration();
 				context.propagateTimingChanges(this.trackIndex, this.clipIndex);
 			});
-
-			// Still need to reconfigure and emit event for the start change
-			this.player.reconfigureAfterRestore();
-			this.player.draw();
-		} else if (newIntent.length === "end") {
-			// Track this clip for end-length updates
-			context.trackEndLengthClip(this.player);
-
-			// Resolve based on current timeline end using correct start (all in Seconds)
-			const timelineEnd = calculateTimelineEnd(context.getTracks());
-			const resolvedLength = sec(Math.max(timelineEnd - resolvedStart, 0.1)); // Minimum 0.1 seconds
-
-			this.player.setResolvedTiming({
-				start: resolvedStart,
-				length: resolvedLength
-			});
-
-			this.player.reconfigureAfterRestore();
-			this.player.draw();
-		} else {
-			// Fixed length - resolve immediately (newIntent.length is already Seconds)
-			context.untrackEndLengthClip(this.player);
-
-			this.player.setResolvedTiming({
-				start: resolvedStart,
-				length: newIntent.length
-			});
-
-			this.player.reconfigureAfterRestore();
-			this.player.draw();
 		}
 
+		this.player.draw();
 		context.updateDuration();
+
 		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.previousConfig as any },
 			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.player.clipConfiguration }
@@ -133,50 +89,41 @@ export class UpdateClipTimingCommand implements EditCommand {
 	}
 
 	undo(context?: CommandContext): void {
-		if (!context || !this.player || !this.originalIntent) return;
-
-		// Restore original intent
-		this.player.setTimingIntent(this.originalIntent);
-
-		// Restore clip configuration
-		if (this.previousConfig) {
-			context.restoreClipConfiguration(this.player, this.previousConfig as any);
+		// Explicit errors instead of silent failures
+		if (!context) {
+			throw new Error("UpdateClipTimingCommand.undo: No context provided");
+		}
+		if (!this.player) {
+			throw new Error("UpdateClipTimingCommand.undo: No player - was execute() called?");
+		}
+		if (!this.originalIntent) {
+			throw new Error("UpdateClipTimingCommand.undo: No original intent - was execute() called?");
 		}
 
-		// Re-resolve timing based on original intent
+		// Single mutation path: restore original timing intent
+		commitTimingChange(context, this.trackIndex, this.clipIndex, {
+			start: this.originalIntent.start,
+			length: this.originalIntent.length
+		});
+
+		// Special handling for "auto" length: trigger async resolution
 		if (this.originalIntent.length === "auto") {
-			context.resolveClipAutoLength(this.player);
-		} else if (this.originalIntent.length === "end") {
-			context.trackEndLengthClip(this.player);
-		} else {
-			context.untrackEndLengthClip(this.player);
+			context.resolveClipAutoLength(this.player).then(() => {
+				this.player?.reconfigureAfterRestore();
+				this.player?.draw();
+				context.updateDuration();
+				context.propagateTimingChanges(this.trackIndex, this.clipIndex);
+			});
 		}
 
-		this.player.reconfigureAfterRestore();
 		this.player.draw();
-
 		context.updateDuration();
+
 		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.player.clipConfiguration },
 			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.previousConfig as any }
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
-	}
-
-	/**
-	 * Update clip configuration to reflect the timing intent.
-	 */
-	private updateClipConfiguration(player: Player, intent: TimingIntent): void {
-		const config = player.clipConfiguration;
-
-		// Update config with explicit values (auto/end keep resolved numeric values)
-		// intent.start/length are already Seconds when numeric
-		if (intent.start !== "auto") {
-			config.start = intent.start;
-		}
-		if (intent.length !== "auto" && intent.length !== "end") {
-			config.length = intent.length;
-		}
 	}
 }

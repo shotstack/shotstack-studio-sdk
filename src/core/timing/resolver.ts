@@ -6,9 +6,34 @@
 import type { Player } from "@canvas/players/player";
 import type { Asset } from "@schemas";
 
-import { type ResolvedTiming, type Seconds, type TimingIntent, sec } from "./types";
+import { type ResolutionContext, type ResolvedTiming, type Seconds, type TimingIntent, sec } from "./types";
+
+const DEFAULT_AUTO_LENGTH_FALLBACK = sec(1);
 
 const DEFAULT_AUTO_LENGTH_SEC = sec(3);
+
+export function resolveTimingIntent(intent: TimingIntent, context: Readonly<ResolutionContext>): ResolvedTiming {
+	// Resolve start
+	const start: Seconds = intent.start === "auto" ? context.previousClipEnd : intent.start;
+
+	// Resolve length
+	let length: Seconds;
+	if (intent.length === "end") {
+		// Extend to timeline end (minimum 0.1s to prevent zero-length clips)
+		length = sec(Math.max(context.timelineEnd - start, 0.1));
+	} else if (intent.length === "auto") {
+		// Use intrinsic duration if available, fallback otherwise
+		length = context.intrinsicDuration ?? DEFAULT_AUTO_LENGTH_FALLBACK;
+	} else {
+		// Fixed value - use as-is
+		length = intent.length;
+	}
+
+	return { start, length };
+}
+
+// ─── Legacy Resolution Functions ──────────────────────────────────────────────
+// These still access tracks directly. Prefer resolveTimingIntent with explicit context.
 
 export function probeMediaDuration(src: string): Promise<number | null> {
 	return new Promise(resolve => {
@@ -61,30 +86,4 @@ export function calculateTimelineEnd(tracks: Player[][]): Seconds {
 	}
 
 	return max;
-}
-
-export async function resolveClipTiming(
-	intent: TimingIntent,
-	asset: Asset,
-	trackIndex: number,
-	clipIndex: number,
-	tracks: Player[][]
-): Promise<ResolvedTiming> {
-	let resolvedStart: Seconds;
-	if (intent.start === "auto") {
-		resolvedStart = resolveAutoStart(trackIndex, clipIndex, tracks);
-	} else {
-		resolvedStart = intent.start;
-	}
-
-	let resolvedLength: Seconds;
-	if (intent.length === "auto") {
-		resolvedLength = await resolveAutoLength(asset);
-	} else if (intent.length === "end") {
-		resolvedLength = sec(0);
-	} else {
-		resolvedLength = intent.length;
-	}
-
-	return { start: resolvedStart, length: resolvedLength };
 }

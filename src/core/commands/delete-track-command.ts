@@ -35,6 +35,12 @@ export class DeleteTrackCommand implements EditCommand {
 
 		tracks.splice(this.trackIdx, 1);
 
+		const doc = context.getDocument();
+		if (!doc) {
+			throw new Error(`DeleteTrackCommand.execute: Document not initialized - cannot sync track ${this.trackIdx}`);
+		}
+		doc.removeTrack(this.trackIdx);
+
 		const remainingClips = context.getClips();
 		const container = context.getContainer();
 
@@ -65,6 +71,12 @@ export class DeleteTrackCommand implements EditCommand {
 		const clips = context.getClips();
 
 		tracks.splice(this.trackIdx, 0, []);
+
+		const doc = context.getDocument();
+		if (!doc) {
+			throw new Error(`DeleteTrackCommand.undo: Document not initialized - cannot sync track ${this.trackIdx}`);
+		}
+		doc.addTrack(this.trackIdx);
 
 		clips.forEach((clip, index) => {
 			if (clip.layer >= this.trackIdx + 1) {

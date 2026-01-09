@@ -28,6 +28,8 @@ export class AddClipCommand implements EditCommand {
 			const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
 			const clipIndex = trackClips.findIndex(c => c === clipPlayer);
 
+			context.documentAddClip(this.trackIdx, this.clip, clipIndex);
+
 			context.updateDuration();
 			context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
 
@@ -51,6 +53,8 @@ export class AddClipCommand implements EditCommand {
 		const clips = context.getClips();
 		const trackClips = clips.filter(c => c.layer === this.addedPlayer!.layer);
 		const clipIndex = trackClips.findIndex(c => c === this.addedPlayer);
+
+		context.documentRemoveClip(this.trackIdx, clipIndex);
 
 		context.queueDisposeClip(this.addedPlayer);
 		context.updateDuration();

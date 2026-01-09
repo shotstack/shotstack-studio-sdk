@@ -34,7 +34,7 @@ import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "
 import { Entity } from "@core/shared/entity";
 import { deepMerge } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type Seconds, ms, sec, toSec } from "@core/timing/types";
+import { type ResolutionContext, type Seconds, ms, sec, toSec } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -1380,7 +1380,84 @@ export class Edit extends Entity {
 			getOutputFps: () => this.getOutputFps(),
 			setOutputFps: fps => this.setOutputFpsInternal(fps),
 			getTimelineBackground: () => this.getTimelineBackground(),
-			setTimelineBackground: color => this.setTimelineBackgroundInternal(color)
+			setTimelineBackground: color => this.setTimelineBackgroundInternal(color),
+			// Document access (single source of truth)
+			getDocument: () => this.document,
+
+			// Document-first mutations (Phase 3)
+			documentUpdateClip: (trackIdx, clipIdx, updates) => {
+				if (!this.document) {
+					throw new Error("Document not initialized - cannot update clip");
+				}
+				this.document.updateClip(trackIdx, clipIdx, updates);
+			},
+
+			documentAddClip: (trackIdx, clip, clipIdx) => {
+				if (!this.document) {
+					throw new Error("Document not initialized - cannot add clip");
+				}
+				return this.document.addClip(trackIdx, clip, clipIdx);
+			},
+
+			documentRemoveClip: (trackIdx, clipIdx) => {
+				if (!this.document) {
+					throw new Error("Document not initialized - cannot remove clip");
+				}
+				return this.document.removeClip(trackIdx, clipIdx);
+			},
+
+			derivePlayerFromDocument: (trackIdx, clipIdx) => {
+				const clip = this.document?.getClip(trackIdx, clipIdx);
+				if (!clip) {
+					throw new Error(`derivePlayerFromDocument: No document clip at ${trackIdx}/${clipIdx} - state desync`);
+				}
+
+				const player = this.getClipAt(trackIdx, clipIdx);
+				if (!player) {
+					throw new Error(`derivePlayerFromDocument: No player at ${trackIdx}/${clipIdx} - state desync`);
+				}
+
+				// Only copy timing-related fields from document to player
+				// Do NOT copy asset - it contains unresolved merge field placeholders
+				// (e.g., "{{ FONT_COLOR }}") that would fail validation.
+				// The player's asset already has resolved values from load time.
+				const { asset, ...timingFields } = clip;
+				Object.assign(player.clipConfiguration, timingFields);
+				player.reconfigureAfterRestore();
+			},
+
+			buildResolutionContext: (trackIdx, clipIdx): ResolutionContext => {
+				// 1. Previous clip end (for start: "auto")
+				let previousClipEnd: Seconds = sec(0);
+				if (clipIdx > 0) {
+					const track = this.tracks[trackIdx];
+					if (track && track[clipIdx - 1]) {
+						previousClipEnd = track[clipIdx - 1].getEnd();
+					}
+				}
+
+				// 2. Timeline end excluding "end" clips (for length: "end")
+				const timelineEnd = calculateTimelineEnd(this.tracks);
+
+				// 3. Intrinsic duration if available (for length: "auto")
+				// Note: This may be null if asset metadata hasn't loaded yet
+				let intrinsicDuration: Seconds | null = null;
+				const player = this.getClipAt(trackIdx, clipIdx);
+				if (player) {
+					const intent = player.getTimingIntent();
+					// Only lookup intrinsic duration if the clip uses "auto" length
+					if (intent.length === "auto") {
+						// The player's resolved length IS the intrinsic duration after async load
+						intrinsicDuration = player.getLength();
+					}
+				}
+
+				return {
+					previousClipEnd,
+					timelineEnd,
+					intrinsicDuration
+				};
+			}
 		};
 	}
 
@@ -1620,9 +1697,6 @@ export class Edit extends Entity {
 						start: clip.getStart(),
 						length: newLength
 					});
-					// Sync clipConfiguration with resolved value
-					// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
-					clip.clipConfiguration.length = newLength;
 					clip.reconfigureAfterRestore();
 				}
 			}
@@ -1654,11 +1728,6 @@ export class Edit extends Entity {
 			start: resolvedStart,
 			length: newLength
 		});
-
-		// Sync clipConfiguration with resolved value
-		// eslint-disable-next-line no-param-reassign -- Intentional mutation of clip state
-		clip.clipConfiguration.length = newLength;
-
 		clip.reconfigureAfterRestore();
 
 		if (indices) {
@@ -2461,12 +2530,7 @@ export class Edit extends Entity {
 		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
 		if (!lumaPlayer) return;
 
-		// Sync timing from content to luma
-		const contentConfig = contentPlayer.clipConfiguration;
-		lumaPlayer.clipConfiguration.start = contentConfig.start;
-		lumaPlayer.clipConfiguration.length = contentConfig.length;
-
-		// Update resolved timing to match content player
+		// Sync timing from content to luma (setter syncs clipConfiguration)
 		lumaPlayer.setResolvedTiming({
 			start: contentPlayer.getStart(),
 			length: contentPlayer.getLength()
@@ -2480,8 +2544,8 @@ export class Edit extends Entity {
 		const lumaIndices = this.findClipIndices(lumaPlayer);
 		if (lumaIndices) {
 			this.document.updateClip(lumaIndices.trackIndex, lumaIndices.clipIndex, {
-				start: contentConfig.start,
-				length: contentConfig.length
+				start: contentPlayer.getStart(),
+				length: contentPlayer.getLength()
 			});
 		}
 	}

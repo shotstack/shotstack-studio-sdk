@@ -14,6 +14,10 @@ const globals = {
 };
 
 export default defineConfig({
+	define: {
+		// Make process.env.NODE_ENV available in browser for __DEV__ checks
+		"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development")
+	},
 	worker: {
 		format: "es"
 	},

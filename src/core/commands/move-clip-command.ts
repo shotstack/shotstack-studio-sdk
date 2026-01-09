@@ -30,6 +30,7 @@ export class MoveClipCommand implements EditCommand {
 
 		// Get the player by indices
 		const tracks = context.getTracks();
+		const document = context.getDocument();
 
 		if (this.fromTrackIndex < 0 || this.fromTrackIndex >= tracks.length) {
 			console.warn(`Invalid source track index: ${this.fromTrackIndex}`);
@@ -120,10 +121,6 @@ export class MoveClipCommand implements EditCommand {
 			this.originalClipIndex = insertIndex;
 		}
 
-		// Update the clip position
-		this.player.clipConfiguration.start = this.newStart;
-
-		// Update resolved timing to match the new position (now in Seconds)
 		this.player.setResolvedTiming({
 			start: this.newStart,
 			length: this.player.getLength()
@@ -138,6 +135,21 @@ export class MoveClipCommand implements EditCommand {
 		// If timing intent changed from "end" to fixed, untrack from endLengthClips Set
 		if (this.originalTimingIntent?.length === "end" && this.player.getTimingIntent().length !== "end") {
 			context.untrackEndLengthClip(this.player);
+		}
+
+		if (document) {
+			if (this.fromTrackIndex !== this.toTrackIndex) {
+				const sourceDocTrackIdx = this.sourceTrackWasDeleted ? -1 : this.fromTrackIndex;
+				if (sourceDocTrackIdx >= 0) {
+					document.removeClip(sourceDocTrackIdx, this.fromClipIndex);
+				}
+				const exportableClip = this.player.getExportableClip();
+				document.addClip(this.toTrackIndex, exportableClip, this.originalClipIndex);
+			} else {
+				context.documentUpdateClip(this.toTrackIndex, this.originalClipIndex, {
+					start: this.newStart
+				});
+			}
 		}
 
 		// Move the player container to the new track container
@@ -245,10 +257,6 @@ export class MoveClipCommand implements EditCommand {
 			track.splice(this.fromClipIndex, 0, this.player);
 		}
 
-		// Restore original position
-		this.player.clipConfiguration.start = this.originalStart;
-
-		// Restore original timing intent
 		if (this.originalTimingIntent) {
 			this.player.setTimingIntent(this.originalTimingIntent);
 			// Update resolved timing to match (now in Seconds)
@@ -260,6 +268,23 @@ export class MoveClipCommand implements EditCommand {
 			// If restoring "end" length, re-track in endLengthClips Set
 			if (this.originalTimingIntent.length === "end") {
 				context.trackEndLengthClip(this.player);
+			}
+		}
+
+		const document = context.getDocument();
+		if (document) {
+			if (this.fromTrackIndex !== this.toTrackIndex) {
+				const destTrack = tracks[this.toTrackIndex];
+				const currentDocIdx = destTrack ? this.originalClipIndex : -1;
+				if (currentDocIdx >= 0) {
+					document.removeClip(this.toTrackIndex, currentDocIdx);
+				}
+				const exportableClip = this.player.getExportableClip();
+				document.addClip(this.fromTrackIndex, exportableClip, this.fromClipIndex);
+			} else {
+				context.documentUpdateClip(this.fromTrackIndex, this.fromClipIndex, {
+					start: this.originalTimingIntent?.start ?? this.originalStart
+				});
 			}
 		}
 

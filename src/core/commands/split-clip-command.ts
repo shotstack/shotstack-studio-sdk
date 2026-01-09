@@ -76,17 +76,27 @@ export class SplitClipCommand implements EditCommand {
 			}
 		}
 
-		// Update the existing clip to be the left portion
-		Object.assign(player.clipConfiguration, leftClip);
-		player.reconfigureAfterRestore();
+		// 1. Mutate document first (source of truth)
+		// Update left clip in document
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, {
+			length: leftClip.length,
+			asset: leftClip.asset
+		});
+
+		// Add right clip to document
+		context.documentAddClip(this.trackIndex, rightClip, this.clipIndex + 1);
+
+		// 2. Derive left player from document
+		context.derivePlayerFromDocument(this.trackIndex, this.clipIndex);
 		player.draw();
 
-		// Create the right clip player
+		// 3. Create the right clip player from document data
 		this.rightClipPlayer = context.createPlayerFromAssetType(rightClip);
 		if (!this.rightClipPlayer) {
-			// Restore original if creation failed
-			Object.assign(player.clipConfiguration, this.originalClipConfig);
-			player.reconfigureAfterRestore();
+			// Restore document and player if creation failed
+			context.documentUpdateClip(this.trackIndex, this.clipIndex, this.originalClipConfig);
+			context.documentRemoveClip(this.trackIndex, this.clipIndex + 1);
+			context.derivePlayerFromDocument(this.trackIndex, this.clipIndex);
 			throw new Error("Failed to create right clip player");
 		}
 
@@ -97,7 +107,7 @@ export class SplitClipCommand implements EditCommand {
 			this.rightClipPlayer.setInitialBindings(this.originalBindings);
 		}
 
-		// Insert right clip after the current clip
+		// Insert right clip into runtime track
 		const track = context.getTrack(this.trackIndex);
 		if (!track) {
 			throw new Error("Invalid track index");
@@ -151,11 +161,18 @@ export class SplitClipCommand implements EditCommand {
 			return;
 		}
 
-		// Restore original configuration
-		Object.assign(leftPlayer.clipConfiguration, this.originalClipConfig);
-		leftPlayer.reconfigureAfterRestore();
+		// 1. Restore document first (source of truth)
+		// Restore left clip in document to original configuration
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, this.originalClipConfig);
 
-		// Remove the right clip if it was created
+		// Remove the right clip from document BEFORE removing from runtime
+		// (must happen first while indices are still valid)
+		context.documentRemoveClip(this.trackIndex, this.clipIndex + 1);
+
+		// 2. Derive left player from restored document
+		context.derivePlayerFromDocument(this.trackIndex, this.clipIndex);
+
+		// Remove the right clip from runtime if it was created
 		if (this.rightClipPlayer) {
 			const track = context.getTrack(this.trackIndex);
 			if (track) {
