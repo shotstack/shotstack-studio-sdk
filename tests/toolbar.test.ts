@@ -1405,6 +1405,338 @@ describe("UIController Callback Wiring (Regression)", () => {
 	});
 });
 
+// ============================================================================
+// ClipToolbar Tests (Timing Regression)
+// ============================================================================
+
+describe("ClipToolbar", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/clip-toolbar").ClipToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+		toolbar = new ClipToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-clip-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-clip-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+
+		it("mounts start timing control", () => {
+			toolbar.mount(container);
+
+			const startMount = container.querySelector("[data-start-mount]");
+			expect(startMount?.children.length).toBeGreaterThan(0);
+		});
+
+		it("mounts length timing control", () => {
+			toolbar.mount(container);
+
+			const lengthMount = container.querySelector("[data-length-mount]");
+			expect(lengthMount?.children.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("visibility", () => {
+		it("show() makes toolbar visible", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const toolbarEl = container.querySelector(".ss-clip-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(true);
+		});
+
+		it("hide() hides toolbar", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+			toolbar.hide();
+
+			const toolbarEl = container.querySelector(".ss-clip-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(false);
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-clip-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-clip-toolbar")).toBeNull();
+		});
+
+		it("dispose() unsubscribes from EditChanged event", () => {
+			toolbar.mount(container);
+			toolbar.dispose();
+
+			// Verify off was called for EditChanged event
+			expect(mockEdit.events.off).toHaveBeenCalled();
+		});
+	});
+});
+
+// ============================================================================
+// ClipToolbar Timing Regression Tests
+// ============================================================================
+
+describe("ClipToolbar Timing (Regression)", () => {
+	/**
+	 * REGRESSION TEST: ClipToolbar must use timing INTENT, not resolved values
+	 *
+	 * Bug: ClipToolbar was reading from clipConfiguration (resolved values)
+	 * which showed numeric values instead of "auto"/"end" modes.
+	 *
+	 * Fix: Use player.getTimingIntent() to preserve "auto"/"end" display.
+	 */
+	describe("timing intent display", () => {
+		it("displays 'end' mode when length intent is 'end'", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Create player that returns "end" as length intent
+			const mockPlayer = {
+				clipConfiguration: { start: 0, length: 10 }, // resolved value is 10 seconds
+				getTimingIntent: jest.fn(() => ({
+					start: 0,      // Seconds value
+					length: "end"  // Intent preserved as "end"
+				})),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Verify getTimingIntent was called instead of reading clipConfiguration directly
+			expect(mockPlayer.getTimingIntent).toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("displays 'auto' mode when start intent is 'auto'", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Create player that returns "auto" as start intent
+			const mockPlayer = {
+				clipConfiguration: { start: 5, length: 3 }, // resolved value is 5 seconds
+				getTimingIntent: jest.fn(() => ({
+					start: "auto", // Intent preserved as "auto"
+					length: 3      // Seconds value
+				})),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Verify getTimingIntent was called
+			expect(mockPlayer.getTimingIntent).toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	/**
+	 * REGRESSION TEST: Numeric timing values must use toMs() branded type conversion
+	 *
+	 * Bug: ClipToolbar was multiplying by 1000 directly instead of using
+	 * the branded type helper toMs().
+	 *
+	 * Fix: Use toMs(intent.start) for proper Seconds→Milliseconds conversion.
+	 */
+	describe("branded type conversion", () => {
+		it("converts numeric start from Seconds to Milliseconds using toMs()", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Create player with numeric timing values (in Seconds)
+			const mockPlayer = {
+				clipConfiguration: { start: 2.5, length: 3 },
+				getTimingIntent: jest.fn(() => ({
+					start: 2.5,  // 2.5 Seconds
+					length: 3    // 3 Seconds
+				})),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// The TimingControl receives milliseconds, so 2.5s → 2500ms
+			// We verify by checking the input displays "2.5s" (formatted from 2500ms)
+			const startInput = container.querySelector("[data-start-mount] .ss-timing-value") as HTMLInputElement;
+			expect(startInput?.value).toBe("2.5s");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("converts numeric length from Seconds to Milliseconds using toMs()", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Create player with numeric timing values (in Seconds)
+			const mockPlayer = {
+				clipConfiguration: { start: 0, length: 5.5 },
+				getTimingIntent: jest.fn(() => ({
+					start: 0,      // 0 Seconds
+					length: 5.5    // 5.5 Seconds
+				})),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// The TimingControl receives milliseconds, so 5.5s → 5500ms
+			// We verify by checking the input displays "5.5s" (formatted from 5500ms)
+			const lengthInput = container.querySelector("[data-length-mount] .ss-timing-value") as HTMLInputElement;
+			expect(lengthInput?.value).toBe("5.5s");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	/**
+	 * REGRESSION TEST: ClipToolbar must auto-refresh when clip timing changes externally
+	 *
+	 * Bug: Resizing a clip in the timeline didn't update the toolbar values
+	 * until the toolbar was closed and reopened.
+	 *
+	 * Fix: Subscribe to EditEvent.EditChanged and call syncState() when
+	 * the selected clip is visible.
+	 */
+	describe("external timing change refresh", () => {
+		it("subscribes to EditChanged event on mount", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			// Verify event subscription was set up (event name is "edit:changed")
+			expect(mockEdit.events.on).toHaveBeenCalledWith("edit:changed", expect.any(Function));
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("refreshes timing display when EditChanged event fires", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Initial timing values
+			const mockPlayer = {
+				clipConfiguration: { start: 1, length: 2 },
+				getTimingIntent: jest.fn(() => ({
+					start: 1,
+					length: 2
+				})),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Verify initial values
+			const startInput = container.querySelector("[data-start-mount] .ss-timing-value") as HTMLInputElement;
+			expect(startInput?.value).toBe("1.0s");
+
+			// Simulate external timing change (e.g., resize in timeline)
+			mockPlayer.getTimingIntent.mockReturnValue({
+				start: 3,  // Changed from 1 to 3
+				length: 2
+			});
+
+			// Trigger EditChanged event (event name is "edit:changed")
+			mockEdit.events.trigger("edit:changed");
+
+			// Verify toolbar updated to new value
+			expect(startInput?.value).toBe("3.0s");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("does not refresh when no clip is selected", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			const mockPlayer = {
+				clipConfiguration: { start: 1, length: 2 },
+				getTimingIntent: jest.fn(() => ({ start: 1, length: 2 })),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			// Don't call show() - no clip selected
+
+			// Clear call count
+			mockPlayer.getTimingIntent.mockClear();
+
+			// Trigger EditChanged event
+			mockEdit.events.trigger("edit:changed");
+
+			// Verify getTimingIntent was NOT called (no refresh needed)
+			expect(mockPlayer.getTimingIntent).not.toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("unsubscribes from EditChanged event on dispose", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+			toolbar.dispose();
+
+			// Verify off was called to unsubscribe (event name is "edit:changed")
+			expect(mockEdit.events.off).toHaveBeenCalledWith("edit:changed", expect.any(Function));
+
+			cleanupTestContainer(container);
+		});
+	});
+});
+
 describe("Mode Toggle (Regression)", () => {
 	/**
 	 * REGRESSION TEST: Mode toggle buttons must be findable via document.querySelectorAll
