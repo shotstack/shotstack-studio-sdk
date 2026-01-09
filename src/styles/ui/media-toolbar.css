@@ -302,6 +302,12 @@
 	color: #fff;
 }
 
+/* Volume icon wrapper - needs display for SVG visibility */
+[data-volume-icon] {
+	display: flex;
+	align-items: center;
+}
+
 /* Volume section - hidden for images */
 .ss-media-toolbar-volume {
 	display: flex;
