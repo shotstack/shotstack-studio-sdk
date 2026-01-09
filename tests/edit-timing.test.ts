@@ -184,9 +184,9 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 			resolvedTiming = { ...timing };
 			// Sync clipConfiguration to match real Player behavior (Option B)
 			// eslint-disable-next-line no-param-reassign
-			config.start = timing.start;
+			config.start = sec(timing.start);
 			// eslint-disable-next-line no-param-reassign
-			config.length = timing.length;
+			config.length = sec(timing.length);
 		}),
 		load: jest.fn().mockResolvedValue(undefined),
 		draw: jest.fn(),
