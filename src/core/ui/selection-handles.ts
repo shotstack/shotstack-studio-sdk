@@ -1,7 +1,14 @@
 import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
-import { calculateCornerScale, calculateEdgeResize, clampDimensions, detectCornerZone, detectEdgeZone } from "@core/interaction/clip-interaction";
+import {
+	calculateCornerScale,
+	calculateEdgeResize,
+	clampDimensions,
+	roundDimensions,
+	detectCornerZone,
+	detectEdgeZone
+} from "@core/interaction/clip-interaction";
 import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
 import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
 import { Pointer } from "@inputs/pointer";
@@ -461,9 +468,10 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		const result = calculateCornerScale(this.scaleDirection, delta, this.originalDimensions, this.edit.size);
 		const clamped = clampDimensions(result.width, result.height);
+		const rounded = roundDimensions(clamped.width, clamped.height);
 
-		this.selectedPlayer.clipConfiguration.width = clamped.width;
-		this.selectedPlayer.clipConfiguration.height = clamped.height;
+		this.selectedPlayer.clipConfiguration.width = rounded.width;
+		this.selectedPlayer.clipConfiguration.height = rounded.height;
 
 		if (!this.selectedPlayer.clipConfiguration.offset) {
 			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
@@ -496,9 +504,10 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		const result = calculateEdgeResize(this.edgeDragDirection, delta, this.originalDimensions, this.edit.size);
 		const clamped = clampDimensions(result.width, result.height);
+		const rounded = roundDimensions(clamped.width, clamped.height);
 
-		this.selectedPlayer.clipConfiguration.width = Math.round(clamped.width);
-		this.selectedPlayer.clipConfiguration.height = Math.round(clamped.height);
+		this.selectedPlayer.clipConfiguration.width = rounded.width;
+		this.selectedPlayer.clipConfiguration.height = rounded.height;
 
 		if (!this.selectedPlayer.clipConfiguration.offset) {
 			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };

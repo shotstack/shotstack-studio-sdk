@@ -226,3 +226,17 @@ export function clampDimensions(width: number, height: number): { width: number;
 		height: Math.max(INTERACTION_CONSTANTS.MIN_DIMENSION, Math.min(height, INTERACTION_CONSTANTS.MAX_DIMENSION))
 	};
 }
+
+// ─── Dimension Rounding ───────────────────────────────────────────────────────
+
+/**
+ * Round dimensions to integers.
+ * Clip width/height should always be whole numbers.
+ * Pure function - no side effects.
+ */
+export function roundDimensions(width: number, height: number): { width: number; height: number } {
+	return {
+		width: Math.round(width),
+		height: Math.round(height)
+	};
+}
