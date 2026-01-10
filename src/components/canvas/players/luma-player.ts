@@ -63,14 +63,12 @@ export class LumaPlayer extends Player {
 			return;
 		}
 
-		// getPlaybackTime() returns seconds
 		const playbackTime = this.getPlaybackTime();
 		const shouldClipPlay = this.edit.isPlaying && this.isActive();
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-				// playbackTime is already in seconds
 				this.texture.source.resource.currentTime = playbackTime;
 				this.texture.source.resource.play().catch(console.error);
 			}
@@ -79,9 +77,7 @@ export class LumaPlayer extends Player {
 				this.texture.source.resource.volume = this.getVolume();
 			}
 
-			// Desync threshold: 0.1 seconds (100ms)
 			const desyncThreshold = 0.1;
-			// Both currentTime and playbackTime are in seconds
 			const shouldSync = Math.abs(this.texture.source.resource.currentTime - playbackTime) > desyncThreshold;
 
 			if (shouldSync) {
@@ -94,7 +90,6 @@ export class LumaPlayer extends Player {
 			this.texture.source.resource.pause();
 		}
 
-		// When paused, sync for scrubbing
 		if (!this.edit.isPlaying && this.isActive()) {
 			this.texture.source.resource.currentTime = playbackTime;
 		}

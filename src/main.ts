@@ -21,14 +21,14 @@ async function main() {
 		await canvas.load();
 		await edit.load();
 
-		// 4. Register toolbar buttons (on UIController)
+		// 4. Register toolbar buttons
 		ui.registerButton({
 			id: "text",
 			icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H13"/><path d="M8 3V13"/><path d="M5 13H11"/></svg>`,
 			tooltip: "Add Text"
 		});
 
-		// 5. Handle button clicks (typed events on UIController)
+		// 5. Handle button clicks
 		ui.on("button:text", ({ position }) => {
 			edit.addTrack(0, {
 				clips: [
@@ -69,11 +69,7 @@ async function main() {
 		const controls = new Controls(edit);
 		await controls.load();
 
-		// 8. Enable video export (Cmd/Ctrl+E)
-		// eslint-disable-next-line no-new
-		new VideoExporter(edit, canvas);
-
-		// 9. Add event handlers
+		// 8. Add event handlers
 		edit.events.on("clip:selected", data => {
 			console.log("Clip selected:", data);
 		});

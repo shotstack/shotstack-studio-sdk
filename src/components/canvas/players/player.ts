@@ -43,12 +43,8 @@ export enum PlayerType {
  * Base class for all visual content players in the canvas.
  *
  * Player is responsible for rendering clip content (video, image, text, etc.)
- * and applying keyframe animations. It does NOT handle selection UI or
- * drag/resize/rotate interactions - those are handled by SelectionHandles
- * when registered via UIController.
+ * and applying keyframe animations.
  *
- * This separation allows Canvas to be used as a pure preview renderer
- * without any interactive overlays.
  */
 export abstract class Player extends Entity {
 	private static readonly DiscardedFrameCount = 0;
@@ -76,7 +72,6 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Tracks which properties came from merge field templates.
-	 * Key: property path (e.g., "asset.src"), Value: binding info
 	 */
 	private mergeFieldBindings: Map<string, MergeFieldBinding> = new Map();
 
@@ -96,7 +91,6 @@ export abstract class Player extends Entity {
 			length: clipConfiguration.length
 		};
 
-		// ResolvedClip.start/length are already Seconds branded types
 		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
 
 		this.wipeMask = null;
@@ -130,13 +124,10 @@ export abstract class Player extends Entity {
 		const baseRotation = typeof config.transform?.rotate?.angle === "number" ? config.transform.rotate.angle : 0;
 
 		// Create composed builders with base values
-		// Offsets use additive composition (base + effect delta + transition delta)
 		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, length, "additive");
 		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, length, "additive");
-		// Scale and opacity use multiplicative composition (base × effect factor × transition factor)
 		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, length, "multiplicative");
 		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, length, "multiplicative", { min: 0, max: 1 });
-		// Rotation uses additive composition
 		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, length, "additive");
 
 		// If user has custom keyframes, don't add effect/transition layers
@@ -145,7 +136,6 @@ export abstract class Player extends Entity {
 		}
 
 		// Build resolved clip config for preset builders
-		// getStart() and length are already in Seconds
 		const resolvedClipConfig: ResolvedClip = {
 			...config,
 			start: this.getStart(),
@@ -158,28 +148,28 @@ export abstract class Player extends Entity {
 		// Build relative transition keyframes (separate in/out sets)
 		const transitionSet = new TransitionPresetBuilder(resolvedClipConfig).buildRelative();
 
-		// Add effect layer (runs for full clip duration)
+		// Add effect layer
 		this.offsetXKeyframeBuilder.addLayer(effectSet.offsetXKeyframes);
 		this.offsetYKeyframeBuilder.addLayer(effectSet.offsetYKeyframes);
 		this.scaleKeyframeBuilder.addLayer(effectSet.scaleKeyframes);
 		this.opacityKeyframeBuilder.addLayer(effectSet.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(effectSet.rotationKeyframes);
 
-		// Add transition-in layer (runs at clip start)
+		// Add transition-in layer
 		this.offsetXKeyframeBuilder.addLayer(transitionSet.in.offsetXKeyframes);
 		this.offsetYKeyframeBuilder.addLayer(transitionSet.in.offsetYKeyframes);
 		this.scaleKeyframeBuilder.addLayer(transitionSet.in.scaleKeyframes);
 		this.opacityKeyframeBuilder.addLayer(transitionSet.in.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(transitionSet.in.rotationKeyframes);
 
-		// Add transition-out layer (runs at clip end)
+		// Add transition-out layer
 		this.offsetXKeyframeBuilder.addLayer(transitionSet.out.offsetXKeyframes);
 		this.offsetYKeyframeBuilder.addLayer(transitionSet.out.offsetYKeyframes);
 		this.scaleKeyframeBuilder.addLayer(transitionSet.out.scaleKeyframes);
 		this.opacityKeyframeBuilder.addLayer(transitionSet.out.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
-		// Mask keyframes (wipe/reveal effects) - still use KeyframeBuilder directly
+		// Mask keyframes (wipe/reveal effects)
 		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
 			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
@@ -194,7 +184,7 @@ export abstract class Player extends Entity {
 
 		this.getContainer().sortableChildren = true;
 
-		// Enable pointer events for click-to-select (handled by edit-session)
+		// Enable pointer events for click-to-select
 		this.getContainer().cursor = "pointer";
 		this.getContainer().eventMode = "static";
 		this.getContainer().on?.("pointerdown", this.onPointerDown.bind(this));
@@ -234,7 +224,6 @@ export abstract class Player extends Entity {
 
 	private updateWipeMask(): void {
 		if (!this.maskXKeyframeBuilder) {
-			// No wipe transition, ensure mask is removed
 			if (this.wipeMask) {
 				this.getContainer().mask = null;
 				this.wipeMask.destroy();
@@ -247,7 +236,6 @@ export abstract class Player extends Entity {
 		const size = this.getSize();
 
 		// Create mask if it doesn't exist
-		// Apply to main container (not contentContainer) to avoid conflict with fixed dimensions mask
 		if (!this.wipeMask) {
 			this.wipeMask = new pixi.Graphics();
 			this.getContainer().addChild(this.wipeMask);
@@ -255,8 +243,6 @@ export abstract class Player extends Entity {
 		}
 
 		// Update mask to create wipe effect
-		// maskProgress 0 → 1 reveals content from left to right
-		// maskProgress 1 → 0 hides content from right to left
 		this.wipeMask.clear();
 		this.wipeMask.rect(0, 0, size.width * maskProgress, size.height);
 		this.wipeMask.fill(0xffffff);
@@ -315,7 +301,6 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Set a merge field binding for a property path.
-	 * Called when a property is resolved from a merge field template.
 	 */
 	public setMergeFieldBinding(path: string, binding: MergeFieldBinding): void {
 		this.mergeFieldBindings.set(path, binding);
@@ -351,8 +336,6 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Get the exportable clip configuration with merge field placeholders restored.
-	 * For properties that haven't changed from their resolved value, the original
-	 * placeholder (e.g., "{{ HERO_IMAGE }}") is restored for export.
 	 */
 	public getExportableClip(): Clip {
 		const exported = structuredClone(this.clipConfiguration) as Record<string, unknown>;
@@ -361,7 +344,6 @@ export abstract class Player extends Entity {
 		for (const [path, { placeholder, resolvedValue }] of this.mergeFieldBindings) {
 			const currentValue = getNestedValue(exported, path);
 			if (currentValue === resolvedValue) {
-				// Value unchanged - restore the placeholder for export
 				setNestedValue(exported, path, placeholder);
 			}
 			// If value changed, leave current value (binding is broken)
@@ -379,10 +361,8 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Get the playback time relative to clip start, in seconds.
-	 * Used for keyframe animation calculations.
 	 */
 	public getPlaybackTime(): number {
-		// Convert edit.playbackTime (ms) to seconds for comparison with clip timing
 		const playbackTimeSeconds = this.edit.playbackTime / 1000;
 		const clipTime = playbackTimeSeconds - this.getStart();
 
@@ -396,8 +376,6 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Returns the source content dimensions (before fit scaling).
-	 * Override in subclasses that have different source vs output sizes.
-	 * Default implementation returns getSize().
 	 */
 	public getContentSize(): Size {
 		return this.getSize();
