@@ -275,7 +275,9 @@
 	padding: 2px 4px;
 	outline: none;
 	font-family: inherit;
-	transition: border-color 0.15s ease, background-color 0.15s ease;
+	transition:
+		border-color 0.15s ease,
+		background-color 0.15s ease;
 }
 .ss-media-toolbar-slider-value:hover {
 	border-color: rgba(255, 255, 255, 0.2);

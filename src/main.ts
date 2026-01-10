@@ -1,6 +1,6 @@
 import { Timeline } from "@timeline/index";
 
-import { Edit, Canvas, Controls, VideoExporter, UIController } from "./index";
+import { Edit, Canvas, Controls, UIController } from "./index";
 
 /**
  * This is a simple example that implements the README quick start guide

@@ -1513,8 +1513,8 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const mockPlayer = {
 				clipConfiguration: { start: 0, length: 10 }, // resolved value is 10 seconds
 				getTimingIntent: jest.fn(() => ({
-					start: 0,      // Seconds value
-					length: "end"  // Intent preserved as "end"
+					start: 0, // Seconds value
+					length: "end" // Intent preserved as "end"
 				})),
 				getMergeFieldBinding: jest.fn(() => null)
 			};
@@ -1541,7 +1541,7 @@ describe("ClipToolbar Timing (Regression)", () => {
 				clipConfiguration: { start: 5, length: 3 }, // resolved value is 5 seconds
 				getTimingIntent: jest.fn(() => ({
 					start: "auto", // Intent preserved as "auto"
-					length: 3      // Seconds value
+					length: 3 // Seconds value
 				})),
 				getMergeFieldBinding: jest.fn(() => null)
 			};
@@ -1577,8 +1577,8 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const mockPlayer = {
 				clipConfiguration: { start: 2.5, length: 3 },
 				getTimingIntent: jest.fn(() => ({
-					start: 2.5,  // 2.5 Seconds
-					length: 3    // 3 Seconds
+					start: 2.5, // 2.5 Seconds
+					length: 3 // 3 Seconds
 				})),
 				getMergeFieldBinding: jest.fn(() => null)
 			};
@@ -1606,8 +1606,8 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const mockPlayer = {
 				clipConfiguration: { start: 0, length: 5.5 },
 				getTimingIntent: jest.fn(() => ({
-					start: 0,      // 0 Seconds
-					length: 5.5    // 5.5 Seconds
+					start: 0, // 0 Seconds
+					length: 5.5 // 5.5 Seconds
 				})),
 				getMergeFieldBinding: jest.fn(() => null)
 			};
@@ -1677,7 +1677,7 @@ describe("ClipToolbar Timing (Regression)", () => {
 
 			// Simulate external timing change (e.g., resize in timeline)
 			mockPlayer.getTimingIntent.mockReturnValue({
-				start: 3,  // Changed from 1 to 3
+				start: 3, // Changed from 1 to 3
 				length: 2
 			});
 
