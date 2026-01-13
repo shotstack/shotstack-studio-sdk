@@ -497,6 +497,13 @@ export class RichTextPlayer extends Player {
 		};
 	}
 
+	public override getContentSize(): Size {
+		return {
+			width: this.clipConfiguration.width || this.canvas?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || this.canvas?.height || this.edit.size.height
+		};
+	}
+
 	protected override getFitScale(): number {
 		return 1;
 	}

@@ -561,10 +561,12 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			width = config.width;
 			height = config.height;
 		} else {
-			const contentSize = this.selectedPlayer.getContentSize();
-			const scale = this.selectedPlayer.getScale();
-			width = contentSize.width * scale;
-			height = contentSize.height * scale;
+			const size = this.selectedPlayer.getSize();
+			width = size.width;
+			height = size.height;
+
+			this.selectedPlayer.clipConfiguration.width = width;
+			this.selectedPlayer.clipConfiguration.height = height;
 		}
 
 		const currentOffsetX = config.offset?.x ?? 0;
