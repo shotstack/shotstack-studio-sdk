@@ -376,6 +376,8 @@ export class EditDocument {
 	 */
 	toJSON(): Edit {
 		const result = structuredClone(this.data);
+		// TODO: Filter out empty tracks (should never exist, but safety net). Remove when centralised type enforcement is in place.
+		result.timeline.tracks = result.timeline.tracks.filter(t => t.clips.length > 0);
 		if (result.merge?.length === 0) {
 			delete result.merge;
 		}

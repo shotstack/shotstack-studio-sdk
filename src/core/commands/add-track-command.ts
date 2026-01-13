@@ -23,7 +23,6 @@ export class AddTrackCommand implements EditCommand {
 
 		// Update layers for all clips that are on tracks AFTER the insertion point
 		// Since we're inserting a track, all tracks after trackIdx shift down
-		// Note: layer = trackIndex + 1, so clips with layer > trackIdx are affected
 		clips.forEach(clip => {
 			if (clip.layer > this.trackIdx) {
 				// Remove from old container

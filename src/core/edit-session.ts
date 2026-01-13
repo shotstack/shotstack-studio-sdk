@@ -702,15 +702,14 @@ export class Edit extends Entity {
 	}
 
 	public async addTrack(trackIdx: number, track: Track): Promise<void> {
-		// Sync document FIRST, before any async operations that yield to event loop
-		if (this.document && !this.isLoadingEdit) {
-			this.document.addTrack(trackIdx);
+		if (!track?.clips?.length) {
+			throw new Error("Cannot add empty track - at least one clip required");
 		}
 
 		const command = new AddTrackCommand(trackIdx);
 		await this.executeCommand(command);
 
-		for (const clip of track?.clips ?? []) {
+		for (const clip of track.clips) {
 			await this.addClip(trackIdx, clip);
 		}
 	}
@@ -1847,18 +1846,7 @@ export class Edit extends Entity {
 
 		this.clips.push(clipToAdd);
 
-		// Sync with document layer - add clip to preserve "auto"/"end" values
-		// Skip during initial load since document already has clips from constructor
-		if (this.document && !this.isLoadingEdit) {
-			// Ensure document has enough tracks
-			while (this.document.getTrackCount() <= trackIdx) {
-				this.document.addTrack(this.document.getTrackCount());
-			}
-			// Add clip at the position it was added (end of track)
-			const clipIdx = this.tracks[trackIdx].length - 1;
-			const exportableClip = clipToAdd.getExportableClip();
-			this.document.addClip(trackIdx, exportableClip, clipIdx);
-		}
+		// Document sync is handled by AddClipCommand - don't duplicate here
 
 		if (clipToAdd.getTimingIntent().length === "end") {
 			this.endLengthClips.add(clipToAdd);
