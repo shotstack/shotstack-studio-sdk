@@ -7,9 +7,7 @@ import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../
 
 type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
 
-/** Simplified state manager - only holds UI state, derives data from Edit */
 export class TimelineStateManager {
-	// UI-only state (not in Edit)
 	private viewport: ViewportState;
 	private clipVisualStates = new Map<string, ClipVisualState>();
 
@@ -19,10 +17,6 @@ export class TimelineStateManager {
 	// Track which content Players have visible lumas for editing
 	private lumaEditingVisible = new Set<Player>();
 
-	/**
-	 * Cached tracks state to avoid recreating objects every frame.
-	 * Invalidated on timeline changes, selection changes, and visual state changes.
-	 */
 	private cachedTracks: TrackState[] | null = null;
 
 	constructor(
@@ -39,11 +33,15 @@ export class TimelineStateManager {
 
 		// Subscribe to events that require cache invalidation
 		this.edit.events.on(EditEvent.TimelineUpdated, this.invalidateCache);
+		this.edit.events.on(EditEvent.ClipAdded, this.invalidateCache);
+		this.edit.events.on(EditEvent.ClipDeleted, this.invalidateCache);
+		this.edit.events.on(EditEvent.ClipSplit, this.invalidateCache);
+		this.edit.events.on(EditEvent.TrackAdded, this.invalidateCache);
+		this.edit.events.on(EditEvent.TrackRemoved, this.invalidateCache);
 		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.on(EditEvent.SelectionCleared, this.invalidateCache);
 	}
 
-	/** Invalidate the tracks cache - called on timeline/selection changes */
 	private invalidateCache = (): void => {
 		this.cachedTracks = null;
 	};
@@ -61,7 +59,6 @@ export class TimelineStateManager {
 		this.cachedTracks = resolvedEdit.timeline.tracks.map((track: ResolvedTrack, trackIndex: number) => {
 			const clips = (track.clips || []).map((clip: ResolvedClip, clipIndex: number) => this.createClipState(clip, trackIndex, clipIndex));
 
-			// Derive primary asset type from first clip
 			const primaryAssetType = clips.length > 0 && clips[0].config.asset ? clips[0].config.asset.type || "unknown" : "empty";
 
 			return {
@@ -288,6 +285,11 @@ export class TimelineStateManager {
 	public dispose(): void {
 		// Remove event listeners
 		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
+		this.edit.events.off(EditEvent.ClipAdded, this.invalidateCache);
+		this.edit.events.off(EditEvent.ClipDeleted, this.invalidateCache);
+		this.edit.events.off(EditEvent.ClipSplit, this.invalidateCache);
+		this.edit.events.off(EditEvent.TrackAdded, this.invalidateCache);
+		this.edit.events.off(EditEvent.TrackRemoved, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
 
