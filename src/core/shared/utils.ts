@@ -69,6 +69,80 @@ export function getNestedValue(obj: unknown, path: string): unknown {
 	return current;
 }
 
+/**
+ * Creates a throttled version of a function that limits how often it can be called.
+ * The function will be called at most once per interval, with the most recent arguments.
+ *
+ * Unlike debounce, throttle provides immediate feedback during continuous interaction
+ * (like slider drags) while still limiting update frequency.
+ *
+ * @param fn - The function to throttle
+ * @param intervalMs - Minimum time between calls (default: 50ms = ~20 updates/sec)
+ * @returns Object with throttled function and cleanup method
+ * @internal
+ */
+export function createThrottle<TArgs extends unknown[]>(
+	fn: (...args: TArgs) => void,
+	intervalMs: number = 50
+): {
+	/** Call the throttled function */
+	call: (...args: TArgs) => void;
+	/** Force execution of any pending call and clear timer */
+	flush: () => void;
+	/** Clear timer without executing pending call */
+	cancel: () => void;
+} {
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	let lastArgs: TArgs | null = null;
+	let lastCallTime = 0;
+
+	const call = (...args: TArgs): void => {
+		const now = Date.now();
+		const elapsed = now - lastCallTime;
+
+		lastArgs = args;
+
+		if (elapsed >= intervalMs) {
+			// Enough time has passed, call immediately
+			lastCallTime = now;
+			fn(...args);
+		} else if (!timer) {
+			// Schedule call for remaining time
+			timer = setTimeout(() => {
+				timer = null;
+				lastCallTime = Date.now();
+				if (lastArgs) {
+					fn(...lastArgs);
+					lastArgs = null;
+				}
+			}, intervalMs - elapsed);
+		}
+		// If timer exists, lastArgs is updated and will be used when timer fires
+	};
+
+	const flush = (): void => {
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		if (lastArgs) {
+			lastCallTime = Date.now();
+			fn(...lastArgs);
+			lastArgs = null;
+		}
+	};
+
+	const cancel = (): void => {
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		lastArgs = null;
+	};
+
+	return { call, flush, cancel };
+}
+
 export interface UrlValidationResult {
 	valid: boolean;
 	error?: string;

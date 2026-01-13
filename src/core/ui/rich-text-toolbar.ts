@@ -1,6 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
+import { createThrottle } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip, RichTextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
@@ -80,6 +81,10 @@ export class RichTextToolbar extends BaseToolbar {
 	private animationDurationValue: HTMLSpanElement | null = null;
 	private animationStyleSection: HTMLDivElement | null = null;
 	private animationDirectionSection: HTMLDivElement | null = null;
+
+	// Throttle for rate-limiting animation duration slider updates (~20 updates/sec max)
+	private pendingAnimationDuration = 1;
+	private animationDurationThrottle = createThrottle(() => this.updateAnimationProperty({ duration: this.pendingAnimationDuration }), 50);
 
 	// Composite panels (replace ~400 lines of duplicated transition/effect code)
 	private transitionPopup: HTMLDivElement | null = null;
@@ -316,6 +321,17 @@ export class RichTextToolbar extends BaseToolbar {
 		this.autocompletePopup = this.container.querySelector("[data-autocomplete-popup]");
 		this.autocompleteItems = this.container.querySelector("[data-autocomplete-items]");
 
+		// Delegated click handler for autocomplete items (set up once, no leak on repeated shows)
+		this.autocompleteItems?.addEventListener("click", (e: MouseEvent) => {
+			const item = (e.target as HTMLElement).closest("[data-var-name]") as HTMLElement | null;
+			if (!item) return;
+			e.stopPropagation();
+			const { varName } = item.dataset;
+			if (varName) {
+				this.insertVariable(varName);
+			}
+		});
+
 		this.boundHandleClick = this.handleClick.bind(this);
 		this.container.addEventListener("click", this.boundHandleClick);
 
@@ -442,12 +458,14 @@ export class RichTextToolbar extends BaseToolbar {
 			});
 		});
 
-		// Duration slider
+		// Duration slider (throttled to limit updates during drag)
 		this.animationDurationSlider?.addEventListener("input", e => {
 			const value = parseFloat((e.target as HTMLInputElement).value);
 			if (this.animationDurationValue) this.animationDurationValue.textContent = `${value.toFixed(1)}s`;
-			this.updateAnimationProperty({ duration: value });
+			this.pendingAnimationDuration = value;
+			this.animationDurationThrottle.call();
 		});
+		this.animationDurationSlider?.addEventListener("change", () => this.animationDurationThrottle.flush());
 
 		// Style buttons
 		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach(btn => {
@@ -771,24 +789,38 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private toggleSizePopup(): void {
-		this.togglePopup(this.sizePopup, () => this.buildSizePopup());
+		this.togglePopup(this.sizePopup, () => this.updateSizePopupState());
 	}
 
+	/** Build popup once at mount - uses event delegation (no per-item listeners) */
 	private buildSizePopup(): void {
+		if (!this.sizePopup) return;
+
+		// Build static HTML once
+		this.sizePopup.innerHTML = FONT_SIZES.map(size => `<div class="ss-toolbar-size-item" data-size="${size}">${size}</div>`).join("");
+
+		// Single delegated click handler (no leak on repeated opens)
+		this.sizePopup.addEventListener("click", (e: MouseEvent) => {
+			const item = (e.target as HTMLElement).closest("[data-size]") as HTMLElement | null;
+			if (!item) return;
+			const size = parseInt(item.dataset["size"]!, 10);
+			this.updateSize(size);
+			this.closeAllPopups();
+		});
+
+		this.updateSizePopupState();
+	}
+
+	/** Update active state without rebuilding DOM */
+	private updateSizePopupState(): void {
 		if (!this.sizePopup) return;
 		const asset = this.getCurrentAsset();
 		const currentSize = asset?.font?.size ?? 48;
 
-		this.sizePopup.innerHTML = FONT_SIZES.map(
-			size => `<div class="ss-toolbar-size-item${size === currentSize ? " active" : ""}" data-size="${size}">${size}</div>`
-		).join("");
-
 		this.sizePopup.querySelectorAll("[data-size]").forEach(item => {
-			item.addEventListener("click", () => {
-				const size = parseInt((item as HTMLElement).dataset["size"]!, 10);
-				this.updateSize(size);
-				this.closeAllPopups();
-			});
+			const el = item as HTMLElement;
+			const size = parseInt(el.dataset["size"]!, 10);
+			el.classList.toggle("active", size === currentSize);
 		});
 	}
 
@@ -920,6 +952,7 @@ export class RichTextToolbar extends BaseToolbar {
 			this.selectedAutocompleteIndex = 0;
 		}
 
+		// Update HTML content only - click handler is delegated at mount time
 		this.autocompleteItems.innerHTML = filtered
 			.map(
 				(f: MergeField, i: number) => `
@@ -931,18 +964,6 @@ export class RichTextToolbar extends BaseToolbar {
 		`
 			)
 			.join("");
-
-		// Add click handlers
-		this.autocompleteItems.querySelectorAll(".ss-autocomplete-item").forEach(item => {
-			item.addEventListener("click", e => {
-				e.stopPropagation();
-				const el = e.currentTarget as HTMLElement;
-				const { varName } = el.dataset;
-				if (varName) {
-					this.insertVariable(varName);
-				}
-			});
-		});
 
 		this.autocompletePopup.classList.add("visible");
 		this.autocompleteVisible = true;
@@ -1445,6 +1466,9 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
+		// Cancel throttle to prevent any pending callbacks after disposal
+		this.animationDurationThrottle.cancel();
+
 		// Clean up event listener before super.dispose() removes container
 		if (this.boundHandleClick) {
 			this.container?.removeEventListener("click", this.boundHandleClick);

@@ -1,3 +1,4 @@
+import { createThrottle } from "@core/shared/utils";
 import { injectShotstackStyles } from "@styles/inject";
 
 type ColorChangeCallback = (color: string, opacity: number) => void;
@@ -10,17 +11,25 @@ export class BackgroundColorPicker {
 
 	private onColorChange: ColorChangeCallback | null = null;
 
+	// Throttle instance for rate-limiting slider updates (~20 updates/sec max)
+	private colorThrottle = createThrottle(() => this.emitColorChange(), 50);
+
 	// Arrow function handlers for proper cleanup
 	private handleColorChange = (): void => {
-		this.emitColorChange();
+		this.colorThrottle.call();
 	};
 
-	private handleOpacityChange = (e: Event): void => {
+	private handleOpacityInput = (e: Event): void => {
 		const opacity = parseInt((e.target as HTMLInputElement).value, 10);
 		if (this.opacityValue) {
 			this.opacityValue.textContent = `${opacity}%`;
 		}
-		this.emitColorChange();
+		this.colorThrottle.call();
+	};
+
+	// Flush throttle on slider release (change event) to ensure final value is applied
+	private handleOpacityChange = (): void => {
+		this.colorThrottle.flush();
 	};
 
 	constructor() {
@@ -55,7 +64,8 @@ export class BackgroundColorPicker {
 		this.opacityValue = this.container.querySelector(".ss-color-picker-opacity-value");
 
 		this.colorInput?.addEventListener("input", this.handleColorChange);
-		this.opacitySlider?.addEventListener("input", this.handleOpacityChange);
+		this.opacitySlider?.addEventListener("input", this.handleOpacityInput);
+		this.opacitySlider?.addEventListener("change", this.handleOpacityChange);
 	}
 
 	private emitColorChange(): void {
@@ -88,8 +98,12 @@ export class BackgroundColorPicker {
 	}
 
 	dispose(): void {
+		// Cancel throttle to prevent any pending callbacks after disposal
+		this.colorThrottle.cancel();
+
 		this.colorInput?.removeEventListener("input", this.handleColorChange);
-		this.opacitySlider?.removeEventListener("input", this.handleOpacityChange);
+		this.opacitySlider?.removeEventListener("input", this.handleOpacityInput);
+		this.opacitySlider?.removeEventListener("change", this.handleOpacityChange);
 		this.container?.remove();
 		this.container = null;
 		this.colorInput = null;

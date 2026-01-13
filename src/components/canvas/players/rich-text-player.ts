@@ -1,4 +1,5 @@
 import { Player, PlayerType } from "@canvas/players/player";
+import { SEEK_ELAPSED_MARKER } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
@@ -34,6 +35,7 @@ export class RichTextPlayer extends Player {
 	private lastRenderedTime: number = -1;
 	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
+	private pendingRenderTime: number | null = null; // Stores time requested while rendering (race condition fix)
 	private validatedAsset: CanvasRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
 	private loadComplete: boolean = false;
@@ -395,6 +397,9 @@ export class RichTextPlayer extends Player {
 	}
 	private renderFrameSafe(timeSeconds: number): void {
 		if (this.isRendering) {
+			// Store pending time to render after current render completes (race condition fix)
+			this.pendingRenderTime = timeSeconds;
+
 			// Show nearest cached frame instead of skipping entirely
 			const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
 			const cachedTexture = this.cachedFrames.get(cacheKey);
@@ -405,10 +410,19 @@ export class RichTextPlayer extends Player {
 		}
 
 		this.isRendering = true;
+		this.pendingRenderTime = null;
+
 		this.renderFrame(timeSeconds)
 			.catch(err => console.error("Failed to render rich text frame:", err))
 			.finally(() => {
 				this.isRendering = false;
+
+				// Check if a render was requested while we were busy
+				if (this.pendingRenderTime !== null && this.pendingRenderTime !== timeSeconds) {
+					const pending = this.pendingRenderTime;
+					this.pendingRenderTime = null;
+					this.renderFrameSafe(pending);
+				}
 			});
 	}
 
@@ -416,8 +430,9 @@ export class RichTextPlayer extends Player {
 		super.update(deltaTime, elapsed);
 
 		// Reset render state on seek to prevent race conditions
-		if (elapsed === 101) {
+		if (elapsed === SEEK_ELAPSED_MARKER) {
 			this.isRendering = false;
+			this.pendingRenderTime = null;
 			this.lastRenderedTime = -1;
 		}
 

@@ -108,6 +108,14 @@ function calculateSizeFromPreset(resolution: string, aspectRatio: string = "16:9
 	}
 }
 
+/**
+ * Magic elapsed value passed to update() during seek operations.
+ * Any value > 100 signals to players that a seek occurred rather than normal playback.
+ * VideoPlayer uses this to force video sync; RichTextPlayer uses it to reset render state.
+ * @internal
+ */
+export const SEEK_ELAPSED_MARKER = 101;
+
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
 export class Edit extends Entity {
@@ -450,8 +458,8 @@ export class Edit extends Entity {
 	public seek(target: number): void {
 		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
 		this.pause();
-		// Force immediate render - elapsed > 100 triggers VideoPlayer sync
-		this.update(0, 101);
+		// Force immediate render - SEEK_ELAPSED_MARKER signals seek to all players
+		this.update(0, SEEK_ELAPSED_MARKER);
 		this.draw();
 	}
 	public stop(): void {

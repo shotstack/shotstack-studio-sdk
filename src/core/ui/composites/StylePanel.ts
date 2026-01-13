@@ -1,3 +1,5 @@
+import { createThrottle } from "@core/shared/utils";
+
 import { UIComponent } from "../primitives/UIComponent";
 
 /**
@@ -100,6 +102,11 @@ export class StylePanel extends UIComponent<StyleState> {
 	private shadowColorInput: HTMLInputElement | null = null;
 	private shadowOpacitySlider: HTMLInputElement | null = null;
 	private shadowOpacityValue: HTMLSpanElement | null = null;
+
+	// Throttle instances for rate-limiting slider updates (~20 updates/sec max)
+	private borderThrottle = createThrottle(() => this.emitBorderChange(), 50);
+	private paddingThrottle = createThrottle(() => this.emitPaddingChange(), 50);
+	private shadowThrottle = createThrottle(() => this.emitShadowChange(), 50);
 
 	render(): string {
 		return `
@@ -291,28 +298,32 @@ export class StylePanel extends UIComponent<StyleState> {
 			this.events.on(this.borderWidthSlider, "input", () => {
 				this.state.border.width = parseInt(this.borderWidthSlider!.value, 10);
 				this.updateBorderWidthDisplay();
-				this.emitBorderChange();
+				this.borderThrottle.call();
 			});
+			this.events.on(this.borderWidthSlider, "change", () => this.borderThrottle.flush());
 		}
 		if (this.borderColorInput) {
 			this.events.on(this.borderColorInput, "input", () => {
 				this.state.border.color = this.borderColorInput!.value;
-				this.emitBorderChange();
+				this.borderThrottle.call();
 			});
+			this.events.on(this.borderColorInput, "change", () => this.borderThrottle.flush());
 		}
 		if (this.borderOpacitySlider) {
 			this.events.on(this.borderOpacitySlider, "input", () => {
 				this.state.border.opacity = parseInt(this.borderOpacitySlider!.value, 10);
 				this.updateBorderOpacityDisplay();
-				this.emitBorderChange();
+				this.borderThrottle.call();
 			});
+			this.events.on(this.borderOpacitySlider, "change", () => this.borderThrottle.flush());
 		}
 		if (this.borderRadiusSlider) {
 			this.events.on(this.borderRadiusSlider, "input", () => {
 				this.state.border.radius = parseInt(this.borderRadiusSlider!.value, 10);
 				this.updateBorderRadiusDisplay();
-				this.emitBorderChange();
+				this.borderThrottle.call();
 			});
+			this.events.on(this.borderRadiusSlider, "change", () => this.borderThrottle.flush());
 		}
 	}
 
@@ -329,8 +340,9 @@ export class StylePanel extends UIComponent<StyleState> {
 				this.events.on(slider, "input", () => {
 					this.state.padding[key] = parseInt(slider.value, 10);
 					this.updatePaddingDisplay(key);
-					this.emitPaddingChange();
+					this.paddingThrottle.call();
 				});
+				this.events.on(slider, "change", () => this.paddingThrottle.flush());
 			}
 		});
 	}
@@ -341,14 +353,15 @@ export class StylePanel extends UIComponent<StyleState> {
 		const SHADOW_DEFAULTS = { offsetX: 2, offsetY: 2, blur: 4, color: "#000000", opacity: 50 };
 
 		// Auto-enable shadow when any slider is changed (better UX)
-		const autoEnableAndEmit = (): void => {
+		const autoEnableAndThrottle = (): void => {
 			if (!this.state.shadow.enabled) {
 				this.state.shadow.enabled = true;
 				if (this.shadowToggle) this.shadowToggle.checked = true;
 			}
-			this.emitShadowChange();
+			this.shadowThrottle.call();
 		};
 
+		// Toggle is a discrete action - emit immediately without throttling
 		if (this.shadowToggle) {
 			this.events.on(this.shadowToggle, "change", () => {
 				const enabling = this.shadowToggle!.checked;
@@ -367,29 +380,33 @@ export class StylePanel extends UIComponent<StyleState> {
 			this.events.on(this.shadowOffsetXSlider, "input", () => {
 				this.state.shadow.offsetX = parseInt(this.shadowOffsetXSlider!.value, 10);
 				this.updateShadowOffsetXDisplay();
-				autoEnableAndEmit();
+				autoEnableAndThrottle();
 			});
+			this.events.on(this.shadowOffsetXSlider, "change", () => this.shadowThrottle.flush());
 		}
 		if (this.shadowOffsetYSlider) {
 			this.events.on(this.shadowOffsetYSlider, "input", () => {
 				this.state.shadow.offsetY = parseInt(this.shadowOffsetYSlider!.value, 10);
 				this.updateShadowOffsetYDisplay();
-				autoEnableAndEmit();
+				autoEnableAndThrottle();
 			});
+			this.events.on(this.shadowOffsetYSlider, "change", () => this.shadowThrottle.flush());
 		}
 		// Note: blur slider removed - canvas doesn't implement actual blur effect
 		if (this.shadowColorInput) {
 			this.events.on(this.shadowColorInput, "input", () => {
 				this.state.shadow.color = this.shadowColorInput!.value;
-				autoEnableAndEmit();
+				autoEnableAndThrottle();
 			});
+			this.events.on(this.shadowColorInput, "change", () => this.shadowThrottle.flush());
 		}
 		if (this.shadowOpacitySlider) {
 			this.events.on(this.shadowOpacitySlider, "input", () => {
 				this.state.shadow.opacity = parseInt(this.shadowOpacitySlider!.value, 10);
 				this.updateShadowOpacityDisplay();
-				autoEnableAndEmit();
+				autoEnableAndThrottle();
 			});
+			this.events.on(this.shadowOpacitySlider, "change", () => this.shadowThrottle.flush());
 		}
 	}
 
@@ -562,5 +579,15 @@ export class StylePanel extends UIComponent<StyleState> {
 
 	private updateShadowOpacityDisplay(): void {
 		if (this.shadowOpacityValue) this.shadowOpacityValue.textContent = String(this.state.shadow.opacity);
+	}
+
+	// ─── Disposal ─────────────────────────────────────────────────────────────
+
+	override dispose(): void {
+		// Cancel throttles to prevent any pending callbacks after disposal
+		this.borderThrottle.cancel();
+		this.paddingThrottle.cancel();
+		this.shadowThrottle.cancel();
+		super.dispose();
 	}
 }
