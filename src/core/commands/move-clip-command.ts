@@ -9,6 +9,7 @@ export class MoveClipCommand implements EditCommand {
 	name = "moveClip";
 	private player?: Player;
 	private originalTrackIndex: number;
+	private originalToTrackIndex: number;
 	private originalClipIndex: number;
 	private originalStart?: Seconds;
 	private originalTimingIntent?: TimingIntent;
@@ -22,6 +23,7 @@ export class MoveClipCommand implements EditCommand {
 		private newStart: Seconds
 	) {
 		this.originalTrackIndex = fromTrackIndex;
+		this.originalToTrackIndex = toTrackIndex;
 		this.originalClipIndex = fromClipIndex;
 	}
 
@@ -138,7 +140,7 @@ export class MoveClipCommand implements EditCommand {
 		}
 
 		if (document) {
-			if (this.fromTrackIndex !== this.toTrackIndex) {
+			if (this.originalTrackIndex !== this.originalToTrackIndex) {
 				const sourceDocTrackIdx = this.sourceTrackWasDeleted ? -1 : this.fromTrackIndex;
 				if (sourceDocTrackIdx >= 0) {
 					document.removeClip(sourceDocTrackIdx, this.fromClipIndex);
