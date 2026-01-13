@@ -345,7 +345,6 @@ export class Timeline extends TimelineEntity {
 				} else {
 					this.stateManager.selectClip(trackIndex, clipIndex, false);
 				}
-				this.edit.selectClip(trackIndex, clipIndex);
 				this.requestRender();
 			},
 			getClipRenderer: type => this.clipRenderers.get(type),
