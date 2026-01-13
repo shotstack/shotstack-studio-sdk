@@ -14,10 +14,8 @@ import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { resolveAliasReferences } from "@core/alias";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
-import { ClearSelectionCommand } from "@core/commands/clear-selection-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
-import { SelectClipCommand } from "@core/commands/select-clip-command";
 import { SetOutputFpsCommand } from "@core/commands/set-output-fps-command";
 import { SetOutputSizeCommand } from "@core/commands/set-output-size-command";
 import { SetTimelineBackgroundCommand } from "@core/commands/set-timeline-background-command";
@@ -1884,12 +1882,20 @@ export class Edit extends Entity {
 	}
 
 	public selectClip(trackIndex: number, clipIndex: number): void {
-		const command = new SelectClipCommand(trackIndex, clipIndex);
-		this.executeCommand(command);
+		const player = this.getPlayerClip(trackIndex, clipIndex);
+		if (player) {
+			this.selectedClip = player;
+			this.events.emit(EditEvent.ClipSelected, {
+				clip: player.clipConfiguration,
+				trackIndex,
+				clipIndex
+			});
+		}
 	}
+
 	public clearSelection(): void {
-		const command = new ClearSelectionCommand();
-		this.executeCommand(command);
+		this.selectedClip = null;
+		this.events.emit(EditEvent.SelectionCleared);
 	}
 	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
 		if (!this.selectedClip) return false;
