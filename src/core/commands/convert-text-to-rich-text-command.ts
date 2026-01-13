@@ -86,7 +86,8 @@ function convertTextToRichText(textAsset: TextAsset): { richTextAsset: RichTextA
 		}
 	}
 
-	// Map animation (add required speed property)
+	// Map animation
+	// TODO: speed is deprecated and should be removed once @shotstack/schemas is updated
 	if (textAsset.animation) {
 		richTextAsset.animation = {
 			preset: textAsset.animation.preset,
