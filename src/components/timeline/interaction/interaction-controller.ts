@@ -62,8 +62,22 @@ const DEFAULT_CONFIG: ResolvedConfig = {
 	resizeZone: 12
 };
 
+// ─── Lifecycle Interface ───────────────────────────────────────────────────
+
+/**
+ * Lifecycle interface for timeline interaction controllers.
+ */
+export interface TimelineInteractionRegistration {
+	mount(): void;
+	update(deltaTime: number): void;
+	draw(): void;
+	dispose(): void;
+}
+
+// ─── Controller ────────────────────────────────────────────────────────────
+
 /** Controller for timeline interactions (drag, resize, selection) */
-export class InteractionController {
+export class InteractionController implements TimelineInteractionRegistration {
 	private state: InteractionState = IDLE_STATE;
 	private readonly config: ResolvedConfig;
 	private snapPoints: SnapPoint[] = [];
@@ -88,18 +102,29 @@ export class InteractionController {
 		this.feedbackElements = createFeedbackElements(feedbackLayer);
 		this.config = { ...DEFAULT_CONFIG, ...config };
 
-		// Bind handlers
+		// Bind handlers (event setup deferred to mount())
 		this.handlePointerDown = this.onPointerDown.bind(this);
 		this.handlePointerMove = this.onPointerMove.bind(this);
 		this.handlePointerUp = this.onPointerUp.bind(this);
-
-		this.setupEventListeners();
 	}
 
-	private setupEventListeners(): void {
+	// ═══════════════════════════════════════════════════════════════════════════
+	// LIFECYCLE (TimelineInteractionRegistration)
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	public mount(): void {
 		this.tracksContainer.addEventListener("pointerdown", this.handlePointerDown);
 		document.addEventListener("pointermove", this.handlePointerMove);
 		document.addEventListener("pointerup", this.handlePointerUp);
+	}
+
+	public update(_deltaTime: number): void {
+		// Lazy caching approach works well for DOM-based timeline.
+		// Future optimization: Could rebuild snap points here instead of on-demand.
+	}
+
+	public draw(): void {
+		// No frame-synced rendering needed for DOM-based timeline.
 	}
 
 	private onPointerDown(e: PointerEvent): void {
@@ -429,7 +454,12 @@ export class InteractionController {
 			const newLength = Math.max(0.1, time - originalStart);
 
 			clipElement.style.setProperty("--clip-length", String(newLength));
-			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(this.feedbackElements, originalStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
+			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(
+				this.feedbackElements,
+				originalStart + newLength,
+				e.clientX - rect.left,
+				e.clientY - rect.top
+			);
 		}
 	}
 

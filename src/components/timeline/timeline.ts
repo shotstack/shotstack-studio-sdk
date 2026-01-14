@@ -407,6 +407,7 @@ export class Timeline {
 			snapThreshold: this.features.snap ? 10 : 0,
 			onRequestRender: () => this.requestRender()
 		});
+		this.interactionController.mount();
 
 		this.stateManager.setInteractionQuery({
 			isDragging: (t, c) => this.interactionController?.isDragging(t, c) ?? false,

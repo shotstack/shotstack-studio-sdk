@@ -282,6 +282,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			// isDragging/isResizing should both return false
 			expect(controller.isDragging(0, 0)).toBe(false);
@@ -295,6 +296,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const event = createPointerEvent("pointerdown", {
@@ -318,6 +320,7 @@ describe("InteractionController", () => {
 				mockDOM.feedbackLayer,
 				{ dragThreshold: 3 }
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -347,6 +350,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -377,6 +381,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			// Click on container (not on a clip)
 			const event = createPointerEvent("pointerdown", {
@@ -400,6 +405,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const leftHandle = clipElement.querySelector(".ss-clip-resize-handle.left") as HTMLElement;
@@ -422,6 +428,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const rightHandle = clipElement.querySelector(".ss-clip-resize-handle.right") as HTMLElement;
@@ -457,6 +464,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -491,6 +499,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const handle = clipElement.querySelector(".ss-clip-resize-handle.left") as HTMLElement;
@@ -526,6 +535,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -568,6 +578,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -615,6 +626,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const handle = clipElement.querySelector(".ss-clip-resize-handle.right") as HTMLElement;
@@ -652,6 +664,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const handle = clipElement.querySelector(".ss-clip-resize-handle.left") as HTMLElement;
@@ -689,6 +702,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const handle = clipElement.querySelector(".ss-clip-resize-handle.right") as HTMLElement;
@@ -730,6 +744,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			// Spy on removeEventListener
 			const tracksRemoveSpy = jest.spyOn(mockDOM.tracksContainer, "removeEventListener");
@@ -749,6 +764,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			// Trigger some feedback elements to be created by starting a drag
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -800,6 +816,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -851,6 +868,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -893,6 +911,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 			const handle = clipElement.querySelector(".ss-clip-resize-handle.right") as HTMLElement;
@@ -939,6 +958,7 @@ describe("InteractionController", () => {
 				mockDOM.feedbackLayer,
 				{ dragThreshold: 20 } // High threshold
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
@@ -978,6 +998,7 @@ describe("InteractionController", () => {
 				mockDOM.tracksContainer,
 				mockDOM.feedbackLayer
 			);
+			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
 
