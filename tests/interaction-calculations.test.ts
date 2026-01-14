@@ -5,6 +5,8 @@
  * These functions have no side effects and are easily testable in isolation.
  */
 
+import type { ResolvedClip } from "@schemas";
+
 import {
 	pixelsToSeconds,
 	secondsToPixels,
@@ -23,7 +25,6 @@ import {
 	exceedsDragThreshold
 } from "../src/components/timeline/interaction/interaction-calculations";
 import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
-import type { ResolvedClip } from "@schemas";
 
 // ─── Test Fixtures ─────────────────────────────────────────────────────────
 

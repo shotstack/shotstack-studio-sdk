@@ -10,9 +10,6 @@ import { getTrackHeight } from "@timeline/timeline.types";
 import { TimelineStateManager } from "../core/state/timeline-state";
 
 import {
-	type ClipRef,
-	type CollisionResult,
-	type DragTarget,
 	type SnapPoint,
 	buildSnapPoints,
 	buildTrackYPositions,
@@ -40,33 +37,20 @@ import {
 	showSnapLine,
 	updateLumaTargetHighlight
 } from "./interaction-feedback";
-
-/** Point coordinates */
-interface Point {
-	x: number;
-	y: number;
-}
-
-/** Interaction state machine */
-type InteractionState =
-	| { type: "idle" }
-	| { type: "pending"; startPoint: Point; clipRef: ClipRef; originalTime: number }
-	| {
-			type: "dragging";
-			clipRef: ClipRef;
-			clipElement: HTMLElement; // Original clip element (follows mouse)
-			ghost: HTMLElement; // Drop preview (shows snap target)
-			startTime: number;
-			originalTrack: number;
-			dragTarget: DragTarget;
-			dragOffsetX: number; // Pixel offset from clip left edge to mouse
-			dragOffsetY: number; // Pixel offset from clip top to mouse
-			originalStyles: { position: string; left: string; top: string; zIndex: string; pointerEvents: string };
-			draggedClipLength: number; // Length of the clip being dragged
-			collisionResult: CollisionResult; // Current collision resolution
-			altKeyHeld: boolean; // Alt/Option key held for mask attachment mode
-	  }
-	| { type: "resizing"; clipRef: ClipRef; edge: "left" | "right"; originalStart: number; originalLength: number; clipElement: HTMLElement };
+import {
+	type ClipRef,
+	type CollisionResult,
+	type DragTarget,
+	type InteractionState,
+	IDLE_STATE,
+	createDraggingState,
+	createPendingState,
+	createResizingState,
+	isDragging,
+	isPending,
+	isResizing,
+	updateDragState
+} from "./interaction-state";
 
 /** Resolved config type - numeric properties required, callback optional */
 type ResolvedConfig = Required<Omit<TimelineInteractionConfig, "onRequestRender">> & Pick<TimelineInteractionConfig, "onRequestRender">;
@@ -80,7 +64,7 @@ const DEFAULT_CONFIG: ResolvedConfig = {
 
 /** Controller for timeline interactions (drag, resize, selection) */
 export class InteractionController {
-	private state: InteractionState = { type: "idle" };
+	private state: InteractionState = IDLE_STATE;
 	private readonly config: ResolvedConfig;
 	private snapPoints: SnapPoint[] = [];
 
@@ -147,12 +131,7 @@ export class InteractionController {
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) return;
 
-		this.state = {
-			type: "pending",
-			startPoint: { x: e.clientX, y: e.clientY },
-			clipRef,
-			originalTime: clip.config.start
-		};
+		this.state = createPendingState({ x: e.clientX, y: e.clientY }, clipRef, clip.config.start);
 	}
 
 	private startResize(e: PointerEvent, clipRef: ClipRef, edge: "left" | "right"): void {
@@ -167,14 +146,7 @@ export class InteractionController {
 
 		this.trackYCache = null;
 
-		this.state = {
-			type: "resizing",
-			clipRef,
-			edge,
-			originalStart: clip.config.start,
-			originalLength: clip.config.length,
-			clipElement
-		};
+		this.state = createResizingState(clipRef, clipElement, edge, clip.config.start, clip.config.length);
 
 		this.buildSnapPointsForClip(clipRef);
 
@@ -209,14 +181,15 @@ export class InteractionController {
 	}
 
 	private transitionToDragging(e: PointerEvent): void {
-		if (this.state.type !== "pending") return;
+		if (!isPending(this.state)) return;
 
 		this.trackYCache = null;
 
-		const { clipRef, originalTime } = this.state;
+		const pendingState = this.state;
+		const { clipRef } = pendingState;
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) {
-			this.state = { type: "idle" };
+			this.state = IDLE_STATE;
 			return;
 		}
 
@@ -225,7 +198,7 @@ export class InteractionController {
 			`[data-track-index="${clipRef.trackIndex}"][data-clip-index="${clipRef.clipIndex}"]`
 		) as HTMLElement | null;
 		if (!clipElement) {
-			this.state = { type: "idle" };
+			this.state = IDLE_STATE;
 			return;
 		}
 
@@ -262,21 +235,7 @@ export class InteractionController {
 		const ghost = createDragGhost(clip.config.length, clipAssetType, trackAssetType, pps);
 		this.feedbackElements.container.appendChild(ghost);
 
-		this.state = {
-			type: "dragging",
-			clipRef,
-			clipElement,
-			ghost,
-			startTime: originalTime,
-			originalTrack: clipRef.trackIndex,
-			dragTarget: { type: "track", trackIndex: clipRef.trackIndex },
-			dragOffsetX,
-			dragOffsetY,
-			originalStyles,
-			draggedClipLength: clip.config.length,
-			collisionResult: { newStartTime: originalTime, pushOffset: 0 },
-			altKeyHeld: e.altKey
-		};
+		this.state = createDraggingState(pendingState, clipElement, ghost, dragOffsetX, dragOffsetY, originalStyles, clip.config.length, e.altKey);
 
 		// Position ghost at current clip position initially
 		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
@@ -287,7 +246,7 @@ export class InteractionController {
 	}
 
 	private handleDragMove(e: PointerEvent): void {
-		if (this.state.type !== "dragging") return;
+		if (!isDragging(this.state)) return;
 
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
@@ -308,7 +267,7 @@ export class InteractionController {
 
 		// Determine drag target based on mouse Y
 		const dragTarget = this.getDragTargetAtYPosition(mouseY);
-		this.state.dragTarget = dragTarget;
+		this.state = updateDragState(this.state, { dragTarget });
 
 		// Apply snapping to clip time
 		const snappedTime = this.applySnap(clipTime);
@@ -330,7 +289,7 @@ export class InteractionController {
 
 			if (canAttachAsLuma) {
 				// Update Alt key state during drag (user can press/release Alt while dragging)
-				this.state.altKeyHeld = e.altKey;
+				this.state = updateDragState(this.state, { altKeyHeld: e.altKey });
 
 				// Find target content clip (excluding self for image/video)
 				const targetClip = this.findContentClipAtPositionOnTrack(dragTarget.trackIndex, clipTime, this.state.clipRef);
@@ -346,7 +305,7 @@ export class InteractionController {
 					if (existingLumaRef && !isDraggingSameLuma) {
 						clearLumaFeedback(this.feedbackElements, this.state.clipElement);
 						if (draggedAssetType === "luma") {
-							this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+							this.state = updateDragState(this.state, { collisionResult: { newStartTime: clipTime, pushOffset: 0 } });
 						} else {
 							const collisionResult = this.resolveClipCollisionOnTrack(
 								dragTarget.trackIndex,
@@ -355,7 +314,7 @@ export class InteractionController {
 								this.state.clipRef
 							);
 							clipTime = collisionResult.newStartTime;
-							this.state.collisionResult = collisionResult;
+							this.state = updateDragState(this.state, { collisionResult });
 						}
 					} else {
 						// Mask mode: show UI and snap to target
@@ -377,14 +336,14 @@ export class InteractionController {
 						this.feedbackElements.lumaTargetClipElement = lumaResult.targetClipElement;
 						this.feedbackElements.lumaConnectionLine = lumaResult.connectionLine;
 						clipTime = targetClip.config.start;
-						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+						this.state = updateDragState(this.state, { collisionResult: { newStartTime: clipTime, pushOffset: 0 } });
 					}
 				} else {
 					// Normal mode: clear feedback and use collision detection
 					clearLumaFeedback(this.feedbackElements, this.state.clipElement);
 					if (draggedAssetType === "luma") {
 						// Luma clips overlay freely (no collision)
-						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+						this.state = updateDragState(this.state, { collisionResult: { newStartTime: clipTime, pushOffset: 0 } });
 					} else {
 						// Image/video use normal collision detection
 						const collisionResult = this.resolveClipCollisionOnTrack(
@@ -394,17 +353,17 @@ export class InteractionController {
 							this.state.clipRef
 						);
 						clipTime = collisionResult.newStartTime;
-						this.state.collisionResult = collisionResult;
+						this.state = updateDragState(this.state, { collisionResult });
 					}
 				}
 			} else {
 				const collisionResult = this.resolveClipCollisionOnTrack(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
 				clipTime = collisionResult.newStartTime;
-				this.state.collisionResult = collisionResult;
+				this.state = updateDragState(this.state, { collisionResult });
 			}
 		} else {
 			// No collision for insertion targets (new track)
-			this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+			this.state = updateDragState(this.state, { collisionResult: { newStartTime: clipTime, pushOffset: 0 } });
 			// Clear luma target highlight when not over a track
 			clearLumaFeedback(this.feedbackElements, this.state.clipElement);
 		}
@@ -433,7 +392,7 @@ export class InteractionController {
 	}
 
 	private handleResizeMove(e: PointerEvent): void {
-		if (this.state.type !== "resizing") return;
+		if (!isResizing(this.state)) return;
 
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
@@ -478,7 +437,7 @@ export class InteractionController {
 		switch (this.state.type) {
 			case "pending":
 				// Was just a click, selection already handled
-				this.state = { type: "idle" };
+				this.state = IDLE_STATE;
 				break;
 			case "dragging":
 				this.completeDrag(e);
@@ -492,7 +451,7 @@ export class InteractionController {
 	}
 
 	private completeDrag(_e: PointerEvent): void {
-		if (this.state.type !== "dragging") return;
+		if (!isDragging(this.state)) return;
 
 		const { clipRef, clipElement, ghost, startTime, originalTrack, dragTarget, originalStyles, collisionResult, altKeyHeld } = this.state;
 
@@ -566,7 +525,7 @@ export class InteractionController {
 					// Cleanup
 					ghost.remove();
 					this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
-					this.state = { type: "idle" };
+					this.state = IDLE_STATE;
 					return;
 				}
 			}
@@ -593,7 +552,7 @@ export class InteractionController {
 
 						ghost.remove();
 						this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
-						this.state = { type: "idle" };
+						this.state = IDLE_STATE;
 						return;
 					}
 				}
@@ -641,11 +600,11 @@ export class InteractionController {
 		// Cleanup
 		ghost.remove();
 		this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
-		this.state = { type: "idle" };
+		this.state = IDLE_STATE;
 	}
 
 	private completeResize(e: PointerEvent): void {
-		if (this.state.type !== "resizing") return;
+		if (!isResizing(this.state)) return;
 
 		const { clipRef, edge, originalStart, originalLength } = this.state;
 
@@ -721,7 +680,7 @@ export class InteractionController {
 		// Cleanup
 		hideSnapLine(this.feedbackElements.snapLine);
 		hideDragTimeTooltip(this.feedbackElements.dragTimeTooltip);
-		this.state = { type: "idle" };
+		this.state = IDLE_STATE;
 	}
 
 	private moveLumaWithContent(lumaPlayer: ReturnType<TimelineStateManager["getAttachedLumaPlayer"]>, targetTrack: number, newTime: number): void {
