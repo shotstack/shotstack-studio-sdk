@@ -17,15 +17,26 @@ function parseAliasReference(value: unknown): string | null {
 	return match ? match[1] : null;
 }
 
+interface ClipLocation {
+	trackIdx: number;
+	clipIdx: number;
+}
+
 function extractClipAliases(edit: Edit): Record<string, Clip> {
 	const aliases: Record<string, Clip> = {};
+	const locations: Record<string, ClipLocation> = {};
 
 	forEachClip(edit, (clip, trackIdx, clipIdx) => {
 		if (clip.alias) {
 			if (aliases[clip.alias]) {
-				console.warn(`Duplicate alias "${clip.alias}" at track ${trackIdx}, clip ${clipIdx} - overwriting previous`);
+				const first = locations[clip.alias];
+				throw new Error(
+					`Duplicate alias "${clip.alias}" found at track ${first.trackIdx} clip ${first.clipIdx} ` +
+						`and track ${trackIdx} clip ${clipIdx}. Each alias must be unique.`
+				);
 			}
 			aliases[clip.alias] = clip;
+			locations[clip.alias] = { trackIdx, clipIdx };
 		}
 	});
 
