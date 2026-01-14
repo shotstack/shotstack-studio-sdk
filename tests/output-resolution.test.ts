@@ -107,7 +107,7 @@ jest.mock("pixi.js", () => {
 function createMinimalEdit(): EditConfig {
 	return {
 		timeline: {
-			tracks: [{ clips: [] }]
+			tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
 		},
 		output: {
 			size: { width: 1920, height: 1080 },

@@ -184,10 +184,14 @@ export class EditDocument {
 
 	/**
 	 * Remove a track at the specified index
-	 * @returns The removed track, or null if index invalid
+	 * @returns The removed track, or null if index invalid or would leave 0 tracks
 	 */
 	removeTrack(index: number): Track | null {
 		if (index < 0 || index >= this.data.timeline.tracks.length) {
+			return null;
+		}
+		if (this.data.timeline.tracks.length <= 1) {
+			console.warn("Cannot remove the last track");
 			return null;
 		}
 		const [removed] = this.data.timeline.tracks.splice(index, 1);
@@ -376,8 +380,6 @@ export class EditDocument {
 	 */
 	toJSON(): Edit {
 		const result = structuredClone(this.data);
-		// TODO: Filter out empty tracks (should never exist, but safety net). Remove when centralised type enforcement is in place.
-		result.timeline.tracks = result.timeline.tracks.filter(t => t.clips.length > 0);
 		if (result.merge?.length === 0) {
 			delete result.merge;
 		}

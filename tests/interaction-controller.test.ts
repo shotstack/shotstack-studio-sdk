@@ -9,6 +9,10 @@
  * These tests verify the state machine transitions and command execution.
  */
 
+import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
+import { InteractionController } from "../src/components/timeline/interaction/interaction-controller";
+import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
+
 // Mock pixi.js before any imports that use it
 jest.mock("pixi.js", () => ({
 	Container: jest.fn(),
@@ -63,10 +67,6 @@ jest.mock("../src/core/commands/resize-clip-command", () => ({
 		length
 	}))
 }));
-
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
-import { InteractionController } from "../src/components/timeline/interaction/interaction-controller";
-import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
 
 // ─── Mock Types ──────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ function createMockStateManager(tracks: MockTrack[] = []) {
 		getAttachedLumaPlayer: jest.fn(() => null),
 		setInteractionQuery: jest.fn(),
 		// Allow tests to update tracks
-		_setTracks: (newTracks: MockTrack[]) => {
+		setTestTracks: (newTracks: MockTrack[]) => {
 			mockTracks = newTracks;
 		}
 	};
@@ -516,7 +516,7 @@ describe("InteractionController", () => {
 	describe("drag completion", () => {
 		it("executes MoveClipCommand when clip is moved", () => {
 			// Setup with single clip to avoid collision
-			mockStateManager._setTracks([
+			mockStateManager.setTestTracks([
 				createMockTrack(0, [{ start: 0, length: 2 }])
 			] as MockTrack[]);
 
@@ -786,7 +786,7 @@ describe("InteractionController", () => {
 	describe("luma co-movement", () => {
 		it("moves attached luma when content clip is dragged", () => {
 			// Setup with single clip and luma attachment
-			mockStateManager._setTracks([
+			mockStateManager.setTestTracks([
 				createMockTrack(0, [{ start: 0, length: 2 }])
 			] as MockTrack[]);
 
@@ -884,7 +884,7 @@ describe("InteractionController", () => {
 		it("resizes attached luma when content clip is resized", () => {
 			// Setup with luma attachment
 			const mockLumaPlayer = { id: "luma-player" };
-			mockStateManager.getAttachedLumaPlayer = jest.fn(() => mockLumaPlayer);
+			(mockStateManager as { getAttachedLumaPlayer: jest.Mock }).getAttachedLumaPlayer = jest.fn(() => mockLumaPlayer);
 			mockEdit.findClipIndices = jest.fn(() => ({ trackIndex: 0, clipIndex: 1 }));
 
 			controller = new InteractionController(

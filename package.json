@@ -91,7 +91,7 @@
 	},
 	"dependencies": {
 		"@huggingface/transformers": "^3.0.0",
-		"@shotstack/schemas": "^1.4.2",
+		"@shotstack/schemas": "^1.4.6",
 		"@shotstack/shotstack-canvas": "^1.9.2",
 		"fast-deep-equal": "^3.1.3",
 		"howler": "^2.2.4",

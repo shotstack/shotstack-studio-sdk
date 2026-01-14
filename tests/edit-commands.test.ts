@@ -208,7 +208,13 @@ describe("Edit Command History", () => {
 
 	beforeEach(async () => {
 		edit = new Edit({
-			timeline: { tracks: [] },
+			timeline: {
+				tracks: [
+					{
+						clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }]
+					}
+				]
+			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 		await edit.load();

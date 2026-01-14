@@ -10,10 +10,16 @@ import type { Edit, Clip } from "@core/schemas";
 
 // ─── Test Fixtures ────────────────────────────────────────────────────────────
 
+const MINIMAL_CLIP: Clip = {
+	asset: { type: "image", src: "https://example.com/image.jpg" },
+	start: 0,
+	length: 1
+};
+
 function createMinimalEdit(): Edit {
 	return {
 		timeline: {
-			tracks: []
+			tracks: [{ clips: [MINIMAL_CLIP] }]
 		},
 		output: {
 			size: { width: 1920, height: 1080 },
@@ -81,7 +87,8 @@ describe("EditDocument", () => {
 			const edit = createMinimalEdit();
 			const doc = new EditDocument(edit);
 
-			expect(doc.getTrackCount()).toBe(0);
+			expect(doc.getTrackCount()).toBe(1);
+			expect(doc.getClipCountInTrack(0)).toBe(1);
 			expect(doc.getSize()).toEqual({ width: 1920, height: 1080 });
 		});
 
@@ -167,9 +174,9 @@ describe("EditDocument", () => {
 			expect(doc.getTrackCount()).toBe(2);
 		});
 
-		it("getTrackCount returns 0 for empty timeline", () => {
+		it("getTrackCount returns 1 for minimal edit with empty track", () => {
 			const doc = new EditDocument(createMinimalEdit());
-			expect(doc.getTrackCount()).toBe(0);
+			expect(doc.getTrackCount()).toBe(1);
 		});
 	});
 
@@ -354,19 +361,19 @@ describe("EditDocument", () => {
 	// ─── Track Mutation Tests ─────────────────────────────────────────────────
 
 	describe("track mutations", () => {
-		it("addTrack adds empty track at index", () => {
+		it("addTrack adds track at index", () => {
 			const doc = new EditDocument(createMinimalEdit());
 
-			doc.addTrack(0);
+			doc.addTrack(0, { clips: [MINIMAL_CLIP] });
 
-			expect(doc.getTrackCount()).toBe(1);
-			expect(doc.getClipCountInTrack(0)).toBe(0);
+			expect(doc.getTrackCount()).toBe(2);
+			expect(doc.getClipCountInTrack(0)).toBe(1);
 		});
 
 		it("addTrack inserts at correct position", () => {
 			const doc = new EditDocument(createEditWithTracks());
 
-			doc.addTrack(1, { clips: [] });
+			doc.addTrack(1, { clips: [MINIMAL_CLIP] });
 
 			expect(doc.getTrackCount()).toBe(3);
 			// Original track 1 should now be at index 2
@@ -579,21 +586,12 @@ describe("EditDocument", () => {
 	// ─── Edge Cases ───────────────────────────────────────────────────────────
 
 	describe("edge cases", () => {
-		it("handles empty tracks array", () => {
+		it("handles minimal edit with single track and clip", () => {
 			const doc = new EditDocument(createMinimalEdit());
 
-			expect(doc.getTrackCount()).toBe(0);
-			expect(doc.getClipCount()).toBe(0);
-			expect(doc.getTracks()).toEqual([]);
-		});
-
-		it("handles track with empty clips array", () => {
-			const edit = createMinimalEdit();
-			edit.timeline.tracks = [{ clips: [] }];
-			const doc = new EditDocument(edit);
-
 			expect(doc.getTrackCount()).toBe(1);
-			expect(doc.getClipCountInTrack(0)).toBe(0);
+			expect(doc.getClipCount()).toBe(1);
+			expect(doc.getTracks()).toEqual([{ clips: [MINIMAL_CLIP] }]);
 		});
 	});
 });

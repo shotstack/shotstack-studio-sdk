@@ -456,10 +456,17 @@ describe("Edit Timing Integration", () => {
 
 	beforeEach(async () => {
 		edit = new Edit({
-			timeline: { tracks: [] },
+			timeline: {
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
+			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 		await edit.load();
+
+		// Delete the initial minimal clip so timing tests start with a clean slate
+		// Schema validation happens at load time; runtime state can be empty
+		edit.deleteClip(0, 0);
+
 		events = edit.events;
 		emitSpy = jest.spyOn(events, "emit");
 	});

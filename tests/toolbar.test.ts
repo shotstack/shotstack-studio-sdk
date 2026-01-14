@@ -145,7 +145,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		getEdit: jest.fn(() => ({
 			timeline: {
 				fonts: [],
-				tracks: []
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
 			}
 		})),
 		getDocument: jest.fn(() => ({

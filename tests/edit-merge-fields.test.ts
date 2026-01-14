@@ -328,20 +328,21 @@ describe("Edit Merge Fields", () => {
 	let emitSpy: jest.SpyInstance;
 
 	beforeEach(async () => {
+		const minimalClip = { asset: { type: "image" as const, src: "https://example.com/image.jpg" }, start: 0, length: 1 };
 		edit = new ShotstackEdit({
-			timeline: { tracks: [] },
+			timeline: { tracks: [{ clips: [minimalClip] }] },
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 		await edit.load();
 
 		// Initialize originalEdit with tracks so merge field templates can be stored
 		// When addClip is called, it syncs to originalEdit.timeline.tracks[trackIdx]
-		// We pre-create empty track objects so the sync will work
+		// We pre-create track objects with minimal clips so the sync will work
 		await edit.loadEdit({
 			timeline: {
 				tracks: [
-					{ clips: [] }, // Track 0
-					{ clips: [] } // Track 1
+					{ clips: [minimalClip] }, // Track 0
+					{ clips: [minimalClip] } // Track 1
 				]
 			},
 			output: {

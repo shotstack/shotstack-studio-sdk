@@ -307,10 +307,17 @@ describe("Edit Clip Operations", () => {
 
 	beforeEach(async () => {
 		edit = new Edit({
-			timeline: { tracks: [] },
+			timeline: {
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
+			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 		await edit.load();
+
+		// Delete the initial minimal clip so tests start with a clean slate
+		// Schema validation happens at load time; runtime state can be empty
+		edit.deleteClip(0, 0);
+
 		events = edit.events;
 		emitSpy = jest.spyOn(events, "emit");
 	});
@@ -750,7 +757,9 @@ describe("Edit Clip Operations", () => {
 
 	describe("AddClipCommand export state sync", () => {
 		const baseEdit = {
-			timeline: { tracks: [] as { clips: ResolvedClip[] }[] },
+			timeline: {
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }] as { clips: ResolvedClip[] }[]
+			},
 			output: { format: "mp4" as const, fps: 25 as const, size: { width: 1920, height: 1080 } }
 		};
 

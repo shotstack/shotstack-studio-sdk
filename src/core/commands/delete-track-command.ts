@@ -18,6 +18,11 @@ export class DeleteTrackCommand implements EditCommand {
 		const clips = context.getClips();
 		const tracks = context.getTracks();
 
+		if (tracks.length <= 1) {
+			console.warn("Cannot delete the last track");
+			return;
+		}
+
 		// Save config and bindings for undo
 		this.deletedClips = clips
 			.filter(c => c.layer === this.trackIdx + 1)
