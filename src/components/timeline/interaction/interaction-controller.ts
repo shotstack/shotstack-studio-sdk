@@ -19,13 +19,27 @@ import {
 	exceedsDragThreshold,
 	findContentClipAtPosition,
 	findNearestSnapPoint,
-	formatDragTime,
 	getDragTargetAtY,
 	getTrackYPosition,
-	pixelsToSeconds,
-	resolveClipCollision,
-	secondsToPixels
+	resolveClipCollision
 } from "./interaction-calculations";
+import {
+	type FeedbackElements,
+	clearAllFeedback,
+	clearLumaFeedback,
+	createDragGhost,
+	createFeedbackElements,
+	disposeFeedbackElements,
+	getTracksOffsetInFeedbackLayer,
+	hideDragTimeTooltip,
+	hideDropZone,
+	hideLumaConnectionLine,
+	hideSnapLine,
+	showDragTimeTooltip,
+	showDropZone,
+	showSnapLine,
+	updateLumaTargetHighlight
+} from "./interaction-feedback";
 
 /** Point coordinates */
 interface Point {
@@ -70,16 +84,8 @@ export class InteractionController {
 	private readonly config: ResolvedConfig;
 	private snapPoints: SnapPoint[] = [];
 
-	// DOM references
-	private readonly feedbackLayer: HTMLElement;
-	private snapLine: HTMLElement | null = null;
-	private dragGhost: HTMLElement | null = null;
-	private dropZone: HTMLElement | null = null;
-	private dragTimeTooltip: HTMLElement | null = null;
-
-	// Luma drag state
-	private lumaTargetClipElement: HTMLElement | null = null;
-	private lumaConnectionLine: HTMLElement | null = null;
+	// DOM feedback elements (stateless management)
+	private feedbackElements: FeedbackElements;
 
 	private trackYCache: number[] | null = null;
 
@@ -95,7 +101,7 @@ export class InteractionController {
 		feedbackLayer: HTMLElement,
 		config?: Partial<TimelineInteractionConfig>
 	) {
-		this.feedbackLayer = feedbackLayer;
+		this.feedbackElements = createFeedbackElements(feedbackLayer);
 		this.config = { ...DEFAULT_CONFIG, ...config };
 
 		// Bind handlers
@@ -249,10 +255,12 @@ export class InteractionController {
 		clipElement.style.pointerEvents = "none";
 
 		// Create ghost as drop preview (shows where clip will land)
-		const ghost = this.createDragGhost(clip, clipRef.trackIndex);
-		this.feedbackLayer.appendChild(ghost);
-
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
+		const track = this.stateManager.getTracks()[clipRef.trackIndex];
+		const clipAssetType = clip.config.asset?.type || "unknown";
+		const trackAssetType = track?.primaryAssetType ?? clipAssetType;
+		const ghost = createDragGhost(clip.config.length, clipAssetType, trackAssetType, pps);
+		this.feedbackElements.container.appendChild(ghost);
 
 		this.state = {
 			type: "dragging",
@@ -271,32 +279,11 @@ export class InteractionController {
 		};
 
 		// Position ghost at current clip position initially
-		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
+		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
 		ghost.style.left = `${clip.config.start * pps}px`;
 		ghost.style.top = `${this.getTrackYPositionCached(clipRef.trackIndex) + 4 + tracksOffset}px`;
 
 		this.buildSnapPointsForClip(clipRef);
-	}
-
-	private createDragGhost(clip: ClipState, trackIndex: number): HTMLElement {
-		const ghost = document.createElement("div");
-		ghost.className = "ss-drag-ghost ss-clip";
-		const clipAssetType = clip.config.asset?.type || "unknown";
-		ghost.dataset["assetType"] = clipAssetType;
-
-		const pps = this.stateManager.getViewport().pixelsPerSecond;
-		const width = clip.config.length * pps;
-		const track = this.stateManager.getTracks()[trackIndex];
-		const trackAssetType = track?.primaryAssetType ?? clipAssetType;
-		const trackHeight = getTrackHeight(trackAssetType);
-
-		ghost.style.width = `${width}px`;
-		ghost.style.height = `${trackHeight - 8}px`; // Track height - padding
-		ghost.style.position = "absolute";
-		ghost.style.pointerEvents = "none";
-		ghost.style.opacity = "0.8";
-
-		return ghost;
 	}
 
 	private handleDragMove(e: PointerEvent): void {
@@ -325,15 +312,15 @@ export class InteractionController {
 
 		// Apply snapping to clip time
 		const snappedTime = this.applySnap(clipTime);
+		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
+		const feedbackConfig = { pixelsPerSecond: pps, scrollLeft: scrollX, tracksOffset };
+
 		if (snappedTime !== null) {
 			clipTime = snappedTime;
-			this.showSnapLine(clipTime);
+			this.feedbackElements.snapLine = showSnapLine(this.feedbackElements, clipTime, feedbackConfig);
 		} else {
-			this.hideSnapLine();
+			hideSnapLine(this.feedbackElements.snapLine);
 		}
-
-		// Get offset for positioning in feedback layer (accounts for ruler height)
-		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
 
 		// Apply collision detection for track targets (skip for luma/image/video when attaching)
 		if (dragTarget.type === "track") {
@@ -357,7 +344,7 @@ export class InteractionController {
 						existingLumaRef.trackIndex === this.state.clipRef.trackIndex;
 
 					if (existingLumaRef && !isDraggingSameLuma) {
-						this.clearLumaDragFeedback();
+						clearLumaFeedback(this.feedbackElements, this.state.clipElement);
 						if (draggedAssetType === "luma") {
 							this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 						} else {
@@ -372,13 +359,29 @@ export class InteractionController {
 						}
 					} else {
 						// Mask mode: show UI and snap to target
-						this.updateLumaTargetHighlight(targetClip, dragTarget.trackIndex, tracksOffset);
+						const tracks = this.stateManager.getTracks();
+						const targetTrack = tracks[dragTarget.trackIndex];
+						const targetTrackY = this.getTrackYPositionCached(dragTarget.trackIndex);
+						const targetTrackHeight = getTrackHeight(targetTrack?.primaryAssetType ?? "default");
+						const lumaResult = updateLumaTargetHighlight(
+							this.tracksContainer,
+							this.feedbackElements,
+							this.state.clipElement,
+							targetClip,
+							dragTarget.trackIndex,
+							targetTrackY,
+							targetTrackHeight,
+							tracksOffset,
+							pps
+						);
+						this.feedbackElements.lumaTargetClipElement = lumaResult.targetClipElement;
+						this.feedbackElements.lumaConnectionLine = lumaResult.connectionLine;
 						clipTime = targetClip.config.start;
 						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 					}
 				} else {
 					// Normal mode: clear feedback and use collision detection
-					this.clearLumaDragFeedback();
+					clearLumaFeedback(this.feedbackElements, this.state.clipElement);
 					if (draggedAssetType === "luma") {
 						// Luma clips overlay freely (no collision)
 						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
@@ -403,7 +406,7 @@ export class InteractionController {
 			// No collision for insertion targets (new track)
 			this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 			// Clear luma target highlight when not over a track
-			this.clearLumaDragFeedback();
+			clearLumaFeedback(this.feedbackElements, this.state.clipElement);
 		}
 
 		// Position ghost and drop zone based on target type
@@ -419,12 +422,13 @@ export class InteractionController {
 			this.state.ghost.style.top = `${targetTrackY + tracksOffset}px`;
 			this.state.ghost.style.height = `${targetHeight}px`;
 
-			this.showDragTimeTooltip(clipTime, clipTime * pps, targetTrackY + tracksOffset);
-			this.hideDropZone();
+			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(this.feedbackElements, clipTime, clipTime * pps, targetTrackY + tracksOffset);
+			hideDropZone(this.feedbackElements.dropZone);
 		} else {
 			// Hide ghost for insertion targets - drop zone indicator is sufficient
 			this.state.ghost.style.display = "none";
-			this.showDropZone(dragTarget.insertionIndex);
+			const dropZoneY = this.getTrackYPositionCached(dragTarget.insertionIndex);
+			this.feedbackElements.dropZone = showDropZone(this.feedbackElements, dropZoneY, tracksOffset);
 		}
 	}
 
@@ -434,6 +438,8 @@ export class InteractionController {
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
+		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
+		const feedbackConfig = { pixelsPerSecond: pps, scrollLeft: scrollX, tracksOffset };
 
 		const x = e.clientX - rect.left + scrollX;
 		let time = Math.max(0, x / pps);
@@ -442,9 +448,9 @@ export class InteractionController {
 		const snappedTime = this.applySnap(time);
 		if (snappedTime !== null) {
 			time = snappedTime;
-			this.showSnapLine(time);
+			this.feedbackElements.snapLine = showSnapLine(this.feedbackElements, time, feedbackConfig);
 		} else {
-			this.hideSnapLine();
+			hideSnapLine(this.feedbackElements.snapLine);
 		}
 
 		// Calculate new dimensions based on edge
@@ -458,13 +464,13 @@ export class InteractionController {
 
 			clipElement.style.setProperty("--clip-start", String(newStart));
 			clipElement.style.setProperty("--clip-length", String(newLength));
-			this.showDragTimeTooltip(newStart, e.clientX - rect.left, e.clientY - rect.top);
+			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(this.feedbackElements, newStart, e.clientX - rect.left, e.clientY - rect.top);
 		} else {
 			// Resize from right edge
 			const newLength = Math.max(0.1, time - originalStart);
 
 			clipElement.style.setProperty("--clip-length", String(newLength));
-			this.showDragTimeTooltip(originalStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
+			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(this.feedbackElements, originalStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
 		}
 	}
 
@@ -545,23 +551,21 @@ export class InteractionController {
 					this.edit.syncLumaToContent(contentIndices.trackIndex, contentIndices.clipIndex, imageIndices.trackIndex, imageIndices.clipIndex);
 
 					// Play success animation on target clip before clearing
-					if (this.lumaTargetClipElement) {
-						const targetElement = this.lumaTargetClipElement;
+					if (this.feedbackElements.lumaTargetClipElement) {
+						const targetElement = this.feedbackElements.lumaTargetClipElement;
 						targetElement.classList.remove("ss-clip-luma-target");
 						targetElement.classList.add("ss-clip-luma-attached");
 						setTimeout(() => targetElement.classList.remove("ss-clip-luma-attached"), 600);
-						this.lumaTargetClipElement = null;
+						this.feedbackElements.lumaTargetClipElement = null;
 					}
-					this.hideLumaConnectionLine();
+					hideLumaConnectionLine(this.feedbackElements.lumaConnectionLine);
 
 					// Trigger re-render
 					this.config.onRequestRender?.();
 
 					// Cleanup
 					ghost.remove();
-					this.hideSnapLine();
-					this.hideDropZone();
-					this.hideDragTimeTooltip();
+					this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
 					this.state = { type: "idle" };
 					return;
 				}
@@ -588,10 +592,7 @@ export class InteractionController {
 						this.edit.syncLumaToContent(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
 
 						ghost.remove();
-						this.hideSnapLine();
-						this.hideDropZone();
-						this.hideDragTimeTooltip();
-						this.clearLumaDragFeedback();
+						this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
 						this.state = { type: "idle" };
 						return;
 					}
@@ -639,10 +640,7 @@ export class InteractionController {
 
 		// Cleanup
 		ghost.remove();
-		this.hideSnapLine();
-		this.hideDropZone();
-		this.hideDragTimeTooltip();
-		this.clearLumaDragFeedback();
+		this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
 		this.state = { type: "idle" };
 	}
 
@@ -721,8 +719,8 @@ export class InteractionController {
 		}
 
 		// Cleanup
-		this.hideSnapLine();
-		this.hideDragTimeTooltip();
+		hideSnapLine(this.feedbackElements.snapLine);
+		hideDragTimeTooltip(this.feedbackElements.dragTimeTooltip);
 		this.state = { type: "idle" };
 	}
 
@@ -732,14 +730,6 @@ export class InteractionController {
 		if (!lumaIndices) return;
 		const cmd = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, targetTrack, sec(newTime));
 		this.edit.executeEditCommand(cmd);
-	}
-
-	private getOrCreateFeedbackElement(existing: HTMLElement | null, className: string): HTMLElement {
-		if (existing) return existing;
-		const el = document.createElement("div");
-		el.className = className;
-		this.feedbackLayer.appendChild(el);
-		return el;
 	}
 
 	/** Resolve clip collision based on clip boundaries (delegates to pure function) */
@@ -791,136 +781,6 @@ export class InteractionController {
 		});
 	}
 
-	private showSnapLine(time: number): void {
-		this.snapLine = this.getOrCreateFeedbackElement(this.snapLine, "ss-snap-line");
-		const pps = this.stateManager.getViewport().pixelsPerSecond;
-		const x = time * pps - this.tracksContainer.scrollLeft;
-		this.snapLine.style.left = `${x}px`;
-		this.snapLine.style.display = "block";
-	}
-
-	private hideSnapLine(): void {
-		if (this.snapLine) {
-			this.snapLine.style.display = "none";
-		}
-	}
-
-	private showDropZone(insertionIndex: number): void {
-		this.dropZone = this.getOrCreateFeedbackElement(this.dropZone, "ss-drop-zone");
-		const y = this.getTrackYPositionCached(insertionIndex);
-		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
-		this.dropZone.style.top = `${y - 2 + tracksOffset}px`;
-		this.dropZone.style.display = "block";
-	}
-
-	private getTracksOffsetInFeedbackLayer(): number {
-		const feedbackParent = this.feedbackLayer.parentElement;
-		if (!feedbackParent) return 0;
-
-		const parentRect = feedbackParent.getBoundingClientRect();
-		const tracksRect = this.tracksContainer.getBoundingClientRect();
-		return tracksRect.top - parentRect.top;
-	}
-
-	private hideDropZone(): void {
-		if (this.dropZone) {
-			this.dropZone.style.display = "none";
-		}
-	}
-
-	private showDragTimeTooltip(time: number, x: number, y: number): void {
-		this.dragTimeTooltip = this.getOrCreateFeedbackElement(this.dragTimeTooltip, "ss-drag-time-tooltip");
-		this.dragTimeTooltip.textContent = formatDragTime(time);
-		this.dragTimeTooltip.style.left = `${x}px`;
-		this.dragTimeTooltip.style.top = `${y - 28}px`;
-		this.dragTimeTooltip.style.display = "block";
-	}
-
-	private hideDragTimeTooltip(): void {
-		if (this.dragTimeTooltip) {
-			this.dragTimeTooltip.style.display = "none";
-		}
-	}
-
-	// ========== Luma Target Highlighting ==========
-
-	/** Update luma target highlight during drag */
-	private updateLumaTargetHighlight(targetClip: ClipState | null, trackIndex: number, tracksOffset: number): void {
-		// Clear previous highlight
-		if (this.lumaTargetClipElement) {
-			this.lumaTargetClipElement.classList.remove("ss-clip-luma-target");
-			this.lumaTargetClipElement = null;
-		}
-
-		// Get the dragging clip element
-		const draggingClipElement = this.state?.type === "dragging" ? this.state.clipElement : null;
-
-		// Hide connection line and clear dragging clip indicator if no target
-		if (!targetClip) {
-			this.hideLumaConnectionLine();
-			if (draggingClipElement) {
-				draggingClipElement.classList.remove("ss-clip-luma-has-target");
-			}
-			return;
-		}
-
-		// Find and highlight new target
-		const clipElement = this.tracksContainer.querySelector(
-			`[data-track-index="${trackIndex}"][data-clip-index="${targetClip.clipIndex}"]`
-		) as HTMLElement | null;
-
-		if (clipElement) {
-			clipElement.classList.add("ss-clip-luma-target");
-			this.lumaTargetClipElement = clipElement;
-
-			// Add indicator to dragging clip (shows mask icon via ::after)
-			if (draggingClipElement) {
-				draggingClipElement.classList.add("ss-clip-luma-has-target");
-			}
-
-			// Show connection line from ghost to target
-			this.showLumaConnectionLine(targetClip, trackIndex, tracksOffset);
-		}
-	}
-
-	/** Show magnetic connection line between luma ghost and target clip */
-	private showLumaConnectionLine(targetClip: ClipState, trackIndex: number, tracksOffset: number): void {
-		this.lumaConnectionLine = this.getOrCreateFeedbackElement(this.lumaConnectionLine, "ss-luma-connection-line");
-		const pps = this.stateManager.getViewport().pixelsPerSecond;
-		const tracks = this.stateManager.getTracks();
-		const track = tracks[trackIndex];
-		const trackY = this.getTrackYPositionCached(trackIndex);
-		const trackHeight = getTrackHeight(track?.primaryAssetType ?? "default");
-
-		// Position connection indicator at target clip's left edge
-		const clipX = targetClip.config.start * pps;
-		this.lumaConnectionLine.style.left = `${clipX}px`;
-		this.lumaConnectionLine.style.top = `${trackY + tracksOffset}px`;
-		this.lumaConnectionLine.style.height = `${trackHeight}px`;
-		this.lumaConnectionLine.classList.add("active");
-	}
-
-	/** Hide luma connection line */
-	private hideLumaConnectionLine(): void {
-		if (this.lumaConnectionLine) {
-			this.lumaConnectionLine.classList.remove("active");
-		}
-	}
-
-	/** Clear all luma drag visual feedback */
-	private clearLumaDragFeedback(): void {
-		if (this.lumaTargetClipElement) {
-			this.lumaTargetClipElement.classList.remove("ss-clip-luma-target");
-			this.lumaTargetClipElement = null;
-		}
-		// Clear dragging clip indicator
-		const draggingClipElement = this.state?.type === "dragging" ? this.state.clipElement : null;
-		if (draggingClipElement) {
-			draggingClipElement.classList.remove("ss-clip-luma-has-target");
-		}
-		this.hideLumaConnectionLine();
-	}
-
 	/** Get drag target at Y position (delegates to pure function) */
 	private getDragTargetAtYPosition(y: number): DragTarget {
 		const tracks = this.stateManager.getTracks();
@@ -957,31 +817,7 @@ export class InteractionController {
 		document.removeEventListener("pointermove", this.handlePointerMove);
 		document.removeEventListener("pointerup", this.handlePointerUp);
 
-		if (this.snapLine) {
-			this.snapLine.remove();
-			this.snapLine = null;
-		}
-
-		if (this.dragGhost) {
-			this.dragGhost.remove();
-			this.dragGhost = null;
-		}
-
-		if (this.dropZone) {
-			this.dropZone.remove();
-			this.dropZone = null;
-		}
-
-		if (this.dragTimeTooltip) {
-			this.dragTimeTooltip.remove();
-			this.dragTimeTooltip = null;
-		}
-
-		if (this.lumaConnectionLine) {
-			this.lumaConnectionLine.remove();
-			this.lumaConnectionLine = null;
-		}
-
-		this.clearLumaDragFeedback();
+		// Dispose all feedback elements (stateless, idempotent)
+		disposeFeedbackElements(this.feedbackElements);
 	}
 }

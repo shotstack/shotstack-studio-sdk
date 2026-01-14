@@ -23,7 +23,7 @@ import {
 	exceedsDragThreshold
 } from "../src/components/timeline/interaction/interaction-calculations";
 import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
-import type { ResolvedClip } from "../src/schemas";
+import type { ResolvedClip } from "@schemas";
 
 // ─── Test Fixtures ─────────────────────────────────────────────────────────
 
@@ -119,10 +119,7 @@ describe("Track Y Position Calculations", () => {
 		});
 
 		it("calculates positions for image tracks (72px height)", () => {
-			const tracks: TrackState[] = [
-				createMockTrack([createMockClip(0, 1)], "image"),
-				createMockTrack([createMockClip(0, 1, "image", 1)], "image")
-			];
+			const tracks: TrackState[] = [createMockTrack([createMockClip(0, 1)], "image"), createMockTrack([createMockClip(0, 1, "image", 1)], "image")];
 			expect(buildTrackYPositions(tracks)).toEqual([0, 72]);
 		});
 
