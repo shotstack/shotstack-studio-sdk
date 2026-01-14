@@ -49,13 +49,12 @@ import {
 	type DragTarget,
 	type DraggingState,
 	type InteractionState,
+	type PendingState,
+	type ResizingState,
 	IDLE_STATE,
 	createDraggingState,
 	createPendingState,
 	createResizingState,
-	isDragging,
-	isPending,
-	isResizing,
 	updateDragState
 } from "./interaction-state";
 
@@ -188,37 +187,32 @@ export class InteractionController implements TimelineInteractionRegistration {
 	private onPointerMove(e: PointerEvent): void {
 		switch (this.state.type) {
 			case "pending":
-				this.handlePendingMove(e);
+				this.handlePendingMove(e, this.state);
 				break;
 			case "dragging":
-				this.handleDragMove(e);
+				this.handleDragMove(e, this.state);
 				break;
 			case "resizing":
-				this.handleResizeMove(e);
+				this.handleResizeMove(e, this.state);
 				break;
 			default:
 				break;
 		}
 	}
 
-	private handlePendingMove(e: PointerEvent): void {
-		if (this.state.type !== "pending") return;
-
-		const dx = e.clientX - this.state.startPoint.x;
-		const dy = e.clientY - this.state.startPoint.y;
+	private handlePendingMove(e: PointerEvent, state: PendingState): void {
+		const dx = e.clientX - state.startPoint.x;
+		const dy = e.clientY - state.startPoint.y;
 
 		if (exceedsDragThreshold(dx, dy, this.config.dragThreshold)) {
-			this.transitionToDragging(e);
+			this.transitionToDragging(e, state);
 		}
 	}
 
-	private transitionToDragging(e: PointerEvent): void {
-		if (!isPending(this.state)) return;
-
+	private transitionToDragging(e: PointerEvent, state: PendingState): void {
 		this.trackYCache = null;
 
-		const pendingState = this.state;
-		const { clipRef } = pendingState;
+		const { clipRef } = state;
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) {
 			this.state = IDLE_STATE;
@@ -267,7 +261,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const ghost = createDragGhost(clip.config.length, clipAssetType, trackAssetType, pps);
 		this.feedbackElements.container.appendChild(ghost);
 
-		this.state = createDraggingState(pendingState, clipElement, ghost, dragOffsetX, dragOffsetY, originalStyles, clip.config.length, e.altKey);
+		this.state = createDraggingState(state, clipElement, ghost, dragOffsetX, dragOffsetY, originalStyles, clip.config.length, e.altKey);
 
 		// Position ghost at current clip position initially
 		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
@@ -277,9 +271,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		this.buildSnapPointsForClip(clipRef);
 	}
 
-	private handleDragMove(e: PointerEvent): void {
-		if (!isDragging(this.state)) return;
-
+	private handleDragMove(e: PointerEvent, state: DraggingState): void {
 		// 1. Setup
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
@@ -288,24 +280,24 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const feedbackConfig: FeedbackConfig = { pixelsPerSecond: pps, scrollLeft: scrollX, tracksOffset };
 
 		// 2. Move clip element with mouse
-		this.state.clipElement.style.left = `${e.clientX - this.state.dragOffsetX}px`;
-		this.state.clipElement.style.top = `${e.clientY - this.state.dragOffsetY}px`;
+		state.clipElement.style.left = `${e.clientX - state.dragOffsetX}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
+		state.clipElement.style.top = `${e.clientY - state.dragOffsetY}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
 
 		// 3. Calculate target position
 		const mouseX = e.clientX - rect.left + scrollX;
 		const mouseY = e.clientY - rect.top + this.tracksContainer.scrollTop;
-		const clipX = mouseX - this.state.dragOffsetX;
+		const clipX = mouseX - state.dragOffsetX;
 		let clipTime = Math.max(0, clipX / pps);
 
 		// 4. Determine drag target and apply snapping
 		const dragTarget = this.getDragTargetAtYPosition(mouseY);
-		this.state = updateDragState(this.state, { dragTarget, altKeyHeld: e.altKey });
+		const updatedState = updateDragState(state, { dragTarget, altKeyHeld: e.altKey });
+		this.state = updatedState;
 		clipTime = this.applySnapAndShowLine(clipTime, feedbackConfig);
 
 		// 5. Determine behaviour
-		const draggedClip = this.stateManager.getClipAt(this.state.clipRef.trackIndex, this.state.clipRef.clipIndex);
-		const targetClip =
-			dragTarget.type === "track" ? this.findContentClipAtPositionOnTrack(dragTarget.trackIndex, clipTime, this.state.clipRef) : null;
+		const draggedClip = this.stateManager.getClipAt(state.clipRef.trackIndex, state.clipRef.clipIndex);
+		const targetClip = dragTarget.type === "track" ? this.findContentClipAtPositionOnTrack(dragTarget.trackIndex, clipTime, state.clipRef) : null;
 		const existingLumaRef =
 			targetClip && dragTarget.type === "track" ? this.stateManager.findAttachedLuma(dragTarget.trackIndex, targetClip.clipIndex) : null;
 
@@ -315,14 +307,14 @@ export class InteractionController implements TimelineInteractionRegistration {
 			altKeyHeld: e.altKey,
 			targetClip,
 			existingLumaRef,
-			draggedClipRef: this.state.clipRef
+			draggedClipRef: state.clipRef
 		});
 
 		// 6. Apply behaviour
-		clipTime = this.applyDragBehavior(this.state, behavior, clipTime, feedbackConfig);
+		clipTime = this.applyDragBehavior(updatedState, behavior, clipTime, feedbackConfig);
 
 		// 7. Update ghost position
-		this.updateGhostPosition(this.state, clipTime, feedbackConfig);
+		this.updateGhostPosition(updatedState, clipTime, feedbackConfig);
 	}
 
 	// ─── Drag Behavior Helpers ─────────────────────────────────────────────────
@@ -432,9 +424,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 	// ─── Resize Handling ───────────────────────────────────────────────────────
 
-	private handleResizeMove(e: PointerEvent): void {
-		if (!isResizing(this.state)) return;
-
+	private handleResizeMove(e: PointerEvent, state: ResizingState): void {
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
@@ -454,7 +444,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		}
 
 		// Calculate new dimensions based on edge
-		const { edge, originalStart, originalLength, clipElement } = this.state;
+		const { edge, originalStart, originalLength, clipElement } = state;
 
 		if (edge === "left") {
 			// Resize from left edge (keep end fixed, change start and length)
@@ -486,20 +476,18 @@ export class InteractionController implements TimelineInteractionRegistration {
 				this.state = IDLE_STATE;
 				break;
 			case "dragging":
-				this.completeDrag(e);
+				this.completeDrag(e, this.state);
 				break;
 			case "resizing":
-				this.completeResize(e);
+				this.completeResize(e, this.state);
 				break;
 			default:
 				break;
 		}
 	}
 
-	private completeDrag(_e: PointerEvent): void {
-		if (!isDragging(this.state)) return;
-
-		const { clipRef, clipElement, ghost, originalStyles, dragTarget, collisionResult, altKeyHeld, startTime, originalTrack } = this.state;
+	private completeDrag(_e: PointerEvent, state: DraggingState): void {
+		const { clipRef, clipElement, ghost, originalStyles, dragTarget, collisionResult, altKeyHeld, startTime, originalTrack } = state;
 
 		// 1. Restore clip element styles
 		restoreClipElementStyles(clipElement, originalStyles);
@@ -525,7 +513,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		});
 
 		// 3. Execute action
-		this.executeDropAction(action, targetClip, existingLumaRef);
+		this.executeDropAction(state, action, targetClip, existingLumaRef);
 
 		// 4. Cleanup (single exit point)
 		ghost.remove();
@@ -533,34 +521,34 @@ export class InteractionController implements TimelineInteractionRegistration {
 		this.state = IDLE_STATE;
 	}
 
-	private executeDropAction(action: DropAction, targetClip: ClipState | null, existingLumaRef: ClipRef | null): void {
+	private executeDropAction(state: DraggingState, action: DropAction, targetClip: ClipState | null, existingLumaRef: ClipRef | null): void {
 		switch (action.type) {
 			case "transform-and-attach":
 				if (existingLumaRef) {
 					console.warn("Cannot attach luma: target clip already has a luma mask");
-					this.executeNormalMove({ type: "simple-move" });
+					this.executeNormalMove(state, { type: "simple-move" });
 				} else {
-					this.executeTransformAndAttach(action.targetClip);
+					this.executeTransformAndAttach(state, action.targetClip);
 				}
 				break;
 
 			case "reattach-luma":
-				this.executeReattachLuma(action.targetClip);
+				this.executeReattachLuma(state, action.targetClip);
 				break;
 
 			case "detach-luma":
 				if (existingLumaRef && targetClip) {
 					console.warn("Cannot attach luma: target clip already has a luma mask");
 				}
-				this.executeDetachLuma();
-				this.executeNormalMove({ type: "simple-move" });
+				this.executeDetachLuma(state);
+				this.executeNormalMove(state, { type: "simple-move" });
 				break;
 
 			case "insert-track":
 			case "move-with-push":
 			case "simple-move":
 			case "no-change":
-				this.executeNormalMove(action);
+				this.executeNormalMove(state, action);
 				break;
 
 			default: {
@@ -570,9 +558,8 @@ export class InteractionController implements TimelineInteractionRegistration {
 		}
 	}
 
-	private executeTransformAndAttach(targetClip: ClipState): void {
-		if (!isDragging(this.state)) return;
-		const { clipRef, originalTrack, dragTarget } = this.state;
+	private executeTransformAndAttach(state: DraggingState, targetClip: ClipState): void {
+		const { clipRef, originalTrack, dragTarget } = state;
 		if (dragTarget.type !== "track") return;
 
 		const imagePlayer = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex);
@@ -605,9 +592,8 @@ export class InteractionController implements TimelineInteractionRegistration {
 		this.config.onRequestRender?.();
 	}
 
-	private executeReattachLuma(targetClip: ClipState): void {
-		if (!isDragging(this.state)) return;
-		const { clipRef, startTime, originalTrack, dragTarget } = this.state;
+	private executeReattachLuma(state: DraggingState, targetClip: ClipState): void {
+		const { clipRef, startTime, originalTrack, dragTarget } = state;
 		if (dragTarget.type !== "track") return;
 
 		const newTime = targetClip.config.start;
@@ -626,15 +612,13 @@ export class InteractionController implements TimelineInteractionRegistration {
 		}
 	}
 
-	private executeDetachLuma(): void {
-		if (!isDragging(this.state)) return;
-		const { clipRef } = this.state;
+	private executeDetachLuma(state: DraggingState): void {
+		const { clipRef } = state;
 		this.edit.transformFromLuma(clipRef.trackIndex, clipRef.clipIndex);
 	}
 
-	private executeNormalMove(action: DropAction): void {
-		if (!isDragging(this.state)) return;
-		const { clipRef, originalTrack, dragTarget, collisionResult, startTime } = this.state;
+	private executeNormalMove(state: DraggingState, action: DropAction): void {
+		const { clipRef, originalTrack, dragTarget, collisionResult, startTime } = state;
 		const newTime = collisionResult.newStartTime;
 
 		// Get attached luma Player BEFORE move
@@ -683,10 +667,8 @@ export class InteractionController implements TimelineInteractionRegistration {
 		hideLumaConnectionLine(this.feedbackElements.lumaConnectionLine);
 	}
 
-	private completeResize(e: PointerEvent): void {
-		if (!isResizing(this.state)) return;
-
-		const { clipRef, edge, originalStart, originalLength } = this.state;
+	private completeResize(e: PointerEvent, state: ResizingState): void {
+		const { clipRef, edge, originalStart, originalLength } = state;
 
 		const rect = this.tracksContainer.getBoundingClientRect();
 		const scrollX = this.tracksContainer.scrollLeft;
