@@ -238,7 +238,6 @@ export class InteractionController {
 		clipElement.style.height = `${clipRect.height}px`;
 		clipElement.style.zIndex = "1000";
 		clipElement.style.pointerEvents = "none";
-		clipElement.classList.add("dragging");
 
 		// Create ghost as drop preview (shows where clip will land)
 		const ghost = this.createDragGhost(clip, clipRef.trackIndex);
@@ -474,7 +473,6 @@ export class InteractionController {
 		clipElement.style.pointerEvents = originalStyles.pointerEvents;
 		clipElement.style.width = "";
 		clipElement.style.height = "";
-		clipElement.classList.remove("dragging");
 
 		// Get dragged clip's asset type
 		const draggedClip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
