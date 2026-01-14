@@ -217,7 +217,15 @@ function createMockDOM() {
 
 function createPointerEvent(
 	type: string,
-	options: { clientX?: number; clientY?: number; target?: EventTarget; altKey?: boolean; shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } = {}
+	options: {
+		clientX?: number;
+		clientY?: number;
+		target?: EventTarget;
+		altKey?: boolean;
+		shiftKey?: boolean;
+		ctrlKey?: boolean;
+		metaKey?: boolean;
+	} = {}
 ): Event {
 	// Create a custom event with pointer event properties
 	// jsdom doesn't support PointerEvent, so we create an Event and add properties
@@ -276,12 +284,7 @@ describe("InteractionController", () => {
 
 	describe("state machine", () => {
 		it("starts in idle state", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			// isDragging/isResizing should both return false
@@ -290,12 +293,7 @@ describe("InteractionController", () => {
 		});
 
 		it("transitions to pending state on pointerdown on clip", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -313,13 +311,9 @@ describe("InteractionController", () => {
 		});
 
 		it("transitions from pending to dragging after threshold", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer,
-				{ dragThreshold: 3 }
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer, {
+				dragThreshold: 3
+			});
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -344,12 +338,7 @@ describe("InteractionController", () => {
 		});
 
 		it("returns to idle state on pointerup without movement (click)", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -375,12 +364,7 @@ describe("InteractionController", () => {
 		});
 
 		it("clears selection when clicking on empty space", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			// Click on container (not on a clip)
@@ -399,12 +383,7 @@ describe("InteractionController", () => {
 
 	describe("resize state", () => {
 		it("transitions to resizing state on resize handle click", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -422,12 +401,7 @@ describe("InteractionController", () => {
 		});
 
 		it("returns to idle after resize completion", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -458,12 +432,7 @@ describe("InteractionController", () => {
 
 	describe("visual state queries", () => {
 		it("isDragging returns false for non-dragged clips", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -493,12 +462,7 @@ describe("InteractionController", () => {
 		});
 
 		it("isResizing returns false for non-resized clips", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -525,16 +489,9 @@ describe("InteractionController", () => {
 	describe("drag completion", () => {
 		it("executes MoveClipCommand when clip is moved", () => {
 			// Setup with single clip to avoid collision
-			mockStateManager.setTestTracks([
-				createMockTrack(0, [{ start: 0, length: 2 }])
-			] as MockTrack[]);
+			mockStateManager.setTestTracks([createMockTrack(0, [{ start: 0, length: 2 }])] as MockTrack[]);
 
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -572,12 +529,7 @@ describe("InteractionController", () => {
 		});
 
 		it("does not execute command when clip returns to original position", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -620,12 +572,7 @@ describe("InteractionController", () => {
 
 	describe("resize completion", () => {
 		it("executes ResizeClipCommand when resizing right edge", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -658,12 +605,7 @@ describe("InteractionController", () => {
 		});
 
 		it("executes both MoveClipCommand and ResizeClipCommand when resizing left edge", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -696,12 +638,7 @@ describe("InteractionController", () => {
 		});
 
 		it("enforces minimum clip length during resize", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -738,12 +675,7 @@ describe("InteractionController", () => {
 
 	describe("dispose", () => {
 		it("removes event listeners on dispose", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			// Spy on removeEventListener
@@ -758,12 +690,7 @@ describe("InteractionController", () => {
 		});
 
 		it("removes feedback elements on dispose", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			// Trigger some feedback elements to be created by starting a drag
@@ -802,20 +729,13 @@ describe("InteractionController", () => {
 	describe("luma co-movement", () => {
 		it("moves attached luma when content clip is dragged", () => {
 			// Setup with single clip and luma attachment
-			mockStateManager.setTestTracks([
-				createMockTrack(0, [{ start: 0, length: 2 }])
-			] as MockTrack[]);
+			mockStateManager.setTestTracks([createMockTrack(0, [{ start: 0, length: 2 }])] as MockTrack[]);
 
 			const mockLumaPlayer = { id: "luma-player" };
 			(mockStateManager as { getAttachedLumaPlayer: jest.Mock }).getAttachedLumaPlayer = jest.fn(() => mockLumaPlayer);
 			mockEdit.findClipIndices = jest.fn(() => ({ trackIndex: 0, clipIndex: 1 }));
 
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -862,12 +782,7 @@ describe("InteractionController", () => {
 			// No luma attachment
 			mockStateManager.getAttachedLumaPlayer = jest.fn(() => null);
 
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -905,12 +820,7 @@ describe("InteractionController", () => {
 			(mockStateManager as { getAttachedLumaPlayer: jest.Mock }).getAttachedLumaPlayer = jest.fn(() => mockLumaPlayer);
 			mockEdit.findClipIndices = jest.fn(() => ({ trackIndex: 0, clipIndex: 1 }));
 
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
@@ -992,12 +902,7 @@ describe("InteractionController", () => {
 		});
 
 		it("uses default configuration when none provided", () => {
-			controller = new InteractionController(
-				mockEdit as never,
-				mockStateManager as never,
-				mockDOM.tracksContainer,
-				mockDOM.feedbackLayer
-			);
+			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
 
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
