@@ -2554,25 +2554,25 @@ export class Edit extends Entity {
 			const track = this.tracks[trackIdx];
 
 			for (const player of track) {
-				if (player.playerType !== PlayerType.Luma) continue;
+				if (player.playerType === PlayerType.Luma) {
+					// Find best content match (by overlap, not exact timing)
+					const contentPlayer = this.findBestContentMatch(trackIdx, player);
+					if (contentPlayer) {
+						// Force luma timing to match content
+						player.setResolvedTiming({
+							start: contentPlayer.getStart(),
+							length: contentPlayer.getLength()
+						});
+						player.reconfigureAfterRestore();
 
-				// Find best content match (by overlap, not exact timing)
-				const contentPlayer = this.findBestContentMatch(trackIdx, player);
-				if (!contentPlayer) continue;
-
-				// Force luma timing to match content
-				player.setResolvedTiming({
-					start: contentPlayer.getStart(),
-					length: contentPlayer.getLength()
-				});
-				player.reconfigureAfterRestore();
-
-				// Update document to match
-				const lumaIdx = track.indexOf(player);
-				this.document.updateClip(trackIdx, lumaIdx, {
-					start: contentPlayer.getStart(),
-					length: contentPlayer.getLength()
-				});
+						// Update document to match
+						const lumaIdx = track.indexOf(player);
+						this.document.updateClip(trackIdx, lumaIdx, {
+							start: contentPlayer.getStart(),
+							length: contentPlayer.getLength()
+						});
+					}
+				}
 			}
 		}
 	}
@@ -2590,19 +2590,19 @@ export class Edit extends Entity {
 		let bestOverlap = 0;
 
 		for (const player of track) {
-			if (player.playerType === PlayerType.Luma) continue;
+			if (player.playerType !== PlayerType.Luma) {
+				const contentStart = player.getStart();
+				const contentEnd = contentStart + player.getLength();
 
-			const contentStart = player.getStart();
-			const contentEnd = contentStart + player.getLength();
+				// Calculate overlap
+				const overlapStart = Math.max(lumaStart, contentStart);
+				const overlapEnd = Math.min(lumaEnd, contentEnd);
+				const overlap = Math.max(0, overlapEnd - overlapStart);
 
-			// Calculate overlap
-			const overlapStart = Math.max(lumaStart, contentStart);
-			const overlapEnd = Math.min(lumaEnd, contentEnd);
-			const overlap = Math.max(0, overlapEnd - overlapStart);
-
-			if (overlap > bestOverlap) {
-				bestOverlap = overlap;
-				bestMatch = player;
+				if (overlap > bestOverlap) {
+					bestOverlap = overlap;
+					bestMatch = player;
+				}
 			}
 		}
 
