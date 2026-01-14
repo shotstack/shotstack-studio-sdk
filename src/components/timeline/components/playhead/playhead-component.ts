@@ -1,12 +1,11 @@
-import { TimelineEntity } from "../../core/timeline-entity";
-
 export interface PlayheadOptions {
 	onSeek: (timeMs: number) => void;
 	getScrollX?: () => number;
 }
 
 /** Playhead indicator with drag support */
-export class PlayheadComponent extends TimelineEntity {
+export class PlayheadComponent {
+	public readonly element: HTMLElement;
 	private readonly options: PlayheadOptions;
 	private currentTimeMs = 0;
 	private pixelsPerSecond = 50;
@@ -16,7 +15,8 @@ export class PlayheadComponent extends TimelineEntity {
 	private needsUpdate = true;
 
 	constructor(options: PlayheadOptions) {
-		super("div", "ss-playhead");
+		this.element = document.createElement("div");
+		this.element.className = "ss-playhead";
 		this.options = options;
 		this.buildElement();
 	}
@@ -74,14 +74,6 @@ export class PlayheadComponent extends TimelineEntity {
 		handle.addEventListener("pointermove", onPointerMove);
 		handle.addEventListener("pointerup", onPointerUp);
 		handle.addEventListener("pointercancel", onPointerUp);
-	}
-
-	public async load(): Promise<void> {
-		// No async initialization needed
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State is updated via setTime()
 	}
 
 	public draw(): void {

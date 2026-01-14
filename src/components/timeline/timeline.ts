@@ -10,12 +10,12 @@ import { RulerComponent } from "./components/ruler/ruler-component";
 import { ToolbarComponent } from "./components/toolbar/toolbar-component";
 import { TrackListComponent } from "./components/track/track-list";
 import { TimelineStateManager } from "./core/state/timeline-state";
-import { TimelineEntity } from "./core/timeline-entity";
 import { InteractionController } from "./interaction/interaction-controller";
 import { MediaThumbnailRenderer } from "./renderers/media-thumbnail-renderer";
 import { ThumbnailGenerator } from "./services/thumbnail-generator";
 
-export class Timeline extends TimelineEntity {
+export class Timeline {
+	public readonly element: HTMLElement;
 	private readonly container: HTMLElement;
 	private readonly stateManager: TimelineStateManager;
 
@@ -60,8 +60,8 @@ export class Timeline extends TimelineEntity {
 		container: HTMLElement,
 		options: TimelineOptions = {}
 	) {
-		super("div", "ss-html-timeline");
-
+		this.element = document.createElement("div");
+		this.element.className = "ss-html-timeline";
 		this.container = container;
 
 		// Merge default features with provided options
@@ -135,17 +135,9 @@ export class Timeline extends TimelineEntity {
 		this.setupEventListeners();
 
 		// Initial render (data is derived from Edit on-demand)
-		this.update(0, performance.now());
 		this.draw();
 
 		this.isLoaded = true;
-	}
-
-	/** Update component state (called each frame during active rendering) */
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State manager already syncs with Edit via events
-		// This method is here for TimelineEntity conformance
-		// Children that extend TimelineEntity will be updated via updateChildren()
 	}
 
 	/** Render/draw component to DOM (called each frame after update) */
@@ -265,10 +257,8 @@ export class Timeline extends TimelineEntity {
 		if (!this.isRenderLoopActive) return;
 
 		const now = performance.now();
-		const deltaTime = now - this.lastFrameTime;
 		this.lastFrameTime = now;
 
-		this.update(deltaTime, now);
 		this.draw();
 
 		// Continue loop if playing or interacting
@@ -283,7 +273,6 @@ export class Timeline extends TimelineEntity {
 	/** Request a single render (used when idle and data changes) */
 	private requestRender(): void {
 		if (this.isRenderLoopActive) return; // Loop already running
-		this.update(0, performance.now());
 		this.draw();
 	}
 

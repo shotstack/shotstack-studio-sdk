@@ -1,4 +1,3 @@
-import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
 import { getTrackHeight } from "../../timeline.types";
 import { ClipComponent } from "../clip/clip-component";
@@ -22,7 +21,8 @@ export interface TrackComponentOptions {
 }
 
 /** Renders a single track with its clips */
-export class TrackComponent extends TimelineEntity {
+export class TrackComponent {
+	public readonly element: HTMLElement;
 	private readonly clipComponents = new Map<string, ClipComponent>();
 	private readonly options: TrackComponentOptions;
 	private trackIndex: number;
@@ -33,18 +33,11 @@ export class TrackComponent extends TimelineEntity {
 	private needsUpdate = true;
 
 	constructor(trackIndex: number, options: TrackComponentOptions) {
-		super("div", "ss-track");
+		this.element = document.createElement("div");
+		this.element.className = "ss-track";
 		this.trackIndex = trackIndex;
 		this.options = options;
 		this.element.dataset["trackIndex"] = String(trackIndex);
-	}
-
-	public async load(): Promise<void> {
-		await this.loadChildren();
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		this.updateChildren(_deltaTime, _elapsed);
 	}
 
 	public draw(): void {
@@ -53,7 +46,6 @@ export class TrackComponent extends TimelineEntity {
 			for (const clipComponent of this.clipComponents.values()) {
 				clipComponent.draw();
 			}
-			this.drawChildren();
 			return;
 		}
 		this.needsUpdate = false;
@@ -132,12 +124,10 @@ export class TrackComponent extends TimelineEntity {
 			}
 		}
 
-		// Draw all clip components (they're not in children array)
+		// Draw all clip components
 		for (const clipComponent of this.clipComponents.values()) {
 			clipComponent.draw();
 		}
-
-		this.drawChildren();
 	}
 
 	public dispose(): void {

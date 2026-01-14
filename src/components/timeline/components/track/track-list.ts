@@ -1,4 +1,3 @@
-import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
 import { getTrackHeight } from "../../timeline.types";
 
@@ -23,7 +22,8 @@ export interface TrackListOptions {
 }
 
 /** Container for all track components with virtualization support */
-export class TrackListComponent extends TimelineEntity {
+export class TrackListComponent {
+	public readonly element: HTMLElement;
 	public readonly contentElement: HTMLElement;
 	private readonly trackComponents: TrackComponent[] = [];
 	private readonly options: TrackListOptions;
@@ -38,7 +38,8 @@ export class TrackListComponent extends TimelineEntity {
 	private onScroll?: (scrollX: number, scrollY: number) => void;
 
 	constructor(options: TrackListOptions) {
-		super("div", "ss-timeline-tracks");
+		this.element = document.createElement("div");
+		this.element.className = "ss-timeline-tracks";
 		this.options = options;
 		this.contentElement = this.buildElement();
 	}
@@ -58,21 +59,12 @@ export class TrackListComponent extends TimelineEntity {
 		return content;
 	}
 
-	public async load(): Promise<void> {
-		await this.loadChildren();
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		this.updateChildren(_deltaTime, _elapsed);
-	}
-
 	public draw(): void {
 		if (!this.needsUpdate) {
 			// Still need to draw track components even when data hasn't changed
 			for (const trackComponent of this.trackComponents) {
 				trackComponent.draw();
 			}
-			this.drawChildren();
 			return;
 		}
 		this.needsUpdate = false;
@@ -106,13 +98,11 @@ export class TrackListComponent extends TimelineEntity {
 			trackComponent?.dispose();
 		}
 
-		// Update each track and draw (tracks are not in children array)
+		// Update each track and draw
 		tracks.forEach((track, index) => {
 			this.trackComponents[index].updateTrack(track, pixelsPerSecond);
 			this.trackComponents[index].draw();
 		});
-
-		this.drawChildren();
 	}
 
 	public dispose(): void {

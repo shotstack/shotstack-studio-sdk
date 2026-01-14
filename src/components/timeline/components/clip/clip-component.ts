@@ -1,6 +1,5 @@
 import type { ResolvedClip } from "@schemas";
 
-import { TimelineEntity } from "../../core/timeline-entity";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
 import { formatClipErrorMessage } from "../../utils/error-messages";
 
@@ -23,7 +22,8 @@ export interface ClipComponentOptions {
 }
 
 /** Renders a single clip element */
-export class ClipComponent extends TimelineEntity {
+export class ClipComponent {
+	public readonly element: HTMLElement;
 	private readonly options: ClipComponentOptions;
 	private currentState: ClipState | null = null;
 	private currentLumaRef: LumaRef | undefined = undefined;
@@ -33,7 +33,8 @@ export class ClipComponent extends TimelineEntity {
 	private needsUpdate = true;
 
 	constructor(clip: ClipState, options: ClipComponentOptions) {
-		super("div", "ss-clip");
+		this.element = document.createElement("div");
+		this.element.className = "ss-clip";
 		this.options = options;
 		this.buildElement(clip);
 		this.currentState = clip;
@@ -89,14 +90,6 @@ export class ClipComponent extends TimelineEntity {
 			const addToSelection = e.shiftKey || e.ctrlKey || e.metaKey;
 			this.options.onSelect(clip.trackIndex, clip.clipIndex, addToSelection);
 		});
-	}
-
-	public async load(): Promise<void> {
-		// No async initialization needed
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State is updated via updateClip()
 	}
 
 	public draw(): void {
