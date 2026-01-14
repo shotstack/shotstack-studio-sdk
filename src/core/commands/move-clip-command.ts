@@ -148,9 +148,17 @@ export class MoveClipCommand implements EditCommand {
 				const exportableClip = this.player.getExportableClip();
 				document.addClip(this.toTrackIndex, exportableClip, this.originalClipIndex);
 			} else {
-				context.documentUpdateClip(this.toTrackIndex, this.originalClipIndex, {
+				// Same-track move: update at original position, then reorder to match player array
+				context.documentUpdateClip(this.toTrackIndex, this.fromClipIndex, {
 					start: this.newStart
 				});
+				// Reorder document clip to match player array ordering
+				if (this.fromClipIndex !== this.originalClipIndex) {
+					const clip = document.removeClip(this.toTrackIndex, this.fromClipIndex);
+					if (clip) {
+						document.addClip(this.toTrackIndex, clip, this.originalClipIndex);
+					}
+				}
 			}
 		}
 

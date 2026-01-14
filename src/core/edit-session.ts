@@ -1401,6 +1401,10 @@ export class Edit extends Entity {
 				if (!this.document) {
 					throw new Error("Document not initialized - cannot add clip");
 				}
+				// Ensure document has enough tracks before adding clip
+				while (this.document.getTrackCount() <= trackIdx) {
+					this.document.addTrack(this.document.getTrackCount());
+				}
 				return this.document.addClip(trackIdx, clip, clipIdx);
 			},
 
