@@ -1,5 +1,7 @@
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
 
@@ -13,7 +15,6 @@ import { InteractionController } from "./interaction/interaction-controller";
 import { MediaThumbnailRenderer } from "./renderers/media-thumbnail-renderer";
 import { ThumbnailGenerator } from "./services/thumbnail-generator";
 
-/** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */
 export class Timeline extends TimelineEntity {
 	private readonly container: HTMLElement;
 	private readonly stateManager: TimelineStateManager;
@@ -51,6 +52,7 @@ export class Timeline extends TimelineEntity {
 	private readonly handlePlaybackPause: () => void;
 	private readonly handleClipSelected: () => void;
 	private readonly handleClipLoadFailed: () => void;
+	private readonly handleClipUpdated: () => void;
 	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
 
 	constructor(
@@ -91,8 +93,6 @@ export class Timeline extends TimelineEntity {
 
 		// Bind event handlers
 		this.handleTimelineUpdated = () => {
-			// Re-detect luma attachments in case clips were added/removed/moved
-			this.stateManager.detectAndAttachLumas();
 			this.requestRender();
 		};
 		this.handlePlaybackPlay = () => this.startRenderLoop();
@@ -102,6 +102,7 @@ export class Timeline extends TimelineEntity {
 		};
 		this.handleClipSelected = () => this.requestRender();
 		this.handleClipLoadFailed = () => this.requestRender();
+		this.handleClipUpdated = () => this.requestRender();
 		this.handleRulerMouseMove = (e: MouseEvent) => {
 			if (!this.playheadGhost || !this.rulerTracksWrapper) return;
 			const rect = this.rulerTracksWrapper.getBoundingClientRect();
@@ -221,6 +222,9 @@ export class Timeline extends TimelineEntity {
 		// Listen for selection changes (from canvas or other sources)
 		this.edit.events.on(EditEvent.ClipSelected, this.handleClipSelected);
 
+		// Listen for clip updates
+		this.edit.events.on(EditEvent.ClipUpdated, this.handleClipUpdated);
+
 		// Listen for clip load failures (to show error badge on timeline)
 		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
 	}
@@ -235,6 +239,7 @@ export class Timeline extends TimelineEntity {
 		this.edit.events.off(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
 		this.edit.events.off(EditEvent.PlaybackPause, this.handlePlaybackPause);
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
+		this.edit.events.off(EditEvent.ClipUpdated, this.handleClipUpdated);
 		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
 	}
 
@@ -349,22 +354,29 @@ export class Timeline extends TimelineEntity {
 			},
 			getClipRenderer: type => this.clipRenderers.get(type),
 			getClipError: (trackIndex, clipIndex) => this.edit.getClipError(trackIndex, clipIndex),
-			isLumaAttached: (trackIndex, clipIndex) => this.stateManager.isLumaAttached(trackIndex, clipIndex),
-			getAttachedLuma: (trackIndex, clipIndex) => this.stateManager.getAttachedLuma(trackIndex, clipIndex),
+			hasAttachedLuma: (trackIndex, clipIndex) => this.stateManager.hasAttachedLuma(trackIndex, clipIndex),
+			findAttachedLuma: (trackIndex, clipIndex) => this.stateManager.findAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {
-				this.stateManager.toggleLumaVisibility(contentTrackIndex, contentClipIndex);
+				const contentPlayer = this.edit.getPlayerClip(contentTrackIndex, contentClipIndex);
+				const lumaRef = this.stateManager.findAttachedLuma(contentTrackIndex, contentClipIndex);
+				if (!lumaRef || !contentPlayer) return;
 
-				// Select the luma clip when toggling mask visibility
-				const lumaRef = this.stateManager.getAttachedLuma(contentTrackIndex, contentClipIndex);
-				if (lumaRef) {
-					this.edit.selectClip(lumaRef.trackIndex, lumaRef.clipIndex);
-				}
+				const contentConfig = contentPlayer.clipConfiguration;
+				const startTime = contentConfig.start;
+				const newTrackIndex = contentTrackIndex + 1;
+
+				const cmd = new CreateTrackAndMoveClipCommand(newTrackIndex, lumaRef.trackIndex, lumaRef.clipIndex, sec(startTime));
+				this.edit.executeEditCommand(cmd);
+
+				this.edit.transformFromLuma(newTrackIndex, 0);
+
+				this.stateManager.clearLumaVisibilityFor(contentPlayer);
 
 				this.requestRender();
 			},
 			isLumaVisibleForEditing: (contentTrackIndex, contentClipIndex) =>
 				this.stateManager.isLumaVisibleForEditing(contentTrackIndex, contentClipIndex),
-			getContentClipForLuma: (lumaTrack, lumaClip) => this.stateManager.getContentClipForLuma(lumaTrack, lumaClip)
+			findContentForLuma: (lumaTrack, lumaClip) => this.stateManager.findContentForLuma(lumaTrack, lumaClip)
 		});
 
 		// Set up scroll sync (also sync playhead)
@@ -406,9 +418,6 @@ export class Timeline extends TimelineEntity {
 			snapThreshold: this.features.snap ? 10 : 0,
 			onRequestRender: () => this.requestRender()
 		});
-
-		// Auto-detect luma attachments from existing clips (e.g., on template load)
-		this.stateManager.detectAndAttachLumas();
 	}
 
 	private disposeComponents(): void {

@@ -493,25 +493,31 @@ export class InteractionController {
 
 			// Image/video dropped on a content clip → transform to luma and attach (only if Alt held)
 			if ((draggedAssetType === "image" || draggedAssetType === "video") && targetContentClip && attachMaskMode) {
+				const imagePlayer = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex);
+				const contentPlayer = this.edit.getPlayerClip(targetContentClip.trackIndex, targetContentClip.clipIndex);
+
+				if (!imagePlayer || !contentPlayer) {
+					console.error("Failed to get player references for luma attachment");
+					return;
+				}
+
 				// Move clip to target track first (if different)
 				if (dragTarget.trackIndex !== originalTrack) {
 					const moveCmd = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(targetContentClip.config.start));
 					this.edit.executeEditCommand(moveCmd);
 				}
 
-				// Transform to luma - indices may have changed after move
-				const newClipIndex =
-					dragTarget.trackIndex !== originalTrack
-						? this.findClipIndexAfterMove(dragTarget.trackIndex, targetContentClip.config.start)
-						: clipRef.clipIndex;
-				this.edit.transformToLuma(dragTarget.trackIndex, newClipIndex);
+				const imageIndices = this.edit.findClipIndices(imagePlayer);
+				const contentIndices = this.edit.findClipIndices(contentPlayer);
 
-				// Register attachment in both timeline-state (UI) and edit-session (runtime sync)
-				this.stateManager.attachLuma(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, newClipIndex);
-				this.edit.registerLumaAttachment(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, newClipIndex);
+				if (!imageIndices || !contentIndices) {
+					console.error("Failed to find clips after move - players may have been disposed");
+					return;
+				}
 
-				// Sync timing to target clip (now works because edit-session map is populated)
-				this.edit.syncAttachedLuma(targetContentClip.trackIndex, targetContentClip.clipIndex);
+				this.edit.transformToLuma(imageIndices.trackIndex, imageIndices.clipIndex);
+
+				this.edit.syncLumaToContent(contentIndices.trackIndex, contentIndices.clipIndex, imageIndices.trackIndex, imageIndices.clipIndex);
 
 				// Play success animation on target clip before clearing
 				if (this.lumaTargetClipElement) {
@@ -523,8 +529,7 @@ export class InteractionController {
 				}
 				this.hideLumaConnectionLine();
 
-				// Force timeline to rebuild state and show updated attachment
-				this.stateManager.detectAndAttachLumas();
+				// Trigger re-render
 				this.config.onRequestRender?.();
 
 				// Cleanup
@@ -548,7 +553,7 @@ export class InteractionController {
 						this.edit.executeEditCommand(command);
 					}
 
-					this.stateManager.attachLuma(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
+					this.edit.syncLumaToContent(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
 
 					ghost.remove();
 					this.hideSnapLine();
@@ -561,12 +566,6 @@ export class InteractionController {
 
 				// Luma dropped on empty space → transform back and place at drop location
 				this.edit.transformFromLuma(clipRef.trackIndex, clipRef.clipIndex);
-
-				// Clear any existing attachment
-				const contentClipRef = this.stateManager.getContentClipForLuma(clipRef.trackIndex, clipRef.clipIndex);
-				if (contentClipRef) {
-					this.stateManager.detachLuma(contentClipRef.trackIndex, contentClipRef.clipIndex);
-				}
 
 				// Move to drop location - fall through to normal move handling
 			}
@@ -824,15 +823,6 @@ export class InteractionController {
 			}
 		}
 		return null;
-	}
-
-	/** Find clip index on a track by start time (used after move to get updated index) */
-	private findClipIndexAfterMove(trackIndex: number, startTime: number): number {
-		const track = this.stateManager.getTracks()[trackIndex];
-		if (!track) return 0;
-
-		const index = track.clips.findIndex(clip => Math.abs(clip.config.start - startTime) < 0.001);
-		return index === -1 ? 0 : index;
 	}
 
 	private buildSnapPoints(excludeClip: ClipRef): void {

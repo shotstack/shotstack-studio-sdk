@@ -874,99 +874,6 @@ describe("Edit getPlayerClip regression", () => {
 	});
 });
 
-describe("Luma Attachment Registration", () => {
-	let edit: Edit;
-
-	beforeEach(async () => {
-		// Create edit with a video clip on track 0, luma clip on track 1
-		// Using separate tracks to avoid the image-to-luma transform complexity
-		edit = new Edit({
-			timeline: {
-				tracks: [
-					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } }]
-					},
-					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "luma", src: "https://example.com/luma.mp4" } }]
-					}
-				]
-			},
-			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
-		});
-		await edit.load();
-	});
-
-	afterEach(() => {
-		edit.dispose();
-		jest.clearAllMocks();
-	});
-
-	it("registerLumaAttachment populates the attachment map", () => {
-		// Get initial state - video at track 0 index 0, luma at track 1 index 0
-		const videoPlayer = edit.getPlayerClip(0, 0);
-		expect(videoPlayer).toBeDefined();
-
-		const lumaPlayer = edit.getPlayerClip(1, 0);
-		expect(lumaPlayer).toBeDefined();
-
-		// Initially no luma attached to video
-		expect(edit.hasLumaMask(0, 0)).toBe(false);
-
-		// Register the luma attachment
-		edit.registerLumaAttachment(0, 0, 1, 0);
-
-		// Now hasLumaMask should return true
-		expect(edit.hasLumaMask(0, 0)).toBe(true);
-
-		// And getAttachedLumaPlayer should find the luma player
-		const attachedLuma = edit.getAttachedLumaPlayer(videoPlayer!);
-		expect(attachedLuma).toBe(lumaPlayer);
-	});
-
-	it("syncAttachedLuma syncs timing after registerLumaAttachment", () => {
-		// Register the attachment
-		edit.registerLumaAttachment(0, 0, 1, 0);
-
-		// Change video clip start time
-		const videoClipBefore = edit.getClip(0, 0);
-		expect(videoClipBefore?.start).toBe(0);
-
-		// Update video start using setResolvedTiming (the proper mutation path under Option B)
-		const videoPlayer = edit.getPlayerClip(0, 0);
-		if (videoPlayer) {
-			videoPlayer.setResolvedTiming({ start: sec(2), length: videoPlayer.getLength() });
-		}
-
-		// Sync luma to content clip
-		edit.syncAttachedLuma(0, 0);
-
-		// Verify luma timing matches video
-		const lumaPlayer = edit.getPlayerClip(1, 0);
-		expect(lumaPlayer?.clipConfiguration.start).toBe(2);
-	});
-
-	it("syncAttachedLuma returns early if attachment not registered", () => {
-		// DON'T register attachment
-		expect(edit.hasLumaMask(0, 0)).toBe(false);
-
-		// Get luma initial timing
-		const lumaPlayer = edit.getPlayerClip(1, 0);
-		const initialStart = lumaPlayer?.clipConfiguration.start;
-
-		// Update video start
-		const videoPlayer = edit.getPlayerClip(0, 0);
-		if (videoPlayer?.clipConfiguration) {
-			videoPlayer.clipConfiguration.start = sec(2);
-		}
-
-		// Try to sync - should do nothing since attachment not registered
-		edit.syncAttachedLuma(0, 0);
-
-		// Luma timing should be unchanged (sync was skipped)
-		expect(lumaPlayer?.clipConfiguration.start).toBe(initialStart);
-	});
-});
-
 /**
  * TransformClipAssetCommand Tests
  *
@@ -1315,5 +1222,119 @@ describe("Output Settings Commands fail-fast", () => {
 		const cmd = new SetTimelineBackgroundCommand("#ff0000");
 		expect(() => cmd.execute(undefined)).toThrow("requires context");
 		expect(() => cmd.undo(undefined)).toThrow("requires context");
+	});
+});
+
+/**
+ * Luma Detach Thumbnail Regression Tests
+ *
+ * Tests the observable behavior of luma transformations.
+ */
+describe("Luma Detach Thumbnail Regression", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		// Create edit with an image clip
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("clip type changes to luma after transformToLuma", async () => {
+		// Initial state
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+
+		// Transform to luma
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Verify it's luma
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+	});
+
+	it("clip type is image after transformFromLuma completes", async () => {
+		// Transform to luma
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Verify it's luma
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		// Transform back to image
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Verify it's back to image
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+	});
+
+	it("preserves asset src through transform cycle", async () => {
+		const originalSrc = (edit.getClip(0, 0)?.asset as { src?: string })?.src;
+
+		// Transform to luma
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Src should be preserved
+		expect((edit.getClip(0, 0)?.asset as { src?: string })?.src).toBe(originalSrc);
+
+		// Transform back to image
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Src should still be preserved
+		expect((edit.getClip(0, 0)?.asset as { src?: string })?.src).toBe(originalSrc);
+	});
+
+	it("can transform image → luma → image → luma → image", async () => {
+		// Verify each step in a longer transform sequence
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
 	});
 });

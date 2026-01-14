@@ -1,6 +1,5 @@
 /**
  * Base class for HTML-based timeline components.
- * Mirrors the Entity pattern used by PixiJS components (load/update/draw/dispose lifecycle).
  */
 export abstract class TimelineEntity {
 	public readonly element: HTMLElement;

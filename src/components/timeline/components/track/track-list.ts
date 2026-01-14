@@ -10,16 +10,16 @@ export interface TrackListOptions {
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
-	/** Check if a luma clip is attached (and should be hidden) */
-	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
-	/** Get attached luma for a content clip (to show badge) */
-	getAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Check if content clip has an attached luma */
+	hasAttachedLuma?: (trackIndex: number, clipIndex: number) => boolean;
+	/** Find attached luma for a content clip via timing match */
+	findAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Callback when mask badge is clicked on a content clip */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
 	/** Check if attached luma is currently visible for editing */
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
-	/** Get the content clip that a luma is attached to */
-	getContentClipForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Find the content clip that a luma is attached to via timing match */
+	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 }
 
 /** Container for all track components with virtualization support */
@@ -91,11 +91,11 @@ export class TrackListComponent extends TimelineEntity {
 				onClipSelect: this.options.onClipSelect,
 				getClipRenderer: this.options.getClipRenderer,
 				getClipError: this.options.getClipError,
-				isLumaAttached: this.options.isLumaAttached,
-				getAttachedLuma: this.options.getAttachedLuma,
+				hasAttachedLuma: this.options.hasAttachedLuma,
+				findAttachedLuma: this.options.findAttachedLuma,
 				onMaskClick: this.options.onMaskClick,
 				isLumaVisibleForEditing: this.options.isLumaVisibleForEditing,
-				getContentClipForLuma: this.options.getContentClipForLuma
+				findContentForLuma: this.options.findContentForLuma
 			});
 			this.trackComponents.push(trackComponent);
 			this.contentElement.appendChild(trackComponent.element);

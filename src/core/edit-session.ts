@@ -2382,11 +2382,27 @@ export class Edit extends Entity {
 
 	// ─── Luma Mask API ──────────────────────────────────────────────────────────
 
-	/** Map of content player → luma player for attachment tracking */
-	private lumaAttachments = new Map<Player, Player>();
-
-	/** Map of asset src → original asset type (for reliable luma detachment) */
+	/** Map of asset src → original asset type (for reliable luma detachment during undo) */
 	private originalAssetTypes = new Map<string, "image" | "video">();
+
+	/**
+	 * Find the luma clip attached to a content clip via timing match.
+	 * Attachment is determined by: same track + exact timing match.
+	 * PURE FUNCTION - no stored state.
+	 */
+	private findAttachedLumaPlayer(trackIndex: number, clipIndex: number): Player | null {
+		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
+		if (!contentPlayer || contentPlayer.playerType === PlayerType.Luma) return null;
+
+		const track = this.tracks[trackIndex];
+		if (!track) return null;
+
+		const contentStart = contentPlayer.getStart();
+		const contentLength = contentPlayer.getLength();
+
+		// Find luma with exact timing match on same track
+		return track.find(p => p.playerType === PlayerType.Luma && p.getStart() === contentStart && p.getLength() === contentLength) ?? null;
+	}
 
 	/**
 	 * Attach a luma mask to a specific clip.
@@ -2403,8 +2419,8 @@ export class Edit extends Entity {
 		// Don't attach luma to another luma
 		if (contentPlayer.playerType === PlayerType.Luma) return;
 
-		// Check if already has a luma attached
-		if (this.lumaAttachments.has(contentPlayer)) {
+		// Check if already has a luma attached (via timing match)
+		if (this.findAttachedLumaPlayer(trackIndex, clipIndex)) {
 			// Detach existing luma first
 			await this.detachLumaFromClip(trackIndex, clipIndex);
 		}
@@ -2429,10 +2445,7 @@ export class Edit extends Entity {
 		const lumaPlayer = track.find(p => p.playerType === PlayerType.Luma && p.clipConfiguration.start === contentConfig.start);
 
 		if (lumaPlayer) {
-			// Store the attachment
-			this.lumaAttachments.set(contentPlayer, lumaPlayer);
-
-			// Emit event
+			// Emit event (attachment is implicit via timing match)
 			const lumaClipIndex = track.indexOf(lumaPlayer);
 			this.events.emit(EditEvent.LumaAttached, {
 				trackIndex,
@@ -2451,18 +2464,12 @@ export class Edit extends Entity {
 	 * @param clipIndex - Clip index of the content clip
 	 */
 	public async detachLumaFromClip(trackIndex: number, clipIndex: number): Promise<void> {
-		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
-		if (!contentPlayer) return;
-
-		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
+		const lumaPlayer = this.findAttachedLumaPlayer(trackIndex, clipIndex);
 		if (!lumaPlayer) return;
 
 		// Find the luma clip index
 		const lumaIndices = this.findClipIndices(lumaPlayer);
 		if (lumaIndices) {
-			// Remove the attachment first
-			this.lumaAttachments.delete(contentPlayer);
-
 			// Delete the luma clip
 			const command = new DeleteClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex);
 			this.executeCommand(command);
@@ -2480,10 +2487,7 @@ export class Edit extends Entity {
 	 * @returns Luma info or null if no luma attached
 	 */
 	public getClipLuma(trackIndex: number, clipIndex: number): { src: string; clipIndex: number } | null {
-		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
-		if (!contentPlayer) return null;
-
-		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
+		const lumaPlayer = this.findAttachedLumaPlayer(trackIndex, clipIndex);
 		if (!lumaPlayer) return null;
 
 		const lumaIndices = this.findClipIndices(lumaPlayer);
@@ -2497,95 +2501,108 @@ export class Edit extends Entity {
 
 	/**
 	 * Check if a clip has a luma mask attached.
+	 * Uses pure timing-based lookup (no stored state).
 	 *
 	 * @param trackIndex - Track index of the content clip
 	 * @param clipIndex - Clip index of the content clip
 	 */
 	public hasLumaMask(trackIndex: number, clipIndex: number): boolean {
-		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
-		if (!contentPlayer) return false;
-		return this.lumaAttachments.has(contentPlayer);
+		return this.findAttachedLumaPlayer(trackIndex, clipIndex) !== null;
 	}
 
 	/**
-	 * Register a luma attachment in the Edit Session's map.
-	 * This is called when a luma is attached to a content clip (e.g., during drag-drop).
-	 * The map is used by syncAttachedLuma() to coordinate timing between attached clips.
+	 * Sync luma timing to match content clip.
+	 * Call after content clip is moved/resized to keep luma aligned.
+	 *
+	 * @param contentTrackIdx - Track index of the content clip
+	 * @param contentClipIdx - Clip index of the content clip
+	 * @param lumaTrackIdx - Track index of the luma clip
+	 * @param lumaClipIdx - Clip index of the luma clip
 	 */
-	public registerLumaAttachment(contentTrackIndex: number, contentClipIndex: number, lumaTrackIndex: number, lumaClipIndex: number): void {
-		const contentPlayer = this.getClipAt(contentTrackIndex, contentClipIndex);
-		const lumaPlayer = this.getClipAt(lumaTrackIndex, lumaClipIndex);
-		if (contentPlayer && lumaPlayer) {
-			this.lumaAttachments.set(contentPlayer, lumaPlayer);
-		}
-	}
+	public syncLumaToContent(contentTrackIdx: number, contentClipIdx: number, lumaTrackIdx: number, lumaClipIdx: number): void {
+		const contentPlayer = this.getClipAt(contentTrackIdx, contentClipIdx);
+		const lumaPlayer = this.getClipAt(lumaTrackIdx, lumaClipIdx);
+		if (!contentPlayer || !lumaPlayer) return;
 
-	/**
-	 * Synchronize attached luma timing with content clip.
-	 * Called internally when content clip is moved or resized.
-	 * @internal
-	 */
-	public syncAttachedLuma(contentTrackIndex: number, contentClipIndex: number): void {
-		const contentPlayer = this.getClipAt(contentTrackIndex, contentClipIndex);
-		if (!contentPlayer) return;
-
-		const lumaPlayer = this.lumaAttachments.get(contentPlayer);
-		if (!lumaPlayer) return;
-
-		// Sync timing from content to luma (setter syncs clipConfiguration)
+		// Sync luma timing to content
 		lumaPlayer.setResolvedTiming({
 			start: contentPlayer.getStart(),
 			length: contentPlayer.getLength()
 		});
-
-		// Visually apply the position change
 		lumaPlayer.reconfigureAfterRestore();
 		lumaPlayer.draw();
 
-		// Also update in document layer
-		const lumaIndices = this.findClipIndices(lumaPlayer);
-		if (lumaIndices) {
-			this.document.updateClip(lumaIndices.trackIndex, lumaIndices.clipIndex, {
-				start: contentPlayer.getStart(),
-				length: contentPlayer.getLength()
-			});
-		}
+		// Update document
+		this.document.updateClip(lumaTrackIdx, lumaClipIdx, {
+			start: contentPlayer.getStart(),
+			length: contentPlayer.getLength()
+		});
 	}
 
 	/**
-	 * Get the luma player attached to a content player.
-	 * @internal
+	 * Normalize luma attachments after loading.
+	 * For each luma, find the best content match and sync timing.
+	 * Handles legacy JSON where luma timing doesn't match content.
+	 * Call once after loadEdit() completes.
 	 */
-	public getAttachedLumaPlayer(contentPlayer: Player): Player | null {
-		return this.lumaAttachments.get(contentPlayer) ?? null;
-	}
+	public normalizeLumaAttachments(): void {
+		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
+			const track = this.tracks[trackIdx];
 
-	/**
-	 * Rebuild luma attachments from track state.
-	 * Called after loading or undo/redo to restore attachment map.
-	 * @internal
-	 */
-	public rebuildLumaAttachments(): void {
-		this.lumaAttachments.clear();
+			for (const player of track) {
+				if (player.playerType !== PlayerType.Luma) continue;
 
-		for (const track of this.tracks) {
-			const lumaPlayer = track.find(p => p.playerType === PlayerType.Luma);
-			const contentClips = track.filter(p => p.playerType !== PlayerType.Luma);
+				// Find best content match (by overlap, not exact timing)
+				const contentPlayer = this.findBestContentMatch(trackIdx, player);
+				if (!contentPlayer) continue;
 
-			if (lumaPlayer && contentClips.length > 0) {
-				// Find content clip with matching timing
-				const matchingContent = contentClips.find(
-					c => c.clipConfiguration.start === lumaPlayer.clipConfiguration.start && c.clipConfiguration.length === lumaPlayer.clipConfiguration.length
-				);
+				// Force luma timing to match content
+				player.setResolvedTiming({
+					start: contentPlayer.getStart(),
+					length: contentPlayer.getLength()
+				});
+				player.reconfigureAfterRestore();
 
-				if (matchingContent) {
-					this.lumaAttachments.set(matchingContent, lumaPlayer);
-				} else if (contentClips.length === 1) {
-					// Fallback: if only one content clip, attach to it
-					this.lumaAttachments.set(contentClips[0], lumaPlayer);
-				}
+				// Update document to match
+				const lumaIdx = track.indexOf(player);
+				this.document.updateClip(trackIdx, lumaIdx, {
+					start: contentPlayer.getStart(),
+					length: contentPlayer.getLength()
+				});
 			}
 		}
+	}
+
+	/**
+	 * Find the content clip that best matches a luma (by temporal overlap).
+	 * Used during normalization for legacy JSON.
+	 */
+	private findBestContentMatch(trackIdx: number, lumaPlayer: Player): Player | null {
+		const track = this.tracks[trackIdx];
+		const lumaStart = lumaPlayer.getStart();
+		const lumaEnd = lumaStart + lumaPlayer.getLength();
+
+		let bestMatch: Player | null = null;
+		let bestOverlap = 0;
+
+		for (const player of track) {
+			if (player.playerType === PlayerType.Luma) continue;
+
+			const contentStart = player.getStart();
+			const contentEnd = contentStart + player.getLength();
+
+			// Calculate overlap
+			const overlapStart = Math.max(lumaStart, contentStart);
+			const overlapEnd = Math.min(lumaEnd, contentEnd);
+			const overlap = Math.max(0, overlapEnd - overlapStart);
+
+			if (overlap > bestOverlap) {
+				bestOverlap = overlap;
+				bestMatch = player;
+			}
+		}
+
+		return bestMatch;
 	}
 
 	/**

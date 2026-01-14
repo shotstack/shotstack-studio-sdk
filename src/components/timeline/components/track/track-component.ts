@@ -9,16 +9,16 @@ export interface TrackComponentOptions {
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
-	/** Check if a luma clip is attached (and should be hidden) */
-	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
-	/** Get attached luma for a content clip (to show badge) */
-	getAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Check if content clip has an attached luma (pure function) */
+	hasAttachedLuma?: (trackIndex: number, clipIndex: number) => boolean;
+	/** Find attached luma for a content clip via timing match (pure function) */
+	findAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Callback when mask badge is clicked on a content clip */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
 	/** Check if attached luma is currently visible for editing */
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
-	/** Get the content clip that a luma is attached to */
-	getContentClipForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Find the content clip that a luma is attached to via timing match (pure function) */
+	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 }
 
 /** Renders a single track with its clips */
@@ -66,14 +66,14 @@ export class TrackComponent extends TimelineEntity {
 
 		// Update or create clips
 		for (const clipState of track.clips) {
-			// Check if this is an attached luma clip
+			// Check if this is an attached luma clip (luma with matching content via timing)
 			const isLumaClip = clipState.config.asset?.type === "luma";
-			const isAttachedLuma = isLumaClip && this.options.isLumaAttached?.(clipState.trackIndex, clipState.clipIndex);
+			const contentClip = isLumaClip ? this.options.findContentForLuma?.(clipState.trackIndex, clipState.clipIndex) : null;
+			const isAttachedLuma = isLumaClip && contentClip !== null;
 
-			if (isAttachedLuma) {
+			if (isAttachedLuma && contentClip) {
 				// Check if it should be visible for editing
-				const contentClip = this.options.getContentClipForLuma?.(clipState.trackIndex, clipState.clipIndex);
-				const isVisibleForEditing = contentClip && this.options.isLumaVisibleForEditing?.(contentClip.trackIndex, contentClip.clipIndex);
+				const isVisibleForEditing = this.options.isLumaVisibleForEditing?.(contentClip.trackIndex, contentClip.clipIndex);
 
 				if (isVisibleForEditing) {
 					// Render the luma clip (it's visible for editing)
@@ -104,7 +104,7 @@ export class TrackComponent extends TimelineEntity {
 				processedIds.add(clipState.id);
 
 				// Check if this content clip has an attached luma (for badge display)
-				const attachedLuma = this.options.getAttachedLuma?.(clipState.trackIndex, clipState.clipIndex);
+				const attachedLuma = this.options.findAttachedLuma?.(clipState.trackIndex, clipState.clipIndex);
 
 				let clipComponent = this.clipComponents.get(clipState.id);
 				if (!clipComponent) {

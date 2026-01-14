@@ -107,6 +107,11 @@ export class ClipComponent extends TimelineEntity {
 		const { config } = clip;
 		const assetType = this.getAssetType(config);
 
+		const prevAssetType = this.element.dataset["assetType"];
+		if (prevAssetType && prevAssetType !== assetType) {
+			this.clearRendererStyles();
+		}
+
 		// Update data attributes
 		this.element.dataset["assetType"] = assetType;
 		this.element.dataset["trackIndex"] = String(clip.trackIndex);
@@ -220,6 +225,15 @@ export class ClipComponent extends TimelineEntity {
 		}
 
 		this.element.remove();
+	}
+
+	/** Clear any styles that renderers might have applied */
+	private clearRendererStyles(): void {
+		this.element.classList.remove("ss-clip--thumbnails", "ss-clip--loading-thumbnails");
+		this.element.style.backgroundImage = "";
+		this.element.style.backgroundPosition = "";
+		this.element.style.backgroundSize = "";
+		this.element.style.backgroundRepeat = "";
 	}
 
 	/** Update clip state and mark for re-render */

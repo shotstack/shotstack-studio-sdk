@@ -27,70 +27,94 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	private readonly generator: ThumbnailGenerator;
 	private readonly onRendered: () => void;
 
-	// Track state per clip element to avoid redundant requests
-	private clipStates = new WeakMap<HTMLElement, ThumbnailState>();
-	private clipRequestKeys = new WeakMap<HTMLElement, string>();
+	// Track state per clip identity (src|trim|start) - NOT by element reference
+	// This prevents state aliasing when elements are recycled or clips move
+	private clipStates = new Map<string, ThumbnailState>();
 
 	constructor(generator: ThumbnailGenerator, onRendered: () => void = () => {}) {
 		this.generator = generator;
 		this.onRendered = onRendered;
 	}
 
+	/**
+	 * Generate stable clip key from content identity.
+	 * Key is based on asset source, trim point, and clip start time.
+	 */
+	private getClipKey(clip: ResolvedClip): string {
+		const asset = clip.asset as { src?: string; trim?: number; type?: string };
+		return `${asset?.type ?? "unknown"}|${asset?.src ?? "none"}|${asset?.trim ?? 0}|${clip.start}`;
+	}
+
 	render(clip: ResolvedClip, element: HTMLElement): void {
 		const { asset } = clip;
+		const clipKey = this.getClipKey(clip);
+
+		this.clearThumbnailStyles(element);
+
 		if (!asset || !("src" in asset) || !asset.src) {
 			return;
 		}
 
 		if (asset.type === "video") {
-			this.renderVideoThumbnail(element, asset as VideoAsset);
+			this.renderVideoThumbnail(element, asset as VideoAsset, clipKey);
 		} else if (asset.type === "image") {
-			this.renderImageThumbnail(element, asset as ImageAsset);
+			this.renderImageThumbnail(element, asset as ImageAsset, clipKey);
 		}
+		// Non-thumbnail types (svg, luma, etc.) exit with clean element
 	}
 
-	private renderVideoThumbnail(element: HTMLElement, asset: VideoAsset): void {
-		// Create request key to detect if we need to regenerate
-		const requestKey = `video|${asset.src}|${asset.trim ?? 0}`;
-		if (this.shouldSkipRender(element, requestKey)) return;
-
-		this.clipRequestKeys.set(element, requestKey);
-		this.showLoadingIfNeeded(element);
-		this.generateAndApplyVideo(element, asset);
+	private clearThumbnailStyles(el: HTMLElement): void {
+		el.classList.remove("ss-clip--thumbnails", "ss-clip--loading-thumbnails");
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundImage = "";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundPosition = "";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundSize = "";
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
+		el.style.backgroundRepeat = "";
 	}
 
-	private renderImageThumbnail(element: HTMLElement, asset: ImageAsset): void {
-		// Create request key to detect if we need to regenerate
-		const requestKey = `image|${asset.src}`;
-		if (this.shouldSkipRender(element, requestKey)) return;
-
-		this.clipRequestKeys.set(element, requestKey);
-		this.showLoadingIfNeeded(element);
-		this.generateAndApplyImage(element, asset);
-	}
-
-	private shouldSkipRender(element: HTMLElement, requestKey: string): boolean {
-		const previousKey = this.clipRequestKeys.get(element);
-		if (previousKey === requestKey) {
-			const state = this.clipStates.get(element);
-			// Skip if already loaded OR failed (prevents infinite retry loop)
-			if (state && !state.loading && (state.thumbnails.length > 0 || state.failed)) {
-				return true;
+	private renderVideoThumbnail(element: HTMLElement, asset: VideoAsset, clipKey: string): void {
+		// Check if we already have cached state for this clip
+		const cachedState = this.clipStates.get(clipKey);
+		if (cachedState && !cachedState.loading && (cachedState.thumbnails.length > 0 || cachedState.failed)) {
+			// Apply cached thumbnail to element (may be a new element for same clip)
+			if (cachedState.thumbnails.length > 0) {
+				this.applyThumbnail(element, cachedState.thumbnails[0], cachedState.thumbnailWidth);
 			}
+			return;
 		}
-		return false;
+
+		this.showLoadingIfNeeded(element, clipKey);
+		this.generateAndApplyVideo(element, asset, clipKey);
 	}
 
-	private showLoadingIfNeeded(element: HTMLElement): void {
-		const state = this.clipStates.get(element) ?? { loading: false, thumbnails: [], thumbnailWidth: 0, failed: false };
+	private renderImageThumbnail(element: HTMLElement, asset: ImageAsset, clipKey: string): void {
+		// Check if we already have cached state for this clip
+		const cachedState = this.clipStates.get(clipKey);
+		if (cachedState && !cachedState.loading && (cachedState.thumbnails.length > 0 || cachedState.failed)) {
+			// Apply cached thumbnail to element (may be a new element for same clip)
+			if (cachedState.thumbnails.length > 0) {
+				this.applyThumbnail(element, cachedState.thumbnails[0], cachedState.thumbnailWidth);
+			}
+			return;
+		}
+
+		this.showLoadingIfNeeded(element, clipKey);
+		this.generateAndApplyImage(element, asset, clipKey);
+	}
+
+	private showLoadingIfNeeded(element: HTMLElement, clipKey: string): void {
+		const state = this.clipStates.get(clipKey) ?? { loading: false, thumbnails: [], thumbnailWidth: 0, failed: false };
 		if (!state.loading && state.thumbnails.length === 0 && !state.failed) {
 			this.setLoadingState(element, true);
 		}
 	}
 
-	private async generateAndApplyVideo(element: HTMLElement, asset: VideoAsset): Promise<void> {
+	private async generateAndApplyVideo(element: HTMLElement, asset: VideoAsset, clipKey: string): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
-		this.clipStates.set(element, state);
+		this.clipStates.set(clipKey, state);
 
 		try {
 			const result = await this.generator.generateThumbnail(asset.src, asset.trim ?? 0);
@@ -111,14 +135,14 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 			this.setLoadingState(element, false);
 		} finally {
 			state.loading = false;
-			this.clipStates.set(element, state);
+			this.clipStates.set(clipKey, state);
 			this.onRendered();
 		}
 	}
 
-	private async generateAndApplyImage(element: HTMLElement, asset: ImageAsset): Promise<void> {
+	private async generateAndApplyImage(element: HTMLElement, asset: ImageAsset, clipKey: string): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
-		this.clipStates.set(element, state);
+		this.clipStates.set(clipKey, state);
 
 		try {
 			const result = await this.loadImageThumbnail(asset.src);
@@ -139,7 +163,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 			this.setLoadingState(element, false);
 		} finally {
 			state.loading = false;
-			this.clipStates.set(element, state);
+			this.clipStates.set(clipKey, state);
 			this.onRendered();
 		}
 	}
@@ -178,19 +202,13 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	}
 
 	dispose(el: HTMLElement): void {
-		// Clean up state
-		this.clipStates.delete(el);
-		this.clipRequestKeys.delete(el);
+		// Note: We keep clipStates cached - keyed by clip identity, not element.
+		// This allows reuse when same clip gets a new element after move/transform.
+		this.clearThumbnailStyles(el);
+	}
 
-		// Remove thumbnail styles
-		el.classList.remove("ss-clip--thumbnails", "ss-clip--loading-thumbnails");
-		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
-		el.style.backgroundImage = "";
-		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
-		el.style.backgroundPosition = "";
-		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
-		el.style.backgroundSize = "";
-		// eslint-disable-next-line no-param-reassign -- Intentional DOM cleanup
-		el.style.backgroundRepeat = "";
+	/** Clear all cached thumbnail state */
+	clearCache(): void {
+		this.clipStates.clear();
 	}
 }
