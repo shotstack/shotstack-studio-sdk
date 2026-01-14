@@ -65,6 +65,8 @@ export abstract class Player extends Entity {
 	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
 	private opacityKeyframeBuilder?: ComposedKeyframeBuilder;
 	private rotationKeyframeBuilder?: ComposedKeyframeBuilder;
+	private skewXKeyframeBuilder?: ComposedKeyframeBuilder;
+	private skewYKeyframeBuilder?: ComposedKeyframeBuilder;
 	private maskXKeyframeBuilder?: KeyframeBuilder;
 
 	private wipeMask: pixi.Graphics | null;
@@ -122,6 +124,8 @@ export abstract class Player extends Entity {
 		const baseScale = typeof config.scale === "number" ? config.scale : 1;
 		const baseOpacity = typeof config.opacity === "number" ? config.opacity : 1;
 		const baseRotation = typeof config.transform?.rotate?.angle === "number" ? config.transform.rotate.angle : 0;
+		const baseSkewX = typeof config.transform?.skew?.x === "number" ? config.transform.skew.x : 0;
+		const baseSkewY = typeof config.transform?.skew?.y === "number" ? config.transform.skew.y : 0;
 
 		// Create composed builders with base values
 		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, length, "additive");
@@ -129,9 +133,32 @@ export abstract class Player extends Entity {
 		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, length, "multiplicative");
 		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, length, "multiplicative", { min: 0, max: 1 });
 		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, length, "additive");
+		this.skewXKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewX, length, "additive");
+		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, length, "additive");
 
-		// If user has custom keyframes, don't add effect/transition layers
+		// If user has custom keyframes, add them and skip effect/transition layers
 		if (this.clipHasKeyframes()) {
+			if (Array.isArray(config.scale)) {
+				this.scaleKeyframeBuilder.addLayer(config.scale);
+			}
+			if (Array.isArray(config.opacity)) {
+				this.opacityKeyframeBuilder.addLayer(config.opacity);
+			}
+			if (Array.isArray(config.offset?.x)) {
+				this.offsetXKeyframeBuilder.addLayer(config.offset.x);
+			}
+			if (Array.isArray(config.offset?.y)) {
+				this.offsetYKeyframeBuilder.addLayer(config.offset.y);
+			}
+			if (Array.isArray(config.transform?.rotate?.angle)) {
+				this.rotationKeyframeBuilder.addLayer(config.transform.rotate.angle);
+			}
+			if (Array.isArray(config.transform?.skew?.x)) {
+				this.skewXKeyframeBuilder.addLayer(config.transform.skew.x);
+			}
+			if (Array.isArray(config.transform?.skew?.y)) {
+				this.skewYKeyframeBuilder.addLayer(config.transform.skew.y);
+			}
 			return;
 		}
 
@@ -209,6 +236,9 @@ export abstract class Player extends Entity {
 
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
+
+		const skew = this.getSkew();
+		this.getContainer().skew.set(skew.x * (Math.PI / 180), skew.y * (Math.PI / 180));
 
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			this.applyFixedDimensions();
@@ -452,6 +482,13 @@ export abstract class Player extends Entity {
 		return this.rotationKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
 	}
 
+	public getSkew(): { x: number; y: number } {
+		return {
+			x: this.skewXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0,
+			y: this.skewYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0
+		};
+	}
+
 	public isActive(): boolean {
 		// Convert edit.playbackTime (ms) to seconds for comparison
 		const playbackTimeSeconds = this.edit.playbackTime / 1000;
@@ -479,7 +516,9 @@ export abstract class Player extends Entity {
 			this.clipConfiguration.scale,
 			this.clipConfiguration.offset?.x,
 			this.clipConfiguration.offset?.y,
-			this.clipConfiguration.transform?.rotate?.angle
+			this.clipConfiguration.transform?.rotate?.angle,
+			this.clipConfiguration.transform?.skew?.x,
+			this.clipConfiguration.transform?.skew?.y
 		].some(property => property && typeof property !== "number");
 	}
 

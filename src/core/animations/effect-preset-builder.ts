@@ -10,27 +10,21 @@ export type EffectKeyframeSet = {
 	rotationKeyframes: Keyframe[];
 };
 
-/**
- * Relative keyframe set for composition with other animation layers.
- * - Offset keyframes are deltas (added to base position)
- * - Scale keyframes are factors (multiplied with base scale)
- * - Opacity keyframes are factors (multiplied with base opacity)
- */
 export type RelativeEffectKeyframeSet = EffectKeyframeSet;
 
+type ParsedEffect = { name: string; speed: string | undefined };
+
 export class EffectPresetBuilder {
-	private clipConfiguration: ResolvedClip;
+	private readonly clipConfiguration: ResolvedClip;
+	private readonly effectPreset: ParsedEffect;
 
 	constructor(clipConfiguration: ResolvedClip) {
 		this.clipConfiguration = clipConfiguration;
+
+		const [name, speed] = (clipConfiguration.effect ?? "").split(/(Slow|Fast)/);
+		this.effectPreset = { name, speed };
 	}
 
-	/**
-	 * Build keyframes with relative values for composition.
-	 * - Scale values are factors (e.g., 1.0 → 1.3 means "multiply base by 1.0, then by 1.3")
-	 * - Offset values are deltas (e.g., 0.12 → -0.12 means "add 0.12 to base, then add -0.12")
-	 * These can be composed with transition keyframes without conflicts.
-	 */
 	public buildRelative(editSize: Size, clipSize: Size): RelativeEffectKeyframeSet {
 		const offsetXKeyframes: Keyframe[] = [];
 		const offsetYKeyframes: Keyframe[] = [];
@@ -60,65 +54,30 @@ export class EffectPresetBuilder {
 				scaleKeyframes.push({ from: zoomSpeed, to: 1, start, length, interpolation: "linear" });
 				break;
 			}
-			case "slideLeft": {
-				const fittedSize = this.getFittedSize(editSize, clipSize);
-				let targetOffsetX = this.getSlideStart();
-				const minScaleWidth = editSize.width + editSize.width * targetOffsetX * 2;
-
-				if (fittedSize.width < minScaleWidth) {
-					const scaleFactorWidth = minScaleWidth / fittedSize.width;
-					// Scale factor (constant) to ensure content fills during slide
-					scaleKeyframes.push({ from: scaleFactorWidth, to: scaleFactorWidth, start, length, interpolation: "linear" });
-				} else {
-					targetOffsetX = (fittedSize.width - editSize.width) / 2 / editSize.width;
-				}
-				// Offset delta: slides from right (+) to left (-)
-				offsetXKeyframes.push({ from: targetOffsetX, to: -targetOffsetX, start, length });
-				break;
-			}
-			case "slideRight": {
-				const fittedSize = this.getFittedSize(editSize, clipSize);
-				let targetOffsetX = this.getSlideStart();
-				const minScaleWidth = editSize.width + editSize.width * targetOffsetX * 2;
-
-				if (fittedSize.width < minScaleWidth) {
-					const scaleFactorWidth = minScaleWidth / fittedSize.width;
-					scaleKeyframes.push({ from: scaleFactorWidth, to: scaleFactorWidth, start, length, interpolation: "linear" });
-				} else {
-					targetOffsetX = (fittedSize.width - editSize.width) / 2 / editSize.width;
-				}
-				// Offset delta: slides from left (-) to right (+)
-				offsetXKeyframes.push({ from: -targetOffsetX, to: targetOffsetX, start, length });
-				break;
-			}
-			case "slideUp": {
-				const fittedSize = this.getFittedSize(editSize, clipSize);
-				let targetOffsetY = this.getSlideStart();
-				const minScaleHeight = editSize.height + editSize.height * targetOffsetY * 2;
-
-				if (fittedSize.height < minScaleHeight) {
-					const scaleFactorHeight = minScaleHeight / fittedSize.height;
-					scaleKeyframes.push({ from: scaleFactorHeight, to: scaleFactorHeight, start, length, interpolation: "linear" });
-				} else {
-					targetOffsetY = (fittedSize.height - editSize.height) / 2 / editSize.height;
-				}
-				// Offset delta: slides from bottom (+) to top (-)
-				offsetYKeyframes.push({ from: targetOffsetY, to: -targetOffsetY, start, length });
-				break;
-			}
+			case "slideLeft":
+			case "slideRight":
+			case "slideUp":
 			case "slideDown": {
-				const fittedSize = this.getFittedSize(editSize, clipSize);
-				let targetOffsetY = this.getSlideStart();
-				const minScaleHeight = editSize.height + editSize.height * targetOffsetY * 2;
+				const isHorizontal = effectName === "slideLeft" || effectName === "slideRight";
+				const startsPositive = effectName === "slideLeft" || effectName === "slideUp";
 
-				if (fittedSize.height < minScaleHeight) {
-					const scaleFactorHeight = minScaleHeight / fittedSize.height;
-					scaleKeyframes.push({ from: scaleFactorHeight, to: scaleFactorHeight, start, length, interpolation: "linear" });
+				const fittedSize = this.getFittedSize(editSize, clipSize);
+				const editDimension = isHorizontal ? editSize.width : editSize.height;
+				const fittedDimension = isHorizontal ? fittedSize.width : fittedSize.height;
+
+				let targetOffset = this.getSlideStart();
+				const minScale = editDimension + editDimension * targetOffset * 2;
+
+				if (fittedDimension < minScale) {
+					const scaleFactor = minScale / fittedDimension;
+					scaleKeyframes.push({ from: scaleFactor, to: scaleFactor, start, length, interpolation: "linear" });
 				} else {
-					targetOffsetY = (fittedSize.height - editSize.height) / 2 / editSize.height;
+					targetOffset = (fittedDimension - editDimension) / 2 / editDimension;
 				}
-				// Offset delta: slides from top (-) to bottom (+)
-				offsetYKeyframes.push({ from: -targetOffsetY, to: targetOffsetY, start, length });
+
+				const [from, to] = startsPositive ? [targetOffset, -targetOffset] : [-targetOffset, targetOffset];
+				const targetKeyframes = isHorizontal ? offsetXKeyframes : offsetYKeyframes;
+				targetKeyframes.push({ from, to, start, length });
 				break;
 			}
 			default:
@@ -129,15 +88,14 @@ export class EffectPresetBuilder {
 	}
 
 	private getPresetName(): string {
-		const [effectName] = (this.clipConfiguration.effect ?? "").split(/(Slow|Fast)/);
-		return effectName;
+		return this.effectPreset.name;
 	}
 
 	private getZoomSpeed(): number {
-		const [effectName, effectSpeed] = (this.clipConfiguration.effect ?? "").split(/(Slow|Fast)/);
+		const { name, speed } = this.effectPreset;
 
-		if (effectName.startsWith("zoom")) {
-			switch (effectSpeed) {
+		if (name.startsWith("zoom")) {
+			switch (speed) {
 				case "Slow":
 					return 1.1;
 				case "Fast":
@@ -151,10 +109,10 @@ export class EffectPresetBuilder {
 	}
 
 	private getSlideStart(): number {
-		const [effectName, effectSpeed] = (this.clipConfiguration.effect ?? "").split(/(Slow|Fast)/);
+		const { name, speed } = this.effectPreset;
 
-		if (effectName.startsWith("slide")) {
-			switch (effectSpeed) {
+		if (name.startsWith("slide")) {
+			switch (speed) {
 				case "Slow":
 					return 0.03;
 				case "Fast":
