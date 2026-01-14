@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, jest } from "@jest/globals";
-import { TimelineStateManager } from "../src/components/timeline/core/state/timeline-state";
+import { TimelineStateManager } from "../src/components/timeline/timeline-state";
 import { EditEvent } from "../src/core/events/edit-events";
 
 // Mock EventEmitter with event storage for testing

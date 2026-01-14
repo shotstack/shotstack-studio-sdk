@@ -9,10 +9,10 @@ import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
 import { ToolbarComponent } from "./components/toolbar/toolbar-component";
 import { TrackListComponent } from "./components/track/track-list";
-import { TimelineStateManager } from "./core/state/timeline-state";
 import { InteractionController } from "./interaction/interaction-controller";
-import { MediaThumbnailRenderer } from "./renderers/media-thumbnail-renderer";
-import { ThumbnailGenerator } from "./services/thumbnail-generator";
+import { MediaThumbnailRenderer } from "./media-thumbnail-renderer";
+import { ThumbnailGenerator } from "./thumbnail-generator";
+import { TimelineStateManager } from "./timeline-state";
 
 export class Timeline {
 	public readonly element: HTMLElement;

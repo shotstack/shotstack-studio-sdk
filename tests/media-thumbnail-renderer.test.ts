@@ -5,8 +5,8 @@
 import { describe, it, expect, jest } from "@jest/globals";
 import type { ResolvedClip } from "../src/core/schemas";
 import { sec } from "../src/core/timing/types";
-import { MediaThumbnailRenderer } from "../src/components/timeline/renderers/media-thumbnail-renderer";
-import type { ThumbnailGenerator } from "../src/components/timeline/services/thumbnail-generator";
+import { MediaThumbnailRenderer } from "../src/components/timeline/media-thumbnail-renderer";
+import type { ThumbnailGenerator } from "../src/components/timeline/thumbnail-generator";
 
 // Helper to create a delayed promise for async tests
 const delay = (ms: number): Promise<void> =>

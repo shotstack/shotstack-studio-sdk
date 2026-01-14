@@ -1,7 +1,7 @@
 import type { ResolvedClip } from "@schemas";
 
+import { formatClipErrorMessage } from "../../error-messages";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
-import { formatClipErrorMessage } from "../../utils/error-messages";
 
 /** Reference to an attached luma clip */
 interface LumaRef {

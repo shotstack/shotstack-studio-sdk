@@ -7,7 +7,7 @@ import { sec } from "@core/timing/types";
 import type { ClipState, TimelineInteractionConfig } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
 
-import { TimelineStateManager } from "../core/state/timeline-state";
+import { TimelineStateManager } from "../timeline-state";
 
 import {
 	type DragBehavior,

@@ -3,7 +3,7 @@ import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, ResolvedTrack } from "@schemas";
 
-import type { TrackState, ClipState, ViewportState, PlaybackState, ClipVisualState, InteractionQuery } from "../../timeline.types";
+import type { TrackState, ClipState, ViewportState, PlaybackState, ClipVisualState, InteractionQuery } from "./timeline.types";
 
 export class TimelineStateManager {
 	private viewport: ViewportState;

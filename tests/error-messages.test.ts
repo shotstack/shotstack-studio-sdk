@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { formatClipErrorMessage, extractFilenameFromError } from "../src/components/timeline/utils/error-messages";
+import { formatClipErrorMessage, extractFilenameFromError } from "../src/components/timeline/error-messages";
 
 describe("extractFilenameFromError", () => {
 	it("should extract filename from URL in error message", () => {

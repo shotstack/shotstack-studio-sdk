@@ -10,8 +10,8 @@
 
 import type { ResolvedClip, ImageAsset, VideoAsset } from "@schemas";
 
-import type { ThumbnailGenerator } from "../services/thumbnail-generator";
-import type { ClipRenderer } from "../timeline.types";
+import type { ThumbnailGenerator } from "./thumbnail-generator";
+import type { ClipRenderer } from "./timeline.types";
 
 interface ThumbnailState {
 	loading: boolean;
