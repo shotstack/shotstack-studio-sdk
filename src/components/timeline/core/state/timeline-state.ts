@@ -10,10 +10,7 @@ type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
 export class TimelineStateManager {
 	private viewport: ViewportState;
 	private clipVisualStates = new Map<string, ClipVisualState>();
-
-	// Track which content Players have visible lumas for editing
 	private lumaEditingVisible = new Set<Player>();
-
 	private cachedTracks: TrackState[] | null = null;
 
 	constructor(
@@ -82,7 +79,7 @@ export class TimelineStateManager {
 		return tracks[trackIndex]?.clips.find(c => c.clipIndex === clipIndex);
 	}
 
-	// ========== UI State (local only) ==========
+	// ========== UI State ==========
 
 	public getViewport(): ViewportState {
 		return this.viewport;
@@ -175,7 +172,6 @@ export class TimelineStateManager {
 		const lumaStart = luma.config.start;
 		const lumaLength = luma.config.length;
 
-		// Find content with exact timing match on same track
 		const contentIndex = track.clips.findIndex(
 			clip => clip.config.asset?.type !== "luma" && clip.config.start === lumaStart && clip.config.length === lumaLength
 		);
@@ -195,7 +191,6 @@ export class TimelineStateManager {
 
 	// ========== Luma UI State ==========
 
-	/** Toggle visibility of attached luma for editing (by indices) */
 	public toggleLumaVisibility(contentTrack: number, contentClip: number): boolean {
 		const contentPlayer = this.edit.getPlayerClip(contentTrack, contentClip);
 		if (!contentPlayer) return false;
@@ -207,7 +202,6 @@ export class TimelineStateManager {
 		return true; // Now visible
 	}
 
-	/** Check if attached luma is currently visible for editing */
 	public isLumaVisibleForEditing(contentTrack: number, contentClip: number): boolean {
 		const contentPlayer = this.edit.getPlayerClip(contentTrack, contentClip);
 		if (!contentPlayer) return false;
