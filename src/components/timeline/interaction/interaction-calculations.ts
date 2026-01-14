@@ -67,7 +67,7 @@ export function determineDragBehavior(input: DetermineDragBehaviorInput): DragBe
 // ─── Coordinate Transforms ─────────────────────────────────────────────────
 
 export function pixelsToSeconds(px: number, pixelsPerSecond: number): number {
-	return px / pixelsPerSecond;
+	return pixelsPerSecond === 0 ? 0 : px / pixelsPerSecond;
 }
 export function secondsToPixels(seconds: number, pixelsPerSecond: number): number {
 	return seconds * pixelsPerSecond;

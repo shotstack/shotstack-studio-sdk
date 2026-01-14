@@ -372,8 +372,10 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 		const tracks = this.stateManager.getTracks();
 		const targetTrack = tracks[state.dragTarget.trackIndex];
+		if (!targetTrack) return targetClip.config.start;
+
 		const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex);
-		const targetTrackHeight = getTrackHeight(targetTrack?.primaryAssetType ?? "default");
+		const targetTrackHeight = getTrackHeight(targetTrack.primaryAssetType);
 
 		const lumaResult = updateLumaTargetHighlight(
 			this.tracksContainer,
@@ -400,9 +402,11 @@ export class InteractionController implements TimelineInteractionRegistration {
 		if (state.dragTarget.type === "track") {
 			ghost.style.display = "block"; // eslint-disable-line no-param-reassign -- DOM manipulation
 			const tracks = this.stateManager.getTracks();
-			const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex) + 4;
 			const targetTrack = tracks[state.dragTarget.trackIndex];
-			const targetHeight = getTrackHeight(targetTrack?.primaryAssetType ?? "default") - 8;
+			if (!targetTrack) return;
+
+			const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex) + 4;
+			const targetHeight = getTrackHeight(targetTrack.primaryAssetType) - 8;
 
 			ghost.style.left = `${clipTime * feedbackConfig.pixelsPerSecond}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
 			ghost.style.top = `${targetTrackY + feedbackConfig.tracksOffset}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
@@ -492,7 +496,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		// 1. Restore clip element styles
 		restoreClipElementStyles(clipElement, originalStyles);
 
-		// 2. Determine action (pure function)
+		// 2. Determine action
 		const draggedClip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		const targetClip =
 			dragTarget.type === "track" ? this.findContentClipAtPositionOnTrack(dragTarget.trackIndex, collisionResult.newStartTime, clipRef) : null;
@@ -515,7 +519,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		// 3. Execute action
 		this.executeDropAction(state, action, targetClip, existingLumaRef);
 
-		// 4. Cleanup (single exit point)
+		// 4. Cleanup
 		ghost.remove();
 		this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
 		this.state = IDLE_STATE;
