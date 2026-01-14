@@ -514,6 +514,7 @@ export abstract class Player extends Entity {
 	private clipHasKeyframes(): boolean {
 		return [
 			this.clipConfiguration.scale,
+			this.clipConfiguration.opacity,
 			this.clipConfiguration.offset?.x,
 			this.clipConfiguration.offset?.y,
 			this.clipConfiguration.transform?.rotate?.angle,
