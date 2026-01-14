@@ -1,6 +1,6 @@
 import type { ClipRef, CollisionResult, DragTarget } from "./interaction-calculations";
 
-export type { ClipRef, SnapPoint, CollisionResult, DragTarget } from "./interaction-calculations";
+export type { ClipRef, SnapPoint, CollisionResult, DragTarget, DragBehavior, DetermineDragBehaviorInput } from "./interaction-calculations";
 
 // ─── Point ─────────────────────────────────────────────────────────────────
 

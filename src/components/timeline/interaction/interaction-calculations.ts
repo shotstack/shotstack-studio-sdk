@@ -20,6 +20,50 @@ export interface CollisionResult {
 
 export type DragTarget = { readonly type: "track"; readonly trackIndex: number } | { readonly type: "insert"; readonly insertionIndex: number };
 
+// ─── Drag Behavior ─────────────────────────────────────────────────────────
+
+export interface DetermineDragBehaviorInput {
+	readonly dragTarget: DragTarget;
+	readonly draggedAssetType: string | undefined;
+	readonly altKeyHeld: boolean;
+	readonly targetClip: ClipState | null;
+	readonly existingLumaRef: ClipRef | null;
+	readonly draggedClipRef: ClipRef;
+}
+
+export type DragBehavior =
+	| { readonly type: "luma-attach"; readonly targetClip: ClipState }
+	| { readonly type: "luma-blocked"; readonly reason: string }
+	| { readonly type: "luma-overlay" }
+	| { readonly type: "normal-collision" }
+	| { readonly type: "track-insert" };
+
+export function determineDragBehavior(input: DetermineDragBehaviorInput): DragBehavior {
+	const { dragTarget, draggedAssetType, altKeyHeld, targetClip, existingLumaRef, draggedClipRef } = input;
+
+	if (dragTarget.type === "insert") {
+		return { type: "track-insert" };
+	}
+
+	const canAttachAsLuma = draggedAssetType === "luma" || draggedAssetType === "image" || draggedAssetType === "video";
+	if (!canAttachAsLuma) {
+		return { type: "normal-collision" };
+	}
+
+	if (!altKeyHeld || !targetClip) {
+		return draggedAssetType === "luma" ? { type: "luma-overlay" } : { type: "normal-collision" };
+	}
+
+	const isDraggingSameLuma =
+		existingLumaRef && existingLumaRef.clipIndex === draggedClipRef.clipIndex && existingLumaRef.trackIndex === draggedClipRef.trackIndex;
+
+	if (existingLumaRef && !isDraggingSameLuma) {
+		return { type: "luma-blocked", reason: "Target already has a different luma" };
+	}
+
+	return { type: "luma-attach", targetClip };
+}
+
 // ─── Coordinate Transforms ─────────────────────────────────────────────────
 
 export function pixelsToSeconds(px: number, pixelsPerSecond: number): number {

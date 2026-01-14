@@ -22,7 +22,8 @@ import {
 	resolveClipCollision,
 	findContentClipAtPosition,
 	distance,
-	exceedsDragThreshold
+	exceedsDragThreshold,
+	determineDragBehavior
 } from "../src/components/timeline/interaction/interaction-calculations";
 import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
 
@@ -488,6 +489,233 @@ describe("Distance Calculations", () => {
 
 		it("returns true when over threshold", () => {
 			expect(exceedsDragThreshold(10, 10, 5)).toBe(true);
+		});
+	});
+});
+
+// ─── Drag Behavior Determination ────────────────────────────────────────────
+
+describe("determineDragBehavior", () => {
+	const draggedClipRef = { trackIndex: 0, clipIndex: 0 };
+	const targetClip = createMockClip(2, 3, "video", 1, 0);
+
+	describe("Path 6: Insert target", () => {
+		it("returns track-insert for insert drag target", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "insert", insertionIndex: 1 },
+				draggedAssetType: "image",
+				altKeyHeld: false,
+				targetClip: null,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "track-insert" });
+		});
+
+		it("returns track-insert even with Alt held", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "insert", insertionIndex: 0 },
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "track-insert" });
+		});
+	});
+
+	describe("Path 5: Non-attachable asset", () => {
+		it("returns normal-collision for audio assets", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "audio",
+				altKeyHeld: false,
+				targetClip: null,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "normal-collision" });
+		});
+
+		it("returns normal-collision for text assets", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "text",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "normal-collision" });
+		});
+
+		it("returns normal-collision for undefined asset type", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: undefined,
+				altKeyHeld: false,
+				targetClip: null,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "normal-collision" });
+		});
+	});
+
+	describe("Path 3: Luma overlay (no Alt)", () => {
+		it("returns luma-overlay for luma asset without Alt", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "luma",
+				altKeyHeld: false,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-overlay" });
+		});
+
+		it("returns luma-overlay for luma even with target clip (but no Alt)", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "luma",
+				altKeyHeld: false,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-overlay" });
+		});
+	});
+
+	describe("Path 4: Normal collision (image/video without Alt)", () => {
+		it("returns normal-collision for image without Alt", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "image",
+				altKeyHeld: false,
+				targetClip: null,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "normal-collision" });
+		});
+
+		it("returns normal-collision for video without Alt", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "video",
+				altKeyHeld: false,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "normal-collision" });
+		});
+
+		it("returns normal-collision when Alt held but no target clip", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "image",
+				altKeyHeld: true,
+				targetClip: null,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "normal-collision" });
+		});
+	});
+
+	describe("Path 2: Luma attach", () => {
+		it("returns luma-attach for image with Alt and target clip", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "image",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-attach", targetClip });
+		});
+
+		it("returns luma-attach for video with Alt and target clip", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "video",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-attach", targetClip });
+		});
+
+		it("returns luma-attach for luma with Alt and target clip", () => {
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-attach", targetClip });
+		});
+
+		it("returns luma-attach when dragging same luma that's already attached", () => {
+			const sameClipRef = { trackIndex: 0, clipIndex: 0 };
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: sameClipRef,
+				draggedClipRef: sameClipRef
+			});
+			expect(result).toEqual({ type: "luma-attach", targetClip });
+		});
+	});
+
+	describe("Path 1: Luma blocked", () => {
+		it("returns luma-blocked when target has different luma attached", () => {
+			const differentLumaRef = { trackIndex: 2, clipIndex: 5 };
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "image",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: differentLumaRef,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-blocked", reason: "Target already has a different luma" });
+		});
+
+		it("returns luma-blocked for video when target has different luma", () => {
+			const differentLumaRef = { trackIndex: 1, clipIndex: 3 };
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "video",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: differentLumaRef,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-blocked", reason: "Target already has a different luma" });
+		});
+
+		it("returns luma-blocked when existingLumaRef has same track but different clip", () => {
+			const sameTrackDifferentClip = { trackIndex: 0, clipIndex: 5 };
+			const result = determineDragBehavior({
+				dragTarget: { type: "track", trackIndex: 0 },
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: sameTrackDifferentClip,
+				draggedClipRef
+			});
+			expect(result).toEqual({ type: "luma-blocked", reason: "Target already has a different luma" });
 		});
 	});
 });
