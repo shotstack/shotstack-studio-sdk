@@ -3,13 +3,11 @@ import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, ResolvedTrack } from "@schemas";
 
-import type { TrackState, ClipState, ViewportState, PlaybackState } from "../../timeline.types";
-
-type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
+import type { TrackState, ClipState, ViewportState, PlaybackState, ClipVisualState, InteractionQuery } from "../../timeline.types";
 
 export class TimelineStateManager {
 	private viewport: ViewportState;
-	private clipVisualStates = new Map<string, ClipVisualState>();
+	private interactionQuery: InteractionQuery | null = null;
 	private lumaEditingVisible = new Set<Player>();
 	private cachedTracks: TrackState[] | null = null;
 
@@ -98,18 +96,8 @@ export class TimelineStateManager {
 		this.viewport.scrollY = scrollY;
 	}
 
-	public setClipVisualState(trackIndex: number, clipIndex: number, state: ClipVisualState): void {
-		this.clipVisualStates.set(`${trackIndex}-${clipIndex}`, state);
-		this.invalidateCache();
-	}
-
-	public getClipVisualState(trackIndex: number, clipIndex: number): ClipVisualState {
-		return this.clipVisualStates.get(`${trackIndex}-${clipIndex}`) ?? "normal";
-	}
-
-	public clearVisualStates(): void {
-		this.clipVisualStates.clear();
-		this.invalidateCache();
+	public setInteractionQuery(query: InteractionQuery | null): void {
+		this.interactionQuery = query;
 	}
 
 	// ========== Selection (delegate to Edit) ==========
@@ -230,18 +218,25 @@ export class TimelineStateManager {
 
 		// Clear state
 		this.cachedTracks = null;
-		this.clipVisualStates.clear();
+		this.interactionQuery = null;
 		this.lumaEditingVisible.clear();
 	}
 
 	// ========== Private ==========
+
+	private getComputedVisualState(trackIndex: number, clipIndex: number, isSelected: boolean): ClipVisualState {
+		if (this.interactionQuery?.isDragging(trackIndex, clipIndex)) return "dragging";
+		if (this.interactionQuery?.isResizing(trackIndex, clipIndex)) return "resizing";
+		if (isSelected) return "selected";
+		return "normal";
+	}
 
 	private createClipState(clip: ResolvedClip, trackIndex: number, clipIndex: number): ClipState {
 		const unresolvedEdit = this.edit.getEdit();
 		const unresolvedClip = unresolvedEdit?.timeline?.tracks?.[trackIndex]?.clips?.[clipIndex];
 
 		const isSelected = this.edit.isClipSelected(trackIndex, clipIndex);
-		const visualState = this.clipVisualStates.get(`${trackIndex}-${clipIndex}`) ?? (isSelected ? "selected" : "normal");
+		const visualState = this.getComputedVisualState(trackIndex, clipIndex, isSelected);
 
 		return {
 			id: `${trackIndex}-${clipIndex}`,

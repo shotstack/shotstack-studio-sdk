@@ -294,7 +294,6 @@ export class Canvas {
 		this.uiController?.updateOverlays(ticker.deltaTime, ticker.deltaMS);
 
 		if (this.timeline) {
-			this.timeline.update(ticker.deltaTime, ticker.deltaMS);
 			this.timeline.draw();
 		}
 	}

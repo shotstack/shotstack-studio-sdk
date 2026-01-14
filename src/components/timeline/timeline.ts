@@ -407,6 +407,11 @@ export class Timeline {
 			snapThreshold: this.features.snap ? 10 : 0,
 			onRequestRender: () => this.requestRender()
 		});
+
+		this.stateManager.setInteractionQuery({
+			isDragging: (t, c) => this.interactionController?.isDragging(t, c) ?? false,
+			isResizing: (t, c) => this.interactionController?.isResizing(t, c) ?? false
+		});
 	}
 
 	private disposeComponents(): void {

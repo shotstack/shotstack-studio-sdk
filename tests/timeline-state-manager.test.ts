@@ -304,51 +304,47 @@ describe("TimelineStateManager", () => {
 			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
 
 			const stateManager = new TimelineStateManager(edit as never);
+			const tracks = stateManager.getTracks();
 
-			expect(stateManager.getClipVisualState(0, 0)).toBe("normal");
+			expect(tracks[0].clips[0].visualState).toBe("normal");
 		});
 
-		it("sets and gets clip visual state", () => {
+		it("returns selected when clip is selected", () => {
+			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
+			(edit as { isClipSelected: (t: number, c: number) => boolean }).isClipSelected = (t, c) => t === 0 && c === 0;
+
+			const stateManager = new TimelineStateManager(edit as never);
+			const tracks = stateManager.getTracks();
+
+			expect(tracks[0].clips[0].visualState).toBe("selected");
+		});
+
+		it("returns dragging when interaction query reports dragging", () => {
 			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
 
 			const stateManager = new TimelineStateManager(edit as never);
+			stateManager.setInteractionQuery({
+				isDragging: (t, c) => t === 0 && c === 0,
+				isResizing: () => false
+			});
 
-			stateManager.setClipVisualState(0, 0, "dragging");
-			expect(stateManager.getClipVisualState(0, 0)).toBe("dragging");
+			const tracks = stateManager.getTracks();
 
-			stateManager.setClipVisualState(0, 0, "resizing");
-			expect(stateManager.getClipVisualState(0, 0)).toBe("resizing");
+			expect(tracks[0].clips[0].visualState).toBe("dragging");
 		});
 
-		it("invalidates cache when visual state changes", () => {
+		it("returns resizing when interaction query reports resizing", () => {
 			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
 
 			const stateManager = new TimelineStateManager(edit as never);
-			const tracks1 = stateManager.getTracks();
+			stateManager.setInteractionQuery({
+				isDragging: () => false,
+				isResizing: (t, c) => t === 0 && c === 0
+			});
 
-			stateManager.setClipVisualState(0, 0, "selected");
+			const tracks = stateManager.getTracks();
 
-			const tracks2 = stateManager.getTracks();
-			expect(tracks2).not.toBe(tracks1);
-		});
-
-		it("clears all visual states", () => {
-			const edit = createMockEdit([
-				[
-					{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ asset: { type: "video", src: "video.mp4" }, start: 5, length: 5 }
-				]
-			]);
-
-			const stateManager = new TimelineStateManager(edit as never);
-
-			stateManager.setClipVisualState(0, 0, "selected");
-			stateManager.setClipVisualState(0, 1, "dragging");
-
-			stateManager.clearVisualStates();
-
-			expect(stateManager.getClipVisualState(0, 0)).toBe("normal");
-			expect(stateManager.getClipVisualState(0, 1)).toBe("normal");
+			expect(tracks[0].clips[0].visualState).toBe("resizing");
 		});
 	});
 });

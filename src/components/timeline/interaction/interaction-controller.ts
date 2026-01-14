@@ -162,7 +162,6 @@ export class InteractionController {
 			originalLength: clip.config.length
 		};
 
-		this.stateManager.setClipVisualState(clipRef.trackIndex, clipRef.clipIndex, "resizing");
 		this.buildSnapPoints(clipRef);
 
 		e.preventDefault();
@@ -708,7 +707,6 @@ export class InteractionController {
 		// Cleanup
 		this.hideSnapLine();
 		this.hideDragTimeTooltip();
-		this.stateManager.setClipVisualState(clipRef.trackIndex, clipRef.clipIndex, "normal");
 		this.state = { type: "idle" };
 	}
 
@@ -1073,6 +1071,18 @@ export class InteractionController {
 			y += getTrackHeight(tracks[i].primaryAssetType);
 		}
 		return y;
+	}
+
+	// ========== Visual State Queries ==========
+
+	public isDragging(trackIndex: number, clipIndex: number): boolean {
+		if (this.state.type !== "dragging") return false;
+		return this.state.clipRef.trackIndex === trackIndex && this.state.clipRef.clipIndex === clipIndex;
+	}
+
+	public isResizing(trackIndex: number, clipIndex: number): boolean {
+		if (this.state.type !== "resizing") return false;
+		return this.state.clipRef.trackIndex === trackIndex && this.state.clipRef.clipIndex === clipIndex;
 	}
 
 	public dispose(): void {

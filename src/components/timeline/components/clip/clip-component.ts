@@ -160,7 +160,7 @@ export class ClipComponent {
 				this.maskBadge = document.createElement("div");
 				this.maskBadge.className = "ss-clip-mask-badge";
 				this.maskBadge.textContent = "◐";
-				this.maskBadge.title = "Luma mask attached - click to toggle";
+				this.maskBadge.title = "Luma mask attached - click to detach";
 				this.maskBadge.addEventListener("click", e => {
 					e.stopPropagation();
 					// Pass the CONTENT clip indices (this clip), not the luma indices
