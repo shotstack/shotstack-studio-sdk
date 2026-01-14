@@ -337,3 +337,23 @@ export function disposeFeedbackElements(elements: FeedbackElements): void {
 		elements.lumaTargetClipElement.classList.remove("ss-clip-luma-target");
 	}
 }
+
+// ─── Clip Element Style Restoration ────────────────────────────────────────
+
+export interface ClipOriginalStyles {
+	readonly position: string;
+	readonly left: string;
+	readonly top: string;
+	readonly zIndex: string;
+	readonly pointerEvents: string;
+}
+
+export function restoreClipElementStyles(clipElement: HTMLElement, originalStyles: ClipOriginalStyles): void {
+	clipElement.style.position = originalStyles.position; // eslint-disable-line no-param-reassign -- DOM manipulation
+	clipElement.style.left = originalStyles.left; // eslint-disable-line no-param-reassign -- DOM manipulation
+	clipElement.style.top = originalStyles.top; // eslint-disable-line no-param-reassign -- DOM manipulation
+	clipElement.style.zIndex = originalStyles.zIndex; // eslint-disable-line no-param-reassign -- DOM manipulation
+	clipElement.style.pointerEvents = originalStyles.pointerEvents; // eslint-disable-line no-param-reassign -- DOM manipulation
+	clipElement.style.width = ""; // eslint-disable-line no-param-reassign -- DOM manipulation
+	clipElement.style.height = ""; // eslint-disable-line no-param-reassign -- DOM manipulation
+}

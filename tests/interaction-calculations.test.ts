@@ -23,7 +23,8 @@ import {
 	findContentClipAtPosition,
 	distance,
 	exceedsDragThreshold,
-	determineDragBehavior
+	determineDragBehavior,
+	determineDropAction
 } from "../src/components/timeline/interaction/interaction-calculations";
 import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
 
@@ -716,6 +717,193 @@ describe("determineDragBehavior", () => {
 				draggedClipRef
 			});
 			expect(result).toEqual({ type: "luma-blocked", reason: "Target already has a different luma" });
+		});
+	});
+});
+
+// ─── Drop Action Determination ─────────────────────────────────────────────
+
+describe("determineDropAction", () => {
+	const draggedClipRef = { trackIndex: 0, clipIndex: 0 };
+	const targetClip = createMockClip(2, 3, "video", 1, 0);
+
+	const baseInput = {
+		dragTarget: { type: "track" as const, trackIndex: 1 },
+		draggedAssetType: "image" as const,
+		altKeyHeld: false,
+		targetClip: null,
+		existingLumaRef: null,
+		draggedClipRef,
+		startTime: 0,
+		newTime: 0,
+		originalTrack: 0,
+		pushOffset: 0
+	};
+
+	describe("insert-track action", () => {
+		it("returns insert-track for insert drag target", () => {
+			const result = determineDropAction({
+				...baseInput,
+				dragTarget: { type: "insert", insertionIndex: 2 }
+			});
+			expect(result).toEqual({ type: "insert-track", insertionIndex: 2 });
+		});
+
+		it("returns insert-track even with Alt held and target clip", () => {
+			const result = determineDropAction({
+				...baseInput,
+				dragTarget: { type: "insert", insertionIndex: 0 },
+				altKeyHeld: true,
+				targetClip
+			});
+			expect(result).toEqual({ type: "insert-track", insertionIndex: 0 });
+		});
+	});
+
+	describe("transform-and-attach action", () => {
+		it("returns transform-and-attach for image with Alt and target clip", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "image",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null
+			});
+			expect(result).toEqual({ type: "transform-and-attach", targetClip });
+		});
+
+		it("returns transform-and-attach for video with Alt and target clip", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "video",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null
+			});
+			expect(result).toEqual({ type: "transform-and-attach", targetClip });
+		});
+
+		it("falls through to normal move when target has existing luma", () => {
+			const differentLuma = { trackIndex: 2, clipIndex: 5 };
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "image",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: differentLuma,
+				newTime: 5,
+				originalTrack: 0
+			});
+			// Should fall through to simple-move since time changed
+			expect(result).toEqual({ type: "simple-move" });
+		});
+	});
+
+	describe("reattach-luma action", () => {
+		it("returns reattach-luma for luma with Alt and target clip", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: null
+			});
+			expect(result).toEqual({ type: "reattach-luma", targetClip });
+		});
+
+		it("returns reattach-luma when dragging same luma that's already attached", () => {
+			const sameClipRef = { trackIndex: 0, clipIndex: 0 };
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: sameClipRef,
+				draggedClipRef: sameClipRef
+			});
+			expect(result).toEqual({ type: "reattach-luma", targetClip });
+		});
+	});
+
+	describe("detach-luma action", () => {
+		it("returns detach-luma for luma without Alt", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "luma",
+				altKeyHeld: false
+			});
+			expect(result).toEqual({ type: "detach-luma" });
+		});
+
+		it("returns detach-luma for luma with Alt but no target clip", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip: null
+			});
+			expect(result).toEqual({ type: "detach-luma" });
+		});
+
+		it("returns detach-luma when target has different luma attached", () => {
+			const differentLuma = { trackIndex: 2, clipIndex: 5 };
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "luma",
+				altKeyHeld: true,
+				targetClip,
+				existingLumaRef: differentLuma
+			});
+			expect(result).toEqual({ type: "detach-luma" });
+		});
+	});
+
+	describe("move-with-push action", () => {
+		it("returns move-with-push when pushOffset is positive", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "audio",
+				pushOffset: 2.5
+			});
+			expect(result).toEqual({ type: "move-with-push", pushOffset: 2.5 });
+		});
+	});
+
+	describe("simple-move action", () => {
+		it("returns simple-move when time changed", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "audio",
+				startTime: 0,
+				newTime: 5
+			});
+			expect(result).toEqual({ type: "simple-move" });
+		});
+
+		it("returns simple-move when track changed", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "audio",
+				startTime: 0,
+				newTime: 0,
+				originalTrack: 0,
+				dragTarget: { type: "track", trackIndex: 2 }
+			});
+			expect(result).toEqual({ type: "simple-move" });
+		});
+	});
+
+	describe("no-change action", () => {
+		it("returns no-change when nothing changed", () => {
+			const result = determineDropAction({
+				...baseInput,
+				draggedAssetType: "audio",
+				startTime: 5,
+				newTime: 5,
+				originalTrack: 1,
+				dragTarget: { type: "track", trackIndex: 1 }
+			});
+			expect(result).toEqual({ type: "no-change" });
 		});
 	});
 });

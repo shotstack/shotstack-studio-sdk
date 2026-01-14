@@ -330,3 +330,77 @@ export function distance(dx: number, dy: number): number {
 export function exceedsDragThreshold(dx: number, dy: number, threshold: number): boolean {
 	return distance(dx, dy) >= threshold;
 }
+
+// ─── Drop Action ────────────────────────────────────────────────────────────
+
+export type DropAction =
+	| { readonly type: "transform-and-attach"; readonly targetClip: ClipState }
+	| { readonly type: "reattach-luma"; readonly targetClip: ClipState }
+	| { readonly type: "detach-luma" }
+	| { readonly type: "insert-track"; readonly insertionIndex: number }
+	| { readonly type: "move-with-push"; readonly pushOffset: number }
+	| { readonly type: "simple-move" }
+	| { readonly type: "no-change" };
+
+export interface DetermineDropActionInput {
+	readonly dragTarget: DragTarget;
+	readonly draggedAssetType: string | undefined;
+	readonly altKeyHeld: boolean;
+	readonly targetClip: ClipState | null;
+	readonly existingLumaRef: ClipRef | null;
+	readonly draggedClipRef: ClipRef;
+	readonly startTime: number;
+	readonly newTime: number;
+	readonly originalTrack: number;
+	readonly pushOffset: number;
+}
+
+function determineNormalMove(startTime: number, newTime: number, originalTrack: number, targetTrack: number, pushOffset: number): DropAction {
+	if (pushOffset > 0) {
+		return { type: "move-with-push", pushOffset };
+	}
+	if (newTime !== startTime || targetTrack !== originalTrack) {
+		return { type: "simple-move" };
+	}
+	return { type: "no-change" };
+}
+
+export function determineDropAction(input: DetermineDropActionInput): DropAction {
+	const { dragTarget, draggedAssetType, altKeyHeld, targetClip, existingLumaRef, draggedClipRef, startTime, newTime, originalTrack, pushOffset } =
+		input;
+
+	// Insert target - always create new track
+	if (dragTarget.type === "insert") {
+		return { type: "insert-track", insertionIndex: dragTarget.insertionIndex };
+	}
+
+	const attachMode = altKeyHeld && targetClip;
+
+	// Image/video with Alt on target → transform to luma and attach
+	if ((draggedAssetType === "image" || draggedAssetType === "video") && attachMode) {
+		const targetHasLuma = existingLumaRef !== null;
+		if (targetHasLuma) {
+			// Fall through to normal move (warning handled separately in controller)
+			return determineNormalMove(startTime, newTime, originalTrack, dragTarget.trackIndex, pushOffset);
+		}
+		return { type: "transform-and-attach", targetClip };
+	}
+
+	// Luma handling
+	if (draggedAssetType === "luma") {
+		if (attachMode) {
+			const isDraggingSameLuma = existingLumaRef?.clipIndex === draggedClipRef.clipIndex && existingLumaRef?.trackIndex === draggedClipRef.trackIndex;
+
+			if (existingLumaRef && !isDraggingSameLuma) {
+				// Target has different luma - detach and move normally (warning handled in controller)
+				return { type: "detach-luma" };
+			}
+			return { type: "reattach-luma", targetClip };
+		}
+		// No Alt or no target - detach luma and move normally
+		return { type: "detach-luma" };
+	}
+
+	// Normal move for non-attachable assets
+	return determineNormalMove(startTime, newTime, originalTrack, dragTarget.trackIndex, pushOffset);
+}
