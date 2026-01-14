@@ -354,11 +354,28 @@ export class InteractionController {
 
 				// Alt key enables mask attachment mode
 				if (targetClip && e.altKey) {
-					// Mask mode: show UI and snap to target
-					this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
-					this.updateLumaTargetHighlight(targetClip, dragTarget.trackIndex, tracksOffset);
-					clipTime = targetClip.config.start;
-					this.state.collisionResult.newStartTime = clipTime;
+					const existingLumaRef = this.stateManager.findAttachedLuma(dragTarget.trackIndex, targetClip.clipIndex);
+					const isDraggingSameLuma =
+						existingLumaRef &&
+						existingLumaRef.clipIndex === this.state.clipRef.clipIndex &&
+						existingLumaRef.trackIndex === this.state.clipRef.trackIndex;
+
+					if (existingLumaRef && !isDraggingSameLuma) {
+						this.clearLumaDragFeedback();
+						if (draggedAssetType === "luma") {
+							this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+						} else {
+							const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
+							clipTime = collisionResult.newStartTime;
+							this.state.collisionResult = collisionResult;
+						}
+					} else {
+						// Mask mode: show UI and snap to target
+						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
+						this.updateLumaTargetHighlight(targetClip, dragTarget.trackIndex, tracksOffset);
+						clipTime = targetClip.config.start;
+						this.state.collisionResult.newStartTime = clipTime;
+					}
 				} else {
 					// Normal mode: clear feedback and use collision detection
 					this.clearLumaDragFeedback();
@@ -493,75 +510,86 @@ export class InteractionController {
 
 			// Image/video dropped on a content clip → transform to luma and attach (only if Alt held)
 			if ((draggedAssetType === "image" || draggedAssetType === "video") && targetContentClip && attachMaskMode) {
-				const imagePlayer = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex);
-				const contentPlayer = this.edit.getPlayerClip(targetContentClip.trackIndex, targetContentClip.clipIndex);
+				if (this.edit.hasLumaMask(targetContentClip.trackIndex, targetContentClip.clipIndex)) {
+					console.warn("Cannot attach luma: target clip already has a luma mask");
+				} else {
+					const imagePlayer = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex);
+					const contentPlayer = this.edit.getPlayerClip(targetContentClip.trackIndex, targetContentClip.clipIndex);
 
-				if (!imagePlayer || !contentPlayer) {
-					console.error("Failed to get player references for luma attachment");
+					if (!imagePlayer || !contentPlayer) {
+						console.error("Failed to get player references for luma attachment");
+						return;
+					}
+
+					// Move clip to target track first (if different)
+					if (dragTarget.trackIndex !== originalTrack) {
+						const moveCmd = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(targetContentClip.config.start));
+						this.edit.executeEditCommand(moveCmd);
+					}
+
+					const imageIndices = this.edit.findClipIndices(imagePlayer);
+					const contentIndices = this.edit.findClipIndices(contentPlayer);
+
+					if (!imageIndices || !contentIndices) {
+						console.error("Failed to find clips after move - players may have been disposed");
+						return;
+					}
+
+					this.edit.transformToLuma(imageIndices.trackIndex, imageIndices.clipIndex);
+
+					this.edit.syncLumaToContent(contentIndices.trackIndex, contentIndices.clipIndex, imageIndices.trackIndex, imageIndices.clipIndex);
+
+					// Play success animation on target clip before clearing
+					if (this.lumaTargetClipElement) {
+						const targetElement = this.lumaTargetClipElement;
+						targetElement.classList.remove("ss-clip-luma-target");
+						targetElement.classList.add("ss-clip-luma-attached");
+						setTimeout(() => targetElement.classList.remove("ss-clip-luma-attached"), 600);
+						this.lumaTargetClipElement = null;
+					}
+					this.hideLumaConnectionLine();
+
+					// Trigger re-render
+					this.config.onRequestRender?.();
+
+					// Cleanup
+					ghost.remove();
+					this.hideSnapLine();
+					this.hideDropZone();
+					this.hideDragTimeTooltip();
+					this.state = { type: "idle" };
 					return;
 				}
-
-				// Move clip to target track first (if different)
-				if (dragTarget.trackIndex !== originalTrack) {
-					const moveCmd = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(targetContentClip.config.start));
-					this.edit.executeEditCommand(moveCmd);
-				}
-
-				const imageIndices = this.edit.findClipIndices(imagePlayer);
-				const contentIndices = this.edit.findClipIndices(contentPlayer);
-
-				if (!imageIndices || !contentIndices) {
-					console.error("Failed to find clips after move - players may have been disposed");
-					return;
-				}
-
-				this.edit.transformToLuma(imageIndices.trackIndex, imageIndices.clipIndex);
-
-				this.edit.syncLumaToContent(contentIndices.trackIndex, contentIndices.clipIndex, imageIndices.trackIndex, imageIndices.clipIndex);
-
-				// Play success animation on target clip before clearing
-				if (this.lumaTargetClipElement) {
-					const targetElement = this.lumaTargetClipElement;
-					targetElement.classList.remove("ss-clip-luma-target");
-					targetElement.classList.add("ss-clip-luma-attached");
-					setTimeout(() => targetElement.classList.remove("ss-clip-luma-attached"), 600);
-					this.lumaTargetClipElement = null;
-				}
-				this.hideLumaConnectionLine();
-
-				// Trigger re-render
-				this.config.onRequestRender?.();
-
-				// Cleanup
-				ghost.remove();
-				this.hideSnapLine();
-				this.hideDropZone();
-				this.hideDragTimeTooltip();
-				this.state = { type: "idle" };
-				return;
 			}
 
 			// Luma handling
 			if (draggedAssetType === "luma") {
 				// Only attach if Alt key was held (deliberate action required)
 				if (targetContentClip && attachMaskMode) {
-					// Luma dropped on content clip → re-attach to new target
-					newTime = targetContentClip.config.start;
+					const existingLumaRef = this.stateManager.findAttachedLuma(targetContentClip.trackIndex, targetContentClip.clipIndex);
+					const isDraggingSameLuma = existingLumaRef?.clipIndex === clipRef.clipIndex && existingLumaRef?.trackIndex === clipRef.trackIndex;
 
-					if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
-						const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
-						this.edit.executeEditCommand(command);
+					if (existingLumaRef && !isDraggingSameLuma) {
+						console.warn("Cannot attach luma: target clip already has a luma mask");
+					} else {
+						// Luma dropped on content clip → re-attach to new target
+						newTime = targetContentClip.config.start;
+
+						if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
+							const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
+							this.edit.executeEditCommand(command);
+						}
+
+						this.edit.syncLumaToContent(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
+
+						ghost.remove();
+						this.hideSnapLine();
+						this.hideDropZone();
+						this.hideDragTimeTooltip();
+						this.clearLumaDragFeedback();
+						this.state = { type: "idle" };
+						return;
 					}
-
-					this.edit.syncLumaToContent(targetContentClip.trackIndex, targetContentClip.clipIndex, dragTarget.trackIndex, clipRef.clipIndex);
-
-					ghost.remove();
-					this.hideSnapLine();
-					this.hideDropZone();
-					this.hideDragTimeTooltip();
-					this.clearLumaDragFeedback();
-					this.state = { type: "idle" };
-					return;
 				}
 
 				// Luma dropped on empty space → transform back and place at drop location
