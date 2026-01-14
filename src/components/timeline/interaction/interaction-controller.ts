@@ -55,7 +55,7 @@ type InteractionState =
 			collisionResult: CollisionResult; // Current collision resolution
 			altKeyHeld: boolean; // Alt/Option key held for mask attachment mode
 	  }
-	| { type: "resizing"; clipRef: ClipRef; edge: "left" | "right"; originalStart: number; originalLength: number };
+	| { type: "resizing"; clipRef: ClipRef; edge: "left" | "right"; originalStart: number; originalLength: number; clipElement: HTMLElement };
 
 /** Resolved config type - numeric properties required, callback optional */
 type ResolvedConfig = Required<Omit<TimelineInteractionConfig, "onRequestRender">> & Pick<TimelineInteractionConfig, "onRequestRender">;
@@ -83,6 +83,8 @@ export class InteractionController {
 	// Luma drag state
 	private lumaTargetClipElement: HTMLElement | null = null;
 	private lumaConnectionLine: HTMLElement | null = null;
+
+	private trackYCache: number[] | null = null;
 
 	// Bound handlers for cleanup
 	private readonly handlePointerDown: (e: PointerEvent) => void;
@@ -154,12 +156,21 @@ export class InteractionController {
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) return;
 
+		// Cache clip element to avoid querySelector on every mouse move
+		const clipElement = this.tracksContainer.querySelector(
+			`[data-track-index="${clipRef.trackIndex}"][data-clip-index="${clipRef.clipIndex}"]`
+		) as HTMLElement | null;
+		if (!clipElement) return;
+
+		this.trackYCache = null;
+
 		this.state = {
 			type: "resizing",
 			clipRef,
 			edge,
 			originalStart: clip.config.start,
-			originalLength: clip.config.length
+			originalLength: clip.config.length,
+			clipElement
 		};
 
 		this.buildSnapPoints(clipRef);
@@ -197,6 +208,8 @@ export class InteractionController {
 
 	private transitionToDragging(e: PointerEvent): void {
 		if (this.state.type !== "pending") return;
+
+		this.trackYCache = null;
 
 		const { clipRef, originalTime } = this.state;
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
@@ -413,7 +426,7 @@ export class InteractionController {
 		}
 
 		// Calculate new dimensions based on edge
-		const { clipRef, edge, originalStart, originalLength } = this.state;
+		const { edge, originalStart, originalLength, clipElement } = this.state;
 
 		if (edge === "left") {
 			// Resize from left edge (keep end fixed, change start and length)
@@ -421,24 +434,14 @@ export class InteractionController {
 			const newStart = Math.max(0, Math.min(time, originalEnd - 0.1));
 			const newLength = originalEnd - newStart;
 
-			const clipEl = this.tracksContainer.querySelector(
-				`[data-track-index="${clipRef.trackIndex}"][data-clip-index="${clipRef.clipIndex}"]`
-			) as HTMLElement;
-			if (clipEl) {
-				clipEl.style.setProperty("--clip-start", String(newStart));
-				clipEl.style.setProperty("--clip-length", String(newLength));
-			}
+			clipElement.style.setProperty("--clip-start", String(newStart));
+			clipElement.style.setProperty("--clip-length", String(newLength));
 			this.showDragTimeTooltip(newStart, e.clientX - rect.left, e.clientY - rect.top);
 		} else {
 			// Resize from right edge
 			const newLength = Math.max(0.1, time - originalStart);
 
-			const clipEl = this.tracksContainer.querySelector(
-				`[data-track-index="${clipRef.trackIndex}"][data-clip-index="${clipRef.clipIndex}"]`
-			) as HTMLElement;
-			if (clipEl) {
-				clipEl.style.setProperty("--clip-length", String(newLength));
-			}
+			clipElement.style.setProperty("--clip-length", String(newLength));
 			this.showDragTimeTooltip(originalStart + newLength, e.clientX - rect.left, e.clientY - rect.top);
 		}
 	}
@@ -577,14 +580,8 @@ export class InteractionController {
 			const command = new CreateTrackAndMoveClipCommand(dragTarget.insertionIndex, originalTrack, clipRef.clipIndex, sec(newTime));
 			this.edit.executeEditCommand(command);
 
-			// Move attached luma - get fresh indices AFTER content move
-			if (lumaPlayer) {
-				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
-				if (lumaIndices) {
-					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.insertionIndex, sec(newTime));
-					this.edit.executeEditCommand(lumaCommand);
-				}
-			}
+			// Move attached luma to new track
+			this.moveLumaWithContent(lumaPlayer, dragTarget.insertionIndex, newTime);
 		} else if (collisionResult.pushOffset > 0) {
 			// Need to push clips forward - use MoveClipWithPushCommand
 			const command = new MoveClipWithPushCommand(
@@ -596,27 +593,15 @@ export class InteractionController {
 			);
 			this.edit.executeEditCommand(command);
 
-			// Move attached luma - get fresh indices AFTER content move
-			if (lumaPlayer) {
-				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
-				if (lumaIndices) {
-					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, sec(newTime));
-					this.edit.executeEditCommand(lumaCommand);
-				}
-			}
+			// Move attached luma to target track
+			this.moveLumaWithContent(lumaPlayer, dragTarget.trackIndex, newTime);
 		} else if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
 			// Simple move without push
 			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
 			this.edit.executeEditCommand(command);
 
-			// Move attached luma - get fresh indices AFTER content move
-			if (lumaPlayer) {
-				const lumaIndices = this.edit.findClipIndices(lumaPlayer);
-				if (lumaIndices) {
-					const lumaCommand = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, dragTarget.trackIndex, sec(newTime));
-					this.edit.executeEditCommand(lumaCommand);
-				}
-			}
+			// Move attached luma to target track
+			this.moveLumaWithContent(lumaPlayer, dragTarget.trackIndex, newTime);
 		}
 
 		// Cleanup
@@ -713,6 +698,22 @@ export class InteractionController {
 		newStartTime: 0,
 		pushOffset: 0
 	};
+
+	private moveLumaWithContent(lumaPlayer: ReturnType<TimelineStateManager["getAttachedLumaPlayer"]>, targetTrack: number, newTime: number): void {
+		if (!lumaPlayer) return;
+		const lumaIndices = this.edit.findClipIndices(lumaPlayer);
+		if (!lumaIndices) return;
+		const cmd = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, targetTrack, sec(newTime));
+		this.edit.executeEditCommand(cmd);
+	}
+
+	private getOrCreateFeedbackElement(existing: HTMLElement | null, className: string): HTMLElement {
+		if (existing) return existing;
+		const el = document.createElement("div");
+		el.className = className;
+		this.feedbackLayer.appendChild(el);
+		return el;
+	}
 
 	/** Get sorted clips on a track, excluding the dragged clip */
 	private getTrackClips(trackIndex: number, excludeClip: ClipRef): ClipState[] {
@@ -865,12 +866,7 @@ export class InteractionController {
 	}
 
 	private showSnapLine(time: number): void {
-		if (!this.snapLine) {
-			this.snapLine = document.createElement("div");
-			this.snapLine.className = "ss-snap-line";
-			this.feedbackLayer.appendChild(this.snapLine);
-		}
-
+		this.snapLine = this.getOrCreateFeedbackElement(this.snapLine, "ss-snap-line");
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 		const x = time * pps - this.tracksContainer.scrollLeft;
 		this.snapLine.style.left = `${x}px`;
@@ -884,22 +880,14 @@ export class InteractionController {
 	}
 
 	private showDropZone(insertionIndex: number): void {
-		if (!this.dropZone) {
-			this.dropZone = document.createElement("div");
-			this.dropZone.className = "ss-drop-zone";
-			this.feedbackLayer.appendChild(this.dropZone);
-		}
-
+		this.dropZone = this.getOrCreateFeedbackElement(this.dropZone, "ss-drop-zone");
 		const y = this.getTrackYPosition(insertionIndex);
 		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
 		this.dropZone.style.top = `${y - 2 + tracksOffset}px`;
 		this.dropZone.style.display = "block";
 	}
 
-	/** Get the Y offset of tracks container relative to feedback layer's parent */
 	private getTracksOffsetInFeedbackLayer(): number {
-		// Feedback layer and tracks container are siblings inside rulerTracksWrapper
-		// The ruler sits above the tracks, so we need this offset for correct positioning
 		const feedbackParent = this.feedbackLayer.parentElement;
 		if (!feedbackParent) return 0;
 
@@ -923,12 +911,7 @@ export class InteractionController {
 	}
 
 	private showDragTimeTooltip(time: number, x: number, y: number): void {
-		if (!this.dragTimeTooltip) {
-			this.dragTimeTooltip = document.createElement("div");
-			this.dragTimeTooltip.className = "ss-drag-time-tooltip";
-			this.feedbackLayer.appendChild(this.dragTimeTooltip);
-		}
-
+		this.dragTimeTooltip = this.getOrCreateFeedbackElement(this.dragTimeTooltip, "ss-drag-time-tooltip");
 		this.dragTimeTooltip.textContent = this.formatDragTime(time);
 		this.dragTimeTooltip.style.left = `${x}px`;
 		this.dragTimeTooltip.style.top = `${y - 28}px`;
@@ -984,12 +967,7 @@ export class InteractionController {
 
 	/** Show magnetic connection line between luma ghost and target clip */
 	private showLumaConnectionLine(targetClip: ClipState, trackIndex: number, tracksOffset: number): void {
-		if (!this.lumaConnectionLine) {
-			this.lumaConnectionLine = document.createElement("div");
-			this.lumaConnectionLine.className = "ss-luma-connection-line";
-			this.feedbackLayer.appendChild(this.lumaConnectionLine);
-		}
-
+		this.lumaConnectionLine = this.getOrCreateFeedbackElement(this.lumaConnectionLine, "ss-luma-connection-line");
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 		const tracks = this.stateManager.getTracks();
 		const track = tracks[trackIndex];
@@ -1061,14 +1039,22 @@ export class InteractionController {
 		return { type: "track", trackIndex: Math.max(0, tracks.length - 1) };
 	}
 
-	/** Get Y position of a track by index (accounting for variable heights) */
-	private getTrackYPosition(trackIndex: number): number {
+	private buildTrackYCache(): number[] {
 		const tracks = this.stateManager.getTracks();
+		const cache: number[] = [];
 		let y = 0;
-		for (let i = 0; i < trackIndex && i < tracks.length; i += 1) {
-			y += getTrackHeight(tracks[i].primaryAssetType);
+		for (const track of tracks) {
+			cache.push(y);
+			y += getTrackHeight(track.primaryAssetType);
 		}
-		return y;
+		return cache;
+	}
+
+	private getTrackYPosition(trackIndex: number): number {
+		if (!this.trackYCache) {
+			this.trackYCache = this.buildTrackYCache();
+		}
+		return this.trackYCache[trackIndex] ?? 0;
 	}
 
 	// ========== Visual State Queries ==========
