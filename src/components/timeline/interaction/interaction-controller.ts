@@ -9,32 +9,29 @@ import { getTrackHeight } from "@timeline/timeline.types";
 
 import { TimelineStateManager } from "../core/state/timeline-state";
 
+import {
+	type ClipRef,
+	type CollisionResult,
+	type DragTarget,
+	type SnapPoint,
+	buildSnapPoints,
+	buildTrackYPositions,
+	exceedsDragThreshold,
+	findContentClipAtPosition,
+	findNearestSnapPoint,
+	formatDragTime,
+	getDragTargetAtY,
+	getTrackYPosition,
+	pixelsToSeconds,
+	resolveClipCollision,
+	secondsToPixels
+} from "./interaction-calculations";
+
 /** Point coordinates */
 interface Point {
 	x: number;
 	y: number;
 }
-
-/** Clip reference */
-interface ClipRef {
-	trackIndex: number;
-	clipIndex: number;
-}
-
-/** Snap point for alignment */
-interface SnapPoint {
-	time: number;
-	type: "clip-start" | "clip-end" | "playhead";
-}
-
-/** Collision resolution result */
-interface CollisionResult {
-	newStartTime: number;
-	pushOffset: number;
-}
-
-/** Drag target - either an existing track or an insertion point between tracks */
-type DragTarget = { type: "track"; trackIndex: number } | { type: "insert"; insertionIndex: number };
 
 /** Interaction state machine */
 type InteractionState =
@@ -173,7 +170,7 @@ export class InteractionController {
 			clipElement
 		};
 
-		this.buildSnapPoints(clipRef);
+		this.buildSnapPointsForClip(clipRef);
 
 		e.preventDefault();
 	}
@@ -199,9 +196,8 @@ export class InteractionController {
 
 		const dx = e.clientX - this.state.startPoint.x;
 		const dy = e.clientY - this.state.startPoint.y;
-		const distance = Math.sqrt(dx * dx + dy * dy);
 
-		if (distance >= this.config.dragThreshold) {
+		if (exceedsDragThreshold(dx, dy, this.config.dragThreshold)) {
 			this.transitionToDragging(e);
 		}
 	}
@@ -277,9 +273,9 @@ export class InteractionController {
 		// Position ghost at current clip position initially
 		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
 		ghost.style.left = `${clip.config.start * pps}px`;
-		ghost.style.top = `${this.getTrackYPosition(clipRef.trackIndex) + 4 + tracksOffset}px`;
+		ghost.style.top = `${this.getTrackYPositionCached(clipRef.trackIndex) + 4 + tracksOffset}px`;
 
-		this.buildSnapPoints(clipRef);
+		this.buildSnapPointsForClip(clipRef);
 	}
 
 	private createDragGhost(clip: ClipState, trackIndex: number): HTMLElement {
@@ -324,7 +320,7 @@ export class InteractionController {
 		let clipTime = Math.max(0, clipX / pps);
 
 		// Determine drag target based on mouse Y
-		const dragTarget = this.getDragTargetAtY(mouseY);
+		const dragTarget = this.getDragTargetAtYPosition(mouseY);
 		this.state.dragTarget = dragTarget;
 
 		// Apply snapping to clip time
@@ -350,7 +346,7 @@ export class InteractionController {
 				this.state.altKeyHeld = e.altKey;
 
 				// Find target content clip (excluding self for image/video)
-				const targetClip = this.findContentClipAtPosition(dragTarget.trackIndex, clipTime, this.state.clipRef);
+				const targetClip = this.findContentClipAtPositionOnTrack(dragTarget.trackIndex, clipTime, this.state.clipRef);
 
 				// Alt key enables mask attachment mode
 				if (targetClip && e.altKey) {
@@ -365,16 +361,20 @@ export class InteractionController {
 						if (draggedAssetType === "luma") {
 							this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 						} else {
-							const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
+							const collisionResult = this.resolveClipCollisionOnTrack(
+								dragTarget.trackIndex,
+								clipTime,
+								this.state.draggedClipLength,
+								this.state.clipRef
+							);
 							clipTime = collisionResult.newStartTime;
 							this.state.collisionResult = collisionResult;
 						}
 					} else {
 						// Mask mode: show UI and snap to target
-						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 						this.updateLumaTargetHighlight(targetClip, dragTarget.trackIndex, tracksOffset);
 						clipTime = targetClip.config.start;
-						this.state.collisionResult.newStartTime = clipTime;
+						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 					}
 				} else {
 					// Normal mode: clear feedback and use collision detection
@@ -384,13 +384,18 @@ export class InteractionController {
 						this.state.collisionResult = { newStartTime: clipTime, pushOffset: 0 };
 					} else {
 						// Image/video use normal collision detection
-						const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
+						const collisionResult = this.resolveClipCollisionOnTrack(
+							dragTarget.trackIndex,
+							clipTime,
+							this.state.draggedClipLength,
+							this.state.clipRef
+						);
 						clipTime = collisionResult.newStartTime;
 						this.state.collisionResult = collisionResult;
 					}
 				}
 			} else {
-				const collisionResult = this.resolveClipCollision(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
+				const collisionResult = this.resolveClipCollisionOnTrack(dragTarget.trackIndex, clipTime, this.state.draggedClipLength, this.state.clipRef);
 				clipTime = collisionResult.newStartTime;
 				this.state.collisionResult = collisionResult;
 			}
@@ -406,7 +411,7 @@ export class InteractionController {
 			// Show ghost for track targets
 			this.state.ghost.style.display = "block";
 			const tracks = this.stateManager.getTracks();
-			const targetTrackY = this.getTrackYPosition(dragTarget.trackIndex) + 4; // +4 for clip padding
+			const targetTrackY = this.getTrackYPositionCached(dragTarget.trackIndex) + 4; // +4 for clip padding
 			const targetTrack = tracks[dragTarget.trackIndex];
 			const targetHeight = getTrackHeight(targetTrack?.primaryAssetType ?? "default") - 8;
 
@@ -506,7 +511,7 @@ export class InteractionController {
 		const attachMaskMode = altKeyHeld;
 
 		if (dragTarget.type === "track") {
-			const targetContentClip = this.findContentClipAtPosition(dragTarget.trackIndex, newTime, clipRef);
+			const targetContentClip = this.findContentClipAtPositionOnTrack(dragTarget.trackIndex, newTime, clipRef);
 
 			// Image/video dropped on a content clip → transform to luma and attach (only if Alt held)
 			if ((draggedAssetType === "image" || draggedAssetType === "video") && targetContentClip && attachMaskMode) {
@@ -721,12 +726,6 @@ export class InteractionController {
 		this.state = { type: "idle" };
 	}
 
-	/** Default result when no collision detected */
-	private static readonly NO_COLLISION: CollisionResult = {
-		newStartTime: 0,
-		pushOffset: 0
-	};
-
 	private moveLumaWithContent(lumaPlayer: ReturnType<TimelineStateManager["getAttachedLumaPlayer"]>, targetTrack: number, newTime: number): void {
 		if (!lumaPlayer) return;
 		const lumaIndices = this.edit.findClipIndices(lumaPlayer);
@@ -743,154 +742,53 @@ export class InteractionController {
 		return el;
 	}
 
-	/** Get sorted clips on a track, excluding the dragged clip */
-	private getTrackClips(trackIndex: number, excludeClip: ClipRef): ClipState[] {
+	/** Resolve clip collision based on clip boundaries (delegates to pure function) */
+	private resolveClipCollisionOnTrack(trackIndex: number, desiredStart: number, clipLength: number, excludeClip: ClipRef): CollisionResult {
 		const track = this.stateManager.getTracks()[trackIndex];
-		if (!track) return [];
+		if (!track) {
+			return { newStartTime: desiredStart, pushOffset: 0 };
+		}
 
-		return track.clips
-			.filter(c => !(c.trackIndex === excludeClip.trackIndex && c.clipIndex === excludeClip.clipIndex))
-			.sort((a, b) => a.config.start - b.config.start);
+		return resolveClipCollision({
+			track,
+			desiredStart,
+			clipLength,
+			excludeClip
+		});
 	}
 
-	/** Find which clip (if any) the dragged clip overlaps */
-	private findOverlappingClip(clips: ClipState[], desiredStart: number, clipLength: number): { clip: ClipState; index: number } | null {
-		const desiredEnd = desiredStart + clipLength;
-		for (let i = 0; i < clips.length; i += 1) {
-			const clip = clips[i];
-			const clipStart = clip.config.start;
-			const clipEnd = clipStart + clip.config.length;
-			if (desiredStart < clipEnd && desiredEnd > clipStart) {
-				return { clip, index: i };
-			}
-		}
-		return null;
-	}
-
-	/** Resolve snap position when dragged clip overlaps another (uses clip centers for direction) */
-	private resolveOverlapSnap(
-		targetClip: ClipState,
-		targetIndex: number,
-		desiredStart: number,
-		clipLength: number,
-		clips: ClipState[]
-	): CollisionResult {
-		const targetStart = targetClip.config.start;
-		const targetEnd = targetStart + targetClip.config.length;
-
-		// Determine snap direction based on dragged clip center vs target clip center
-		const draggedCenter = desiredStart + clipLength / 2;
-		const targetCenter = targetStart + targetClip.config.length / 2;
-		const snapRight = draggedCenter >= targetCenter;
-
-		if (snapRight) {
-			// Snap to RIGHT of target clip
-			const newStartTime = targetEnd;
-			const newEndTime = newStartTime + clipLength;
-			const nextClip = clips[targetIndex + 1];
-
-			if (nextClip && newEndTime > nextClip.config.start) {
-				return { newStartTime, pushOffset: newEndTime - nextClip.config.start };
-			}
-			return { newStartTime, pushOffset: 0 };
-		}
-
-		// Snap to LEFT of target clip
-		const prevClipEnd = targetIndex > 0 ? clips[targetIndex - 1].config.start + clips[targetIndex - 1].config.length : 0;
-		const availableSpace = targetStart - prevClipEnd;
-
-		if (availableSpace >= clipLength) {
-			return { newStartTime: targetStart - clipLength, pushOffset: 0 };
-		}
-
-		// No space on left - push target clip forward
-		const newStartTime = prevClipEnd;
-		return { newStartTime, pushOffset: newStartTime + clipLength - targetStart };
-	}
-
-	/** Resolve clip collision based on clip boundaries */
-	private resolveClipCollision(trackIndex: number, desiredStart: number, clipLength: number, excludeClip: ClipRef): CollisionResult {
-		const clips = this.getTrackClips(trackIndex, excludeClip);
-		if (clips.length === 0) {
-			return { ...InteractionController.NO_COLLISION, newStartTime: desiredStart };
-		}
-
-		const overlap = this.findOverlappingClip(clips, desiredStart, clipLength);
-		if (overlap) {
-			// Skip collision for luma assets - they should be overlayable
-			if (overlap.clip.config.asset?.type === "luma") {
-				return { newStartTime: desiredStart, pushOffset: 0 };
-			}
-			return this.resolveOverlapSnap(overlap.clip, overlap.index, desiredStart, clipLength, clips);
-		}
-
-		return { newStartTime: desiredStart, pushOffset: 0 };
-	}
-
-	/** Find a non-luma content clip at the given position on a track */
-	private findContentClipAtPosition(trackIndex: number, time: number, excludeClipRef?: ClipRef): ClipState | null {
+	/** Find a non-luma content clip at the given position on a track (delegates to pure function) */
+	private findContentClipAtPositionOnTrack(trackIndex: number, time: number, excludeClipRef?: ClipRef): ClipState | null {
 		const track = this.stateManager.getTracks()[trackIndex];
 		if (!track) return null;
 
-		for (const clip of track.clips) {
-			// Skip excluded clip (can't attach to self)
-			const isExcluded = excludeClipRef && clip.trackIndex === excludeClipRef.trackIndex && clip.clipIndex === excludeClipRef.clipIndex;
-
-			// Only consider non-luma content clips that aren't excluded
-			if (!isExcluded && clip.config.asset?.type !== "luma") {
-				const clipStart = clip.config.start;
-				const clipEnd = clipStart + clip.config.length;
-
-				// Check if time falls within this clip
-				if (time >= clipStart && time < clipEnd) {
-					return clip;
-				}
-			}
-		}
-		return null;
+		return findContentClipAtPosition({
+			track,
+			time,
+			excludeClip: excludeClipRef
+		});
 	}
 
-	private buildSnapPoints(excludeClip: ClipRef): void {
-		this.snapPoints = [];
-
-		// Add playhead position
+	private buildSnapPointsForClip(excludeClip: ClipRef): void {
 		const playback = this.stateManager.getPlayback();
-		this.snapPoints.push({
-			time: playback.time / 1000,
-			type: "playhead"
-		});
-
-		// Add clip edges
 		const tracks = this.stateManager.getTracks();
-		for (const track of tracks) {
-			for (const clip of track.clips) {
-				// Skip the clip being dragged/resized
-				const isExcluded = clip.trackIndex === excludeClip.trackIndex && clip.clipIndex === excludeClip.clipIndex;
-				if (!isExcluded) {
-					this.snapPoints.push({
-						time: clip.config.start,
-						type: "clip-start"
-					});
-					this.snapPoints.push({
-						time: clip.config.start + clip.config.length,
-						type: "clip-end"
-					});
-				}
-			}
-		}
+
+		this.snapPoints = buildSnapPoints({
+			tracks,
+			playheadTimeMs: playback.time,
+			excludeClip
+		});
 	}
 
 	private applySnap(time: number): number | null {
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
-		const threshold = this.config.snapThreshold / pps; // Convert pixels to seconds
 
-		for (const point of this.snapPoints) {
-			if (Math.abs(time - point.time) <= threshold) {
-				return point.time;
-			}
-		}
-
-		return null;
+		return findNearestSnapPoint({
+			time,
+			snapPoints: this.snapPoints,
+			snapThresholdPx: this.config.snapThreshold,
+			pixelsPerSecond: pps
+		});
 	}
 
 	private showSnapLine(time: number): void {
@@ -909,7 +807,7 @@ export class InteractionController {
 
 	private showDropZone(insertionIndex: number): void {
 		this.dropZone = this.getOrCreateFeedbackElement(this.dropZone, "ss-drop-zone");
-		const y = this.getTrackYPosition(insertionIndex);
+		const y = this.getTrackYPositionCached(insertionIndex);
 		const tracksOffset = this.getTracksOffsetInFeedbackLayer();
 		this.dropZone.style.top = `${y - 2 + tracksOffset}px`;
 		this.dropZone.style.display = "block";
@@ -930,17 +828,9 @@ export class InteractionController {
 		}
 	}
 
-	/** Format time for drag tooltip display (MM:SS.T) */
-	private formatDragTime(seconds: number): string {
-		const mins = Math.floor(seconds / 60);
-		const secs = Math.floor(seconds % 60);
-		const tenths = Math.floor((seconds % 1) * 10);
-		return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${tenths}`;
-	}
-
 	private showDragTimeTooltip(time: number, x: number, y: number): void {
 		this.dragTimeTooltip = this.getOrCreateFeedbackElement(this.dragTimeTooltip, "ss-drag-time-tooltip");
-		this.dragTimeTooltip.textContent = this.formatDragTime(time);
+		this.dragTimeTooltip.textContent = formatDragTime(time);
 		this.dragTimeTooltip.style.left = `${x}px`;
 		this.dragTimeTooltip.style.top = `${y - 28}px`;
 		this.dragTimeTooltip.style.display = "block";
@@ -999,7 +889,7 @@ export class InteractionController {
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 		const tracks = this.stateManager.getTracks();
 		const track = tracks[trackIndex];
-		const trackY = this.getTrackYPosition(trackIndex);
+		const trackY = this.getTrackYPositionCached(trackIndex);
 		const trackHeight = getTrackHeight(track?.primaryAssetType ?? "default");
 
 		// Position connection indicator at target clip's left edge
@@ -1031,58 +921,23 @@ export class InteractionController {
 		this.hideLumaConnectionLine();
 	}
 
-	/** Get drag target at Y position - either an existing track or an insertion point between tracks */
-	private getDragTargetAtY(y: number): DragTarget {
+	/** Get drag target at Y position (delegates to pure function) */
+	private getDragTargetAtYPosition(y: number): DragTarget {
 		const tracks = this.stateManager.getTracks();
-		const insertZoneSize = 12; // pixels at track edges for insert detection
-		let currentY = 0;
-
-		// Top edge - insert above first track
-		if (y < insertZoneSize / 2) {
-			return { type: "insert", insertionIndex: 0 };
-		}
-
-		for (let i = 0; i < tracks.length; i += 1) {
-			const height = getTrackHeight(tracks[i].primaryAssetType);
-
-			// Top edge insert zone (between this track and previous)
-			if (i > 0 && y >= currentY - insertZoneSize / 2 && y < currentY + insertZoneSize / 2) {
-				return { type: "insert", insertionIndex: i };
-			}
-
-			// Inside track (not in edge zones)
-			if (y >= currentY + insertZoneSize / 2 && y < currentY + height - insertZoneSize / 2) {
-				return { type: "track", trackIndex: i };
-			}
-
-			currentY += height;
-		}
-
-		// Bottom edge - insert after last track
-		if (y >= currentY - insertZoneSize / 2) {
-			return { type: "insert", insertionIndex: tracks.length };
-		}
-
-		// Default to last track
-		return { type: "track", trackIndex: Math.max(0, tracks.length - 1) };
+		return getDragTargetAtY(y, tracks);
 	}
 
-	private buildTrackYCache(): number[] {
-		const tracks = this.stateManager.getTracks();
-		const cache: number[] = [];
-		let y = 0;
-		for (const track of tracks) {
-			cache.push(y);
-			y += getTrackHeight(track.primaryAssetType);
-		}
-		return cache;
-	}
-
-	private getTrackYPosition(trackIndex: number): number {
+	private ensureTrackYCache(): number[] {
 		if (!this.trackYCache) {
-			this.trackYCache = this.buildTrackYCache();
+			const tracks = this.stateManager.getTracks();
+			this.trackYCache = buildTrackYPositions(tracks);
 		}
-		return this.trackYCache[trackIndex] ?? 0;
+		return this.trackYCache;
+	}
+
+	private getTrackYPositionCached(trackIndex: number): number {
+		const cache = this.ensureTrackYCache();
+		return getTrackYPosition(trackIndex, cache);
 	}
 
 	// ========== Visual State Queries ==========
