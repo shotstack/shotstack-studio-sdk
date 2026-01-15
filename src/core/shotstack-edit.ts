@@ -268,6 +268,11 @@ export class ShotstackEdit extends Edit {
 				if (indices) {
 					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
 					if (templateClip) {
+						// Only validate URLs for asset types that use URL sources (not HTML/text)
+						const assetType = (templateClip.asset as { type?: string })?.type;
+						const isUrlBasedAsset = assetType === "image" || assetType === "video" || assetType === "audio";
+						if (!isUrlBasedAsset) continue;
+
 						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
 						if (usageInfo.used && usageInfo.isSrcField) {
 							return true;
