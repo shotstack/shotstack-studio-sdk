@@ -15,16 +15,19 @@ export class MoveClipCommand implements EditCommand {
 	private originalTimingIntent?: TimingIntent;
 	private deleteTrackCommand?: DeleteTrackCommand;
 	private sourceTrackWasDeleted = false;
+	/** Effective destination track index, adjusted if source track was deleted */
+	private effectiveToTrackIndex: number;
 
 	constructor(
-		private fromTrackIndex: number,
-		private fromClipIndex: number,
-		private toTrackIndex: number,
-		private newStart: Seconds
+		private readonly fromTrackIndex: number,
+		private readonly fromClipIndex: number,
+		private readonly toTrackIndex: number,
+		private readonly newStart: Seconds
 	) {
 		this.originalTrackIndex = fromTrackIndex;
 		this.originalToTrackIndex = toTrackIndex;
 		this.originalClipIndex = fromClipIndex;
+		this.effectiveToTrackIndex = toTrackIndex;
 	}
 
 	execute(context?: CommandContext): void {
@@ -35,14 +38,12 @@ export class MoveClipCommand implements EditCommand {
 		const document = context.getDocument();
 
 		if (this.fromTrackIndex < 0 || this.fromTrackIndex >= tracks.length) {
-			console.warn(`Invalid source track index: ${this.fromTrackIndex}`);
-			return;
+			throw new Error(`MoveClipCommand.execute: invalid source track index ${this.fromTrackIndex}`);
 		}
 
 		const fromTrack = tracks[this.fromTrackIndex];
 		if (this.fromClipIndex < 0 || this.fromClipIndex >= fromTrack.length) {
-			console.warn(`Invalid clip index: ${this.fromClipIndex}`);
-			return;
+			throw new Error(`MoveClipCommand.execute: invalid clip index ${this.fromClipIndex}`);
 		}
 
 		// Get the clip to move
@@ -56,18 +57,17 @@ export class MoveClipCommand implements EditCommand {
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			// Validate destination track
 			if (this.toTrackIndex < 0 || this.toTrackIndex >= tracks.length) {
-				console.warn(`Invalid destination track index: ${this.toTrackIndex}`);
-				return;
+				throw new Error(`MoveClipCommand.execute: invalid destination track index ${this.toTrackIndex}`);
 			}
 
 			// Remove from current track
 			fromTrack.splice(this.fromClipIndex, 1);
 
 			// Update the player's layer
-			this.player.layer = this.toTrackIndex + 1;
+			this.player.layer = this.effectiveToTrackIndex + 1;
 
 			// Add to new track at the correct position (sorted by start time)
-			const toTrack = tracks[this.toTrackIndex];
+			const toTrack = tracks[this.effectiveToTrackIndex];
 
 			// Find the correct insertion point based on start time
 			let insertIndex = 0;
@@ -92,10 +92,10 @@ export class MoveClipCommand implements EditCommand {
 				this.deleteTrackCommand.execute(context);
 				this.sourceTrackWasDeleted = true;
 
-				// Adjust destination track index if it was after the deleted track
+				// Adjust effective destination track index if it was after the deleted track
 				if (this.toTrackIndex > this.fromTrackIndex) {
-					this.toTrackIndex -= 1;
-					this.player.layer = this.toTrackIndex + 1;
+					this.effectiveToTrackIndex = this.toTrackIndex - 1;
+					this.player.layer = this.effectiveToTrackIndex + 1;
 				}
 			}
 		} else {
@@ -146,24 +146,24 @@ export class MoveClipCommand implements EditCommand {
 					document.removeClip(sourceDocTrackIdx, this.fromClipIndex);
 				}
 				const exportableClip = this.player.getExportableClip();
-				document.addClip(this.toTrackIndex, exportableClip, this.originalClipIndex);
+				document.addClip(this.effectiveToTrackIndex, exportableClip, this.originalClipIndex);
 			} else {
 				// Same-track move: update at original position, then reorder to match player array
-				context.documentUpdateClip(this.toTrackIndex, this.fromClipIndex, {
+				context.documentUpdateClip(this.effectiveToTrackIndex, this.fromClipIndex, {
 					start: this.newStart
 				});
 				// Reorder document clip to match player array ordering
 				if (this.fromClipIndex !== this.originalClipIndex) {
-					const clip = document.removeClip(this.toTrackIndex, this.fromClipIndex);
+					const clip = document.removeClip(this.effectiveToTrackIndex, this.fromClipIndex);
 					if (clip) {
-						document.addClip(this.toTrackIndex, clip, this.originalClipIndex);
+						document.addClip(this.effectiveToTrackIndex, clip, this.originalClipIndex);
 					}
 				}
 			}
 		}
 
 		// Move the player container to the new track container
-		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
+		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.effectiveToTrackIndex);
 
 		// Reconfigure and redraw the player
 		this.player.reconfigureAfterRestore();
@@ -176,7 +176,7 @@ export class MoveClipCommand implements EditCommand {
 		if (this.fromTrackIndex !== this.toTrackIndex && !this.sourceTrackWasDeleted) {
 			// Force all clips in the affected tracks to redraw (skip if source was deleted)
 			const sourceTrack = tracks[this.fromTrackIndex];
-			const destTrack = tracks[this.toTrackIndex];
+			const destTrack = tracks[this.effectiveToTrackIndex];
 
 			[...sourceTrack, ...destTrack].forEach(clip => {
 				if (clip && clip !== this.player) {
@@ -185,7 +185,7 @@ export class MoveClipCommand implements EditCommand {
 			});
 		} else if (this.sourceTrackWasDeleted) {
 			// Only redraw destination track clips
-			const destTrack = tracks[this.toTrackIndex];
+			const destTrack = tracks[this.effectiveToTrackIndex];
 			destTrack?.forEach(clip => {
 				if (clip && clip !== this.player) {
 					clip.draw();
@@ -198,7 +198,7 @@ export class MoveClipCommand implements EditCommand {
 		if (this.fromTrackIndex !== this.toTrackIndex && !this.sourceTrackWasDeleted) {
 			context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex - 1);
 		}
-		context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex);
+		context.propagateTimingChanges(this.effectiveToTrackIndex, this.originalClipIndex);
 
 		// Emit events AFTER all changes complete to avoid partial rebuilds
 		context.emitEvent(EditEvent.ClipUpdated, {
@@ -209,7 +209,7 @@ export class MoveClipCommand implements EditCommand {
 			},
 			current: {
 				clip: this.player.clipConfiguration,
-				trackIndex: this.toTrackIndex,
+				trackIndex: this.effectiveToTrackIndex,
 				clipIndex: this.originalClipIndex
 			}
 		});
@@ -218,7 +218,7 @@ export class MoveClipCommand implements EditCommand {
 		context.setSelectedClip(this.player);
 		context.emitEvent(EditEvent.ClipSelected, {
 			clip: this.player.clipConfiguration,
-			trackIndex: this.toTrackIndex,
+			trackIndex: this.effectiveToTrackIndex,
 			clipIndex: this.originalClipIndex
 		});
 	}
@@ -232,10 +232,11 @@ export class MoveClipCommand implements EditCommand {
 			await this.deleteTrackCommand.undo(context);
 			this.sourceTrackWasDeleted = false;
 
-			// Re-adjust track indices that were modified during execute
-			if (this.toTrackIndex >= this.fromTrackIndex) {
-				this.toTrackIndex += 1;
-				this.player.layer = this.toTrackIndex + 1;
+			// Restore effective track index now that the deleted track is back
+			// The effectiveToTrackIndex needs to shift back up if it was adjusted
+			if (this.toTrackIndex > this.fromTrackIndex) {
+				this.effectiveToTrackIndex = this.toTrackIndex;
+				this.player.layer = this.effectiveToTrackIndex + 1;
 			}
 		}
 
@@ -244,7 +245,7 @@ export class MoveClipCommand implements EditCommand {
 		// If we moved tracks, move it back
 		if (this.fromTrackIndex !== this.toTrackIndex) {
 			// Remove from current track
-			const currentTrack = tracks[this.toTrackIndex];
+			const currentTrack = tracks[this.effectiveToTrackIndex];
 			const clipIndex = currentTrack.indexOf(this.player);
 			if (clipIndex !== -1) {
 				currentTrack.splice(clipIndex, 1);
@@ -285,10 +286,10 @@ export class MoveClipCommand implements EditCommand {
 		const document = context.getDocument();
 		if (document) {
 			if (this.fromTrackIndex !== this.toTrackIndex) {
-				const destTrack = tracks[this.toTrackIndex];
+				const destTrack = tracks[this.effectiveToTrackIndex];
 				const currentDocIdx = destTrack ? this.originalClipIndex : -1;
 				if (currentDocIdx >= 0) {
-					document.removeClip(this.toTrackIndex, currentDocIdx);
+					document.removeClip(this.effectiveToTrackIndex, currentDocIdx);
 				}
 				const exportableClip = this.player.getExportableClip();
 				document.addClip(this.fromTrackIndex, exportableClip, this.fromClipIndex);
@@ -300,7 +301,7 @@ export class MoveClipCommand implements EditCommand {
 		}
 
 		// Move the player container back to the original track container if needed
-		context.movePlayerToTrackContainer(this.player, this.toTrackIndex, this.fromTrackIndex);
+		context.movePlayerToTrackContainer(this.player, this.effectiveToTrackIndex, this.fromTrackIndex);
 
 		// Reconfigure and redraw the player
 		this.player.reconfigureAfterRestore();
@@ -310,7 +311,7 @@ export class MoveClipCommand implements EditCommand {
 
 		// Propagate timing changes on both tracks
 		if (this.fromTrackIndex !== this.toTrackIndex) {
-			context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex - 1);
+			context.propagateTimingChanges(this.effectiveToTrackIndex, this.originalClipIndex - 1);
 		}
 		context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex);
 
@@ -318,7 +319,7 @@ export class MoveClipCommand implements EditCommand {
 		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: {
 				clip: { ...this.player.clipConfiguration, start: this.newStart },
-				trackIndex: this.toTrackIndex,
+				trackIndex: this.effectiveToTrackIndex,
 				clipIndex: this.originalClipIndex
 			},
 			current: {
@@ -335,5 +336,13 @@ export class MoveClipCommand implements EditCommand {
 			trackIndex: this.fromTrackIndex,
 			clipIndex: this.fromClipIndex
 		});
+
+		// Reset effective track index for potential re-execute
+		this.effectiveToTrackIndex = this.toTrackIndex;
+	}
+
+	dispose(): void {
+		this.player = undefined;
+		this.deleteTrackCommand = undefined;
 	}
 }

@@ -17,6 +17,7 @@ export class TransformClipAssetCommand implements EditCommand {
 	private originalBindings: Map<string, MergeFieldBinding> = new Map();
 	private newPlayer: Player | null = null;
 	private loadCompleted = false;
+	private loadFailed = false;
 
 	constructor(
 		private trackIndex: number,
@@ -36,6 +37,7 @@ export class TransformClipAssetCommand implements EditCommand {
 		this.originalAssetType = ((this.originalConfig.asset as { type?: string })?.type as "image" | "video" | "luma") ?? null;
 		this.originalBindings = new Map(player.getMergeFieldBindings());
 		this.loadCompleted = false;
+		this.loadFailed = false;
 
 		// Build new config with transformed asset type (only works for src-based assets)
 		const originalAsset = this.originalConfig.asset as { src?: string };
@@ -101,12 +103,55 @@ export class TransformClipAssetCommand implements EditCommand {
 				}
 			})
 			.catch(error => {
-				console.error("Failed to load transformed clip:", error);
+				// Rollback state on load failure
+				this.loadFailed = true;
+				this.rollbackOnFailure(context);
+
+				// Emit failure event so UI can respond
+				context.emitEvent(EditEvent.ClipLoadFailed, {
+					trackIndex: this.trackIndex,
+					clipIndex: this.clipIndex,
+					error: error instanceof Error ? error.message : String(error),
+					assetType: this.targetAssetType
+				});
 			});
+	}
+
+	/**
+	 * Rollback state when async load fails.
+	 * Restores the original player to arrays and disposes the failed new player.
+	 */
+	private rollbackOnFailure(context: CommandContext): void {
+		if (!this.originalPlayer || !this.newPlayer) return;
+
+		// Restore original player to track array
+		const track = context.getTrack(this.trackIndex);
+		if (track && track[this.clipIndex] === this.newPlayer) {
+			track[this.clipIndex] = this.originalPlayer;
+		}
+
+		// Restore original player to global clips array
+		const clips = context.getClips();
+		const globalIndex = clips.indexOf(this.newPlayer);
+		if (globalIndex !== -1) {
+			clips[globalIndex] = this.originalPlayer;
+		}
+
+		// Re-add original player to container and redraw
+		context.addPlayerToContainer(this.trackIndex, this.originalPlayer);
+		this.originalPlayer.reconfigureAfterRestore();
+		this.originalPlayer.draw();
+
+		// Dispose the failed new player
+		context.queueDisposeClip(this.newPlayer);
+		this.newPlayer = null;
 	}
 
 	public undo(context: CommandContext): void {
 		if (!this.originalPlayer || !this.originalConfig) return;
+
+		// If load failed, rollback already happened - nothing to undo
+		if (this.loadFailed) return;
 
 		// Restore original player to arrays
 		const track = context.getTrack(this.trackIndex);
@@ -151,5 +196,17 @@ export class TransformClipAssetCommand implements EditCommand {
 	/** Check if the async load has completed */
 	public isLoadCompleted(): boolean {
 		return this.loadCompleted;
+	}
+
+	/** Check if the async load failed */
+	public isLoadFailed(): boolean {
+		return this.loadFailed;
+	}
+
+	public dispose(): void {
+		this.originalPlayer = null;
+		this.newPlayer = null;
+		this.originalConfig = null;
+		this.originalBindings.clear();
 	}
 }

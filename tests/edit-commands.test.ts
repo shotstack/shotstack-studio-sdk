@@ -22,6 +22,18 @@ jest.mock("pixi-filters", () => ({
 
 // Mock pixi.js to prevent WebGL initialization
 jest.mock("pixi.js", () => {
+	// ImageSource and VideoSource classes for instanceof checks - must be inside factory
+	class MockImageSource {
+		width = 100;
+		height = 100;
+	}
+
+	class MockVideoSource {
+		width = 100;
+		height = 100;
+		alphaMode = "premultiply-alpha";
+	}
+
 	const createMockContainer = (): Record<string, unknown> => {
 		const children: unknown[] = [];
 		return {
@@ -72,14 +84,26 @@ jest.mock("pixi.js", () => {
 		})),
 		Texture: { from: jest.fn() },
 		Assets: { load: jest.fn(), unload: jest.fn(), cache: { has: jest.fn().mockReturnValue(false) } },
-		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() }))
+		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() })),
+		ImageSource: MockImageSource,
+		VideoSource: MockVideoSource
 	};
 });
 
 // Mock AssetLoader
 jest.mock("@loaders/asset-loader", () => ({
 	AssetLoader: jest.fn().mockImplementation(() => ({
-		load: jest.fn().mockResolvedValue({}),
+		load: jest.fn().mockImplementation(() => {
+			// Get ImageSource from mocked pixi.js at runtime
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			const { ImageSource } = require("pixi.js");
+			return Promise.resolve({
+				source: new ImageSource(),
+				width: 100,
+				height: 100,
+				destroy: jest.fn()
+			});
+		}),
 		unload: jest.fn(),
 		getProgress: jest.fn().mockReturnValue(100),
 		incrementRef: jest.fn(),

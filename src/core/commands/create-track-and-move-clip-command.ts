@@ -17,10 +17,10 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 	private wasExecuted = false;
 
 	constructor(
-		private insertionIndex: number,
-		private fromTrackIndex: number,
-		private fromClipIndex: number,
-		private newStart: Seconds
+		private readonly insertionIndex: number,
+		private readonly fromTrackIndex: number,
+		private readonly fromClipIndex: number,
+		private readonly newStart: Seconds
 	) {
 		// Create the track at the insertion index
 		this.addTrackCommand = new AddTrackCommand(insertionIndex);
@@ -37,21 +37,29 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 	async execute(context?: CommandContext): Promise<void> {
 		if (!context) throw new Error("CreateTrackAndMoveClipCommand.execute: context is required");
 
+		let addTrackExecuted = false;
+
 		try {
 			// Execute both commands in sequence
 			this.addTrackCommand.execute(context);
+			addTrackExecuted = true;
+
 			this.moveClipCommand.execute(context);
 			this.wasExecuted = true;
-		} catch (error) {
-			// Clean up on error
-			if (this.wasExecuted) {
+		} catch (executeError) {
+			// Attempt partial rollback: only undo addTrack if it succeeded but moveClip failed
+			if (addTrackExecuted && !this.wasExecuted) {
 				try {
-					this.undo(context);
-				} catch {
-					// Ignore undo errors
+					this.addTrackCommand.undo(context);
+				} catch (undoError) {
+					// If rollback fails, throw a compound error with both failures
+					throw new Error(
+						`CreateTrackAndMoveClipCommand: execute failed (${executeError instanceof Error ? executeError.message : String(executeError)}) ` +
+							`and rollback also failed (${undoError instanceof Error ? undoError.message : String(undoError)}). State may be corrupted.`
+					);
 				}
 			}
-			throw error;
+			throw executeError;
 		}
 	}
 
@@ -67,5 +75,10 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		context.emitEvent(EditEvent.TrackRemoved, {
 			trackIndex: this.insertionIndex
 		});
+	}
+
+	dispose(): void {
+		this.addTrackCommand.dispose?.();
+		this.moveClipCommand.dispose?.();
 	}
 }
