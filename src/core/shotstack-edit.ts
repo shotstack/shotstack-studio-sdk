@@ -134,7 +134,7 @@ export class ShotstackEdit extends Edit {
 		originalValue?: string
 	): void {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player) return;
+		if (!player?.clipId) return;
 
 		// Get current value from player for undo
 		const currentValue = getNestedValue(player.clipConfiguration, propertyPath);
@@ -145,7 +145,7 @@ export class ShotstackEdit extends Edit {
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
 		const previousFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
-		const command = new SetMergeFieldCommand(player, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
+		const command = new SetMergeFieldCommand(player.clipId, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
 		this.executeCommand(command);
 	}
 
@@ -156,10 +156,16 @@ export class ShotstackEdit extends Edit {
 	 * @param clipIndex - Clip index within the track
 	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src")
 	 * @param restoreValue - The value to restore (original pre-merge-field value)
+	 * @returns Promise that resolves when the command completes
 	 */
-	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void {
+	public removeMergeField(
+		trackIndex: number,
+		clipIndex: number,
+		propertyPath: string,
+		restoreValue: string
+	): void | Promise<void> {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player) return;
+		if (!player?.clipId) return;
 
 		// Get current merge field name
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
@@ -169,7 +175,7 @@ export class ShotstackEdit extends Edit {
 		if (!currentFieldName) return; // No merge field to remove
 
 		const command = new SetMergeFieldCommand(
-			player,
+			player.clipId,
 			propertyPath,
 			null, // Removing merge field
 			currentFieldName,
@@ -178,7 +184,7 @@ export class ShotstackEdit extends Edit {
 			trackIndex,
 			clipIndex
 		);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/**
@@ -472,8 +478,16 @@ export class ShotstackEdit extends Edit {
 		if (!player) return;
 
 		const clipId = player.clipId;
+		if (!clipId) return;
 
-		for (const [path, binding] of player.getMergeFieldBindings()) {
+		const document = this.getDocument();
+		if (!document) return;
+
+		// Read bindings from document (source of truth)
+		const bindings = document.getClipBindings(clipId);
+		if (!bindings) return;
+
+		for (const [path, binding] of bindings) {
 			// Check if this binding's placeholder contains this field
 			const extractedField = this.mergeFieldService.extractFieldName(binding.placeholder);
 			if (extractedField === fieldName) {
@@ -484,12 +498,8 @@ export class ShotstackEdit extends Edit {
 					resolvedValue: newResolvedValue
 				};
 
-				// Document binding (source of truth)
-				if (clipId) {
-					this.getDocument()?.setClipBinding(clipId, path, updatedBinding);
-				}
-				// Player binding (parallel storage during migration)
-				player.setMergeFieldBinding(path, updatedBinding);
+				// Update document binding
+				document.setClipBinding(clipId, path, updatedBinding);
 			}
 		}
 	}

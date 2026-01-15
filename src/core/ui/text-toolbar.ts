@@ -545,13 +545,23 @@ export class TextToolbar extends BaseToolbar {
 
 			// Update merge field binding
 			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-			if (player && shotstackEdit?.mergeFields.isMergeFieldTemplate(rawText)) {
-				player.setMergeFieldBinding("asset.text", {
+			const document = this.edit.getDocument();
+			const clipId = player?.clipId;
+
+			if (shotstackEdit?.mergeFields.isMergeFieldTemplate(rawText)) {
+				const binding = {
 					placeholder: rawText,
 					resolvedValue: resolvedText
-				});
-			} else if (player) {
-				player.removeMergeFieldBinding("asset.text");
+				};
+				// Document binding (source of truth)
+				if (clipId && document) {
+					document.setClipBinding(clipId, "asset.text", binding);
+				}
+			} else {
+				// Document binding (source of truth)
+				if (clipId && document) {
+					document.removeClipBinding(clipId, "asset.text");
+				}
 			}
 
 			this.updateAssetProperty({ text: resolvedText });
@@ -681,7 +691,9 @@ export class TextToolbar extends BaseToolbar {
 		// Text - show merge field placeholder if present, otherwise resolved value
 		if (this.textEditArea) {
 			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-			const binding = player?.getMergeFieldBinding("asset.text");
+			const document = this.edit.getDocument();
+			const clipId = player?.clipId;
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.text") : undefined;
 			this.textEditArea.value = binding?.placeholder ?? asset.text ?? "";
 		}
 

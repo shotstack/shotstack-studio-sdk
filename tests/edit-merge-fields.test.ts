@@ -148,13 +148,11 @@ const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: Playe
 	const lengthMs = typeof config.length === "number" ? config.length * 1000 : 3000;
 
 	let resolvedTiming = { start: startMs, length: lengthMs };
-	const timingIntent: { start: number | string; length: number | string } = { start: config.start, length: config.length };
 
-	// Merge field bindings storage
-	const mergeFieldBindings = new Map<string, { placeholder: string; resolvedValue: string }>();
-
-	const player = {
+	// Mock player object - clipId will be set by reconciler after creation
+	const mockPlayer: Record<string, unknown> = {
 		clipConfiguration: config,
+		clipId: null as string | null,
 		layer: 0,
 		playerType: type,
 		shouldDispose: false,
@@ -164,11 +162,24 @@ const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: Playe
 		getLength: () => resolvedTiming.length,
 		getEnd: () => resolvedTiming.start + resolvedTiming.length,
 		getSize: () => ({ width: 1920, height: 1080 }),
-		getTimingIntent: () => ({ ...timingIntent }),
-		setTimingIntent: jest.fn((intent: { start?: number | string; length?: number | string }) => {
-			if (intent.start !== undefined) timingIntent.start = intent.start;
-			if (intent.length !== undefined) timingIntent.length = intent.length;
-		}),
+		// Read timing intent from document (matches real Player behavior)
+		getTimingIntent: () => {
+			const clipId = mockPlayer["clipId"] as string | null;
+			if (clipId) {
+				const docClip = edit.getDocumentClipById(clipId);
+				if (docClip) {
+					return {
+						start: docClip.start,
+						length: docClip.length
+					};
+				}
+			}
+			// Fallback: use resolved values from clipConfiguration
+			return {
+				start: config.start,
+				length: config.length
+			};
+		},
 		getResolvedTiming: () => ({ ...resolvedTiming }),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
@@ -180,39 +191,18 @@ const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: Playe
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		// Merge field binding methods
-		getMergeFieldBindings: () => mergeFieldBindings,
-		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),
-		setMergeFieldBinding: (path: string, binding: { placeholder: string; resolvedValue: string }) => {
-			mergeFieldBindings.set(path, binding);
-		},
-		removeMergeFieldBinding: (path: string) => {
-			mergeFieldBindings.delete(path);
-		},
-		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
-			mergeFieldBindings.clear();
-			bindings.forEach((v, k) => {
-				mergeFieldBindings.set(k, v);
-			});
-		},
+		// Export - placeholder restoration now handled by document.toJSON()
 		getExportableClip: () => {
-			// Clone the config and restore placeholders for unchanged values
-			const exported = structuredClone(player.clipConfiguration) as Record<string, unknown>;
-			mergeFieldBindings.forEach(({ placeholder, resolvedValue }, path) => {
-				// eslint-disable-next-line @typescript-eslint/no-use-before-define -- Helper functions defined below
-				const current = getNestedValue(exported, path);
-				if (current === resolvedValue) {
-					// eslint-disable-next-line @typescript-eslint/no-use-before-define -- Helper functions defined below
-					setNestedValue(exported, path, placeholder);
-				}
-			});
-			exported["start"] = timingIntent.start;
-			exported["length"] = timingIntent.length;
+			const exported = structuredClone(mockPlayer["clipConfiguration"]) as Record<string, unknown>;
+			// Apply timing intent from document (matches real Player behavior)
+			const intent = (mockPlayer["getTimingIntent"] as () => { start: unknown; length: unknown })();
+			exported["start"] = intent.start;
+			exported["length"] = intent.length;
 			return exported as ResolvedClip;
 		}
 	};
 
-	return player;
+	return mockPlayer;
 };
 
 // Helper to get/set nested values for mock player
@@ -361,7 +351,7 @@ describe("Edit Merge Fields", () => {
 	});
 
 	describe("applyMergeField()", () => {
-		it("stores {{ FIELD }} template in player bindings", async () => {
+		it("stores {{ FIELD }} template in document bindings", async () => {
 			// Add a clip first
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
@@ -369,11 +359,11 @@ describe("Edit Merge Fields", () => {
 			// Apply merge field
 			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg");
 
-			// Check player has binding with template
-			const player = edit.getPlayerClip(0, 0) as {
-				getMergeFieldBinding: (path: string) => { placeholder: string; resolvedValue: string } | undefined;
-			};
-			const binding = player?.getMergeFieldBinding("asset.src");
+			// Check document has binding with template
+			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
 			expect(binding?.placeholder).toBe("{{ MEDIA_URL }}");
 			expect(binding?.resolvedValue).toBe("https://cdn.example.com/new.jpg");
 		});
@@ -510,11 +500,11 @@ describe("Edit Merge Fields", () => {
 			// Remove merge field
 			edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
 
-			// Check binding was removed
-			const player = edit.getPlayerClip(0, 0) as {
-				getMergeFieldBinding: (path: string) => { placeholder: string; resolvedValue: string } | undefined;
-			};
-			const binding = player?.getMergeFieldBinding("asset.src");
+			// Check binding was removed from document
+			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
 			expect(binding).toBeUndefined();
 		});
 
@@ -551,11 +541,11 @@ describe("Edit Merge Fields", () => {
 			edit.undo();
 			await Promise.resolve();
 
-			// Binding should be back on player
-			const player = edit.getPlayerClip(0, 0) as {
-				getMergeFieldBinding: (path: string) => { placeholder: string; resolvedValue: string } | undefined;
-			};
-			const binding = player?.getMergeFieldBinding("asset.src");
+			// Binding should be back in document
+			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
 			expect(binding?.placeholder).toBe("{{ UNDO_TEST }}");
 		});
 
@@ -718,10 +708,12 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Before update: verify initial state
 			expect((player?.clipConfiguration.asset as { text?: string }).text).toBe("Hello World");
-			const bindingBefore = player?.getMergeFieldBinding("asset.text");
+			const bindingBefore = clipId ? document?.getClipBinding(clipId, "asset.text") : undefined;
 			expect(bindingBefore?.placeholder).toBe("Hello {{ NAME }}");
 
 			// Update the merge field value (simulates changing placeholder in merge field overview)
@@ -732,12 +724,13 @@ describe("Edit Merge Fields", () => {
 			expect((player?.clipConfiguration.asset as { text?: string }).text).toBe("Hello Universe");
 
 			// 2. Binding placeholder should still contain {{ NAME }} (for toolbar display)
-			const bindingAfter = player?.getMergeFieldBinding("asset.text");
+			const bindingAfter = clipId ? document?.getClipBinding(clipId, "asset.text") : undefined;
 			expect(bindingAfter?.placeholder).toBe("Hello {{ NAME }}");
 
 			// 3. Export should still contain {{ NAME }} (for template output)
-			const exported = player?.getExportableClip();
-			expect((exported?.asset as { text?: string }).text).toBe("Hello {{ NAME }}");
+			const exported = document?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect((exportedClip?.asset as { text?: string }).text).toBe("Hello {{ NAME }}");
 		});
 	});
 
@@ -867,12 +860,14 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Resolved value in clipConfiguration (for rendering)
 			expect((player?.clipConfiguration.asset as { text?: string }).text).toBe("Resolved Title");
 
-			// Placeholder accessible via binding (for UI display)
-			const binding = player?.getMergeFieldBinding("asset.text");
+			// Placeholder accessible via document binding (for UI display)
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.text") : undefined;
 			expect(binding?.placeholder).toBe("{{ TITLE }}");
 			expect(binding?.resolvedValue).toBe("Resolved Title");
 		});
@@ -892,16 +887,20 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Simulate text edit in toolbar: user types "{{ TITLE }} extra text"
 			const rawText = "{{ TITLE }} extra text";
 			const resolvedText = edit.mergeFields.resolve(rawText); // "Hello World extra text"
 
-			// Update binding (what toolbar should do)
-			player?.setMergeFieldBinding("asset.text", {
-				placeholder: rawText,
-				resolvedValue: resolvedText
-			});
+			// Update document binding (what toolbar should do)
+			if (clipId && document) {
+				document.setClipBinding(clipId, "asset.text", {
+					placeholder: rawText,
+					resolvedValue: resolvedText
+				});
+			}
 
 			// Update clip with resolved text (what toolbar should do)
 			edit.updateClip(0, 0, { asset: { type: "text", text: resolvedText } });
@@ -909,9 +908,10 @@ describe("Edit Merge Fields", () => {
 			// Canvas should show resolved value
 			expect((player?.clipConfiguration.asset as { text?: string }).text).toBe("Hello World extra text");
 
-			// Export should restore placeholder
-			const exported = player?.getExportableClip();
-			expect((exported?.asset as { text?: string }).text).toBe("{{ TITLE }} extra text");
+			// Export via toJSON should restore placeholder
+			const exported = document?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect((exportedClip?.asset as { text?: string }).text).toBe("{{ TITLE }} extra text");
 		});
 
 		it("removing merge fields from text removes the binding", async () => {
@@ -929,25 +929,30 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Initially has binding
-			expect(player?.getMergeFieldBinding("asset.text")).toBeDefined();
+			expect(clipId && document?.getClipBinding(clipId, "asset.text")).toBeDefined();
 
 			// Simulate text edit removing merge field: user types plain text
 			const plainText = "Just plain text";
 
-			// Remove binding (what toolbar should do when no merge field)
-			player?.removeMergeFieldBinding("asset.text");
+			// Remove binding via document (what toolbar should do when no merge field)
+			if (clipId) {
+				document?.removeClipBinding(clipId, "asset.text");
+			}
 
 			// Update clip with plain text
 			edit.updateClip(0, 0, { asset: { type: "text", text: plainText } });
 
 			// No binding should exist
-			expect(player?.getMergeFieldBinding("asset.text")).toBeUndefined();
+			expect(clipId && document?.getClipBinding(clipId, "asset.text")).toBeUndefined();
 
-			// Export should show plain text
-			const exported = player?.getExportableClip();
-			expect((exported?.asset as { text?: string }).text).toBe("Just plain text");
+			// Export via toJSON should show plain text (since document was also updated with plain text)
+			const exported = document?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect((exportedClip?.asset as { text?: string }).text).toBe("Just plain text");
 		});
 	});
 
@@ -967,18 +972,21 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Resolved value in clipConfiguration (for rendering)
 			expect((player?.clipConfiguration.asset as { src?: string }).src).toBe("https://cdn.example.com/image.jpg");
 
-			// Binding stores placeholder for export
-			const binding = player?.getMergeFieldBinding("asset.src");
+			// Binding stored in document for export
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
 			expect(binding?.placeholder).toBe("{{ IMAGE_URL }}");
 			expect(binding?.resolvedValue).toBe("https://cdn.example.com/image.jpg");
 
-			// Export restores placeholder
-			const exported = player?.getExportableClip();
-			expect((exported?.asset as { src?: string }).src).toBe("{{ IMAGE_URL }}");
+			// Export via toJSON restores placeholder
+			const exported = document?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect((exportedClip?.asset as { src?: string }).src).toBe("{{ IMAGE_URL }}");
 		});
 
 		it("video source with merge field preserves placeholder for export", async () => {
@@ -996,17 +1004,20 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Resolved value in clipConfiguration (for rendering)
 			expect((player?.clipConfiguration.asset as { src?: string }).src).toBe("https://cdn.example.com/video.mp4");
 
-			// Binding stores placeholder for export
-			const binding = player?.getMergeFieldBinding("asset.src");
+			// Binding stored in document (source of truth) for export
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
 			expect(binding?.placeholder).toBe("{{ VIDEO_URL }}");
 
-			// Export restores placeholder
-			const exported = player?.getExportableClip();
-			expect((exported?.asset as { src?: string }).src).toBe("{{ VIDEO_URL }}");
+			// Export via toJSON restores placeholder
+			const exported = document?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect((exportedClip?.asset as { src?: string }).src).toBe("{{ VIDEO_URL }}");
 		});
 
 		it("changing source to different URL while binding exists updates export correctly", async () => {
@@ -1054,19 +1065,22 @@ describe("Edit Merge Fields", () => {
 			});
 
 			const player = edit.getPlayerClip(0, 0);
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
 
 			// Initially has binding
-			expect(player?.getMergeFieldBinding("asset.src")).toBeDefined();
+			expect(clipId && document?.getClipBinding(clipId, "asset.src")).toBeDefined();
 
-			// Remove binding (simulating user removing merge field association)
-			player?.removeMergeFieldBinding("asset.src");
+			// Remove merge field via API (updates document data AND removes binding)
+			await edit.removeMergeField(0, 0, "asset.src", "https://cdn.example.com/image.jpg");
 
 			// No binding should exist
-			expect(player?.getMergeFieldBinding("asset.src")).toBeUndefined();
+			expect(clipId && document?.getClipBinding(clipId, "asset.src")).toBeUndefined();
 
-			// Export should show literal URL
-			const exported = player?.getExportableClip();
-			expect((exported?.asset as { src?: string }).src).toBe("https://cdn.example.com/image.jpg");
+			// Export via toJSON should show literal URL (no placeholder to restore)
+			const exported = document?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect((exportedClip?.asset as { src?: string }).src).toBe("https://cdn.example.com/image.jpg");
 		});
 	});
 

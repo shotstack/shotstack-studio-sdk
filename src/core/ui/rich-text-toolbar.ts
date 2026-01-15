@@ -902,13 +902,23 @@ export class RichTextToolbar extends BaseToolbar {
 
 		// Update merge field binding for export to preserve templates
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (player && shotstackEdit?.mergeFields.isMergeFieldTemplate(templateText)) {
-			player.setMergeFieldBinding("asset.text", {
+		const document = this.edit.getDocument();
+		const clipId = player?.clipId;
+
+		if (shotstackEdit?.mergeFields.isMergeFieldTemplate(templateText)) {
+			const binding = {
 				placeholder: templateText,
 				resolvedValue: resolvedText
-			});
-		} else if (player) {
-			player.removeMergeFieldBinding("asset.text");
+			};
+			// Document binding (source of truth)
+			if (clipId && document) {
+				document.setClipBinding(clipId, "asset.text", binding);
+			}
+		} else {
+			// Document binding (source of truth)
+			if (clipId && document) {
+				document.removeClipBinding(clipId, "asset.text");
+			}
 		}
 
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
@@ -1004,11 +1014,16 @@ export class RichTextToolbar extends BaseToolbar {
 
 		// Update merge field binding for export to preserve templates
 		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (player) {
-			player.setMergeFieldBinding("asset.text", {
+		const document = this.edit.getDocument();
+		const clipId = player?.clipId;
+
+		// Document binding (source of truth)
+		if (clipId && document) {
+			const binding = {
 				placeholder: templateText,
 				resolvedValue: resolvedText
-			});
+			};
+			document.setClipBinding(clipId, "asset.text", binding);
 		}
 
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {

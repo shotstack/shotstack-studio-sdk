@@ -19,7 +19,7 @@ import type { ResolvedClip, ResolvedEdit } from "@schemas";
 
 import type { Edit } from "./edit-session";
 import { InternalEvent } from "./events/edit-events";
-import type { Seconds, TimingValue } from "./timing/types";
+import type { Seconds } from "./timing/types";
 
 export interface ReconcileResult {
 	created: string[];
@@ -136,21 +136,11 @@ export class PlayerReconciler {
 		player.layer = trackIndex + 1;
 		player.clipId = clipId;
 
-		// Preserve timing intent from document (may have "auto"/"end" values)
+		// Track clips with "end" length for timeline-end recalculation
+		// Note: timingIntent is now read directly from document by player.getTimingIntent()
 		const docClip = this.edit.getDocumentClipById(clipId);
-		if (docClip) {
-			// Cast to TimingIntent compatible types
-			// Document has `number | "auto"` for start, `number | "auto" | "end"` for length
-			// TimingIntent expects `Seconds | "auto"` and `Seconds | "auto" | "end"`
-			const startIntent = docClip.start === "auto" ? "auto" : (docClip.start as Seconds);
-			const lengthIntent = (typeof docClip.length === "string" ? docClip.length : docClip.length) as TimingValue;
-
-			player.setTimingIntent({ start: startIntent, length: lengthIntent });
-
-			// Track clips with "end" length for timeline-end recalculation
-			if (lengthIntent === "end") {
-				this.edit.trackEndLengthClip(player);
-			}
+		if (docClip?.length === "end") {
+			this.edit.trackEndLengthClip(player);
 		}
 
 		// Register in ID map
@@ -193,18 +183,8 @@ export class PlayerReconciler {
 		const currentLength = player.clipConfiguration.length as Seconds;
 
 		if (currentStart !== clip.start || currentLength !== clip.length) {
-			// Update timing intent from document (preserves "auto"/"end" strings)
-			const clipId = (clip as ResolvedClip & { id?: string }).id;
-			if (clipId) {
-				const docClip = this.edit.getDocumentClipById(clipId);
-				if (docClip) {
-					const startIntent = docClip.start === "auto" ? "auto" : (docClip.start as Seconds);
-					const lengthIntent = (typeof docClip.length === "string" ? docClip.length : docClip.length) as TimingValue;
-					player.setTimingIntent({ start: startIntent, length: lengthIntent });
-				}
-			}
-
 			// Update resolved timing (which also sets clipConfiguration.start/length)
+			// Note: timingIntent is now read directly from document by player.getTimingIntent()
 			player.setResolvedTiming({
 				start: clip.start,
 				length: clip.length

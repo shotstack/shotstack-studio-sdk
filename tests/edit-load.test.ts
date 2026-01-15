@@ -175,13 +175,11 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const lengthMs = typeof config.length === "number" ? config.length * 1000 : 3000;
 
 	let resolvedTiming = { start: startMs, length: lengthMs };
-	const timingIntent: { start: number | string; length: number | string } = { start: config.start, length: config.length };
 
-	// Merge field bindings support
-	const mergeFieldBindings = new Map<string, { placeholder: string; resolvedValue: string }>();
-
-	return {
+	// Mock player object - clipId will be set by reconciler after creation
+	const mockPlayer: Record<string, unknown> = {
 		clipConfiguration: config,
+		clipId: null as string | null,
 		layer: 0,
 		playerType: type,
 		shouldDispose: false,
@@ -191,11 +189,24 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getLength: () => resolvedTiming.length,
 		getEnd: () => resolvedTiming.start + resolvedTiming.length,
 		getSize: () => ({ width: 1920, height: 1080 }),
-		getTimingIntent: () => ({ ...timingIntent }),
-		setTimingIntent: jest.fn((intent: { start?: number | string; length?: number | string }) => {
-			if (intent.start !== undefined) timingIntent.start = intent.start;
-			if (intent.length !== undefined) timingIntent.length = intent.length;
-		}),
+		// Read timing intent from document (matches real Player behavior)
+		getTimingIntent: () => {
+			const clipId = mockPlayer["clipId"] as string | null;
+			if (clipId) {
+				const docClip = edit.getDocumentClipById(clipId);
+				if (docClip) {
+					return {
+						start: docClip.start,
+						length: docClip.length
+					};
+				}
+			}
+			// Fallback: use resolved values from clipConfiguration
+			return {
+				start: config.start,
+				length: config.length
+			};
+		},
 		getResolvedTiming: () => ({ ...resolvedTiming }),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
@@ -207,29 +218,17 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		// Merge field binding methods
-		getMergeFieldBindings: () => mergeFieldBindings,
-		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),
-		setMergeFieldBinding: (path: string, binding: { placeholder: string; resolvedValue: string }) => {
-			mergeFieldBindings.set(path, binding);
-		},
-		removeMergeFieldBinding: (path: string) => {
-			mergeFieldBindings.delete(path);
-		},
-		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
-			mergeFieldBindings.clear();
-			bindings.forEach((v, k) => {
-				mergeFieldBindings.set(k, v);
-			});
-		},
 		getExportableClip: () => {
 			const exported = structuredClone(config);
-			// Apply timing intent (cast needed as timingIntent can be string for "auto")
-			if (timingIntent.start !== undefined) (exported as { start: unknown }).start = timingIntent.start;
-			if (timingIntent.length !== undefined) (exported as { length: unknown }).length = timingIntent.length;
+			// Apply timing intent from document (matches real Player behavior)
+			const intent = (mockPlayer["getTimingIntent"] as () => { start: unknown; length: unknown })();
+			(exported as { start: unknown }).start = intent.start;
+			(exported as { length: unknown }).length = intent.length;
 			return exported;
 		}
 	};
+
+	return mockPlayer;
 };
 
 // Mock all player types
@@ -667,8 +666,10 @@ describe("Edit loadEdit()", () => {
 			const player = edit.getPlayerClip(0, 0);
 			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://resolved.example.com/img.jpg");
 
-			// Player should track the merge field binding
-			const binding = player?.getMergeFieldBinding("asset.src");
+			// Document should track the merge field binding
+			const document = edit.getDocument();
+			const clipId = player?.clipId;
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
 			expect(binding).toBeDefined();
 			expect(binding?.placeholder).toBe("{{ MEDIA_URL }}");
 			expect(binding?.resolvedValue).toBe("https://resolved.example.com/img.jpg");
@@ -1109,7 +1110,7 @@ describe("Edit loadEdit()", () => {
 			const { ImagePlayer: ImagePlayerMock } = jest.requireMock("@canvas/players/image-player");
 			ImagePlayerMock.mockImplementationOnce((editInstance: Edit, config: ResolvedClip) => {
 				const player = createMockPlayer(editInstance, config, PlayerType.Image);
-				player.load = jest.fn().mockRejectedValue(new Error("Invalid image source 'bad.mp4'."));
+				player["load"] = jest.fn().mockRejectedValue(new Error("Invalid image source 'bad.mp4'."));
 				return player;
 			});
 

@@ -92,7 +92,7 @@ export class DeleteClipCommand implements EditCommand {
 		// Document mutation - add clip back at original position
 		const restoredClip = context.documentAddClip(this.trackIdx, this.deletedClipConfig, this.clipIdx);
 
-		// Restore merge field bindings to document
+		// Restore merge field bindings to document (source of truth)
 		const restoredClipId = (restoredClip as { id?: string }).id;
 		if (restoredClipId && this.storedBindings && this.storedBindings.size > 0) {
 			const document = context.getDocument();
@@ -101,14 +101,6 @@ export class DeleteClipCommand implements EditCommand {
 
 		// Resolve triggers reconciler → creates Player
 		context.resolve();
-
-		// Restore bindings to player (parallel storage during migration)
-		if (restoredClipId && this.storedBindings && this.storedBindings.size > 0) {
-			const player = context.getPlayerByClipId(restoredClipId);
-			if (player) {
-				player.setInitialBindings(this.storedBindings);
-			}
-		}
 
 		context.updateDuration();
 

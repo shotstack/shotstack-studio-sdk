@@ -5,8 +5,7 @@ import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
-import { getNestedValue, setNestedValue } from "@core/shared/utils";
-import { type ResolvedTiming, type Seconds, type TimingIntent, sec } from "@core/timing/types";
+import { type ResolvedTiming, type Seconds, type TimingIntent, type TimingValue, sec } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
@@ -62,7 +61,6 @@ export abstract class Player extends Entity {
 	protected edit: Edit;
 	public clipConfiguration: ResolvedClip;
 
-	private timingIntent: TimingIntent;
 	private resolvedTiming: ResolvedTiming;
 
 	private positionBuilder: PositionBuilder;
@@ -78,11 +76,6 @@ export abstract class Player extends Entity {
 	private wipeMask: pixi.Graphics | null;
 	protected contentContainer: pixi.Container;
 
-	/**
-	 * Tracks which properties came from merge field templates.
-	 */
-	private mergeFieldBindings: Map<string, MergeFieldBinding> = new Map();
-
 	constructor(edit: Edit, clipConfiguration: ResolvedClip, playerType: PlayerType) {
 		super();
 
@@ -93,11 +86,6 @@ export abstract class Player extends Entity {
 
 		this.clipConfiguration = clipConfiguration;
 		this.positionBuilder = new PositionBuilder(edit.size);
-
-		this.timingIntent = {
-			start: clipConfiguration.start,
-			length: clipConfiguration.length
-		};
 
 		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
 
@@ -310,17 +298,25 @@ export abstract class Player extends Entity {
 		return sec(this.resolvedTiming.start + this.resolvedTiming.length);
 	}
 
+	/**
+	 * Get timing intent from document (source of truth).
+	 * Returns "auto"/"end" strings as stored in the document, not resolved numeric values.
+	 */
 	public getTimingIntent(): TimingIntent {
-		return { ...this.timingIntent };
-	}
-
-	public setTimingIntent(intent: Partial<TimingIntent>): void {
-		if (intent.start !== undefined) {
-			this.timingIntent.start = intent.start;
+		// Read timing intent from document (source of truth)
+		if (this.clipId) {
+			const docClip = this.edit.getDocumentClipById(this.clipId);
+			if (docClip) {
+				const startIntent = docClip.start === "auto" ? "auto" : (docClip.start as Seconds);
+				const lengthIntent = (typeof docClip.length === "string" ? docClip.length : docClip.length) as TimingValue;
+				return { start: startIntent, length: lengthIntent };
+			}
 		}
-		if (intent.length !== undefined) {
-			this.timingIntent.length = intent.length;
-		}
+		// Fallback: use resolved timing from clipConfiguration
+		return {
+			start: this.clipConfiguration.start,
+			length: this.clipConfiguration.length
+		};
 	}
 
 	public getResolvedTiming(): ResolvedTiming {
@@ -333,57 +329,13 @@ export abstract class Player extends Entity {
 		this.clipConfiguration.length = timing.length;
 	}
 
-	// ─── Merge Field Binding Methods ─────────────────────────────────────────────
-
 	/**
-	 * Set a merge field binding for a property path.
-	 */
-	public setMergeFieldBinding(path: string, binding: MergeFieldBinding): void {
-		this.mergeFieldBindings.set(path, binding);
-	}
-
-	/**
-	 * Get the merge field binding for a property path, if any.
-	 */
-	public getMergeFieldBinding(path: string): MergeFieldBinding | undefined {
-		return this.mergeFieldBindings.get(path);
-	}
-
-	/**
-	 * Remove a merge field binding (e.g., when user changes the value).
-	 */
-	public removeMergeFieldBinding(path: string): void {
-		this.mergeFieldBindings.delete(path);
-	}
-
-	/**
-	 * Get all merge field bindings for this player.
-	 */
-	public getMergeFieldBindings(): Map<string, MergeFieldBinding> {
-		return this.mergeFieldBindings;
-	}
-
-	/**
-	 * Bulk set bindings during player initialization.
-	 */
-	public setInitialBindings(bindings: Map<string, MergeFieldBinding>): void {
-		this.mergeFieldBindings = new Map(bindings);
-	}
-
-	/**
-	 * Get the exportable clip configuration with merge field placeholders restored.
+	 * Get the clip configuration with timing intent applied.
+	 * Note: Placeholder restoration is handled by document.toJSON() for export,
+	 * or by EditSession.getTemplateClip() for API callers.
 	 */
 	public getExportableClip(): Clip {
 		const exported = structuredClone(this.clipConfiguration) as Record<string, unknown>;
-
-		// Restore merge field placeholders for unchanged values
-		for (const [path, { placeholder, resolvedValue }] of this.mergeFieldBindings) {
-			const currentValue = getNestedValue(exported, path);
-			if (currentValue === resolvedValue) {
-				setNestedValue(exported, path, placeholder);
-			}
-			// If value changed, leave current value (binding is broken)
-		}
 
 		// Apply timing intent (preserves "auto", "end" strings)
 		const intent = this.getTimingIntent();
@@ -441,23 +393,18 @@ export abstract class Player extends Entity {
 	}
 
 	/**
-	 * Move the clip by a pixel delta. Used for keyboard arrow key positioning.
+	 * Calculate the new offset position after moving by a pixel delta.
+	 * Returns the new offset without mutating player state.
+	 * Used for keyboard arrow key positioning.
 	 * @internal
 	 */
-	public moveBy(deltaX: number, deltaY: number): void {
+	public calculateMoveOffset(deltaX: number, deltaY: number): { x: number; y: number } {
 		const currentPos = this.getPosition();
 		const newAbsolutePos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
 
 		const relativePos = this.positionBuilder.absoluteToRelative(this.getSize(), this.clipConfiguration.position ?? "center", newAbsolutePos);
 
-		if (!this.clipConfiguration.offset) {
-			this.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.clipConfiguration.offset.x = relativePos.x;
-		this.clipConfiguration.offset.y = relativePos.y;
-
-		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(relativePos.x, this.getLength(), "additive");
-		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(relativePos.y, this.getLength(), "additive");
+		return { x: relativePos.x, y: relativePos.y };
 	}
 
 	protected getFitScale(): number {

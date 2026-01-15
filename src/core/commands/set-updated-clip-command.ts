@@ -1,4 +1,4 @@
-import type { MergeFieldBinding } from "@canvas/players/player";
+import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import { getNestedValue } from "@core/shared/utils";
 import type { ResolvedClip } from "@schemas";
@@ -56,8 +56,9 @@ export class SetUpdatedClipCommand implements EditCommand {
 		this.storedInitialConfig = this.initialClipConfig ? structuredClone(this.initialClipConfig) : structuredClone(player.clipConfiguration);
 		this.storedFinalConfig = this.finalClipConfig ? structuredClone(this.finalClipConfig) : structuredClone(player.clipConfiguration);
 
-		// Save bindings before modification (for undo) - binding management stays until Phase 4
-		this.storedInitialBindings = new Map(player.getMergeFieldBindings());
+		// Save bindings before modification (for undo) - read from document (source of truth)
+		const docBindings = this.clipId ? context.getClipBindings(this.clipId) : undefined;
+		this.storedInitialBindings = docBindings ? new Map(docBindings) : new Map();
 
 		// Use provided indices or calculate from player
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
@@ -74,11 +75,10 @@ export class SetUpdatedClipCommand implements EditCommand {
 		context.resolve();
 
 		// Detect broken bindings - if value changed from resolvedValue, remove the binding
-		// Note: This binding logic stays on players until Phase 4 (document-based bindings)
 		for (const [path, { resolvedValue }] of this.storedInitialBindings) {
 			const currentValue = getNestedValue(player.clipConfiguration, path);
-			if (currentValue !== resolvedValue) {
-				player.removeMergeFieldBinding(path);
+			if (currentValue !== resolvedValue && this.clipId) {
+				context.removeClipBinding(this.clipId, path);
 			}
 		}
 
@@ -128,9 +128,8 @@ export class SetUpdatedClipCommand implements EditCommand {
 		// Reconciler handles player updates
 		context.resolve();
 
-		// Restore saved bindings to both document and player (parallel storage)
+		// Restore saved bindings (document = source of truth)
 		if (this.clipId) {
-			// Document binding (source of truth)
 			const docBindings = new Map(this.storedInitialBindings);
 			if (docBindings.size > 0) {
 				const document = context.getDocument();
@@ -139,8 +138,6 @@ export class SetUpdatedClipCommand implements EditCommand {
 				context.getDocument()?.clearClipBindings(this.clipId);
 			}
 		}
-		// Player binding (parallel storage during migration)
-		player.setInitialBindings(this.storedInitialBindings);
 
 		// Check if asset src changed (reverse direction)
 		const previousAsset = this.storedFinalConfig?.asset as { src?: string } | undefined;

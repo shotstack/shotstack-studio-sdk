@@ -3,7 +3,8 @@ import { CaptionPlayer } from "@canvas/players/caption-player";
 import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
-import { type MergeFieldBinding, type Player, PlayerType } from "@canvas/players/player";
+import { type Player, PlayerType } from "@canvas/players/player";
+import type { MergeFieldBinding } from "@core/edit-document";
 import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { SvgPlayer } from "@canvas/players/svg-player";
@@ -30,7 +31,7 @@ import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { Entity } from "@core/shared/entity";
-import { deepMerge } from "@core/shared/utils";
+import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type ResolutionContext, type Seconds, ms, sec, toSec } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
@@ -348,15 +349,10 @@ export class Edit extends Entity {
 						this.playerByClipId.set(clipId, clipPlayer);
 					}
 
-					// Pass merge field bindings to player AND document (parallel storage)
+					// Store merge field bindings in document (source of truth)
 					const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
-					if (bindings && bindings.size > 0) {
-						// Document binding (source of truth)
-						if (clipId) {
-							this.document.setClipBindingsForClip(clipId, bindings);
-						}
-						// Player binding (parallel storage during migration)
-						clipPlayer.setInitialBindings(bindings);
+					if (bindings && bindings.size > 0 && clipId) {
+						this.document.setClipBindingsForClip(clipId, bindings);
 					}
 
 					await this.addPlayer(trackIdx, clipPlayer);
@@ -859,7 +855,26 @@ export class Edit extends Entity {
 	public getOriginalAsset(trackIndex: number, clipIndex: number): unknown | undefined {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
 		if (!player) return undefined;
-		return player.getExportableClip()?.asset;
+
+		const clip = player.getExportableClip();
+		if (!clip) return undefined;
+
+		// Restore merge field placeholders from document bindings
+		const clipId = player.clipId;
+		if (clipId && this.document) {
+			const bindings = this.document.getClipBindings(clipId);
+			if (bindings) {
+				for (const [path, { placeholder }] of bindings) {
+					// Only restore if path is within asset
+					if (path.startsWith("asset.")) {
+						const assetPath = path.slice(6); // Remove "asset." prefix
+						setNestedValue(clip.asset as Record<string, unknown>, assetPath, placeholder);
+					}
+				}
+			}
+		}
+
+		return clip.asset;
 	}
 
 	public deleteClip(trackIdx: number, clipIdx: number): void {
@@ -1226,10 +1241,13 @@ export class Edit extends Entity {
 			return;
 		}
 
-		const initialConfig = structuredClone(clip.clipConfiguration);
-		const currentConfig = structuredClone(clip.clipConfiguration);
+		// Read from document (source of truth) to preserve timing intent ("auto"/"end")
+		// Player's clipConfiguration has resolved numeric values, but document has original strings
+		const documentClip = this.document?.getClip(trackIdx, clipIdx);
+		const initialConfig = structuredClone(documentClip ?? clip.clipConfiguration) as ResolvedClip;
+		const currentConfig = structuredClone(documentClip ?? clip.clipConfiguration);
 		// Cast to ResolvedClip - the timing resolver handles "auto"/"end" at runtime
-		const mergedConfig = deepMerge(currentConfig, updates as unknown as Partial<ResolvedClip>);
+		const mergedConfig = deepMerge(currentConfig, updates as unknown as Partial<ResolvedClip>) as ResolvedClip;
 
 		const command = new SetUpdatedClipCommand(initialConfig, mergedConfig, {
 			trackIndex: trackIdx,
@@ -2303,9 +2321,15 @@ export class Edit extends Entity {
 		const { player } = info;
 		const initialConfig = structuredClone(player.clipConfiguration);
 
-		player.moveBy(deltaX, deltaY);
+		// Calculate new offset (pure function, no player mutation)
+		const newOffset = player.calculateMoveOffset(deltaX, deltaY);
 
-		this.setUpdatedClip(player, initialConfig, structuredClone(player.clipConfiguration));
+		// Build final config with new offset
+		const finalConfig = structuredClone(initialConfig);
+		finalConfig.offset = newOffset;
+
+		// Document update → resolve() → Reconciler syncs offset to player
+		this.setUpdatedClip(player, initialConfig, finalConfig);
 	}
 
 	public setExportMode(exporting: boolean): void {
@@ -2656,13 +2680,28 @@ export class Edit extends Entity {
 		return [...this.toolbarButtons];
 	}
 
-	// ─── Template Edit Access (via player bindings) ───────────────────────────
+	// ─── Template Edit Access (via document bindings) ──────────────────────────
 
 	/** Get the exportable clip (with merge field placeholders restored) */
 	protected getTemplateClip(trackIndex: number, clipIndex: number): ResolvedClip | null {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
 		if (!player) return null;
-		return player.getExportableClip() as ResolvedClip;
+
+		const clip = player.getExportableClip();
+		if (!clip) return null;
+
+		// Restore merge field placeholders from document bindings
+		const clipId = player.clipId;
+		if (clipId && this.document) {
+			const bindings = this.document.getClipBindings(clipId);
+			if (bindings) {
+				for (const [path, { placeholder }] of bindings) {
+					setNestedValue(clip as Record<string, unknown>, path, placeholder);
+				}
+			}
+		}
+
+		return clip as ResolvedClip;
 	}
 
 	/** Get the text content from the template clip (with merge field placeholders) */
