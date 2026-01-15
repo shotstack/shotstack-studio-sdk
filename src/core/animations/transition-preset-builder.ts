@@ -105,7 +105,7 @@ export class TransitionPresetBuilder {
 				const isNegative = transitionName === "carouselLeft" || transitionName === "carouselUp";
 
 				// Carousel uses different offsets for in vs out, and different interpolation
-				const baseOffset = isHorizontal ? 1 : isIn ? 1.05 : 1.1;
+				const baseOffset = (isHorizontal && 1) || (isIn ? 1.05 : 1.1);
 				const [offsetFrom, offsetTo] = isIn ? [isNegative ? baseOffset : -baseOffset, 0] : [0, isNegative ? -baseOffset : baseOffset];
 
 				const targetKeyframes = isHorizontal ? keyframes.offsetXKeyframes : keyframes.offsetYKeyframes;
