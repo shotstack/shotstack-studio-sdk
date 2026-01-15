@@ -238,7 +238,7 @@ export abstract class Player extends Entity {
 		this.getContainer().angle = angle;
 
 		const skew = this.getSkew();
-		this.getContainer().skew.set(skew.x * (Math.PI / 180), skew.y * (Math.PI / 180));
+		this.getContainer().skew?.set(skew.x * (Math.PI / 180), skew.y * (Math.PI / 180));
 
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			this.applyFixedDimensions();
