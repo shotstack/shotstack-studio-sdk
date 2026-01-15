@@ -59,6 +59,7 @@ import * as pixi from "pixi.js";
 
 import type { EditCommand, CommandContext } from "./commands/types";
 import { EditDocument } from "./edit-document";
+import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument } from "./resolver";
 
 // ─── Resolution Preset Dimensions ─────────────────────────────────────────────
@@ -189,6 +190,7 @@ export class Edit extends Entity {
 	/** @internal */
 	private alignmentGuides: AlignmentGuides | null = null;
 	private lumaMaskController: LumaMaskController;
+	private playerReconciler: PlayerReconciler;
 
 	// Clip load errors - persisted so Timeline can query them after subscribing
 	private clipErrors = new Map<string, { error: string; assetType: string }>();
@@ -248,6 +250,7 @@ export class Edit extends Entity {
 			() => this.tracks,
 			this.events
 		);
+		this.playerReconciler = new PlayerReconciler(this);
 
 		this.playbackTime = 0;
 		this.totalDuration = 0;
@@ -419,6 +422,7 @@ export class Edit extends Entity {
 	public override dispose(): void {
 		this.clearClips();
 		this.lumaMaskController.dispose();
+		this.playerReconciler.dispose();
 
 		// Dispose all commands in history to free memory
 		for (const cmd of this.commandHistory) {
@@ -494,6 +498,10 @@ export class Edit extends Entity {
 	public async loadEdit(edit: EditConfig): Promise<void> {
 		// Smart diff: only do full reload when structure changes (track/clip count, asset type)
 		if (this.edit && !this.hasStructuralChanges(edit)) {
+			// Preserve existing clip IDs before creating new document
+			// This ensures the reconciler sees the same IDs and updates players in-place
+			this.preserveClipIdsForGranularUpdate(edit);
+
 			// Update document with new edit (preserves "auto", "end", placeholders)
 			this.document = new EditDocument(edit);
 			this.isBatchingEvents = true;
@@ -696,6 +704,150 @@ export class Edit extends Entity {
 	 */
 	public getPlayerByClipId(clipId: string): Player | null {
 		return this.playerByClipId.get(clipId) ?? null;
+	}
+
+	/**
+	 * Get the document clip by its stable ID.
+	 * Used by reconciler to access original timing intent.
+	 * @internal
+	 */
+	public getDocumentClipById(clipId: string): Clip | null {
+		return this.document?.getClipById(clipId)?.clip ?? null;
+	}
+
+	/**
+	 * Track a clip with length: "end" for timeline-end recalculation.
+	 * @internal Used by PlayerReconciler
+	 */
+	public trackEndLengthClip(player: Player): void {
+		this.endLengthClips.add(player);
+	}
+
+	/**
+	 * Untrack a clip from end-length recalculation.
+	 * @internal Used by PlayerReconciler
+	 */
+	public untrackEndLengthClip(player: Player): void {
+		this.endLengthClips.delete(player);
+	}
+
+	/**
+	 * Register a Player by its clip ID.
+	 * @internal Used by PlayerReconciler
+	 */
+	public registerPlayerByClipId(clipId: string, player: Player): void {
+		this.playerByClipId.set(clipId, player);
+	}
+
+	/**
+	 * Unregister a Player by its clip ID.
+	 * @internal Used by PlayerReconciler
+	 */
+	public unregisterPlayerByClipId(clipId: string): void {
+		this.playerByClipId.delete(clipId);
+	}
+
+	/**
+	 * Get the Player ID map for iteration.
+	 * @internal Used by PlayerReconciler
+	 */
+	public getPlayerMap(): Map<string, Player> {
+		return this.playerByClipId;
+	}
+
+	/**
+	 * Add a Player to the tracks array at the specified index.
+	 * @internal Used by PlayerReconciler
+	 */
+	public addPlayerToTracksArray(trackIndex: number, player: Player): void {
+		while (this.tracks.length <= trackIndex) {
+			this.tracks.push([]);
+		}
+		this.tracks[trackIndex].push(player);
+	}
+
+	/**
+	 * Add a Player to the global clips array.
+	 * @internal Used by PlayerReconciler
+	 */
+	public addPlayerToClipsArray(player: Player): void {
+		this.clips.push(player);
+	}
+
+	/**
+	 * Move a Player between tracks (both container and array).
+	 * @internal Used by PlayerReconciler
+	 */
+	public movePlayerBetweenTracks(player: Player, fromTrackIndex: number, toTrackIndex: number): void {
+		// Remove from old track array
+		const fromTrack = this.tracks[fromTrackIndex];
+		if (fromTrack) {
+			const idx = fromTrack.indexOf(player);
+			if (idx !== -1) {
+				fromTrack.splice(idx, 1);
+			}
+		}
+
+		// Add to new track array
+		while (this.tracks.length <= toTrackIndex) {
+			this.tracks.push([]);
+		}
+		this.tracks[toTrackIndex].push(player);
+
+		// Move PIXI container
+		this.movePlayerToTrackContainer(player, fromTrackIndex, toTrackIndex);
+	}
+
+	/**
+	 * Queue a Player for disposal.
+	 * @internal Used by PlayerReconciler
+	 */
+	public queuePlayerForDisposal(player: Player): void {
+		this.queueDisposeClip(player);
+		this.disposeClips();
+	}
+
+	/**
+	 * Ensure a track exists at the given index (creates empty track if needed).
+	 * @internal Used by PlayerReconciler for track syncing
+	 */
+	public ensureTrackExists(trackIndex: number): void {
+		while (this.tracks.length <= trackIndex) {
+			this.tracks.push([]);
+		}
+	}
+
+	/**
+	 * Remove an empty track at the given index (including PIXI container).
+	 * @internal Used by PlayerReconciler for track syncing
+	 */
+	public removeEmptyTrack(trackIndex: number): void {
+		if (trackIndex < 0 || trackIndex >= this.tracks.length) return;
+
+		// Only remove if track is empty
+		const track = this.tracks[trackIndex];
+		if (track && track.length > 0) {
+			console.warn(`Cannot remove non-empty track ${trackIndex}`);
+			return;
+		}
+
+		// Remove from tracks array
+		this.tracks.splice(trackIndex, 1);
+
+		// Remove PIXI container if it exists
+		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
+		const trackContainerKey = `shotstack-track-${zIndex}`;
+		const trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
+		if (trackContainer) {
+			this.getContainer().removeChild(trackContainer);
+		}
+
+		// Update layer numbers for all players in tracks above the removed one
+		for (let i = trackIndex; i < this.tracks.length; i += 1) {
+			for (const player of this.tracks[i]) {
+				player.layer = i + 1;
+			}
+		}
 	}
 
 	/** Get the exportable asset for a clip, preserving merge field templates */
@@ -1055,7 +1207,7 @@ export class Edit extends Entity {
 		const track = this.tracks[trackIdx];
 		const clipIdx = track ? track.indexOf(clip) : -1;
 
-		const command = new SetUpdatedClipCommand(clip, initialClipConfig, finalClipConfig, {
+		const command = new SetUpdatedClipCommand(initialClipConfig, finalClipConfig, {
 			trackIndex: trackIdx,
 			clipIndex: clipIdx
 		});
@@ -1074,7 +1226,7 @@ export class Edit extends Entity {
 		// Cast to ResolvedClip - the timing resolver handles "auto"/"end" at runtime
 		const mergedConfig = deepMerge(currentConfig, updates as unknown as Partial<ResolvedClip>);
 
-		const command = new SetUpdatedClipCommand(clip, initialConfig, mergedConfig, {
+		const command = new SetUpdatedClipCommand(initialConfig, mergedConfig, {
 			trackIndex: trackIdx,
 			clipIndex: clipIdx
 		});
@@ -1100,8 +1252,14 @@ export class Edit extends Entity {
 	}
 
 	/** @internal */
-	public updateTextContent(clip: Player, newText: string, initialConfig: ResolvedClip): void {
-		const command = new UpdateTextContentCommand(clip, newText, initialConfig);
+	public updateTextContent(clip: Player, newText: string, _initialConfig: ResolvedClip): void {
+		const trackIndex = clip.layer - 1;
+		const clipIndex = this.tracks[trackIndex]?.indexOf(clip) ?? -1;
+		if (clipIndex < 0) {
+			console.warn("UpdateTextContent: clip not found in track");
+			return;
+		}
+		const command = new UpdateTextContentCommand(trackIndex, clipIndex, newText);
 		this.executeCommand(command);
 	}
 
@@ -1264,6 +1422,33 @@ export class Edit extends Entity {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Transfers existing clip IDs from the current document to the new edit configuration.
+	 * This ensures the reconciler sees the same IDs during granular updates and updates
+	 * players in-place rather than creating new ones.
+	 */
+	private preserveClipIdsForGranularUpdate(newEdit: EditConfig): void {
+		if (!this.document) return;
+
+		const existingTracks = this.document.getTracks();
+
+		for (let trackIdx = 0; trackIdx < newEdit.timeline.tracks.length; trackIdx += 1) {
+			const existingTrack = existingTracks[trackIdx];
+			const newTrack = newEdit.timeline.tracks[trackIdx];
+
+			if (!existingTrack || !newTrack) continue;
+
+			for (let clipIdx = 0; clipIdx < newTrack.clips.length; clipIdx += 1) {
+				const existingId = this.document.getClipId(trackIdx, clipIdx);
+				if (existingId) {
+					// Add the ID to the new clip so EditDocument.hydrateIds() preserves it
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal ID hydration
+					(newTrack.clips[clipIdx] as any).id = existingId;
+				}
+			}
+		}
 	}
 
 	/**
@@ -1440,6 +1625,7 @@ export class Edit extends Entity {
 			setTimelineBackground: color => this.setTimelineBackgroundInternal(color),
 			// Document access (single source of truth)
 			getDocument: () => this.document,
+			getDocumentTrack: trackIdx => this.document?.getTrack(trackIdx) ?? null,
 
 			// Document-first mutations (Phase 3)
 			documentUpdateClip: (trackIdx, clipIdx, updates) => {
@@ -1568,11 +1754,8 @@ export class Edit extends Entity {
 				const clipIdx = this.tracks[trackIdx].indexOf(clip);
 				if (clipIdx !== -1) {
 					this.tracks[trackIdx].splice(clipIdx, 1);
-
-					// Sync with document layer - remove clip
-					if (this.document) {
-						this.document.removeClip(trackIdx, clipIdx);
-					}
+					// NOTE: Document sync is NOT done here - commands handle document mutations directly.
+					// This avoids double-removal when commands already called documentRemoveClip().
 				}
 			}
 		}
@@ -1815,7 +1998,11 @@ export class Edit extends Entity {
 		}
 	}
 
-	private addPlayerToContainer(trackIndex: number, player: Player): void {
+	/**
+	 * Add a Player to the appropriate PIXI track container.
+	 * @internal Used by PlayerReconciler and commands
+	 */
+	public addPlayerToContainer(trackIndex: number, player: Player): void {
 		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
 		const trackContainerKey = `shotstack-track-${zIndex}`;
 		let trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
@@ -1858,7 +2045,11 @@ export class Edit extends Entity {
 		// Force parent container to re-sort children by zIndex
 		this.getContainer().sortDirty = true;
 	}
-	private createPlayerFromAssetType(clipConfiguration: ResolvedClip): Player {
+	/**
+	 * Create a Player from a clip configuration based on asset type.
+	 * @internal Used by PlayerReconciler and commands
+	 */
+	public createPlayerFromAssetType(clipConfiguration: ResolvedClip): Player {
 		if (!clipConfiguration.asset?.type) {
 			throw new Error("Invalid clip configuration: missing asset type");
 		}
@@ -2003,6 +2194,10 @@ export class Edit extends Entity {
 
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
 		pastedClip.start = toSec(ms(this.playbackTime)); // Paste at playhead position
+
+		// Remove ID so document generates a new one (otherwise reconciler
+		// would see duplicate IDs and update instead of create)
+		delete (pastedClip as { id?: string }).id;
 
 		this.addClip(this.copiedClip.trackIndex, pastedClip);
 	}
@@ -2763,8 +2958,8 @@ export class Edit extends Entity {
 
 	// ─── Protected Accessors for Subclasses ─────────────────────────────────────
 
-	/** @internal Get the tracks array for subclass access */
-	protected getTracks(): Player[][] {
+	/** @internal Get the tracks array for subclass and reconciler access */
+	public getTracks(): Player[][] {
 		return this.tracks;
 	}
 

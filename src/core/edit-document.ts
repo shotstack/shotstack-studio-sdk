@@ -327,6 +327,55 @@ export class EditDocument {
 		return oldClip;
 	}
 
+	/**
+	 * Move a clip to a different track and/or position, preserving its ID.
+	 * @returns The moved clip, or null if source clip not found
+	 */
+	moveClip(
+		fromTrackIndex: number,
+		fromClipIndex: number,
+		toTrackIndex: number,
+		updates?: Partial<Clip>
+	): Clip | null {
+		// Get the source track and clip
+		const fromTrack = this.data.timeline.tracks[fromTrackIndex];
+		if (!fromTrack || fromClipIndex < 0 || fromClipIndex >= fromTrack.clips.length) {
+			return null;
+		}
+
+		// Get destination track (create if needed)
+		const toTrack = this.data.timeline.tracks[toTrackIndex];
+		if (!toTrack) {
+			return null;
+		}
+
+		// Remove clip from source (preserves the clip object with its ID)
+		const [clip] = fromTrack.clips.splice(fromClipIndex, 1);
+		if (!clip) return null;
+
+		// Apply updates (e.g., new start time)
+		if (updates) {
+			Object.assign(clip, updates);
+		}
+
+		// Find insertion point based on start time
+		const clipStart = typeof clip.start === "number" ? clip.start : 0;
+		let insertIndex = 0;
+		for (let i = 0; i < toTrack.clips.length; i += 1) {
+			const existingClipStart = toTrack.clips[i].start;
+			const existingStart = typeof existingClipStart === "number" ? existingClipStart : 0;
+			if (clipStart < existingStart) {
+				break;
+			}
+			insertIndex += 1;
+		}
+
+		// Insert at the correct position
+		toTrack.clips.splice(insertIndex, 0, clip);
+
+		return clip;
+	}
+
 	// ─── Timeline Mutations ───────────────────────────────────────────────────
 
 	/**

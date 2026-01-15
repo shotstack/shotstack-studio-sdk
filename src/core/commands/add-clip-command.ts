@@ -1,4 +1,3 @@
-import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas";
 
@@ -8,85 +7,73 @@ type ClipType = ResolvedClip;
 
 /**
  * Atomic command that adds a new clip to a track.
+ *
+ * Document-only: This command only mutates the document.
+ * The PlayerReconciler handles Player creation via the Resolved event.
  */
 export class AddClipCommand implements EditCommand {
 	name = "addClip";
-	private addedPlayer?: Player;
+	private addedClipId?: string;
 
 	constructor(
 		private trackIdx: number,
 		private clip: ClipType
 	) {}
 
-	async execute(context?: CommandContext): Promise<void> {
+	execute(context?: CommandContext): void {
 		if (!context) throw new Error("AddClipCommand.execute: context is required");
 
-		const clipPlayer = context.createPlayerFromAssetType(this.clip);
-		clipPlayer.layer = this.trackIdx + 1;
+		// Document mutation only - reconciler creates the Player
+		const addedClip = context.documentAddClip(this.trackIdx, this.clip);
 
-		try {
-			await context.addPlayer(this.trackIdx, clipPlayer);
-		} catch (error) {
-			context.queueDisposeClip(clipPlayer);
-			context.emitEvent(EditEvent.ClipLoadFailed, {
-				trackIndex: this.trackIdx,
-				clipIndex: -1,
-				error: error instanceof Error ? error.message : String(error),
-				assetType: (this.clip.asset as { type?: string }).type ?? "unknown"
-			});
-			throw error;
-		}
+		// Store clip ID for undo
+		this.addedClipId = (addedClip as { id?: string }).id;
 
-		const clips = context.getClips();
-		const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
-		const clipIndex = trackClips.findIndex(c => c === clipPlayer);
-
-		const addedDocClip = context.documentAddClip(this.trackIdx, this.clip, clipIndex);
-
-		// Register Player by clip ID for reconciliation
-		const clipId = (addedDocClip as { id?: string }).id;
-		if (clipId) {
-			clipPlayer.clipId = clipId;
-			context.registerPlayerByClipId(clipId, clipPlayer);
-		}
+		// Resolve triggers reconciler → creates Player (must happen before duration calc)
+		context.resolve();
 
 		context.updateDuration();
 
-		// Emit resolution after document mutation
-		context.resolve();
+		// Get clip index from document for event
+		const docTrack = context.getDocumentTrack(this.trackIdx);
+		const clips = docTrack?.clips as Array<{ id?: string }> | undefined;
+		const clipIndex = clips?.findIndex(c => c.id === this.addedClipId) ?? -1;
 
-		context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
-
-		this.addedPlayer = clipPlayer;
+		context.emitEvent(EditEvent.ClipAdded, {
+			trackIndex: this.trackIdx,
+			clipIndex
+		});
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
+	undo(context?: CommandContext): void {
 		if (!context) throw new Error("AddClipCommand.undo: context is required");
-		if (!this.addedPlayer) return;
+		if (!this.addedClipId) return;
 
-		const clips = context.getClips();
-		const trackClips = clips.filter(c => c.layer === this.addedPlayer!.layer);
-		const clipIndex = trackClips.findIndex(c => c === this.addedPlayer);
+		// Find clip index by ID (position may have changed)
+		const docTrack = context.getDocumentTrack(this.trackIdx);
+		const clips = docTrack?.clips as Array<{ id?: string }> | undefined;
+		const clipIndex = clips?.findIndex(c => c.id === this.addedClipId) ?? -1;
 
-		context.documentRemoveClip(this.trackIdx, clipIndex);
-
-		// Unregister Player by clip ID
-		if (this.addedPlayer.clipId) {
-			context.unregisterPlayerByClipId(this.addedPlayer.clipId);
+		if (clipIndex === -1) {
+			console.warn(`AddClipCommand.undo: clip ${this.addedClipId} not found in track ${this.trackIdx}`);
+			return;
 		}
 
-		context.queueDisposeClip(this.addedPlayer);
-		this.addedPlayer = undefined;
+		// Document mutation only - reconciler disposes the Player
+		context.documentRemoveClip(this.trackIdx, clipIndex);
+
+		// Resolve triggers reconciler → disposes orphaned Player (before duration calc)
+		context.resolve();
 
 		context.updateDuration();
 
-		// Emit resolution after document mutation
-		context.resolve();
-
-		context.emitEvent(EditEvent.ClipDeleted, { trackIndex: this.trackIdx, clipIndex });
+		context.emitEvent(EditEvent.ClipDeleted, {
+			trackIndex: this.trackIdx,
+			clipIndex
+		});
 	}
 
 	dispose(): void {
-		this.addedPlayer = undefined;
+		this.addedClipId = undefined;
 	}
 }

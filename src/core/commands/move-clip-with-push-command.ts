@@ -1,17 +1,18 @@
-import type { Player } from "@canvas/players/player";
 import { type Seconds, sec } from "@core/timing/types";
 
 import { MoveClipCommand } from "./move-clip-command";
 import type { EditCommand, CommandContext } from "./types";
 
 /**
- * Command to move a clip while pushing other clips forward to make room.
- * Self-contained: calculates which clips to push based on the move destination.
+ * Document-only command to move a clip while pushing other clips forward to make room.
+ * Calculates which clips to push based on the move destination.
+ *
+ * Flow: Document mutations → MoveClipCommand → resolve() → Reconciler updates all Players
  */
 export class MoveClipWithPushCommand implements EditCommand {
 	name = "moveClipWithPush";
 	private moveCommand: MoveClipCommand;
-	private pushedClips: Array<{ player: Player; originalStart: Seconds }> = [];
+	private pushedClipIds: Array<{ clipId: string; originalStart: Seconds }> = [];
 
 	constructor(
 		private fromTrackIndex: number,
@@ -26,64 +27,68 @@ export class MoveClipWithPushCommand implements EditCommand {
 	execute(context?: CommandContext): void {
 		if (!context) throw new Error("MoveClipWithPushCommand.execute: context is required");
 
-		const tracks = context.getTracks();
-		const targetTrack = tracks[this.toTrackIndex];
-		const sourceTrack = tracks[this.fromTrackIndex];
-		if (!targetTrack || !sourceTrack) return;
+		const doc = context.getDocument();
+		if (!doc) throw new Error("MoveClipWithPushCommand.execute: document is required");
 
 		// Get the clip being moved to know its length
-		const movingClip = sourceTrack[this.fromClipIndex];
-		if (!movingClip) return;
+		const movingPlayer = context.getClipAt(this.fromTrackIndex, this.fromClipIndex);
+		if (!movingPlayer) return;
 
-		const newEnd = this.newStart + movingClip.clipConfiguration.length;
+		const movingLength = movingPlayer.clipConfiguration.length as Seconds;
+		const newEnd = this.newStart + movingLength;
 
-		// Find and push clips that would overlap with the new position
-		this.pushedClips = [];
-		for (const player of targetTrack) {
+		// Get clips in target track from document
+		const targetClips = doc.getClipsInTrack(this.toTrackIndex);
+		const movingClipId = movingPlayer.clipId;
+
+		// Find and record clips that would overlap with the new position
+		this.pushedClipIds = [];
+		for (const clipInfo of targetClips) {
+			const clip = clipInfo as { id?: string; start: number | "auto"; length: number | "auto" | "end" };
+
 			// Skip the clip we're moving
-			if (player !== movingClip) {
-				const clipStart = sec(player.clipConfiguration.start);
-				// Push clips that start before our new end position and would overlap
+			if (clip.id && clip.id !== movingClipId) {
+				const clipStart = typeof clip.start === "number" ? sec(clip.start) : sec(0);
+
+				// Push clips that start within our new range
 				if (clipStart >= this.newStart && clipStart < newEnd) {
-					this.pushedClips.push({ player, originalStart: clipStart });
-					this.updateClipStart(player, sec(clipStart + this.pushOffset), context);
+					this.pushedClipIds.push({ clipId: clip.id, originalStart: clipStart });
+
+					// Update in document
+					const clipIndex = targetClips.indexOf(clipInfo);
+					doc.updateClip(this.toTrackIndex, clipIndex, {
+						start: sec(clipStart + this.pushOffset)
+					});
 				}
 			}
 		}
 
-		// Execute the move
+		// Execute the move (which will call resolve())
 		this.moveCommand.execute(context);
+
+		// Propagate timing changes for pushed clips
 		context.propagateTimingChanges(this.toTrackIndex, 0);
-	}
-
-	private updateClipStart(clip: Player, newStart: Seconds, context?: CommandContext): void {
-		clip.setResolvedTiming({ start: newStart, length: clip.getLength() });
-		clip.setTimingIntent({ start: newStart, length: clip.getTimingIntent().length });
-
-		if (context) {
-			const tracks = context.getTracks();
-			const trackIdx = tracks.findIndex(t => t.includes(clip));
-			if (trackIdx >= 0) {
-				const clipIdx = tracks[trackIdx].indexOf(clip);
-				if (clipIdx >= 0) {
-					context.documentUpdateClip(trackIdx, clipIdx, { start: newStart });
-				}
-			}
-		}
-
-		clip.reconfigureAfterRestore();
-		clip.draw();
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
 		if (!context) throw new Error("MoveClipWithPushCommand.undo: context is required");
 
+		const doc = context.getDocument();
+		if (!doc) throw new Error("MoveClipWithPushCommand.undo: document is required");
+
+		// Undo the move first
 		await this.moveCommand.undo(context);
 
-		// Restore pushed clips
-		for (const { player, originalStart } of this.pushedClips) {
-			this.updateClipStart(player, originalStart, context);
+		// Restore pushed clips to original positions in document
+		for (const { clipId, originalStart } of this.pushedClipIds) {
+			const clipInfo = doc.getClipById(clipId);
+			if (clipInfo) {
+				doc.updateClip(clipInfo.trackIndex, clipInfo.clipIndex, { start: originalStart });
+			}
 		}
+
+		// Reconciler handles player updates
+		context.resolve();
 
 		context.propagateTimingChanges(this.toTrackIndex, 0);
 		context.updateDuration();

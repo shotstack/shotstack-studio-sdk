@@ -1,23 +1,21 @@
-import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip } from "@schemas";
+import type { Clip, ResolvedClip } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 
 /**
- * Transforms a clip's asset type by recreating the player.
+ * Transforms a clip's asset type.
  * Used for luma attachment (image/video → luma) and detachment (luma → image/video).
+ *
+ * Document-only: This command only mutates the document.
+ * The PlayerReconciler handles Player recreation via the Resolved event
+ * (detects asset type change and recreates the Player).
  */
 export class TransformClipAssetCommand implements EditCommand {
 	public readonly name = "TransformClipAsset";
 
-	private originalPlayer: Player | null = null;
-	private originalConfig: ResolvedClip | null = null;
+	private originalAsset: Clip["asset"] | null = null;
 	private originalAssetType: "image" | "video" | "luma" | null = null;
-	private originalBindings: Map<string, MergeFieldBinding> = new Map();
-	private newPlayer: Player | null = null;
-	private loadCompleted = false;
-	private loadFailed = false;
 
 	constructor(
 		private trackIndex: number,
@@ -26,166 +24,57 @@ export class TransformClipAssetCommand implements EditCommand {
 	) {}
 
 	public execute(context: CommandContext): void {
-		const player = context.getClipAt(this.trackIndex, this.clipIndex);
-		if (!player?.clipConfiguration) {
-			throw new Error("Cannot transform clip: invalid player");
-		}
+		const document = context.getDocument();
+		if (!document) throw new Error("Cannot transform clip: no document");
 
-		// Store for undo - including original asset type for reliable restoration
-		this.originalPlayer = player;
-		this.originalConfig = { ...player.clipConfiguration };
-		this.originalAssetType = ((this.originalConfig.asset as { type?: string })?.type as "image" | "video" | "luma") ?? null;
-		this.originalBindings = new Map(player.getMergeFieldBindings());
-		this.loadCompleted = false;
-		this.loadFailed = false;
+		const clip = document.getClip(this.trackIndex, this.clipIndex);
+		if (!clip?.asset) throw new Error("Cannot transform clip: invalid clip or no asset");
 
-		// Build new config with transformed asset type (only works for src-based assets)
-		const originalAsset = this.originalConfig.asset as { src?: string };
+		// Store original for undo
+		this.originalAsset = structuredClone(clip.asset);
+		this.originalAssetType = ((clip.asset as { type?: string })?.type as "image" | "video" | "luma") ?? null;
+
+		// Only works for src-based assets
+		const originalAsset = clip.asset as { src?: string };
 		if (!originalAsset.src) {
 			throw new Error("Cannot transform clip: asset has no src property");
 		}
 
-		// Create minimal asset with new type - full properties will be resolved by player
-		const newAsset = { type: this.targetAssetType, src: originalAsset.src } as ResolvedClip["asset"];
-		const newConfig: ResolvedClip = {
-			...this.originalConfig,
-			asset: newAsset
-		};
+		// Create new asset with target type (minimal - resolver fills in details)
+		const newAsset = { type: this.targetAssetType, src: originalAsset.src };
 
-		// Create new player
-		this.newPlayer = context.createPlayerFromAssetType(newConfig);
-		if (!this.newPlayer) {
-			throw new Error("Failed to create transformed player");
-		}
-		this.newPlayer.layer = this.trackIndex + 1;
+		// Document mutation
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: newAsset });
 
-		// Copy merge field bindings
-		if (this.originalBindings.size > 0) {
-			this.newPlayer.setInitialBindings(this.originalBindings);
-		}
+		// Resolve triggers reconciler → detects asset type change → recreates Player
+		context.resolve();
 
-		// Replace in track array
-		const track = context.getTrack(this.trackIndex);
-		if (!track) throw new Error("Invalid track index");
-		track[this.clipIndex] = this.newPlayer;
+		// Get resolved clip for event
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		const newConfig = player?.clipConfiguration;
 
-		// Replace in global clips array
-		const clips = context.getClips();
-		const globalIndex = clips.indexOf(this.originalPlayer);
-		if (globalIndex !== -1) {
-			clips[globalIndex] = this.newPlayer;
-		}
-
-		// Add to PIXI container and configure
-		context.addPlayerToContainer(this.trackIndex, this.newPlayer);
-		this.newPlayer.reconfigureAfterRestore();
-
-		// Load async - only dispose original player AFTER successful load
-		// This prevents race conditions if undo is triggered during load
-		this.newPlayer
-			.load()
-			.then(() => {
-				this.loadCompleted = true;
-				if (this.newPlayer) {
-					this.newPlayer.draw();
-				}
-
-				// Sync transformed asset to document (source of truth)
-				context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: newConfig.asset });
-
-				context.emitEvent(EditEvent.ClipUpdated, {
-					previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.originalConfig! },
-					current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: newConfig }
-				});
-				// Safe to dispose original player now that new one is loaded
-				if (this.originalPlayer) {
-					context.queueDisposeClip(this.originalPlayer);
-				}
-			})
-			.catch(error => {
-				// Rollback state on load failure
-				this.loadFailed = true;
-				this.rollbackOnFailure(context);
-
-				// Emit failure event so UI can respond
-				context.emitEvent(EditEvent.ClipLoadFailed, {
-					trackIndex: this.trackIndex,
-					clipIndex: this.clipIndex,
-					error: error instanceof Error ? error.message : String(error),
-					assetType: this.targetAssetType
-				});
-			});
-	}
-
-	/**
-	 * Rollback state when async load fails.
-	 * Restores the original player to arrays and disposes the failed new player.
-	 */
-	private rollbackOnFailure(context: CommandContext): void {
-		if (!this.originalPlayer || !this.newPlayer) return;
-
-		// Restore original player to track array
-		const track = context.getTrack(this.trackIndex);
-		if (track && track[this.clipIndex] === this.newPlayer) {
-			track[this.clipIndex] = this.originalPlayer;
-		}
-
-		// Restore original player to global clips array
-		const clips = context.getClips();
-		const globalIndex = clips.indexOf(this.newPlayer);
-		if (globalIndex !== -1) {
-			clips[globalIndex] = this.originalPlayer;
-		}
-
-		// Re-add original player to container and redraw
-		context.addPlayerToContainer(this.trackIndex, this.originalPlayer);
-		this.originalPlayer.reconfigureAfterRestore();
-		this.originalPlayer.draw();
-
-		// Dispose the failed new player
-		context.queueDisposeClip(this.newPlayer);
-		this.newPlayer = null;
+		context.emitEvent(EditEvent.ClipUpdated, {
+			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: { asset: this.originalAsset } as ResolvedClip },
+			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: newConfig! }
+		});
 	}
 
 	public undo(context: CommandContext): void {
-		if (!this.originalPlayer || !this.originalConfig) return;
+		if (!this.originalAsset) return;
 
-		// If load failed, rollback already happened - nothing to undo
-		if (this.loadFailed) return;
+		// Document mutation - restore original asset
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: this.originalAsset });
 
-		// Restore original player to arrays
-		const track = context.getTrack(this.trackIndex);
-		if (track && this.newPlayer) {
-			track[this.clipIndex] = this.originalPlayer;
-		}
+		// Resolve triggers reconciler → detects asset type change → recreates Player
+		context.resolve();
 
-		const clips = context.getClips();
-		if (this.newPlayer) {
-			const globalIndex = clips.indexOf(this.newPlayer);
-			if (globalIndex !== -1) {
-				clips[globalIndex] = this.originalPlayer;
-			}
-		}
-
-		// Re-add original player to container
-		context.addPlayerToContainer(this.trackIndex, this.originalPlayer);
-		this.originalPlayer.reconfigureAfterRestore();
-		this.originalPlayer.draw();
-
-		// Queue new player for disposal (safe even if still loading)
-		if (this.newPlayer) {
-			context.queueDisposeClip(this.newPlayer);
-		}
-
-		// Sync restored asset to document (source of truth)
-		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: this.originalConfig.asset });
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		const currentConfig = player?.clipConfiguration;
 
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.newPlayer?.clipConfiguration! },
-			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: this.originalConfig }
+			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: currentConfig! },
+			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: { asset: this.originalAsset } as ResolvedClip }
 		});
-
-		this.newPlayer = null;
 	}
 
 	/** Get the stored original asset type (used for reliable restoration) */
@@ -193,20 +82,8 @@ export class TransformClipAssetCommand implements EditCommand {
 		return this.originalAssetType;
 	}
 
-	/** Check if the async load has completed */
-	public isLoadCompleted(): boolean {
-		return this.loadCompleted;
-	}
-
-	/** Check if the async load failed */
-	public isLoadFailed(): boolean {
-		return this.loadFailed;
-	}
-
 	public dispose(): void {
-		this.originalPlayer = null;
-		this.newPlayer = null;
-		this.originalConfig = null;
-		this.originalBindings.clear();
+		this.originalAsset = null;
+		this.originalAssetType = null;
 	}
 }

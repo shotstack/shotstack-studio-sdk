@@ -4,7 +4,7 @@
 
 import { describe, it, expect, jest } from "@jest/globals";
 import { TimelineStateManager } from "../src/components/timeline/timeline-state";
-import { EditEvent } from "../src/core/events/edit-events";
+import { EditEvent, InternalEvent } from "../src/core/events/edit-events";
 
 // Mock EventEmitter with event storage for testing
 function createMockEventEmitter() {
@@ -76,16 +76,16 @@ function createMockEdit(tracks: unknown[][] = []) {
 
 describe("TimelineStateManager", () => {
 	describe("cache invalidation", () => {
-		it("subscribes to ClipUpdated event on construction", () => {
+		it("subscribes to Resolved event on construction", () => {
 			const edit = createMockEdit();
 			const stateManager = new TimelineStateManager(edit as never);
 
-			expect(edit.events.on).toHaveBeenCalledWith(EditEvent.ClipUpdated, expect.any(Function));
+			expect(edit.events.on).toHaveBeenCalledWith(InternalEvent.Resolved, expect.any(Function));
 			// Use stateManager to satisfy no-unused-vars
 			expect(stateManager).toBeDefined();
 		});
 
-		it("invalidates cache when ClipUpdated fires", () => {
+		it("invalidates cache when Resolved event fires", () => {
 			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
 
 			const stateManager = new TimelineStateManager(edit as never);
@@ -98,33 +98,33 @@ describe("TimelineStateManager", () => {
 			const tracks2 = stateManager.getTracks();
 			expect(tracks2).toBe(tracks1);
 
-			// Fire ClipUpdated event
-			edit.events.emit(EditEvent.ClipUpdated);
+			// Fire Resolved event (this is what commands do after document mutations)
+			edit.events.emit(InternalEvent.Resolved, { edit: edit.getResolvedEdit() });
 
 			// Cache should be invalidated - getTracks returns new array
 			const tracks3 = stateManager.getTracks();
 			expect(tracks3).not.toBe(tracks1);
 		});
 
-		it("invalidates cache when ClipAdded fires", () => {
+		it("invalidates cache when selection changes", () => {
 			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
 
 			const stateManager = new TimelineStateManager(edit as never);
 			const tracks1 = stateManager.getTracks();
 
-			edit.events.emit(EditEvent.ClipAdded);
+			edit.events.emit(EditEvent.ClipSelected);
 
 			const tracks2 = stateManager.getTracks();
 			expect(tracks2).not.toBe(tracks1);
 		});
 
-		it("invalidates cache when ClipDeleted fires", () => {
+		it("invalidates cache when SelectionCleared fires", () => {
 			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
 
 			const stateManager = new TimelineStateManager(edit as never);
 			const tracks1 = stateManager.getTracks();
 
-			edit.events.emit(EditEvent.ClipDeleted);
+			edit.events.emit(EditEvent.SelectionCleared);
 
 			const tracks2 = stateManager.getTracks();
 			expect(tracks2).not.toBe(tracks1);
@@ -136,9 +136,9 @@ describe("TimelineStateManager", () => {
 
 			stateManager.dispose();
 
-			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipUpdated, expect.any(Function));
-			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipAdded, expect.any(Function));
-			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipDeleted, expect.any(Function));
+			expect(edit.events.off).toHaveBeenCalledWith(InternalEvent.Resolved, expect.any(Function));
+			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipSelected, expect.any(Function));
+			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.SelectionCleared, expect.any(Function));
 		});
 	});
 
@@ -350,18 +350,18 @@ describe("TimelineStateManager", () => {
 });
 
 /**
- * Regression test: ClipUpdated cache invalidation
+ * Regression test: Resolved event cache invalidation
  *
- * This test specifically verifies the bug fix where:
- * 1. transformFromLuma fires ClipUpdated
- * 2. TimelineStateManager invalidates cache on ClipUpdated
+ * This test verifies that:
+ * 1. Commands call context.resolve() after document mutations
+ * 2. TimelineStateManager invalidates cache on InternalEvent.Resolved
  * 3. Next getTracks() returns fresh data with updated asset type
  *
- * Without this fix, the timeline would show stale luma type until
- * a second user action triggered a different cache invalidation.
+ * The unidirectional flow ensures the timeline always reflects
+ * the current resolved state of the document.
  */
-describe("ClipUpdated cache invalidation regression", () => {
-	it("getTracks returns updated asset type after ClipUpdated fires", () => {
+describe("Resolved event cache invalidation regression", () => {
+	it("getTracks returns updated asset type after Resolved event fires", () => {
 		// Initial state: image clip
 		let currentAssetType = "image";
 
@@ -397,15 +397,15 @@ describe("ClipUpdated cache invalidation regression", () => {
 		const tracks1 = stateManager.getTracks();
 		expect(tracks1[0].clips[0].config.asset?.type).toBe("image");
 
-		// Simulate transformToLuma changing the type
+		// Simulate a command changing the asset type in the document
 		currentAssetType = "luma";
 
 		// Without cache invalidation, we'd get stale data
 		const tracks2 = stateManager.getTracks();
 		expect(tracks2[0].clips[0].config.asset?.type).toBe("image"); // Cached!
 
-		// Fire ClipUpdated (what transformFromLuma does after async load)
-		events.emit(EditEvent.ClipUpdated);
+		// Fire Resolved event (what commands do after document mutations)
+		events.emit(InternalEvent.Resolved, { edit: edit.getResolvedEdit() });
 
 		// Now we should get fresh data
 		const tracks3 = stateManager.getTracks();

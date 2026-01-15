@@ -660,11 +660,11 @@ describe("Edit Clip Operations", () => {
 			);
 		});
 
-		it("pasteClip adds clip at playhead position", () => {
+		it("pasteClip adds clip at playhead position", async () => {
 			edit.copyClip(0, 0);
 			edit.playbackTime = 5000; // 5 seconds
 
-			edit.pasteClip();
+			await edit.pasteClip();
 
 			const { tracks } = getEditState(edit);
 			expect(tracks[0].length).toBe(2);
@@ -756,74 +756,78 @@ describe("Edit Clip Operations", () => {
 	});
 
 	describe("AddClipCommand export state sync", () => {
+		// Note: The tests below call loadEdit which starts with this clip,
+		// then add more clips on top. Test assertions account for this.
 		const baseEdit = {
 			timeline: {
-				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }] as { clips: ResolvedClip[] }[]
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/base.jpg" }, start: 0, length: 1 }] }] as { clips: ResolvedClip[] }[]
 			},
 			output: { format: "mp4" as const, fps: 25 as const, size: { width: 1920, height: 1080 } }
 		};
 
 		it("tracks clip state after addClip", async () => {
-			// Load an initial edit
+			// Load an initial edit (has 1 base image clip)
 			await edit.loadEdit(baseEdit);
 
-			const clip = createVideoClip(0, 5);
+			const clip = createVideoClip(1, 5); // Start after base clip
 			await edit.addClip(0, clip);
 
-			// Verify clip is tracked in player
-			const player = edit.getPlayerClip(0, 0);
+			// Verify added clip is tracked (appended at index 1)
+			const player = edit.getPlayerClip(0, 1);
 			expect(player).not.toBeNull();
 			expect(player?.clipConfiguration.asset?.type).toBe("video");
 		});
 
 		it("removes clip state on undo", async () => {
-			// Load an initial edit
+			// Load an initial edit (has 1 base image clip)
 			await edit.loadEdit(baseEdit);
 
-			const clip = createVideoClip(0, 5);
+			const clip = createVideoClip(1, 5);
 			await edit.addClip(0, clip);
 
-			// Verify clip exists
-			expect(edit.getPlayerClip(0, 0)).not.toBeNull();
+			// Verify added clip exists (appended at index 1)
+			expect(edit.getPlayerClip(0, 1)).not.toBeNull();
 
 			edit.undo();
 			edit.update(0, 0); // Process disposal
 
-			// Verify clip is removed
-			expect(edit.getPlayerClip(0, 0)).toBeNull();
+			// Verify added clip is removed (base clip still at index 0)
+			expect(edit.getPlayerClip(0, 1)).toBeNull();
+			// Base clip should still exist
+			expect(edit.getPlayerClip(0, 0)).not.toBeNull();
 		});
 
 		it("tracks multiple clips after addClip", async () => {
-			await edit.loadEdit(baseEdit);
+			await edit.loadEdit(baseEdit); // 1 base clip
 
-			await edit.addClip(0, createVideoClip(0, 3));
-			await edit.addClip(0, createImageClip(3, 2));
+			await edit.addClip(0, createVideoClip(1, 3));
+			await edit.addClip(0, createImageClip(4, 2));
 
-			// Verify both clips are tracked
+			// Verify all 3 clips are tracked (1 base + 2 added)
 			const { tracks } = getEditState(edit);
-			expect(tracks[0]).toHaveLength(2);
+			expect(tracks[0]).toHaveLength(3);
 		});
 
 		it("maintains state across multiple undo operations", async () => {
-			await edit.loadEdit(baseEdit);
+			await edit.loadEdit(baseEdit); // 1 base clip
 
-			await edit.addClip(0, createVideoClip(0, 3));
-			await edit.addClip(0, createImageClip(3, 2));
+			await edit.addClip(0, createVideoClip(1, 3));
+			await edit.addClip(0, createImageClip(4, 2));
 
-			const { tracks: withTwo } = getEditState(edit);
-			expect(withTwo[0]).toHaveLength(2);
+			const { tracks: withThree } = getEditState(edit);
+			expect(withThree[0]).toHaveLength(3); // 1 base + 2 added
 
 			edit.undo(); // Undo second add
 			edit.update(0, 0);
 
-			const { tracks: withOne } = getEditState(edit);
-			expect(withOne[0]).toHaveLength(1);
+			const { tracks: withTwo } = getEditState(edit);
+			expect(withTwo[0]).toHaveLength(2); // 1 base + 1 added
 
 			edit.undo(); // Undo first add
 			edit.update(0, 0);
 
-			const { tracks: withNone } = getEditState(edit);
-			expect(withNone[0]?.length ?? 0).toBe(0);
+			const { tracks: withOne } = getEditState(edit);
+			expect(withOne[0]).toHaveLength(1); // Just base clip
 		});
 	});
 

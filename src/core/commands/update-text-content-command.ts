@@ -1,76 +1,90 @@
-import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, TextAsset } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 
-type ClipType = ResolvedClip;
-
+/**
+ * Document-only command to update text content in a text clip.
+ *
+ * Flow: Document mutation → resolve() → Reconciler updates Player asset
+ */
 export class UpdateTextContentCommand implements EditCommand {
 	name = "updateTextContent";
-	private previousText: string;
+
+	private clipId: string | null = null;
+	private previousText = "";
+	private previousClipConfig?: ResolvedClip;
 
 	constructor(
-		private clip: Player,
-		private newText: string,
-		private initialConfig: ClipType
-	) {
-		const { asset } = this.clip.clipConfiguration;
-		this.previousText = asset && "text" in asset ? ((asset as TextAsset).text ?? "") : "";
-	}
+		private trackIndex: number,
+		private clipIndex: number,
+		private newText: string
+	) {}
 
 	execute(context?: CommandContext): void {
 		if (!context) throw new Error("UpdateTextContentCommand.execute: context is required");
-		if (this.clip.clipConfiguration.asset && "text" in this.clip.clipConfiguration.asset) {
-			(this.clip.clipConfiguration.asset as TextAsset).text = this.newText;
 
-			const textSprite = (this.clip as any).text;
-			if (textSprite) {
-				textSprite.text = this.newText;
-				(this.clip as any).positionText(this.clip.clipConfiguration.asset as TextAsset);
-			}
+		const doc = context.getDocument();
+		if (!doc) throw new Error("UpdateTextContentCommand.execute: document is required");
 
-			context.setUpdatedClip(this.clip);
-
-			const trackIndex = this.clip.layer - 1;
-			const clips = context.getClips();
-			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
-			const clipIndex = clipsByTrack.indexOf(this.clip);
-
-			// Sync text content to document (source of truth)
-			context.documentUpdateClip(trackIndex, clipIndex, { asset: this.clip.clipConfiguration.asset });
-
-			context.emitEvent(EditEvent.ClipUpdated, {
-				previous: { clip: this.initialConfig, trackIndex, clipIndex },
-				current: { clip: this.clip.clipConfiguration, trackIndex, clipIndex }
-			});
+		// Get current player for config and ID
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) {
+			console.warn(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
+			return;
 		}
+
+		// Store for undo
+		this.clipId = player.clipId;
+		this.previousClipConfig = structuredClone(player.clipConfiguration);
+		const asset = player.clipConfiguration.asset;
+		this.previousText = asset && "text" in asset ? ((asset as TextAsset).text ?? "") : "";
+
+		// Get current clip from document
+		const clip = doc.getClip(this.trackIndex, this.clipIndex);
+		if (!clip) return;
+
+		// Update document with new text
+		const currentAsset = clip.asset as TextAsset;
+		const newAsset = { ...currentAsset, text: this.newText };
+		doc.updateClip(this.trackIndex, this.clipIndex, { asset: newAsset });
+
+		// Reconciler handles player asset update
+		context.resolve();
+
+		context.emitEvent(EditEvent.ClipUpdated, {
+			previous: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+		});
 	}
 
 	undo(context?: CommandContext): void {
 		if (!context) throw new Error("UpdateTextContentCommand.undo: context is required");
-		if (this.clip.clipConfiguration.asset && "text" in this.clip.clipConfiguration.asset) {
-			(this.clip.clipConfiguration.asset as TextAsset).text = this.previousText;
 
-			const textSprite = (this.clip as any).text;
-			if (textSprite) {
-				textSprite.text = this.previousText;
-				(this.clip as any).positionText(this.clip.clipConfiguration.asset as TextAsset);
-			}
+		const doc = context.getDocument();
+		if (!doc) throw new Error("UpdateTextContentCommand.undo: document is required");
 
-			context.setUpdatedClip(this.clip);
+		const player = this.clipId ? context.getPlayerByClipId(this.clipId) : context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) return;
 
-			const trackIndex = this.clip.layer - 1;
-			const clips = context.getClips();
-			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
-			const clipIndex = clipsByTrack.indexOf(this.clip);
+		const currentConfig = structuredClone(player.clipConfiguration);
 
-			// Sync restored text to document (source of truth)
-			context.documentUpdateClip(trackIndex, clipIndex, { asset: this.clip.clipConfiguration.asset });
+		// Get current clip from document
+		const clip = doc.getClip(this.trackIndex, this.clipIndex);
+		if (!clip) return;
 
+		// Restore previous text in document
+		const currentAsset = clip.asset as TextAsset;
+		const restoredAsset = { ...currentAsset, text: this.previousText };
+		doc.updateClip(this.trackIndex, this.clipIndex, { asset: restoredAsset });
+
+		// Reconciler handles player asset update
+		context.resolve();
+
+		if (this.previousClipConfig) {
 			context.emitEvent(EditEvent.ClipUpdated, {
-				previous: { clip: this.clip.clipConfiguration, trackIndex, clipIndex },
-				current: { clip: this.initialConfig, trackIndex, clipIndex }
+				previous: { clip: currentConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+				current: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 			});
 		}
 	}

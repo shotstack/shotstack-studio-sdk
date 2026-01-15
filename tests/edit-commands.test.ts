@@ -977,6 +977,7 @@ describe("TransformClipAssetCommand", () => {
 	it("undo during transform is safe", () => {
 		const originalPlayer = edit.getPlayerClip(0, 0);
 		expect(originalPlayer).toBeDefined();
+		const originalClipId = originalPlayer?.clipId;
 
 		// Transform to luma (async load starts)
 		edit.transformToLuma(0, 0);
@@ -987,9 +988,12 @@ describe("TransformClipAssetCommand", () => {
 			edit.undo();
 		}).not.toThrow();
 
-		// Original player should be restored
+		// Player should be restored with original state
+		// Note: With reconciler, asset type changes cause player recreation,
+		// so we verify state equivalence rather than object identity
 		const restoredPlayer = edit.getPlayerClip(0, 0);
-		expect(restoredPlayer).toBe(originalPlayer);
+		expect(restoredPlayer).toBeDefined();
+		expect(restoredPlayer?.clipId).toBe(originalClipId);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 
