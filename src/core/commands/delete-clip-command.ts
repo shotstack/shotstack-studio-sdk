@@ -17,47 +17,43 @@ export class DeleteClipCommand implements EditCommand {
 
 	execute(context?: CommandContext): void {
 		if (!context) throw new Error("DeleteClipCommand.execute: context is required");
-		const clips = context.getClips();
-		const tracks = context.getTracks();
-		const trackClips = clips.filter((c: Player) => c.layer === this.trackIdx + 1);
-		this.deletedClip = trackClips[this.clipIdx];
+
+		const track = context.getTrack(this.trackIdx);
+		if (!track) {
+			throw new Error(`DeleteClipCommand: invalid track index ${this.trackIdx}`);
+		}
+		this.deletedClip = track[this.clipIdx];
+		if (!this.deletedClip) {
+			throw new Error(`DeleteClipCommand: no clip at track ${this.trackIdx}, index ${this.clipIdx}`);
+		}
 
 		// Clear any error associated with this clip before deletion
 		context.clearClipError(this.trackIdx, this.clipIdx);
 
-		if (this.deletedClip) {
-			context.documentRemoveClip(this.trackIdx, this.clipIdx);
+		context.documentRemoveClip(this.trackIdx, this.clipIdx);
 
-			context.queueDisposeClip(this.deletedClip);
-			context.disposeClips();
-			context.updateDuration();
+		context.queueDisposeClip(this.deletedClip);
+		context.disposeClips();
+		context.updateDuration();
 
-			// Propagate timing changes to clips that were after the deleted clip
-			// Use clipIdx - 1 because the clip at clipIdx no longer exists
-			context.propagateTimingChanges(this.trackIdx, this.clipIdx - 1);
+		context.propagateTimingChanges(this.trackIdx, Math.max(0, this.clipIdx - 1));
 
-			// Check if track is now empty and delete it (same pattern as MoveClipCommand)
-			// DeleteTrackCommand emits TrackRemoved
-			const track = tracks[this.trackIdx];
-			if (track && track.length === 0) {
-				this.deleteTrackCommand = new DeleteTrackCommand(this.trackIdx);
-				this.deleteTrackCommand.execute(context);
-				this.trackWasDeleted = true;
-			}
-
-			// Emit event so luma masking and other listeners can update
-			context.emitEvent(EditEvent.ClipDeleted, {
-				trackIndex: this.trackIdx,
-				clipIndex: this.clipIdx
-			});
-
-			// Clear selection if the deleted clip was selected
-			const selectedClip = context.getSelectedClip();
-			if (selectedClip === this.deletedClip) {
-				context.setSelectedClip(null);
-				context.emitEvent(EditEvent.SelectionCleared);
-			}
+		const selectedClip = context.getSelectedClip();
+		if (selectedClip === this.deletedClip) {
+			context.setSelectedClip(null);
+			context.emitEvent(EditEvent.SelectionCleared);
 		}
+
+		if (track.length === 0) {
+			this.deleteTrackCommand = new DeleteTrackCommand(this.trackIdx);
+			this.deleteTrackCommand.execute(context);
+			this.trackWasDeleted = true;
+		}
+
+		context.emitEvent(EditEvent.ClipDeleted, {
+			trackIndex: this.trackIdx,
+			clipIndex: this.clipIdx
+		});
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
@@ -83,5 +79,10 @@ export class DeleteClipCommand implements EditCommand {
 			trackIndex: this.trackIdx,
 			clipIndex: this.clipIdx
 		});
+	}
+
+	dispose(): void {
+		this.deletedClip = undefined;
+		this.deleteTrackCommand = undefined;
 	}
 }

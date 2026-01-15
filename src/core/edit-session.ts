@@ -1893,16 +1893,20 @@ export class Edit extends Entity {
 		if (!this.selectedClip) return false;
 
 		const selectedTrackIndex = this.selectedClip.layer - 1;
-		const selectedClipIndex = this.tracks[selectedTrackIndex].indexOf(this.selectedClip);
+		const track = this.tracks[selectedTrackIndex];
+		if (!track) return false;
 
+		const selectedClipIndex = track.indexOf(this.selectedClip);
 		return trackIndex === selectedTrackIndex && clipIndex === selectedClipIndex;
 	}
 	public getSelectedClipInfo(): { trackIndex: number; clipIndex: number; player: Player } | null {
 		if (!this.selectedClip) return null;
 
 		const trackIndex = this.selectedClip.layer - 1;
-		const clipIndex = this.tracks[trackIndex].indexOf(this.selectedClip);
+		const track = this.tracks[trackIndex];
+		if (!track) return null; // Track was deleted
 
+		const clipIndex = track.indexOf(this.selectedClip);
 		return { trackIndex, clipIndex, player: this.selectedClip };
 	}
 
