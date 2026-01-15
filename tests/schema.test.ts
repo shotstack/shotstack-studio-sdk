@@ -232,8 +232,8 @@ describe("Asset Schema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("rejects text asset with empty string", () => {
-		// Centralized schema now requires non-empty text
+	it("accepts text asset with empty string", () => {
+		// Shotstack schema allows empty text strings - the SDK renders them as empty text elements
 		const textAssetWithEmptyText = {
 			type: "text",
 			text: "",
@@ -255,7 +255,7 @@ describe("Asset Schema Validation", () => {
 		};
 
 		const result = TextAssetSchema.safeParse(textAssetWithEmptyText);
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
 	});
 
 	it("should validate image asset", () => {
