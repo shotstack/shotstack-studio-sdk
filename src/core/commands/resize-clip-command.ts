@@ -18,7 +18,7 @@ export class ResizeClipCommand implements EditCommand {
 	) {}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("ResizeClipCommand.execute: context is required");
 
 		// Get the specific track
 		const track = context.getTrack(this.trackIndex);

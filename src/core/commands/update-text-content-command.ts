@@ -20,7 +20,7 @@ export class UpdateTextContentCommand implements EditCommand {
 	}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("UpdateTextContentCommand.execute: context is required");
 		if (this.clip.clipConfiguration.asset && "text" in this.clip.clipConfiguration.asset) {
 			(this.clip.clipConfiguration.asset as TextAsset).text = this.newText;
 
@@ -48,7 +48,7 @@ export class UpdateTextContentCommand implements EditCommand {
 	}
 
 	undo(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("UpdateTextContentCommand.undo: context is required");
 		if (this.clip.clipConfiguration.asset && "text" in this.clip.clipConfiguration.asset) {
 			(this.clip.clipConfiguration.asset as TextAsset).text = this.previousText;
 

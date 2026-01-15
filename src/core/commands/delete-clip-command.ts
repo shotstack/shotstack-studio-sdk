@@ -16,7 +16,7 @@ export class DeleteClipCommand implements EditCommand {
 	) {}
 
 	execute(context?: CommandContext): void {
-		if (!context) return; // For backward compatibility
+		if (!context) throw new Error("DeleteClipCommand.execute: context is required");
 		const clips = context.getClips();
 		const tracks = context.getTracks();
 		const trackClips = clips.filter((c: Player) => c.layer === this.trackIdx + 1);
@@ -61,7 +61,8 @@ export class DeleteClipCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context || !this.deletedClip) return;
+		if (!context) throw new Error("DeleteClipCommand.undo: context is required");
+		if (!this.deletedClip) return;
 
 		// Restore deleted track first if it was deleted
 		if (this.trackWasDeleted && this.deleteTrackCommand) {

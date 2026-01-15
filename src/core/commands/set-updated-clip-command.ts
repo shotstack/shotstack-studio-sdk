@@ -35,7 +35,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 	}
 
 	async execute(context?: CommandContext): Promise<void> {
-		if (!context) return;
+		if (!context) throw new Error("SetUpdatedClipCommand.execute: context is required");
 
 		// Save bindings before modification (for undo)
 		this.storedInitialBindings = new Map(this.clip.getMergeFieldBindings());
@@ -110,7 +110,8 @@ export class SetUpdatedClipCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context || !this.storedInitialConfig) return;
+		if (!context) throw new Error("SetUpdatedClipCommand.undo: context is required");
+		if (!this.storedInitialConfig) return;
 
 		context.restoreClipConfiguration(this.clip, this.storedInitialConfig);
 

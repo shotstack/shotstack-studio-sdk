@@ -16,7 +16,7 @@ export class AddClipCommand implements EditCommand {
 	) {}
 
 	async execute(context?: CommandContext): Promise<void> {
-		if (!context) return; // For backward compatibility
+		if (!context) throw new Error("AddClipCommand.execute: context is required");
 
 		try {
 			const clipPlayer = context.createPlayerFromAssetType(this.clip);
@@ -47,7 +47,8 @@ export class AddClipCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context || !this.addedPlayer) return;
+		if (!context) throw new Error("AddClipCommand.undo: context is required");
+		if (!this.addedPlayer) return;
 
 		// Find clip index before disposal
 		const clips = context.getClips();

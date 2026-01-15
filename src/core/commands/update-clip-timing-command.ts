@@ -32,7 +32,7 @@ export class UpdateClipTimingCommand implements EditCommand {
 	) {}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("UpdateClipTimingCommand.execute: context is required");
 
 		const track = context.getTrack(this.trackIndex);
 		if (!track || this.clipIndex < 0 || this.clipIndex >= track.length) {

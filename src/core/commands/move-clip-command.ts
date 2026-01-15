@@ -28,7 +28,7 @@ export class MoveClipCommand implements EditCommand {
 	}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("MoveClipCommand.execute: context is required");
 
 		// Get the player by indices
 		const tracks = context.getTracks();
@@ -224,7 +224,8 @@ export class MoveClipCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context || !this.player || this.originalStart === undefined) return;
+		if (!context) throw new Error("MoveClipCommand.undo: context is required");
+		if (!this.player || this.originalStart === undefined) return;
 
 		// If source track was deleted, recreate it first
 		if (this.sourceTrackWasDeleted && this.deleteTrackCommand) {

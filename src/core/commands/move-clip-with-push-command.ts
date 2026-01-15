@@ -24,7 +24,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 	}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("MoveClipWithPushCommand.execute: context is required");
 
 		const tracks = context.getTracks();
 		const targetTrack = tracks[this.toTrackIndex];
@@ -76,7 +76,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context) return;
+		if (!context) throw new Error("MoveClipWithPushCommand.undo: context is required");
 
 		await this.moveCommand.undo(context);
 

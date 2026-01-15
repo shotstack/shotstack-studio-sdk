@@ -35,7 +35,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 	}
 
 	async execute(context?: CommandContext): Promise<void> {
-		if (!context) return;
+		if (!context) throw new Error("CreateTrackAndMoveClipCommand.execute: context is required");
 
 		try {
 			// Execute both commands in sequence
@@ -56,7 +56,8 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context || !this.wasExecuted) return;
+		if (!context) throw new Error("CreateTrackAndMoveClipCommand.undo: context is required");
+		if (!this.wasExecuted) return;
 
 		// Undo in reverse order
 		await this.moveClipCommand.undo(context);

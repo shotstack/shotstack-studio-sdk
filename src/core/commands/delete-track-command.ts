@@ -14,7 +14,7 @@ export class DeleteTrackCommand implements EditCommand {
 	constructor(private trackIdx: number) {}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("DeleteTrackCommand.execute: context is required");
 		const clips = context.getClips();
 		const tracks = context.getTracks();
 
@@ -71,7 +71,7 @@ export class DeleteTrackCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context) return;
+		if (!context) throw new Error("DeleteTrackCommand.undo: context is required");
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 

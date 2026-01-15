@@ -39,7 +39,7 @@ export class SetMergeFieldCommand implements EditCommand {
 	}
 
 	async execute(context?: CommandContext): Promise<void> {
-		if (!context) return;
+		if (!context) throw new Error("SetMergeFieldCommand.execute: context is required");
 
 		const mergeFields = context.getMergeFields();
 
@@ -93,7 +93,7 @@ export class SetMergeFieldCommand implements EditCommand {
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
-		if (!context) return;
+		if (!context) throw new Error("SetMergeFieldCommand.undo: context is required");
 
 		const mergeFields = context.getMergeFields();
 

@@ -9,7 +9,7 @@ export class AddTrackCommand implements EditCommand {
 	constructor(private trackIdx: number) {}
 
 	execute(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("AddTrackCommand.execute: context is required");
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 
@@ -59,7 +59,7 @@ export class AddTrackCommand implements EditCommand {
 	}
 
 	undo(context?: CommandContext): void {
-		if (!context) return;
+		if (!context) throw new Error("AddTrackCommand.undo: context is required");
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 
