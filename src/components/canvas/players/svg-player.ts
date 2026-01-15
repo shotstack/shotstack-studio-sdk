@@ -99,6 +99,10 @@ export class SvgPlayer extends Player {
 		}
 	}
 
+	public override async reloadAsset(): Promise<void> {
+		await this.rerenderAtCurrentDimensions();
+	}
+
 	private createFallbackGraphic(): void {
 		const width = this.clipConfiguration.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || this.edit.size.height;

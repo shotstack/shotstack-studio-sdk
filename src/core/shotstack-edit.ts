@@ -3,7 +3,7 @@ import { Edit } from "./edit-session";
 import { parseFontFamily } from "./fonts/font-config";
 import type { MergeFieldService } from "./merge";
 import type { Clip, RichTextAsset, TextAsset } from "./schemas";
-import { getNestedValue } from "./shared/utils";
+import { getNestedValue, setNestedValue } from "./shared/utils";
 
 /**
  * Type guard for empty TextAsset (used as shape).
@@ -201,59 +201,27 @@ export class ShotstackEdit extends Edit {
 	}
 
 	/**
-	 * Update the value of a merge field. Updates all clips using this field in-place.
+	 * Update the value of a merge field using document-first flow.
 	 * This does NOT use the command pattern (no undo) - it's for live preview updates.
+	 * Updates document bindings then calls resolve() to let reconciler update players.
 	 */
 	public updateMergeFieldValueLive(fieldName: string, newValue: string): void {
-		// Update the field in the service
+		// Update the field in the registry
 		const field = this.mergeFieldService.get(fieldName);
 		if (!field) return;
 		this.mergeFieldService.register({ ...field, defaultValue: newValue }, { silent: true });
 
-		// Find and update all clips using this field
+		// Update document bindings with new resolved values
 		const tracks = this.getTracks();
 		for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
 			for (let clipIdx = 0; clipIdx < tracks[trackIdx].length; clipIdx += 1) {
 				const player = tracks[trackIdx][clipIdx];
-				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
-				if (templateClip) {
-					// Update clipConfiguration with new resolved value (for rendering)
-					this.updateMergeFieldInObject(player.clipConfiguration, templateClip, fieldName, newValue);
-
-					// Also update the binding's resolvedValue so getExportableClip() can match correctly
-					this.updateMergeFieldBindings(player, fieldName, newValue);
-				}
+				this.updateMergeFieldBindings(player, fieldName, newValue);
 			}
 		}
-	}
 
-	/**
-	 * Redraw all clips that use a specific merge field.
-	 * Call this after updateMergeFieldValueLive() to refresh the canvas.
-	 * Handles both text redraws and asset reloads for URL changes.
-	 */
-	public redrawMergeFieldClips(fieldName: string): void {
-		const tracks = this.getTracks();
-		for (const track of tracks) {
-			for (const player of track) {
-				const indices = this.findClipIndices(player);
-				if (indices) {
-					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
-					if (templateClip) {
-						// Check if this clip uses the merge field and where
-						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
-						if (usageInfo.used) {
-							// If the merge field is used for asset.src, reload the asset
-							if (usageInfo.isSrcField) {
-								player.reloadAsset();
-							}
-							player.reconfigureAfterRestore();
-							player.draw();
-						}
-					}
-				}
-			}
-		}
+		// Document-first: resolve() triggers reconciler which updates players
+		this.resolve();
 	}
 
 	/**
@@ -478,7 +446,10 @@ export class ShotstackEdit extends Edit {
 
 	// ─── Private Helpers ───────────────────────────────────────────────────────
 
-	/** Helper: Update merge field binding resolvedValues for a player */
+	/**
+	 * Helper: Update merge field bindings and document clip data for a player.
+	 * Must update both bindings and clip data because the resolver reads clip data directly.
+	 */
 	private updateMergeFieldBindings(player: ReturnType<typeof this.getPlayerClip>, fieldName: string, _newValue: string): void {
 		if (!player) return;
 
@@ -487,6 +458,10 @@ export class ShotstackEdit extends Edit {
 
 		const document = this.getDocument();
 		if (!document) return;
+
+		// Find clip indices for document updates
+		const indices = this.findClipIndices(player);
+		if (!indices) return;
 
 		// Read bindings from document (source of truth)
 		const bindings = document.getClipBindings(clipId);
@@ -505,26 +480,12 @@ export class ShotstackEdit extends Edit {
 
 				// Update document binding
 				document.setClipBinding(clipId, path, updatedBinding);
-			}
-		}
-	}
 
-	/** Helper: Update merge field occurrences in an object */
-	private updateMergeFieldInObject(target: unknown, template: unknown, fieldName: string, newValue: string): void {
-		if (!target || !template || typeof target !== "object" || typeof template !== "object") return;
-
-		for (const key of Object.keys(template as Record<string, unknown>)) {
-			const templateVal = (template as Record<string, unknown>)[key];
-			const targetObj = target as Record<string, unknown>;
-
-			if (typeof templateVal === "string") {
-				const extractedField = this.mergeFieldService.extractFieldName(templateVal);
-				if (extractedField === fieldName) {
-					// Replace {{ FIELD }} with newValue in the resolved clipConfiguration
-					targetObj[key] = templateVal.replace(new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"), newValue);
+				// Also update document clip data (resolver reads clip data, not bindings)
+				const clip = document.getClip(indices.trackIndex, indices.clipIndex);
+				if (clip) {
+					setNestedValue(clip as Record<string, unknown>, path, newResolvedValue);
 				}
-			} else if (templateVal && typeof templateVal === "object") {
-				this.updateMergeFieldInObject(targetObj[key], templateVal, fieldName, newValue);
 			}
 		}
 	}

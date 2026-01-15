@@ -537,9 +537,8 @@ export class CanvasToolbar {
 						el.title = "";
 					}
 
-					// Update the merge field value and refresh affected clips
+					// Update the merge field value (resolve() handles canvas refresh)
 					ssEdit.updateMergeFieldValueLive(name, el.value);
-					ssEdit.redrawMergeFieldClips(name);
 				}
 			});
 		});

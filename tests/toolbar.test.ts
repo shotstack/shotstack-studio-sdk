@@ -164,7 +164,6 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		playbackTime: 0,
 		isSrcMergeField: jest.fn(() => false),
 		updateMergeFieldValueLive: jest.fn(),
-		redrawMergeFieldClips: jest.fn(),
 		setOutputSize: jest.fn(),
 		setOutputFps: jest.fn(),
 		getOutputFps: jest.fn(() => 25),
