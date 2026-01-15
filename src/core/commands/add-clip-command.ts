@@ -18,39 +18,38 @@ export class AddClipCommand implements EditCommand {
 	async execute(context?: CommandContext): Promise<void> {
 		if (!context) throw new Error("AddClipCommand.execute: context is required");
 
+		const clipPlayer = context.createPlayerFromAssetType(this.clip);
+		clipPlayer.layer = this.trackIdx + 1;
+
 		try {
-			const clipPlayer = context.createPlayerFromAssetType(this.clip);
-			clipPlayer.layer = this.trackIdx + 1;
 			await context.addPlayer(this.trackIdx, clipPlayer);
-
-			// Find the clip's index in the track
-			const clips = context.getClips();
-			const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
-			const clipIndex = trackClips.findIndex(c => c === clipPlayer);
-
-			context.documentAddClip(this.trackIdx, this.clip, clipIndex);
-
-			context.updateDuration();
-			context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
-
-			this.addedPlayer = clipPlayer;
 		} catch (error) {
-			// Emit error event instead of crashing
-			const assetType = (this.clip.asset as { type?: string }).type ?? "unknown";
+			context.queueDisposeClip(clipPlayer);
 			context.emitEvent(EditEvent.ClipLoadFailed, {
 				trackIndex: this.trackIdx,
-				clipIndex: -1, // Not yet added
+				clipIndex: -1,
 				error: error instanceof Error ? error.message : String(error),
-				assetType
+				assetType: (this.clip.asset as { type?: string }).type ?? "unknown"
 			});
+			throw error;
 		}
+
+		const clips = context.getClips();
+		const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
+		const clipIndex = trackClips.findIndex(c => c === clipPlayer);
+
+		context.documentAddClip(this.trackIdx, this.clip, clipIndex);
+
+		context.updateDuration();
+		context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
+
+		this.addedPlayer = clipPlayer;
 	}
 
 	async undo(context?: CommandContext): Promise<void> {
 		if (!context) throw new Error("AddClipCommand.undo: context is required");
 		if (!this.addedPlayer) return;
 
-		// Find clip index before disposal
 		const clips = context.getClips();
 		const trackClips = clips.filter(c => c.layer === this.addedPlayer!.layer);
 		const clipIndex = trackClips.findIndex(c => c === this.addedPlayer);
@@ -58,7 +57,13 @@ export class AddClipCommand implements EditCommand {
 		context.documentRemoveClip(this.trackIdx, clipIndex);
 
 		context.queueDisposeClip(this.addedPlayer);
+		this.addedPlayer = undefined;
+
 		context.updateDuration();
 		context.emitEvent(EditEvent.ClipDeleted, { trackIndex: this.trackIdx, clipIndex });
+	}
+
+	dispose(): void {
+		this.addedPlayer = undefined;
 	}
 }
