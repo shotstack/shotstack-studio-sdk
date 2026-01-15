@@ -1,8 +1,8 @@
-import { executeTextToRichTextConversion } from "./commands/convert-text-to-rich-text-command";
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import { Edit } from "./edit-session";
+import { parseFontFamily } from "./fonts/font-config";
 import type { MergeFieldService } from "./merge";
-import type { Clip, TextAsset } from "./schemas";
+import type { Clip, RichTextAsset, TextAsset } from "./schemas";
 import { getNestedValue } from "./shared/utils";
 
 /**
@@ -305,62 +305,6 @@ export class ShotstackEdit extends Edit {
 	// ─── Text Conversion API ───────────────────────────────────────────────────
 
 	/**
-	 * Convert a TextAsset clip to a RichTextAsset clip.
-	 * This is a one-way conversion that preserves styling.
-	 * Width/height properties are moved to clip.fit.
-	 * Not added to undo history (one-way upgrade).
-	 *
-	 * @param trackIndex - Track index of the text clip
-	 * @param clipIndex - Clip index of the text clip
-	 */
-	public async convertTextToRichText(trackIndex: number, clipIndex: number): Promise<void> {
-		const player = this.getClipAt(trackIndex, clipIndex);
-		if (!player?.clipConfiguration?.asset) return;
-
-		const asset = player.clipConfiguration.asset as { type?: string };
-		if (asset.type !== "text") return;
-
-		// Execute directly (NOT via executeCommand - no undo for one-way upgrade)
-		const context = this.createCommandContext();
-		await executeTextToRichTextConversion(trackIndex, clipIndex, context);
-
-		this.emitEditChanged("ConvertTextToRichText");
-
-		// Re-select the clip to trigger toolbar switch
-		this.selectClip(trackIndex, clipIndex);
-	}
-
-	/**
-	 * Convert all TextAsset clips to RichTextAsset clips.
-	 * Skips text assets with empty text (used as shapes).
-	 * One-way conversion, not added to undo history.
-	 *
-	 * @returns Number of clips converted
-	 */
-	public async convertAllTextToRichText(): Promise<number> {
-		const trackCount = this.getTrackCount();
-		let converted = 0;
-
-		// Iterate backwards to avoid index shifting issues when clips are replaced
-		for (let trackIdx = 0; trackIdx < trackCount; trackIdx += 1) {
-			const clipCount = this.getClipCountInTrack(trackIdx);
-			for (let clipIdx = clipCount - 1; clipIdx >= 0; clipIdx -= 1) {
-				const player = this.getClipAt(trackIdx, clipIdx);
-				const asset = player?.clipConfiguration?.asset as { type?: string; text?: string };
-
-				// Only convert text assets with non-empty text
-				// Empty text assets are used as shapes and need different handling
-				if (asset?.type === "text" && asset.text && asset.text.trim() !== "") {
-					await this.convertTextToRichText(trackIdx, clipIdx);
-					converted += 1;
-				}
-			}
-		}
-
-		return converted;
-	}
-
-	/**
 	 * Convert all text assets and log the resulting template JSON to console.
 	 *
 	 * This performs a pure JSON transformation (no live player updates):
@@ -436,24 +380,74 @@ export class ShotstackEdit extends Edit {
 	private convertTextClipToRichText(clip: Clip): Clip {
 		const textAsset = clip.asset as TextAsset;
 
-		// Map TextAsset properties to RichTextAsset
-		const richTextAsset = {
-			type: "rich-text" as const,
-			text: textAsset.text || "",
-			font: {
-				family: textAsset.font?.family || "Open Sans",
-				size: typeof textAsset.font?.size === "string" ? Number(textAsset.font.size) : (textAsset.font?.size ?? 48),
-				color: textAsset.font?.color || "#ffffff",
-				opacity: textAsset.font?.opacity ?? 1,
-				weight: 400,
-				style: "normal" as const,
-				lineHeight: textAsset.font?.lineHeight ?? 1
-			},
+		// Extract weight from font family suffix (e.g., "Montserrat ExtraBold" → 800)
+		const fontFamily = textAsset.font?.family ?? "Open Sans";
+		const { fontWeight } = parseFontFamily(fontFamily);
+
+		// Build font object
+		const font: RichTextAsset["font"] = {
+			family: fontFamily,
+			size: typeof textAsset.font?.size === "string" ? Number(textAsset.font.size) : (textAsset.font?.size ?? 32),
+			weight: textAsset.font?.weight ?? fontWeight,
+			color: textAsset.font?.color ?? "#ffffff",
+			opacity: textAsset.font?.opacity ?? 1
+		};
+
+		// Nest stroke inside font if present
+		if (textAsset.stroke?.width && textAsset.stroke.width > 0) {
+			font.stroke = {
+				width: textAsset.stroke.width,
+				color: textAsset.stroke.color ?? "#000000",
+				opacity: 1
+			};
+		}
+
+		// Build style object
+		const style: RichTextAsset["style"] = {
+			letterSpacing: 0,
+			lineHeight: textAsset.font?.lineHeight ?? 1.2,
+			textTransform: "none",
+			textDecoration: "none"
+		};
+
+		// Build the RichTextAsset
+		const richTextAsset: RichTextAsset = {
+			type: "rich-text",
+			text: textAsset.text ?? "",
+			font,
+			style,
 			align: {
-				horizontal: (textAsset.alignment?.horizontal || "center") as "left" | "center" | "right",
+				horizontal: textAsset.alignment?.horizontal ?? "center",
 				vertical: this.mapVerticalAlign(textAsset.alignment?.vertical)
 			}
 		};
+
+		// Map background
+		if (textAsset.background) {
+			richTextAsset.background = {
+				color: textAsset.background.color,
+				opacity: textAsset.background.opacity ?? 1,
+				borderRadius: textAsset.background.borderRadius ?? 0
+			};
+
+			// Extract padding from background to top-level
+			if (textAsset.background.padding) {
+				richTextAsset.padding = textAsset.background.padding;
+			}
+		}
+
+		// Map animation
+		if (textAsset.animation) {
+			richTextAsset.animation = {
+				preset: textAsset.animation.preset,
+				duration: textAsset.animation.duration
+			};
+		}
+
+		// Warn if ellipsis is dropped
+		if (textAsset.ellipsis !== undefined) {
+			console.warn("TextAsset ellipsis property not supported in RichTextAsset, value dropped");
+		}
 
 		const newClip: Clip = {
 			...clip,
