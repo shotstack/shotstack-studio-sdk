@@ -136,30 +136,30 @@ function collectResolutions(resolveOrder: string[], clipMap: Map<string, Clip>, 
 
 	for (const clipId of resolveOrder) {
 		const clip = clipMap.get(clipId);
-		if (!clip) continue;
+		if (clip) {
+			const startAliasName = parseAliasReference(clip.start);
+			if (startAliasName) {
+				const targetClip = aliases[startAliasName];
+				if (!targetClip) {
+					throw new Error(`Alias "${startAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
+				}
+				if (typeof targetClip.start !== "number") {
+					throw new Error(`Cannot resolve alias "${startAliasName}": target has unresolved start`);
+				}
+				resolutions.push({ clip, field: "start", value: targetClip.start });
+			}
 
-		const startAliasName = parseAliasReference(clip.start);
-		if (startAliasName) {
-			const targetClip = aliases[startAliasName];
-			if (!targetClip) {
-				throw new Error(`Alias "${startAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
+			const lengthAliasName = parseAliasReference(clip.length);
+			if (lengthAliasName) {
+				const targetClip = aliases[lengthAliasName];
+				if (!targetClip) {
+					throw new Error(`Alias "${lengthAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
+				}
+				if (typeof targetClip.length !== "number") {
+					throw new Error(`Cannot resolve alias "${lengthAliasName}": target has unresolved length`);
+				}
+				resolutions.push({ clip, field: "length", value: targetClip.length });
 			}
-			if (typeof targetClip.start !== "number") {
-				throw new Error(`Cannot resolve alias "${startAliasName}": target has unresolved start`);
-			}
-			resolutions.push({ clip, field: "start", value: targetClip.start });
-		}
-
-		const lengthAliasName = parseAliasReference(clip.length);
-		if (lengthAliasName) {
-			const targetClip = aliases[lengthAliasName];
-			if (!targetClip) {
-				throw new Error(`Alias "${lengthAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
-			}
-			if (typeof targetClip.length !== "number") {
-				throw new Error(`Cannot resolve alias "${lengthAliasName}": target has unresolved length`);
-			}
-			resolutions.push({ clip, field: "length", value: targetClip.length });
 		}
 	}
 
