@@ -1,11 +1,13 @@
 /**
  * Edit Class Command History Tests
  *
- * Tests the undo/redo mechanics and command pattern behavior.
- * The command system is the foundation for all editing operations.
+ * Tests the undo/redo mechanics and command pattern behaviour.
  */
 
 /* eslint-disable max-classes-per-file -- Test helper classes */
+/* eslint-disable global-require, @typescript-eslint/no-require-imports -- Jest hoists mock factories
+ * before imports/declarations. To share mock classes between mocks (e.g., MockImageSource for instanceof
+ * checks), we must use require() at runtime inside the factory. This is the standard Jest pattern. */
 import { Edit } from "@core/edit-session";
 import type { EditCommand, CommandContext } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
@@ -22,15 +24,17 @@ jest.mock("pixi-filters", () => ({
 
 // Mock pixi.js to prevent WebGL initialization
 jest.mock("pixi.js", () => {
-	// ImageSource and VideoSource classes for instanceof checks - must be inside factory
 	class MockImageSource {
 		width = 100;
+
 		height = 100;
 	}
 
 	class MockVideoSource {
 		width = 100;
+
 		height = 100;
+
 		alphaMode = "premultiply-alpha";
 	}
 
@@ -90,12 +94,9 @@ jest.mock("pixi.js", () => {
 	};
 });
 
-// Mock AssetLoader
 jest.mock("@loaders/asset-loader", () => ({
 	AssetLoader: jest.fn().mockImplementation(() => ({
 		load: jest.fn().mockImplementation(() => {
-			// Get ImageSource from mocked pixi.js at runtime
-			// eslint-disable-next-line @typescript-eslint/no-require-imports
 			const { ImageSource } = require("pixi.js");
 			return Promise.resolve({
 				source: new ImageSource(),
