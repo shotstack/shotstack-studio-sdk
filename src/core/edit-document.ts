@@ -18,6 +18,16 @@ import type { Clip, Track, Edit, Soundtrack } from "./schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/** Internal clip type with stable ID for reconciliation */
+type InternalClip = Clip & { id?: string };
+
+/** Result from ID-based clip lookup */
+export interface ClipLookupResult {
+	clip: Clip;
+	trackIndex: number;
+	clipIndex: number;
+}
+
 export interface EditDocumentOptions {
 	defaultSize?: Size;
 }
@@ -29,6 +39,21 @@ export class EditDocument {
 
 	constructor(edit: Edit) {
 		this.data = structuredClone(edit);
+		this.hydrateIds();
+	}
+
+	/**
+	 * Hydrate clips with stable UUIDs for reconciliation.
+	 * IDs are stripped on export via toJSON().
+	 */
+	private hydrateIds(): void {
+		for (const track of this.data.timeline.tracks) {
+			for (const clip of track.clips as InternalClip[]) {
+				if (!clip.id) {
+					clip.id = crypto.randomUUID();
+				}
+			}
+		}
 	}
 
 	// ─── Timeline Accessors ───────────────────────────────────────────────────
@@ -107,6 +132,53 @@ export class EditDocument {
 	getClipCountInTrack(trackIndex: number): number {
 		const track = this.data.timeline.tracks[trackIndex];
 		return track?.clips.length ?? 0;
+	}
+
+	// ─── ID-Based Clip Accessors ─────────────────────────────────────────────
+
+	/**
+	 * Get a clip by its stable ID
+	 */
+	getClipById(clipId: string): ClipLookupResult | null {
+		for (let t = 0; t < this.data.timeline.tracks.length; t += 1) {
+			const clips = this.data.timeline.tracks[t].clips as InternalClip[];
+			for (let c = 0; c < clips.length; c += 1) {
+				if (clips[c].id === clipId) {
+					return { clip: clips[c], trackIndex: t, clipIndex: c };
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Update a clip by its stable ID (partial update)
+	 */
+	updateClipById(clipId: string, updates: Partial<Clip>): void {
+		const found = this.getClipById(clipId);
+		if (found) {
+			Object.assign(found.clip, updates);
+		}
+	}
+
+	/**
+	 * Remove a clip by its stable ID
+	 * @returns The removed clip, or null if not found
+	 */
+	removeClipById(clipId: string): Clip | null {
+		const found = this.getClipById(clipId);
+		if (found) {
+			return this.removeClip(found.trackIndex, found.clipIndex);
+		}
+		return null;
+	}
+
+	/**
+	 * Get the stable ID of a clip at a given position
+	 */
+	getClipId(trackIndex: number, clipIndex: number): string | null {
+		const clip = this.getClip(trackIndex, clipIndex) as InternalClip | null;
+		return clip?.id ?? null;
 	}
 
 	// ─── Output Accessors ─────────────────────────────────────────────────────
@@ -199,12 +271,18 @@ export class EditDocument {
 
 	/**
 	 * Add a clip to a track
-	 * @returns The added clip
+	 * @returns The added clip (with hydrated ID)
 	 */
 	addClip(trackIndex: number, clip: Clip, clipIndex?: number): Clip {
 		const track = this.data.timeline.tracks[trackIndex];
 		if (!track) {
 			throw new Error(`Track ${trackIndex} does not exist`);
+		}
+
+		// Hydrate with stable ID if not present
+		const internalClip = clip as InternalClip;
+		if (!internalClip.id) {
+			internalClip.id = crypto.randomUUID();
 		}
 
 		const insertIndex = clipIndex ?? track.clips.length;
@@ -374,9 +452,18 @@ export class EditDocument {
 	/**
 	 * Export the document as raw Edit JSON (preserves "auto", "end", placeholders)
 	 * This is what gets sent to the backend API.
+	 * Internal IDs are stripped - they are not part of the Shotstack API spec.
 	 */
 	toJSON(): Edit {
 		const result = structuredClone(this.data);
+
+		// Strip internal IDs from clips (not part of Shotstack API)
+		for (const track of result.timeline.tracks) {
+			for (const clip of track.clips) {
+				delete (clip as InternalClip).id;
+			}
+		}
+
 		if (result.merge?.length === 0) {
 			delete result.merge;
 		}

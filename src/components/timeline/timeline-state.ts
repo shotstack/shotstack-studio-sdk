@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import type { ResolvedClip, ResolvedTrack } from "@schemas";
 
 import type { TrackState, ClipState, ViewportState, PlaybackState, ClipVisualState, InteractionQuery } from "./timeline.types";
@@ -8,7 +8,8 @@ import type { TrackState, ClipState, ViewportState, PlaybackState, ClipVisualSta
 export class TimelineStateManager {
 	private viewport: ViewportState;
 	private interactionQuery: InteractionQuery | null = null;
-	private lumaEditingVisible = new Set<Player>();
+	/** Track luma visibility by clip ID for stability across reconciliation */
+	private lumaEditingVisibleByClipId = new Set<string>();
 	private cachedTracks: TrackState[] | null = null;
 
 	constructor(
@@ -23,14 +24,10 @@ export class TimelineStateManager {
 			height: initialViewport.height ?? 400
 		};
 
-		// Subscribe to events that require cache invalidation
-		this.edit.events.on(EditEvent.TimelineUpdated, this.invalidateCache);
-		this.edit.events.on(EditEvent.ClipAdded, this.invalidateCache);
-		this.edit.events.on(EditEvent.ClipDeleted, this.invalidateCache);
-		this.edit.events.on(EditEvent.ClipSplit, this.invalidateCache);
-		this.edit.events.on(EditEvent.ClipUpdated, this.invalidateCache);
-		this.edit.events.on(EditEvent.TrackAdded, this.invalidateCache);
-		this.edit.events.on(EditEvent.TrackRemoved, this.invalidateCache);
+		// Document changes trigger Resolved event
+		this.edit.events.on(InternalEvent.Resolved, this.invalidateCache);
+
+		// Selection changes are UI state (not document mutations)
 		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.on(EditEvent.SelectionCleared, this.invalidateCache);
 	}
@@ -181,45 +178,42 @@ export class TimelineStateManager {
 
 	public toggleLumaVisibility(contentTrack: number, contentClip: number): boolean {
 		const contentPlayer = this.edit.getPlayerClip(contentTrack, contentClip);
-		if (!contentPlayer) return false;
-		if (this.lumaEditingVisible.has(contentPlayer)) {
-			this.lumaEditingVisible.delete(contentPlayer);
+		if (!contentPlayer?.clipId) return false;
+
+		if (this.lumaEditingVisibleByClipId.has(contentPlayer.clipId)) {
+			this.lumaEditingVisibleByClipId.delete(contentPlayer.clipId);
 			return false; // Now hidden
 		}
-		this.lumaEditingVisible.add(contentPlayer);
+		this.lumaEditingVisibleByClipId.add(contentPlayer.clipId);
 		return true; // Now visible
 	}
 
 	public isLumaVisibleForEditing(contentTrack: number, contentClip: number): boolean {
 		const contentPlayer = this.edit.getPlayerClip(contentTrack, contentClip);
-		if (!contentPlayer) return false;
-		return this.lumaEditingVisible.has(contentPlayer);
+		if (!contentPlayer?.clipId) return false;
+		return this.lumaEditingVisibleByClipId.has(contentPlayer.clipId);
 	}
 
 	public clearLumaVisibility(): void {
-		this.lumaEditingVisible.clear();
+		this.lumaEditingVisibleByClipId.clear();
 	}
 
 	public clearLumaVisibilityFor(contentPlayer: Player): void {
-		this.lumaEditingVisible.delete(contentPlayer);
+		if (contentPlayer.clipId) {
+			this.lumaEditingVisibleByClipId.delete(contentPlayer.clipId);
+		}
 	}
 
 	public dispose(): void {
 		// Remove event listeners
-		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
-		this.edit.events.off(EditEvent.ClipAdded, this.invalidateCache);
-		this.edit.events.off(EditEvent.ClipDeleted, this.invalidateCache);
-		this.edit.events.off(EditEvent.ClipSplit, this.invalidateCache);
-		this.edit.events.off(EditEvent.ClipUpdated, this.invalidateCache);
-		this.edit.events.off(EditEvent.TrackAdded, this.invalidateCache);
-		this.edit.events.off(EditEvent.TrackRemoved, this.invalidateCache);
+		this.edit.events.off(InternalEvent.Resolved, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
 
 		// Clear state
 		this.cachedTracks = null;
 		this.interactionQuery = null;
-		this.lumaEditingVisible.clear();
+		this.lumaEditingVisibleByClipId.clear();
 	}
 
 	// ========== Private ==========

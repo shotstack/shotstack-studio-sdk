@@ -142,11 +142,21 @@ export class MoveClipCommand implements EditCommand {
 		if (document) {
 			if (this.originalTrackIndex !== this.originalToTrackIndex) {
 				const sourceDocTrackIdx = this.sourceTrackWasDeleted ? -1 : this.fromTrackIndex;
+				// Unregister old clip ID before document modification
+				if (this.player.clipId) {
+					context.unregisterPlayerByClipId(this.player.clipId);
+				}
 				if (sourceDocTrackIdx >= 0) {
 					document.removeClip(sourceDocTrackIdx, this.fromClipIndex);
 				}
 				const exportableClip = this.player.getExportableClip();
-				document.addClip(this.effectiveToTrackIndex, exportableClip, this.originalClipIndex);
+				const addedClip = document.addClip(this.effectiveToTrackIndex, exportableClip, this.originalClipIndex);
+				// Re-register with new clip ID
+				const newClipId = (addedClip as { id?: string }).id;
+				if (newClipId) {
+					this.player.clipId = newClipId;
+					context.registerPlayerByClipId(newClipId, this.player);
+				}
 			} else {
 				// Same-track move: update at original position, then reorder to match player array
 				context.documentUpdateClip(this.effectiveToTrackIndex, this.fromClipIndex, {
@@ -199,6 +209,9 @@ export class MoveClipCommand implements EditCommand {
 			context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex - 1);
 		}
 		context.propagateTimingChanges(this.effectiveToTrackIndex, this.originalClipIndex);
+
+		// Emit resolution after document mutation
+		context.resolve();
 
 		// Emit events AFTER all changes complete to avoid partial rebuilds
 		context.emitEvent(EditEvent.ClipUpdated, {
@@ -286,13 +299,23 @@ export class MoveClipCommand implements EditCommand {
 		const document = context.getDocument();
 		if (document) {
 			if (this.fromTrackIndex !== this.toTrackIndex) {
+				// Unregister old clip ID before document modification
+				if (this.player.clipId) {
+					context.unregisterPlayerByClipId(this.player.clipId);
+				}
 				const destTrack = tracks[this.effectiveToTrackIndex];
 				const currentDocIdx = destTrack ? this.originalClipIndex : -1;
 				if (currentDocIdx >= 0) {
 					document.removeClip(this.effectiveToTrackIndex, currentDocIdx);
 				}
 				const exportableClip = this.player.getExportableClip();
-				document.addClip(this.fromTrackIndex, exportableClip, this.fromClipIndex);
+				const addedClip = document.addClip(this.fromTrackIndex, exportableClip, this.fromClipIndex);
+				// Re-register with new clip ID
+				const newClipId = (addedClip as { id?: string }).id;
+				if (newClipId) {
+					this.player.clipId = newClipId;
+					context.registerPlayerByClipId(newClipId, this.player);
+				}
 			} else {
 				context.documentUpdateClip(this.fromTrackIndex, this.fromClipIndex, {
 					start: this.originalTimingIntent?.start ?? this.originalStart
@@ -314,6 +337,9 @@ export class MoveClipCommand implements EditCommand {
 			context.propagateTimingChanges(this.effectiveToTrackIndex, this.originalClipIndex - 1);
 		}
 		context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex);
+
+		// Emit resolution after document mutation
+		context.resolve();
 
 		// Emit events AFTER all changes complete to avoid partial rebuilds
 		context.emitEvent(EditEvent.ClipUpdated, {

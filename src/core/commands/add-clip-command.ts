@@ -41,9 +41,20 @@ export class AddClipCommand implements EditCommand {
 		const trackClips = clips.filter(c => c.layer === clipPlayer.layer);
 		const clipIndex = trackClips.findIndex(c => c === clipPlayer);
 
-		context.documentAddClip(this.trackIdx, this.clip, clipIndex);
+		const addedDocClip = context.documentAddClip(this.trackIdx, this.clip, clipIndex);
+
+		// Register Player by clip ID for reconciliation
+		const clipId = (addedDocClip as { id?: string }).id;
+		if (clipId) {
+			clipPlayer.clipId = clipId;
+			context.registerPlayerByClipId(clipId, clipPlayer);
+		}
 
 		context.updateDuration();
+
+		// Emit resolution after document mutation
+		context.resolve();
+
 		context.emitEvent(EditEvent.ClipAdded, { trackIndex: this.trackIdx, clipIndex });
 
 		this.addedPlayer = clipPlayer;
@@ -59,10 +70,19 @@ export class AddClipCommand implements EditCommand {
 
 		context.documentRemoveClip(this.trackIdx, clipIndex);
 
+		// Unregister Player by clip ID
+		if (this.addedPlayer.clipId) {
+			context.unregisterPlayerByClipId(this.addedPlayer.clipId);
+		}
+
 		context.queueDisposeClip(this.addedPlayer);
 		this.addedPlayer = undefined;
 
 		context.updateDuration();
+
+		// Emit resolution after document mutation
+		context.resolve();
+
 		context.emitEvent(EditEvent.ClipDeleted, { trackIndex: this.trackIdx, clipIndex });
 	}
 

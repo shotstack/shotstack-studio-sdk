@@ -84,7 +84,8 @@ export class SplitClipCommand implements EditCommand {
 		});
 
 		// Add right clip to document
-		context.documentAddClip(this.trackIndex, rightClip, this.clipIndex + 1);
+		const addedRightClip = context.documentAddClip(this.trackIndex, rightClip, this.clipIndex + 1);
+		const rightClipId = (addedRightClip as { id?: string }).id;
 
 		// 2. Derive left player from document
 		context.derivePlayerFromDocument(this.trackIndex, this.clipIndex);
@@ -101,6 +102,12 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		this.rightClipPlayer.layer = this.trackIndex + 1;
+
+		// Register right clip with its clip ID for reconciliation
+		if (rightClipId) {
+			this.rightClipPlayer.clipId = rightClipId;
+			context.registerPlayerByClipId(rightClipId, this.rightClipPlayer);
+		}
 
 		// Copy merge field bindings to right clip (both clips inherit same bindings)
 		if (this.originalBindings.size > 0) {
@@ -138,6 +145,10 @@ export class SplitClipCommand implements EditCommand {
 					this.rightClipPlayer.draw();
 				}
 				context.updateDuration();
+
+				// Emit resolution after document mutation
+				context.resolve();
+
 				context.emitEvent(EditEvent.ClipSplit, {
 					trackIndex: this.trackIndex,
 					originalClipIndex: this.clipIndex,
@@ -194,6 +205,10 @@ export class SplitClipCommand implements EditCommand {
 		}
 
 		context.updateDuration();
+
+		// Emit resolution after document mutation
+		context.resolve();
+
 		// Emit ClipDeleted for the merged (removed) right clip
 		context.emitEvent(EditEvent.ClipDeleted, {
 			trackIndex: this.trackIndex,

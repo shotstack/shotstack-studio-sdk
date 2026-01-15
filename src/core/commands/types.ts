@@ -80,4 +80,19 @@ export type CommandContext = {
 	 * @returns Context with previousClipEnd, timelineEnd, intrinsicDuration
 	 */
 	buildResolutionContext(trackIdx: number, clipIdx: number): ResolutionContext;
+
+	/**
+	 * Resolve the document to a ResolvedEdit and emit the Resolved event.
+	 * This is the core of unidirectional data flow:
+	 * Command → Document → resolve() → ResolvedEdit → Components
+	 */
+	resolve(): EditType;
+
+	// ID-based Player access (for reconciliation)
+	/** Get a Player by its stable clip ID */
+	getPlayerByClipId(clipId: string): Player | null;
+	/** Register a Player with its clip ID for lookup */
+	registerPlayerByClipId(clipId: string, player: Player): void;
+	/** Unregister a Player from the ID map */
+	unregisterPlayerByClipId(clipId: string): void;
 };

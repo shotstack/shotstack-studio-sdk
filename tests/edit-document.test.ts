@@ -591,7 +591,100 @@ describe("EditDocument", () => {
 
 			expect(doc.getTrackCount()).toBe(1);
 			expect(doc.getClipCount()).toBe(1);
-			expect(doc.getTracks()).toEqual([{ clips: [MINIMAL_CLIP] }]);
+			// Use toMatchObject to allow internal fields like hydrated IDs
+			expect(doc.getTracks()).toMatchObject([{ clips: [MINIMAL_CLIP] }]);
+		});
+	});
+
+	// ─── ID-Based Operations ──────────────────────────────────────────────────
+
+	describe("ID hydration and ID-based operations", () => {
+		it("hydrates clips with stable IDs on construction", () => {
+			const doc = new EditDocument(createEditWithTracks());
+
+			// Each clip should have an ID
+			const id0 = doc.getClipId(0, 0);
+			const id1 = doc.getClipId(1, 0);
+
+			expect(id0).toBeDefined();
+			expect(id1).toBeDefined();
+			expect(id0).not.toBe(id1);
+		});
+
+		it("getClipById finds clip by its ID", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const clipId = doc.getClipId(0, 0);
+
+			const result = doc.getClipById(clipId!);
+
+			expect(result).not.toBeNull();
+			expect(result!.trackIndex).toBe(0);
+			expect(result!.clipIndex).toBe(0);
+			expect(result!.clip.start).toBe(0);
+		});
+
+		it("updateClipById modifies clip properties", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const clipId = doc.getClipId(0, 0);
+
+			doc.updateClipById(clipId!, { start: 5 });
+
+			const clip = doc.getClip(0, 0);
+			expect(clip?.start).toBe(5);
+		});
+
+		it("removeClipById removes clip by ID", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const clipId = doc.getClipId(0, 0);
+
+			const removed = doc.removeClipById(clipId!);
+
+			expect(removed).not.toBeNull();
+			expect(doc.getClipById(clipId!)).toBeNull();
+		});
+
+		it("addClip generates ID for new clips", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			const newClip: Clip = {
+				asset: { type: "image", src: "https://example.com/new.jpg" },
+				start: 1,
+				length: 1
+			};
+
+			doc.addClip(0, newClip);
+
+			const clipId = doc.getClipId(0, 1);
+			expect(clipId).toBeDefined();
+		});
+
+		it("toJSON strips internal IDs from export", () => {
+			const doc = new EditDocument(createEditWithTracks());
+
+			const exported = doc.toJSON();
+
+			// IDs should not be in exported JSON
+			for (const track of exported.timeline.tracks) {
+				for (const clip of track.clips) {
+					expect((clip as { id?: string }).id).toBeUndefined();
+				}
+			}
+		});
+
+		it("preserves IDs when clips are reordered", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const originalId = doc.getClipId(0, 0);
+
+			// Add a clip at position 0, pushing original to position 1
+			const newClip: Clip = {
+				asset: { type: "image", src: "https://example.com/first.jpg" },
+				start: 0,
+				length: 0.5
+			};
+			doc.addClip(0, newClip, 0);
+
+			// Original clip is now at index 1 but should have same ID
+			const movedId = doc.getClipId(0, 1);
+			expect(movedId).toBe(originalId);
 		});
 	});
 });

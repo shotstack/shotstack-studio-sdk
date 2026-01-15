@@ -53,6 +53,12 @@ export abstract class Player extends Entity {
 	public shouldDispose: boolean;
 	public readonly playerType: PlayerType;
 
+	/**
+	 * Stable ID from the document for reconciliation.
+	 * Used to track this Player across document changes.
+	 */
+	public clipId: string | null = null;
+
 	protected edit: Edit;
 	public clipConfiguration: ResolvedClip;
 

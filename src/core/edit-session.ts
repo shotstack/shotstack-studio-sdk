@@ -59,6 +59,7 @@ import * as pixi from "pixi.js";
 
 import type { EditCommand, CommandContext } from "./commands/types";
 import { EditDocument } from "./edit-document";
+import { resolve as resolveDocument } from "./resolver";
 
 // ─── Resolution Preset Dimensions ─────────────────────────────────────────────
 
@@ -154,7 +155,7 @@ export class Edit extends Entity {
 	private selectedClip: Player | null;
 	/** @internal */
 	private copiedClip: { trackIndex: number; clipConfiguration: ResolvedClip } | null = null;
-	/** @internal */
+	/** @internal Stored for future reconciliation use */
 	private updatedClip: Player | null;
 	/** @internal */
 	private viewportMask?: pixi.Graphics;
@@ -191,6 +192,13 @@ export class Edit extends Entity {
 
 	// Clip load errors - persisted so Timeline can query them after subscribing
 	private clipErrors = new Map<string, { error: string; assetType: string }>();
+
+	/**
+	 * Map of clip ID → Player for ID-based lookup.
+	 * Enables reconciliation and commands to reference clips by stable ID.
+	 * @internal
+	 */
+	private playerByClipId = new Map<string, Player>();
 
 	// Font metadata storage - maps URL to normalized base family + weight for rich-text font resolution
 	private fontMetadata = new Map<string, { baseFamilyName: string; weight: number }>();
@@ -329,6 +337,13 @@ export class Edit extends Entity {
 				try {
 					const clipPlayer = this.createPlayerFromAssetType(clip);
 					clipPlayer.layer = trackIdx + 1;
+
+					// Set stable clip ID from document for reconciliation
+					const clipId = this.document.getClipId(trackIdx, clipIdx);
+					if (clipId) {
+						clipPlayer.clipId = clipId;
+						this.playerByClipId.set(clipId, clipPlayer);
+					}
 
 					// Pass merge field bindings to the player
 					const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
@@ -603,6 +618,26 @@ export class Edit extends Entity {
 		return this.document;
 	}
 
+	/**
+	 * Resolve the document to a ResolvedEdit and emit the Resolved event.
+	 * Components (Canvas, Timeline) subscribe to this event to update themselves.
+	 *
+	 * This is the core of unidirectional data flow:
+	 * Command → Document → resolve() → ResolvedEdit → Components
+	 *
+	 * @internal
+	 */
+	public resolve(): ResolvedEdit {
+		const resolved = resolveDocument(this.document, {
+			mergeFields: this.mergeFieldService
+		});
+
+		// Emit event for components to react
+		this.events.emit(InternalEvent.Resolved, { edit: resolved });
+
+		return resolved;
+	}
+
 	public addClip(trackIdx: number, clip: Clip): void | Promise<void> {
 		// Cast to ResolvedClip - the Player and timing resolver handle "auto"/"end" at runtime
 		const command = new AddClipCommand(trackIdx, clip as unknown as ResolvedClip);
@@ -652,6 +687,15 @@ export class Edit extends Entity {
 		const track = this.tracks[trackIdx];
 		if (!track || clipIdx < 0 || clipIdx >= track.length) return null;
 		return track[clipIdx];
+	}
+
+	/**
+	 * Get a Player by its stable clip ID.
+	 * Used for reconciliation and ID-based clip operations.
+	 * @internal
+	 */
+	public getPlayerByClipId(clipId: string): Player | null {
+		return this.playerByClipId.get(clipId) ?? null;
 	}
 
 	/** Get the exportable asset for a clip, preserving merge field templates */
@@ -1322,6 +1366,14 @@ export class Edit extends Entity {
 				if (this.document) {
 					const exportableClip = clip.getExportableClip();
 					this.document.addClip(trackIdx, exportableClip, insertIdx);
+
+					// Update Player's clipId to match new document ID and re-register
+					const newClipId = this.document.getClipId(trackIdx, insertIdx);
+					if (newClipId) {
+						// eslint-disable-next-line no-param-reassign
+						clip.clipId = newClipId;
+						this.playerByClipId.set(newClipId, clip);
+					}
 				}
 
 				this.addPlayerToContainer(trackIdx, clip);
@@ -1466,6 +1518,18 @@ export class Edit extends Entity {
 					timelineEnd,
 					intrinsicDuration
 				};
+			},
+
+			// Unidirectional data flow: resolve document → ResolvedEdit
+			resolve: () => this.resolve(),
+
+			// ID-based Player access (for reconciliation)
+			getPlayerByClipId: clipId => this.playerByClipId.get(clipId) ?? null,
+			registerPlayerByClipId: (clipId, player) => {
+				this.playerByClipId.set(clipId, player);
+			},
+			unregisterPlayerByClipId: clipId => {
+				this.playerByClipId.delete(clipId);
 			}
 		};
 	}
@@ -1482,6 +1546,13 @@ export class Edit extends Entity {
 		for (const clip of this.clipsToDispose) {
 			if (clip.playerType === PlayerType.Luma) {
 				this.lumaMaskController.cleanupForPlayer(clip);
+			}
+		}
+
+		// Remove from ID→Player map
+		for (const clip of this.clipsToDispose) {
+			if (clip.clipId) {
+				this.playerByClipId.delete(clip.clipId);
 			}
 		}
 

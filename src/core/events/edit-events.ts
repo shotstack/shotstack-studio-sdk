@@ -95,7 +95,10 @@ export const InternalEvent = {
 	FontCapabilitiesChanged: "font:capabilitiesChanged",
 
 	// Toolbar updates
-	ToolbarButtonsChanged: "toolbar:buttonsChanged"
+	ToolbarButtonsChanged: "toolbar:buttonsChanged",
+
+	// Resolution - document to resolved edit transformation
+	Resolved: "resolved"
 } as const;
 
 export type InternalEventName = (typeof InternalEvent)[keyof typeof InternalEvent];
@@ -174,4 +177,7 @@ export type InternalEventMap = {
 
 	// Toolbar
 	"toolbar:buttonsChanged": { buttons: ToolbarButtonConfig[] };
+
+	// Resolution
+	[InternalEvent.Resolved]: { edit: ResolvedEdit };
 };

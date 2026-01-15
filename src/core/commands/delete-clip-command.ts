@@ -50,6 +50,9 @@ export class DeleteClipCommand implements EditCommand {
 			this.trackWasDeleted = true;
 		}
 
+		// Emit resolution after document mutation
+		context.resolve();
+
 		context.emitEvent(EditEvent.ClipDeleted, {
 			trackIndex: this.trackIdx,
 			clipIndex: this.clipIdx
@@ -66,13 +69,14 @@ export class DeleteClipCommand implements EditCommand {
 			this.trackWasDeleted = false;
 		}
 
+		// undeleteClip handles both Player restoration and document sync
 		context.undeleteClip(this.trackIdx, this.deletedClip);
-
-		const exportableClip = this.deletedClip.getExportableClip();
-		context.documentAddClip(this.trackIdx, exportableClip, this.clipIdx);
 
 		// Propagate timing changes after restoring the clip
 		context.propagateTimingChanges(this.trackIdx, this.clipIdx);
+
+		// Emit resolution after document mutation
+		context.resolve();
 
 		// Emit event so luma masking can rebuild after restore
 		context.emitEvent(EditEvent.ClipRestored, {
