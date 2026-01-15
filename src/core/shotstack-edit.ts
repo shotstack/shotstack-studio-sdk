@@ -470,16 +470,26 @@ export class ShotstackEdit extends Edit {
 	/** Helper: Update merge field binding resolvedValues for a player */
 	private updateMergeFieldBindings(player: ReturnType<typeof this.getPlayerClip>, fieldName: string, _newValue: string): void {
 		if (!player) return;
+
+		const clipId = player.clipId;
+
 		for (const [path, binding] of player.getMergeFieldBindings()) {
 			// Check if this binding's placeholder contains this field
 			const extractedField = this.mergeFieldService.extractFieldName(binding.placeholder);
 			if (extractedField === fieldName) {
 				// Recompute the resolved value from the placeholder with the new field value
 				const newResolvedValue = this.mergeFieldService.resolve(binding.placeholder);
-				player.setMergeFieldBinding(path, {
+				const updatedBinding = {
 					placeholder: binding.placeholder,
 					resolvedValue: newResolvedValue
-				});
+				};
+
+				// Document binding (source of truth)
+				if (clipId) {
+					this.getDocument()?.setClipBinding(clipId, path, updatedBinding);
+				}
+				// Player binding (parallel storage during migration)
+				player.setMergeFieldBinding(path, updatedBinding);
 			}
 		}
 	}

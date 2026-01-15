@@ -1,3 +1,4 @@
+import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
@@ -16,6 +17,7 @@ export class DeleteClipCommand implements EditCommand {
 	private deletedClipId?: string;
 	private deleteTrackCommand?: DeleteTrackCommand;
 	private trackWasDeleted = false;
+	private storedBindings?: Map<string, MergeFieldBinding>;
 
 	constructor(
 		private trackIdx: number,
@@ -36,6 +38,14 @@ export class DeleteClipCommand implements EditCommand {
 		// Save config for undo
 		this.deletedClipConfig = structuredClone(clip);
 		this.deletedClipId = (clip as { id?: string }).id;
+
+		// Save merge field bindings for undo (from document)
+		if (this.deletedClipId) {
+			const bindings = context.getClipBindings(this.deletedClipId);
+			this.storedBindings = bindings ? new Map(bindings) : undefined;
+			// Clear bindings from document (will be recreated on undo)
+			document.clearClipBindings(this.deletedClipId);
+		}
 
 		// Clear any error associated with this clip before deletion
 		context.clearClipError(this.trackIdx, this.clipIdx);
@@ -80,10 +90,25 @@ export class DeleteClipCommand implements EditCommand {
 		}
 
 		// Document mutation - add clip back at original position
-		context.documentAddClip(this.trackIdx, this.deletedClipConfig, this.clipIdx);
+		const restoredClip = context.documentAddClip(this.trackIdx, this.deletedClipConfig, this.clipIdx);
+
+		// Restore merge field bindings to document
+		const restoredClipId = (restoredClip as { id?: string }).id;
+		if (restoredClipId && this.storedBindings && this.storedBindings.size > 0) {
+			const document = context.getDocument();
+			document?.setClipBindingsForClip(restoredClipId, this.storedBindings);
+		}
 
 		// Resolve triggers reconciler → creates Player
 		context.resolve();
+
+		// Restore bindings to player (parallel storage during migration)
+		if (restoredClipId && this.storedBindings && this.storedBindings.size > 0) {
+			const player = context.getPlayerByClipId(restoredClipId);
+			if (player) {
+				player.setInitialBindings(this.storedBindings);
+			}
+		}
 
 		context.updateDuration();
 
@@ -98,5 +123,6 @@ export class DeleteClipCommand implements EditCommand {
 		this.deletedClipConfig = undefined;
 		this.deletedClipId = undefined;
 		this.deleteTrackCommand = undefined;
+		this.storedBindings = undefined;
 	}
 }

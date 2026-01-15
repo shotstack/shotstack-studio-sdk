@@ -348,9 +348,14 @@ export class Edit extends Entity {
 						this.playerByClipId.set(clipId, clipPlayer);
 					}
 
-					// Pass merge field bindings to the player
+					// Pass merge field bindings to player AND document (parallel storage)
 					const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
 					if (bindings && bindings.size > 0) {
+						// Document binding (source of truth)
+						if (clipId) {
+							this.document.setClipBindingsForClip(clipId, bindings);
+						}
+						// Player binding (parallel storage during migration)
 						clipPlayer.setInitialBindings(bindings);
 					}
 
@@ -1716,6 +1721,20 @@ export class Edit extends Entity {
 			},
 			unregisterPlayerByClipId: clipId => {
 				this.playerByClipId.delete(clipId);
+			},
+
+			// Merge field binding management (document-based)
+			setClipBinding: (clipId, path, binding) => {
+				this.document?.setClipBinding(clipId, path, binding);
+			},
+			getClipBinding: (clipId, path) => {
+				return this.document?.getClipBinding(clipId, path);
+			},
+			removeClipBinding: (clipId, path) => {
+				this.document?.removeClipBinding(clipId, path);
+			},
+			getClipBindings: clipId => {
+				return this.document?.getClipBindings(clipId);
 			}
 		};
 	}

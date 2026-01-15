@@ -1,5 +1,5 @@
 import type { Player } from "@canvas/players/player";
-import type { EditDocument } from "@core/edit-document";
+import type { EditDocument, MergeFieldBinding } from "@core/edit-document";
 import type { EditEventMap, EditEventName } from "@core/events/edit-events";
 import type { MergeFieldService } from "@core/merge";
 import type { ResolutionContext } from "@core/timing/types";
@@ -97,4 +97,14 @@ export type CommandContext = {
 	registerPlayerByClipId(clipId: string, player: Player): void;
 	/** Unregister a Player from the ID map */
 	unregisterPlayerByClipId(clipId: string): void;
+
+	// Merge field binding management (document-based)
+	/** Set a merge field binding for a clip property */
+	setClipBinding(clipId: string, path: string, binding: MergeFieldBinding): void;
+	/** Get a merge field binding for a clip property */
+	getClipBinding(clipId: string, path: string): MergeFieldBinding | undefined;
+	/** Remove a merge field binding for a clip property */
+	removeClipBinding(clipId: string, path: string): void;
+	/** Get all bindings for a clip */
+	getClipBindings(clipId: string): Map<string, MergeFieldBinding> | undefined;
 };

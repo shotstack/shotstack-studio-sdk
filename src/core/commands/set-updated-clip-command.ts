@@ -128,7 +128,18 @@ export class SetUpdatedClipCommand implements EditCommand {
 		// Reconciler handles player updates
 		context.resolve();
 
-		// Restore saved bindings - binding logic stays on players until Phase 4
+		// Restore saved bindings to both document and player (parallel storage)
+		if (this.clipId) {
+			// Document binding (source of truth)
+			const docBindings = new Map(this.storedInitialBindings);
+			if (docBindings.size > 0) {
+				const document = context.getDocument();
+				document?.setClipBindingsForClip(this.clipId, docBindings);
+			} else {
+				context.getDocument()?.clearClipBindings(this.clipId);
+			}
+		}
+		// Player binding (parallel storage during migration)
 		player.setInitialBindings(this.storedInitialBindings);
 
 		// Check if asset src changed (reverse direction)

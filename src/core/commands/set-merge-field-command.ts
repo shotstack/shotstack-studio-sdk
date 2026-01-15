@@ -1,4 +1,5 @@
 import type { MergeFieldBinding, Player } from "@canvas/players/player";
+import type { MergeFieldBinding as DocumentMergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import { setNestedValue } from "@core/shared/utils";
 
@@ -9,13 +10,15 @@ import type { EditCommand, CommandContext } from "./types";
  * Handles both the player binding (for export) and resolved value (for rendering) atomically.
  *
  * This command supports undo/redo and ensures:
+ * - Document stores the binding (source of truth for export)
  * - Player's clipConfiguration gets the resolved value (for rendering)
- * - Player's mergeFieldBindings track the placeholder (for export)
+ * - Player's mergeFieldBindings also track the placeholder (parallel storage during migration)
  * - Merge field registry is updated appropriately
  */
 export class SetMergeFieldCommand implements EditCommand {
 	name = "setMergeField";
 
+	private clipId: string | null = null;
 	private storedPreviousValue: string;
 	private storedNewValue: string;
 	private trackIndex: number;
@@ -36,6 +39,8 @@ export class SetMergeFieldCommand implements EditCommand {
 		this.storedNewValue = newValue;
 		this.trackIndex = trackIndex;
 		this.clipIndex = clipIndex;
+		// Store clip ID for robust lookup (survives player recreation)
+		this.clipId = clip.clipId;
 	}
 
 	async execute(context?: CommandContext): Promise<void> {
@@ -43,21 +48,34 @@ export class SetMergeFieldCommand implements EditCommand {
 
 		const mergeFields = context.getMergeFields();
 
-		// Save previous binding for undo
-		this.storedPreviousBinding = this.clip.getMergeFieldBinding(this.propertyPath);
+		// Save previous binding for undo (from document first, fallback to player)
+		if (this.clipId) {
+			const docBinding = context.getClipBinding(this.clipId, this.propertyPath);
+			this.storedPreviousBinding = docBinding ?? this.clip.getMergeFieldBinding(this.propertyPath);
+		} else {
+			this.storedPreviousBinding = this.clip.getMergeFieldBinding(this.propertyPath);
+		}
 
 		// 1. Update player's clipConfiguration with resolved value
 		setNestedValue(this.clip.clipConfiguration, this.propertyPath, this.storedNewValue);
 
-		// 2. Update player binding
+		// 2. Update bindings (document = source of truth, player = parallel for compatibility)
 		if (this.fieldName) {
-			// Applying a merge field - create binding with template
-			this.clip.setMergeFieldBinding(this.propertyPath, {
+			const binding: DocumentMergeFieldBinding = {
 				placeholder: mergeFields.createTemplate(this.fieldName),
 				resolvedValue: this.storedNewValue
-			});
+			};
+			// Document binding (source of truth)
+			if (this.clipId) {
+				context.setClipBinding(this.clipId, this.propertyPath, binding);
+			}
+			// Player binding (parallel storage during migration)
+			this.clip.setMergeFieldBinding(this.propertyPath, binding);
 		} else {
-			// Removing merge field - remove binding
+			// Removing merge field - remove from both
+			if (this.clipId) {
+				context.removeClipBinding(this.clipId, this.propertyPath);
+			}
 			this.clip.removeMergeFieldBinding(this.propertyPath);
 		}
 
@@ -100,10 +118,19 @@ export class SetMergeFieldCommand implements EditCommand {
 		// 1. Restore player's clipConfiguration with previous value
 		setNestedValue(this.clip.clipConfiguration, this.propertyPath, this.storedPreviousValue);
 
-		// 2. Restore previous binding
+		// 2. Restore previous binding (to both document and player)
 		if (this.storedPreviousBinding) {
+			// Document binding (source of truth)
+			if (this.clipId) {
+				context.setClipBinding(this.clipId, this.propertyPath, this.storedPreviousBinding);
+			}
+			// Player binding (parallel storage during migration)
 			this.clip.setMergeFieldBinding(this.propertyPath, this.storedPreviousBinding);
 		} else {
+			// No previous binding - remove from both
+			if (this.clipId) {
+				context.removeClipBinding(this.clipId, this.propertyPath);
+			}
 			this.clip.removeMergeFieldBinding(this.propertyPath);
 		}
 

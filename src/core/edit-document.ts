@@ -15,11 +15,23 @@
 import type { Size } from "@layouts/geometry";
 
 import type { Clip, Track, Edit, Soundtrack } from "./schemas";
+import { setNestedValue } from "./shared/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /** Internal clip type with stable ID for reconciliation */
 type InternalClip = Clip & { id?: string };
+
+/**
+ * Binding between a clip property and a merge field placeholder.
+ * Stored by clip ID and property path for document-based management.
+ */
+export interface MergeFieldBinding {
+	/** The original placeholder string, e.g., "{{ HERO_IMAGE }}" */
+	placeholder: string;
+	/** The resolved value at binding time, used for change detection */
+	resolvedValue: string;
+}
 
 /** Result from ID-based clip lookup */
 export interface ClipLookupResult {
@@ -36,6 +48,12 @@ export interface EditDocumentOptions {
 
 export class EditDocument {
 	private data: Edit;
+
+	/**
+	 * Merge field bindings stored by clip ID → property path → binding.
+	 * This is the source of truth for merge field state.
+	 */
+	private clipBindings: Map<string, Map<string, MergeFieldBinding>> = new Map();
 
 	constructor(edit: Edit) {
 		this.data = structuredClone(edit);
@@ -496,19 +514,111 @@ export class EditDocument {
 		this.data.merge = mergeFields;
 	}
 
+	// ─── Clip Binding Management ─────────────────────────────────────────────
+
+	/**
+	 * Set a merge field binding for a clip property.
+	 * @param clipId - The stable clip ID
+	 * @param path - Property path (e.g., "asset.src")
+	 * @param binding - The placeholder and resolved value
+	 */
+	setClipBinding(clipId: string, path: string, binding: MergeFieldBinding): void {
+		let clipBindingsMap = this.clipBindings.get(clipId);
+		if (!clipBindingsMap) {
+			clipBindingsMap = new Map();
+			this.clipBindings.set(clipId, clipBindingsMap);
+		}
+		clipBindingsMap.set(path, binding);
+	}
+
+	/**
+	 * Get a merge field binding for a clip property.
+	 * @param clipId - The stable clip ID
+	 * @param path - Property path (e.g., "asset.src")
+	 * @returns The binding, or undefined if not set
+	 */
+	getClipBinding(clipId: string, path: string): MergeFieldBinding | undefined {
+		return this.clipBindings.get(clipId)?.get(path);
+	}
+
+	/**
+	 * Remove a merge field binding for a clip property.
+	 * @param clipId - The stable clip ID
+	 * @param path - Property path (e.g., "asset.src")
+	 */
+	removeClipBinding(clipId: string, path: string): void {
+		const clipBindingsMap = this.clipBindings.get(clipId);
+		if (clipBindingsMap) {
+			clipBindingsMap.delete(path);
+			// Clean up empty maps
+			if (clipBindingsMap.size === 0) {
+				this.clipBindings.delete(clipId);
+			}
+		}
+	}
+
+	/**
+	 * Get all bindings for a clip.
+	 * @param clipId - The stable clip ID
+	 * @returns Map of path → binding, or undefined if clip has no bindings
+	 */
+	getClipBindings(clipId: string): Map<string, MergeFieldBinding> | undefined {
+		return this.clipBindings.get(clipId);
+	}
+
+	/**
+	 * Set all bindings for a clip (replaces existing).
+	 * @param clipId - The stable clip ID
+	 * @param bindings - Map of path → binding
+	 */
+	setClipBindingsForClip(clipId: string, bindings: Map<string, MergeFieldBinding>): void {
+		if (bindings.size === 0) {
+			this.clipBindings.delete(clipId);
+		} else {
+			this.clipBindings.set(clipId, new Map(bindings));
+		}
+	}
+
+	/**
+	 * Clear all bindings for a clip.
+	 * @param clipId - The stable clip ID
+	 */
+	clearClipBindings(clipId: string): void {
+		this.clipBindings.delete(clipId);
+	}
+
+	/**
+	 * Get all clip IDs that have bindings.
+	 * @returns Array of clip IDs
+	 */
+	getClipIdsWithBindings(): string[] {
+		return Array.from(this.clipBindings.keys());
+	}
+
 	// ─── Serialization ────────────────────────────────────────────────────────
 
 	/**
 	 * Export the document as raw Edit JSON (preserves "auto", "end", placeholders)
 	 * This is what gets sent to the backend API.
 	 * Internal IDs are stripped - they are not part of the Shotstack API spec.
+	 * Merge field placeholders are restored from document bindings.
 	 */
 	toJSON(): Edit {
 		const result = structuredClone(this.data);
 
-		// Strip internal IDs from clips (not part of Shotstack API)
+		// Restore placeholders from document bindings before stripping IDs
 		for (const track of result.timeline.tracks) {
 			for (const clip of track.clips) {
+				const clipId = (clip as InternalClip).id;
+				if (clipId) {
+					const bindings = this.clipBindings.get(clipId);
+					if (bindings) {
+						for (const [path, { placeholder }] of bindings) {
+							setNestedValue(clip, path, placeholder);
+						}
+					}
+				}
+				// Strip internal ID (not part of Shotstack API)
 				delete (clip as InternalClip).id;
 			}
 		}
