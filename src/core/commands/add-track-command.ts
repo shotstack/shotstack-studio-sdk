@@ -3,6 +3,9 @@ import * as pixi from "pixi.js";
 
 import type { EditCommand, CommandContext } from "./types";
 
+/**
+ * Atomic command that adds a new track with at least one clip.
+ */
 export class AddTrackCommand implements EditCommand {
 	name = "addTrack";
 
@@ -21,22 +24,17 @@ export class AddTrackCommand implements EditCommand {
 		}
 		doc.addTrack(this.trackIdx);
 
-		// Update layers for all clips that are on tracks AFTER the insertion point
-		// Since we're inserting a track, all tracks after trackIdx shift down
 		clips.forEach(clip => {
 			if (clip.layer > this.trackIdx) {
-				// Remove from old container
 				const oldZIndex = 100000 - clip.layer * 100;
 				const oldContainer = context.getContainer().getChildByLabel(`shotstack-track-${oldZIndex}`, false);
 				if (oldContainer) {
 					oldContainer.removeChild(clip.getContainer());
 				}
 
-				// Update layer (track index + 1)
 				// eslint-disable-next-line no-param-reassign
 				clip.layer += 1;
 
-				// Add to new container
 				const newZIndex = 100000 - clip.layer * 100;
 				let newContainer = context.getContainer().getChildByLabel(`shotstack-track-${newZIndex}`, false);
 				if (!newContainer) {
@@ -47,11 +45,9 @@ export class AddTrackCommand implements EditCommand {
 			}
 		});
 
-		// Force re-sort
 		context.getContainer().sortDirty = true;
 		context.updateDuration();
 
-		// Emit track creation event to trigger timeline visual updates
 		context.emitEvent(EditEvent.TrackAdded, {
 			trackIndex: this.trackIdx,
 			totalTracks: tracks.length
@@ -63,31 +59,25 @@ export class AddTrackCommand implements EditCommand {
 		const tracks = context.getTracks();
 		const clips = context.getClips();
 
-		// Remove inserted track
 		tracks.splice(this.trackIdx, 1);
 
-		// Sync with document layer (explicit error - no silent failures)
 		const doc = context.getDocument();
 		if (!doc) {
 			throw new Error(`AddTrackCommand.undo: Document not initialized - cannot sync track ${this.trackIdx}`);
 		}
 		doc.removeTrack(this.trackIdx);
 
-		// Update layers AND move to correct containers (mirror of execute)
 		clips.forEach(clip => {
 			if (clip.layer > this.trackIdx) {
-				// Remove from current container
 				const oldZIndex = 100000 - clip.layer * 100;
 				const oldContainer = context.getContainer().getChildByLabel(`shotstack-track-${oldZIndex}`, false);
 				if (oldContainer) {
 					oldContainer.removeChild(clip.getContainer());
 				}
 
-				// Decrement layer
 				// eslint-disable-next-line no-param-reassign
 				clip.layer -= 1;
 
-				// Add to correct container
 				const newZIndex = 100000 - clip.layer * 100;
 				let newContainer = context.getContainer().getChildByLabel(`shotstack-track-${newZIndex}`, false);
 				if (!newContainer) {
@@ -98,8 +88,11 @@ export class AddTrackCommand implements EditCommand {
 			}
 		});
 
-		// Force re-sort
 		context.getContainer().sortDirty = true;
 		context.updateDuration();
+	}
+
+	dispose(): void {
+		// No resources to release
 	}
 }

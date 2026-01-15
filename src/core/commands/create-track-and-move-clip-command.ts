@@ -7,7 +7,6 @@ import type { EditCommand, CommandContext } from "./types";
 
 /**
  * Compound command that creates a new track and moves a clip to it atomically.
- * This ensures that both operations are treated as a single undo/redo action.
  */
 export class CreateTrackAndMoveClipCommand implements EditCommand {
 	name = "createTrackAndMoveClip";

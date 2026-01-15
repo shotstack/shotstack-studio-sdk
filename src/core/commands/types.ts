@@ -19,10 +19,6 @@ export interface TimelineUpdatedEvent {
 export type EditCommand = {
 	execute(context?: CommandContext): void | Promise<void>;
 	undo?(context?: CommandContext): void | Promise<void>;
-	/**
-	 * Optional cleanup when command is pruned from history.
-	 * Called when command is removed to free memory (e.g., Player references, deep-cloned configs).
-	 */
 	dispose?(): void;
 	readonly name: string;
 };
@@ -64,18 +60,15 @@ export type CommandContext = {
 	getTimelineBackground(): string;
 	setTimelineBackground(color: string): void;
 
-	// Document access (single source of truth)
+	// Document access
 	getDocument(): EditDocument | null;
-
-	// Document-first mutations (Phase 3)
-	// These methods establish document as the source of truth - mutations flow through document first
-	/** Update a clip's properties in the document (source of truth) */
+	/** Update a clip's properties in the document */
 	documentUpdateClip(trackIdx: number, clipIdx: number, updates: Partial<DocumentClipType>): void;
 	/** Add a clip to the document, returns the added clip */
 	documentAddClip(trackIdx: number, clip: DocumentClipType, clipIdx?: number): DocumentClipType;
 	/** Remove a clip from the document, returns the removed clip or null */
 	documentRemoveClip(trackIdx: number, clipIdx: number): DocumentClipType | null;
-	/** Derive runtime Player state from document clip (applies document data to Player) */
+	/** Derive runtime Player state from document clip */
 	derivePlayerFromDocument(trackIdx: number, clipIdx: number): void;
 
 	/**

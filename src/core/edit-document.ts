@@ -3,14 +3,13 @@
  *
  * This class owns the raw Edit configuration with "auto", "end", and merge
  * field placeholders preserved. It provides CRUD operations on the document
- * structure without any rendering or pixi.js dependencies.
+ * structure.
  *
- * The document is the source of truth that serializes to the backend API.
- * Resolution to concrete values (ResolvedEdit) happens in EditSession.
+ * The document is the source of truth that serializes to the Shotstack Edit API.
  *
  * Key distinction:
- * - Edit (this class holds) = raw user input with "auto", "end", {{ placeholders }}
- * - ResolvedEdit = concrete values (ms timing, substituted text) for pixi rendering
+ * - Edit (this class) = raw user input with "auto", "end", {{ placeholders }}
+ * - ResolvedEdit = concrete values (ms timing, substituted text)
  */
 
 import type { Size } from "@layouts/geometry";
@@ -20,7 +19,6 @@ import type { Clip, Track, Edit, Soundtrack } from "./schemas";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface EditDocumentOptions {
-	/** Default output size if not specified in edit */
 	defaultSize?: Size;
 }
 
@@ -30,7 +28,6 @@ export class EditDocument {
 	private data: Edit;
 
 	constructor(edit: Edit) {
-		// Deep clone to prevent external mutations
 		this.data = structuredClone(edit);
 	}
 
@@ -51,7 +48,7 @@ export class EditDocument {
 	}
 
 	/**
-	 * Get all tracks (raw, unresolved)
+	 * Get all tracks
 	 */
 	getTracks(): Track[] {
 		return this.data.timeline.tracks;

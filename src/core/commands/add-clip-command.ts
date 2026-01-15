@@ -6,6 +6,9 @@ import type { EditCommand, CommandContext } from "./types";
 
 type ClipType = ResolvedClip;
 
+/**
+ * Atomic command that adds a new clip to a track.
+ */
 export class AddClipCommand implements EditCommand {
 	name = "addClip";
 	private addedPlayer?: Player;
