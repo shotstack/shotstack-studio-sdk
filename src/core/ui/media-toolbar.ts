@@ -744,11 +744,8 @@ export class MediaToolbar extends BaseToolbar {
 		if (!shotstackEdit) return;
 
 		if (this.dynamicFieldName) {
+			// Document-first: resolve() triggers reconciler which handles reloadAsset()
 			shotstackEdit.updateMergeFieldValueLive(this.dynamicFieldName, url);
-			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-			if (player) {
-				player.reloadAsset();
-			}
 			return;
 		}
 
