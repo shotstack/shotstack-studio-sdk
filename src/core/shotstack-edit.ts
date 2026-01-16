@@ -104,6 +104,9 @@ function convertEmptyTextClipToSvg(clip: Clip): Clip {
  * ```
  */
 export class ShotstackEdit extends Edit {
+	// Recursion guard for merge field updates (prevents stack overflow)
+	private isUpdatingMergeFields = false;
+
 	// ─── Merge Field API ───────────────────────────────────────────────────────
 
 	/**
@@ -206,22 +209,30 @@ export class ShotstackEdit extends Edit {
 	 * Updates document bindings then calls resolve() to let reconciler update players.
 	 */
 	public updateMergeFieldValueLive(fieldName: string, newValue: string): void {
-		// Update the field in the registry
-		const field = this.mergeFieldService.get(fieldName);
-		if (!field) return;
-		this.mergeFieldService.register({ ...field, defaultValue: newValue }, { silent: true });
+		// Recursion guard: prevent stack overflow from event cascades
+		if (this.isUpdatingMergeFields) return;
 
-		// Update document bindings with new resolved values
-		const tracks = this.getTracks();
-		for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
-			for (let clipIdx = 0; clipIdx < tracks[trackIdx].length; clipIdx += 1) {
-				const player = tracks[trackIdx][clipIdx];
-				this.updateMergeFieldBindings(player, fieldName, newValue);
+		this.isUpdatingMergeFields = true;
+		try {
+			// Update the field in the registry
+			const field = this.mergeFieldService.get(fieldName);
+			if (!field) return;
+			this.mergeFieldService.register({ ...field, defaultValue: newValue }, { silent: true });
+
+			// Update document bindings with new resolved values
+			const tracks = this.getTracks();
+			for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
+				for (let clipIdx = 0; clipIdx < tracks[trackIdx].length; clipIdx += 1) {
+					const player = tracks[trackIdx][clipIdx];
+					this.updateMergeFieldBindings(player, fieldName, newValue);
+				}
 			}
-		}
 
-		// Document-first: resolve() triggers reconciler which updates players
-		this.resolve();
+			// Document-first: resolve() triggers reconciler which updates players
+			this.resolve();
+		} finally {
+			this.isUpdatingMergeFields = false;
+		}
 	}
 
 	/**
