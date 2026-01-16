@@ -356,12 +356,12 @@ export class Timeline {
 			hasAttachedLuma: (trackIndex, clipIndex) => this.stateManager.hasAttachedLuma(trackIndex, clipIndex),
 			findAttachedLuma: (trackIndex, clipIndex) => this.stateManager.findAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {
-				const contentPlayer = this.edit.getPlayerClip(contentTrackIndex, contentClipIndex);
+				const contentClip = this.edit.getResolvedClip(contentTrackIndex, contentClipIndex);
+				const clipId = this.edit.getClipId(contentTrackIndex, contentClipIndex);
 				const lumaRef = this.stateManager.findAttachedLuma(contentTrackIndex, contentClipIndex);
-				if (!lumaRef || !contentPlayer) return;
+				if (!lumaRef || !contentClip || !clipId) return;
 
-				const contentConfig = contentPlayer.clipConfiguration;
-				const startTime = contentConfig.start;
+				const startTime = contentClip.start;
 				const newTrackIndex = contentTrackIndex + 1;
 
 				const cmd = new CreateTrackAndMoveClipCommand(newTrackIndex, lumaRef.trackIndex, lumaRef.clipIndex, sec(startTime));
@@ -369,7 +369,7 @@ export class Timeline {
 
 				this.edit.transformFromLuma(newTrackIndex, 0);
 
-				this.stateManager.clearLumaVisibilityFor(contentPlayer);
+				this.stateManager.clearLumaVisibilityForClipId(clipId);
 
 				this.requestRender();
 			},

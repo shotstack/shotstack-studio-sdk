@@ -519,9 +519,9 @@ export class TextToolbar extends BaseToolbar {
 	}
 
 	private getCurrentAsset(): TextAsset | null {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player || player.clipConfiguration.asset.type !== "text") return null;
-		return player.clipConfiguration.asset as TextAsset;
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || clip.asset.type !== "text") return null;
+		return clip.asset as TextAsset;
 	}
 
 	private updateAssetProperty(updates: Partial<TextAsset>): void {
@@ -543,10 +543,8 @@ export class TextToolbar extends BaseToolbar {
 			const shotstackEdit = this.getShotstackEdit();
 			const resolvedText = shotstackEdit?.mergeFields.resolve(rawText) ?? rawText;
 
-			// Update merge field binding
-			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 			const document = this.edit.getDocument();
-			const clipId = player?.clipId;
+			const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 
 			if (shotstackEdit?.mergeFields.isMergeFieldTemplate(rawText)) {
 				const binding = {
@@ -690,9 +688,8 @@ export class TextToolbar extends BaseToolbar {
 
 		// Text - show merge field placeholder if present, otherwise resolved value
 		if (this.textEditArea) {
-			const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 			const document = this.edit.getDocument();
-			const clipId = player?.clipId;
+			const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 			const binding = clipId ? document?.getClipBinding(clipId, "asset.text") : undefined;
 			this.textEditArea.value = binding?.placeholder ?? asset.text ?? "";
 		}

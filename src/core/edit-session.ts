@@ -610,9 +610,29 @@ export class Edit extends Entity {
 	}
 
 	/**
+	 * Get a specific clip from the resolved edit.
+	 */
+	public getResolvedClip(trackIdx: number, clipIdx: number): ResolvedClip | null {
+		const resolved = this.getResolvedEdit();
+		return resolved?.timeline?.tracks?.[trackIdx]?.clips?.[clipIdx] ?? null;
+	}
+
+	/**
+	 * Get the stable clip ID for a clip at a given position.
+	 */
+	public getClipId(trackIdx: number, clipIdx: number): string | null {
+		return this.document?.getClipId(trackIdx, clipIdx) ?? null;
+	}
+
+	/**
+	 * Get the raw document clip at a given position.
+	 */
+	public getDocumentClip(trackIdx: number, clipIdx: number): Clip | null {
+		return this.document?.getClip(trackIdx, clipIdx) ?? null;
+	}
+
+	/**
 	 * Get the original parsed edit configuration.
-	 * Unlike getResolvedEdit(), this returns the edit as originally parsed,
-	 * with all clips present regardless of loading state.
 	 */
 	public getOriginalEdit(): ResolvedEdit | null {
 		return this.edit;

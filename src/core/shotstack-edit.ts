@@ -136,11 +136,11 @@ export class ShotstackEdit extends Edit {
 		value: string,
 		originalValue?: string
 	): void {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player?.clipId) return;
+		const clipId = this.getClipId(trackIndex, clipIndex);
+		if (!clipId) return;
 
-		// Get current value from player for undo
-		const currentValue = getNestedValue(player.clipConfiguration, propertyPath);
+		const resolvedClip = this.getResolvedClip(trackIndex, clipIndex);
+		const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
 		const previousValue = originalValue ?? (typeof currentValue === "string" ? currentValue : "");
 
 		// Check if there's already a merge field on this property
@@ -148,7 +148,7 @@ export class ShotstackEdit extends Edit {
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
 		const previousFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
-		const command = new SetMergeFieldCommand(player.clipId, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
+		const command = new SetMergeFieldCommand(clipId, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
 		this.executeCommand(command);
 	}
 
@@ -161,14 +161,9 @@ export class ShotstackEdit extends Edit {
 	 * @param restoreValue - The value to restore (original pre-merge-field value)
 	 * @returns Promise that resolves when the command completes
 	 */
-	public removeMergeField(
-		trackIndex: number,
-		clipIndex: number,
-		propertyPath: string,
-		restoreValue: string
-	): void | Promise<void> {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player?.clipId) return;
+	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void | Promise<void> {
+		const clipId = this.getClipId(trackIndex, clipIndex);
+		if (!clipId) return;
 
 		// Get current merge field name
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
@@ -178,7 +173,7 @@ export class ShotstackEdit extends Edit {
 		if (!currentFieldName) return; // No merge field to remove
 
 		const command = new SetMergeFieldCommand(
-			player.clipId,
+			clipId,
 			propertyPath,
 			null, // Removing merge field
 			currentFieldName,

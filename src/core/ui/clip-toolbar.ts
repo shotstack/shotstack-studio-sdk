@@ -1,5 +1,5 @@
 import { EditEvent } from "@core/events/edit-events";
-import { toMs } from "@core/timing/types";
+import { sec, toMs } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -95,17 +95,15 @@ export class ClipToolbar extends BaseToolbar {
 	}
 
 	protected override syncState(): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const docClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!docClip) return;
 
-		// Use timing INTENT to preserve "auto"/"end" modes for display
-		const intent = player.getTimingIntent();
+		const startIntent = docClip.start as number | "auto";
+		const lengthIntent = docClip.length as number | "auto" | "end";
 
-		// Sync start timing
-		this.startControl?.setFromClip(typeof intent.start === "number" ? toMs(intent.start) : intent.start);
+		this.startControl?.setFromClip(typeof startIntent === "number" ? toMs(sec(startIntent)) : startIntent);
 
-		// Sync length timing
-		this.lengthControl?.setFromClip(typeof intent.length === "number" ? toMs(intent.length) : intent.length);
+		this.lengthControl?.setFromClip(typeof lengthIntent === "number" ? toMs(sec(lengthIntent)) : lengthIntent);
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {

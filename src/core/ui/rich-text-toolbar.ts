@@ -698,9 +698,9 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private getCurrentAsset(): RichTextAsset | null {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return null;
-		return player.clipConfiguration.asset as RichTextAsset;
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip) return null;
+		return clip.asset as RichTextAsset;
 	}
 
 	private updateSize(newSize: number): void {
@@ -901,9 +901,8 @@ export class RichTextToolbar extends BaseToolbar {
 		const resolvedText = shotstackEdit?.mergeFields.resolve(templateText) ?? templateText;
 
 		// Update merge field binding for export to preserve templates
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const document = this.edit.getDocument();
-		const clipId = player?.clipId;
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 
 		if (shotstackEdit?.mergeFields.isMergeFieldTemplate(templateText)) {
 			const binding = {
@@ -1013,9 +1012,8 @@ export class RichTextToolbar extends BaseToolbar {
 		this.hideAutocomplete();
 
 		// Update merge field binding for export to preserve templates
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const document = this.edit.getDocument();
-		const clipId = player?.clipId;
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 
 		// Document binding (source of truth)
 		if (clipId && document) {
@@ -1151,34 +1149,28 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private updateBorderProperty(updates: Partial<{ width: number; color: string; opacity: number; radius: number }>): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
 
-		const asset = player.clipConfiguration.asset as RichTextAsset;
 		const currentBorder = asset.border || { width: 0, color: "#000000", opacity: 1, radius: 0 };
-
 		const updatedBorder = { ...currentBorder, ...updates };
 		this.updateClipProperty({ border: updatedBorder });
 	}
 
 	private updateShadowProperty(updates: Partial<{ offsetX: number; offsetY: number; blur: number; color: string; opacity: number }>): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
 
-		const asset = player.clipConfiguration.asset as RichTextAsset;
 		const currentShadow = asset.shadow || { offsetX: 0, offsetY: 0, blur: 0, color: "#000000", opacity: 0.5 };
-
 		const updatedShadow = { ...currentShadow, ...updates };
 		this.updateClipProperty({ shadow: updatedShadow });
 	}
 
 	private updateAnimationProperty(updates: Partial<{ preset: string; duration: number; style: string; direction: string }>): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
 
-		const asset = player.clipConfiguration.asset as RichTextAsset;
 		const currentAnimation = asset.animation || { preset: "fadeIn" as const };
-
 		const updatedAnimation = { ...currentAnimation, ...updates };
 		this.updateClipProperty({ animation: updatedAnimation });
 
@@ -1203,12 +1195,10 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private updateBackgroundProperty(updates: Partial<{ color?: string; opacity: number }>): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
 
-		const asset = player.clipConfiguration.asset as RichTextAsset;
 		const currentBackground = asset.background || { opacity: 1 };
-
 		const updatedBackground = { ...currentBackground, ...updates };
 
 		// If color is being removed and opacity is 1, remove background entirely
@@ -1221,10 +1211,8 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private updatePaddingProperty(updates: Partial<{ top: number; right: number; bottom: number; left: number }>): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
-
-		const asset = player.clipConfiguration.asset as RichTextAsset;
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
 
 		// Get current padding (handle both number and object formats)
 		let currentPadding: { top: number; right: number; bottom: number; left: number };
@@ -1273,10 +1261,9 @@ export class RichTextToolbar extends BaseToolbar {
 		background?: string;
 		gradient?: { type: "linear" | "radial"; angle: number; stops: Array<{ offset: number; color: string }> };
 	}): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
 
-		const asset = player.clipConfiguration.asset as RichTextAsset;
 		const currentFont = asset.font || {};
 
 		const fontUpdates: Record<string, unknown> = { ...currentFont };

@@ -570,10 +570,8 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	protected override syncState(): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (player) {
-			const clip = player.clipConfiguration;
-
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (clip) {
 			// Fit
 			this.currentFit = (clip.fit as FitValue) || "crop";
 
@@ -654,11 +652,11 @@ export class MediaToolbar extends BaseToolbar {
 		this.currentVolume = value;
 		this.updateVolumeDisplay();
 
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (player && (player.clipConfiguration.asset.type === "video" || player.clipConfiguration.asset.type === "audio")) {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (clip && (clip.asset.type === "video" || clip.asset.type === "audio")) {
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
 				asset: {
-					...player.clipConfiguration.asset,
+					...clip.asset,
 					volume: value / 100
 				}
 			});
@@ -715,12 +713,12 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	private applyAudioFade(): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player || player.clipConfiguration.asset.type !== "audio") return;
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || clip.asset.type !== "audio") return;
 
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
 			asset: {
-				...player.clipConfiguration.asset,
+				...clip.asset,
 				effect: this.audioFadeEffect || undefined
 			}
 		});
@@ -850,8 +848,8 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	private updateDynamicSourceUI(): void {
-		const player = this.edit.getPlayerClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!player) return;
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip) return;
 
 		const shotstackEdit = this.getShotstackEdit();
 		const fieldName = shotstackEdit?.getMergeFieldForProperty(this.selectedTrackIdx, this.selectedClipIdx, "asset.src") ?? null;
@@ -870,7 +868,7 @@ export class MediaToolbar extends BaseToolbar {
 			this.isDynamicSource = false;
 			this.dynamicFieldName = "";
 
-			const asset = player.clipConfiguration.asset as { src?: string };
+			const asset = clip.asset as { src?: string };
 			this.originalSrc = asset?.src || "";
 
 			if (this.dynamicToggle) this.dynamicToggle.checked = false;
@@ -926,8 +924,8 @@ export class MediaToolbar extends BaseToolbar {
 	 * Derives assetType from the clip's asset configuration.
 	 */
 	override show(trackIndex: number, clipIndex: number): void {
-		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-		this.assetType = (player?.clipConfiguration.asset?.type ?? "image") as MediaAssetType;
+		const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
+		this.assetType = (clip?.asset?.type ?? "image") as MediaAssetType;
 		super.show(trackIndex, clipIndex);
 	}
 

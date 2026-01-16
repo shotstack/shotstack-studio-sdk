@@ -663,8 +663,8 @@ export class UIController {
 	// ─── Event Handlers ─────────────────────────────────────────────────────────
 
 	private onClipSelected = ({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void => {
-		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-		const assetType = player?.clipConfiguration.asset?.type;
+		const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
+		const assetType = clip?.asset?.type;
 
 		// Track current selection for mode toggle
 		this.currentAssetType = assetType ?? null;

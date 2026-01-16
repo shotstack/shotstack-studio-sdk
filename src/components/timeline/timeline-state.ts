@@ -204,6 +204,10 @@ export class TimelineStateManager {
 		}
 	}
 
+	public clearLumaVisibilityForClipId(clipId: string): void {
+		this.lumaEditingVisibleByClipId.delete(clipId);
+	}
+
 	public dispose(): void {
 		// Remove event listeners
 		this.edit.events.off(InternalEvent.Resolved, this.invalidateCache);
