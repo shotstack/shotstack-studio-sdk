@@ -42,6 +42,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	// Selection state
 	private selectedPlayer: Player | null = null;
+	private selectedClipId: string | null = null;
 	private selectedTrackIndex = -1;
 	private selectedClipIndex = -1;
 
@@ -170,12 +171,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	private onClipSelected({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
 		this.selectedPlayer = this.edit.getPlayerClip(trackIndex, clipIndex);
+		this.selectedClipId = this.selectedPlayer?.clipId ?? null;
 		this.selectedTrackIndex = trackIndex;
 		this.selectedClipIndex = clipIndex;
 	}
 
 	private onSelectionCleared(): void {
 		this.selectedPlayer = null;
+		this.selectedClipId = null;
 		this.selectedTrackIndex = -1;
 		this.selectedClipIndex = -1;
 		this.resetDragState();
@@ -376,8 +379,12 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		const hasChanged = this.hasStateChanged();
-		if ((this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) && hasChanged) {
-			this.edit.setUpdatedClip(this.selectedPlayer, this.initialClipConfiguration, structuredClone(this.selectedPlayer.clipConfiguration));
+		if ((this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) && hasChanged && this.selectedClipId && this.initialClipConfiguration) {
+			// Resolve once at end to ensure document/player consistency
+			this.edit.resolve();
+
+			// Create undo entry (state already correct from optimistic updates + resolve)
+			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration);
 		}
 
 		this.resetDragState();
@@ -400,7 +407,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleDrag(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || !this.selectedClipId) return;
 
 		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
 		const pivot = this.selectedPlayer.getPivot();
@@ -432,19 +439,23 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			this.edit.showAlignmentGuide(guide.type, guide.axis, guide.position, guide.bounds);
 		}
 
-		// Apply position
+		// Calculate new offset position
 		const size = this.selectedPlayer.getSize();
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
 		const updatedRelative = this.positionBuilder.absoluteToRelative(size, position, snapResult.position);
 
+		// Optimistic: Update player directly for instant visual feedback
 		if (!this.selectedPlayer.clipConfiguration.offset) {
 			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
 		}
 		this.selectedPlayer.clipConfiguration.offset.x = updatedRelative.x;
 		this.selectedPlayer.clipConfiguration.offset.y = updatedRelative.y;
-
-		// Rebuild keyframes
 		this.selectedPlayer.reconfigureAfterRestore();
+
+		// Sync: Update document (no resolve - too expensive for every frame)
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			offset: { x: updatedRelative.x, y: updatedRelative.y }
+		});
 	}
 
 	private startCornerResize(event: pixi.FederatedPointerEvent, corner: ScaleDirection): void {
@@ -458,7 +469,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleCornerResize(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.scaleDirection || !this.originalDimensions) return;
+		if (!this.selectedPlayer || !this.selectedClipId || !this.scaleDirection || !this.originalDimensions) return;
 
 		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
 		const delta = {
@@ -470,17 +481,23 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const clamped = clampDimensions(result.width, result.height);
 		const rounded = roundDimensions(clamped.width, clamped.height);
 
+		// Optimistic: Update player directly for instant visual feedback
 		this.selectedPlayer.clipConfiguration.width = rounded.width;
 		this.selectedPlayer.clipConfiguration.height = rounded.height;
-
 		if (!this.selectedPlayer.clipConfiguration.offset) {
 			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
 		}
 		this.selectedPlayer.clipConfiguration.offset.x = result.offsetX;
 		this.selectedPlayer.clipConfiguration.offset.y = result.offsetY;
-
 		this.selectedPlayer.reconfigureAfterRestore();
 		this.selectedPlayer.notifyDimensionsChanged();
+
+		// Sync: Update document (no resolve - too expensive for every frame)
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			width: rounded.width,
+			height: rounded.height,
+			offset: { x: result.offsetX, y: result.offsetY }
+		});
 	}
 
 	private startEdgeResize(event: pixi.FederatedPointerEvent, edge: EdgeDirection): void {
@@ -494,7 +511,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleEdgeResize(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.edgeDragDirection || !this.originalDimensions) return;
+		if (!this.selectedPlayer || !this.selectedClipId || !this.edgeDragDirection || !this.originalDimensions) return;
 
 		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
 		const delta = {
@@ -506,17 +523,23 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const clamped = clampDimensions(result.width, result.height);
 		const rounded = roundDimensions(clamped.width, clamped.height);
 
+		// Optimistic: Update player directly for instant visual feedback
 		this.selectedPlayer.clipConfiguration.width = rounded.width;
 		this.selectedPlayer.clipConfiguration.height = rounded.height;
-
 		if (!this.selectedPlayer.clipConfiguration.offset) {
 			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
 		}
 		this.selectedPlayer.clipConfiguration.offset.x = result.offsetX;
 		this.selectedPlayer.clipConfiguration.offset.y = result.offsetY;
-
 		this.selectedPlayer.reconfigureAfterRestore();
 		this.selectedPlayer.notifyDimensionsChanged();
+
+		// Sync: Update document (no resolve - too expensive for every frame)
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			width: rounded.width,
+			height: rounded.height,
+			offset: { x: result.offsetX, y: result.offsetY }
+		});
 	}
 
 	private startRotation(event: pixi.FederatedPointerEvent, corner: CornerName): void {
@@ -531,7 +554,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleRotation(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || this.rotationStart === null) return;
+		if (!this.selectedPlayer || !this.selectedClipId || this.rotationStart === null) return;
 
 		const center = this.getContentCenter();
 		const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
@@ -540,18 +563,27 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const rawRotation = this.initialRotation + deltaAngle;
 		const { angle: snappedRotation } = snapRotation(rawRotation);
 
+		// Optimistic: Update player directly for instant visual feedback
+		const currentTransform = this.selectedPlayer.clipConfiguration.transform ?? {};
 		this.selectedPlayer.clipConfiguration.transform = {
-			...this.selectedPlayer.clipConfiguration.transform,
+			...currentTransform,
 			rotate: { angle: snappedRotation }
 		};
-
 		this.selectedPlayer.reconfigureAfterRestore();
+
+		// Sync: Update document (no resolve - too expensive for every frame)
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			transform: {
+				...currentTransform,
+				rotate: { angle: snappedRotation }
+			}
+		});
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 	private captureOriginalDimensions(): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || !this.selectedClipId) return;
 
 		const config = this.selectedPlayer.clipConfiguration;
 		let width: number;
@@ -561,12 +593,20 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			width = config.width;
 			height = config.height;
 		} else {
+			// Initialize dimensions from intrinsic size
 			const size = this.selectedPlayer.getSize();
 			width = size.width;
 			height = size.height;
 
+			// Optimistic: Update player directly
 			this.selectedPlayer.clipConfiguration.width = width;
 			this.selectedPlayer.clipConfiguration.height = height;
+
+			// Sync: Update document (no resolve - will resolve on pointer up)
+			this.edit.updateClipInDocument(this.selectedClipId, {
+				width,
+				height
+			});
 		}
 
 		const currentOffsetX = config.offset?.x ?? 0;

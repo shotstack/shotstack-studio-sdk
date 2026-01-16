@@ -229,7 +229,7 @@ export class PlayerReconciler {
 		const currentRecord = current as Record<string, unknown>;
 		const resolvedRecord = resolved as Record<string, unknown>;
 
-		const propsToCheck = ["fit", "position", "offset", "opacity", "scale", "filter", "transition", "effect", "transform"];
+		const propsToCheck = ["fit", "position", "offset", "opacity", "scale", "filter", "transition", "effect", "transform", "width", "height"];
 
 		for (const prop of propsToCheck) {
 			if (JSON.stringify(currentRecord[prop]) !== JSON.stringify(resolvedRecord[prop])) {
@@ -246,7 +246,7 @@ export class PlayerReconciler {
 		const playerConfig = player.clipConfiguration as Record<string, unknown>;
 		const clipRecord = clip as Record<string, unknown>;
 
-		const propsToUpdate = ["fit", "position", "offset", "opacity", "scale", "filter", "transition", "effect", "transform"];
+		const propsToUpdate = ["fit", "position", "offset", "opacity", "scale", "filter", "transition", "effect", "transform", "width", "height"];
 
 		for (const prop of propsToUpdate) {
 			if (clipRecord[prop] !== undefined) {

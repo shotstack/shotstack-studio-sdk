@@ -1234,6 +1234,88 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
+	// ─── Live Update API (No Undo) ────────────────────────────────────────────────
+	//
+	// TODO: Evaluate resolve() performance to enable pure unidirectional data flow.
+	// Currently, drag/resize/rotate use optimistic player updates + document sync
+	// (without resolve) for 60fps performance. This creates temporary dual source
+	// of truth during interactions. If resolve() can be optimized to <2ms, we could
+	// call document.updateClip() + resolve() on every frame instead.
+	// See: selection-handles.ts handleDrag/handleCornerResize/handleEdgeResize/handleRotation
+
+	/**
+	 * Update clip in document only, without resolving.
+	 * Used during drag for document sync without performance cost.
+	 * Call resolve() at drag end to ensure document/player consistency.
+	 *
+	 * @param clipId - Stable clip ID
+	 * @param updates - Partial clip properties to update
+	 * @internal
+	 */
+	public updateClipInDocument(clipId: string, updates: Partial<ResolvedClip>): void {
+		const location = this.document.getClipById(clipId);
+		if (!location) return;
+
+		this.document.updateClip(location.trackIndex, location.clipIndex, updates);
+	}
+
+	/**
+	 * Commit a live update session to the undo history.
+	 * Call this at the end of a drag operation.
+	 *
+	 * Creates a command that can undo back to initialConfig.
+	 * Does NOT execute the command (state already correct from optimistic updates).
+	 *
+	 * @param clipId - The clip that was updated
+	 * @param initialConfig - The clip configuration before the drag started
+	 * @internal
+	 */
+	public commitClipUpdate(clipId: string, initialConfig: ResolvedClip): void {
+		const player = this.getPlayerByClipId(clipId);
+		if (!player) return;
+
+		const location = this.document.getClipById(clipId);
+		if (!location) return;
+
+		// Create command for undo (uses current state as "final")
+		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(player.clipConfiguration), {
+			trackIndex: location.trackIndex,
+			clipIndex: location.clipIndex
+		});
+
+		// Add to history without executing (state already correct)
+		this.addCommandToHistory(command);
+	}
+
+	/**
+	 * Add a command to history without executing it.
+	 * Used when the command's effect has already been applied
+	 * (e.g., via live updates during drag).
+	 * @internal
+	 */
+	private addCommandToHistory(command: EditCommand): void {
+		// Dispose any commands we're about to overwrite (redo history)
+		const discarded = this.commandHistory.slice(this.commandIndex + 1);
+		for (const cmd of discarded) {
+			cmd.dispose?.();
+		}
+
+		// Truncate redo history and add new command
+		this.commandHistory = this.commandHistory.slice(0, this.commandIndex + 1);
+		this.commandHistory.push(command);
+		this.commandIndex += 1;
+
+		// Prune old commands
+		while (this.commandHistory.length > Edit.MAX_HISTORY_SIZE) {
+			const pruned = this.commandHistory.shift();
+			pruned?.dispose?.();
+			this.commandIndex -= 1;
+		}
+
+		// Emit edit changed event (consistent with executeCommand pattern)
+		this.emitEditChanged(`commit:${command.name}`);
+	}
+
 	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<Clip>): void {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
 		if (!clip) {
