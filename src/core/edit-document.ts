@@ -28,10 +28,6 @@ export interface ClipLookupResult {
 	clipIndex: number;
 }
 
-export interface EditDocumentOptions {
-	defaultSize?: Size;
-}
-
 // ─── EditDocument Class ───────────────────────────────────────────────────────
 
 export class EditDocument {
