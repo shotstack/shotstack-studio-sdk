@@ -917,10 +917,10 @@ export class Edit {
 	}
 
 	/**
-	 * Add a command to history without executing it.
+	 * Manage command history: dispose redo stack, add command, prune old entries.
 	 * @internal
 	 */
-	private addCommandToHistory(command: EditCommand): void {
+	private pushCommandToHistory(command: EditCommand): void {
 		// Dispose any commands we're about to overwrite (redo history)
 		const discarded = this.commandHistory.slice(this.commandIndex + 1);
 		for (const cmd of discarded) {
@@ -938,8 +938,14 @@ export class Edit {
 			pruned?.dispose?.();
 			this.commandIndex -= 1;
 		}
+	}
 
-		// Emit edit changed event (consistent with executeCommand pattern)
+	/**
+	 * Add a command to history without executing it.
+	 * @internal
+	 */
+	private addCommandToHistory(command: EditCommand): void {
+		this.pushCommandToHistory(command);
 		this.emitEditChanged(`commit:${command.name}`);
 	}
 
@@ -999,22 +1005,7 @@ export class Edit {
 		const context = this.createCommandContext();
 		const result = command.execute(context);
 
-		// Dispose any commands we're about to overwrite (redo history)
-		const discarded = this.commandHistory.slice(this.commandIndex + 1);
-		for (const cmd of discarded) {
-			cmd.dispose?.();
-		}
-
-		this.commandHistory = this.commandHistory.slice(0, this.commandIndex + 1);
-		this.commandHistory.push(command);
-		this.commandIndex += 1;
-
-		// Prune old commands to prevent unbounded memory growth
-		while (this.commandHistory.length > Edit.MAX_HISTORY_SIZE) {
-			const pruned = this.commandHistory.shift();
-			pruned?.dispose?.();
-			this.commandIndex -= 1;
-		}
+		this.pushCommandToHistory(command);
 
 		// Handle both sync and async commands
 		if (result instanceof Promise) {
