@@ -61,11 +61,7 @@ export class TrackListComponent {
 
 	public draw(): void {
 		if (!this.needsUpdate) {
-			// Still need to draw track components even when data hasn't changed
-			for (const trackComponent of this.trackComponents) {
-				trackComponent.draw();
-			}
-			return;
+			return; // Nothing changed, skip entirely
 		}
 		this.needsUpdate = false;
 

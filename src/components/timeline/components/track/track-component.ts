@@ -42,11 +42,7 @@ export class TrackComponent {
 
 	public draw(): void {
 		if (!this.needsUpdate || !this.currentTrack) {
-			// Still need to draw clip components even when data hasn't changed
-			for (const clipComponent of this.clipComponents.values()) {
-				clipComponent.draw();
-			}
-			return;
+			return; // Nothing changed, skip entirely
 		}
 		this.needsUpdate = false;
 
@@ -140,6 +136,14 @@ export class TrackComponent {
 
 	/** Update track state and mark for re-render */
 	public updateTrack(track: TrackState, pixelsPerSecond: number): void {
+		// Only mark dirty if data actually changed (reference equality works due to TimelineStateManager caching)
+		const trackChanged = track !== this.currentTrack;
+		const ppsChanged = pixelsPerSecond !== this.currentPixelsPerSecond;
+
+		if (!trackChanged && !ppsChanged) {
+			return; // Nothing changed, skip update
+		}
+
 		// Only update height if asset type changed (not every frame)
 		const prevAssetType = this.currentTrack?.primaryAssetType;
 

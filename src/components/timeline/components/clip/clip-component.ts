@@ -232,6 +232,14 @@ export class ClipComponent {
 
 	/** Update clip state and mark for re-render */
 	public updateClip(clip: ClipState, attachedLuma?: LumaRef): void {
+		// Only mark dirty if data actually changed (reference equality works due to TimelineStateManager caching)
+		const clipChanged = clip !== this.currentState;
+		const lumaChanged = attachedLuma !== this.currentLumaRef;
+
+		if (!clipChanged && !lumaChanged) {
+			return; // Nothing changed, skip update
+		}
+
 		this.currentState = clip;
 		this.currentLumaRef = attachedLuma;
 		this.needsUpdate = true;
