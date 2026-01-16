@@ -30,6 +30,7 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
+import { calculateSizeFromPreset, OutputSettingsManager, type OutputSettingsContext } from "@core/output-settings-manager";
 import { Entity } from "@core/shared/entity";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
@@ -39,14 +40,8 @@ import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
 import {
-	DestinationSchema,
 	EditSchema,
 	HexColorSchema,
-	OutputAspectRatioSchema,
-	OutputFormatSchema,
-	OutputFpsSchema,
-	OutputResolutionSchema,
-	OutputSizeSchema,
 	type Clip,
 	type Destination,
 	type Edit as EditConfig,
@@ -62,52 +57,6 @@ import type { EditCommand, CommandContext } from "./commands/types";
 import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
-
-// ─── Resolution Preset Dimensions ─────────────────────────────────────────────
-
-/**
- * Base dimensions for each resolution preset (16:9 aspect ratio)
- */
-const RESOLUTION_DIMENSIONS: Record<string, { width: number; height: number }> = {
-	preview: { width: 512, height: 288 },
-	mobile: { width: 640, height: 360 },
-	sd: { width: 1024, height: 576 },
-	hd: { width: 1280, height: 720 },
-	"1080": { width: 1920, height: 1080 },
-	"4k": { width: 3840, height: 2160 }
-};
-
-/**
- * Calculate output size from resolution preset and aspect ratio.
- * Resolution defines the base dimensions (16:9), aspectRatio transforms them.
- */
-function calculateSizeFromPreset(resolution: string, aspectRatio: string = "16:9"): Size {
-	const base = RESOLUTION_DIMENSIONS[resolution];
-	if (!base) {
-		throw new Error(`Unknown resolution: ${resolution}`);
-	}
-
-	// Apply aspect ratio transformation
-	// Base dimensions are 16:9, so we transform to the target aspect ratio
-	switch (aspectRatio) {
-		case "16:9":
-			return { width: base.width, height: base.height };
-		case "9:16":
-			// Flip width and height for vertical orientation
-			return { width: base.height, height: base.width };
-		case "1:1":
-			// Square - use height as base dimension
-			return { width: base.height, height: base.height };
-		case "4:5":
-			// Short vertical - maintain height, adjust width to 4:5 ratio
-			return { width: Math.round((base.height * 4) / 5), height: base.height };
-		case "4:3":
-			// Legacy TV - maintain height, adjust width to 4:3 ratio
-			return { width: Math.round((base.height * 4) / 3), height: base.height };
-		default:
-			throw new Error(`Unknown aspectRatio: ${aspectRatio}`);
-	}
-}
 
 /**
  * Magic elapsed value passed to update() during seek operations.
@@ -187,6 +136,9 @@ export class Edit extends Entity {
 	// Toolbar button registry
 	private toolbarButtons: ToolbarButtonConfig[] = [];
 
+	/** Output settings manager - handles size, fps, format, resolution, etc. */
+	private outputSettings!: OutputSettingsManager;
+
 	/**
 	 * Merge field service for internal template resolution.
 	 * @internal Use ShotstackEdit.mergeFields for public API access.
@@ -258,6 +210,9 @@ export class Edit extends Entity {
 			this.events
 		);
 		this.playerReconciler = new PlayerReconciler(this);
+
+		// Initialize output settings manager with context
+		this.outputSettings = new OutputSettingsManager(this.createOutputSettingsContext());
 
 		this.playbackTime = 0;
 		this.totalDuration = 0;
@@ -1432,6 +1387,23 @@ export class Edit extends Entity {
 		}
 	}
 
+	/**
+	 * Create context for OutputSettingsManager.
+	 */
+	private createOutputSettingsContext(): OutputSettingsContext {
+		return {
+			getEdit: () => this.edit,
+			getDocument: () => this.document,
+			getSize: () => this.size,
+			setSize: (size: Size) => {
+				this.size = size;
+			},
+			getEvents: () => this.events,
+			updateCanvasForSize: () => this.updateCanvasForSize(),
+			emitEditChanged: (source: string) => this.emitEditChanged(source)
+		};
+	}
+
 	protected createCommandContext(): CommandContext {
 		return {
 			getClips: () => this.clips,
@@ -1532,11 +1504,11 @@ export class Edit extends Entity {
 			resolveClipAutoLength: clip => this.resolveClipAutoLength(clip),
 			// Merge field context
 			getMergeFields: () => this.mergeFieldService,
-			// Output settings
-			getOutputSize: () => ({ width: this.size.width, height: this.size.height }),
-			setOutputSize: (width, height) => this.setOutputSizeInternal(width, height),
-			getOutputFps: () => this.getOutputFps(),
-			setOutputFps: fps => this.setOutputFpsInternal(fps),
+			// Output settings (delegated to OutputSettingsManager)
+			getOutputSize: () => this.outputSettings.getSize(),
+			setOutputSize: (width, height) => this.outputSettings.setSize(width, height),
+			getOutputFps: () => this.outputSettings.getFps(),
+			setOutputFps: fps => this.outputSettings.setFps(fps),
 			getTimelineBackground: () => this.getTimelineBackground(),
 			setTimelineBackground: color => this.setTimelineBackgroundInternal(color),
 			// Document access (single source of truth)
@@ -2233,41 +2205,11 @@ export class Edit extends Entity {
 		return this.canvas?.getZoom() ?? 1;
 	}
 
+	// ─── Output Settings (delegated to OutputSettingsManager) ────────────────────
+
 	public setOutputSize(width: number, height: number): void {
 		const command = new SetOutputSizeCommand(width, height);
 		this.executeCommand(command);
-	}
-
-	/** @internal Called by SetOutputSizeCommand */
-	private setOutputSizeInternal(width: number, height: number): void {
-		const result = OutputSizeSchema.safeParse({ width, height });
-		if (!result.success) {
-			throw new Error(`Invalid size: ${result.error.issues[0]?.message}`);
-		}
-
-		// We validated with required width/height so we can safely cast
-		const size: Size = { width, height };
-		this.size = size;
-
-		if (this.edit) {
-			this.edit.output = {
-				...this.edit.output,
-				size
-			};
-			// Clear resolution/aspectRatio (mutually exclusive with custom size)
-			delete this.edit.output.resolution;
-			delete this.edit.output.aspectRatio;
-		}
-
-		// Sync with document layer
-		this.document?.setSize(size);
-		this.document?.clearResolution();
-		this.document?.clearAspectRatio();
-
-		this.updateCanvasForSize();
-
-		this.events.emit(EditEvent.OutputResized, size);
-		// Note: emitEditChanged is handled by executeCommand
 	}
 
 	public setOutputFps(fps: number): void {
@@ -2275,163 +2217,40 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
-	/** @internal Called by SetOutputFpsCommand */
-	private setOutputFpsInternal(fps: number): void {
-		const result = OutputFpsSchema.safeParse(fps);
-		if (!result.success) {
-			throw new Error(`Invalid fps: ${result.error.issues[0]?.message}`);
-		}
-
-		if (this.edit) {
-			this.edit.output = {
-				...this.edit.output,
-				fps: result.data
-			};
-		}
-
-		// Sync with document layer
-		this.document?.setFps(result.data);
-
-		this.events.emit(EditEvent.OutputFpsChanged, { fps });
-		// Note: emitEditChanged is handled by executeCommand
-	}
-
 	public getOutputFps(): number {
-		return this.edit?.output?.fps ?? 30;
+		return this.outputSettings.getFps();
 	}
 
 	public setOutputFormat(format: string): void {
-		const result = OutputFormatSchema.safeParse(format);
-		if (!result.success) {
-			throw new Error(`Invalid format: ${result.error.issues[0]?.message}`);
-		}
-
-		if (this.edit) {
-			this.edit.output = {
-				...this.edit.output,
-				format: result.data
-			};
-		}
-
-		// Sync with document layer
-		this.document?.setFormat(result.data);
-
-		this.events.emit(EditEvent.OutputFormatChanged, { format: result.data });
-		this.emitEditChanged("output:format");
+		this.outputSettings.setFormat(format);
 	}
 
 	public getOutputFormat(): string {
-		return this.edit?.output?.format ?? "mp4";
+		return this.outputSettings.getFormat();
 	}
 
 	public setOutputDestinations(destinations: Destination[]): void {
-		const result = DestinationSchema.array().safeParse(destinations);
-		if (!result.success) {
-			throw new Error(`Invalid destinations: ${result.error.message}`);
-		}
-
-		if (this.edit) {
-			this.edit.output = {
-				...this.edit.output,
-				destinations: result.data
-			};
-		}
-
-		this.events.emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
-		this.emitEditChanged("output:destinations");
+		this.outputSettings.setDestinations(destinations);
 	}
 
 	public getOutputDestinations(): Destination[] {
-		return this.edit?.output?.destinations ?? [];
+		return this.outputSettings.getDestinations();
 	}
 
 	public setOutputResolution(resolution: string): void {
-		const result = OutputResolutionSchema.safeParse(resolution);
-		if (!result.success || !result.data) {
-			throw new Error(`Invalid resolution: ${result.success ? "resolution is required" : result.error.issues[0]?.message}`);
-		}
-
-		const validatedResolution = result.data;
-		const aspectRatio = this.edit?.output?.aspectRatio ?? "16:9";
-		const newSize = calculateSizeFromPreset(validatedResolution, aspectRatio);
-
-		// Update runtime state
-		this.size = newSize;
-
-		if (this.edit) {
-			this.edit.output = {
-				...this.edit.output,
-				resolution: validatedResolution
-			};
-			// Clear custom size (mutually exclusive with resolution/aspectRatio)
-			delete this.edit.output.size;
-		}
-
-		// Sync with document layer (size is cleared for mutual exclusivity)
-		this.document?.setResolution(validatedResolution);
-		this.document?.clearSize();
-
-		this.updateCanvasForSize();
-
-		this.events.emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
-		this.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
-		this.emitEditChanged("output:resolution");
+		this.outputSettings.setResolution(resolution);
 	}
 
 	public getOutputResolution(): string | undefined {
-		return this.edit?.output?.resolution;
+		return this.outputSettings.getResolution();
 	}
 
 	public setOutputAspectRatio(aspectRatio: string): void {
-		const result = OutputAspectRatioSchema.safeParse(aspectRatio);
-		if (!result.success || !result.data) {
-			throw new Error(`Invalid aspectRatio: ${result.success ? "aspectRatio is required" : result.error.issues[0]?.message}`);
-		}
-
-		const validatedAspectRatio = result.data;
-		const resolution = this.edit?.output?.resolution;
-		if (!resolution) {
-			// If no resolution is set, just store the aspectRatio without recalculating size
-			if (this.edit) {
-				this.edit.output = {
-					...this.edit.output,
-					aspectRatio: validatedAspectRatio
-				};
-			}
-			this.document?.setAspectRatio(validatedAspectRatio);
-			this.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
-			this.emitEditChanged("output:aspectRatio");
-			return;
-		}
-
-		// Recalculate size based on current resolution and new aspectRatio
-		const newSize = calculateSizeFromPreset(resolution, validatedAspectRatio);
-
-		// Update runtime state
-		this.size = newSize;
-
-		if (this.edit) {
-			this.edit.output = {
-				...this.edit.output,
-				aspectRatio: validatedAspectRatio
-			};
-			// Clear custom size (mutually exclusive with resolution/aspectRatio)
-			delete this.edit.output.size;
-		}
-
-		// Sync with document layer (size is cleared for mutual exclusivity)
-		this.document?.setAspectRatio(validatedAspectRatio);
-		this.document?.clearSize();
-
-		this.updateCanvasForSize();
-
-		this.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
-		this.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
-		this.emitEditChanged("output:aspectRatio");
+		this.outputSettings.setAspectRatio(aspectRatio);
 	}
 
 	public getOutputAspectRatio(): string | undefined {
-		return this.edit?.output?.aspectRatio;
+		return this.outputSettings.getAspectRatio();
 	}
 
 	public getTimelineFonts(): Array<{ src: string }> {
