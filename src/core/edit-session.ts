@@ -31,10 +31,11 @@ import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager, type OutputSettingsContext } from "@core/output-settings-manager";
+import { SelectionManager, type SelectionContext } from "@core/selection-manager";
 import { Entity } from "@core/shared/entity";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type ResolutionContext, type Seconds, ms, sec, toSec } from "@core/timing/types";
+import { type ResolutionContext, type Seconds, sec } from "@core/timing/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -106,10 +107,6 @@ export class Edit extends Entity {
 	public totalDuration: number;
 	/** @internal */
 	public isPlaying: boolean;
-	/** @internal */
-	private selectedClip: Player | null;
-	/** @internal */
-	private copiedClip: { trackIndex: number; clipConfiguration: ResolvedClip } | null = null;
 	/** @internal Stored for future reconciliation use */
 	private updatedClip: Player | null;
 	/** @internal */
@@ -138,6 +135,9 @@ export class Edit extends Entity {
 
 	/** Output settings manager - handles size, fps, format, resolution, etc. */
 	private outputSettings!: OutputSettingsManager;
+
+	/** Selection manager - handles clip selection and clipboard state. */
+	private selectionManager!: SelectionManager;
 
 	/**
 	 * Merge field service for internal template resolution.
@@ -214,10 +214,12 @@ export class Edit extends Entity {
 		// Initialize output settings manager with context
 		this.outputSettings = new OutputSettingsManager(this.createOutputSettingsContext());
 
+		// Initialize selection manager with context
+		this.selectionManager = new SelectionManager(this.createSelectionContext());
+
 		this.playbackTime = 0;
 		this.totalDuration = 0;
 		this.isPlaying = false;
-		this.selectedClip = null;
 		this.updatedClip = null;
 		this.background = null;
 
@@ -1404,6 +1406,21 @@ export class Edit extends Entity {
 		};
 	}
 
+	/**
+	 * Create context for SelectionManager.
+	 */
+	private createSelectionContext(): SelectionContext {
+		return {
+			getTracks: () => this.tracks,
+			getEvents: () => this.events,
+			getPlayerClip: (trackIndex, clipIndex) => this.getPlayerClip(trackIndex, clipIndex),
+			getResolvedClip: (trackIndex, clipIndex) => this.getResolvedClip(trackIndex, clipIndex),
+			addClip: (trackIndex, clip) => this.addClip(trackIndex, clip),
+			getPlaybackTime: () => this.playbackTime,
+			isExporting: () => this.isExporting
+		};
+	}
+
 	protected createCommandContext(): CommandContext {
 		return {
 			getClips: () => this.clips,
@@ -1492,11 +1509,11 @@ export class Edit extends Entity {
 			},
 			updateDuration: () => this.updateTotalDuration(),
 			emitEvent: (name, ...args) => (this.events as EventEmitter<EditEventMap>).emit(name, ...args),
-			findClipIndices: player => this.findClipIndices(player),
+			findClipIndices: player => this.selectionManager.findClipIndices(player),
 			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
-			getSelectedClip: () => this.selectedClip,
+			getSelectedClip: () => this.selectionManager.getSelectedClip(),
 			setSelectedClip: clip => {
-				this.selectedClip = clip;
+				this.selectionManager.setSelectedClip(clip);
 			},
 			movePlayerToTrackContainer: (player, fromTrackIdx, toTrackIdx) => this.movePlayerToTrackContainer(player, fromTrackIdx, toTrackIdx),
 			getEditState: () => this.getResolvedEdit(),
@@ -2024,89 +2041,44 @@ export class Edit extends Entity {
 	}
 
 	public selectClip(trackIndex: number, clipIndex: number): void {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (player) {
-			this.selectedClip = player;
-			const clip = this.getResolvedClip(trackIndex, clipIndex);
-			if (clip) {
-				this.events.emit(EditEvent.ClipSelected, {
-					clip,
-					trackIndex,
-					clipIndex
-				});
-			}
-		}
+		this.selectionManager.selectClip(trackIndex, clipIndex);
 	}
 
 	public clearSelection(): void {
-		this.selectedClip = null;
-		this.events.emit(EditEvent.SelectionCleared);
+		this.selectionManager.clearSelection();
 	}
+
 	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
-		if (!this.selectedClip) return false;
-
-		const selectedTrackIndex = this.selectedClip.layer - 1;
-		const track = this.tracks[selectedTrackIndex];
-		if (!track) return false;
-
-		const selectedClipIndex = track.indexOf(this.selectedClip);
-		return trackIndex === selectedTrackIndex && clipIndex === selectedClipIndex;
+		return this.selectionManager.isClipSelected(trackIndex, clipIndex);
 	}
+
 	public getSelectedClipInfo(): { trackIndex: number; clipIndex: number; player: Player } | null {
-		if (!this.selectedClip) return null;
-
-		const trackIndex = this.selectedClip.layer - 1;
-		const track = this.tracks[trackIndex];
-		if (!track) return null; // Track was deleted
-
-		const clipIndex = track.indexOf(this.selectedClip);
-		return { trackIndex, clipIndex, player: this.selectedClip };
+		return this.selectionManager.getSelectedClipInfo();
 	}
 
 	/**
 	 * Copy a clip to the internal clipboard
 	 */
 	public copyClip(trackIdx: number, clipIdx: number): void {
-		const clip = this.getResolvedClip(trackIdx, clipIdx);
-		if (clip) {
-			this.copiedClip = {
-				trackIndex: trackIdx,
-				clipConfiguration: structuredClone(clip)
-			};
-			this.events.emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
-		}
+		this.selectionManager.copyClip(trackIdx, clipIdx);
 	}
 
 	/**
 	 * Paste the copied clip at the current playhead position
 	 */
 	public pasteClip(): void {
-		if (!this.copiedClip) return;
-
-		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
-		pastedClip.start = toSec(ms(this.playbackTime)); // Paste at playhead position
-
-		// Remove ID so document generates a new one (otherwise reconciler
-		// would see duplicate IDs and update instead of create)
-		delete (pastedClip as { id?: string }).id;
-
-		this.addClip(this.copiedClip.trackIndex, pastedClip);
+		this.selectionManager.pasteClip();
 	}
 
 	/**
 	 * Check if there is a clip in the clipboard
 	 */
 	public hasCopiedClip(): boolean {
-		return this.copiedClip !== null;
+		return this.selectionManager.hasCopiedClip();
 	}
+
 	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
-		for (let trackIndex = 0; trackIndex < this.tracks.length; trackIndex += 1) {
-			const clipIndex = this.tracks[trackIndex].indexOf(player);
-			if (clipIndex !== -1) {
-				return { trackIndex, clipIndex };
-			}
-		}
-		return null;
+		return this.selectionManager.findClipIndices(player);
 	}
 	public getClipAt(trackIndex: number, clipIndex: number): Player | null {
 		if (trackIndex >= 0 && trackIndex < this.tracks.length && clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
@@ -2115,14 +2087,11 @@ export class Edit extends Entity {
 		return null;
 	}
 	public selectPlayer(player: Player): void {
-		const indices = this.findClipIndices(player);
-		if (indices) {
-			this.selectClip(indices.trackIndex, indices.clipIndex);
-		}
+		this.selectionManager.selectPlayer(player);
 	}
+
 	public isPlayerSelected(player: Player): boolean {
-		if (this.isExporting) return false;
-		return this.selectedClip === player;
+		return this.selectionManager.isPlayerSelected(player);
 	}
 
 	/**

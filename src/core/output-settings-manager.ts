@@ -9,7 +9,6 @@ import type { EditDocument } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { Destination, ResolvedEdit } from "@core/schemas";
-import type { Size } from "@layouts/geometry";
 import {
 	DestinationSchema,
 	OutputAspectRatioSchema,
@@ -18,6 +17,7 @@ import {
 	OutputResolutionSchema,
 	OutputSizeSchema
 } from "@core/schemas";
+import type { Size } from "@layouts/geometry";
 
 // ─── Resolution Preset Dimensions ─────────────────────────────────────────────
 
