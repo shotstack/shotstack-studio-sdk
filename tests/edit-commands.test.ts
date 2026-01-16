@@ -9,7 +9,7 @@
  * before imports/declarations. To share mock classes between mocks (e.g., MockImageSource for instanceof
  * checks), we must use require() at runtime inside the factory. This is the standard Jest pattern. */
 import { Edit } from "@core/edit-session";
-import type { EditCommand, CommandContext } from "@core/commands/types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
 import { InternalEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
@@ -160,14 +160,16 @@ class TestCommand implements EditCommand {
 		this.name = name;
 	}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		this.executeCount += 1;
 		this.lastContext = context;
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		this.undoCount += 1;
 		this.lastContext = context;
+		return CommandSuccess();
 	}
 }
 
@@ -187,18 +189,20 @@ class AsyncTestCommand implements EditCommand {
 		this.resolveDelay = resolveDelay;
 	}
 
-	async execute(): Promise<void> {
+	async execute(): Promise<CommandResult> {
 		await new Promise<void>(resolve => {
 			setTimeout(resolve, this.resolveDelay);
 		});
 		this.executeCount += 1;
+		return CommandSuccess();
 	}
 
-	async undo(): Promise<void> {
+	async undo(): Promise<CommandResult> {
 		await new Promise<void>(resolve => {
 			setTimeout(resolve, this.resolveDelay);
 		});
 		this.undoCount += 1;
+		return CommandSuccess();
 	}
 }
 
@@ -210,8 +214,9 @@ class NoUndoCommand implements EditCommand {
 
 	executeCount = 0;
 
-	execute(): void {
+	execute(): CommandResult {
 		this.executeCount += 1;
+		return CommandSuccess();
 	}
 	// Intentionally no undo method
 }
@@ -295,34 +300,34 @@ describe("Edit Command History", () => {
 	});
 
 	describe("executeCommand() behavior", () => {
-		it("adds command to history", () => {
+		it("adds command to history", async () => {
 			const cmd = new TestCommand();
 
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 
 			const { history } = getCommandState(edit);
 			expect(history).toContain(cmd);
 			expect(history.length).toBe(1);
 		});
 
-		it("increments commandIndex", () => {
+		it("increments commandIndex", async () => {
 			const { index: initialIndex } = getCommandState(edit);
 			expect(initialIndex).toBe(-1); // Starts at -1
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(2);
 		});
 
-		it("calls command.execute() with context", () => {
+		it("calls command.execute() with context", async () => {
 			const cmd = new TestCommand();
 
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 
 			expect(cmd.executeCount).toBe(1);
 			expect(cmd.lastContext).toBeDefined();
@@ -332,10 +337,12 @@ describe("Edit Command History", () => {
 			expect(typeof cmd.lastContext?.emitEvent).toBe("function");
 		});
 
-		it("returns void for sync commands", () => {
+		it("returns Promise for all commands (queue-based execution)", async () => {
 			const cmd = new TestCommand();
 			const result = edit.executeEditCommand(cmd);
-			expect(result).toBeUndefined();
+			expect(result).toBeInstanceOf(Promise);
+			await result;
+			expect(cmd.executeCount).toBe(1);
 		});
 
 		it("returns Promise for async commands", async () => {
@@ -349,177 +356,177 @@ describe("Edit Command History", () => {
 	});
 
 	describe("undo() method", () => {
-		it("calls command.undo() with context", () => {
+		it("calls command.undo() with context", async () => {
 			const cmd = new TestCommand();
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 
-			edit.undo();
+			await edit.undo();
 
 			expect(cmd.undoCount).toBe(1);
 			expect(cmd.lastContext).toBeDefined();
 		});
 
-		it("decrements commandIndex after undo", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("decrements commandIndex after undo", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 		});
 
-		it("emits edit:undo event with command name", () => {
+		it("emits edit:undo event with command name", async () => {
 			const cmd = new TestCommand("MyTestCmd");
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			expect(emitSpy).toHaveBeenCalledWith("edit:undo", { command: "MyTestCmd" });
 		});
 
-		it("is no-op when commandIndex is -1 (empty history)", () => {
+		it("is no-op when commandIndex is -1 (empty history)", async () => {
 			expect(getCommandState(edit).index).toBe(-1);
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			expect(getCommandState(edit).index).toBe(-1);
 			expect(emitSpy).not.toHaveBeenCalledWith("edit:undo", expect.anything());
 		});
 
-		it("is no-op when command has no undo method", () => {
+		it("is no-op when command has no undo method", async () => {
 			const cmd = new NoUndoCommand();
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 			const { index: afterExec } = getCommandState(edit);
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			// Index should not change since undo is undefined
 			expect(getCommandState(edit).index).toBe(afterExec);
 			expect(emitSpy).not.toHaveBeenCalledWith("edit:undo", expect.anything());
 		});
 
-		it("allows multiple sequential undos", () => {
+		it("allows multiple sequential undos", async () => {
 			const cmd1 = new TestCommand("Cmd1");
 			const cmd2 = new TestCommand("Cmd2");
 			const cmd3 = new TestCommand("Cmd3");
 
-			edit.executeEditCommand(cmd1);
-			edit.executeEditCommand(cmd2);
-			edit.executeEditCommand(cmd3);
+			await edit.executeEditCommand(cmd1);
+			await edit.executeEditCommand(cmd2);
+			await edit.executeEditCommand(cmd3);
 
-			edit.undo();
+			await edit.undo();
 			expect(cmd3.undoCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 			expect(cmd2.undoCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.undo();
+			await edit.undo();
 			expect(cmd1.undoCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(-1);
 		});
 	});
 
 	describe("redo() method", () => {
-		it("increments commandIndex before execute", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.undo();
+		it("increments commandIndex before execute", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 
-			edit.redo();
+			await edit.redo();
 
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("calls command.execute() with context", () => {
+		it("calls command.execute() with context", async () => {
 			const cmd = new TestCommand();
-			edit.executeEditCommand(cmd);
-			edit.undo();
+			await edit.executeEditCommand(cmd);
+			await edit.undo();
 			cmd.executeCount = 0; // Reset after initial execute
 
-			edit.redo();
+			await edit.redo();
 
 			expect(cmd.executeCount).toBe(1);
 			expect(cmd.lastContext).toBeDefined();
 		});
 
-		it("emits edit:redo event with command name", () => {
+		it("emits edit:redo event with command name", async () => {
 			const cmd = new TestCommand("MyRedoCmd");
-			edit.executeEditCommand(cmd);
-			edit.undo();
+			await edit.executeEditCommand(cmd);
+			await edit.undo();
 			emitSpy.mockClear();
 
-			edit.redo();
+			await edit.redo();
 
 			expect(emitSpy).toHaveBeenCalledWith("edit:redo", { command: "MyRedoCmd" });
 		});
 
-		it("is no-op when at end of history", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("is no-op when at end of history", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 			emitSpy.mockClear();
 
-			edit.redo();
+			await edit.redo();
 
 			expect(getCommandState(edit).index).toBe(0);
 			expect(emitSpy).not.toHaveBeenCalledWith("edit:redo", expect.anything());
 		});
 
-		it("allows multiple sequential redos", () => {
+		it("allows multiple sequential redos", async () => {
 			const cmd1 = new TestCommand("Cmd1");
 			const cmd2 = new TestCommand("Cmd2");
 			const cmd3 = new TestCommand("Cmd3");
 
-			edit.executeEditCommand(cmd1);
-			edit.executeEditCommand(cmd2);
-			edit.executeEditCommand(cmd3);
-			edit.undo();
-			edit.undo();
-			edit.undo();
+			await edit.executeEditCommand(cmd1);
+			await edit.executeEditCommand(cmd2);
+			await edit.executeEditCommand(cmd3);
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
 
 			// Reset execute counts
 			cmd1.executeCount = 0;
 			cmd2.executeCount = 0;
 			cmd3.executeCount = 0;
 
-			edit.redo();
+			await edit.redo();
 			expect(cmd1.executeCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.redo();
+			await edit.redo();
 			expect(cmd2.executeCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.redo();
+			await edit.redo();
 			expect(cmd3.executeCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(2);
 		});
 	});
 
 	describe("history truncation", () => {
-		it("truncates future commands when executing after undo", () => {
+		it("truncates future commands when executing after undo", async () => {
 			const cmdA = new TestCommand("A");
 			const cmdB = new TestCommand("B");
 			const cmdC = new TestCommand("C");
 			const cmdD = new TestCommand("D");
 
-			edit.executeEditCommand(cmdA);
-			edit.executeEditCommand(cmdB);
-			edit.executeEditCommand(cmdC);
+			await edit.executeEditCommand(cmdA);
+			await edit.executeEditCommand(cmdB);
+			await edit.executeEditCommand(cmdC);
 			// History: [A, B, C], index = 2
 
-			edit.undo(); // index = 1
-			edit.undo(); // index = 0
+			await edit.undo(); // index = 1
+			await edit.undo(); // index = 0
 			// History still [A, B, C], but index = 0
 
-			edit.executeEditCommand(cmdD);
+			await edit.executeEditCommand(cmdD);
 			// Should truncate B and C, leaving [A, D]
 
 			const { history, index } = getCommandState(edit);
@@ -529,19 +536,19 @@ describe("Edit Command History", () => {
 			expect(index).toBe(1);
 		});
 
-		it("preserves commands before current index", () => {
+		it("preserves commands before current index", async () => {
 			const cmdA = new TestCommand("A");
 			const cmdB = new TestCommand("B");
 			const cmdC = new TestCommand("C");
 			const cmdNew = new TestCommand("New");
 
-			edit.executeEditCommand(cmdA);
-			edit.executeEditCommand(cmdB);
-			edit.executeEditCommand(cmdC);
+			await edit.executeEditCommand(cmdA);
+			await edit.executeEditCommand(cmdB);
+			await edit.executeEditCommand(cmdC);
 
-			edit.undo(); // index = 1 (at B)
+			await edit.undo(); // index = 1 (at B)
 
-			edit.executeEditCommand(cmdNew);
+			await edit.executeEditCommand(cmdNew);
 
 			const { history } = getCommandState(edit);
 			expect(history).toContain(cmdA);
@@ -550,25 +557,25 @@ describe("Edit Command History", () => {
 			expect(history).not.toContain(cmdC);
 		});
 
-		it("clears entire redo stack on new command", () => {
+		it("clears entire redo stack on new command", async () => {
 			const cmd1 = new TestCommand("1");
 			const cmd2 = new TestCommand("2");
 			const cmd3 = new TestCommand("3");
 			const cmd4 = new TestCommand("4");
 			const cmdNew = new TestCommand("New");
 
-			edit.executeEditCommand(cmd1);
-			edit.executeEditCommand(cmd2);
-			edit.executeEditCommand(cmd3);
-			edit.executeEditCommand(cmd4);
+			await edit.executeEditCommand(cmd1);
+			await edit.executeEditCommand(cmd2);
+			await edit.executeEditCommand(cmd3);
+			await edit.executeEditCommand(cmd4);
 			// Undo all the way back
-			edit.undo();
-			edit.undo();
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
 			// index = -1, but history = [1, 2, 3, 4]
 
-			edit.executeEditCommand(cmdNew);
+			await edit.executeEditCommand(cmdNew);
 
 			const { history, index } = getCommandState(edit);
 			expect(history.length).toBe(1);
@@ -578,59 +585,59 @@ describe("Edit Command History", () => {
 	});
 
 	describe("commandIndex tracking", () => {
-		it("starts at -1 (no commands)", () => {
+		it("starts at -1 (no commands)", async () => {
 			const { index } = getCommandState(edit);
 			expect(index).toBe(-1);
 		});
 
-		it("equals 0 after first command", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("equals 0 after first command", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("equals history.length - 1 after multiple commands", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("equals history.length - 1 after multiple commands", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 
 			const { history, index } = getCommandState(edit);
 			expect(index).toBe(history.length - 1);
 			expect(index).toBe(4);
 		});
 
-		it("decrements on undo", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("decrements on undo", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("increments on redo", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.undo();
-			edit.undo();
+		it("increments on redo", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 
-			edit.redo();
+			await edit.redo();
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("resets correctly after truncation", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("resets correctly after truncation", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			// index = 2, history.length = 3
 
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
 			// index = 0, history.length = 3
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			// Should be: index = 1, history.length = 2
 
 			const { history, index } = getCommandState(edit);
@@ -641,7 +648,7 @@ describe("Edit Command History", () => {
 	});
 
 	describe("state restoration", () => {
-		it("undo restores previous state via command.undo()", () => {
+		it("undo restores previous state via command.undo()", async () => {
 			// Use a command that tracks state changes
 			let stateValue = 0;
 
@@ -649,82 +656,88 @@ describe("Edit Command History", () => {
 				name: "StateCmd",
 				execute: () => {
 					stateValue = 42;
+					return CommandSuccess();
 				},
 				undo: () => {
 					stateValue = 0;
+					return CommandSuccess();
 				}
 			};
 
 			expect(stateValue).toBe(0);
-			edit.executeEditCommand(stateCmd);
+			await edit.executeEditCommand(stateCmd);
 			expect(stateValue).toBe(42);
 
-			edit.undo();
+			await edit.undo();
 			expect(stateValue).toBe(0);
 		});
 
-		it("redo re-applies state change", () => {
+		it("redo re-applies state change", async () => {
 			let stateValue = 0;
 
 			const stateCmd: EditCommand = {
 				name: "StateCmd",
 				execute: () => {
 					stateValue = 100;
+					return CommandSuccess();
 				},
 				undo: () => {
 					stateValue = 0;
+					return CommandSuccess();
 				}
 			};
 
-			edit.executeEditCommand(stateCmd);
-			edit.undo();
+			await edit.executeEditCommand(stateCmd);
+			await edit.undo();
 			expect(stateValue).toBe(0);
 
-			edit.redo();
+			await edit.redo();
 			expect(stateValue).toBe(100);
 		});
 
-		it("multiple undo/redo cycles preserve state integrity", () => {
+		it("multiple undo/redo cycles preserve state integrity", async () => {
 			const stateHistory: number[] = [];
 
 			const incrementCmd: EditCommand = {
 				name: "Increment",
 				execute: () => {
 					stateHistory.push(stateHistory.length);
+					return CommandSuccess();
 				},
 				undo: () => {
 					stateHistory.pop();
+					return CommandSuccess();
 				}
 			};
 
 			// Execute 3 times
-			edit.executeEditCommand(incrementCmd);
-			edit.executeEditCommand(incrementCmd);
-			edit.executeEditCommand(incrementCmd);
+			await edit.executeEditCommand(incrementCmd);
+			await edit.executeEditCommand(incrementCmd);
+			await edit.executeEditCommand(incrementCmd);
 			expect(stateHistory).toEqual([0, 1, 2]);
 
 			// Undo twice
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
 			expect(stateHistory).toEqual([0]);
 
 			// Redo once
-			edit.redo();
+			await edit.redo();
 			expect(stateHistory).toEqual([0, 1]);
 
 			// Undo once
-			edit.undo();
+			await edit.undo();
 			expect(stateHistory).toEqual([0]);
 
 			// Redo twice
-			edit.redo();
-			edit.redo();
+			await edit.redo();
+			await edit.redo();
 			expect(stateHistory).toEqual([0, 1, 2]);
 		});
 	});
 
 	describe("edge cases", () => {
-		it("handles empty history gracefully", () => {
+		it("handles empty history gracefully", async () => {
 			// Verify no errors thrown
 			expect(() => edit.undo()).not.toThrow();
 			expect(() => edit.redo()).not.toThrow();
@@ -734,32 +747,32 @@ describe("Edit Command History", () => {
 			expect(index).toBe(-1);
 		});
 
-		it("undo at beginning is idempotent", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.undo();
+		it("undo at beginning is idempotent", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 
 			// Multiple undos at beginning should not change state
-			edit.undo();
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
 
 			expect(getCommandState(edit).index).toBe(-1);
 		});
 
-		it("redo at end is idempotent", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("redo at end is idempotent", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 
 			// Multiple redos at end should not change state
-			edit.redo();
-			edit.redo();
-			edit.redo();
+			await edit.redo();
+			await edit.redo();
+			await edit.redo();
 
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("mixed undo/redo/execute sequence", () => {
+		it("mixed undo/redo/execute sequence", async () => {
 			const cmdA = new TestCommand("A");
 			const cmdB = new TestCommand("B");
 			const cmdC = new TestCommand("C");
@@ -767,71 +780,71 @@ describe("Edit Command History", () => {
 			const cmdE = new TestCommand("E");
 
 			// Execute A, B, C
-			edit.executeEditCommand(cmdA);
-			edit.executeEditCommand(cmdB);
-			edit.executeEditCommand(cmdC);
+			await edit.executeEditCommand(cmdA);
+			await edit.executeEditCommand(cmdB);
+			await edit.executeEditCommand(cmdC);
 			expect(getCommandState(edit).history.map(c => c.name)).toEqual(["A", "B", "C"]);
 
 			// Undo to B
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(1);
 
 			// Execute D (should truncate C)
-			edit.executeEditCommand(cmdD);
+			await edit.executeEditCommand(cmdD);
 			expect(getCommandState(edit).history.map(c => c.name)).toEqual(["A", "B", "D"]);
 
 			// Undo D and B
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(0);
 
 			// Redo B
-			edit.redo();
+			await edit.redo();
 			expect(getCommandState(edit).index).toBe(1);
 
 			// Execute E (should truncate D)
-			edit.executeEditCommand(cmdE);
+			await edit.executeEditCommand(cmdE);
 			expect(getCommandState(edit).history.map(c => c.name)).toEqual(["A", "B", "E"]);
 			expect(getCommandState(edit).index).toBe(2);
 		});
 	});
 
 	describe("event emission patterns", () => {
-		it("undo emits exactly one edit:undo event", () => {
-			edit.executeEditCommand(new TestCommand("Test"));
+		it("undo emits exactly one edit:undo event", async () => {
+			await edit.executeEditCommand(new TestCommand("Test"));
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			const undoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:undo");
 			expect(undoEvents.length).toBe(1);
 		});
 
-		it("redo emits exactly one edit:redo event", () => {
-			edit.executeEditCommand(new TestCommand("Test"));
-			edit.undo();
+		it("redo emits exactly one edit:redo event", async () => {
+			await edit.executeEditCommand(new TestCommand("Test"));
+			await edit.undo();
 			emitSpy.mockClear();
 
-			edit.redo();
+			await edit.redo();
 
 			const redoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:redo");
 			expect(redoEvents.length).toBe(1);
 		});
 
-		it("no-op undo does not emit event", () => {
+		it("no-op undo does not emit event", async () => {
 			emitSpy.mockClear();
 
-			edit.undo(); // Empty history
+			await edit.undo(); // Empty history
 
 			const undoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:undo");
 			expect(undoEvents.length).toBe(0);
 		});
 
-		it("no-op redo does not emit event", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("no-op redo does not emit event", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			emitSpy.mockClear();
 
-			edit.redo(); // Already at end
+			await edit.redo(); // Already at end
 
 			const redoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:redo");
 			expect(redoEvents.length).toBe(0);
@@ -931,14 +944,14 @@ describe("Edit getPlayerClip regression", () => {
 
 		// Move A to start=15 (after C) → order becomes [B, C, A]
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
-		edit.executeEditCommand(new MoveClipCommand(0, 0, 0, sec(15)));
+		await edit.executeEditCommand(new MoveClipCommand(0, 0, 0, sec(15)));
 
 		expect(edit.getPlayerClip(0, 0)).toBe(playerB);
 		expect(edit.getPlayerClip(0, 1)).toBe(playerC);
 		expect(edit.getPlayerClip(0, 2)).toBe(playerA);
 
 		// Move C to start=1 (between original B position) → order becomes [C, B, A]
-		edit.executeEditCommand(new MoveClipCommand(0, 1, 0, sec(1)));
+		await edit.executeEditCommand(new MoveClipCommand(0, 1, 0, sec(1)));
 
 		expect(edit.getPlayerClip(0, 0)).toBe(playerC);
 		expect(edit.getPlayerClip(0, 1)).toBe(playerB);
@@ -977,11 +990,11 @@ describe("TransformClipAssetCommand", () => {
 		jest.clearAllMocks();
 	});
 
-	it("transformToLuma changes asset type to luma", () => {
+	it("transformToLuma changes asset type to luma", async () => {
 		const clipBefore = edit.getClip(0, 0);
 		expect(clipBefore?.asset?.type).toBe("video");
 
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 
 		const clipAfter = edit.getClip(0, 0);
 		expect(clipAfter?.asset?.type).toBe("luma");
@@ -989,45 +1002,42 @@ describe("TransformClipAssetCommand", () => {
 		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
 	});
 
-	it("transformFromLuma restores original video type", () => {
+	it("transformFromLuma restores original video type", async () => {
 		// First transform to luma
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
 		// Now transform back
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 
 		const clipAfter = edit.getClip(0, 0);
 		expect(clipAfter?.asset?.type).toBe("video");
 		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
 	});
 
-	it("transformFromLuma restores original image type", () => {
+	it("transformFromLuma restores original image type", async () => {
 		// First transform image to luma
-		edit.transformToLuma(0, 1);
+		await edit.transformToLuma(0, 1);
 		expect(edit.getClip(0, 1)?.asset?.type).toBe("luma");
 
 		// Now transform back
-		edit.transformFromLuma(0, 1);
+		await edit.transformFromLuma(0, 1);
 
 		const clipAfter = edit.getClip(0, 1);
 		expect(clipAfter?.asset?.type).toBe("image");
 		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/image.jpg");
 	});
 
-	it("undo during transform is safe", () => {
+	it("undo during transform is safe", async () => {
 		const originalPlayer = edit.getPlayerClip(0, 0);
 		expect(originalPlayer).toBeDefined();
 		const originalClipId = originalPlayer?.clipId;
 
-		// Transform to luma (async load starts)
-		edit.transformToLuma(0, 0);
+		// Transform to luma - must await since commands are queued
+		await edit.transformToLuma(0, 0);
 
-		// Immediately undo (while load may still be in progress)
-		// This should NOT crash even though the new player may not be fully loaded
-		expect(() => {
-			edit.undo();
-		}).not.toThrow();
+		// Undo the transform
+		await edit.undo();
 
 		// Player should be restored with original state
 		// Note: With reconciler, asset type changes cause player recreation,
@@ -1038,19 +1048,19 @@ describe("TransformClipAssetCommand", () => {
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 
-	it("preserves asset type through multiple transform cycles", () => {
+	it("preserves asset type through multiple transform cycles", async () => {
 		// Video → luma → video
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 
 		// Another cycle
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 
@@ -1073,11 +1083,11 @@ describe("TransformClipAssetCommand", () => {
 		await edit.load();
 
 		// Transform to luma - stores original type
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
 		// Transform back - should use stored type (video), not URL inference (would be image)
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 });
@@ -1167,7 +1177,7 @@ describe("Track Reordering Z-Index", () => {
 		const emitSpy = jest.spyOn(edit.events, "emit");
 
 		// Undo the move (MoveClipCommand.undo is async, wait for it)
-		edit.undo();
+		await edit.undo();
 		await new Promise(resolve => {
 			setTimeout(resolve, 0);
 		});
@@ -1269,7 +1279,7 @@ describe("AddTrackCommand Z-Index", () => {
 
 		expect(edit.getDocument()?.getTrackCount()).toBe(initialDocTracks + 1);
 
-		edit.undo();
+		await edit.undo();
 
 		// Document track count is restored (source of truth)
 		expect(edit.getDocument()?.getTrackCount()).toBe(initialDocTracks);
@@ -1288,7 +1298,7 @@ describe("AddTrackCommand Z-Index", () => {
 		expect(track1Player?.layer).toBe(3);
 
 		// Undo should restore original layers
-		edit.undo();
+		await edit.undo();
 
 		expect(track0Player?.layer).toBe(1);
 		expect(track1Player?.layer).toBe(2);

@@ -1,18 +1,16 @@
 import { EditEvent } from "@core/events/edit-events";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess } from "./types";
 
 /**
  * Document-only command that adds a new empty track.
- *
- * Flow: Document mutation → resolve() → Reconciler syncs track containers and player layers
  */
 export class AddTrackCommand implements EditCommand {
-	name = "addTrack";
+	readonly name = "addTrack";
 
 	constructor(private trackIdx: number) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("AddTrackCommand.execute: context is required");
 
 		const doc = context.getDocument();
@@ -30,9 +28,11 @@ export class AddTrackCommand implements EditCommand {
 			trackIndex: this.trackIdx,
 			totalTracks: doc.getTrackCount()
 		});
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("AddTrackCommand.undo: context is required");
 
 		const doc = context.getDocument();
@@ -45,6 +45,8 @@ export class AddTrackCommand implements EditCommand {
 		context.resolve();
 
 		context.updateDuration();
+
+		return CommandSuccess();
 	}
 
 	dispose(): void {

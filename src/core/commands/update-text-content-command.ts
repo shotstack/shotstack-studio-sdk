@@ -1,17 +1,13 @@
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, TextAsset } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Document-only command to update text content in a text clip.
- *
- * Flow: Document mutation → resolveClip() → Reconciler updates Player asset
- *
- * Uses single-clip resolution for O(1) performance instead of O(n) full resolve.
  */
 export class UpdateTextContentCommand implements EditCommand {
-	name = "updateTextContent";
+	readonly name = "updateTextContent";
 
 	private clipId: string | null = null;
 	private previousText = "";
@@ -23,7 +19,7 @@ export class UpdateTextContentCommand implements EditCommand {
 		private newText: string
 	) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("UpdateTextContentCommand.execute: context is required");
 
 		const doc = context.getDocument();
@@ -32,8 +28,7 @@ export class UpdateTextContentCommand implements EditCommand {
 		// Get current player for config and ID
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);
 		if (!player) {
-			console.warn(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
-			return;
+			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
 		}
 
 		// Store for undo
@@ -44,7 +39,7 @@ export class UpdateTextContentCommand implements EditCommand {
 
 		// Get current clip from document
 		const clip = doc.getClip(this.trackIndex, this.clipIndex);
-		if (!clip) return;
+		if (!clip) return CommandNoop("Clip not found in document");
 
 		// Update document with new text
 		const currentAsset = clip.asset as TextAsset;
@@ -62,22 +57,24 @@ export class UpdateTextContentCommand implements EditCommand {
 			previous: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
 			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("UpdateTextContentCommand.undo: context is required");
 
 		const doc = context.getDocument();
 		if (!doc) throw new Error("UpdateTextContentCommand.undo: document is required");
 
 		const player = this.clipId ? context.getPlayerByClipId(this.clipId) : context.getClipAt(this.trackIndex, this.clipIndex);
-		if (!player) return;
+		if (!player) return CommandNoop("Player not found for undo");
 
 		const currentConfig = structuredClone(player.clipConfiguration);
 
 		// Get current clip from document
 		const clip = doc.getClip(this.trackIndex, this.clipIndex);
-		if (!clip) return;
+		if (!clip) return CommandNoop("Clip not found for undo");
 
 		// Restore previous text in document
 		const currentAsset = clip.asset as TextAsset;
@@ -97,5 +94,12 @@ export class UpdateTextContentCommand implements EditCommand {
 				current: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 			});
 		}
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.clipId = null;
+		this.previousClipConfig = undefined;
 	}
 }

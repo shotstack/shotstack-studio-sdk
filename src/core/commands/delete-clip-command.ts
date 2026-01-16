@@ -3,16 +3,13 @@ import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
 import { DeleteTrackCommand } from "./delete-track-command";
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Deletes a clip from a track.
- *
- * Document-only: This command only mutates the document.
- * The PlayerReconciler handles Player disposal via the Resolved event.
  */
 export class DeleteClipCommand implements EditCommand {
-	name = "deleteClip";
+	readonly name = "deleteClip";
 	private deletedClipConfig?: Clip;
 	private deletedClipId?: string;
 	private deleteTrackCommand?: DeleteTrackCommand;
@@ -24,7 +21,7 @@ export class DeleteClipCommand implements EditCommand {
 		private clipIdx: number
 	) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("DeleteClipCommand.execute: context is required");
 
 		const document = context.getDocument();
@@ -32,7 +29,7 @@ export class DeleteClipCommand implements EditCommand {
 
 		const clip = document.getClip(this.trackIdx, this.clipIdx);
 		if (!clip) {
-			throw new Error(`DeleteClipCommand: no clip at track ${this.trackIdx}, index ${this.clipIdx}`);
+			return CommandNoop(`No clip at track ${this.trackIdx}, index ${this.clipIdx}`);
 		}
 
 		// Save config for undo
@@ -64,8 +61,12 @@ export class DeleteClipCommand implements EditCommand {
 		const track = document.getTrack(this.trackIdx);
 		if (track && track.clips.length === 0) {
 			this.deleteTrackCommand = new DeleteTrackCommand(this.trackIdx);
-			this.deleteTrackCommand.execute(context);
-			this.trackWasDeleted = true;
+			const result = this.deleteTrackCommand.execute(context);
+
+			// Only set trackWasDeleted if the command succeeded (not noop)
+			if (result.status === "success") {
+				this.trackWasDeleted = true;
+			}
 		}
 
 		// Resolve triggers reconciler → disposes orphaned Player
@@ -77,11 +78,13 @@ export class DeleteClipCommand implements EditCommand {
 			trackIndex: this.trackIdx,
 			clipIndex: this.clipIdx
 		});
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("DeleteClipCommand.undo: context is required");
-		if (!this.deletedClipConfig) return;
+		if (!this.deletedClipConfig) return CommandNoop("No deleted clip config");
 
 		// Restore deleted track first if it was deleted
 		if (this.trackWasDeleted && this.deleteTrackCommand) {
@@ -109,6 +112,8 @@ export class DeleteClipCommand implements EditCommand {
 			trackIndex: this.trackIdx,
 			clipIndex: this.clipIdx
 		});
+
+		return CommandSuccess();
 	}
 
 	dispose(): void {

@@ -3,15 +3,13 @@ import type { Seconds, TimingIntent } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
 import { DeleteTrackCommand } from "./delete-track-command";
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Document-only command that moves a clip to a different track and/or position.
- *
- * Flow: Document mutation → resolve() → Reconciler updates Player layer and position
  */
 export class MoveClipCommand implements EditCommand {
-	name = "moveClip";
+	readonly name = "moveClip";
 
 	private clipId: string | null = null;
 	private originalStart?: Seconds;
@@ -33,7 +31,7 @@ export class MoveClipCommand implements EditCommand {
 		this.effectiveToTrackIndex = toTrackIndex;
 	}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("MoveClipCommand.execute: context is required");
 
 		const doc = context.getDocument();
@@ -42,7 +40,7 @@ export class MoveClipCommand implements EditCommand {
 		// Get the player to store state for undo and events
 		const player = context.getClipAt(this.fromTrackIndex, this.fromClipIndex);
 		if (!player) {
-			throw new Error(`MoveClipCommand.execute: invalid clip at ${this.fromTrackIndex}/${this.fromClipIndex}`);
+			return CommandNoop(`Invalid clip at ${this.fromTrackIndex}/${this.fromClipIndex}`);
 		}
 
 		// Store for undo
@@ -64,12 +62,16 @@ export class MoveClipCommand implements EditCommand {
 				// Source track is empty - delete it
 				// Note: DeleteTrackCommand is already document-only
 				this.deleteTrackCommand = new DeleteTrackCommand(this.fromTrackIndex);
-				this.deleteTrackCommand.execute(context);
-				this.sourceTrackWasDeleted = true;
+				const result = this.deleteTrackCommand.execute(context);
 
-				// Adjust effective destination track index if it was after the deleted track
-				if (this.toTrackIndex > this.fromTrackIndex) {
-					this.effectiveToTrackIndex = this.toTrackIndex - 1;
+				// Only set sourceTrackWasDeleted if the command succeeded (not noop)
+				if (result.status === "success") {
+					this.sourceTrackWasDeleted = true;
+
+					// Adjust effective destination track index if it was after the deleted track
+					if (this.toTrackIndex > this.fromTrackIndex) {
+						this.effectiveToTrackIndex = this.toTrackIndex - 1;
+					}
 				}
 			}
 		}
@@ -115,18 +117,20 @@ export class MoveClipCommand implements EditCommand {
 				clipIndex: this.newClipIndex
 			});
 		}
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
+	async undo(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("MoveClipCommand.undo: context is required");
-		if (!this.clipId || this.originalStart === undefined) return;
+		if (!this.clipId || this.originalStart === undefined) return CommandNoop("No clip state stored");
 
 		const doc = context.getDocument();
 		if (!doc) throw new Error("MoveClipCommand.undo: document is required");
 
 		// If source track was deleted, recreate it first
 		if (this.sourceTrackWasDeleted && this.deleteTrackCommand) {
-			await this.deleteTrackCommand.undo(context);
+			this.deleteTrackCommand.undo(context);
 			this.sourceTrackWasDeleted = false;
 
 			// Restore effective track index now that the deleted track is back
@@ -142,7 +146,7 @@ export class MoveClipCommand implements EditCommand {
 		// Find current clip position in document
 		const clipInfo = doc.getClipById(this.clipId);
 		if (!clipInfo) {
-			throw new Error(`MoveClipCommand.undo: clip ${this.clipId} not found in document`);
+			return CommandNoop(`Clip ${this.clipId} not found in document`);
 		}
 
 		// Document-only mutations: move back to original position (always use moveClip for reordering)
@@ -192,6 +196,8 @@ export class MoveClipCommand implements EditCommand {
 
 		// Reset effective track index for potential re-execute
 		this.effectiveToTrackIndex = this.toTrackIndex;
+
+		return CommandSuccess();
 	}
 
 	dispose(): void {

@@ -387,7 +387,7 @@ describe("Edit Merge Fields", () => {
 			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg", originalSrc);
 
 			// Undo
-			edit.undo();
+			await edit.undo();
 			await Promise.resolve(); // Flush async operations
 
 			// Check restored value
@@ -431,11 +431,11 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip);
 
 			// Apply first merge field
-			edit.applyMergeField(0, 0, "asset.src", "FIELD_A", "https://a.example.com/a.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "FIELD_A", "https://a.example.com/a.jpg");
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("FIELD_A");
 
 			// Apply second merge field to same property
-			edit.applyMergeField(0, 0, "asset.src", "FIELD_B", "https://b.example.com/b.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "FIELD_B", "https://b.example.com/b.jpg");
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("FIELD_B");
 		});
 
@@ -446,7 +446,7 @@ describe("Edit Merge Fields", () => {
 			const player = edit.getPlayerClip(0, 0);
 			const reloadSpy = jest.spyOn(player!, "reloadAsset");
 
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 
 			expect(reloadSpy).toHaveBeenCalled();
 		});
@@ -472,10 +472,10 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip);
 
 			// Apply merge field first
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 
 			// Remove merge field
-			edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
 
 			// Check binding was removed from document
 			const player = edit.getPlayerClip(0, 0);
@@ -489,8 +489,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
-			edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
 
 			const player = edit.getPlayerClip(0, 0);
 			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/restored.jpg");
@@ -500,10 +500,10 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "REMOVE_ME", "https://example.com/value.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "REMOVE_ME", "https://example.com/value.jpg");
 			expect(edit.mergeFields.get("REMOVE_ME")).toBeDefined();
 
-			edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
 			expect(edit.mergeFields.get("REMOVE_ME")).toBeUndefined();
 		});
 
@@ -511,11 +511,11 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "UNDO_TEST", "https://example.com/merged.jpg");
-			edit.removeMergeField(0, 0, "asset.src", "https://example.com/original.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "UNDO_TEST", "https://example.com/merged.jpg");
+			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/original.jpg");
 
 			// Undo the remove
-			edit.undo();
+			await edit.undo();
 			await Promise.resolve();
 
 			// Binding should be back in document
@@ -547,7 +547,7 @@ describe("Edit Merge Fields", () => {
 			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 			await Promise.resolve();
 
 			expect(emitSpy).toHaveBeenCalledWith(
@@ -655,11 +655,11 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip2);
 
 			// Apply same merge field to both
-			edit.applyMergeField(0, 0, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
-			edit.applyMergeField(0, 1, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
+			await edit.applyMergeField(0, 1, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
 
 			// Update the field value
-			edit.updateMergeFieldValueLive("SHARED_FIELD", "https://example.com/updated.jpg");
+			await edit.updateMergeFieldValueLive("SHARED_FIELD", "https://example.com/updated.jpg");
 
 			// Both clips should be updated
 			const player1 = edit.getPlayerClip(0, 0);
@@ -716,10 +716,10 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "DELETE_ME", "https://example.com/value.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "DELETE_ME", "https://example.com/value.jpg");
 			expect(edit.mergeFields.get("DELETE_ME")).toBeDefined();
 
-			edit.deleteMergeFieldGlobally("DELETE_ME");
+			await edit.deleteMergeFieldGlobally("DELETE_ME");
 			expect(edit.mergeFields.get("DELETE_ME")).toBeUndefined();
 		});
 
@@ -727,9 +727,9 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "RESTORE_TEST", "https://example.com/merged.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "RESTORE_TEST", "https://example.com/merged.jpg");
 
-			edit.deleteMergeFieldGlobally("RESTORE_TEST");
+			await edit.deleteMergeFieldGlobally("RESTORE_TEST");
 
 			// The clip should have the default value restored
 			const player = edit.getPlayerClip(0, 0);
@@ -747,11 +747,11 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip2);
 
 			// Apply same merge field to both
-			edit.applyMergeField(0, 0, "asset.src", "SHARED", "https://example.com/shared.jpg");
-			edit.applyMergeField(0, 1, "asset.src", "SHARED", "https://example.com/shared.jpg");
+			await edit.applyMergeField(0, 0, "asset.src", "SHARED", "https://example.com/shared.jpg");
+			await edit.applyMergeField(0, 1, "asset.src", "SHARED", "https://example.com/shared.jpg");
 
 			// Delete globally
-			edit.deleteMergeFieldGlobally("SHARED");
+			await edit.deleteMergeFieldGlobally("SHARED");
 
 			// Both should have merge field removed
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBeNull();
@@ -764,7 +764,7 @@ describe("Edit Merge Fields", () => {
 
 			const { commandIndex: beforeIndex } = getEditState(edit);
 
-			edit.deleteMergeFieldGlobally("NONEXISTENT");
+			await edit.deleteMergeFieldGlobally("NONEXISTENT");
 
 			const { commandIndex: afterIndex } = getEditState(edit);
 			// No commands added for non-existent field
@@ -783,26 +783,26 @@ describe("Edit Merge Fields", () => {
 			expect(uniqueName).toBe("MEDIA_3");
 		});
 
-		it("createTemplate formats {{ FIELD }} correctly", () => {
+		it("createTemplate formats {{ FIELD }} correctly", async () => {
 			const template = edit.mergeFields.createTemplate("MY_FIELD");
 			expect(template).toBe("{{ MY_FIELD }}");
 		});
 
-		it("extractFieldName parses template string", () => {
+		it("extractFieldName parses template string", async () => {
 			expect(edit.mergeFields.extractFieldName("{{ MY_FIELD }}")).toBe("MY_FIELD");
 			expect(edit.mergeFields.extractFieldName("{{MY_FIELD}}")).toBe("MY_FIELD");
 			expect(edit.mergeFields.extractFieldName("{{  MY_FIELD  }}")).toBe("MY_FIELD");
 			expect(edit.mergeFields.extractFieldName("no field here")).toBeNull();
 		});
 
-		it("isMergeFieldTemplate detects template strings", () => {
+		it("isMergeFieldTemplate detects template strings", async () => {
 			expect(edit.mergeFields.isMergeFieldTemplate("{{ FIELD }}")).toBe(true);
 			expect(edit.mergeFields.isMergeFieldTemplate("{{FIELD}}")).toBe(true);
 			expect(edit.mergeFields.isMergeFieldTemplate("no template")).toBe(false);
 			expect(edit.mergeFields.isMergeFieldTemplate("")).toBe(false);
 		});
 
-		it("resolve substitutes field values in strings", () => {
+		it("resolve substitutes field values in strings", async () => {
 			edit.mergeFields.register({ name: "NAME", defaultValue: "John" });
 			edit.mergeFields.register({ name: "GREETING", defaultValue: "Hello" });
 
@@ -810,7 +810,7 @@ describe("Edit Merge Fields", () => {
 			expect(result).toBe("Hello, John!");
 		});
 
-		it("toSerializedArray exports in Shotstack format", () => {
+		it("toSerializedArray exports in Shotstack format", async () => {
 			edit.mergeFields.register({ name: "FIELD_A", defaultValue: "value_a" });
 			edit.mergeFields.register({ name: "FIELD_B", defaultValue: "value_b" });
 
@@ -1073,12 +1073,12 @@ describe("Edit Merge Fields", () => {
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("SEQUENCE_TEST");
 
 			// Undo
-			edit.undo();
+			await edit.undo();
 			await Promise.resolve();
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBeNull();
 
 			// Redo
-			edit.redo();
+			await edit.redo();
 			await Promise.resolve();
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("SEQUENCE_TEST");
 		});
@@ -1094,12 +1094,12 @@ describe("Edit Merge Fields", () => {
 			edit.applyMergeField(0, 0, "asset.text", "FIELD_2", "Value 2");
 
 			// Undo second
-			edit.undo();
+			await edit.undo();
 			await Promise.resolve();
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.text")).toBe("FIELD_1");
 
 			// Undo first
-			edit.undo();
+			await edit.undo();
 			await Promise.resolve();
 			expect(edit.getMergeFieldForProperty(0, 0, "asset.text")).toBeNull();
 		});

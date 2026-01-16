@@ -119,14 +119,6 @@ export class ShotstackEdit extends Edit {
 
 	/**
 	 * Apply a merge field to a clip property.
-	 * The property value will be wrapped in {{ FIELD }} placeholder syntax.
-	 *
-	 * @param trackIndex - Track index of the clip
-	 * @param clipIndex - Clip index within the track
-	 * @param propertyPath - Dot-notation path to property (e.g., "asset.text", "asset.src")
-	 * @param fieldName - Name of the merge field (e.g., "TITLE", "PRODUCT_IMAGE")
-	 * @param value - The resolved value to apply
-	 * @param originalValue - Optional: the original value before merge field (for undo)
 	 */
 	public applyMergeField(
 		trackIndex: number,
@@ -135,9 +127,9 @@ export class ShotstackEdit extends Edit {
 		fieldName: string,
 		value: string,
 		originalValue?: string
-	): void {
+	): Promise<void> {
 		const clipId = this.getClipId(trackIndex, clipIndex);
-		if (!clipId) return;
+		if (!clipId) return Promise.resolve();
 
 		const resolvedClip = this.getResolvedClip(trackIndex, clipIndex);
 		const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
@@ -149,28 +141,22 @@ export class ShotstackEdit extends Edit {
 		const previousFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
 		const command = new SetMergeFieldCommand(clipId, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/**
 	 * Remove a merge field from a clip property, restoring the original value.
-	 *
-	 * @param trackIndex - Track index
-	 * @param clipIndex - Clip index within the track
-	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src")
-	 * @param restoreValue - The value to restore (original pre-merge-field value)
-	 * @returns Promise that resolves when the command completes
 	 */
-	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void | Promise<void> {
+	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): Promise<void> {
 		const clipId = this.getClipId(trackIndex, clipIndex);
-		if (!clipId) return undefined;
+		if (!clipId) return Promise.resolve();
 
 		// Get current merge field name
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
 		const currentFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
-		if (!currentFieldName) return undefined; // No merge field to remove
+		if (!currentFieldName) return Promise.resolve(); // No merge field to remove
 
 		const command = new SetMergeFieldCommand(
 			clipId,
@@ -187,8 +173,6 @@ export class ShotstackEdit extends Edit {
 
 	/**
 	 * Get the merge field name for a clip property, if any.
-	 *
-	 * @returns The field name if a merge field is applied, null otherwise
 	 */
 	public getMergeFieldForProperty(trackIndex: number, clipIndex: number, propertyPath: string): string | null {
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
@@ -199,9 +183,7 @@ export class ShotstackEdit extends Edit {
 	}
 
 	/**
-	 * Update the value of a merge field using document-first flow.
-	 * This does NOT use the command pattern (no undo) - it's for live preview updates.
-	 * Updates document bindings then calls resolve() to let reconciler update players.
+	 * Update the placeholder value of a merge field.
 	 */
 	public updateMergeFieldValueLive(fieldName: string, newValue: string): void {
 		// Recursion guard: prevent stack overflow from event cascades
@@ -260,11 +242,8 @@ export class ShotstackEdit extends Edit {
 
 	/**
 	 * Remove a merge field globally from all clips and the registry.
-	 * Restores all affected clip properties to the merge field's default value.
-	 *
-	 * @param fieldName - The merge field name to remove
 	 */
-	public deleteMergeFieldGlobally(fieldName: string): void {
+	public async deleteMergeFieldGlobally(fieldName: string): Promise<void> {
 		const field = this.mergeFieldService.get(fieldName);
 		if (!field) return;
 
@@ -278,7 +257,7 @@ export class ShotstackEdit extends Edit {
 				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
 				if (templateClip) {
 					// Find properties with this template and restore them
-					this.restoreMergeFieldInClip(trackIdx, clipIdx, templateClip, template, restoreValue);
+					await this.restoreMergeFieldInClip(trackIdx, clipIdx, templateClip, template, restoreValue); // eslint-disable-line no-await-in-loop
 				}
 			}
 		}
@@ -291,14 +270,6 @@ export class ShotstackEdit extends Edit {
 
 	/**
 	 * Convert all text assets and log the resulting template JSON to console.
-	 *
-	 * This performs a pure JSON transformation (no live player updates):
-	 * - Text assets with content → RichText assets
-	 * - Empty text assets (shapes) → SVG assets
-	 *
-	 * The converted template is logged to console for manual copying.
-	 *
-	 * @returns Conversion counts
 	 */
 	public async convertAllTextAssets(): Promise<{ richText: number; svg: number }> {
 		const document = this.getDocument();
@@ -521,14 +492,14 @@ export class ShotstackEdit extends Edit {
 	/**
 	 * Helper: Find and restore merge field occurrences in a clip
 	 */
-	private restoreMergeFieldInClip(
+	private async restoreMergeFieldInClip(
 		trackIdx: number,
 		clipIdx: number,
 		templateClip: unknown,
 		template: string,
 		restoreValue: string,
 		path: string = ""
-	): void {
+	): Promise<void> {
 		if (!templateClip || typeof templateClip !== "object") return;
 
 		for (const key of Object.keys(templateClip as Record<string, unknown>)) {
@@ -541,11 +512,11 @@ export class ShotstackEdit extends Edit {
 				if (extractedField && templateFieldName && extractedField === templateFieldName) {
 					// Apply proper substitution - replace {{ FIELD }} with restoreValue, preserving surrounding text
 					const substitutedValue = value.replace(new RegExp(`\\{\\{\\s*${extractedField}\\s*\\}\\}`, "gi"), restoreValue);
-					this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue);
+					await this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue); // eslint-disable-line no-await-in-loop
 				}
 			} else if (typeof value === "object" && value !== null) {
 				// Recurse into nested objects
-				this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath);
+				await this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath); // eslint-disable-line no-await-in-loop
 			}
 		}
 	}

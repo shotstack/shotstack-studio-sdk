@@ -3,16 +3,13 @@ import { EditEvent } from "@core/events/edit-events";
 import { deepMerge } from "@core/shared/utils";
 import type { ResolvedClip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess } from "./types";
 
 /**
  * Command to apply or remove a merge field on a clip property.
- *
- * Uses document-first pattern: mutate document → resolve() → reconciler updates player.
- * The reconciler handles reloadAsset() for src changes and reconfigureAfterRestore() for all changes.
  */
 export class SetMergeFieldCommand implements EditCommand {
-	name = "setMergeField";
+	readonly name = "setMergeField";
 
 	private storedPreviousValue: string;
 	private storedNewValue: string;
@@ -70,7 +67,7 @@ export class SetMergeFieldCommand implements EditCommand {
 		return deepMerge(currentAsset, partialUpdate) as ResolvedClip["asset"];
 	}
 
-	async execute(context?: CommandContext): Promise<void> {
+	async execute(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("SetMergeFieldCommand.execute: context is required");
 
 		const mergeFields = context.getMergeFields();
@@ -112,9 +109,11 @@ export class SetMergeFieldCommand implements EditCommand {
 			trackIndex: this.trackIndex,
 			clipIndex: this.clipIndex
 		});
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
+	async undo(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("SetMergeFieldCommand.undo: context is required");
 
 		const mergeFields = context.getMergeFields();
@@ -146,5 +145,11 @@ export class SetMergeFieldCommand implements EditCommand {
 			trackIndex: this.trackIndex,
 			clipIndex: this.clipIndex
 		});
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.storedPreviousBinding = undefined;
 	}
 }

@@ -3,7 +3,7 @@ import { EditEvent } from "@core/events/edit-events";
 import { getNestedValue } from "@core/shared/utils";
 import type { ResolvedClip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 type ClipType = ResolvedClip;
 
@@ -14,13 +14,9 @@ export interface SetUpdatedClipOptions {
 
 /**
  * Command to update a clip's full configuration.
- *
- * Flow: Document mutation → resolve() → Reconciler updates Player
- *
- * Note: Merge field binding management is still on players until Phase 4 (document-based bindings).
  */
 export class SetUpdatedClipCommand implements EditCommand {
-	name = "setUpdatedClip";
+	readonly name = "setUpdatedClip";
 
 	private clipId: string | null = null;
 	private storedInitialConfig: ClipType | null = null;
@@ -38,7 +34,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 		this.clipIndex = options?.clipIndex ?? -1;
 	}
 
-	async execute(context?: CommandContext): Promise<void> {
+	async execute(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("SetUpdatedClipCommand.execute: context is required");
 
 		const doc = context.getDocument();
@@ -47,8 +43,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 		// Get player to determine indices if not provided
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);
 		if (!player) {
-			console.warn(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
-			return;
+			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
 		}
 
 		// Store for undo
@@ -98,11 +93,13 @@ export class SetUpdatedClipCommand implements EditCommand {
 			previous: { clip: this.storedInitialConfig, trackIndex, clipIndex },
 			current: { clip: this.storedFinalConfig ?? player.clipConfiguration, trackIndex, clipIndex }
 		});
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
+	async undo(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("SetUpdatedClipCommand.undo: context is required");
-		if (!this.storedInitialConfig) return;
+		if (!this.storedInitialConfig) return CommandNoop("No stored initial config");
 
 		const doc = context.getDocument();
 		if (!doc) throw new Error("SetUpdatedClipCommand.undo: document is required");
@@ -110,7 +107,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 		// Get player by ID or indices
 		const player = this.clipId ? context.getPlayerByClipId(this.clipId) : context.getClipAt(this.trackIndex, this.clipIndex);
 
-		if (!player) return;
+		if (!player) return CommandNoop(`Clip not found for undo`);
 
 		const currentConfig = structuredClone(player.clipConfiguration);
 
@@ -153,5 +150,14 @@ export class SetUpdatedClipCommand implements EditCommand {
 			previous: { clip: currentConfig, trackIndex, clipIndex },
 			current: { clip: this.storedInitialConfig, trackIndex, clipIndex }
 		});
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.clipId = null;
+		this.storedInitialConfig = null;
+		this.storedFinalConfig = null;
+		this.storedInitialBindings.clear();
 	}
 }

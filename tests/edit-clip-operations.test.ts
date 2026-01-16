@@ -378,7 +378,7 @@ describe("Edit Clip Operations", () => {
 			const { tracks: beforeUndo } = getEditState(edit);
 			expect(beforeUndo[0].length).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 
 			// After undo, the clip should be queued for disposal
 			// The actual removal happens on next update cycle
@@ -395,7 +395,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 		});
 
-		it("removes clip from track", () => {
+		it("removes clip from track", async () => {
 			const { tracks: before } = getEditState(edit);
 			expect(before[0].length).toBe(1);
 
@@ -405,7 +405,7 @@ describe("Edit Clip Operations", () => {
 			expect(after[0]?.length ?? 0).toBe(0);
 		});
 
-		it("emits clip:deleted event", () => {
+		it("emits clip:deleted event", async () => {
 			emitSpy.mockClear();
 
 			edit.deleteClip(0, 0);
@@ -428,7 +428,7 @@ describe("Edit Clip Operations", () => {
 			const { tracks: afterDelete } = getEditState(edit);
 			expect(afterDelete[0]?.length ?? 0).toBe(0);
 
-			edit.undo();
+			await edit.undo();
 			// Flush microtask queue - undo is async internally due to DeleteTrackCommand
 			await Promise.resolve();
 
@@ -436,11 +436,11 @@ describe("Edit Clip Operations", () => {
 			expect(afterUndo[0].length).toBe(1);
 		});
 
-		it("handles non-existent track gracefully", () => {
+		it("handles non-existent track gracefully", async () => {
 			expect(() => edit.deleteClip(99, 0)).not.toThrow();
 		});
 
-		it("handles non-existent clip gracefully", () => {
+		it("handles non-existent clip gracefully", async () => {
 			expect(() => edit.deleteClip(0, 99)).not.toThrow();
 		});
 	});
@@ -450,7 +450,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createTextClip(0, 5, "Original"));
 		});
 
-		it("merges partial updates with existing config", () => {
+		it("merges partial updates with existing config", async () => {
 			const clipBefore = edit.getClip(0, 0);
 			expect((clipBefore?.asset as { text: string }).text).toBe("Original");
 
@@ -462,7 +462,7 @@ describe("Edit Clip Operations", () => {
 			expect((clipAfter?.asset as { text: string }).text).toBe("Updated");
 		});
 
-		it("emits clip:updated event with previous/current", () => {
+		it("emits clip:updated event with previous/current", async () => {
 			emitSpy.mockClear();
 
 			edit.updateClip(0, 0, {
@@ -478,7 +478,7 @@ describe("Edit Clip Operations", () => {
 			);
 		});
 
-		it("is undoable - restores original config on undo", () => {
+		it("is undoable - restores original config on undo", async () => {
 			edit.updateClip(0, 0, {
 				asset: { type: "text", text: "Changed" }
 			});
@@ -486,13 +486,13 @@ describe("Edit Clip Operations", () => {
 			const clipChanged = edit.getClip(0, 0);
 			expect((clipChanged?.asset as { text: string }).text).toBe("Changed");
 
-			edit.undo();
+			await edit.undo();
 
 			const clipRestored = edit.getClip(0, 0);
 			expect((clipRestored?.asset as { text: string }).text).toBe("Original");
 		});
 
-		it("handles position updates", () => {
+		it("handles position updates", async () => {
 			edit.updateClip(0, 0, {
 				position: "topLeft"
 			});
@@ -501,7 +501,7 @@ describe("Edit Clip Operations", () => {
 			expect(clip?.position).toBe("topLeft");
 		});
 
-		it("handles offset updates", () => {
+		it("handles offset updates", async () => {
 			edit.updateClip(0, 0, {
 				offset: { x: 0.1, y: -0.2 }
 			});
@@ -511,7 +511,7 @@ describe("Edit Clip Operations", () => {
 			expect(clip?.offset?.y).toBe(-0.2);
 		});
 
-		it("warns for non-existent clip", () => {
+		it("warns for non-existent clip", async () => {
 			const warnSpy = jest.spyOn(console, "warn").mockImplementation();
 
 			edit.updateClip(99, 99, { opacity: 0.5 });
@@ -528,7 +528,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(1, createTextClip(0, 4, "Track 2"));
 		});
 
-		it("getClip returns correct clip configuration", () => {
+		it("getClip returns correct clip configuration", async () => {
 			const clip = edit.getClip(0, 0);
 			expect(clip?.asset?.type).toBe("video");
 
@@ -539,26 +539,26 @@ describe("Edit Clip Operations", () => {
 			expect(clip3?.asset?.type).toBe("text");
 		});
 
-		it("getClip returns null for invalid indices", () => {
+		it("getClip returns null for invalid indices", async () => {
 			expect(edit.getClip(-1, 0)).toBeNull();
 			expect(edit.getClip(0, -1)).toBeNull();
 			expect(edit.getClip(99, 0)).toBeNull();
 			expect(edit.getClip(0, 99)).toBeNull();
 		});
 
-		it("getPlayerClip returns player instance", () => {
+		it("getPlayerClip returns player instance", async () => {
 			const player = edit.getPlayerClip(0, 0);
 			expect(player).not.toBeNull();
 			expect(player?.clipConfiguration.asset?.type).toBe("video");
 		});
 
-		it("getTrack returns track configuration", () => {
+		it("getTrack returns track configuration", async () => {
 			const track = edit.getTrack(0);
 			expect(track).not.toBeNull();
 			expect(track?.clips.length).toBe(2);
 		});
 
-		it("getTrack returns null for invalid index", () => {
+		it("getTrack returns null for invalid index", async () => {
 			expect(edit.getTrack(99)).toBeNull();
 		});
 	});
@@ -568,7 +568,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			expect(edit.getClip(0, 0)).not.toBeNull();
 
-			edit.undo();
+			await edit.undo();
 			edit.update(0, 0); // Process disposal
 
 			expect(edit.getClip(0, 0)).toBeNull();
@@ -579,7 +579,7 @@ describe("Edit Clip Operations", () => {
 			edit.deleteClip(0, 0);
 			expect(edit.getClip(0, 0)).toBeNull();
 
-			edit.undo();
+			await edit.undo();
 			// Flush microtask queue - undo is async internally due to DeleteTrackCommand
 			await Promise.resolve();
 
@@ -594,7 +594,7 @@ describe("Edit Clip Operations", () => {
 			});
 			expect((edit.getClip(0, 0)?.asset as { text: string }).text).toBe("After");
 
-			edit.undo();
+			await edit.undo();
 
 			expect((edit.getClip(0, 0)?.asset as { text: string }).text).toBe("Before");
 		});
@@ -606,13 +606,13 @@ describe("Edit Clip Operations", () => {
 			const { tracks: withTwo } = getEditState(edit);
 			expect(withTwo[0].length).toBe(2);
 
-			edit.undo(); // Undo second add
+			await edit.undo(); // Undo second add
 			edit.update(0, 0);
 
 			const { tracks: withOne } = getEditState(edit);
 			expect(withOne[0].length).toBe(1);
 
-			edit.undo(); // Undo first add
+			await edit.undo(); // Undo first add
 			edit.update(0, 0);
 
 			const { tracks: withNone } = getEditState(edit);
@@ -622,11 +622,11 @@ describe("Edit Clip Operations", () => {
 		it("redo re-applies undone operations", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 
-			edit.undo();
+			await edit.undo();
 			edit.update(0, 0);
 			expect(edit.getClip(0, 0)).toBeNull();
 
-			edit.redo();
+			await edit.redo();
 
 			expect(edit.getClip(0, 0)).not.toBeNull();
 		});
@@ -637,7 +637,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 		});
 
-		it("copyClip stores clip configuration", () => {
+		it("copyClip stores clip configuration", async () => {
 			expect(edit.hasCopiedClip()).toBe(false);
 
 			edit.copyClip(0, 0);
@@ -645,7 +645,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.hasCopiedClip()).toBe(true);
 		});
 
-		it("copyClip emits clip:copied event", () => {
+		it("copyClip emits clip:copied event", async () => {
 			emitSpy.mockClear();
 
 			edit.copyClip(0, 0);
@@ -673,7 +673,7 @@ describe("Edit Clip Operations", () => {
 			expect(pastedClip?.start).toBe(5); // 5 seconds
 		});
 
-		it("pasteClip does nothing without copied clip", () => {
+		it("pasteClip does nothing without copied clip", async () => {
 			const { tracks: before } = getEditState(edit);
 			const countBefore = before[0].length;
 
@@ -690,7 +690,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(1, createImageClip(0, 3));
 		});
 
-		it("selectClip updates selected clip", () => {
+		it("selectClip updates selected clip", async () => {
 			expect(edit.isClipSelected(0, 0)).toBe(false);
 
 			edit.selectClip(0, 0);
@@ -699,7 +699,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.isClipSelected(1, 0)).toBe(false);
 		});
 
-		it("selectClip deselects previous selection", () => {
+		it("selectClip deselects previous selection", async () => {
 			edit.selectClip(0, 0);
 			expect(edit.isClipSelected(0, 0)).toBe(true);
 
@@ -709,7 +709,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.isClipSelected(1, 0)).toBe(true);
 		});
 
-		it("clearSelection clears selected clip", () => {
+		it("clearSelection clears selected clip", async () => {
 			edit.selectClip(0, 0);
 			expect(edit.isClipSelected(0, 0)).toBe(true);
 
@@ -718,7 +718,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.isClipSelected(0, 0)).toBe(false);
 		});
 
-		it("getSelectedClipInfo returns correct info", () => {
+		it("getSelectedClipInfo returns correct info", async () => {
 			expect(edit.getSelectedClipInfo()).toBeNull();
 
 			edit.selectClip(1, 0);
@@ -749,7 +749,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.getTotalDuration()).toBe(5000);
 		});
 
-		it("duration is 0 with no clips", () => {
+		it("duration is 0 with no clips", async () => {
 			expect(edit.getTotalDuration()).toBe(0);
 		});
 	});
@@ -787,7 +787,7 @@ describe("Edit Clip Operations", () => {
 			// Verify added clip exists (appended at index 1)
 			expect(edit.getPlayerClip(0, 1)).not.toBeNull();
 
-			edit.undo();
+			await edit.undo();
 			edit.update(0, 0); // Process disposal
 
 			// Verify added clip is removed (base clip still at index 0)
@@ -816,13 +816,13 @@ describe("Edit Clip Operations", () => {
 			const { tracks: withThree } = getEditState(edit);
 			expect(withThree[0]).toHaveLength(3); // 1 base + 2 added
 
-			edit.undo(); // Undo second add
+			await edit.undo(); // Undo second add
 			edit.update(0, 0);
 
 			const { tracks: withTwo } = getEditState(edit);
 			expect(withTwo[0]).toHaveLength(2); // 1 base + 1 added
 
-			edit.undo(); // Undo first add
+			await edit.undo(); // Undo first add
 			edit.update(0, 0);
 
 			const { tracks: withOne } = getEditState(edit);
@@ -840,7 +840,7 @@ describe("Edit Clip Operations", () => {
 			expect(withFive[0].length).toBe(5);
 
 			for (let i = 4; i >= 0; i -= 1) {
-				edit.deleteClip(0, i);
+				await edit.deleteClip(0, i); // eslint-disable-line no-await-in-loop -- Sequential deletes are intentional for this test
 			}
 
 			const { tracks: withNone } = getEditState(edit);
@@ -849,7 +849,7 @@ describe("Edit Clip Operations", () => {
 
 		it("handles updates to deleted clips gracefully", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
-			edit.deleteClip(0, 0);
+			await edit.deleteClip(0, 0);
 
 			// Should not throw
 			const warnSpy = jest.spyOn(console, "warn").mockImplementation();

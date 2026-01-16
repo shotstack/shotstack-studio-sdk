@@ -1,21 +1,17 @@
 import { EditEvent } from "@core/events/edit-events";
-import type { Seconds, TimingIntent } from "@core/timing/types";
-import type { ResolvedClip } from "@schemas";
+import type { Seconds } from "@core/timing/types";
+import type { Clip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Document-only command to resize a clip's length.
- *
- * Flow: Document mutation → resolveClip() → Reconciler updates Player
- *
- * Uses single-clip resolution for O(1) performance instead of O(n) full resolve.
- * Downstream clips with "auto" starts are updated via propagateTimingChanges().
  */
 export class ResizeClipCommand implements EditCommand {
-	name = "resizeClip";
-	private originalIntent?: TimingIntent;
-	private previousClipConfig?: ResolvedClip;
+	readonly name = "resizeClip";
+
+	/** Document-layer value for undo (may be "auto", "end", or numeric) */
+	private originalLength?: Clip["length"];
 	private clipId?: string;
 
 	constructor(
@@ -24,23 +20,31 @@ export class ResizeClipCommand implements EditCommand {
 		private newLength: Seconds
 	) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("ResizeClipCommand.execute: context is required");
 
 		const doc = context.getDocument();
 		if (!doc) throw new Error("ResizeClipCommand.execute: document is required");
 
-		// Get current player's resolved config for undo/events
-		const player = context.getClipAt(this.trackIndex, this.clipIndex);
-		if (!player) {
-			console.warn(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
-			return;
+		// Get document clip to store original length
+		const docTrack = context.getDocumentTrack(this.trackIndex);
+		const docClip = docTrack?.clips[this.clipIndex];
+		if (!docClip) {
+			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
 		}
 
-		// Store for undo
-		this.previousClipConfig = structuredClone(player.clipConfiguration);
-		this.originalIntent = player.getTimingIntent();
+		// Get current player for event emission
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) {
+			return CommandNoop(`Player not found at ${this.trackIndex}/${this.clipIndex}`);
+		}
+
+		// Store document-layer value for undo
+		this.originalLength = docClip.length;
 		this.clipId = player.clipId ?? undefined;
+
+		// Capture previous resolved config for event (local, not stored)
+		const previousConfig = structuredClone(player.clipConfiguration);
 
 		// Document-only mutation
 		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.newLength });
@@ -54,18 +58,20 @@ export class ResizeClipCommand implements EditCommand {
 
 		context.updateDuration();
 
-		// Get updated config from player (now has resolved values)
+		// Emit event with before/after resolved configs
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			previous: { clip: previousConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
 			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("ResizeClipCommand.undo: context is required");
-		if (!this.originalIntent) throw new Error("ResizeClipCommand.undo: no original intent");
+		if (this.originalLength === undefined) throw new Error("ResizeClipCommand.undo: no original length");
 
 		const doc = context.getDocument();
 		if (!doc) throw new Error("ResizeClipCommand.undo: document is required");
@@ -73,10 +79,11 @@ export class ResizeClipCommand implements EditCommand {
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);
 		if (!player) throw new Error("ResizeClipCommand.undo: player not found");
 
+		// Capture current resolved config for event (local, not stored)
 		const currentConfig = structuredClone(player.clipConfiguration);
 
-		// Document-only mutation - restore original length
-		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.originalIntent.length });
+		// Document-only mutation - restore original length (may be "auto", "end", or numeric)
+		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.originalLength });
 
 		// Single-clip resolution (O(1) instead of O(n) full resolve)
 		if (this.clipId) {
@@ -93,5 +100,7 @@ export class ResizeClipCommand implements EditCommand {
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
+
+		return CommandSuccess();
 	}
 }

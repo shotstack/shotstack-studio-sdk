@@ -1,16 +1,13 @@
 import { type Seconds, sec } from "@core/timing/types";
 
 import { MoveClipCommand } from "./move-clip-command";
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Document-only command to move a clip while pushing other clips forward to make room.
- * Calculates which clips to push based on the move destination.
- *
- * Flow: Document mutations → MoveClipCommand → resolve() → Reconciler updates all Players
  */
 export class MoveClipWithPushCommand implements EditCommand {
-	name = "moveClipWithPush";
+	readonly name = "moveClipWithPush";
 	private moveCommand: MoveClipCommand;
 	private pushedClipIds: Array<{ clipId: string; originalStart: Seconds }> = [];
 
@@ -24,7 +21,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 		this.moveCommand = new MoveClipCommand(fromTrackIndex, fromClipIndex, toTrackIndex, newStart);
 	}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("MoveClipWithPushCommand.execute: context is required");
 
 		const doc = context.getDocument();
@@ -32,7 +29,7 @@ export class MoveClipWithPushCommand implements EditCommand {
 
 		// Get the clip being moved to know its length
 		const movingPlayer = context.getClipAt(this.fromTrackIndex, this.fromClipIndex);
-		if (!movingPlayer) return;
+		if (!movingPlayer) return CommandNoop(`No clip at ${this.fromTrackIndex}/${this.fromClipIndex}`);
 
 		const movingLength = movingPlayer.clipConfiguration.length as Seconds;
 		const newEnd = this.newStart + movingLength;
@@ -68,9 +65,11 @@ export class MoveClipWithPushCommand implements EditCommand {
 
 		// Propagate timing changes for pushed clips
 		context.propagateTimingChanges(this.toTrackIndex, 0);
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
+	async undo(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("MoveClipWithPushCommand.undo: context is required");
 
 		const doc = context.getDocument();
@@ -92,5 +91,12 @@ export class MoveClipWithPushCommand implements EditCommand {
 
 		context.propagateTimingChanges(this.toTrackIndex, 0);
 		context.updateDuration();
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.moveCommand.dispose();
+		this.pushedClipIds = [];
 	}
 }

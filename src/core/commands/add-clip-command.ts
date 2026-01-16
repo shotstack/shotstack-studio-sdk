@@ -1,18 +1,15 @@
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 type ClipType = ResolvedClip;
 
 /**
  * Atomic command that adds a new clip to a track.
- *
- * Document-only: This command only mutates the document.
- * The PlayerReconciler handles Player creation via the Resolved event.
  */
 export class AddClipCommand implements EditCommand {
-	name = "addClip";
+	readonly name = "addClip";
 	private addedClipId?: string;
 
 	constructor(
@@ -20,7 +17,7 @@ export class AddClipCommand implements EditCommand {
 		private clip: ClipType
 	) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("AddClipCommand.execute: context is required");
 
 		// Document mutation only - reconciler creates the Player
@@ -43,11 +40,13 @@ export class AddClipCommand implements EditCommand {
 			trackIndex: this.trackIdx,
 			clipIndex
 		});
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("AddClipCommand.undo: context is required");
-		if (!this.addedClipId) return;
+		if (!this.addedClipId) return CommandNoop("No clip ID stored");
 
 		// Find clip index by ID (position may have changed)
 		const docTrack = context.getDocumentTrack(this.trackIdx);
@@ -55,8 +54,7 @@ export class AddClipCommand implements EditCommand {
 		const clipIndex = clips?.findIndex(c => c.id === this.addedClipId) ?? -1;
 
 		if (clipIndex === -1) {
-			console.warn(`AddClipCommand.undo: clip ${this.addedClipId} not found in track ${this.trackIdx}`);
-			return;
+			return CommandNoop(`Clip ${this.addedClipId} not found in track ${this.trackIdx}`);
 		}
 
 		// Document mutation only - reconciler disposes the Player
@@ -71,6 +69,8 @@ export class AddClipCommand implements EditCommand {
 			trackIndex: this.trackIdx,
 			clipIndex
 		});
+
+		return CommandSuccess();
 	}
 
 	dispose(): void {

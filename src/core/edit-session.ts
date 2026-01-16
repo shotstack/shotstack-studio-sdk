@@ -48,7 +48,8 @@ import {
 } from "@schemas";
 import * as pixi from "pixi.js";
 
-import type { EditCommand, CommandContext } from "./commands/types";
+import { CommandQueue } from "./commands/command-queue";
+import type { EditCommand, CommandContext, CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
@@ -86,6 +87,7 @@ export class Edit {
 	}
 	private commandHistory: EditCommand[] = [];
 	private commandIndex: number = -1;
+	private commandQueue = new CommandQueue();
 
 	public playbackTime: number;
 	/** @internal */
@@ -390,7 +392,7 @@ export class Edit {
 
 			this.document = new EditDocument(edit);
 			this.isBatchingEvents = true;
-			this.applyGranularChanges(edit);
+			await this.applyGranularChanges(edit);
 			this.isBatchingEvents = false;
 			this.emitEditChanged("loadEdit:granular");
 			return;
@@ -768,7 +770,7 @@ export class Edit {
 		return clip.asset;
 	}
 
-	public deleteClip(trackIdx: number, clipIdx: number): void {
+	public async deleteClip(trackIdx: number, clipIdx: number): Promise<void> {
 		const track = this.tracks[trackIdx];
 		if (!track) return;
 
@@ -789,23 +791,23 @@ export class Edit {
 				const adjustedContentIdx = lumaIndex < clipIdx ? clipIdx - 1 : clipIdx;
 
 				const lumaCommand = new DeleteClipCommand(trackIdx, lumaIndex);
-				this.executeCommand(lumaCommand);
+				await this.executeCommand(lumaCommand);
 
 				// Now delete content clip with adjusted index
 				const contentCommand = new DeleteClipCommand(trackIdx, adjustedContentIdx);
-				this.executeCommand(contentCommand);
+				await this.executeCommand(contentCommand);
 				return;
 			}
 		}
 
 		// No luma attachment or deleting a luma directly - just delete the clip
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
-		this.executeCommand(command);
+		await this.executeCommand(command);
 	}
 
-	public splitClip(trackIndex: number, clipIndex: number, splitTime: number): void {
+	public splitClip(trackIndex: number, clipIndex: number, splitTime: number): Promise<void> {
 		const command = new SplitClipCommand(trackIndex, clipIndex, splitTime);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	public async addTrack(trackIdx: number, track: Track): Promise<void> {
@@ -844,28 +846,39 @@ export class Edit {
 		this.syncCorrectionCount += 1;
 	}
 
-	public undo(): void {
-		if (this.commandIndex >= 0) {
-			const command = this.commandHistory[this.commandIndex];
-			if (command.undo) {
-				const context = this.createCommandContext();
-				command.undo(context);
-				this.commandIndex -= 1;
-				this.events.emit(EditEvent.EditUndo, { command: command.name });
-				this.emitEditChanged(`undo:${command.name}`);
+	public undo(): Promise<void> {
+		return this.commandQueue.enqueue(async () => {
+			if (this.commandIndex >= 0) {
+				const command = this.commandHistory[this.commandIndex];
+				if (command.undo) {
+					const context = this.createCommandContext();
+					// Always await - harmless on sync results, works across realms
+					await Promise.resolve(command.undo(context));
+					// Only decrement after successful completion
+					this.commandIndex -= 1;
+
+					this.events.emit(EditEvent.EditUndo, { command: command.name });
+					this.emitEditChanged(`undo:${command.name}`);
+				}
 			}
-		}
+		});
 	}
 
-	public redo(): void {
-		if (this.commandIndex < this.commandHistory.length - 1) {
-			this.commandIndex += 1;
-			const command = this.commandHistory[this.commandIndex];
-			const context = this.createCommandContext();
-			command.execute(context);
-			this.events.emit(EditEvent.EditRedo, { command: command.name });
-			this.emitEditChanged(`redo:${command.name}`);
-		}
+	public redo(): Promise<void> {
+		return this.commandQueue.enqueue(async () => {
+			if (this.commandIndex < this.commandHistory.length - 1) {
+				const nextIndex = this.commandIndex + 1;
+				const command = this.commandHistory[nextIndex];
+				const context = this.createCommandContext();
+				// Always await - harmless on sync results, works across realms
+				await Promise.resolve(command.execute(context));
+				// Only increment after successful completion
+				this.commandIndex = nextIndex;
+
+				this.events.emit(EditEvent.EditRedo, { command: command.name });
+				this.emitEditChanged(`redo:${command.name}`);
+			}
+		});
 	}
 	/** @internal */
 	public setUpdatedClip(clip: Player, initialClipConfig: ResolvedClip | null = null, finalClipConfig: ResolvedClip | null = null): void {
@@ -948,11 +961,11 @@ export class Edit {
 		this.emitEditChanged(`commit:${command.name}`);
 	}
 
-	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<Clip>): void {
+	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<Clip>): Promise<void> {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
 		if (!clip) {
 			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
-			return;
+			return Promise.resolve();
 		}
 
 		// Read from document (source of truth) to preserve timing intent ("auto"/"end")
@@ -967,7 +980,7 @@ export class Edit {
 			trackIndex: trackIdx,
 			clipIndex: clipIdx
 		});
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/**
@@ -1000,18 +1013,24 @@ export class Edit {
 		return this.executeCommand(command);
 	}
 
-	protected executeCommand(command: EditCommand): void | Promise<void> {
-		const context = this.createCommandContext();
-		const result = command.execute(context);
+	protected executeCommand(command: EditCommand): Promise<void> {
+		return this.commandQueue.enqueue(async () => {
+			const context = this.createCommandContext();
+			// Always await - harmless on sync results, works across realms
+			const result = await Promise.resolve(command.execute(context));
+			this.handleCommandResult(command, result);
+		});
+	}
 
-		this.pushCommandToHistory(command);
-
-		// Handle both sync and async commands
-		if (result instanceof Promise) {
-			return result.then(() => this.emitEditChanged(command.name));
+	/**
+	 * Handle command result - only add to history if successful.
+	 */
+	private handleCommandResult(command: EditCommand, result: CommandResult): void {
+		if (result.status === "success") {
+			this.pushCommandToHistory(command);
+			this.emitEditChanged(command.name);
 		}
-		this.emitEditChanged(command.name);
-		return result;
+		// 'noop' - don't add to history, don't emit
 	}
 
 	/**
@@ -1165,7 +1184,7 @@ export class Edit {
 	/**
 	 * Applies granular changes without full reload.
 	 */
-	private applyGranularChanges(newEdit: EditConfig): void {
+	private async applyGranularChanges(newEdit: EditConfig): Promise<void> {
 		const currentOutput = this.edit?.output;
 		const newOutput = newEdit.output;
 
@@ -1173,32 +1192,32 @@ export class Edit {
 		if (newOutput?.size && (currentOutput?.size?.width !== newOutput.size.width || currentOutput?.size?.height !== newOutput.size.height)) {
 			const width = newOutput.size.width ?? this.size.width;
 			const height = newOutput.size.height ?? this.size.height;
-			this.setOutputSize(width, height);
+			await this.setOutputSize(width, height);
 		}
 
 		if (newOutput?.fps !== undefined && currentOutput?.fps !== newOutput.fps) {
-			this.setOutputFps(newOutput.fps);
+			await this.setOutputFps(newOutput.fps);
 		}
 
 		if (newOutput?.format !== undefined && currentOutput?.format !== newOutput.format) {
-			this.setOutputFormat(newOutput.format);
+			await this.setOutputFormat(newOutput.format);
 		}
 
 		if (newOutput?.destinations && JSON.stringify(currentOutput?.destinations) !== JSON.stringify(newOutput.destinations)) {
-			this.setOutputDestinations(newOutput.destinations);
+			await this.setOutputDestinations(newOutput.destinations);
 		}
 
 		if (newOutput?.resolution !== undefined && currentOutput?.resolution !== newOutput.resolution) {
-			this.setOutputResolution(newOutput.resolution);
+			await this.setOutputResolution(newOutput.resolution);
 		}
 
 		if (newOutput?.aspectRatio !== undefined && currentOutput?.aspectRatio !== newOutput.aspectRatio) {
-			this.setOutputAspectRatio(newOutput.aspectRatio);
+			await this.setOutputAspectRatio(newOutput.aspectRatio);
 		}
 
 		const newBg = newEdit.timeline?.background;
 		if (newBg && this.backgroundColor !== newBg) {
-			this.setTimelineBackground(newBg);
+			await this.setTimelineBackground(newBg);
 		}
 
 		// 2. Diff and update each clip
@@ -1216,7 +1235,8 @@ export class Edit {
 				// Only update if clip changed
 				if (JSON.stringify(currentClip) !== JSON.stringify(newClip)) {
 					// Cast since newClip may have "auto"/"end" strings; updateClip handles resolution
-					this.updateClip(trackIdx, clipIdx, newClip as unknown as Partial<ResolvedClip>);
+					// eslint-disable-next-line no-await-in-loop
+					await this.updateClip(trackIdx, clipIdx, newClip as unknown as Partial<ResolvedClip>);
 				}
 			}
 		}
@@ -1941,50 +1961,50 @@ export class Edit {
 
 	// ─── Output Settings (delegated to OutputSettingsManager) ────────────────────
 
-	public setOutputSize(width: number, height: number): void {
+	public setOutputSize(width: number, height: number): Promise<void> {
 		const command = new SetOutputSizeCommand(width, height);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
-	public setOutputFps(fps: number): void {
+	public setOutputFps(fps: number): Promise<void> {
 		const command = new SetOutputFpsCommand(fps);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	public getOutputFps(): number {
 		return this.outputSettings.getFps();
 	}
 
-	public setOutputFormat(format: string): void {
+	public setOutputFormat(format: string): Promise<void> {
 		const command = new SetOutputFormatCommand(format);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	public getOutputFormat(): string {
 		return this.outputSettings.getFormat();
 	}
 
-	public setOutputDestinations(destinations: Destination[]): void {
+	public setOutputDestinations(destinations: Destination[]): Promise<void> {
 		const command = new SetOutputDestinationsCommand(destinations);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	public getOutputDestinations(): Destination[] {
 		return this.outputSettings.getDestinations();
 	}
 
-	public setOutputResolution(resolution: string): void {
+	public setOutputResolution(resolution: string): Promise<void> {
 		const command = new SetOutputResolutionCommand(resolution);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	public getOutputResolution(): string | undefined {
 		return this.outputSettings.getResolution();
 	}
 
-	public setOutputAspectRatio(aspectRatio: string): void {
+	public setOutputAspectRatio(aspectRatio: string): Promise<void> {
 		const command = new SetOutputAspectRatioCommand(aspectRatio);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	public getOutputAspectRatio(): string | undefined {
@@ -2028,9 +2048,9 @@ export class Edit {
 		this.cleanupUnusedFonts();
 	}
 
-	public setTimelineBackground(color: string): void {
+	public setTimelineBackground(color: string): Promise<void> {
 		const command = new SetTimelineBackgroundCommand(color);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/** @internal */
@@ -2309,10 +2329,10 @@ export class Edit {
 	/**
 	 * Transform a clip to luma type.
 	 */
-	public transformToLuma(trackIndex: number, clipIndex: number): void {
+	public transformToLuma(trackIndex: number, clipIndex: number): Promise<void> {
 		// Read from document (source of truth), not player's copy
 		const clip = this.getResolvedClip(trackIndex, clipIndex);
-		if (!clip?.asset) return;
+		if (!clip?.asset) return Promise.resolve();
 
 		const asset = clip.asset as { type?: string; src?: string };
 		const originalType = asset.type as "image" | "video" | undefined;
@@ -2324,18 +2344,18 @@ export class Edit {
 		}
 
 		const command = new TransformClipAssetCommand(trackIndex, clipIndex, "luma");
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/**
 	 * Transform a luma clip back to its original type.
 	 */
-	public transformFromLuma(trackIndex: number, clipIndex: number): void {
+	public transformFromLuma(trackIndex: number, clipIndex: number): Promise<void> {
 		const clip = this.getResolvedClip(trackIndex, clipIndex);
-		if (!clip?.asset) return;
+		if (!clip?.asset) return Promise.resolve();
 
 		const { src } = clip.asset as { src?: string };
-		if (!src) return;
+		if (!src) return Promise.resolve();
 
 		// Use stored original type if available (most reliable)
 		let originalType = this.originalAssetTypes.get(src);
@@ -2346,7 +2366,7 @@ export class Edit {
 		}
 
 		const command = new TransformClipAssetCommand(trackIndex, clipIndex, originalType);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/**

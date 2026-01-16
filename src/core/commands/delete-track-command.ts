@@ -1,29 +1,25 @@
 import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Deletes a track and all its clips.
- *
- * Document-only: This command only mutates the document.
- * The PlayerReconciler handles Player disposal and layer updates via the Resolved event.
  */
 export class DeleteTrackCommand implements EditCommand {
-	name = "deleteTrack";
+	readonly name = "deleteTrack";
 	private deletedClips: Clip[] = [];
 
 	constructor(private trackIdx: number) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("DeleteTrackCommand.execute: context is required");
 
 		const document = context.getDocument();
 		if (!document) throw new Error("DeleteTrackCommand: no document");
 
 		if (document.getTrackCount() <= 1) {
-			console.warn("Cannot delete the last track");
-			return;
+			return CommandNoop("Cannot delete the last track");
 		}
 
 		// Save clips for undo
@@ -43,9 +39,11 @@ export class DeleteTrackCommand implements EditCommand {
 		context.updateDuration();
 
 		context.emitEvent(EditEvent.TrackRemoved, { trackIndex: this.trackIdx });
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("DeleteTrackCommand.undo: context is required");
 
 		const document = context.getDocument();
@@ -67,6 +65,8 @@ export class DeleteTrackCommand implements EditCommand {
 		context.updateDuration();
 
 		context.emitEvent(EditEvent.TrackAdded, { trackIndex: this.trackIdx, totalTracks: document.getTrackCount() });
+
+		return CommandSuccess();
 	}
 
 	dispose(): void {

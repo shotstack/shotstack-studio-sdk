@@ -16,9 +16,30 @@ export interface TimelineUpdatedEvent {
 	current: { timeline: EditType };
 }
 
+/**
+ * Result of command execution.
+ */
+export interface CommandResult {
+	status: "success" | "noop";
+	message?: string;
+}
+
+/**
+ * Helper to create a success result.
+ */
+export const CommandSuccess = (): CommandResult => ({ status: "success" });
+
+/**
+ * Helper to create a noop result.
+ */
+export const CommandNoop = (message?: string): CommandResult => ({ status: "noop", message });
+
+// Return type for commands
+export type CommandReturn = CommandResult | Promise<CommandResult>;
+
 export type EditCommand = {
-	execute(context?: CommandContext): void | Promise<void>;
-	undo?(context?: CommandContext): void | Promise<void>;
+	execute(context?: CommandContext): CommandReturn;
+	undo?(context?: CommandContext): CommandReturn;
 	dispose?(): void;
 	readonly name: string;
 };

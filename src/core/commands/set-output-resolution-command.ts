@@ -1,20 +1,26 @@
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 export class SetOutputResolutionCommand implements EditCommand {
-	name = "setOutputResolution";
+	readonly name = "setOutputResolution";
 	private previousResolution?: string;
 
 	constructor(private resolution: string) {}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("SetOutputResolutionCommand requires context");
 		this.previousResolution = context.getOutputResolution();
 		context.setOutputResolution(this.resolution);
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		if (!context) throw new Error("SetOutputResolutionCommand requires context");
-		if (this.previousResolution === undefined) return;
+		if (this.previousResolution === undefined) return CommandNoop("No previous resolution stored");
 		context.setOutputResolution(this.previousResolution);
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.previousResolution = undefined;
 	}
 }

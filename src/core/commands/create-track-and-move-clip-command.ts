@@ -3,13 +3,13 @@ import { type Seconds } from "@core/timing/types";
 
 import { AddTrackCommand } from "./add-track-command";
 import { MoveClipCommand } from "./move-clip-command";
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Compound command that creates a new track and moves a clip to it atomically.
  */
 export class CreateTrackAndMoveClipCommand implements EditCommand {
-	name = "createTrackAndMoveClip";
+	readonly name = "createTrackAndMoveClip";
 
 	private addTrackCommand: AddTrackCommand;
 	private moveClipCommand: MoveClipCommand;
@@ -33,7 +33,7 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		this.moveClipCommand = new MoveClipCommand(adjustedFromTrackIndex, fromClipIndex, insertionIndex, newStart);
 	}
 
-	async execute(context?: CommandContext): Promise<void> {
+	async execute(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("CreateTrackAndMoveClipCommand.execute: context is required");
 
 		let addTrackExecuted = false;
@@ -60,11 +60,13 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 			}
 			throw executeError;
 		}
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
+	async undo(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("CreateTrackAndMoveClipCommand.undo: context is required");
-		if (!this.wasExecuted) return;
+		if (!this.wasExecuted) return CommandNoop("Command was not executed");
 
 		// Undo in reverse order
 		await this.moveClipCommand.undo(context);
@@ -74,6 +76,8 @@ export class CreateTrackAndMoveClipCommand implements EditCommand {
 		context.emitEvent(EditEvent.TrackRemoved, {
 			trackIndex: this.insertionIndex
 		});
+
+		return CommandSuccess();
 	}
 
 	dispose(): void {
