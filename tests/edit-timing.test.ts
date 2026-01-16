@@ -269,13 +269,13 @@ function createMockPlayerForResolver(startSec: number, lengthSec: number, length
 function getEditState(edit: Edit): {
 	tracks: unknown[][];
 	clips: unknown[];
-	endLengthClips: Set<unknown>;
+	endLengthClips: unknown[];
 	cachedTimelineEnd: number;
 } {
 	const anyEdit = edit as unknown as {
 		tracks: unknown[][];
 		clips: unknown[];
-		endLengthClips: Set<unknown>;
+		endLengthClips: unknown[];
 		cachedTimelineEnd: number;
 	};
 	return {
@@ -525,7 +525,7 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createTextClip(0, "end"));
 
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(1);
+			expect(endLengthClips.length).toBe(1);
 		});
 	});
 
@@ -534,25 +534,25 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createTextClip(0, "end"));
 
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(1);
+			expect(endLengthClips.length).toBe(1);
 		});
 
 		it("removes clip from set when deleted", async () => {
 			await edit.addClip(0, createTextClip(0, "end"));
 			const { endLengthClips: before } = getEditState(edit);
-			expect(before.size).toBe(1);
+			expect(before.length).toBe(1);
 
 			edit.deleteClip(0, 0);
 
 			const { endLengthClips: after } = getEditState(edit);
-			expect(after.size).toBe(0);
+			expect(after.length).toBe(0);
 		});
 
 		it("does not add fixed-length clips to set", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(0);
+			expect(endLengthClips.length).toBe(0);
 		});
 	});
 
@@ -660,7 +660,7 @@ describe("Edit Timing Integration", () => {
 
 			// Clip should be tracked in endLengthClips set
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(1);
+			expect(endLengthClips.length).toBe(1);
 		});
 	});
 
@@ -739,7 +739,7 @@ describe("Edit Timing Integration", () => {
 
 			// Verify clip is tracked for end-length updates
 			const state = getEditState(edit);
-			expect(state.endLengthClips.has(endClip!)).toBe(true);
+			expect(state.endLengthClips.includes(endClip!)).toBe(true);
 		});
 	});
 });

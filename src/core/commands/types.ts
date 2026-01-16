@@ -47,8 +47,6 @@ export type CommandContext = {
 	getEditState(): EditType;
 	propagateTimingChanges(trackIndex: number, startFromClipIndex: number): void;
 	resolveClipAutoLength(clip: Player): Promise<void>;
-	untrackEndLengthClip(clip: Player): void;
-	trackEndLengthClip(clip: Player): void;
 	// Merge field context
 	getMergeFields(): MergeFieldService;
 

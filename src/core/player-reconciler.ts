@@ -170,19 +170,11 @@ export class PlayerReconciler {
 		player.layer = trackIndex + 1;
 		player.clipId = clipId;
 
-		// Track clips with "end" length for timeline-end recalculation
-		// Note: timingIntent is now read directly from document by player.getTimingIntent()
-		const docClip = this.edit.getDocumentClipById(clipId);
-		if (docClip?.length === "end") {
-			this.edit.trackEndLengthClip(player);
-		}
-
 		// Register in ID map
 		this.edit.registerPlayerByClipId(clipId, player);
 
-		// Add to runtime arrays
+		// Add to tracks array (clips are derived from tracks)
 		this.edit.addPlayerToTracksArray(trackIndex, player);
-		this.edit.addPlayerToClipsArray(player);
 
 		// Add to PIXI container
 		this.edit.addPlayerToContainer(trackIndex, player);

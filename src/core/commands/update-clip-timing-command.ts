@@ -85,14 +85,6 @@ export class UpdateClipTimingCommand implements EditCommand {
 			});
 		}
 
-		// Handle "end" length tracking
-		if (updates.length === "end") {
-			context.trackEndLengthClip(player);
-		} else if (updates.length !== undefined && this.originalIntent?.length === "end") {
-			// Changing from "end" to something else → untrack
-			context.untrackEndLengthClip(player);
-		}
-
 		context.updateDuration();
 
 		context.emitEvent(EditEvent.ClipUpdated, {
@@ -134,11 +126,6 @@ export class UpdateClipTimingCommand implements EditCommand {
 				context.updateDuration();
 				context.propagateTimingChanges(this.trackIndex, this.clipIndex);
 			});
-		}
-
-		// Handle "end" length tracking restoration
-		if (this.originalIntent.length === "end") {
-			context.trackEndLengthClip(player);
 		}
 
 		context.updateDuration();

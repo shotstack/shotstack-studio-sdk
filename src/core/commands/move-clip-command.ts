@@ -74,12 +74,6 @@ export class MoveClipCommand implements EditCommand {
 			}
 		}
 
-		// Handle timing intent changes
-		if (this.originalTimingIntent?.length === "end") {
-			// When moving a clip, it loses the "end" intent and gets a fixed start
-			context.untrackEndLengthClip(player);
-		}
-
 		// Reconciler handles player layer update, container move, timing update
 		context.resolve();
 
@@ -155,11 +149,6 @@ export class MoveClipCommand implements EditCommand {
 		doc.moveClip(clipInfo.trackIndex, clipInfo.clipIndex, this.fromTrackIndex, {
 			start: this.originalTimingIntent?.start ?? this.originalStart
 		});
-
-		// Restore "end" tracking if original intent had it
-		if (player && this.originalTimingIntent?.length === "end") {
-			context.trackEndLengthClip(player);
-		}
 
 		// Reconciler handles player layer update, container move, timing update
 		context.resolve();

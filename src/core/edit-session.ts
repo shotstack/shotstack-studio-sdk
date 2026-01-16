@@ -140,8 +140,12 @@ export class Edit extends Entity {
 
 	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
-	private clipsToDispose: Player[];
-	private clips: Player[];
+	private clipsToDispose = new Set<Player>();
+
+	/** Derived from tracks - no longer stored separately */
+	private get clips(): Player[] {
+		return this.tracks.flat();
+	}
 	private commandHistory: EditCommand[] = [];
 	private commandIndex: number = -1;
 
@@ -168,7 +172,10 @@ export class Edit extends Entity {
 
 	// Performance optimization: cache timeline end and track "end" length clips
 	private cachedTimelineEnd: number = 0;
-	private endLengthClips: Set<Player> = new Set();
+	/** Derived from clips - no longer stored separately */
+	private get endLengthClips(): Player[] {
+		return this.clips.filter(c => c.getTimingIntent().length === "end");
+	}
 	private isBatchingEvents: boolean = false;
 
 	// Document sync state - skip sync during initial load (document already has clips)
@@ -241,8 +248,7 @@ export class Edit extends Entity {
 		this.assetLoader = new AssetLoader();
 		this.edit = null;
 		this.tracks = [];
-		this.clipsToDispose = [];
-		this.clips = [];
+		this.clipsToDispose.clear();
 
 		this.events = new EventEmitter();
 		this.mergeFieldService = new MergeFieldService(this.events);
@@ -591,7 +597,7 @@ export class Edit extends Entity {
 	public getResolvedEdit(): ResolvedEdit {
 		const tracks: ResolvedTrack[] = this.tracks.map(track => ({
 			clips: track
-				.filter(player => player && !this.clipsToDispose.includes(player))
+				.filter(player => player && !this.clipsToDispose.has(player))
 				.map(player => ({
 					...player.clipConfiguration,
 					start: player.getStart(),
@@ -795,22 +801,6 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Track a clip with length: "end" for timeline-end recalculation.
-	 * @internal Used by PlayerReconciler
-	 */
-	public trackEndLengthClip(player: Player): void {
-		this.endLengthClips.add(player);
-	}
-
-	/**
-	 * Untrack a clip from end-length recalculation.
-	 * @internal Used by PlayerReconciler
-	 */
-	public untrackEndLengthClip(player: Player): void {
-		this.endLengthClips.delete(player);
-	}
-
-	/**
 	 * Register a Player by its clip ID.
 	 * @internal Used by PlayerReconciler
 	 */
@@ -843,14 +833,6 @@ export class Edit extends Entity {
 			this.tracks.push([]);
 		}
 		this.tracks[trackIndex].push(player);
-	}
-
-	/**
-	 * Add a Player to the global clips array.
-	 * @internal Used by PlayerReconciler
-	 */
-	public addPlayerToClipsArray(player: Player): void {
-		this.clips.push(player);
 	}
 
 	/**
@@ -1470,8 +1452,6 @@ export class Edit extends Entity {
 			disposeClips: () => this.disposeClips(),
 			clearClipError: (trackIdx, clipIdx) => this.clearClipErrorAndShift(trackIdx, clipIdx),
 			undeleteClip: (trackIdx, clip) => {
-				this.clips.push(clip);
-
 				let insertIdx = 0;
 				if (trackIdx >= 0 && trackIdx < this.tracks.length) {
 					const track = this.tracks[trackIdx];
@@ -1550,8 +1530,6 @@ export class Edit extends Entity {
 			getEditState: () => this.getResolvedEdit(),
 			propagateTimingChanges: (trackIndex, startFromClipIndex) => this.propagateTimingChanges(trackIndex, startFromClipIndex),
 			resolveClipAutoLength: clip => this.resolveClipAutoLength(clip),
-			untrackEndLengthClip: clip => this.endLengthClips.delete(clip),
-			trackEndLengthClip: clip => this.endLengthClips.add(clip),
 			// Merge field context
 			getMergeFields: () => this.mergeFieldService,
 			// Output settings
@@ -1670,10 +1648,10 @@ export class Edit extends Entity {
 	}
 
 	private queueDisposeClip(clipToDispose: Player): void {
-		this.clipsToDispose.push(clipToDispose);
+		this.clipsToDispose.add(clipToDispose);
 	}
 	protected disposeClips(): void {
-		if (this.clipsToDispose.length === 0) {
+		if (this.clipsToDispose.size === 0) {
 			return;
 		}
 
@@ -1695,8 +1673,7 @@ export class Edit extends Entity {
 			this.disposeClip(clip);
 		}
 
-		this.clips = this.clips.filter((clip: Player) => !this.clipsToDispose.includes(clip));
-
+		// Remove from tracks (clips are derived from tracks.flat())
 		for (const clip of this.clipsToDispose) {
 			const trackIdx = clip.layer - 1;
 			if (trackIdx >= 0 && trackIdx < this.tracks.length) {
@@ -1709,7 +1686,7 @@ export class Edit extends Entity {
 			}
 		}
 
-		this.clipsToDispose = [];
+		this.clipsToDispose.clear();
 		this.updateTotalDuration();
 
 		// Clean up fonts that are no longer used by any clip
@@ -1785,9 +1762,6 @@ export class Edit extends Entity {
 
 		this.unloadClipAssets(clip);
 
-		// Remove from endLengthClips tracking
-		this.endLengthClips.delete(clip);
-
 		// Invalidate cache since timeline end may have changed
 		this.cachedTimelineEnd = 0;
 
@@ -1807,9 +1781,8 @@ export class Edit extends Entity {
 			this.disposeClip(clip);
 		}
 
-		this.clips = [];
 		this.tracks = [];
-		this.clipsToDispose = [];
+		this.clipsToDispose.clear();
 		this.clipErrors.clear();
 
 		this.updateTotalDuration();
@@ -2059,13 +2032,7 @@ export class Edit extends Entity {
 
 		this.tracks[trackIdx].push(clipToAdd);
 
-		this.clips.push(clipToAdd);
-
 		// Document sync is handled by AddClipCommand - don't duplicate here
-
-		if (clipToAdd.getTimingIntent().length === "end") {
-			this.endLengthClips.add(clipToAdd);
-		}
 
 		const zIndex = 100000 - (trackIdx + 1) * Edit.ZIndexPadding;
 
