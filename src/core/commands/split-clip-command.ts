@@ -1,6 +1,6 @@
 import { EditEvent } from "@core/events/edit-events";
-import { sec, type Seconds } from "@core/timing/types";
-import type { AudioAsset, Clip, ResolvedClip, VideoAsset } from "@schemas";
+import { sec } from "@core/timing/types";
+import type { AudioAsset, Clip, VideoAsset } from "@schemas";
 
 import type { EditCommand, CommandContext } from "./types";
 
@@ -30,7 +30,6 @@ export class SplitClipCommand implements EditCommand {
 		if (!clip) throw new Error("Cannot split clip: invalid clip");
 
 		// Get resolved timing for calculations
-		const resolutionCtx = context.buildResolutionContext(this.trackIndex, this.clipIndex);
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);
 		const clipStart = player?.clipConfiguration.start ?? 0;
 		const clipLength = player?.clipConfiguration.length ?? 0;

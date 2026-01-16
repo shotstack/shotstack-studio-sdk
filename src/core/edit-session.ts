@@ -4,7 +4,6 @@ import { HtmlPlayer } from "@canvas/players/html-player";
 import { ImagePlayer } from "@canvas/players/image-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
 import { type Player, PlayerType } from "@canvas/players/player";
-import type { MergeFieldBinding } from "@core/edit-document";
 import { RichTextPlayer } from "@canvas/players/rich-text-player";
 import { ShapePlayer } from "@canvas/players/shape-player";
 import { SvgPlayer } from "@canvas/players/svg-player";
@@ -25,6 +24,7 @@ import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { TransformClipAssetCommand } from "@core/commands/transform-clip-asset-command";
 import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands/update-clip-timing-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
+import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
@@ -1621,14 +1621,14 @@ export class Edit extends Entity {
 			const existingTrack = existingTracks[trackIdx];
 			const newTrack = newEdit.timeline.tracks[trackIdx];
 
-			if (!existingTrack || !newTrack) continue;
-
-			for (let clipIdx = 0; clipIdx < newTrack.clips.length; clipIdx += 1) {
-				const existingId = this.document.getClipId(trackIdx, clipIdx);
-				if (existingId) {
-					// Add the ID to the new clip so EditDocument.hydrateIds() preserves it
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal ID hydration
-					(newTrack.clips[clipIdx] as any).id = existingId;
+			if (existingTrack && newTrack) {
+				for (let clipIdx = 0; clipIdx < newTrack.clips.length; clipIdx += 1) {
+					const existingId = this.document.getClipId(trackIdx, clipIdx);
+					if (existingId) {
+						// Add the ID to the new clip so EditDocument.hydrateIds() preserves it
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal ID hydration
+						(newTrack.clips[clipIdx] as any).id = existingId;
+					}
 				}
 			}
 		}

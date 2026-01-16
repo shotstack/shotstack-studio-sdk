@@ -663,8 +663,10 @@ describe("EditDocument", () => {
 			const exported = doc.toJSON();
 
 			// IDs should not be in exported JSON
-			for (const track of exported.timeline.tracks) {
-				for (const clip of track.clips) {
+			for (let i = 0; i < exported.timeline.tracks.length; i += 1) {
+				const track = exported.timeline.tracks[i];
+				for (let j = 0; j < track.clips.length; j += 1) {
+					const clip = track.clips[j];
 					expect((clip as { id?: string }).id).toBeUndefined();
 				}
 			}

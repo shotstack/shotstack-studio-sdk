@@ -163,14 +163,14 @@ export class ShotstackEdit extends Edit {
 	 */
 	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void | Promise<void> {
 		const clipId = this.getClipId(trackIndex, clipIndex);
-		if (!clipId) return;
+		if (!clipId) return undefined;
 
 		// Get current merge field name
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
 		const currentFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
-		if (!currentFieldName) return; // No merge field to remove
+		if (!currentFieldName) return undefined; // No merge field to remove
 
 		const command = new SetMergeFieldCommand(
 			clipId,
@@ -245,11 +245,11 @@ export class ShotstackEdit extends Edit {
 						// Only validate URLs for asset types that use URL sources (not HTML/text)
 						const assetType = (templateClip.asset as { type?: string })?.type;
 						const isUrlBasedAsset = assetType === "image" || assetType === "video" || assetType === "audio";
-						if (!isUrlBasedAsset) continue;
-
-						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
-						if (usageInfo.used && usageInfo.isSrcField) {
-							return true;
+						if (isUrlBasedAsset) {
+							const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
+							if (usageInfo.used && usageInfo.isSrcField) {
+								return true;
+							}
 						}
 					}
 				}

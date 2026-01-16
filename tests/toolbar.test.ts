@@ -142,6 +142,10 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 	return {
 		getPlayerClip: jest.fn((): MockPlayer | null => null),
 		getClip: jest.fn(() => null),
+		getClipId: jest.fn(() => "mock-clip-id"),
+		getResolvedClip: jest.fn(() => null),
+		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+		getCurrentTime: jest.fn(() => 0),
 		getEdit: jest.fn(() => ({
 			timeline: {
 				fonts: [],
@@ -149,7 +153,8 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 			}
 		})),
 		getDocument: jest.fn(() => ({
-			getFonts: jest.fn(() => [])
+			getFonts: jest.fn(() => []),
+			getClipBinding: jest.fn(() => null)
 		})),
 		getMergeFieldForProperty: jest.fn(() => null),
 		updateClip: jest.fn(),
@@ -268,6 +273,19 @@ function simulateChange(element: HTMLInputElement | null, value: string | number
 		element.value = String(value);
 		element.dispatchEvent(new Event("change", { bubbles: true }));
 	}
+}
+
+// Helper to set up both getPlayerClip and getResolvedClip mocks consistently
+// Since the document-first refactor, toolbars read from getResolvedClip instead of player
+function setupMockClip(
+	mockEdit: ReturnType<typeof createMockEdit>,
+	assetType: string,
+	overrides: Record<string, unknown> = {}
+): MockPlayer {
+	const mockPlayer = createMockClip(assetType, overrides);
+	mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+	mockEdit.getResolvedClip.mockReturnValue(mockPlayer.clipConfiguration);
+	return mockPlayer;
 }
 
 // ============================================================================
@@ -738,7 +756,7 @@ describe("MediaToolbar", () => {
 
 	describe("asset type visibility", () => {
 		it("show() with image clip hides volume section", () => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("image"));
+			setupMockClip(mockEdit, "image");
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -748,7 +766,7 @@ describe("MediaToolbar", () => {
 		});
 
 		it("show() with video clip shows both visual and volume sections", () => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+			setupMockClip(mockEdit, "video");
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -762,7 +780,7 @@ describe("MediaToolbar", () => {
 		});
 
 		it("show() with audio clip hides visual section", () => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("audio"));
+			setupMockClip(mockEdit, "audio");
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -774,7 +792,7 @@ describe("MediaToolbar", () => {
 
 	describe("fit options", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+			setupMockClip(mockEdit, "video");
 		});
 
 		it("clicking fit option calls updateClip with fit value", () => {
@@ -804,7 +822,7 @@ describe("MediaToolbar", () => {
 
 	describe("opacity", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+			setupMockClip(mockEdit, "video");
 		});
 
 		it("opacity slider calls updateClip", () => {
@@ -827,7 +845,7 @@ describe("MediaToolbar", () => {
 
 	describe("scale", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+			setupMockClip(mockEdit, "video");
 		});
 
 		it("scale slider calls updateClip", () => {
@@ -850,7 +868,7 @@ describe("MediaToolbar", () => {
 
 	describe("volume", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+			setupMockClip(mockEdit, "video");
 		});
 
 		it("volume slider calls updateClip", () => {
@@ -891,7 +909,7 @@ describe("MediaToolbar", () => {
 
 	describe("composite panels (regression)", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("video"));
+			setupMockClip(mockEdit, "video");
 		});
 
 		it("TransitionPanel renders content inside existing popup without wrapper class conflict", () => {
@@ -965,7 +983,7 @@ describe("RichTextToolbar", () => {
 
 	describe("text editing", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text"));
+			setupMockClip(mockEdit, "rich-text");
 		});
 
 		it("text area exists after mount", () => {
@@ -979,7 +997,7 @@ describe("RichTextToolbar", () => {
 
 	describe("font selection", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text"));
+			setupMockClip(mockEdit, "rich-text");
 		});
 
 		it("font popup displays fonts after toggle", () => {
@@ -997,7 +1015,7 @@ describe("RichTextToolbar", () => {
 
 	describe("font size", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontSize: 48 }));
+			setupMockClip(mockEdit, "rich-text", { fontSize: 48 });
 		});
 
 		it("size input displays current size", () => {
@@ -1049,7 +1067,7 @@ describe("RichTextToolbar", () => {
 
 	describe("font weight dropdown", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: 400 }));
+			setupMockClip(mockEdit, "rich-text", { fontWeight: 400 });
 		});
 
 		it("should render weight dropdown with current weight name", () => {
@@ -1062,7 +1080,7 @@ describe("RichTextToolbar", () => {
 
 		it("should display weight name for different weights", () => {
 			// Test with Bold weight (700)
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: 700 }));
+			setupMockClip(mockEdit, "rich-text", { fontWeight: 700 });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -1124,7 +1142,7 @@ describe("RichTextToolbar", () => {
 		});
 
 		it("should show checkmark on current weight", () => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: 500 }));
+			setupMockClip(mockEdit, "rich-text", { fontWeight: 500 });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -1143,7 +1161,7 @@ describe("RichTextToolbar", () => {
 
 		it("should handle string weight values from clip", () => {
 			// Some clips may have weight as string "700" instead of number
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("rich-text", { fontWeight: "700" }));
+			setupMockClip(mockEdit, "rich-text", { fontWeight: "700" });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -1217,7 +1235,7 @@ describe("TextToolbar", () => {
 
 	describe("text editing", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("text"));
+			setupMockClip(mockEdit, "text");
 		});
 
 		it("text area exists after mount", () => {
@@ -1231,7 +1249,7 @@ describe("TextToolbar", () => {
 
 	describe("font selection", () => {
 		beforeEach(() => {
-			mockEdit.getPlayerClip.mockReturnValue(createMockClip("text"));
+			setupMockClip(mockEdit, "text");
 		});
 
 		it("clicking font updates fontFamily in clip", () => {
@@ -1499,7 +1517,7 @@ describe("ClipToolbar Timing (Regression)", () => {
 	 * Bug: ClipToolbar was reading from clipConfiguration (resolved values)
 	 * which showed numeric values instead of "auto"/"end" modes.
 	 *
-	 * Fix: Use player.getTimingIntent() to preserve "auto"/"end" display.
+	 * Fix: Use edit.getDocumentClip() to preserve "auto"/"end" display from document.
 	 */
 	describe("timing intent display", () => {
 		it("displays 'end' mode when length intent is 'end'", async () => {
@@ -1508,22 +1526,23 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const toolbar = new ClipToolbar(mockEdit as never);
 			const container = createTestContainer();
 
-			// Create player that returns "end" as length intent
+			// Document stores "end" as length intent
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 0, // Seconds value
+				length: "end" // Intent preserved as "end" in document
+			});
+
+			// Player is still needed for selection
 			const mockPlayer = {
-				clipConfiguration: { start: 0, length: 10 }, // resolved value is 10 seconds
-				getTimingIntent: jest.fn(() => ({
-					start: 0, // Seconds value
-					length: "end" // Intent preserved as "end"
-				})),
-				getMergeFieldBinding: jest.fn(() => null)
+				clipConfiguration: { start: 0, length: 10 } // resolved value is 10 seconds
 			};
 			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
 
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
-			// Verify getTimingIntent was called instead of reading clipConfiguration directly
-			expect(mockPlayer.getTimingIntent).toHaveBeenCalled();
+			// Verify getDocumentClip was called (document-first pattern)
+			expect(mockEdit.getDocumentClip).toHaveBeenCalledWith(0, 0);
 
 			toolbar.dispose();
 			cleanupTestContainer(container);
@@ -1535,22 +1554,23 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const toolbar = new ClipToolbar(mockEdit as never);
 			const container = createTestContainer();
 
-			// Create player that returns "auto" as start intent
+			// Document stores "auto" as start intent
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: "auto", // Intent preserved as "auto" in document
+				length: 3 // Seconds value
+			});
+
+			// Player is still needed for selection
 			const mockPlayer = {
-				clipConfiguration: { start: 5, length: 3 }, // resolved value is 5 seconds
-				getTimingIntent: jest.fn(() => ({
-					start: "auto", // Intent preserved as "auto"
-					length: 3 // Seconds value
-				})),
-				getMergeFieldBinding: jest.fn(() => null)
+				clipConfiguration: { start: 5, length: 3 } // resolved value is 5 seconds
 			};
 			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
 
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
-			// Verify getTimingIntent was called
-			expect(mockPlayer.getTimingIntent).toHaveBeenCalled();
+			// Verify getDocumentClip was called (document-first pattern)
+			expect(mockEdit.getDocumentClip).toHaveBeenCalledWith(0, 0);
 
 			toolbar.dispose();
 			cleanupTestContainer(container);
@@ -1563,7 +1583,7 @@ describe("ClipToolbar Timing (Regression)", () => {
 	 * Bug: ClipToolbar was multiplying by 1000 directly instead of using
 	 * the branded type helper toMs().
 	 *
-	 * Fix: Use toMs(intent.start) for proper Seconds→Milliseconds conversion.
+	 * Fix: Use toMs(sec(value)) for proper Seconds→Milliseconds conversion.
 	 */
 	describe("branded type conversion", () => {
 		it("converts numeric start from Seconds to Milliseconds using toMs()", async () => {
@@ -1572,14 +1592,15 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const toolbar = new ClipToolbar(mockEdit as never);
 			const container = createTestContainer();
 
-			// Create player with numeric timing values (in Seconds)
+			// Document stores numeric timing values (in Seconds)
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 2.5, // 2.5 Seconds
+				length: 3 // 3 Seconds
+			});
+
+			// Player is still needed for selection
 			const mockPlayer = {
-				clipConfiguration: { start: 2.5, length: 3 },
-				getTimingIntent: jest.fn(() => ({
-					start: 2.5, // 2.5 Seconds
-					length: 3 // 3 Seconds
-				})),
-				getMergeFieldBinding: jest.fn(() => null)
+				clipConfiguration: { start: 2.5, length: 3 }
 			};
 			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
 
@@ -1601,14 +1622,15 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const toolbar = new ClipToolbar(mockEdit as never);
 			const container = createTestContainer();
 
-			// Create player with numeric timing values (in Seconds)
+			// Document stores numeric timing values (in Seconds)
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 0, // 0 Seconds
+				length: 5.5 // 5.5 Seconds
+			});
+
+			// Player is still needed for selection
 			const mockPlayer = {
-				clipConfiguration: { start: 0, length: 5.5 },
-				getTimingIntent: jest.fn(() => ({
-					start: 0, // 0 Seconds
-					length: 5.5 // 5.5 Seconds
-				})),
-				getMergeFieldBinding: jest.fn(() => null)
+				clipConfiguration: { start: 0, length: 5.5 }
 			};
 			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
 
@@ -1656,14 +1678,15 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const toolbar = new ClipToolbar(mockEdit as never);
 			const container = createTestContainer();
 
-			// Initial timing values
+			// Initial timing values from document
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 1,
+				length: 2
+			});
+
+			// Player is still needed for selection
 			const mockPlayer = {
-				clipConfiguration: { start: 1, length: 2 },
-				getTimingIntent: jest.fn(() => ({
-					start: 1,
-					length: 2
-				})),
-				getMergeFieldBinding: jest.fn(() => null)
+				clipConfiguration: { start: 1, length: 2 }
 			};
 			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
 
@@ -1674,8 +1697,8 @@ describe("ClipToolbar Timing (Regression)", () => {
 			const startInput = container.querySelector("[data-start-mount] .ss-timing-value") as HTMLInputElement;
 			expect(startInput?.value).toBe("1.0s");
 
-			// Simulate external timing change (e.g., resize in timeline)
-			mockPlayer.getTimingIntent.mockReturnValue({
+			// Simulate external timing change (e.g., resize in timeline) - update document mock
+			mockEdit.getDocumentClip.mockReturnValue({
 				start: 3, // Changed from 1 to 3
 				length: 2
 			});

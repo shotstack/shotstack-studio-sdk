@@ -913,11 +913,9 @@ export class RichTextToolbar extends BaseToolbar {
 			if (clipId && document) {
 				document.setClipBinding(clipId, "asset.text", binding);
 			}
-		} else {
+		} else if (clipId && document) {
 			// Document binding (source of truth)
-			if (clipId && document) {
-				document.removeClipBinding(clipId, "asset.text");
-			}
+			document.removeClipBinding(clipId, "asset.text");
 		}
 
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {

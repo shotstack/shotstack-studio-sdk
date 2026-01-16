@@ -272,8 +272,11 @@ describe("MediaThumbnailRenderer", () => {
 			// Clear cache
 			renderer.clearCache();
 
-			// Second render - should regenerate (cache cleared)
-			renderer.render(clip, element);
+			// Second render with NEW element - should regenerate (cache cleared)
+			// Note: We use a new element because the renderer tracks per-element application
+			// separately from the content cache (to avoid redundant DOM updates)
+			const newElement = createMockElement();
+			renderer.render(clip, newElement);
 			await delay(50);
 
 			expect((generator.generateThumbnail as jest.Mock).mock.calls.length).toBeGreaterThan(callsAfterFirst);

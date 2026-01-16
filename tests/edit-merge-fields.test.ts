@@ -205,29 +205,6 @@ const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: Playe
 	return mockPlayer;
 };
 
-// Helper to get/set nested values for mock player
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-	const keys = path.split(".");
-	let current: unknown = obj;
-	for (let i = 0; i < keys.length; i += 1) {
-		if (current === null || current === undefined) return undefined;
-		current = (current as Record<string, unknown>)[keys[i]];
-	}
-	return current;
-}
-
-function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
-	const keys = path.split(".");
-	let current = obj;
-	for (let i = 0; i < keys.length - 1; i += 1) {
-		if (!(keys[i] in current)) {
-			current[keys[i]] = {};
-		}
-		current = current[keys[i]] as Record<string, unknown>;
-	}
-	current[keys[keys.length - 1]] = value;
-}
-
 // Mock all player types
 jest.mock("@canvas/players/video-player", () => ({
 	VideoPlayer: jest.fn().mockImplementation((edit, config) => createMockPlayer(edit, config, PlayerType.Video))
