@@ -2960,6 +2960,8 @@ export class Edit extends Entity {
 	 * Call once after loadEdit() completes.
 	 */
 	public normalizeLumaAttachments(): void {
+		let needsResolve = false;
+
 		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
 			const track = this.tracks[trackIdx];
 
@@ -2968,22 +2970,20 @@ export class Edit extends Entity {
 					// Find best content match (by overlap, not exact timing)
 					const contentPlayer = this.findBestContentMatch(trackIdx, player);
 					if (contentPlayer) {
-						// Force luma timing to match content
-						player.setResolvedTiming({
-							start: contentPlayer.getStart(),
-							length: contentPlayer.getLength()
-						});
-						player.reconfigureAfterRestore();
-
-						// Update document to match
 						const lumaIdx = track.indexOf(player);
 						this.document.updateClip(trackIdx, lumaIdx, {
 							start: contentPlayer.getStart(),
 							length: contentPlayer.getLength()
 						});
+						needsResolve = true;
 					}
 				}
 			}
+		}
+
+		// Single resolve at end → Reconciler syncs all players
+		if (needsResolve) {
+			this.resolve();
 		}
 	}
 
