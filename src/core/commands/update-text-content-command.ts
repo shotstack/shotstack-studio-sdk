@@ -39,7 +39,7 @@ export class UpdateTextContentCommand implements EditCommand {
 		// Store for undo
 		this.clipId = player.clipId;
 		this.previousClipConfig = structuredClone(player.clipConfiguration);
-		const asset = player.clipConfiguration.asset;
+		const { asset } = player.clipConfiguration;
 		this.previousText = asset && "text" in asset ? ((asset as TextAsset).text ?? "") : "";
 
 		// Get current clip from document

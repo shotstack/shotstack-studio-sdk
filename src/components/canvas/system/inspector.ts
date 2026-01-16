@@ -189,9 +189,8 @@ export class Inspector {
 		const fps = frameStats.avgFrameTime > 0 ? Math.round(1000 / frameStats.avgFrameTime) : 0;
 
 		// Get playback data from Edit
-		const playbackTime = this.edit.playbackTime;
+		const { playbackTime, isPlaying } = this.edit;
 		const duration = this.edit.totalDuration;
-		const isPlaying = this.edit.isPlaying;
 
 		// Count clips
 		const tracks = this.edit.getTracks();
@@ -200,7 +199,8 @@ export class Inspector {
 
 		// Update cached elements with textContent (no DOM tree recreation)
 		if (this.fpsEl) this.fpsEl.textContent = String(fps);
-		if (this.playbackEl) this.playbackEl.textContent = `${isPlaying ? "▶" : "⏸"} ${(playbackTime / 1000).toFixed(1)}s / ${(duration / 1000).toFixed(1)}s`;
+		if (this.playbackEl)
+			this.playbackEl.textContent = `${isPlaying ? "▶" : "⏸"} ${(playbackTime / 1000).toFixed(1)}s / ${(duration / 1000).toFixed(1)}s`;
 		if (this.frameStatsEl) this.frameStatsEl.textContent = `Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms`;
 		if (this.frameSparklineEl) this.frameSparklineEl.textContent = frameSparkline;
 		if (this.jankEl) this.jankEl.textContent = String(frameStats.jankCount);

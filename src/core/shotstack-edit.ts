@@ -459,7 +459,7 @@ export class ShotstackEdit extends Edit {
 	private updateMergeFieldBindings(player: ReturnType<typeof this.getPlayerClip>, fieldName: string, _newValue: string): void {
 		if (!player) return;
 
-		const clipId = player.clipId;
+		const { clipId } = player;
 		if (!clipId) return;
 
 		const document = this.getDocument();

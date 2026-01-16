@@ -30,14 +30,10 @@ function createEditWithEndLength(): Edit {
 		timeline: {
 			tracks: [
 				{
-					clips: [
-						{ asset: { type: "image", src: "https://example.com/1.jpg" }, start: 0, length: 5 }
-					]
+					clips: [{ asset: { type: "image", src: "https://example.com/1.jpg" }, start: 0, length: 5 }]
 				},
 				{
-					clips: [
-						{ asset: { type: "image", src: "https://example.com/bg.jpg" }, start: 0, length: "end" }
-					]
+					clips: [{ asset: { type: "image", src: "https://example.com/bg.jpg" }, start: 0, length: "end" }]
 				}
 			]
 		},
@@ -77,7 +73,7 @@ describe("Resolver", () => {
 
 			const resolved = resolve(doc, { mergeFields });
 
-			const clips = resolved.timeline.tracks[0].clips;
+			const { clips } = resolved.timeline.tracks[0];
 			expect(clips[0].start).toBe(0);
 			expect(clips[1].start).toBe(2); // After first clip (0 + 2)
 			expect(clips[2].start).toBe(5); // After second clip (2 + 3)
@@ -140,12 +136,8 @@ describe("Resolver", () => {
 			const resolved2 = resolve(doc, { mergeFields });
 
 			// Structure should be identical (excluding dynamically generated IDs which are stable)
-			expect(resolved1.timeline.tracks[0].clips.map(c => c.start)).toEqual(
-				resolved2.timeline.tracks[0].clips.map(c => c.start)
-			);
-			expect(resolved1.timeline.tracks[0].clips.map(c => c.length)).toEqual(
-				resolved2.timeline.tracks[0].clips.map(c => c.length)
-			);
+			expect(resolved1.timeline.tracks[0].clips.map(c => c.start)).toEqual(resolved2.timeline.tracks[0].clips.map(c => c.start));
+			expect(resolved1.timeline.tracks[0].clips.map(c => c.length)).toEqual(resolved2.timeline.tracks[0].clips.map(c => c.length));
 		});
 
 		it("does not mutate the source document", () => {

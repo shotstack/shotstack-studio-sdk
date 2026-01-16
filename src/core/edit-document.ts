@@ -6,10 +6,6 @@
  * structure.
  *
  * The document is the source of truth that serializes to the Shotstack Edit API.
- *
- * Key distinction:
- * - Edit (this class) = raw user input with "auto", "end", {{ placeholders }}
- * - ResolvedEdit = concrete values (ms timing, substituted text)
  */
 
 import type { Size } from "@layouts/geometry";
@@ -19,21 +15,13 @@ import { setNestedValue } from "./shared/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Internal clip type with stable ID for reconciliation */
 type InternalClip = Clip & { id?: string };
 
-/**
- * Binding between a clip property and a merge field placeholder.
- * Stored by clip ID and property path for document-based management.
- */
 export interface MergeFieldBinding {
-	/** The original placeholder string, e.g., "{{ HERO_IMAGE }}" */
 	placeholder: string;
-	/** The resolved value at binding time, used for change detection */
 	resolvedValue: string;
 }
 
-/** Result from ID-based clip lookup */
 export interface ClipLookupResult {
 	clip: Clip;
 	trackIndex: number;
@@ -50,8 +38,7 @@ export class EditDocument {
 	private data: Edit;
 
 	/**
-	 * Merge field bindings stored by clip ID → property path → binding.
-	 * This is the source of truth for merge field state.
+	 * Merge field bindings
 	 */
 	private clipBindings: Map<string, Map<string, MergeFieldBinding>> = new Map();
 
@@ -61,8 +48,7 @@ export class EditDocument {
 	}
 
 	/**
-	 * Hydrate clips with stable UUIDs for reconciliation.
-	 * IDs are stripped on export via toJSON().
+	 * Hydrate clips
 	 */
 	private hydrateIds(): void {
 		for (const track of this.data.timeline.tracks) {
@@ -349,12 +335,7 @@ export class EditDocument {
 	 * Move a clip to a different track and/or position, preserving its ID.
 	 * @returns The moved clip, or null if source clip not found
 	 */
-	moveClip(
-		fromTrackIndex: number,
-		fromClipIndex: number,
-		toTrackIndex: number,
-		updates?: Partial<Clip>
-	): Clip | null {
+	moveClip(fromTrackIndex: number, fromClipIndex: number, toTrackIndex: number, updates?: Partial<Clip>): Clip | null {
 		// Get the source track and clip
 		const fromTrack = this.data.timeline.tracks[fromTrackIndex];
 		if (!fromTrack || fromClipIndex < 0 || fromClipIndex >= fromTrack.clips.length) {
@@ -598,10 +579,7 @@ export class EditDocument {
 	// ─── Serialization ────────────────────────────────────────────────────────
 
 	/**
-	 * Export the document as raw Edit JSON (preserves "auto", "end", placeholders)
-	 * This is what gets sent to the backend API.
-	 * Internal IDs are stripped - they are not part of the Shotstack API spec.
-	 * Merge field placeholders are restored from document bindings.
+	 * Export the document as raw Edit JSON (preserves "auto", "end", merge fields, aliases)
 	 */
 	toJSON(): Edit {
 		const result = structuredClone(this.data);

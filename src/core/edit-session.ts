@@ -938,7 +938,7 @@ export class Edit extends Entity {
 		if (!clip) return undefined;
 
 		// Restore merge field placeholders from document bindings
-		const clipId = player.clipId;
+		const { clipId } = player;
 		if (clipId && this.document) {
 			const bindings = this.document.getClipBindings(clipId);
 			if (bindings) {
@@ -1349,14 +1349,14 @@ export class Edit extends Entity {
 	 * @internal
 	 */
 	public commitClipUpdate(clipId: string, initialConfig: ResolvedClip): void {
-		const player = this.getPlayerByClipId(clipId);
-		if (!player) return;
-
 		const location = this.document.getClipById(clipId);
 		if (!location) return;
 
+		const finalConfig = this.getResolvedClip(location.trackIndex, location.clipIndex);
+		if (!finalConfig) return;
+
 		// Create command for undo (uses current state as "final")
-		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(player.clipConfiguration), {
+		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(finalConfig), {
 			trackIndex: location.trackIndex,
 			clipIndex: location.clipIndex
 		});
@@ -1906,15 +1906,11 @@ export class Edit extends Entity {
 			setClipBinding: (clipId, path, binding) => {
 				this.document?.setClipBinding(clipId, path, binding);
 			},
-			getClipBinding: (clipId, path) => {
-				return this.document?.getClipBinding(clipId, path);
-			},
+			getClipBinding: (clipId, path) => this.document?.getClipBinding(clipId, path),
 			removeClipBinding: (clipId, path) => {
 				this.document?.removeClipBinding(clipId, path);
 			},
-			getClipBindings: clipId => {
-				return this.document?.getClipBindings(clipId);
-			}
+			getClipBindings: clipId => this.document?.getClipBindings(clipId)
 		};
 	}
 
@@ -2337,11 +2333,14 @@ export class Edit extends Entity {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
 		if (player) {
 			this.selectedClip = player;
-			this.events.emit(EditEvent.ClipSelected, {
-				clip: player.clipConfiguration,
-				trackIndex,
-				clipIndex
-			});
+			const clip = this.getResolvedClip(trackIndex, clipIndex);
+			if (clip) {
+				this.events.emit(EditEvent.ClipSelected, {
+					clip,
+					trackIndex,
+					clipIndex
+				});
+			}
 		}
 	}
 
@@ -2374,11 +2373,11 @@ export class Edit extends Entity {
 	 * Copy a clip to the internal clipboard
 	 */
 	public copyClip(trackIdx: number, clipIdx: number): void {
-		const player = this.getClipAt(trackIdx, clipIdx);
-		if (player) {
+		const clip = this.getResolvedClip(trackIdx, clipIdx);
+		if (clip) {
 			this.copiedClip = {
 				trackIndex: trackIdx,
-				clipConfiguration: structuredClone(player.clipConfiguration)
+				clipConfiguration: structuredClone(clip)
 			};
 			this.events.emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
 		}
@@ -2479,8 +2478,12 @@ export class Edit extends Entity {
 		const info = this.getSelectedClipInfo();
 		if (!info) return;
 
-		const { player } = info;
-		const initialConfig = structuredClone(player.clipConfiguration);
+		const { player, trackIndex, clipIndex } = info;
+
+		const resolvedClip = this.getResolvedClip(trackIndex, clipIndex);
+		if (!resolvedClip) return;
+
+		const initialConfig = structuredClone(resolvedClip);
 
 		// Calculate new offset (pure function, no player mutation)
 		const newOffset = player.calculateMoveOffset(deltaX, deltaY);
@@ -2852,7 +2855,7 @@ export class Edit extends Entity {
 		if (!clip) return null;
 
 		// Restore merge field placeholders from document bindings
-		const clipId = player.clipId;
+		const { clipId } = player;
 		if (clipId && this.document) {
 			const bindings = this.document.getClipBindings(clipId);
 			if (bindings) {
@@ -2918,8 +2921,11 @@ export class Edit extends Entity {
 			await this.detachLumaFromClip(trackIndex, clipIndex);
 		}
 
+		// Read timing from document (source of truth), not player's copy
+		const contentConfig = this.getResolvedClip(trackIndex, clipIndex);
+		if (!contentConfig) return;
+
 		// Create luma clip config with synced timing
-		const contentConfig = contentPlayer.clipConfiguration;
 		const lumaClip: ResolvedClip = {
 			asset: {
 				type: "luma",
@@ -2933,9 +2939,9 @@ export class Edit extends Entity {
 		// Add the luma clip to the same track
 		await this.addClip(trackIndex, lumaClip);
 
-		// Find the newly added luma player
+		// Find the newly added luma player by timing match
 		const track = this.tracks[trackIndex];
-		const lumaPlayer = track.find(p => p.playerType === PlayerType.Luma && p.clipConfiguration.start === contentConfig.start);
+		const lumaPlayer = track.find(p => p.playerType === PlayerType.Luma && p.getStart() === contentConfig.start);
 
 		if (lumaPlayer) {
 			// Emit event (attachment is implicit via timing match)
@@ -2986,7 +2992,9 @@ export class Edit extends Entity {
 		const lumaIndices = this.findClipIndices(lumaPlayer);
 		if (!lumaIndices) return null;
 
-		const lumaSrc = (lumaPlayer.clipConfiguration.asset as { src?: string })?.src;
+		// Read from document (source of truth), not player's copy
+		const lumaClip = this.getResolvedClip(lumaIndices.trackIndex, lumaIndices.clipIndex);
+		const lumaSrc = (lumaClip?.asset as { src?: string })?.src;
 		if (!lumaSrc) return null;
 
 		return { src: lumaSrc, clipIndex: lumaIndices.clipIndex };
@@ -3106,10 +3114,11 @@ export class Edit extends Entity {
 	 * @param clipIndex - Clip index of the clip
 	 */
 	public transformToLuma(trackIndex: number, clipIndex: number): void {
-		const player = this.getClipAt(trackIndex, clipIndex);
-		if (!player?.clipConfiguration?.asset) return;
+		// Read from document (source of truth), not player's copy
+		const clip = this.getResolvedClip(trackIndex, clipIndex);
+		if (!clip?.asset) return;
 
-		const asset = player.clipConfiguration.asset as { type?: string; src?: string };
+		const asset = clip.asset as { type?: string; src?: string };
 		const originalType = asset.type as "image" | "video" | undefined;
 		const { src } = asset;
 
@@ -3130,10 +3139,10 @@ export class Edit extends Entity {
 	 * @param clipIndex - Clip index of the luma clip
 	 */
 	public transformFromLuma(trackIndex: number, clipIndex: number): void {
-		const player = this.getClipAt(trackIndex, clipIndex);
-		if (!player?.clipConfiguration?.asset) return;
+		const clip = this.getResolvedClip(trackIndex, clipIndex);
+		if (!clip?.asset) return;
 
-		const { src } = player.clipConfiguration.asset as { src?: string };
+		const { src } = clip.asset as { src?: string };
 		if (!src) return;
 
 		// Use stored original type if available (most reliable)
