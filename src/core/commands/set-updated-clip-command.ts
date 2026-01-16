@@ -62,7 +62,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		// Use provided indices or calculate from player
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
-		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : context.getTracks()[trackIndex]?.indexOf(player) ?? -1;
+		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : (context.getTracks()[trackIndex]?.indexOf(player) ?? -1);
 
 		// Update document with full configuration (all clip properties, not just timing/asset)
 		if (this.storedFinalConfig) {
@@ -108,9 +108,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 		if (!doc) throw new Error("SetUpdatedClipCommand.undo: document is required");
 
 		// Get player by ID or indices
-		const player = this.clipId
-			? context.getPlayerByClipId(this.clipId)
-			: context.getClipAt(this.trackIndex, this.clipIndex);
+		const player = this.clipId ? context.getPlayerByClipId(this.clipId) : context.getClipAt(this.trackIndex, this.clipIndex);
 
 		if (!player) return;
 
@@ -118,7 +116,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		// Use provided indices or calculate from player
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
-		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : context.getTracks()[trackIndex]?.indexOf(player) ?? -1;
+		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : (context.getTracks()[trackIndex]?.indexOf(player) ?? -1);
 
 		// Update document with full initial configuration (all clip properties)
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars -- id is internal, don't update it

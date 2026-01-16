@@ -142,11 +142,7 @@ export class PlayerReconciler {
 	 * @param trackIndex - The track index (for track change detection)
 	 * @returns true if changes were made, false if no changes, 'recreate' if asset type changed
 	 */
-	public updateSinglePlayer(
-		player: Player,
-		resolvedClip: ResolvedClip,
-		trackIndex: number
-	): boolean | "recreate" {
+	public updateSinglePlayer(player: Player, resolvedClip: ResolvedClip, trackIndex: number): boolean | "recreate" {
 		const result = this.updatePlayer(player, resolvedClip, trackIndex);
 
 		// Handle asset type change (rare case - requires full recreation)
@@ -180,11 +176,14 @@ export class PlayerReconciler {
 		this.edit.addPlayerToContainer(trackIndex, player);
 
 		// Load asynchronously (non-blocking)
-		player.load().then(() => {
-			player.draw();
-		}).catch(error => {
-			console.error(`Failed to load player for clip ${clipId}:`, error);
-		});
+		player
+			.load()
+			.then(() => {
+				player.draw();
+			})
+			.catch(error => {
+				console.error(`Failed to load player for clip ${clipId}:`, error);
+			});
 	}
 
 	/**
@@ -308,12 +307,15 @@ export class PlayerReconciler {
 
 		// If src changed, trigger async reload
 		if (oldSrc !== newSrc && player.reloadAsset) {
-			player.reloadAsset().then(() => {
-				player.reconfigureAfterRestore();
-				player.draw();
-			}).catch(error => {
-				console.error("Failed to reload asset:", error);
-			});
+			player
+				.reloadAsset()
+				.then(() => {
+					player.reconfigureAfterRestore();
+					player.draw();
+				})
+				.catch(error => {
+					console.error("Failed to reload asset:", error);
+				});
 		} else {
 			player.reconfigureAfterRestore();
 		}

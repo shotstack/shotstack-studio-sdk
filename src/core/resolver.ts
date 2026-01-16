@@ -56,11 +56,7 @@ function substituteMergeFieldsInAsset(asset: Asset, mergeFields: MergeFieldServi
 	return cloned;
 }
 
-function resolveClipFirstPass(
-	clip: InternalClip,
-	previousClipEnd: Seconds,
-	context: ResolveContext
-): PartialResolvedClip {
+function resolveClipFirstPass(clip: InternalClip, previousClipEnd: Seconds, context: ResolveContext): PartialResolvedClip {
 	// Resolve start
 	const start: Seconds = clip.start === "auto" ? previousClipEnd : sec(clip.start as number);
 
@@ -162,11 +158,7 @@ export interface SingleClipContext extends ResolveContext {
  * @param context - Resolution context with cached values for efficiency
  * @returns Resolved clip with location, or null if clip not found
  */
-export function resolveClip(
-	document: EditDocument,
-	clipId: string,
-	context: SingleClipContext
-): ResolveClipResult | null {
+export function resolveClip(document: EditDocument, clipId: string, context: SingleClipContext): ResolveClipResult | null {
 	// 1. Locate clip in document
 	const lookup = document.getClipById(clipId);
 	if (!lookup) {
@@ -177,11 +169,7 @@ export function resolveClip(
 	const internalClip = clip as InternalClip;
 
 	// 2. Resolve the single clip using first-pass logic
-	const resolvedClip = resolveClipFirstPass(
-		internalClip,
-		context.previousClipEnd,
-		context
-	);
+	const resolvedClip = resolveClipFirstPass(internalClip, context.previousClipEnd, context);
 
 	// 3. Handle "end" length (second pass for this single clip)
 	if (resolvedClip.pendingEndLength && context.cachedTimelineEnd !== undefined) {

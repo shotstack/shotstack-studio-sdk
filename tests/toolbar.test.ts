@@ -277,11 +277,7 @@ function simulateChange(element: HTMLInputElement | null, value: string | number
 
 // Helper to set up both getPlayerClip and getResolvedClip mocks consistently
 // Since the document-first refactor, toolbars read from getResolvedClip instead of player
-function setupMockClip(
-	mockEdit: ReturnType<typeof createMockEdit>,
-	assetType: string,
-	overrides: Record<string, unknown> = {}
-): MockPlayer {
+function setupMockClip(mockEdit: ReturnType<typeof createMockEdit>, assetType: string, overrides: Record<string, unknown> = {}): MockPlayer {
 	const mockPlayer = createMockClip(assetType, overrides);
 	mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
 	mockEdit.getResolvedClip.mockReturnValue(mockPlayer.clipConfiguration as never);
