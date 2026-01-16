@@ -21,6 +21,16 @@ export class Inspector {
 	private lastFrameTime = 0;
 	private edit: Edit;
 
+	// Cached DOM elements for efficient updates (avoid innerHTML every frame)
+	private fpsEl: HTMLElement | null = null;
+	private playbackEl: HTMLElement | null = null;
+	private frameStatsEl: HTMLElement | null = null;
+	private frameSparklineEl: HTMLElement | null = null;
+	private jankEl: HTMLElement | null = null;
+	private heapEl: HTMLElement | null = null;
+	private heapSparklineEl: HTMLElement | null = null;
+	private clipsEl: HTMLElement | null = null;
+
 	// History tracking
 	private historySamples: MemorySnapshot[] = [];
 	private readonly maxSamples = 20;
@@ -59,6 +69,30 @@ export class Inspector {
 			backdrop-filter: blur(4px);
 			border: 1px solid rgba(255, 255, 255, 0.1);
 		`;
+
+		// Build structure once (innerHTML only at mount, not every frame)
+		this.container.innerHTML = `
+			<div style="color: #4ade80; font-weight: 600;">FPS: <span data-fps></span></div>
+			<div style="opacity: 0.7;"><span data-playback></span></div>
+			<div style="opacity: 0.7;"><span data-frame-stats></span> <span style="letter-spacing: -1px;" data-frame-sparkline></span> Jank: <span data-jank></span></div>
+			<div style="height: 8px;"></div>
+			<div style="color: #f472b6; font-weight: 600;">MEMORY</div>
+			<div style="opacity: 0.7;">JS Heap: <span data-heap></span> <span style="letter-spacing: -1px;" data-heap-sparkline></span></div>
+			<div style="height: 8px;"></div>
+			<div style="color: #a78bfa; font-weight: 600;">SYSTEM</div>
+			<div style="opacity: 0.7;"><span data-clips></span></div>
+		`;
+
+		// Cache element references for efficient per-frame updates
+		this.fpsEl = this.container.querySelector("[data-fps]");
+		this.playbackEl = this.container.querySelector("[data-playback]");
+		this.frameStatsEl = this.container.querySelector("[data-frame-stats]");
+		this.frameSparklineEl = this.container.querySelector("[data-frame-sparkline]");
+		this.jankEl = this.container.querySelector("[data-jank]");
+		this.heapEl = this.container.querySelector("[data-heap]");
+		this.heapSparklineEl = this.container.querySelector("[data-heap-sparkline]");
+		this.clipsEl = this.container.querySelector("[data-clips]");
+
 		parent.appendChild(this.container);
 
 		// Start the update loop
@@ -164,23 +198,15 @@ export class Inspector {
 		const clipCount = tracks.reduce((sum, track) => sum + track.length, 0);
 		const trackCount = tracks.length;
 
-		const lines: string[] = [
-			`<div style="color: #4ade80; font-weight: 600;">FPS: ${fps}</div>`,
-			`<div style="opacity: 0.7;">${isPlaying ? "▶" : "⏸"} ${(playbackTime / 1000).toFixed(1)}s / ${(duration / 1000).toFixed(1)}s</div>`,
-			`<div style="opacity: 0.7;">Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms <span style="letter-spacing: -1px;">${frameSparkline}</span> Jank: ${frameStats.jankCount}</div>`,
-			`<div style="height: 8px;"></div>`
-		];
-
-		// Memory
-		lines.push(`<div style="color: #f472b6; font-weight: 600;">MEMORY</div>`);
-		lines.push(`<div style="opacity: 0.7;">JS Heap: ${jsHeapMB}MB / ${jsLimitMB}MB <span style="letter-spacing: -1px;">${jsSparkline}</span></div>`);
-		lines.push(`<div style="height: 8px;"></div>`);
-
-		// System
-		lines.push(`<div style="color: #a78bfa; font-weight: 600;">SYSTEM</div>`);
-		lines.push(`<div style="opacity: 0.7;">Clips: ${clipCount}  Tracks: ${trackCount}</div>`);
-
-		this.container.innerHTML = lines.join("");
+		// Update cached elements with textContent (no DOM tree recreation)
+		if (this.fpsEl) this.fpsEl.textContent = String(fps);
+		if (this.playbackEl) this.playbackEl.textContent = `${isPlaying ? "▶" : "⏸"} ${(playbackTime / 1000).toFixed(1)}s / ${(duration / 1000).toFixed(1)}s`;
+		if (this.frameStatsEl) this.frameStatsEl.textContent = `Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms`;
+		if (this.frameSparklineEl) this.frameSparklineEl.textContent = frameSparkline;
+		if (this.jankEl) this.jankEl.textContent = String(frameStats.jankCount);
+		if (this.heapEl) this.heapEl.textContent = `${jsHeapMB}MB / ${jsLimitMB}MB`;
+		if (this.heapSparklineEl) this.heapSparklineEl.textContent = jsSparkline;
+		if (this.clipsEl) this.clipsEl.textContent = `Clips: ${clipCount}  Tracks: ${trackCount}`;
 	}
 
 	private getMemoryInfo(): MemoryInfo {
