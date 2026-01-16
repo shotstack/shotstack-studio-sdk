@@ -32,6 +32,11 @@ export class ClipComponent {
 	private currentError: { error: string; assetType: string } | null = null;
 	private needsUpdate = true;
 
+	// Cached element references (avoid querySelector every frame)
+	private iconEl: HTMLElement | null = null;
+	private labelEl: HTMLElement | null = null;
+	private badgeEl: HTMLElement | null = null;
+
 	constructor(clip: ClipState, options: ClipComponentOptions) {
 		this.element = document.createElement("div");
 		this.element.className = "ss-clip";
@@ -46,22 +51,23 @@ export class ClipComponent {
 		const content = document.createElement("div");
 		content.className = "ss-clip-content";
 
-		// Icon for asset type
-		const icon = document.createElement("span");
-		icon.className = "ss-clip-icon";
-		content.appendChild(icon);
+		// Icon for asset type (cache reference)
+		this.iconEl = document.createElement("span");
+		this.iconEl.className = "ss-clip-icon";
+		content.appendChild(this.iconEl);
 
-		const label = document.createElement("span");
-		label.className = "ss-clip-label";
-		content.appendChild(label);
+		// Label (cache reference)
+		this.labelEl = document.createElement("span");
+		this.labelEl.className = "ss-clip-label";
+		content.appendChild(this.labelEl);
 
 		this.element.appendChild(content);
 
-		// Timing badge
+		// Timing badge (cache reference)
 		if (this.options.showBadges) {
-			const badge = document.createElement("div");
-			badge.className = "ss-clip-badge";
-			this.element.appendChild(badge);
+			this.badgeEl = document.createElement("div");
+			this.badgeEl.className = "ss-clip-badge";
+			this.element.appendChild(this.badgeEl);
 		}
 
 		// Resize handles
@@ -119,24 +125,19 @@ export class ClipComponent {
 		this.element.classList.toggle("dragging", clip.visualState === "dragging");
 		this.element.classList.toggle("resizing", clip.visualState === "resizing");
 
-		// Update icon
-		const icon = this.element.querySelector(".ss-clip-icon") as HTMLElement;
-		if (icon) {
-			icon.textContent = this.getAssetIcon(assetType);
+		// Update icon (using cached reference)
+		if (this.iconEl) {
+			this.iconEl.textContent = this.getAssetIcon(assetType);
 		}
 
-		// Update label
-		const label = this.element.querySelector(".ss-clip-label") as HTMLElement;
-		if (label) {
-			label.textContent = this.getClipLabel(config);
+		// Update label (using cached reference)
+		if (this.labelEl) {
+			this.labelEl.textContent = this.getClipLabel(config);
 		}
 
-		// Update timing badge
-		if (this.options.showBadges) {
-			const badge = this.element.querySelector(".ss-clip-badge") as HTMLElement;
-			if (badge) {
-				this.updateBadge(badge, clip.timingIntent);
-			}
+		// Update timing badge (using cached reference)
+		if (this.badgeEl) {
+			this.updateBadge(this.badgeEl, clip.timingIntent);
 		}
 
 		// Update mask badge (show if clip has attached luma)
