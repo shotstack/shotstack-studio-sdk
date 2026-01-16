@@ -385,10 +385,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			this.selectedClipId &&
 			this.initialClipConfiguration
 		) {
-			// Resolve once at end to ensure document/player consistency
-			this.edit.resolve();
-
-			// Create undo entry (state already correct from optimistic updates + resolve)
+			// Create undo entry (document already in sync via per-frame resolveClip)
 			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration);
 		}
 
@@ -449,18 +446,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
 		const updatedRelative = this.positionBuilder.absoluteToRelative(size, position, snapResult.position);
 
-		// Optimistic: Update player directly for instant visual feedback
-		if (!this.selectedPlayer.clipConfiguration.offset) {
-			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.selectedPlayer.clipConfiguration.offset.x = updatedRelative.x;
-		this.selectedPlayer.clipConfiguration.offset.y = updatedRelative.y;
-		this.selectedPlayer.reconfigureAfterRestore();
-
-		// Sync: Update document (no resolve - too expensive for every frame)
+		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			offset: { x: updatedRelative.x, y: updatedRelative.y }
 		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	private startCornerResize(event: pixi.FederatedPointerEvent, corner: ScaleDirection): void {
@@ -486,23 +476,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const clamped = clampDimensions(result.width, result.height);
 		const rounded = roundDimensions(clamped.width, clamped.height);
 
-		// Optimistic: Update player directly for instant visual feedback
-		this.selectedPlayer.clipConfiguration.width = rounded.width;
-		this.selectedPlayer.clipConfiguration.height = rounded.height;
-		if (!this.selectedPlayer.clipConfiguration.offset) {
-			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.selectedPlayer.clipConfiguration.offset.x = result.offsetX;
-		this.selectedPlayer.clipConfiguration.offset.y = result.offsetY;
-		this.selectedPlayer.reconfigureAfterRestore();
-		this.selectedPlayer.notifyDimensionsChanged();
-
-		// Sync: Update document (no resolve - too expensive for every frame)
+		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			width: rounded.width,
 			height: rounded.height,
 			offset: { x: result.offsetX, y: result.offsetY }
 		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	private startEdgeResize(event: pixi.FederatedPointerEvent, edge: EdgeDirection): void {
@@ -528,23 +508,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const clamped = clampDimensions(result.width, result.height);
 		const rounded = roundDimensions(clamped.width, clamped.height);
 
-		// Optimistic: Update player directly for instant visual feedback
-		this.selectedPlayer.clipConfiguration.width = rounded.width;
-		this.selectedPlayer.clipConfiguration.height = rounded.height;
-		if (!this.selectedPlayer.clipConfiguration.offset) {
-			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.selectedPlayer.clipConfiguration.offset.x = result.offsetX;
-		this.selectedPlayer.clipConfiguration.offset.y = result.offsetY;
-		this.selectedPlayer.reconfigureAfterRestore();
-		this.selectedPlayer.notifyDimensionsChanged();
-
-		// Sync: Update document (no resolve - too expensive for every frame)
+		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			width: rounded.width,
 			height: rounded.height,
 			offset: { x: result.offsetX, y: result.offsetY }
 		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	private startRotation(event: pixi.FederatedPointerEvent, corner: CornerName): void {
@@ -568,21 +538,17 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const rawRotation = this.initialRotation + deltaAngle;
 		const { angle: snappedRotation } = snapRotation(rawRotation);
 
-		// Optimistic: Update player directly for instant visual feedback
+		// Get current transform to preserve other properties (scale, etc.)
 		const currentTransform = this.selectedPlayer.clipConfiguration.transform ?? {};
-		this.selectedPlayer.clipConfiguration.transform = {
-			...currentTransform,
-			rotate: { angle: snappedRotation }
-		};
-		this.selectedPlayer.reconfigureAfterRestore();
 
-		// Sync: Update document (no resolve - too expensive for every frame)
+		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			transform: {
 				...currentTransform,
 				rotate: { angle: snappedRotation }
 			}
 		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -598,18 +564,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			width = config.width;
 			height = config.height;
 		} else {
+			// Use canvas size to preserve visual appearance (clips without explicit dimensions fill the canvas)
 			width = this.edit.size.width;
 			height = this.edit.size.height;
 
-			// Optimistic: Update player directly
-			this.selectedPlayer.clipConfiguration.width = width;
-			this.selectedPlayer.clipConfiguration.height = height;
-
-			// Sync: Update document (no resolve - will resolve on pointer up)
-			this.edit.updateClipInDocument(this.selectedClipId, {
-				width,
-				height
-			});
+			// Document-first: Update document, then resolve
+			this.edit.updateClipInDocument(this.selectedClipId, { width, height });
+			this.edit.resolveClip(this.selectedClipId);
 		}
 
 		const currentOffsetX = config.offset?.x ?? 0;
