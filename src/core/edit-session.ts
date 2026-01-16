@@ -30,7 +30,6 @@ import { SelectionManager, type SelectionContext } from "@core/selection-manager
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type ResolutionContext, type Seconds, sec } from "@core/timing/types";
-import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -97,8 +96,6 @@ export class Edit {
 	public totalDuration: number;
 	/** @internal */
 	public isPlaying: boolean;
-	/** @internal Stored for future reconciliation use */
-	private updatedClip: Player | null;
 	/** @internal */
 	private isExporting: boolean = false;
 
@@ -109,12 +106,8 @@ export class Edit {
 		return this.clips.filter(c => c.getTimingIntent().length === "end");
 	}
 	private isBatchingEvents: boolean = false;
-	// Document sync state
-	private isLoadingEdit: boolean = false;
 	// Playback health tracking
 	private syncCorrectionCount: number = 0;
-	// Toolbar button registry
-	private toolbarButtons: ToolbarButtonConfig[] = [];
 	/** Output settings manager - handles size, fps, format, resolution, etc. */
 	private outputSettings!: OutputSettingsManager;
 	/** Selection manager - handles clip selection and clipboard state. */
@@ -199,7 +192,6 @@ export class Edit {
 		this.playbackTime = 0;
 		this.totalDuration = 0;
 		this.isPlaying = false;
-		this.updatedClip = null;
 
 		// Set up event-driven architecture
 		this.setupIntentListeners();
@@ -254,7 +246,6 @@ export class Edit {
 		);
 
 		// Create players for each clip (skip document sync - document already has clips)
-		this.isLoadingEdit = true;
 		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
 			for (const [clipIdx, clip] of track.clips.entries()) {
 				try {
@@ -289,7 +280,6 @@ export class Edit {
 				}
 			}
 		}
-		this.isLoadingEdit = false;
 
 		// Initialize luma mask relationships
 		this.lumaMaskController.initialize();
@@ -1338,8 +1328,8 @@ export class Edit {
 
 				this.updateTotalDuration();
 			},
-			setUpdatedClip: clip => {
-				this.updatedClip = clip;
+			setUpdatedClip: () => {
+				// No-op: kept for interface compatibility
 			},
 			restoreClipConfiguration: (clip, previousConfig) => {
 				const cloned = structuredClone(previousConfig);
