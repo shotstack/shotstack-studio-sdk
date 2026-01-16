@@ -3,7 +3,7 @@ import type { EditDocument, MergeFieldBinding } from "@core/edit-document";
 import type { EditEventMap, EditEventName } from "@core/events/edit-events";
 import type { MergeFieldService } from "@core/merge";
 import type { ResolutionContext } from "@core/timing/types";
-import type { Clip, ResolvedClip, ResolvedEdit } from "@schemas";
+import type { Clip, Destination, ResolvedClip, ResolvedEdit } from "@schemas";
 import type { Container } from "pixi.js";
 
 type ClipType = ResolvedClip;
@@ -55,6 +55,14 @@ export type CommandContext = {
 	setOutputSize(width: number, height: number): void;
 	getOutputFps(): number;
 	setOutputFps(fps: number): void;
+	getOutputFormat(): string;
+	setOutputFormat(format: string): void;
+	getOutputResolution(): string | undefined;
+	setOutputResolution(resolution: string): void;
+	getOutputAspectRatio(): string | undefined;
+	setOutputAspectRatio(aspectRatio: string): void;
+	getOutputDestinations(): Destination[];
+	setOutputDestinations(destinations: Destination[]): void;
 	getTimelineBackground(): string;
 	setTimelineBackground(color: string): void;
 

@@ -7,7 +7,11 @@ import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
+import { SetOutputAspectRatioCommand } from "@core/commands/set-output-aspect-ratio-command";
+import { SetOutputDestinationsCommand } from "@core/commands/set-output-destinations-command";
+import { SetOutputFormatCommand } from "@core/commands/set-output-format-command";
 import { SetOutputFpsCommand } from "@core/commands/set-output-fps-command";
+import { SetOutputResolutionCommand } from "@core/commands/set-output-resolution-command";
 import { SetOutputSizeCommand } from "@core/commands/set-output-size-command";
 import { SetTimelineBackgroundCommand } from "@core/commands/set-timeline-background-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
@@ -103,19 +107,14 @@ export class Edit {
 		return this.clips.filter(c => c.getTimingIntent().length === "end");
 	}
 	private isBatchingEvents: boolean = false;
-
-	// Document sync state - skip sync during initial load (document already has clips)
+	// Document sync state
 	private isLoadingEdit: boolean = false;
-
 	// Playback health tracking
 	private syncCorrectionCount: number = 0;
-
 	// Toolbar button registry
 	private toolbarButtons: ToolbarButtonConfig[] = [];
-
 	/** Output settings manager - handles size, fps, format, resolution, etc. */
 	private outputSettings!: OutputSettingsManager;
-
 	/** Selection manager - handles clip selection and clipboard state. */
 	private selectionManager!: SelectionManager;
 
@@ -1360,6 +1359,14 @@ export class Edit {
 			setOutputSize: (width, height) => this.outputSettings.setSize(width, height),
 			getOutputFps: () => this.outputSettings.getFps(),
 			setOutputFps: fps => this.outputSettings.setFps(fps),
+			getOutputFormat: () => this.outputSettings.getFormat(),
+			setOutputFormat: format => this.outputSettings.setFormat(format),
+			getOutputResolution: () => this.outputSettings.getResolution(),
+			setOutputResolution: resolution => this.outputSettings.setResolution(resolution),
+			getOutputAspectRatio: () => this.outputSettings.getAspectRatio(),
+			setOutputAspectRatio: aspectRatio => this.outputSettings.setAspectRatio(aspectRatio),
+			getOutputDestinations: () => this.outputSettings.getDestinations(),
+			setOutputDestinations: destinations => this.outputSettings.setDestinations(destinations),
 			getTimelineBackground: () => this.getTimelineBackground(),
 			setTimelineBackground: color => this.setTimelineBackgroundInternal(color),
 			// Document access (single source of truth)
@@ -1949,7 +1956,8 @@ export class Edit {
 	}
 
 	public setOutputFormat(format: string): void {
-		this.outputSettings.setFormat(format);
+		const command = new SetOutputFormatCommand(format);
+		this.executeCommand(command);
 	}
 
 	public getOutputFormat(): string {
@@ -1957,7 +1965,8 @@ export class Edit {
 	}
 
 	public setOutputDestinations(destinations: Destination[]): void {
-		this.outputSettings.setDestinations(destinations);
+		const command = new SetOutputDestinationsCommand(destinations);
+		this.executeCommand(command);
 	}
 
 	public getOutputDestinations(): Destination[] {
@@ -1965,7 +1974,8 @@ export class Edit {
 	}
 
 	public setOutputResolution(resolution: string): void {
-		this.outputSettings.setResolution(resolution);
+		const command = new SetOutputResolutionCommand(resolution);
+		this.executeCommand(command);
 	}
 
 	public getOutputResolution(): string | undefined {
@@ -1973,7 +1983,8 @@ export class Edit {
 	}
 
 	public setOutputAspectRatio(aspectRatio: string): void {
-		this.outputSettings.setAspectRatio(aspectRatio);
+		const command = new SetOutputAspectRatioCommand(aspectRatio);
+		this.executeCommand(command);
 	}
 
 	public getOutputAspectRatio(): string | undefined {

@@ -177,7 +177,6 @@ export class OutputSettingsManager {
 		this.context.getDocument()?.setFormat(result.data);
 
 		this.context.getEvents().emit(EditEvent.OutputFormatChanged, { format: result.data });
-		this.context.emitEditChanged("output:format");
 	}
 
 	getFormat(): string {
@@ -201,7 +200,6 @@ export class OutputSettingsManager {
 		}
 
 		this.context.getEvents().emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
-		this.context.emitEditChanged("output:destinations");
 	}
 
 	getDestinations(): Destination[] {
@@ -243,7 +241,6 @@ export class OutputSettingsManager {
 		const events = this.context.getEvents();
 		events.emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
 		events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
-		this.context.emitEditChanged("output:resolution");
 	}
 
 	getResolution(): string | undefined {
@@ -272,7 +269,6 @@ export class OutputSettingsManager {
 			}
 			this.context.getDocument()?.setAspectRatio(validatedAspectRatio);
 			this.context.getEvents().emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
-			this.context.emitEditChanged("output:aspectRatio");
 			return;
 		}
 
@@ -301,7 +297,6 @@ export class OutputSettingsManager {
 		const events = this.context.getEvents();
 		events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
 		events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
-		this.context.emitEditChanged("output:aspectRatio");
 	}
 
 	getAspectRatio(): string | undefined {

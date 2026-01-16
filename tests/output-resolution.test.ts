@@ -187,7 +187,7 @@ describe("Output Resolution and AspectRatio", () => {
 
 			it("emits edit:changed event", () => {
 				edit.setOutputResolution("hd");
-				expect(emitSpy).toHaveBeenCalledWith(EditEvent.EditChanged, expect.objectContaining({ source: "output:resolution" }));
+				expect(emitSpy).toHaveBeenCalledWith(EditEvent.EditChanged, expect.objectContaining({ source: "setOutputResolution" }));
 			});
 		});
 
@@ -285,7 +285,7 @@ describe("Output Resolution and AspectRatio", () => {
 
 			it("emits edit:changed event", () => {
 				edit.setOutputAspectRatio("1:1");
-				expect(emitSpy).toHaveBeenCalledWith(EditEvent.EditChanged, expect.objectContaining({ source: "output:aspectRatio" }));
+				expect(emitSpy).toHaveBeenCalledWith(EditEvent.EditChanged, expect.objectContaining({ source: "setOutputAspectRatio" }));
 			});
 		});
 
