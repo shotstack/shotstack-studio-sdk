@@ -379,7 +379,12 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		const hasChanged = this.hasStateChanged();
-		if ((this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) && hasChanged && this.selectedClipId && this.initialClipConfiguration) {
+		if (
+			(this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) &&
+			hasChanged &&
+			this.selectedClipId &&
+			this.initialClipConfiguration
+		) {
 			// Resolve once at end to ensure document/player consistency
 			this.edit.resolve();
 
@@ -593,10 +598,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			width = config.width;
 			height = config.height;
 		} else {
-			// Initialize dimensions from intrinsic size
-			const size = this.selectedPlayer.getSize();
-			width = size.width;
-			height = size.height;
+			width = this.edit.size.width;
+			height = this.edit.size.height;
 
 			// Optimistic: Update player directly
 			this.selectedPlayer.clipConfiguration.width = width;
