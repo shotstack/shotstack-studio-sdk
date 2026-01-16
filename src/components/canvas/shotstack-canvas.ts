@@ -10,6 +10,17 @@ import { SubtitleLoadParser } from "@loaders/subtitle-load-parser";
 import type { Timeline } from "@timeline/index";
 import * as pixi from "pixi.js";
 
+// Manually import PIXI extensions (excluding accessibility to prevent MutationObserver stack overflow)
+// See: https://github.com/pixijs/pixijs/issues/11698
+import "pixi.js/app";
+import "pixi.js/events";
+import "pixi.js/graphics";
+import "pixi.js/text";
+import "pixi.js/text-html";
+import "pixi.js/sprite-tiling";
+import "pixi.js/filters";
+import "pixi.js/mesh";
+
 export class Canvas {
 	/** @internal */
 	public static readonly CanvasSelector = "[data-shotstack-studio]";
@@ -276,7 +287,17 @@ export class Canvas {
 			background: "#000000",
 			width: this.viewportSize.width,
 			height: this.viewportSize.height,
-			antialias: true
+			antialias: true,
+			powerPreference: "high-performance",
+			eventFeatures: {
+				globalMove: false,
+				move: true,
+				click: true,
+				wheel: true
+			},
+			textureGCActive: false,
+			renderableGCActive: false,
+			manageImports: false
 		};
 
 		await this.application.init(options);

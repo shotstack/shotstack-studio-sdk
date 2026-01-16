@@ -31,6 +31,8 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	// This prevents state aliasing when elements are recycled or clips move
 	private clipStates = new Map<string, ThumbnailState>();
 
+	private appliedToElement = new WeakMap<HTMLElement, string>();
+
 	constructor(generator: ThumbnailGenerator, onRendered: () => void = () => {}) {
 		this.generator = generator;
 		this.onRendered = onRendered;
@@ -49,9 +51,14 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		const { asset } = clip;
 		const clipKey = this.getClipKey(clip);
 
+		if (this.appliedToElement.get(element) === clipKey) {
+			return;
+		}
+
 		this.clearThumbnailStyles(element);
 
 		if (!asset || !("src" in asset) || !asset.src) {
+			this.appliedToElement.set(element, clipKey);
 			return;
 		}
 
@@ -59,8 +66,9 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 			this.renderVideoThumbnail(element, asset as VideoAsset, clipKey);
 		} else if (asset.type === "image") {
 			this.renderImageThumbnail(element, asset as ImageAsset, clipKey);
+		} else {
+			this.appliedToElement.set(element, clipKey);
 		}
-		// Non-thumbnail types (svg, luma, etc.) exit with clean element
 	}
 
 	private clearThumbnailStyles(el: HTMLElement): void {
@@ -83,6 +91,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 			if (cachedState.thumbnails.length > 0) {
 				this.applyThumbnail(element, cachedState.thumbnails[0], cachedState.thumbnailWidth);
 			}
+			this.appliedToElement.set(element, clipKey);
 			return;
 		}
 
@@ -98,6 +107,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 			if (cachedState.thumbnails.length > 0) {
 				this.applyThumbnail(element, cachedState.thumbnails[0], cachedState.thumbnailWidth);
 			}
+			this.appliedToElement.set(element, clipKey);
 			return;
 		}
 
@@ -136,6 +146,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		} finally {
 			state.loading = false;
 			this.clipStates.set(clipKey, state);
+			this.appliedToElement.set(element, clipKey);
 			this.onRendered();
 		}
 	}
@@ -164,6 +175,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		} finally {
 			state.loading = false;
 			this.clipStates.set(clipKey, state);
+			this.appliedToElement.set(element, clipKey);
 			this.onRendered();
 		}
 	}
@@ -205,6 +217,7 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		// Note: We keep clipStates cached - keyed by clip identity, not element.
 		// This allows reuse when same clip gets a new element after move/transform.
 		this.clearThumbnailStyles(el);
+		this.appliedToElement.delete(el);
 	}
 
 	/** Clear all cached thumbnail state */

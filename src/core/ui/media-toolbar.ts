@@ -110,6 +110,9 @@ export class MediaToolbar extends BaseToolbar {
 	private dynamicFieldName: string = "";
 	private originalSrc: string = "";
 
+	// AbortController for cleanup of event listeners
+	private abortController: AbortController | null = null;
+
 	override mount(parent: HTMLElement): void {
 		injectShotstackStyles();
 
@@ -383,82 +386,138 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	private setupEventListeners(): void {
+		// Create AbortController for cleanup
+		this.abortController = new AbortController();
+		const { signal } = this.abortController;
+
 		// Toggle popups
-		this.fitBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("fit");
-		});
-		this.opacityBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("opacity");
-		});
-		this.scaleBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("scale");
-		});
-		this.volumeBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("volume");
-		});
-		this.transitionBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("transition");
-		});
-		this.effectBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("effect");
-		});
-		this.advancedBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("advanced");
-		});
-		this.audioFadeBtn?.addEventListener("click", e => {
-			e.stopPropagation();
-			this.togglePopupByName("audio-fade");
-		});
+		this.fitBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("fit");
+			},
+			{ signal }
+		);
+		this.opacityBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("opacity");
+			},
+			{ signal }
+		);
+		this.scaleBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("scale");
+			},
+			{ signal }
+		);
+		this.volumeBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("volume");
+			},
+			{ signal }
+		);
+		this.transitionBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("transition");
+			},
+			{ signal }
+		);
+		this.effectBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("effect");
+			},
+			{ signal }
+		);
+		this.advancedBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("advanced");
+			},
+			{ signal }
+		);
+		this.audioFadeBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("audio-fade");
+			},
+			{ signal }
+		);
 
 		// Dynamic source handlers
-		this.setupDynamicSourceHandlers();
+		this.setupDynamicSourceHandlers(signal);
 
 		// Fit options
 		this.fitPopup?.querySelectorAll("[data-fit]").forEach(item => {
-			item.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const fit = el.dataset["fit"] as FitValue;
-				this.handleFitChange(fit);
-			});
+			item.addEventListener(
+				"click",
+				e => {
+					const el = e.currentTarget as HTMLElement;
+					const fit = el.dataset["fit"] as FitValue;
+					this.handleFitChange(fit);
+				},
+				{ signal }
+			);
 		});
 
 		// Volume slider
-		this.volumeSlider?.addEventListener("input", () => {
-			const value = parseInt(this.volumeSlider!.value, 10);
-			this.handleVolumeChange(value);
-		});
+		this.volumeSlider?.addEventListener(
+			"input",
+			() => {
+				const value = parseInt(this.volumeSlider!.value, 10);
+				this.handleVolumeChange(value);
+			},
+			{ signal }
+		);
 
 		// Volume display input: commit on blur or Enter, revert on Escape
-		this.volumeDisplayInput?.addEventListener("blur", () => this.commitVolumeInputValue());
-		this.volumeDisplayInput?.addEventListener("keydown", (e: KeyboardEvent) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				this.commitVolumeInputValue();
-				this.volumeDisplayInput?.blur();
-			} else if (e.key === "Escape") {
-				e.preventDefault();
-				this.revertVolumeInputValue();
-				this.volumeDisplayInput?.blur();
-			}
-		});
-		this.volumeDisplayInput?.addEventListener("focus", () => {
-			this.volumeDisplayInput?.select();
-		});
+		this.volumeDisplayInput?.addEventListener("blur", () => this.commitVolumeInputValue(), { signal });
+		this.volumeDisplayInput?.addEventListener(
+			"keydown",
+			(e: KeyboardEvent) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					this.commitVolumeInputValue();
+					this.volumeDisplayInput?.blur();
+				} else if (e.key === "Escape") {
+					e.preventDefault();
+					this.revertVolumeInputValue();
+					this.volumeDisplayInput?.blur();
+				}
+			},
+			{ signal }
+		);
+		this.volumeDisplayInput?.addEventListener(
+			"focus",
+			() => {
+				this.volumeDisplayInput?.select();
+			},
+			{ signal }
+		);
 
 		// Audio fade options
 		this.audioFadePopup?.querySelectorAll("[data-audio-fade]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const fadeValue = el.dataset["audioFade"] || "";
-				this.handleAudioFadeSelect(fadeValue as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut");
-			});
+			btn.addEventListener(
+				"click",
+				e => {
+					const el = e.currentTarget as HTMLElement;
+					const fadeValue = el.dataset["audioFade"] || "";
+					this.handleAudioFadeSelect(fadeValue as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut");
+				},
+				{ signal }
+			);
 		});
 	}
 
@@ -698,34 +757,46 @@ export class MediaToolbar extends BaseToolbar {
 
 	// ─── Dynamic Source Handlers ─────────────────────────────────────────────────
 
-	private setupDynamicSourceHandlers(): void {
-		this.dynamicToggle?.addEventListener("change", () => {
-			const checked = this.dynamicToggle?.checked || false;
-			this.isDynamicSource = checked;
+	private setupDynamicSourceHandlers(signal: AbortSignal): void {
+		this.dynamicToggle?.addEventListener(
+			"change",
+			() => {
+				const checked = this.dynamicToggle?.checked || false;
+				this.isDynamicSource = checked;
 
-			if (this.dynamicPanel) {
-				this.dynamicPanel.style.display = checked ? "block" : "none";
-			}
+				if (this.dynamicPanel) {
+					this.dynamicPanel.style.display = checked ? "block" : "none";
+				}
 
-			if (checked) {
-				this.dynamicInput?.focus();
-			} else {
-				this.clearDynamicSource();
-			}
-		});
+				if (checked) {
+					this.dynamicInput?.focus();
+				} else {
+					this.clearDynamicSource();
+				}
+			},
+			{ signal }
+		);
 
-		this.dynamicInput?.addEventListener("keydown", e => {
-			if (e.key === "Enter") {
-				e.preventDefault();
+		this.dynamicInput?.addEventListener(
+			"keydown",
+			e => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					this.applyDynamicUrl();
+				} else if (e.key === "Escape") {
+					this.dynamicInput?.blur();
+				}
+			},
+			{ signal }
+		);
+
+		this.dynamicInput?.addEventListener(
+			"blur",
+			() => {
 				this.applyDynamicUrl();
-			} else if (e.key === "Escape") {
-				this.dynamicInput?.blur();
-			}
-		});
-
-		this.dynamicInput?.addEventListener("blur", () => {
-			this.applyDynamicUrl();
-		});
+			},
+			{ signal }
+		);
 	}
 
 	private async applyDynamicUrl(): Promise<void> {
@@ -861,6 +932,10 @@ export class MediaToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
+		// Abort all event listeners
+		this.abortController?.abort();
+		this.abortController = null;
+
 		// Dispose composite components
 		this.transitionPanel?.dispose();
 		this.effectPanel?.dispose();
