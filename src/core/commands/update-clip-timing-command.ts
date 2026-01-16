@@ -17,13 +17,17 @@ export interface TimingUpdateParams {
  * Document-only command to update a clip's timing.
  * Supports manual values, "auto", and "end" modes.
  *
- * Flow: Document mutation → resolve() → Reconciler updates Player
+ * Flow: Document mutation → resolveClip() → Reconciler updates Player
+ *
+ * Uses single-clip resolution for O(1) performance instead of O(n) full resolve.
+ * Downstream clips with "auto" starts are updated via propagateTimingChanges().
  */
 export class UpdateClipTimingCommand implements EditCommand {
 	public readonly name = "UpdateClipTiming";
 
 	private originalIntent?: TimingIntent;
 	private previousClipConfig?: ResolvedClip;
+	private clipId?: string;
 
 	constructor(
 		private trackIndex: number,
@@ -46,6 +50,7 @@ export class UpdateClipTimingCommand implements EditCommand {
 		// Store for undo
 		this.previousClipConfig = structuredClone(player.clipConfiguration);
 		this.originalIntent = player.getTimingIntent();
+		this.clipId = player.clipId ?? undefined;
 
 		// Build document updates from params (convert ms to seconds)
 		const updates: Partial<{ start: Seconds | "auto"; length: Seconds | "auto" | "end" }> = {};
@@ -65,8 +70,12 @@ export class UpdateClipTimingCommand implements EditCommand {
 		// Document-only mutation
 		doc.updateClip(this.trackIndex, this.clipIndex, updates);
 
-		// Reconciler handles player updates
-		context.resolve();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		// Handle "auto" length async resolution
 		if (updates.length === "auto") {
@@ -112,8 +121,12 @@ export class UpdateClipTimingCommand implements EditCommand {
 			length: this.originalIntent.length
 		});
 
-		// Reconciler handles player updates
-		context.resolve();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		// Handle "auto" length async resolution
 		if (this.originalIntent.length === "auto") {

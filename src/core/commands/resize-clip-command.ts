@@ -7,12 +7,16 @@ import type { EditCommand, CommandContext } from "./types";
 /**
  * Document-only command to resize a clip's length.
  *
- * Flow: Document mutation → resolve() → Reconciler updates Player
+ * Flow: Document mutation → resolveClip() → Reconciler updates Player
+ *
+ * Uses single-clip resolution for O(1) performance instead of O(n) full resolve.
+ * Downstream clips with "auto" starts are updated via propagateTimingChanges().
  */
 export class ResizeClipCommand implements EditCommand {
 	name = "resizeClip";
 	private originalIntent?: TimingIntent;
 	private previousClipConfig?: ResolvedClip;
+	private clipId?: string;
 
 	constructor(
 		private trackIndex: number,
@@ -36,12 +40,17 @@ export class ResizeClipCommand implements EditCommand {
 		// Store for undo
 		this.previousClipConfig = structuredClone(player.clipConfiguration);
 		this.originalIntent = player.getTimingIntent();
+		this.clipId = player.clipId ?? undefined;
 
 		// Document-only mutation
 		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.newLength });
 
-		// Reconciler handles player updates
-		context.resolve();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		context.updateDuration();
 
@@ -69,8 +78,12 @@ export class ResizeClipCommand implements EditCommand {
 		// Document-only mutation - restore original length
 		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.originalIntent.length });
 
-		// Reconciler handles player updates
-		context.resolve();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		context.updateDuration();
 

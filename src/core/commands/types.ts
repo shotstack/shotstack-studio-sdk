@@ -90,6 +90,17 @@ export type CommandContext = {
 	 */
 	resolve(): EditType;
 
+	/**
+	 * Resolve a single clip and update its player.
+	 *
+	 * This is an optimization for single-clip mutations (timing, asset, properties).
+	 * Use instead of resolve() when only one clip changed.
+	 *
+	 * @param clipId - The clip to resolve and update
+	 * @returns true if clip was found and updated, false otherwise
+	 */
+	resolveClip(clipId: string): boolean;
+
 	// ID-based Player access (for reconciliation)
 	/** Get a Player by its stable clip ID */
 	getPlayerByClipId(clipId: string): Player | null;

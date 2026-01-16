@@ -6,7 +6,9 @@ import type { EditCommand, CommandContext } from "./types";
 /**
  * Document-only command to update text content in a text clip.
  *
- * Flow: Document mutation → resolve() → Reconciler updates Player asset
+ * Flow: Document mutation → resolveClip() → Reconciler updates Player asset
+ *
+ * Uses single-clip resolution for O(1) performance instead of O(n) full resolve.
  */
 export class UpdateTextContentCommand implements EditCommand {
 	name = "updateTextContent";
@@ -49,8 +51,12 @@ export class UpdateTextContentCommand implements EditCommand {
 		const newAsset = { ...currentAsset, text: this.newText };
 		doc.updateClip(this.trackIndex, this.clipIndex, { asset: newAsset });
 
-		// Reconciler handles player asset update
-		context.resolve();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
@@ -78,8 +84,12 @@ export class UpdateTextContentCommand implements EditCommand {
 		const restoredAsset = { ...currentAsset, text: this.previousText };
 		doc.updateClip(this.trackIndex, this.clipIndex, { asset: restoredAsset });
 
-		// Reconciler handles player asset update
-		context.resolve();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		if (this.previousClipConfig) {
 			context.emitEvent(EditEvent.ClipUpdated, {

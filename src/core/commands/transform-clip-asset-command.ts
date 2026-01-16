@@ -10,6 +10,11 @@ import type { EditCommand, CommandContext } from "./types";
  * Document-only: This command only mutates the document.
  * The PlayerReconciler handles Player recreation via the Resolved event
  * (detects asset type change and recreates the Player).
+ *
+ * NOTE: Uses full resolve() instead of resolveClip() because asset type changes
+ * require Player recreation, which needs the full reconciler's rebuildTracksOrdering()
+ * to properly manage the tracks array. This is acceptable since asset type changes
+ * are rare operations (only luma attachment/detachment).
  */
 export class TransformClipAssetCommand implements EditCommand {
 	public readonly name = "TransformClipAsset";
@@ -46,7 +51,7 @@ export class TransformClipAssetCommand implements EditCommand {
 		// Document mutation
 		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: newAsset });
 
-		// Resolve triggers reconciler → detects asset type change → recreates Player
+		// Full resolve (required for asset type changes - needs Player recreation with tracks array management)
 		context.resolve();
 
 		// Get resolved clip for event
@@ -65,7 +70,7 @@ export class TransformClipAssetCommand implements EditCommand {
 		// Document mutation - restore original asset
 		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: this.originalAsset });
 
-		// Resolve triggers reconciler → detects asset type change → recreates Player
+		// Full resolve (required for asset type changes - needs Player recreation with tracks array management)
 		context.resolve();
 
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);

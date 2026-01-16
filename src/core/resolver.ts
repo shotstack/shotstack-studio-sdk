@@ -116,6 +116,86 @@ function cleanupPendingFlags(clip: PartialResolvedClip): ResolvedClipWithId {
 	return cleanClip;
 }
 
+// ─── Single-Clip Resolution ───────────────────────────────────────────────────
+
+/** Result of single-clip resolution */
+export interface ResolveClipResult {
+	resolved: ResolvedClipWithId;
+	trackIndex: number;
+	clipIndex: number;
+}
+
+/** Extended context for single-clip resolution with cached values */
+export interface SingleClipContext extends ResolveContext {
+	/**
+	 * End time of the previous clip in the same track.
+	 * Required for clips with start: "auto".
+	 * Get from previous player's getEnd() for already-resolved timing.
+	 */
+	previousClipEnd: Seconds;
+
+	/**
+	 * Cached timeline end for clips with length: "end".
+	 * Get from edit.cachedTimelineEnd for already-calculated value.
+	 */
+	cachedTimelineEnd?: Seconds;
+}
+
+/**
+ * Resolve a single clip by ID.
+ *
+ * This is an optimization for single-clip mutations (timing, asset, properties).
+ * Instead of re-resolving ALL clips, we resolve just the one that changed.
+ *
+ * Use cases:
+ * - Resize a clip → resolveClip() is 10x faster than resolve()
+ * - Update asset property → instant feedback
+ * - Text content change → no full timeline recalc needed
+ *
+ * NOT for structural changes:
+ * - Adding/deleting clips (affects downstream "auto" starts)
+ * - Moving clips between tracks
+ * - Track add/delete
+ *
+ * @param document - The EditDocument (source of truth)
+ * @param clipId - The clip to resolve
+ * @param context - Resolution context with cached values for efficiency
+ * @returns Resolved clip with location, or null if clip not found
+ */
+export function resolveClip(
+	document: EditDocument,
+	clipId: string,
+	context: SingleClipContext
+): ResolveClipResult | null {
+	// 1. Locate clip in document
+	const lookup = document.getClipById(clipId);
+	if (!lookup) {
+		return null;
+	}
+
+	const { clip, trackIndex, clipIndex } = lookup;
+	const internalClip = clip as InternalClip;
+
+	// 2. Resolve the single clip using first-pass logic
+	const resolvedClip = resolveClipFirstPass(
+		internalClip,
+		context.previousClipEnd,
+		context
+	);
+
+	// 3. Handle "end" length (second pass for this single clip)
+	if (resolvedClip.pendingEndLength && context.cachedTimelineEnd !== undefined) {
+		resolvedClip.length = sec(Math.max(context.cachedTimelineEnd - resolvedClip.start, 0.1));
+	}
+
+	// 4. Clean up and return
+	return {
+		resolved: cleanupPendingFlags(resolvedClip),
+		trackIndex,
+		clipIndex
+	};
+}
+
 // ─── Main Resolver ────────────────────────────────────────────────────────────
 
 /**

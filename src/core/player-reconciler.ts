@@ -129,6 +129,40 @@ export class PlayerReconciler {
 	}
 
 	/**
+	 * Update a single player to match a resolved clip.
+	 *
+	 * This is the optimized path for single-clip mutations. Instead of running
+	 * a full reconcile() which processes ALL clips, this updates just ONE player.
+	 *
+	 * Extracted from reconcile() logic for single-clip optimization in commands
+	 * like resize-clip, update-timing, and transform-asset.
+	 *
+	 * @param player - The player to update
+	 * @param resolvedClip - The resolved clip state to sync to
+	 * @param trackIndex - The track index (for track change detection)
+	 * @returns true if changes were made, false if no changes, 'recreate' if asset type changed
+	 */
+	public updateSinglePlayer(
+		player: Player,
+		resolvedClip: ResolvedClip,
+		trackIndex: number
+	): boolean | "recreate" {
+		const result = this.updatePlayer(player, resolvedClip, trackIndex);
+
+		// Handle asset type change (rare case - requires full recreation)
+		if (result === "recreate") {
+			const { clipId } = player;
+			if (clipId) {
+				this.disposePlayer(clipId);
+				this.createPlayer(resolvedClip, clipId, trackIndex);
+			}
+			return "recreate";
+		}
+
+		return result;
+	}
+
+	/**
 	 * Create a new Player for a clip.
 	 */
 	private createPlayer(clip: ResolvedClip, clipId: string, trackIndex: number): void {
