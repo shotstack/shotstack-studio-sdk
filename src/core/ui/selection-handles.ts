@@ -399,7 +399,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		this.isDragging = true;
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const viewportContainer = this.edit.getViewportContainer();
+		const timelinePoint = event.getLocalPosition(viewportContainer);
 		const playerPos = this.selectedPlayer.getContainer().position;
 
 		this.dragOffset = {
@@ -411,7 +412,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private handleDrag(event: pixi.FederatedPointerEvent): void {
 		if (!this.selectedPlayer || !this.selectedClipId) return;
 
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const viewportContainer = this.edit.getViewportContainer();
+		const timelinePoint = event.getLocalPosition(viewportContainer);
 		const pivot = this.selectedPlayer.getPivot();
 
 		const cursorPosition: Vector = {
@@ -457,7 +459,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		this.scaleDirection = corner;
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		this.edgeDragStart = timelinePoint;
 
 		this.captureOriginalDimensions();
@@ -466,7 +468,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private handleCornerResize(event: pixi.FederatedPointerEvent): void {
 		if (!this.selectedPlayer || !this.selectedClipId || !this.scaleDirection || !this.originalDimensions) return;
 
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		const delta = {
 			x: timelinePoint.x - this.edgeDragStart.x,
 			y: timelinePoint.y - this.edgeDragStart.y
@@ -489,7 +491,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		this.edgeDragDirection = edge;
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		this.edgeDragStart = timelinePoint;
 
 		this.captureOriginalDimensions();
@@ -498,7 +500,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private handleEdgeResize(event: pixi.FederatedPointerEvent): void {
 		if (!this.selectedPlayer || !this.selectedClipId || !this.edgeDragDirection || !this.originalDimensions) return;
 
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		const delta = {
 			x: timelinePoint.x - this.edgeDragStart.x,
 			y: timelinePoint.y - this.edgeDragStart.y

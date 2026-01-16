@@ -98,7 +98,15 @@ export const InternalEvent = {
 	ToolbarButtonsChanged: "toolbar:buttonsChanged",
 
 	// Resolution - document to resolved edit transformation
-	Resolved: "resolved"
+	Resolved: "resolved",
+
+	// Edit → Canvas visual syn
+	PlayerAddedToTrack: "player:addedToTrack",
+	PlayerMovedBetweenTracks: "player:movedBetweenTracks",
+	PlayerRemovedFromTrack: "player:removedFromTrack",
+	TrackContainerRemoved: "track:containerRemoved",
+	ViewportSizeChanged: "viewport:sizeChanged",
+	ViewportNeedsZoomToFit: "viewport:needsZoomToFit"
 } as const;
 
 export type InternalEventName = (typeof InternalEvent)[keyof typeof InternalEvent];
@@ -180,4 +188,20 @@ export type InternalEventMap = {
 
 	// Resolution
 	[InternalEvent.Resolved]: { edit: ResolvedEdit };
+
+	// Edit → Canvas visual sync
+	[InternalEvent.PlayerAddedToTrack]: { player: Player; trackIndex: number };
+	[InternalEvent.PlayerMovedBetweenTracks]: {
+		player: Player;
+		fromTrackIndex: number;
+		toTrackIndex: number;
+	};
+	[InternalEvent.PlayerRemovedFromTrack]: { player: Player; trackIndex: number };
+	[InternalEvent.TrackContainerRemoved]: { trackIndex: number };
+	[InternalEvent.ViewportSizeChanged]: {
+		width: number;
+		height: number;
+		backgroundColor: string;
+	};
+	[InternalEvent.ViewportNeedsZoomToFit]: void;
 };

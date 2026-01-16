@@ -1,14 +1,5 @@
-import { AudioPlayer } from "@canvas/players/audio-player";
-import { CaptionPlayer } from "@canvas/players/caption-player";
-import { HtmlPlayer } from "@canvas/players/html-player";
-import { ImagePlayer } from "@canvas/players/image-player";
-import { LumaPlayer } from "@canvas/players/luma-player";
 import { type Player, PlayerType } from "@canvas/players/player";
-import { RichTextPlayer } from "@canvas/players/rich-text-player";
-import { ShapePlayer } from "@canvas/players/shape-player";
-import { SvgPlayer } from "@canvas/players/svg-player";
-import { TextPlayer } from "@canvas/players/text-player";
-import { VideoPlayer } from "@canvas/players/video-player";
+import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
 import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { resolveAliasReferences } from "@core/alias";
@@ -32,7 +23,6 @@ import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager, type OutputSettingsContext } from "@core/output-settings-manager";
 import { SelectionManager, type SelectionContext } from "@core/selection-manager";
-import { Entity } from "@core/shared/entity";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type ResolutionContext, type Seconds, sec } from "@core/timing/types";
@@ -61,20 +51,15 @@ import { resolve as resolveDocument, resolveClip as resolveClipById, type Single
 
 /**
  * Magic elapsed value passed to update() during seek operations.
- * Any value > 100 signals to players that a seek occurred rather than normal playback.
- * VideoPlayer uses this to force video sync; RichTextPlayer uses it to reset render state.
  * @internal
  */
 export const SEEK_ELAPSED_MARKER = 101;
 
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
-export class Edit extends Entity {
-	private static readonly ZIndexPadding = 100;
+export class Edit {
 	/**
 	 * Maximum number of commands to keep in undo history.
-	 * Prevents unbounded memory growth in long editing sessions.
-	 * Each command may hold Player references and deep-cloned configs.
 	 */
 	private static readonly MAX_HISTORY_SIZE = 100;
 
@@ -82,8 +67,7 @@ export class Edit extends Entity {
 	public events: EventEmitter<EditEventMap & InternalEventMap>;
 
 	/**
-	 * Pure document layer - holds the raw Edit config with "auto", "end", placeholders.
-	 * This is the source of truth for serialization to backend.
+	 * Pure document layer
 	 * @internal
 	 */
 	private document: EditDocument;
@@ -109,10 +93,6 @@ export class Edit extends Entity {
 	public isPlaying: boolean;
 	/** @internal Stored for future reconciliation use */
 	private updatedClip: Player | null;
-	/** @internal */
-	private viewportMask?: pixi.Graphics;
-	/** @internal */
-	private background: pixi.Graphics | null;
 	/** @internal */
 	private isExporting: boolean = false;
 
@@ -180,8 +160,6 @@ export class Edit extends Entity {
 	 * ```
 	 */
 	constructor(template: EditConfig) {
-		super();
-
 		// Create document layer from template (pure data, preserves "auto"/"end"/placeholders)
 		this.document = new EditDocument(template);
 
@@ -221,45 +199,22 @@ export class Edit extends Entity {
 		this.totalDuration = 0;
 		this.isPlaying = false;
 		this.updatedClip = null;
-		this.background = null;
 
 		// Set up event-driven architecture
 		this.setupIntentListeners();
 	}
 
-	public override async load(): Promise<void> {
-		// Enable z-index sorting so track containers render in correct layer order
-		this.getContainer().sortableChildren = true;
-
-		const background = new pixi.Graphics();
-		this.background = background;
-		background.fillStyle = {
-			color: this.backgroundColor
-		};
-
-		background.rect(0, 0, this.size.width, this.size.height);
-		background.fill();
-
-		this.getContainer().addChild(background);
-
-		// Ensure content outside the edit viewport is not visible
-		this.viewportMask = new pixi.Graphics();
-		this.viewportMask.rect(0, 0, this.size.width, this.size.height);
-		this.viewportMask.fill(0xffffff);
-		this.getContainer().addChild(this.viewportMask);
-		this.getContainer().setMask({ mask: this.viewportMask });
-
-		// Initialize alignment guides (rendered above all clips)
-		this.alignmentGuides = new AlignmentGuides(this.getContainer(), this.size.width, this.size.height);
-
-		// Initialize from document - create players, resolve timing
+	public async load(): Promise<void> {
+		// Initialize alignment guides in Canvas's viewport container
+		if (this.canvas) {
+			const viewportContainer = this.canvas.getViewportContainer();
+			this.alignmentGuides = new AlignmentGuides(viewportContainer, this.size.width, this.size.height);
+		}
 		await this.initializeFromDocument();
 	}
 
 	/**
 	 * Initialize players and timing from the document.
-	 * Called during initial load() and can be called again via loadEdit() for hot-reload.
-	 * @param source - The source identifier for events (default: "load")
 	 */
 	private async initializeFromDocument(source: string = "load"): Promise<void> {
 		// Get raw edit from document
@@ -355,7 +310,7 @@ export class Edit extends Entity {
 	}
 
 	/** @internal */
-	public override update(deltaTime: number, elapsed: number): void {
+	public update(deltaTime: number, elapsed: number): void {
 		for (const clip of this.clips) {
 			if (clip.shouldDispose) {
 				this.queueDisposeClip(clip);
@@ -377,13 +332,13 @@ export class Edit extends Entity {
 		}
 	}
 	/** @internal */
-	public override draw(): void {
+	public draw(): void {
 		for (const clip of this.clips) {
 			clip.draw();
 		}
 	}
 	/** @internal */
-	public override dispose(): void {
+	public dispose(): void {
 		this.clearClips();
 		this.lumaMaskController.dispose();
 		this.playerReconciler.dispose();
@@ -395,37 +350,17 @@ export class Edit extends Entity {
 		this.commandHistory = [];
 		this.commandIndex = -1;
 
-		if (this.viewportMask) {
-			try {
-				this.getContainer().setMask(null as any);
-			} catch {
-				// Ignore errors when removing mask during dispose
-			}
-			this.viewportMask.destroy();
-			this.viewportMask = undefined;
-		}
-
-		TextPlayer.resetFontCache();
-	}
-
-	private updateViewportMask(): void {
-		if (this.viewportMask) {
-			this.viewportMask.clear();
-			this.viewportMask.rect(0, 0, this.size.width, this.size.height);
-			this.viewportMask.fill(0xffffff);
-		}
+		PlayerFactory.cleanup();
 	}
 
 	/** Update canvas visuals after size change (viewport mask, background, zoom) */
 	private updateCanvasForSize(): void {
-		this.updateViewportMask();
-		if (this.background) {
-			this.background.clear();
-			this.background.fillStyle = { color: this.backgroundColor };
-			this.background.rect(0, 0, this.size.width, this.size.height);
-			this.background.fill();
-		}
-		this.canvas?.zoomToFit();
+		this.events.emit(InternalEvent.ViewportSizeChanged, {
+			width: this.size.width,
+			height: this.size.height,
+			backgroundColor: this.backgroundColor
+		});
+		this.events.emit(InternalEvent.ViewportNeedsZoomToFit);
 	}
 
 	public play(): void {
@@ -449,24 +384,11 @@ export class Edit extends Entity {
 
 	/**
 	 * Reload the edit with a new configuration (hot-reload).
-	 * Uses smart diffing to only update what changed when possible.
-	 *
-	 * For initial loading, use the constructor + load() pattern instead:
-	 * ```typescript
-	 * const edit = new Edit(template);
-	 * await edit.load();
-	 * ```
-	 *
-	 * @param edit - The new Edit configuration to load
 	 */
 	public async loadEdit(edit: EditConfig): Promise<void> {
-		// Smart diff: only do full reload when structure changes (track/clip count, asset type)
 		if (this.edit && !this.hasStructuralChanges(edit)) {
-			// Preserve existing clip IDs before creating new document
-			// This ensures the reconciler sees the same IDs and updates players in-place
 			this.preserveClipIdsForGranularUpdate(edit);
 
-			// Update document with new edit (preserves "auto", "end", placeholders)
 			this.document = new EditDocument(edit);
 			this.isBatchingEvents = true;
 			this.applyGranularChanges(edit);
@@ -475,30 +397,20 @@ export class Edit extends Entity {
 			return;
 		}
 
-		// Full reload - replace document and reinitialize
 		this.document = new EditDocument(edit);
 
-		// Handle size changes
 		const newSize = this.document.getSize();
-		if (newSize.width !== this.size.width || newSize.height !== this.size.height) {
-			this.size = newSize;
-			this.updateViewportMask();
-			this.canvas?.zoomToFit();
-		}
-
-		// Handle background changes
+		this.size = newSize;
 		this.backgroundColor = this.document.getBackground() ?? "#000000";
-		if (this.background) {
-			this.background.clear();
-			this.background.fillStyle = {
-				color: this.backgroundColor
-			};
-			this.background.rect(0, 0, this.size.width, this.size.height);
-			this.background.fill();
-		}
 
-		// Clear existing clips and reinitialize from document
+		this.events.emit(InternalEvent.ViewportSizeChanged, {
+			width: this.size.width,
+			height: this.size.height,
+			backgroundColor: this.backgroundColor
+		});
+		this.events.emit(InternalEvent.ViewportNeedsZoomToFit);
 		this.clearClips();
+
 		await this.initializeFromDocument("loadEdit");
 	}
 
@@ -515,7 +427,7 @@ export class Edit extends Entity {
 			length: sec(this.totalDuration / 1000) // totalDuration is in ms
 		};
 
-		const player = new AudioPlayer(this, clip);
+		const player = this.createPlayerFromAssetType(clip);
 		player.layer = this.tracks.length + 1;
 		await this.addPlayer(this.tracks.length, player);
 	}
@@ -531,11 +443,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Validates an edit configuration without applying it.
-	 * Use this to pre-validate user input before calling loadEdit().
-	 *
-	 * @param edit - The edit configuration to validate
-	 * @returns Validation result with valid boolean and any errors
+	 * Validates an edit configuration.
 	 */
 	public validateEdit(edit: unknown): { valid: boolean; errors: Array<{ path: string; message: string }> } {
 		const result = EditSchema.safeParse(edit);
@@ -602,8 +510,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Get the pure document layer (holds raw Edit with "auto", "end", placeholders).
-	 * This is the source of truth for backend serialization.
+	 * Get the pure document layer.
 	 * @internal
 	 */
 	public getDocument(): EditDocument | null {
@@ -612,11 +519,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Resolve the document to a ResolvedEdit and emit the Resolved event.
-	 * Components (Canvas, Timeline) subscribe to this event to update themselves.
-	 *
-	 * This is the core of unidirectional data flow:
-	 * Command → Document → resolve() → ResolvedEdit → Components
-	 *
 	 * @internal
 	 */
 	public resolve(): ResolvedEdit {
@@ -632,26 +534,8 @@ export class Edit extends Entity {
 
 	/**
 	 * Resolve a single clip and update its player.
-	 *
-	 * This is an optimization for single-clip mutations (timing, asset, properties).
-	 * Instead of re-resolving ALL clips with O(n) complexity, we resolve just the
-	 * one that changed with O(1) complexity.
-	 *
-	 * Use cases:
-	 * - Resize a clip → 10x faster than full resolve()
-	 * - Update asset property → instant feedback
-	 * - Text content change → no full timeline recalc needed
-	 *
-	 * NOT for structural changes (use full resolve() instead):
-	 * - Adding/deleting clips (affects downstream "auto" starts)
-	 * - Moving clips between tracks
-	 * - Track add/delete
-	 *
-	 * @param clipId - The clip to resolve and update
-	 * @returns true if clip was found and updated, false otherwise
 	 */
 	public resolveClip(clipId: string): boolean {
-		// Build context with cached values from already-resolved players
 		const player = this.getPlayerByClipId(clipId);
 		if (!player) {
 			return false;
@@ -693,6 +577,7 @@ export class Edit extends Entity {
 		const command = new AddClipCommand(trackIdx, clip as unknown as ResolvedClip);
 		return this.executeCommand(command);
 	}
+
 	public getClip(trackIdx: number, clipIdx: number): Clip | null {
 		// Return from Player array for position-based ordering (matches Player behavior)
 		// Cast to Clip since clipConfiguration is ResolvedClip internally but compatible at runtime
@@ -703,7 +588,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Get the error state for a clip that failed to load.
-	 * Returns null if the clip loaded successfully.
 	 */
 	public getClipError(trackIdx: number, clipIdx: number): { error: string; assetType: string } | null {
 		return this.clipErrors.get(`${trackIdx}-${clipIdx}`) ?? null;
@@ -711,7 +595,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Clear the error for a deleted clip and shift indices for remaining errors.
-	 * Called when a clip is deleted to keep error indices in sync.
 	 */
 	private clearClipErrorAndShift(trackIdx: number, clipIdx: number): void {
 		// Remove the error for the deleted clip
@@ -741,7 +624,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Get a Player by its stable clip ID.
-	 * Used for reconciliation and ID-based clip operations.
 	 * @internal
 	 */
 	public getPlayerByClipId(clipId: string): Player | null {
@@ -750,7 +632,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Get the document clip by its stable ID.
-	 * Used by reconciler to access original timing intent.
 	 * @internal
 	 */
 	public getDocumentClipById(clipId: string): Clip | null {
@@ -826,7 +707,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Ensure a track exists at the given index (creates empty track if needed).
+	 * Ensure a track exists at the given index.
 	 * @internal Used by PlayerReconciler for track syncing
 	 */
 	public ensureTrackExists(trackIndex: number): void {
@@ -836,7 +717,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Remove an empty track at the given index (including PIXI container).
+	 * Remove an empty track at the given index.
 	 * @internal Used by PlayerReconciler for track syncing
 	 */
 	public removeEmptyTrack(trackIndex: number): void {
@@ -852,13 +733,7 @@ export class Edit extends Entity {
 		// Remove from tracks array
 		this.tracks.splice(trackIndex, 1);
 
-		// Remove PIXI container if it exists
-		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
-		const trackContainerKey = `shotstack-track-${zIndex}`;
-		const trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
-		if (trackContainer) {
-			this.getContainer().removeChild(trackContainer);
-		}
+		this.events.emit(InternalEvent.TrackContainerRemoved, { trackIndex });
 
 		// Update layer numbers for all players in tracks above the removed one
 		for (let i = trackIndex; i < this.tracks.length; i += 1) {
@@ -956,6 +831,7 @@ export class Edit extends Entity {
 			clips: trackClips.map((clip: Player) => clip.clipConfiguration as unknown as Clip)
 		};
 	}
+
 	public deleteTrack(trackIdx: number): void {
 		const command = new DeleteTrackCommand(trackIdx);
 		this.executeCommand(command);
@@ -1007,21 +883,9 @@ export class Edit extends Entity {
 	}
 
 	// ─── Live Update API (No Undo) ────────────────────────────────────────────────
-	//
-	// TODO: Evaluate resolve() performance to enable pure unidirectional data flow.
-	// Currently, drag/resize/rotate use optimistic player updates + document sync
-	// (without resolve) for 60fps performance. This creates temporary dual source
-	// of truth during interactions. If resolve() can be optimized to <2ms, we could
-	// call document.updateClip() + resolve() on every frame instead.
-	// See: selection-handles.ts handleDrag/handleCornerResize/handleEdgeResize/handleRotation
 
 	/**
 	 * Update clip in document only, without resolving.
-	 * Used during drag for document sync without performance cost.
-	 * Call resolve() at drag end to ensure document/player consistency.
-	 *
-	 * @param clipId - Stable clip ID
-	 * @param updates - Partial clip properties to update
 	 * @internal
 	 */
 	public updateClipInDocument(clipId: string, updates: Partial<ResolvedClip>): void {
@@ -1033,13 +897,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Commit a live update session to the undo history.
-	 * Call this at the end of a drag operation.
-	 *
-	 * Creates a command that can undo back to initialConfig.
-	 * Does NOT execute the command (state already correct from optimistic updates).
-	 *
-	 * @param clipId - The clip that was updated
-	 * @param initialConfig - The clip configuration before the drag started
 	 * @internal
 	 */
 	public commitClipUpdate(clipId: string, initialConfig: ResolvedClip): void {
@@ -1049,20 +906,18 @@ export class Edit extends Entity {
 		const finalConfig = this.getResolvedClip(location.trackIndex, location.clipIndex);
 		if (!finalConfig) return;
 
-		// Create command for undo (uses current state as "final")
+		// Create command for undo
 		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(finalConfig), {
 			trackIndex: location.trackIndex,
 			clipIndex: location.clipIndex
 		});
 
-		// Add to history without executing (state already correct)
+		// Add to history without executing
 		this.addCommandToHistory(command);
 	}
 
 	/**
 	 * Add a command to history without executing it.
-	 * Used when the command's effect has already been applied
-	 * (e.g., via live updates during drag).
 	 * @internal
 	 */
 	private addCommandToHistory(command: EditCommand): void {
@@ -1112,10 +967,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Update clip timing mode and/or values.
-	 * Supports manual values, "auto", and "end" timing modes.
-	 * @param trackIdx - Track index
-	 * @param clipIdx - Clip index within track
-	 * @param params - Timing update parameters (start and/or length in milliseconds)
 	 */
 	public updateClipTiming(trackIdx: number, clipIdx: number, params: TimingUpdateParams): void {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
@@ -1175,7 +1026,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Emits a unified `edit:changed` event after any state mutation.
-	 * Consumers can subscribe to this single event instead of tracking 31+ granular events.
 	 */
 	protected emitEditChanged(source: string): void {
 		if (this.isBatchingEvents) return;
@@ -1184,8 +1034,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Detects merge field placeholders in the raw edit before substitution.
-	 * Returns a map of clip keys ("trackIdx-clipIdx") to their merge field bindings.
-	 * Each binding maps a property path to its placeholder and resolved value.
 	 */
 	private detectMergeFieldBindings(edit: ResolvedEdit, mergeFields: SerializedMergeField[]): Map<string, Map<string, MergeFieldBinding>> {
 		const result = new Map<string, Map<string, MergeFieldBinding>>();
@@ -1215,7 +1063,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Recursively walks an object to find merge field placeholders.
-	 * Returns a map of property paths to their bindings.
 	 */
 	private detectBindingsInObject(obj: unknown, basePath: string, fieldValues: Map<string, string>): Map<string, MergeFieldBinding> {
 		const bindings = new Map<string, MergeFieldBinding>();
@@ -1264,7 +1111,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Checks if edit has structural changes requiring full reload.
-	 * Structural = track count, clip count, or asset type changed.
 	 */
 	private hasStructuralChanges(newEdit: EditConfig): boolean {
 		if (!this.edit) return true;
@@ -1303,8 +1149,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Transfers existing clip IDs from the current document to the new edit configuration.
-	 * This ensures the reconciler sees the same IDs during granular updates and updates
-	 * players in-place rather than creating new ones.
 	 */
 	private preserveClipIdsForGranularUpdate(newEdit: EditConfig): void {
 		if (!this.document) return;
@@ -1329,8 +1173,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Applies granular changes without full reload (preserves undo history, no flash).
-	 * Only called when structure is unchanged (same track/clip counts).
+	 * Applies granular changes without full reload.
 	 */
 	private applyGranularChanges(newEdit: EditConfig): void {
 		const currentOutput = this.edit?.output;
@@ -1431,7 +1274,7 @@ export class Edit extends Entity {
 				}
 				return null;
 			},
-			getContainer: () => this.getContainer(),
+			getContainer: () => this.getViewportContainer(),
 			addPlayer: (trackIdx, player) => this.addPlayer(trackIdx, player),
 			addPlayerToContainer: (trackIdx, player) => {
 				this.addPlayerToContainer(trackIdx, player);
@@ -1639,6 +1482,7 @@ export class Edit extends Entity {
 	private queueDisposeClip(clipToDispose: Player): void {
 		this.clipsToDispose.add(clipToDispose);
 	}
+
 	protected disposeClips(): void {
 		if (this.clipsToDispose.size === 0) {
 			return;
@@ -1684,7 +1528,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Remove fonts from timeline.fonts that are no longer referenced by any clip.
-	 * This keeps the document clean and prevents accumulation of unused font URLs.
 	 */
 	private cleanupUnusedFonts(): void {
 		if (!this.document) return;
@@ -1716,7 +1559,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Extract the filename (without extension) from a font URL.
-	 * e.g., "https://fonts.gstatic.com/s/inter/v20/UcCO3Fwr...Bg-4.ttf" → "UcCO3Fwr...Bg-4"
 	 */
 	private extractFilenameFromUrl(url: string): string | null {
 		try {
@@ -1732,11 +1574,9 @@ export class Edit extends Entity {
 
 	private disposeClip(clip: Player): void {
 		try {
-			if (this.getContainer().children.includes(clip.getContainer())) {
-				const childIndex = this.getContainer().getChildIndex(clip.getContainer());
-				this.getContainer().removeChildAt(childIndex);
-			} else {
-				for (const child of this.getContainer().children) {
+			const viewportContainer = this.canvas?.getViewportContainer();
+			if (viewportContainer) {
+				for (const child of viewportContainer.children) {
 					if (child instanceof pixi.Container && child.label?.toString().startsWith("shotstack-track-")) {
 						if (child.children.includes(clip.getContainer())) {
 							child.removeChild(clip.getContainer());
@@ -1756,6 +1596,7 @@ export class Edit extends Entity {
 
 		clip.dispose();
 	}
+
 	private unloadClipAssets(clip: Player): void {
 		const { asset } = clip.clipConfiguration;
 		if (asset && "src" in asset && typeof asset.src === "string") {
@@ -1765,6 +1606,7 @@ export class Edit extends Entity {
 			}
 		}
 	}
+
 	protected clearClips(): void {
 		for (const clip of this.clips) {
 			this.disposeClip(clip);
@@ -1776,6 +1618,7 @@ export class Edit extends Entity {
 
 		this.updateTotalDuration();
 	}
+
 	private updateTotalDuration(): void {
 		let maxDurationSeconds = 0;
 
@@ -1835,7 +1678,6 @@ export class Edit extends Entity {
 		}
 
 		// After timing is resolved, reconfigure ALL "end" clips to rebuild keyframes
-		// This applies to Text, Image, Video, Shape, HTML, Caption - any player type with length: "end"
 		for (const clip of this.endLengthClips) {
 			clip.reconfigureAfterRestore();
 		}
@@ -1914,106 +1756,26 @@ export class Edit extends Entity {
 	 * @internal Used by PlayerReconciler and commands
 	 */
 	public addPlayerToContainer(trackIndex: number, player: Player): void {
-		const zIndex = 100000 - (trackIndex + 1) * Edit.ZIndexPadding;
-		const trackContainerKey = `shotstack-track-${zIndex}`;
-		let trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
-
-		if (!trackContainer) {
-			trackContainer = new pixi.Container({ label: trackContainerKey, zIndex });
-			this.getContainer().addChild(trackContainer);
-		}
-
-		trackContainer.addChild(player.getContainer());
+		// Emit event for Canvas to add player to track container
+		this.events.emit(InternalEvent.PlayerAddedToTrack, { player, trackIndex });
 	}
 
 	// Move a player's container to the appropriate track container
 	private movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void {
-		if (fromTrackIdx === toTrackIdx) return;
-
-		// Calculate z-indices for track containers
-		const fromZIndex = 100000 - (fromTrackIdx + 1) * Edit.ZIndexPadding;
-		const toZIndex = 100000 - (toTrackIdx + 1) * Edit.ZIndexPadding;
-
-		// Get track containers
-		const fromTrackContainerKey = `shotstack-track-${fromZIndex}`;
-		const toTrackContainerKey = `shotstack-track-${toZIndex}`;
-
-		const fromTrackContainer = this.getContainer().getChildByLabel(fromTrackContainerKey, false);
-		let toTrackContainer = this.getContainer().getChildByLabel(toTrackContainerKey, false);
-
-		// Create new track container if it doesn't exist
-		if (!toTrackContainer) {
-			toTrackContainer = new pixi.Container({ label: toTrackContainerKey, zIndex: toZIndex });
-			this.getContainer().addChild(toTrackContainer);
-		}
-
-		// Move player container from old track container to new one
-		if (fromTrackContainer) {
-			fromTrackContainer.removeChild(player.getContainer());
-		}
-		toTrackContainer.addChild(player.getContainer());
-
-		// Force parent container to re-sort children by zIndex
-		this.getContainer().sortDirty = true;
+		this.events.emit(InternalEvent.PlayerMovedBetweenTracks, {
+			player,
+			fromTrackIndex: fromTrackIdx,
+			toTrackIndex: toTrackIdx
+		});
 	}
 	/**
 	 * Create a Player from a clip configuration based on asset type.
 	 * @internal Used by PlayerReconciler and commands
 	 */
 	public createPlayerFromAssetType(clipConfiguration: ResolvedClip): Player {
-		if (!clipConfiguration.asset?.type) {
-			throw new Error("Invalid clip configuration: missing asset type");
-		}
-
-		let player: Player;
-
-		switch (clipConfiguration.asset.type) {
-			case "text": {
-				player = new TextPlayer(this, clipConfiguration);
-				break;
-			}
-			case "rich-text": {
-				player = new RichTextPlayer(this, clipConfiguration);
-				break;
-			}
-			case "shape": {
-				player = new ShapePlayer(this, clipConfiguration);
-				break;
-			}
-			case "html": {
-				player = new HtmlPlayer(this, clipConfiguration);
-				break;
-			}
-			case "image": {
-				player = new ImagePlayer(this, clipConfiguration);
-				break;
-			}
-			case "video": {
-				player = new VideoPlayer(this, clipConfiguration);
-				break;
-			}
-			case "audio": {
-				player = new AudioPlayer(this, clipConfiguration);
-				break;
-			}
-			case "luma": {
-				player = new LumaPlayer(this, clipConfiguration);
-				break;
-			}
-			case "caption": {
-				player = new CaptionPlayer(this, clipConfiguration);
-				break;
-			}
-			case "svg": {
-				player = new SvgPlayer(this, clipConfiguration);
-				break;
-			}
-			default:
-				throw new Error(`Unsupported clip type: ${(clipConfiguration.asset as any).type}`);
-		}
-
-		return player;
+		return PlayerFactory.create(this, clipConfiguration);
 	}
+
 	private async addPlayer(trackIdx: number, clipToAdd: Player): Promise<void> {
 		while (this.tracks.length <= trackIdx) {
 			this.tracks.push([]);
@@ -2023,17 +1785,7 @@ export class Edit extends Entity {
 
 		// Document sync is handled by AddClipCommand - don't duplicate here
 
-		const zIndex = 100000 - (trackIdx + 1) * Edit.ZIndexPadding;
-
-		const trackContainerKey = `shotstack-track-${zIndex}`;
-		let trackContainer = this.getContainer().getChildByLabel(trackContainerKey, false);
-
-		if (!trackContainer) {
-			trackContainer = new pixi.Container({ label: trackContainerKey, zIndex });
-			this.getContainer().addChild(trackContainer);
-		}
-
-		trackContainer.addChild(clipToAdd.getContainer());
+		this.events.emit(InternalEvent.PlayerAddedToTrack, { player: clipToAdd, trackIndex: trackIdx });
 
 		await clipToAdd.load();
 
@@ -2080,12 +1832,14 @@ export class Edit extends Entity {
 	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
 		return this.selectionManager.findClipIndices(player);
 	}
+
 	public getClipAt(trackIndex: number, clipIndex: number): Player | null {
 		if (trackIndex >= 0 && trackIndex < this.tracks.length && clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
 			return this.tracks[trackIndex][clipIndex];
 		}
 		return null;
 	}
+
 	public selectPlayer(player: Player): void {
 		this.selectionManager.selectPlayer(player);
 	}
@@ -2096,7 +1850,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Get all active players except the specified one.
-	 * Used for clip-to-clip alignment snapping.
 	 * @internal
 	 */
 	public getActivePlayersExcept(excludePlayer: Player): Player[] {
@@ -2135,7 +1888,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Move the selected clip by a pixel delta.
-	 * Used for keyboard arrow key positioning.
 	 */
 	public moveSelectedClip(deltaX: number, deltaY: number): void {
 		const info = this.getSelectedClipInfo();
@@ -2170,8 +1922,23 @@ export class Edit extends Entity {
 		this.canvas = canvas;
 	}
 
+	public getCanvas(): Canvas | null {
+		return this.canvas;
+	}
+
 	public getCanvasZoom(): number {
 		return this.canvas?.getZoom() ?? 1;
+	}
+
+	/**
+	 * Get the viewport container for coordinate transforms.
+	 * @internal
+	 */
+	public getViewportContainer(): pixi.Container {
+		if (!this.canvas) {
+			throw new Error("Canvas not attached. Viewport container requires Canvas.");
+		}
+		return this.canvas.getViewportContainer();
 	}
 
 	// ─── Output Settings (delegated to OutputSettingsManager) ────────────────────
@@ -2228,12 +1995,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Look up a font URL by family name and weight.
-	 * Uses normalized metadata extracted from TTF files during font loading.
-	 * This enables rich-text font resolution for template fonts with UUID-based URLs.
-	 *
-	 * @param familyName - The font family name (e.g., "Lato", "Lato Light")
-	 * @param weight - The font weight (e.g., 300 for Light, 900 for Black)
-	 * @returns The font URL if found, null otherwise
 	 */
 	public getFontUrlByFamilyAndWeight(familyName: string, weight: number): string | null {
 		// Extract base family name (e.g., "Lato Light" → "Lato")
@@ -2270,7 +2031,7 @@ export class Edit extends Entity {
 		this.executeCommand(command);
 	}
 
-	/** @internal Called by SetTimelineBackgroundCommand */
+	/** @internal */
 	private setTimelineBackgroundInternal(color: string): void {
 		const result = HexColorSchema.safeParse(color);
 		if (!result.success) {
@@ -2289,12 +2050,11 @@ export class Edit extends Entity {
 		// Sync with document layer
 		this.document?.setBackground(result.data);
 
-		if (this.background) {
-			this.background.clear();
-			this.background.fillStyle = { color: this.backgroundColor };
-			this.background.rect(0, 0, this.size.width, this.size.height);
-			this.background.fill();
-		}
+		this.events.emit(InternalEvent.ViewportSizeChanged, {
+			width: this.size.width,
+			height: this.size.height,
+			backgroundColor: this.backgroundColor
+		});
 
 		this.events.emit(EditEvent.TimelineBackgroundChanged, { color: result.data });
 		// Note: emitEditChanged is handled by executeCommand
@@ -2306,10 +2066,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Resolve merge field placeholders in a string.
-	 * Replaces {{ FIELD_NAME }} patterns with their current values.
-	 *
-	 * @param input - String potentially containing merge field placeholders
-	 * @returns String with all merge fields resolved to their values
 	 */
 	public resolveMergeFields(input: string): string {
 		return this.mergeFieldService.resolve(input);
@@ -2354,8 +2110,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Find the luma clip attached to a content clip via timing match.
-	 * Attachment is determined by: same track + exact timing match.
-	 * PURE FUNCTION - no stored state.
 	 */
 	private findAttachedLumaPlayer(trackIndex: number, clipIndex: number): Player | null {
 		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
@@ -2373,11 +2127,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Attach a luma mask to a specific clip.
-	 * Creates a luma clip on the same track with synchronized timing.
-	 *
-	 * @param trackIndex - Track index of the content clip
-	 * @param clipIndex - Clip index of the content clip
-	 * @param lumaSrc - URL of the luma mask asset (video or image)
 	 */
 	public async attachLumaToClip(trackIndex: number, clipIndex: number, lumaSrc: string): Promise<void> {
 		const contentPlayer = this.getClipAt(trackIndex, clipIndex);
@@ -2428,10 +2177,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Detach the luma mask from a clip.
-	 * Removes the luma clip from the track.
-	 *
-	 * @param trackIndex - Track index of the content clip
-	 * @param clipIndex - Clip index of the content clip
 	 */
 	public async detachLumaFromClip(trackIndex: number, clipIndex: number): Promise<void> {
 		const lumaPlayer = this.findAttachedLumaPlayer(trackIndex, clipIndex);
@@ -2451,10 +2196,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Get the luma mask attached to a clip, if any.
-	 *
-	 * @param trackIndex - Track index of the content clip
-	 * @param clipIndex - Clip index of the content clip
-	 * @returns Luma info or null if no luma attached
 	 */
 	public getClipLuma(trackIndex: number, clipIndex: number): { src: string; clipIndex: number } | null {
 		const lumaPlayer = this.findAttachedLumaPlayer(trackIndex, clipIndex);
@@ -2473,10 +2214,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Check if a clip has a luma mask attached.
-	 * Uses pure timing-based lookup (no stored state).
-	 *
-	 * @param trackIndex - Track index of the content clip
-	 * @param clipIndex - Clip index of the content clip
 	 */
 	public hasLumaMask(trackIndex: number, clipIndex: number): boolean {
 		return this.findAttachedLumaPlayer(trackIndex, clipIndex) !== null;
@@ -2484,12 +2221,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Sync luma timing to match content clip.
-	 * Call after content clip is moved/resized to keep luma aligned.
-	 *
-	 * @param contentTrackIdx - Track index of the content clip
-	 * @param contentClipIdx - Clip index of the content clip
-	 * @param lumaTrackIdx - Track index of the luma clip
-	 * @param lumaClipIdx - Clip index of the luma clip
 	 */
 	public syncLumaToContent(contentTrackIdx: number, contentClipIdx: number, lumaTrackIdx: number, lumaClipIdx: number): void {
 		const contentPlayer = this.getClipAt(contentTrackIdx, contentClipIdx);
@@ -2513,9 +2244,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Normalize luma attachments after loading.
-	 * For each luma, find the best content match and sync timing.
-	 * Handles legacy JSON where luma timing doesn't match content.
-	 * Call once after loadEdit() completes.
 	 */
 	public normalizeLumaAttachments(): void {
 		let needsResolve = false;
@@ -2547,7 +2275,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Find the content clip that best matches a luma (by temporal overlap).
-	 * Used during normalization for legacy JSON.
 	 */
 	private findBestContentMatch(trackIdx: number, lumaPlayer: Player): Player | null {
 		const track = this.tracks[trackIdx];
@@ -2578,11 +2305,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Transform a clip to luma type (for attachment).
-	 * Recreates the player with luma asset type while preserving the src.
-	 *
-	 * @param trackIndex - Track index of the clip
-	 * @param clipIndex - Clip index of the clip
+	 * Transform a clip to luma type.
 	 */
 	public transformToLuma(trackIndex: number, clipIndex: number): void {
 		// Read from document (source of truth), not player's copy
@@ -2603,11 +2326,7 @@ export class Edit extends Entity {
 	}
 
 	/**
-	 * Transform a luma clip back to its original type (for detachment).
-	 * Uses stored original type for reliability, with URL extension fallback.
-	 *
-	 * @param trackIndex - Track index of the luma clip
-	 * @param clipIndex - Clip index of the luma clip
+	 * Transform a luma clip back to its original type.
 	 */
 	public transformFromLuma(trackIndex: number, clipIndex: number): void {
 		const clip = this.getResolvedClip(trackIndex, clipIndex);
@@ -2630,7 +2349,6 @@ export class Edit extends Entity {
 
 	/**
 	 * Infer asset type from URL extension.
-	 * Used as fallback when original type isn't stored.
 	 * @internal
 	 */
 	private inferAssetTypeFromUrl(src: string): "image" | "video" {

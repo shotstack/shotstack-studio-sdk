@@ -11,6 +11,7 @@
 import { Edit } from "@core/edit-session";
 import type { EditCommand, CommandContext } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
+import { InternalEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
@@ -223,6 +224,46 @@ function getCommandState(edit: Edit): { history: EditCommand[]; index: number } 
 	return {
 		history: anyEdit.commandHistory,
 		index: anyEdit.commandIndex
+	};
+}
+
+/**
+ * Helper to create a mock Canvas with viewport container for tests.
+ * Canvas now owns the viewport container. Edit emits events for visual
+ * sync; Canvas subscribes and updates visuals. Tests verify events are
+ * emitted correctly; Canvas behavior is tested separately.
+ */
+function createMockCanvas(): {
+	getViewportContainer: () => Record<string, unknown>;
+	viewportContainer: Record<string, unknown>;
+	getZoom: () => number;
+} {
+	const children: unknown[] = [];
+	const viewportContainer: Record<string, unknown> = {
+		children,
+		sortableChildren: true,
+		sortDirty: false,
+		parent: null,
+		label: "viewport",
+		zIndex: 0,
+		addChild: jest.fn((child: { parent?: unknown }) => {
+			children.push(child);
+			return child;
+		}),
+		removeChild: jest.fn((child: unknown) => {
+			const idx = children.indexOf(child);
+			if (idx !== -1) children.splice(idx, 1);
+			return child;
+		}),
+		getChildByLabel: jest.fn(() => null),
+		destroy: jest.fn(),
+		setMask: jest.fn()
+	};
+
+	return {
+		getViewportContainer: () => viewportContainer,
+		viewportContainer,
+		getZoom: () => 1
 	};
 }
 
@@ -1050,6 +1091,7 @@ describe("TransformClipAssetCommand", () => {
  */
 describe("Track Reordering Z-Index", () => {
 	let edit: Edit;
+	let mockCanvas: ReturnType<typeof createMockCanvas>;
 
 	beforeEach(async () => {
 		// Create edit with clips on two different tracks
@@ -1068,6 +1110,11 @@ describe("Track Reordering Z-Index", () => {
 			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
+
+		// Attach mock canvas so getContainer() works (Canvas now owns the viewport container)
+		mockCanvas = createMockCanvas();
+		edit.setCanvas(mockCanvas as unknown as Parameters<typeof edit.setCanvas>[0]);
+
 		await edit.load();
 	});
 
@@ -1076,18 +1123,23 @@ describe("Track Reordering Z-Index", () => {
 		jest.clearAllMocks();
 	});
 
-	it("sets sortDirty when moving clip to different track", async () => {
-		// Get the main container and verify sortDirty starts false
-		const container = edit.getContainer();
-		expect(container.sortDirty).toBe(false);
+	it("emits PlayerMovedBetweenTracks event when moving clip to different track", async () => {
+		// Spy on event emission
+		const emitSpy = jest.spyOn(edit.events, "emit");
 
 		// Move clip from track 1 to track 0
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
 		const moveCommand = new MoveClipCommand(1, 0, 0, sec(0)); // From track 1, index 0 → track 0
 		edit.executeEditCommand(moveCommand);
 
-		// After moving between tracks, sortDirty should be set to true
-		expect(container.sortDirty).toBe(true);
+		// Verify PlayerMovedBetweenTracks event was emitted (Canvas subscribes and sets sortDirty)
+		expect(emitSpy).toHaveBeenCalledWith(
+			InternalEvent.PlayerMovedBetweenTracks,
+			expect.objectContaining({
+				fromTrackIndex: 1,
+				toTrackIndex: 0
+			})
+		);
 	});
 
 	it("player layer updates correctly when moving between tracks", async () => {
@@ -1105,15 +1157,14 @@ describe("Track Reordering Z-Index", () => {
 		expect(player?.layer).toBe(1);
 	});
 
-	it("sets sortDirty on undo when moving clip back to original track", async () => {
+	it("emits PlayerMovedBetweenTracks event on undo when moving clip back to original track", async () => {
 		// Move clip from track 1 to track 0
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
 		const moveCommand = new MoveClipCommand(1, 0, 0, sec(6));
 		edit.executeEditCommand(moveCommand);
 
-		// Reset sortDirty to verify undo sets it again
-		const container = edit.getContainer();
-		container.sortDirty = false;
+		// Spy on event emission after the first move
+		const emitSpy = jest.spyOn(edit.events, "emit");
 
 		// Undo the move (MoveClipCommand.undo is async, wait for it)
 		edit.undo();
@@ -1121,8 +1172,14 @@ describe("Track Reordering Z-Index", () => {
 			setTimeout(resolve, 0);
 		});
 
-		// sortDirty should be set again during undo
-		expect(container.sortDirty).toBe(true);
+		// Verify PlayerMovedBetweenTracks event was emitted again (clip moved back)
+		expect(emitSpy).toHaveBeenCalledWith(
+			InternalEvent.PlayerMovedBetweenTracks,
+			expect.objectContaining({
+				fromTrackIndex: 0,
+				toTrackIndex: 1
+			})
+		);
 	});
 });
 
@@ -1141,6 +1198,7 @@ describe("Track Reordering Z-Index", () => {
  */
 describe("AddTrackCommand Z-Index", () => {
 	let edit: Edit;
+	let mockCanvas: ReturnType<typeof createMockCanvas>;
 
 	beforeEach(async () => {
 		// Create edit with clips on two tracks
@@ -1159,6 +1217,11 @@ describe("AddTrackCommand Z-Index", () => {
 			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
+
+		// Attach mock canvas so getContainer() works (Canvas now owns the viewport container)
+		mockCanvas = createMockCanvas();
+		edit.setCanvas(mockCanvas as unknown as Parameters<typeof edit.setCanvas>[0]);
+
 		await edit.load();
 	});
 
@@ -1187,28 +1250,29 @@ describe("AddTrackCommand Z-Index", () => {
 		expect(track1Player?.layer).toBe(3);
 	});
 
-	it("sets sortDirty when adding track", async () => {
-		const container = edit.getContainer();
-		container.sortDirty = false;
+	it("updates track count when adding track", async () => {
+		const initialTracks = edit.getTracks().length;
 
 		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const addTrackCommand = new AddTrackCommand(1);
 		edit.executeEditCommand(addTrackCommand);
 
-		expect(container.sortDirty).toBe(true);
+		expect(edit.getTracks().length).toBe(initialTracks + 1);
 	});
 
-	it("sets sortDirty on undo", async () => {
+	it("document track count is restored on undo", async () => {
+		const initialDocTracks = edit.getDocument()?.getTrackCount() ?? 0;
+
 		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const addTrackCommand = new AddTrackCommand(1);
 		edit.executeEditCommand(addTrackCommand);
 
-		const container = edit.getContainer();
-		container.sortDirty = false;
+		expect(edit.getDocument()?.getTrackCount()).toBe(initialDocTracks + 1);
 
 		edit.undo();
 
-		expect(container.sortDirty).toBe(true);
+		// Document track count is restored (source of truth)
+		expect(edit.getDocument()?.getTrackCount()).toBe(initialDocTracks);
 	});
 
 	it("restores layers correctly on undo", async () => {
