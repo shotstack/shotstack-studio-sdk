@@ -74,20 +74,22 @@ export class SvgPlayer extends Player {
 			const blob = new Blob([result.png as BlobPart], { type: "image/png" });
 			const imageUrl = URL.createObjectURL(blob);
 
-			try {
-				this.texture = await pixi.Assets.load<pixi.Texture>({
-					src: imageUrl,
-					parser: "loadTextures"
-				});
+			const image = new Image();
+			image.src = imageUrl;
 
-				this.sprite = new pixi.Sprite(this.texture);
-				this.contentContainer.addChild(this.sprite);
+			await new Promise<void>((resolve, reject) => {
+				image.onload = () => resolve();
+				image.onerror = () => reject(new Error("Failed to load SVG image"));
+			});
 
-				if (this.clipConfiguration.width && this.clipConfiguration.height) {
-					this.applyFixedDimensions();
-				}
-			} finally {
-				URL.revokeObjectURL(imageUrl);
+			URL.revokeObjectURL(imageUrl);
+
+			this.texture = pixi.Texture.from(image);
+			this.sprite = new pixi.Sprite(this.texture);
+			this.contentContainer.addChild(this.sprite);
+
+			if (this.clipConfiguration.width && this.clipConfiguration.height) {
+				this.applyFixedDimensions();
 			}
 
 			this.configureKeyframes();
@@ -95,6 +97,10 @@ export class SvgPlayer extends Player {
 			console.error("Failed to render SVG asset:", error);
 			this.createFallbackGraphic();
 		}
+	}
+
+	public override async reloadAsset(): Promise<void> {
+		await this.rerenderAtCurrentDimensions();
 	}
 
 	private createFallbackGraphic(): void {
@@ -164,5 +170,58 @@ export class SvgPlayer extends Player {
 
 	public override supportsEdgeResize(): boolean {
 		return true;
+	}
+
+	protected override onDimensionsChanged(): void {
+		this.rerenderAtCurrentDimensions();
+	}
+
+	private async rerenderAtCurrentDimensions(): Promise<void> {
+		const svgAsset = this.clipConfiguration.asset as SvgAsset;
+		const width = this.clipConfiguration.width || this.edit.size.width;
+		const height = this.clipConfiguration.height || this.edit.size.height;
+
+		try {
+			const result = await renderSvgAssetToPng(svgAsset as CanvasSvgAsset, {
+				defaultWidth: width,
+				defaultHeight: height
+			});
+
+			this.renderedWidth = result.width;
+			this.renderedHeight = result.height;
+
+			if (this.sprite) {
+				this.contentContainer.removeChild(this.sprite);
+				this.sprite.destroy();
+				this.sprite = null;
+			}
+			if (this.texture) {
+				this.texture.destroy(true);
+				this.texture = null;
+			}
+
+			const blob = new Blob([result.png as BlobPart], { type: "image/png" });
+			const imageUrl = URL.createObjectURL(blob);
+
+			const image = new Image();
+			image.src = imageUrl;
+
+			await new Promise<void>((resolve, reject) => {
+				image.onload = () => resolve();
+				image.onerror = () => reject(new Error("Failed to load SVG image"));
+			});
+
+			URL.revokeObjectURL(imageUrl);
+
+			this.texture = pixi.Texture.from(image);
+			this.sprite = new pixi.Sprite(this.texture);
+			this.contentContainer.addChild(this.sprite);
+
+			if (this.clipConfiguration.width && this.clipConfiguration.height) {
+				this.applyFixedDimensions();
+			}
+		} catch (error) {
+			console.error("Failed to re-render SVG at new dimensions:", error);
+		}
 	}
 }

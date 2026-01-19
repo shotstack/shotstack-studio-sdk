@@ -5,8 +5,7 @@ import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
-import { getNestedValue, setNestedValue } from "@core/shared/utils";
-import { type ResolvedTiming, type Seconds, type TimingIntent, sec } from "@core/timing/types";
+import { type ResolvedTiming, type Seconds, type TimingIntent, type TimingValue, sec } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
@@ -43,12 +42,8 @@ export enum PlayerType {
  * Base class for all visual content players in the canvas.
  *
  * Player is responsible for rendering clip content (video, image, text, etc.)
- * and applying keyframe animations. It does NOT handle selection UI or
- * drag/resize/rotate interactions - those are handled by SelectionHandles
- * when registered via UIController.
+ * and applying keyframe animations.
  *
- * This separation allows Canvas to be used as a pure preview renderer
- * without any interactive overlays.
  */
 export abstract class Player extends Entity {
 	private static readonly DiscardedFrameCount = 0;
@@ -57,10 +52,15 @@ export abstract class Player extends Entity {
 	public shouldDispose: boolean;
 	public readonly playerType: PlayerType;
 
+	/**
+	 * Stable ID from the document for reconciliation.
+	 * Used to track this Player across document changes.
+	 */
+	public clipId: string | null = null;
+
 	protected edit: Edit;
 	public clipConfiguration: ResolvedClip;
 
-	private timingIntent: TimingIntent;
 	private resolvedTiming: ResolvedTiming;
 
 	private positionBuilder: PositionBuilder;
@@ -69,16 +69,12 @@ export abstract class Player extends Entity {
 	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
 	private opacityKeyframeBuilder?: ComposedKeyframeBuilder;
 	private rotationKeyframeBuilder?: ComposedKeyframeBuilder;
+	private skewXKeyframeBuilder?: ComposedKeyframeBuilder;
+	private skewYKeyframeBuilder?: ComposedKeyframeBuilder;
 	private maskXKeyframeBuilder?: KeyframeBuilder;
 
 	private wipeMask: pixi.Graphics | null;
 	protected contentContainer: pixi.Container;
-
-	/**
-	 * Tracks which properties came from merge field templates.
-	 * Key: property path (e.g., "asset.src"), Value: binding info
-	 */
-	private mergeFieldBindings: Map<string, MergeFieldBinding> = new Map();
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip, playerType: PlayerType) {
 		super();
@@ -91,12 +87,6 @@ export abstract class Player extends Entity {
 		this.clipConfiguration = clipConfiguration;
 		this.positionBuilder = new PositionBuilder(edit.size);
 
-		this.timingIntent = {
-			start: clipConfiguration.start,
-			length: clipConfiguration.length
-		};
-
-		// ResolvedClip.start/length are already Seconds branded types
 		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
 
 		this.wipeMask = null;
@@ -128,24 +118,45 @@ export abstract class Player extends Entity {
 		const baseScale = typeof config.scale === "number" ? config.scale : 1;
 		const baseOpacity = typeof config.opacity === "number" ? config.opacity : 1;
 		const baseRotation = typeof config.transform?.rotate?.angle === "number" ? config.transform.rotate.angle : 0;
+		const baseSkewX = typeof config.transform?.skew?.x === "number" ? config.transform.skew.x : 0;
+		const baseSkewY = typeof config.transform?.skew?.y === "number" ? config.transform.skew.y : 0;
 
 		// Create composed builders with base values
-		// Offsets use additive composition (base + effect delta + transition delta)
 		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, length, "additive");
 		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, length, "additive");
-		// Scale and opacity use multiplicative composition (base × effect factor × transition factor)
 		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, length, "multiplicative");
 		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, length, "multiplicative", { min: 0, max: 1 });
-		// Rotation uses additive composition
 		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, length, "additive");
+		this.skewXKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewX, length, "additive");
+		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, length, "additive");
 
-		// If user has custom keyframes, don't add effect/transition layers
+		// If user has custom keyframes, add them and skip effect/transition layers
 		if (this.clipHasKeyframes()) {
+			if (Array.isArray(config.scale)) {
+				this.scaleKeyframeBuilder.addLayer(config.scale);
+			}
+			if (Array.isArray(config.opacity)) {
+				this.opacityKeyframeBuilder.addLayer(config.opacity);
+			}
+			if (Array.isArray(config.offset?.x)) {
+				this.offsetXKeyframeBuilder.addLayer(config.offset.x);
+			}
+			if (Array.isArray(config.offset?.y)) {
+				this.offsetYKeyframeBuilder.addLayer(config.offset.y);
+			}
+			if (Array.isArray(config.transform?.rotate?.angle)) {
+				this.rotationKeyframeBuilder.addLayer(config.transform.rotate.angle);
+			}
+			if (Array.isArray(config.transform?.skew?.x)) {
+				this.skewXKeyframeBuilder.addLayer(config.transform.skew.x);
+			}
+			if (Array.isArray(config.transform?.skew?.y)) {
+				this.skewYKeyframeBuilder.addLayer(config.transform.skew.y);
+			}
 			return;
 		}
 
 		// Build resolved clip config for preset builders
-		// getStart() and length are already in Seconds
 		const resolvedClipConfig: ResolvedClip = {
 			...config,
 			start: this.getStart(),
@@ -158,28 +169,28 @@ export abstract class Player extends Entity {
 		// Build relative transition keyframes (separate in/out sets)
 		const transitionSet = new TransitionPresetBuilder(resolvedClipConfig).buildRelative();
 
-		// Add effect layer (runs for full clip duration)
+		// Add effect layer
 		this.offsetXKeyframeBuilder.addLayer(effectSet.offsetXKeyframes);
 		this.offsetYKeyframeBuilder.addLayer(effectSet.offsetYKeyframes);
 		this.scaleKeyframeBuilder.addLayer(effectSet.scaleKeyframes);
 		this.opacityKeyframeBuilder.addLayer(effectSet.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(effectSet.rotationKeyframes);
 
-		// Add transition-in layer (runs at clip start)
+		// Add transition-in layer
 		this.offsetXKeyframeBuilder.addLayer(transitionSet.in.offsetXKeyframes);
 		this.offsetYKeyframeBuilder.addLayer(transitionSet.in.offsetYKeyframes);
 		this.scaleKeyframeBuilder.addLayer(transitionSet.in.scaleKeyframes);
 		this.opacityKeyframeBuilder.addLayer(transitionSet.in.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(transitionSet.in.rotationKeyframes);
 
-		// Add transition-out layer (runs at clip end)
+		// Add transition-out layer
 		this.offsetXKeyframeBuilder.addLayer(transitionSet.out.offsetXKeyframes);
 		this.offsetYKeyframeBuilder.addLayer(transitionSet.out.offsetYKeyframes);
 		this.scaleKeyframeBuilder.addLayer(transitionSet.out.scaleKeyframes);
 		this.opacityKeyframeBuilder.addLayer(transitionSet.out.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
-		// Mask keyframes (wipe/reveal effects) - still use KeyframeBuilder directly
+		// Mask keyframes (wipe/reveal effects)
 		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
 			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
@@ -194,7 +205,7 @@ export abstract class Player extends Entity {
 
 		this.getContainer().sortableChildren = true;
 
-		// Enable pointer events for click-to-select (handled by edit-session)
+		// Enable pointer events for click-to-select
 		this.getContainer().cursor = "pointer";
 		this.getContainer().eventMode = "static";
 		this.getContainer().on?.("pointerdown", this.onPointerDown.bind(this));
@@ -220,6 +231,9 @@ export abstract class Player extends Entity {
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
 
+		const skew = this.getSkew();
+		this.getContainer().skew?.set(skew.x * (Math.PI / 180), skew.y * (Math.PI / 180));
+
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			this.applyFixedDimensions();
 		}
@@ -234,7 +248,6 @@ export abstract class Player extends Entity {
 
 	private updateWipeMask(): void {
 		if (!this.maskXKeyframeBuilder) {
-			// No wipe transition, ensure mask is removed
 			if (this.wipeMask) {
 				this.getContainer().mask = null;
 				this.wipeMask.destroy();
@@ -247,7 +260,6 @@ export abstract class Player extends Entity {
 		const size = this.getSize();
 
 		// Create mask if it doesn't exist
-		// Apply to main container (not contentContainer) to avoid conflict with fixed dimensions mask
 		if (!this.wipeMask) {
 			this.wipeMask = new pixi.Graphics();
 			this.getContainer().addChild(this.wipeMask);
@@ -255,8 +267,6 @@ export abstract class Player extends Entity {
 		}
 
 		// Update mask to create wipe effect
-		// maskProgress 0 → 1 reveals content from left to right
-		// maskProgress 1 → 0 hides content from right to left
 		this.wipeMask.clear();
 		this.wipeMask.rect(0, 0, size.width * maskProgress, size.height);
 		this.wipeMask.fill(0xffffff);
@@ -288,17 +298,25 @@ export abstract class Player extends Entity {
 		return sec(this.resolvedTiming.start + this.resolvedTiming.length);
 	}
 
+	/**
+	 * Get timing intent from document (source of truth).
+	 * Returns "auto"/"end" strings as stored in the document, not resolved numeric values.
+	 */
 	public getTimingIntent(): TimingIntent {
-		return { ...this.timingIntent };
-	}
-
-	public setTimingIntent(intent: Partial<TimingIntent>): void {
-		if (intent.start !== undefined) {
-			this.timingIntent.start = intent.start;
+		// Read timing intent from document (source of truth)
+		if (this.clipId) {
+			const docClip = this.edit.getDocumentClipById(this.clipId);
+			if (docClip) {
+				const startIntent = docClip.start === "auto" ? "auto" : (docClip.start as Seconds);
+				const lengthIntent = (typeof docClip.length === "string" ? docClip.length : docClip.length) as TimingValue;
+				return { start: startIntent, length: lengthIntent };
+			}
 		}
-		if (intent.length !== undefined) {
-			this.timingIntent.length = intent.length;
-		}
+		// Fallback: use resolved timing from clipConfiguration
+		return {
+			start: this.clipConfiguration.start,
+			length: this.clipConfiguration.length
+		};
 	}
 
 	public getResolvedTiming(): ResolvedTiming {
@@ -307,71 +325,17 @@ export abstract class Player extends Entity {
 
 	public setResolvedTiming(timing: ResolvedTiming): void {
 		this.resolvedTiming = { ...timing };
-	}
-
-	public convertToFixedTiming(): void {
-		// resolvedTiming is already in Seconds, just copy it
-		this.timingIntent = {
-			start: this.resolvedTiming.start,
-			length: this.resolvedTiming.length
-		};
-	}
-
-	// ─── Merge Field Binding Methods ─────────────────────────────────────────────
-
-	/**
-	 * Set a merge field binding for a property path.
-	 * Called when a property is resolved from a merge field template.
-	 */
-	public setMergeFieldBinding(path: string, binding: MergeFieldBinding): void {
-		this.mergeFieldBindings.set(path, binding);
+		this.clipConfiguration.start = timing.start;
+		this.clipConfiguration.length = timing.length;
 	}
 
 	/**
-	 * Get the merge field binding for a property path, if any.
-	 */
-	public getMergeFieldBinding(path: string): MergeFieldBinding | undefined {
-		return this.mergeFieldBindings.get(path);
-	}
-
-	/**
-	 * Remove a merge field binding (e.g., when user changes the value).
-	 */
-	public removeMergeFieldBinding(path: string): void {
-		this.mergeFieldBindings.delete(path);
-	}
-
-	/**
-	 * Get all merge field bindings for this player.
-	 */
-	public getMergeFieldBindings(): Map<string, MergeFieldBinding> {
-		return this.mergeFieldBindings;
-	}
-
-	/**
-	 * Bulk set bindings during player initialization.
-	 */
-	public setInitialBindings(bindings: Map<string, MergeFieldBinding>): void {
-		this.mergeFieldBindings = new Map(bindings);
-	}
-
-	/**
-	 * Get the exportable clip configuration with merge field placeholders restored.
-	 * For properties that haven't changed from their resolved value, the original
-	 * placeholder (e.g., "{{ HERO_IMAGE }}") is restored for export.
+	 * Get the clip configuration with timing intent applied.
+	 * Note: Placeholder restoration is handled by document.toJSON() for export,
+	 * or by EditSession.getTemplateClip() for API callers.
 	 */
 	public getExportableClip(): Clip {
 		const exported = structuredClone(this.clipConfiguration) as Record<string, unknown>;
-
-		// Restore merge field placeholders for unchanged values
-		for (const [path, { placeholder, resolvedValue }] of this.mergeFieldBindings) {
-			const currentValue = getNestedValue(exported, path);
-			if (currentValue === resolvedValue) {
-				// Value unchanged - restore the placeholder for export
-				setNestedValue(exported, path, placeholder);
-			}
-			// If value changed, leave current value (binding is broken)
-		}
 
 		// Apply timing intent (preserves "auto", "end" strings)
 		const intent = this.getTimingIntent();
@@ -385,10 +349,8 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Get the playback time relative to clip start, in seconds.
-	 * Used for keyframe animation calculations.
 	 */
 	public getPlaybackTime(): number {
-		// Convert edit.playbackTime (ms) to seconds for comparison with clip timing
 		const playbackTimeSeconds = this.edit.playbackTime / 1000;
 		const clipTime = playbackTimeSeconds - this.getStart();
 
@@ -402,8 +364,6 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Returns the source content dimensions (before fit scaling).
-	 * Override in subclasses that have different source vs output sizes.
-	 * Default implementation returns getSize().
 	 */
 	public getContentSize(): Size {
 		return this.getSize();
@@ -433,23 +393,18 @@ export abstract class Player extends Entity {
 	}
 
 	/**
-	 * Move the clip by a pixel delta. Used for keyboard arrow key positioning.
+	 * Calculate the new offset position after moving by a pixel delta.
+	 * Returns the new offset without mutating player state.
+	 * Used for keyboard arrow key positioning.
 	 * @internal
 	 */
-	public moveBy(deltaX: number, deltaY: number): void {
+	public calculateMoveOffset(deltaX: number, deltaY: number): { x: number; y: number } {
 		const currentPos = this.getPosition();
 		const newAbsolutePos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
 
 		const relativePos = this.positionBuilder.absoluteToRelative(this.getSize(), this.clipConfiguration.position ?? "center", newAbsolutePos);
 
-		if (!this.clipConfiguration.offset) {
-			this.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.clipConfiguration.offset.x = relativePos.x;
-		this.clipConfiguration.offset.y = relativePos.y;
-
-		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(relativePos.x, this.getLength(), "additive");
-		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(relativePos.y, this.getLength(), "additive");
+		return { x: relativePos.x, y: relativePos.y };
 	}
 
 	protected getFitScale(): number {
@@ -480,6 +435,13 @@ export abstract class Player extends Entity {
 		return this.rotationKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
 	}
 
+	public getSkew(): { x: number; y: number } {
+		return {
+			x: this.skewXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0,
+			y: this.skewYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0
+		};
+	}
+
 	public isActive(): boolean {
 		// Convert edit.playbackTime (ms) to seconds for comparison
 		const playbackTimeSeconds = this.edit.playbackTime / 1000;
@@ -505,9 +467,12 @@ export abstract class Player extends Entity {
 	private clipHasKeyframes(): boolean {
 		return [
 			this.clipConfiguration.scale,
+			this.clipConfiguration.opacity,
 			this.clipConfiguration.offset?.x,
 			this.clipConfiguration.offset?.y,
-			this.clipConfiguration.transform?.rotate?.angle
+			this.clipConfiguration.transform?.rotate?.angle,
+			this.clipConfiguration.transform?.skew?.x,
+			this.clipConfiguration.transform?.skew?.y
 		].some(property => property && typeof property !== "number");
 	}
 

@@ -10,10 +10,10 @@ export { Timeline } from "@timeline/index";
 export { UIController } from "@core/ui/ui-controller";
 export type { UIRegistration, CanvasOverlayRegistration, UIControllerOptions, ToolbarButtonConfig, ButtonClickPayload } from "@core/ui/ui-controller";
 
-// Canvas overlays (optional - register via UIController)
+// Canvas overlays
 export { SelectionHandles } from "@core/ui/selection-handles";
 
-// Toolbars (optional - register via UIController)
+// Toolbars
 export { TextToolbar } from "@core/ui/text-toolbar";
 export { RichTextToolbar } from "@core/ui/rich-text-toolbar";
 export { MediaToolbar } from "@core/ui/media-toolbar";
@@ -21,7 +21,7 @@ export { ClipToolbar } from "@core/ui/clip-toolbar";
 export { CanvasToolbar } from "@core/ui/canvas-toolbar";
 export { AssetToolbar } from "@core/ui/asset-toolbar";
 
-// Utilities (optional - register via UIController)
+// Utilities
 export { Inspector } from "@canvas/system/inspector";
 export { TranscriptionIndicator } from "@core/ui/transcription-indicator";
 
@@ -33,10 +33,7 @@ export type { EditEventMap, EditEventName, ClipLocation, ClipReference } from "@
 export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types";
 export type { TimelineOptions, TimelineFeatures } from "@timeline/index";
 
-// Export schema types and Zod schemas for library users
-// Note: Edit and Timeline types are intentionally not re-exported here
-// to avoid conflict with the Edit and Timeline classes exported above.
-// Use EditConfig for the schema type, or import from @schemas directly.
+// Export schema types and Zod schemas
 export type { EditConfig } from "./core/schemas";
 export {
 	// Zod schemas
@@ -70,7 +67,7 @@ export {
 	HexColorSchema
 } from "./core/schemas";
 export type {
-	// Types (excluding Edit and Timeline to avoid conflicts)
+	// Types
 	Track,
 	Clip,
 	Output,

@@ -1,9 +1,9 @@
-import { executeTextToRichTextConversion } from "./commands/convert-text-to-rich-text-command";
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import { Edit } from "./edit-session";
+import { parseFontFamily } from "./fonts/font-config";
 import type { MergeFieldService } from "./merge";
-import type { Clip, TextAsset } from "./schemas";
-import { getNestedValue } from "./shared/utils";
+import type { Clip, RichTextAsset, TextAsset } from "./schemas";
+import { getNestedValue, setNestedValue } from "./shared/utils";
 
 /**
  * Type guard for empty TextAsset (used as shape).
@@ -104,6 +104,9 @@ function convertEmptyTextClipToSvg(clip: Clip): Clip {
  * ```
  */
 export class ShotstackEdit extends Edit {
+	// Recursion guard for merge field updates (prevents stack overflow)
+	private isUpdatingMergeFields = false;
+
 	// ─── Merge Field API ───────────────────────────────────────────────────────
 
 	/**
@@ -116,14 +119,6 @@ export class ShotstackEdit extends Edit {
 
 	/**
 	 * Apply a merge field to a clip property.
-	 * The property value will be wrapped in {{ FIELD }} placeholder syntax.
-	 *
-	 * @param trackIndex - Track index of the clip
-	 * @param clipIndex - Clip index within the track
-	 * @param propertyPath - Dot-notation path to property (e.g., "asset.text", "asset.src")
-	 * @param fieldName - Name of the merge field (e.g., "TITLE", "PRODUCT_IMAGE")
-	 * @param value - The resolved value to apply
-	 * @param originalValue - Optional: the original value before merge field (for undo)
 	 */
 	public applyMergeField(
 		trackIndex: number,
@@ -132,12 +127,12 @@ export class ShotstackEdit extends Edit {
 		fieldName: string,
 		value: string,
 		originalValue?: string
-	): void {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player) return;
+	): Promise<void> {
+		const clipId = this.getClipId(trackIndex, clipIndex);
+		if (!clipId) return Promise.resolve();
 
-		// Get current value from player for undo
-		const currentValue = getNestedValue(player.clipConfiguration, propertyPath);
+		const resolvedClip = this.getResolvedClip(trackIndex, clipIndex);
+		const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
 		const previousValue = originalValue ?? (typeof currentValue === "string" ? currentValue : "");
 
 		// Check if there's already a merge field on this property
@@ -145,31 +140,26 @@ export class ShotstackEdit extends Edit {
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
 		const previousFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
-		const command = new SetMergeFieldCommand(player, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
-		this.executeCommand(command);
+		const command = new SetMergeFieldCommand(clipId, propertyPath, fieldName, previousFieldName, previousValue, value, trackIndex, clipIndex);
+		return this.executeCommand(command);
 	}
 
 	/**
 	 * Remove a merge field from a clip property, restoring the original value.
-	 *
-	 * @param trackIndex - Track index
-	 * @param clipIndex - Clip index within the track
-	 * @param propertyPath - Dot-notation path to property (e.g., "asset.src")
-	 * @param restoreValue - The value to restore (original pre-merge-field value)
 	 */
-	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): void {
-		const player = this.getPlayerClip(trackIndex, clipIndex);
-		if (!player) return;
+	public removeMergeField(trackIndex: number, clipIndex: number, propertyPath: string, restoreValue: string): Promise<void> {
+		const clipId = this.getClipId(trackIndex, clipIndex);
+		if (!clipId) return Promise.resolve();
 
 		// Get current merge field name
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
 		const templateValue = templateClip ? getNestedValue(templateClip, propertyPath) : null;
 		const currentFieldName = typeof templateValue === "string" ? this.mergeFieldService.extractFieldName(templateValue) : null;
 
-		if (!currentFieldName) return; // No merge field to remove
+		if (!currentFieldName) return Promise.resolve(); // No merge field to remove
 
 		const command = new SetMergeFieldCommand(
-			player,
+			clipId,
 			propertyPath,
 			null, // Removing merge field
 			currentFieldName,
@@ -178,13 +168,11 @@ export class ShotstackEdit extends Edit {
 			trackIndex,
 			clipIndex
 		);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
 	/**
 	 * Get the merge field name for a clip property, if any.
-	 *
-	 * @returns The field name if a merge field is applied, null otherwise
 	 */
 	public getMergeFieldForProperty(trackIndex: number, clipIndex: number, propertyPath: string): string | null {
 		const templateClip = this.getTemplateClip(trackIndex, clipIndex);
@@ -195,58 +183,32 @@ export class ShotstackEdit extends Edit {
 	}
 
 	/**
-	 * Update the value of a merge field. Updates all clips using this field in-place.
-	 * This does NOT use the command pattern (no undo) - it's for live preview updates.
+	 * Update the placeholder value of a merge field.
 	 */
 	public updateMergeFieldValueLive(fieldName: string, newValue: string): void {
-		// Update the field in the service
-		const field = this.mergeFieldService.get(fieldName);
-		if (!field) return;
-		this.mergeFieldService.register({ ...field, defaultValue: newValue }, { silent: true });
+		// Recursion guard: prevent stack overflow from event cascades
+		if (this.isUpdatingMergeFields) return;
 
-		// Find and update all clips using this field
-		const tracks = this.getTracks();
-		for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
-			for (let clipIdx = 0; clipIdx < tracks[trackIdx].length; clipIdx += 1) {
-				const player = tracks[trackIdx][clipIdx];
-				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
-				if (templateClip) {
-					// Update clipConfiguration with new resolved value (for rendering)
-					this.updateMergeFieldInObject(player.clipConfiguration, templateClip, fieldName, newValue);
+		this.isUpdatingMergeFields = true;
+		try {
+			// Update the field in the registry
+			const field = this.mergeFieldService.get(fieldName);
+			if (!field) return;
+			this.mergeFieldService.register({ ...field, defaultValue: newValue }, { silent: true });
 
-					// Also update the binding's resolvedValue so getExportableClip() can match correctly
+			// Update document bindings with new resolved values
+			const tracks = this.getTracks();
+			for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
+				for (let clipIdx = 0; clipIdx < tracks[trackIdx].length; clipIdx += 1) {
+					const player = tracks[trackIdx][clipIdx];
 					this.updateMergeFieldBindings(player, fieldName, newValue);
 				}
 			}
-		}
-	}
 
-	/**
-	 * Redraw all clips that use a specific merge field.
-	 * Call this after updateMergeFieldValueLive() to refresh the canvas.
-	 * Handles both text redraws and asset reloads for URL changes.
-	 */
-	public redrawMergeFieldClips(fieldName: string): void {
-		const tracks = this.getTracks();
-		for (const track of tracks) {
-			for (const player of track) {
-				const indices = this.findClipIndices(player);
-				if (indices) {
-					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
-					if (templateClip) {
-						// Check if this clip uses the merge field and where
-						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
-						if (usageInfo.used) {
-							// If the merge field is used for asset.src, reload the asset
-							if (usageInfo.isSrcField) {
-								player.reloadAsset();
-							}
-							player.reconfigureAfterRestore();
-							player.draw();
-						}
-					}
-				}
-			}
+			// Document-first: resolve() triggers reconciler which updates players
+			this.resolve();
+		} finally {
+			this.isUpdatingMergeFields = false;
 		}
 	}
 
@@ -262,9 +224,14 @@ export class ShotstackEdit extends Edit {
 				if (indices) {
 					const templateClip = this.getTemplateClip(indices.trackIndex, indices.clipIndex);
 					if (templateClip) {
-						const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
-						if (usageInfo.used && usageInfo.isSrcField) {
-							return true;
+						// Only validate URLs for asset types that use URL sources (not HTML/text)
+						const assetType = (templateClip.asset as { type?: string })?.type;
+						const isUrlBasedAsset = assetType === "image" || assetType === "video" || assetType === "audio";
+						if (isUrlBasedAsset) {
+							const usageInfo = this.getMergeFieldUsage(templateClip, fieldName);
+							if (usageInfo.used && usageInfo.isSrcField) {
+								return true;
+							}
 						}
 					}
 				}
@@ -275,11 +242,8 @@ export class ShotstackEdit extends Edit {
 
 	/**
 	 * Remove a merge field globally from all clips and the registry.
-	 * Restores all affected clip properties to the merge field's default value.
-	 *
-	 * @param fieldName - The merge field name to remove
 	 */
-	public deleteMergeFieldGlobally(fieldName: string): void {
+	public async deleteMergeFieldGlobally(fieldName: string): Promise<void> {
 		const field = this.mergeFieldService.get(fieldName);
 		if (!field) return;
 
@@ -293,7 +257,7 @@ export class ShotstackEdit extends Edit {
 				const templateClip = this.getTemplateClip(trackIdx, clipIdx);
 				if (templateClip) {
 					// Find properties with this template and restore them
-					this.restoreMergeFieldInClip(trackIdx, clipIdx, templateClip, template, restoreValue);
+					await this.restoreMergeFieldInClip(trackIdx, clipIdx, templateClip, template, restoreValue); // eslint-disable-line no-await-in-loop
 				}
 			}
 		}
@@ -305,71 +269,7 @@ export class ShotstackEdit extends Edit {
 	// ─── Text Conversion API ───────────────────────────────────────────────────
 
 	/**
-	 * Convert a TextAsset clip to a RichTextAsset clip.
-	 * This is a one-way conversion that preserves styling.
-	 * Width/height properties are moved to clip.fit.
-	 * Not added to undo history (one-way upgrade).
-	 *
-	 * @param trackIndex - Track index of the text clip
-	 * @param clipIndex - Clip index of the text clip
-	 */
-	public async convertTextToRichText(trackIndex: number, clipIndex: number): Promise<void> {
-		const player = this.getClipAt(trackIndex, clipIndex);
-		if (!player?.clipConfiguration?.asset) return;
-
-		const asset = player.clipConfiguration.asset as { type?: string };
-		if (asset.type !== "text") return;
-
-		// Execute directly (NOT via executeCommand - no undo for one-way upgrade)
-		const context = this.createCommandContext();
-		await executeTextToRichTextConversion(trackIndex, clipIndex, context);
-
-		this.emitEditChanged("ConvertTextToRichText");
-
-		// Re-select the clip to trigger toolbar switch
-		this.selectClip(trackIndex, clipIndex);
-	}
-
-	/**
-	 * Convert all TextAsset clips to RichTextAsset clips.
-	 * Skips text assets with empty text (used as shapes).
-	 * One-way conversion, not added to undo history.
-	 *
-	 * @returns Number of clips converted
-	 */
-	public async convertAllTextToRichText(): Promise<number> {
-		const trackCount = this.getTrackCount();
-		let converted = 0;
-
-		// Iterate backwards to avoid index shifting issues when clips are replaced
-		for (let trackIdx = 0; trackIdx < trackCount; trackIdx += 1) {
-			const clipCount = this.getClipCountInTrack(trackIdx);
-			for (let clipIdx = clipCount - 1; clipIdx >= 0; clipIdx -= 1) {
-				const player = this.getClipAt(trackIdx, clipIdx);
-				const asset = player?.clipConfiguration?.asset as { type?: string; text?: string };
-
-				// Only convert text assets with non-empty text
-				// Empty text assets are used as shapes and need different handling
-				if (asset?.type === "text" && asset.text && asset.text.trim() !== "") {
-					await this.convertTextToRichText(trackIdx, clipIdx);
-					converted += 1;
-				}
-			}
-		}
-
-		return converted;
-	}
-
-	/**
 	 * Convert all text assets and log the resulting template JSON to console.
-	 *
-	 * This performs a pure JSON transformation (no live player updates):
-	 * - Text assets with content → RichText assets
-	 * - Empty text assets (shapes) → SVG assets
-	 *
-	 * The converted template is logged to console for manual copying.
-	 *
-	 * @returns Conversion counts
 	 */
 	public async convertAllTextAssets(): Promise<{ richText: number; svg: number }> {
 		const document = this.getDocument();
@@ -436,24 +336,74 @@ export class ShotstackEdit extends Edit {
 	private convertTextClipToRichText(clip: Clip): Clip {
 		const textAsset = clip.asset as TextAsset;
 
-		// Map TextAsset properties to RichTextAsset
-		const richTextAsset = {
-			type: "rich-text" as const,
-			text: textAsset.text || "",
-			font: {
-				family: textAsset.font?.family || "Open Sans",
-				size: typeof textAsset.font?.size === "string" ? Number(textAsset.font.size) : (textAsset.font?.size ?? 48),
-				color: textAsset.font?.color || "#ffffff",
-				opacity: textAsset.font?.opacity ?? 1,
-				weight: 400,
-				style: "normal" as const,
-				lineHeight: textAsset.font?.lineHeight ?? 1
-			},
+		// Extract weight from font family suffix (e.g., "Montserrat ExtraBold" → 800)
+		const fontFamily = textAsset.font?.family ?? "Open Sans";
+		const { fontWeight } = parseFontFamily(fontFamily);
+
+		// Build font object
+		const font: RichTextAsset["font"] = {
+			family: fontFamily,
+			size: typeof textAsset.font?.size === "string" ? Number(textAsset.font.size) : (textAsset.font?.size ?? 32),
+			weight: textAsset.font?.weight ?? fontWeight,
+			color: textAsset.font?.color ?? "#ffffff",
+			opacity: textAsset.font?.opacity ?? 1
+		};
+
+		// Nest stroke inside font if present
+		if (textAsset.stroke?.width && textAsset.stroke.width > 0) {
+			font.stroke = {
+				width: textAsset.stroke.width,
+				color: textAsset.stroke.color ?? "#000000",
+				opacity: 1
+			};
+		}
+
+		// Build style object
+		const style: RichTextAsset["style"] = {
+			letterSpacing: 0,
+			lineHeight: textAsset.font?.lineHeight ?? 1.2,
+			textTransform: "none",
+			textDecoration: "none"
+		};
+
+		// Build the RichTextAsset
+		const richTextAsset: RichTextAsset = {
+			type: "rich-text",
+			text: textAsset.text ?? "",
+			font,
+			style,
 			align: {
-				horizontal: (textAsset.alignment?.horizontal || "center") as "left" | "center" | "right",
+				horizontal: textAsset.alignment?.horizontal ?? "center",
 				vertical: this.mapVerticalAlign(textAsset.alignment?.vertical)
 			}
 		};
+
+		// Map background
+		if (textAsset.background) {
+			richTextAsset.background = {
+				color: textAsset.background.color,
+				opacity: textAsset.background.opacity ?? 1,
+				borderRadius: textAsset.background.borderRadius ?? 0
+			};
+
+			// Extract padding from background to top-level
+			if (textAsset.background.padding) {
+				richTextAsset.padding = textAsset.background.padding;
+			}
+		}
+
+		// Map animation
+		if (textAsset.animation) {
+			richTextAsset.animation = {
+				preset: textAsset.animation.preset,
+				duration: textAsset.animation.duration
+			};
+		}
+
+		// Warn if ellipsis is dropped
+		if (textAsset.ellipsis !== undefined) {
+			console.warn("TextAsset ellipsis property not supported in RichTextAsset, value dropped");
+		}
 
 		const newClip: Clip = {
 			...clip,
@@ -473,39 +423,46 @@ export class ShotstackEdit extends Edit {
 
 	// ─── Private Helpers ───────────────────────────────────────────────────────
 
-	/** Helper: Update merge field binding resolvedValues for a player */
+	/**
+	 * Helper: Update merge field bindings and document clip data for a player.
+	 * Must update both bindings and clip data because the resolver reads clip data directly.
+	 */
 	private updateMergeFieldBindings(player: ReturnType<typeof this.getPlayerClip>, fieldName: string, _newValue: string): void {
 		if (!player) return;
-		for (const [path, binding] of player.getMergeFieldBindings()) {
+
+		const { clipId } = player;
+		if (!clipId) return;
+
+		const document = this.getDocument();
+		if (!document) return;
+
+		// Find clip indices for document updates
+		const indices = this.findClipIndices(player);
+		if (!indices) return;
+
+		// Read bindings from document (source of truth)
+		const bindings = document.getClipBindings(clipId);
+		if (!bindings) return;
+
+		for (const [path, binding] of bindings) {
 			// Check if this binding's placeholder contains this field
 			const extractedField = this.mergeFieldService.extractFieldName(binding.placeholder);
 			if (extractedField === fieldName) {
 				// Recompute the resolved value from the placeholder with the new field value
 				const newResolvedValue = this.mergeFieldService.resolve(binding.placeholder);
-				player.setMergeFieldBinding(path, {
+				const updatedBinding = {
 					placeholder: binding.placeholder,
 					resolvedValue: newResolvedValue
-				});
-			}
-		}
-	}
+				};
 
-	/** Helper: Update merge field occurrences in an object */
-	private updateMergeFieldInObject(target: unknown, template: unknown, fieldName: string, newValue: string): void {
-		if (!target || !template || typeof target !== "object" || typeof template !== "object") return;
+				// Update document binding
+				document.setClipBinding(clipId, path, updatedBinding);
 
-		for (const key of Object.keys(template as Record<string, unknown>)) {
-			const templateVal = (template as Record<string, unknown>)[key];
-			const targetObj = target as Record<string, unknown>;
-
-			if (typeof templateVal === "string") {
-				const extractedField = this.mergeFieldService.extractFieldName(templateVal);
-				if (extractedField === fieldName) {
-					// Replace {{ FIELD }} with newValue in the resolved clipConfiguration
-					targetObj[key] = templateVal.replace(new RegExp(`\\{\\{\\s*${fieldName}\\s*\\}\\}`, "gi"), newValue);
+				// Also update document clip data (resolver reads clip data, not bindings)
+				const clip = document.getClip(indices.trackIndex, indices.clipIndex);
+				if (clip) {
+					setNestedValue(clip as Record<string, unknown>, path, newResolvedValue);
 				}
-			} else if (templateVal && typeof templateVal === "object") {
-				this.updateMergeFieldInObject(targetObj[key], templateVal, fieldName, newValue);
 			}
 		}
 	}
@@ -535,14 +492,14 @@ export class ShotstackEdit extends Edit {
 	/**
 	 * Helper: Find and restore merge field occurrences in a clip
 	 */
-	private restoreMergeFieldInClip(
+	private async restoreMergeFieldInClip(
 		trackIdx: number,
 		clipIdx: number,
 		templateClip: unknown,
 		template: string,
 		restoreValue: string,
 		path: string = ""
-	): void {
+	): Promise<void> {
 		if (!templateClip || typeof templateClip !== "object") return;
 
 		for (const key of Object.keys(templateClip as Record<string, unknown>)) {
@@ -555,11 +512,11 @@ export class ShotstackEdit extends Edit {
 				if (extractedField && templateFieldName && extractedField === templateFieldName) {
 					// Apply proper substitution - replace {{ FIELD }} with restoreValue, preserving surrounding text
 					const substitutedValue = value.replace(new RegExp(`\\{\\{\\s*${extractedField}\\s*\\}\\}`, "gi"), restoreValue);
-					this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue);
+					await this.removeMergeField(trackIdx, clipIdx, propertyPath, substitutedValue); // eslint-disable-line no-await-in-loop
 				}
 			} else if (typeof value === "object" && value !== null) {
 				// Recurse into nested objects
-				this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath);
+				await this.restoreMergeFieldInClip(trackIdx, clipIdx, value, template, restoreValue, propertyPath); // eslint-disable-line no-await-in-loop
 			}
 		}
 	}

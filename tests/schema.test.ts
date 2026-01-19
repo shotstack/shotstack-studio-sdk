@@ -44,8 +44,8 @@ describe("ClipSchema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("accepts clip with negative start (backend validates)", () => {
-		// Note: External schema allows negative start; backend performs semantic validation
+	it("rejects clip with negative start", () => {
+		// Centralized schema now enforces non-negative start
 		const clip = {
 			asset: {
 				type: "video",
@@ -56,7 +56,7 @@ describe("ClipSchema Validation", () => {
 		};
 
 		const result = ClipSchema.safeParse(clip);
-		expect(result.success).toBe(true);
+		expect(result.success).toBe(false);
 	});
 
 	it("accepts clip with zero length (backend validates)", () => {
@@ -232,12 +232,11 @@ describe("Asset Schema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("validates text asset with empty string for background-only text boxes", () => {
-		// External schema requires text property; use empty string for background-only boxes
-		// SDK TextPlayer handles empty strings gracefully for visual text boxes
+	it("accepts text asset with empty string", () => {
+		// Shotstack schema allows empty text strings - the SDK renders them as empty text elements
 		const textAssetWithEmptyText = {
 			type: "text",
-			text: "", // Required by external schema, but can be empty
+			text: "",
 			width: 1080,
 			height: 325,
 			font: {

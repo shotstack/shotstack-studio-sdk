@@ -148,23 +148,17 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 	const container = createMockPlayerContainer();
 	const contentContainer = createMockPlayerContainer();
 
-	// Parse timing intent from config
-	const startIntent = config.start;
-	const lengthIntent = config.length;
-
 	// Calculate initial resolved values in SECONDS (not milliseconds)
 	// The timing system now operates in seconds internally
-	const startSec = typeof startIntent === "number" ? startIntent : 0;
-	const lengthSec = typeof lengthIntent === "number" ? lengthIntent : 3;
+	const startSec = typeof config.start === "number" ? config.start : 0;
+	const lengthSec = typeof config.length === "number" ? config.length : 3;
 
 	let resolvedTiming = { start: startSec, length: lengthSec };
-	const timingIntent: { start: number | string; length: number | string } = { start: startIntent, length: lengthIntent };
 
-	// Merge field bindings support
-	const mergeFieldBindings = new Map<string, { placeholder: string; resolvedValue: string }>();
-
-	return {
+	// Mock player object - clipId will be set by reconciler after creation
+	const mockPlayer: Record<string, unknown> = {
 		clipConfiguration: config,
+		clipId: null as string | null,
 		layer: 0,
 		playerType: type,
 		shouldDispose: false,
@@ -174,14 +168,32 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		getLength: () => resolvedTiming.length,
 		getEnd: () => resolvedTiming.start + resolvedTiming.length,
 		getSize: () => ({ width: 1920, height: 1080 }),
-		getTimingIntent: () => ({ ...timingIntent }),
-		setTimingIntent: jest.fn((intent: { start?: number | string; length?: number | string }) => {
-			if (intent.start !== undefined) timingIntent.start = intent.start;
-			if (intent.length !== undefined) timingIntent.length = intent.length;
-		}),
+		// Read timing intent from document (matches real Player behavior)
+		getTimingIntent: () => {
+			const clipId = mockPlayer["clipId"] as string | null;
+			if (clipId) {
+				const docClip = edit.getDocumentClipById(clipId);
+				if (docClip) {
+					return {
+						start: docClip.start,
+						length: docClip.length
+					};
+				}
+			}
+			// Fallback: use resolved values from clipConfiguration
+			return {
+				start: config.start,
+				length: config.length
+			};
+		},
 		getResolvedTiming: () => ({ ...resolvedTiming }),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
+			// Sync clipConfiguration to match real Player behavior (Option B)
+			// eslint-disable-next-line no-param-reassign
+			config.start = sec(timing.start);
+			// eslint-disable-next-line no-param-reassign
+			config.length = sec(timing.length);
 		}),
 		load: jest.fn().mockResolvedValue(undefined),
 		draw: jest.fn(),
@@ -190,30 +202,17 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 		reloadAsset: jest.fn().mockResolvedValue(undefined),
 		dispose: jest.fn(),
 		isActive: () => true,
-		convertToFixedTiming: jest.fn(),
-		// Merge field binding methods
-		getMergeFieldBindings: () => mergeFieldBindings,
-		getMergeFieldBinding: (path: string) => mergeFieldBindings.get(path),
-		setMergeFieldBinding: (path: string, binding: { placeholder: string; resolvedValue: string }) => {
-			mergeFieldBindings.set(path, binding);
-		},
-		removeMergeFieldBinding: (path: string) => {
-			mergeFieldBindings.delete(path);
-		},
-		setInitialBindings: (bindings: Map<string, { placeholder: string; resolvedValue: string }>) => {
-			mergeFieldBindings.clear();
-			bindings.forEach((v, k) => {
-				mergeFieldBindings.set(k, v);
-			});
-		},
 		getExportableClip: () => {
 			const exported = structuredClone(config);
-			// Apply timing intent (cast needed as timingIntent can be string for "auto")
-			if (timingIntent.start !== undefined) (exported as { start: unknown }).start = timingIntent.start;
-			if (timingIntent.length !== undefined) (exported as { length: unknown }).length = timingIntent.length;
+			// Apply timing intent from document (matches real Player behavior)
+			const intent = (mockPlayer["getTimingIntent"] as () => { start: unknown; length: unknown })();
+			(exported as { start: unknown }).start = intent.start;
+			(exported as { length: unknown }).length = intent.length;
 			return exported;
 		}
 	};
+
+	return mockPlayer;
 };
 
 // Mock all player types
@@ -270,13 +269,13 @@ function createMockPlayerForResolver(startSec: number, lengthSec: number, length
 function getEditState(edit: Edit): {
 	tracks: unknown[][];
 	clips: unknown[];
-	endLengthClips: Set<unknown>;
+	endLengthClips: unknown[];
 	cachedTimelineEnd: number;
 } {
 	const anyEdit = edit as unknown as {
 		tracks: unknown[][];
 		clips: unknown[];
-		endLengthClips: Set<unknown>;
+		endLengthClips: unknown[];
 		cachedTimelineEnd: number;
 	};
 	return {
@@ -452,10 +451,17 @@ describe("Edit Timing Integration", () => {
 
 	beforeEach(async () => {
 		edit = new Edit({
-			timeline: { tracks: [] },
+			timeline: {
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
+			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 		await edit.load();
+
+		// Delete the initial minimal clip so timing tests start with a clean slate
+		// Schema validation happens at load time; runtime state can be empty
+		edit.deleteClip(0, 0);
+
 		events = edit.events;
 		emitSpy = jest.spyOn(events, "emit");
 	});
@@ -519,7 +525,7 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createTextClip(0, "end"));
 
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(1);
+			expect(endLengthClips.length).toBe(1);
 		});
 	});
 
@@ -528,25 +534,25 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createTextClip(0, "end"));
 
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(1);
+			expect(endLengthClips.length).toBe(1);
 		});
 
 		it("removes clip from set when deleted", async () => {
 			await edit.addClip(0, createTextClip(0, "end"));
 			const { endLengthClips: before } = getEditState(edit);
-			expect(before.size).toBe(1);
+			expect(before.length).toBe(1);
 
 			edit.deleteClip(0, 0);
 
 			const { endLengthClips: after } = getEditState(edit);
-			expect(after.size).toBe(0);
+			expect(after.length).toBe(0);
 		});
 
 		it("does not add fixed-length clips to set", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(0);
+			expect(endLengthClips.length).toBe(0);
 		});
 	});
 
@@ -654,7 +660,7 @@ describe("Edit Timing Integration", () => {
 
 			// Clip should be tracked in endLengthClips set
 			const { endLengthClips } = getEditState(edit);
-			expect(endLengthClips.size).toBe(1);
+			expect(endLengthClips.length).toBe(1);
 		});
 	});
 
@@ -733,7 +739,7 @@ describe("Edit Timing Integration", () => {
 
 			// Verify clip is tracked for end-length updates
 			const state = getEditState(edit);
-			expect(state.endLengthClips.has(endClip!)).toBe(true);
+			expect(state.endLengthClips.includes(endClip!)).toBe(true);
 		});
 	});
 });

@@ -1,0 +1,57 @@
+{
+	"timeline": {
+		"background": "#000000",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"alias": "image",
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/bold-business-promotion-event-template/ef7eddca-7336-4bd8-a952-fb28a67a1de3/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "svg",
+							"src": "<svg viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"40\" height=\"40\" fill=\"{{ ELEMENT_COLOR }}\"/></svg>",
+							"opacity": 1
+						},
+						"start": 0,
+						"length": "alias://image",
+						"offset": {
+							"x": -0.412,
+							"y": -0.338
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"width": 40,
+						"height": 40
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": {
+			"width": 1080,
+			"height": 1080
+		}
+	},
+	"merge": [
+		{
+			"find": "ELEMENT_COLOR",
+			"replace": "#ff9500"
+		}
+	]
+}

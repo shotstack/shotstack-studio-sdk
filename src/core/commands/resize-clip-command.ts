@@ -1,14 +1,18 @@
-import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { type Seconds, type TimingIntent, sec } from "@core/timing/types";
+import type { Seconds } from "@core/timing/types";
+import type { Clip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
+/**
+ * Document-only command to resize a clip's length.
+ */
 export class ResizeClipCommand implements EditCommand {
-	name = "resizeClip";
-	private originalLength?: Seconds;
-	private originalTimingIntent?: TimingIntent;
-	private player?: Player;
+	readonly name = "resizeClip";
+
+	/** Document-layer value for undo (may be "auto", "end", or numeric) */
+	private originalLength?: Clip["length"];
+	private clipId?: string;
 
 	constructor(
 		private trackIndex: number,
@@ -16,76 +20,87 @@ export class ResizeClipCommand implements EditCommand {
 		private newLength: Seconds
 	) {}
 
-	execute(context?: CommandContext): void {
-		if (!context) return;
+	execute(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("ResizeClipCommand.execute: context is required");
 
-		// Get the specific track
-		const track = context.getTrack(this.trackIndex);
-		if (!track) {
-			console.warn(`Invalid track index: ${this.trackIndex}`);
-			return;
+		const doc = context.getDocument();
+		if (!doc) throw new Error("ResizeClipCommand.execute: document is required");
+
+		// Get document clip to store original length
+		const docTrack = context.getDocumentTrack(this.trackIndex);
+		const docClip = docTrack?.clips[this.clipIndex];
+		if (!docClip) {
+			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
 		}
 
-		if (this.clipIndex < 0 || this.clipIndex >= track.length) {
-			console.warn(`Invalid clip index: ${this.clipIndex} for track ${this.trackIndex}`);
-			return;
+		// Get current player for event emission
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) {
+			return CommandNoop(`Player not found at ${this.trackIndex}/${this.clipIndex}`);
 		}
 
-		this.player = track[this.clipIndex];
-		this.originalLength = sec(this.player.clipConfiguration.length);
+		// Store document-layer value for undo
+		this.originalLength = docClip.length;
+		this.clipId = player.clipId ?? undefined;
 
-		// Store original timing intent for undo
-		this.originalTimingIntent = this.player.getTimingIntent();
+		// Capture previous resolved config for event (local, not stored)
+		const previousConfig = structuredClone(player.clipConfiguration);
 
-		// Convert to fixed timing when manually resized
-		this.player.convertToFixedTiming();
+		// Document-only mutation
+		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.newLength });
 
-		this.player.clipConfiguration.length = this.newLength;
-
-		// Update resolved timing (now in Seconds)
-		this.player.setResolvedTiming({
-			start: this.player.getStart(),
-			length: this.newLength
-		});
-
-		this.player.reconfigureAfterRestore();
-		this.player.draw();
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
 
 		context.updateDuration();
+
+		// Emit event with before/after resolved configs
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: { ...this.player.clipConfiguration, length: this.originalLength }, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
-			current: { clip: this.player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+			previous: { clip: previousConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
 
-		// Propagate timing changes to dependent clips
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
-		if (!context || !this.player || this.originalLength === undefined) return;
+	undo(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("ResizeClipCommand.undo: context is required");
+		if (this.originalLength === undefined) throw new Error("ResizeClipCommand.undo: no original length");
 
-		this.player.clipConfiguration.length = this.originalLength;
+		const doc = context.getDocument();
+		if (!doc) throw new Error("ResizeClipCommand.undo: document is required");
 
-		// Restore original timing intent
-		if (this.originalTimingIntent) {
-			this.player.setTimingIntent(this.originalTimingIntent);
-			// Update resolved timing to match (now in Seconds)
-			this.player.setResolvedTiming({
-				start: this.player.getStart(),
-				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length : this.player.getLength()
-			});
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) throw new Error("ResizeClipCommand.undo: player not found");
+
+		// Capture current resolved config for event (local, not stored)
+		const currentConfig = structuredClone(player.clipConfiguration);
+
+		// Document-only mutation - restore original length (may be "auto", "end", or numeric)
+		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.originalLength });
+
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
 		}
 
-		this.player.reconfigureAfterRestore();
-		this.player.draw();
-
 		context.updateDuration();
+
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: { ...this.player.clipConfiguration, length: this.newLength }, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
-			current: { clip: this.player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+			previous: { clip: currentConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
 
-		// Propagate timing changes
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
+
+		return CommandSuccess();
 	}
 }

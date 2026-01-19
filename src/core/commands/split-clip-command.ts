@@ -1,16 +1,16 @@
-import type { MergeFieldBinding, Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { sec, type Seconds } from "@core/timing/types";
-import type { AudioAsset, ResolvedClip, VideoAsset } from "@schemas";
+import { sec } from "@core/timing/types";
+import type { AudioAsset, Clip, VideoAsset } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
+/**
+ * Splits a clip at a specified time point.
+ */
 export class SplitClipCommand implements EditCommand {
 	public readonly name = "SplitClip";
-	private originalClipConfig: ResolvedClip | null = null;
-	private rightClipPlayer: Player | null = null;
-	private splitSuccessful = false;
-	private originalBindings: Map<string, MergeFieldBinding> = new Map();
+	private originalClipConfig: Clip | null = null;
+	private rightClipId: string | null = null;
 
 	constructor(
 		private trackIndex: number,
@@ -18,57 +18,57 @@ export class SplitClipCommand implements EditCommand {
 		private splitTime: number // Time in seconds where to split
 	) {}
 
-	public execute(context: CommandContext): void {
-		// Get the player to split
-		const player = context.getClipAt(this.trackIndex, this.clipIndex);
-		if (!player || !player.clipConfiguration) {
-			throw new Error("Cannot split clip: invalid player or clip configuration");
-		}
+	public execute(context: CommandContext): CommandResult {
+		// Get the clip from document
+		const document = context.getDocument();
+		if (!document) throw new Error("Cannot split clip: no document");
 
-		const clipConfig = player.clipConfiguration;
-		// clipConfig.start/length are Seconds branded types
-		const clipStart: Seconds = clipConfig.start;
-		const clipLength: Seconds = clipConfig.length;
+		const clip = document.getClip(this.trackIndex, this.clipIndex);
+		if (!clip) return CommandNoop(`No clip at ${this.trackIndex}/${this.clipIndex}`);
+
+		// Get resolved timing for calculations
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		const clipStart = player?.clipConfiguration.start ?? 0;
+		const clipLength = player?.clipConfiguration.length ?? 0;
 
 		// Validate split point
 		const MIN_CLIP_LENGTH = 0.1;
 		const splitPoint = this.splitTime - clipStart;
 
 		if (splitPoint <= MIN_CLIP_LENGTH || splitPoint >= clipLength - MIN_CLIP_LENGTH) {
-			throw new Error("Cannot split clip: split point too close to clip boundaries");
+			return CommandNoop("Split point too close to clip boundaries");
 		}
 
-		// Store original configuration and bindings for undo
-		this.originalClipConfig = { ...clipConfig };
-		this.originalBindings = new Map(player.getMergeFieldBindings());
+		// Store original configuration for undo
+		this.originalClipConfig = structuredClone(clip);
 
-		// Calculate left and right clip configurations (use sec() for branded Seconds type)
-		const leftClip: ResolvedClip = {
-			...clipConfig,
-			length: sec(splitPoint)
-		};
+		// Calculate left clip length
+		const leftLength = splitPoint;
 
-		const rightClip: ResolvedClip = {
-			...clipConfig,
-			start: sec(clipStart + splitPoint),
-			length: sec(clipLength - splitPoint)
-		};
+		// Build right clip config
+		const rightClip: Clip = structuredClone(clip);
 
-		// Deep clone assets to avoid shared references
-		if (clipConfig.asset) {
-			leftClip.asset = { ...clipConfig.asset };
-			rightClip.asset = { ...clipConfig.asset };
+		// Update timing - use "auto" for sequential positioning
+		// The resolver will calculate actual values
+		if (clip.start === "auto") {
+			// Keep auto for left, right continues auto chain
+			rightClip.start = "auto";
+		} else {
+			// Explicit start: left keeps original, right gets calculated position
+			rightClip.start = sec(clipStart + splitPoint) as number;
+		}
+
+		// Calculate right clip length
+		if (clip.length === "auto" || clip.length === "end") {
+			// For auto/end, we need to adjust based on the split
+			rightClip.length = sec(clipLength - splitPoint) as number;
+		} else {
+			rightClip.length = sec(clipLength - splitPoint) as number;
 		}
 
 		// Adjust trim values for video/audio assets
-		if (clipConfig.asset && (clipConfig.asset.type === "video" || clipConfig.asset.type === "audio")) {
-			// The trim value indicates how much was trimmed from the start of the original asset
-			const originalTrim = (clipConfig.asset as VideoAsset | AudioAsset).trim || 0;
-
-			// Left clip keeps the original trim
-			if (leftClip.asset && (leftClip.asset.type === "video" || leftClip.asset.type === "audio")) {
-				(leftClip.asset as VideoAsset | AudioAsset).trim = originalTrim;
-			}
+		if (clip.asset && (clip.asset.type === "video" || clip.asset.type === "audio")) {
+			const originalTrim = (clip.asset as VideoAsset | AudioAsset).trim || 0;
 
 			// Right clip needs trim = original trim + split point
 			if (rightClip.asset && (rightClip.asset.type === "video" || rightClip.asset.type === "audio")) {
@@ -76,111 +76,55 @@ export class SplitClipCommand implements EditCommand {
 			}
 		}
 
-		// Update the existing clip to be the left portion
-		Object.assign(player.clipConfiguration, leftClip);
-		player.reconfigureAfterRestore();
-		player.draw();
+		// Document mutations
+		// 1. Update left clip with new length
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, {
+			length: sec(leftLength) as number
+		});
 
-		// Create the right clip player
-		this.rightClipPlayer = context.createPlayerFromAssetType(rightClip);
-		if (!this.rightClipPlayer) {
-			// Restore original if creation failed
-			Object.assign(player.clipConfiguration, this.originalClipConfig);
-			player.reconfigureAfterRestore();
-			throw new Error("Failed to create right clip player");
-		}
+		// 2. Add right clip after left
+		const addedRightClip = context.documentAddClip(this.trackIndex, rightClip, this.clipIndex + 1);
+		this.rightClipId = (addedRightClip as { id?: string }).id ?? null;
 
-		this.rightClipPlayer.layer = this.trackIndex + 1;
-
-		// Copy merge field bindings to right clip (both clips inherit same bindings)
-		if (this.originalBindings.size > 0) {
-			this.rightClipPlayer.setInitialBindings(this.originalBindings);
-		}
-
-		// Insert right clip after the current clip
-		const track = context.getTrack(this.trackIndex);
-		if (!track) {
-			throw new Error("Invalid track index");
-		}
-
-		track.splice(this.clipIndex + 1, 0, this.rightClipPlayer);
-
-		// Update global clips array
-		const clips = context.getClips();
-		const globalIndex = clips.indexOf(player);
-		if (globalIndex !== -1) {
-			clips.splice(globalIndex + 1, 0, this.rightClipPlayer);
-		}
-
-		// Add to PIXI container
-		context.addPlayerToContainer(this.trackIndex, this.rightClipPlayer);
-
-		// Configure and position the new player before loading
-		this.rightClipPlayer.reconfigureAfterRestore();
-
-		// Load the new player
-		this.rightClipPlayer
-			.load()
-			.then(() => {
-				this.splitSuccessful = true;
-				// Draw the new player after loading
-				if (this.rightClipPlayer) {
-					this.rightClipPlayer.draw();
-				}
-				context.updateDuration();
-				context.emitEvent(EditEvent.ClipSplit, {
-					trackIndex: this.trackIndex,
-					originalClipIndex: this.clipIndex,
-					newClipIndex: this.clipIndex + 1
-				});
-			})
-			.catch(error => {
-				console.error("Failed to load split clip:", error);
-				// Clean up will happen in undo if needed
-			});
-	}
-
-	public undo(context: CommandContext): void {
-		if (!this.originalClipConfig) {
-			return;
-		}
-
-		// Get the left clip (original player)
-		const leftPlayer = context.getClipAt(this.trackIndex, this.clipIndex);
-		if (!leftPlayer) {
-			return;
-		}
-
-		// Restore original configuration
-		Object.assign(leftPlayer.clipConfiguration, this.originalClipConfig);
-		leftPlayer.reconfigureAfterRestore();
-
-		// Remove the right clip if it was created
-		if (this.rightClipPlayer) {
-			const track = context.getTrack(this.trackIndex);
-			if (track) {
-				const rightIndex = track.indexOf(this.rightClipPlayer);
-				if (rightIndex !== -1) {
-					track.splice(rightIndex, 1);
-				}
-			}
-
-			const clips = context.getClips();
-			const globalIndex = clips.indexOf(this.rightClipPlayer);
-			if (globalIndex !== -1) {
-				clips.splice(globalIndex, 1);
-			}
-
-			// Queue for disposal
-			context.queueDisposeClip(this.rightClipPlayer);
-			this.rightClipPlayer = null;
-		}
+		// Resolve triggers reconciler → updates left Player, creates right Player
+		context.resolve();
 
 		context.updateDuration();
-		// Emit ClipDeleted for the merged (removed) right clip
+
+		context.emitEvent(EditEvent.ClipSplit, {
+			trackIndex: this.trackIndex,
+			originalClipIndex: this.clipIndex,
+			newClipIndex: this.clipIndex + 1
+		});
+
+		return CommandSuccess();
+	}
+
+	public undo(context: CommandContext): CommandResult {
+		if (!this.originalClipConfig) return CommandNoop("No original clip config stored");
+
+		// Document mutations
+		// 1. Remove the right clip first (while indices are valid)
+		context.documentRemoveClip(this.trackIndex, this.clipIndex + 1);
+
+		// 2. Restore left clip to original configuration
+		context.documentUpdateClip(this.trackIndex, this.clipIndex, this.originalClipConfig);
+
+		// Resolve triggers reconciler → disposes right Player, updates left Player
+		context.resolve();
+
+		context.updateDuration();
+
 		context.emitEvent(EditEvent.ClipDeleted, {
 			trackIndex: this.trackIndex,
 			clipIndex: this.clipIndex + 1
 		});
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.originalClipConfig = null;
+		this.rightClipId = null;
 	}
 }

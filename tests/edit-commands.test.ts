@@ -1,14 +1,17 @@
 /**
  * Edit Class Command History Tests
  *
- * Tests the undo/redo mechanics and command pattern behavior.
- * The command system is the foundation for all editing operations.
+ * Tests the undo/redo mechanics and command pattern behaviour.
  */
 
 /* eslint-disable max-classes-per-file -- Test helper classes */
+/* eslint-disable global-require, @typescript-eslint/no-require-imports -- Jest hoists mock factories
+ * before imports/declarations. To share mock classes between mocks (e.g., MockImageSource for instanceof
+ * checks), we must use require() at runtime inside the factory. This is the standard Jest pattern. */
 import { Edit } from "@core/edit-session";
-import type { EditCommand, CommandContext } from "@core/commands/types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess } from "@core/commands/types";
 import type { EventEmitter } from "@core/events/event-emitter";
+import { InternalEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
@@ -22,6 +25,20 @@ jest.mock("pixi-filters", () => ({
 
 // Mock pixi.js to prevent WebGL initialization
 jest.mock("pixi.js", () => {
+	class MockImageSource {
+		width = 100;
+
+		height = 100;
+	}
+
+	class MockVideoSource {
+		width = 100;
+
+		height = 100;
+
+		alphaMode = "premultiply-alpha";
+	}
+
 	const createMockContainer = (): Record<string, unknown> => {
 		const children: unknown[] = [];
 		return {
@@ -72,14 +89,23 @@ jest.mock("pixi.js", () => {
 		})),
 		Texture: { from: jest.fn() },
 		Assets: { load: jest.fn(), unload: jest.fn(), cache: { has: jest.fn().mockReturnValue(false) } },
-		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() }))
+		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() })),
+		ImageSource: MockImageSource,
+		VideoSource: MockVideoSource
 	};
 });
 
-// Mock AssetLoader
 jest.mock("@loaders/asset-loader", () => ({
 	AssetLoader: jest.fn().mockImplementation(() => ({
-		load: jest.fn().mockResolvedValue({}),
+		load: jest.fn().mockImplementation(() => {
+			const { ImageSource } = require("pixi.js");
+			return Promise.resolve({
+				source: new ImageSource(),
+				width: 100,
+				height: 100,
+				destroy: jest.fn()
+			});
+		}),
 		unload: jest.fn(),
 		getProgress: jest.fn().mockReturnValue(100),
 		incrementRef: jest.fn(),
@@ -134,14 +160,16 @@ class TestCommand implements EditCommand {
 		this.name = name;
 	}
 
-	execute(context?: CommandContext): void {
+	execute(context?: CommandContext): CommandResult {
 		this.executeCount += 1;
 		this.lastContext = context;
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
+	undo(context?: CommandContext): CommandResult {
 		this.undoCount += 1;
 		this.lastContext = context;
+		return CommandSuccess();
 	}
 }
 
@@ -161,18 +189,20 @@ class AsyncTestCommand implements EditCommand {
 		this.resolveDelay = resolveDelay;
 	}
 
-	async execute(): Promise<void> {
+	async execute(): Promise<CommandResult> {
 		await new Promise<void>(resolve => {
 			setTimeout(resolve, this.resolveDelay);
 		});
 		this.executeCount += 1;
+		return CommandSuccess();
 	}
 
-	async undo(): Promise<void> {
+	async undo(): Promise<CommandResult> {
 		await new Promise<void>(resolve => {
 			setTimeout(resolve, this.resolveDelay);
 		});
 		this.undoCount += 1;
+		return CommandSuccess();
 	}
 }
 
@@ -184,8 +214,9 @@ class NoUndoCommand implements EditCommand {
 
 	executeCount = 0;
 
-	execute(): void {
+	execute(): CommandResult {
 		this.executeCount += 1;
+		return CommandSuccess();
 	}
 	// Intentionally no undo method
 }
@@ -201,6 +232,46 @@ function getCommandState(edit: Edit): { history: EditCommand[]; index: number } 
 	};
 }
 
+/**
+ * Helper to create a mock Canvas with viewport container for tests.
+ * Canvas now owns the viewport container. Edit emits events for visual
+ * sync; Canvas subscribes and updates visuals. Tests verify events are
+ * emitted correctly; Canvas behavior is tested separately.
+ */
+function createMockCanvas(): {
+	getViewportContainer: () => Record<string, unknown>;
+	viewportContainer: Record<string, unknown>;
+	getZoom: () => number;
+} {
+	const children: unknown[] = [];
+	const viewportContainer: Record<string, unknown> = {
+		children,
+		sortableChildren: true,
+		sortDirty: false,
+		parent: null,
+		label: "viewport",
+		zIndex: 0,
+		addChild: jest.fn((child: { parent?: unknown }) => {
+			children.push(child);
+			return child;
+		}),
+		removeChild: jest.fn((child: unknown) => {
+			const idx = children.indexOf(child);
+			if (idx !== -1) children.splice(idx, 1);
+			return child;
+		}),
+		getChildByLabel: jest.fn(() => null),
+		destroy: jest.fn(),
+		setMask: jest.fn()
+	};
+
+	return {
+		getViewportContainer: () => viewportContainer,
+		viewportContainer,
+		getZoom: () => 1
+	};
+}
+
 describe("Edit Command History", () => {
 	let edit: Edit;
 	let events: EventEmitter;
@@ -208,7 +279,13 @@ describe("Edit Command History", () => {
 
 	beforeEach(async () => {
 		edit = new Edit({
-			timeline: { tracks: [] },
+			timeline: {
+				tracks: [
+					{
+						clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }]
+					}
+				]
+			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 		await edit.load();
@@ -223,34 +300,34 @@ describe("Edit Command History", () => {
 	});
 
 	describe("executeCommand() behavior", () => {
-		it("adds command to history", () => {
+		it("adds command to history", async () => {
 			const cmd = new TestCommand();
 
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 
 			const { history } = getCommandState(edit);
 			expect(history).toContain(cmd);
 			expect(history.length).toBe(1);
 		});
 
-		it("increments commandIndex", () => {
+		it("increments commandIndex", async () => {
 			const { index: initialIndex } = getCommandState(edit);
 			expect(initialIndex).toBe(-1); // Starts at -1
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(2);
 		});
 
-		it("calls command.execute() with context", () => {
+		it("calls command.execute() with context", async () => {
 			const cmd = new TestCommand();
 
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 
 			expect(cmd.executeCount).toBe(1);
 			expect(cmd.lastContext).toBeDefined();
@@ -260,10 +337,12 @@ describe("Edit Command History", () => {
 			expect(typeof cmd.lastContext?.emitEvent).toBe("function");
 		});
 
-		it("returns void for sync commands", () => {
+		it("returns Promise for all commands (queue-based execution)", async () => {
 			const cmd = new TestCommand();
 			const result = edit.executeEditCommand(cmd);
-			expect(result).toBeUndefined();
+			expect(result).toBeInstanceOf(Promise);
+			await result;
+			expect(cmd.executeCount).toBe(1);
 		});
 
 		it("returns Promise for async commands", async () => {
@@ -277,177 +356,177 @@ describe("Edit Command History", () => {
 	});
 
 	describe("undo() method", () => {
-		it("calls command.undo() with context", () => {
+		it("calls command.undo() with context", async () => {
 			const cmd = new TestCommand();
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 
-			edit.undo();
+			await edit.undo();
 
 			expect(cmd.undoCount).toBe(1);
 			expect(cmd.lastContext).toBeDefined();
 		});
 
-		it("decrements commandIndex after undo", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("decrements commandIndex after undo", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 		});
 
-		it("emits edit:undo event with command name", () => {
+		it("emits edit:undo event with command name", async () => {
 			const cmd = new TestCommand("MyTestCmd");
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			expect(emitSpy).toHaveBeenCalledWith("edit:undo", { command: "MyTestCmd" });
 		});
 
-		it("is no-op when commandIndex is -1 (empty history)", () => {
+		it("is no-op when commandIndex is -1 (empty history)", async () => {
 			expect(getCommandState(edit).index).toBe(-1);
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			expect(getCommandState(edit).index).toBe(-1);
 			expect(emitSpy).not.toHaveBeenCalledWith("edit:undo", expect.anything());
 		});
 
-		it("is no-op when command has no undo method", () => {
+		it("is no-op when command has no undo method", async () => {
 			const cmd = new NoUndoCommand();
-			edit.executeEditCommand(cmd);
+			await edit.executeEditCommand(cmd);
 			const { index: afterExec } = getCommandState(edit);
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			// Index should not change since undo is undefined
 			expect(getCommandState(edit).index).toBe(afterExec);
 			expect(emitSpy).not.toHaveBeenCalledWith("edit:undo", expect.anything());
 		});
 
-		it("allows multiple sequential undos", () => {
+		it("allows multiple sequential undos", async () => {
 			const cmd1 = new TestCommand("Cmd1");
 			const cmd2 = new TestCommand("Cmd2");
 			const cmd3 = new TestCommand("Cmd3");
 
-			edit.executeEditCommand(cmd1);
-			edit.executeEditCommand(cmd2);
-			edit.executeEditCommand(cmd3);
+			await edit.executeEditCommand(cmd1);
+			await edit.executeEditCommand(cmd2);
+			await edit.executeEditCommand(cmd3);
 
-			edit.undo();
+			await edit.undo();
 			expect(cmd3.undoCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 			expect(cmd2.undoCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.undo();
+			await edit.undo();
 			expect(cmd1.undoCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(-1);
 		});
 	});
 
 	describe("redo() method", () => {
-		it("increments commandIndex before execute", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.undo();
+		it("increments commandIndex before execute", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 
-			edit.redo();
+			await edit.redo();
 
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("calls command.execute() with context", () => {
+		it("calls command.execute() with context", async () => {
 			const cmd = new TestCommand();
-			edit.executeEditCommand(cmd);
-			edit.undo();
+			await edit.executeEditCommand(cmd);
+			await edit.undo();
 			cmd.executeCount = 0; // Reset after initial execute
 
-			edit.redo();
+			await edit.redo();
 
 			expect(cmd.executeCount).toBe(1);
 			expect(cmd.lastContext).toBeDefined();
 		});
 
-		it("emits edit:redo event with command name", () => {
+		it("emits edit:redo event with command name", async () => {
 			const cmd = new TestCommand("MyRedoCmd");
-			edit.executeEditCommand(cmd);
-			edit.undo();
+			await edit.executeEditCommand(cmd);
+			await edit.undo();
 			emitSpy.mockClear();
 
-			edit.redo();
+			await edit.redo();
 
 			expect(emitSpy).toHaveBeenCalledWith("edit:redo", { command: "MyRedoCmd" });
 		});
 
-		it("is no-op when at end of history", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("is no-op when at end of history", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 			emitSpy.mockClear();
 
-			edit.redo();
+			await edit.redo();
 
 			expect(getCommandState(edit).index).toBe(0);
 			expect(emitSpy).not.toHaveBeenCalledWith("edit:redo", expect.anything());
 		});
 
-		it("allows multiple sequential redos", () => {
+		it("allows multiple sequential redos", async () => {
 			const cmd1 = new TestCommand("Cmd1");
 			const cmd2 = new TestCommand("Cmd2");
 			const cmd3 = new TestCommand("Cmd3");
 
-			edit.executeEditCommand(cmd1);
-			edit.executeEditCommand(cmd2);
-			edit.executeEditCommand(cmd3);
-			edit.undo();
-			edit.undo();
-			edit.undo();
+			await edit.executeEditCommand(cmd1);
+			await edit.executeEditCommand(cmd2);
+			await edit.executeEditCommand(cmd3);
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
 
 			// Reset execute counts
 			cmd1.executeCount = 0;
 			cmd2.executeCount = 0;
 			cmd3.executeCount = 0;
 
-			edit.redo();
+			await edit.redo();
 			expect(cmd1.executeCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(0);
 
-			edit.redo();
+			await edit.redo();
 			expect(cmd2.executeCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.redo();
+			await edit.redo();
 			expect(cmd3.executeCount).toBe(1);
 			expect(getCommandState(edit).index).toBe(2);
 		});
 	});
 
 	describe("history truncation", () => {
-		it("truncates future commands when executing after undo", () => {
+		it("truncates future commands when executing after undo", async () => {
 			const cmdA = new TestCommand("A");
 			const cmdB = new TestCommand("B");
 			const cmdC = new TestCommand("C");
 			const cmdD = new TestCommand("D");
 
-			edit.executeEditCommand(cmdA);
-			edit.executeEditCommand(cmdB);
-			edit.executeEditCommand(cmdC);
+			await edit.executeEditCommand(cmdA);
+			await edit.executeEditCommand(cmdB);
+			await edit.executeEditCommand(cmdC);
 			// History: [A, B, C], index = 2
 
-			edit.undo(); // index = 1
-			edit.undo(); // index = 0
+			await edit.undo(); // index = 1
+			await edit.undo(); // index = 0
 			// History still [A, B, C], but index = 0
 
-			edit.executeEditCommand(cmdD);
+			await edit.executeEditCommand(cmdD);
 			// Should truncate B and C, leaving [A, D]
 
 			const { history, index } = getCommandState(edit);
@@ -457,19 +536,19 @@ describe("Edit Command History", () => {
 			expect(index).toBe(1);
 		});
 
-		it("preserves commands before current index", () => {
+		it("preserves commands before current index", async () => {
 			const cmdA = new TestCommand("A");
 			const cmdB = new TestCommand("B");
 			const cmdC = new TestCommand("C");
 			const cmdNew = new TestCommand("New");
 
-			edit.executeEditCommand(cmdA);
-			edit.executeEditCommand(cmdB);
-			edit.executeEditCommand(cmdC);
+			await edit.executeEditCommand(cmdA);
+			await edit.executeEditCommand(cmdB);
+			await edit.executeEditCommand(cmdC);
 
-			edit.undo(); // index = 1 (at B)
+			await edit.undo(); // index = 1 (at B)
 
-			edit.executeEditCommand(cmdNew);
+			await edit.executeEditCommand(cmdNew);
 
 			const { history } = getCommandState(edit);
 			expect(history).toContain(cmdA);
@@ -478,25 +557,25 @@ describe("Edit Command History", () => {
 			expect(history).not.toContain(cmdC);
 		});
 
-		it("clears entire redo stack on new command", () => {
+		it("clears entire redo stack on new command", async () => {
 			const cmd1 = new TestCommand("1");
 			const cmd2 = new TestCommand("2");
 			const cmd3 = new TestCommand("3");
 			const cmd4 = new TestCommand("4");
 			const cmdNew = new TestCommand("New");
 
-			edit.executeEditCommand(cmd1);
-			edit.executeEditCommand(cmd2);
-			edit.executeEditCommand(cmd3);
-			edit.executeEditCommand(cmd4);
+			await edit.executeEditCommand(cmd1);
+			await edit.executeEditCommand(cmd2);
+			await edit.executeEditCommand(cmd3);
+			await edit.executeEditCommand(cmd4);
 			// Undo all the way back
-			edit.undo();
-			edit.undo();
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
 			// index = -1, but history = [1, 2, 3, 4]
 
-			edit.executeEditCommand(cmdNew);
+			await edit.executeEditCommand(cmdNew);
 
 			const { history, index } = getCommandState(edit);
 			expect(history.length).toBe(1);
@@ -506,59 +585,59 @@ describe("Edit Command History", () => {
 	});
 
 	describe("commandIndex tracking", () => {
-		it("starts at -1 (no commands)", () => {
+		it("starts at -1 (no commands)", async () => {
 			const { index } = getCommandState(edit);
 			expect(index).toBe(-1);
 		});
 
-		it("equals 0 after first command", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("equals 0 after first command", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("equals history.length - 1 after multiple commands", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("equals history.length - 1 after multiple commands", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 
 			const { history, index } = getCommandState(edit);
 			expect(index).toBe(history.length - 1);
 			expect(index).toBe(4);
 		});
 
-		it("decrements on undo", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("decrements on undo", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(1);
 
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("increments on redo", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.undo();
-			edit.undo();
+		it("increments on redo", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 
-			edit.redo();
+			await edit.redo();
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("resets correctly after truncation", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
-			edit.executeEditCommand(new TestCommand());
+		it("resets correctly after truncation", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			// index = 2, history.length = 3
 
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
 			// index = 0, history.length = 3
 
-			edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
 			// Should be: index = 1, history.length = 2
 
 			const { history, index } = getCommandState(edit);
@@ -569,7 +648,7 @@ describe("Edit Command History", () => {
 	});
 
 	describe("state restoration", () => {
-		it("undo restores previous state via command.undo()", () => {
+		it("undo restores previous state via command.undo()", async () => {
 			// Use a command that tracks state changes
 			let stateValue = 0;
 
@@ -577,82 +656,88 @@ describe("Edit Command History", () => {
 				name: "StateCmd",
 				execute: () => {
 					stateValue = 42;
+					return CommandSuccess();
 				},
 				undo: () => {
 					stateValue = 0;
+					return CommandSuccess();
 				}
 			};
 
 			expect(stateValue).toBe(0);
-			edit.executeEditCommand(stateCmd);
+			await edit.executeEditCommand(stateCmd);
 			expect(stateValue).toBe(42);
 
-			edit.undo();
+			await edit.undo();
 			expect(stateValue).toBe(0);
 		});
 
-		it("redo re-applies state change", () => {
+		it("redo re-applies state change", async () => {
 			let stateValue = 0;
 
 			const stateCmd: EditCommand = {
 				name: "StateCmd",
 				execute: () => {
 					stateValue = 100;
+					return CommandSuccess();
 				},
 				undo: () => {
 					stateValue = 0;
+					return CommandSuccess();
 				}
 			};
 
-			edit.executeEditCommand(stateCmd);
-			edit.undo();
+			await edit.executeEditCommand(stateCmd);
+			await edit.undo();
 			expect(stateValue).toBe(0);
 
-			edit.redo();
+			await edit.redo();
 			expect(stateValue).toBe(100);
 		});
 
-		it("multiple undo/redo cycles preserve state integrity", () => {
+		it("multiple undo/redo cycles preserve state integrity", async () => {
 			const stateHistory: number[] = [];
 
 			const incrementCmd: EditCommand = {
 				name: "Increment",
 				execute: () => {
 					stateHistory.push(stateHistory.length);
+					return CommandSuccess();
 				},
 				undo: () => {
 					stateHistory.pop();
+					return CommandSuccess();
 				}
 			};
 
 			// Execute 3 times
-			edit.executeEditCommand(incrementCmd);
-			edit.executeEditCommand(incrementCmd);
-			edit.executeEditCommand(incrementCmd);
+			await edit.executeEditCommand(incrementCmd);
+			await edit.executeEditCommand(incrementCmd);
+			await edit.executeEditCommand(incrementCmd);
 			expect(stateHistory).toEqual([0, 1, 2]);
 
 			// Undo twice
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
 			expect(stateHistory).toEqual([0]);
 
 			// Redo once
-			edit.redo();
+			await edit.redo();
 			expect(stateHistory).toEqual([0, 1]);
 
 			// Undo once
-			edit.undo();
+			await edit.undo();
 			expect(stateHistory).toEqual([0]);
 
 			// Redo twice
-			edit.redo();
-			edit.redo();
+			await edit.redo();
+			await edit.redo();
 			expect(stateHistory).toEqual([0, 1, 2]);
 		});
 	});
 
 	describe("edge cases", () => {
-		it("handles empty history gracefully", () => {
+		it("handles empty history gracefully", async () => {
 			// Verify no errors thrown
 			expect(() => edit.undo()).not.toThrow();
 			expect(() => edit.redo()).not.toThrow();
@@ -662,32 +747,32 @@ describe("Edit Command History", () => {
 			expect(index).toBe(-1);
 		});
 
-		it("undo at beginning is idempotent", () => {
-			edit.executeEditCommand(new TestCommand());
-			edit.undo();
+		it("undo at beginning is idempotent", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(-1);
 
 			// Multiple undos at beginning should not change state
-			edit.undo();
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
+			await edit.undo();
 
 			expect(getCommandState(edit).index).toBe(-1);
 		});
 
-		it("redo at end is idempotent", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("redo at end is idempotent", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			expect(getCommandState(edit).index).toBe(0);
 
 			// Multiple redos at end should not change state
-			edit.redo();
-			edit.redo();
-			edit.redo();
+			await edit.redo();
+			await edit.redo();
+			await edit.redo();
 
 			expect(getCommandState(edit).index).toBe(0);
 		});
 
-		it("mixed undo/redo/execute sequence", () => {
+		it("mixed undo/redo/execute sequence", async () => {
 			const cmdA = new TestCommand("A");
 			const cmdB = new TestCommand("B");
 			const cmdC = new TestCommand("C");
@@ -695,71 +780,71 @@ describe("Edit Command History", () => {
 			const cmdE = new TestCommand("E");
 
 			// Execute A, B, C
-			edit.executeEditCommand(cmdA);
-			edit.executeEditCommand(cmdB);
-			edit.executeEditCommand(cmdC);
+			await edit.executeEditCommand(cmdA);
+			await edit.executeEditCommand(cmdB);
+			await edit.executeEditCommand(cmdC);
 			expect(getCommandState(edit).history.map(c => c.name)).toEqual(["A", "B", "C"]);
 
 			// Undo to B
-			edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(1);
 
 			// Execute D (should truncate C)
-			edit.executeEditCommand(cmdD);
+			await edit.executeEditCommand(cmdD);
 			expect(getCommandState(edit).history.map(c => c.name)).toEqual(["A", "B", "D"]);
 
 			// Undo D and B
-			edit.undo();
-			edit.undo();
+			await edit.undo();
+			await edit.undo();
 			expect(getCommandState(edit).index).toBe(0);
 
 			// Redo B
-			edit.redo();
+			await edit.redo();
 			expect(getCommandState(edit).index).toBe(1);
 
 			// Execute E (should truncate D)
-			edit.executeEditCommand(cmdE);
+			await edit.executeEditCommand(cmdE);
 			expect(getCommandState(edit).history.map(c => c.name)).toEqual(["A", "B", "E"]);
 			expect(getCommandState(edit).index).toBe(2);
 		});
 	});
 
 	describe("event emission patterns", () => {
-		it("undo emits exactly one edit:undo event", () => {
-			edit.executeEditCommand(new TestCommand("Test"));
+		it("undo emits exactly one edit:undo event", async () => {
+			await edit.executeEditCommand(new TestCommand("Test"));
 			emitSpy.mockClear();
 
-			edit.undo();
+			await edit.undo();
 
 			const undoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:undo");
 			expect(undoEvents.length).toBe(1);
 		});
 
-		it("redo emits exactly one edit:redo event", () => {
-			edit.executeEditCommand(new TestCommand("Test"));
-			edit.undo();
+		it("redo emits exactly one edit:redo event", async () => {
+			await edit.executeEditCommand(new TestCommand("Test"));
+			await edit.undo();
 			emitSpy.mockClear();
 
-			edit.redo();
+			await edit.redo();
 
 			const redoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:redo");
 			expect(redoEvents.length).toBe(1);
 		});
 
-		it("no-op undo does not emit event", () => {
+		it("no-op undo does not emit event", async () => {
 			emitSpy.mockClear();
 
-			edit.undo(); // Empty history
+			await edit.undo(); // Empty history
 
 			const undoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:undo");
 			expect(undoEvents.length).toBe(0);
 		});
 
-		it("no-op redo does not emit event", () => {
-			edit.executeEditCommand(new TestCommand());
+		it("no-op redo does not emit event", async () => {
+			await edit.executeEditCommand(new TestCommand());
 			emitSpy.mockClear();
 
-			edit.redo(); // Already at end
+			await edit.redo(); // Already at end
 
 			const redoEvents = emitSpy.mock.calls.filter(call => call[0] === "edit:redo");
 			expect(redoEvents.length).toBe(0);
@@ -859,111 +944,18 @@ describe("Edit getPlayerClip regression", () => {
 
 		// Move A to start=15 (after C) → order becomes [B, C, A]
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
-		edit.executeEditCommand(new MoveClipCommand(0, 0, 0, sec(15)));
+		await edit.executeEditCommand(new MoveClipCommand(0, 0, 0, sec(15)));
 
 		expect(edit.getPlayerClip(0, 0)).toBe(playerB);
 		expect(edit.getPlayerClip(0, 1)).toBe(playerC);
 		expect(edit.getPlayerClip(0, 2)).toBe(playerA);
 
 		// Move C to start=1 (between original B position) → order becomes [C, B, A]
-		edit.executeEditCommand(new MoveClipCommand(0, 1, 0, sec(1)));
+		await edit.executeEditCommand(new MoveClipCommand(0, 1, 0, sec(1)));
 
 		expect(edit.getPlayerClip(0, 0)).toBe(playerC);
 		expect(edit.getPlayerClip(0, 1)).toBe(playerB);
 		expect(edit.getPlayerClip(0, 2)).toBe(playerA);
-	});
-});
-
-describe("Luma Attachment Registration", () => {
-	let edit: Edit;
-
-	beforeEach(async () => {
-		// Create edit with a video clip on track 0, luma clip on track 1
-		// Using separate tracks to avoid the image-to-luma transform complexity
-		edit = new Edit({
-			timeline: {
-				tracks: [
-					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } }]
-					},
-					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "luma", src: "https://example.com/luma.mp4" } }]
-					}
-				]
-			},
-			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
-		});
-		await edit.load();
-	});
-
-	afterEach(() => {
-		edit.dispose();
-		jest.clearAllMocks();
-	});
-
-	it("registerLumaAttachment populates the attachment map", () => {
-		// Get initial state - video at track 0 index 0, luma at track 1 index 0
-		const videoPlayer = edit.getPlayerClip(0, 0);
-		expect(videoPlayer).toBeDefined();
-
-		const lumaPlayer = edit.getPlayerClip(1, 0);
-		expect(lumaPlayer).toBeDefined();
-
-		// Initially no luma attached to video
-		expect(edit.hasLumaMask(0, 0)).toBe(false);
-
-		// Register the luma attachment
-		edit.registerLumaAttachment(0, 0, 1, 0);
-
-		// Now hasLumaMask should return true
-		expect(edit.hasLumaMask(0, 0)).toBe(true);
-
-		// And getAttachedLumaPlayer should find the luma player
-		const attachedLuma = edit.getAttachedLumaPlayer(videoPlayer!);
-		expect(attachedLuma).toBe(lumaPlayer);
-	});
-
-	it("syncAttachedLuma syncs timing after registerLumaAttachment", () => {
-		// Register the attachment
-		edit.registerLumaAttachment(0, 0, 1, 0);
-
-		// Change video clip start time directly
-		const videoClipBefore = edit.getClip(0, 0);
-		expect(videoClipBefore?.start).toBe(0);
-
-		// Update video start (simulating what happens after a move)
-		const videoPlayer = edit.getPlayerClip(0, 0);
-		if (videoPlayer?.clipConfiguration) {
-			videoPlayer.clipConfiguration.start = sec(2);
-		}
-
-		// Sync luma to content clip
-		edit.syncAttachedLuma(0, 0);
-
-		// Verify luma timing matches video
-		const lumaPlayer = edit.getPlayerClip(1, 0);
-		expect(lumaPlayer?.clipConfiguration.start).toBe(2);
-	});
-
-	it("syncAttachedLuma returns early if attachment not registered", () => {
-		// DON'T register attachment
-		expect(edit.hasLumaMask(0, 0)).toBe(false);
-
-		// Get luma initial timing
-		const lumaPlayer = edit.getPlayerClip(1, 0);
-		const initialStart = lumaPlayer?.clipConfiguration.start;
-
-		// Update video start
-		const videoPlayer = edit.getPlayerClip(0, 0);
-		if (videoPlayer?.clipConfiguration) {
-			videoPlayer.clipConfiguration.start = sec(2);
-		}
-
-		// Try to sync - should do nothing since attachment not registered
-		edit.syncAttachedLuma(0, 0);
-
-		// Luma timing should be unchanged (sync was skipped)
-		expect(lumaPlayer?.clipConfiguration.start).toBe(initialStart);
 	});
 });
 
@@ -998,11 +990,11 @@ describe("TransformClipAssetCommand", () => {
 		jest.clearAllMocks();
 	});
 
-	it("transformToLuma changes asset type to luma", () => {
+	it("transformToLuma changes asset type to luma", async () => {
 		const clipBefore = edit.getClip(0, 0);
 		expect(clipBefore?.asset?.type).toBe("video");
 
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 
 		const clipAfter = edit.getClip(0, 0);
 		expect(clipAfter?.asset?.type).toBe("luma");
@@ -1010,64 +1002,65 @@ describe("TransformClipAssetCommand", () => {
 		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
 	});
 
-	it("transformFromLuma restores original video type", () => {
+	it("transformFromLuma restores original video type", async () => {
 		// First transform to luma
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
 		// Now transform back
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 
 		const clipAfter = edit.getClip(0, 0);
 		expect(clipAfter?.asset?.type).toBe("video");
 		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
 	});
 
-	it("transformFromLuma restores original image type", () => {
+	it("transformFromLuma restores original image type", async () => {
 		// First transform image to luma
-		edit.transformToLuma(0, 1);
+		await edit.transformToLuma(0, 1);
 		expect(edit.getClip(0, 1)?.asset?.type).toBe("luma");
 
 		// Now transform back
-		edit.transformFromLuma(0, 1);
+		await edit.transformFromLuma(0, 1);
 
 		const clipAfter = edit.getClip(0, 1);
 		expect(clipAfter?.asset?.type).toBe("image");
 		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/image.jpg");
 	});
 
-	it("undo during transform is safe", () => {
+	it("undo during transform is safe", async () => {
 		const originalPlayer = edit.getPlayerClip(0, 0);
 		expect(originalPlayer).toBeDefined();
+		const originalClipId = originalPlayer?.clipId;
 
-		// Transform to luma (async load starts)
-		edit.transformToLuma(0, 0);
+		// Transform to luma - must await since commands are queued
+		await edit.transformToLuma(0, 0);
 
-		// Immediately undo (while load may still be in progress)
-		// This should NOT crash even though the new player may not be fully loaded
-		expect(() => {
-			edit.undo();
-		}).not.toThrow();
+		// Undo the transform
+		await edit.undo();
 
-		// Original player should be restored
+		// Player should be restored with original state
+		// Note: With reconciler, asset type changes cause player recreation,
+		// so we verify state equivalence rather than object identity
 		const restoredPlayer = edit.getPlayerClip(0, 0);
-		expect(restoredPlayer).toBe(originalPlayer);
+		expect(restoredPlayer).toBeDefined();
+		expect(restoredPlayer?.clipId).toBe(originalClipId);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 
-	it("preserves asset type through multiple transform cycles", () => {
+	it("preserves asset type through multiple transform cycles", async () => {
 		// Video → luma → video
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 
 		// Another cycle
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 
@@ -1090,11 +1083,11 @@ describe("TransformClipAssetCommand", () => {
 		await edit.load();
 
 		// Transform to luma - stores original type
-		edit.transformToLuma(0, 0);
+		await edit.transformToLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
 
 		// Transform back - should use stored type (video), not URL inference (would be image)
-		edit.transformFromLuma(0, 0);
+		await edit.transformFromLuma(0, 0);
 		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
 	});
 });
@@ -1108,6 +1101,7 @@ describe("TransformClipAssetCommand", () => {
  */
 describe("Track Reordering Z-Index", () => {
 	let edit: Edit;
+	let mockCanvas: ReturnType<typeof createMockCanvas>;
 
 	beforeEach(async () => {
 		// Create edit with clips on two different tracks
@@ -1126,6 +1120,11 @@ describe("Track Reordering Z-Index", () => {
 			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
+
+		// Attach mock canvas so getContainer() works (Canvas now owns the viewport container)
+		mockCanvas = createMockCanvas();
+		edit.setCanvas(mockCanvas as unknown as Parameters<typeof edit.setCanvas>[0]);
+
 		await edit.load();
 	});
 
@@ -1134,18 +1133,23 @@ describe("Track Reordering Z-Index", () => {
 		jest.clearAllMocks();
 	});
 
-	it("sets sortDirty when moving clip to different track", async () => {
-		// Get the main container and verify sortDirty starts false
-		const container = edit.getContainer();
-		expect(container.sortDirty).toBe(false);
+	it("emits PlayerMovedBetweenTracks event when moving clip to different track", async () => {
+		// Spy on event emission
+		const emitSpy = jest.spyOn(edit.events, "emit");
 
 		// Move clip from track 1 to track 0
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
 		const moveCommand = new MoveClipCommand(1, 0, 0, sec(0)); // From track 1, index 0 → track 0
 		edit.executeEditCommand(moveCommand);
 
-		// After moving between tracks, sortDirty should be set to true
-		expect(container.sortDirty).toBe(true);
+		// Verify PlayerMovedBetweenTracks event was emitted (Canvas subscribes and sets sortDirty)
+		expect(emitSpy).toHaveBeenCalledWith(
+			InternalEvent.PlayerMovedBetweenTracks,
+			expect.objectContaining({
+				fromTrackIndex: 1,
+				toTrackIndex: 0
+			})
+		);
 	});
 
 	it("player layer updates correctly when moving between tracks", async () => {
@@ -1163,24 +1167,29 @@ describe("Track Reordering Z-Index", () => {
 		expect(player?.layer).toBe(1);
 	});
 
-	it("sets sortDirty on undo when moving clip back to original track", async () => {
+	it("emits PlayerMovedBetweenTracks event on undo when moving clip back to original track", async () => {
 		// Move clip from track 1 to track 0
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
 		const moveCommand = new MoveClipCommand(1, 0, 0, sec(6));
 		edit.executeEditCommand(moveCommand);
 
-		// Reset sortDirty to verify undo sets it again
-		const container = edit.getContainer();
-		container.sortDirty = false;
+		// Spy on event emission after the first move
+		const emitSpy = jest.spyOn(edit.events, "emit");
 
 		// Undo the move (MoveClipCommand.undo is async, wait for it)
-		edit.undo();
+		await edit.undo();
 		await new Promise(resolve => {
 			setTimeout(resolve, 0);
 		});
 
-		// sortDirty should be set again during undo
-		expect(container.sortDirty).toBe(true);
+		// Verify PlayerMovedBetweenTracks event was emitted again (clip moved back)
+		expect(emitSpy).toHaveBeenCalledWith(
+			InternalEvent.PlayerMovedBetweenTracks,
+			expect.objectContaining({
+				fromTrackIndex: 0,
+				toTrackIndex: 1
+			})
+		);
 	});
 });
 
@@ -1199,6 +1208,7 @@ describe("Track Reordering Z-Index", () => {
  */
 describe("AddTrackCommand Z-Index", () => {
 	let edit: Edit;
+	let mockCanvas: ReturnType<typeof createMockCanvas>;
 
 	beforeEach(async () => {
 		// Create edit with clips on two tracks
@@ -1217,6 +1227,11 @@ describe("AddTrackCommand Z-Index", () => {
 			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
+
+		// Attach mock canvas so getContainer() works (Canvas now owns the viewport container)
+		mockCanvas = createMockCanvas();
+		edit.setCanvas(mockCanvas as unknown as Parameters<typeof edit.setCanvas>[0]);
+
 		await edit.load();
 	});
 
@@ -1245,28 +1260,29 @@ describe("AddTrackCommand Z-Index", () => {
 		expect(track1Player?.layer).toBe(3);
 	});
 
-	it("sets sortDirty when adding track", async () => {
-		const container = edit.getContainer();
-		container.sortDirty = false;
+	it("updates track count when adding track", async () => {
+		const initialTracks = edit.getTracks().length;
 
 		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const addTrackCommand = new AddTrackCommand(1);
 		edit.executeEditCommand(addTrackCommand);
 
-		expect(container.sortDirty).toBe(true);
+		expect(edit.getTracks().length).toBe(initialTracks + 1);
 	});
 
-	it("sets sortDirty on undo", async () => {
+	it("document track count is restored on undo", async () => {
+		const initialDocTracks = edit.getDocument()?.getTrackCount() ?? 0;
+
 		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const addTrackCommand = new AddTrackCommand(1);
 		edit.executeEditCommand(addTrackCommand);
 
-		const container = edit.getContainer();
-		container.sortDirty = false;
+		expect(edit.getDocument()?.getTrackCount()).toBe(initialDocTracks + 1);
 
-		edit.undo();
+		await edit.undo();
 
-		expect(container.sortDirty).toBe(true);
+		// Document track count is restored (source of truth)
+		expect(edit.getDocument()?.getTrackCount()).toBe(initialDocTracks);
 	});
 
 	it("restores layers correctly on undo", async () => {
@@ -1282,7 +1298,7 @@ describe("AddTrackCommand Z-Index", () => {
 		expect(track1Player?.layer).toBe(3);
 
 		// Undo should restore original layers
-		edit.undo();
+		await edit.undo();
 
 		expect(track0Player?.layer).toBe(1);
 		expect(track1Player?.layer).toBe(2);
@@ -1315,5 +1331,119 @@ describe("Output Settings Commands fail-fast", () => {
 		const cmd = new SetTimelineBackgroundCommand("#ff0000");
 		expect(() => cmd.execute(undefined)).toThrow("requires context");
 		expect(() => cmd.undo(undefined)).toThrow("requires context");
+	});
+});
+
+/**
+ * Luma Detach Thumbnail Regression Tests
+ *
+ * Tests the observable behavior of luma transformations.
+ */
+describe("Luma Detach Thumbnail Regression", () => {
+	let edit: Edit;
+
+	beforeEach(async () => {
+		// Create edit with an image clip
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("clip type changes to luma after transformToLuma", async () => {
+		// Initial state
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+
+		// Transform to luma
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Verify it's luma
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+	});
+
+	it("clip type is image after transformFromLuma completes", async () => {
+		// Transform to luma
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Verify it's luma
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		// Transform back to image
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Verify it's back to image
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+	});
+
+	it("preserves asset src through transform cycle", async () => {
+		const originalSrc = (edit.getClip(0, 0)?.asset as { src?: string })?.src;
+
+		// Transform to luma
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Src should be preserved
+		expect((edit.getClip(0, 0)?.asset as { src?: string })?.src).toBe(originalSrc);
+
+		// Transform back to image
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+
+		// Src should still be preserved
+		expect((edit.getClip(0, 0)?.asset as { src?: string })?.src).toBe(originalSrc);
+	});
+
+	it("can transform image → luma → image → luma → image", async () => {
+		// Verify each step in a longer transform sequence
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+
+		edit.transformToLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+
+		edit.transformFromLuma(0, 0);
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 50);
+		});
+		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
 	});
 });

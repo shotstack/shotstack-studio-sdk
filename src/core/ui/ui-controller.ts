@@ -131,6 +131,9 @@ export class UIController {
 	private currentClipIndex = -1;
 	private onKeyDownBound: (e: KeyboardEvent) => void;
 
+	// Track mode button handlers for cleanup (prevents memory leak)
+	private modeButtonHandlers: Array<{ btn: Element; handler: () => void }> = [];
+
 	// Button registry
 	private buttonRegistry: ToolbarButtonConfig[] = [];
 	private buttonEvents = new EventEmitter<UIButtonEventMap & { "buttons:changed": void }>();
@@ -334,12 +337,14 @@ export class UIController {
 		// Use document.querySelectorAll since toolbars are mounted to canvasContainer, not this.container
 		requestAnimationFrame(() => {
 			document.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
-				btn.addEventListener("click", () => {
+				const handler = (): void => {
 					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
 					if (mode) {
 						this.setToolbarMode(mode);
 					}
-				});
+				};
+				btn.addEventListener("click", handler);
+				this.modeButtonHandlers.push({ btn, handler });
 			});
 		});
 
@@ -409,6 +414,12 @@ export class UIController {
 
 		// Remove keyboard listener
 		document.removeEventListener("keydown", this.onKeyDownBound);
+
+		// Remove mode button handlers (prevents memory leak)
+		for (const { btn, handler } of this.modeButtonHandlers) {
+			btn.removeEventListener("click", handler);
+		}
+		this.modeButtonHandlers = [];
 
 		// Dispose toolbars (avoid double-dispose for shared instances)
 		const disposedToolbars = new Set<UIRegistration>();
@@ -652,8 +663,8 @@ export class UIController {
 	// ─── Event Handlers ─────────────────────────────────────────────────────────
 
 	private onClipSelected = ({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void => {
-		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
-		const assetType = player?.clipConfiguration.asset?.type;
+		const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
+		const assetType = clip?.asset?.type;
 
 		// Track current selection for mode toggle
 		this.currentAssetType = assetType ?? null;

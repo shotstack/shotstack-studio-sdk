@@ -1,5 +1,7 @@
+import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
 
@@ -7,14 +9,13 @@ import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
 import { ToolbarComponent } from "./components/toolbar/toolbar-component";
 import { TrackListComponent } from "./components/track/track-list";
-import { TimelineStateManager } from "./core/state/timeline-state";
-import { TimelineEntity } from "./core/timeline-entity";
 import { InteractionController } from "./interaction/interaction-controller";
-import { MediaThumbnailRenderer } from "./renderers/media-thumbnail-renderer";
-import { ThumbnailGenerator } from "./services/thumbnail-generator";
+import { MediaThumbnailRenderer } from "./media-thumbnail-renderer";
+import { ThumbnailGenerator } from "./thumbnail-generator";
+import { TimelineStateManager } from "./timeline-state";
 
-/** HTML/CSS-based Timeline component extending TimelineEntity for SDK consistency */
-export class Timeline extends TimelineEntity {
+export class Timeline {
+	public readonly element: HTMLElement;
 	private readonly container: HTMLElement;
 	private readonly stateManager: TimelineStateManager;
 
@@ -45,12 +46,15 @@ export class Timeline extends TimelineEntity {
 	private isInteracting = false;
 	private isLoaded = false;
 
+	private thumbnailRenderPending = false;
+
 	// Bound event handlers for cleanup
 	private readonly handleTimelineUpdated: () => void;
 	private readonly handlePlaybackPlay: () => void;
 	private readonly handlePlaybackPause: () => void;
 	private readonly handleClipSelected: () => void;
 	private readonly handleClipLoadFailed: () => void;
+	private readonly handleClipUpdated: () => void;
 	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
 
 	constructor(
@@ -58,8 +62,8 @@ export class Timeline extends TimelineEntity {
 		container: HTMLElement,
 		options: TimelineOptions = {}
 	) {
-		super("div", "ss-html-timeline");
-
+		this.element = document.createElement("div");
+		this.element.className = "ss-html-timeline";
 		this.container = container;
 
 		// Merge default features with provided options
@@ -85,14 +89,20 @@ export class Timeline extends TimelineEntity {
 
 		// Initialize media thumbnail generation (video and image)
 		this.thumbnailGenerator = new ThumbnailGenerator();
-		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(this.thumbnailGenerator, () => this.requestRender());
+		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(this.thumbnailGenerator, () => {
+			if (!this.thumbnailRenderPending) {
+				this.thumbnailRenderPending = true;
+				requestAnimationFrame(() => {
+					this.thumbnailRenderPending = false;
+					this.requestRender();
+				});
+			}
+		});
 		this.clipRenderers.set("video", this.mediaThumbnailRenderer);
 		this.clipRenderers.set("image", this.mediaThumbnailRenderer);
 
 		// Bind event handlers
 		this.handleTimelineUpdated = () => {
-			// Re-detect luma attachments in case clips were added/removed/moved
-			this.stateManager.detectAndAttachLumas();
 			this.requestRender();
 		};
 		this.handlePlaybackPlay = () => this.startRenderLoop();
@@ -102,6 +112,7 @@ export class Timeline extends TimelineEntity {
 		};
 		this.handleClipSelected = () => this.requestRender();
 		this.handleClipLoadFailed = () => this.requestRender();
+		this.handleClipUpdated = () => this.requestRender();
 		this.handleRulerMouseMove = (e: MouseEvent) => {
 			if (!this.playheadGhost || !this.rulerTracksWrapper) return;
 			const rect = this.rulerTracksWrapper.getBoundingClientRect();
@@ -134,17 +145,9 @@ export class Timeline extends TimelineEntity {
 		this.setupEventListeners();
 
 		// Initial render (data is derived from Edit on-demand)
-		this.update(0, performance.now());
 		this.draw();
 
 		this.isLoaded = true;
-	}
-
-	/** Update component state (called each frame during active rendering) */
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State manager already syncs with Edit via events
-		// This method is here for TimelineEntity conformance
-		// Children that extend TimelineEntity will be updated via updateChildren()
 	}
 
 	/** Render/draw component to DOM (called each frame after update) */
@@ -221,6 +224,9 @@ export class Timeline extends TimelineEntity {
 		// Listen for selection changes (from canvas or other sources)
 		this.edit.events.on(EditEvent.ClipSelected, this.handleClipSelected);
 
+		// Listen for clip updates
+		this.edit.events.on(EditEvent.ClipUpdated, this.handleClipUpdated);
+
 		// Listen for clip load failures (to show error badge on timeline)
 		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
 	}
@@ -235,6 +241,7 @@ export class Timeline extends TimelineEntity {
 		this.edit.events.off(EditEvent.PlaybackPlay, this.handlePlaybackPlay);
 		this.edit.events.off(EditEvent.PlaybackPause, this.handlePlaybackPause);
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
+		this.edit.events.off(EditEvent.ClipUpdated, this.handleClipUpdated);
 		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
 	}
 
@@ -260,10 +267,8 @@ export class Timeline extends TimelineEntity {
 		if (!this.isRenderLoopActive) return;
 
 		const now = performance.now();
-		const deltaTime = now - this.lastFrameTime;
 		this.lastFrameTime = now;
 
-		this.update(deltaTime, now);
 		this.draw();
 
 		// Continue loop if playing or interacting
@@ -278,7 +283,6 @@ export class Timeline extends TimelineEntity {
 	/** Request a single render (used when idle and data changes) */
 	private requestRender(): void {
 		if (this.isRenderLoopActive) return; // Loop already running
-		this.update(0, performance.now());
 		this.draw();
 	}
 
@@ -345,27 +349,33 @@ export class Timeline extends TimelineEntity {
 				} else {
 					this.stateManager.selectClip(trackIndex, clipIndex, false);
 				}
-				this.edit.selectClip(trackIndex, clipIndex);
 				this.requestRender();
 			},
 			getClipRenderer: type => this.clipRenderers.get(type),
 			getClipError: (trackIndex, clipIndex) => this.edit.getClipError(trackIndex, clipIndex),
-			isLumaAttached: (trackIndex, clipIndex) => this.stateManager.isLumaAttached(trackIndex, clipIndex),
-			getAttachedLuma: (trackIndex, clipIndex) => this.stateManager.getAttachedLuma(trackIndex, clipIndex),
+			hasAttachedLuma: (trackIndex, clipIndex) => this.stateManager.hasAttachedLuma(trackIndex, clipIndex),
+			findAttachedLuma: (trackIndex, clipIndex) => this.stateManager.findAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {
-				this.stateManager.toggleLumaVisibility(contentTrackIndex, contentClipIndex);
+				const contentClip = this.edit.getResolvedClip(contentTrackIndex, contentClipIndex);
+				const clipId = this.edit.getClipId(contentTrackIndex, contentClipIndex);
+				const lumaRef = this.stateManager.findAttachedLuma(contentTrackIndex, contentClipIndex);
+				if (!lumaRef || !contentClip || !clipId) return;
 
-				// Select the luma clip when toggling mask visibility
-				const lumaRef = this.stateManager.getAttachedLuma(contentTrackIndex, contentClipIndex);
-				if (lumaRef) {
-					this.edit.selectClip(lumaRef.trackIndex, lumaRef.clipIndex);
-				}
+				const startTime = contentClip.start;
+				const newTrackIndex = contentTrackIndex + 1;
+
+				const cmd = new CreateTrackAndMoveClipCommand(newTrackIndex, lumaRef.trackIndex, lumaRef.clipIndex, sec(startTime));
+				this.edit.executeEditCommand(cmd);
+
+				this.edit.transformFromLuma(newTrackIndex, 0);
+
+				this.stateManager.clearLumaVisibilityForClipId(clipId);
 
 				this.requestRender();
 			},
 			isLumaVisibleForEditing: (contentTrackIndex, contentClipIndex) =>
 				this.stateManager.isLumaVisibleForEditing(contentTrackIndex, contentClipIndex),
-			getContentClipForLuma: (lumaTrack, lumaClip) => this.stateManager.getContentClipForLuma(lumaTrack, lumaClip)
+			findContentForLuma: (lumaTrack, lumaClip) => this.stateManager.findContentForLuma(lumaTrack, lumaClip)
 		});
 
 		// Set up scroll sync (also sync playhead)
@@ -407,9 +417,12 @@ export class Timeline extends TimelineEntity {
 			snapThreshold: this.features.snap ? 10 : 0,
 			onRequestRender: () => this.requestRender()
 		});
+		this.interactionController.mount();
 
-		// Auto-detect luma attachments from existing clips (e.g., on template load)
-		this.stateManager.detectAndAttachLumas();
+		this.stateManager.setInteractionQuery({
+			isDragging: (t, c) => this.interactionController?.isDragging(t, c) ?? false,
+			isResizing: (t, c) => this.interactionController?.isResizing(t, c) ?? false
+		});
 	}
 
 	private disposeComponents(): void {

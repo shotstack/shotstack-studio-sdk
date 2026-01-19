@@ -1,7 +1,14 @@
 import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
-import { calculateCornerScale, calculateEdgeResize, clampDimensions, detectCornerZone, detectEdgeZone } from "@core/interaction/clip-interaction";
+import {
+	calculateCornerScale,
+	calculateEdgeResize,
+	clampDimensions,
+	roundDimensions,
+	detectCornerZone,
+	detectEdgeZone
+} from "@core/interaction/clip-interaction";
 import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
 import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
 import { Pointer } from "@inputs/pointer";
@@ -35,6 +42,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	// Selection state
 	private selectedPlayer: Player | null = null;
+	private selectedClipId: string | null = null;
 	private selectedTrackIndex = -1;
 	private selectedClipIndex = -1;
 
@@ -163,12 +171,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	private onClipSelected({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
 		this.selectedPlayer = this.edit.getPlayerClip(trackIndex, clipIndex);
+		this.selectedClipId = this.selectedPlayer?.clipId ?? null;
 		this.selectedTrackIndex = trackIndex;
 		this.selectedClipIndex = clipIndex;
 	}
 
 	private onSelectionCleared(): void {
 		this.selectedPlayer = null;
+		this.selectedClipId = null;
 		this.selectedTrackIndex = -1;
 		this.selectedClipIndex = -1;
 		this.resetDragState();
@@ -369,8 +379,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		const hasChanged = this.hasStateChanged();
-		if ((this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) && hasChanged) {
-			this.edit.setUpdatedClip(this.selectedPlayer, this.initialClipConfiguration, structuredClone(this.selectedPlayer.clipConfiguration));
+		if (
+			(this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) &&
+			hasChanged &&
+			this.selectedClipId &&
+			this.initialClipConfiguration
+		) {
+			// Create undo entry (document already in sync via per-frame resolveClip)
+			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration);
 		}
 
 		this.resetDragState();
@@ -383,7 +399,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (!this.selectedPlayer) return;
 
 		this.isDragging = true;
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const viewportContainer = this.edit.getViewportContainer();
+		const timelinePoint = event.getLocalPosition(viewportContainer);
 		const playerPos = this.selectedPlayer.getContainer().position;
 
 		this.dragOffset = {
@@ -393,9 +410,10 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleDrag(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || !this.selectedClipId) return;
 
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const viewportContainer = this.edit.getViewportContainer();
+		const timelinePoint = event.getLocalPosition(viewportContainer);
 		const pivot = this.selectedPlayer.getPivot();
 
 		const cursorPosition: Vector = {
@@ -425,35 +443,32 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			this.edit.showAlignmentGuide(guide.type, guide.axis, guide.position, guide.bounds);
 		}
 
-		// Apply position
+		// Calculate new offset position
 		const size = this.selectedPlayer.getSize();
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
 		const updatedRelative = this.positionBuilder.absoluteToRelative(size, position, snapResult.position);
 
-		if (!this.selectedPlayer.clipConfiguration.offset) {
-			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.selectedPlayer.clipConfiguration.offset.x = updatedRelative.x;
-		this.selectedPlayer.clipConfiguration.offset.y = updatedRelative.y;
-
-		// Rebuild keyframes
-		this.selectedPlayer.reconfigureAfterRestore();
+		// Document-first: Update document, then resolve
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			offset: { x: updatedRelative.x, y: updatedRelative.y }
+		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	private startCornerResize(event: pixi.FederatedPointerEvent, corner: ScaleDirection): void {
 		if (!this.selectedPlayer) return;
 
 		this.scaleDirection = corner;
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		this.edgeDragStart = timelinePoint;
 
 		this.captureOriginalDimensions();
 	}
 
 	private handleCornerResize(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.scaleDirection || !this.originalDimensions) return;
+		if (!this.selectedPlayer || !this.selectedClipId || !this.scaleDirection || !this.originalDimensions) return;
 
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		const delta = {
 			x: timelinePoint.x - this.edgeDragStart.x,
 			y: timelinePoint.y - this.edgeDragStart.y
@@ -461,34 +476,31 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		const result = calculateCornerScale(this.scaleDirection, delta, this.originalDimensions, this.edit.size);
 		const clamped = clampDimensions(result.width, result.height);
+		const rounded = roundDimensions(clamped.width, clamped.height);
 
-		this.selectedPlayer.clipConfiguration.width = clamped.width;
-		this.selectedPlayer.clipConfiguration.height = clamped.height;
-
-		if (!this.selectedPlayer.clipConfiguration.offset) {
-			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.selectedPlayer.clipConfiguration.offset.x = result.offsetX;
-		this.selectedPlayer.clipConfiguration.offset.y = result.offsetY;
-
-		this.selectedPlayer.reconfigureAfterRestore();
-		this.selectedPlayer.notifyDimensionsChanged();
+		// Document-first: Update document, then resolve
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			width: rounded.width,
+			height: rounded.height,
+			offset: { x: result.offsetX, y: result.offsetY }
+		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	private startEdgeResize(event: pixi.FederatedPointerEvent, edge: EdgeDirection): void {
 		if (!this.selectedPlayer) return;
 
 		this.edgeDragDirection = edge;
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		this.edgeDragStart = timelinePoint;
 
 		this.captureOriginalDimensions();
 	}
 
 	private handleEdgeResize(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.edgeDragDirection || !this.originalDimensions) return;
+		if (!this.selectedPlayer || !this.selectedClipId || !this.edgeDragDirection || !this.originalDimensions) return;
 
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
+		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		const delta = {
 			x: timelinePoint.x - this.edgeDragStart.x,
 			y: timelinePoint.y - this.edgeDragStart.y
@@ -496,18 +508,15 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		const result = calculateEdgeResize(this.edgeDragDirection, delta, this.originalDimensions, this.edit.size);
 		const clamped = clampDimensions(result.width, result.height);
+		const rounded = roundDimensions(clamped.width, clamped.height);
 
-		this.selectedPlayer.clipConfiguration.width = Math.round(clamped.width);
-		this.selectedPlayer.clipConfiguration.height = Math.round(clamped.height);
-
-		if (!this.selectedPlayer.clipConfiguration.offset) {
-			this.selectedPlayer.clipConfiguration.offset = { x: 0, y: 0 };
-		}
-		this.selectedPlayer.clipConfiguration.offset.x = result.offsetX;
-		this.selectedPlayer.clipConfiguration.offset.y = result.offsetY;
-
-		this.selectedPlayer.reconfigureAfterRestore();
-		this.selectedPlayer.notifyDimensionsChanged();
+		// Document-first: Update document, then resolve
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			width: rounded.width,
+			height: rounded.height,
+			offset: { x: result.offsetX, y: result.offsetY }
+		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	private startRotation(event: pixi.FederatedPointerEvent, corner: CornerName): void {
@@ -522,7 +531,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleRotation(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || this.rotationStart === null) return;
+		if (!this.selectedPlayer || !this.selectedClipId || this.rotationStart === null) return;
 
 		const center = this.getContentCenter();
 		const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
@@ -531,18 +540,23 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const rawRotation = this.initialRotation + deltaAngle;
 		const { angle: snappedRotation } = snapRotation(rawRotation);
 
-		this.selectedPlayer.clipConfiguration.transform = {
-			...this.selectedPlayer.clipConfiguration.transform,
-			rotate: { angle: snappedRotation }
-		};
+		// Get current transform to preserve other properties (scale, etc.)
+		const currentTransform = this.selectedPlayer.clipConfiguration.transform ?? {};
 
-		this.selectedPlayer.reconfigureAfterRestore();
+		// Document-first: Update document, then resolve
+		this.edit.updateClipInDocument(this.selectedClipId, {
+			transform: {
+				...currentTransform,
+				rotate: { angle: snappedRotation }
+			}
+		});
+		this.edit.resolveClip(this.selectedClipId);
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 	private captureOriginalDimensions(): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || !this.selectedClipId) return;
 
 		const config = this.selectedPlayer.clipConfiguration;
 		let width: number;
@@ -552,10 +566,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			width = config.width;
 			height = config.height;
 		} else {
-			const contentSize = this.selectedPlayer.getContentSize();
-			const scale = this.selectedPlayer.getScale();
-			width = contentSize.width * scale;
-			height = contentSize.height * scale;
+			// Use canvas size to preserve visual appearance (clips without explicit dimensions fill the canvas)
+			width = this.edit.size.width;
+			height = this.edit.size.height;
+
+			// Document-first: Update document, then resolve
+			this.edit.updateClipInDocument(this.selectedClipId, { width, height });
+			this.edit.resolveClip(this.selectedClipId);
 		}
 
 		const currentOffsetX = config.offset?.x ?? 0;

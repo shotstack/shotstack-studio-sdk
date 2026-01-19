@@ -1,5 +1,4 @@
-import { Entity } from "@core/shared/entity";
-import * as pixi from "pixi.js";
+import type { Edit } from "@core/edit-session";
 
 type MemoryInfo = {
 	totalHeapSize?: number;
@@ -7,121 +6,120 @@ type MemoryInfo = {
 	heapSizeLimit?: number;
 };
 
-export interface ClipStats {
-	videos: number;
-	images: number;
-	text: number;
-	richText: number;
-	luma: number;
-	animatedClips: number;
-	cachedFrames: number;
-}
-
-export interface SystemStats {
-	clipCount: number;
-	trackCount: number;
-	commandCount: number;
-}
-
 interface MemorySnapshot {
 	timestamp: number;
 	jsHeapUsed: number;
 }
 
-export interface PlaybackHealth {
-	activePlayerCount: number;
-	totalPlayerCount: number;
-	videoMaxDrift: number;
-	audioMaxDrift: number;
-	syncCorrections: number;
-}
+/**
+ * Inspector displays performance stats as an HTML overlay.
+ * Shows FPS, memory, playback health, and clip statistics.
+ */
+export class Inspector {
+	private container: HTMLDivElement | null = null;
+	private animationFrameId: number | null = null;
+	private lastFrameTime = 0;
+	private edit: Edit;
 
-export class Inspector extends Entity {
-	private static readonly Width = 340;
-	private static readonly Height = 380;
-
-	// Playback state
-	public fps: number;
-	public playbackTime: number;
-	public playbackDuration: number;
-	public isPlaying: boolean;
-
-	// Stats (set by Canvas)
-	public clipStats: ClipStats | null = null;
-	public systemStats: SystemStats | null = null;
-	public playbackHealth: PlaybackHealth | null = null;
-
-	// Legacy stats (for backward compatibility)
-	public clipCounts: Record<string, number> = {};
-	public totalClips: number = 0;
-	public commandHistorySize: number = 0;
-	public trackCount: number = 0;
-
-	private background: pixi.Graphics | null;
-	private text: pixi.Text | null;
+	// Cached DOM elements for efficient updates (avoid innerHTML every frame)
+	private fpsEl: HTMLElement | null = null;
+	private playbackEl: HTMLElement | null = null;
+	private frameStatsEl: HTMLElement | null = null;
+	private frameSparklineEl: HTMLElement | null = null;
+	private jankEl: HTMLElement | null = null;
+	private heapEl: HTMLElement | null = null;
+	private heapSparklineEl: HTMLElement | null = null;
+	private clipsEl: HTMLElement | null = null;
 
 	// History tracking
 	private historySamples: MemorySnapshot[] = [];
-	private readonly maxSamples = 20; // 10 seconds at 2 samples/sec
-	private lastSampleTime: number = 0;
-	private readonly sampleInterval = 500; // ms
+	private readonly maxSamples = 20;
+	private lastSampleTime = 0;
+	private readonly sampleInterval = 500;
 
 	// Frame timing tracking
 	private frameTimes: number[] = [];
-	private readonly frameTimeWindow = 60; // Track last 60 frames (1 second at 60fps)
-	private readonly jankThreshold = 33; // >33ms = below 30fps = jank
+	private readonly frameTimeWindow = 60;
+	private readonly jankThreshold = 33;
 
-	constructor() {
-		super();
-
-		this.background = null;
-		this.text = null;
-
-		this.fps = 0;
-		this.playbackTime = 0;
-		this.playbackDuration = 0;
-		this.isPlaying = false;
+	constructor(edit: Edit) {
+		this.edit = edit;
 	}
 
-	public override async load(): Promise<void> {
-		const background = new pixi.Graphics();
-		background.fillStyle = { color: "#424242", alpha: 0.85 };
-		background.rect(0, 0, Inspector.Width, Inspector.Height);
-		background.fill();
+	/**
+	 * Mount the inspector to a parent element.
+	 * @param parent - The parent element to append the inspector to
+	 */
+	mount(parent: HTMLElement): void {
+		this.container = document.createElement("div");
+		this.container.style.cssText = `
+			position: fixed;
+			top: 10px;
+			left: 10px;
+			background: rgba(30, 30, 30, 0.9);
+			color: #fff;
+			font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+			font-size: 11px;
+			line-height: 1.4;
+			padding: 12px;
+			border-radius: 6px;
+			z-index: 1000;
+			pointer-events: none;
+			min-width: 320px;
+			backdrop-filter: blur(4px);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		`;
 
-		this.getContainer().addChild(background);
-		this.background = background;
+		// Build structure once (innerHTML only at mount, not every frame)
+		this.container.innerHTML = `
+			<div style="color: #4ade80; font-weight: 600;">FPS: <span data-fps></span></div>
+			<div style="opacity: 0.7;"><span data-playback></span></div>
+			<div style="opacity: 0.7;"><span data-frame-stats></span> <span style="letter-spacing: -1px;" data-frame-sparkline></span> Jank: <span data-jank></span></div>
+			<div style="height: 8px;"></div>
+			<div style="color: #f472b6; font-weight: 600;">MEMORY</div>
+			<div style="opacity: 0.7;">JS Heap: <span data-heap></span> <span style="letter-spacing: -1px;" data-heap-sparkline></span></div>
+			<div style="height: 8px;"></div>
+			<div style="color: #a78bfa; font-weight: 600;">SYSTEM</div>
+			<div style="opacity: 0.7;"><span data-clips></span></div>
+		`;
 
-		const text = new pixi.Text();
-		text.text = "";
-		text.style = {
-			fontFamily: "monospace",
-			fontSize: 10,
-			fill: "#ffffff",
-			wordWrap: true,
-			wordWrapWidth: Inspector.Width - 10,
-			lineHeight: 12
+		// Cache element references for efficient per-frame updates
+		this.fpsEl = this.container.querySelector("[data-fps]");
+		this.playbackEl = this.container.querySelector("[data-playback]");
+		this.frameStatsEl = this.container.querySelector("[data-frame-stats]");
+		this.frameSparklineEl = this.container.querySelector("[data-frame-sparkline]");
+		this.jankEl = this.container.querySelector("[data-jank]");
+		this.heapEl = this.container.querySelector("[data-heap]");
+		this.heapSparklineEl = this.container.querySelector("[data-heap-sparkline]");
+		this.clipsEl = this.container.querySelector("[data-clips]");
+
+		parent.appendChild(this.container);
+
+		// Start the update loop
+		this.startUpdateLoop();
+	}
+
+	private startUpdateLoop(): void {
+		const loop = (timestamp: number) => {
+			const deltaMS = timestamp - this.lastFrameTime;
+			this.lastFrameTime = timestamp;
+
+			this.update(deltaMS);
+			this.animationFrameId = requestAnimationFrame(loop);
 		};
-		text.x = 5;
-		text.y = 5;
-
-		this.getContainer().addChild(text);
-		this.text = text;
+		this.animationFrameId = requestAnimationFrame(loop);
 	}
 
-	public override update(_: number, deltaMS: number): void {
-		if (!this.text) {
-			return;
-		}
+	private update(deltaMS: number): void {
+		if (!this.container) return;
 
 		// Track frame timing
 		this.trackFrameTime(deltaMS);
 
-		// Sample history at interval
+		// Sample memory at interval
 		const now = performance.now();
 		if (now - this.lastSampleTime > this.sampleInterval) {
 			const memoryInfo = this.getMemoryInfo();
-
 			this.addHistorySample({
 				timestamp: now,
 				jsHeapUsed: memoryInfo.usedHeapSize ?? 0
@@ -129,7 +127,7 @@ export class Inspector extends Entity {
 			this.lastSampleTime = now;
 		}
 
-		this.renderStats();
+		this.render();
 	}
 
 	private trackFrameTime(deltaMS: number): void {
@@ -151,12 +149,10 @@ export class Inspector extends Entity {
 
 	private getFrameTimeSparkline(): string {
 		if (this.frameTimes.length === 0) return "";
-
 		const chars = "▁▂▃▄▅▆▇█";
-		// Normalize against 33ms (jank threshold) for better visualization
-		const maxScale = 50; // Cap at 50ms for sparkline visualization
+		const maxScale = 50;
 		return this.frameTimes
-			.slice(-20) // Show last 20 frames
+			.slice(-20)
 			.map(t => chars[Math.min(7, Math.floor((t / maxScale) * 7))])
 			.join("");
 	}
@@ -170,130 +166,70 @@ export class Inspector extends Entity {
 
 	private getJsHeapSparkline(): string {
 		if (this.historySamples.length === 0) return "";
-
 		const chars = "▁▂▃▄▅▆▇█";
 		const values = this.historySamples.map(s => s.jsHeapUsed);
 		const max = Math.max(...values);
 		const min = Math.min(...values);
 		const range = max - min || 1;
-
 		return values.map(v => chars[Math.min(7, Math.floor(((v - min) / range) * 7))]).join("");
 	}
 
-	private renderStats(): void {
-		if (!this.text) return;
+	private render(): void {
+		if (!this.container) return;
 
 		const memoryInfo = this.getMemoryInfo();
 		const jsSparkline = this.getJsHeapSparkline();
-
 		const jsHeapMB = memoryInfo.usedHeapSize ? this.bytesToMegabytes(memoryInfo.usedHeapSize) : 0;
 		const jsLimitMB = memoryInfo.heapSizeLimit ? this.bytesToMegabytes(memoryInfo.heapSizeLimit) : 0;
 
-		// Frame timing stats
 		const frameStats = this.getFrameStats();
 		const frameSparkline = this.getFrameTimeSparkline();
 
-		const stats: string[] = [
-			// Header row with FPS and playback time
-			`FPS: ${this.fps}  ${this.isPlaying ? "▶" : "⏸"}  ${(this.playbackTime / 1000).toFixed(1)}s / ${(this.playbackDuration / 1000).toFixed(1)}s`,
-			// Frame timing row
-			`Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms  ${frameSparkline}  Jank: ${frameStats.jankCount}`,
-			``
-		];
+		// Calculate FPS from frame times
+		const fps = frameStats.avgFrameTime > 0 ? Math.round(1000 / frameStats.avgFrameTime) : 0;
 
-		// Playback Health section
-		if (this.playbackHealth) {
-			stats.push(`── PLAYBACK HEALTH ──`);
-			stats.push(`  Active: ${this.playbackHealth.activePlayerCount}/${this.playbackHealth.totalPlayerCount} players`);
+		// Get playback data from Edit
+		const { playbackTime, isPlaying } = this.edit;
+		const duration = this.edit.totalDuration;
 
-			const videoStatus = this.getSyncStatusIcon(this.playbackHealth.videoMaxDrift);
-			const audioStatus = this.getSyncStatusIcon(this.playbackHealth.audioMaxDrift);
+		// Count clips
+		const tracks = this.edit.getTracks();
+		const clipCount = tracks.reduce((sum, track) => sum + track.length, 0);
+		const trackCount = tracks.length;
 
-			stats.push(`  Video sync: ${videoStatus} (drift: ${Math.round(this.playbackHealth.videoMaxDrift)}ms)`);
-			stats.push(`  Audio sync: ${audioStatus} (drift: ${Math.round(this.playbackHealth.audioMaxDrift)}ms)`);
-			stats.push(`  Sync corrections: ${this.playbackHealth.syncCorrections} this session`);
-			stats.push(``);
-		}
-
-		stats.push(`── MEMORY ──`);
-		stats.push(`  JS Heap: ${jsHeapMB}MB / ${jsLimitMB}MB  ${jsSparkline}`);
-		stats.push(``);
-
-		// Clip counts by type
-		if (this.clipStats) {
-			stats.push(`── CLIPS ──`);
-			const clipLines: string[] = [];
-			if (this.clipStats.videos > 0) clipLines.push(`Video: ${this.clipStats.videos}`);
-			if (this.clipStats.images > 0) clipLines.push(`Image: ${this.clipStats.images}`);
-			if (this.clipStats.text > 0) clipLines.push(`Text: ${this.clipStats.text}`);
-			if (this.clipStats.richText > 0) clipLines.push(`RichText: ${this.clipStats.richText}`);
-			if (this.clipStats.luma > 0) clipLines.push(`Luma: ${this.clipStats.luma}`);
-			stats.push(`  ${clipLines.join("  ")}`);
-			if (this.clipStats.animatedClips > 0) {
-				stats.push(`  Animated: ${this.clipStats.animatedClips} clips  ${this.clipStats.cachedFrames} cached frames`);
-			}
-			stats.push(``);
-		}
-
-		// System section
-		if (this.systemStats) {
-			stats.push(`── SYSTEM ──`);
-			stats.push(`  Clips: ${this.systemStats.clipCount}  Tracks: ${this.systemStats.trackCount}  Commands: ${this.systemStats.commandCount}`);
-		} else {
-			// Fallback to legacy
-			stats.push(`── SYSTEM ──`);
-			stats.push(`  Clips: ${this.totalClips}  Tracks: ${this.trackCount}  Commands: ${this.commandHistorySize}`);
-			stats.push(`  ${this.formatClipCounts()}`);
-		}
-
-		this.text.text = stats.join("\n");
-
-		// Resize background to fit content
-		if (this.background) {
-			this.background.clear();
-			this.background.fillStyle = { color: "#424242", alpha: 0.85 };
-			this.background.rect(0, 0, Inspector.Width, this.text.height + 10);
-			this.background.fill();
-		}
-	}
-
-	private getSyncStatusIcon(driftMs: number): string {
-		if (driftMs < 50) return "✓ OK";
-		if (driftMs < 100) return "⚠ DRIFT";
-		return "🔴 DESYNC";
-	}
-
-	public override draw(): void {}
-
-	public override dispose(): void {
-		this.background?.destroy();
-		this.background = null;
-
-		this.text?.destroy();
-		this.text = null;
-	}
-
-	private formatClipCounts(): string {
-		const types = ["video", "image", "text", "audio", "luma", "html", "title"];
-		const counts = types.filter(t => (this.clipCounts[t] || 0) > 0).map(t => `${t}: ${this.clipCounts[t]}`);
-		return counts.length > 0 ? counts.join("  ") : "none";
+		// Update cached elements with textContent (no DOM tree recreation)
+		if (this.fpsEl) this.fpsEl.textContent = String(fps);
+		if (this.playbackEl)
+			this.playbackEl.textContent = `${isPlaying ? "▶" : "⏸"} ${(playbackTime / 1000).toFixed(1)}s / ${(duration / 1000).toFixed(1)}s`;
+		if (this.frameStatsEl) this.frameStatsEl.textContent = `Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms`;
+		if (this.frameSparklineEl) this.frameSparklineEl.textContent = frameSparkline;
+		if (this.jankEl) this.jankEl.textContent = String(frameStats.jankCount);
+		if (this.heapEl) this.heapEl.textContent = `${jsHeapMB}MB / ${jsLimitMB}MB`;
+		if (this.heapSparklineEl) this.heapSparklineEl.textContent = jsSparkline;
+		if (this.clipsEl) this.clipsEl.textContent = `Clips: ${clipCount}  Tracks: ${trackCount}`;
 	}
 
 	private getMemoryInfo(): MemoryInfo {
 		const memoryInfo: MemoryInfo = {};
-
 		if (!("memory" in performance)) {
 			return memoryInfo;
 		}
-
 		memoryInfo.totalHeapSize = (performance.memory as any).totalJSHeapSize;
 		memoryInfo.usedHeapSize = (performance.memory as any).usedJSHeapSize;
 		memoryInfo.heapSizeLimit = (performance.memory as any).jsHeapSizeLimit;
-
 		return memoryInfo;
 	}
 
 	private bytesToMegabytes(bytes: number): number {
 		return Math.round(bytes / 1024 / 1024);
+	}
+
+	dispose(): void {
+		if (this.animationFrameId !== null) {
+			cancelAnimationFrame(this.animationFrameId);
+			this.animationFrameId = null;
+		}
+		this.container?.remove();
+		this.container = null;
 	}
 }

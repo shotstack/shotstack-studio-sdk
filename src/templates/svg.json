@@ -1,0 +1,44 @@
+{
+	"timeline": {
+		"background": "#FFFFFF",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "svg",
+							"src": "<svg viewBox=\"0 0 80 80\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"80\" height=\"80\" fill=\"{{ ELEMENT_COLOR }}\"/></svg>",
+							"opacity": 1
+						},
+						"start": 0,
+						"length": 10,
+						"offset": {
+							"x": -0.412,
+							"y": -0.412
+						},
+						"position": "center",
+						"transition": {
+							"in": "fade"
+						},
+						"width": 80,
+						"height": 80
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": {
+			"width": 1080,
+			"height": 1080
+		}
+	},
+	"merge": [
+		{
+			"find": "ELEMENT_COLOR",
+			"replace": "#ff9500"
+		}
+	]
+}

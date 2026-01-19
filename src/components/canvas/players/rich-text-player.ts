@@ -1,4 +1,5 @@
 import { Player, PlayerType } from "@canvas/players/player";
+import { SEEK_ELAPSED_MARKER } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
@@ -34,6 +35,7 @@ export class RichTextPlayer extends Player {
 	private lastRenderedTime: number = -1;
 	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
+	private pendingRenderTime: number | null = null; // Stores time requested while rendering (race condition fix)
 	private validatedAsset: CanvasRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
 	private loadComplete: boolean = false;
@@ -203,7 +205,7 @@ export class RichTextPlayer extends Player {
 		}
 
 		if (this.textEngine && this.renderer) {
-			this.renderFrameSafe(this.getCurrentTime() / 1000);
+			this.renderFrameSafe(this.getPlaybackTime());
 		}
 	}
 
@@ -317,7 +319,9 @@ export class RichTextPlayer extends Player {
 		}
 
 		try {
-			const ops = await this.textEngine.renderFrame(this.validatedAsset, timeSeconds);
+			// Pass clip duration so animations can cap their length appropriately
+			const clipDuration = this.getLength();
+			const ops = await this.textEngine.renderFrame(this.validatedAsset, timeSeconds, clipDuration);
 
 			const ctx = this.canvas.getContext("2d");
 			if (ctx) ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -395,6 +399,9 @@ export class RichTextPlayer extends Player {
 	}
 	private renderFrameSafe(timeSeconds: number): void {
 		if (this.isRendering) {
+			// Store pending time to render after current render completes (race condition fix)
+			this.pendingRenderTime = timeSeconds;
+
 			// Show nearest cached frame instead of skipping entirely
 			const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
 			const cachedTexture = this.cachedFrames.get(cacheKey);
@@ -405,10 +412,19 @@ export class RichTextPlayer extends Player {
 		}
 
 		this.isRendering = true;
+		this.pendingRenderTime = null;
+
 		this.renderFrame(timeSeconds)
 			.catch(err => console.error("Failed to render rich text frame:", err))
 			.finally(() => {
 				this.isRendering = false;
+
+				// Check if a render was requested while we were busy
+				if (this.pendingRenderTime !== null && this.pendingRenderTime !== timeSeconds) {
+					const pending = this.pendingRenderTime;
+					this.pendingRenderTime = null;
+					this.renderFrameSafe(pending);
+				}
 			});
 	}
 
@@ -416,8 +432,9 @@ export class RichTextPlayer extends Player {
 		super.update(deltaTime, elapsed);
 
 		// Reset render state on seek to prevent race conditions
-		if (elapsed === 101) {
+		if (elapsed === SEEK_ELAPSED_MARKER) {
 			this.isRendering = false;
+			this.pendingRenderTime = null;
 			this.lastRenderedTime = -1;
 		}
 
@@ -431,7 +448,7 @@ export class RichTextPlayer extends Player {
 		}
 
 		if (this.textEngine && this.renderer && !this.isRendering) {
-			const currentTimeSeconds = this.getCurrentTime() / 1000;
+			const currentTimeSeconds = this.getPlaybackTime();
 			const frameInterval = 1 / 60; // Always render at 60fps for smooth preview
 
 			if (Math.abs(currentTimeSeconds - this.lastRenderedTime) > frameInterval) {
@@ -480,6 +497,13 @@ export class RichTextPlayer extends Player {
 		};
 	}
 
+	public override getContentSize(): Size {
+		return {
+			width: this.clipConfiguration.width || this.canvas?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || this.canvas?.height || this.edit.size.height
+		};
+	}
+
 	protected override getFitScale(): number {
 		return 1;
 	}
@@ -513,7 +537,7 @@ export class RichTextPlayer extends Player {
 		const { value: validated } = this.textEngine.validate(canvasPayload);
 		this.validatedAsset = validated;
 
-		this.renderFrameSafe(this.getCurrentTime() / 1000);
+		this.renderFrameSafe(this.getPlaybackTime());
 	}
 
 	public updateTextContent(newText: string): void {
@@ -533,12 +557,8 @@ export class RichTextPlayer extends Player {
 
 		this.lastRenderedTime = -1;
 		if (this.textEngine && this.renderer) {
-			this.renderFrameSafe(this.getCurrentTime() / 1000);
+			this.renderFrameSafe(this.getPlaybackTime());
 		}
-	}
-
-	private getCurrentTime(): number {
-		return this.edit.playbackTime - this.getStart();
 	}
 
 	public getCacheSize(): number {

@@ -1,3 +1,5 @@
+import { createThrottle } from "@core/shared/utils";
+
 import { UIComponent } from "../primitives/UIComponent";
 
 /**
@@ -55,6 +57,9 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 	private lineHeightSlider: HTMLInputElement | null = null;
 	private lineHeightValue: HTMLSpanElement | null = null;
 
+	// Throttle instance for rate-limiting slider updates (~20 updates/sec max)
+	private spacingThrottle = createThrottle(() => this.emit(this.state), 50);
+
 	constructor(panelConfig: SpacingPanelConfig = {}) {
 		super(); // No wrapper class - mounted inside existing popup
 		this.panelConfig = {
@@ -105,8 +110,9 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 				const value = parseInt(this.letterSpacingSlider!.value, 10);
 				this.state.letterSpacing = value;
 				this.updateLetterSpacingDisplay();
-				this.emit(this.state);
+				this.spacingThrottle.call();
 			});
+			this.events.on(this.letterSpacingSlider, "change", () => this.spacingThrottle.flush());
 		}
 
 		// Line height
@@ -116,8 +122,9 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 				const lineHeight = rawValue / 10;
 				this.state.lineHeight = lineHeight;
 				this.updateLineHeightDisplay();
-				this.emit(this.state);
+				this.spacingThrottle.call();
 			});
+			this.events.on(this.lineHeightSlider, "change", () => this.spacingThrottle.flush());
 		}
 	}
 
@@ -172,5 +179,11 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 		if (this.lineHeightValue) {
 			this.lineHeightValue.textContent = this.state.lineHeight.toFixed(1);
 		}
+	}
+
+	override dispose(): void {
+		// Cancel throttle to prevent any pending callbacks after disposal
+		this.spacingThrottle.cancel();
+		super.dispose();
 	}
 }

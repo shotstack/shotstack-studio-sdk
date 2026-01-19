@@ -140,6 +140,28 @@ const mockRevokeObjectURL = jest.fn();
 global.URL.createObjectURL = mockCreateObjectURL;
 global.URL.revokeObjectURL = mockRevokeObjectURL;
 
+// Mock Image class to trigger onload immediately when src is set
+class MockImage {
+	onload: (() => void) | null = null;
+
+	onerror: (() => void) | null = null;
+
+	private srcValue = "";
+
+	get src(): string {
+		return this.srcValue;
+	}
+
+	set src(value: string) {
+		this.srcValue = value;
+		// Trigger onload asynchronously to simulate real behavior
+		setTimeout(() => {
+			if (this.onload) this.onload();
+		}, 0);
+	}
+}
+global.Image = MockImage as unknown as typeof Image;
+
 // Mock AssetLoader
 jest.mock("@loaders/asset-loader", () => ({
 	AssetLoader: jest.fn().mockImplementation(() => ({
@@ -368,7 +390,7 @@ describe("SvgPlayer", () => {
 			);
 		});
 
-		it("creates blob URL and loads texture via pixi.Assets", async () => {
+		it("creates blob URL and loads texture via Image and Texture.from", async () => {
 			const mockEdit = createMockEdit();
 			const clipConfig = createSvgClipConfig();
 			const player = new SvgPlayer(mockEdit, clipConfig);
@@ -378,12 +400,8 @@ describe("SvgPlayer", () => {
 			await player.load();
 
 			expect(mockCreateObjectURL).toHaveBeenCalled();
-			expect(pixi.Assets.load).toHaveBeenCalledWith(
-				expect.objectContaining({
-					src: "blob:mock-url",
-					parser: "loadTextures"
-				})
-			);
+			// New implementation uses Image + Texture.from instead of Assets.load
+			expect(pixi.Texture.from).toHaveBeenCalled();
 		});
 
 		it("revokes blob URL after texture is loaded", async () => {

@@ -3,25 +3,29 @@
  *
  * This class owns the raw Edit configuration with "auto", "end", and merge
  * field placeholders preserved. It provides CRUD operations on the document
- * structure without any rendering or pixi.js dependencies.
+ * structure.
  *
- * The document is the source of truth that serializes to the backend API.
- * Resolution to concrete values (ResolvedEdit) happens in EditSession.
- *
- * Key distinction:
- * - Edit (this class holds) = raw user input with "auto", "end", {{ placeholders }}
- * - ResolvedEdit = concrete values (ms timing, substituted text) for pixi rendering
+ * The document is the source of truth that serializes to the Shotstack Edit API.
  */
 
 import type { Size } from "@layouts/geometry";
 
 import type { Clip, Track, Edit, Soundtrack } from "./schemas";
+import { setNestedValue } from "./shared/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface EditDocumentOptions {
-	/** Default output size if not specified in edit */
-	defaultSize?: Size;
+type InternalClip = Clip & { id?: string };
+
+export interface MergeFieldBinding {
+	placeholder: string;
+	resolvedValue: string;
+}
+
+export interface ClipLookupResult {
+	clip: Clip;
+	trackIndex: number;
+	clipIndex: number;
 }
 
 // ─── EditDocument Class ───────────────────────────────────────────────────────
@@ -29,9 +33,27 @@ export interface EditDocumentOptions {
 export class EditDocument {
 	private data: Edit;
 
+	/**
+	 * Merge field bindings
+	 */
+	private clipBindings: Map<string, Map<string, MergeFieldBinding>> = new Map();
+
 	constructor(edit: Edit) {
-		// Deep clone to prevent external mutations
 		this.data = structuredClone(edit);
+		this.hydrateIds();
+	}
+
+	/**
+	 * Hydrate clips
+	 */
+	private hydrateIds(): void {
+		for (const track of this.data.timeline.tracks) {
+			for (const clip of track.clips as InternalClip[]) {
+				if (!clip.id) {
+					clip.id = crypto.randomUUID();
+				}
+			}
+		}
 	}
 
 	// ─── Timeline Accessors ───────────────────────────────────────────────────
@@ -51,7 +73,7 @@ export class EditDocument {
 	}
 
 	/**
-	 * Get all tracks (raw, unresolved)
+	 * Get all tracks
 	 */
 	getTracks(): Track[] {
 		return this.data.timeline.tracks;
@@ -110,6 +132,53 @@ export class EditDocument {
 	getClipCountInTrack(trackIndex: number): number {
 		const track = this.data.timeline.tracks[trackIndex];
 		return track?.clips.length ?? 0;
+	}
+
+	// ─── ID-Based Clip Accessors ─────────────────────────────────────────────
+
+	/**
+	 * Get a clip by its stable ID
+	 */
+	getClipById(clipId: string): ClipLookupResult | null {
+		for (let t = 0; t < this.data.timeline.tracks.length; t += 1) {
+			const clips = this.data.timeline.tracks[t].clips as InternalClip[];
+			for (let c = 0; c < clips.length; c += 1) {
+				if (clips[c].id === clipId) {
+					return { clip: clips[c], trackIndex: t, clipIndex: c };
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Update a clip by its stable ID (partial update)
+	 */
+	updateClipById(clipId: string, updates: Partial<Clip>): void {
+		const found = this.getClipById(clipId);
+		if (found) {
+			Object.assign(found.clip, updates);
+		}
+	}
+
+	/**
+	 * Remove a clip by its stable ID
+	 * @returns The removed clip, or null if not found
+	 */
+	removeClipById(clipId: string): Clip | null {
+		const found = this.getClipById(clipId);
+		if (found) {
+			return this.removeClip(found.trackIndex, found.clipIndex);
+		}
+		return null;
+	}
+
+	/**
+	 * Get the stable ID of a clip at a given position
+	 */
+	getClipId(trackIndex: number, clipIndex: number): string | null {
+		const clip = this.getClip(trackIndex, clipIndex) as InternalClip | null;
+		return clip?.id ?? null;
 	}
 
 	// ─── Output Accessors ─────────────────────────────────────────────────────
@@ -184,10 +253,14 @@ export class EditDocument {
 
 	/**
 	 * Remove a track at the specified index
-	 * @returns The removed track, or null if index invalid
+	 * @returns The removed track, or null if index invalid or would leave 0 tracks
 	 */
 	removeTrack(index: number): Track | null {
 		if (index < 0 || index >= this.data.timeline.tracks.length) {
+			return null;
+		}
+		if (this.data.timeline.tracks.length <= 1) {
+			console.warn("Cannot remove the last track");
 			return null;
 		}
 		const [removed] = this.data.timeline.tracks.splice(index, 1);
@@ -198,12 +271,18 @@ export class EditDocument {
 
 	/**
 	 * Add a clip to a track
-	 * @returns The added clip
+	 * @returns The added clip (with hydrated ID)
 	 */
 	addClip(trackIndex: number, clip: Clip, clipIndex?: number): Clip {
 		const track = this.data.timeline.tracks[trackIndex];
 		if (!track) {
 			throw new Error(`Track ${trackIndex} does not exist`);
+		}
+
+		// Hydrate with stable ID if not present
+		const internalClip = clip as InternalClip;
+		if (!internalClip.id) {
+			internalClip.id = crypto.randomUUID();
 		}
 
 		const insertIndex = clipIndex ?? track.clips.length;
@@ -246,6 +325,50 @@ export class EditDocument {
 		const oldClip = track.clips[clipIndex];
 		track.clips[clipIndex] = newClip;
 		return oldClip;
+	}
+
+	/**
+	 * Move a clip to a different track and/or position, preserving its ID.
+	 * @returns The moved clip, or null if source clip not found
+	 */
+	moveClip(fromTrackIndex: number, fromClipIndex: number, toTrackIndex: number, updates?: Partial<Clip>): Clip | null {
+		// Get the source track and clip
+		const fromTrack = this.data.timeline.tracks[fromTrackIndex];
+		if (!fromTrack || fromClipIndex < 0 || fromClipIndex >= fromTrack.clips.length) {
+			return null;
+		}
+
+		// Get destination track (create if needed)
+		const toTrack = this.data.timeline.tracks[toTrackIndex];
+		if (!toTrack) {
+			return null;
+		}
+
+		// Remove clip from source (preserves the clip object with its ID)
+		const [clip] = fromTrack.clips.splice(fromClipIndex, 1);
+		if (!clip) return null;
+
+		// Apply updates (e.g., new start time)
+		if (updates) {
+			Object.assign(clip, updates);
+		}
+
+		// Find insertion point based on start time
+		const clipStart = typeof clip.start === "number" ? clip.start : 0;
+		let insertIndex = 0;
+		for (let i = 0; i < toTrack.clips.length; i += 1) {
+			const existingClipStart = toTrack.clips[i].start;
+			const existingStart = typeof existingClipStart === "number" ? existingClipStart : 0;
+			if (clipStart < existingStart) {
+				break;
+			}
+			insertIndex += 1;
+		}
+
+		// Insert at the correct position
+		toTrack.clips.splice(insertIndex, 0, clip);
+
+		return clip;
 	}
 
 	// ─── Timeline Mutations ───────────────────────────────────────────────────
@@ -368,14 +491,112 @@ export class EditDocument {
 		this.data.merge = mergeFields;
 	}
 
+	// ─── Clip Binding Management ─────────────────────────────────────────────
+
+	/**
+	 * Set a merge field binding for a clip property.
+	 * @param clipId - The stable clip ID
+	 * @param path - Property path (e.g., "asset.src")
+	 * @param binding - The placeholder and resolved value
+	 */
+	setClipBinding(clipId: string, path: string, binding: MergeFieldBinding): void {
+		let clipBindingsMap = this.clipBindings.get(clipId);
+		if (!clipBindingsMap) {
+			clipBindingsMap = new Map();
+			this.clipBindings.set(clipId, clipBindingsMap);
+		}
+		clipBindingsMap.set(path, binding);
+	}
+
+	/**
+	 * Get a merge field binding for a clip property.
+	 * @param clipId - The stable clip ID
+	 * @param path - Property path (e.g., "asset.src")
+	 * @returns The binding, or undefined if not set
+	 */
+	getClipBinding(clipId: string, path: string): MergeFieldBinding | undefined {
+		return this.clipBindings.get(clipId)?.get(path);
+	}
+
+	/**
+	 * Remove a merge field binding for a clip property.
+	 * @param clipId - The stable clip ID
+	 * @param path - Property path (e.g., "asset.src")
+	 */
+	removeClipBinding(clipId: string, path: string): void {
+		const clipBindingsMap = this.clipBindings.get(clipId);
+		if (clipBindingsMap) {
+			clipBindingsMap.delete(path);
+			// Clean up empty maps
+			if (clipBindingsMap.size === 0) {
+				this.clipBindings.delete(clipId);
+			}
+		}
+	}
+
+	/**
+	 * Get all bindings for a clip.
+	 * @param clipId - The stable clip ID
+	 * @returns Map of path → binding, or undefined if clip has no bindings
+	 */
+	getClipBindings(clipId: string): Map<string, MergeFieldBinding> | undefined {
+		return this.clipBindings.get(clipId);
+	}
+
+	/**
+	 * Set all bindings for a clip (replaces existing).
+	 * @param clipId - The stable clip ID
+	 * @param bindings - Map of path → binding
+	 */
+	setClipBindingsForClip(clipId: string, bindings: Map<string, MergeFieldBinding>): void {
+		if (bindings.size === 0) {
+			this.clipBindings.delete(clipId);
+		} else {
+			this.clipBindings.set(clipId, new Map(bindings));
+		}
+	}
+
+	/**
+	 * Clear all bindings for a clip.
+	 * @param clipId - The stable clip ID
+	 */
+	clearClipBindings(clipId: string): void {
+		this.clipBindings.delete(clipId);
+	}
+
+	/**
+	 * Get all clip IDs that have bindings.
+	 * @returns Array of clip IDs
+	 */
+	getClipIdsWithBindings(): string[] {
+		return Array.from(this.clipBindings.keys());
+	}
+
 	// ─── Serialization ────────────────────────────────────────────────────────
 
 	/**
-	 * Export the document as raw Edit JSON (preserves "auto", "end", placeholders)
-	 * This is what gets sent to the backend API.
+	 * Export the document as raw Edit JSON (preserves "auto", "end", merge fields, aliases)
 	 */
 	toJSON(): Edit {
 		const result = structuredClone(this.data);
+
+		// Restore placeholders from document bindings before stripping IDs
+		for (const track of result.timeline.tracks) {
+			for (const clip of track.clips) {
+				const clipId = (clip as InternalClip).id;
+				if (clipId) {
+					const bindings = this.clipBindings.get(clipId);
+					if (bindings) {
+						for (const [path, { placeholder }] of bindings) {
+							setNestedValue(clip, path, placeholder);
+						}
+					}
+				}
+				// Strip internal ID (not part of Shotstack API)
+				delete (clip as InternalClip).id;
+			}
+		}
+
 		if (result.merge?.length === 0) {
 			delete result.merge;
 		}

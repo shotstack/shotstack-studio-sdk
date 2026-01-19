@@ -79,10 +79,10 @@ describe("KeyframeBuilder", () => {
 			// Test various time values including edge cases
 			const times = [-1, 0, 0.001, 5, 9.999, 10, 11, 100];
 
-			for (const time of times) {
+			times.forEach(time => {
 				const value = builder.getValue(time);
 				expect(Number.isFinite(value)).toBe(true);
-			}
+			});
 		});
 	});
 

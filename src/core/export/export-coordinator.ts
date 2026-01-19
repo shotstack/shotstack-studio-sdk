@@ -120,7 +120,7 @@ export class ExportCoordinator {
 		_canvas: HTMLCanvasElement,
 		ctx: CanvasRenderingContext2D
 	): Promise<void> {
-		const container = this.edit.getContainer();
+		const container = this.edit.getViewportContainer();
 		this.edit.pause();
 		Object.assign(container.position, { x: 0, y: 0 });
 		Object.assign(container.scale, { x: 1, y: 1 });
@@ -189,7 +189,7 @@ export class ExportCoordinator {
 	}
 
 	private saveEditState(): EditState {
-		const c = this.edit.getContainer();
+		const c = this.edit.getViewportContainer();
 		return {
 			wasPlaying: this.edit.isPlaying,
 			time: this.edit.playbackTime,
@@ -200,7 +200,7 @@ export class ExportCoordinator {
 	}
 
 	private restoreEditState(state: EditState): void {
-		const c = this.edit.getContainer();
+		const c = this.edit.getViewportContainer();
 		this.edit.setExportMode(false);
 
 		for (const clip of this.exportCommand.getClips()) {

@@ -1,4 +1,3 @@
-import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
 import { getTrackHeight } from "../../timeline.types";
 import { ClipComponent } from "../clip/clip-component";
@@ -9,20 +8,21 @@ export interface TrackComponentOptions {
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
-	/** Check if a luma clip is attached (and should be hidden) */
-	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
-	/** Get attached luma for a content clip (to show badge) */
-	getAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Check if content clip has an attached luma (pure function) */
+	hasAttachedLuma?: (trackIndex: number, clipIndex: number) => boolean;
+	/** Find attached luma for a content clip via timing match (pure function) */
+	findAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Callback when mask badge is clicked on a content clip */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
 	/** Check if attached luma is currently visible for editing */
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
-	/** Get the content clip that a luma is attached to */
-	getContentClipForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Find the content clip that a luma is attached to via timing match (pure function) */
+	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 }
 
 /** Renders a single track with its clips */
-export class TrackComponent extends TimelineEntity {
+export class TrackComponent {
+	public readonly element: HTMLElement;
 	private readonly clipComponents = new Map<string, ClipComponent>();
 	private readonly options: TrackComponentOptions;
 	private trackIndex: number;
@@ -33,28 +33,16 @@ export class TrackComponent extends TimelineEntity {
 	private needsUpdate = true;
 
 	constructor(trackIndex: number, options: TrackComponentOptions) {
-		super("div", "ss-track");
+		this.element = document.createElement("div");
+		this.element.className = "ss-track";
 		this.trackIndex = trackIndex;
 		this.options = options;
 		this.element.dataset["trackIndex"] = String(trackIndex);
 	}
 
-	public async load(): Promise<void> {
-		await this.loadChildren();
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		this.updateChildren(_deltaTime, _elapsed);
-	}
-
 	public draw(): void {
 		if (!this.needsUpdate || !this.currentTrack) {
-			// Still need to draw clip components even when data hasn't changed
-			for (const clipComponent of this.clipComponents.values()) {
-				clipComponent.draw();
-			}
-			this.drawChildren();
-			return;
+			return; // Nothing changed, skip entirely
 		}
 		this.needsUpdate = false;
 
@@ -66,14 +54,14 @@ export class TrackComponent extends TimelineEntity {
 
 		// Update or create clips
 		for (const clipState of track.clips) {
-			// Check if this is an attached luma clip
+			// Check if this is an attached luma clip (luma with matching content via timing)
 			const isLumaClip = clipState.config.asset?.type === "luma";
-			const isAttachedLuma = isLumaClip && this.options.isLumaAttached?.(clipState.trackIndex, clipState.clipIndex);
+			const contentClip = isLumaClip ? this.options.findContentForLuma?.(clipState.trackIndex, clipState.clipIndex) : null;
+			const isAttachedLuma = isLumaClip && contentClip !== null;
 
-			if (isAttachedLuma) {
+			if (isAttachedLuma && contentClip) {
 				// Check if it should be visible for editing
-				const contentClip = this.options.getContentClipForLuma?.(clipState.trackIndex, clipState.clipIndex);
-				const isVisibleForEditing = contentClip && this.options.isLumaVisibleForEditing?.(contentClip.trackIndex, contentClip.clipIndex);
+				const isVisibleForEditing = this.options.isLumaVisibleForEditing?.(contentClip.trackIndex, contentClip.clipIndex);
 
 				if (isVisibleForEditing) {
 					// Render the luma clip (it's visible for editing)
@@ -104,7 +92,7 @@ export class TrackComponent extends TimelineEntity {
 				processedIds.add(clipState.id);
 
 				// Check if this content clip has an attached luma (for badge display)
-				const attachedLuma = this.options.getAttachedLuma?.(clipState.trackIndex, clipState.clipIndex);
+				const attachedLuma = this.options.findAttachedLuma?.(clipState.trackIndex, clipState.clipIndex);
 
 				let clipComponent = this.clipComponents.get(clipState.id);
 				if (!clipComponent) {
@@ -132,12 +120,10 @@ export class TrackComponent extends TimelineEntity {
 			}
 		}
 
-		// Draw all clip components (they're not in children array)
+		// Draw all clip components
 		for (const clipComponent of this.clipComponents.values()) {
 			clipComponent.draw();
 		}
-
-		this.drawChildren();
 	}
 
 	public dispose(): void {
@@ -150,6 +136,14 @@ export class TrackComponent extends TimelineEntity {
 
 	/** Update track state and mark for re-render */
 	public updateTrack(track: TrackState, pixelsPerSecond: number): void {
+		// Only mark dirty if data actually changed (reference equality works due to TimelineStateManager caching)
+		const trackChanged = track !== this.currentTrack;
+		const ppsChanged = pixelsPerSecond !== this.currentPixelsPerSecond;
+
+		if (!trackChanged && !ppsChanged) {
+			return; // Nothing changed, skip update
+		}
+
 		// Only update height if asset type changed (not every frame)
 		const prevAssetType = this.currentTrack?.primaryAssetType;
 

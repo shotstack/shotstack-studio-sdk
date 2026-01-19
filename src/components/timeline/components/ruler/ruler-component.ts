@@ -1,12 +1,11 @@
-import { TimelineEntity } from "../../core/timeline-entity";
-
 interface RulerOptions {
 	onSeek?: (timeMs: number) => void;
 	onWheel?: (e: WheelEvent) => void;
 }
 
 /** Time ruler component for the timeline */
-export class RulerComponent extends TimelineEntity {
+export class RulerComponent {
+	public readonly element: HTMLElement;
 	private readonly contentElement: HTMLElement;
 	private readonly options: RulerOptions;
 	private currentPixelsPerSecond = 50;
@@ -15,7 +14,8 @@ export class RulerComponent extends TimelineEntity {
 	private scrollX = 0;
 
 	constructor(options: RulerOptions = {}) {
-		super("div", "ss-timeline-ruler");
+		this.element = document.createElement("div");
+		this.element.className = "ss-timeline-ruler";
 		this.options = options;
 		this.contentElement = this.buildElement();
 		this.setupClickHandler();
@@ -49,14 +49,6 @@ export class RulerComponent extends TimelineEntity {
 		content.className = "ss-ruler-content";
 		this.element.appendChild(content);
 		return content;
-	}
-
-	public async load(): Promise<void> {
-		// No async initialization needed
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State is updated via update(pps, duration)
 	}
 
 	public draw(): void {

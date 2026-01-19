@@ -40,6 +40,9 @@ export interface TimelineInteractionConfig {
 	onRequestRender?: () => void;
 }
 
+/** Visual state for clips */
+export type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
+
 /** Internal state for a clip */
 export interface ClipState {
 	/** Unique identifier for keyed updates */
@@ -51,7 +54,7 @@ export interface ClipState {
 	/** Resolved clip configuration */
 	config: ResolvedClip;
 	/** Visual state */
-	visualState: "normal" | "selected" | "dragging" | "resizing";
+	visualState: ClipVisualState;
 	/** Original timing intent before resolution */
 	timingIntent: {
 		start: "auto" | number;
@@ -106,6 +109,11 @@ export interface ClipRenderer {
 	render(clip: ResolvedClip, element: HTMLElement): void;
 	/** Optional cleanup when clip is removed */
 	dispose?(element: HTMLElement): void;
+}
+
+export interface InteractionQuery {
+	isDragging(trackIndex: number, clipIndex: number): boolean;
+	isResizing(trackIndex: number, clipIndex: number): boolean;
 }
 
 /** Default feature settings */

@@ -12,7 +12,8 @@ import {
 	detectCornerZone,
 	calculateCornerScale,
 	calculateEdgeResize,
-	clampDimensions
+	clampDimensions,
+	roundDimensions
 } from "@core/interaction/clip-interaction";
 
 describe("ClipInteractionSystem", () => {
@@ -570,6 +571,45 @@ describe("ClipInteractionSystem", () => {
 
 			expect(clamped.width).toBe(INTERACTION_CONSTANTS.MIN_DIMENSION);
 			expect(clamped.height).toBe(INTERACTION_CONSTANTS.MIN_DIMENSION);
+		});
+	});
+
+	// ─── Dimension Rounding Tests ─────────────────────────────────────────────
+
+	describe("roundDimensions", () => {
+		it("rounds decimal width and height to integers", () => {
+			const result = roundDimensions(123.7, 456.3);
+
+			expect(result.width).toBe(124);
+			expect(result.height).toBe(456);
+		});
+
+		it("preserves integer values", () => {
+			const result = roundDimensions(200, 150);
+
+			expect(result.width).toBe(200);
+			expect(result.height).toBe(150);
+		});
+
+		it("rounds .5 values up", () => {
+			const result = roundDimensions(100.5, 200.5);
+
+			expect(result.width).toBe(101);
+			expect(result.height).toBe(201);
+		});
+
+		it("handles very small decimals", () => {
+			const result = roundDimensions(100.0001, 200.9999);
+
+			expect(result.width).toBe(100);
+			expect(result.height).toBe(201);
+		});
+
+		it("handles negative values (edge case)", () => {
+			const result = roundDimensions(-10.5, -20.4);
+
+			expect(result.width).toBe(-10);
+			expect(result.height).toBe(-20);
 		});
 	});
 });

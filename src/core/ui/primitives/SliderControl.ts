@@ -21,7 +21,7 @@ import { UIComponent } from "./UIComponent";
  */
 export class SliderControl extends UIComponent<number> {
 	private slider: HTMLInputElement | null = null;
-	private valueDisplay: HTMLSpanElement | null = null;
+	private valueInput: HTMLInputElement | null = null;
 	private formatValue: (value: number) => string;
 
 	constructor(private sliderConfig: SliderConfig) {
@@ -37,22 +37,72 @@ export class SliderControl extends UIComponent<number> {
 			<div class="ss-toolbar-popup-row">
 				<input type="range" class="ss-toolbar-slider"
 					min="${min}" max="${max}" step="${step}" value="${value}" />
-				<span class="ss-toolbar-popup-value">${this.formatValue(value)}</span>
+				<input type="text" class="ss-toolbar-popup-value" value="${this.formatValue(value)}" />
 			</div>
 		`;
 	}
 
 	protected bindElements(): void {
-		this.slider = this.container?.querySelector("input") ?? null;
-		this.valueDisplay = this.container?.querySelector(".ss-toolbar-popup-value") ?? null;
+		this.slider = this.container?.querySelector('input[type="range"]') ?? null;
+		this.valueInput = this.container?.querySelector(".ss-toolbar-popup-value") ?? null;
 	}
 
 	protected setupEvents(): void {
+		// Slider drag updates the display and emits
 		this.events.on(this.slider, "input", () => {
 			const value = this.getValue();
 			this.updateDisplay(value);
 			this.emit(value);
 		});
+
+		// Value input: commit on blur or Enter, revert on Escape
+		this.events.on(this.valueInput, "blur", () => this.commitInputValue());
+		this.events.on(this.valueInput, "keydown", (e: KeyboardEvent) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				this.commitInputValue();
+				this.valueInput?.blur();
+			} else if (e.key === "Escape") {
+				e.preventDefault();
+				this.revertInputValue();
+				this.valueInput?.blur();
+			}
+		});
+
+		// Select all text on focus for easy replacement
+		this.events.on(this.valueInput, "focus", () => {
+			this.valueInput?.select();
+		});
+	}
+
+	/**
+	 * Parse and commit the value from the text input.
+	 */
+	private commitInputValue(): void {
+		if (!this.valueInput) return;
+
+		const { min, max } = this.sliderConfig;
+		const parsed = this.parseInputValue(this.valueInput.value, min, max);
+		this.slider!.value = String(parsed);
+		this.updateDisplay(parsed);
+		this.emit(parsed);
+	}
+
+	/**
+	 * Revert the text input to match the current slider value.
+	 */
+	private revertInputValue(): void {
+		this.updateDisplay(this.getValue());
+	}
+
+	/**
+	 * Parse user input, strip non-numeric chars, clamp to range.
+	 */
+	private parseInputValue(input: string, min: number, max: number): number {
+		const stripped = input.replace(/[^0-9.-]/g, "");
+		const num = parseFloat(stripped);
+		if (Number.isNaN(num)) return this.getValue(); // Keep current if invalid
+		return Math.max(min, Math.min(max, num));
 	}
 
 	/**
@@ -76,17 +126,20 @@ export class SliderControl extends UIComponent<number> {
 	 * Update the displayed value text.
 	 */
 	private updateDisplay(value: number): void {
-		if (this.valueDisplay) {
-			this.valueDisplay.textContent = this.formatValue(value);
+		if (this.valueInput) {
+			this.valueInput.value = this.formatValue(value);
 		}
 	}
 
 	/**
-	 * Enable or disable the slider.
+	 * Enable or disable the slider and input.
 	 */
 	setEnabled(enabled: boolean): void {
 		if (this.slider) {
 			this.slider.disabled = !enabled;
+		}
+		if (this.valueInput) {
+			this.valueInput.disabled = !enabled;
 		}
 	}
 }

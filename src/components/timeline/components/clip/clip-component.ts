@@ -1,8 +1,7 @@
 import type { ResolvedClip } from "@schemas";
 
-import { TimelineEntity } from "../../core/timeline-entity";
+import { formatClipErrorMessage } from "../../error-messages";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
-import { formatClipErrorMessage } from "../../utils/error-messages";
 
 /** Reference to an attached luma clip */
 interface LumaRef {
@@ -23,7 +22,8 @@ export interface ClipComponentOptions {
 }
 
 /** Renders a single clip element */
-export class ClipComponent extends TimelineEntity {
+export class ClipComponent {
+	public readonly element: HTMLElement;
 	private readonly options: ClipComponentOptions;
 	private currentState: ClipState | null = null;
 	private currentLumaRef: LumaRef | undefined = undefined;
@@ -32,8 +32,14 @@ export class ClipComponent extends TimelineEntity {
 	private currentError: { error: string; assetType: string } | null = null;
 	private needsUpdate = true;
 
+	// Cached element references (avoid querySelector every frame)
+	private iconEl: HTMLElement | null = null;
+	private labelEl: HTMLElement | null = null;
+	private badgeEl: HTMLElement | null = null;
+
 	constructor(clip: ClipState, options: ClipComponentOptions) {
-		super("div", "ss-clip");
+		this.element = document.createElement("div");
+		this.element.className = "ss-clip";
 		this.options = options;
 		this.buildElement(clip);
 		this.currentState = clip;
@@ -45,22 +51,23 @@ export class ClipComponent extends TimelineEntity {
 		const content = document.createElement("div");
 		content.className = "ss-clip-content";
 
-		// Icon for asset type
-		const icon = document.createElement("span");
-		icon.className = "ss-clip-icon";
-		content.appendChild(icon);
+		// Icon for asset type (cache reference)
+		this.iconEl = document.createElement("span");
+		this.iconEl.className = "ss-clip-icon";
+		content.appendChild(this.iconEl);
 
-		const label = document.createElement("span");
-		label.className = "ss-clip-label";
-		content.appendChild(label);
+		// Label (cache reference)
+		this.labelEl = document.createElement("span");
+		this.labelEl.className = "ss-clip-label";
+		content.appendChild(this.labelEl);
 
 		this.element.appendChild(content);
 
-		// Timing badge
+		// Timing badge (cache reference)
 		if (this.options.showBadges) {
-			const badge = document.createElement("div");
-			badge.className = "ss-clip-badge";
-			this.element.appendChild(badge);
+			this.badgeEl = document.createElement("div");
+			this.badgeEl.className = "ss-clip-badge";
+			this.element.appendChild(this.badgeEl);
 		}
 
 		// Resize handles
@@ -91,14 +98,6 @@ export class ClipComponent extends TimelineEntity {
 		});
 	}
 
-	public async load(): Promise<void> {
-		// No async initialization needed
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State is updated via updateClip()
-	}
-
 	public draw(): void {
 		if (!this.needsUpdate || !this.currentState) return;
 		this.needsUpdate = false;
@@ -106,6 +105,11 @@ export class ClipComponent extends TimelineEntity {
 		const clip = this.currentState;
 		const { config } = clip;
 		const assetType = this.getAssetType(config);
+
+		const prevAssetType = this.element.dataset["assetType"];
+		if (prevAssetType && prevAssetType !== assetType) {
+			this.clearRendererStyles();
+		}
 
 		// Update data attributes
 		this.element.dataset["assetType"] = assetType;
@@ -121,24 +125,19 @@ export class ClipComponent extends TimelineEntity {
 		this.element.classList.toggle("dragging", clip.visualState === "dragging");
 		this.element.classList.toggle("resizing", clip.visualState === "resizing");
 
-		// Update icon
-		const icon = this.element.querySelector(".ss-clip-icon") as HTMLElement;
-		if (icon) {
-			icon.textContent = this.getAssetIcon(assetType);
+		// Update icon (using cached reference)
+		if (this.iconEl) {
+			this.iconEl.textContent = this.getAssetIcon(assetType);
 		}
 
-		// Update label
-		const label = this.element.querySelector(".ss-clip-label") as HTMLElement;
-		if (label) {
-			label.textContent = this.getClipLabel(config);
+		// Update label (using cached reference)
+		if (this.labelEl) {
+			this.labelEl.textContent = this.getClipLabel(config);
 		}
 
-		// Update timing badge
-		if (this.options.showBadges) {
-			const badge = this.element.querySelector(".ss-clip-badge") as HTMLElement;
-			if (badge) {
-				this.updateBadge(badge, clip.timingIntent);
-			}
+		// Update timing badge (using cached reference)
+		if (this.badgeEl) {
+			this.updateBadge(this.badgeEl, clip.timingIntent);
 		}
 
 		// Update mask badge (show if clip has attached luma)
@@ -162,7 +161,7 @@ export class ClipComponent extends TimelineEntity {
 				this.maskBadge = document.createElement("div");
 				this.maskBadge.className = "ss-clip-mask-badge";
 				this.maskBadge.textContent = "◐";
-				this.maskBadge.title = "Luma mask attached - click to toggle";
+				this.maskBadge.title = "Luma mask attached - click to detach";
 				this.maskBadge.addEventListener("click", e => {
 					e.stopPropagation();
 					// Pass the CONTENT clip indices (this clip), not the luma indices
@@ -222,8 +221,25 @@ export class ClipComponent extends TimelineEntity {
 		this.element.remove();
 	}
 
+	/** Clear any styles that renderers might have applied */
+	private clearRendererStyles(): void {
+		this.element.classList.remove("ss-clip--thumbnails", "ss-clip--loading-thumbnails");
+		this.element.style.backgroundImage = "";
+		this.element.style.backgroundPosition = "";
+		this.element.style.backgroundSize = "";
+		this.element.style.backgroundRepeat = "";
+	}
+
 	/** Update clip state and mark for re-render */
 	public updateClip(clip: ClipState, attachedLuma?: LumaRef): void {
+		// Only mark dirty if data actually changed (reference equality works due to TimelineStateManager caching)
+		const clipChanged = clip !== this.currentState;
+		const lumaChanged = attachedLuma !== this.currentLumaRef;
+
+		if (!clipChanged && !lumaChanged) {
+			return; // Nothing changed, skip update
+		}
+
 		this.currentState = clip;
 		this.currentLumaRef = attachedLuma;
 		this.needsUpdate = true;

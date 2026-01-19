@@ -1,0 +1,258 @@
+{
+	"timeline": {
+		"background": "#FFFFFF",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{SUBHEADING}}",
+							"alignment": {
+								"horizontal": "left",
+								"vertical": "center"
+							},
+							"font": {
+								"color": "{{ FONT_COLOR_2 }}",
+								"family": "Montserrat SemiBold",
+								"size": "30",
+								"lineHeight": 1
+							},
+							"width": 1300,
+							"height": 110
+						},
+						"start": 0.6,
+						"length": "end",
+						"offset": {
+							"x": 0.087,
+							"y": -0.404
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{HEADING}}",
+							"alignment": {
+								"horizontal": "left",
+								"vertical": "center"
+							},
+							"font": {
+								"color": "{{ FONT_COLOR_1 }}",
+								"family": "Montserrat ExtraBold",
+								"size": "45",
+								"lineHeight": 1
+							},
+							"width": 1300,
+							"height": 110
+						},
+						"start": 0.4,
+						"length": "end",
+						"offset": {
+							"x": 0.087,
+							"y": -0.321
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": {
+								"horizontal": "center",
+								"vertical": "center"
+							},
+							"font": {
+								"color": "#000000",
+								"family": "Montserrat SemiBold",
+								"size": 24,
+								"lineHeight": 1
+							},
+							"width": 100,
+							"height": 12,
+							"background": {
+								"color": "#e1dbd7"
+							}
+						},
+						"start": 0.6,
+						"length": "end",
+						"offset": {
+							"x": -0.301,
+							"y": -0.315
+						},
+						"position": "center"
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{BULLETIN}}",
+							"alignment": {
+								"horizontal": "left",
+								"vertical": "center"
+							},
+							"font": {
+								"color": "{{ FONT_COLOR_1 }}",
+								"family": "Montserrat ExtraBold",
+								"size": 72,
+								"lineHeight": 1
+							},
+							"width": 400,
+							"height": 200
+						},
+						"start": 0.4,
+						"length": "end",
+						"offset": {
+							"x": -0.356,
+							"y": -0.353
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": {
+								"horizontal": "center",
+								"vertical": "center"
+							},
+							"font": {
+								"color": "#000000",
+								"family": "Montserrat SemiBold",
+								"size": 24,
+								"lineHeight": 1
+							},
+							"width": 1370,
+							"height": 110,
+							"stroke": {
+								"color": "#000000"
+							},
+							"background": {
+								"color": "{{ FONT_COLOR_2 }}"
+							}
+						},
+						"start": 0.2,
+						"length": "end",
+						"offset": {
+							"x": 0.096,
+							"y": -0.321
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": {
+								"horizontal": "center",
+								"vertical": "center"
+							},
+							"font": {
+								"color": "#000000",
+								"family": "Montserrat SemiBold",
+								"size": 24,
+								"lineHeight": 1
+							},
+							"width": 1300,
+							"height": 110,
+							"stroke": {
+								"color": "#000000"
+							},
+							"background": {
+								"color": "{{ FONT_COLOR_1 }}"
+							}
+						},
+						"start": 0.4,
+						"length": "end",
+						"offset": {
+							"x": 0.078,
+							"y": -0.387
+						},
+						"position": "center",
+						"transition": {
+							"in": "slideRight"
+						}
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"length": 15,
+						"asset": {
+							"type": "video",
+							"src": "{{ VIDEO }}"
+						},
+						"start": 0,
+						"scale": 1
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": {
+			"width": 1920,
+			"height": 1080
+		}
+	},
+	"merge": [
+		{
+			"find": "HEADING",
+			"replace": "City Gripped by Crime Surge"
+		},
+		{
+			"find": "SUBHEADING",
+			"replace": "Government vows tougher security measures to restore safety."
+		},
+		{
+			"find": "BULLETIN",
+			"replace": "NEWS UPDATE"
+		},
+		{
+			"find": "VIDEO",
+			"replace": "https://templates.shotstack.io/news-update-template-broadcast-breaking-news-live/9d899be9-185f-4ead-afce-0cfc1c946eea/source.mp4"
+		},
+		{
+			"find": "FONT_COLOR_1",
+			"replace": "#e1dbd7"
+		},
+		{
+			"find": "FONT_COLOR_2",
+			"replace": "#008000"
+		}
+	]
+}

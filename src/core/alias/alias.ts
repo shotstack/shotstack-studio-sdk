@@ -17,15 +17,26 @@ function parseAliasReference(value: unknown): string | null {
 	return match ? match[1] : null;
 }
 
+interface ClipLocation {
+	trackIdx: number;
+	clipIdx: number;
+}
+
 function extractClipAliases(edit: Edit): Record<string, Clip> {
 	const aliases: Record<string, Clip> = {};
+	const locations: Record<string, ClipLocation> = {};
 
 	forEachClip(edit, (clip, trackIdx, clipIdx) => {
 		if (clip.alias) {
 			if (aliases[clip.alias]) {
-				console.warn(`Duplicate alias "${clip.alias}" at track ${trackIdx}, clip ${clipIdx} - overwriting previous`);
+				const first = locations[clip.alias];
+				throw new Error(
+					`Duplicate alias "${clip.alias}" found at track ${first.trackIdx} clip ${first.clipIdx} ` +
+						`and track ${trackIdx} clip ${clipIdx}. Each alias must be unique.`
+				);
 			}
 			aliases[clip.alias] = clip;
+			locations[clip.alias] = { trackIdx, clipIdx };
 		}
 	});
 
@@ -114,6 +125,53 @@ function topologicalSort(dependencies: Map<string, Set<string>>, aliases: Record
 	return result;
 }
 
+interface AliasResolution {
+	clip: Clip;
+	field: "start" | "length";
+	value: number;
+}
+
+function collectResolutions(resolveOrder: string[], clipMap: Map<string, Clip>, aliases: Record<string, Clip>): AliasResolution[] {
+	const resolutions: AliasResolution[] = [];
+
+	for (const clipId of resolveOrder) {
+		const clip = clipMap.get(clipId);
+		if (clip) {
+			const startAliasName = parseAliasReference(clip.start);
+			if (startAliasName) {
+				const targetClip = aliases[startAliasName];
+				if (!targetClip) {
+					throw new Error(`Alias "${startAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
+				}
+				if (typeof targetClip.start !== "number") {
+					throw new Error(`Cannot resolve alias "${startAliasName}": target has unresolved start`);
+				}
+				resolutions.push({ clip, field: "start", value: targetClip.start });
+			}
+
+			const lengthAliasName = parseAliasReference(clip.length);
+			if (lengthAliasName) {
+				const targetClip = aliases[lengthAliasName];
+				if (!targetClip) {
+					throw new Error(`Alias "${lengthAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
+				}
+				if (typeof targetClip.length !== "number") {
+					throw new Error(`Cannot resolve alias "${lengthAliasName}": target has unresolved length`);
+				}
+				resolutions.push({ clip, field: "length", value: targetClip.length });
+			}
+		}
+	}
+
+	return resolutions;
+}
+
+function applyResolutions(resolutions: AliasResolution[]): void {
+	for (const { clip, field, value } of resolutions) {
+		(clip as Record<string, unknown>)[field] = value;
+	}
+}
+
 export function resolveAliasReferences(edit: Edit): void {
 	const dependencies = buildAliasDependencyGraph(edit);
 	if (dependencies.size === 0) return;
@@ -133,32 +191,7 @@ export function resolveAliasReferences(edit: Edit): void {
 
 	const resolveOrder = topologicalSort(dependencies, aliases);
 
-	for (const clipId of resolveOrder) {
-		const clip = clipMap.get(clipId);
-		if (clip) {
-			const startAliasName = parseAliasReference(clip.start);
-			if (startAliasName) {
-				const targetClip = aliases[startAliasName];
-				if (!targetClip) {
-					throw new Error(`Alias "${startAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
-				}
-				if (typeof targetClip.start !== "number") {
-					throw new Error(`Cannot resolve alias "${startAliasName}": target has unresolved start`);
-				}
-				(clip as { start: number }).start = targetClip.start;
-			}
+	const resolutions = collectResolutions(resolveOrder, clipMap, aliases);
 
-			const lengthAliasName = parseAliasReference(clip.length);
-			if (lengthAliasName) {
-				const targetClip = aliases[lengthAliasName];
-				if (!targetClip) {
-					throw new Error(`Alias "${lengthAliasName}" not found. Available: ${Object.keys(aliases).join(", ") || "none"}`);
-				}
-				if (typeof targetClip.length !== "number") {
-					throw new Error(`Cannot resolve alias "${lengthAliasName}": target has unresolved length`);
-				}
-				(clip as { length: number }).length = targetClip.length;
-			}
-		}
-	}
+	applyResolutions(resolutions);
 }

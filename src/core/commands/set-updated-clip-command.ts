@@ -1,10 +1,9 @@
-import type { MergeFieldBinding, Player } from "@canvas/players/player";
+import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import { getNestedValue } from "@core/shared/utils";
-import type { Seconds } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 type ClipType = ResolvedClip;
 
@@ -13,75 +12,70 @@ export interface SetUpdatedClipOptions {
 	clipIndex?: number;
 }
 
+/**
+ * Command to update a clip's full configuration.
+ */
 export class SetUpdatedClipCommand implements EditCommand {
-	name = "setUpdatedClip";
-	private storedInitialConfig: ClipType | null;
-	private storedFinalConfig: ClipType;
+	readonly name = "setUpdatedClip";
+
+	private clipId: string | null = null;
+	private storedInitialConfig: ClipType | null = null;
+	private storedFinalConfig: ClipType | null = null;
 	private storedInitialBindings: Map<string, MergeFieldBinding> = new Map();
 	private trackIndex: number;
 	private clipIndex: number;
-	private storedInitialTiming: { start: Seconds; length: Seconds } | null = null;
 
 	constructor(
-		private clip: Player,
 		private initialClipConfig: ClipType | null,
 		private finalClipConfig: ClipType | null,
 		options?: SetUpdatedClipOptions
 	) {
-		this.storedInitialConfig = initialClipConfig ? structuredClone(initialClipConfig) : null;
-		this.storedFinalConfig = finalClipConfig ? structuredClone(finalClipConfig) : structuredClone(this.clip.clipConfiguration);
 		this.trackIndex = options?.trackIndex ?? -1;
 		this.clipIndex = options?.clipIndex ?? -1;
 	}
 
-	async execute(context?: CommandContext): Promise<void> {
-		if (!context) return;
+	async execute(context?: CommandContext): Promise<CommandResult> {
+		if (!context) throw new Error("SetUpdatedClipCommand.execute: context is required");
 
-		// Save bindings before modification (for undo)
-		this.storedInitialBindings = new Map(this.clip.getMergeFieldBindings());
+		const doc = context.getDocument();
+		if (!doc) throw new Error("SetUpdatedClipCommand.execute: document is required");
 
+		// Get player to determine indices if not provided
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) {
+			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
+		}
+
+		// Store for undo
+		this.clipId = player.clipId;
+		this.storedInitialConfig = this.initialClipConfig ? structuredClone(this.initialClipConfig) : structuredClone(player.clipConfiguration);
+		this.storedFinalConfig = this.finalClipConfig ? structuredClone(this.finalClipConfig) : structuredClone(player.clipConfiguration);
+
+		// Save bindings before modification (for undo) - read from document (source of truth)
+		const docBindings = this.clipId ? context.getClipBindings(this.clipId) : undefined;
+		this.storedInitialBindings = docBindings ? new Map(docBindings) : new Map();
+
+		// Use provided indices or calculate from player
+		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
+		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : (context.getTracks()[trackIndex]?.indexOf(player) ?? -1);
+
+		// Update document with full configuration (all clip properties, not just timing/asset)
 		if (this.storedFinalConfig) {
-			context.restoreClipConfiguration(this.clip, this.storedFinalConfig);
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars -- id is internal, don't update it
+			const { id: unusedId, ...clipUpdates } = this.storedFinalConfig as ResolvedClip & { id?: string };
+			doc.updateClip(trackIndex, clipIndex, clipUpdates);
 		}
 
-		// Sync timing state if start or length actually changed
-		const startChanged = this.storedFinalConfig.start !== this.storedInitialConfig?.start;
-		const lengthChanged = this.storedFinalConfig.length !== this.storedInitialConfig?.length;
-
-		if (startChanged || lengthChanged) {
-			// Store initial timing for undo (already in Seconds)
-			this.storedInitialTiming = {
-				start: this.clip.getStart(),
-				length: this.clip.getLength()
-			};
-
-			// ResolvedClip.start/length are already Seconds
-			this.clip.setTimingIntent({
-				start: this.storedFinalConfig.start,
-				length: this.storedFinalConfig.length
-			});
-
-			this.clip.setResolvedTiming({
-				start: this.storedFinalConfig.start,
-				length: this.storedFinalConfig.length
-			});
-		}
-
-		context.setUpdatedClip(this.clip);
+		// Reconciler handles player updates
+		context.resolve();
 
 		// Detect broken bindings - if value changed from resolvedValue, remove the binding
 		for (const [path, { resolvedValue }] of this.storedInitialBindings) {
-			const currentValue = getNestedValue(this.clip.clipConfiguration, path);
-			if (currentValue !== resolvedValue) {
-				this.clip.removeMergeFieldBinding(path);
+			const currentValue = getNestedValue(player.clipConfiguration, path);
+			if (currentValue !== resolvedValue && this.clipId) {
+				context.removeClipBinding(this.clipId, path);
 			}
 		}
-
-		// Use provided indices or calculate from clip
-		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : this.clip.layer - 1;
-		const clips = context.getClips();
-		const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
-		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : clipsByTrack.indexOf(this.clip);
 
 		// Check if asset src changed
 		const previousAsset = this.storedInitialConfig?.asset as { src?: string } | undefined;
@@ -89,46 +83,56 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		if (previousAsset?.src !== currentAsset?.src) {
 			// Asset changed - if clip has "auto" length, re-resolve it
-			const intent = this.clip.getTimingIntent();
+			const intent = player.getTimingIntent();
 			if (intent.length === "auto") {
-				await context.resolveClipAutoLength(this.clip);
+				await context.resolveClipAutoLength(player);
 			}
 		}
 
-		const previousClip = this.storedInitialConfig ?? this.initialClipConfig ?? this.clip.clipConfiguration;
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: previousClip, trackIndex, clipIndex },
-			current: { clip: this.storedFinalConfig, trackIndex, clipIndex }
+			previous: { clip: this.storedInitialConfig, trackIndex, clipIndex },
+			current: { clip: this.storedFinalConfig ?? player.clipConfiguration, trackIndex, clipIndex }
 		});
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
-		if (!context || !this.storedInitialConfig) return;
+	async undo(context?: CommandContext): Promise<CommandResult> {
+		if (!context) throw new Error("SetUpdatedClipCommand.undo: context is required");
+		if (!this.storedInitialConfig) return CommandNoop("No stored initial config");
 
-		context.restoreClipConfiguration(this.clip, this.storedInitialConfig);
+		const doc = context.getDocument();
+		if (!doc) throw new Error("SetUpdatedClipCommand.undo: document is required");
 
-		// Restore timing state if we modified it (already in Seconds)
-		if (this.storedInitialTiming) {
-			this.clip.setTimingIntent({
-				start: this.storedInitialTiming.start,
-				length: this.storedInitialTiming.length
-			});
-			this.clip.setResolvedTiming({
-				start: this.storedInitialTiming.start,
-				length: this.storedInitialTiming.length
-			});
+		// Get player by ID or indices
+		const player = this.clipId ? context.getPlayerByClipId(this.clipId) : context.getClipAt(this.trackIndex, this.clipIndex);
+
+		if (!player) return CommandNoop(`Clip not found for undo`);
+
+		const currentConfig = structuredClone(player.clipConfiguration);
+
+		// Use provided indices or calculate from player
+		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
+		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : (context.getTracks()[trackIndex]?.indexOf(player) ?? -1);
+
+		// Update document with full initial configuration (all clip properties)
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars -- id is internal, don't update it
+		const { id: unusedId, ...clipUpdates } = this.storedInitialConfig as ResolvedClip & { id?: string };
+		doc.updateClip(trackIndex, clipIndex, clipUpdates);
+
+		// Reconciler handles player updates
+		context.resolve();
+
+		// Restore saved bindings (document = source of truth)
+		if (this.clipId) {
+			const docBindings = new Map(this.storedInitialBindings);
+			if (docBindings.size > 0) {
+				const document = context.getDocument();
+				document?.setClipBindingsForClip(this.clipId, docBindings);
+			} else {
+				context.getDocument()?.clearClipBindings(this.clipId);
+			}
 		}
-
-		context.setUpdatedClip(this.clip);
-
-		// Restore saved bindings
-		this.clip.setInitialBindings(this.storedInitialBindings);
-
-		// Use provided indices or calculate from clip
-		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : this.clip.layer - 1;
-		const clips = context.getClips();
-		const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
-		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : clipsByTrack.indexOf(this.clip);
 
 		// Check if asset src changed (reverse direction)
 		const previousAsset = this.storedFinalConfig?.asset as { src?: string } | undefined;
@@ -136,15 +140,24 @@ export class SetUpdatedClipCommand implements EditCommand {
 
 		if (previousAsset?.src !== currentAsset?.src) {
 			// Asset changed - if clip has "auto" length, re-resolve it
-			const intent = this.clip.getTimingIntent();
+			const intent = player.getTimingIntent();
 			if (intent.length === "auto") {
-				await context.resolveClipAutoLength(this.clip);
+				await context.resolveClipAutoLength(player);
 			}
 		}
 
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: this.storedFinalConfig, trackIndex, clipIndex },
+			previous: { clip: currentConfig, trackIndex, clipIndex },
 			current: { clip: this.storedInitialConfig, trackIndex, clipIndex }
 		});
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.clipId = null;
+		this.storedInitialConfig = null;
+		this.storedFinalConfig = null;
+		this.storedInitialBindings.clear();
 	}
 }

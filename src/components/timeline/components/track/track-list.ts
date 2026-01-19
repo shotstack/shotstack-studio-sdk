@@ -1,4 +1,3 @@
-import { TimelineEntity } from "../../core/timeline-entity";
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
 import { getTrackHeight } from "../../timeline.types";
 
@@ -10,20 +9,21 @@ export interface TrackListOptions {
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
-	/** Check if a luma clip is attached (and should be hidden) */
-	isLumaAttached?: (trackIndex: number, clipIndex: number) => boolean;
-	/** Get attached luma for a content clip (to show badge) */
-	getAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Check if content clip has an attached luma */
+	hasAttachedLuma?: (trackIndex: number, clipIndex: number) => boolean;
+	/** Find attached luma for a content clip via timing match */
+	findAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Callback when mask badge is clicked on a content clip */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
 	/** Check if attached luma is currently visible for editing */
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
-	/** Get the content clip that a luma is attached to */
-	getContentClipForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Find the content clip that a luma is attached to via timing match */
+	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 }
 
 /** Container for all track components with virtualization support */
-export class TrackListComponent extends TimelineEntity {
+export class TrackListComponent {
+	public readonly element: HTMLElement;
 	public readonly contentElement: HTMLElement;
 	private readonly trackComponents: TrackComponent[] = [];
 	private readonly options: TrackListOptions;
@@ -38,7 +38,8 @@ export class TrackListComponent extends TimelineEntity {
 	private onScroll?: (scrollX: number, scrollY: number) => void;
 
 	constructor(options: TrackListOptions) {
-		super("div", "ss-timeline-tracks");
+		this.element = document.createElement("div");
+		this.element.className = "ss-timeline-tracks";
 		this.options = options;
 		this.contentElement = this.buildElement();
 	}
@@ -58,22 +59,9 @@ export class TrackListComponent extends TimelineEntity {
 		return content;
 	}
 
-	public async load(): Promise<void> {
-		await this.loadChildren();
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		this.updateChildren(_deltaTime, _elapsed);
-	}
-
 	public draw(): void {
 		if (!this.needsUpdate) {
-			// Still need to draw track components even when data hasn't changed
-			for (const trackComponent of this.trackComponents) {
-				trackComponent.draw();
-			}
-			this.drawChildren();
-			return;
+			return; // Nothing changed, skip entirely
 		}
 		this.needsUpdate = false;
 
@@ -91,11 +79,11 @@ export class TrackListComponent extends TimelineEntity {
 				onClipSelect: this.options.onClipSelect,
 				getClipRenderer: this.options.getClipRenderer,
 				getClipError: this.options.getClipError,
-				isLumaAttached: this.options.isLumaAttached,
-				getAttachedLuma: this.options.getAttachedLuma,
+				hasAttachedLuma: this.options.hasAttachedLuma,
+				findAttachedLuma: this.options.findAttachedLuma,
 				onMaskClick: this.options.onMaskClick,
 				isLumaVisibleForEditing: this.options.isLumaVisibleForEditing,
-				getContentClipForLuma: this.options.getContentClipForLuma
+				findContentForLuma: this.options.findContentForLuma
 			});
 			this.trackComponents.push(trackComponent);
 			this.contentElement.appendChild(trackComponent.element);
@@ -106,13 +94,11 @@ export class TrackListComponent extends TimelineEntity {
 			trackComponent?.dispose();
 		}
 
-		// Update each track and draw (tracks are not in children array)
+		// Update each track and draw
 		tracks.forEach((track, index) => {
 			this.trackComponents[index].updateTrack(track, pixelsPerSecond);
 			this.trackComponents[index].draw();
 		});
-
-		this.drawChildren();
 	}
 
 	public dispose(): void {

@@ -2,22 +2,12 @@ import { type Keyframe, type NumericKeyframe } from "@schemas";
 
 import { CurveInterpolator } from "./curve-interpolator";
 
-/**
- * Builds interpolatable keyframe sequences from external Keyframe data.
- * Converts the external schema's optional/unknown typed keyframes into
- * a normalized internal representation with guaranteed numeric values.
- */
 export class KeyframeBuilder {
 	private readonly property: NumericKeyframe[];
 	private readonly length: number;
 
 	private readonly cubicBuilder: CurveInterpolator;
 
-	/**
-	 * Cached index for temporal coherence optimization.
-	 * During sequential playback, time increases monotonically,
-	 * so checking the last-used index first is O(1) for ~99% of calls.
-	 */
 	private cachedIndex = 0;
 
 	constructor(value: Keyframe[] | number, length: number, initialValue = 0) {
@@ -49,25 +39,18 @@ export class KeyframeBuilder {
 		}
 	}
 
-	/**
-	 * Find keyframe containing the given time using temporal coherence + binary search.
-	 * Optimized for sequential playback (O(1)) with binary search fallback (O(log n)).
-	 */
 	private findKeyframe(time: number): NumericKeyframe | undefined {
 		const props = this.property;
 		if (props.length === 0) return undefined;
 
-		// Fast path: check cached index first (O(1) for sequential playback)
 		const cached = props[this.cachedIndex];
 		if (cached) {
 			const cachedEnd = cached.start + cached.length;
-			// Guard against NaN: must be finite to be a valid match
 			if (Number.isFinite(cachedEnd) && time >= cached.start && time < cachedEnd) {
 				return cached;
 			}
 		}
 
-		// Check next index (time moved forward slightly)
 		const nextIdx = this.cachedIndex + 1;
 		if (nextIdx < props.length) {
 			const next = props[nextIdx];
@@ -78,7 +61,6 @@ export class KeyframeBuilder {
 			}
 		}
 
-		// Check previous index (scrubbing backward)
 		const prevIdx = this.cachedIndex - 1;
 		if (prevIdx >= 0) {
 			const prev = props[prevIdx];
@@ -89,7 +71,6 @@ export class KeyframeBuilder {
 			}
 		}
 
-		// Fallback: binary search (O(log n) for random seeks)
 		const idx = this.binarySearchKeyframe(time);
 		if (idx !== -1) {
 			this.cachedIndex = idx;
@@ -99,11 +80,6 @@ export class KeyframeBuilder {
 		return undefined;
 	}
 
-	/**
-	 * Binary search for keyframe containing the given time.
-	 * Returns index or -1 if not found.
-	 * Handles NaN lengths by skipping invalid keyframes (matching original .find() behavior).
-	 */
 	private binarySearchKeyframe(time: number): number {
 		const props = this.property;
 		let low = 0;
@@ -114,24 +90,16 @@ export class KeyframeBuilder {
 			const kf = props[mid];
 			const end = kf.start + kf.length;
 
-			// Guard against NaN: if end is not finite, skip this keyframe
-			// This matches original .find() behavior where `time < NaN` returns false
-			if (!Number.isFinite(end)) {
+			if (!Number.isFinite(end) || time >= end) {
 				low = mid + 1;
-				continue;
-			}
-
-			if (time < kf.start) {
+			} else if (time < kf.start) {
 				high = mid - 1;
-			} else if (time >= end) {
-				low = mid + 1;
 			} else {
-				// Found: time >= kf.start && time < end
 				return mid;
 			}
 		}
 
-		return -1; // Not found
+		return -1;
 	}
 
 	private createKeyframes(value: Keyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {
@@ -145,21 +113,11 @@ export class KeyframeBuilder {
 
 		const normalizedKeyframes = this.createNormalizedKeyframes(value);
 
-		try {
-			this.validateKeyframes(normalizedKeyframes);
-		} catch (error) {
-			console.warn("Keyframe configuration issues detected:", error);
-		}
+		this.validateKeyframes(normalizedKeyframes);
 
 		return this.insertFillerKeyframes(normalizedKeyframes, length, initialValue);
 	}
 
-	/**
-	 * Converts external Keyframe[] to internal NumericKeyframe[].
-	 * - Filters out keyframes without required start/length
-	 * - Coerces from/to to numbers (defaults to 0 if not numeric)
-	 * - Timing values are kept in seconds (consistent with getPlaybackTime())
-	 */
 	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
 		return keyframes
 			.filter((kf): kf is Keyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")

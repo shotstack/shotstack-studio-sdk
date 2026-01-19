@@ -1,5 +1,3 @@
-import { TimelineEntity } from "../../core/timeline-entity";
-
 export interface ToolbarOptions {
 	onPlay: () => void;
 	onPause: () => void;
@@ -9,7 +7,8 @@ export interface ToolbarOptions {
 }
 
 /** Timeline toolbar with playback controls and zoom */
-export class ToolbarComponent extends TimelineEntity {
+export class ToolbarComponent {
+	public readonly element: HTMLElement;
 	private readonly options: ToolbarOptions;
 	private timeDisplayElement: HTMLElement | null = null;
 	private playButton: HTMLButtonElement | null = null;
@@ -19,17 +18,10 @@ export class ToolbarComponent extends TimelineEntity {
 	private durationMs = 0;
 
 	constructor(options: ToolbarOptions, initialZoom: number = 50) {
-		super("div", "ss-timeline-toolbar");
+		this.element = document.createElement("div");
+		this.element.className = "ss-timeline-toolbar";
 		this.options = options;
 		this.buildElement(initialZoom);
-	}
-
-	public async load(): Promise<void> {
-		// No async initialization needed
-	}
-
-	public update(_deltaTime: number, _elapsed: number): void {
-		// State is updated via updatePlayState/updateTimeDisplay
 	}
 
 	public draw(): void {

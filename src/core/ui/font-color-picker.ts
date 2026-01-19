@@ -1,3 +1,4 @@
+import { createThrottle } from "@core/shared/utils";
 import { injectShotstackStyles } from "@styles/inject";
 
 type GradientPreset = {
@@ -338,6 +339,36 @@ export class FontColorPicker {
 
 	private onColorChange: FontColorChangeCallback | null = null;
 
+	// Throttle instances for rate-limiting slider updates (~20 updates/sec max)
+	private colorThrottle = createThrottle(() => this.emitColorChange(), 50);
+	private highlightThrottle = createThrottle(() => this.emitHighlightChange(), 50);
+
+	// Arrow function handlers for proper cleanup (like BackgroundColorPicker pattern)
+	private handleColorInputChange = (): void => {
+		this.colorThrottle.call();
+	};
+
+	private handleColorOpacityInput = (e: Event): void => {
+		const opacity = parseInt((e.target as HTMLInputElement).value, 10);
+		if (this.colorOpacityValue) {
+			this.colorOpacityValue.textContent = `${opacity}%`;
+		}
+		this.colorThrottle.call();
+	};
+
+	private handleHighlightInputChange = (): void => {
+		this.highlightThrottle.call();
+	};
+
+	// Flush throttle on slider release (change event) to ensure final value is applied
+	private handleColorOpacityChange = (): void => {
+		this.colorThrottle.flush();
+	};
+
+	private handleTabClick = (mode: ColorMode): void => {
+		this.setMode(mode);
+	};
+
 	constructor() {
 		injectShotstackStyles();
 	}
@@ -393,14 +424,19 @@ export class FontColorPicker {
 		// Query highlight elements
 		this.highlightColorInput = this.container.querySelector("[data-highlight-color]");
 
-		// Setup event listeners
-		this.colorTab?.addEventListener("click", () => this.setMode("color"));
-		this.gradientTab?.addEventListener("click", () => this.setMode("gradient"));
+		// Setup event listeners using arrow function handlers for proper cleanup
+		this.colorTab?.addEventListener("click", () => this.handleTabClick("color"));
+		this.gradientTab?.addEventListener("click", () => this.handleTabClick("gradient"));
 
-		this.colorInput?.addEventListener("input", () => this.handleColorChange());
-		this.colorOpacitySlider?.addEventListener("input", e => this.handleColorOpacityChange(e));
+		// Color input: throttle on input, immediate flush on blur
+		this.colorInput?.addEventListener("input", this.handleColorInputChange);
 
-		this.highlightColorInput?.addEventListener("input", () => this.handleHighlightChange());
+		// Opacity slider: throttle on input, flush on change (mouse release)
+		this.colorOpacitySlider?.addEventListener("input", this.handleColorOpacityInput);
+		this.colorOpacitySlider?.addEventListener("change", this.handleColorOpacityChange);
+
+		// Highlight color: throttle on input
+		this.highlightColorInput?.addEventListener("input", this.handleHighlightInputChange);
 
 		// Setup gradient swatch click handlers
 		this.container.querySelectorAll("[data-cat]").forEach(btn => {
@@ -409,22 +445,6 @@ export class FontColorPicker {
 				this.handleGradientClick(parseInt(el.dataset["cat"] || "0", 10), parseInt(el.dataset["idx"] || "0", 10));
 			});
 		});
-	}
-
-	private handleColorChange(): void {
-		this.emitColorChange();
-	}
-
-	private handleColorOpacityChange(e: Event): void {
-		const opacity = parseInt((e.target as HTMLInputElement).value, 10);
-		if (this.colorOpacityValue) {
-			this.colorOpacityValue.textContent = `${opacity}%`;
-		}
-		this.emitColorChange();
-	}
-
-	private handleHighlightChange(): void {
-		this.emitHighlightChange();
 	}
 
 	private emitColorChange(): void {
@@ -507,6 +527,16 @@ export class FontColorPicker {
 	}
 
 	dispose(): void {
+		// Cancel throttles to prevent any pending callbacks after disposal
+		this.colorThrottle.cancel();
+		this.highlightThrottle.cancel();
+
+		// Remove event listeners before destroying references
+		this.colorInput?.removeEventListener("input", this.handleColorInputChange);
+		this.colorOpacitySlider?.removeEventListener("input", this.handleColorOpacityInput);
+		this.colorOpacitySlider?.removeEventListener("change", this.handleColorOpacityChange);
+		this.highlightColorInput?.removeEventListener("input", this.handleHighlightInputChange);
+
 		this.container?.remove();
 		this.container = null;
 		this.colorTab = null;

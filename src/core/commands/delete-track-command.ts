@@ -1,86 +1,75 @@
-import type { MergeFieldBinding } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip } from "@schemas";
-import * as pixi from "pixi.js";
+import type { Clip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
-type ClipType = ResolvedClip;
-
+/**
+ * Deletes a track and all its clips.
+ */
 export class DeleteTrackCommand implements EditCommand {
-	name = "deleteTrack";
-	private deletedClips: Array<{ config: ClipType; bindings: Map<string, MergeFieldBinding> }> = [];
+	readonly name = "deleteTrack";
+	private deletedClips: Clip[] = [];
 
 	constructor(private trackIdx: number) {}
 
-	execute(context?: CommandContext): void {
-		if (!context) return;
-		const clips = context.getClips();
-		const tracks = context.getTracks();
+	execute(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("DeleteTrackCommand.execute: context is required");
 
-		// Save config and bindings for undo
-		this.deletedClips = clips
-			.filter(c => c.layer === this.trackIdx + 1)
-			.map(c => ({
-				config: structuredClone(c.clipConfiguration),
-				bindings: new Map(c.getMergeFieldBindings())
-			}));
+		const document = context.getDocument();
+		if (!document) throw new Error("DeleteTrackCommand: no document");
 
-		clips.forEach((clip, index) => {
-			if (clip.layer === this.trackIdx + 1) {
-				clips[index].shouldDispose = true;
-			}
-		});
-		context.disposeClips();
+		if (document.getTrackCount() <= 1) {
+			return CommandNoop("Cannot delete the last track");
+		}
 
-		tracks.splice(this.trackIdx, 1);
+		// Save clips for undo
+		const track = document.getTrack(this.trackIdx);
+		if (track) {
+			this.deletedClips = track.clips.map(c => structuredClone(c));
+		}
 
-		const remainingClips = context.getClips();
-		const container = context.getContainer();
+		// Document mutation - remove track (and all its clips)
+		document.removeTrack(this.trackIdx);
 
-		remainingClips.forEach((clip, index) => {
-			if (clip.layer > this.trackIdx + 1) {
-				const oldContainer = container.getChildByLabel(`shotstack-track-${100000 - clip.layer * 100}`, false);
-				oldContainer?.removeChild(clip.getContainer());
-				remainingClips[index].layer -= 1;
-
-				const zIndex = 100000 - remainingClips[index].layer * 100;
-				let trackContainer = container.getChildByLabel(`shotstack-track-${zIndex}`, false);
-				if (!trackContainer) {
-					trackContainer = new pixi.Container({ label: `shotstack-track-${zIndex}`, zIndex });
-					container.addChild(trackContainer);
-				}
-				trackContainer.addChild(remainingClips[index].getContainer());
-			}
-		});
+		// Resolve triggers reconciler:
+		// - Disposes orphaned Players (clips on deleted track)
+		// - Updates remaining Players' layers (clips below move up)
+		context.resolve();
 
 		context.updateDuration();
 
 		context.emitEvent(EditEvent.TrackRemoved, { trackIndex: this.trackIdx });
+
+		return CommandSuccess();
 	}
 
-	async undo(context?: CommandContext): Promise<void> {
-		if (!context) return;
-		const tracks = context.getTracks();
-		const clips = context.getClips();
+	undo(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("DeleteTrackCommand.undo: context is required");
 
-		tracks.splice(this.trackIdx, 0, []);
+		const document = context.getDocument();
+		if (!document) throw new Error("DeleteTrackCommand.undo: no document");
 
-		clips.forEach((clip, index) => {
-			if (clip.layer >= this.trackIdx + 1) {
-				clips[index].layer += 1;
-			}
-		});
+		// Document mutation - add track back at original position
+		document.addTrack(this.trackIdx);
 
-		for (const { config, bindings } of this.deletedClips) {
-			const player = context.createPlayerFromAssetType(config);
-			player.layer = this.trackIdx + 1;
-			// Restore merge field bindings
-			if (bindings.size > 0) {
-				player.setInitialBindings(bindings);
-			}
-			await context.addPlayer(this.trackIdx, player);
+		// Add all clips back to the restored track
+		for (let i = 0; i < this.deletedClips.length; i += 1) {
+			document.addClip(this.trackIdx, this.deletedClips[i], i);
 		}
+
+		// Resolve triggers reconciler:
+		// - Creates Players for restored clips
+		// - Updates remaining Players' layers (clips below move down)
+		context.resolve();
+
 		context.updateDuration();
+
+		context.emitEvent(EditEvent.TrackAdded, { trackIndex: this.trackIdx, totalTracks: document.getTrackCount() });
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.deletedClips = [];
 	}
 }

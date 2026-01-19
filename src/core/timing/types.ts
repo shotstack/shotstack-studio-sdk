@@ -82,3 +82,17 @@ export interface ResolvedTiming {
 	start: Seconds;
 	length: Seconds;
 }
+
+/**
+ * Context required to resolve timing intent to concrete values.
+ *
+ * @see resolveTimingIntent - the pure function that uses this context
+ */
+export interface ResolutionContext {
+	/** End time of previous clip on same track (for start: "auto") */
+	readonly previousClipEnd: Seconds;
+	/** Total duration of timeline excluding "end" clips (for length: "end") */
+	readonly timelineEnd: Seconds;
+	/** Intrinsic duration from asset metadata, null if not yet loaded (for length: "auto") */
+	readonly intrinsicDuration: Seconds | null;
+}

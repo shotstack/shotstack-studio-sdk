@@ -27,6 +27,10 @@ jest.mock("pixi.js", () => {
 			parent: null as unknown,
 			label: null as string | null,
 			zIndex: 0,
+			visible: true,
+			scale: { set: jest.fn(), x: 1, y: 1 },
+			pivot: { set: jest.fn(), x: 0, y: 0 },
+			position: { set: jest.fn(), x: 0, y: 0 },
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
@@ -122,7 +126,9 @@ describe("Edit Playback", () => {
 	beforeEach(async () => {
 		// Create Edit instance from template
 		edit = new Edit({
-			timeline: { tracks: [] },
+			timeline: {
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
+			},
 			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 		});
 
