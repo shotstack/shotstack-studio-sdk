@@ -1,4 +1,5 @@
 import type { Player } from "@canvas/players/player";
+import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
@@ -45,6 +46,7 @@ export class Canvas {
 	private background?: pixi.Graphics;
 	private timeline?: Timeline;
 	private uiController: UIController | null = null;
+	private alignmentGuides: AlignmentGuides | null = null;
 
 	private minZoom = 0.1;
 	private maxZoom = 4;
@@ -128,6 +130,8 @@ export class Canvas {
 		this.viewportMask.fill(0xffffff);
 		this.viewportContainer.addChild(this.viewportMask);
 		this.viewportContainer.setMask({ mask: this.viewportMask });
+
+		this.alignmentGuides = new AlignmentGuides(this.viewportContainer, this.edit.size.width, this.edit.size.height);
 
 		this.subscribeToEditEvents();
 
@@ -316,6 +320,30 @@ export class Canvas {
 		return this.viewportContainer;
 	}
 
+	// ─── Alignment Guides ─────────────────────────────────────────────────────────
+
+	/**
+	 * Show an alignment guide line.
+	 * @internal
+	 */
+	public showAlignmentGuide(type: "canvas" | "clip", axis: "x" | "y", position: number, bounds?: { start: number; end: number }): void {
+		if (!this.alignmentGuides) return;
+
+		if (type === "canvas") {
+			this.alignmentGuides.drawCanvasGuide(axis, position);
+		} else if (bounds) {
+			this.alignmentGuides.drawClipGuide(axis, position, bounds.start, bounds.end);
+		}
+	}
+
+	/**
+	 * Clear all alignment guides.
+	 * @internal
+	 */
+	public clearAlignmentGuides(): void {
+		this.alignmentGuides?.clear();
+	}
+
 	// ─── Player Container Management ─────────────────────────────────────────────
 
 	/**
@@ -402,6 +430,8 @@ export class Canvas {
 			this.viewportMask.rect(0, 0, width, height);
 			this.viewportMask.fill(0xffffff);
 		}
+
+		this.alignmentGuides?.updateSize(width, height);
 	}
 
 	// ─────────────────────────────────────────────────────────────
@@ -550,6 +580,10 @@ export class Canvas {
 		// Remove wheel listener from canvas root
 		this.canvasRoot?.removeEventListener("wheel", this.onWheelBound, { capture: true });
 		this.canvasRoot = null;
+
+		// Clean up alignment guides
+		this.alignmentGuides?.dispose();
+		this.alignmentGuides = null;
 
 		// Clean up viewport container elements
 		this.editBackground?.destroy();

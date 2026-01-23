@@ -1,7 +1,6 @@
 import { type Player, PlayerType } from "@canvas/players/player";
 import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
-import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { resolveAliasReferences } from "@core/alias";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
@@ -90,12 +89,11 @@ export class Edit {
 	public events: EventEmitter<EditEventMap & InternalEventMap>;
 	private canvas: Canvas | null = null;
 
-	// ─── Controllers ──────────────────────────────────────────────────────────
+	// ─── Subsystems ──────────────────────────────────────────────────────────-
 	private lumaMaskController: LumaMaskController;
 	private playerReconciler: PlayerReconciler;
 	private outputSettings!: OutputSettingsManager;
 	private selectionManager!: SelectionManager;
-	private alignmentGuides: AlignmentGuides | null = null;
 	/** @internal */
 	protected mergeFieldService: MergeFieldService;
 
@@ -150,7 +148,6 @@ export class Edit {
 	 * Load the edit session.
 	 */
 	public async load(): Promise<void> {
-		if (this.canvas) this.alignmentGuides = new AlignmentGuides(this.canvas.getViewportContainer(), this.size.width, this.size.height);
 		await this.initializeFromDocument();
 	}
 
@@ -1803,13 +1800,7 @@ export class Edit {
 	 * @internal
 	 */
 	public showAlignmentGuide(type: "canvas" | "clip", axis: "x" | "y", position: number, bounds?: { start: number; end: number }): void {
-		if (!this.alignmentGuides) return;
-
-		if (type === "canvas") {
-			this.alignmentGuides.drawCanvasGuide(axis, position);
-		} else if (bounds) {
-			this.alignmentGuides.drawClipGuide(axis, position, bounds.start, bounds.end);
-		}
+		this.canvas?.showAlignmentGuide(type, axis, position, bounds);
 	}
 
 	/**
@@ -1817,7 +1808,7 @@ export class Edit {
 	 * @internal
 	 */
 	public clearAlignmentGuides(): void {
-		this.alignmentGuides?.clear();
+		this.canvas?.clearAlignmentGuides();
 	}
 
 	/**

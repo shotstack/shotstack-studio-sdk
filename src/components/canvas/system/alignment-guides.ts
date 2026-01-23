@@ -80,6 +80,11 @@ export class AlignmentGuides {
 		this.graphics.stroke();
 	}
 
+	updateSize(width: number, height: number): void {
+		this.canvasWidth = width;
+		this.canvasHeight = height;
+	}
+
 	dispose(): void {
 		this.graphics.destroy();
 	}
