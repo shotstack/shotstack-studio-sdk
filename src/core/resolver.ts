@@ -15,7 +15,7 @@
 import type { EditDocument } from "./edit-document";
 import type { MergeFieldService } from "./merge/merge-field-service";
 import type { Clip, ResolvedClip, ResolvedEdit, ResolvedTrack, Asset } from "./schemas";
-import { type Seconds, sec } from "./timing/types";
+import { type Seconds, sec, isAliasReference } from "./timing/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,14 @@ function substituteMergeFieldsInAsset(asset: Asset, mergeFields: MergeFieldServi
 
 function resolveClipFirstPass(clip: InternalClip, previousClipEnd: Seconds, context: ResolveContext): PartialResolvedClip {
 	// Resolve start
-	const start: Seconds = clip.start === "auto" ? previousClipEnd : sec(clip.start as number);
+	let start: Seconds;
+	if (clip.start === "auto") {
+		start = previousClipEnd;
+	} else if (isAliasReference(clip.start)) {
+		start = sec(0); // Placeholder for alias reference
+	} else {
+		start = sec(clip.start as number);
+	}
 
 	// Resolve length (partially - "end" deferred to second pass)
 	let length: Seconds;
@@ -72,6 +79,9 @@ function resolveClipFirstPass(clip: InternalClip, previousClipEnd: Seconds, cont
 		// Use intrinsic duration if available, else fallback
 		// Note: For now use fallback; intrinsic duration will be provided by Players
 		length = sec(3);
+	} else if (isAliasReference(clip.length)) {
+		// Alias reference - TimingManager resolves these before resolve() is called
+		length = sec(1);
 	} else {
 		length = sec(clip.length as number);
 	}

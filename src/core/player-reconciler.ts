@@ -51,10 +51,10 @@ export class PlayerReconciler {
 	 * Reconcile Players to match the ResolvedEdit.
 	 *
 	 * Four-pass algorithm:
-	 * 0. Sync track containers (add/remove empty containers)
 	 * 1. Add new Players (clips in resolved but not in playerMap)
 	 * 2. Update existing Players (timing, track, asset changes)
 	 * 3. Dispose orphaned Players (in playerMap but not in resolved)
+	 * 4. Sync track containers (add/remove empty containers - runs AFTER disposal)
 	 */
 	public reconcile(resolved: ResolvedEdit): ReconcileResult {
 		if (this.isReconciling) {
@@ -70,9 +70,6 @@ export class PlayerReconciler {
 				updated: [],
 				disposed: []
 			};
-
-			// Pass 0: Sync track containers to match resolved track count
-			this.syncTrackContainers(resolved.timeline.tracks.length);
 
 			const resolvedClipIds = new Set<string>();
 
@@ -121,6 +118,10 @@ export class PlayerReconciler {
 			if (result.created.length > 0 || result.disposed.length > 0 || result.updated.length > 0) {
 				this.rebuildTracksOrdering(resolved);
 			}
+
+			// Sync track containers AFTER players are disposed and tracks rebuilt
+			// This ensures empty tracks are correctly identified for removal
+			this.syncTrackContainers(resolved.timeline.tracks.length);
 
 			return result;
 		} finally {
