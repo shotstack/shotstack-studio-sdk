@@ -25,11 +25,11 @@ import { EventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
-import { calculateSizeFromPreset, OutputSettingsManager, type OutputSettingsContext } from "@core/output-settings-manager";
-import { SelectionManager, type SelectionContext } from "@core/selection-manager";
+import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
+import { SelectionManager } from "@core/selection-manager";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type Milliseconds, type ResolutionContext, type Seconds, ms, sec, toSec } from "@core/timing/types";
+import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec } from "@core/timing/types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -53,148 +53,114 @@ import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
 
-/**
- * Magic elapsed value passed to update() during seek operations.
- * @internal
- */
-export const SEEK_ELAPSED_MARKER = ms(101);
-
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
 export class Edit {
-	/**
-	 * Maximum number of commands to keep in undo history.
-	 */
+	// ─── Constants ────────────────────────────────────────────────────────────
 	private static readonly MAX_HISTORY_SIZE = 100;
-
 	/** @internal */
-	public assetLoader: AssetLoader;
-	public events: EventEmitter<EditEventMap & InternalEventMap>;
+	public static readonly SEEK_ELAPSED_MARKER = 101 as Milliseconds;
 
-	/**
-	 * Pure document layer
-	 * @internal
-	 */
+	// ─── Core Configuration ───────────────────────────────────────────────────
 	private document: EditDocument;
+	/** @internal */
+	public size: Size;
+	private backgroundColor: string;
 
+	// ─── Primary State ────────────────────────────────────────────────────────
 	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
-	private clipsToDispose = new Set<Player>();
+	public playbackTime: Seconds;
+	public totalDuration: Seconds;
+	public isPlaying: boolean;
 
+	// ─── Derived State ────────────────────────────────────────────────────────
 	private get clips(): Player[] {
 		return this.tracks.flat();
 	}
+	private get endLengthClips(): Player[] {
+		return this.clips.filter(c => c.getTimingIntent().length === "end");
+	}
+	private cachedTimelineEnd: number = 0;
+
+	// ─── Services ─────────────────────────────────────────────────────────────
+	/** @internal */
+	public assetLoader: AssetLoader;
+	/** @internal */
+	public events: EventEmitter<EditEventMap & InternalEventMap>;
+	private canvas: Canvas | null = null;
+
+	// ─── Controllers ──────────────────────────────────────────────────────────
+	private lumaMaskController: LumaMaskController;
+	private playerReconciler: PlayerReconciler;
+	private outputSettings!: OutputSettingsManager;
+	private selectionManager!: SelectionManager;
+	private alignmentGuides: AlignmentGuides | null = null;
+	/** @internal */
+	protected mergeFieldService: MergeFieldService;
+
+	// ─── Command History ──────────────────────────────────────────────────────
 	private commandHistory: EditCommand[] = [];
 	private commandIndex: number = -1;
 	private commandQueue = new CommandQueue();
 
-	public playbackTime: Seconds;
-	/** @internal */
-	public size: Size;
-	/** @internal */
-	private backgroundColor: string;
-	public totalDuration: Seconds;
-	public isPlaying: boolean;
-	/** @internal */
-	private isExporting: boolean = false;
-
-	private cachedTimelineEnd: number = 0;
-	private get endLengthClips(): Player[] {
-		return this.clips.filter(c => c.getTimingIntent().length === "end");
-	}
+	// ─── Internal Bookkeeping ─────────────────────────────────────────────────
+	private clipsToDispose = new Set<Player>();
+	private clipErrors = new Map<string, { error: string; assetType: string }>();
+	private playerByClipId = new Map<string, Player>();
+	private fontMetadata = new Map<string, { baseFamilyName: string; weight: number }>();
 	private isBatchingEvents: boolean = false;
 	private syncCorrectionCount: number = 0;
-	private outputSettings!: OutputSettingsManager;
-	private selectionManager!: SelectionManager;
-
-	/**
-	 * Merge field service for internal template resolution.
-	 * @internal Use ShotstackEdit.mergeFields for public API access.
-	 */
-	protected mergeFieldService: MergeFieldService;
-
-	private canvas: Canvas | null = null;
-
-	/** @internal */
-	private alignmentGuides: AlignmentGuides | null = null;
-	private lumaMaskController: LumaMaskController;
-	private playerReconciler: PlayerReconciler;
-
-	// Clip load errors - persisted so Timeline can query them after subscribing
-	private clipErrors = new Map<string, { error: string; assetType: string }>();
-
-	/**
-	 * Map of clip ID → Player for ID-based lookup.
-	 * Enables reconciliation and commands to reference clips by stable ID.
-	 * @internal
-	 */
-	private playerByClipId = new Map<string, Player>();
-
-	// Font metadata storage - maps URL to normalized base family + weight for rich-text font resolution
-	private fontMetadata = new Map<string, { baseFamilyName: string; weight: number }>();
+	private isExporting: boolean = false;
 
 	/**
 	 * Create an Edit instance from a template configuration.
 	 */
 	constructor(template: EditConfig) {
-		// Create document layer from template
+		this.edit = null;
+		this.tracks = [];
+		this.playbackTime = sec(0);
+		this.totalDuration = sec(0);
+		this.isPlaying = false;
+
 		this.document = new EditDocument(template);
 
 		const resolution = this.document.getResolution();
-		if (resolution) {
-			const aspectRatio = this.document.getAspectRatio();
-			this.size = calculateSizeFromPreset(resolution, aspectRatio);
-		} else {
-			this.size = this.document.getSize();
-		}
+		const aspectRatio = this.document.getAspectRatio();
 		this.backgroundColor = this.document.getBackground() ?? "#000000";
+		this.size = resolution ? calculateSizeFromPreset(resolution, aspectRatio) : this.document.getSize();
 
-		// Initialize runtime state
 		this.assetLoader = new AssetLoader();
-		this.edit = null;
-		this.tracks = [];
-		this.clipsToDispose.clear();
-
 		this.events = new EventEmitter();
-		this.mergeFieldService = new MergeFieldService(this.events);
+
 		this.lumaMaskController = new LumaMaskController(
 			() => this.canvas,
 			() => this.tracks,
 			this.events
 		);
 		this.playerReconciler = new PlayerReconciler(this);
+		this.mergeFieldService = new MergeFieldService(this.events);
+		this.outputSettings = new OutputSettingsManager(this);
+		this.selectionManager = new SelectionManager(this);
 
-		// Initialize output settings manager with context
-		this.outputSettings = new OutputSettingsManager(this.createOutputSettingsContext());
-
-		// Initialize selection manager with context
-		this.selectionManager = new SelectionManager(this.createSelectionContext());
-
-		this.playbackTime = sec(0);
-		this.totalDuration = sec(0);
-		this.isPlaying = false;
-
-		// Set up event-driven architecture
 		this.setupIntentListeners();
 	}
 
+	/**
+	 * Load the edit session.
+	 */
 	public async load(): Promise<void> {
-		// Initialize alignment guides in Canvas's viewport container
-		if (this.canvas) {
-			const viewportContainer = this.canvas.getViewportContainer();
-			this.alignmentGuides = new AlignmentGuides(viewportContainer, this.size.width, this.size.height);
-		}
+		if (this.canvas) this.alignmentGuides = new AlignmentGuides(this.canvas.getViewportContainer(), this.size.width, this.size.height);
 		await this.initializeFromDocument();
 	}
 
 	/**
-	 * Initialize players and timing from the document.
+	 * Initialize runtime from the document.
 	 */
 	private async initializeFromDocument(source: string = "load"): Promise<void> {
-		// Get raw edit from document
 		const rawEdit = this.document.toJSON();
 
-		// Load merge fields from edit payload into service
+		// Load merge fields
 		const serializedMergeFields = rawEdit.merge ?? [];
 		this.mergeFieldService.loadFromSerialized(serializedMergeFields);
 
@@ -226,7 +192,7 @@ export class Edit {
 			})
 		);
 
-		// Create players for each clip (skip document sync - document already has clips)
+		// Create players for each clip
 		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
 			for (const [clipIdx, clip] of track.clips.entries()) {
 				try {
@@ -248,7 +214,6 @@ export class Edit {
 
 					await this.addPlayer(trackIdx, clipPlayer);
 				} catch (error) {
-					// Store and emit error event, continue loading other clips
 					const assetType = (clip.asset as { type?: string }).type ?? "unknown";
 					const errorMessage = error instanceof Error ? error.message : String(error);
 					this.clipErrors.set(`${trackIdx}-${clipIdx}`, { error: errorMessage, assetType });
@@ -262,7 +227,7 @@ export class Edit {
 			}
 		}
 
-		// Initialize luma mask relationships
+		// Initialize luma masks
 		this.lumaMaskController.initialize();
 
 		// Resolve timing for all clips
@@ -326,8 +291,11 @@ export class Edit {
 		PlayerFactory.cleanup();
 	}
 
-	/** Update canvas visuals after size change (viewport mask, background, zoom) */
-	private updateCanvasForSize(): void {
+	/**
+	 * Update canvas visuals after size change (viewport mask, background, zoom).
+	 * @internal Called by OutputSettingsManager
+	 */
+	public updateCanvasForSize(): void {
 		this.events.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,
 			height: this.size.height,
@@ -348,7 +316,7 @@ export class Edit {
 		this.playbackTime = sec(Math.max(0, Math.min(target, this.totalDuration)));
 		this.pause();
 		// Force immediate render - SEEK_ELAPSED_MARKER signals seek to all players
-		this.update(0, SEEK_ELAPSED_MARKER);
+		this.update(0, Edit.SEEK_ELAPSED_MARKER);
 		this.draw();
 	}
 	public stop(): void {
@@ -933,7 +901,6 @@ export class Edit {
 
 	/**
 	 * Add a command to history without executing it.
-	 * @internal
 	 */
 	private addCommandToHistory(command: EditCommand): void {
 		this.pushCommandToHistory(command);
@@ -992,6 +959,7 @@ export class Edit {
 		return this.executeCommand(command);
 	}
 
+	/** @internal */
 	protected executeCommand(command: EditCommand): Promise<void> {
 		return this.commandQueue.enqueue(async () => {
 			const context = this.createCommandContext();
@@ -1014,6 +982,7 @@ export class Edit {
 
 	/**
 	 * Emits a unified `edit:changed` event after any state mutation.
+	 * @internal
 	 */
 	protected emitEditChanged(source: string): void {
 		if (this.isBatchingEvents) return;
@@ -1221,38 +1190,7 @@ export class Edit {
 		}
 	}
 
-	/**
-	 * Create context for OutputSettingsManager.
-	 */
-	private createOutputSettingsContext(): OutputSettingsContext {
-		return {
-			getEdit: () => this.edit,
-			getDocument: () => this.document,
-			getSize: () => this.size,
-			setSize: (size: Size) => {
-				this.size = size;
-			},
-			getEvents: () => this.events,
-			updateCanvasForSize: () => this.updateCanvasForSize(),
-			emitEditChanged: (source: string) => this.emitEditChanged(source)
-		};
-	}
-
-	/**
-	 * Create context for SelectionManager.
-	 */
-	private createSelectionContext(): SelectionContext {
-		return {
-			getTracks: () => this.tracks,
-			getEvents: () => this.events,
-			getPlayerClip: (trackIndex, clipIndex) => this.getPlayerClip(trackIndex, clipIndex),
-			getResolvedClip: (trackIndex, clipIndex) => this.getResolvedClip(trackIndex, clipIndex),
-			addClip: (trackIndex, clip) => this.addClip(trackIndex, clip),
-			getPlaybackTime: () => this.playbackTime,
-			isExporting: () => this.isExporting
-		};
-	}
-
+	/** @internal */
 	protected createCommandContext(): CommandContext {
 		return {
 			getClips: () => this.clips,
@@ -1480,6 +1418,7 @@ export class Edit {
 		this.clipsToDispose.add(clipToDispose);
 	}
 
+	/** @internal */
 	protected disposeClips(): void {
 		if (this.clipsToDispose.size === 0) {
 			return;
@@ -1604,6 +1543,7 @@ export class Edit {
 		}
 	}
 
+	/** @internal */
 	protected clearClips(): void {
 		for (const clip of this.clips) {
 			this.disposeClip(clip);
@@ -2053,7 +1993,6 @@ export class Edit {
 		return this.executeCommand(command);
 	}
 
-	/** @internal */
 	private setTimelineBackgroundInternal(color: string): void {
 		const result = HexColorSchema.safeParse(color);
 		if (!result.success) {
@@ -2096,7 +2035,7 @@ export class Edit {
 
 	// ─── Template Edit Access (via document bindings) ──────────────────────────
 
-	/** Get the exportable clip (with merge field placeholders restored) */
+	/* @internal Get the exportable clip (with merge field placeholders restored) */
 	protected getTemplateClip(trackIndex: number, clipIndex: number): ResolvedClip | null {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
 		if (!player) return null;

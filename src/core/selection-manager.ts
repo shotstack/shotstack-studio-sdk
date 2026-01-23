@@ -1,15 +1,13 @@
 /**
  * SelectionManager - Manages clip selection and clipboard state.
- *
- * Extracted from Edit to reduce God Class complexity.
  * Handles selection state, clipboard operations, and related events.
  */
 
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@core/schemas";
-import type { Seconds } from "@core/timing/types";
+
+import type { Edit } from "./edit-session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,29 +22,13 @@ export interface SelectedClipInfo {
 	player: Player;
 }
 
-// ─── Context Interface ────────────────────────────────────────────────────────
-
-/**
- * Context interface for SelectionManager dependencies.
- * Allows the manager to interact with Edit without tight coupling.
- */
-export interface SelectionContext {
-	getTracks(): Player[][];
-	getEvents(): EventEmitter;
-	getPlayerClip(trackIndex: number, clipIndex: number): Player | null;
-	getResolvedClip(trackIndex: number, clipIndex: number): ResolvedClip | null;
-	addClip(trackIndex: number, clip: ResolvedClip): void | Promise<void>;
-	getPlaybackTime(): Seconds;
-	isExporting(): boolean;
-}
-
 // ─── SelectionManager ─────────────────────────────────────────────────────────
 
 export class SelectionManager {
 	private selectedClip: Player | null = null;
 	private copiedClip: CopiedClip | null = null;
 
-	constructor(private readonly context: SelectionContext) {}
+	constructor(private readonly edit: Edit) {}
 
 	// ─── Selection ────────────────────────────────────────────────────────────
 
@@ -54,12 +36,12 @@ export class SelectionManager {
 	 * Select a clip by track and clip index.
 	 */
 	selectClip(trackIndex: number, clipIndex: number): void {
-		const player = this.context.getPlayerClip(trackIndex, clipIndex);
+		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
 		if (player) {
 			this.selectedClip = player;
-			const clip = this.context.getResolvedClip(trackIndex, clipIndex);
+			const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
 			if (clip) {
-				this.context.getEvents().emit(EditEvent.ClipSelected, {
+				this.edit.events.emit(EditEvent.ClipSelected, {
 					clip,
 					trackIndex,
 					clipIndex
@@ -83,7 +65,7 @@ export class SelectionManager {
 	 */
 	clearSelection(): void {
 		this.selectedClip = null;
-		this.context.getEvents().emit(EditEvent.SelectionCleared);
+		this.edit.events.emit(EditEvent.SelectionCleared);
 	}
 
 	/**
@@ -93,7 +75,7 @@ export class SelectionManager {
 		if (!this.selectedClip) return false;
 
 		const selectedTrackIndex = this.selectedClip.layer - 1;
-		const tracks = this.context.getTracks();
+		const tracks = this.edit.getTracks();
 		const track = tracks[selectedTrackIndex];
 		if (!track) return false;
 
@@ -105,7 +87,7 @@ export class SelectionManager {
 	 * Check if a specific player is selected.
 	 */
 	isPlayerSelected(player: Player): boolean {
-		if (this.context.isExporting()) return false;
+		if (this.edit.isInExportMode()) return false;
 		return this.selectedClip === player;
 	}
 
@@ -116,7 +98,7 @@ export class SelectionManager {
 		if (!this.selectedClip) return null;
 
 		const trackIndex = this.selectedClip.layer - 1;
-		const tracks = this.context.getTracks();
+		const tracks = this.edit.getTracks();
 		const track = tracks[trackIndex];
 		if (!track) return null; // Track was deleted
 
@@ -144,13 +126,13 @@ export class SelectionManager {
 	 * Copy a clip to the internal clipboard.
 	 */
 	copyClip(trackIdx: number, clipIdx: number): void {
-		const clip = this.context.getResolvedClip(trackIdx, clipIdx);
+		const clip = this.edit.getResolvedClip(trackIdx, clipIdx);
 		if (clip) {
 			this.copiedClip = {
 				trackIndex: trackIdx,
 				clipConfiguration: structuredClone(clip)
 			};
-			this.context.getEvents().emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
+			this.edit.events.emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
 		}
 	}
 
@@ -161,13 +143,13 @@ export class SelectionManager {
 		if (!this.copiedClip) return;
 
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
-		pastedClip.start = this.context.getPlaybackTime();
+		pastedClip.start = this.edit.playbackTime;
 
 		// Remove ID so document generates a new one (otherwise reconciler
 		// would see duplicate IDs and update instead of create)
 		delete (pastedClip as { id?: string }).id;
 
-		this.context.addClip(this.copiedClip.trackIndex, pastedClip);
+		this.edit.addClip(this.copiedClip.trackIndex, pastedClip);
 	}
 
 	/**
@@ -183,7 +165,7 @@ export class SelectionManager {
 	 * Find the track and clip indices for a given player.
 	 */
 	findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
-		const tracks = this.context.getTracks();
+		const tracks = this.edit.getTracks();
 		for (let trackIndex = 0; trackIndex < tracks.length; trackIndex += 1) {
 			const clipIndex = tracks[trackIndex].indexOf(player);
 			if (clipIndex !== -1) {

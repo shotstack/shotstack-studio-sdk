@@ -1,14 +1,10 @@
 /**
  * OutputSettingsManager - Manages output configuration (size, fps, format, resolution, etc.)
- *
- * Extracted from Edit to reduce God Class complexity.
  * Handles validation, state updates, document sync, and event emission.
  */
 
-import type { EditDocument } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
-import type { EventEmitter } from "@core/events/event-emitter";
-import type { Destination, ResolvedEdit } from "@core/schemas";
+import type { Destination } from "@core/schemas";
 import {
 	DestinationSchema,
 	OutputAspectRatioSchema,
@@ -18,6 +14,8 @@ import {
 	OutputSizeSchema
 } from "@core/schemas";
 import type { Size } from "@layouts/geometry";
+
+import type { Edit } from "./edit-session";
 
 // ─── Resolution Preset Dimensions ─────────────────────────────────────────────
 
@@ -65,26 +63,10 @@ export function calculateSizeFromPreset(resolution: string, aspectRatio: string 
 	}
 }
 
-// ─── Context Interface ────────────────────────────────────────────────────────
-
-/**
- * Context interface for OutputSettingsManager dependencies.
- * Allows the manager to interact with Edit without tight coupling.
- */
-export interface OutputSettingsContext {
-	getEdit(): ResolvedEdit | null;
-	getDocument(): EditDocument | null;
-	getSize(): Size;
-	setSize(size: Size): void;
-	getEvents(): EventEmitter;
-	updateCanvasForSize(): void;
-	emitEditChanged(source: string): void;
-}
-
 // ─── OutputSettingsManager ────────────────────────────────────────────────────
 
 export class OutputSettingsManager {
-	constructor(private readonly context: OutputSettingsContext) {}
+	constructor(private readonly edit: Edit) {}
 
 	// ─── Size ─────────────────────────────────────────────────────────────────
 
@@ -98,33 +80,33 @@ export class OutputSettingsManager {
 		}
 
 		const size: Size = { width, height };
-		this.context.setSize(size);
+		this.edit.size = size;
 
-		const edit = this.context.getEdit();
-		if (edit) {
-			edit.output = {
-				...edit.output,
+		const resolvedEdit = this.edit.getOriginalEdit();
+		if (resolvedEdit) {
+			resolvedEdit.output = {
+				...resolvedEdit.output,
 				size
 			};
 			// Clear resolution/aspectRatio (mutually exclusive with custom size)
-			delete edit.output.resolution;
-			delete edit.output.aspectRatio;
+			delete resolvedEdit.output.resolution;
+			delete resolvedEdit.output.aspectRatio;
 		}
 
 		// Sync with document layer
-		const doc = this.context.getDocument();
+		const doc = this.edit.getDocument();
 		doc?.setSize(size);
 		doc?.clearResolution();
 		doc?.clearAspectRatio();
 
-		this.context.updateCanvasForSize();
+		this.edit.updateCanvasForSize();
 
-		this.context.getEvents().emit(EditEvent.OutputResized, size);
+		this.edit.events.emit(EditEvent.OutputResized, size);
 		// Note: emitEditChanged is handled by executeCommand
 	}
 
 	getSize(): Size {
-		return this.context.getSize();
+		return this.edit.size;
 	}
 
 	// ─── FPS ──────────────────────────────────────────────────────────────────
@@ -138,23 +120,23 @@ export class OutputSettingsManager {
 			throw new Error(`Invalid fps: ${result.error.issues[0]?.message}`);
 		}
 
-		const edit = this.context.getEdit();
-		if (edit) {
-			edit.output = {
-				...edit.output,
+		const resolvedEdit = this.edit.getOriginalEdit();
+		if (resolvedEdit) {
+			resolvedEdit.output = {
+				...resolvedEdit.output,
 				fps: result.data
 			};
 		}
 
 		// Sync with document layer
-		this.context.getDocument()?.setFps(result.data);
+		this.edit.getDocument()?.setFps(result.data);
 
-		this.context.getEvents().emit(EditEvent.OutputFpsChanged, { fps });
+		this.edit.events.emit(EditEvent.OutputFpsChanged, { fps });
 		// Note: emitEditChanged is handled by executeCommand
 	}
 
 	getFps(): number {
-		return this.context.getEdit()?.output?.fps ?? 30;
+		return this.edit.getOriginalEdit()?.output?.fps ?? 30;
 	}
 
 	// ─── Format ───────────────────────────────────────────────────────────────
@@ -165,22 +147,22 @@ export class OutputSettingsManager {
 			throw new Error(`Invalid format: ${result.error.issues[0]?.message}`);
 		}
 
-		const edit = this.context.getEdit();
-		if (edit) {
-			edit.output = {
-				...edit.output,
+		const resolvedEdit = this.edit.getOriginalEdit();
+		if (resolvedEdit) {
+			resolvedEdit.output = {
+				...resolvedEdit.output,
 				format: result.data
 			};
 		}
 
 		// Sync with document layer
-		this.context.getDocument()?.setFormat(result.data);
+		this.edit.getDocument()?.setFormat(result.data);
 
-		this.context.getEvents().emit(EditEvent.OutputFormatChanged, { format: result.data });
+		this.edit.events.emit(EditEvent.OutputFormatChanged, { format: result.data });
 	}
 
 	getFormat(): string {
-		return this.context.getEdit()?.output?.format ?? "mp4";
+		return this.edit.getOriginalEdit()?.output?.format ?? "mp4";
 	}
 
 	// ─── Destinations ─────────────────────────────────────────────────────────
@@ -191,19 +173,19 @@ export class OutputSettingsManager {
 			throw new Error(`Invalid destinations: ${result.error.message}`);
 		}
 
-		const edit = this.context.getEdit();
-		if (edit) {
-			edit.output = {
-				...edit.output,
+		const resolvedEdit = this.edit.getOriginalEdit();
+		if (resolvedEdit) {
+			resolvedEdit.output = {
+				...resolvedEdit.output,
 				destinations: result.data
 			};
 		}
 
-		this.context.getEvents().emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
+		this.edit.events.emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
 	}
 
 	getDestinations(): Destination[] {
-		return this.context.getEdit()?.output?.destinations ?? [];
+		return this.edit.getOriginalEdit()?.output?.destinations ?? [];
 	}
 
 	// ─── Resolution ───────────────────────────────────────────────────────────
@@ -215,36 +197,35 @@ export class OutputSettingsManager {
 		}
 
 		const validatedResolution = result.data;
-		const edit = this.context.getEdit();
-		const aspectRatio = edit?.output?.aspectRatio ?? "16:9";
+		const resolvedEdit = this.edit.getOriginalEdit();
+		const aspectRatio = resolvedEdit?.output?.aspectRatio ?? "16:9";
 		const newSize = calculateSizeFromPreset(validatedResolution, aspectRatio);
 
 		// Update runtime state
-		this.context.setSize(newSize);
+		this.edit.size = newSize;
 
-		if (edit) {
-			edit.output = {
-				...edit.output,
+		if (resolvedEdit) {
+			resolvedEdit.output = {
+				...resolvedEdit.output,
 				resolution: validatedResolution
 			};
 			// Clear custom size (mutually exclusive with resolution/aspectRatio)
-			delete edit.output.size;
+			delete resolvedEdit.output.size;
 		}
 
 		// Sync with document layer (size is cleared for mutual exclusivity)
-		const doc = this.context.getDocument();
+		const doc = this.edit.getDocument();
 		doc?.setResolution(validatedResolution);
 		doc?.clearSize();
 
-		this.context.updateCanvasForSize();
+		this.edit.updateCanvasForSize();
 
-		const events = this.context.getEvents();
-		events.emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
-		events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
+		this.edit.events.emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
+		this.edit.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
 	}
 
 	getResolution(): string | undefined {
-		return this.context.getEdit()?.output?.resolution;
+		return this.edit.getOriginalEdit()?.output?.resolution;
 	}
 
 	// ─── Aspect Ratio ─────────────────────────────────────────────────────────
@@ -256,19 +237,19 @@ export class OutputSettingsManager {
 		}
 
 		const validatedAspectRatio = result.data;
-		const edit = this.context.getEdit();
-		const resolution = edit?.output?.resolution;
+		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolution = resolvedEdit?.output?.resolution;
 
 		if (!resolution) {
 			// If no resolution is set, just store the aspectRatio without recalculating size
-			if (edit) {
-				edit.output = {
-					...edit.output,
+			if (resolvedEdit) {
+				resolvedEdit.output = {
+					...resolvedEdit.output,
 					aspectRatio: validatedAspectRatio
 				};
 			}
-			this.context.getDocument()?.setAspectRatio(validatedAspectRatio);
-			this.context.getEvents().emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
+			this.edit.getDocument()?.setAspectRatio(validatedAspectRatio);
+			this.edit.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
 			return;
 		}
 
@@ -276,30 +257,29 @@ export class OutputSettingsManager {
 		const newSize = calculateSizeFromPreset(resolution, validatedAspectRatio);
 
 		// Update runtime state
-		this.context.setSize(newSize);
+		this.edit.size = newSize;
 
-		if (edit) {
-			edit.output = {
-				...edit.output,
+		if (resolvedEdit) {
+			resolvedEdit.output = {
+				...resolvedEdit.output,
 				aspectRatio: validatedAspectRatio
 			};
 			// Clear custom size (mutually exclusive with resolution/aspectRatio)
-			delete edit.output.size;
+			delete resolvedEdit.output.size;
 		}
 
 		// Sync with document layer (size is cleared for mutual exclusivity)
-		const doc = this.context.getDocument();
+		const doc = this.edit.getDocument();
 		doc?.setAspectRatio(validatedAspectRatio);
 		doc?.clearSize();
 
-		this.context.updateCanvasForSize();
+		this.edit.updateCanvasForSize();
 
-		const events = this.context.getEvents();
-		events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
-		events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
+		this.edit.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
+		this.edit.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
 	}
 
 	getAspectRatio(): string | undefined {
-		return this.context.getEdit()?.output?.aspectRatio;
+		return this.edit.getOriginalEdit()?.output?.aspectRatio;
 	}
 }

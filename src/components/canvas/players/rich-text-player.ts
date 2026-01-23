@@ -1,5 +1,5 @@
 import { Player, PlayerType } from "@canvas/players/player";
-import { SEEK_ELAPSED_MARKER } from "@core/edit-session";
+import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
@@ -432,7 +432,7 @@ export class RichTextPlayer extends Player {
 		super.update(deltaTime, elapsed);
 
 		// Reset render state on seek to prevent race conditions
-		if (elapsed === SEEK_ELAPSED_MARKER) {
+		if (elapsed === Edit.SEEK_ELAPSED_MARKER) {
 			this.isRendering = false;
 			this.pendingRenderTime = null;
 			this.lastRenderedTime = -1;
