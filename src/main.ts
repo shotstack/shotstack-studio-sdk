@@ -1,3 +1,4 @@
+import { Edit as EditSchema } from "@schemas";
 import { Timeline } from "@timeline/index";
 
 import { Edit, Canvas, Controls, UIController } from "./index";
@@ -9,8 +10,7 @@ import { Edit, Canvas, Controls, UIController } from "./index";
 async function main() {
 	try {
 		// 1. Load the hello.json template from local file
-		const templateModule = await import("./templates/hello.json");
-		const template = templateModule.default as any;
+		const template = (await import("./templates/hello.json")) as EditSchema;
 
 		// 2. Create core components
 		const edit = new Edit(template);
@@ -50,20 +50,17 @@ async function main() {
 
 		// 6. Initialize the Timeline
 		const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-		if (timelineContainer) {
-			const timeline = new Timeline(edit, timelineContainer, {
-				features: {
-					toolbar: true,
-					ruler: true,
-					playhead: true,
-					snap: true,
-					badges: true,
-					multiSelect: true
-				}
-			});
-			await timeline.load();
-			console.log("Timeline loaded!");
-		}
+		const timeline = new Timeline(edit, timelineContainer, {
+			features: {
+				toolbar: true,
+				ruler: true,
+				playhead: true,
+				snap: true,
+				badges: true,
+				multiSelect: true
+			}
+		});
+		await timeline.load();
 
 		// 7. Add keyboard controls
 		const controls = new Controls(edit);
@@ -77,16 +74,6 @@ async function main() {
 		edit.events.on("clip:updated", data => {
 			console.log("Clip updated:", data);
 		});
-
-		// Additional helpful information for the demo
-		console.log("Demo loaded successfully! Try the following keyboard controls:");
-		console.log("- Space: Play/Pause");
-		console.log("- J: Stop");
-		console.log("- K: Pause");
-		console.log("- L: Play");
-		console.log("- Left/Right Arrow: Seek");
-		console.log("- Shift+Left/Right: Seek faster");
-		console.log("- Comma/Period: Step frame by frame");
 	} catch (error) {
 		console.error("Error in Shotstack Studio demo:", error);
 	}
