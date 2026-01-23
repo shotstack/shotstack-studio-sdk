@@ -483,8 +483,7 @@ export class Canvas {
 				click: true,
 				wheel: true
 			},
-			textureGCActive: false,
-			renderableGCActive: false,
+			gcActive: false,
 			manageImports: false
 		};
 
