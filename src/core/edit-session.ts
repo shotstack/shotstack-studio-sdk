@@ -1254,9 +1254,7 @@ export class Edit {
 			getEditState: () => this.getResolvedEdit(),
 			propagateTimingChanges: (trackIndex, startFromClipIndex) => this.propagateTimingChanges(trackIndex, startFromClipIndex),
 			resolveClipAutoLength: clip => this.resolveClipAutoLength(clip),
-			// Merge field context
 			getMergeFields: () => this.mergeFieldService,
-			// Output settings (delegated to OutputSettingsManager)
 			getOutputSize: () => this.outputSettings.getSize(),
 			setOutputSize: (width, height) => this.outputSettings.setSize(width, height),
 			getOutputFps: () => this.outputSettings.getFps(),
@@ -1271,18 +1269,14 @@ export class Edit {
 			setOutputDestinations: destinations => this.outputSettings.setDestinations(destinations),
 			getTimelineBackground: () => this.getTimelineBackground(),
 			setTimelineBackground: color => this.setTimelineBackgroundInternal(color),
-			// Document access (single source of truth)
 			getDocument: () => this.document,
 			getDocumentTrack: trackIdx => this.document?.getTrack(trackIdx) ?? null,
-
-			// Document-first mutations (Phase 3)
 			documentUpdateClip: (trackIdx, clipIdx, updates) => {
 				if (!this.document) {
 					throw new Error("Document not initialized - cannot update clip");
 				}
 				this.document.updateClip(trackIdx, clipIdx, updates);
 			},
-
 			documentAddClip: (trackIdx, clip, clipIdx) => {
 				if (!this.document) {
 					throw new Error("Document not initialized - cannot add clip");
@@ -1293,14 +1287,12 @@ export class Edit {
 				}
 				return this.document.addClip(trackIdx, clip, clipIdx);
 			},
-
 			documentRemoveClip: (trackIdx, clipIdx) => {
 				if (!this.document) {
 					throw new Error("Document not initialized - cannot remove clip");
 				}
 				return this.document.removeClip(trackIdx, clipIdx);
 			},
-
 			derivePlayerFromDocument: (trackIdx, clipIdx) => {
 				const clip = this.document?.getClip(trackIdx, clipIdx);
 				if (!clip) {
@@ -1320,7 +1312,6 @@ export class Edit {
 				Object.assign(player.clipConfiguration, timingFields);
 				player.reconfigureAfterRestore();
 			},
-
 			buildResolutionContext: (trackIdx, clipIdx): ResolutionContext => {
 				// 1. Previous clip end (for start: "auto")
 				let previousClipEnd: Seconds = sec(0);
@@ -1353,12 +1344,8 @@ export class Edit {
 					intrinsicDuration
 				};
 			},
-
-			// Unidirectional data flow: resolve document → ResolvedEdit
 			resolve: () => this.resolve(),
 			resolveClip: clipId => this.resolveClip(clipId),
-
-			// ID-based Player access (for reconciliation)
 			getPlayerByClipId: clipId => this.playerByClipId.get(clipId) ?? null,
 			registerPlayerByClipId: (clipId, player) => {
 				this.playerByClipId.set(clipId, player);
@@ -1366,8 +1353,6 @@ export class Edit {
 			unregisterPlayerByClipId: clipId => {
 				this.playerByClipId.delete(clipId);
 			},
-
-			// Merge field binding management (document-based)
 			setClipBinding: (clipId, path, binding) => {
 				this.document?.setClipBinding(clipId, path, binding);
 			},
@@ -1681,10 +1666,7 @@ export class Edit {
 		return this.selectionManager.isPlayerSelected(player);
 	}
 
-	/**
-	 * Get all active players except the specified one.
-	 * @internal
-	 */
+	/** @internal Get all active players except the specified one. */
 	public getActivePlayersExcept(excludePlayer: Player): Player[] {
 		const active: Player[] = [];
 		for (const track of this.tracks) {
@@ -1697,26 +1679,17 @@ export class Edit {
 		return active;
 	}
 
-	/**
-	 * Show an alignment guide line.
-	 * @internal
-	 */
+	/** @internal Show an alignment guide line. */
 	public showAlignmentGuide(type: "canvas" | "clip", axis: "x" | "y", position: number, bounds?: { start: number; end: number }): void {
 		this.canvas?.showAlignmentGuide(type, axis, position, bounds);
 	}
 
-	/**
-	 * Clear all alignment guides.
-	 * @internal
-	 */
+	/** @internal Clear all alignment guides. */
 	public clearAlignmentGuides(): void {
 		this.canvas?.clearAlignmentGuides();
 	}
 
-	/**
-	 * Move the selected clip by a pixel delta.
-	 * @internal
-	 */
+	/** @internal Move the selected clip by a pixel delta. */
 	public moveSelectedClip(deltaX: number, deltaY: number): void {
 		const info = this.getSelectedClipInfo();
 		if (!info) return;
@@ -1728,14 +1701,11 @@ export class Edit {
 
 		const initialConfig = structuredClone(resolvedClip);
 
-		// Calculate new offset (pure function, no player mutation)
 		const newOffset = player.calculateMoveOffset(deltaX, deltaY);
 
-		// Build final config with new offset
 		const finalConfig = structuredClone(initialConfig);
 		finalConfig.offset = newOffset;
 
-		// Document update → resolve() → Reconciler syncs offset to player
 		this.setUpdatedClip(player, initialConfig, finalConfig);
 	}
 
