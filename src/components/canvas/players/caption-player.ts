@@ -66,11 +66,11 @@ export class CaptionPlayer extends Player {
 	private async loadTranscriptionInBackground(src: string): Promise<void> {
 		const clipAlias = this.clipConfiguration.alias ?? "";
 		try {
-			const originalEdit = this.edit.getOriginalEdit();
-			if (!originalEdit) {
+			const resolvedEdit = this.edit.getResolvedEdit();
+			if (!resolvedEdit) {
 				throw new Error("Cannot resolve alias: edit not loaded");
 			}
-			const result = await resolveTranscriptionAlias(src, originalEdit, progress => {
+			const result = await resolveTranscriptionAlias(src, resolvedEdit, progress => {
 				this.edit.events.emit(EditEvent.TranscriptionProgress, {
 					clipAlias,
 					...progress

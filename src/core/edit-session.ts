@@ -1,7 +1,6 @@
 import { type Player, PlayerType } from "@canvas/players/player";
 import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
-import { resolveAliasReferences } from "@core/alias";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
@@ -27,8 +26,9 @@ import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
 import { SelectionManager } from "@core/selection-manager";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
-import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
+import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
 import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec } from "@core/timing/types";
+import { TimingManager } from "@core/timing-manager";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -67,7 +67,6 @@ export class Edit {
 	private backgroundColor: string;
 
 	// ─── Primary State ────────────────────────────────────────────────────────
-	private edit: ResolvedEdit | null;
 	private tracks: Player[][];
 	public playbackTime: Seconds;
 	public totalDuration: Seconds;
@@ -77,10 +76,6 @@ export class Edit {
 	private get clips(): Player[] {
 		return this.tracks.flat();
 	}
-	private get endLengthClips(): Player[] {
-		return this.clips.filter(c => c.getTimingIntent().length === "end");
-	}
-	private cachedTimelineEnd: number = 0;
 
 	// ─── Services ─────────────────────────────────────────────────────────────
 	/** @internal */
@@ -90,6 +85,7 @@ export class Edit {
 	private canvas: Canvas | null = null;
 
 	// ─── Subsystems ──────────────────────────────────────────────────────────-
+	private timingManager!: TimingManager;
 	private lumaMaskController: LumaMaskController;
 	private playerReconciler: PlayerReconciler;
 	private outputSettings!: OutputSettingsManager;
@@ -115,7 +111,6 @@ export class Edit {
 	 * Create an Edit instance from a template configuration.
 	 */
 	constructor(template: EditConfig) {
-		this.edit = null;
 		this.tracks = [];
 		this.playbackTime = sec(0);
 		this.totalDuration = sec(0);
@@ -140,6 +135,7 @@ export class Edit {
 		this.mergeFieldService = new MergeFieldService(this.events);
 		this.outputSettings = new OutputSettingsManager(this);
 		this.selectionManager = new SelectionManager(this);
+		this.timingManager = new TimingManager(this);
 
 		this.setupIntentListeners();
 	}
@@ -167,13 +163,11 @@ export class Edit {
 		// Apply merge field substitutions for initial load
 		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(rawEdit as ResolvedEdit, serializedMergeFields) : rawEdit;
 
-		const parsedEdit = EditSchema.parse(mergedEdit) as EditConfig as ResolvedEdit;
-		resolveAliasReferences(parsedEdit as unknown as EditConfig);
-		this.edit = parsedEdit;
+		const parsedEdit = EditSchema.parse(mergedEdit) as EditConfig;
 
 		// Load fonts and store metadata for rich-text font resolution
 		await Promise.all(
-			(this.edit.timeline.fonts ?? []).map(async font => {
+			(parsedEdit.timeline.fonts ?? []).map(async font => {
 				const identifier = font.src;
 				const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: FontLoadParser.Name };
 
@@ -190,10 +184,10 @@ export class Edit {
 		);
 
 		// Create players for each clip
-		for (const [trackIdx, track] of this.edit.timeline.tracks.entries()) {
+		for (const [trackIdx, track] of parsedEdit.timeline.tracks.entries()) {
 			for (const [clipIdx, clip] of track.clips.entries()) {
 				try {
-					const clipPlayer = this.createPlayerFromAssetType(clip);
+					const clipPlayer = this.createPlayerFromAssetType(clip as ResolvedClip);
 					clipPlayer.layer = trackIdx + 1;
 
 					// Set stable clip ID from document for reconciliation
@@ -228,13 +222,13 @@ export class Edit {
 		this.lumaMaskController.initialize();
 
 		// Resolve timing for all clips
-		await this.resolveAllTiming();
+		await this.timingManager.resolveAllTiming();
 
 		// Update total duration
 		this.updateTotalDuration();
 
 		// Load soundtrack if present
-		if (this.edit.timeline.soundtrack) await this.loadSoundtrack(this.edit.timeline.soundtrack);
+		if (parsedEdit.timeline.soundtrack) await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
 
 		// Emit events
 		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
@@ -314,12 +308,15 @@ export class Edit {
 	 * Reload the edit with a new configuration (hot-reload).
 	 */
 	public async loadEdit(edit: EditConfig): Promise<void> {
-		if (this.edit && !this.hasStructuralChanges(edit)) {
+		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
 			this.preserveClipIdsForGranularUpdate(edit);
+
+			const oldTracks = this.document.getTracks();
+			const oldOutput = this.document.getOutput();
 
 			this.document = new EditDocument(edit);
 			this.isBatchingEvents = true;
-			await this.applyGranularChanges(edit);
+			await this.applyGranularChanges(edit, oldTracks, oldOutput);
 			this.isBatchingEvents = false;
 			this.emitEditChanged("loadEdit:granular");
 			return;
@@ -396,9 +393,9 @@ export class Edit {
 			timeline: {
 				background: this.backgroundColor,
 				tracks,
-				fonts: this.edit?.timeline.fonts || []
+				fonts: this.document.getFonts()
 			},
-			output: this.edit?.output || { size: this.size, format: "mp4" }
+			output: this.document.getOutput()
 		};
 	}
 
@@ -425,14 +422,6 @@ export class Edit {
 	 */
 	public getDocumentClip(trackIdx: number, clipIdx: number): Clip | null {
 		return this.document?.getClip(trackIdx, clipIdx) ?? null;
-	}
-
-	/**
-	 * Get the original parsed edit configuration.
-	 * @internal
-	 */
-	public getOriginalEdit(): ResolvedEdit | null {
-		return this.edit;
 	}
 
 	/**
@@ -484,7 +473,7 @@ export class Edit {
 		const context: SingleClipContext = {
 			mergeFields: this.mergeFieldService,
 			previousClipEnd,
-			cachedTimelineEnd: sec(this.cachedTimelineEnd)
+			cachedTimelineEnd: this.timingManager.getTimelineEnd()
 		};
 
 		// Resolve just this one clip
@@ -1051,9 +1040,9 @@ export class Edit {
 	 * Checks if edit has structural changes requiring full reload.
 	 */
 	private hasStructuralChanges(newEdit: EditConfig): boolean {
-		if (!this.edit) return true;
+		if (!this.document) return true;
 
-		const currentTracks = this.edit.timeline.tracks;
+		const currentTracks = this.document.getTracks();
 		const newTracks = newEdit.timeline.tracks;
 
 		// Different track count = structural
@@ -1073,12 +1062,12 @@ export class Edit {
 		}
 
 		// Merge fields changed = structural (affects asset resolution)
-		if (JSON.stringify(this.edit.merge ?? []) !== JSON.stringify(newEdit.merge ?? [])) {
+		if (JSON.stringify(this.document.getMergeFields() ?? []) !== JSON.stringify(newEdit.merge ?? [])) {
 			return true;
 		}
 
 		// Fonts changed = structural (requires re-loading fonts)
-		if (JSON.stringify(this.edit.timeline.fonts ?? []) !== JSON.stringify(newEdit.timeline.fonts ?? [])) {
+		if (JSON.stringify(this.document.getFonts()) !== JSON.stringify(newEdit.timeline.fonts ?? [])) {
 			return true;
 		}
 
@@ -1112,35 +1101,37 @@ export class Edit {
 
 	/**
 	 * Applies granular changes without full reload.
+	 * @param newEdit - The new edit configuration
+	 * @param oldTracks - The old tracks (captured before document update)
+	 * @param oldOutput - The old output settings (captured before document update)
 	 */
-	private async applyGranularChanges(newEdit: EditConfig): Promise<void> {
-		const currentOutput = this.edit?.output;
+	private async applyGranularChanges(newEdit: EditConfig, oldTracks: Track[], oldOutput: EditConfig["output"]): Promise<void> {
 		const newOutput = newEdit.output;
 
 		// 1. Apply output changes
-		if (newOutput?.size && (currentOutput?.size?.width !== newOutput.size.width || currentOutput?.size?.height !== newOutput.size.height)) {
+		if (newOutput?.size && (oldOutput?.size?.width !== newOutput.size.width || oldOutput?.size?.height !== newOutput.size.height)) {
 			const width = newOutput.size.width ?? this.size.width;
 			const height = newOutput.size.height ?? this.size.height;
 			await this.setOutputSize(width, height);
 		}
 
-		if (newOutput?.fps !== undefined && currentOutput?.fps !== newOutput.fps) {
+		if (newOutput?.fps !== undefined && oldOutput?.fps !== newOutput.fps) {
 			await this.setOutputFps(newOutput.fps);
 		}
 
-		if (newOutput?.format !== undefined && currentOutput?.format !== newOutput.format) {
+		if (newOutput?.format !== undefined && oldOutput?.format !== newOutput.format) {
 			await this.setOutputFormat(newOutput.format);
 		}
 
-		if (newOutput?.destinations && JSON.stringify(currentOutput?.destinations) !== JSON.stringify(newOutput.destinations)) {
+		if (newOutput?.destinations && JSON.stringify(oldOutput?.destinations) !== JSON.stringify(newOutput.destinations)) {
 			await this.setOutputDestinations(newOutput.destinations);
 		}
 
-		if (newOutput?.resolution !== undefined && currentOutput?.resolution !== newOutput.resolution) {
+		if (newOutput?.resolution !== undefined && oldOutput?.resolution !== newOutput.resolution) {
 			await this.setOutputResolution(newOutput.resolution);
 		}
 
-		if (newOutput?.aspectRatio !== undefined && currentOutput?.aspectRatio !== newOutput.aspectRatio) {
+		if (newOutput?.aspectRatio !== undefined && oldOutput?.aspectRatio !== newOutput.aspectRatio) {
 			await this.setOutputAspectRatio(newOutput.aspectRatio);
 		}
 
@@ -1150,19 +1141,18 @@ export class Edit {
 		}
 
 		// 2. Diff and update each clip
-		const currentTracks = this.edit!.timeline.tracks;
 		const newTracks = newEdit.timeline.tracks;
 
 		for (let trackIdx = 0; trackIdx < newTracks.length; trackIdx += 1) {
-			const currentClips = currentTracks[trackIdx].clips;
+			const oldClips = oldTracks[trackIdx].clips;
 			const newClips = newTracks[trackIdx].clips;
 
 			for (let clipIdx = 0; clipIdx < newClips.length; clipIdx += 1) {
-				const currentClip = currentClips[clipIdx];
+				const oldClip = oldClips[clipIdx];
 				const newClip = newClips[clipIdx];
 
 				// Only update if clip changed
-				if (JSON.stringify(currentClip) !== JSON.stringify(newClip)) {
+				if (JSON.stringify(oldClip) !== JSON.stringify(newClip)) {
 					// Cast since newClip may have "auto"/"end" strings; updateClip handles resolution
 					// eslint-disable-next-line no-await-in-loop
 					await this.updateClip(trackIdx, clipIdx, newClip as unknown as Partial<ResolvedClip>);
@@ -1509,7 +1499,7 @@ export class Edit {
 		this.unloadClipAssets(clip);
 
 		// Invalidate cache since timeline end may have changed
-		this.cachedTimelineEnd = 0;
+		this.timingManager.invalidateTimelineEndCache();
 
 		clip.dispose();
 	}
@@ -1537,7 +1527,8 @@ export class Edit {
 		this.updateTotalDuration();
 	}
 
-	private updateTotalDuration(): void {
+	/** @internal */
+	public updateTotalDuration(): void {
 		let maxDurationSeconds = 0;
 
 		for (const track of this.tracks) {
@@ -1557,92 +1548,9 @@ export class Edit {
 		}
 	}
 
-	private async resolveAllTiming(): Promise<void> {
-		for (let trackIdx = 0; trackIdx < this.tracks.length; trackIdx += 1) {
-			for (let clipIdx = 0; clipIdx < this.tracks[trackIdx].length; clipIdx += 1) {
-				const clip = this.tracks[trackIdx][clipIdx];
-				const intent = clip.getTimingIntent();
-
-				let resolvedStart: Seconds;
-				if (intent.start === "auto") {
-					resolvedStart = resolveAutoStart(trackIdx, clipIdx, this.tracks);
-				} else {
-					resolvedStart = intent.start;
-				}
-
-				let resolvedLength: Seconds;
-				if (intent.length === "auto") {
-					resolvedLength = await resolveAutoLength(clip.clipConfiguration.asset);
-				} else if (intent.length === "end") {
-					resolvedLength = sec(0);
-				} else {
-					resolvedLength = intent.length;
-				}
-
-				clip.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
-			}
-		}
-
-		const timelineEnd = calculateTimelineEnd(this.tracks);
-
-		this.cachedTimelineEnd = timelineEnd;
-
-		for (const clip of [...this.endLengthClips]) {
-			const resolved = clip.getResolvedTiming();
-			clip.setResolvedTiming({
-				start: resolved.start,
-				length: resolveEndLength(resolved.start, timelineEnd)
-			});
-		}
-
-		// After timing is resolved, reconfigure ALL "end" clips to rebuild keyframes
-		for (const clip of this.endLengthClips) {
-			clip.reconfigureAfterRestore();
-		}
-	}
-
 	/** @internal */
 	public propagateTimingChanges(trackIndex: number, startFromClipIndex: number): void {
-		const track = this.tracks[trackIndex];
-		if (!track) return;
-
-		// Include the clip itself (not just subsequent clips) so auto start on first clip resolves to 0
-		for (let i = Math.max(0, startFromClipIndex); i < track.length; i += 1) {
-			const clip = track[i];
-			if (clip.getTimingIntent().start === "auto") {
-				const newStart = resolveAutoStart(trackIndex, i, this.tracks);
-				clip.setResolvedTiming({
-					start: newStart,
-					length: clip.getLength()
-				});
-				clip.reconfigureAfterRestore();
-			}
-		}
-
-		const newTimelineEnd = calculateTimelineEnd(this.tracks);
-		if (newTimelineEnd !== this.cachedTimelineEnd) {
-			this.cachedTimelineEnd = newTimelineEnd;
-
-			for (const clip of [...this.endLengthClips]) {
-				const newLength = resolveEndLength(clip.getStart(), newTimelineEnd);
-				const currentLength = clip.getLength();
-
-				if (Math.abs(newLength - currentLength) > 0.001) {
-					clip.setResolvedTiming({
-						start: clip.getStart(),
-						length: newLength
-					});
-					clip.reconfigureAfterRestore();
-				}
-			}
-		}
-
-		this.updateTotalDuration();
-
-		// Notify Timeline to update visuals with new timing (use resolved values)
-		this.events.emit(EditEvent.TimelineUpdated, {
-			current: this.getResolvedEdit()
-		});
+		this.timingManager.propagateTimingChanges(trackIndex, startFromClipIndex);
 	}
 
 	/** @internal */
@@ -1925,7 +1833,7 @@ export class Edit {
 	}
 
 	public getTimelineFonts(): Array<{ src: string }> {
-		return this.edit?.timeline?.fonts ?? [];
+		return this.document.getFonts();
 	}
 
 	/**
@@ -1976,15 +1884,8 @@ export class Edit {
 
 		this.backgroundColor = result.data;
 
-		if (this.edit) {
-			this.edit.timeline = {
-				...this.edit.timeline,
-				background: result.data
-			};
-		}
-
 		// Sync with document layer
-		this.document?.setBackground(result.data);
+		this.document.setBackground(result.data);
 
 		this.events.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,

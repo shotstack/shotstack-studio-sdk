@@ -5,7 +5,15 @@ import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
-import { type ResolvedTiming, type Seconds, type TimingIntent, type TimingValue, sec } from "@core/timing/types";
+import {
+	type AliasReference,
+	type ResolvedTiming,
+	type Seconds,
+	type TimingIntent,
+	type TimingValue,
+	isAliasReference,
+	sec
+} from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
@@ -300,15 +308,30 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Get timing intent from document (source of truth).
-	 * Returns "auto"/"end" strings as stored in the document, not resolved numeric values.
+	 * Returns "auto"/"end"/"alias://x" strings as stored in the document, not resolved numeric values.
 	 */
 	public getTimingIntent(): TimingIntent {
-		// Read timing intent from document (source of truth)
 		if (this.clipId) {
 			const docClip = this.edit.getDocumentClipById(this.clipId);
 			if (docClip) {
-				const startIntent = docClip.start === "auto" ? "auto" : (docClip.start as Seconds);
-				const lengthIntent = (typeof docClip.length === "string" ? docClip.length : docClip.length) as TimingValue;
+				let startIntent: Seconds | "auto" | AliasReference;
+				if (docClip.start === "auto") {
+					startIntent = "auto";
+				} else if (isAliasReference(docClip.start)) {
+					startIntent = docClip.start as AliasReference;
+				} else {
+					startIntent = docClip.start as Seconds;
+				}
+
+				let lengthIntent: TimingValue;
+				if (docClip.length === "auto" || docClip.length === "end") {
+					lengthIntent = docClip.length;
+				} else if (isAliasReference(docClip.length)) {
+					lengthIntent = docClip.length as AliasReference;
+				} else {
+					lengthIntent = docClip.length as Seconds;
+				}
+
 				return { start: startIntent, length: lengthIntent };
 			}
 		}

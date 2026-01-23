@@ -82,7 +82,7 @@ export class OutputSettingsManager {
 		const size: Size = { width, height };
 		this.edit.size = size;
 
-		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
@@ -120,7 +120,7 @@ export class OutputSettingsManager {
 			throw new Error(`Invalid fps: ${result.error.issues[0]?.message}`);
 		}
 
-		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
@@ -136,7 +136,7 @@ export class OutputSettingsManager {
 	}
 
 	getFps(): number {
-		return this.edit.getOriginalEdit()?.output?.fps ?? 30;
+		return this.edit.getResolvedEdit()?.output?.fps ?? 30;
 	}
 
 	// ─── Format ───────────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ export class OutputSettingsManager {
 			throw new Error(`Invalid format: ${result.error.issues[0]?.message}`);
 		}
 
-		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
@@ -162,7 +162,7 @@ export class OutputSettingsManager {
 	}
 
 	getFormat(): string {
-		return this.edit.getOriginalEdit()?.output?.format ?? "mp4";
+		return this.edit.getResolvedEdit()?.output?.format ?? "mp4";
 	}
 
 	// ─── Destinations ─────────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ export class OutputSettingsManager {
 			throw new Error(`Invalid destinations: ${result.error.message}`);
 		}
 
-		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
@@ -185,7 +185,7 @@ export class OutputSettingsManager {
 	}
 
 	getDestinations(): Destination[] {
-		return this.edit.getOriginalEdit()?.output?.destinations ?? [];
+		return this.edit.getResolvedEdit()?.output?.destinations ?? [];
 	}
 
 	// ─── Resolution ───────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export class OutputSettingsManager {
 		}
 
 		const validatedResolution = result.data;
-		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolvedEdit = this.edit.getResolvedEdit();
 		const aspectRatio = resolvedEdit?.output?.aspectRatio ?? "16:9";
 		const newSize = calculateSizeFromPreset(validatedResolution, aspectRatio);
 
@@ -225,7 +225,7 @@ export class OutputSettingsManager {
 	}
 
 	getResolution(): string | undefined {
-		return this.edit.getOriginalEdit()?.output?.resolution;
+		return this.edit.getResolvedEdit()?.output?.resolution;
 	}
 
 	// ─── Aspect Ratio ─────────────────────────────────────────────────────────
@@ -237,7 +237,7 @@ export class OutputSettingsManager {
 		}
 
 		const validatedAspectRatio = result.data;
-		const resolvedEdit = this.edit.getOriginalEdit();
+		const resolvedEdit = this.edit.getResolvedEdit();
 		const resolution = resolvedEdit?.output?.resolution;
 
 		if (!resolution) {
@@ -280,6 +280,6 @@ export class OutputSettingsManager {
 	}
 
 	getAspectRatio(): string | undefined {
-		return this.edit.getOriginalEdit()?.output?.aspectRatio;
+		return this.edit.getResolvedEdit()?.output?.aspectRatio;
 	}
 }

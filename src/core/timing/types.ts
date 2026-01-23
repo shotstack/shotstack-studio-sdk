@@ -56,12 +56,32 @@ export function ms(value: number): Milliseconds {
 // ─── Timing Types ────────────────────────────────────────────────────────────
 
 /**
+ * An alias reference to another clip's timing.
+ */
+export type AliasReference = `alias://${string}`;
+
+/**
+ * Check if a value is an alias reference string.
+ */
+export function isAliasReference(value: unknown): value is AliasReference {
+	return typeof value === "string" && /^alias:\/\/[a-zA-Z0-9_-]+$/.test(value);
+}
+
+/**
+ * Extract the alias name from an alias reference.
+ */
+export function parseAliasName(value: AliasReference): string {
+	return value.replace(/^alias:\/\//, "");
+}
+
+/**
  * A timing value can be a numeric value (in seconds) or a special string.
  * - "auto" for start: position after previous clip on track
  * - "auto" for length: asset's intrinsic duration
  * - "end" for length: extend to timeline end
+ * - "alias://x" for start/length: reference another clip's timing
  */
-export type TimingValue = Seconds | "auto" | "end";
+export type TimingValue = Seconds | "auto" | "end" | AliasReference;
 
 /**
  * Stores the original timing intent as specified by the user.
@@ -69,7 +89,7 @@ export type TimingValue = Seconds | "auto" | "end";
  * All numeric values are in seconds.
  */
 export interface TimingIntent {
-	start: Seconds | "auto";
+	start: Seconds | "auto" | AliasReference;
 	length: TimingValue;
 }
 

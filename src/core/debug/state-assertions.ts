@@ -6,7 +6,7 @@
  */
 
 import { resolveTimingIntent } from "@core/timing/resolver";
-import type { ResolutionContext, ResolvedTiming, Seconds, TimingIntent } from "@core/timing/types";
+import type { ResolutionContext, ResolvedTiming, TimingIntent, TimingValue } from "@core/timing/types";
 
 /**
  * Check if we're in a development/debug build.
@@ -24,7 +24,7 @@ const TIMING_EPSILON = 0.001;
 /**
  * Format a timing value for error messages.
  */
-function formatTimingValue(value: Seconds | "auto" | "end"): string {
+function formatTimingValue(value: TimingValue | "auto"): string {
 	if (typeof value === "string") return `"${value}"`;
 	return `${value}s`;
 }

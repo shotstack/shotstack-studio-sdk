@@ -6,13 +6,21 @@
 import type { Player } from "@canvas/players/player";
 import type { Asset } from "@schemas";
 
-import { type ResolutionContext, type ResolvedTiming, type Seconds, type TimingIntent, sec } from "./types";
+import { type ResolutionContext, type ResolvedTiming, type Seconds, type TimingIntent, isAliasReference, sec } from "./types";
 
 const DEFAULT_AUTO_LENGTH_FALLBACK = sec(1);
 
 const DEFAULT_AUTO_LENGTH_SEC = sec(3);
 
 export function resolveTimingIntent(intent: TimingIntent, context: Readonly<ResolutionContext>): ResolvedTiming {
+	// Alias references must be resolved before calling this function
+	if (isAliasReference(intent.start)) {
+		throw new Error(`Cannot resolve alias reference "${intent.start}" - aliases must be resolved by TimingManager first`);
+	}
+	if (isAliasReference(intent.length)) {
+		throw new Error(`Cannot resolve alias reference "${intent.length}" - aliases must be resolved by TimingManager first`);
+	}
+
 	// Resolve start
 	const start: Seconds = intent.start === "auto" ? context.previousClipEnd : intent.start;
 

@@ -273,16 +273,16 @@ function getEditState(edit: Edit): {
 	cachedTimelineEnd: number;
 } {
 	const anyEdit = edit as unknown as {
-		tracks: unknown[][];
-		clips: unknown[];
-		endLengthClips: unknown[];
-		cachedTimelineEnd: number;
+		tracks: Array<Array<{ getTimingIntent: () => { length: unknown } }>>;
+		timingManager: { getTimelineEnd: () => number };
 	};
+	const allClips = anyEdit.tracks.flat();
+	const endLengthClips = allClips.filter(c => c.getTimingIntent().length === "end");
 	return {
 		tracks: anyEdit.tracks,
-		clips: anyEdit.clips,
-		endLengthClips: anyEdit.endLengthClips,
-		cachedTimelineEnd: anyEdit.cachedTimelineEnd
+		clips: allClips,
+		endLengthClips,
+		cachedTimelineEnd: anyEdit.timingManager.getTimelineEnd()
 	};
 }
 
