@@ -582,21 +582,21 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			await edit.addClip(1, createVideoClip(0, 8));
 
-			expect(edit.getTotalDuration()).toBe(8000); // in milliseconds
+			expect(edit.totalDuration).toBe(8); // in seconds
 		});
 
 		it("duration is 0 with no clips", () => {
-			expect(edit.getTotalDuration()).toBe(0);
+			expect(edit.totalDuration).toBe(0);
 		});
 
 		it("duration updates when clip is deleted", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			await edit.addClip(1, createVideoClip(0, 8));
-			expect(edit.getTotalDuration()).toBe(8000);
+			expect(edit.totalDuration).toBe(8);
 
 			edit.deleteClip(1, 0);
 
-			expect(edit.getTotalDuration()).toBe(5000);
+			expect(edit.totalDuration).toBe(5);
 		});
 	});
 

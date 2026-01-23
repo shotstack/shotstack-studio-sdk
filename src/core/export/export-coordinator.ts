@@ -179,12 +179,12 @@ export class ExportCoordinator {
 	private prepareConfig(fps: number): ExportConfig {
 		const outputSize = this.edit.getEdit().output?.size;
 		const size = { width: outputSize?.width ?? 1920, height: outputSize?.height ?? 1080 };
-		const durationSec = this.edit.totalDuration / 1000;
+		// totalDuration is in seconds
 		return {
 			fps,
 			size,
-			frames: Math.ceil(durationSec * fps),
-			frameDuration: 1000 / fps
+			frames: Math.ceil(this.edit.totalDuration * fps),
+			frameDuration: 1 / fps // seconds per frame
 		};
 	}
 

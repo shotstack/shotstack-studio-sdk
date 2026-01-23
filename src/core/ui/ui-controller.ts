@@ -560,7 +560,7 @@ export class UIController {
 	 */
 	emitButtonClick(buttonId: string): void {
 		const payload: ButtonClickPayload = {
-			position: this.edit.playbackTime / 1000,
+			position: this.edit.playbackTime, // playbackTime is in seconds
 			selectedClip: this.edit.getSelectedClipInfo()
 		};
 		this.buttonEvents.emit(`button:${buttonId}`, payload);
@@ -571,7 +571,7 @@ export class UIController {
 	 * @internal Used by AssetToolbar
 	 */
 	getPlaybackTime(): number {
-		return this.edit.playbackTime / 1000;
+		return this.edit.playbackTime; // playbackTime is in seconds
 	}
 
 	/**

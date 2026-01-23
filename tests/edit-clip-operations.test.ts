@@ -357,11 +357,11 @@ describe("Edit Clip Operations", () => {
 		});
 
 		it("updates totalDuration", async () => {
-			expect(edit.getTotalDuration()).toBe(0);
+			expect(edit.totalDuration).toBe(0);
 
 			await edit.addClip(0, createVideoClip(0, 5));
 
-			expect(edit.getTotalDuration()).toBe(5000); // 5 seconds in ms
+			expect(edit.totalDuration).toBe(5); // 5 seconds
 		});
 
 		it("adds multiple clips to same track", async () => {
@@ -370,7 +370,7 @@ describe("Edit Clip Operations", () => {
 
 			const { tracks } = getEditState(edit);
 			expect(tracks[0].length).toBe(2);
-			expect(edit.getTotalDuration()).toBe(5000);
+			expect(edit.totalDuration).toBe(5);
 		});
 
 		it("is undoable - clip removed on undo", async () => {
@@ -415,11 +415,11 @@ describe("Edit Clip Operations", () => {
 
 		it("updates totalDuration after deletion", async () => {
 			await edit.addClip(0, createVideoClip(5, 3)); // Add second clip
-			expect(edit.getTotalDuration()).toBe(8000);
+			expect(edit.totalDuration).toBe(8);
 
 			edit.deleteClip(0, 1); // Delete second clip
 
-			expect(edit.getTotalDuration()).toBe(5000);
+			expect(edit.totalDuration).toBe(5);
 		});
 
 		it("is undoable - clip restored on undo", async () => {
@@ -735,22 +735,22 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			await edit.addClip(1, createImageClip(0, 8));
 
-			expect(edit.getTotalDuration()).toBe(8000);
+			expect(edit.totalDuration).toBe(8);
 		});
 
 		it("duration updates when clips change", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
-			expect(edit.getTotalDuration()).toBe(5000);
+			expect(edit.totalDuration).toBe(5);
 
 			await edit.addClip(0, createVideoClip(5, 3));
-			expect(edit.getTotalDuration()).toBe(8000);
+			expect(edit.totalDuration).toBe(8);
 
 			edit.deleteClip(0, 1);
-			expect(edit.getTotalDuration()).toBe(5000);
+			expect(edit.totalDuration).toBe(5);
 		});
 
 		it("duration is 0 with no clips", async () => {
-			expect(edit.getTotalDuration()).toBe(0);
+			expect(edit.totalDuration).toBe(0);
 		});
 	});
 

@@ -1,13 +1,12 @@
 /**
- * Player Sync Regression Tests
+ * Player Sync Tests
  *
  * These tests verify that player time calculations use correct units (seconds).
- * This prevents regression of a bug where getPlaybackTime() returned seconds
- * but sync code was treating it as milliseconds (dividing by 1000).
+ * Both edit.playbackTime and player.getPlaybackTime() are in seconds.
  *
  * Key invariants tested:
- * - getPlaybackTime() returns seconds (not milliseconds)
- * - getCurrentDrift() returns seconds (not milliseconds)
+ * - getPlaybackTime() returns seconds relative to clip start
+ * - getCurrentDrift() returns seconds (video vs expected time)
  * - Time values are consistent across all player types
  */
 
@@ -181,9 +180,9 @@ function createMockVideoElement(): HTMLVideoElement {
 	} as unknown as HTMLVideoElement;
 }
 
-function createMockEdit(playbackTimeMs: number): Edit {
+function createMockEdit(playbackTimeSec: number): Edit {
 	return {
-		playbackTime: playbackTimeMs,
+		playbackTime: playbackTimeSec,
 		isPlaying: true,
 		recordSyncCorrection: jest.fn(),
 		assetLoader: {
@@ -235,22 +234,21 @@ function createCaptionClipConfig(start = 0): ResolvedClip {
 
 describe("VideoPlayer", () => {
 	describe("getPlaybackTime", () => {
-		it("returns time in seconds (not milliseconds)", () => {
-			// edit.playbackTime = 2500ms (2.5 seconds from timeline start)
-			const mockEdit = createMockEdit(2500);
+		it("returns time in seconds", () => {
+			// edit.playbackTime = 2.5 seconds from timeline start
+			const mockEdit = createMockEdit(2.5);
 
 			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0, 0));
 
-			// getPlaybackTime() should return 2.5 (seconds), not 2500 (ms)
+			// getPlaybackTime() should return 2.5 seconds
 			const playbackTime = player.getPlaybackTime();
 
 			expect(playbackTime).toBe(2.5);
-			expect(playbackTime).not.toBe(2500);
 		});
 
 		it("accounts for clip start time", () => {
-			// edit.playbackTime = 5000ms, clip starts at 2 seconds
-			const mockEdit = createMockEdit(5000);
+			// edit.playbackTime = 5 seconds, clip starts at 2 seconds
+			const mockEdit = createMockEdit(5);
 
 			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0, 2));
 
@@ -259,8 +257,8 @@ describe("VideoPlayer", () => {
 		});
 
 		it("clamps to 0 when before clip start", () => {
-			// edit.playbackTime = 1000ms, but clip starts at 2 seconds
-			const mockEdit = createMockEdit(1000);
+			// edit.playbackTime = 1 second, but clip starts at 2 seconds
+			const mockEdit = createMockEdit(1);
 
 			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0, 2));
 
@@ -269,8 +267,8 @@ describe("VideoPlayer", () => {
 		});
 
 		it("clamps to clip length when past end", () => {
-			// edit.playbackTime = 15000ms, clip is 10 seconds long starting at 0
-			const mockEdit = createMockEdit(15000);
+			// edit.playbackTime = 15 seconds, clip is 10 seconds long starting at 0
+			const mockEdit = createMockEdit(15);
 
 			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0, 0));
 
@@ -280,8 +278,8 @@ describe("VideoPlayer", () => {
 	});
 
 	describe("getCurrentDrift", () => {
-		it("returns drift in seconds (not milliseconds)", () => {
-			const mockEdit = createMockEdit(3000); // 3 seconds
+		it("returns drift in seconds", () => {
+			const mockEdit = createMockEdit(3); // 3 seconds
 			const mockVideoElement = createMockVideoElement();
 			const trim = 0.5;
 
@@ -304,14 +302,12 @@ describe("VideoPlayer", () => {
 
 			// Drift should be 0.5 seconds
 			expect(drift).toBe(0.5);
-			// NOT 500 milliseconds
-			expect(drift).not.toBe(500);
 			// Should be a small decimal, not hundreds
 			expect(drift).toBeLessThan(10);
 		});
 
 		it("handles zero drift correctly", () => {
-			const mockEdit = createMockEdit(2000); // 2 seconds
+			const mockEdit = createMockEdit(2); // 2 seconds
 			const mockVideoElement = createMockVideoElement();
 			const trim = 1.0;
 
@@ -339,17 +335,16 @@ describe("VideoPlayer", () => {
 
 describe("AudioPlayer", () => {
 	describe("getPlaybackTime", () => {
-		it("returns time in seconds (not milliseconds)", () => {
-			const mockEdit = createMockEdit(4500); // 4.5 seconds
+		it("returns time in seconds", () => {
+			const mockEdit = createMockEdit(4.5); // 4.5 seconds
 
 			const player = new AudioPlayer(mockEdit, createAudioClipConfig(0, 0));
 
 			expect(player.getPlaybackTime()).toBe(4.5);
-			expect(player.getPlaybackTime()).not.toBe(4500);
 		});
 
 		it("accounts for clip start time", () => {
-			const mockEdit = createMockEdit(6000); // 6 seconds
+			const mockEdit = createMockEdit(6); // 6 seconds
 
 			const player = new AudioPlayer(mockEdit, createAudioClipConfig(0, 1));
 
@@ -365,13 +360,12 @@ describe("AudioPlayer", () => {
 
 describe("LumaPlayer", () => {
 	describe("getPlaybackTime", () => {
-		it("returns time in seconds (not milliseconds)", () => {
-			const mockEdit = createMockEdit(6000); // 6 seconds
+		it("returns time in seconds", () => {
+			const mockEdit = createMockEdit(6); // 6 seconds
 
 			const player = new LumaPlayer(mockEdit, createLumaClipConfig(0));
 
 			expect(player.getPlaybackTime()).toBe(6);
-			expect(player.getPlaybackTime()).not.toBe(6000);
 		});
 	});
 });
@@ -382,13 +376,12 @@ describe("LumaPlayer", () => {
 
 describe("CaptionPlayer", () => {
 	describe("getPlaybackTime", () => {
-		it("returns time in seconds (not milliseconds)", () => {
-			const mockEdit = createMockEdit(7500); // 7.5 seconds
+		it("returns time in seconds", () => {
+			const mockEdit = createMockEdit(7.5); // 7.5 seconds
 
 			const player = new CaptionPlayer(mockEdit, createCaptionClipConfig(0));
 
 			expect(player.getPlaybackTime()).toBe(7.5);
-			expect(player.getPlaybackTime()).not.toBe(7500);
 		});
 	});
 });
@@ -400,7 +393,7 @@ describe("CaptionPlayer", () => {
 describe("Regression guards", () => {
 	describe("time unit consistency across all players", () => {
 		it("all players return getPlaybackTime in seconds for same edit.playbackTime", () => {
-			const mockEdit = createMockEdit(5000); // 5000ms = 5 seconds
+			const mockEdit = createMockEdit(5); // 5 seconds
 
 			const videoPlayer = new VideoPlayer(mockEdit, createVideoClipConfig(0, 0));
 			const audioPlayer = new AudioPlayer(mockEdit, createAudioClipConfig(0, 0));
@@ -412,34 +405,25 @@ describe("Regression guards", () => {
 			expect(audioPlayer.getPlaybackTime()).toBe(5);
 			expect(lumaPlayer.getPlaybackTime()).toBe(5);
 			expect(captionPlayer.getPlaybackTime()).toBe(5);
-
-			// None should return milliseconds
-			expect(videoPlayer.getPlaybackTime()).not.toBe(5000);
-			expect(audioPlayer.getPlaybackTime()).not.toBe(5000);
-			expect(lumaPlayer.getPlaybackTime()).not.toBe(5000);
-			expect(captionPlayer.getPlaybackTime()).not.toBe(5000);
 		});
 
-		it("verifies values are small decimals (seconds) not large integers (milliseconds)", () => {
-			// Use 8000ms (8 seconds) - within the 10s clip length
-			const mockEdit = createMockEdit(8000);
+		it("verifies values are small decimals (seconds)", () => {
+			// Use 8 seconds - within the 10s clip length
+			const mockEdit = createMockEdit(8);
 
 			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0, 0));
 			const playbackTime = player.getPlaybackTime();
 
-			// Seconds: should be exactly 8 (small decimal value)
+			// Should be exactly 8 seconds
 			expect(playbackTime).toBe(8);
-
-			// Milliseconds would be 8000 (much larger)
-			expect(playbackTime).not.toBe(8000);
 			// Should be a small value, not hundreds or thousands
 			expect(playbackTime).toBeLessThan(100);
 		});
 	});
 
 	describe("drift calculation unit consistency", () => {
-		it("getCurrentDrift returns small values (seconds) not large values (milliseconds)", () => {
-			const mockEdit = createMockEdit(5000);
+		it("getCurrentDrift returns small values (seconds)", () => {
+			const mockEdit = createMockEdit(5);
 			const mockVideoElement = createMockVideoElement();
 
 			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0, 0));
@@ -459,7 +443,7 @@ describe("Regression guards", () => {
 
 			// Drift in seconds: 0.3
 			expect(drift).toBeCloseTo(0.3, 1);
-			// Drift in milliseconds would be 300
+			// Should be a small value
 			expect(drift).not.toBeGreaterThan(10);
 		});
 	});

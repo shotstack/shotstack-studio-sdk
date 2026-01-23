@@ -115,7 +115,7 @@ export class TimelineStateManager {
 	// ========== Utilities ==========
 
 	public getTimelineDuration(): number {
-		return this.edit.totalDuration / 1000;
+		return this.edit.totalDuration; // totalDuration is in seconds
 	}
 
 	public getExtendedDuration(): number {

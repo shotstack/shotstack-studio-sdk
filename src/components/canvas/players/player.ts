@@ -351,8 +351,7 @@ export abstract class Player extends Entity {
 	 * Get the playback time relative to clip start, in seconds.
 	 */
 	public getPlaybackTime(): number {
-		const playbackTimeSeconds = this.edit.playbackTime / 1000;
-		const clipTime = playbackTimeSeconds - this.getStart();
+		const clipTime = this.edit.playbackTime - this.getStart();
 
 		if (clipTime < 0) return 0;
 		if (clipTime > this.getLength()) return this.getLength();
@@ -443,9 +442,8 @@ export abstract class Player extends Entity {
 	}
 
 	public isActive(): boolean {
-		// Convert edit.playbackTime (ms) to seconds for comparison
-		const playbackTimeSeconds = this.edit.playbackTime / 1000;
-		return playbackTimeSeconds >= this.getStart() && playbackTimeSeconds < this.getEnd();
+		// playbackTime is in seconds, matching clip start/end
+		return this.edit.playbackTime >= this.getStart() && this.edit.playbackTime < this.getEnd();
 	}
 
 	public shouldDiscardFrame(): boolean {

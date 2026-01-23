@@ -312,8 +312,8 @@ export class Timeline {
 				{
 					onPlay: () => this.edit.play(),
 					onPause: () => this.edit.pause(),
-					onSkipBack: () => this.edit.seek(Math.max(0, this.edit.playbackTime - 1000)),
-					onSkipForward: () => this.edit.seek(this.edit.playbackTime + 1000),
+					onSkipBack: () => this.edit.seek(Math.max(0, this.edit.playbackTime - 1)),
+					onSkipForward: () => this.edit.seek(this.edit.playbackTime + 1),
 					onZoomChange: pps => this.setZoom(pps)
 				},
 				viewport.pixelsPerSecond

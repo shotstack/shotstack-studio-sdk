@@ -45,7 +45,7 @@ function createMockEdit(tracks: unknown[][] = []) {
 		events,
 		playbackTime: 0,
 		isPlaying: false,
-		totalDuration: 10000,
+		totalDuration: 10,
 		getResolvedEdit: jest.fn(() => ({
 			timeline: {
 				tracks: mockClips.map(clips => ({
@@ -370,7 +370,7 @@ describe("Resolved event cache invalidation regression", () => {
 			events,
 			playbackTime: 0,
 			isPlaying: false,
-			totalDuration: 10000,
+			totalDuration: 10,
 			getResolvedEdit: jest.fn(() => ({
 				timeline: {
 					tracks: [

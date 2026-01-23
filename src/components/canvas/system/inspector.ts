@@ -199,8 +199,7 @@ export class Inspector {
 
 		// Update cached elements with textContent (no DOM tree recreation)
 		if (this.fpsEl) this.fpsEl.textContent = String(fps);
-		if (this.playbackEl)
-			this.playbackEl.textContent = `${isPlaying ? "▶" : "⏸"} ${(playbackTime / 1000).toFixed(1)}s / ${(duration / 1000).toFixed(1)}s`;
+		if (this.playbackEl) this.playbackEl.textContent = `${isPlaying ? "▶" : "⏸"} ${playbackTime.toFixed(1)}s / ${duration.toFixed(1)}s`;
 		if (this.frameStatsEl) this.frameStatsEl.textContent = `Frame: ${frameStats.avgFrameTime.toFixed(0)}/${frameStats.maxFrameTime.toFixed(0)}ms`;
 		if (this.frameSparklineEl) this.frameSparklineEl.textContent = frameSparkline;
 		if (this.jankEl) this.jankEl.textContent = String(frameStats.jankCount);

@@ -2,9 +2,9 @@ import { Edit } from "@core/edit-session";
 
 export class Controls {
 	private edit: Edit;
-	private seekDistance: number = 50;
-	private seekDistanceLarge: number = 500;
-	private frameTime: number = 16.67;
+	private seekDistance: number = 0.05; // 50ms in seconds
+	private seekDistanceLarge: number = 0.5; // 500ms in seconds
+	private frameTime: number = 1 / 60; // ~16.67ms in seconds
 
 	constructor(timeline: Edit) {
 		this.edit = timeline;
@@ -137,8 +137,8 @@ export class Controls {
 					// Go to selected clip end
 					this.edit.seek(selected.player.getEnd());
 				} else {
-					// Go to timeline end
-					this.edit.seek(this.edit.getTotalDuration());
+					// Go to timeline end (totalDuration is in seconds)
+					this.edit.seek(this.edit.totalDuration);
 				}
 				break;
 			}

@@ -67,6 +67,7 @@ export class Edit {
 	 */
 	private static readonly MAX_HISTORY_SIZE = 100;
 
+	/** @internal */
 	public assetLoader: AssetLoader;
 	public events: EventEmitter<EditEventMap & InternalEventMap>;
 
@@ -80,7 +81,6 @@ export class Edit {
 	private tracks: Player[][];
 	private clipsToDispose = new Set<Player>();
 
-	/** Derived from tracks - no longer stored separately */
 	private get clips(): Player[] {
 		return this.tracks.flat();
 	}
@@ -94,23 +94,17 @@ export class Edit {
 	/** @internal */
 	private backgroundColor: string;
 	public totalDuration: number;
-	/** @internal */
 	public isPlaying: boolean;
 	/** @internal */
 	private isExporting: boolean = false;
 
-	// Performance optimization: cache timeline end and track "end" length clips
 	private cachedTimelineEnd: number = 0;
-	/** Derived from clips - no longer stored separately */
 	private get endLengthClips(): Player[] {
 		return this.clips.filter(c => c.getTimingIntent().length === "end");
 	}
 	private isBatchingEvents: boolean = false;
-	// Playback health tracking
 	private syncCorrectionCount: number = 0;
-	/** Output settings manager - handles size, fps, format, resolution, etc. */
 	private outputSettings!: OutputSettingsManager;
-	/** Selection manager - handles clip selection and clipboard state. */
 	private selectionManager!: SelectionManager;
 
 	/**
@@ -141,17 +135,6 @@ export class Edit {
 
 	/**
 	 * Create an Edit instance from a template configuration.
-	 *
-	 * @param template - The Edit JSON configuration (aligns with Shotstack API contract)
-	 *
-	 * @example
-	 * ```typescript
-	 * const edit = new Edit(template);
-	 * await edit.load();
-	 *
-	 * const canvas = new Canvas(edit);
-	 * await canvas.load();
-	 * ```
 	 */
 	constructor(template: EditConfig) {
 		// Create document layer from template (pure data, preserves "auto"/"end"/placeholders)
@@ -415,7 +398,7 @@ export class Edit {
 			},
 			fit: "crop",
 			start: sec(0),
-			length: sec(this.totalDuration / 1000) // totalDuration is in ms
+			length: sec(this.totalDuration)
 		};
 
 		const player = this.createPlayerFromAssetType(clip);
@@ -473,6 +456,7 @@ export class Edit {
 
 	/**
 	 * Get a specific clip from the resolved edit.
+	 * @internal
 	 */
 	public getResolvedClip(trackIdx: number, clipIdx: number): ResolvedClip | null {
 		const resolved = this.getResolvedEdit();
@@ -481,6 +465,7 @@ export class Edit {
 
 	/**
 	 * Get the stable clip ID for a clip at a given position.
+	 * @internal
 	 */
 	public getClipId(trackIdx: number, clipIdx: number): string | null {
 		return this.document?.getClipId(trackIdx, clipIdx) ?? null;
@@ -488,6 +473,7 @@ export class Edit {
 
 	/**
 	 * Get the raw document clip at a given position.
+	 * @internal
 	 */
 	public getDocumentClip(trackIdx: number, clipIdx: number): Clip | null {
 		return this.document?.getClip(trackIdx, clipIdx) ?? null;
@@ -495,6 +481,7 @@ export class Edit {
 
 	/**
 	 * Get the original parsed edit configuration.
+	 * @internal
 	 */
 	public getOriginalEdit(): ResolvedEdit | null {
 		return this.edit;
@@ -525,6 +512,7 @@ export class Edit {
 
 	/**
 	 * Resolve a single clip and update its player.
+	 * @internal
 	 */
 	public resolveClip(clipId: string): boolean {
 		const player = this.getPlayerByClipId(clipId);
@@ -579,6 +567,7 @@ export class Edit {
 
 	/**
 	 * Get the error state for a clip that failed to load.
+	 * @internal
 	 */
 	public getClipError(trackIdx: number, clipIdx: number): { error: string; assetType: string } | null {
 		return this.clipErrors.get(`${trackIdx}-${clipIdx}`) ?? null;
@@ -607,6 +596,7 @@ export class Edit {
 		}
 	}
 
+	/** @internal */
 	public getPlayerClip(trackIdx: number, clipIdx: number): Player | null {
 		const track = this.tracks[trackIdx];
 		if (!track || clipIdx < 0 || clipIdx >= track.length) return null;
@@ -734,7 +724,10 @@ export class Edit {
 		}
 	}
 
-	/** Get the exportable asset for a clip, preserving merge field templates */
+	/**
+	 * Get the exportable asset for a clip, preserving merge field templates.
+	 * @internal
+	 */
 	public getOriginalAsset(trackIndex: number, clipIndex: number): unknown | undefined {
 		const player = this.getPlayerClip(trackIndex, clipIndex);
 		if (!player) return undefined;
@@ -828,10 +821,7 @@ export class Edit {
 		this.executeCommand(command);
 	}
 
-	public getTotalDuration(): number {
-		return this.totalDuration;
-	}
-
+	/** @internal */
 	public recordSyncCorrection(): void {
 		this.syncCorrectionCount += 1;
 	}
@@ -975,6 +965,7 @@ export class Edit {
 
 	/**
 	 * Update clip timing mode and/or values.
+	 * @internal Use updateClip() for public API access
 	 */
 	public updateClipTiming(trackIdx: number, clipIdx: number, params: TimingUpdateParams): void {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
@@ -999,6 +990,7 @@ export class Edit {
 		this.executeCommand(command);
 	}
 
+	/** @internal */
 	public executeEditCommand(command: EditCommand): void | Promise<void> {
 		return this.executeCommand(command);
 	}
@@ -1637,9 +1629,9 @@ export class Edit {
 			}
 		}
 
-		// Convert to milliseconds for playbackTime compatibility
+		// Store in seconds (consistent with Seconds type)
 		const previousDuration = this.totalDuration;
-		this.totalDuration = maxDurationSeconds * 1000;
+		this.totalDuration = maxDurationSeconds;
 
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {
@@ -1691,6 +1683,7 @@ export class Edit {
 		}
 	}
 
+	/** @internal */
 	public propagateTimingChanges(trackIndex: number, startFromClipIndex: number): void {
 		const track = this.tracks[trackIndex];
 		if (!track) return;
@@ -1734,6 +1727,7 @@ export class Edit {
 		});
 	}
 
+	/** @internal */
 	public async resolveClipAutoLength(clip: Player): Promise<void> {
 		const intent = clip.getTimingIntent();
 		if (intent.length !== "auto") return;
@@ -1800,47 +1794,56 @@ export class Edit {
 		this.updateTotalDuration();
 	}
 
+	/** @internal */
 	public selectClip(trackIndex: number, clipIndex: number): void {
 		this.selectionManager.selectClip(trackIndex, clipIndex);
 	}
 
+	/** @internal */
 	public clearSelection(): void {
 		this.selectionManager.clearSelection();
 	}
 
+	/** @internal */
 	public isClipSelected(trackIndex: number, clipIndex: number): boolean {
 		return this.selectionManager.isClipSelected(trackIndex, clipIndex);
 	}
 
+	/** @internal */
 	public getSelectedClipInfo(): { trackIndex: number; clipIndex: number; player: Player } | null {
 		return this.selectionManager.getSelectedClipInfo();
 	}
 
 	/**
-	 * Copy a clip to the internal clipboard
+	 * Copy a clip to the internal clipboard.
+	 * @internal
 	 */
 	public copyClip(trackIdx: number, clipIdx: number): void {
 		this.selectionManager.copyClip(trackIdx, clipIdx);
 	}
 
 	/**
-	 * Paste the copied clip at the current playhead position
+	 * Paste the copied clip at the current playhead position.
+	 * @internal
 	 */
 	public pasteClip(): void {
 		this.selectionManager.pasteClip();
 	}
 
 	/**
-	 * Check if there is a clip in the clipboard
+	 * Check if there is a clip in the clipboard.
+	 * @internal
 	 */
 	public hasCopiedClip(): boolean {
 		return this.selectionManager.hasCopiedClip();
 	}
 
+	/** @internal */
 	public findClipIndices(player: Player): { trackIndex: number; clipIndex: number } | null {
 		return this.selectionManager.findClipIndices(player);
 	}
 
+	/** @internal */
 	public getClipAt(trackIndex: number, clipIndex: number): Player | null {
 		if (trackIndex >= 0 && trackIndex < this.tracks.length && clipIndex >= 0 && clipIndex < this.tracks[trackIndex].length) {
 			return this.tracks[trackIndex][clipIndex];
@@ -1848,10 +1851,12 @@ export class Edit {
 		return null;
 	}
 
+	/** @internal */
 	public selectPlayer(player: Player): void {
 		this.selectionManager.selectPlayer(player);
 	}
 
+	/** @internal */
 	public isPlayerSelected(player: Player): boolean {
 		return this.selectionManager.isPlayerSelected(player);
 	}
@@ -1896,6 +1901,7 @@ export class Edit {
 
 	/**
 	 * Move the selected clip by a pixel delta.
+	 * @internal
 	 */
 	public moveSelectedClip(deltaX: number, deltaY: number): void {
 		const info = this.getSelectedClipInfo();
@@ -1919,21 +1925,26 @@ export class Edit {
 		this.setUpdatedClip(player, initialConfig, finalConfig);
 	}
 
+	/** @internal */
 	public setExportMode(exporting: boolean): void {
 		this.isExporting = exporting;
 	}
+	/** @internal */
 	public isInExportMode(): boolean {
 		return this.isExporting;
 	}
 
+	/** @internal */
 	public setCanvas(canvas: Canvas): void {
 		this.canvas = canvas;
 	}
 
+	/** @internal */
 	public getCanvas(): Canvas | null {
 		return this.canvas;
 	}
 
+	/** @internal */
 	public getCanvasZoom(): number {
 		return this.canvas?.getZoom() ?? 1;
 	}
@@ -2007,6 +2018,7 @@ export class Edit {
 
 	/**
 	 * Look up a font URL by family name and weight.
+	 * @internal
 	 */
 	public getFontUrlByFamilyAndWeight(familyName: string, weight: number): string | null {
 		// Extract base family name (e.g., "Lato Light" → "Lato")
@@ -2033,6 +2045,7 @@ export class Edit {
 	/**
 	 * Remove any fonts from timeline.fonts that are no longer used by clips.
 	 * Call this after changing a clip's font to clean up the old font.
+	 * @internal
 	 */
 	public pruneUnusedFonts(): void {
 		this.cleanupUnusedFonts();
@@ -2078,6 +2091,7 @@ export class Edit {
 
 	/**
 	 * Resolve merge field placeholders in a string.
+	 * @internal
 	 */
 	public resolveMergeFields(input: string): string {
 		return this.mergeFieldService.resolve(input);
@@ -2107,7 +2121,10 @@ export class Edit {
 		return clip as ResolvedClip;
 	}
 
-	/** Get the text content from the template clip (with merge field placeholders) */
+	/**
+	 * Get the text content from the template clip (with merge field placeholders).
+	 * @internal
+	 */
 	public getTemplateClipText(trackIdx: number, clipIdx: number): string | null {
 		const templateClip = this.getTemplateClip(trackIdx, clipIdx);
 		if (!templateClip) return null;
@@ -2233,6 +2250,7 @@ export class Edit {
 
 	/**
 	 * Sync luma timing to match content clip.
+	 * @internal
 	 */
 	public syncLumaToContent(contentTrackIdx: number, contentClipIdx: number, lumaTrackIdx: number, lumaClipIdx: number): void {
 		const contentPlayer = this.getClipAt(contentTrackIdx, contentClipIdx);
@@ -2256,6 +2274,7 @@ export class Edit {
 
 	/**
 	 * Normalize luma attachments after loading.
+	 * @internal
 	 */
 	public normalizeLumaAttachments(): void {
 		let needsResolve = false;
@@ -2318,6 +2337,7 @@ export class Edit {
 
 	/**
 	 * Transform a clip to luma type.
+	 * @internal
 	 */
 	public transformToLuma(trackIndex: number, clipIndex: number): Promise<void> {
 		// Read from document (source of truth), not player's copy
@@ -2339,6 +2359,7 @@ export class Edit {
 
 	/**
 	 * Transform a luma clip back to its original type.
+	 * @internal
 	 */
 	public transformFromLuma(trackIndex: number, clipIndex: number): Promise<void> {
 		const clip = this.getResolvedClip(trackIndex, clipIndex);
