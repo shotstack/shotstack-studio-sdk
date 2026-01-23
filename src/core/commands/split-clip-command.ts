@@ -55,16 +55,11 @@ export class SplitClipCommand implements EditCommand {
 			rightClip.start = "auto";
 		} else {
 			// Explicit start: left keeps original, right gets calculated position
-			rightClip.start = sec(clipStart + splitPoint) as number;
+			rightClip.start = sec(clipStart + splitPoint);
 		}
 
 		// Calculate right clip length
-		if (clip.length === "auto" || clip.length === "end") {
-			// For auto/end, we need to adjust based on the split
-			rightClip.length = sec(clipLength - splitPoint) as number;
-		} else {
-			rightClip.length = sec(clipLength - splitPoint) as number;
-		}
+		rightClip.length = sec(clipLength - splitPoint);
 
 		// Adjust trim values for video/audio assets
 		if (clip.asset && (clip.asset.type === "video" || clip.asset.type === "audio")) {
@@ -79,7 +74,7 @@ export class SplitClipCommand implements EditCommand {
 		// Document mutations
 		// 1. Update left clip with new length
 		context.documentUpdateClip(this.trackIndex, this.clipIndex, {
-			length: sec(leftLength) as number
+			length: sec(leftLength)
 		});
 
 		// 2. Add right clip after left

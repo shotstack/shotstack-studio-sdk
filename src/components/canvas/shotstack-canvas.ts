@@ -2,6 +2,7 @@ import type { Player } from "@canvas/players/player";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
+import { ms } from "@core/timing/types";
 import type { UIController } from "@core/ui/ui-controller";
 import { checkWebGLSupport } from "@core/webgl-support";
 import { type Size } from "@layouts/geometry";
@@ -495,7 +496,7 @@ export class Canvas {
 	}
 
 	private onTick(ticker: pixi.Ticker): void {
-		this.edit.update(ticker.deltaTime, ticker.deltaMS);
+		this.edit.update(ticker.deltaTime, ms(ticker.deltaMS));
 		this.edit.draw();
 
 		// Update canvas overlays (selection handles, guides, etc.)

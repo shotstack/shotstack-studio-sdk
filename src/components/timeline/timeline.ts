@@ -312,8 +312,8 @@ export class Timeline {
 				{
 					onPlay: () => this.edit.play(),
 					onPause: () => this.edit.pause(),
-					onSkipBack: () => this.edit.seek(Math.max(0, this.edit.playbackTime - 1)),
-					onSkipForward: () => this.edit.seek(this.edit.playbackTime + 1),
+					onSkipBack: () => this.edit.seek(sec(Math.max(0, this.edit.playbackTime - 1))),
+					onSkipForward: () => this.edit.seek(sec(this.edit.playbackTime + 1)),
 					onZoomChange: pps => this.setZoom(pps)
 				},
 				viewport.pixelsPerSecond
@@ -329,7 +329,7 @@ export class Timeline {
 		// Build ruler
 		if (this.features.ruler) {
 			this.ruler = new RulerComponent({
-				onSeek: timeMs => this.edit.seek(timeMs),
+				onSeek: timeSec => this.edit.seek(sec(timeSec)),
 				onWheel: e => {
 					if (this.trackList) {
 						this.trackList.element.scrollTop += e.deltaY;
@@ -394,7 +394,7 @@ export class Timeline {
 		// Build playhead (at wrapper level so it spans ruler + tracks)
 		if (this.features.playhead) {
 			this.playhead = new PlayheadComponent({
-				onSeek: timeMs => this.edit.seek(timeMs)
+				onSeek: timeSec => this.edit.seek(sec(timeSec))
 			});
 			this.playhead.setPixelsPerSecond(viewport.pixelsPerSecond);
 			this.rulerTracksWrapper.appendChild(this.playhead.element);

@@ -619,8 +619,8 @@ describe("Edit loadEdit()", () => {
 
 			await edit.loadEdit(editConfig);
 
-			// Second clip ends at 3 + 4 = 7 seconds = 7000ms
-			expect(edit.totalDuration).toBe(7000);
+			// Second clip ends at 3 + 4 = 7 seconds (totalDuration is in Seconds)
+			expect(edit.totalDuration).toBe(7);
 		});
 
 		it("initializes luma mask controller after clips loaded", async () => {
@@ -641,8 +641,8 @@ describe("Edit loadEdit()", () => {
 
 			await edit.loadEdit(editConfig);
 
-			// Track 1 clip ends at 2 + 10 = 12 seconds = 12000ms
-			expect(edit.totalDuration).toBe(12000);
+			// Track 1 clip ends at 2 + 10 = 12 seconds (totalDuration is in Seconds)
+			expect(edit.totalDuration).toBe(12);
 		});
 	});
 

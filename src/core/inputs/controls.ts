@@ -1,4 +1,5 @@
 import { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 
 export class Controls {
 	private edit: Edit;
@@ -62,7 +63,7 @@ export class Controls {
 					this.edit.moveSelectedClip(-delta, 0);
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
-					this.edit.seek(this.edit.playbackTime - seekAmount);
+					this.edit.seek(sec(this.edit.playbackTime - seekAmount));
 				}
 				break;
 			}
@@ -74,7 +75,7 @@ export class Controls {
 					this.edit.moveSelectedClip(delta, 0);
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
-					this.edit.seek(this.edit.playbackTime + seekAmount);
+					this.edit.seek(sec(this.edit.playbackTime + seekAmount));
 				}
 				break;
 			}
@@ -110,12 +111,12 @@ export class Controls {
 			}
 			case "Comma": {
 				// Frame step backward
-				this.edit.seek(this.edit.playbackTime - this.frameTime);
+				this.edit.seek(sec(this.edit.playbackTime - this.frameTime));
 				break;
 			}
 			case "Period": {
 				// Frame step forward
-				this.edit.seek(this.edit.playbackTime + this.frameTime);
+				this.edit.seek(sec(this.edit.playbackTime + this.frameTime));
 				break;
 			}
 			case "Home": {
@@ -123,10 +124,10 @@ export class Controls {
 				const selected = this.edit.getSelectedClipInfo();
 				if (event.shiftKey && selected) {
 					// Go to selected clip start
-					this.edit.seek(selected.player.getStart());
+					this.edit.seek(sec(selected.player.getStart()));
 				} else {
 					// Go to timeline start
-					this.edit.seek(0);
+					this.edit.seek(sec(0));
 				}
 				break;
 			}
@@ -135,9 +136,9 @@ export class Controls {
 				const selected = this.edit.getSelectedClipInfo();
 				if (event.shiftKey && selected) {
 					// Go to selected clip end
-					this.edit.seek(selected.player.getEnd());
+					this.edit.seek(sec(selected.player.getEnd()));
 				} else {
-					// Go to timeline end (totalDuration is in seconds)
+					// Go to timeline end
 					this.edit.seek(this.edit.totalDuration);
 				}
 				break;

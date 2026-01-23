@@ -669,8 +669,8 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createTextClip(0, 5));
 			emitSpy.mockClear();
 
-			// Change length from 5s to 3s
-			edit.updateClipTiming(0, 0, { length: 3000 });
+			// Change length from 5s to 3s (use Seconds branded type)
+			edit.updateClipTiming(0, 0, { length: sec(3) });
 
 			const clipUpdatedCalls = emitSpy.mock.calls.filter(call => call[0] === "clip:updated");
 			expect(clipUpdatedCalls.length).toBeGreaterThan(0);
@@ -687,8 +687,8 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			emitSpy.mockClear();
 
-			// Update timing
-			edit.updateClipTiming(0, 0, { start: 2000 });
+			// Update timing (use Seconds branded type)
+			edit.updateClipTiming(0, 0, { start: sec(2) });
 
 			const clipUpdatedCalls = emitSpy.mock.calls.filter(call => call[0] === "clip:updated");
 			const lastCall = clipUpdatedCalls[clipUpdatedCalls.length - 1];

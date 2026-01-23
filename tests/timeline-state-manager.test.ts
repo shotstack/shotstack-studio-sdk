@@ -5,6 +5,7 @@
 import { describe, it, expect, jest } from "@jest/globals";
 import { TimelineStateManager } from "../src/components/timeline/timeline-state";
 import { EditEvent, InternalEvent } from "../src/core/events/edit-events";
+import { sec } from "../src/core/timing/types";
 
 // Mock EventEmitter with event storage for testing
 function createMockEventEmitter() {
@@ -43,9 +44,9 @@ function createMockEdit(tracks: unknown[][] = []) {
 
 	return {
 		events,
-		playbackTime: 0,
+		playbackTime: sec(0),
 		isPlaying: false,
-		totalDuration: 10,
+		totalDuration: sec(10),
 		getResolvedEdit: jest.fn(() => ({
 			timeline: {
 				tracks: mockClips.map(clips => ({
@@ -368,9 +369,9 @@ describe("Resolved event cache invalidation regression", () => {
 		const events = createMockEventEmitter();
 		const edit = {
 			events,
-			playbackTime: 0,
+			playbackTime: sec(0),
 			isPlaying: false,
-			totalDuration: 10,
+			totalDuration: sec(10),
 			getResolvedEdit: jest.fn(() => ({
 				timeline: {
 					tracks: [

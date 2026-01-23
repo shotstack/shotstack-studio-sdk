@@ -3,6 +3,7 @@ import { PlayerType } from "@canvas/players/player";
 import { Canvas } from "@canvas/shotstack-canvas";
 import { ExportCommand } from "@core/commands/export-command";
 import { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource } from "mediabunny";
 import * as pixi from "pixi.js";
 
@@ -130,7 +131,7 @@ export class ExportCoordinator {
 
 		for (let i = 0; i < cfg.frames; i += 1) {
 			const frameTime = i * cfg.frameDuration;
-			this.edit.playbackTime = frameTime;
+			this.edit.playbackTime = sec(frameTime);
 
 			for (const clip of this.exportCommand.getClips()) {
 				clip.update(0, 0);
@@ -225,7 +226,7 @@ export class ExportCoordinator {
 		Object.assign(c.position, state.pos);
 		Object.assign(c.scale, state.scale);
 		c.visible = state.visible;
-		this.edit.seek(state.time);
+		this.edit.seek(sec(state.time));
 		if (state.wasPlaying) this.edit.play();
 	}
 

@@ -9,7 +9,7 @@ import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas";
-import { sec } from "@core/timing/types";
+import { ms, sec } from "@core/timing/types";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -382,7 +382,7 @@ describe("Edit Clip Operations", () => {
 
 			// After undo, the clip should be queued for disposal
 			// The actual removal happens on next update cycle
-			edit.update(0, 0);
+			edit.update(0, ms(0));
 
 			const { tracks: afterUndo } = getEditState(edit);
 			expect(afterUndo[0]?.length ?? 0).toBe(0);
@@ -569,7 +569,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.getClip(0, 0)).not.toBeNull();
 
 			await edit.undo();
-			edit.update(0, 0); // Process disposal
+			edit.update(0, ms(0)); // Process disposal
 
 			expect(edit.getClip(0, 0)).toBeNull();
 		});
@@ -607,13 +607,13 @@ describe("Edit Clip Operations", () => {
 			expect(withTwo[0].length).toBe(2);
 
 			await edit.undo(); // Undo second add
-			edit.update(0, 0);
+			edit.update(0, ms(0));
 
 			const { tracks: withOne } = getEditState(edit);
 			expect(withOne[0].length).toBe(1);
 
 			await edit.undo(); // Undo first add
-			edit.update(0, 0);
+			edit.update(0, ms(0));
 
 			const { tracks: withNone } = getEditState(edit);
 			expect(withNone[0]?.length ?? 0).toBe(0);
@@ -623,7 +623,7 @@ describe("Edit Clip Operations", () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 
 			await edit.undo();
-			edit.update(0, 0);
+			edit.update(0, ms(0));
 			expect(edit.getClip(0, 0)).toBeNull();
 
 			await edit.redo();
@@ -661,7 +661,7 @@ describe("Edit Clip Operations", () => {
 
 		it("pasteClip adds clip at playhead position", async () => {
 			edit.copyClip(0, 0);
-			edit.playbackTime = 5000; // 5 seconds
+			edit.playbackTime = sec(5); // 5 seconds
 
 			await edit.pasteClip();
 
@@ -788,7 +788,7 @@ describe("Edit Clip Operations", () => {
 			expect(edit.getPlayerClip(0, 1)).not.toBeNull();
 
 			await edit.undo();
-			edit.update(0, 0); // Process disposal
+			edit.update(0, ms(0)); // Process disposal
 
 			// Verify added clip is removed (base clip still at index 0)
 			expect(edit.getPlayerClip(0, 1)).toBeNull();
@@ -817,13 +817,13 @@ describe("Edit Clip Operations", () => {
 			expect(withThree[0]).toHaveLength(3); // 1 base + 2 added
 
 			await edit.undo(); // Undo second add
-			edit.update(0, 0);
+			edit.update(0, ms(0));
 
 			const { tracks: withTwo } = getEditState(edit);
 			expect(withTwo[0]).toHaveLength(2); // 1 base + 1 added
 
 			await edit.undo(); // Undo first add
-			edit.update(0, 0);
+			edit.update(0, ms(0));
 
 			const { tracks: withOne } = getEditState(edit);
 			expect(withOne[0]).toHaveLength(1); // Just base clip

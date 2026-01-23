@@ -15,6 +15,7 @@ import { AudioPlayer } from "@canvas/players/audio-player";
 import { LumaPlayer } from "@canvas/players/luma-player";
 import { CaptionPlayer } from "@canvas/players/caption-player";
 import type { Edit } from "@core/edit-session";
+import { sec, type Seconds } from "@core/timing/types";
 import type { ResolvedClip, VideoAsset, AudioAsset, LumaAsset, CaptionAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
@@ -182,7 +183,7 @@ function createMockVideoElement(): HTMLVideoElement {
 
 function createMockEdit(playbackTimeSec: number): Edit {
 	return {
-		playbackTime: playbackTimeSec,
+		playbackTime: sec(playbackTimeSec) as Seconds, // Use Seconds branded type
 		isPlaying: true,
 		recordSyncCorrection: jest.fn(),
 		assetLoader: {

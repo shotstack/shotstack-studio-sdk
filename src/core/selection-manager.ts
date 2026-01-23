@@ -9,7 +9,7 @@ import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@core/schemas";
-import { ms, toSec } from "@core/timing/types";
+import type { Seconds } from "@core/timing/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ export interface SelectionContext {
 	getPlayerClip(trackIndex: number, clipIndex: number): Player | null;
 	getResolvedClip(trackIndex: number, clipIndex: number): ResolvedClip | null;
 	addClip(trackIndex: number, clip: ResolvedClip): void | Promise<void>;
-	getPlaybackTime(): number;
+	getPlaybackTime(): Seconds;
 	isExporting(): boolean;
 }
 
@@ -161,7 +161,7 @@ export class SelectionManager {
 		if (!this.copiedClip) return;
 
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
-		pastedClip.start = toSec(ms(this.context.getPlaybackTime())); // Paste at playhead position
+		pastedClip.start = this.context.getPlaybackTime();
 
 		// Remove ID so document generates a new one (otherwise reconciler
 		// would see duplicate IDs and update instead of create)

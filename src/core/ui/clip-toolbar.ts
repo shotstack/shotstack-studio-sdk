@@ -1,5 +1,5 @@
 import { EditEvent } from "@core/events/edit-events";
-import { sec, toMs } from "@core/timing/types";
+import { type Milliseconds, sec, toMs, toSec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -87,10 +87,13 @@ export class ClipToolbar extends BaseToolbar {
 		const startValue = this.startControl?.getStartValue();
 		const lengthValue = this.lengthControl?.getLengthValue();
 
-		// Apply update via edit session
+		// Convert from Milliseconds to Seconds for command
+		const startSeconds = typeof startValue === "number" ? toSec(startValue as Milliseconds) : startValue;
+		const lengthSeconds = typeof lengthValue === "number" ? toSec(lengthValue as Milliseconds) : lengthValue;
+
 		this.edit.updateClipTiming(this.selectedTrackIdx, this.selectedClipIdx, {
-			start: startValue,
-			length: lengthValue
+			start: startSeconds,
+			length: lengthSeconds
 		});
 	}
 

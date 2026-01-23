@@ -29,7 +29,7 @@ import { calculateSizeFromPreset, OutputSettingsManager, type OutputSettingsCont
 import { SelectionManager, type SelectionContext } from "@core/selection-manager";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type ResolutionContext, type Seconds, sec } from "@core/timing/types";
+import { type Milliseconds, type ResolutionContext, type Seconds, ms, sec, toSec } from "@core/timing/types";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -57,7 +57,7 @@ import { resolve as resolveDocument, resolveClip as resolveClipById, type Single
  * Magic elapsed value passed to update() during seek operations.
  * @internal
  */
-export const SEEK_ELAPSED_MARKER = 101;
+export const SEEK_ELAPSED_MARKER = ms(101);
 
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
@@ -88,12 +88,12 @@ export class Edit {
 	private commandIndex: number = -1;
 	private commandQueue = new CommandQueue();
 
-	public playbackTime: number;
+	public playbackTime: Seconds;
 	/** @internal */
 	public size: Size;
 	/** @internal */
 	private backgroundColor: string;
-	public totalDuration: number;
+	public totalDuration: Seconds;
 	public isPlaying: boolean;
 	/** @internal */
 	private isExporting: boolean = false;
@@ -137,11 +137,9 @@ export class Edit {
 	 * Create an Edit instance from a template configuration.
 	 */
 	constructor(template: EditConfig) {
-		// Create document layer from template (pure data, preserves "auto"/"end"/placeholders)
+		// Create document layer from template
 		this.document = new EditDocument(template);
 
-		// Extract configuration from document
-		// Calculate size from resolution preset, or use explicit size
 		const resolution = this.document.getResolution();
 		if (resolution) {
 			const aspectRatio = this.document.getAspectRatio();
@@ -172,8 +170,8 @@ export class Edit {
 		// Initialize selection manager with context
 		this.selectionManager = new SelectionManager(this.createSelectionContext());
 
-		this.playbackTime = 0;
-		this.totalDuration = 0;
+		this.playbackTime = sec(0);
+		this.totalDuration = sec(0);
 		this.isPlaying = false;
 
 		// Set up event-driven architecture
@@ -284,7 +282,7 @@ export class Edit {
 	}
 
 	/** @internal */
-	public update(deltaTime: number, elapsed: number): void {
+	public update(deltaTime: number, elapsed: Milliseconds): void {
 		for (const clip of this.clips) {
 			if (clip.shouldDispose) {
 				this.queueDisposeClip(clip);
@@ -298,7 +296,8 @@ export class Edit {
 		this.lumaMaskController.update();
 
 		if (this.isPlaying) {
-			this.playbackTime = Math.max(0, Math.min(this.playbackTime + elapsed, this.totalDuration));
+			const elapsedSeconds = toSec(elapsed);
+			this.playbackTime = sec(Math.max(0, Math.min(this.playbackTime + elapsedSeconds, this.totalDuration)));
 
 			if (this.playbackTime === this.totalDuration) {
 				this.pause();
@@ -345,15 +344,15 @@ export class Edit {
 		this.isPlaying = false;
 		this.events.emit(EditEvent.PlaybackPause);
 	}
-	public seek(target: number): void {
-		this.playbackTime = Math.max(0, Math.min(target, this.totalDuration));
+	public seek(target: Seconds): void {
+		this.playbackTime = sec(Math.max(0, Math.min(target, this.totalDuration)));
 		this.pause();
 		// Force immediate render - SEEK_ELAPSED_MARKER signals seek to all players
 		this.update(0, SEEK_ELAPSED_MARKER);
 		this.draw();
 	}
 	public stop(): void {
-		this.seek(0);
+		this.seek(sec(0));
 	}
 
 	/**
@@ -948,8 +947,6 @@ export class Edit {
 			return Promise.resolve();
 		}
 
-		// Read from document (source of truth) to preserve timing intent ("auto"/"end")
-		// Player's clipConfiguration has resolved numeric values, but document has original strings
 		const documentClip = this.document?.getClip(trackIdx, clipIdx);
 		const initialConfig = structuredClone(documentClip ?? clip.clipConfiguration) as ResolvedClip;
 		const currentConfig = structuredClone(documentClip ?? clip.clipConfiguration);
@@ -1631,7 +1628,7 @@ export class Edit {
 
 		// Store in seconds (consistent with Seconds type)
 		const previousDuration = this.totalDuration;
-		this.totalDuration = maxDurationSeconds;
+		this.totalDuration = sec(maxDurationSeconds);
 
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {

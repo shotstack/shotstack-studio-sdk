@@ -1,16 +1,16 @@
 import { EditEvent } from "@core/events/edit-events";
-import { type Seconds, sec } from "@core/timing/types";
+import type { Seconds } from "@core/timing/types";
 import type { Clip } from "@schemas";
 
 import { type CommandContext, type EditCommand, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
  * Command parameters for timing updates.
- * Values in milliseconds (for UI convenience).
+ * Values in Seconds.
  */
 export interface TimingUpdateParams {
-	start?: number | "auto";
-	length?: number | "auto" | "end";
+	start?: Seconds | "auto";
+	length?: Seconds | "auto" | "end";
 }
 
 /**
@@ -56,19 +56,15 @@ export class UpdateClipTimingCommand implements EditCommand {
 		// Capture previous resolved config for event (local, not stored)
 		const previousConfig = structuredClone(player.clipConfiguration);
 
-		// Build document updates from params (convert ms to seconds)
+		// Build document updates from params
 		const updates: Partial<{ start: Seconds | "auto"; length: Seconds | "auto" | "end" }> = {};
 
 		if (this.params.start !== undefined) {
-			updates.start = this.params.start === "auto" ? "auto" : sec(this.params.start / 1000);
+			updates.start = this.params.start;
 		}
 
 		if (this.params.length !== undefined) {
-			if (this.params.length === "auto" || this.params.length === "end") {
-				updates.length = this.params.length;
-			} else {
-				updates.length = sec(this.params.length / 1000);
-			}
+			updates.length = this.params.length;
 		}
 
 		// Document-only mutation

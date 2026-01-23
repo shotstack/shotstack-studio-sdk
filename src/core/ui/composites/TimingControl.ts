@@ -1,3 +1,5 @@
+import { type Milliseconds, ms } from "@core/timing/types";
+
 import { UIComponent } from "../primitives/UIComponent";
 
 /**
@@ -55,10 +57,11 @@ const LENGTH_MODES: TimingMode[] = [
 
 /**
  * State for timing control.
+ * Value uses Milliseconds branded type for UI-layer type safety.
  */
 export interface TimingControlState {
 	mode: string;
-	value: number; // milliseconds
+	value: Milliseconds;
 }
 
 /**
@@ -90,7 +93,7 @@ export class TimingControl extends UIComponent<TimingControlState> {
 		super({ className: "ss-timing-control", attributes: { "data-type": type } });
 		this.type = type;
 		this.modes = type === "start" ? START_MODES : LENGTH_MODES;
-		this.state = { mode: "manual", value: type === "start" ? 0 : 3000 };
+		this.state = { mode: "manual", value: type === "start" ? ms(0) : ms(3000) };
 	}
 
 	render(): string {
@@ -236,7 +239,7 @@ export class TimingControl extends UIComponent<TimingControlState> {
 		const deltaMs = deltaX * sensitivity;
 		const newValue = Math.max(0, this.dragStartValue + deltaMs);
 
-		this.state.value = Math.round(newValue);
+		this.state.value = ms(Math.round(newValue));
 		this.updateValueDisplay();
 	};
 
@@ -264,7 +267,7 @@ export class TimingControl extends UIComponent<TimingControlState> {
 		// Parse and validate input
 		const parsed = this.parseTimeString(this.valueInput.value);
 		if (parsed !== null && parsed >= 0) {
-			this.state.value = parsed;
+			this.state.value = ms(parsed);
 			this.emit(this.state);
 		}
 
@@ -312,7 +315,7 @@ export class TimingControl extends UIComponent<TimingControlState> {
 		}
 
 		e.preventDefault();
-		this.state.value = Math.max(0, this.state.value + delta);
+		this.state.value = ms(Math.max(0, this.state.value + delta));
 		this.updateValueDisplay();
 		this.emit(this.state);
 	}
@@ -325,8 +328,8 @@ export class TimingControl extends UIComponent<TimingControlState> {
 	 * - 1min+: "1:23.4" (colon implies time)
 	 * - 10min+: "12:34"
 	 */
-	private formatTime(ms: number): string {
-		const totalSecs = ms / 1000;
+	private formatTime(msValue: Milliseconds): string {
+		const totalSecs = msValue / 1000;
 
 		if (totalSecs < 60) {
 			// Show as seconds with unit suffix for clarity
@@ -423,25 +426,25 @@ export class TimingControl extends UIComponent<TimingControlState> {
 			this.state.mode = "end";
 		} else {
 			this.state.mode = "manual";
-			this.state.value = typeof value === "number" ? value : 0;
+			this.state.value = typeof value === "number" ? ms(value) : ms(0);
 		}
 		this.updateUI();
 	}
 
 	/**
 	 * Get value for clip update (start timing).
-	 * Returns number | "auto" for start controls.
+	 * Returns Milliseconds | "auto" for start controls.
 	 */
-	getStartValue(): number | "auto" {
+	getStartValue(): Milliseconds | "auto" {
 		if (this.state.mode === "auto") return "auto";
 		return this.state.value;
 	}
 
 	/**
 	 * Get value for clip update (length timing).
-	 * Returns number | "auto" | "end" for length controls.
+	 * Returns Milliseconds | "auto" | "end" for length controls.
 	 */
-	getLengthValue(): number | "auto" | "end" {
+	getLengthValue(): Milliseconds | "auto" | "end" {
 		if (this.state.mode === "auto") return "auto";
 		if (this.state.mode === "end") return "end";
 		return this.state.value;

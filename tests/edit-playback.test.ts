@@ -7,6 +7,7 @@
 
 import { Edit } from "@core/edit-session";
 import type { EventEmitter } from "@core/events/event-emitter";
+import { ms, sec } from "@core/timing/types";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
 jest.mock("pixi-filters", () => ({
@@ -139,9 +140,9 @@ describe("Edit Playback", () => {
 		events = edit.events;
 		emitSpy = jest.spyOn(events, "emit");
 
-		// Set up a mock duration for testing
-		edit.totalDuration = 10; // 10 seconds
-		edit.playbackTime = 0;
+		// Set up a mock duration for testing (use Seconds branded type)
+		edit.totalDuration = sec(10); // 10 seconds
+		edit.playbackTime = sec(0);
 		edit.isPlaying = false;
 	});
 
@@ -166,7 +167,7 @@ describe("Edit Playback", () => {
 		});
 
 		it("does not change playbackTime", () => {
-			edit.playbackTime = 5;
+			edit.playbackTime = sec(5);
 
 			edit.play();
 
@@ -190,7 +191,7 @@ describe("Edit Playback", () => {
 		});
 
 		it("does not change playbackTime", () => {
-			edit.playbackTime = 5;
+			edit.playbackTime = sec(5);
 			edit.isPlaying = true;
 
 			edit.pause();
@@ -201,19 +202,19 @@ describe("Edit Playback", () => {
 
 	describe("seek()", () => {
 		it("updates playbackTime to target", () => {
-			edit.seek(5);
+			edit.seek(sec(5));
 
 			expect(edit.playbackTime).toBe(5);
 		});
 
 		it("clamps negative time to 0", () => {
-			edit.seek(-1);
+			edit.seek(sec(-1));
 
 			expect(edit.playbackTime).toBe(0);
 		});
 
 		it("clamps time beyond duration to totalDuration", () => {
-			edit.seek(20); // Beyond 10 second duration
+			edit.seek(sec(20)); // Beyond 10 second duration
 
 			expect(edit.playbackTime).toBe(10);
 		});
@@ -221,7 +222,7 @@ describe("Edit Playback", () => {
 		it("pauses playback when seeking", () => {
 			edit.isPlaying = true;
 
-			edit.seek(5);
+			edit.seek(sec(5));
 
 			expect(edit.isPlaying).toBe(false);
 		});
@@ -229,23 +230,23 @@ describe("Edit Playback", () => {
 		it("emits playback:pause event", () => {
 			edit.isPlaying = true;
 
-			edit.seek(5);
+			edit.seek(sec(5));
 
 			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 
 		it("seeks to exact boundary values", () => {
-			edit.seek(0);
+			edit.seek(sec(0));
 			expect(edit.playbackTime).toBe(0);
 
-			edit.seek(10);
+			edit.seek(sec(10));
 			expect(edit.playbackTime).toBe(10);
 		});
 	});
 
 	describe("stop()", () => {
 		it("resets playbackTime to 0", () => {
-			edit.playbackTime = 5;
+			edit.playbackTime = sec(5);
 
 			edit.stop();
 
@@ -264,36 +265,36 @@ describe("Edit Playback", () => {
 	describe("update() playback advancement", () => {
 		it("advances playbackTime by elapsed when playing", () => {
 			edit.isPlaying = true;
-			edit.playbackTime = 0;
+			edit.playbackTime = sec(0);
 
-			edit.update(0.016, 0.1); // 0.1s elapsed
+			edit.update(0.016, ms(100)); // 100ms = 0.1s elapsed
 
 			expect(edit.playbackTime).toBe(0.1);
 		});
 
 		it("does not advance playbackTime when paused", () => {
 			edit.isPlaying = false;
-			edit.playbackTime = 1;
+			edit.playbackTime = sec(1);
 
-			edit.update(0.016, 0.1);
+			edit.update(0.016, ms(100));
 
 			expect(edit.playbackTime).toBe(1);
 		});
 
 		it("clamps playbackTime to totalDuration", () => {
 			edit.isPlaying = true;
-			edit.playbackTime = 9.95;
+			edit.playbackTime = sec(9.95);
 
-			edit.update(0.016, 0.1); // Would advance to 10.05, but should clamp to 10
+			edit.update(0.016, ms(100)); // Would advance to 10.05, but should clamp to 10
 
 			expect(edit.playbackTime).toBe(10);
 		});
 
 		it("auto-pauses when reaching end of timeline", () => {
 			edit.isPlaying = true;
-			edit.playbackTime = 9.95;
+			edit.playbackTime = sec(9.95);
 
-			edit.update(0.016, 0.1); // Reaches end
+			edit.update(0.016, ms(100)); // Reaches end
 
 			expect(edit.isPlaying).toBe(false);
 			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
@@ -301,12 +302,12 @@ describe("Edit Playback", () => {
 
 		it("clamps negative elapsed values to 0", () => {
 			edit.isPlaying = true;
-			edit.playbackTime = 5;
+			edit.playbackTime = sec(5);
 
-			edit.update(0.016, -0.1); // Negative elapsed
+			edit.update(0.016, ms(-100)); // Negative elapsed (-100ms = -0.1s)
 
 			// playbackTime should be clamped to 0 minimum, but since we're at 5
-			// and elapsed is -0.1, result would be 4.9, clamped to max(0, 4.9) = 4.9
+			// and elapsed is -0.1s, result would be 4.9, clamped to max(0, 4.9) = 4.9
 			// Actually looking at the code: Math.max(0, Math.min(this.playbackTime + elapsed, this.totalDuration))
 			// So playbackTime + (-0.1) = 4.9, min(4.9, 10) = 4.9, max(0, 4.9) = 4.9
 			expect(edit.playbackTime).toBe(4.9);
@@ -315,11 +316,11 @@ describe("Edit Playback", () => {
 
 	describe("playback edge cases", () => {
 		it("handles empty timeline (duration 0)", () => {
-			edit.totalDuration = 0;
-			edit.playbackTime = 0;
+			edit.totalDuration = sec(0);
+			edit.playbackTime = sec(0);
 			edit.isPlaying = true;
 
-			edit.update(0.016, 0.1);
+			edit.update(0.016, ms(100));
 
 			// Should immediately hit end and pause
 			expect(edit.playbackTime).toBe(0);
@@ -328,19 +329,19 @@ describe("Edit Playback", () => {
 
 		it("seek while playing stops playback", () => {
 			edit.isPlaying = true;
-			edit.playbackTime = 2;
+			edit.playbackTime = sec(2);
 
-			edit.seek(8);
+			edit.seek(sec(8));
 
 			expect(edit.isPlaying).toBe(false);
 			expect(edit.playbackTime).toBe(8);
 		});
 
 		it("play at end of timeline (no advancement)", () => {
-			edit.playbackTime = 10;
+			edit.playbackTime = sec(10);
 			edit.isPlaying = true;
 
-			edit.update(0.016, 0.1);
+			edit.update(0.016, ms(100));
 
 			// Already at end, should pause immediately
 			expect(edit.playbackTime).toBe(10);
@@ -350,7 +351,7 @@ describe("Edit Playback", () => {
 
 	describe("playback state sequences", () => {
 		it("play → pause → play preserves position", () => {
-			edit.playbackTime = 3;
+			edit.playbackTime = sec(3);
 
 			edit.play();
 			expect(edit.isPlaying).toBe(true);
@@ -367,9 +368,9 @@ describe("Edit Playback", () => {
 
 		it("play → seek → play restarts from seek position", () => {
 			edit.play();
-			edit.playbackTime = 2; // Simulate some advancement
+			edit.playbackTime = sec(2); // Simulate some advancement
 
-			edit.seek(7);
+			edit.seek(sec(7));
 			expect(edit.isPlaying).toBe(false);
 			expect(edit.playbackTime).toBe(7);
 
@@ -380,21 +381,21 @@ describe("Edit Playback", () => {
 
 		it("stop always returns to beginning", () => {
 			edit.play();
-			edit.playbackTime = 5;
+			edit.playbackTime = sec(5);
 
 			edit.stop();
 			expect(edit.playbackTime).toBe(0);
 			expect(edit.isPlaying).toBe(false);
 
 			edit.play();
-			edit.playbackTime = 8;
+			edit.playbackTime = sec(8);
 
 			edit.stop();
 			expect(edit.playbackTime).toBe(0);
 		});
 
 		it("repeated stops are idempotent", () => {
-			edit.playbackTime = 5;
+			edit.playbackTime = sec(5);
 
 			edit.stop();
 			expect(edit.playbackTime).toBe(0);
@@ -429,7 +430,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			emitSpy.mockClear();
 
-			edit.seek(5);
+			edit.seek(sec(5));
 
 			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
