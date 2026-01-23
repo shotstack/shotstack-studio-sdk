@@ -7,7 +7,7 @@
 
 import { Edit } from "@core/edit-session";
 import type { EventEmitter } from "@core/events/event-emitter";
-import { sec } from "@core/timing/types";
+import { ms, sec } from "@core/timing/types";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
 jest.mock("pixi-filters", () => ({
@@ -267,7 +267,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(0);
 
-			edit.update(0.016, 0.1); // 0.1s elapsed (update takes seconds, not ms)
+			edit.update(0.016, ms(100)); // 100ms elapsed = 0.1s
 
 			expect(edit.playbackTime).toBe(0.1);
 		});
@@ -276,7 +276,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = false;
 			edit.playbackTime = sec(1);
 
-			edit.update(0.016, 0.1);
+			edit.update(0.016, ms(100));
 
 			expect(edit.playbackTime).toBe(1);
 		});
@@ -285,7 +285,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(9.95);
 
-			edit.update(0.016, 0.1); // Would advance to 10.05, but should clamp to 10
+			edit.update(0.016, ms(100)); // Would advance to 10.05, but should clamp to 10
 
 			expect(edit.playbackTime).toBe(10);
 		});
@@ -294,7 +294,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(9.95);
 
-			edit.update(0.016, 0.1); // Reaches end
+			edit.update(0.016, ms(100)); // Reaches end
 
 			expect(edit.isPlaying).toBe(false);
 			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
@@ -304,10 +304,27 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(5);
 
-			edit.update(0.016, -0.1); // Negative elapsed (-0.1s)
+			edit.update(0.016, ms(-100)); // Negative elapsed (-100ms = -0.1s)
 
 			// playbackTime + (-0.1) = 4.9, clamped to max(0, min(4.9, 10)) = 4.9
 			expect(edit.playbackTime).toBe(4.9);
+		});
+
+		it("correctly converts milliseconds to seconds for playback time (regression: #play-immediately-pauses)", () => {
+			// This test prevents regression of a bug where milliseconds were added directly
+			// to playbackTime (in seconds), causing playback to jump to end immediately.
+			// At 60fps, ticker passes ~16.67ms. If added as seconds, playback would advance
+			// 16.67 "seconds" per frame instead of 0.01667 seconds.
+			edit.isPlaying = true;
+			edit.playbackTime = sec(0);
+			edit.totalDuration = sec(10);
+
+			// Simulate 60fps frame (~16.67ms)
+			edit.update(0.016, ms(16.67));
+
+			// Should advance by ~0.01667 seconds, NOT 16.67 seconds
+			expect(edit.playbackTime).toBeCloseTo(0.01667, 3);
+			expect(edit.isPlaying).toBe(true); // Should still be playing, not auto-paused
 		});
 	});
 
@@ -317,7 +334,7 @@ describe("Edit Playback", () => {
 			edit.playbackTime = sec(0);
 			edit.isPlaying = true;
 
-			edit.update(0.016, 0.1);
+			edit.update(0.016, ms(100));
 
 			// Should immediately hit end and pause
 			expect(edit.playbackTime).toBe(0);
@@ -338,7 +355,7 @@ describe("Edit Playback", () => {
 			edit.playbackTime = sec(10);
 			edit.isPlaying = true;
 
-			edit.update(0.016, 0.1);
+			edit.update(0.016, ms(100));
 
 			// Already at end, should pause immediately
 			expect(edit.playbackTime).toBe(10);
