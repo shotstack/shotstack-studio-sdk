@@ -7,7 +7,7 @@
 
 import { Edit } from "@core/edit-session";
 import type { EventEmitter } from "@core/events/event-emitter";
-import { ms, sec } from "@core/timing/types";
+import { sec } from "@core/timing/types";
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
 jest.mock("pixi-filters", () => ({
@@ -267,7 +267,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(0);
 
-			edit.update(0.016, ms(100)); // 100ms = 0.1s elapsed
+			edit.update(0.016, 0.1); // 0.1s elapsed (update takes seconds, not ms)
 
 			expect(edit.playbackTime).toBe(0.1);
 		});
@@ -276,7 +276,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = false;
 			edit.playbackTime = sec(1);
 
-			edit.update(0.016, ms(100));
+			edit.update(0.016, 0.1);
 
 			expect(edit.playbackTime).toBe(1);
 		});
@@ -285,7 +285,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(9.95);
 
-			edit.update(0.016, ms(100)); // Would advance to 10.05, but should clamp to 10
+			edit.update(0.016, 0.1); // Would advance to 10.05, but should clamp to 10
 
 			expect(edit.playbackTime).toBe(10);
 		});
@@ -294,7 +294,7 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(9.95);
 
-			edit.update(0.016, ms(100)); // Reaches end
+			edit.update(0.016, 0.1); // Reaches end
 
 			expect(edit.isPlaying).toBe(false);
 			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
@@ -304,12 +304,9 @@ describe("Edit Playback", () => {
 			edit.isPlaying = true;
 			edit.playbackTime = sec(5);
 
-			edit.update(0.016, ms(-100)); // Negative elapsed (-100ms = -0.1s)
+			edit.update(0.016, -0.1); // Negative elapsed (-0.1s)
 
-			// playbackTime should be clamped to 0 minimum, but since we're at 5
-			// and elapsed is -0.1s, result would be 4.9, clamped to max(0, 4.9) = 4.9
-			// Actually looking at the code: Math.max(0, Math.min(this.playbackTime + elapsed, this.totalDuration))
-			// So playbackTime + (-0.1) = 4.9, min(4.9, 10) = 4.9, max(0, 4.9) = 4.9
+			// playbackTime + (-0.1) = 4.9, clamped to max(0, min(4.9, 10)) = 4.9
 			expect(edit.playbackTime).toBe(4.9);
 		});
 	});
@@ -320,7 +317,7 @@ describe("Edit Playback", () => {
 			edit.playbackTime = sec(0);
 			edit.isPlaying = true;
 
-			edit.update(0.016, ms(100));
+			edit.update(0.016, 0.1);
 
 			// Should immediately hit end and pause
 			expect(edit.playbackTime).toBe(0);
@@ -341,7 +338,7 @@ describe("Edit Playback", () => {
 			edit.playbackTime = sec(10);
 			edit.isPlaying = true;
 
-			edit.update(0.016, ms(100));
+			edit.update(0.016, 0.1);
 
 			// Already at end, should pause immediately
 			expect(edit.playbackTime).toBe(10);
