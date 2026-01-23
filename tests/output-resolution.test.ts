@@ -8,7 +8,7 @@
 
 import { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
-import type { EditConfig } from "@schemas";
+import type { UnresolvedEdit } from "@schemas";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -104,7 +104,7 @@ jest.mock("pixi.js", () => {
 	};
 });
 
-function createMinimalEdit(): EditConfig {
+function createMinimalEdit(): UnresolvedEdit {
 	return {
 		timeline: {
 			tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]

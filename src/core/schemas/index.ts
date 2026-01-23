@@ -93,8 +93,8 @@ export type ResolvedEdit = Omit<Edit, "timeline"> & {
 
 // ─── Backward Compatibility Aliases ────────────────────────────────────────
 
-/** Alias for Edit type to avoid conflicts with SDK's Edit class */
-export type EditConfig = Edit;
+/** Alias for Edit type - represents an edit before timing values are resolved */
+export type UnresolvedEdit = Edit;
 export type ClipAnchor = Clip["position"];
 export type HtmlAssetPosition = NonNullable<HtmlAsset["position"]>;
 export type Keyframe = Tween; // SDK previously called Tween "Keyframe"

@@ -1,4 +1,4 @@
-import type { Clip, ResolvedClip, Edit as EditConfig, ResolvedEdit } from "@schemas";
+import type { Clip, ResolvedClip, Edit as UnresolvedEdit, ResolvedEdit } from "@schemas";
 
 import { mergeAssetForExport } from "./merge-asset";
 
@@ -24,9 +24,9 @@ export function serializeEditForExport(
 	originalEdit: ResolvedEdit | null,
 	backgroundColor: string,
 	fonts: Array<{ src: string }>,
-	output: EditConfig["output"],
+	output: UnresolvedEdit["output"],
 	mergeFields: Array<{ find: string; replace: string }>
-): EditConfig {
+): UnresolvedEdit {
 	const tracks = clips.map((track, trackIdx) => ({
 		clips: track.map((clip, clipIdx) => {
 			const originalClip = originalEdit?.timeline.tracks[trackIdx]?.clips[clipIdx];

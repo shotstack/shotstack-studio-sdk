@@ -37,7 +37,7 @@ import {
 	HexColorSchema,
 	type Clip,
 	type Destination,
-	type Edit as EditConfig,
+	type Edit as UnresolvedEdit,
 	type ResolvedClip,
 	type ResolvedEdit,
 	type ResolvedTrack,
@@ -110,7 +110,7 @@ export class Edit {
 	/**
 	 * Create an Edit instance from a template configuration.
 	 */
-	constructor(template: EditConfig) {
+	constructor(template: UnresolvedEdit) {
 		this.tracks = [];
 		this.playbackTime = sec(0);
 		this.totalDuration = sec(0);
@@ -156,14 +156,12 @@ export class Edit {
 		// Load merge fields
 		const serializedMergeFields = rawEdit.merge ?? [];
 		this.mergeFieldService.loadFromSerialized(serializedMergeFields);
-
-		// Detect merge field bindings BEFORE substitution (preserves placeholder info)
 		const bindingsPerClip = this.detectMergeFieldBindings(rawEdit as ResolvedEdit, serializedMergeFields);
 
 		// Apply merge field substitutions for initial load
 		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(rawEdit as ResolvedEdit, serializedMergeFields) : rawEdit;
 
-		const parsedEdit = EditSchema.parse(mergedEdit) as EditConfig;
+		const parsedEdit = EditSchema.parse(mergedEdit) as UnresolvedEdit;
 
 		// Load fonts and store metadata for rich-text font resolution
 		await Promise.all(
@@ -190,18 +188,14 @@ export class Edit {
 					const clipPlayer = this.createPlayerFromAssetType(clip as ResolvedClip);
 					clipPlayer.layer = trackIdx + 1;
 
-					// Set stable clip ID from document for reconciliation
 					const clipId = this.document.getClipId(trackIdx, clipIdx);
 					if (clipId) {
 						clipPlayer.clipId = clipId;
 						this.playerByClipId.set(clipId, clipPlayer);
 					}
 
-					// Store merge field bindings in document (source of truth)
 					const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
-					if (bindings && bindings.size > 0 && clipId) {
-						this.document.setClipBindingsForClip(clipId, bindings);
-					}
+					if (bindings && bindings.size > 0 && clipId) this.document.setClipBindingsForClip(clipId, bindings);
 
 					await this.addPlayer(trackIdx, clipPlayer);
 				} catch (error) {
@@ -218,19 +212,11 @@ export class Edit {
 			}
 		}
 
-		// Initialize luma masks
 		this.lumaMaskController.initialize();
-
-		// Resolve timing for all clips
 		await this.timingManager.resolveAllTiming();
-
-		// Update total duration
 		this.updateTotalDuration();
-
-		// Load soundtrack if present
 		if (parsedEdit.timeline.soundtrack) await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
 
-		// Emit events
 		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
 		this.emitEditChanged(source);
 	}
@@ -270,10 +256,7 @@ export class Edit {
 		PlayerFactory.cleanup();
 	}
 
-	/**
-	 * Update canvas visuals after size change (viewport mask, background, zoom).
-	 * @internal Called by OutputSettingsManager
-	 */
+	/* @internal Update canvas visuals after size change (viewport mask, background, zoom). */
 	public updateCanvasForSize(): void {
 		this.events.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,
@@ -307,7 +290,7 @@ export class Edit {
 	/**
 	 * Reload the edit with a new configuration (hot-reload).
 	 */
-	public async loadEdit(edit: EditConfig): Promise<void> {
+	public async loadEdit(edit: UnresolvedEdit): Promise<void> {
 		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
 			this.preserveClipIdsForGranularUpdate(edit);
 
@@ -356,7 +339,7 @@ export class Edit {
 		player.layer = this.tracks.length + 1;
 		await this.addPlayer(this.tracks.length, player);
 	}
-	public getEdit(): EditConfig {
+	public getEdit(): UnresolvedEdit {
 		const doc = this.document.toJSON();
 		const mergeFields = this.mergeFieldService.toSerializedArray();
 		if (mergeFields.length > 0) doc.merge = mergeFields;
@@ -1039,7 +1022,7 @@ export class Edit {
 	/**
 	 * Checks if edit has structural changes requiring full reload.
 	 */
-	private hasStructuralChanges(newEdit: EditConfig): boolean {
+	private hasStructuralChanges(newEdit: UnresolvedEdit): boolean {
 		if (!this.document) return true;
 
 		const currentTracks = this.document.getTracks();
@@ -1077,7 +1060,7 @@ export class Edit {
 	/**
 	 * Transfers existing clip IDs from the current document to the new edit configuration.
 	 */
-	private preserveClipIdsForGranularUpdate(newEdit: EditConfig): void {
+	private preserveClipIdsForGranularUpdate(newEdit: UnresolvedEdit): void {
 		if (!this.document) return;
 
 		const existingTracks = this.document.getTracks();
@@ -1105,7 +1088,7 @@ export class Edit {
 	 * @param oldTracks - The old tracks (captured before document update)
 	 * @param oldOutput - The old output settings (captured before document update)
 	 */
-	private async applyGranularChanges(newEdit: EditConfig, oldTracks: Track[], oldOutput: EditConfig["output"]): Promise<void> {
+	private async applyGranularChanges(newEdit: UnresolvedEdit, oldTracks: Track[], oldOutput: UnresolvedEdit["output"]): Promise<void> {
 		const newOutput = newEdit.output;
 
 		// 1. Apply output changes
