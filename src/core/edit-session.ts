@@ -1021,6 +1021,12 @@ export class Edit {
 
 	/**
 	 * Checks if edit has structural changes requiring full reload.
+	 *
+	 * TODO: Expand granular path to handle more cases:
+	 * - Clip add/remove: Use existing addClip()/deleteClip() commands
+	 * - Soundtrack changes: Add/remove AudioPlayer via commands
+	 * - Font changes: Load new fonts incrementally
+	 * - Merge field changes: Re-resolve affected clips
 	 */
 	private hasStructuralChanges(newEdit: UnresolvedEdit): boolean {
 		if (!this.document) return true;
@@ -1051,6 +1057,11 @@ export class Edit {
 
 		// Fonts changed = structural (requires re-loading fonts)
 		if (JSON.stringify(this.document.getFonts()) !== JSON.stringify(newEdit.timeline.fonts ?? [])) {
+			return true;
+		}
+
+		// Soundtrack changed = structural (requires creating/destroying AudioPlayer)
+		if (JSON.stringify(this.document.getSoundtrack()) !== JSON.stringify(newEdit.timeline.soundtrack)) {
 			return true;
 		}
 

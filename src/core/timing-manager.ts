@@ -5,7 +5,13 @@
 
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { buildAliasPlayerMap, buildClipIdMap, buildTimingDependencies, detectCircularReferences, topologicalSort } from "@core/timing/alias-resolution";
+import {
+	buildAliasPlayerMap,
+	buildClipIdMap,
+	buildTimingDependencies,
+	detectCircularReferences,
+	topologicalSort
+} from "@core/timing/alias-resolution";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type AliasReference, type Seconds, isAliasReference, parseAliasName, sec } from "@core/timing/types";
 

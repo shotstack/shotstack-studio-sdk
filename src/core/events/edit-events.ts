@@ -1,7 +1,33 @@
 import type { Player } from "@canvas/players/player";
 import type { MergeField } from "@core/merge/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
-import type { ResolvedClip, ResolvedEdit } from "@schemas";
+import type { Destination, Output, ResolvedClip, ResolvedEdit } from "@schemas";
+
+// ─────────────────────────────────────────────────────────────
+// Event Emission Patterns
+// ─────────────────────────────────────────────────────────────
+//
+// Events are emitted from 4 different contexts, each with its own pattern:
+//
+// 1. EditSession (direct emit):
+//    this.events.emit(EditEvent.TimelineUpdated, { current });
+//    → EditSession owns the EventEmitter, so it emits directly.
+//
+// 2. EditSession (emitEditChanged wrapper):
+//    this.emitEditChanged("command-name");
+//    → Special wrapper for EditChanged only. Has batching (skips if
+//      isBatchingEvents is true) and auto-adds timestamp.
+//
+// 3. Commands (context delegation):
+//    context.emitEvent(EditEvent.ClipUpdated, { previous, current });
+//    → Commands receive a CommandContext to stay decoupled from Edit.
+//      This enables testing commands in isolation.
+//
+// 4. Managers (delegate through edit):
+//    this.edit.events.emit(EditEvent.OutputResized, { width, height });
+//    → Managers hold a reference to Edit and delegate to its emitter.
+//
+// ─────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────
 // Shared Payload Types
@@ -151,11 +177,11 @@ export type EditEventMap = {
 
 	// Output
 	[EditEvent.OutputResized]: { width: number; height: number };
-	[EditEvent.OutputResolutionChanged]: { resolution: string | undefined };
-	[EditEvent.OutputAspectRatioChanged]: { aspectRatio: string | undefined };
+	[EditEvent.OutputResolutionChanged]: { resolution: Output["resolution"] };
+	[EditEvent.OutputAspectRatioChanged]: { aspectRatio: Output["aspectRatio"] };
 	[EditEvent.OutputFpsChanged]: { fps: number };
-	[EditEvent.OutputFormatChanged]: { format: string };
-	[EditEvent.OutputDestinationsChanged]: { destinations: unknown[] };
+	[EditEvent.OutputFormatChanged]: { format: Output["format"] };
+	[EditEvent.OutputDestinationsChanged]: { destinations: Destination[] };
 
 	// Merge fields
 	[EditEvent.MergeFieldRegistered]: { field: MergeField };
@@ -177,14 +203,14 @@ export type EditEventMap = {
 // Internal event payloads - not part of public API
 export type InternalEventMap = {
 	// Canvas interaction
-	"canvas:clipClicked": { player: Player };
-	"canvas:backgroundClicked": void;
+	[InternalEvent.CanvasClipClicked]: { player: Player };
+	[InternalEvent.CanvasBackgroundClicked]: void;
 
 	// Font
-	"font:capabilitiesChanged": { supportsBold: boolean };
+	[InternalEvent.FontCapabilitiesChanged]: { supportsBold: boolean };
 
 	// Toolbar
-	"toolbar:buttonsChanged": { buttons: ToolbarButtonConfig[] };
+	[InternalEvent.ToolbarButtonsChanged]: { buttons: ToolbarButtonConfig[] };
 
 	// Resolution
 	[InternalEvent.Resolved]: { edit: ResolvedEdit };
