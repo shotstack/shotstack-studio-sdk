@@ -1,3 +1,4 @@
+import type { Seconds } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
 /** Configuration options for Timeline */
@@ -88,12 +89,12 @@ export interface ViewportState {
 
 /** Playback state */
 export interface PlaybackState {
-	/** Current playback time in milliseconds */
-	time: number;
+	/** Current playback time in seconds */
+	time: Seconds;
 	/** Whether playback is active */
 	isPlaying: boolean;
-	/** Total timeline duration in milliseconds */
-	duration: number;
+	/** Total timeline duration in seconds */
+	duration: Seconds;
 }
 
 /** Clip info for interactions */

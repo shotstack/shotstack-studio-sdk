@@ -1,3 +1,5 @@
+import { type Seconds, sec } from "@core/timing/types";
+
 export interface ToolbarOptions {
 	onPlay: () => void;
 	onPause: () => void;
@@ -14,8 +16,8 @@ export class ToolbarComponent {
 	private playButton: HTMLButtonElement | null = null;
 	private zoomSlider: HTMLInputElement | null = null;
 	private isPlaying = false;
-	private currentTimeMs = 0;
-	private durationMs = 0;
+	private currentTime: Seconds = sec(0);
+	private duration: Seconds = sec(0);
 
 	constructor(options: ToolbarOptions, initialZoom: number = 50) {
 		this.element = document.createElement("div");
@@ -32,7 +34,7 @@ export class ToolbarComponent {
 
 		// Update time display
 		if (this.timeDisplayElement) {
-			this.timeDisplayElement.textContent = `${this.formatTime(this.currentTimeMs)} / ${this.formatTime(this.durationMs)}`;
+			this.timeDisplayElement.textContent = `${this.formatTime(this.currentTime)} / ${this.formatTime(this.duration)}`;
 		}
 	}
 
@@ -129,9 +131,9 @@ export class ToolbarComponent {
 		this.isPlaying = isPlaying;
 	}
 
-	public updateTimeDisplay(currentTimeMs: number, durationMs: number): void {
-		this.currentTimeMs = currentTimeMs;
-		this.durationMs = durationMs;
+	public updateTimeDisplay(currentTime: Seconds, duration: Seconds): void {
+		this.currentTime = currentTime;
+		this.duration = duration;
 	}
 
 	public setZoom(pixelsPerSecond: number): void {
@@ -140,11 +142,10 @@ export class ToolbarComponent {
 		}
 	}
 
-	private formatTime(ms: number): string {
-		const totalSeconds = ms / 1000;
-		const minutes = Math.floor(totalSeconds / 60);
-		const seconds = totalSeconds % 60;
-		return `${minutes.toString().padStart(2, "0")}:${seconds.toFixed(1).padStart(4, "0")}`;
+	private formatTime(seconds: number): string {
+		const minutes = Math.floor(seconds / 60);
+		const secs = seconds % 60;
+		return `${minutes.toString().padStart(2, "0")}:${secs.toFixed(1).padStart(4, "0")}`;
 	}
 
 	// Icon SVGs - pointer-events:none ensures clicks pass through to button

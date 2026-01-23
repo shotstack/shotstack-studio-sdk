@@ -3,7 +3,7 @@ import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { MoveClipWithPushCommand } from "@core/commands/move-clip-with-push-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import type { Edit } from "@core/edit-session";
-import { sec } from "@core/timing/types";
+import { type Seconds, sec } from "@core/timing/types";
 import type { ClipState, TimelineInteractionConfig } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
 
@@ -287,7 +287,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const mouseX = e.clientX - rect.left + scrollX;
 		const mouseY = e.clientY - rect.top + this.tracksContainer.scrollTop;
 		const clipX = mouseX - state.dragOffsetX;
-		let clipTime = Math.max(0, clipX / pps);
+		let clipTime: Seconds = sec(Math.max(0, clipX / pps));
 
 		// 4. Determine drag target and apply snapping
 		const dragTarget = this.getDragTargetAtYPosition(mouseY);
@@ -319,7 +319,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 	// ─── Drag Behavior Helpers ─────────────────────────────────────────────────
 
-	private applySnapAndShowLine(clipTime: number, feedbackConfig: FeedbackConfig): number {
+	private applySnapAndShowLine(clipTime: Seconds, feedbackConfig: FeedbackConfig): Seconds {
 		const snappedTime = this.applySnap(clipTime);
 		if (snappedTime !== null) {
 			this.feedbackElements.snapLine = showSnapLine(this.feedbackElements, snappedTime, feedbackConfig);
@@ -329,16 +329,16 @@ export class InteractionController implements TimelineInteractionRegistration {
 		return clipTime;
 	}
 
-	private applyDragBehavior(state: DraggingState, behavior: DragBehavior, clipTime: number, feedbackConfig: FeedbackConfig): number {
+	private applyDragBehavior(state: DraggingState, behavior: DragBehavior, clipTime: Seconds, feedbackConfig: FeedbackConfig): Seconds {
 		switch (behavior.type) {
 			case "track-insert":
-				this.state = updateDragState(state, { collisionResult: { newStartTime: clipTime, pushOffset: 0 } });
+				this.state = updateDragState(state, { collisionResult: { newStartTime: clipTime, pushOffset: sec(0) } });
 				clearLumaFeedback(this.feedbackElements, state.clipElement);
 				return clipTime;
 
 			case "luma-overlay":
 				clearLumaFeedback(this.feedbackElements, state.clipElement);
-				this.state = updateDragState(state, { collisionResult: { newStartTime: clipTime, pushOffset: 0 } });
+				this.state = updateDragState(state, { collisionResult: { newStartTime: clipTime, pushOffset: sec(0) } });
 				return clipTime;
 
 			case "luma-blocked":
@@ -359,7 +359,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		}
 	}
 
-	private applyCollisionAndUpdateState(state: DraggingState, clipTime: number): number {
+	private applyCollisionAndUpdateState(state: DraggingState, clipTime: Seconds): Seconds {
 		if (state.dragTarget.type !== "track") return clipTime;
 
 		const collisionResult = this.resolveClipCollisionOnTrack(state.dragTarget.trackIndex, clipTime, state.draggedClipLength, state.clipRef);
@@ -367,12 +367,12 @@ export class InteractionController implements TimelineInteractionRegistration {
 		return collisionResult.newStartTime;
 	}
 
-	private applyLumaAttachmentFeedback(state: DraggingState, targetClip: ClipState, feedbackConfig: FeedbackConfig): number {
-		if (state.dragTarget.type !== "track") return targetClip.config.start;
+	private applyLumaAttachmentFeedback(state: DraggingState, targetClip: ClipState, feedbackConfig: FeedbackConfig): Seconds {
+		if (state.dragTarget.type !== "track") return sec(targetClip.config.start);
 
 		const tracks = this.stateManager.getTracks();
 		const targetTrack = tracks[state.dragTarget.trackIndex];
-		if (!targetTrack) return targetClip.config.start;
+		if (!targetTrack) return sec(targetClip.config.start);
 
 		const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex);
 		const targetTrackHeight = getTrackHeight(targetTrack.primaryAssetType);
@@ -392,12 +392,12 @@ export class InteractionController implements TimelineInteractionRegistration {
 		this.feedbackElements.lumaTargetClipElement = lumaResult.targetClipElement;
 		this.feedbackElements.lumaConnectionLine = lumaResult.connectionLine;
 
-		const newTime = targetClip.config.start;
-		this.state = updateDragState(state, { collisionResult: { newStartTime: newTime, pushOffset: 0 } });
+		const newTime = sec(targetClip.config.start);
+		this.state = updateDragState(state, { collisionResult: { newStartTime: newTime, pushOffset: sec(0) } });
 		return newTime;
 	}
 
-	private updateGhostPosition(state: DraggingState, clipTime: number, feedbackConfig: FeedbackConfig): void {
+	private updateGhostPosition(state: DraggingState, clipTime: Seconds, feedbackConfig: FeedbackConfig): void {
 		const { ghost } = state;
 		if (state.dragTarget.type === "track") {
 			ghost.style.display = "block"; // eslint-disable-line no-param-reassign -- DOM manipulation
@@ -436,7 +436,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const feedbackConfig = { pixelsPerSecond: pps, scrollLeft: scrollX, tracksOffset };
 
 		const x = e.clientX - rect.left + scrollX;
-		let time = Math.max(0, x / pps);
+		let time: Seconds = sec(Math.max(0, x / pps));
 
 		// Apply snapping
 		const snappedTime = this.applySnap(time);
@@ -453,20 +453,20 @@ export class InteractionController implements TimelineInteractionRegistration {
 		if (edge === "left") {
 			// Resize from left edge (keep end fixed, change start and length)
 			const originalEnd = originalStart + originalLength;
-			const newStart = Math.max(0, Math.min(time, originalEnd - 0.1));
-			const newLength = originalEnd - newStart;
+			const newStart = sec(Math.max(0, Math.min(time, originalEnd - 0.1)));
+			const newLength = sec(originalEnd - newStart);
 
 			clipElement.style.setProperty("--clip-start", String(newStart));
 			clipElement.style.setProperty("--clip-length", String(newLength));
 			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(this.feedbackElements, newStart, e.clientX - rect.left, e.clientY - rect.top);
 		} else {
 			// Resize from right edge
-			const newLength = Math.max(0.1, time - originalStart);
+			const newLength = sec(Math.max(0.1, time - originalStart));
 
 			clipElement.style.setProperty("--clip-length", String(newLength));
 			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(
 				this.feedbackElements,
-				originalStart + newLength,
+				sec(originalStart + newLength),
 				e.clientX - rect.left,
 				e.clientY - rect.top
 			);
@@ -679,7 +679,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 
 		const x = e.clientX - rect.left + scrollX;
-		let time = Math.max(0, x / pps);
+		let time: Seconds = sec(Math.max(0, x / pps));
 
 		// Apply snapping
 		const snappedTime = this.applySnap(time);
@@ -758,10 +758,10 @@ export class InteractionController implements TimelineInteractionRegistration {
 	}
 
 	/** Resolve clip collision based on clip boundaries (delegates to pure function) */
-	private resolveClipCollisionOnTrack(trackIndex: number, desiredStart: number, clipLength: number, excludeClip: ClipRef): CollisionResult {
+	private resolveClipCollisionOnTrack(trackIndex: number, desiredStart: Seconds, clipLength: Seconds, excludeClip: ClipRef): CollisionResult {
 		const track = this.stateManager.getTracks()[trackIndex];
 		if (!track) {
-			return { newStartTime: desiredStart, pushOffset: 0 };
+			return { newStartTime: desiredStart, pushOffset: sec(0) };
 		}
 
 		return resolveClipCollision({
@@ -773,7 +773,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 	}
 
 	/** Find a non-luma content clip at the given position on a track (delegates to pure function) */
-	private findContentClipAtPositionOnTrack(trackIndex: number, time: number, excludeClipRef?: ClipRef): ClipState | null {
+	private findContentClipAtPositionOnTrack(trackIndex: number, time: Seconds, excludeClipRef?: ClipRef): ClipState | null {
 		const track = this.stateManager.getTracks()[trackIndex];
 		if (!track) return null;
 
@@ -790,12 +790,12 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 		this.snapPoints = buildSnapPoints({
 			tracks,
-			playheadTimeMs: playback.time,
+			playheadTime: playback.time,
 			excludeClip
 		});
 	}
 
-	private applySnap(time: number): number | null {
+	private applySnap(time: Seconds): Seconds | null {
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 
 		return findNearestSnapPoint({

@@ -1,3 +1,5 @@
+import { type Seconds, sec } from "@core/timing/types";
+
 import type { ClipState, TrackState } from "../timeline.types";
 import { getTrackHeight } from "../timeline.types";
 
@@ -9,13 +11,13 @@ export interface ClipRef {
 }
 
 export interface SnapPoint {
-	readonly time: number;
+	readonly time: Seconds;
 	readonly type: "clip-start" | "clip-end" | "playhead";
 }
 
 export interface CollisionResult {
-	readonly newStartTime: number;
-	readonly pushOffset: number;
+	readonly newStartTime: Seconds;
+	readonly pushOffset: Seconds;
 }
 
 export type DragTarget = { readonly type: "track"; readonly trackIndex: number } | { readonly type: "insert"; readonly insertionIndex: number };
@@ -66,16 +68,16 @@ export function determineDragBehavior(input: DetermineDragBehaviorInput): DragBe
 
 // ─── Coordinate Transforms ─────────────────────────────────────────────────
 
-export function pixelsToSeconds(px: number, pixelsPerSecond: number): number {
-	return pixelsPerSecond === 0 ? 0 : px / pixelsPerSecond;
+export function pixelsToSeconds(px: number, pixelsPerSecond: number): Seconds {
+	return sec(pixelsPerSecond === 0 ? 0 : px / pixelsPerSecond);
 }
-export function secondsToPixels(seconds: number, pixelsPerSecond: number): number {
+export function secondsToPixels(seconds: Seconds, pixelsPerSecond: number): number {
 	return seconds * pixelsPerSecond;
 }
 
 // ─── Time Formatting ───────────────────────────────────────────────────────
 
-export function formatDragTime(seconds: number): string {
+export function formatDragTime(seconds: Seconds): string {
 	const mins = Math.floor(seconds / 60);
 	const secs = Math.floor(seconds % 60);
 	const tenths = Math.floor((seconds % 1) * 10);
@@ -138,17 +140,17 @@ export function getDragTargetAtY(y: number, tracks: readonly TrackState[]): Drag
 
 export interface BuildSnapPointsInput {
 	readonly tracks: readonly TrackState[];
-	readonly playheadTimeMs: number;
+	readonly playheadTime: Seconds;
 	readonly excludeClip: ClipRef;
 }
 
 export function buildSnapPoints(input: BuildSnapPointsInput): SnapPoint[] {
-	const { tracks, playheadTimeMs, excludeClip } = input;
+	const { tracks, playheadTime, excludeClip } = input;
 	const snapPoints: SnapPoint[] = [];
 
 	// Add playhead position
 	snapPoints.push({
-		time: playheadTimeMs / 1000,
+		time: playheadTime,
 		type: "playhead"
 	});
 
@@ -159,11 +161,11 @@ export function buildSnapPoints(input: BuildSnapPointsInput): SnapPoint[] {
 			const isExcluded = clip.trackIndex === excludeClip.trackIndex && clip.clipIndex === excludeClip.clipIndex;
 			if (!isExcluded) {
 				snapPoints.push({
-					time: clip.config.start,
+					time: sec(clip.config.start),
 					type: "clip-start"
 				});
 				snapPoints.push({
-					time: clip.config.start + clip.config.length,
+					time: sec(clip.config.start + clip.config.length),
 					type: "clip-end"
 				});
 			}
@@ -174,13 +176,13 @@ export function buildSnapPoints(input: BuildSnapPointsInput): SnapPoint[] {
 }
 
 export interface ApplySnapInput {
-	readonly time: number;
+	readonly time: Seconds;
 	readonly snapPoints: readonly SnapPoint[];
 	readonly snapThresholdPx: number;
 	readonly pixelsPerSecond: number;
 }
 
-export function findNearestSnapPoint(input: ApplySnapInput): number | null {
+export function findNearestSnapPoint(input: ApplySnapInput): Seconds | null {
 	const { time, snapPoints, snapThresholdPx, pixelsPerSecond } = input;
 	const thresholdSeconds = snapThresholdPx / pixelsPerSecond;
 
@@ -238,14 +240,14 @@ export function resolveOverlapSnap(
 
 	if (snapRight) {
 		// Snap to RIGHT of target clip
-		const newStartTime = targetEnd;
+		const newStartTime = sec(targetEnd);
 		const newEndTime = newStartTime + clipLength;
 		const nextClip = sortedClips[targetIndex + 1];
 
 		if (nextClip && newEndTime > nextClip.config.start) {
-			return { newStartTime, pushOffset: newEndTime - nextClip.config.start };
+			return { newStartTime, pushOffset: sec(newEndTime - nextClip.config.start) };
 		}
-		return { newStartTime, pushOffset: 0 };
+		return { newStartTime, pushOffset: sec(0) };
 	}
 
 	// Snap to LEFT of target clip
@@ -253,23 +255,23 @@ export function resolveOverlapSnap(
 	const availableSpace = targetStart - prevClipEnd;
 
 	if (availableSpace >= clipLength) {
-		return { newStartTime: targetStart - clipLength, pushOffset: 0 };
+		return { newStartTime: sec(targetStart - clipLength), pushOffset: sec(0) };
 	}
 
 	// No space on left - push target clip forward
-	const newStartTime = prevClipEnd;
-	return { newStartTime, pushOffset: newStartTime + clipLength - targetStart };
+	const newStartTime = sec(prevClipEnd);
+	return { newStartTime, pushOffset: sec(newStartTime + clipLength - targetStart) };
 }
 
 export interface ResolveCollisionInput {
 	readonly track: TrackState;
-	readonly desiredStart: number;
-	readonly clipLength: number;
+	readonly desiredStart: Seconds;
+	readonly clipLength: Seconds;
 	readonly excludeClip: ClipRef;
 }
 
 /** Default result when no collision detected */
-const NO_COLLISION: CollisionResult = { newStartTime: 0, pushOffset: 0 };
+const NO_COLLISION: CollisionResult = { newStartTime: sec(0), pushOffset: sec(0) };
 
 export function resolveClipCollision(input: ResolveCollisionInput): CollisionResult {
 	const { track, desiredStart, clipLength, excludeClip } = input;
@@ -283,19 +285,19 @@ export function resolveClipCollision(input: ResolveCollisionInput): CollisionRes
 	if (overlap) {
 		// Skip collision for luma assets - they should be overlayable
 		if (overlap.clip.config.asset?.type === "luma") {
-			return { newStartTime: desiredStart, pushOffset: 0 };
+			return { newStartTime: desiredStart, pushOffset: sec(0) };
 		}
 		return resolveOverlapSnap(overlap.clip, overlap.index, desiredStart, clipLength, clips);
 	}
 
-	return { newStartTime: desiredStart, pushOffset: 0 };
+	return { newStartTime: desiredStart, pushOffset: sec(0) };
 }
 
 // ─── Content Clip Detection ────────────────────────────────────────────────
 
 export interface FindContentClipInput {
 	readonly track: TrackState;
-	readonly time: number;
+	readonly time: Seconds;
 	readonly excludeClip?: ClipRef;
 }
 

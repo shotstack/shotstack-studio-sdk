@@ -5,6 +5,7 @@
  * These functions have no side effects and are easily testable in isolation.
  */
 
+import { sec } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
 import {
@@ -58,32 +59,32 @@ function createMockTrack(clips: ClipState[], primaryAssetType = "image"): TrackS
 describe("Coordinate Transforms", () => {
 	describe("pixelsToSeconds", () => {
 		it("converts pixels to seconds at standard zoom", () => {
-			expect(pixelsToSeconds(100, 50)).toBe(2); // 100px / 50pps = 2s
+			expect(pixelsToSeconds(100, 50)).toEqual(sec(2)); // 100px / 50pps = 2s
 		});
 
 		it("handles zero pixels", () => {
-			expect(pixelsToSeconds(0, 50)).toBe(0);
+			expect(pixelsToSeconds(0, 50)).toEqual(sec(0));
 		});
 
 		it("handles different zoom levels", () => {
-			expect(pixelsToSeconds(100, 100)).toBe(1);
-			expect(pixelsToSeconds(100, 25)).toBe(4);
+			expect(pixelsToSeconds(100, 100)).toEqual(sec(1));
+			expect(pixelsToSeconds(100, 25)).toEqual(sec(4));
 		});
 	});
 
 	describe("secondsToPixels", () => {
 		it("converts seconds to pixels at standard zoom", () => {
-			expect(secondsToPixels(2, 50)).toBe(100); // 2s * 50pps = 100px
+			expect(secondsToPixels(sec(2), 50)).toBe(100); // 2s * 50pps = 100px
 		});
 
 		it("handles zero seconds", () => {
-			expect(secondsToPixels(0, 50)).toBe(0);
+			expect(secondsToPixels(sec(0), 50)).toBe(0);
 		});
 
 		it("is inverse of pixelsToSeconds", () => {
 			const pps = 50;
-			const seconds = 3.5;
-			expect(pixelsToSeconds(secondsToPixels(seconds, pps), pps)).toBeCloseTo(seconds);
+			const seconds = sec(3.5);
+			expect(pixelsToSeconds(secondsToPixels(seconds, pps), pps)).toEqual(seconds);
 		});
 	});
 });
@@ -92,24 +93,24 @@ describe("Coordinate Transforms", () => {
 
 describe("formatDragTime", () => {
 	it("formats zero seconds", () => {
-		expect(formatDragTime(0)).toBe("00:00.0");
+		expect(formatDragTime(sec(0))).toBe("00:00.0");
 	});
 
 	it("formats seconds with tenths", () => {
 		// Note: Due to floating point precision, 5.3 becomes 5.299... which floors to 2
-		expect(formatDragTime(5.35)).toBe("00:05.3");
+		expect(formatDragTime(sec(5.35))).toBe("00:05.3");
 	});
 
 	it("formats minutes and seconds", () => {
-		expect(formatDragTime(65)).toBe("01:05.0");
+		expect(formatDragTime(sec(65))).toBe("01:05.0");
 	});
 
 	it("formats complex time correctly", () => {
-		expect(formatDragTime(125.7)).toBe("02:05.7");
+		expect(formatDragTime(sec(125.7))).toBe("02:05.7");
 	});
 
 	it("pads single digit values", () => {
-		expect(formatDragTime(3)).toBe("00:03.0");
+		expect(formatDragTime(sec(3))).toBe("00:03.0");
 	});
 });
 
@@ -201,11 +202,11 @@ describe("Snap Point Logic", () => {
 		it("includes playhead position", () => {
 			const points = buildSnapPoints({
 				tracks: [],
-				playheadTimeMs: 5000,
+				playheadTime: sec(5),
 				excludeClip: { trackIndex: 0, clipIndex: 0 }
 			});
 
-			expect(points).toContainEqual({ time: 5, type: "playhead" });
+			expect(points).toContainEqual({ time: sec(5), type: "playhead" });
 		});
 
 		it("includes clip start and end edges", () => {
@@ -214,7 +215,7 @@ describe("Snap Point Logic", () => {
 
 			const points = buildSnapPoints({
 				tracks: [track],
-				playheadTimeMs: 0,
+				playheadTime: sec(0),
 				excludeClip: { trackIndex: 1, clipIndex: 0 } // Different clip
 			});
 
@@ -228,7 +229,7 @@ describe("Snap Point Logic", () => {
 
 			const points = buildSnapPoints({
 				tracks: [track],
-				playheadTimeMs: 0,
+				playheadTime: sec(0),
 				excludeClip: { trackIndex: 0, clipIndex: 0 } // Same clip
 			});
 
@@ -240,24 +241,24 @@ describe("Snap Point Logic", () => {
 
 	describe("findNearestSnapPoint", () => {
 		const snapPoints = [
-			{ time: 0, type: "playhead" as const },
-			{ time: 5, type: "clip-start" as const },
-			{ time: 10, type: "clip-end" as const }
+			{ time: sec(0), type: "playhead" as const },
+			{ time: sec(5), type: "clip-start" as const },
+			{ time: sec(10), type: "clip-end" as const }
 		];
 
 		it("snaps to nearby point within threshold", () => {
 			const result = findNearestSnapPoint({
-				time: 4.9,
+				time: sec(4.9),
 				snapPoints,
 				snapThresholdPx: 10,
 				pixelsPerSecond: 50
 			});
-			expect(result).toBe(5);
+			expect(result).toEqual(sec(5));
 		});
 
 		it("returns null when no point within threshold", () => {
 			const result = findNearestSnapPoint({
-				time: 7.5,
+				time: sec(7.5),
 				snapPoints,
 				snapThresholdPx: 10,
 				pixelsPerSecond: 50
@@ -267,12 +268,12 @@ describe("Snap Point Logic", () => {
 
 		it("returns first match (not closest)", () => {
 			const result = findNearestSnapPoint({
-				time: 0.1,
+				time: sec(0.1),
 				snapPoints,
 				snapThresholdPx: 10,
 				pixelsPerSecond: 50
 			});
-			expect(result).toBe(0);
+			expect(result).toEqual(sec(0));
 		});
 	});
 });
@@ -364,12 +365,12 @@ describe("Collision Detection", () => {
 			const track = createMockTrack([]);
 			const result = resolveClipCollision({
 				track,
-				desiredStart: 5,
-				clipLength: 1,
+				desiredStart: sec(5),
+				clipLength: sec(1),
 				excludeClip: { trackIndex: 0, clipIndex: 0 }
 			});
-			expect(result.newStartTime).toBe(5);
-			expect(result.pushOffset).toBe(0);
+			expect(result.newStartTime).toEqual(sec(5));
+			expect(result.pushOffset).toEqual(sec(0));
 		});
 
 		it("returns desired position when no collision", () => {
@@ -378,11 +379,11 @@ describe("Collision Detection", () => {
 
 			const result = resolveClipCollision({
 				track,
-				desiredStart: 5,
-				clipLength: 1,
+				desiredStart: sec(5),
+				clipLength: sec(1),
 				excludeClip: { trackIndex: 1, clipIndex: 0 }
 			});
-			expect(result.newStartTime).toBe(5);
+			expect(result.newStartTime).toEqual(sec(5));
 		});
 
 		it("resolves collision with snap", () => {
@@ -391,12 +392,12 @@ describe("Collision Detection", () => {
 
 			const result = resolveClipCollision({
 				track,
-				desiredStart: 2.5,
-				clipLength: 1,
+				desiredStart: sec(2.5),
+				clipLength: sec(1),
 				excludeClip: { trackIndex: 1, clipIndex: 0 }
 			});
 			// Should snap to end of target clip (4)
-			expect(result.newStartTime).toBe(4);
+			expect(result.newStartTime).toEqual(sec(4));
 		});
 
 		it("allows overlap with luma clips", () => {
@@ -405,12 +406,12 @@ describe("Collision Detection", () => {
 
 			const result = resolveClipCollision({
 				track,
-				desiredStart: 2.5,
-				clipLength: 1,
+				desiredStart: sec(2.5),
+				clipLength: sec(1),
 				excludeClip: { trackIndex: 1, clipIndex: 0 }
 			});
 			// Should not resolve - luma clips are overlayable
-			expect(result.newStartTime).toBe(2.5);
+			expect(result.newStartTime).toEqual(sec(2.5));
 		});
 	});
 });
@@ -420,7 +421,7 @@ describe("Collision Detection", () => {
 describe("findContentClipAtPosition", () => {
 	it("returns null for empty track", () => {
 		const track = createMockTrack([]);
-		const result = findContentClipAtPosition({ track, time: 5 });
+		const result = findContentClipAtPosition({ track, time: sec(5) });
 		expect(result).toBeNull();
 	});
 
@@ -428,7 +429,7 @@ describe("findContentClipAtPosition", () => {
 		const clips = [createMockClip(0, 2, "image", 0, 0), createMockClip(3, 2, "video", 0, 1)];
 		const track = createMockTrack(clips);
 
-		const result = findContentClipAtPosition({ track, time: 3.5 });
+		const result = findContentClipAtPosition({ track, time: sec(3.5) });
 		expect(result).not.toBeNull();
 		expect(result?.clipIndex).toBe(1);
 	});
@@ -437,7 +438,7 @@ describe("findContentClipAtPosition", () => {
 		const clips = [createMockClip(0, 5, "luma", 0, 0)];
 		const track = createMockTrack(clips);
 
-		const result = findContentClipAtPosition({ track, time: 2 });
+		const result = findContentClipAtPosition({ track, time: sec(2) });
 		expect(result).toBeNull();
 	});
 
@@ -447,7 +448,7 @@ describe("findContentClipAtPosition", () => {
 
 		const result = findContentClipAtPosition({
 			track,
-			time: 2,
+			time: sec(2),
 			excludeClip: { trackIndex: 0, clipIndex: 0 }
 		});
 		expect(result).toBeNull();
@@ -457,7 +458,7 @@ describe("findContentClipAtPosition", () => {
 		const clips = [createMockClip(0, 2, "image", 0, 0)];
 		const track = createMockTrack(clips);
 
-		const result = findContentClipAtPosition({ track, time: 5 });
+		const result = findContentClipAtPosition({ track, time: sec(5) });
 		expect(result).toBeNull();
 	});
 });

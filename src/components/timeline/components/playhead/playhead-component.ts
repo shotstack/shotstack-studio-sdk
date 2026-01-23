@@ -1,5 +1,7 @@
+import { type Seconds, sec } from "@core/timing/types";
+
 export interface PlayheadOptions {
-	onSeek: (timeMs: number) => void;
+	onSeek: (time: Seconds) => void;
 	getScrollX?: () => number;
 }
 
@@ -7,7 +9,7 @@ export interface PlayheadOptions {
 export class PlayheadComponent {
 	public readonly element: HTMLElement;
 	private readonly options: PlayheadOptions;
-	private currentTimeMs = 0;
+	private currentTime: Seconds = sec(0);
 	private pixelsPerSecond = 50;
 	private isDragging = false;
 	private containerRect: DOMRect | null = null;
@@ -53,13 +55,13 @@ export class PlayheadComponent {
 			// Get current scroll from callback or stored value
 			const scrollX = this.options.getScrollX?.() ?? this.currentScrollX;
 			const x = e.clientX - this.containerRect.left + scrollX;
-			const time = Math.max(0, x / this.pixelsPerSecond);
+			const time = sec(Math.max(0, x / this.pixelsPerSecond));
 
 			// Update position immediately for smooth feedback
-			this.setPosition(time * 1000);
+			this.setPosition(time);
 
 			// Emit seek event
-			this.options.onSeek(time * 1000);
+			this.options.onSeek(time);
 		};
 
 		const onPointerUp = (e: PointerEvent) => {
@@ -80,10 +82,9 @@ export class PlayheadComponent {
 		if (!this.needsUpdate) return;
 		this.needsUpdate = false;
 
-		const timeSec = this.currentTimeMs / 1000;
-		const x = timeSec * this.pixelsPerSecond;
+		const x = this.currentTime * this.pixelsPerSecond;
 
-		this.element.style.setProperty("--playhead-time", String(timeSec));
+		this.element.style.setProperty("--playhead-time", String(this.currentTime));
 		this.element.style.left = `${x}px`;
 	}
 
@@ -96,22 +97,22 @@ export class PlayheadComponent {
 		this.needsUpdate = true;
 	}
 
-	public setTime(timeMs: number): void {
+	public setTime(time: Seconds): void {
 		if (this.isDragging) return; // Don't update during drag
 
-		this.currentTimeMs = timeMs;
+		this.currentTime = time;
 		this.needsUpdate = true;
 	}
 
-	private setPosition(timeMs: number): void {
-		this.currentTimeMs = timeMs;
+	private setPosition(time: Seconds): void {
+		this.currentTime = time;
 		this.needsUpdate = true;
 		// Immediate draw for responsive drag feedback
 		this.draw();
 	}
 
-	public getTime(): number {
-		return this.currentTimeMs;
+	public getTime(): Seconds {
+		return this.currentTime;
 	}
 
 	public setScrollX(scrollX: number): void {

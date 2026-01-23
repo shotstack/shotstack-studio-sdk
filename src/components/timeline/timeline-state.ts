@@ -1,6 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
+import { type Seconds, sec } from "@core/timing/types";
 import type { ResolvedClip, ResolvedTrack } from "@schemas";
 
 import type { TrackState, ClipState, ViewportState, PlaybackState, ClipVisualState, InteractionQuery } from "./timeline.types";
@@ -114,12 +115,12 @@ export class TimelineStateManager {
 
 	// ========== Utilities ==========
 
-	public getTimelineDuration(): number {
-		return this.edit.totalDuration; // totalDuration is in seconds
+	public getTimelineDuration(): Seconds {
+		return this.edit.totalDuration;
 	}
 
-	public getExtendedDuration(): number {
-		return Math.max(60, this.getTimelineDuration() * 1.5);
+	public getExtendedDuration(): Seconds {
+		return sec(Math.max(60, this.getTimelineDuration() * 1.5));
 	}
 
 	public getTimelineWidth(): number {

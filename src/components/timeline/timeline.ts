@@ -1,7 +1,7 @@
 import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
-import { sec } from "@core/timing/types";
+import { type Seconds, sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
 
@@ -469,7 +469,7 @@ export class Timeline {
 		this.setZoom(Math.max(10, current / 1.2));
 	}
 
-	public scrollTo(time: number): void {
+	public scrollTo(time: Seconds): void {
 		if (!this.trackList) return;
 
 		const pps = this.stateManager.getViewport().pixelsPerSecond;

@@ -1,3 +1,5 @@
+import { type Seconds, sec } from "@core/timing/types";
+
 import type { ClipRef, CollisionResult, DragTarget } from "./interaction-calculations";
 
 export type {
@@ -41,7 +43,7 @@ export interface PendingState {
 	readonly type: "pending";
 	readonly startPoint: Point;
 	readonly clipRef: ClipRef;
-	readonly originalTime: number;
+	readonly originalTime: Seconds;
 }
 
 export interface DraggingState {
@@ -49,12 +51,12 @@ export interface DraggingState {
 	readonly clipRef: ClipRef;
 	readonly clipElement: HTMLElement;
 	readonly ghost: HTMLElement;
-	readonly startTime: number;
+	readonly startTime: Seconds;
 	readonly originalTrack: number;
 	readonly dragOffsetX: number;
 	readonly dragOffsetY: number;
 	readonly originalStyles: ClipOriginalStyles;
-	readonly draggedClipLength: number;
+	readonly draggedClipLength: Seconds;
 	// Ephemeral drag state (updated each frame)
 	readonly dragTarget: DragTarget;
 	readonly collisionResult: CollisionResult;
@@ -66,8 +68,8 @@ export interface ResizingState {
 	readonly clipRef: ClipRef;
 	readonly clipElement: HTMLElement;
 	readonly edge: "left" | "right";
-	readonly originalStart: number;
-	readonly originalLength: number;
+	readonly originalStart: Seconds;
+	readonly originalLength: Seconds;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -76,7 +78,7 @@ export const IDLE_STATE: IdleState = { type: "idle" };
 
 // ─── State Factory Functions ───────────────────────────────────────────────
 
-export function createPendingState(startPoint: Point, clipRef: ClipRef, originalTime: number): PendingState {
+export function createPendingState(startPoint: Point, clipRef: ClipRef, originalTime: Seconds): PendingState {
 	return { type: "pending", startPoint, clipRef, originalTime };
 }
 
@@ -87,7 +89,7 @@ export function createDraggingState(
 	dragOffsetX: number,
 	dragOffsetY: number,
 	originalStyles: ClipOriginalStyles,
-	clipLength: number,
+	clipLength: Seconds,
 	altKeyHeld: boolean
 ): DraggingState {
 	return {
@@ -103,7 +105,7 @@ export function createDraggingState(
 		draggedClipLength: clipLength,
 		// Initial ephemeral state
 		dragTarget: { type: "track", trackIndex: pending.clipRef.trackIndex },
-		collisionResult: { newStartTime: pending.originalTime, pushOffset: 0 },
+		collisionResult: { newStartTime: pending.originalTime, pushOffset: sec(0) },
 		altKeyHeld
 	};
 }
@@ -112,8 +114,8 @@ export function createResizingState(
 	clipRef: ClipRef,
 	clipElement: HTMLElement,
 	edge: "left" | "right",
-	originalStart: number,
-	originalLength: number
+	originalStart: Seconds,
+	originalLength: Seconds
 ): ResizingState {
 	return { type: "resizing", clipRef, clipElement, edge, originalStart, originalLength };
 }

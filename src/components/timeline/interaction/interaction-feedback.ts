@@ -1,3 +1,5 @@
+import type { Seconds } from "@core/timing/types";
+
 import type { ClipState } from "../timeline.types";
 import { getTrackHeight } from "../timeline.types";
 
@@ -21,7 +23,7 @@ export interface FeedbackConfig {
 }
 
 export interface DragFeedbackInput {
-	readonly clipTime: number;
+	readonly clipTime: Seconds;
 	readonly tooltipX: number;
 	readonly tooltipY: number;
 	readonly isSnapActive: boolean;
@@ -37,7 +39,7 @@ export interface DragFeedbackInput {
 }
 
 export interface ResizeFeedbackInput {
-	readonly time: number;
+	readonly time: Seconds;
 	readonly isSnapActive: boolean;
 	readonly tooltipX: number;
 	readonly tooltipY: number;
@@ -55,7 +57,7 @@ export function getOrCreateElement(container: HTMLElement, existing: HTMLElement
 
 // ─── Snap Line ─────────────────────────────────────────────────────────────
 
-export function showSnapLine(elements: FeedbackElements, time: number, config: FeedbackConfig): HTMLElement {
+export function showSnapLine(elements: FeedbackElements, time: Seconds, config: FeedbackConfig): HTMLElement {
 	const snapLine = getOrCreateElement(elements.container, elements.snapLine, "ss-snap-line");
 	const x = secondsToPixels(time, config.pixelsPerSecond) - config.scrollLeft;
 	snapLine.style.left = `${x}px`;
@@ -84,7 +86,7 @@ export function hideDropZone(element: HTMLElement | null): void {
 
 // ─── Drag Time Tooltip ─────────────────────────────────────────────────────
 
-export function showDragTimeTooltip(elements: FeedbackElements, time: number, x: number, y: number): HTMLElement {
+export function showDragTimeTooltip(elements: FeedbackElements, time: Seconds, x: number, y: number): HTMLElement {
 	const tooltip = getOrCreateElement(elements.container, elements.dragTimeTooltip, "ss-drag-time-tooltip");
 	tooltip.textContent = formatDragTime(time);
 	tooltip.style.left = `${x}px`;
@@ -187,7 +189,7 @@ export function clearLumaFeedback(elements: FeedbackElements, draggingClipElemen
 
 // ─── Ghost Creation ────────────────────────────────────────────────────────
 
-export function createDragGhost(clipLength: number, clipAssetType: string, trackAssetType: string, pixelsPerSecond: number): HTMLElement {
+export function createDragGhost(clipLength: Seconds, clipAssetType: string, trackAssetType: string, pixelsPerSecond: number): HTMLElement {
 	const ghost = document.createElement("div");
 	ghost.className = "ss-drag-ghost ss-clip";
 	ghost.dataset["assetType"] = clipAssetType;

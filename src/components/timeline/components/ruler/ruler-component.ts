@@ -1,5 +1,7 @@
+import { type Seconds, sec } from "@core/timing/types";
+
 interface RulerOptions {
-	onSeek?: (timeMs: number) => void;
+	onSeek?: (time: Seconds) => void;
 	onWheel?: (e: WheelEvent) => void;
 }
 
@@ -9,7 +11,7 @@ export class RulerComponent {
 	private readonly contentElement: HTMLElement;
 	private readonly options: RulerOptions;
 	private currentPixelsPerSecond = 50;
-	private currentDuration = 60;
+	private currentDuration: Seconds = sec(60);
 	private needsRender = true;
 	private scrollX = 0;
 
@@ -41,7 +43,7 @@ export class RulerComponent {
 		const x = e.clientX - rect.left + this.scrollX;
 		const time = Math.max(0, x / this.currentPixelsPerSecond);
 
-		this.options.onSeek(time * 1000);
+		this.options.onSeek(sec(time));
 	}
 
 	private buildElement(): HTMLElement {
@@ -104,7 +106,7 @@ export class RulerComponent {
 	}
 
 	/** Update ruler parameters and mark for re-render */
-	public updateRuler(pixelsPerSecond: number, duration: number): void {
+	public updateRuler(pixelsPerSecond: number, duration: Seconds): void {
 		if (pixelsPerSecond === this.currentPixelsPerSecond && duration === this.currentDuration) {
 			return;
 		}
