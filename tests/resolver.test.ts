@@ -213,5 +213,137 @@ describe("Resolver", () => {
 			// Should have minimum length of 0.1
 			expect(resolved.timeline.tracks[0].clips[0].length).toBeGreaterThanOrEqual(0.1);
 		});
+
+		describe("alias references", () => {
+			it("handles alias reference in length without producing NaN", () => {
+				// Regression test: alias://image was falling through to sec() which produced NaN
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: 0,
+										length: 5,
+										alias: "image"
+									}
+								]
+							},
+							{
+								clips: [
+									{
+										asset: { type: "html", html: "<p>overlay</p>" },
+										start: 0,
+										length: "alias://image" as unknown as number // TypeScript doesn't know about alias
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				const resolved = resolve(doc, { mergeFields });
+
+				// The length should be a valid number (placeholder), NOT NaN
+				const aliasClip = resolved.timeline.tracks[1].clips[0];
+				expect(aliasClip.length).not.toBeNaN();
+				expect(typeof aliasClip.length).toBe("number");
+				expect(aliasClip.length).toBeGreaterThan(0);
+			});
+
+			it("handles alias reference in start without producing NaN", () => {
+				// Regression test: alias://image in start was falling through to sec() which produced NaN
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: 2,
+										length: 5,
+										alias: "image"
+									}
+								]
+							},
+							{
+								clips: [
+									{
+										asset: { type: "html", html: "<p>overlay</p>" },
+										start: "alias://image" as unknown as number, // TypeScript doesn't know about alias
+										length: 3
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				const resolved = resolve(doc, { mergeFields });
+
+				// The start should be a valid number (placeholder), NOT NaN
+				const aliasClip = resolved.timeline.tracks[1].clips[0];
+				expect(aliasClip.start).not.toBeNaN();
+				expect(typeof aliasClip.start).toBe("number");
+				expect(aliasClip.start).toBeGreaterThanOrEqual(0);
+			});
+
+			it("handles luma mask scenario with alias timing", () => {
+				// Regression test: combining luma mask + alias timing produced NaN:0NaN duration
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/photo.jpg" },
+										start: 0,
+										length: 5,
+										alias: "image"
+									}
+								]
+							},
+							{
+								clips: [
+									{
+										asset: { type: "html", html: '<svg>...</svg>', width: 100, height: 100 },
+										start: 0,
+										length: "alias://image" as unknown as number
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				const resolved = resolve(doc, { mergeFields });
+
+				// Both clips should have valid timing
+				const imageClip = resolved.timeline.tracks[0].clips[0];
+				const svgClip = resolved.timeline.tracks[1].clips[0];
+
+				expect(imageClip.start).not.toBeNaN();
+				expect(imageClip.length).not.toBeNaN();
+				expect(svgClip.start).not.toBeNaN();
+				expect(svgClip.length).not.toBeNaN();
+
+				// Verify the resolved values are finite numbers
+				expect(Number.isFinite(svgClip.start)).toBe(true);
+				expect(Number.isFinite(svgClip.length)).toBe(true);
+			});
+		});
 	});
 });
