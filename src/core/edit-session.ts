@@ -237,9 +237,7 @@ export class Edit {
 		this.updateTotalDuration();
 
 		// Load soundtrack if present
-		if (this.edit.timeline.soundtrack) {
-			await this.loadSoundtrack(this.edit.timeline.soundtrack);
-		}
+		if (this.edit.timeline.soundtrack) await this.loadSoundtrack(this.edit.timeline.soundtrack);
 
 		// Emit events
 		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
@@ -249,10 +247,7 @@ export class Edit {
 	/** @internal */
 	public update(deltaTime: number, elapsed: Milliseconds): void {
 		for (const clip of this.clips) {
-			if (clip.shouldDispose) {
-				this.queueDisposeClip(clip);
-			}
-
+			if (clip.shouldDispose) this.queueDisposeClip(clip);
 			clip.update(deltaTime, elapsed);
 		}
 
@@ -261,30 +256,23 @@ export class Edit {
 		this.lumaMaskController.update();
 
 		if (this.isPlaying) {
-			const elapsedSeconds = toSec(elapsed);
-			this.playbackTime = sec(Math.max(0, Math.min(this.playbackTime + elapsedSeconds, this.totalDuration)));
-
-			if (this.playbackTime === this.totalDuration) {
-				this.pause();
-			}
+			this.playbackTime = sec(Math.max(0, Math.min(this.playbackTime + toSec(elapsed), this.totalDuration)));
+			if (this.playbackTime === this.totalDuration) this.pause();
 		}
 	}
+
 	/** @internal */
 	public draw(): void {
-		for (const clip of this.clips) {
-			clip.draw();
-		}
+		for (const clip of this.clips) clip.draw();
 	}
+
 	/** @internal */
 	public dispose(): void {
 		this.clearClips();
 		this.lumaMaskController.dispose();
 		this.playerReconciler.dispose();
 
-		// Dispose all commands in history to free memory
-		for (const cmd of this.commandHistory) {
-			cmd.dispose?.();
-		}
+		for (const cmd of this.commandHistory) cmd.dispose?.();
 		this.commandHistory = [];
 		this.commandIndex = -1;
 
@@ -308,17 +296,19 @@ export class Edit {
 		this.isPlaying = true;
 		this.events.emit(EditEvent.PlaybackPlay);
 	}
+
 	public pause(): void {
 		this.isPlaying = false;
 		this.events.emit(EditEvent.PlaybackPause);
 	}
+
 	public seek(target: Seconds): void {
 		this.playbackTime = sec(Math.max(0, Math.min(target, this.totalDuration)));
 		this.pause();
-		// Force immediate render - SEEK_ELAPSED_MARKER signals seek to all players
 		this.update(0, Edit.SEEK_ELAPSED_MARKER);
 		this.draw();
 	}
+
 	public stop(): void {
 		this.seek(sec(0));
 	}
@@ -373,13 +363,9 @@ export class Edit {
 		await this.addPlayer(this.tracks.length, player);
 	}
 	public getEdit(): EditConfig {
-		// Delegate to document layer - preserves "auto"/"end" values
 		const doc = this.document.toJSON();
-		// Overlay current merge field state (may have changed via setMergeField)
 		const mergeFields = this.mergeFieldService.toSerializedArray();
-		if (mergeFields.length > 0) {
-			doc.merge = mergeFields;
-		}
+		if (mergeFields.length > 0) doc.merge = mergeFields;
 		return doc;
 	}
 
@@ -388,9 +374,7 @@ export class Edit {
 	 */
 	public validateEdit(edit: unknown): { valid: boolean; errors: Array<{ path: string; message: string }> } {
 		const result = EditSchema.safeParse(edit);
-		if (result.success) {
-			return { valid: true, errors: [] };
-		}
+		if (result.success) return { valid: true, errors: [] };
 		return {
 			valid: false,
 			errors: result.error.issues.map(issue => ({
