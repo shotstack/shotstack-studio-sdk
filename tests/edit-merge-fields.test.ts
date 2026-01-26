@@ -270,6 +270,7 @@ function getEditState(edit: ShotstackEdit): {
  */
 function createImageClip(start: number, length: number, src: string = "https://example.com/image.jpg"): ResolvedClip {
 	return {
+		id: crypto.randomUUID(),
 		asset: { type: "image", src },
 		start: sec(start),
 		length: sec(length),
@@ -282,6 +283,7 @@ function createImageClip(start: number, length: number, src: string = "https://e
  */
 function createTextClip(start: number, length: number, text: string = "Hello World"): ResolvedClip {
 	return {
+		id: crypto.randomUUID(),
 		asset: { type: "text", text },
 		start: sec(start),
 		length: sec(length),

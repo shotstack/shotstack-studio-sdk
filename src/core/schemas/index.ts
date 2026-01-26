@@ -77,6 +77,7 @@ export type Destination = components["schemas"]["Destinations"];
 // Runtime types where "auto", "end", and aliases are resolved to concrete values
 
 export type ResolvedClip = Omit<Clip, "start" | "length"> & {
+	id: string;
 	start: Seconds;
 	length: Seconds;
 };

@@ -238,7 +238,7 @@ export class TimelineStateManager {
 		const visualState = this.getComputedVisualState(trackIndex, clipIndex, isSelected);
 
 		return {
-			id: `${trackIndex}-${clipIndex}`,
+			id: clip.id,
 			trackIndex,
 			clipIndex,
 			config: clip,

@@ -1,7 +1,7 @@
 import { EditDocument } from "@core/edit-document";
 import { EventEmitter } from "@core/events/event-emitter";
 import { MergeFieldService } from "@core/merge/merge-field-service";
-import { resolve, type ResolvedClipWithId } from "@core/resolver";
+import { resolve } from "@core/resolver";
 import type { Edit } from "@schemas";
 
 function createMergeFieldService(): MergeFieldService {
@@ -113,7 +113,7 @@ describe("Resolver", () => {
 			const resolved = resolve(doc, { mergeFields });
 
 			// The resolved clip should have the same ID
-			const resolvedClip = resolved.timeline.tracks[0].clips[0] as ResolvedClipWithId;
+			const resolvedClip = resolved.timeline.tracks[0].clips[0];
 			expect(resolvedClip.id).toBe(originalId);
 		});
 
@@ -123,7 +123,7 @@ describe("Resolver", () => {
 
 			const resolved = resolve(doc, { mergeFields });
 
-			const ids = resolved.timeline.tracks[0].clips.map(c => (c as ResolvedClipWithId).id);
+			const ids = resolved.timeline.tracks[0].clips.map(c => c.id);
 			const uniqueIds = new Set(ids);
 			expect(uniqueIds.size).toBe(ids.length);
 		});

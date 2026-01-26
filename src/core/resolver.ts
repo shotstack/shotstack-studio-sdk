@@ -41,9 +41,6 @@ interface PartialResolvedClip extends ResolvedClip {
 	pendingEndLength?: boolean;
 }
 
-/** Resolved clip with guaranteed ID (exported type) */
-export type ResolvedClipWithId = ResolvedClip & { id: string };
-
 // ─── Alias Types ──────────────────────────────────────────────────────────────
 
 /**
@@ -304,7 +301,7 @@ function calculateTimelineEndFromTracks(tracks: Array<{ clips: PartialResolvedCl
 	return max;
 }
 
-function cleanupPendingFlags(clip: PartialResolvedClip): ResolvedClipWithId {
+function cleanupPendingFlags(clip: PartialResolvedClip): ResolvedClip {
 	const { pendingEndLength, ...cleanClip } = clip;
 	return cleanClip;
 }
@@ -313,7 +310,7 @@ function cleanupPendingFlags(clip: PartialResolvedClip): ResolvedClipWithId {
 
 /** Result of single-clip resolution */
 export interface ResolveClipResult {
-	resolved: ResolvedClipWithId;
+	resolved: ResolvedClip;
 	trackIndex: number;
 	clipIndex: number;
 }

@@ -99,9 +99,10 @@ export class DeleteClipCommand implements EditCommand {
 		if (!document) throw new Error("DeleteClipCommand.undo: no document");
 
 		// Restore deleted track first if it was deleted
-		if (this.trackWasDeleted && this.deleteTrackCommand) {
-			this.deleteTrackCommand.undo(context);
-			this.trackWasDeleted = false;
+		// NOTE: Don't use deleteTrackCommand.undo() as it calls resolve() with empty track
+		// which causes the reconciler to run in an incomplete state
+		if (this.trackWasDeleted) {
+			document.addTrack(this.trackIdx);
 		}
 
 		// Document mutation - add clip back at original position
@@ -118,10 +119,19 @@ export class DeleteClipCommand implements EditCommand {
 			restoreAliasReferences(document, this.convertedReferences);
 		}
 
-		// Resolve triggers reconciler → creates Player
+		// Single resolve() with complete state (track + clip)
 		context.resolve();
 
 		context.updateDuration();
+
+		// Emit TrackAdded event if track was restored (same as DeleteTrackCommand.undo())
+		if (this.trackWasDeleted) {
+			context.emitEvent(EditEvent.TrackAdded, {
+				trackIndex: this.trackIdx,
+				totalTracks: document.getTrackCount()
+			});
+			this.trackWasDeleted = false;
+		}
 
 		// Emit event so luma masking can rebuild after restore
 		context.emitEvent(EditEvent.ClipRestored, {

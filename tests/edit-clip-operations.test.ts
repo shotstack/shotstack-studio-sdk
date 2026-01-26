@@ -268,6 +268,7 @@ function getEditState(edit: Edit): {
  */
 function createVideoClip(start: number, length: number): ResolvedClip {
 	return {
+		id: crypto.randomUUID(),
 		asset: { type: "video", src: "https://example.com/video.mp4", transcode: false },
 		start: sec(start),
 		length: sec(length),
@@ -280,6 +281,7 @@ function createVideoClip(start: number, length: number): ResolvedClip {
  */
 function createImageClip(start: number, length: number): ResolvedClip {
 	return {
+		id: crypto.randomUUID(),
 		asset: { type: "image", src: "https://example.com/image.jpg" },
 		start: sec(start),
 		length: sec(length),
@@ -292,6 +294,7 @@ function createImageClip(start: number, length: number): ResolvedClip {
  */
 function createTextClip(start: number, length: number, text: string = "Hello"): ResolvedClip {
 	return {
+		id: crypto.randomUUID(),
 		asset: { type: "text", text },
 		start: sec(start),
 		length: sec(length),

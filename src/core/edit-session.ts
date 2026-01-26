@@ -321,6 +321,7 @@ export class Edit {
 
 	private async loadSoundtrack(soundtrack: Soundtrack): Promise<void> {
 		const clip: ResolvedClip = {
+			id: crypto.randomUUID(),
 			asset: {
 				type: "audio",
 				src: soundtrack.src,
@@ -1946,6 +1947,7 @@ export class Edit {
 
 		// Create luma clip config with synced timing
 		const lumaClip: ResolvedClip = {
+			id: crypto.randomUUID(),
 			asset: {
 				type: "luma",
 				src: lumaSrc

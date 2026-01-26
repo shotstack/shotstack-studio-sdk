@@ -6,6 +6,7 @@ import type { Clip } from "@schemas";
  * never be exposed to consumers or backend APIs.
  */
 export function stripInternalProperties(clip: Clip): Clip {
-	const { id: _id, ...publicClip } = clip as Clip & { id?: string };
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- intentionally stripping id
+	const { id, ...publicClip } = clip as Clip & { id?: string };
 	return publicClip;
 }
