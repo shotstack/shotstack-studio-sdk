@@ -1,6 +1,13 @@
 /**
- * Resolves alias:// references in caption assets.
- * Extracts audio from referenced clips and transcribes to VTT.
+ * Caption Alias Resolver - Resolves alias:// references in caption asset.src
+ *
+ * Finds the referenced clip, extracts its audio URL, transcribes to VTT.
+ *
+ * **This file:** `asset.src: "alias://x"` → extracts audio for transcription.
+ * **Timing resolver:** `start: "alias://x"` → gets timing values.
+ *
+ * Both share the same alias namespace (clip.alias property).
+ * Only audio/video assets can be transcribed.
  */
 
 import type { ResolvedEdit } from "@schemas";
@@ -10,7 +17,8 @@ import { TranscriptionService } from "./transcription-service";
 
 /**
  * Regex pattern for alias:// references.
- * Aligns with pattern used in src/core/alias/alias.ts
+ * Must align with the pattern in src/core/timing/types.ts (isAliasReference, parseAliasName).
+ * Format: alias://name where name contains only alphanumeric, underscore, or hyphen.
  */
 const ALIAS_REFERENCE_REGEX = /^alias:\/\/([a-zA-Z0-9_-]+)$/;
 

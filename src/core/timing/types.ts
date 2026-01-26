@@ -56,20 +56,17 @@ export function ms(value: number): Milliseconds {
 // ─── Timing Types ────────────────────────────────────────────────────────────
 
 /**
- * An alias reference to another clip's timing.
+ * Alias reference format: `alias://name` (alphanumeric, underscore, hyphen).
+ * Used in `start`/`length` for timing, and in caption `asset.src` for transcription.
  */
 export type AliasReference = `alias://${string}`;
 
-/**
- * Check if a value is an alias reference string.
- */
+/** Check if a value is an alias reference. Pattern shared with captions/alias-resolver.ts. */
 export function isAliasReference(value: unknown): value is AliasReference {
 	return typeof value === "string" && /^alias:\/\/[a-zA-Z0-9_-]+$/.test(value);
 }
 
-/**
- * Extract the alias name from an alias reference.
- */
+/** Extract alias name from reference. */
 export function parseAliasName(value: AliasReference): string {
 	return value.replace(/^alias:\/\//, "");
 }

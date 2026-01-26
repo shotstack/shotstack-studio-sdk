@@ -2,6 +2,7 @@ import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
+import { type AliasReferenceMap, convertAliasReferencesToValues, restoreAliasReferences } from "./alias-reference-utils";
 import { DeleteTrackCommand } from "./delete-track-command";
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
@@ -15,6 +16,7 @@ export class DeleteClipCommand implements EditCommand {
 	private deleteTrackCommand?: DeleteTrackCommand;
 	private trackWasDeleted = false;
 	private storedBindings?: Map<string, MergeFieldBinding>;
+	private convertedReferences?: AliasReferenceMap;
 
 	constructor(
 		private trackIdx: number,
@@ -42,6 +44,13 @@ export class DeleteClipCommand implements EditCommand {
 			this.storedBindings = bindings ? new Map(bindings) : undefined;
 			// Clear bindings from document (will be recreated on undo)
 			document.clearClipBindings(this.deletedClipId);
+		}
+
+		// Convert alias references to resolved values before deletion
+		const clipAlias = (clip as { alias?: string }).alias;
+		if (clipAlias) {
+			const skipIndices = new Set([`${this.trackIdx}:${this.clipIdx}`]);
+			this.convertedReferences = convertAliasReferencesToValues(document, context.getEditState(), clipAlias, skipIndices);
 		}
 
 		// Clear any error associated with this clip before deletion
@@ -86,6 +95,9 @@ export class DeleteClipCommand implements EditCommand {
 		if (!context) throw new Error("DeleteClipCommand.undo: context is required");
 		if (!this.deletedClipConfig) return CommandNoop("No deleted clip config");
 
+		const document = context.getDocument();
+		if (!document) throw new Error("DeleteClipCommand.undo: no document");
+
 		// Restore deleted track first if it was deleted
 		if (this.trackWasDeleted && this.deleteTrackCommand) {
 			this.deleteTrackCommand.undo(context);
@@ -98,8 +110,12 @@ export class DeleteClipCommand implements EditCommand {
 		// Restore merge field bindings to document (source of truth)
 		const restoredClipId = (restoredClip as { id?: string }).id;
 		if (restoredClipId && this.storedBindings && this.storedBindings.size > 0) {
-			const document = context.getDocument();
-			document?.setClipBindingsForClip(restoredClipId, this.storedBindings);
+			document.setClipBindingsForClip(restoredClipId, this.storedBindings);
+		}
+
+		// Restore alias references that were converted to numeric values
+		if (this.convertedReferences && this.convertedReferences.size > 0) {
+			restoreAliasReferences(document, this.convertedReferences);
 		}
 
 		// Resolve triggers reconciler → creates Player
@@ -121,5 +137,6 @@ export class DeleteClipCommand implements EditCommand {
 		this.deletedClipId = undefined;
 		this.deleteTrackCommand = undefined;
 		this.storedBindings = undefined;
+		this.convertedReferences = undefined;
 	}
 }

@@ -95,10 +95,6 @@ export class LumaPlayer extends Player {
 		}
 	}
 
-	public override draw(): void {
-		super.draw();
-	}
-
 	public override dispose(): void {
 		super.dispose();
 

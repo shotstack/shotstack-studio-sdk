@@ -280,13 +280,6 @@ export abstract class Player extends Entity {
 		this.wipeMask.fill(0xffffff);
 	}
 
-	public override draw(): void {
-		// Re-apply fixed dimensions when config changes (e.g., fit property updated)
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			this.applyFixedDimensions();
-		}
-	}
-
 	public override dispose(): void {
 		this.wipeMask?.destroy();
 		this.wipeMask = null;

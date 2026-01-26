@@ -214,6 +214,100 @@ describe("Resolver", () => {
 			expect(resolved.timeline.tracks[0].clips[0].length).toBeGreaterThanOrEqual(0.1);
 		});
 
+		describe("alias validation", () => {
+			it("throws when start alias reference points to non-existent alias", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: "alias://nonexistent" as unknown as number,
+										length: 5
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				expect(() => resolve(doc, { mergeFields })).toThrow(/Alias reference.*nonexistent.*not found/);
+			});
+
+			it("throws when length alias reference points to non-existent alias", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: 0,
+										length: "alias://missing" as unknown as number
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				expect(() => resolve(doc, { mergeFields })).toThrow(/Alias reference.*missing.*not found/);
+			});
+		});
+
+		describe("array integrity", () => {
+			it("produces contiguous clip arrays after topological sort resolves out of order", () => {
+				// Template where toposort resolves clips out of document order:
+				// Clip 'a' (index 0) depends on clip 'b' (index 1), so 'b' resolves first
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/a.jpg" },
+										start: "alias://b" as unknown as number,
+										length: 1,
+										alias: "a"
+									},
+									{
+										asset: { type: "image", src: "https://example.com/b.jpg" },
+										start: 0,
+										length: 2,
+										alias: "b"
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				const result = resolve(doc, { mergeFields });
+				const { clips } = result.timeline.tracks[0];
+
+				// No undefined values (array is contiguous)
+				expect(clips.every(c => c !== undefined)).toBe(true);
+				expect(clips.length).toBe(2);
+
+				// Correct order preserved (document order, not resolution order)
+				expect(clips[0].start).toBe(0); // alias://b resolved to b's start
+				expect(clips[1].start).toBe(0);
+			});
+		});
+
 		describe("alias references", () => {
 			it("handles alias reference in length without producing NaN", () => {
 				// Regression test: alias://image was falling through to sec() which produced NaN
@@ -315,7 +409,7 @@ describe("Resolver", () => {
 							{
 								clips: [
 									{
-										asset: { type: "html", html: '<svg>...</svg>', width: 100, height: 100 },
+										asset: { type: "html", html: "<svg>...</svg>", width: 100, height: 100 },
 										start: 0,
 										length: "alias://image" as unknown as number
 									}

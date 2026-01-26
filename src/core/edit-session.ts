@@ -1,6 +1,7 @@
 import { type Player, PlayerType } from "@canvas/players/player";
 import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
+// TODO: Consolidate commands - many have overlapping concerns and could be unified
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
@@ -40,7 +41,6 @@ import {
 	type Edit as UnresolvedEdit,
 	type ResolvedClip,
 	type ResolvedEdit,
-	type ResolvedTrack,
 	type Soundtrack,
 	type Track
 } from "@schemas";
@@ -106,6 +106,7 @@ export class Edit {
 	private isBatchingEvents: boolean = false;
 	private syncCorrectionCount: number = 0;
 	private isExporting: boolean = false;
+	private lastResolved: ResolvedEdit | null = null;
 
 	/**
 	 * Create an Edit instance from a template configuration.
@@ -217,7 +218,7 @@ export class Edit {
 		this.updateTotalDuration();
 		if (parsedEdit.timeline.soundtrack) await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
 
-		this.events.emit(EditEvent.TimelineUpdated, { current: this.getResolvedEdit() });
+		this.events.emit(EditEvent.TimelineUpdated, { current: this.getEdit() });
 		this.emitEditChanged(source);
 	}
 
@@ -236,11 +237,6 @@ export class Edit {
 			this.playbackTime = sec(Math.max(0, Math.min(this.playbackTime + toSec(elapsed), this.totalDuration)));
 			if (this.playbackTime === this.totalDuration) this.pause();
 		}
-	}
-
-	/** @internal */
-	public draw(): void {
-		for (const clip of this.clips) clip.draw();
 	}
 
 	/** @internal */
@@ -280,7 +276,6 @@ export class Edit {
 		this.playbackTime = sec(Math.max(0, Math.min(target, this.totalDuration)));
 		this.pause();
 		this.update(0, Edit.SEEK_ELAPSED_MARKER);
-		this.draw();
 	}
 
 	public stop(): void {
@@ -291,6 +286,8 @@ export class Edit {
 	 * Reload the edit with a new configuration (hot-reload).
 	 */
 	public async loadEdit(edit: UnresolvedEdit): Promise<void> {
+		this.lastResolved = null; // Invalidate cache when document changes
+
 		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
 			this.preserveClipIdsForGranularUpdate(edit);
 
@@ -361,25 +358,16 @@ export class Edit {
 		};
 	}
 
+	/**
+	 * @internal Get the resolved edit state.
+	 */
 	public getResolvedEdit(): ResolvedEdit {
-		const tracks: ResolvedTrack[] = this.tracks.map(track => ({
-			clips: track
-				.filter(player => player && !this.clipsToDispose.has(player))
-				.map(player => ({
-					...player.clipConfiguration,
-					start: player.getStart(),
-					length: player.getLength()
-				}))
-		}));
-
-		return {
-			timeline: {
-				background: this.backgroundColor,
-				tracks,
-				fonts: this.document.getFonts()
-			},
-			output: this.document.getOutput()
-		};
+		if (!this.lastResolved) {
+			this.lastResolved = resolveDocument(this.document, {
+				mergeFields: this.mergeFieldService
+			});
+		}
+		return this.lastResolved;
 	}
 
 	/**
@@ -415,29 +403,32 @@ export class Edit {
 		return this.document;
 	}
 
-	/**
-	 * Resolve the document to a ResolvedEdit and emit the Resolved event.
-	 * @internal
+	/** @internal Resolve the document to a ResolvedEdit and emit the Resolved event.
 	 */
 	public resolve(): ResolvedEdit {
-		const resolved = resolveDocument(this.document, {
+		this.lastResolved = resolveDocument(this.document, {
 			mergeFields: this.mergeFieldService
 		});
 
 		// Emit event for components to react
-		this.events.emit(InternalEvent.Resolved, { edit: resolved });
+		this.events.emit(InternalEvent.Resolved, { edit: this.lastResolved });
 
-		return resolved;
+		return this.lastResolved;
 	}
 
-	/**
-	 * Resolve a single clip and update its player.
-	 * @internal
-	 */
+	/** @internal Resolve a single clip and update its player. */
 	public resolveClip(clipId: string): boolean {
 		const player = this.getPlayerByClipId(clipId);
 		if (!player) {
 			return false;
+		}
+
+		// Check if this clip has an alias that others might depend on
+		// If so, fall back to full resolution to update all alias dependents
+		const docClip = this.document.getClipById(clipId);
+		if (docClip?.clip.alias) {
+			this.resolve();
+			return true;
 		}
 
 		const trackIndex = player.layer - 1;
@@ -812,13 +803,16 @@ export class Edit {
 	 * @internal
 	 */
 	public commitClipUpdate(clipId: string, initialConfig: ResolvedClip): void {
+		const player = this.getPlayerByClipId(clipId);
+		if (!player) return;
+
 		const location = this.document.getClipById(clipId);
 		if (!location) return;
 
-		const finalConfig = this.getResolvedClip(location.trackIndex, location.clipIndex);
-		if (!finalConfig) return;
+		// player.clipConfiguration is the authoritative resolved state after resolveClip()
+		// (lastResolved cache is for full-document reads, not single-clip updates)
+		const finalConfig = player.clipConfiguration;
 
-		// Create command for undo
 		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(finalConfig), {
 			trackIndex: location.trackIndex,
 			clipIndex: location.clipIndex
@@ -1231,7 +1225,6 @@ export class Edit {
 				}
 				Object.assign(config, cloned);
 				clip.reconfigureAfterRestore();
-				clip.draw();
 
 				// Sync with document layer - update clip configuration
 				if (this.document) {
@@ -1271,6 +1264,7 @@ export class Edit {
 			setTimelineBackground: color => this.setTimelineBackgroundInternal(color),
 			getDocument: () => this.document,
 			getDocumentTrack: trackIdx => this.document?.getTrack(trackIdx) ?? null,
+			getDocumentClip: (trackIdx, clipIdx) => this.document?.getClip(trackIdx, clipIdx) ?? null,
 			documentUpdateClip: (trackIdx, clipIdx, updates) => {
 				if (!this.document) {
 					throw new Error("Document not initialized - cannot update clip");
@@ -2039,7 +2033,6 @@ export class Edit {
 			length: contentPlayer.getLength()
 		});
 		lumaPlayer.reconfigureAfterRestore();
-		lumaPlayer.draw();
 
 		// Update document
 		this.document.updateClip(lumaTrackIdx, lumaClipIdx, {

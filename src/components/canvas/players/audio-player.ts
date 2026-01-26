@@ -100,10 +100,6 @@ export class AudioPlayer extends Player {
 		}
 	}
 
-	public override draw(): void {
-		super.draw();
-	}
-
 	public override dispose(): void {
 		this.audioResource?.unload();
 		this.audioResource = null;

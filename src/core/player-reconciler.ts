@@ -177,14 +177,7 @@ export class PlayerReconciler {
 		this.edit.addPlayerToContainer(trackIndex, player);
 
 		// Load asynchronously (non-blocking)
-		player
-			.load()
-			.then(() => {
-				player.draw();
-			})
-			.catch(error => {
-				console.error(`Failed to load player for clip ${clipId}:`, error);
-			});
+		player.load().catch(error => console.error(`Failed to load player for clip ${clipId}:`, error));
 	}
 
 	/**
@@ -237,10 +230,6 @@ export class PlayerReconciler {
 		if (this.clipPropertiesChanged(player.clipConfiguration, clip)) {
 			this.updateClipProperties(player, clip);
 			changed = true;
-		}
-
-		if (changed) {
-			player.draw();
 		}
 
 		return changed;
@@ -312,7 +301,6 @@ export class PlayerReconciler {
 				.reloadAsset()
 				.then(() => {
 					player.reconfigureAfterRestore();
-					player.draw();
 				})
 				.catch(error => {
 					console.error("Failed to reload asset:", error);

@@ -124,6 +124,13 @@ export interface NumericKeyframe {
 
 // ─── Zod Schemas (for validation) ──────────────────────────────────────────
 
+// TODO: Enable strict mode on all Zod schemas to reject unknown properties.
+// Currently, typos like "transformation" instead of "transform" are silently stripped.
+// This should be implemented at the @shotstack/schemas library level (oas-api-definition)
+// by adding .strict() to all z.object() schemas in the post-processing script.
+// Additionally, we need to emit an EditEvent.ValidationError when schema validation fails
+// so consumers can handle validation errors gracefully.
+
 // Re-export external schemas with SDK naming convention
 export {
 	editSchema as EditSchema,

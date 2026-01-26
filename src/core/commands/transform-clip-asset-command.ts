@@ -1,5 +1,6 @@
 import { EditEvent } from "@core/events/edit-events";
-import type { Clip, ResolvedClip } from "@schemas";
+import { stripInternalProperties } from "@core/shared/clip-utils";
+import type { Clip } from "@schemas";
 
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
@@ -26,6 +27,9 @@ export class TransformClipAssetCommand implements EditCommand {
 		const clip = document.getClip(this.trackIndex, this.clipIndex);
 		if (!clip?.asset) return CommandNoop("Invalid clip or no asset");
 
+		// Capture document clip BEFORE mutation (source of truth for SDK events)
+		const previousDocClip = structuredClone(clip);
+
 		// Store original for undo
 		this.originalAsset = structuredClone(clip.asset);
 		this.originalAssetType = ((clip.asset as { type?: string })?.type as "image" | "video" | "luma") ?? null;
@@ -45,13 +49,13 @@ export class TransformClipAssetCommand implements EditCommand {
 		// Full resolve (required for asset type changes - needs Player recreation with tracks array management)
 		context.resolve();
 
-		// Get resolved clip for event
-		const player = context.getClipAt(this.trackIndex, this.clipIndex);
-		const newConfig = player?.clipConfiguration;
+		// Get document clip AFTER mutation (source of truth for SDK events)
+		const currentDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!currentDocClip) throw new Error(`TransformClipAssetCommand: document clip not found after mutation at ${this.trackIndex}/${this.clipIndex}`);
 
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: { asset: this.originalAsset } as ResolvedClip },
-			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: newConfig! }
+			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(previousDocClip) },
+			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(currentDocClip) }
 		});
 
 		return CommandSuccess();
@@ -60,18 +64,24 @@ export class TransformClipAssetCommand implements EditCommand {
 	public undo(context: CommandContext): CommandResult {
 		if (!this.originalAsset) return CommandNoop("No original asset stored");
 
+		// Capture document clip BEFORE undo mutation (source of truth for SDK events)
+		const currentDocClip = structuredClone(context.getDocumentClip(this.trackIndex, this.clipIndex));
+
 		// Document mutation - restore original asset
 		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: this.originalAsset });
 
 		// Full resolve (required for asset type changes - needs Player recreation with tracks array management)
 		context.resolve();
 
-		const player = context.getClipAt(this.trackIndex, this.clipIndex);
-		const currentConfig = player?.clipConfiguration;
+		// Get document clip AFTER undo mutation (restored state)
+		const restoredDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!currentDocClip || !restoredDocClip) {
+			throw new Error(`TransformClipAssetCommand: document clip not found after undo at ${this.trackIndex}/${this.clipIndex}`);
+		}
 
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: currentConfig! },
-			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: { asset: this.originalAsset } as ResolvedClip }
+			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(currentDocClip) },
+			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(restoredDocClip) }
 		});
 
 		return CommandSuccess();

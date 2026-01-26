@@ -91,6 +91,8 @@ export type CommandContext = {
 	getDocument(): EditDocument | null;
 	/** Get a track from the document by index */
 	getDocumentTrack(trackIdx: number): { clips: DocumentClipType[] } | null;
+	/** Get a clip from the document by indices (source of truth for SDK events) */
+	getDocumentClip(trackIdx: number, clipIdx: number): DocumentClipType | null;
 	/** Update a clip's properties in the document */
 	documentUpdateClip(trackIdx: number, clipIdx: number, updates: Partial<DocumentClipType>): void;
 	/** Add a clip to the document, returns the added clip */

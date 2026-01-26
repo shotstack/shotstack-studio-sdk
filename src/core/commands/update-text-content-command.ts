@@ -1,5 +1,6 @@
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip, TextAsset } from "@schemas";
+import { stripInternalProperties } from "@core/shared/clip-utils";
+import type { Clip, TextAsset } from "@schemas";
 
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
@@ -11,7 +12,8 @@ export class UpdateTextContentCommand implements EditCommand {
 
 	private clipId: string | null = null;
 	private previousText = "";
-	private previousClipConfig?: ResolvedClip;
+	/** Document clip state before mutation (source of truth for SDK events) */
+	private previousDocClip?: Clip;
 
 	constructor(
 		private trackIndex: number,
@@ -31,18 +33,18 @@ export class UpdateTextContentCommand implements EditCommand {
 			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
 		}
 
+		// Get document clip BEFORE mutation (source of truth for SDK events)
+		const docClip = doc.getClip(this.trackIndex, this.clipIndex);
+		if (!docClip) return CommandNoop("Clip not found in document");
+
 		// Store for undo
 		this.clipId = player.clipId;
-		this.previousClipConfig = structuredClone(player.clipConfiguration);
-		const { asset } = player.clipConfiguration;
-		this.previousText = asset && "text" in asset ? ((asset as TextAsset).text ?? "") : "";
-
-		// Get current clip from document
-		const clip = doc.getClip(this.trackIndex, this.clipIndex);
-		if (!clip) return CommandNoop("Clip not found in document");
+		this.previousDocClip = structuredClone(docClip);
+		const docAsset = docClip.asset as TextAsset;
+		this.previousText = docAsset && "text" in docAsset ? (docAsset.text ?? "") : "";
 
 		// Update document with new text
-		const currentAsset = clip.asset as TextAsset;
+		const currentAsset = docClip.asset as TextAsset;
 		const newAsset = { ...currentAsset, text: this.newText };
 		doc.updateClip(this.trackIndex, this.clipIndex, { asset: newAsset });
 
@@ -53,9 +55,14 @@ export class UpdateTextContentCommand implements EditCommand {
 			context.resolve();
 		}
 
+		// Get document clip AFTER mutation (source of truth for SDK events)
+		const currentDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!this.previousDocClip || !currentDocClip)
+			throw new Error(`UpdateTextContentCommand: document clip not found after mutation at ${this.trackIndex}/${this.clipIndex}`);
+
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
-			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+			previous: { clip: stripInternalProperties(this.previousDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: stripInternalProperties(currentDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
 
 		return CommandSuccess();
@@ -67,10 +74,8 @@ export class UpdateTextContentCommand implements EditCommand {
 		const doc = context.getDocument();
 		if (!doc) throw new Error("UpdateTextContentCommand.undo: document is required");
 
-		const player = this.clipId ? context.getPlayerByClipId(this.clipId) : context.getClipAt(this.trackIndex, this.clipIndex);
-		if (!player) return CommandNoop("Player not found for undo");
-
-		const currentConfig = structuredClone(player.clipConfiguration);
+		// Get document clip BEFORE undo mutation (source of truth for SDK events)
+		const currentDocClip = structuredClone(context.getDocumentClip(this.trackIndex, this.clipIndex));
 
 		// Get current clip from document
 		const clip = doc.getClip(this.trackIndex, this.clipIndex);
@@ -88,10 +93,16 @@ export class UpdateTextContentCommand implements EditCommand {
 			context.resolve();
 		}
 
-		if (this.previousClipConfig) {
+		// Get document clip AFTER undo mutation (restored state)
+		const restoredDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+
+		if (this.previousDocClip) {
+			if (!currentDocClip || !restoredDocClip) {
+				throw new Error(`UpdateTextContentCommand: document clip not found after undo at ${this.trackIndex}/${this.clipIndex}`);
+			}
 			context.emitEvent(EditEvent.ClipUpdated, {
-				previous: { clip: currentConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
-				current: { clip: this.previousClipConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+				previous: { clip: stripInternalProperties(currentDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+				current: { clip: stripInternalProperties(restoredDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 			});
 		}
 
@@ -100,6 +111,6 @@ export class UpdateTextContentCommand implements EditCommand {
 
 	dispose(): void {
 		this.clipId = null;
-		this.previousClipConfig = undefined;
+		this.previousDocClip = undefined;
 	}
 }

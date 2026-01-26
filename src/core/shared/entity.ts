@@ -13,9 +13,6 @@ export abstract class Entity {
 	public abstract update(deltaTime: number, elapsed: number): void;
 
 	/** @internal */
-	public abstract draw(): void;
-
-	/** @internal */
 	public abstract dispose(): void;
 
 	/** @internal */

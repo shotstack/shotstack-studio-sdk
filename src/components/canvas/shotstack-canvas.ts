@@ -513,7 +513,6 @@ export class Canvas {
 
 	private onTick(ticker: pixi.Ticker): void {
 		this.edit.update(ticker.deltaTime, ms(ticker.deltaMS));
-		this.edit.draw();
 
 		// Update canvas overlays (selection handles, guides, etc.)
 		this.uiController?.updateOverlays(ticker.deltaTime, ticker.deltaMS);

@@ -1,4 +1,5 @@
 import { EditEvent } from "@core/events/edit-events";
+import { stripInternalProperties } from "@core/shared/clip-utils";
 import type { Seconds } from "@core/timing/types";
 import type { Clip } from "@schemas";
 
@@ -53,8 +54,8 @@ export class UpdateClipTimingCommand implements EditCommand {
 		this.originalLength = docClip.length;
 		this.clipId = player.clipId ?? undefined;
 
-		// Capture previous resolved config for event (local, not stored)
-		const previousConfig = structuredClone(player.clipConfiguration);
+		// Capture document clip BEFORE mutation (source of truth for SDK events)
+		const previousDocClip = structuredClone(docClip);
 
 		// Build document updates from params
 		const updates: Partial<{ start: Seconds | "auto"; length: Seconds | "auto" | "end" }> = {};
@@ -87,9 +88,13 @@ export class UpdateClipTimingCommand implements EditCommand {
 
 		context.updateDuration();
 
+		// Get document clip AFTER mutation (source of truth for SDK events)
+		const currentDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!currentDocClip) throw new Error(`UpdateClipTimingCommand: document clip not found after mutation at ${this.trackIndex}/${this.clipIndex}`);
+
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: previousConfig },
-			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: player.clipConfiguration }
+			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(previousDocClip) },
+			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(currentDocClip) }
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
@@ -109,8 +114,8 @@ export class UpdateClipTimingCommand implements EditCommand {
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);
 		if (!player) throw new Error("UpdateClipTimingCommand.undo: player not found");
 
-		// Capture current resolved config for event (local, not stored)
-		const currentConfig = structuredClone(player.clipConfiguration);
+		// Capture document clip BEFORE undo mutation (source of truth for SDK events)
+		const currentDocClip = structuredClone(context.getDocumentClip(this.trackIndex, this.clipIndex));
 
 		// Document-only mutation - restore original timing
 		const updates: Partial<{ start: Clip["start"]; length: Clip["length"] }> = {};
@@ -136,9 +141,15 @@ export class UpdateClipTimingCommand implements EditCommand {
 
 		context.updateDuration();
 
+		// Get document clip AFTER undo mutation (source of truth for SDK events)
+		const restoredDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!currentDocClip || !restoredDocClip) {
+			throw new Error(`UpdateClipTimingCommand: document clip not found after undo at ${this.trackIndex}/${this.clipIndex}`);
+		}
+
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: currentConfig },
-			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: player.clipConfiguration }
+			previous: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(currentDocClip) },
+			current: { trackIndex: this.trackIndex, clipIndex: this.clipIndex, clip: stripInternalProperties(restoredDocClip) }
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);

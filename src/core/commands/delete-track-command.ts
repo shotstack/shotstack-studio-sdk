@@ -1,6 +1,7 @@
 import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
+import { type AliasReferenceMap, convertMultipleAliasReferences, extractAliasNames, restoreAliasReferences } from "./alias-reference-utils";
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
@@ -9,6 +10,7 @@ import { type EditCommand, type CommandContext, type CommandResult, CommandSucce
 export class DeleteTrackCommand implements EditCommand {
 	readonly name = "deleteTrack";
 	private deletedClips: Clip[] = [];
+	private convertedReferences?: AliasReferenceMap;
 
 	constructor(private trackIdx: number) {}
 
@@ -26,6 +28,17 @@ export class DeleteTrackCommand implements EditCommand {
 		const track = document.getTrack(this.trackIdx);
 		if (track) {
 			this.deletedClips = track.clips.map(c => structuredClone(c));
+		}
+
+		// Convert alias references to resolved values before deletion
+		const aliasNames = extractAliasNames(this.deletedClips);
+		if (aliasNames.length > 0) {
+			// Build set of clips being deleted (all clips on this track)
+			const skipIndices = new Set<string>();
+			for (let c = 0; c < this.deletedClips.length; c += 1) {
+				skipIndices.add(`${this.trackIdx}:${c}`);
+			}
+			this.convertedReferences = convertMultipleAliasReferences(document, context.getEditState(), aliasNames, skipIndices);
 		}
 
 		// Document mutation - remove track (and all its clips)
@@ -57,6 +70,11 @@ export class DeleteTrackCommand implements EditCommand {
 			document.addClip(this.trackIdx, this.deletedClips[i], i);
 		}
 
+		// Restore alias references that were converted to numeric values
+		if (this.convertedReferences && this.convertedReferences.size > 0) {
+			restoreAliasReferences(document, this.convertedReferences);
+		}
+
 		// Resolve triggers reconciler:
 		// - Creates Players for restored clips
 		// - Updates remaining Players' layers (clips below move down)
@@ -71,5 +89,6 @@ export class DeleteTrackCommand implements EditCommand {
 
 	dispose(): void {
 		this.deletedClips = [];
+		this.convertedReferences = undefined;
 	}
 }

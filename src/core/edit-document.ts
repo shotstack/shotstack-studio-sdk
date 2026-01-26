@@ -44,13 +44,24 @@ export class EditDocument {
 	}
 
 	/**
-	 * Hydrate clips
+	 * Hydrate clips with unique IDs.
 	 */
 	private hydrateIds(): void {
+		const seenClips = new Set<InternalClip>();
+
 		for (const track of this.data.timeline.tracks) {
-			for (const clip of track.clips as InternalClip[]) {
-				if (!clip.id) {
-					clip.id = crypto.randomUUID();
+			for (let i = 0; i < track.clips.length; i += 1) {
+				const clip = track.clips[i] as InternalClip;
+
+				if (seenClips.has(clip)) {
+					const cloned = structuredClone(clip) as InternalClip;
+					cloned.id = crypto.randomUUID();
+					track.clips[i] = cloned;
+				} else {
+					seenClips.add(clip);
+					if (!clip.id) {
+						clip.id = crypto.randomUUID();
+					}
 				}
 			}
 		}

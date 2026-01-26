@@ -1,4 +1,5 @@
 import { EditEvent } from "@core/events/edit-events";
+import { stripInternalProperties } from "@core/shared/clip-utils";
 import type { Seconds } from "@core/timing/types";
 import type { Clip } from "@schemas";
 
@@ -43,8 +44,8 @@ export class ResizeClipCommand implements EditCommand {
 		this.originalLength = docClip.length;
 		this.clipId = player.clipId ?? undefined;
 
-		// Capture previous resolved config for event (local, not stored)
-		const previousConfig = structuredClone(player.clipConfiguration);
+		// Capture document clip BEFORE mutation
+		const previousDocClip = structuredClone(docClip);
 
 		// Document-only mutation
 		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.newLength });
@@ -58,10 +59,14 @@ export class ResizeClipCommand implements EditCommand {
 
 		context.updateDuration();
 
-		// Emit event with before/after resolved configs
+		// Get document clip AFTER mutation
+		const currentDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!currentDocClip) throw new Error(`ResizeClipCommand: document clip not found after mutation at ${this.trackIndex}/${this.clipIndex}`);
+
+		// Emit event with document clips
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: previousConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
-			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+			previous: { clip: stripInternalProperties(previousDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: stripInternalProperties(currentDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);
@@ -79,8 +84,8 @@ export class ResizeClipCommand implements EditCommand {
 		const player = context.getClipAt(this.trackIndex, this.clipIndex);
 		if (!player) throw new Error("ResizeClipCommand.undo: player not found");
 
-		// Capture current resolved config for event (local, not stored)
-		const currentConfig = structuredClone(player.clipConfiguration);
+		// Capture document clip BEFORE undo mutation
+		const currentDocClip = structuredClone(context.getDocumentClip(this.trackIndex, this.clipIndex));
 
 		// Document-only mutation - restore original length (may be "auto", "end", or numeric)
 		doc.updateClip(this.trackIndex, this.clipIndex, { length: this.originalLength });
@@ -94,9 +99,15 @@ export class ResizeClipCommand implements EditCommand {
 
 		context.updateDuration();
 
+		// Get document clip AFTER undo mutation
+		const restoredDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!currentDocClip || !restoredDocClip) {
+			throw new Error(`ResizeClipCommand: document clip not found after undo at ${this.trackIndex}/${this.clipIndex}`);
+		}
+
 		context.emitEvent(EditEvent.ClipUpdated, {
-			previous: { clip: currentConfig, trackIndex: this.trackIndex, clipIndex: this.clipIndex },
-			current: { clip: player.clipConfiguration, trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+			previous: { clip: stripInternalProperties(currentDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: stripInternalProperties(restoredDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 		});
 
 		context.propagateTimingChanges(this.trackIndex, this.clipIndex);

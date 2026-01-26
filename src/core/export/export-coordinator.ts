@@ -145,7 +145,6 @@ export class ExportCoordinator {
 				}
 			}
 
-			this.edit.draw();
 			this.app.renderer.render(this.app.stage);
 
 			const pixels = this.app.renderer.extract.pixels({

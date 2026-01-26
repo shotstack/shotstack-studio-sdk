@@ -1,6 +1,7 @@
 import { EditEvent } from "@core/events/edit-events";
+import { stripInternalProperties } from "@core/shared/clip-utils";
 import type { Seconds, TimingIntent } from "@core/timing/types";
-import type { ResolvedClip } from "@schemas";
+import type { Clip } from "@schemas";
 
 import { DeleteTrackCommand } from "./delete-track-command";
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
@@ -14,7 +15,7 @@ export class MoveClipCommand implements EditCommand {
 	private clipId: string | null = null;
 	private originalStart?: Seconds;
 	private originalTimingIntent?: TimingIntent;
-	private previousClipConfig?: ResolvedClip;
+	private previousDocClip?: Clip;
 	private deleteTrackCommand?: DeleteTrackCommand;
 	private sourceTrackWasDeleted = false;
 	/** Effective destination track index, adjusted if source track was deleted */
@@ -37,15 +38,19 @@ export class MoveClipCommand implements EditCommand {
 		const doc = context.getDocument();
 		if (!doc) throw new Error("MoveClipCommand.execute: document is required");
 
-		// Get the player to store state for undo and events
+		// Get player for ID and timing intent
 		const player = context.getClipAt(this.fromTrackIndex, this.fromClipIndex);
 		if (!player) {
 			return CommandNoop(`Invalid clip at ${this.fromTrackIndex}/${this.fromClipIndex}`);
 		}
 
-		// Store for undo
+		// Get document clip
+		const docClip = doc.getClip(this.fromTrackIndex, this.fromClipIndex);
+		if (!docClip) return CommandNoop(`Document clip not found at ${this.fromTrackIndex}/${this.fromClipIndex}`);
+
+		// Store for undo and events
 		this.clipId = player.clipId;
-		this.previousClipConfig = structuredClone(player.clipConfiguration);
+		this.previousDocClip = structuredClone(docClip);
 		this.originalStart = player.clipConfiguration.start as Seconds;
 		this.originalTimingIntent = player.getTimingIntent();
 
@@ -60,7 +65,6 @@ export class MoveClipCommand implements EditCommand {
 			const sourceTrackClips = doc.getClipsInTrack(this.fromTrackIndex);
 			if (sourceTrackClips.length === 0) {
 				// Source track is empty - delete it
-				// Note: DeleteTrackCommand is already document-only
 				this.deleteTrackCommand = new DeleteTrackCommand(this.fromTrackIndex);
 				const result = this.deleteTrackCommand.execute(context);
 
@@ -91,28 +95,30 @@ export class MoveClipCommand implements EditCommand {
 		}
 		context.propagateTimingChanges(this.effectiveToTrackIndex, this.newClipIndex);
 
-		// Get updated player for events (may have different reference after reconciliation)
-		const updatedPlayer = this.clipId ? context.getPlayerByClipId(this.clipId) : player;
-		const currentConfig = updatedPlayer?.clipConfiguration ?? player.clipConfiguration;
+		// Get document clip AFTER mutation
+		const currentDocClip = doc.getClip(this.effectiveToTrackIndex, this.newClipIndex);
+		if (!this.previousDocClip || !currentDocClip)
+			throw new Error(`MoveClipCommand: document clip not found after mutation at ${this.effectiveToTrackIndex}/${this.newClipIndex}`);
 
 		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: {
-				clip: this.previousClipConfig,
+				clip: stripInternalProperties(this.previousDocClip),
 				trackIndex: this.fromTrackIndex,
 				clipIndex: this.fromClipIndex
 			},
 			current: {
-				clip: currentConfig,
+				clip: stripInternalProperties(currentDocClip),
 				trackIndex: this.effectiveToTrackIndex,
 				clipIndex: this.newClipIndex
 			}
 		});
 
 		// Re-select the moved clip at its new position
+		const updatedPlayer = this.clipId ? context.getPlayerByClipId(this.clipId) : player;
 		if (updatedPlayer) {
 			context.setSelectedClip(updatedPlayer);
 			context.emitEvent(EditEvent.ClipSelected, {
-				clip: currentConfig,
+				clip: stripInternalProperties(currentDocClip),
 				trackIndex: this.effectiveToTrackIndex,
 				clipIndex: this.newClipIndex
 			});
@@ -139,15 +145,10 @@ export class MoveClipCommand implements EditCommand {
 			}
 		}
 
-		// Get player before document changes for events
-		const player = context.getPlayerByClipId(this.clipId);
-		const currentConfig = player ? structuredClone(player.clipConfiguration) : undefined;
-
 		// Find current clip position in document
 		const clipInfo = doc.getClipById(this.clipId);
-		if (!clipInfo) {
-			return CommandNoop(`Clip ${this.clipId} not found in document`);
-		}
+		if (!clipInfo) return CommandNoop(`Clip ${this.clipId} not found in document`);
+		const currentDocClip = structuredClone(doc.getClip(clipInfo.trackIndex, clipInfo.clipIndex));
 
 		// Document-only mutations: move back to original position (always use moveClip for reordering)
 		doc.moveClip(clipInfo.trackIndex, clipInfo.clipIndex, this.fromTrackIndex, {
@@ -165,19 +166,18 @@ export class MoveClipCommand implements EditCommand {
 		}
 		context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex);
 
-		// Get updated player for events
-		const updatedPlayer = context.getPlayerByClipId(this.clipId);
-		const restoredConfig = updatedPlayer?.clipConfiguration ?? this.previousClipConfig;
+		// Get document clip AFTER undo mutation (restored state)
+		const restoredDocClip = doc.getClip(this.fromTrackIndex, this.fromClipIndex);
 
-		if (this.previousClipConfig) {
+		if (this.previousDocClip) {
 			context.emitEvent(EditEvent.ClipUpdated, {
 				previous: {
-					clip: currentConfig ?? this.previousClipConfig,
+					clip: stripInternalProperties(currentDocClip ?? this.previousDocClip),
 					trackIndex: this.effectiveToTrackIndex,
 					clipIndex: this.newClipIndex
 				},
 				current: {
-					clip: restoredConfig ?? this.previousClipConfig,
+					clip: stripInternalProperties(restoredDocClip ?? this.previousDocClip),
 					trackIndex: this.fromTrackIndex,
 					clipIndex: this.fromClipIndex
 				}
@@ -185,10 +185,11 @@ export class MoveClipCommand implements EditCommand {
 		}
 
 		// Re-select the clip at its restored position
-		if (updatedPlayer && restoredConfig) {
+		const updatedPlayer = context.getPlayerByClipId(this.clipId);
+		if (updatedPlayer && restoredDocClip) {
 			context.setSelectedClip(updatedPlayer);
 			context.emitEvent(EditEvent.ClipSelected, {
-				clip: restoredConfig,
+				clip: stripInternalProperties(restoredDocClip),
 				trackIndex: this.fromTrackIndex,
 				clipIndex: this.fromClipIndex
 			});

@@ -53,8 +53,6 @@ export class TranscriptionIndicator extends Entity {
 		this.spinner.rotation = this.spinnerAngle;
 	}
 
-	public override draw(): void {}
-
 	private redraw(): void {
 		if (!this.background || !this.spinner || !this.statusText) return;
 

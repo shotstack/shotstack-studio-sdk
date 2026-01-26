@@ -1,7 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import type { MergeField } from "@core/merge/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
-import type { Destination, Output, ResolvedClip, ResolvedEdit } from "@schemas";
+import type { Clip, Destination, Edit as UnresolvedEdit, Output, ResolvedClip, ResolvedEdit } from "@schemas";
 
 // ─────────────────────────────────────────────────────────────
 // Event Emission Patterns
@@ -38,7 +38,21 @@ export type ClipLocation = {
 	clipIndex: number;
 };
 
+/**
+ * Reference to a clip from the document (source of truth).
+ * Contains original timing values like "auto", "end", and alias references.
+ * Used in public SDK events so consumers see the document state.
+ */
 export type ClipReference = ClipLocation & {
+	clip: Clip;
+};
+
+/**
+ * Reference to a resolved clip with computed timing values.
+ * Used internally for rendering and playback.
+ * @internal
+ */
+export type ResolvedClipReference = ClipLocation & {
 	clip: ResolvedClip;
 };
 
@@ -147,7 +161,8 @@ export type EditEventMap = {
 	[EditEvent.PlaybackPause]: void;
 
 	// Timeline
-	[EditEvent.TimelineUpdated]: { current: ResolvedEdit };
+	/** Contains the document (source of truth) with original timing values like "auto", "end" */
+	[EditEvent.TimelineUpdated]: { current: UnresolvedEdit };
 	[EditEvent.TimelineBackgroundChanged]: { color: string };
 
 	// Clip lifecycle

@@ -92,10 +92,6 @@ export class ShapePlayer extends Player {
 		super.update(deltaTime, elapsed);
 	}
 
-	public override draw(): void {
-		super.draw();
-	}
-
 	public override dispose(): void {
 		super.dispose();
 

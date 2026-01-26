@@ -1,19 +1,11 @@
 /**
- * TimingManager - Manages timing resolution for clips with "auto", "end", and alias references.
- * Handles dependency graph construction, topological sorting, and propagation of timing changes.
+ * TimingManager - Handles async timing resolution and propagation.
  */
 
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import {
-	buildAliasPlayerMap,
-	buildClipIdMap,
-	buildTimingDependencies,
-	detectCircularReferences,
-	topologicalSort
-} from "@core/timing/alias-resolution";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
-import { type AliasReference, type Seconds, isAliasReference, parseAliasName, sec } from "@core/timing/types";
+import { type Seconds, isAliasReference, sec } from "@core/timing/types";
 
 import type { Edit } from "./edit-session";
 
@@ -45,110 +37,54 @@ export class TimingManager {
 	// ─── Full Resolution ─────────────────────────────────────────────────────
 
 	/**
-	 * Resolve timing for all clips in topological order.
-	 * Handles "auto", "end", and alias references.
+	 * Resolve timing for all clips, syncing with the resolver's output.
 	 */
 	async resolveAllTiming(): Promise<void> {
 		const tracks = this.edit.getTracks();
+		const resolved = this.edit.getResolvedEdit();
 
-		// 1. Build alias infrastructure and validate uniqueness
-		buildAliasPlayerMap(tracks); // Throws if duplicate aliases found
-		const dependencies = buildTimingDependencies(tracks);
+		// Apply resolved timing from the resolver to Players
+		for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
+			const track = tracks[trackIdx];
+			const resolvedTrack = resolved.timeline.tracks[trackIdx];
 
-		// 2. Check for circular references
-		if (dependencies.size > 0) {
-			const cycle = detectCircularReferences(dependencies);
-			if (cycle) {
-				throw new Error(`Circular alias reference detected: ${cycle.join(" -> ")}`);
-			}
-		}
+			for (let clipIdx = 0; clipIdx < track.length; clipIdx += 1) {
+				const player = track[clipIdx];
+				const resolvedClip = resolvedTrack?.clips[clipIdx];
 
-		// 3. Build clip ID map for lookup
-		const clipIdMap = buildClipIdMap(tracks);
+				if (resolvedClip) {
+					const intent = player.getTimingIntent();
 
-		// 4. Topologically sort clip IDs (dependencies resolve first)
-		const allClipIds = new Set(clipIdMap.keys());
-		const resolveOrder = topologicalSort(dependencies, allClipIds);
+					// Use resolved values from the resolver
+					const resolvedStart = resolvedClip.start;
+					let resolvedLength = resolvedClip.length;
 
-		// 5. Map alias names to their clip IDs for lookup during resolution
-		const aliasToClipId = new Map<string, string>();
-		for (const [clipId, entry] of clipIdMap) {
-			const { alias } = entry.player.clipConfiguration;
-			if (alias) {
-				aliasToClipId.set(alias, clipId);
-			}
-		}
+					// Special handling for "auto" length - requires async asset loading
+					if (intent.length === "auto") {
+						resolvedLength = await resolveAutoLength(player.clipConfiguration.asset);
+					}
 
-		// 6. Resolve timing in topological order
-		const resolvedAliases = new Map<string, { start: Seconds; length: Seconds }>();
-
-		for (const clipId of resolveOrder) {
-			const entry = clipIdMap.get(clipId);
-			// Skip if this is an alias name rather than a clip ID
-			if (!entry) {
-				// eslint-disable-next-line no-continue
-				continue;
-			}
-
-			const { player, trackIdx, clipIdx } = entry;
-			const intent = player.getTimingIntent();
-
-			// Resolve start
-			let resolvedStart: Seconds;
-			if (intent.start === "auto") {
-				resolvedStart = resolveAutoStart(trackIdx, clipIdx, tracks);
-			} else if (isAliasReference(intent.start)) {
-				const aliasName = parseAliasName(intent.start as AliasReference);
-				const aliasValue = resolvedAliases.get(aliasName);
-				if (!aliasValue) {
-					throw new Error(`Alias "${aliasName}" not found or not yet resolved. Available: ${[...resolvedAliases.keys()].join(", ") || "none"}`);
+					player.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
 				}
-				resolvedStart = aliasValue.start;
-			} else {
-				resolvedStart = intent.start as Seconds;
-			}
-
-			// Resolve length
-			let resolvedLength: Seconds;
-			if (intent.length === "auto") {
-				resolvedLength = await resolveAutoLength(player.clipConfiguration.asset);
-			} else if (intent.length === "end") {
-				// Placeholder - will be resolved in second pass
-				resolvedLength = sec(0);
-			} else if (isAliasReference(intent.length)) {
-				const aliasName = parseAliasName(intent.length as AliasReference);
-				const aliasValue = resolvedAliases.get(aliasName);
-				if (!aliasValue) {
-					throw new Error(`Alias "${aliasName}" not found or not yet resolved. Available: ${[...resolvedAliases.keys()].join(", ") || "none"}`);
-				}
-				resolvedLength = aliasValue.length;
-			} else {
-				resolvedLength = intent.length as Seconds;
-			}
-
-			player.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
-
-			// Store resolved values if this clip has an alias
-			const { alias } = player.clipConfiguration;
-			if (alias) {
-				resolvedAliases.set(alias, { start: resolvedStart, length: resolvedLength });
 			}
 		}
 
-		// 7. Second pass: resolve "end" clips now that we know the timeline end
+		// Calculate timeline end and cache it
 		const timelineEnd = calculateTimelineEnd(tracks);
 		this.cachedTimelineEnd = timelineEnd;
 
+		// Resolve "end" clips now that we have the final timeline end
+		// (accounts for any "auto" length changes from async resolution above)
 		const endLengthClips = this.getEndLengthClips();
 		for (const clip of endLengthClips) {
-			const resolved = clip.getResolvedTiming();
+			const currentTiming = clip.getResolvedTiming();
 			clip.setResolvedTiming({
-				start: resolved.start,
-				length: resolveEndLength(resolved.start, timelineEnd)
+				start: currentTiming.start,
+				length: resolveEndLength(currentTiming.start, timelineEnd)
 			});
 		}
 
-		// After timing is resolved, reconfigure ALL "end" clips to rebuild keyframes
+		// Reconfigure "end" clips to rebuild keyframes
 		for (const clip of endLengthClips) {
 			clip.reconfigureAfterRestore();
 		}
@@ -202,62 +138,51 @@ export class TimingManager {
 
 		this.edit.updateTotalDuration();
 
-		// Notify Timeline to update visuals with new timing (use resolved values)
+		// Notify SDK consumers of timeline changes
 		this.edit.events.emit(EditEvent.TimelineUpdated, {
-			current: this.edit.getResolvedEdit()
+			current: this.edit.getEdit()
 		});
 	}
 
 	/**
 	 * Propagate alias changes when a clip's timing changes.
-	 * Clips referencing the changed clip via "alias://x" will be updated.
+	 *
+	 * Delegates to the resolver's output for alias values, then updates Players
+	 * that have alias references.
 	 */
 	private propagateAliasChanges(): void {
 		const tracks = this.edit.getTracks();
+		const resolved = this.edit.getResolvedEdit();
 
-		// 1. Build current alias values from resolved timing
-		const aliasValues = new Map<string, { start: Seconds; length: Seconds }>();
-		for (const track of tracks) {
-			for (const player of track) {
-				const { alias } = player.clipConfiguration;
-				if (alias) {
-					aliasValues.set(alias, {
-						start: player.getStart(),
-						length: player.getLength()
-					});
-				}
-			}
-		}
+		// Update Players with alias references using resolved values
+		for (let trackIdx = 0; trackIdx < tracks.length; trackIdx += 1) {
+			const track = tracks[trackIdx];
+			const resolvedTrack = resolved.timeline.tracks[trackIdx];
 
-		// 2. Update clips that depend on aliases
-		for (const track of tracks) {
-			for (const player of track) {
+			for (let clipIdx = 0; clipIdx < track.length; clipIdx += 1) {
+				const player = track[clipIdx];
+				const resolvedClip = resolvedTrack?.clips[clipIdx];
 				const intent = player.getTimingIntent();
-				let needsUpdate = false;
-				let newStart = player.getStart();
-				let newLength = player.getLength();
 
-				if (isAliasReference(intent.start)) {
-					const aliasName = parseAliasName(intent.start as AliasReference);
-					const resolved = aliasValues.get(aliasName);
-					if (resolved && Math.abs(resolved.start - newStart) > 0.001) {
-						newStart = resolved.start;
-						needsUpdate = true;
+				// Only update if this clip has alias references
+				const hasAliasStart = isAliasReference(intent.start);
+				const hasAliasLength = isAliasReference(intent.length);
+
+				if ((hasAliasStart || hasAliasLength) && resolvedClip) {
+					const currentStart = player.getStart();
+					const currentLength = player.getLength();
+
+					// Check if values differ from resolver's output
+					const startDiffers = Math.abs(resolvedClip.start - currentStart) > 0.001;
+					const lengthDiffers = Math.abs(resolvedClip.length - currentLength) > 0.001;
+
+					if (startDiffers || lengthDiffers) {
+						player.setResolvedTiming({
+							start: resolvedClip.start,
+							length: resolvedClip.length
+						});
+						player.reconfigureAfterRestore();
 					}
-				}
-
-				if (isAliasReference(intent.length)) {
-					const aliasName = parseAliasName(intent.length as AliasReference);
-					const resolved = aliasValues.get(aliasName);
-					if (resolved && Math.abs(resolved.length - newLength) > 0.001) {
-						newLength = resolved.length;
-						needsUpdate = true;
-					}
-				}
-
-				if (needsUpdate) {
-					player.setResolvedTiming({ start: newStart, length: newLength });
-					player.reconfigureAfterRestore();
 				}
 			}
 		}

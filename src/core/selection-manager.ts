@@ -6,6 +6,7 @@
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@core/schemas";
+import { stripInternalProperties } from "@core/shared/clip-utils";
 
 import type { Edit } from "./edit-session";
 
@@ -39,10 +40,10 @@ export class SelectionManager {
 		const player = this.edit.getPlayerClip(trackIndex, clipIndex);
 		if (player) {
 			this.selectedClip = player;
-			const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
+			const clip = this.edit.getDocumentClip(trackIndex, clipIndex);
 			if (clip) {
 				this.edit.events.emit(EditEvent.ClipSelected, {
-					clip,
+					clip: stripInternalProperties(clip),
 					trackIndex,
 					clipIndex
 				});
