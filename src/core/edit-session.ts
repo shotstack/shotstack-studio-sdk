@@ -28,7 +28,7 @@ import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-set
 import { SelectionManager } from "@core/selection-manager";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
-import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec } from "@core/timing/types";
+import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec, isAliasReference } from "@core/timing/types";
 import { TimingManager } from "@core/timing-manager";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -432,6 +432,15 @@ export class Edit {
 			return true;
 		}
 
+		// Check if this clip references an alias (in start or length)
+		// Single-clip resolution doesn't have the resolved alias values map,
+		// so we need to fall back to full resolution for alias references
+		const clip = docClip?.clip;
+		if (clip && (isAliasReference(clip.start) || isAliasReference(clip.length))) {
+			this.resolve();
+			return true;
+		}
+
 		const trackIndex = player.layer - 1;
 		const track = this.tracks[trackIndex];
 		const clipIndex = track ? track.indexOf(player) : -1;
@@ -455,6 +464,14 @@ export class Edit {
 		const result = resolveClipById(this.document, clipId, context);
 		if (!result) {
 			return false;
+		}
+
+		// Update lastResolved cache with the newly resolved clip (keeps cache in sync)
+		if (this.lastResolved) {
+			const cachedTrack = this.lastResolved.timeline.tracks[result.trackIndex];
+			if (cachedTrack && cachedTrack.clips[result.clipIndex]) {
+				cachedTrack.clips[result.clipIndex] = result.resolved;
+			}
 		}
 
 		// Update the player via the reconciler's single-player update

@@ -1,6 +1,6 @@
 import { EditEvent } from "@core/events/edit-events";
 import { stripInternalProperties } from "@core/shared/clip-utils";
-import type { Seconds, TimingIntent } from "@core/timing/types";
+import type { Seconds } from "@core/timing/types";
 import type { Clip } from "@schemas";
 
 import { DeleteTrackCommand } from "./delete-track-command";
@@ -13,8 +13,7 @@ export class MoveClipCommand implements EditCommand {
 	readonly name = "moveClip";
 
 	private clipId: string | null = null;
-	private originalStart?: Seconds;
-	private originalTimingIntent?: TimingIntent;
+	private originalStart?: Clip["start"];
 	private previousDocClip?: Clip;
 	private deleteTrackCommand?: DeleteTrackCommand;
 	private sourceTrackWasDeleted = false;
@@ -51,8 +50,7 @@ export class MoveClipCommand implements EditCommand {
 		// Store for undo and events
 		this.clipId = player.clipId;
 		this.previousDocClip = structuredClone(docClip);
-		this.originalStart = player.clipConfiguration.start as Seconds;
-		this.originalTimingIntent = player.getTimingIntent();
+		this.originalStart = docClip.start;
 
 		// Determine effective destination track index
 		this.effectiveToTrackIndex = this.toTrackIndex;
@@ -152,7 +150,7 @@ export class MoveClipCommand implements EditCommand {
 
 		// Document-only mutations: move back to original position (always use moveClip for reordering)
 		doc.moveClip(clipInfo.trackIndex, clipInfo.clipIndex, this.fromTrackIndex, {
-			start: this.originalTimingIntent?.start ?? this.originalStart
+			start: this.originalStart
 		});
 
 		// Reconciler handles player layer update, container move, timing update
