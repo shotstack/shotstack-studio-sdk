@@ -1,30 +1,25 @@
 /**
  * PlayerReconciler - Manages Player lifecycle based on ResolvedEdit state
  *
- * This is the "destination" approach to Player management:
+ * This is the approach to Player management:
  * - Commands mutate the Document
  * - Resolver produces ResolvedEdit
  * - Reconciler diffs ResolvedEdit against current Players
  * - Creates/updates/disposes Players to match resolved state
- *
- * Benefits:
- * - Single source of truth (Document)
- * - Commands become simple document mutations
- * - Undo/redo just restores document + resolve()
- * - No manual sync between document and Players
  */
 
 import type { Player } from "@canvas/players/player";
 import type { ResolvedClip, ResolvedEdit } from "@schemas";
 
 import type { Edit } from "./edit-session";
-import { InternalEvent } from "./events/edit-events";
+import { EditEvent, InternalEvent } from "./events/edit-events";
 import type { Seconds } from "./timing/types";
 
 export interface ReconcileResult {
 	created: string[];
 	updated: string[];
 	disposed: string[];
+	pendingLoads: Promise<void>[];
 }
 
 export class PlayerReconciler {
@@ -39,13 +34,28 @@ export class PlayerReconciler {
 	private enableCreation = true;
 
 	constructor(private readonly edit: Edit) {
-		// Subscribe to resolution events
 		this.edit.events.on(InternalEvent.Resolved, this.onResolved);
 	}
 
 	private onResolved = ({ edit: resolved }: { edit: ResolvedEdit }): void => {
 		this.reconcile(resolved);
 	};
+
+	/**
+	 * Initial reconciliation - creates all players from ResolvedEdit.
+	 *
+	 * Called during load, before any players exist. This method:
+	 * 1. Uses reconcile() to create all players
+	 * 2. Waits for all player loads to complete
+	 *
+	 * @param resolved - The fully resolved edit state from the resolver
+	 * @returns Promise that resolves when all players are loaded
+	 */
+	public async reconcileInitial(resolved: ResolvedEdit): Promise<ReconcileResult> {
+		const result = this.reconcile(resolved);
+		await Promise.all(result.pendingLoads);
+		return result;
+	}
 
 	/**
 	 * Reconcile Players to match the ResolvedEdit.
@@ -58,17 +68,18 @@ export class PlayerReconciler {
 	 */
 	public reconcile(resolved: ResolvedEdit): ReconcileResult {
 		if (this.isReconciling) {
-			// Prevent recursive reconciliation
-			return { created: [], updated: [], disposed: [] };
+			return { created: [], updated: [], disposed: [], pendingLoads: [] };
 		}
 
 		this.isReconciling = true;
 
 		try {
+			const pendingLoads: Promise<void>[] = [];
 			const result: ReconcileResult = {
 				created: [],
 				updated: [],
-				disposed: []
+				disposed: [],
+				pendingLoads
 			};
 
 			const resolvedClipIds = new Set<string>();
@@ -77,7 +88,8 @@ export class PlayerReconciler {
 			for (let trackIndex = 0; trackIndex < resolved.timeline.tracks.length; trackIndex += 1) {
 				const track = resolved.timeline.tracks[trackIndex];
 
-				for (const clip of track.clips) {
+				for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex += 1) {
+					const clip = track.clips[clipIndex];
 					const clipId = (clip as ResolvedClip & { id?: string }).id;
 					if (clipId) {
 						resolvedClipIds.add(clipId);
@@ -91,7 +103,7 @@ export class PlayerReconciler {
 							if (updateResult === "recreate") {
 								// Asset type changed - dispose old and create new
 								this.disposePlayer(clipId);
-								this.createPlayer(clip, clipId, trackIndex);
+								pendingLoads.push(this.createPlayer(clip, clipId, trackIndex, clipIndex));
 								result.disposed.push(clipId);
 								result.created.push(clipId);
 							} else if (updateResult) {
@@ -99,7 +111,7 @@ export class PlayerReconciler {
 							}
 						} else if (this.enableCreation) {
 							// Create new Player
-							this.createPlayer(clip, clipId, trackIndex);
+							this.createPlayer(clip, clipId, trackIndex, clipIndex);
 							result.created.push(clipId);
 						}
 					}
@@ -132,18 +144,16 @@ export class PlayerReconciler {
 	/**
 	 * Update a single player to match a resolved clip.
 	 *
-	 * This is the optimized path for single-clip mutations. Instead of running
+	 * This is the optimised path for single-clip mutations. Instead of running
 	 * a full reconcile() which processes ALL clips, this updates just ONE player.
-	 *
-	 * Extracted from reconcile() logic for single-clip optimization in commands
-	 * like resize-clip, update-timing, and transform-asset.
 	 *
 	 * @param player - The player to update
 	 * @param resolvedClip - The resolved clip state to sync to
 	 * @param trackIndex - The track index (for track change detection)
+	 * @param clipIndex - The clip index within the track (for error events)
 	 * @returns true if changes were made, false if no changes, 'recreate' if asset type changed
 	 */
-	public updateSinglePlayer(player: Player, resolvedClip: ResolvedClip, trackIndex: number): boolean | "recreate" {
+	public updateSinglePlayer(player: Player, resolvedClip: ResolvedClip, trackIndex: number, clipIndex: number = 0): boolean | "recreate" {
 		const result = this.updatePlayer(player, resolvedClip, trackIndex);
 
 		// Handle asset type change (rare case - requires full recreation)
@@ -151,7 +161,7 @@ export class PlayerReconciler {
 			const { clipId } = player;
 			if (clipId) {
 				this.disposePlayer(clipId);
-				this.createPlayer(resolvedClip, clipId, trackIndex);
+				this.createPlayer(resolvedClip, clipId, trackIndex, clipIndex);
 			}
 			return "recreate";
 		}
@@ -162,7 +172,7 @@ export class PlayerReconciler {
 	/**
 	 * Create a new Player for a clip.
 	 */
-	private createPlayer(clip: ResolvedClip, clipId: string, trackIndex: number): void {
+	private createPlayer(clip: ResolvedClip, clipId: string, trackIndex: number, clipIndex: number): Promise<void> {
 		const player = this.edit.createPlayerFromAssetType(clip);
 		player.layer = trackIndex + 1;
 		player.clipId = clipId;
@@ -176,8 +186,18 @@ export class PlayerReconciler {
 		// Add to PIXI container
 		this.edit.addPlayerToContainer(trackIndex, player);
 
-		// Load asynchronously (non-blocking)
-		player.load().catch(error => console.error(`Failed to load player for clip ${clipId}:`, error));
+		// Load asynchronously
+		const loadPromise = player.load().catch(error => {
+			const assetType = (clip.asset as { type?: string })?.type ?? "unknown";
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.edit.events.emit(EditEvent.ClipLoadFailed, {
+				trackIndex,
+				clipIndex,
+				error: errorMessage,
+				assetType
+			});
+		});
+		return loadPromise;
 	}
 
 	/**
@@ -190,9 +210,7 @@ export class PlayerReconciler {
 		const currentAssetType = (player.clipConfiguration.asset as { type?: string })?.type;
 		const newAssetType = (clip.asset as { type?: string })?.type;
 
-		if (currentAssetType !== newAssetType) {
-			return "recreate";
-		}
+		if (currentAssetType !== newAssetType) return "recreate";
 
 		let changed = false;
 		const currentTrackIndex = player.layer - 1;
@@ -202,8 +220,7 @@ export class PlayerReconciler {
 		const currentLength = player.clipConfiguration.length as Seconds;
 
 		if (currentStart !== clip.start || currentLength !== clip.length) {
-			// Update resolved timing (which also sets clipConfiguration.start/length)
-			// Note: timingIntent is now read directly from document by player.getTimingIntent()
+			// Update resolved timing
 			player.setResolvedTiming({
 				start: clip.start,
 				length: clip.length
@@ -240,7 +257,6 @@ export class PlayerReconciler {
 	 */
 	private clipPropertiesChanged(current: ResolvedClip, resolved: ResolvedClip): boolean {
 		// Compare clip-level properties (not timing or asset)
-		// Use type-safe keyof access for known Clip properties
 		const currentRecord = current as Record<string, unknown>;
 		const resolvedRecord = resolved as Record<string, unknown>;
 

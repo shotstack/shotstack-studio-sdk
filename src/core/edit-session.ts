@@ -23,7 +23,7 @@ import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } fr
 import { EventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
-import { applyMergeFields, MergeFieldService, type SerializedMergeField } from "@core/merge";
+import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
 import { SelectionManager } from "@core/selection-manager";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
@@ -154,17 +154,18 @@ export class Edit {
 	private async initializeFromDocument(source: string = "load"): Promise<void> {
 		const rawEdit = this.document.toJSON();
 
-		// Load merge fields
+		// 1. Load merge fields into service
 		const serializedMergeFields = rawEdit.merge ?? [];
 		this.mergeFieldService.loadFromSerialized(serializedMergeFields);
-		const bindingsPerClip = this.detectMergeFieldBindings(rawEdit as ResolvedEdit, serializedMergeFields);
 
-		// Apply merge field substitutions for initial load
-		const mergedEdit = serializedMergeFields.length > 0 ? applyMergeFields(rawEdit as ResolvedEdit, serializedMergeFields) : rawEdit;
+		// 2. Invalidate resolved cache and detect merge field bindings
+		this.lastResolved = null;
+		const bindingsPerClip = this.detectMergeFieldBindings(serializedMergeFields);
 
-		const parsedEdit = EditSchema.parse(mergedEdit) as UnresolvedEdit;
+		// 3. Parse raw edit
+		const parsedEdit = EditSchema.parse(rawEdit) as UnresolvedEdit;
 
-		// Load fonts and store metadata for rich-text font resolution
+		// 4. Load fonts
 		await Promise.all(
 			(parsedEdit.timeline.fonts ?? []).map(async font => {
 				const identifier = font.src;
@@ -182,41 +183,32 @@ export class Edit {
 			})
 		);
 
-		// Create players for each clip
-		for (const [trackIdx, track] of parsedEdit.timeline.tracks.entries()) {
-			for (const [clipIdx, clip] of track.clips.entries()) {
-				try {
-					const clipPlayer = this.createPlayerFromAssetType(clip as ResolvedClip);
-					clipPlayer.layer = trackIdx + 1;
+		// 5. Resolve the document
+		const resolvedEdit = this.getResolvedEdit();
 
-					const clipId = this.document.getClipId(trackIdx, clipIdx);
-					if (clipId) {
-						clipPlayer.clipId = clipId;
-						this.playerByClipId.set(clipId, clipPlayer);
-					}
+		// 6. Create players
+		await this.playerReconciler.reconcileInitial(resolvedEdit);
 
-					const bindings = bindingsPerClip.get(`${trackIdx}-${clipIdx}`);
-					if (bindings && bindings.size > 0 && clipId) this.document.setClipBindingsForClip(clipId, bindings);
-
-					await this.addPlayer(trackIdx, clipPlayer);
-				} catch (error) {
-					const assetType = (clip.asset as { type?: string }).type ?? "unknown";
-					const errorMessage = error instanceof Error ? error.message : String(error);
-					this.clipErrors.set(`${trackIdx}-${clipIdx}`, { error: errorMessage, assetType });
-					this.events.emit(EditEvent.ClipLoadFailed, {
-						trackIndex: trackIdx,
-						clipIndex: clipIdx,
-						error: errorMessage,
-						assetType
-					});
-				}
+		// 7. Set up clip bindings for merge field tracking
+		for (const [clipId, bindings] of bindingsPerClip) {
+			if (bindings.size > 0) {
+				this.document.setClipBindingsForClip(clipId, bindings);
 			}
 		}
 
+		// 8. Initialize luma mask controller
 		this.lumaMaskController.initialize();
+
+		// 9. Resolve async timing (auto-length for videos, etc.)
 		await this.timingManager.resolveAllTiming();
+
+		// 10. Update total duration
 		this.updateTotalDuration();
-		if (parsedEdit.timeline.soundtrack) await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
+
+		// 11. Load soundtrack if present
+		if (parsedEdit.timeline.soundtrack) {
+			await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
+		}
 
 		this.events.emit(EditEvent.TimelineUpdated, { current: this.getEdit() });
 		this.emitEditChanged(source);
@@ -475,7 +467,7 @@ export class Edit {
 		}
 
 		// Update the player via the reconciler's single-player update
-		const updated = this.playerReconciler.updateSinglePlayer(player, result.resolved, result.trackIndex);
+		const updated = this.playerReconciler.updateSinglePlayer(player, result.resolved, result.trackIndex, result.clipIndex);
 
 		return updated !== false;
 	}
@@ -957,7 +949,7 @@ export class Edit {
 	/**
 	 * Detects merge field placeholders in the raw edit before substitution.
 	 */
-	private detectMergeFieldBindings(edit: ResolvedEdit, mergeFields: SerializedMergeField[]): Map<string, Map<string, MergeFieldBinding>> {
+	private detectMergeFieldBindings(mergeFields: SerializedMergeField[]): Map<string, Map<string, MergeFieldBinding>> {
 		const result = new Map<string, Map<string, MergeFieldBinding>>();
 
 		if (!mergeFields.length) return result;
@@ -971,11 +963,15 @@ export class Edit {
 		}
 
 		// Walk each clip and detect placeholder strings
-		for (const [trackIdx, track] of edit.timeline.tracks.entries()) {
-			for (const [clipIdx, clip] of track.clips.entries()) {
-				const bindings = this.detectBindingsInObject(clip, "", fieldValues);
-				if (bindings.size > 0) {
-					result.set(`${trackIdx}-${clipIdx}`, bindings);
+		for (let t = 0; t < this.document.getTrackCount(); t += 1) {
+			const clips = this.document.getClipsInTrack(t);
+			for (let c = 0; c < clips.length; c += 1) {
+				const clipId = this.document.getClipId(t, c);
+				if (clipId) {
+					const bindings = this.detectBindingsInObject(clips[c], "", fieldValues);
+					if (bindings.size > 0) {
+						result.set(clipId, bindings);
+					}
 				}
 			}
 		}

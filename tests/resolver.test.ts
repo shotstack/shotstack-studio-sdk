@@ -439,5 +439,176 @@ describe("Resolver", () => {
 				expect(Number.isFinite(svgClip.length)).toBe(true);
 			});
 		});
+
+		describe("merge fields in timing", () => {
+			it("resolves merge field in start value", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: "{{ START }}" as unknown as number,
+										length: 5
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } },
+					merge: [{ find: "START", replace: 3 }]
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+				mergeFields.loadFromSerialized(edit.merge!);
+
+				const resolved = resolve(doc, { mergeFields });
+				expect(resolved.timeline.tracks[0].clips[0].start).toBe(3);
+			});
+
+			it("resolves merge field in length value", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: 0,
+										length: "{{ LENGTH }}" as unknown as number
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } },
+					merge: [{ find: "LENGTH", replace: 7.5 }]
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+				mergeFields.loadFromSerialized(edit.merge!);
+
+				const resolved = resolve(doc, { mergeFields });
+				expect(resolved.timeline.tracks[0].clips[0].length).toBe(7.5);
+			});
+
+			it("resolves merge fields in both start and length", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: "{{ START }}" as unknown as number,
+										length: "{{ LENGTH }}" as unknown as number
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } },
+					merge: [
+						{ find: "START", replace: 2 },
+						{ find: "LENGTH", replace: 4 }
+					]
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+				mergeFields.loadFromSerialized(edit.merge!);
+
+				const resolved = resolve(doc, { mergeFields });
+				const clip = resolved.timeline.tracks[0].clips[0];
+				expect(clip.start).toBe(2);
+				expect(clip.length).toBe(4);
+			});
+
+			it("resolves merge field in numeric clip properties like scale", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: 0,
+										length: 5,
+										scale: "{{ SCALE }}" as unknown as number
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } },
+					merge: [{ find: "SCALE", replace: 0.5 }]
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+				mergeFields.loadFromSerialized(edit.merge!);
+
+				const resolved = resolve(doc, { mergeFields });
+				expect(resolved.timeline.tracks[0].clips[0].scale).toBe(0.5);
+			});
+
+			it("preserves string merge fields in asset text", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "title", text: "Hello {{ NAME }}", style: "minimal" },
+										start: 0,
+										length: 5
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } },
+					merge: [{ find: "NAME", replace: "World" }]
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+				mergeFields.loadFromSerialized(edit.merge!);
+
+				const resolved = resolve(doc, { mergeFields });
+				const titleAsset = resolved.timeline.tracks[0].clips[0].asset as { text: string };
+				expect(titleAsset.text).toBe("Hello World");
+			});
+
+			it("handles unresolved merge field in timing (keeps template string)", () => {
+				const edit: Edit = {
+					timeline: {
+						tracks: [
+							{
+								clips: [
+									{
+										asset: { type: "image", src: "https://example.com/1.jpg" },
+										start: "{{ UNKNOWN }}" as unknown as number,
+										length: 5
+									}
+								]
+							}
+						]
+					},
+					output: { format: "mp4", size: { width: 1920, height: 1080 } }
+				};
+
+				const doc = new EditDocument(edit);
+				const mergeFields = createMergeFieldService();
+
+				// Unresolved merge fields are preserved as template strings
+				// This allows downstream code to detect and report the issue
+				const resolved = resolve(doc, { mergeFields });
+				expect(resolved.timeline.tracks[0].clips[0].start).toBe("{{ UNKNOWN }}");
+			});
+		});
 	});
 });

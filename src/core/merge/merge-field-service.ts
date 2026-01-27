@@ -94,6 +94,20 @@ export class MergeFieldService {
 	}
 
 	/**
+	 * Resolve a merge field template to a numeric value.
+	 * Returns the number if successful, or null if:
+	 * - Input is not a merge field template
+	 * - Resolved value is not a valid number
+	 */
+	resolveToNumber(input: string): number | null {
+		if (!this.isMergeFieldTemplate(input)) return null;
+
+		const resolved = this.resolve(input);
+		const num = parseFloat(resolved);
+		return Number.isFinite(num) ? num : null;
+	}
+
+	/**
 	 * Check if a string contains unresolved merge fields.
 	 * Returns true if any {{ FIELD_NAME }} patterns remain after resolution.
 	 */
@@ -137,7 +151,8 @@ export class MergeFieldService {
 	loadFromSerialized(fields: SerializedMergeField[]): void {
 		this.fields.clear();
 		for (const f of fields) {
-			this.fields.set(f.find, fromSerialized(f));
+			const internal = fromSerialized(f);
+			this.fields.set(f.find, internal);
 		}
 	}
 

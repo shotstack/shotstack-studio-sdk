@@ -17,7 +17,7 @@
 
 import type { EditDocument } from "./edit-document";
 import type { MergeFieldService } from "./merge/merge-field-service";
-import type { Clip, ResolvedClip, ResolvedEdit, ResolvedTrack, Asset } from "./schemas";
+import type { Clip, ResolvedClip, ResolvedEdit, ResolvedTrack } from "./schemas";
 import { type Seconds, sec, isAliasReference, parseAliasName } from "./timing/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,17 +62,33 @@ interface ClipLocation {
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
-function substituteInObject(target: Record<string, unknown>, mergeFields: MergeFieldService): void {
-	for (const key of Object.keys(target)) {
-		const value = target[key];
-
-		if (typeof value === "string") {
-			// eslint-disable-next-line no-param-reassign
-			target[key] = mergeFields.resolve(value);
-		} else if (typeof value === "object" && value !== null) {
-			substituteInObject(value as Record<string, unknown>, mergeFields);
+/**
+ * Deep-resolve merge field templates in a clip.
+ * Walks all properties recursively and resolves {{ FIELD }} patterns to their values.
+ *
+ * - Tries numeric conversion first (for timing, scale, offset, etc.)
+ * - Falls back to string resolution (for text content)
+ */
+function resolveMergeFieldsInClip(clip: InternalClip, mergeFields: MergeFieldService): InternalClip {
+	function processValue(value: unknown): unknown {
+		if (typeof value === "string" && mergeFields.isMergeFieldTemplate(value)) {
+			const num = mergeFields.resolveToNumber(value);
+			return num !== null ? num : mergeFields.resolve(value);
 		}
+		if (Array.isArray(value)) {
+			return value.map(processValue);
+		}
+		if (value !== null && typeof value === "object") {
+			const result: Record<string, unknown> = {};
+			for (const [k, v] of Object.entries(value)) {
+				result[k] = processValue(v);
+			}
+			return result;
+		}
+		return value;
 	}
+
+	return processValue(structuredClone(clip)) as InternalClip;
 }
 
 /**
@@ -220,22 +236,12 @@ function topologicalSort(dependencies: Map<string, Set<string>>, allClipIds: str
 	return result;
 }
 
-function substituteMergeFieldsInAsset(asset: Asset, mergeFields: MergeFieldService): Asset {
-	const cloned = structuredClone(asset);
-	substituteInObject(cloned as unknown as Record<string, unknown>, mergeFields);
-	return cloned;
-}
-
 /**
  * Resolve a single clip's timing using alias values.
  * This is called after topological sorting ensures dependencies are resolved first.
+ * Note: Merge fields should be resolved via resolveMergeFieldsInClip() BEFORE calling this.
  */
-function resolveClipWithAliases(
-	clip: InternalClip,
-	previousClipEnd: Seconds,
-	resolvedAliases: Map<string, AliasValue>,
-	context: ResolveContext
-): PartialResolvedClip {
+function resolveClipWithAliases(clip: InternalClip, previousClipEnd: Seconds, resolvedAliases: Map<string, AliasValue>): PartialResolvedClip {
 	// Resolve start
 	let start: Seconds;
 	if (clip.start === "auto") {
@@ -270,15 +276,11 @@ function resolveClipWithAliases(
 		length = sec(clip.length as number);
 	}
 
-	// Resolve merge fields in asset
-	const asset = substituteMergeFieldsInAsset(clip.asset, context.mergeFields);
-
 	return {
 		...clip,
 		id: clip.id ?? crypto.randomUUID(),
 		start,
 		length,
-		asset,
 		pendingEndLength: pendingEndLength || undefined
 	};
 }
@@ -367,16 +369,19 @@ export function resolveClip(document: EditDocument, clipId: string, context: Sin
 	const { clip, trackIndex, clipIndex } = lookup;
 	const internalClip = clip as InternalClip;
 
-	// 2. Resolve the single clip using alias-aware logic
-	const resolvedAliases = context.resolvedAliases ?? new Map();
-	const resolvedClip = resolveClipWithAliases(internalClip, context.previousClipEnd, resolvedAliases, context);
+	// 2. Pre-process merge fields in entire clip
+	const processedClip = resolveMergeFieldsInClip(internalClip, context.mergeFields);
 
-	// 3. Handle "end" length (second pass for this single clip)
+	// 3. Resolve the single clip using alias-aware logic
+	const resolvedAliases = context.resolvedAliases ?? new Map();
+	const resolvedClip = resolveClipWithAliases(processedClip, context.previousClipEnd, resolvedAliases);
+
+	// 4. Handle "end" length (second pass for this single clip)
 	if (resolvedClip.pendingEndLength && context.cachedTimelineEnd !== undefined) {
 		resolvedClip.length = sec(Math.max(context.cachedTimelineEnd - resolvedClip.start, 0.1));
 	}
 
-	// 4. Clean up and return
+	// 5. Clean up and return
 	return {
 		resolved: cleanupPendingFlags(resolvedClip),
 		trackIndex,
@@ -436,11 +441,14 @@ export function resolve(document: EditDocument, context: ResolveContext): Resolv
 		if (clipInfo) {
 			const { clip, trackIndex, clipIndex } = clipInfo;
 
+			// Pre-process merge fields in entire clip
+			const processedClip = resolveMergeFieldsInClip(clip, context.mergeFields);
+
 			// Get previous clip end for this track (for "auto" start)
 			const previousClipEnd = previousClipEndByTrack.get(trackIndex) ?? sec(0);
 
 			// Resolve the clip with alias support
-			const resolvedClip = resolveClipWithAliases(clip, previousClipEnd, resolvedAliases, context);
+			const resolvedClip = resolveClipWithAliases(processedClip, previousClipEnd, resolvedAliases);
 
 			// Store in map by position key
 			resolvedClipsByPosition.set(`${trackIndex}-${clipIndex}`, resolvedClip);
