@@ -22,6 +22,9 @@ export interface ReconcileResult {
 	pendingLoads: Promise<void>[];
 }
 
+/** Properties handled by dedicated checks in updatePlayer — skip in generic diff/patch */
+const HANDLED_PROPS = new Set(["asset", "start", "length", "id"]);
+
 export class PlayerReconciler {
 	private isReconciling = false;
 
@@ -256,14 +259,12 @@ export class PlayerReconciler {
 	 * Check if non-timing, non-asset clip properties changed.
 	 */
 	private clipPropertiesChanged(current: ResolvedClip, resolved: ResolvedClip): boolean {
-		// Compare clip-level properties (not timing or asset)
 		const currentRecord = current as Record<string, unknown>;
 		const resolvedRecord = resolved as Record<string, unknown>;
+		const allKeys = new Set([...Object.keys(currentRecord), ...Object.keys(resolvedRecord)]);
 
-		const propsToCheck = ["fit", "position", "offset", "opacity", "scale", "filter", "transition", "effect", "transform", "width", "height"];
-
-		for (const prop of propsToCheck) {
-			if (JSON.stringify(currentRecord[prop]) !== JSON.stringify(resolvedRecord[prop])) {
+		for (const key of allKeys) {
+			if (!HANDLED_PROPS.has(key) && JSON.stringify(currentRecord[key]) !== JSON.stringify(resolvedRecord[key])) {
 				return true;
 			}
 		}
@@ -276,17 +277,15 @@ export class PlayerReconciler {
 	private updateClipProperties(player: Player, clip: ResolvedClip): void {
 		const playerConfig = player.clipConfiguration as Record<string, unknown>;
 		const clipRecord = clip as Record<string, unknown>;
+		const allKeys = new Set([...Object.keys(playerConfig), ...Object.keys(clipRecord)]);
 
-		const propsToUpdate = ["fit", "position", "offset", "opacity", "scale", "filter", "transition", "effect", "transform", "width", "height"];
-
-		for (const prop of propsToUpdate) {
-			if (clipRecord[prop] !== undefined) {
-				// eslint-disable-next-line no-param-reassign -- Intentional player state update
-				playerConfig[prop] = clipRecord[prop];
-			} else if (playerConfig[prop] !== undefined) {
-				// Remove property if not in resolved clip
-				// eslint-disable-next-line no-param-reassign -- Intentional player state update
-				delete playerConfig[prop];
+		for (const key of allKeys) {
+			if (!HANDLED_PROPS.has(key)) {
+				if (clipRecord[key] !== undefined) {
+					playerConfig[key] = clipRecord[key];
+				} else {
+					delete playerConfig[key];
+				}
 			}
 		}
 
