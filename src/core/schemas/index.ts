@@ -25,6 +25,9 @@ import {
 	shapeAssetSchema,
 	lumaAssetSchema,
 	svgAssetSchema,
+	textToImageAssetSchema,
+	imageToVideoAssetSchema,
+	textToSpeechAssetSchema,
 	assetSchema,
 	tweenSchema,
 	cropSchema,
@@ -61,6 +64,9 @@ export type ShapeAsset = components["schemas"]["ShapeAsset"];
 export type LumaAsset = components["schemas"]["LumaAsset"];
 export type TitleAsset = components["schemas"]["TitleAsset"];
 export type SvgAsset = components["schemas"]["SvgAsset"];
+export type TextToImageAsset = components["schemas"]["TextToImageAsset"];
+export type ImageToVideoAsset = components["schemas"]["ImageToVideoAsset"];
+export type TextToSpeechAsset = components["schemas"]["TextToSpeechAsset"];
 
 // Sub-types
 export type Crop = components["schemas"]["Crop"];
@@ -149,6 +155,9 @@ export {
 	shapeAssetSchema as ShapeAssetSchema,
 	lumaAssetSchema as LumaAssetSchema,
 	svgAssetSchema as SvgAssetSchema,
+	textToImageAssetSchema as TextToImageAssetSchema,
+	imageToVideoAssetSchema as ImageToVideoAssetSchema,
+	textToSpeechAssetSchema as TextToSpeechAssetSchema,
 	assetSchema as AssetSchema,
 	tweenSchema as TweenSchema,
 	tweenSchema as KeyframeSchema,

@@ -78,6 +78,7 @@ export const EditEvent = {
 	ClipRestored: "clip:restored",
 	ClipCopied: "clip:copied",
 	ClipLoadFailed: "clip:loadFailed",
+	ClipUnresolved: "clip:unresolved",
 
 	// Selection
 	SelectionCleared: "selection:cleared",
@@ -174,6 +175,7 @@ export type EditEventMap = {
 	[EditEvent.ClipRestored]: ClipLocation;
 	[EditEvent.ClipCopied]: ClipLocation;
 	[EditEvent.ClipLoadFailed]: ClipLocation & { error: string; assetType: string };
+	[EditEvent.ClipUnresolved]: ClipLocation & { assetType: string; clipId: string };
 
 	// Selection
 	[EditEvent.SelectionCleared]: void;

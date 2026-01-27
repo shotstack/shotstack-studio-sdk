@@ -1,0 +1,56 @@
+{
+	"timeline": {
+		"background": "#111111",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text-to-image",
+							"prompt": "A golden sunset over a calm ocean with silhouetted palm trees"
+						},
+						"start": 0,
+						"length": 5,
+						"width": 512,
+						"height": 512
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image-to-video",
+							"src": "https://shotstack-assets.s3.amazonaws.com/images/woods1.jpg",
+							"prompt": "Slowly zoom out and orbit left around the trees"
+						},
+						"start": 5,
+						"length": 5,
+						"fit": "crop"
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text-to-speech",
+							"text": "Welcome to the AI-powered video editor. This clip was generated using text-to-speech.",
+							"voice": "Matthew"
+						},
+						"start": 0,
+						"length": 10
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": {
+			"width": 1080,
+			"height": 1080
+		}
+	}
+}

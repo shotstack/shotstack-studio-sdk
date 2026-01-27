@@ -25,6 +25,8 @@ export interface ReconcileResult {
 /** Properties handled by dedicated checks in updatePlayer — skip in generic diff/patch */
 const HANDLED_PROPS = new Set(["asset", "start", "length", "id"]);
 
+const AI_ASSET_TYPES = new Set(["text-to-image", "image-to-video", "text-to-speech"]);
+
 export class PlayerReconciler {
 	private isReconciling = false;
 
@@ -190,16 +192,28 @@ export class PlayerReconciler {
 		this.edit.addPlayerToContainer(trackIndex, player);
 
 		// Load asynchronously
-		const loadPromise = player.load().catch(error => {
-			const assetType = (clip.asset as { type?: string })?.type ?? "unknown";
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.edit.events.emit(EditEvent.ClipLoadFailed, {
-				trackIndex,
-				clipIndex,
-				error: errorMessage,
-				assetType
+		const assetType = (clip.asset as { type?: string })?.type ?? "unknown";
+		const loadPromise = player
+			.load()
+			.then(() => {
+				if (AI_ASSET_TYPES.has(assetType)) {
+					this.edit.events.emit(EditEvent.ClipUnresolved, {
+						trackIndex,
+						clipIndex,
+						assetType,
+						clipId
+					});
+				}
+			})
+			.catch(error => {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.edit.events.emit(EditEvent.ClipLoadFailed, {
+					trackIndex,
+					clipIndex,
+					error: errorMessage,
+					assetType
+				});
 			});
-		});
 		return loadPromise;
 	}
 

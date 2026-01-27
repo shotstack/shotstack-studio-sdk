@@ -5,12 +5,15 @@ import { AudioPlayer } from "./audio-player";
 import { CaptionPlayer } from "./caption-player";
 import { HtmlPlayer } from "./html-player";
 import { ImagePlayer } from "./image-player";
+import { ImageToVideoPlayer } from "./image-to-video-player";
 import { LumaPlayer } from "./luma-player";
 import type { Player } from "./player";
 import { RichTextPlayer } from "./rich-text-player";
 import { ShapePlayer } from "./shape-player";
 import { SvgPlayer } from "./svg-player";
 import { TextPlayer } from "./text-player";
+import { TextToImagePlayer } from "./text-to-image-player";
+import { TextToSpeechPlayer } from "./text-to-speech-player";
 import { VideoPlayer } from "./video-player";
 
 /**
@@ -43,6 +46,12 @@ export class PlayerFactory {
 				return new CaptionPlayer(edit, clipConfiguration);
 			case "svg":
 				return new SvgPlayer(edit, clipConfiguration);
+			case "text-to-image":
+				return new TextToImagePlayer(edit, clipConfiguration);
+			case "image-to-video":
+				return new ImageToVideoPlayer(edit, clipConfiguration);
+			case "text-to-speech":
+				return new TextToSpeechPlayer(edit, clipConfiguration);
 			default:
 				throw new Error(`Unsupported asset type: ${(clipConfiguration.asset as { type: string }).type}`);
 		}

@@ -1,5 +1,6 @@
 import type { ResolvedClip } from "@schemas";
 
+import { AI_ICON_LINE_PATHS, AI_ASSET_ICON_MAP } from "../../../canvas/players/ai-icons";
 import { formatClipErrorMessage } from "../../error-messages";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
 
@@ -126,8 +127,14 @@ export class ClipComponent {
 		this.element.classList.toggle("resizing", clip.visualState === "resizing");
 
 		// Update icon (using cached reference)
-		if (this.iconEl) {
-			this.iconEl.textContent = this.getAssetIcon(assetType);
+		if (this.iconEl && this.iconEl.dataset["assetType"] !== assetType) {
+			this.iconEl.dataset["assetType"] = assetType;
+			const aiIconType = AI_ASSET_ICON_MAP[assetType];
+			if (aiIconType) {
+				this.iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${AI_ICON_LINE_PATHS[aiIconType]}"/></svg>`;
+			} else {
+				this.iconEl.textContent = this.getAssetIcon(assetType);
+			}
 		}
 
 		// Update label (using cached reference)

@@ -5,6 +5,8 @@ import { SvgAssetSchema, type ResolvedClip, type SvgAsset } from "@schemas";
 import { initResvg, renderSvgAssetToPng, type CanvasSvgAsset } from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
+import { createPlaceholderGraphic } from "./placeholder-graphic";
+
 const RESVG_WASM_URL = "https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
 
 export class SvgPlayer extends Player {
@@ -107,17 +109,7 @@ export class SvgPlayer extends Player {
 		const width = this.clipConfiguration.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || this.edit.size.height;
 
-		const graphics = new pixi.Graphics();
-		graphics.fillStyle = { color: "#cccccc", alpha: 0.5 };
-		graphics.rect(0, 0, width, height);
-		graphics.fill();
-
-		graphics.strokeStyle = { color: "#999999", width: 2 };
-		graphics.moveTo(0, 0);
-		graphics.lineTo(width, height);
-		graphics.moveTo(width, 0);
-		graphics.lineTo(0, height);
-		graphics.stroke();
+		const graphics = createPlaceholderGraphic(width, height);
 
 		this.renderedWidth = width;
 		this.renderedHeight = height;
