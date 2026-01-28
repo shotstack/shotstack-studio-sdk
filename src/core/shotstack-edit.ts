@@ -81,27 +81,8 @@ function convertEmptyTextClipToSvg(clip: Clip): Clip {
 /**
  * Extended Edit with Shotstack-specific capabilities.
  *
- * @internal This class is for Shotstack products only.
+ * This class is for Shotstack products only.
  * External SDK consumers should use the base `Edit` class.
- *
- * Features:
- * - Merge field management (template variables like {{ NAME }})
- * - Text-to-RichText asset conversion
- * - Future Shotstack-specific functionality
- *
- * @example
- * ```typescript
- * import { ShotstackEdit } from '@shotstack/studio-sdk/internal';
- *
- * const edit = new ShotstackEdit(template);
- * await edit.load();
- *
- * // Register merge fields
- * edit.mergeFields.register({ name: 'TITLE', defaultValue: 'Hello World' });
- *
- * // Convert legacy text assets
- * await edit.convertAllTextToRichText();
- * ```
  */
 export class ShotstackEdit extends Edit {
 	// Recursion guard for merge field updates (prevents stack overflow)

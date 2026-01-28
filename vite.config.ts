@@ -3,8 +3,6 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 import dts from "vite-plugin-dts";
 
-const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg", "harfbuzzjs"];
-
 const globals = {
 	"pixi.js": "PIXI",
 	howler: "Howler",
@@ -56,7 +54,7 @@ export default defineConfig({
 			formats: ["es", "umd"]
 		},
 		rollupOptions: {
-			external,
+			external: ["harfbuzzjs", "opentype.js", "howler"],
 			output: {
 				globals,
 				inlineDynamicImports: true
