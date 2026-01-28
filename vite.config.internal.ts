@@ -26,7 +26,8 @@ export default defineConfig({
 			rollupTypes: true,
 			outDir: "dist",
 			include: ["src/internal.ts", "src/core/**/*.ts"],
-			pathsToAliases: true
+			pathsToAliases: true,
+			entryRoot: "src"
 		})
 	],
 	resolve: {
