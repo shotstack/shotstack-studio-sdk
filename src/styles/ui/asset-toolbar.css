@@ -14,7 +14,7 @@
 		0 2px 8px rgba(0, 0, 0, 0.06),
 		0 8px 24px rgba(0, 0, 0, 0.08);
 	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-	z-index: 50;
+	z-index: 9;
 	backdrop-filter: blur(20px);
 	-webkit-backdrop-filter: blur(20px);
 }

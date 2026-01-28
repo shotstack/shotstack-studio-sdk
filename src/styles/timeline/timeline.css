@@ -375,7 +375,7 @@
 
 .ss-clip.ss-clip--thumbnails .ss-clip-content {
 	background: linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.15) 20%, rgba(0, 0, 0, 0.15) 80%, rgba(0, 0, 0, 0.6) 100%);
-	z-index: 2;
+	z-index: 1;
 }
 
 .ss-clip.ss-clip--thumbnails .ss-clip-icon,
@@ -481,7 +481,7 @@
 	font-size: 11px;
 	color: #fff;
 	cursor: pointer;
-	z-index: 5;
+	z-index: 2;
 	transition: background 0.1s ease;
 }
 
@@ -496,7 +496,7 @@
 	bottom: 0;
 	width: 12px;
 	cursor: ew-resize;
-	z-index: 10;
+	z-index: 2;
 }
 
 .ss-clip-resize-handle.left {
@@ -530,7 +530,7 @@
 	left: calc(var(--playhead-time, 0) * var(--ss-timeline-pixels-per-second) * 1px);
 	width: 2px;
 	pointer-events: none;
-	z-index: 50;
+	z-index: 4;
 }
 
 .ss-playhead-line {
@@ -571,7 +571,7 @@
 	width: 1px;
 	background: rgba(59, 130, 246, 0.4);
 	pointer-events: none;
-	z-index: 49;
+	z-index: 3;
 	opacity: 0;
 	transition: opacity 0.15s;
 }
@@ -588,7 +588,7 @@
 	right: 0;
 	bottom: 0;
 	pointer-events: none;
-	z-index: 100;
+	z-index: 5;
 }
 
 /* Snap line */
@@ -610,6 +610,7 @@
 	background: #3b82f6;
 	box-shadow: 0 0 8px #3b82f6;
 	animation: ss-pulse 0.8s ease-in-out infinite;
+	z-index: 2;
 }
 
 @keyframes ss-pulse {
@@ -631,7 +632,7 @@
 	border: 2px dashed var(--clip-border, #6b7280);
 	border-left-width: 2px;
 	box-shadow: none;
-	z-index: 200;
+	z-index: 7;
 }
 
 /* Drag time tooltip */
@@ -646,7 +647,7 @@
 	font-family: monospace;
 	white-space: nowrap;
 	pointer-events: none;
-	z-index: 250;
+	z-index: 8;
 	transform: translateX(-50%);
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
@@ -657,7 +658,7 @@
 	border: 1px solid #3b82f6;
 	background: rgba(59, 130, 246, 0.15);
 	pointer-events: none;
-	z-index: 150;
+	z-index: 6;
 }
 
 /* Empty state */
@@ -904,7 +905,7 @@
 
 	/* Subtle inner highlight */
 	border: 1px solid rgba(255, 255, 255, 0.15);
-	z-index: 5;
+	z-index: 2;
 }
 
 .ss-clip-mask-badge:hover {
@@ -997,7 +998,7 @@
 .ss-luma-connection-line {
 	position: absolute;
 	pointer-events: none;
-	z-index: 5;
+	z-index: 2;
 
 	/* Line styling */
 	height: 2px;

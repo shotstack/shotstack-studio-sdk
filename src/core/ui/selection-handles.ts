@@ -72,7 +72,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	constructor(private edit: Edit) {
 		this.container = new pixi.Container();
-		this.container.zIndex = 1000;
+		this.container.zIndex = 18;
 		this.container.sortableChildren = true;
 
 		this.outline = new pixi.Graphics();
@@ -103,7 +103,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const corners: CornerName[] = ["topLeft", "topRight", "bottomRight", "bottomLeft"];
 		for (const corner of corners) {
 			const handle = new pixi.Graphics();
-			handle.zIndex = 1001;
+			handle.zIndex = 19;
 			handle.eventMode = "static";
 			this.handles.set(corner, handle);
 			this.container.addChild(handle);
@@ -113,7 +113,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const edges: EdgeDirection[] = ["top", "bottom", "left", "right"];
 		for (const edge of edges) {
 			const handle = new pixi.Graphics();
-			handle.zIndex = 1001;
+			handle.zIndex = 19;
 			handle.eventMode = "static";
 			this.edgeHandles.set(edge, handle);
 			this.container.addChild(handle);

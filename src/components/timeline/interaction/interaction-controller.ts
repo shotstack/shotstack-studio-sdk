@@ -250,7 +250,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		clipElement.style.top = `${clipRect.top}px`;
 		clipElement.style.width = `${clipRect.width}px`;
 		clipElement.style.height = `${clipRect.height}px`;
-		clipElement.style.zIndex = "1000";
+		clipElement.style.zIndex = "18";
 		clipElement.style.pointerEvents = "none";
 
 		// Create ghost as drop preview (shows where clip will land)

@@ -15,7 +15,7 @@
 		0 2px 8px rgba(0, 0, 0, 0.06),
 		0 8px 24px rgba(0, 0, 0, 0.08);
 	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-	z-index: 50;
+	z-index: 9;
 	backdrop-filter: blur(20px);
 	-webkit-backdrop-filter: blur(20px);
 }
@@ -145,7 +145,7 @@
 	border-radius: 14px;
 	padding: 8px;
 	min-width: 180px;
-	z-index: 100;
+	z-index: 13;
 	filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
 }
 

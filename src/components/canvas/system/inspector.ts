@@ -63,7 +63,7 @@ export class Inspector {
 			line-height: 1.4;
 			padding: 12px;
 			border-radius: 6px;
-			z-index: 1000;
+			z-index: 19;
 			pointer-events: none;
 			min-width: 320px;
 			backdrop-filter: blur(4px);
