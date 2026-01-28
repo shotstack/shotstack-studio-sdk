@@ -38,7 +38,7 @@ import {
 	HexColorSchema,
 	type Clip,
 	type Destination,
-	type Edit as UnresolvedEdit,
+	type Edit as EditConfig,
 	type ResolvedClip,
 	type ResolvedEdit,
 	type Soundtrack,
@@ -111,7 +111,7 @@ export class Edit {
 	/**
 	 * Create an Edit instance from a template configuration.
 	 */
-	constructor(template: UnresolvedEdit) {
+	constructor(template: EditConfig) {
 		this.tracks = [];
 		this.playbackTime = sec(0);
 		this.totalDuration = sec(0);
@@ -163,7 +163,7 @@ export class Edit {
 		const bindingsPerClip = this.detectMergeFieldBindings(serializedMergeFields);
 
 		// 3. Parse raw edit
-		const parsedEdit = EditSchema.parse(rawEdit) as UnresolvedEdit;
+		const parsedEdit = EditSchema.parse(rawEdit) as EditConfig;
 
 		// 4. Load fonts
 		await Promise.all(
@@ -277,7 +277,7 @@ export class Edit {
 	/**
 	 * Reload the edit with a new configuration (hot-reload).
 	 */
-	public async loadEdit(edit: UnresolvedEdit): Promise<void> {
+	public async loadEdit(edit: EditConfig): Promise<void> {
 		this.lastResolved = null; // Invalidate cache when document changes
 
 		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
@@ -329,7 +329,7 @@ export class Edit {
 		player.layer = this.tracks.length + 1;
 		await this.addPlayer(this.tracks.length, player);
 	}
-	public getEdit(): UnresolvedEdit {
+	public getEdit(): EditConfig {
 		const doc = this.document.toJSON();
 		const mergeFields = this.mergeFieldService.toSerializedArray();
 		if (mergeFields.length > 0) doc.merge = mergeFields;
@@ -1036,7 +1036,7 @@ export class Edit {
 	 * - Font changes: Load new fonts incrementally
 	 * - Merge field changes: Re-resolve affected clips
 	 */
-	private hasStructuralChanges(newEdit: UnresolvedEdit): boolean {
+	private hasStructuralChanges(newEdit: EditConfig): boolean {
 		if (!this.document) return true;
 
 		const currentTracks = this.document.getTracks();
@@ -1079,7 +1079,7 @@ export class Edit {
 	/**
 	 * Transfers existing clip IDs from the current document to the new edit configuration.
 	 */
-	private preserveClipIdsForGranularUpdate(newEdit: UnresolvedEdit): void {
+	private preserveClipIdsForGranularUpdate(newEdit: EditConfig): void {
 		if (!this.document) return;
 
 		const existingTracks = this.document.getTracks();
@@ -1107,7 +1107,7 @@ export class Edit {
 	 * @param oldTracks - The old tracks (captured before document update)
 	 * @param oldOutput - The old output settings (captured before document update)
 	 */
-	private async applyGranularChanges(newEdit: UnresolvedEdit, oldTracks: Track[], oldOutput: UnresolvedEdit["output"]): Promise<void> {
+	private async applyGranularChanges(newEdit: EditConfig, oldTracks: Track[], oldOutput: EditConfig["output"]): Promise<void> {
 		const newOutput = newEdit.output;
 
 		// 1. Apply output changes

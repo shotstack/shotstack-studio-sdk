@@ -1,7 +1,7 @@
 import type { Player } from "@canvas/players/player";
 import type { MergeField } from "@core/merge/types";
 import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
-import type { Clip, Destination, Edit as UnresolvedEdit, Output, ResolvedClip, ResolvedEdit } from "@schemas";
+import type { Clip, Destination, Edit as EditConfig, Output, ResolvedClip, ResolvedEdit } from "@schemas";
 
 // ─────────────────────────────────────────────────────────────
 // Event Emission Patterns
@@ -163,7 +163,7 @@ export type EditEventMap = {
 
 	// Timeline
 	/** Contains the document (source of truth) with original timing values like "auto", "end" */
-	[EditEvent.TimelineUpdated]: { current: UnresolvedEdit };
+	[EditEvent.TimelineUpdated]: { current: EditConfig };
 	[EditEvent.TimelineBackgroundChanged]: { color: string };
 
 	// Clip lifecycle

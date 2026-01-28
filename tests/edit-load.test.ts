@@ -29,7 +29,7 @@ import { Edit } from "@core/edit-session";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip, UnresolvedEdit } from "@schemas";
+import type { ResolvedClip, EditConfig } from "@schemas";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -322,10 +322,10 @@ const MINIMAL_CLIP = { asset: { type: "image" as const, src: "https://example.co
 /**
  * Create a minimal valid edit configuration.
  */
-function createMinimalEdit(tracks: { clips: TestClip[] }[] = [{ clips: [MINIMAL_CLIP] }]): UnresolvedEdit {
+function createMinimalEdit(tracks: { clips: TestClip[] }[] = [{ clips: [MINIMAL_CLIP] }]): EditConfig {
 	return {
 		timeline: {
-			tracks: tracks as UnresolvedEdit["timeline"]["tracks"]
+			tracks: tracks as EditConfig["timeline"]["tracks"]
 		},
 		output: {
 			size: { width: 1920, height: 1080 },
@@ -648,7 +648,7 @@ describe("Edit loadEdit()", () => {
 
 	describe("merge field handling", () => {
 		it("stores merge field bindings on player", async () => {
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [
 						{
@@ -683,7 +683,7 @@ describe("Edit loadEdit()", () => {
 			});
 			await shotstackEdit.load();
 
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: { tracks: [{ clips: [MINIMAL_CLIP] }] },
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
 				merge: [
@@ -699,7 +699,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("substitutes merge field values in resolved edit", async () => {
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [
 						{
@@ -733,7 +733,7 @@ describe("Edit loadEdit()", () => {
 
 	describe("fonts", () => {
 		it("loads all fonts from timeline.fonts array", async () => {
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [{ clips: [MINIMAL_CLIP] }],
 					fonts: [{ src: "https://example.com/font1.ttf" }, { src: "https://example.com/font2.woff2" }]
@@ -749,7 +749,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("handles empty fonts array", async () => {
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [{ clips: [MINIMAL_CLIP] }],
 					fonts: []
@@ -790,7 +790,7 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("sets background color from timeline.background", async () => {
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [{ clips: [MINIMAL_CLIP] }],
 					background: "#FF5500"
@@ -808,7 +808,7 @@ describe("Edit loadEdit()", () => {
 			// Start with default size
 			expect(getEditState(edit).size).toEqual({ width: 1920, height: 1080 });
 
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: { tracks: [{ clips: [MINIMAL_CLIP] }] },
 				output: { size: { width: 1280, height: 720 }, format: "mp4" }
 			};
@@ -861,7 +861,7 @@ describe("Edit loadEdit()", () => {
 	describe("soundtrack", () => {
 		it("loads soundtrack as AudioPlayer on last track", async () => {
 			// Use 2 tracks to force structural change and full reload
-			const editConfig: UnresolvedEdit = {
+			const editConfig: EditConfig = {
 				timeline: {
 					tracks: [
 						{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 5, fit: "crop" }] },
@@ -1008,7 +1008,7 @@ describe("Edit loadEdit()", () => {
 
 			it("updates output settings via granular path", async () => {
 				// Load initial edit
-				const edit1: UnresolvedEdit = {
+				const edit1: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }]
 					},
@@ -1018,7 +1018,7 @@ describe("Edit loadEdit()", () => {
 				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Change fps only
-				const edit2: UnresolvedEdit = {
+				const edit2: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }]
 					},
@@ -1034,7 +1034,7 @@ describe("Edit loadEdit()", () => {
 
 			it("updates background color via granular path", async () => {
 				// Load initial edit
-				const edit1: UnresolvedEdit = {
+				const edit1: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }],
 						background: "#000000"
@@ -1045,7 +1045,7 @@ describe("Edit loadEdit()", () => {
 				const initialCallCount = (ImagePlayer as unknown as jest.Mock).mock.calls.length;
 
 				// Change background only
-				const edit2: UnresolvedEdit = {
+				const edit2: EditConfig = {
 					timeline: {
 						tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }],
 						background: "#ff0000"

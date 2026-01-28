@@ -34,7 +34,7 @@ export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types
 export type { TimelineOptions, TimelineFeatures } from "@timeline/index";
 
 // Export schema types and Zod schemas
-export type { UnresolvedEdit } from "./core/schemas";
+export type { EditConfig } from "./core/schemas";
 export {
 	// Zod schemas
 	EditSchema,
