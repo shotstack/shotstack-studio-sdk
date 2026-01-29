@@ -3,8 +3,13 @@ import { type Player, PlayerType } from "@canvas/players/player";
 import type { Canvas } from "@canvas/shotstack-canvas";
 import * as pixi from "pixi.js";
 
-import { EditEvent, type EditEventMap } from "./events/edit-events";
+import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "./events/edit-events";
 import type { EventEmitter } from "./events/event-emitter";
+
+const LUMA_MASK_RESOLUTION = 0.5;
+
+// TODO: Set this based on actual video source frame rate instead of hardcoding 30fps
+const LUMA_VIDEO_UPDATE_INTERVAL = 1 / 30;
 
 interface ActiveLumaMask {
 	lumaPlayer: LumaPlayer;
@@ -27,21 +32,21 @@ export class LumaMaskController {
 	private activeLumaMasks: ActiveLumaMask[] = [];
 	private pendingMaskCleanup: PendingMaskCleanup[] = [];
 	private readonly onClipChangedBound: () => void;
+	private readonly onPlayerLoadedBound: (payload: { player: Player; trackIndex: number; clipIndex: number }) => void;
 
 	constructor(
 		private getCanvas: () => Canvas | null,
 		private getTracks: () => Player[][],
-		private events: EventEmitter<EditEventMap>
+		private events: EventEmitter<EditEventMap & InternalEventMap>
 	) {
 		this.onClipChangedBound = () => this.rebuildLumaMasksIfNeeded();
+		this.onPlayerLoadedBound = payload => this.onPlayerLoaded(payload);
 	}
 
 	/**
-	 * Initialize luma masking after clips are loaded.
-	 * Sets up masks and event listeners.
+	 * Initialize luma masking by setting up event listeners.
 	 */
 	initialize(): void {
-		this.finalizeLumaMasking();
 		this.setupEventListeners();
 	}
 
@@ -88,7 +93,9 @@ export class LumaMaskController {
 	 */
 	cleanupForPlayer(player: Player): void {
 		const maskIndex = this.activeLumaMasks.findIndex(mask => mask.lumaPlayer === player);
-		if (maskIndex === -1) return;
+		if (maskIndex === -1) {
+			return;
+		}
 
 		const mask = this.activeLumaMasks[maskIndex];
 
@@ -104,30 +111,54 @@ export class LumaMaskController {
 	}
 
 	/**
-	 * Set up luma masks for all tracks.
-	 * PixiJS masks are inverted vs backend convention (white=visible, not transparent),
-	 * so we bake a negative filter into the mask texture via generateTexture().
+	 * Handle PlayerLoaded event - set up luma mask if player is a luma player.
 	 */
-	private finalizeLumaMasking(): void {
-		const canvas = this.getCanvas();
-		if (!canvas) return;
+	private onPlayerLoaded(payload: { player: Player; trackIndex: number; clipIndex: number }): void {
+		const { player, trackIndex } = payload;
+
+		// Only handle luma players
+		if (player.playerType !== PlayerType.Luma) {
+			return;
+		}
+
+		const lumaPlayer = player as LumaPlayer;
+		const lumaSprite = lumaPlayer.getSprite();
+
+		// Texture should always be ready when PlayerLoaded fires (after load completes)
+		if (!lumaSprite?.texture) {
+			console.warn("PlayerLoaded fired for luma player before texture ready");
+			return;
+		}
 
 		const tracks = this.getTracks();
-		for (const trackClips of tracks) {
-			const lumaPlayer = trackClips.find(clip => clip.playerType === PlayerType.Luma) as LumaPlayer | undefined;
-			const lumaSprite = lumaPlayer?.getSprite();
-			const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
-
-			if (lumaPlayer && lumaSprite?.texture && contentClips.length > 0) {
-				this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
-				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
-			}
+		if (trackIndex >= tracks.length) {
+			return;
 		}
+
+		const trackClips = tracks[trackIndex];
+		const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
+
+		if (contentClips.length === 0) {
+			return;
+		}
+
+		// Check if mask already exists (avoid duplicates)
+		const existingMask = this.activeLumaMasks.find(m => m.lumaPlayer === lumaPlayer);
+		if (existingMask) {
+			return;
+		}
+
+		this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
+
+		// Hide the luma player container (lumas are rendered as masks, not visible clips)
+		lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
 	}
 
 	private setupLumaMask(lumaPlayer: LumaPlayer, lumaTexture: pixi.Texture, contentClip: Player): void {
 		const canvas = this.getCanvas();
-		if (!canvas) return;
+		if (!canvas) {
+			return;
+		}
 
 		const { renderer } = canvas.application;
 		const { width, height } = contentClip.getSize();
@@ -144,11 +175,15 @@ export class LumaMaskController {
 
 		const maskTexture = renderer.generateTexture({
 			target: tempContainer,
-			resolution: 0.5
+			resolution: LUMA_MASK_RESOLUTION
 		});
+
 		const maskSprite = new pixi.Sprite(maskTexture);
+
 		contentClip.getContainer().addChild(maskSprite);
-		contentClip.getContentContainer().setMask({ mask: maskSprite });
+
+		const contentContainer = contentClip.getContentContainer();
+		contentContainer.mask = maskSprite;
 
 		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer, contentClip, lastVideoTime: -1 });
 	}
@@ -158,12 +193,11 @@ export class LumaMaskController {
 		if (!canvas) return;
 
 		const { renderer } = canvas.application;
-		const frameInterval = 1 / 30;
 
 		for (const mask of this.activeLumaMasks) {
 			if (mask.lumaPlayer.isVideoSource()) {
 				const videoTime = mask.lumaPlayer.getVideoCurrentTime();
-				const frameChanged = Math.abs(videoTime - mask.lastVideoTime) >= frameInterval;
+				const frameChanged = Math.abs(videoTime - mask.lastVideoTime) >= LUMA_VIDEO_UPDATE_INTERVAL;
 
 				if (frameChanged) {
 					mask.lastVideoTime = videoTime;
@@ -171,7 +205,7 @@ export class LumaMaskController {
 					const oldTexture = mask.maskSprite.texture;
 					mask.maskSprite.texture = renderer.generateTexture({
 						target: mask.tempContainer,
-						resolution: 0.5
+						resolution: LUMA_MASK_RESOLUTION
 					});
 
 					oldTexture.destroy(true);
@@ -181,19 +215,16 @@ export class LumaMaskController {
 	}
 
 	private setupEventListeners(): void {
-		this.events.on(EditEvent.ClipAdded, this.onClipChangedBound);
-		this.events.on(EditEvent.ClipSplit, this.onClipChangedBound);
+		// PlayerLoaded handles initial mask setup for new luma players
+		this.events.on(InternalEvent.PlayerLoaded, this.onPlayerLoadedBound);
+		// ClipUpdated handles property changes to existing masks
 		this.events.on(EditEvent.ClipUpdated, this.onClipChangedBound);
-		this.events.on(EditEvent.ClipRestored, this.onClipChangedBound);
-		this.events.on(EditEvent.ClipDeleted, this.onClipChangedBound);
+		// Note: ClipAdded and ClipRestored trigger PlayerLoaded, so no need to subscribe separately
 	}
 
 	private removeEventListeners(): void {
-		this.events.off(EditEvent.ClipAdded, this.onClipChangedBound);
-		this.events.off(EditEvent.ClipSplit, this.onClipChangedBound);
+		this.events.off(InternalEvent.PlayerLoaded, this.onPlayerLoadedBound);
 		this.events.off(EditEvent.ClipUpdated, this.onClipChangedBound);
-		this.events.off(EditEvent.ClipRestored, this.onClipChangedBound);
-		this.events.off(EditEvent.ClipDeleted, this.onClipChangedBound);
 	}
 
 	private processPendingMaskCleanup(): void {
@@ -213,7 +244,11 @@ export class LumaMaskController {
 		}
 	}
 
-	private async rebuildLumaMasksIfNeeded(): Promise<void> {
+	/**
+	 * Update existing luma masks when clip properties change.
+	 * This is called in response to ClipUpdated events for already-loaded players.
+	 */
+	private rebuildLumaMasksIfNeeded(): void {
 		const canvas = this.getCanvas();
 		if (!canvas) return;
 
@@ -224,20 +259,17 @@ export class LumaMaskController {
 			const contentClips = trackClips.filter(clip => clip.playerType !== PlayerType.Luma);
 
 			if (lumaPlayer) {
+				// Hide luma player container (lumas are rendered as masks, not visible clips)
 				lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
 			}
 
 			const existingMask = lumaPlayer && this.activeLumaMasks.find(m => m.lumaPlayer === lumaPlayer);
 
+			// Only set up mask if player is already loaded (texture ready)
 			if (lumaPlayer && !existingMask && contentClips.length > 0) {
-				if (!lumaPlayer.getSprite()) {
-					await lumaPlayer.load();
-				}
-
 				const lumaSprite = lumaPlayer.getSprite();
 				if (lumaSprite?.texture) {
 					this.setupLumaMask(lumaPlayer, lumaSprite.texture, contentClips[0]);
-					lumaPlayer.getContainer().parent?.removeChild(lumaPlayer.getContainer());
 				}
 			}
 		}

@@ -186,18 +186,18 @@ export class Edit {
 		// 5. Resolve the document
 		const resolvedEdit = this.getResolvedEdit();
 
-		// 6. Create players
+		// 6. Initialize luma mask controller
+		this.lumaMaskController.initialize();
+
+		// 7. Create players
 		await this.playerReconciler.reconcileInitial(resolvedEdit);
 
-		// 7. Set up clip bindings for merge field tracking
+		// 8. Set up clip bindings for merge field tracking
 		for (const [clipId, bindings] of bindingsPerClip) {
 			if (bindings.size > 0) {
 				this.document.setClipBindingsForClip(clipId, bindings);
 			}
 		}
-
-		// 8. Initialize luma mask controller
-		this.lumaMaskController.initialize();
 
 		// 9. Resolve async timing (auto-length for videos, etc.)
 		await this.timingManager.resolveAllTiming();

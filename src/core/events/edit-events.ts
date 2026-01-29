@@ -145,6 +145,7 @@ export const InternalEvent = {
 	PlayerAddedToTrack: "player:addedToTrack",
 	PlayerMovedBetweenTracks: "player:movedBetweenTracks",
 	PlayerRemovedFromTrack: "player:removedFromTrack",
+	PlayerLoaded: "player:loaded",
 	TrackContainerRemoved: "track:containerRemoved",
 	ViewportSizeChanged: "viewport:sizeChanged",
 	ViewportNeedsZoomToFit: "viewport:needsZoomToFit"
@@ -240,6 +241,7 @@ export type InternalEventMap = {
 		toTrackIndex: number;
 	};
 	[InternalEvent.PlayerRemovedFromTrack]: { player: Player; trackIndex: number };
+	[InternalEvent.PlayerLoaded]: { player: Player; trackIndex: number; clipIndex: number };
 	[InternalEvent.TrackContainerRemoved]: { trackIndex: number };
 	[InternalEvent.ViewportSizeChanged]: {
 		width: number;

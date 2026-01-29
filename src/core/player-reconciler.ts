@@ -196,6 +196,14 @@ export class PlayerReconciler {
 		const loadPromise = player
 			.load()
 			.then(() => {
+				// Emit PlayerLoaded for all players
+				this.edit.events.emit(InternalEvent.PlayerLoaded, {
+					player,
+					trackIndex,
+					clipIndex
+				});
+
+				// Also emit ClipUnresolved for AI assets
 				if (AI_ASSET_TYPES.has(assetType)) {
 					this.edit.events.emit(EditEvent.ClipUnresolved, {
 						trackIndex,
