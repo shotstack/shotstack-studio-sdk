@@ -960,139 +960,6 @@ describe("Edit getPlayerClip regression", () => {
 });
 
 /**
- * TransformClipAssetCommand Tests
- *
- * Tests for the clip asset type transformation command used for luma attachment/detachment.
- * Verifies async load handling and original type preservation.
- */
-describe("TransformClipAssetCommand", () => {
-	let edit: Edit;
-
-	beforeEach(async () => {
-		edit = new Edit({
-			timeline: {
-				tracks: [
-					{
-						clips: [
-							{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://example.com/video.mp4", transcode: false } },
-							{ start: 5, length: 3, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }
-						]
-					}
-				]
-			},
-			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
-		});
-		await edit.load();
-	});
-
-	afterEach(() => {
-		edit.dispose();
-		jest.clearAllMocks();
-	});
-
-	it("transformToLuma changes asset type to luma", async () => {
-		const clipBefore = edit.getClip(0, 0);
-		expect(clipBefore?.asset?.type).toBe("video");
-
-		await edit.transformToLuma(0, 0);
-
-		const clipAfter = edit.getClip(0, 0);
-		expect(clipAfter?.asset?.type).toBe("luma");
-		// Source URL should be preserved
-		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
-	});
-
-	it("transformFromLuma restores original video type", async () => {
-		// First transform to luma
-		await edit.transformToLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
-
-		// Now transform back
-		await edit.transformFromLuma(0, 0);
-
-		const clipAfter = edit.getClip(0, 0);
-		expect(clipAfter?.asset?.type).toBe("video");
-		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/video.mp4");
-	});
-
-	it("transformFromLuma restores original image type", async () => {
-		// First transform image to luma
-		await edit.transformToLuma(0, 1);
-		expect(edit.getClip(0, 1)?.asset?.type).toBe("luma");
-
-		// Now transform back
-		await edit.transformFromLuma(0, 1);
-
-		const clipAfter = edit.getClip(0, 1);
-		expect(clipAfter?.asset?.type).toBe("image");
-		expect((clipAfter?.asset as { src: string })?.src).toBe("https://example.com/image.jpg");
-	});
-
-	it("undo during transform is safe", async () => {
-		const originalPlayer = edit.getPlayerClip(0, 0);
-		expect(originalPlayer).toBeDefined();
-		const originalClipId = originalPlayer?.clipId;
-
-		// Transform to luma - must await since commands are queued
-		await edit.transformToLuma(0, 0);
-
-		// Undo the transform
-		await edit.undo();
-
-		// Player should be restored with original state
-		// Note: With reconciler, asset type changes cause player recreation,
-		// so we verify state equivalence rather than object identity
-		const restoredPlayer = edit.getPlayerClip(0, 0);
-		expect(restoredPlayer).toBeDefined();
-		expect(restoredPlayer?.clipId).toBe(originalClipId);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
-	});
-
-	it("preserves asset type through multiple transform cycles", async () => {
-		// Video → luma → video
-		await edit.transformToLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
-
-		await edit.transformFromLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
-
-		// Another cycle
-		await edit.transformToLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
-
-		await edit.transformFromLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
-	});
-
-	it("handles CDN URLs without extensions via stored type", async () => {
-		// Dispose existing edit and create new one with CDN URL
-		edit.dispose();
-
-		// Create a clip with a CDN URL (no extension)
-		// This tests that we use stored original type, not URL inference
-		edit = new Edit({
-			timeline: {
-				tracks: [
-					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "video", src: "https://cdn.example.com/media/abc123", transcode: false } }]
-					}
-				]
-			},
-			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
-		});
-		await edit.load();
-
-		// Transform to luma - stores original type
-		await edit.transformToLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
-
-		// Transform back - should use stored type (video), not URL inference (would be image)
-		await edit.transformFromLuma(0, 0);
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("video");
-	});
-});
-
-/**
  * Track Reordering Z-Index Regression Tests
  *
  * These tests verify that when clips are moved between tracks, the canvas
@@ -1334,21 +1201,20 @@ describe("Output Settings Commands fail-fast", () => {
 	});
 });
 
-/**
- * Luma Detach Thumbnail Regression Tests
- *
- * Tests the observable behavior of luma transformations.
- */
-describe("Luma Detach Thumbnail Regression", () => {
+describe("AttachLumaCommand", () => {
 	let edit: Edit;
 
 	beforeEach(async () => {
-		// Create edit with an image clip
 		edit = new Edit({
 			timeline: {
 				tracks: [
 					{
-						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+						clips: [
+							// Content clip
+							{ asset: { type: "video", src: "https://example.com/video.mp4" }, start: 0, length: 5 },
+							// Image to be transformed to luma
+							{ asset: { type: "image", src: "https://example.com/luma.png" }, start: 0, length: 3 }
+						]
 					}
 				]
 			},
@@ -1359,91 +1225,97 @@ describe("Luma Detach Thumbnail Regression", () => {
 
 	afterEach(() => {
 		edit.dispose();
-		jest.clearAllMocks();
 	});
 
-	it("clip type changes to luma after transformToLuma", async () => {
+	it("attaches luma with single undo operation", async () => {
+		const { AttachLumaCommand } = await import("@core/commands/attach-luma-command");
+
 		// Initial state
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+		expect(edit.getClip(0, 1)?.asset?.type).toBe("image");
 
-		// Transform to luma
-		edit.transformToLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+		// Attach luma
+		const command = new AttachLumaCommand(0, 1, 0, 0);
+		await edit.executeEditCommand(command);
 
-		// Verify it's luma
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+		// Verify attachment
+		const lumaClip = edit.getClip(0, 1);
+		expect(lumaClip?.asset?.type).toBe("luma");
+		expect(lumaClip?.start).toBe(0);
+		expect(lumaClip?.length).toBe(5); // Synced to content
+
+		// Single undo should reverse everything
+		await edit.undo();
+
+		// Verify restoration
+		const restoredClip = edit.getClip(0, 1);
+		expect(restoredClip?.asset?.type).toBe("image");
+		expect(restoredClip?.start).toBe(0);
+		expect(restoredClip?.length).toBe(3); // Original timing restored
 	});
 
-	it("clip type is image after transformFromLuma completes", async () => {
-		// Transform to luma
-		edit.transformToLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+	it("establishes luma→content relationship", async () => {
+		const { AttachLumaCommand } = await import("@core/commands/attach-luma-command");
 
-		// Verify it's luma
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+		const contentPlayer = edit.getPlayerClip(0, 0);
 
-		// Transform back to image
-		edit.transformFromLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+		// Attach luma
+		const command = new AttachLumaCommand(0, 1, 0, 0);
+		await edit.executeEditCommand(command);
 
-		// Verify it's back to image
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+		// Get luma player after transformation
+		const lumaPlayer = edit.getPlayerClip(0, 1);
+
+		// Verify relationship exists
+		if (lumaPlayer?.clipId && contentPlayer?.clipId) {
+			const relationship = edit.getContentClipIdForLuma(lumaPlayer.clipId);
+			expect(relationship).toBe(contentPlayer.clipId);
+		} else {
+			fail("Failed to get clip IDs");
+		}
 	});
 
-	it("preserves asset src through transform cycle", async () => {
-		const originalSrc = (edit.getClip(0, 0)?.asset as { src?: string })?.src;
+	it("redo re-attaches correctly", async () => {
+		const { AttachLumaCommand } = await import("@core/commands/attach-luma-command");
 
-		// Transform to luma
-		edit.transformToLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+		// Attach
+		const command = new AttachLumaCommand(0, 1, 0, 0);
+		await edit.executeEditCommand(command);
+		expect(edit.getClip(0, 1)?.asset?.type).toBe("luma");
 
-		// Src should be preserved
-		expect((edit.getClip(0, 0)?.asset as { src?: string })?.src).toBe(originalSrc);
+		// Undo
+		await edit.undo();
+		expect(edit.getClip(0, 1)?.asset?.type).toBe("image");
 
-		// Transform back to image
-		edit.transformFromLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-
-		// Src should still be preserved
-		expect((edit.getClip(0, 0)?.asset as { src?: string })?.src).toBe(originalSrc);
+		// Redo
+		await edit.redo();
+		const redoneClip = edit.getClip(0, 1);
+		expect(redoneClip?.asset?.type).toBe("luma");
+		expect(redoneClip?.start).toBe(0);
+		expect(redoneClip?.length).toBe(5);
 	});
 
-	it("can transform image → luma → image → luma → image", async () => {
-		// Verify each step in a longer transform sequence
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+	it("clears relationship on undo", async () => {
+		const { AttachLumaCommand } = await import("@core/commands/attach-luma-command");
 
-		edit.transformToLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+		// Attach
+		const command = new AttachLumaCommand(0, 1, 0, 0);
+		await edit.executeEditCommand(command);
 
-		edit.transformFromLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+		const lumaPlayer = edit.getPlayerClip(0, 1);
+		const lumaClipId = lumaPlayer?.clipId;
 
-		edit.transformToLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("luma");
+		// Verify relationship exists
+		if (lumaClipId) {
+			expect(edit.getContentClipIdForLuma(lumaClipId)).toBeTruthy();
+		}
 
-		edit.transformFromLuma(0, 0);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-		expect(edit.getClip(0, 0)?.asset?.type).toBe("image");
+		// Undo
+		await edit.undo();
+
+		// Verify relationship cleared (note: after undo, clipId changes back)
+		const restoredPlayer = edit.getPlayerClip(0, 1);
+		if (restoredPlayer?.clipId) {
+			expect(edit.getContentClipIdForLuma(restoredPlayer.clipId)).toBeNull();
+		}
 	});
 });

@@ -1,6 +1,7 @@
-import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
+import { CreateTrackMoveAndDetachLumaCommand } from "@core/commands/create-track-move-and-detach-luma-command";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
@@ -366,10 +367,14 @@ export class Timeline {
 				const startTime = contentClip.start;
 				const newTrackIndex = contentTrackIndex + 1;
 
-				const cmd = new CreateTrackAndMoveClipCommand(newTrackIndex, lumaRef.trackIndex, lumaRef.clipIndex, sec(startTime));
-				this.edit.executeEditCommand(cmd);
+				// Determine target asset type from URL
+				const lumaClip = this.edit.getResolvedClip(lumaRef.trackIndex, lumaRef.clipIndex);
+				const src = (lumaClip?.asset as { src?: string })?.src || "";
+				const targetType = inferAssetTypeFromUrl(src);
 
-				this.edit.transformFromLuma(newTrackIndex, 0);
+				// Single compound command for atomic undo
+				const cmd = new CreateTrackMoveAndDetachLumaCommand(newTrackIndex, lumaRef.trackIndex, lumaRef.clipIndex, sec(startTime), targetType);
+				this.edit.executeEditCommand(cmd);
 
 				this.stateManager.clearLumaVisibilityForClipId(clipId);
 

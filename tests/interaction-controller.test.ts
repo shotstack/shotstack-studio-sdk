@@ -146,9 +146,6 @@ function createMockEdit() {
 			if (!player) return null;
 			return { trackIndex: 0, clipIndex: 0 };
 		}),
-		transformToLuma: jest.fn(),
-		transformFromLuma: jest.fn(),
-		syncLumaToContent: jest.fn(),
 		_getExecutedCommands: () => executedCommands
 	};
 }

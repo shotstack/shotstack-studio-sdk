@@ -178,12 +178,15 @@ describe("TimelineStateManager", () => {
 			const lumaId = "luma-456";
 			const lumaRelations = new Map([[lumaId, contentId]]);
 
-			const edit = createMockEdit([
+			const edit = createMockEdit(
 				[
-					{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 } // Same timing
-				]
-			], lumaRelations);
+					[
+						{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
+						{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 } // Same timing
+					]
+				],
+				lumaRelations
+			);
 
 			const stateManager = new TimelineStateManager(edit as never);
 			const result = stateManager.findAttachedLuma(0, 0);
@@ -230,12 +233,15 @@ describe("TimelineStateManager", () => {
 			const lumaId = "luma-012";
 			const lumaRelations = new Map([[lumaId, contentId]]);
 
-			const edit = createMockEdit([
+			const edit = createMockEdit(
 				[
-					{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
-				]
-			], lumaRelations);
+					[
+						{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
+						{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
+					]
+				],
+				lumaRelations
+			);
 
 			const stateManager = new TimelineStateManager(edit as never);
 			const result = stateManager.findContentForLuma(0, 1); // Query the luma clip
@@ -264,12 +270,15 @@ describe("TimelineStateManager", () => {
 			const lumaId = "luma-def";
 			const lumaRelations = new Map([[lumaId, contentId]]);
 
-			const edit = createMockEdit([
+			const edit = createMockEdit(
 				[
-					{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
-				]
-			], lumaRelations);
+					[
+						{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
+						{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
+					]
+				],
+				lumaRelations
+			);
 
 			const stateManager = new TimelineStateManager(edit as never);
 

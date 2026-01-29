@@ -15,7 +15,6 @@ import { SetOutputSizeCommand } from "@core/commands/set-output-size-command";
 import { SetTimelineBackgroundCommand } from "@core/commands/set-timeline-background-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { SplitClipCommand } from "@core/commands/split-clip-command";
-import { TransformClipAssetCommand } from "@core/commands/transform-clip-asset-command";
 import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands/update-clip-timing-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import type { MergeFieldBinding } from "@core/edit-document";
@@ -1375,7 +1374,8 @@ export class Edit {
 			removeClipBinding: (clipId, path) => {
 				this.document?.removeClipBinding(clipId, path);
 			},
-			getClipBindings: clipId => this.document?.getClipBindings(clipId)
+			getClipBindings: clipId => this.document?.getClipBindings(clipId),
+			getEditSession: () => this
 		};
 	}
 
@@ -1930,9 +1930,6 @@ export class Edit {
 
 	// ─── Luma Mask API ──────────────────────────────────────────────────────────
 
-	/** Map of asset src → original asset type (for reliable luma detachment during undo) */
-	private originalAssetTypes = new Map<string, "image" | "video">();
-
 	/**
 	 * @internal Get the luma clip ID attached to a content clip.
 	 */
@@ -1951,34 +1948,27 @@ export class Edit {
 	}
 
 	/**
-	 * Sync luma timing to match content clip.
-	 * @internal
+	 * Set a luma→content relationship.
+	 * @internal Used by commands for managing luma attachments
 	 */
-	public syncLumaToContent(contentTrackIdx: number, contentClipIdx: number, lumaTrackIdx: number, lumaClipIdx: number): void {
-		const contentPlayer = this.getClipAt(contentTrackIdx, contentClipIdx);
-		const lumaPlayer = this.getClipAt(lumaTrackIdx, lumaClipIdx);
-		if (!contentPlayer || !lumaPlayer) return;
+	public setLumaContentRelationship(lumaClipId: string, contentClipId: string): void {
+		this.lumaContentRelations.set(lumaClipId, contentClipId);
+	}
 
-		// Establish luma→content relationship using clip IDs
-		if (lumaPlayer.clipId && contentPlayer.clipId) {
-			this.lumaContentRelations.set(lumaPlayer.clipId, contentPlayer.clipId);
-		}
+	/**
+	 * Clear a luma→content relationship.
+	 * @internal Used by commands for managing luma attachments
+	 */
+	public clearLumaContentRelationship(lumaClipId: string): void {
+		this.lumaContentRelations.delete(lumaClipId);
+	}
 
-		// Sync luma timing to content
-		lumaPlayer.setResolvedTiming({
-			start: contentPlayer.getStart(),
-			length: contentPlayer.getLength()
-		});
-		lumaPlayer.reconfigureAfterRestore();
-
-		// Update document
-		this.document.updateClip(lumaTrackIdx, lumaClipIdx, {
-			start: contentPlayer.getStart(),
-			length: contentPlayer.getLength()
-		});
-
-		// Trigger resolve to update timeline state
-		this.resolve();
+	/**
+	 * Get the luma→content relationship for a luma clip.
+	 * @internal Used by commands for managing luma attachments
+	 */
+	public getLumaContentRelationship(lumaClipId: string): string | undefined {
+		return this.lumaContentRelations.get(lumaClipId);
 	}
 
 	/**
@@ -2043,71 +2033,6 @@ export class Edit {
 		}
 
 		return bestMatch;
-	}
-
-	/**
-	 * Transform a clip to luma type.
-	 * @internal
-	 */
-	public transformToLuma(trackIndex: number, clipIndex: number): Promise<void> {
-		// Read from document (source of truth), not player's copy
-		const clip = this.getResolvedClip(trackIndex, clipIndex);
-		if (!clip?.asset) return Promise.resolve();
-
-		const asset = clip.asset as { type?: string; src?: string };
-		const originalType = asset.type as "image" | "video" | undefined;
-		const { src } = asset;
-
-		// Store original type for reliable restoration later
-		if (src && (originalType === "image" || originalType === "video")) {
-			this.originalAssetTypes.set(src, originalType);
-		}
-
-		const command = new TransformClipAssetCommand(trackIndex, clipIndex, "luma");
-		return this.executeCommand(command);
-	}
-
-	/**
-	 * Transform a luma clip back to its original type.
-	 * @internal
-	 */
-	public transformFromLuma(trackIndex: number, clipIndex: number): Promise<void> {
-		const clip = this.getResolvedClip(trackIndex, clipIndex);
-		if (!clip?.asset) return Promise.resolve();
-
-		// Remove luma→content relationship when detaching
-		const player = this.getClipAt(trackIndex, clipIndex);
-		if (player?.clipId) {
-			this.lumaContentRelations.delete(player.clipId);
-		}
-
-		const { src } = clip.asset as { src?: string };
-		if (!src) return Promise.resolve();
-
-		// Use stored original type if available (most reliable)
-		let originalType = this.originalAssetTypes.get(src);
-
-		// Fallback: infer from URL extension
-		if (!originalType) {
-			originalType = this.inferAssetTypeFromUrl(src);
-		}
-
-		const command = new TransformClipAssetCommand(trackIndex, clipIndex, originalType);
-		return this.executeCommand(command);
-	}
-
-	/**
-	 * Infer asset type from URL extension.
-	 * @internal
-	 */
-	private inferAssetTypeFromUrl(src: string): "image" | "video" {
-		const url = src.toLowerCase().split("?")[0];
-		const videoExtensions = [".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv", ".ogv", ".ogg"];
-
-		if (videoExtensions.some(ext => url.endsWith(ext))) {
-			return "video";
-		}
-		return "image";
 	}
 
 	// ─── Intent Listeners ────────────────────────────────────────────────────────

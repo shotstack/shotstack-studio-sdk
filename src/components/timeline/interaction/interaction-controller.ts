@@ -1,8 +1,11 @@
 import { CreateTrackAndMoveClipCommand } from "@core/commands/create-track-and-move-clip-command";
+import { DetachLumaCommand } from "@core/commands/detach-luma-command";
+import { MoveAndAttachLumaCommand } from "@core/commands/move-and-attach-luma-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { MoveClipWithPushCommand } from "@core/commands/move-clip-with-push-command";
 import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import type { Edit } from "@core/edit-session";
+import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
 import type { ClipState, TimelineInteractionConfig } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
@@ -566,31 +569,16 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const { clipRef, originalTrack, dragTarget } = state;
 		if (dragTarget.type !== "track") return;
 
-		const imagePlayer = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex);
-		const contentPlayer = this.edit.getPlayerClip(targetClip.trackIndex, targetClip.clipIndex);
+		const command = new MoveAndAttachLumaCommand(
+			originalTrack, // fromTrackIndex
+			clipRef.clipIndex, // fromClipIndex
+			dragTarget.trackIndex, // toTrackIndex
+			targetClip.trackIndex, // contentTrackIndex
+			targetClip.clipIndex, // contentClipIndex
+			sec(targetClip.config.start) // targetStart
+		);
 
-		if (!imagePlayer || !contentPlayer) {
-			console.error("Failed to get player references for luma attachment");
-			return;
-		}
-
-		// Move to target track if needed
-		if (dragTarget.trackIndex !== originalTrack) {
-			const moveCmd = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(targetClip.config.start));
-			this.edit.executeEditCommand(moveCmd);
-		}
-
-		// Use stable Player references to find current indices
-		const imageIndices = this.edit.findClipIndices(imagePlayer);
-		const contentIndices = this.edit.findClipIndices(contentPlayer);
-
-		if (!imageIndices || !contentIndices) {
-			console.error("Failed to find clips after move");
-			return;
-		}
-
-		this.edit.transformToLuma(imageIndices.trackIndex, imageIndices.clipIndex);
-		this.edit.syncLumaToContent(contentIndices.trackIndex, contentIndices.clipIndex, imageIndices.trackIndex, imageIndices.clipIndex);
+		this.edit.executeEditCommand(command);
 
 		this.playLumaAttachAnimation();
 		this.config.onRequestRender?.();
@@ -602,23 +590,51 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 		const newTime = targetClip.config.start;
 
-		// Get Player reference BEFORE move
+		// Get Player references BEFORE move
 		const lumaPlayer = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex);
+		const contentPlayer = this.edit.getPlayerClip(targetClip.trackIndex, targetClip.clipIndex);
 
 		if (newTime !== startTime || dragTarget.trackIndex !== originalTrack) {
 			const command = new MoveClipCommand(originalTrack, clipRef.clipIndex, dragTarget.trackIndex, sec(newTime));
 			this.edit.executeEditCommand(command);
 		}
 
+		// Re-establish luma→content relationship using stable clip IDs
 		const lumaIndices = lumaPlayer ? this.edit.findClipIndices(lumaPlayer) : null;
-		if (lumaIndices) {
-			this.edit.syncLumaToContent(targetClip.trackIndex, targetClip.clipIndex, lumaIndices.trackIndex, lumaIndices.clipIndex);
+		if (lumaIndices && lumaPlayer?.clipId && contentPlayer?.clipId) {
+			// Update relationship
+			this.edit.setLumaContentRelationship(lumaPlayer.clipId, contentPlayer.clipId);
+
+			// Sync timing to match content
+			lumaPlayer.setResolvedTiming({
+				start: contentPlayer.getStart(),
+				length: contentPlayer.getLength()
+			});
+			lumaPlayer.reconfigureAfterRestore();
+
+			// Update document (bypassing command for this immediate sync)
+			this.edit.getDocument()?.updateClip(lumaIndices.trackIndex, lumaIndices.clipIndex, {
+				start: contentPlayer.getStart(),
+				length: contentPlayer.getLength()
+			});
 		}
 	}
 
 	private executeDetachLuma(state: DraggingState): void {
 		const { clipRef } = state;
-		this.edit.transformFromLuma(clipRef.trackIndex, clipRef.clipIndex);
+
+		// Get the clip's asset to infer original type
+		const clip = this.edit.getClip(clipRef.trackIndex, clipRef.clipIndex);
+		if (!clip?.asset) return;
+
+		const { src } = clip.asset as { src?: string };
+		if (!src) return;
+
+		// Infer original type from URL extension
+		const originalType = inferAssetTypeFromUrl(src);
+
+		const detachCmd = new DetachLumaCommand(clipRef.trackIndex, clipRef.clipIndex, originalType);
+		this.edit.executeEditCommand(detachCmd);
 	}
 
 	private executeNormalMove(state: DraggingState, action: DropAction): void {

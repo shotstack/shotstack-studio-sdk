@@ -147,4 +147,11 @@ export type CommandContext = {
 	removeClipBinding(clipId: string, path: string): void;
 	/** Get all bindings for a clip */
 	getClipBindings(clipId: string): Map<string, MergeFieldBinding> | undefined;
+
+	/** Get reference to EditSession for managing state */
+	getEditSession(): {
+		setLumaContentRelationship(lumaClipId: string, contentClipId: string): void;
+		clearLumaContentRelationship(lumaClipId: string): void;
+		getLumaContentRelationship(lumaClipId: string): string | undefined;
+	};
 };
