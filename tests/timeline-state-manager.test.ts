@@ -31,7 +31,7 @@ function createMockEventEmitter() {
 }
 
 // Mock Edit class with minimal required functionality
-function createMockEdit(tracks: unknown[][] = []) {
+function createMockEdit(tracks: unknown[][] = [], lumaRelations: Map<string, string> = new Map()) {
 	const events = createMockEventEmitter();
 
 	const mockClips = tracks.map((track, trackIdx) =>
@@ -53,7 +53,8 @@ function createMockEdit(tracks: unknown[][] = []) {
 					clips: clips.map(c => ({
 						asset: (c as { asset?: unknown }).asset,
 						start: (c as { start?: number }).start ?? 0,
-						length: (c as { length?: number }).length ?? 5
+						length: (c as { length?: number }).length ?? 5,
+						id: (c as { id?: string }).id ?? crypto.randomUUID()
 					}))
 				}))
 			}
@@ -71,7 +72,12 @@ function createMockEdit(tracks: unknown[][] = []) {
 		isClipSelected: jest.fn(() => false),
 		selectClip: jest.fn(),
 		clearSelection: jest.fn(),
-		getPlayerClip: jest.fn()
+		getPlayerClip: jest.fn(),
+		getLumaClipIdForContent: jest.fn((contentId: string) => {
+			const entry = Array.from(lumaRelations.entries()).find(([, cId]) => cId === contentId);
+			return entry ? entry[0] : null;
+		}),
+		getContentClipIdForLuma: jest.fn((lumaId: string) => lumaRelations.get(lumaId) ?? null)
 	};
 }
 
@@ -168,12 +174,16 @@ describe("TimelineStateManager", () => {
 		});
 
 		it("finds luma with exact timing match on same track", () => {
+			const contentId = "content-123";
+			const lumaId = "luma-456";
+			const lumaRelations = new Map([[lumaId, contentId]]);
+
 			const edit = createMockEdit([
 				[
-					{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 } // Same timing
+					{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
+					{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 } // Same timing
 				]
-			]);
+			], lumaRelations);
 
 			const stateManager = new TimelineStateManager(edit as never);
 			const result = stateManager.findAttachedLuma(0, 0);
@@ -216,12 +226,16 @@ describe("TimelineStateManager", () => {
 		});
 
 		it("finds content clip with matching timing", () => {
+			const contentId = "content-789";
+			const lumaId = "luma-012";
+			const lumaRelations = new Map([[lumaId, contentId]]);
+
 			const edit = createMockEdit([
 				[
-					{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
+					{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
+					{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
 				]
-			]);
+			], lumaRelations);
 
 			const stateManager = new TimelineStateManager(edit as never);
 			const result = stateManager.findContentForLuma(0, 1); // Query the luma clip
@@ -246,12 +260,16 @@ describe("TimelineStateManager", () => {
 
 	describe("hasAttachedLuma", () => {
 		it("returns true when content clip has attached luma", () => {
+			const contentId = "content-abc";
+			const lumaId = "luma-def";
+			const lumaRelations = new Map([[lumaId, contentId]]);
+
 			const edit = createMockEdit([
 				[
-					{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
-					{ asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
+					{ id: contentId, asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 },
+					{ id: lumaId, asset: { type: "luma", src: "luma.jpg" }, start: 0, length: 5 }
 				]
-			]);
+			], lumaRelations);
 
 			const stateManager = new TimelineStateManager(edit as never);
 

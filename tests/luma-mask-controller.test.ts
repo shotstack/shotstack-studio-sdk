@@ -185,16 +185,16 @@ function createMockCanvas() {
 }
 
 function createMockEventEmitter() {
-	const listeners: Record<string, Array<() => void>> = {};
+	const listeners: Record<string, Array<(payload?: unknown) => void>> = {};
 	return {
-		on: jest.fn((event: string, callback: () => void) => {
+		on: jest.fn((event: string, callback: (payload?: unknown) => void) => {
 			if (!listeners[event]) listeners[event] = [];
 			listeners[event].push(callback);
 		}),
 		off: jest.fn(),
-		emit: (event: string) => {
+		emit: (event: string, payload?: unknown) => {
 			if (listeners[event]) {
-				listeners[event].forEach(cb => cb());
+				listeners[event].forEach(cb => cb(payload));
 			}
 		},
 		getListeners: () => listeners
@@ -223,11 +223,8 @@ describe("LumaMaskController", () => {
 
 			controller.initialize();
 
-			expect(events.on).toHaveBeenCalledWith("clip:added", expect.any(Function));
-			expect(events.on).toHaveBeenCalledWith("clip:split", expect.any(Function));
+			expect(events.on).toHaveBeenCalledWith("player:loaded", expect.any(Function));
 			expect(events.on).toHaveBeenCalledWith("clip:updated", expect.any(Function));
-			expect(events.on).toHaveBeenCalledWith("clip:restored", expect.any(Function));
-			expect(events.on).toHaveBeenCalledWith("clip:deleted", expect.any(Function));
 		});
 	});
 
@@ -237,14 +234,17 @@ describe("LumaMaskController", () => {
 			const lumaPlayer = createMockLumaPlayer();
 			const contentPlayer = createMockContentPlayer();
 			const tracks = [[lumaPlayer, contentPlayer]];
+			const events = createMockEventEmitter();
 
 			const controller = new LumaMaskController(
 				() => canvas as never,
 				() => tracks as never,
-				createMockEventEmitter() as never
+				events as never
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded event to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 
 			expect(controller.getActiveMaskCount()).toBe(1);
 			expect(canvas.application.renderer.generateTexture).toHaveBeenCalled();
@@ -293,14 +293,17 @@ describe("LumaMaskController", () => {
 			parentContainer.addChild(lumaContainer);
 
 			const tracks = [[lumaPlayer, contentPlayer]];
+			const events = createMockEventEmitter();
 
 			const controller = new LumaMaskController(
 				() => canvas as never,
 				() => tracks as never,
-				createMockEventEmitter() as never
+				events as never
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded event to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 
 			expect(parentContainer.removeChild).toHaveBeenCalledWith(lumaContainer);
 		});
@@ -316,14 +319,18 @@ describe("LumaMaskController", () => {
 				[lumaPlayer1, contentPlayer1],
 				[lumaPlayer2, contentPlayer2]
 			];
+			const events = createMockEventEmitter();
 
 			const controller = new LumaMaskController(
 				() => canvas as never,
 				() => tracks as never,
-				createMockEventEmitter() as never
+				events as never
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded events for both luma players to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer1, trackIndex: 0, clipIndex: 0 });
+			events.emit("player:loaded", { player: lumaPlayer2, trackIndex: 1, clipIndex: 0 });
 
 			expect(controller.getActiveMaskCount()).toBe(2);
 		});
@@ -366,20 +373,24 @@ describe("LumaMaskController", () => {
 		let controller: LumaMaskController;
 		let lumaPlayer: ReturnType<typeof createMockLumaPlayer>;
 		let contentPlayer: ReturnType<typeof createMockContentPlayer>;
+		let events: ReturnType<typeof createMockEventEmitter>;
 
 		beforeEach(() => {
 			const canvas = createMockCanvas();
 			lumaPlayer = createMockLumaPlayer();
 			contentPlayer = createMockContentPlayer();
 			const tracks = [[lumaPlayer, contentPlayer]];
+			events = createMockEventEmitter();
 
 			controller = new LumaMaskController(
 				() => canvas as never,
 				() => tracks as never,
-				createMockEventEmitter() as never
+				events as never
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded event to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 		});
 
 		it("removes mask from content clip", () => {
@@ -463,14 +474,17 @@ describe("LumaMaskController", () => {
 			const lumaPlayer = createMockLumaPlayer();
 			const contentPlayer = createMockContentPlayer();
 			const tracks = [[lumaPlayer, contentPlayer]];
+			const events = createMockEventEmitter();
 
 			const controller = new LumaMaskController(
 				() => canvas as never,
 				() => tracks as never,
-				createMockEventEmitter() as never
+				events as never
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded event to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 			expect(controller.getActiveMaskCount()).toBe(1);
 
 			controller.dispose();
@@ -538,14 +552,17 @@ describe("LumaMaskController", () => {
 
 			const contentPlayer = createMockContentPlayer();
 			const tracks = [[lumaPlayer, contentPlayer]];
+			const events = createMockEventEmitter();
 
 			const controller = new LumaMaskController(
 				() => canvas as never,
 				() => tracks as never,
-				createMockEventEmitter() as never
+				events as never
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded event to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 			const initialCalls = (canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length;
 
 			// Advance video time by more than 1/30 second
@@ -628,6 +645,8 @@ describe("LumaMaskController", () => {
 			);
 
 			controller.initialize();
+			// Emit PlayerLoaded event to trigger mask creation
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 			expect(controller.getActiveMaskCount()).toBe(1);
 
 			// Note: The controller checks for existing masks by lumaPlayer reference,

@@ -406,3 +406,19 @@ export function determineDropAction(input: DetermineDropActionInput): DropAction
 	// Normal move for non-attachable assets
 	return determineNormalMove(startTime, newTime, originalTrack, dragTarget.trackIndex, pushOffset);
 }
+
+// ─── Utility Functions ─────────────────────────────────────────────────────
+
+/**
+ * Calculate the overlap duration between two time ranges.
+ * @param start1 Start time of first range
+ * @param end1 End time of first range
+ * @param start2 Start time of second range
+ * @param end2 End time of second range
+ * @returns The duration of overlap, or 0 if no overlap
+ */
+export function calculateOverlap(start1: number, end1: number, start2: number, end2: number): number {
+	const overlapStart = Math.max(start1, start2);
+	const overlapEnd = Math.min(end1, end2);
+	return Math.max(0, overlapEnd - overlapStart);
+}
