@@ -54,7 +54,10 @@ export default defineConfig({
 			formats: ["es", "umd"]
 		},
 		rollupOptions: {
-			external: ["harfbuzzjs", "opentype.js", "howler"],
+			external: id => {
+				if (id === "pixi.js" || id.startsWith("pixi.js/")) return true;
+				return ["harfbuzzjs", "opentype.js", "howler"].includes(id);
+			},
 			output: {
 				globals,
 				inlineDynamicImports: true
