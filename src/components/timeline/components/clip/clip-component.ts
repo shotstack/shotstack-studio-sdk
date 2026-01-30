@@ -1,3 +1,4 @@
+import { getAiAssetTypeLabel, isAiAsset, type ResolvedClipWithId } from "@core/shared/ai-asset-utils";
 import type { ResolvedClip } from "@schemas";
 
 import { AI_ICON_LINE_PATHS, AI_ASSET_ICON_MAP } from "../../../canvas/players/ai-icons";
@@ -20,6 +21,8 @@ export interface ClipComponentOptions {
 	attachedLuma?: LumaRef;
 	/** Callback when mask badge is clicked - passes the CONTENT clip indices */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
+	/** Pre-computed AI asset numbers (map of clip ID to number) */
+	aiAssetNumbers: Map<string, number>;
 }
 
 /** Renders a single clip element */
@@ -300,7 +303,32 @@ export class ClipComponent {
 		const { asset } = clip;
 		if (!asset) return "Clip";
 
-		if (asset.type === "svg") {
+		// Check if clip has ID (needed for AI assets)
+		const clipWithId = clip as ResolvedClipWithId;
+		const hasClipId = "id" in clip && typeof clipWithId.id === "string";
+
+		// AI assets get numbered labels with prompt preview
+		if (isAiAsset(asset)) {
+			const number = hasClipId ? (this.options.aiAssetNumbers.get(clipWithId.id) ?? null) : null;
+			const typeLabel = getAiAssetTypeLabel(asset.type);
+			const prompt = asset.prompt || "";
+
+			if (number && prompt) {
+				const truncatedPrompt = prompt.substring(0, 40);
+				return `${typeLabel} ${number}: ${truncatedPrompt}${prompt.length > 40 ? "..." : ""}`;
+			}
+			if (number) {
+				return `${typeLabel} ${number}`;
+			}
+			// Fallback if number computation fails
+			return `${typeLabel} Asset`;
+		}
+
+		// Get asset type for other checks
+		const assetType = "type" in asset && typeof (asset as { type: unknown }).type === "string" ? (asset as { type: string }).type : undefined;
+
+		// SVG special case
+		if (assetType === "svg") {
 			return "Shape";
 		}
 
@@ -314,7 +342,7 @@ export class ClipComponent {
 			return asset.text.substring(0, 20) + (asset.text.length > 20 ? "..." : "");
 		}
 
-		return asset.type || "Clip";
+		return assetType || "Clip";
 	}
 
 	public getState(): ClipState | null {

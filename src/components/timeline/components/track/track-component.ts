@@ -18,6 +18,8 @@ export interface TrackComponentOptions {
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
 	/** Find the content clip that a luma is attached to via timing match (pure function) */
 	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Pre-computed AI asset numbers (map of clip ID to number) */
+	aiAssetNumbers: Map<string, number>;
 }
 
 /** Renders a single track with its clips */
@@ -73,7 +75,8 @@ export class TrackComponent {
 							showBadges: this.options.showBadges,
 							onSelect: this.options.onClipSelect,
 							getRenderer: this.options.getClipRenderer,
-							getClipError: this.options.getClipError
+							getClipError: this.options.getClipError,
+							aiAssetNumbers: this.options.aiAssetNumbers
 						});
 						this.clipComponents.set(clipState.id, clipComponent);
 						this.element.appendChild(clipComponent.element);
@@ -102,7 +105,8 @@ export class TrackComponent {
 						getRenderer: this.options.getClipRenderer,
 						getClipError: this.options.getClipError,
 						attachedLuma: attachedLuma ?? undefined,
-						onMaskClick: this.options.onMaskClick
+						onMaskClick: this.options.onMaskClick,
+						aiAssetNumbers: this.options.aiAssetNumbers
 					});
 					this.clipComponents.set(clipState.id, clipComponent);
 					this.element.appendChild(clipComponent.element);

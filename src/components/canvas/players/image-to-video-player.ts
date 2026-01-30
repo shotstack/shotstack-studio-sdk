@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type ImageToVideoAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -22,13 +23,38 @@ export class ImageToVideoPlayer extends Player {
 
 		const displaySize = this.getDisplaySize();
 
+		// Compute asset number from resolved state
+		const allClips = this.edit.getResolvedEdit()?.timeline.tracks.flatMap(t => t.clips) ?? [];
+		const assetNumber = computeAiAssetNumber(allClips, this.clipId ?? "");
+
+		// Extract resolved prompt and asset type
+		const { asset } = this.clipConfiguration;
+		const prompt = isAiAsset(asset) ? asset.prompt || "" : "";
+		const assetType = isAiAsset(asset) ? asset.type : "image-to-video";
+
 		try {
 			await this.loadTexture();
-			this.aiOverlay = new AiPendingOverlay({ mode: "badge", icon: "video", width: displaySize.width, height: displaySize.height });
+			this.aiOverlay = new AiPendingOverlay({
+				mode: "badge",
+				icon: "video",
+				width: displaySize.width,
+				height: displaySize.height,
+				assetNumber: assetNumber ?? undefined,
+				prompt,
+				assetType
+			});
 		} catch {
 			this.placeholder = createPlaceholderGraphic(displaySize.width, displaySize.height);
 			this.contentContainer.addChild(this.placeholder);
-			this.aiOverlay = new AiPendingOverlay({ mode: "panel", icon: "video", width: displaySize.width, height: displaySize.height });
+			this.aiOverlay = new AiPendingOverlay({
+				mode: "panel",
+				icon: "video",
+				width: displaySize.width,
+				height: displaySize.height,
+				assetNumber: assetNumber ?? undefined,
+				prompt,
+				assetType
+			});
 		}
 
 		this.contentContainer.addChild(this.aiOverlay.getContainer());

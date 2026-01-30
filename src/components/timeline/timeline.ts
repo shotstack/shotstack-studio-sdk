@@ -1,6 +1,7 @@
 import { CreateTrackMoveAndDetachLumaCommand } from "@core/commands/create-track-move-and-detach-luma-command";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { computeAiAssetNumber, type ResolvedClipWithId } from "@core/shared/ai-asset-utils";
 import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
@@ -207,6 +208,27 @@ export class Timeline {
 
 	// ========== Hybrid Render Loop ==========
 
+	/**
+	 * Pre-compute AI asset numbers for all clips.
+	 */
+	private computeAiAssetNumbers(): Map<string, number> {
+		const numbers = new Map<string, number>();
+		const allClips = this.edit.getResolvedEdit()?.timeline.tracks.flatMap(t => t.clips) ?? [];
+
+		// Compute number for each clip (only AI assets will get numbers)
+		for (const clip of allClips) {
+			const clipWithId = clip as ResolvedClipWithId;
+			if ("id" in clip && typeof clipWithId.id === "string") {
+				const number = computeAiAssetNumber(allClips, clipWithId.id);
+				if (number !== null) {
+					numbers.set(clipWithId.id, number);
+				}
+			}
+		}
+
+		return numbers;
+	}
+
 	private setupEventListeners(): void {
 		// Listen for timeline data changes (single render when idle)
 		this.edit.events.on(EditEvent.TimelineUpdated, this.handleTimelineUpdated);
@@ -382,7 +404,8 @@ export class Timeline {
 			},
 			isLumaVisibleForEditing: (contentTrackIndex, contentClipIndex) =>
 				this.stateManager.isLumaVisibleForEditing(contentTrackIndex, contentClipIndex),
-			findContentForLuma: (lumaTrack, lumaClip) => this.stateManager.findContentForLuma(lumaTrack, lumaClip)
+			findContentForLuma: (lumaTrack, lumaClip) => this.stateManager.findContentForLuma(lumaTrack, lumaClip),
+			aiAssetNumbers: this.computeAiAssetNumbers()
 		});
 
 		// Set up scroll sync (also sync playhead)

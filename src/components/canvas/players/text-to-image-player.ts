@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 
@@ -16,7 +17,25 @@ export class TextToImagePlayer extends Player {
 		await super.load();
 
 		const { width, height } = this.getSize();
-		this.aiOverlay = new AiPendingOverlay({ mode: "panel", icon: "image", width, height });
+
+		// Compute asset number from resolved state
+		const allClips = this.edit.getResolvedEdit()?.timeline.tracks.flatMap(t => t.clips) ?? [];
+		const assetNumber = computeAiAssetNumber(allClips, this.clipId ?? "");
+
+		// Extract resolved prompt and asset type
+		const { asset } = this.clipConfiguration;
+		const prompt = isAiAsset(asset) ? asset.prompt || "" : "";
+		const assetType = isAiAsset(asset) ? asset.type : "text-to-image";
+
+		this.aiOverlay = new AiPendingOverlay({
+			mode: "panel",
+			icon: "image",
+			width,
+			height,
+			assetNumber: assetNumber ?? undefined,
+			prompt,
+			assetType
+		});
 		this.contentContainer.addChild(this.aiOverlay.getContainer());
 
 		this.configureKeyframes();

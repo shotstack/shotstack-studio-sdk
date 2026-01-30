@@ -1,3 +1,4 @@
+import { getAuroraHues, hslToHex, truncatePrompt, getAiAssetTypeLabel } from "@core/shared/ai-asset-utils";
 import * as pixi from "pixi.js";
 
 import { type AiIconType, AI_ICON_FILL_PATHS } from "./ai-icons";
@@ -9,6 +10,9 @@ export interface AiPendingOverlayOptions {
 	icon: AiIconType;
 	width: number;
 	height: number;
+	assetNumber?: number;
+	prompt?: string;
+	assetType?: string;
 }
 
 /**
@@ -33,80 +37,155 @@ function layeredSine(x: number, t: number, phase: number, waves: [number, number
 	return sum;
 }
 
-const LAYER_SPECS: Omit<AuroraLayer, "graphics">[] = [
-	{
-		color: 0x06b6d4,
-		baseAlpha: 0.12,
-		baseY: 0.35,
-		rayHeight: 0.45,
-		phase: 0,
-		scrollSpeed: 0.08,
-		waves: [
-			[2.0, 0.08, 0.15],
-			[4.5, 0.04, 0.25],
-			[9.0, 0.015, 0.4]
-		]
-	},
-	{
-		color: 0x10b981,
-		baseAlpha: 0.18,
-		baseY: 0.3,
-		rayHeight: 0.5,
-		phase: 1.2,
-		scrollSpeed: 0.12,
-		waves: [
-			[1.5, 0.1, 0.18],
-			[3.8, 0.05, 0.3],
-			[8.0, 0.02, 0.5],
-			[14.0, 0.008, 0.7]
-		]
-	},
-	{
-		color: 0x34d399,
-		baseAlpha: 0.15,
-		baseY: 0.28,
-		rayHeight: 0.35,
-		phase: 2.8,
-		scrollSpeed: 0.1,
-		waves: [
-			[2.2, 0.07, 0.2],
-			[5.5, 0.035, 0.35],
-			[11.0, 0.012, 0.55]
-		]
-	},
-	{
-		color: 0x7c3aed,
-		baseAlpha: 0.14,
-		baseY: 0.45,
-		rayHeight: 0.4,
-		phase: 4.1,
-		scrollSpeed: 0.09,
-		waves: [
-			[1.8, 0.09, 0.12],
-			[4.2, 0.045, 0.28],
-			[9.5, 0.018, 0.45]
-		]
-	},
-	{
-		color: 0xec4899,
-		baseAlpha: 0.1,
-		baseY: 0.5,
-		rayHeight: 0.3,
-		phase: 5.5,
-		scrollSpeed: 0.14,
-		waves: [
-			[2.5, 0.06, 0.22],
-			[6.0, 0.03, 0.38],
-			[12.0, 0.01, 0.6]
-		]
+function generateLayerSpecs(assetNumber?: number): Omit<AuroraLayer, "graphics">[] {
+	if (assetNumber === undefined) {
+		return [
+			{
+				color: 0x06b6d4,
+				baseAlpha: 0.12,
+				baseY: 0.35,
+				rayHeight: 0.45,
+				phase: 0,
+				scrollSpeed: 0.08,
+				waves: [
+					[2.0, 0.08, 0.15],
+					[4.5, 0.04, 0.25],
+					[9.0, 0.015, 0.4]
+				]
+			},
+			{
+				color: 0x10b981,
+				baseAlpha: 0.18,
+				baseY: 0.3,
+				rayHeight: 0.5,
+				phase: 1.2,
+				scrollSpeed: 0.12,
+				waves: [
+					[1.5, 0.1, 0.18],
+					[3.8, 0.05, 0.3],
+					[8.0, 0.02, 0.5],
+					[14.0, 0.008, 0.7]
+				]
+			},
+			{
+				color: 0x34d399,
+				baseAlpha: 0.15,
+				baseY: 0.28,
+				rayHeight: 0.35,
+				phase: 2.8,
+				scrollSpeed: 0.1,
+				waves: [
+					[2.2, 0.07, 0.2],
+					[5.5, 0.035, 0.35],
+					[11.0, 0.012, 0.55]
+				]
+			},
+			{
+				color: 0x7c3aed,
+				baseAlpha: 0.14,
+				baseY: 0.45,
+				rayHeight: 0.4,
+				phase: 4.1,
+				scrollSpeed: 0.09,
+				waves: [
+					[1.8, 0.09, 0.12],
+					[4.2, 0.045, 0.28],
+					[9.5, 0.018, 0.45]
+				]
+			},
+			{
+				color: 0xec4899,
+				baseAlpha: 0.1,
+				baseY: 0.5,
+				rayHeight: 0.3,
+				phase: 5.5,
+				scrollSpeed: 0.14,
+				waves: [
+					[2.5, 0.06, 0.22],
+					[6.0, 0.03, 0.38],
+					[12.0, 0.01, 0.6]
+				]
+			}
+		];
 	}
-];
+
+	// Generate custom colors based on asset number using golden angle
+	const hues = getAuroraHues(assetNumber);
+
+	return [
+		{
+			color: hslToHex(hues[0], 70, 50),
+			baseAlpha: 0.12,
+			baseY: 0.35,
+			rayHeight: 0.45,
+			phase: 0,
+			scrollSpeed: 0.08,
+			waves: [
+				[2.0, 0.08, 0.15],
+				[4.5, 0.04, 0.25],
+				[9.0, 0.015, 0.4]
+			]
+		},
+		{
+			color: hslToHex(hues[1], 70, 50),
+			baseAlpha: 0.18,
+			baseY: 0.3,
+			rayHeight: 0.5,
+			phase: 1.2,
+			scrollSpeed: 0.12,
+			waves: [
+				[1.5, 0.1, 0.18],
+				[3.8, 0.05, 0.3],
+				[8.0, 0.02, 0.5],
+				[14.0, 0.008, 0.7]
+			]
+		},
+		{
+			color: hslToHex(hues[2], 70, 50),
+			baseAlpha: 0.15,
+			baseY: 0.28,
+			rayHeight: 0.35,
+			phase: 2.8,
+			scrollSpeed: 0.1,
+			waves: [
+				[2.2, 0.07, 0.2],
+				[5.5, 0.035, 0.35],
+				[11.0, 0.012, 0.55]
+			]
+		},
+		{
+			color: hslToHex(hues[3], 70, 50),
+			baseAlpha: 0.14,
+			baseY: 0.45,
+			rayHeight: 0.4,
+			phase: 4.1,
+			scrollSpeed: 0.09,
+			waves: [
+				[1.8, 0.09, 0.12],
+				[4.2, 0.045, 0.28],
+				[9.5, 0.018, 0.45]
+			]
+		},
+		{
+			color: hslToHex(hues[4], 70, 50),
+			baseAlpha: 0.1,
+			baseY: 0.5,
+			rayHeight: 0.3,
+			phase: 5.5,
+			scrollSpeed: 0.14,
+			waves: [
+				[2.5, 0.06, 0.22],
+				[6.0, 0.03, 0.38],
+				[12.0, 0.01, 0.6]
+			]
+		}
+	];
+}
 
 const COLUMN_COUNT = 64;
 
-const BADGE_SIZE = 48;
-const BADGE_ICON_SIZE = 28;
-const BADGE_INSET = 10;
+const BADGE_SIZE = 72;
+const BADGE_ICON_SIZE = 42;
 
 /**
  * Visual overlay indicating an AI asset is awaiting generation.
@@ -186,7 +265,7 @@ export class AiPendingOverlay {
 
 		this.auroraLayer = new pixi.Container();
 
-		this.layers = LAYER_SPECS.map(spec => {
+		this.layers = generateLayerSpecs(this.options.assetNumber).map(spec => {
 			const graphics = new pixi.Graphics();
 			this.auroraLayer.addChild(graphics);
 			return { ...spec, graphics };
@@ -250,10 +329,10 @@ export class AiPendingOverlay {
 	}
 
 	private buildBadge(): void {
-		const { width, icon } = this.options;
+		const { width, height, icon, assetNumber, prompt, assetType } = this.options;
 
 		const badge = new pixi.Container();
-		badge.position.set(width - BADGE_SIZE - BADGE_INSET, BADGE_INSET);
+		badge.position.set(width / 2 - BADGE_SIZE / 2, height / 2 - BADGE_SIZE / 2);
 
 		const bg = new pixi.Graphics();
 		bg.circle(BADGE_SIZE / 2, BADGE_SIZE / 2, BADGE_SIZE / 2);
@@ -267,6 +346,47 @@ export class AiPendingOverlay {
 		iconGraphics.scale.set(scale, scale);
 		iconGraphics.position.set(offset, offset);
 		badge.addChild(iconGraphics);
+
+		// Number badge with type prefix (if provided)
+		if (assetNumber !== undefined) {
+			// Generate label: "Image 6", "Video 3", etc.
+			const typeLabel = assetType ? getAiAssetTypeLabel(assetType) : "";
+			const labelText = typeLabel ? `${typeLabel} ${assetNumber}` : String(assetNumber);
+
+			const numberText = new pixi.Text({
+				text: labelText,
+				style: {
+					fontFamily: "Arial",
+					fontSize: 18,
+					fontWeight: "bold",
+					fill: "#ffffff"
+				}
+			});
+			numberText.anchor.set(0.5, 0.5);
+			numberText.position.set(BADGE_SIZE / 2, BADGE_SIZE + 15);
+			badge.addChild(numberText);
+		}
+
+		// Prompt text (if provided)
+		if (prompt) {
+			const truncated = truncatePrompt(prompt, 60);
+			const promptText = new pixi.Text({
+				text: truncated,
+				style: {
+					fontFamily: "Arial",
+					fontSize: 16,
+					fontWeight: "normal",
+					fill: "#ffffff",
+					align: "center",
+					wordWrap: true,
+					wordWrapWidth: width * 0.8,
+					lineHeight: 20
+				}
+			});
+			promptText.anchor.set(0.5, 0);
+			promptText.position.set(BADGE_SIZE / 2, BADGE_SIZE + 40);
+			badge.addChild(promptText);
+		}
 
 		this.container.addChild(badge);
 	}

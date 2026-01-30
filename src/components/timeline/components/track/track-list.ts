@@ -19,6 +19,8 @@ export interface TrackListOptions {
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
 	/** Find the content clip that a luma is attached to via timing match */
 	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
+	/** Pre-computed AI asset numbers (map of clip ID to number) */
+	aiAssetNumbers: Map<string, number>;
 }
 
 /** Container for all track components with virtualization support */
@@ -83,7 +85,8 @@ export class TrackListComponent {
 				findAttachedLuma: this.options.findAttachedLuma,
 				onMaskClick: this.options.onMaskClick,
 				isLumaVisibleForEditing: this.options.isLumaVisibleForEditing,
-				findContentForLuma: this.options.findContentForLuma
+				findContentForLuma: this.options.findContentForLuma,
+				aiAssetNumbers: this.options.aiAssetNumbers
 			});
 			this.trackComponents.push(trackComponent);
 			this.contentElement.appendChild(trackComponent.element);
