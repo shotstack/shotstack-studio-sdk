@@ -632,14 +632,15 @@ export class RichTextToolbar extends BaseToolbar {
 			if (fillMount) {
 				this.backgroundColorPicker = new BackgroundColorPicker();
 				this.backgroundColorPicker.mount(fillMount);
-				this.backgroundColorPicker.onChange((color, opacity) => {
-					this.updateBackgroundProperty({ color, opacity });
+				this.backgroundColorPicker.onChange((enabled, color, opacity) => {
+					if (enabled) {
+						this.updateBackgroundProperty({ color, opacity });
+					} else {
+						this.removeBackgroundProperty();
+					}
 				});
 			}
 		}
-
-		// NOTE: Padding controls are now in StylePanel
-		// This dead code was removed because padding sliders don't exist in RichTextToolbar HTML
 
 		// Text edit area handlers
 		this.textEditArea?.addEventListener("input", () => {
@@ -1356,16 +1357,21 @@ export class RichTextToolbar extends BaseToolbar {
 		const asset = this.getCurrentAsset();
 		if (!asset) return;
 
-		const currentBackground = asset.background || { opacity: 1 };
+		const currentBackground = asset.background || { color: "#FFFFFF", opacity: 1 };
 		const updatedBackground = { ...currentBackground, ...updates };
 
-		// If color is being removed and opacity is 1, remove background entirely
-		if (!updatedBackground.color && updatedBackground.opacity === 1) {
-			const { background, ...assetWithoutBackground } = asset;
-			this.updateClipProperty(assetWithoutBackground);
-		} else {
-			this.updateClipProperty({ background: updatedBackground });
-		}
+		this.updateClipProperty({ background: updatedBackground });
+	}
+
+	/**
+	 * Remove background property entirely (sets to undefined).
+	 */
+	private removeBackgroundProperty(): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		// Explicitly set background to undefined to remove it
+		this.updateClipProperty({ background: undefined });
 	}
 
 	private updatePaddingProperty(updates: Partial<{ top: number; right: number; bottom: number; left: number }>): void {
@@ -1590,6 +1596,9 @@ export class RichTextToolbar extends BaseToolbar {
 		// Background fill sync
 		if (this.backgroundColorPicker) {
 			const { background } = asset;
+			const hasBackground = !!background;
+
+			this.backgroundColorPicker.setEnabled(hasBackground);
 			this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
 			this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
 		}

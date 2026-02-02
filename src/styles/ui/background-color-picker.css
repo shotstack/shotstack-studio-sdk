@@ -11,6 +11,39 @@
 	margin-bottom: 14px;
 }
 
+.ss-color-picker-enable-row {
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ss-color-picker-enable-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.9);
+	user-select: none;
+}
+
+.ss-color-picker-enable-checkbox {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	accent-color: #007aff;
+}
+
+.ss-color-picker-controls {
+	transition: opacity 0.2s ease;
+}
+
+.ss-color-picker-controls.disabled {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
 .ss-color-picker-color-section,
 .ss-color-picker-opacity-section {
 	margin-bottom: 16px;
