@@ -1,5 +1,3 @@
-import { createThrottle } from "@core/shared/utils";
-
 import { UIComponent } from "../primitives/UIComponent";
 
 /**
@@ -67,6 +65,10 @@ export class StylePanel extends UIComponent<StyleState> {
 	private paddingChangeCallback: ((state: StyleState["padding"]) => void) | null = null;
 	private shadowChangeCallback: ((state: StyleState["shadow"]) => void) | null = null;
 
+	// Two-phase pattern callbacks
+	private dragStartCallback: (() => void) | null = null;
+	private dragEndCallback: (() => void) | null = null;
+
 	// DOM references
 	private tabButtons: NodeListOf<HTMLButtonElement> | null = null;
 	private tabPanels: NodeListOf<HTMLDivElement> | null = null;
@@ -103,10 +105,10 @@ export class StylePanel extends UIComponent<StyleState> {
 	private shadowOpacitySlider: HTMLInputElement | null = null;
 	private shadowOpacityValue: HTMLSpanElement | null = null;
 
-	// Throttle instances for rate-limiting slider updates (~20 updates/sec max)
-	private borderThrottle = createThrottle(() => this.emitBorderChange(), 50);
-	private paddingThrottle = createThrottle(() => this.emitPaddingChange(), 50);
-	private shadowThrottle = createThrottle(() => this.emitShadowChange(), 50);
+	// Two-phase pattern: Track if drag is active
+	private borderDragActive: boolean = false;
+	private paddingDragActive: boolean = false;
+	private shadowDragActive: boolean = false;
 
 	render(): string {
 		return `
@@ -293,38 +295,94 @@ export class StylePanel extends UIComponent<StyleState> {
 		this.setupShadowEvents();
 	}
 
+	// ─── Phase 2 Helper Methods ────────────────────────────────────
+
+	/**
+	 * Update border value display for a specific property.
+	 */
+	private updateBorderValueDisplay(property: "width" | "opacity" | "radius"): void {
+		const valueMap = {
+			width: this.borderWidthValue,
+			opacity: this.borderOpacityValue,
+			radius: this.borderRadiusValue
+		};
+		const el = valueMap[property];
+		if (el) el.textContent = String(this.state.border[property]);
+	}
+
+	/**
+	 * Update shadow value display for a specific property.
+	 */
+	private updateShadowValueDisplay(property: "offsetX" | "offsetY" | "opacity"): void {
+		const valueMap = {
+			offsetX: this.shadowOffsetXValue,
+			offsetY: this.shadowOffsetYValue,
+			opacity: this.shadowOpacityValue
+		};
+		const el = valueMap[property];
+		if (el) el.textContent = String(this.state.shadow[property]);
+	}
+
 	private setupBorderEvents(): void {
+		// Phase 1: Save state on pointerdown (parent will handle initial state capture)
+		const setupBorderPointerdown = (element: HTMLInputElement | null): void => {
+			if (element) {
+				this.events.on(element, "pointerdown", () => {
+					const wasInactive = !this.borderDragActive;
+					this.borderDragActive = true;
+					if (wasInactive) {
+						this.dragStartCallback?.();
+					}
+				});
+			}
+		};
+
+		setupBorderPointerdown(this.borderWidthSlider);
+		setupBorderPointerdown(this.borderColorInput);
+		setupBorderPointerdown(this.borderOpacitySlider);
+		setupBorderPointerdown(this.borderRadiusSlider);
+
+		// Phase 2: Live update during drag (emit on every input for visual feedback)
 		if (this.borderWidthSlider) {
 			this.events.on(this.borderWidthSlider, "input", () => {
 				this.state.border.width = parseInt(this.borderWidthSlider!.value, 10);
-				this.updateBorderWidthDisplay();
-				this.borderThrottle.call();
+				this.updateBorderValueDisplay("width");
+				this.emitBorderChange();
 			});
-			this.events.on(this.borderWidthSlider, "change", () => this.borderThrottle.flush());
 		}
 		if (this.borderColorInput) {
 			this.events.on(this.borderColorInput, "input", () => {
 				this.state.border.color = this.borderColorInput!.value;
-				this.borderThrottle.call();
+				this.emitBorderChange();
 			});
-			this.events.on(this.borderColorInput, "change", () => this.borderThrottle.flush());
 		}
 		if (this.borderOpacitySlider) {
 			this.events.on(this.borderOpacitySlider, "input", () => {
 				this.state.border.opacity = parseInt(this.borderOpacitySlider!.value, 10);
-				this.updateBorderOpacityDisplay();
-				this.borderThrottle.call();
+				this.updateBorderValueDisplay("opacity");
+				this.emitBorderChange();
 			});
-			this.events.on(this.borderOpacitySlider, "change", () => this.borderThrottle.flush());
 		}
 		if (this.borderRadiusSlider) {
 			this.events.on(this.borderRadiusSlider, "input", () => {
 				this.state.border.radius = parseInt(this.borderRadiusSlider!.value, 10);
-				this.updateBorderRadiusDisplay();
-				this.borderThrottle.call();
+				this.updateBorderValueDisplay("radius");
+				this.emitBorderChange();
 			});
-			this.events.on(this.borderRadiusSlider, "change", () => this.borderThrottle.flush());
 		}
+
+		// Phase 3: Mark drag complete on release
+		const onBorderDragEnd = (): void => {
+			if (this.borderDragActive) {
+				this.borderDragActive = false;
+				this.dragEndCallback?.();
+			}
+		};
+
+		if (this.borderWidthSlider) this.events.on(this.borderWidthSlider, "change", onBorderDragEnd);
+		if (this.borderColorInput) this.events.on(this.borderColorInput, "change", onBorderDragEnd);
+		if (this.borderOpacitySlider) this.events.on(this.borderOpacitySlider, "change", onBorderDragEnd);
+		if (this.borderRadiusSlider) this.events.on(this.borderRadiusSlider, "change", onBorderDragEnd);
 	}
 
 	private setupPaddingEvents(): void {
@@ -335,14 +393,40 @@ export class StylePanel extends UIComponent<StyleState> {
 			{ slider: this.paddingLeftSlider, key: "left" as const }
 		];
 
+		// Phase 1: Mark drag active on pointerdown
+		sliders.forEach(({ slider }) => {
+			if (slider) {
+				this.events.on(slider, "pointerdown", () => {
+					const wasInactive = !this.paddingDragActive;
+					this.paddingDragActive = true;
+					if (wasInactive) {
+						this.dragStartCallback?.();
+					}
+				});
+			}
+		});
+
+		// Phase 2: Live update during drag (emit on every input for visual feedback)
 		sliders.forEach(({ slider, key }) => {
 			if (slider) {
 				this.events.on(slider, "input", () => {
-					this.state.padding[key] = parseInt(slider.value, 10);
+					const value = parseInt(slider.value, 10);
+					this.state.padding[key] = value;
 					this.updatePaddingDisplay(key);
-					this.paddingThrottle.call();
+					this.emitPaddingChange();
 				});
-				this.events.on(slider, "change", () => this.paddingThrottle.flush());
+			}
+		});
+
+		// Phase 3: Mark drag complete on release
+		sliders.forEach(({ slider }) => {
+			if (slider) {
+				this.events.on(slider, "change", () => {
+					if (this.paddingDragActive) {
+						this.paddingDragActive = false;
+						this.dragEndCallback?.();
+					}
+				});
 			}
 		});
 	}
@@ -353,15 +437,33 @@ export class StylePanel extends UIComponent<StyleState> {
 		const SHADOW_DEFAULTS = { offsetX: 2, offsetY: 2, blur: 4, color: "#000000", opacity: 50 };
 
 		// Auto-enable shadow when any slider is changed (better UX)
-		const autoEnableAndThrottle = (): void => {
+		const autoEnableAndEmit = (): void => {
 			if (!this.state.shadow.enabled) {
 				this.state.shadow.enabled = true;
 				if (this.shadowToggle) this.shadowToggle.checked = true;
 			}
-			this.shadowThrottle.call();
+			this.emitShadowChange();
 		};
 
-		// Toggle is a discrete action - emit immediately without throttling
+		// Phase 1: Mark drag active on pointerdown
+		const setupShadowPointerdown = (element: HTMLInputElement | null): void => {
+			if (element) {
+				this.events.on(element, "pointerdown", () => {
+					const wasInactive = !this.shadowDragActive;
+					this.shadowDragActive = true;
+					if (wasInactive) {
+						this.dragStartCallback?.();
+					}
+				});
+			}
+		};
+
+		setupShadowPointerdown(this.shadowOffsetXSlider);
+		setupShadowPointerdown(this.shadowOffsetYSlider);
+		setupShadowPointerdown(this.shadowColorInput);
+		setupShadowPointerdown(this.shadowOpacitySlider);
+
+		// Toggle is a discrete action - emit immediately (no dragging involved)
 		if (this.shadowToggle) {
 			this.events.on(this.shadowToggle, "change", () => {
 				const enabling = this.shadowToggle!.checked;
@@ -376,38 +478,48 @@ export class StylePanel extends UIComponent<StyleState> {
 				this.emitShadowChange();
 			});
 		}
+
+		// Phase 2: Live update during drag (emit on every input for visual feedback)
 		if (this.shadowOffsetXSlider) {
 			this.events.on(this.shadowOffsetXSlider, "input", () => {
 				this.state.shadow.offsetX = parseInt(this.shadowOffsetXSlider!.value, 10);
-				this.updateShadowOffsetXDisplay();
-				autoEnableAndThrottle();
+				this.updateShadowValueDisplay("offsetX");
+				autoEnableAndEmit();
 			});
-			this.events.on(this.shadowOffsetXSlider, "change", () => this.shadowThrottle.flush());
 		}
 		if (this.shadowOffsetYSlider) {
 			this.events.on(this.shadowOffsetYSlider, "input", () => {
 				this.state.shadow.offsetY = parseInt(this.shadowOffsetYSlider!.value, 10);
-				this.updateShadowOffsetYDisplay();
-				autoEnableAndThrottle();
+				this.updateShadowValueDisplay("offsetY");
+				autoEnableAndEmit();
 			});
-			this.events.on(this.shadowOffsetYSlider, "change", () => this.shadowThrottle.flush());
 		}
-		// Note: blur slider removed - canvas doesn't implement actual blur effect
 		if (this.shadowColorInput) {
 			this.events.on(this.shadowColorInput, "input", () => {
 				this.state.shadow.color = this.shadowColorInput!.value;
-				autoEnableAndThrottle();
+				autoEnableAndEmit();
 			});
-			this.events.on(this.shadowColorInput, "change", () => this.shadowThrottle.flush());
 		}
 		if (this.shadowOpacitySlider) {
 			this.events.on(this.shadowOpacitySlider, "input", () => {
 				this.state.shadow.opacity = parseInt(this.shadowOpacitySlider!.value, 10);
-				this.updateShadowOpacityDisplay();
-				autoEnableAndThrottle();
+				this.updateShadowValueDisplay("opacity");
+				autoEnableAndEmit();
 			});
-			this.events.on(this.shadowOpacitySlider, "change", () => this.shadowThrottle.flush());
 		}
+
+		// Phase 3: Mark drag complete on release
+		const onShadowDragEnd = (): void => {
+			if (this.shadowDragActive) {
+				this.shadowDragActive = false;
+				this.dragEndCallback?.();
+			}
+		};
+
+		if (this.shadowOffsetXSlider) this.events.on(this.shadowOffsetXSlider, "change", onShadowDragEnd);
+		if (this.shadowOffsetYSlider) this.events.on(this.shadowOffsetYSlider, "change", onShadowDragEnd);
+		if (this.shadowColorInput) this.events.on(this.shadowColorInput, "change", onShadowDragEnd);
+		if (this.shadowOpacitySlider) this.events.on(this.shadowOpacitySlider, "change", onShadowDragEnd);
 	}
 
 	// ─── Tab Switching ────────────────────────────────────────────────────────
@@ -443,6 +555,20 @@ export class StylePanel extends UIComponent<StyleState> {
 
 	onShadowChange(callback: (state: StyleState["shadow"]) => void): void {
 		this.shadowChangeCallback = callback;
+	}
+
+	/**
+	 * Register callback for drag start (when pointerdown occurs on any slider).
+	 */
+	onDragStart(callback: () => void): void {
+		this.dragStartCallback = callback;
+	}
+
+	/**
+	 * Register callback for drag end (when change event occurs on any slider).
+	 */
+	onDragEnd(callback: () => void): void {
+		this.dragEndCallback = callback;
 	}
 
 	private emitBorderChange(): void {
@@ -512,6 +638,14 @@ export class StylePanel extends UIComponent<StyleState> {
 		};
 	}
 
+	/**
+	 * Check if any property is currently being dragged.
+	 * @internal Used by parent to determine if live updates should skip command creation.
+	 */
+	isDragging(): boolean {
+		return this.borderDragActive || this.paddingDragActive || this.shadowDragActive;
+	}
+
 	// ─── UI Updates ───────────────────────────────────────────────────────────
 
 	private updateBorderUI(): void {
@@ -519,9 +653,9 @@ export class StylePanel extends UIComponent<StyleState> {
 		if (this.borderColorInput) this.borderColorInput.value = this.state.border.color;
 		if (this.borderOpacitySlider) this.borderOpacitySlider.value = String(this.state.border.opacity);
 		if (this.borderRadiusSlider) this.borderRadiusSlider.value = String(this.state.border.radius);
-		this.updateBorderWidthDisplay();
-		this.updateBorderOpacityDisplay();
-		this.updateBorderRadiusDisplay();
+		this.updateBorderValueDisplay("width");
+		this.updateBorderValueDisplay("opacity");
+		this.updateBorderValueDisplay("radius");
 	}
 
 	private updatePaddingUI(): void {
@@ -541,21 +675,9 @@ export class StylePanel extends UIComponent<StyleState> {
 		if (this.shadowOffsetYSlider) this.shadowOffsetYSlider.value = String(this.state.shadow.offsetY);
 		if (this.shadowColorInput) this.shadowColorInput.value = this.state.shadow.color;
 		if (this.shadowOpacitySlider) this.shadowOpacitySlider.value = String(this.state.shadow.opacity);
-		this.updateShadowOffsetXDisplay();
-		this.updateShadowOffsetYDisplay();
-		this.updateShadowOpacityDisplay();
-	}
-
-	private updateBorderWidthDisplay(): void {
-		if (this.borderWidthValue) this.borderWidthValue.textContent = String(this.state.border.width);
-	}
-
-	private updateBorderOpacityDisplay(): void {
-		if (this.borderOpacityValue) this.borderOpacityValue.textContent = String(this.state.border.opacity);
-	}
-
-	private updateBorderRadiusDisplay(): void {
-		if (this.borderRadiusValue) this.borderRadiusValue.textContent = String(this.state.border.radius);
+		this.updateShadowValueDisplay("offsetX");
+		this.updateShadowValueDisplay("offsetY");
+		this.updateShadowValueDisplay("opacity");
 	}
 
 	private updatePaddingDisplay(key: keyof StyleState["padding"]): void {
@@ -569,25 +691,13 @@ export class StylePanel extends UIComponent<StyleState> {
 		if (el) el.textContent = String(this.state.padding[key]);
 	}
 
-	private updateShadowOffsetXDisplay(): void {
-		if (this.shadowOffsetXValue) this.shadowOffsetXValue.textContent = String(this.state.shadow.offsetX);
-	}
-
-	private updateShadowOffsetYDisplay(): void {
-		if (this.shadowOffsetYValue) this.shadowOffsetYValue.textContent = String(this.state.shadow.offsetY);
-	}
-
-	private updateShadowOpacityDisplay(): void {
-		if (this.shadowOpacityValue) this.shadowOpacityValue.textContent = String(this.state.shadow.opacity);
-	}
-
 	// ─── Disposal ─────────────────────────────────────────────────────────────
 
 	override dispose(): void {
-		// Cancel throttles to prevent any pending callbacks after disposal
-		this.borderThrottle.cancel();
-		this.paddingThrottle.cancel();
-		this.shadowThrottle.cancel();
+		// Clear drag state
+		this.borderDragActive = false;
+		this.paddingDragActive = false;
+		this.shadowDragActive = false;
 		super.dispose();
 	}
 }

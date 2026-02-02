@@ -1,5 +1,3 @@
-import { createThrottle } from "@core/shared/utils";
-
 import { UIComponent } from "../primitives/UIComponent";
 
 /**
@@ -57,8 +55,12 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 	private lineHeightSlider: HTMLInputElement | null = null;
 	private lineHeightValue: HTMLSpanElement | null = null;
 
-	// Throttle instance for rate-limiting slider updates (~20 updates/sec max)
-	private spacingThrottle = createThrottle(() => this.emit(this.state), 50);
+	// Two-phase pattern: Track if drag is active
+	private spacingDragActive: boolean = false;
+
+	// Callbacks for drag lifecycle
+	private dragStartCallback: (() => void) | null = null;
+	private dragEndCallback: (() => void) | null = null;
 
 	constructor(panelConfig: SpacingPanelConfig = {}) {
 		super(); // No wrapper class - mounted inside existing popup
@@ -104,28 +106,52 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 	}
 
 	protected setupEvents(): void {
-		// Letter spacing
+		// Phase 1: Mark drag active on pointerdown
+		const setupPointerdown = (slider: HTMLInputElement | null): void => {
+			if (slider) {
+				this.events.on(slider, "pointerdown", () => {
+					const wasInactive = !this.spacingDragActive;
+					this.spacingDragActive = true;
+					if (wasInactive) {
+						this.dragStartCallback?.();
+					}
+				});
+			}
+		};
+
+		setupPointerdown(this.letterSpacingSlider);
+		setupPointerdown(this.lineHeightSlider);
+
+		// Phase 2: Live update during drag
 		if (this.letterSpacingSlider) {
 			this.events.on(this.letterSpacingSlider, "input", () => {
 				const value = parseInt(this.letterSpacingSlider!.value, 10);
 				this.state.letterSpacing = value;
 				this.updateLetterSpacingDisplay();
-				this.spacingThrottle.call();
+				this.emit(this.state);
 			});
-			this.events.on(this.letterSpacingSlider, "change", () => this.spacingThrottle.flush());
 		}
 
-		// Line height
 		if (this.lineHeightSlider) {
 			this.events.on(this.lineHeightSlider, "input", () => {
 				const rawValue = parseInt(this.lineHeightSlider!.value, 10);
 				const lineHeight = rawValue / 10;
 				this.state.lineHeight = lineHeight;
 				this.updateLineHeightDisplay();
-				this.spacingThrottle.call();
+				this.emit(this.state);
 			});
-			this.events.on(this.lineHeightSlider, "change", () => this.spacingThrottle.flush());
 		}
+
+		// Phase 3: Mark drag complete on release
+		const onDragEnd = (): void => {
+			if (this.spacingDragActive) {
+				this.spacingDragActive = false;
+				this.dragEndCallback?.();
+			}
+		};
+
+		if (this.letterSpacingSlider) this.events.on(this.letterSpacingSlider, "change", onDragEnd);
+		if (this.lineHeightSlider) this.events.on(this.lineHeightSlider, "change", onDragEnd);
 	}
 
 	/**
@@ -155,6 +181,28 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 		return { ...this.state };
 	}
 
+	/**
+	 * Register callback for drag start (when pointerdown occurs on any slider).
+	 */
+	onDragStart(callback: () => void): void {
+		this.dragStartCallback = callback;
+	}
+
+	/**
+	 * Register callback for drag end (when change event occurs on any slider).
+	 */
+	onDragEnd(callback: () => void): void {
+		this.dragEndCallback = callback;
+	}
+
+	/**
+	 * Check if any spacing slider is currently being dragged.
+	 * @internal Used by parent to determine if live updates should skip command creation.
+	 */
+	isDragging(): boolean {
+		return this.spacingDragActive;
+	}
+
 	// ─── Private Methods ─────────────────────────────────────────────────────
 
 	private updateUI(): void {
@@ -182,8 +230,8 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 	}
 
 	override dispose(): void {
-		// Cancel throttle to prevent any pending callbacks after disposal
-		this.spacingThrottle.cancel();
+		// Clear drag state
+		this.spacingDragActive = false;
 		super.dispose();
 	}
 }
