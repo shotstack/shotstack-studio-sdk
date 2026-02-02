@@ -120,7 +120,12 @@ export class CanvasToolbar {
 
 	/** Get the edit as ShotstackEdit if it has merge field capabilities */
 	private getShotstackEdit(): ShotstackEdit | null {
-		return this.edit instanceof ShotstackEdit ? this.edit : null;
+		// Use duck typing instead of instanceof to avoid module resolution issues
+		// when the SDK is consumed as an npm package
+		if (this.edit && "mergeFields" in this.edit) {
+			return this.edit as ShotstackEdit;
+		}
+		return null;
 	}
 
 	setPosition(screenX: number, screenY: number): void {
