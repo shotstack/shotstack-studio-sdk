@@ -89,17 +89,10 @@ export class BackgroundColorPicker {
 		element.addEventListener(
 			"blur",
 			() => {
-				console.log("[BG-Picker] blur event", {
-					controlId,
-					dragActive: this.dragActive,
-					currentControlId: this.currentControlId,
-					willCallDragEnd: this.dragActive && this.currentControlId === controlId
-				});
 				// Only end the drag if THIS specific control is the active one
 				if (this.dragActive && this.currentControlId === controlId) {
 					this.dragActive = false;
 					this.currentControlId = null;
-					console.log("[BG-Picker] calling dragEndCallback for", controlId);
 					this.dragEndCallback?.(controlId);
 				}
 			},

@@ -703,10 +703,8 @@ export class RichTextToolbar extends BaseToolbar {
 
 				// Drag end - commit the final state as a single command
 				this.backgroundColorPicker.onDragEnd(controlId => {
-					console.log("[Toolbar] onDragEnd - START", { controlId });
 					const session = this.dragManager.end(controlId);
 					if (!session) {
-						console.log("[Toolbar] onDragEnd - NO SESSION, returning");
 						return;
 					}
 
@@ -719,12 +717,6 @@ export class RichTextToolbar extends BaseToolbar {
 						const enabled = this.backgroundColorPicker?.isEnabled() ?? false;
 						const color = this.backgroundColorPicker?.getColor() ?? "#FFFFFF";
 						const opacity = this.backgroundColorPicker?.getOpacity() ?? 1;
-						console.log("[Toolbar] onDragEnd - building finalClip", {
-							enabled,
-							color,
-							opacity,
-							initialBackground: session.initialState.asset?.type === "rich-text" ? session.initialState.asset.background : null
-						});
 						if (enabled) {
 							finalClip.asset.background = {
 								color,
@@ -737,11 +729,6 @@ export class RichTextToolbar extends BaseToolbar {
 					}
 
 					// Commit command to history
-					console.log("[Toolbar] onDragEnd - COMMITTING", {
-						clipId,
-						initialBg: session.initialState.asset?.type === "rich-text" ? session.initialState.asset.background : null,
-						finalBg: finalClip.asset?.type === "rich-text" ? finalClip.asset.background : null
-					});
 					this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
 				});
 			}
