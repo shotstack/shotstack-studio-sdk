@@ -1,7 +1,7 @@
-import { createThrottle } from "@core/shared/utils";
 import { injectShotstackStyles } from "@styles/inject";
 
-type ColorChangeCallback = (enabled: boolean, color: string, opacity: number) => void;
+type ColorChangeCallback = (controlId: string, enabled: boolean, color: string, opacity: number) => void;
+type DragCallback = (controlId: string) => void;
 
 export class BackgroundColorPicker {
 	private container: HTMLDivElement | null = null;
@@ -11,34 +11,101 @@ export class BackgroundColorPicker {
 	private opacityValue: HTMLSpanElement | null = null;
 
 	private enabled: boolean = false; // Default to disabled (no background)
+	private currentColor: string = "#FFFFFF";
+	private currentOpacity: number = 1;
 	private onColorChange: ColorChangeCallback | null = null;
 
-	// Throttle instance for rate-limiting slider updates (~20 updates/sec max)
-	private colorThrottle = createThrottle(() => this.emitColorChange(), 50);
+	// Two-phase drag pattern state
+	private dragActive: boolean = false;
+	private dragStartCallback: DragCallback | null = null;
+	private dragEndCallback: DragCallback | null = null;
+	private currentControlId: string | null = null; // Track which control is active
+	private abortController = new AbortController(); // For cleanup of dynamic event listeners
 
 	// Arrow function handlers for proper cleanup
 	private handleEnableChange = (): void => {
 		this.enabled = this.enableCheckbox?.checked ?? false;
 		this.updateControlsState();
-		this.emitColorChange();
+		this.emitColorChange("background-checkbox");
 	};
 
-	private handleColorChange = (): void => {
-		this.colorThrottle.call();
+	private handleEnableInteractionStart = (): void => {
+		const wasInactive = this.currentControlId === null;
+		this.dragActive = true;
+		this.currentControlId = "background-checkbox";
+		if (wasInactive) {
+			this.dragStartCallback?.("background-checkbox");
+		}
+	};
+
+	private handleEnableInteractionEnd = (): void => {
+		// Only end the drag if THIS control (checkbox) is the active one
+		if (this.dragActive && this.currentControlId === "background-checkbox") {
+			this.dragActive = false;
+			this.currentControlId = null;
+			this.dragEndCallback?.("background-checkbox");
+		}
+	};
+
+	private handleColorInput = (): void => {
+		this.currentColor = this.colorInput?.value ?? "#FFFFFF";
+		this.emitColorChange("background-color");
 	};
 
 	private handleOpacityInput = (e: Event): void => {
 		const opacity = parseInt((e.target as HTMLInputElement).value, 10);
+		this.currentOpacity = opacity / 100;
 		if (this.opacityValue) {
 			this.opacityValue.textContent = `${opacity}%`;
 		}
-		this.colorThrottle.call();
+		this.emitColorChange("background-opacity");
 	};
 
-	// Flush throttle on slider release (change event) to ensure final value is applied
-	private handleOpacityChange = (): void => {
-		this.colorThrottle.flush();
-	};
+	/**
+	 * Wire up two-phase drag pattern for any input control.
+	 * Handles pointerdown (drag start), input (live updates), and blur (drag end).
+	 */
+	private setupDragPattern(element: HTMLInputElement, controlId: string, onInput: (e: Event) => void): void {
+		const { signal } = this.abortController;
+
+		// Start: pointerdown (for range) or click/input (for color picker)
+		element.addEventListener(
+			"pointerdown",
+			() => {
+				const wasInactive = this.currentControlId === null;
+				this.dragActive = true;
+				this.currentControlId = controlId;
+				if (wasInactive) {
+					this.dragStartCallback?.(controlId);
+				}
+			},
+			{ signal }
+		);
+
+		// During: input events (live updates)
+		element.addEventListener("input", onInput, { signal });
+
+		// End: blur event (drag complete - fires when picker closes regardless of value change)
+		element.addEventListener(
+			"blur",
+			() => {
+				console.log("[BG-Picker] blur event", {
+					controlId,
+					dragActive: this.dragActive,
+					currentControlId: this.currentControlId,
+					willCallDragEnd: this.dragActive && this.currentControlId === controlId
+				});
+				// Only end the drag if THIS specific control is the active one
+				if (this.dragActive && this.currentControlId === controlId) {
+					this.dragActive = false;
+					this.currentControlId = null;
+					console.log("[BG-Picker] calling dragEndCallback for", controlId);
+					this.dragEndCallback?.(controlId);
+				}
+			},
+			{ signal }
+		);
+	}
 
 	constructor() {
 		injectShotstackStyles();
@@ -66,7 +133,7 @@ export class BackgroundColorPicker {
 				<div class="ss-color-picker-opacity-section">
 					<div class="ss-color-picker-label">Opacity</div>
 					<div class="ss-color-picker-opacity-row">
-						<input type="range" class="ss-color-picker-opacity" min="0" max="100" value="100" ${this.enabled ? "" : "disabled"} />
+						<input type="range" class="ss-toolbar-slider ss-color-picker-opacity" min="0" max="100" value="100" ${this.enabled ? "" : "disabled"} />
 						<span class="ss-color-picker-opacity-value">100%</span>
 					</div>
 				</div>
@@ -80,17 +147,27 @@ export class BackgroundColorPicker {
 		this.opacitySlider = this.container.querySelector(".ss-color-picker-opacity");
 		this.opacityValue = this.container.querySelector(".ss-color-picker-opacity-value");
 
-		this.enableCheckbox?.addEventListener("change", this.handleEnableChange);
-		this.colorInput?.addEventListener("input", this.handleColorChange);
-		this.opacitySlider?.addEventListener("input", this.handleOpacityInput);
-		this.opacitySlider?.addEventListener("change", this.handleOpacityChange);
+		// Enable checkbox also uses drag pattern for proper command history
+		if (this.enableCheckbox) {
+			this.enableCheckbox.addEventListener("pointerdown", this.handleEnableInteractionStart);
+			this.enableCheckbox.addEventListener("change", this.handleEnableChange);
+			this.enableCheckbox.addEventListener("blur", this.handleEnableInteractionEnd);
+		}
+
+		if (this.colorInput) {
+			this.setupDragPattern(this.colorInput, "background-color", this.handleColorInput);
+		}
+
+		if (this.opacitySlider) {
+			this.setupDragPattern(this.opacitySlider, "background-opacity", this.handleOpacityInput);
+		}
 	}
 
-	private emitColorChange(): void {
+	private emitColorChange(controlId: string): void {
 		if (this.onColorChange && this.colorInput && this.opacitySlider) {
 			const color = this.colorInput.value;
 			const opacity = parseInt(this.opacitySlider.value, 10) / 100;
-			this.onColorChange(this.enabled, color, opacity);
+			this.onColorChange(controlId, this.enabled, color, opacity);
 		}
 	}
 
@@ -118,13 +195,15 @@ export class BackgroundColorPicker {
 	}
 
 	setColor(hex: string): void {
+		this.currentColor = hex.toUpperCase();
 		if (this.colorInput) {
-			this.colorInput.value = hex.toUpperCase();
+			this.colorInput.value = this.currentColor;
 		}
 	}
 
 	setOpacity(opacity: number): void {
 		const opacityPercent = Math.round(Math.max(0, Math.min(100, opacity)));
+		this.currentOpacity = opacityPercent / 100;
 		if (this.opacitySlider) {
 			this.opacitySlider.value = String(opacityPercent);
 		}
@@ -133,24 +212,52 @@ export class BackgroundColorPicker {
 		}
 	}
 
+	getColor(): string {
+		return this.currentColor;
+	}
+
+	getOpacity(): number {
+		return this.currentOpacity;
+	}
+
 	onChange(callback: ColorChangeCallback): void {
 		this.onColorChange = callback;
 	}
 
-	dispose(): void {
-		// Cancel throttle to prevent any pending callbacks after disposal
-		this.colorThrottle.cancel();
+	onDragStart(callback: DragCallback): void {
+		this.dragStartCallback = callback;
+	}
 
-		this.enableCheckbox?.removeEventListener("change", this.handleEnableChange);
-		this.colorInput?.removeEventListener("input", this.handleColorChange);
-		this.opacitySlider?.removeEventListener("input", this.handleOpacityInput);
-		this.opacitySlider?.removeEventListener("change", this.handleOpacityChange);
+	onDragEnd(callback: DragCallback): void {
+		this.dragEndCallback = callback;
+	}
+
+	isDragging(): boolean {
+		return this.dragActive;
+	}
+
+	dispose(): void {
+		// Abort all listeners registered via setupDragPattern
+		this.abortController.abort();
+
+		// Remove explicitly tracked handlers for checkbox
+		if (this.enableCheckbox) {
+			this.enableCheckbox.removeEventListener("pointerdown", this.handleEnableInteractionStart);
+			this.enableCheckbox.removeEventListener("change", this.handleEnableChange);
+			this.enableCheckbox.removeEventListener("blur", this.handleEnableInteractionEnd);
+		}
+
+		// Remove container from DOM
 		this.container?.remove();
+
+		// Clear references
 		this.container = null;
 		this.enableCheckbox = null;
 		this.colorInput = null;
 		this.opacitySlider = null;
 		this.opacityValue = null;
 		this.onColorChange = null;
+		this.dragStartCallback = null;
+		this.dragEndCallback = null;
 	}
 }

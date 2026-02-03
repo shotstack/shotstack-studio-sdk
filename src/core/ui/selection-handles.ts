@@ -63,6 +63,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	private initialClipConfiguration: ResolvedClip | null = null;
 
+	// Final drag state
+	private finalDragState: {
+		offset?: { x: number; y: number };
+		width?: number;
+		height?: number;
+		transform?: { rotate?: { angle: number } };
+	} | null = null;
+
 	// Bound event handlers for cleanup
 	private onClipSelectedBound: (payload: { trackIndex: number; clipIndex: number }) => void;
 	private onSelectionClearedBound: () => void;
@@ -378,17 +386,37 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private onPointerUp(): void {
 		if (!this.selectedPlayer) return;
 
-		const hasChanged = this.hasStateChanged();
 		if (
 			(this.isDragging || this.scaleDirection || this.edgeDragDirection || this.isRotating) &&
-			hasChanged &&
+			this.finalDragState &&
 			this.selectedClipId &&
 			this.initialClipConfiguration
 		) {
-			// Create undo entry (document already in sync via per-frame resolveClip)
-			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration);
+			// Construct final config from local state with deep merge
+			const finalClip = structuredClone(this.initialClipConfiguration);
+
+			// Deep merge for nested properties (transform, offset)
+			if (this.finalDragState.transform) {
+				finalClip.transform = {
+					...finalClip.transform,
+					...this.finalDragState.transform
+				};
+			}
+			if (this.finalDragState.offset) {
+				finalClip.offset = {
+					...finalClip.offset,
+					...this.finalDragState.offset
+				};
+			}
+			// Shallow merge for flat properties (width, height)
+			if (this.finalDragState.width !== undefined) finalClip.width = this.finalDragState.width;
+			if (this.finalDragState.height !== undefined) finalClip.height = this.finalDragState.height;
+
+			// Commit with explicit final state
+			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration, finalClip);
 		}
 
+		this.finalDragState = null; // Clear final state
 		this.resetDragState();
 		this.edit.clearAlignmentGuides();
 	}
@@ -448,6 +476,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
 		const updatedRelative = this.positionBuilder.absoluteToRelative(size, position, snapResult.position);
 
+		// Store final state locally
+		this.finalDragState = {
+			offset: { x: updatedRelative.x, y: updatedRelative.y }
+		};
+
 		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			offset: { x: updatedRelative.x, y: updatedRelative.y }
@@ -477,6 +510,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const result = calculateCornerScale(this.scaleDirection, delta, this.originalDimensions, this.edit.size);
 		const clamped = clampDimensions(result.width, result.height);
 		const rounded = roundDimensions(clamped.width, clamped.height);
+
+		// Store final state locally
+		this.finalDragState = {
+			width: rounded.width,
+			height: rounded.height,
+			offset: { x: result.offsetX, y: result.offsetY }
+		};
 
 		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
@@ -510,6 +550,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const clamped = clampDimensions(result.width, result.height);
 		const rounded = roundDimensions(clamped.width, clamped.height);
 
+		// Store final state locally
+		this.finalDragState = {
+			width: rounded.width,
+			height: rounded.height,
+			offset: { x: result.offsetX, y: result.offsetY }
+		};
+
 		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			width: rounded.width,
@@ -542,6 +589,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		// Get current transform to preserve other properties (scale, etc.)
 		const currentTransform = this.selectedPlayer.clipConfiguration.transform ?? {};
+
+		// Store final state locally
+		this.finalDragState = {
+			transform: {
+				...currentTransform,
+				rotate: { angle: snappedRotation }
+			}
+		};
 
 		// Document-first: Update document, then resolve
 		this.edit.updateClipInDocument(this.selectedClipId, {
@@ -661,28 +716,5 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.rotationStart = null;
 		this.rotationCorner = null;
 		this.initialClipConfiguration = null;
-	}
-
-	private hasStateChanged(): boolean {
-		if (!this.selectedPlayer || !this.initialClipConfiguration) return false;
-
-		const current = this.selectedPlayer.clipConfiguration;
-		const initial = this.initialClipConfiguration as typeof current;
-
-		const currentOffsetX = current.offset?.x;
-		const currentOffsetY = current.offset?.y;
-		const currentRotation = current.transform?.rotate?.angle ?? 0;
-
-		const initialOffsetX = initial.offset?.x;
-		const initialOffsetY = initial.offset?.y;
-		const initialRotation = initial.transform?.rotate?.angle ?? 0;
-
-		return (
-			currentOffsetX !== initialOffsetX ||
-			currentOffsetY !== initialOffsetY ||
-			currentRotation !== initialRotation ||
-			current.width !== initial.width ||
-			current.height !== initial.height
-		);
 	}
 }

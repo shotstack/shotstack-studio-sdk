@@ -816,18 +816,17 @@ export class Edit {
 
 	/**
 	 * Commit a live update session to the undo history.
+	 * @param clipId - The clip ID to commit changes for
+	 * @param initialConfig - The clip state before the drag/change began
+	 * @param finalConfig - Explicit final state (must match what was already applied to document)
 	 * @internal
 	 */
-	public commitClipUpdate(clipId: string, initialConfig: ResolvedClip): void {
-		const player = this.getPlayerByClipId(clipId);
-		if (!player) return;
-
+	public commitClipUpdate(clipId: string, initialConfig: ResolvedClip, finalConfig: ResolvedClip): void {
 		const location = this.document.getClipById(clipId);
-		if (!location) return;
-
-		// player.clipConfiguration is the authoritative resolved state after resolveClip()
-		// (lastResolved cache is for full-document reads, not single-clip updates)
-		const finalConfig = player.clipConfiguration;
+		if (!location) {
+			console.warn(`commitClipUpdate: clip ${clipId} not found in document`);
+			return;
+		}
 
 		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(finalConfig), {
 			trackIndex: location.trackIndex,

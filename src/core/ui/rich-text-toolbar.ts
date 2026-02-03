@@ -13,6 +13,7 @@ import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
 import { StylePanel } from "./composites/StylePanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
+import { DragStateManager } from "./drag-state-manager";
 import { FontColorPicker } from "./font-color-picker";
 import { FontPicker, type FontInfo } from "./font-picker";
 
@@ -50,14 +51,6 @@ export class RichTextToolbar extends BaseToolbar {
 	private autocompleteFilter: string = "";
 	private autocompleteStartPos: number = 0;
 	private selectedAutocompleteIndex: number = 0;
-	private borderPopup: HTMLDivElement | null = null;
-	private borderWidthSlider: HTMLInputElement | null = null;
-	private borderWidthValue: HTMLSpanElement | null = null;
-	private borderColorInput: HTMLInputElement | null = null;
-	private borderOpacitySlider: HTMLInputElement | null = null;
-	private borderOpacityValue: HTMLSpanElement | null = null;
-	private borderRadiusSlider: HTMLInputElement | null = null;
-	private borderRadiusValue: HTMLSpanElement | null = null;
 	private backgroundPopup: HTMLDivElement | null = null;
 	private backgroundColorPicker: BackgroundColorPicker | null = null;
 
@@ -72,17 +65,14 @@ export class RichTextToolbar extends BaseToolbar {
 	private animationDirectionSection: HTMLDivElement | null = null;
 
 	/**
-	 * Single drag session field.
+	 * Per-control drag state manager.
 	 */
-	private dragSession:
-		| { type: "animation"; clipId: string; initialState: ResolvedClip }
-		| { type: "border"; clipId: string; initialState: ResolvedClip }
-		| { type: "padding"; clipId: string; initialState: ResolvedClip }
-		| { type: "stylePanel"; clipId: string; initialState: ResolvedClip }
-		| { type: "spacingPanel"; clipId: string; initialState: ResolvedClip }
-		| null = null;
+	private dragManager = new DragStateManager();
 
 	private lastSyncedClipId: string | null = null;
+
+	// Current animation duration during drag (for explicit final config)
+	private currentAnimationDuration: number = 1;
 
 	// Composite panels (replace ~400 lines of duplicated transition/effect code)
 	private transitionPopup: HTMLDivElement | null = null;
@@ -375,104 +365,63 @@ export class RichTextToolbar extends BaseToolbar {
 			this.spacingPanel.onDragStart(() => {
 				const state = this.captureClipState();
 				if (state) {
-					this.dragSession = { type: "spacingPanel", ...state };
+					this.dragManager.start("spacing-panel", state.clipId, state.initialState);
 				}
 			});
 
 			// Phase 2: Live updates during drag
 			this.spacingPanel.onChange(state => {
-				this.updateAssetPropertyLive(
-					this.spacingPanel?.isDragging() ?? false,
-					{
+				const isDragging = this.spacingPanel?.isDragging() ?? false;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = {
+						...asset,
 						style: {
+							...(asset.style || {}),
 							letterSpacing: state.letterSpacing,
 							lineHeight: state.lineHeight
 						}
-					},
-					() =>
-						this.updateClipProperty({
-							style: { letterSpacing: state.letterSpacing, lineHeight: state.lineHeight }
-						})
-				);
+					};
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					// Discrete update (creates command)
+					this.updateClipProperty({
+						style: { letterSpacing: state.letterSpacing, lineHeight: state.lineHeight }
+					});
+				}
 			});
 
 			// Phase 3: Commit single command when drag ends
 			this.spacingPanel.onDragEnd(() => {
-				const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+				const session = this.dragManager.end("spacing-panel");
+				if (!session || !this.spacingPanel) return;
 
-				if (this.dragSession?.type === "spacingPanel" && clipId === this.dragSession.clipId) {
-					this.edit.commitClipUpdate(clipId, this.dragSession.initialState);
+				// Use clipId from session (user may have switched clips during drag)
+				const { clipId } = session;
+
+				// Read final state from SpacingPanel
+				const finalState = this.spacingPanel.getState();
+
+				// Construct final clip state
+				const finalClip = structuredClone(session.initialState);
+				if (finalClip.asset && finalClip.asset.type === "rich-text" && finalClip.asset.style) {
+					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
+					finalClip.asset.style.lineHeight = finalState.lineHeight;
 				}
-				this.dragSession = null;
+
+				this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
 			});
 
 			this.spacingPanel.mount(spacingContainer);
 		}
-
-		this.borderPopup = this.container.querySelector("[data-border-popup]");
-		this.borderWidthSlider = this.container.querySelector("[data-border-width-slider]");
-		this.borderWidthValue = this.container.querySelector("[data-border-width-value]");
-		this.borderColorInput = this.container.querySelector("[data-border-color]");
-		this.borderOpacitySlider = this.container.querySelector("[data-border-opacity-slider]");
-		this.borderOpacityValue = this.container.querySelector("[data-border-opacity-value]");
-		this.borderRadiusSlider = this.container.querySelector("[data-border-radius-slider]");
-		this.borderRadiusValue = this.container.querySelector("[data-border-radius-value]");
-
-		// Border sliders - Two-phase pattern (all border sliders share one drag session)
-		// Phase 1: Capture initial state on pointerdown
-		const setupBorderPointerdown = (slider: HTMLInputElement | null): void => {
-			slider?.addEventListener("pointerdown", () => {
-				const state = this.captureClipState();
-				if (state) {
-					this.dragSession = { type: "border", ...state };
-				}
-			});
-		};
-
-		setupBorderPointerdown(this.borderWidthSlider);
-		setupBorderPointerdown(this.borderColorInput);
-		setupBorderPointerdown(this.borderOpacitySlider);
-		setupBorderPointerdown(this.borderRadiusSlider);
-
-		// Phase 2: Live update during drag (no command)
-		this.borderWidthSlider?.addEventListener("input", e => {
-			const width = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.borderWidthValue) this.borderWidthValue.textContent = String(width);
-			this.updateBorderLive({ width });
-		});
-
-		this.borderColorInput?.addEventListener("input", e => {
-			const color = (e.target as HTMLInputElement).value;
-			this.updateBorderLive({ color });
-		});
-
-		this.borderOpacitySlider?.addEventListener("input", e => {
-			const value = parseInt((e.target as HTMLInputElement).value, 10);
-			const opacity = value / 100;
-			if (this.borderOpacityValue) this.borderOpacityValue.textContent = String(value);
-			this.updateBorderLive({ opacity });
-		});
-
-		this.borderRadiusSlider?.addEventListener("input", e => {
-			const radius = parseInt((e.target as HTMLInputElement).value, 10);
-			if (this.borderRadiusValue) this.borderRadiusValue.textContent = String(radius);
-			this.updateBorderLive({ radius });
-		});
-
-		// Phase 3: Commit single command on release (shared for all border sliders)
-		const commitBorderChange = (): void => {
-			const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-
-			if (this.dragSession?.type === "border" && clipId === this.dragSession.clipId) {
-				this.edit.commitClipUpdate(clipId, this.dragSession.initialState);
-			}
-			this.dragSession = null;
-		};
-
-		this.borderWidthSlider?.addEventListener("change", commitBorderChange);
-		this.borderColorInput?.addEventListener("change", commitBorderChange);
-		this.borderOpacitySlider?.addEventListener("change", commitBorderChange);
-		this.borderRadiusSlider?.addEventListener("change", commitBorderChange);
 
 		// Animation controls
 		this.animationPopup = this.container.querySelector("[data-animation-popup]");
@@ -518,26 +467,36 @@ export class RichTextToolbar extends BaseToolbar {
 		this.animationDurationSlider?.addEventListener("pointerdown", () => {
 			const state = this.captureClipState();
 			if (state) {
-				this.dragSession = { type: "animation", ...state };
+				this.dragManager.start("animation-duration", state.clipId, state.initialState);
 			}
 		});
 
 		// Phase 2: Live update during drag (no command)
 		this.animationDurationSlider?.addEventListener("input", e => {
 			const value = parseFloat((e.target as HTMLInputElement).value);
+			this.currentAnimationDuration = value; // Track locally
 			if (this.animationDurationValue) this.animationDurationValue.textContent = `${value.toFixed(1)}s`;
 			this.updateAnimationLive({ duration: value });
 		});
 
 		// Phase 3: Commit single command on release
 		this.animationDurationSlider?.addEventListener("change", () => {
-			const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+			const session = this.dragManager.end("animation-duration");
+			if (!session) return;
 
-			// CRITICAL: Only commit if clipId matches (prevents wrong-clip commits)
-			if (this.dragSession?.type === "animation" && clipId === this.dragSession.clipId) {
-				this.edit.commitClipUpdate(clipId, this.dragSession.initialState);
+			// Use clipId from session (user may have switched clips during drag)
+			const { clipId } = session;
+
+			// Construct final clip state with explicit animation duration
+			const finalClip = structuredClone(session.initialState);
+			if (finalClip.asset && finalClip.asset.type === "rich-text") {
+				if (!finalClip.asset.animation) {
+					finalClip.asset.animation = { preset: "fadeIn" };
+				}
+				finalClip.asset.animation.duration = this.currentAnimationDuration;
 			}
-			this.dragSession = null;
+
+			this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
 		});
 
 		// Style buttons
@@ -565,37 +524,66 @@ export class RichTextToolbar extends BaseToolbar {
 			this.stylePanel.onDragStart(() => {
 				const state = this.captureClipState();
 				if (state) {
-					this.dragSession = { type: "stylePanel", ...state };
+					this.dragManager.start("style-panel", state.clipId, state.initialState);
 				}
 			});
 
 			// Phase 2: Live updates during drag (no commands)
 			this.stylePanel.onBorderChange(border => {
-				this.updateAssetPropertyLive(
-					this.stylePanel?.isDragging() ?? false,
-					{
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = {
+						...asset,
 						border: {
 							width: border.width,
 							color: border.color,
 							opacity: border.opacity / 100,
 							radius: border.radius
 						}
-					},
-					() =>
-						this.updateBorderProperty({
-							width: border.width,
-							color: border.color,
-							opacity: border.opacity / 100,
-							radius: border.radius
-						})
-				);
+					};
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					// Discrete update (creates command)
+					this.updateBorderProperty({
+						width: border.width,
+						color: border.color,
+						opacity: border.opacity / 100,
+						radius: border.radius
+					});
+				}
 			});
 
 			this.stylePanel.onPaddingChange(padding => {
-				this.updateAssetPropertyLive(this.stylePanel?.isDragging() ?? false, { padding }, () => this.updatePaddingProperty(padding));
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = { ...asset, padding };
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					// Discrete update (creates command)
+					this.updatePaddingProperty(padding);
+				}
 			});
 
 			this.stylePanel.onShadowChange(shadow => {
+				const isDragging = this.stylePanel?.isDragging() ?? false;
 				const shadowValue = shadow.enabled
 					? {
 							offsetX: shadow.offsetX,
@@ -606,23 +594,62 @@ export class RichTextToolbar extends BaseToolbar {
 						}
 					: undefined;
 
-				this.updateAssetPropertyLive(this.stylePanel?.isDragging() ?? false, { shadow: shadowValue }, () => {
-					if (shadow.enabled) {
-						this.updateShadowProperty(shadowValue!);
-					} else {
-						this.updateClipProperty({ shadow: undefined });
-					}
-				});
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = { ...asset, shadow: shadowValue };
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else if (shadow.enabled) {
+					// Discrete update (creates command)
+					this.updateShadowProperty(shadowValue!);
+				} else {
+					this.updateClipProperty({ shadow: undefined });
+				}
 			});
 
 			// Phase 3: Commit single command when drag ends
 			this.stylePanel.onDragEnd(() => {
-				const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+				const session = this.dragManager.end("style-panel");
+				if (!session) return;
 
-				if (this.dragSession?.type === "stylePanel" && clipId === this.dragSession.clipId) {
-					this.edit.commitClipUpdate(clipId, this.dragSession.initialState);
+				// Use clipId from session (user may have switched clips during drag)
+				const { clipId } = session;
+				if (!this.stylePanel) return;
+
+				// Read final state from StylePanel (source of truth)
+				const finalState = this.stylePanel.getState();
+
+				// Construct final clip state with actual user-selected values
+				const finalClip = structuredClone(session.initialState);
+				if (finalClip.asset && finalClip.asset.type === "rich-text") {
+					// Border: Convert opacity from percentage (0-100) to decimal (0-1)
+					finalClip.asset.border = {
+						width: finalState.border.width,
+						color: finalState.border.color,
+						opacity: finalState.border.opacity / 100,
+						radius: finalState.border.radius
+					};
+					finalClip.asset.padding = finalState.padding;
+					finalClip.asset.shadow = finalState.shadow.enabled
+						? {
+								offsetX: finalState.shadow.offsetX,
+								offsetY: finalState.shadow.offsetY,
+								blur: finalState.shadow.blur,
+								color: finalState.shadow.color,
+								opacity: finalState.shadow.opacity / 100
+							}
+						: undefined;
+					// Note: fill is handled by BackgroundColorPicker, not StylePanel
 				}
-				this.dragSession = null;
+
+				// Commit with explicit final state (avoids race condition)
+				this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
 			});
 
 			this.stylePanel.mount(this.stylePopup);
@@ -632,12 +659,90 @@ export class RichTextToolbar extends BaseToolbar {
 			if (fillMount) {
 				this.backgroundColorPicker = new BackgroundColorPicker();
 				this.backgroundColorPicker.mount(fillMount);
-				this.backgroundColorPicker.onChange((enabled, color, opacity) => {
-					if (enabled) {
+
+				// Drag start - capture initial state
+				this.backgroundColorPicker.onDragStart(controlId => {
+					const state = this.captureClipState();
+					if (state) {
+						this.dragManager.start(controlId, state.clipId, state.initialState);
+					}
+				});
+
+				// Live updates during drag (or discrete commands outside drag)
+				this.backgroundColorPicker.onChange((controlId, enabled, color, opacity) => {
+					const session = this.dragManager.get(controlId);
+
+					if (session) {
+						// During drag: live updates only (no commands)
+						const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+						if (!clipId) return;
+
+						const asset = this.getCurrentAsset();
+						if (!asset) return;
+
+						if (enabled) {
+							const currentBackground = asset.background || { color: "#FFFFFF", opacity: 1, borderRadius: 0 };
+							const updatedAsset = {
+								...asset,
+								background: { ...currentBackground, color, opacity }
+							};
+							this.edit.updateClipInDocument(clipId, { asset: updatedAsset });
+						} else {
+							const updatedAsset = { ...asset };
+							delete updatedAsset.background;
+							this.edit.updateClipInDocument(clipId, { asset: updatedAsset });
+						}
+						this.edit.resolveClip(clipId);
+					} else if (enabled) {
+						// Outside drag: discrete command (e.g., toggle checkbox without drag)
 						this.updateBackgroundProperty({ color, opacity });
 					} else {
 						this.removeBackgroundProperty();
 					}
+				});
+
+				// Drag end - commit the final state as a single command
+				this.backgroundColorPicker.onDragEnd(controlId => {
+					console.log("[Toolbar] onDragEnd - START", { controlId });
+					const session = this.dragManager.end(controlId);
+					if (!session) {
+						console.log("[Toolbar] onDragEnd - NO SESSION, returning");
+						return;
+					}
+
+					// Use clipId from session (user may have switched clips during drag)
+					const { clipId } = session;
+
+					// Build final state
+					const finalClip = structuredClone(session.initialState);
+					if (finalClip.asset && finalClip.asset.type === "rich-text") {
+						const enabled = this.backgroundColorPicker?.isEnabled() ?? false;
+						const color = this.backgroundColorPicker?.getColor() ?? "#FFFFFF";
+						const opacity = this.backgroundColorPicker?.getOpacity() ?? 1;
+						console.log("[Toolbar] onDragEnd - building finalClip", {
+							enabled,
+							color,
+							opacity,
+							initialBackground: session.initialState.asset?.type === "rich-text" ? session.initialState.asset.background : null
+						});
+						if (enabled) {
+							finalClip.asset.background = {
+								color,
+								opacity,
+								borderRadius: finalClip.asset.background?.borderRadius ?? 0
+							};
+						} else {
+							delete finalClip.asset.background;
+						}
+					}
+
+					// Commit command to history
+					console.log("[Toolbar] onDragEnd - COMMITTING", {
+						clipId,
+						initialBg: session.initialState.asset?.type === "rich-text" ? session.initialState.asset.background : null,
+						finalBg: finalClip.asset?.type === "rich-text" ? finalClip.asset.background : null
+					});
+					this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
 				});
 			}
 		}
@@ -1164,23 +1269,11 @@ export class RichTextToolbar extends BaseToolbar {
 
 	// ─── Phase 2 Helper Methods ────────────────────────────────────
 
-	/**
-	 * Live update border property during drag.
-	 */
-	private updateBorderLive(updates: Partial<{ width: number; color: string; opacity: number; radius: number }>): void {
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clipId) return;
-
-		const asset = this.getCurrentAsset();
-		if (!asset) return;
-
-		const currentBorder = asset.border || { width: 0, color: "#000000", opacity: 1, radius: 0 };
-		const updatedBorder = { ...currentBorder, ...updates };
-		const updatedAsset = { ...asset, border: updatedBorder };
-
-		this.edit.updateClipInDocument(clipId, { asset: updatedAsset });
-		this.edit.resolveClip(clipId);
-	}
+	// TODO: Audit all command history routes for two-phase pattern consistency
+	// After refactoring to explicit updateClipInDocument() + resolveClip() calls,
+	// verify that all other property update paths (not using two-phase drag) are
+	// also consistent with the pattern. Check for any remaining command creation
+	// inconsistencies or places where UI updates should happen before commitClipUpdate().
 
 	/**
 	 * Live update animation property during drag.
@@ -1210,35 +1303,6 @@ export class RichTextToolbar extends BaseToolbar {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
-	}
-
-	/**
-	 * Conditionally update asset property: during drag (no command) or discrete (with command).
-	 * Two-phase pattern helper that eliminates duplicated conditional logic across panel integrations.
-	 *
-	 * @param isDragging - Whether a drag operation is currently active
-	 * @param propertyUpdates - Asset properties to update (style can be partial, will be deep merged)
-	 * @param discreteUpdateFn - Function to call for discrete (non-drag) updates that creates a command
-	 */
-	private updateAssetPropertyLive(
-		isDragging: boolean,
-		propertyUpdates: Partial<Omit<RichTextAsset, "style">> & { style?: Partial<RichTextAsset["style"]> },
-		discreteUpdateFn: () => void
-	): void {
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clipId) return;
-
-		if (isDragging) {
-			const asset = this.getCurrentAsset();
-			if (!asset) return;
-			// Deep merge style property to preserve existing style fields
-			const updatedAsset =
-				"style" in propertyUpdates ? { ...asset, style: { ...asset.style, ...propertyUpdates.style } } : { ...asset, ...propertyUpdates };
-			this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
-			this.edit.resolveClip(clipId);
-		} else {
-			discreteUpdateFn();
-		}
 	}
 
 	private selectFont(font: FontInfo): void {
@@ -1357,7 +1421,7 @@ export class RichTextToolbar extends BaseToolbar {
 		const asset = this.getCurrentAsset();
 		if (!asset) return;
 
-		const currentBackground = asset.background || { color: "#FFFFFF", opacity: 1 };
+		const currentBackground = asset.background || { color: "#FFFFFF", opacity: 1, borderRadius: 0 };
 		const updatedBackground = { ...currentBackground, ...updates };
 
 		this.updateClipProperty({ background: updatedBackground });
@@ -1503,8 +1567,8 @@ export class RichTextToolbar extends BaseToolbar {
 		const clipChanged = this.lastSyncedClipId !== currentClipId;
 
 		if (clipChanged) {
-			// CRITICAL: Clear drag session when selection changes
-			this.dragSession = null;
+			// CRITICAL: Clear all drag sessions when clip selection changes
+			this.dragManager.clear();
 			this.lastSyncedClipId = currentClipId;
 		}
 
@@ -1644,8 +1708,8 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	override dispose(): void {
-		// Clear two-phase drag session
-		this.dragSession = null;
+		// Clear all drag sessions
+		this.dragManager.clear();
 		this.lastSyncedClipId = null;
 
 		// Clean up event listener before super.dispose() removes container
@@ -1687,14 +1751,6 @@ export class RichTextToolbar extends BaseToolbar {
 			clearTimeout(this.textEditDebounceTimer);
 			this.textEditDebounceTimer = null;
 		}
-		this.borderPopup = null;
-		this.borderWidthSlider = null;
-		this.borderWidthValue = null;
-		this.borderColorInput = null;
-		this.borderOpacitySlider = null;
-		this.borderOpacityValue = null;
-		this.borderRadiusSlider = null;
-		this.borderRadiusValue = null;
 
 		this.animationPopup = null;
 		this.animationDurationSlider = null;
