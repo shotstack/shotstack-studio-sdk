@@ -52,6 +52,9 @@ import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
 
+/** Internal type for clips with hydrated IDs during edit updates */
+type ClipWithId = Clip & { id?: string };
+
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
 export class Edit {
@@ -1098,8 +1101,7 @@ export class Edit {
 					const existingId = this.document.getClipId(trackIdx, clipIdx);
 					if (existingId) {
 						// Add the ID to the new clip so EditDocument.hydrateIds() preserves it
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal ID hydration
-						(newTrack.clips[clipIdx] as any).id = existingId;
+						(newTrack.clips[clipIdx] as ClipWithId).id = existingId;
 					}
 				}
 			}

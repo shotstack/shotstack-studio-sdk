@@ -47,7 +47,15 @@ export class RichTextPlayer extends Player {
 		super(edit, configWithoutFit, PlayerType.RichText);
 	}
 
-	private buildCanvasPayload(richTextAsset: RichTextAsset, fontInfo?: { baseFontFamily: string; fontWeight: number }): any {
+	private buildCanvasPayload(
+		richTextAsset: RichTextAsset,
+		fontInfo?: { baseFontFamily: string; fontWeight: number }
+	): RichTextAsset & {
+		width: number;
+		height: number;
+		font?: RichTextAsset["font"] & { family: string; weight: number };
+		customFonts?: Array<{ src: string; family: string; weight: string }>;
+	} {
 		const width = this.clipConfiguration.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || this.edit.size.height;
 
@@ -99,7 +107,9 @@ export class RichTextPlayer extends Player {
 			...richTextAsset,
 			width,
 			height,
-			font: richTextAsset.font ? { ...richTextAsset.font, family: baseFontFamily, weight: fontWeight } : undefined,
+			font: richTextAsset.font
+				? { ...richTextAsset.font, family: baseFontFamily || richTextAsset.font.family, weight: fontWeight }
+				: undefined,
 			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};

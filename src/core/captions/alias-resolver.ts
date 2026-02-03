@@ -10,7 +10,7 @@
  * Only audio/video assets can be transcribed.
  */
 
-import type { ResolvedEdit } from "@schemas";
+import type { Asset, ResolvedEdit } from "@schemas";
 
 import type { TranscriptionProgress } from "./transcription-service";
 import { TranscriptionService } from "./transcription-service";
@@ -62,7 +62,7 @@ export function findClipByAlias(
  * Extract audio URL from a clip's asset.
  * Returns the src URL for audio/video assets.
  */
-export function extractAudioUrl(asset: any): string | null {
+export function extractAudioUrl(asset: Asset | undefined): string | null {
 	if (!asset) return null;
 
 	// Video and audio assets have a src property

@@ -14,7 +14,7 @@ import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotatio
 import { Pointer } from "@inputs/pointer";
 import type { Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import type { ResolvedClip } from "@schemas";
+import type { ResolvedClip, SvgAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
 import type { CanvasOverlayRegistration } from "./ui-controller";
@@ -414,7 +414,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 			// Update SVG viewBox if this is an SVG clip resize
 			if ((this.scaleDirection || this.edgeDragDirection) && finalClip.asset?.type === "svg") {
-				const svgAsset = finalClip.asset as any;
+				const svgAsset = finalClip.asset as SvgAsset;
 				if (svgAsset.src && finalClip.width && finalClip.height) {
 					svgAsset.src = this.updateSvgViewBox(svgAsset.src, finalClip.width, finalClip.height);
 

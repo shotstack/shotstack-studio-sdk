@@ -1,5 +1,19 @@
 import type { Edit } from "@core/edit-session";
 
+// Chrome-specific Performance Memory API
+// https://developer.mozilla.org/en-US/docs/Web/API/Performance/memory
+interface PerformanceMemory {
+	totalJSHeapSize: number;
+	usedJSHeapSize: number;
+	jsHeapSizeLimit: number;
+}
+
+declare global {
+	interface Performance {
+		memory?: PerformanceMemory;
+	}
+}
+
 type MemoryInfo = {
 	totalHeapSize?: number;
 	usedHeapSize?: number;
@@ -210,12 +224,12 @@ export class Inspector {
 
 	private getMemoryInfo(): MemoryInfo {
 		const memoryInfo: MemoryInfo = {};
-		if (!("memory" in performance)) {
+		if (!performance.memory) {
 			return memoryInfo;
 		}
-		memoryInfo.totalHeapSize = (performance.memory as any).totalJSHeapSize;
-		memoryInfo.usedHeapSize = (performance.memory as any).usedJSHeapSize;
-		memoryInfo.heapSizeLimit = (performance.memory as any).jsHeapSizeLimit;
+		memoryInfo.totalHeapSize = performance.memory.totalJSHeapSize;
+		memoryInfo.usedHeapSize = performance.memory.usedJSHeapSize;
+		memoryInfo.heapSizeLimit = performance.memory.jsHeapSizeLimit;
 		return memoryInfo;
 	}
 
