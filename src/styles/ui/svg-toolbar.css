@@ -1,0 +1,91 @@
+/**
+ * SVG Toolbar Styles
+ *
+ * Design principles:
+ * - Compact inline layout matching rich-text toolbar
+ * - Simple color inputs + sliders
+ * - Minimal custom styles (YAGNI principle)
+ */
+
+.ss-svg-toolbar {
+	/* Hidden by default, shown when SVG clip is selected */
+	display: none;
+}
+
+.ss-svg-toolbar.visible {
+	/* Compact horizontal layout */
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Color input styling - match font color button size */
+.ss-toolbar-color-input {
+	width: 32px;
+	height: 32px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	cursor: pointer;
+	background: transparent;
+	padding: 0;
+}
+
+.ss-toolbar-color-input:hover {
+	border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Inline slider groups - compact horizontal layout */
+.ss-toolbar-slider-group--inline {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.ss-toolbar-slider-group--inline label {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.6);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	min-width: 32px;
+}
+
+.ss-toolbar-slider-group--inline .ss-toolbar-slider {
+	width: 80px;
+}
+
+.ss-toolbar-slider-group--inline .ss-toolbar-value {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.8);
+	min-width: 36px;
+	text-align: right;
+}
+
+/* Number input styling */
+.ss-toolbar-number-input {
+	width: 60px;
+	height: 28px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 12px;
+	padding: 0 8px;
+	text-align: center;
+}
+
+.ss-toolbar-number-input:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.2);
+}
+
+.ss-toolbar-number-input:focus {
+	outline: none;
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Conditional controls (hidden by default, shown based on shape type) */
+.ss-conditional-control,
+.ss-conditional-divider {
+	display: none;
+}

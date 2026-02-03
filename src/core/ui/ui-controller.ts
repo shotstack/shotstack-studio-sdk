@@ -11,6 +11,7 @@ import { ClipToolbar } from "./clip-toolbar";
 import { MediaToolbar } from "./media-toolbar";
 import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
+import { SvgToolbar } from "./svg-toolbar";
 import { TextToolbar } from "./text-toolbar";
 
 // Toolbar positioning constants
@@ -233,6 +234,7 @@ export class UIController {
 		// Asset-specific toolbars
 		this.registerToolbar("text", new TextToolbar(this.edit));
 		this.registerToolbar("rich-text", new RichTextToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
+		this.registerToolbar("svg", new SvgToolbar(this.edit));
 		this.registerToolbar(["video", "image"], new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 

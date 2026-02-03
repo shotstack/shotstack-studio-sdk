@@ -213,9 +213,29 @@ jest.mock("@core/fonts/font-config", () => ({
 	resolveFontPath: jest.fn().mockReturnValue(null)
 }));
 
+// Mock placeholder graphic
+jest.mock("@canvas/players/placeholder-graphic", () => ({
+	createPlaceholderGraphic: jest.fn().mockImplementation(() => {
+		mockGraphicsInstance = {
+			fillStyle: {},
+			strokeStyle: {},
+			rect: jest.fn().mockReturnThis(),
+			fill: jest.fn().mockReturnThis(),
+			moveTo: jest.fn().mockReturnThis(),
+			lineTo: jest.fn().mockReturnThis(),
+			stroke: jest.fn().mockReturnThis(),
+			clear: jest.fn().mockReturnThis(),
+			destroy: jest.fn()
+		};
+		return mockGraphicsInstance;
+	})
+}));
+
 // Import after mocks are set up
 // eslint-disable-next-line import/first
 import { SvgPlayer } from "@canvas/players/svg-player";
+// eslint-disable-next-line import/first, @typescript-eslint/no-require-imports
+const { createPlaceholderGraphic } = require("@canvas/players/placeholder-graphic");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper Functions
@@ -420,8 +440,6 @@ describe("SvgPlayer", () => {
 			const mockEdit = createMockEdit();
 			const clipConfig = createInvalidSvgClipConfig();
 			const player = new SvgPlayer(mockEdit, clipConfig);
-			// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-			const pixi = require("pixi.js");
 
 			await player.load();
 
@@ -429,7 +447,7 @@ describe("SvgPlayer", () => {
 			expect(mockRenderSvgAssetToPng).not.toHaveBeenCalled();
 
 			// Should create fallback graphic
-			expect(pixi.Graphics).toHaveBeenCalled();
+			expect(createPlaceholderGraphic).toHaveBeenCalled();
 		});
 
 		it("creates fallback graphic when rendering fails", async () => {
@@ -438,15 +456,13 @@ describe("SvgPlayer", () => {
 			const mockEdit = createMockEdit();
 			const clipConfig = createSvgClipConfig();
 			const player = new SvgPlayer(mockEdit, clipConfig);
-			// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-			const pixi = require("pixi.js");
 
 			const consoleSpy = jest.spyOn(console, "error").mockImplementation();
 
 			await player.load();
 
 			// Should create fallback graphic
-			expect(pixi.Graphics).toHaveBeenCalled();
+			expect(createPlaceholderGraphic).toHaveBeenCalled();
 
 			// Should log error
 			expect(consoleSpy).toHaveBeenCalledWith("Failed to render SVG asset:", expect.any(Error));
@@ -460,14 +476,12 @@ describe("SvgPlayer", () => {
 			const mockEdit = createMockEdit();
 			const clipConfig = createSvgClipConfig();
 			const player = new SvgPlayer(mockEdit, clipConfig);
-			// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-			const pixi = require("pixi.js");
 
 			const consoleSpy = jest.spyOn(console, "error").mockImplementation();
 
 			await player.load();
 
-			expect(pixi.Graphics).toHaveBeenCalled();
+			expect(createPlaceholderGraphic).toHaveBeenCalled();
 			expect(consoleSpy).toHaveBeenCalled();
 
 			consoleSpy.mockRestore();
@@ -611,7 +625,7 @@ describe("SvgPlayer", () => {
 	});
 
 	describe("Fallback Graphic", () => {
-		it("creates X-pattern fallback with correct dimensions", async () => {
+		it("creates fallback graphic with edit dimensions", async () => {
 			const mockEdit = createMockEdit();
 			mockEdit.size = { width: 640, height: 480 };
 			const clipConfig = createInvalidSvgClipConfig();
@@ -621,12 +635,8 @@ describe("SvgPlayer", () => {
 
 			await player.load();
 
-			// Check that Graphics was created with correct pattern
-			expect(mockGraphicsInstance["rect"]).toHaveBeenCalledWith(0, 0, 640, 480);
-			expect(mockGraphicsInstance["moveTo"]).toHaveBeenCalledWith(0, 0);
-			expect(mockGraphicsInstance["lineTo"]).toHaveBeenCalledWith(640, 480);
-			expect(mockGraphicsInstance["moveTo"]).toHaveBeenCalledWith(640, 0);
-			expect(mockGraphicsInstance["lineTo"]).toHaveBeenCalledWith(0, 480);
+			// Verify createPlaceholderGraphic was called with correct dimensions
+			expect(createPlaceholderGraphic).toHaveBeenCalledWith(640, 480);
 		});
 
 		it("uses clip dimensions for fallback when available", async () => {
@@ -642,7 +652,8 @@ describe("SvgPlayer", () => {
 
 			await player.load();
 
-			expect(mockGraphicsInstance["rect"]).toHaveBeenCalledWith(0, 0, 200, 150);
+			// Verify createPlaceholderGraphic was called with clip dimensions
+			expect(createPlaceholderGraphic).toHaveBeenCalledWith(200, 150);
 		});
 	});
 

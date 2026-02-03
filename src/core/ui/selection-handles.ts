@@ -412,8 +412,27 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			if (this.finalDragState.width !== undefined) finalClip.width = this.finalDragState.width;
 			if (this.finalDragState.height !== undefined) finalClip.height = this.finalDragState.height;
 
-			// Commit with explicit final state
+			// Update SVG viewBox if this is an SVG clip resize
+			if ((this.scaleDirection || this.edgeDragDirection) && finalClip.asset?.type === "svg") {
+				const svgAsset = finalClip.asset as any;
+				if (svgAsset.src && finalClip.width && finalClip.height) {
+					svgAsset.src = this.updateSvgViewBox(svgAsset.src, finalClip.width, finalClip.height);
+
+					// Update document BEFORE commitClipUpdate (two-phase pattern)
+					this.edit.updateClipInDocument(this.selectedClipId, {
+						asset: { ...svgAsset }
+					});
+					this.edit.resolveClip(this.selectedClipId);
+				}
+			}
+
+			// Commit with explicit final state (adds to history, doesn't execute)
 			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration, finalClip);
+
+			// Notify player if dimensions changed (corner or edge resize)
+			if ((this.scaleDirection || this.edgeDragDirection) && this.selectedPlayer) {
+				this.selectedPlayer.notifyDimensionsChanged();
+			}
 		}
 
 		this.finalDragState = null; // Clear final state
@@ -716,5 +735,55 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.rotationStart = null;
 		this.rotationCorner = null;
 		this.initialClipConfiguration = null;
+	}
+
+	private updateSvgViewBox(svg: string, width: number, height: number): string {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(svg, "image/svg+xml");
+
+		// Check for parse errors
+		const errorNode = doc.querySelector("parsererror");
+		if (errorNode) {
+			console.warn("[Selection] Invalid SVG markup");
+			return svg;
+		}
+
+		const svgEl = doc.documentElement;
+		const viewBox = svgEl.getAttribute("viewBox");
+		if (!viewBox) {
+			console.warn("[Selection] SVG missing viewBox");
+			return svg;
+		}
+
+		const [vbWidth, vbHeight] = viewBox.split(/\s+/).map(Number);
+		if (!vbWidth || !vbHeight) {
+			console.warn("[Selection] Invalid viewBox dimensions");
+			return svg;
+		}
+
+		// Calculate scale factors
+		const scaleX = width / vbWidth;
+		const scaleY = height / vbHeight;
+		const radiusScale = Math.min(scaleX, scaleY);
+
+		// Update viewBox
+		svgEl.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+		// Scale rect elements
+		doc.querySelectorAll("rect").forEach(rect => {
+			const scale = (attr: string, factor: number) => {
+				const val = rect.getAttribute(attr);
+				if (val) rect.setAttribute(attr, String(parseFloat(val) * factor));
+			};
+
+			scale("x", scaleX);
+			scale("y", scaleY);
+			scale("width", scaleX);
+			scale("height", scaleY);
+			scale("rx", radiusScale);
+			scale("ry", radiusScale);
+		});
+
+		return new XMLSerializer().serializeToString(doc);
 	}
 }

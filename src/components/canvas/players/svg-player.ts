@@ -16,6 +16,7 @@ export class SvgPlayer extends Player {
 	private sprite: pixi.Sprite | null = null;
 	private renderedWidth: number = 0;
 	private renderedHeight: number = 0;
+	private pendingRender: Promise<void> | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Svg);
@@ -61,39 +62,7 @@ export class SvgPlayer extends Player {
 			}
 
 			await SvgPlayer.initializeResvg();
-
-			const defaultWidth = this.clipConfiguration.width || this.edit.size.width;
-			const defaultHeight = this.clipConfiguration.height || this.edit.size.height;
-
-			const result = await renderSvgAssetToPng(svgAsset as CanvasSvgAsset, {
-				defaultWidth,
-				defaultHeight
-			});
-
-			this.renderedWidth = result.width;
-			this.renderedHeight = result.height;
-
-			const blob = new Blob([result.png as BlobPart], { type: "image/png" });
-			const imageUrl = URL.createObjectURL(blob);
-
-			const image = new Image();
-			image.src = imageUrl;
-
-			await new Promise<void>((resolve, reject) => {
-				image.onload = () => resolve();
-				image.onerror = () => reject(new Error("Failed to load SVG image"));
-			});
-
-			URL.revokeObjectURL(imageUrl);
-
-			this.texture = pixi.Texture.from(image);
-			this.sprite = new pixi.Sprite(this.texture);
-			this.contentContainer.addChild(this.sprite);
-
-			if (this.clipConfiguration.width && this.clipConfiguration.height) {
-				this.applyFixedDimensions();
-			}
-
+			await this.doRender();
 			this.configureKeyframes();
 		} catch (error) {
 			console.error("Failed to render SVG asset:", error);
@@ -123,6 +92,8 @@ export class SvgPlayer extends Player {
 
 	public override dispose(): void {
 		super.dispose();
+
+		this.pendingRender = null;
 
 		if (this.sprite) {
 			this.sprite.destroy();
@@ -169,51 +140,60 @@ export class SvgPlayer extends Player {
 	}
 
 	private async rerenderAtCurrentDimensions(): Promise<void> {
+		// Wait for any pending render to complete
+		if (this.pendingRender) {
+			await this.pendingRender;
+		}
+
+		// Clean up old sprite/texture
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		if (this.texture) {
+			this.texture.destroy(true);
+			this.texture = null;
+		}
+
+		// Start new render
+		this.pendingRender = this.doRender();
+		await this.pendingRender;
+		this.pendingRender = null;
+	}
+
+	private async doRender(): Promise<void> {
 		const svgAsset = this.clipConfiguration.asset as SvgAsset;
 		const width = this.clipConfiguration.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || this.edit.size.height;
 
-		try {
-			const result = await renderSvgAssetToPng(svgAsset as CanvasSvgAsset, {
-				defaultWidth: width,
-				defaultHeight: height
-			});
+		const result = await renderSvgAssetToPng(svgAsset as CanvasSvgAsset, {
+			defaultWidth: width,
+			defaultHeight: height
+		});
 
-			this.renderedWidth = result.width;
-			this.renderedHeight = result.height;
+		this.renderedWidth = result.width;
+		this.renderedHeight = result.height;
 
-			if (this.sprite) {
-				this.contentContainer.removeChild(this.sprite);
-				this.sprite.destroy();
-				this.sprite = null;
-			}
-			if (this.texture) {
-				this.texture.destroy(true);
-				this.texture = null;
-			}
+		const blob = new Blob([result.png as BlobPart], { type: "image/png" });
+		const imageUrl = URL.createObjectURL(blob);
 
-			const blob = new Blob([result.png as BlobPart], { type: "image/png" });
-			const imageUrl = URL.createObjectURL(blob);
+		const image = new Image();
+		image.src = imageUrl;
 
-			const image = new Image();
-			image.src = imageUrl;
+		await new Promise<void>((resolve, reject) => {
+			image.onload = () => resolve();
+			image.onerror = () => reject(new Error("Failed to load SVG image"));
+		});
 
-			await new Promise<void>((resolve, reject) => {
-				image.onload = () => resolve();
-				image.onerror = () => reject(new Error("Failed to load SVG image"));
-			});
+		URL.revokeObjectURL(imageUrl);
 
-			URL.revokeObjectURL(imageUrl);
+		this.texture = pixi.Texture.from(image);
+		this.sprite = new pixi.Sprite(this.texture);
+		this.contentContainer.addChild(this.sprite);
 
-			this.texture = pixi.Texture.from(image);
-			this.sprite = new pixi.Sprite(this.texture);
-			this.contentContainer.addChild(this.sprite);
-
-			if (this.clipConfiguration.width && this.clipConfiguration.height) {
-				this.applyFixedDimensions();
-			}
-		} catch (error) {
-			console.error("Failed to re-render SVG at new dimensions:", error);
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
 		}
 	}
 }
