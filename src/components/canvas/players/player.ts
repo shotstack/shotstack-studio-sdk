@@ -521,8 +521,15 @@ export abstract class Player extends Entity {
 
 		// Update Graphics mask to current dimensions (skip if it's a luma Sprite mask)
 		if (clipMask) {
+			// Expand mask to accommodate centered border strokes
+			// Canvas library renders borders centered on content boundary (half extends outward)
+			const { asset } = this.clipConfiguration;
+			const borderWidth = asset && "border" in asset && asset.border && typeof asset.border === "object" ? (asset.border.width ?? 0) : 0;
+
+			const halfBorder = borderWidth / 2;
+
 			clipMask.clear();
-			clipMask.rect(0, 0, clipWidth, clipHeight);
+			clipMask.rect(-halfBorder, -halfBorder, clipWidth + borderWidth, clipHeight + borderWidth);
 			clipMask.fill(0xffffff);
 		}
 

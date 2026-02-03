@@ -41,9 +41,10 @@ export class RichTextPlayer extends Player {
 	private loadComplete: boolean = false;
 
 	constructor(edit: any, clipConfiguration: any) {
-		// Default fit to "cover" for rich-text assets if not provided
-		const config = clipConfiguration.fit ? clipConfiguration : { ...clipConfiguration, fit: "cover" };
-		super(edit, config, PlayerType.RichText);
+		// Remove fit property for rich-text assets
+		// This aligns with @shotstack/schemas v1.5.6 which filters fit at track validation
+		const { fit, ...configWithoutFit } = clipConfiguration;
+		super(edit, configWithoutFit, PlayerType.RichText);
 	}
 
 	private buildCanvasPayload(richTextAsset: RichTextAsset, fontInfo?: { baseFontFamily: string; fontWeight: number }): any {
