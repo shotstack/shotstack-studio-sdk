@@ -92,8 +92,8 @@ describe("DragStateManager", () => {
 
 		expect(manager.get("background-checkbox")).toBeTruthy();
 		expect(manager.get("background-opacity")).toBeTruthy();
-		expect(manager.get("background-checkbox")?.initialState.asset.text).toBe("Test1");
-		expect(manager.get("background-opacity")?.initialState.asset.text).toBe("Test2");
+		expect((manager.get("background-checkbox")?.initialState.asset as any).text).toBe("Test1");
+		expect((manager.get("background-opacity")?.initialState.asset as any).text).toBe("Test2");
 	});
 
 	it("should end drag session and return it", () => {
@@ -181,7 +181,7 @@ describe("DragStateManager", () => {
 
 		// Session should have pristine copy
 		const session = manager.get("background-opacity");
-		expect(session?.initialState.asset.background.color).toBe("#fff");
+		expect((session?.initialState.asset as any).background.color).toBe("#fff");
 	});
 });
 
