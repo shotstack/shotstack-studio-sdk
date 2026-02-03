@@ -3,7 +3,7 @@ import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
-import { RichTextAssetSchema, type RichTextAsset } from "@schemas";
+import { RichTextAssetSchema, type RichTextAsset, type ResolvedClip } from "@schemas";
 import { createTextEngine, type CanvasRichTextAsset } from "@shotstack/shotstack-canvas";
 import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
@@ -40,7 +40,7 @@ export class RichTextPlayer extends Player {
 	private fontSupportsBold: boolean = false;
 	private loadComplete: boolean = false;
 
-	constructor(edit: any, clipConfiguration: any) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		// Remove fit property for rich-text assets
 		// This aligns with @shotstack/schemas v1.5.6 which filters fit at track validation
 		const { fit, ...configWithoutFit } = clipConfiguration;
