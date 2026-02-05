@@ -107,9 +107,7 @@ export class RichTextPlayer extends Player {
 			...richTextAsset,
 			width,
 			height,
-			font: richTextAsset.font
-				? { ...richTextAsset.font, family: baseFontFamily || richTextAsset.font.family, weight: fontWeight }
-				: undefined,
+			font: richTextAsset.font ? { ...richTextAsset.font, family: baseFontFamily || richTextAsset.font.family, weight: fontWeight } : undefined,
 			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};

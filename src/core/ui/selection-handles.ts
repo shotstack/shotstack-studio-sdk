@@ -11,6 +11,7 @@ import {
 } from "@core/interaction/clip-interaction";
 import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
 import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
+import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
 import type { Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
@@ -416,13 +417,17 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			if ((this.scaleDirection || this.edgeDragDirection) && finalClip.asset?.type === "svg") {
 				const svgAsset = finalClip.asset as SvgAsset;
 				if (svgAsset.src && finalClip.width && finalClip.height) {
-					svgAsset.src = this.updateSvgViewBox(svgAsset.src, finalClip.width, finalClip.height);
+					// Only manipulate simple rect-based SVGs (maintains toolbar compatibility)
+					// Complex SVGs (paths, circles, etc.) are scaled by the renderer automatically
+					if (isSimpleRectSvg(svgAsset.src)) {
+						const updatedSrc = updateSvgViewBox(svgAsset.src, finalClip.width, finalClip.height);
 
-					// Update document BEFORE commitClipUpdate (two-phase pattern)
-					this.edit.updateClipInDocument(this.selectedClipId, {
-						asset: { ...svgAsset }
-					});
-					this.edit.resolveClip(this.selectedClipId);
+						// Update document BEFORE commitClipUpdate (two-phase pattern)
+						this.edit.updateClipInDocument(this.selectedClipId, {
+							asset: { ...svgAsset, src: updatedSrc }
+						});
+						this.edit.resolveClip(this.selectedClipId);
+					}
 				}
 			}
 
@@ -735,55 +740,5 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.rotationStart = null;
 		this.rotationCorner = null;
 		this.initialClipConfiguration = null;
-	}
-
-	private updateSvgViewBox(svg: string, width: number, height: number): string {
-		const parser = new DOMParser();
-		const doc = parser.parseFromString(svg, "image/svg+xml");
-
-		// Check for parse errors
-		const errorNode = doc.querySelector("parsererror");
-		if (errorNode) {
-			console.warn("[Selection] Invalid SVG markup");
-			return svg;
-		}
-
-		const svgEl = doc.documentElement;
-		const viewBox = svgEl.getAttribute("viewBox");
-		if (!viewBox) {
-			console.warn("[Selection] SVG missing viewBox");
-			return svg;
-		}
-
-		const [vbWidth, vbHeight] = viewBox.split(/\s+/).map(Number);
-		if (!vbWidth || !vbHeight) {
-			console.warn("[Selection] Invalid viewBox dimensions");
-			return svg;
-		}
-
-		// Calculate scale factors
-		const scaleX = width / vbWidth;
-		const scaleY = height / vbHeight;
-		const radiusScale = Math.min(scaleX, scaleY);
-
-		// Update viewBox
-		svgEl.setAttribute("viewBox", `0 0 ${width} ${height}`);
-
-		// Scale rect elements
-		doc.querySelectorAll("rect").forEach(rect => {
-			const scale = (attr: string, factor: number) => {
-				const val = rect.getAttribute(attr);
-				if (val) rect.setAttribute(attr, String(parseFloat(val) * factor));
-			};
-
-			scale("x", scaleX);
-			scale("y", scaleY);
-			scale("width", scaleX);
-			scale("height", scaleY);
-			scale("rx", radiusScale);
-			scale("ry", radiusScale);
-		});
-
-		return new XMLSerializer().serializeToString(doc);
 	}
 }

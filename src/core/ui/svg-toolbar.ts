@@ -1,8 +1,16 @@
+import { updateSvgAttribute } from "@core/shared/svg-utils";
 import type { ResolvedClip, SvgAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
 
+/**
+ * Toolbar for editing SVG clip properties.
+ *
+ * NOTE: Toolbar controls only work properly on simple rect-based SVGs.
+ * Complex SVGs (with paths, etc.) maintain original dimensions and are
+ * scaled by the renderer.
+ */
 export class SvgToolbar extends BaseToolbar {
 	private fillColorInput: HTMLInputElement | null = null;
 	private cornerRadiusInput: HTMLInputElement | null = null;
@@ -61,7 +69,7 @@ export class SvgToolbar extends BaseToolbar {
 				if (!svgAsset.src) return;
 
 				const updated = structuredClone(svgAsset);
-				updated.src = this.updateSvgAttr(svgAsset.src, "fill", this.currentFill);
+				updated.src = updateSvgAttribute(svgAsset.src, "fill", this.currentFill);
 
 				this.edit.updateClipInDocument(clipId, { asset: updated as ResolvedClip["asset"] });
 				this.edit.resolveClip(clipId);
@@ -122,8 +130,8 @@ export class SvgToolbar extends BaseToolbar {
 					const roundedRadius = Math.round(scaledRadius * 100) / 100;
 
 					const updated = structuredClone(svgAsset);
-					updated.src = this.updateSvgAttr(svgAsset.src, "rx", String(roundedRadius));
-					updated.src = this.updateSvgAttr(updated.src, "ry", String(roundedRadius));
+					updated.src = updateSvgAttribute(svgAsset.src, "rx", String(roundedRadius));
+					updated.src = updateSvgAttribute(updated.src, "ry", String(roundedRadius));
 
 					// Update document and render
 					this.edit.updateClipInDocument(clipId, { asset: updated as ResolvedClip["asset"] });
@@ -167,20 +175,6 @@ export class SvgToolbar extends BaseToolbar {
 		const maxRadius = smallestDimension / 2 / scaleFactor;
 
 		return { scaleFactor, maxRadius };
-	}
-
-	private updateSvgAttr(svg: string, attr: string, value: string): string {
-		const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
-		const shape = doc.querySelector("svg")?.querySelector("rect, circle, polygon, path, ellipse, line, polyline");
-
-		if (!shape) {
-			// Fallback: insert attribute on first shape tag
-			const shapePattern = /(<(?:rect|circle|polygon|path|ellipse|line|polyline)[^>]*)(>)/;
-			return svg.replace(shapePattern, `$1 ${attr}="${value}"$2`);
-		}
-
-		shape.setAttribute(attr, value);
-		return new XMLSerializer().serializeToString(doc);
 	}
 
 	protected override syncState(): void {

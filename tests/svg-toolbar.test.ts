@@ -31,6 +31,8 @@ jest.mock("@styles/inject", () => ({
 // Import after mocks
 // eslint-disable-next-line import/first
 import { SvgToolbar } from "@core/ui/svg-toolbar";
+// eslint-disable-next-line import/first
+import { updateSvgAttribute } from "@core/shared/svg-utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper Functions
@@ -79,16 +81,12 @@ function createToolbar(mockEdit: ReturnType<typeof createMockEditSession>) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("SvgToolbar - Critical Bug Fixes", () => {
-	describe("updateSvgAttr - DOMParser approach", () => {
+	describe("updateSvgAttribute - DOMParser approach", () => {
 		it("updates shape attributes, not SVG root attributes", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
 			// SVG with fill on root and shape
 			const svg = '<svg fill="none"><rect fill="red" width="100" height="100"/></svg>';
 
-			// @ts-expect-error - accessing private method for testing
-			const result = toolbar.updateSvgAttr(svg, "fill", "blue");
+			const result = updateSvgAttribute(svg, "fill", "blue");
 
 			// Parse result to verify
 			const doc = new DOMParser().parseFromString(result, "image/svg+xml");
@@ -102,13 +100,9 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 		});
 
 		it("targets only the first shape element", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
 			const svg = '<svg><rect fill="red" width="100" height="100"/><circle fill="green" r="50"/></svg>';
 
-			// @ts-expect-error - accessing private method for testing
-			const result = toolbar.updateSvgAttr(svg, "fill", "blue");
+			const result = updateSvgAttribute(svg, "fill", "blue");
 
 			const doc = new DOMParser().parseFromString(result, "image/svg+xml");
 			const rect = doc.querySelector("rect");
@@ -120,13 +114,9 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 		});
 
 		it("adds attribute if shape doesn't have it", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
 			const svg = '<svg><rect width="100" height="100"/></svg>';
 
-			// @ts-expect-error - accessing private method for testing
-			const result = toolbar.updateSvgAttr(svg, "rx", "10");
+			const result = updateSvgAttribute(svg, "rx", "10");
 
 			const doc = new DOMParser().parseFromString(result, "image/svg+xml");
 			const rect = doc.querySelector("rect");
@@ -135,22 +125,15 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 		});
 
 		it("handles SVG with no shape elements (fallback)", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
 			const svg = "<svg><g></g></svg>";
 
-			// @ts-expect-error - accessing private method for testing
-			const result = toolbar.updateSvgAttr(svg, "fill", "blue");
+			const result = updateSvgAttribute(svg, "fill", "blue");
 
 			// Should return original SVG unchanged (no shapes to modify)
 			expect(result).toBe(svg);
 		});
 
 		it("handles all shape types (rect, circle, polygon, path, ellipse, line, polyline)", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
 			const shapeTypes = [
 				'<rect width="100" height="100"/>',
 				'<circle r="50"/>',
@@ -164,8 +147,7 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 			shapeTypes.forEach(shapeElement => {
 				const svg = `<svg>${shapeElement}</svg>`;
 
-				// @ts-expect-error - accessing private method for testing
-				const result = toolbar.updateSvgAttr(svg, "fill", "blue");
+				const result = updateSvgAttribute(svg, "fill", "blue");
 
 				const doc = new DOMParser().parseFromString(result, "image/svg+xml");
 				const shape = doc.querySelector("svg")?.querySelector("rect, circle, polygon, path, ellipse, line, polyline");
@@ -622,14 +604,9 @@ describe("SvgToolbar - Edge Cases", () => {
 	});
 
 	it("handles malformed SVG gracefully", () => {
-		const mockEdit = createMockEditSession();
-		const svgClip = createSvgClip("not valid xml <>");
-		mockEdit.getResolvedClip.mockReturnValue(svgClip);
+		const svgSrc = "not valid xml <>";
 
-		const { toolbar } = createToolbar(mockEdit);
-
-		// @ts-expect-error - accessing private method for testing
-		const result = toolbar.updateSvgAttr(svgClip.asset.src!, "fill", "blue");
+		const result = updateSvgAttribute(svgSrc, "fill", "blue");
 
 		// Should return fallback (original or modified)
 		expect(result).toBeTruthy();
