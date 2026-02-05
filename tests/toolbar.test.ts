@@ -3,7 +3,6 @@
  */
 /* eslint-disable import/first, max-classes-per-file */
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
-import type { Mock } from "jest-mock";
 
 // Mock pixi.js before any imports that use it
 jest.mock("pixi.js", () => ({
@@ -71,7 +70,7 @@ import type { ToolbarButtonConfig } from "../src/core/ui/ui-controller";
 
 type MockPlayer = {
 	clipConfiguration: Record<string, unknown>;
-	getMergeFieldBinding: Mock<() => null>;
+	getMergeFieldBinding: ReturnType<typeof jest.fn<() => null>>;
 };
 
 // ============================================================================
