@@ -12,6 +12,7 @@ import { MediaToolbar } from "./media-toolbar";
 import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
 import { SvgToolbar } from "./svg-toolbar";
+import { TextToImageToolbar } from "./text-to-image-toolbar";
 import { TextToolbar } from "./text-toolbar";
 import type { ToolbarDragState } from "./toolbar-drag";
 
@@ -246,7 +247,8 @@ export class UIController {
 		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 
 		// AI asset toolbars
-		this.registerToolbar(["text-to-image", "image-to-video"], new MediaToolbar(this.edit));
+		this.registerToolbar("text-to-image", new TextToImageToolbar(this.edit));
+		this.registerToolbar("image-to-video", new MediaToolbar(this.edit));
 		this.registerToolbar("text-to-speech", new MediaToolbar(this.edit));
 
 		// Utilities

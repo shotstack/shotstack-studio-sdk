@@ -215,6 +215,12 @@ export class AiPendingOverlay {
 		this.rebuild();
 	}
 
+	updatePrompt(prompt: string): void {
+		if (prompt === this.options.prompt) return;
+		this.options.prompt = prompt;
+		this.rebuild();
+	}
+
 	dispose(): void {
 		this.stopAnimation();
 		this.container.destroy({ children: true });

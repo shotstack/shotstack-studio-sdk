@@ -8,6 +8,7 @@ import { Player, PlayerType } from "./player";
 
 export class TextToImagePlayer extends Player {
 	private aiOverlay: AiPendingOverlay | null = null;
+	private lastPrompt = "";
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.TextToImage);
@@ -45,6 +46,14 @@ export class TextToImagePlayer extends Player {
 		super.update(deltaTime, elapsed);
 		const { width, height } = this.getSize();
 		this.aiOverlay?.resize(width, height);
+
+		// Sync prompt text only when it actually changes (e.g. via toolbar editing)
+		const { asset } = this.clipConfiguration;
+		const currentPrompt = isAiAsset(asset) ? asset.prompt || "" : "";
+		if (currentPrompt !== this.lastPrompt) {
+			this.aiOverlay?.updatePrompt(currentPrompt);
+			this.lastPrompt = currentPrompt;
+		}
 	}
 
 	public override getSize(): Size {

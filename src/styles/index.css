@@ -10,6 +10,7 @@
 @import "./ui/rich-text-toolbar.css";
 @import "./ui/svg-toolbar.css";
 @import "./ui/media-toolbar.css";
+@import "./ui/text-to-image-toolbar.css";
 @import "./ui/clip-toolbar.css";
 @import "./ui/canvas-toolbar.css";
 @import "./ui/asset-toolbar.css";
