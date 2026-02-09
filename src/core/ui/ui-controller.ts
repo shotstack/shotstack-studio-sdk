@@ -245,6 +245,10 @@ export class UIController {
 		this.registerToolbar(["video", "image"], new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 
+		// AI asset toolbars
+		this.registerToolbar(["text-to-image", "image-to-video"], new MediaToolbar(this.edit));
+		this.registerToolbar("text-to-speech", new MediaToolbar(this.edit));
+
 		// Utilities
 		this.canvasToolbar = new CanvasToolbar(this.edit, {
 			mergeFields: this.mergeFieldsEnabled,
@@ -391,7 +395,10 @@ export class UIController {
 	 */
 	private applySidebarPosition(
 		toolbar: { getDragState(): ToolbarDragState | null; setPosition(x: number, y: number): void } | null,
-		autoX: number, autoY: number, lastAutoX: number, lastAutoY: number
+		autoX: number,
+		autoY: number,
+		lastAutoX: number,
+		lastAutoY: number
 	): void {
 		if (!toolbar) return;
 		const drag = toolbar.getDragState();

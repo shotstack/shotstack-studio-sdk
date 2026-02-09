@@ -40,7 +40,16 @@ const ICONS = {
 	fadeNone: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 10 L30 10"/></svg>`
 };
 
-type MediaAssetType = "video" | "image" | "audio";
+type MediaAssetType = "video" | "image" | "audio" | "text-to-image" | "image-to-video" | "text-to-speech";
+
+/** Asset types that have visual controls (fit, opacity, scale, transition, effect) */
+const VISUAL_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["video", "image", "text-to-image", "image-to-video"]);
+
+/** Asset types that have volume controls */
+const VOLUME_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["video", "audio", "text-to-speech"]);
+
+/** Asset types that have audio fade controls (audio-only types) */
+const AUDIO_FADE_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["audio", "text-to-speech"]);
 
 export interface MediaToolbarOptions {
 	mergeFields?: boolean;
@@ -584,9 +593,10 @@ export class MediaToolbar extends BaseToolbar {
 			const scale = typeof clip.scale === "number" ? clip.scale : 1;
 			this.scaleSlider?.setValue(Math.round(scale * 100));
 
-			// Volume (video and audio only)
-			if ((this.assetType === "video" || this.assetType === "audio") && (clip.asset.type === "video" || clip.asset.type === "audio")) {
-				const volume = typeof clip.asset.volume === "number" ? clip.asset.volume : 1;
+			// Volume (types with audio output)
+			if (VOLUME_ASSET_TYPES.has(this.assetType)) {
+				const asset = clip.asset as { volume?: number };
+				const volume = typeof asset.volume === "number" ? asset.volume : 1;
 				this.currentVolume = Math.round(volume * 100);
 			}
 
@@ -596,9 +606,10 @@ export class MediaToolbar extends BaseToolbar {
 			// Effect - use composite
 			this.effectPanel?.setFromClip(clip.effect);
 
-			// Audio fade effect (for audio assets)
-			if (clip.asset.type === "audio") {
-				this.audioFadeEffect = (clip.asset.effect as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut") || "";
+			// Audio fade effect (for audio and text-to-speech assets)
+			if (AUDIO_FADE_ASSET_TYPES.has(this.assetType)) {
+				const asset = clip.asset as { effect?: string };
+				this.audioFadeEffect = (asset.effect as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut") || "";
 			}
 		}
 
@@ -613,19 +624,28 @@ export class MediaToolbar extends BaseToolbar {
 		this.updateAudioFadeUI();
 		this.updateDynamicSourceUI();
 
-		// Show/hide visual section (hidden for audio)
+		// Show/hide visual section (only for visual asset types)
 		if (this.visualSection) {
-			this.visualSection.classList.toggle("hidden", this.assetType === "audio");
+			this.visualSection.classList.toggle("hidden", !VISUAL_ASSET_TYPES.has(this.assetType));
 		}
 
-		// Show/hide volume section (hidden for image)
+		// Show/hide volume section (only for types with audio output)
 		if (this.volumeSection) {
-			this.volumeSection.classList.toggle("hidden", this.assetType === "image");
+			this.volumeSection.classList.toggle("hidden", !VOLUME_ASSET_TYPES.has(this.assetType));
 		}
 
-		// Show/hide audio section (only visible for audio)
+		// Show/hide audio fade section (only for audio-only types)
 		if (this.audioSection) {
-			this.audioSection.classList.toggle("hidden", this.assetType !== "audio");
+			this.audioSection.classList.toggle("hidden", !AUDIO_FADE_ASSET_TYPES.has(this.assetType));
+		}
+
+		// Hide the advanced/dynamic source divider and button for AI types
+		const advancedDivider = this.container?.querySelector("[data-divider-before-advanced]") as HTMLElement | null;
+		if (advancedDivider) {
+			advancedDivider.classList.toggle("hidden", !VISUAL_ASSET_TYPES.has(this.assetType) || !this.showMergeFields);
+		}
+		if (this.advancedBtn?.parentElement) {
+			this.advancedBtn.parentElement.classList.toggle("hidden", !VISUAL_ASSET_TYPES.has(this.assetType) || !this.showMergeFields);
 		}
 	}
 
@@ -654,12 +674,10 @@ export class MediaToolbar extends BaseToolbar {
 		this.updateVolumeDisplay();
 
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (clip && (clip.asset.type === "video" || clip.asset.type === "audio")) {
+		if (clip && VOLUME_ASSET_TYPES.has(this.assetType)) {
+			const asset = clip.asset as Record<string, unknown>;
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
-				asset: {
-					...clip.asset,
-					volume: value / 100
-				}
+				asset: { ...asset, volume: value / 100 } as typeof clip.asset
 			});
 		}
 	}
@@ -715,13 +733,11 @@ export class MediaToolbar extends BaseToolbar {
 
 	private applyAudioFade(): void {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clip || clip.asset.type !== "audio") return;
+		if (!clip || !AUDIO_FADE_ASSET_TYPES.has(this.assetType)) return;
 
+		const asset = clip.asset as Record<string, unknown>;
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
-			asset: {
-				...clip.asset,
-				effect: this.audioFadeEffect || undefined
-			}
+			asset: { ...asset, effect: this.audioFadeEffect || undefined } as typeof clip.asset
 		});
 	}
 
