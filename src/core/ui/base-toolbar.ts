@@ -67,6 +67,7 @@ export abstract class BaseToolbar {
 		this.dragResult = makeToolbarDraggable({
 			container: this.container,
 			handleClassName: "ss-toolbar-drag-handle ss-toolbar-drag-handle--dark",
+			handleOrientation: "vertical",
 			onReset: () => {
 				if (!this.container) return;
 				// Restore CSS centering

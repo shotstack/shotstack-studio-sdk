@@ -2,16 +2,26 @@
  * Reusable drag utility for toolbar positioning.
  */
 
-const DRAG_HANDLE_SVG = `<svg width="12" height="8" viewBox="0 0 12 8" fill="currentColor">
+/** Vertical 2×3 dot grid (portrait) – used on horizontal/top toolbars. */
+const DRAG_HANDLE_SVG_VERTICAL = `<svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+	<circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+	<circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
+	<circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+</svg>`;
+
+/** Horizontal 3×2 dot grid (landscape) – used on vertical/side toolbars. */
+const DRAG_HANDLE_SVG_HORIZONTAL = `<svg width="12" height="8" viewBox="0 0 12 8" fill="currentColor">
 	<circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="10" cy="2" r="1.2"/>
 	<circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/><circle cx="10" cy="6" r="1.2"/>
 </svg>`;
 
+export type DragHandleOrientation = "vertical" | "horizontal";
+
 /** Create a drag handle DOM element with the standard 6-dot icon. */
-function createDragHandle(className = "ss-toolbar-drag-handle"): HTMLDivElement {
+function createDragHandle(className = "ss-toolbar-drag-handle", orientation: DragHandleOrientation = "horizontal"): HTMLDivElement {
 	const handle = document.createElement("div");
 	handle.className = className;
-	handle.innerHTML = DRAG_HANDLE_SVG;
+	handle.innerHTML = orientation === "vertical" ? DRAG_HANDLE_SVG_VERTICAL : DRAG_HANDLE_SVG_HORIZONTAL;
 	return handle;
 }
 
@@ -19,6 +29,12 @@ export interface ToolbarDragOptions {
 	container: HTMLElement;
 	/** CSS class(es) for the drag handle. Default `"ss-toolbar-drag-handle"`. */
 	handleClassName?: string;
+	/**
+	 * Dot-grid orientation of the drag handle icon.
+	 * - `"horizontal"` – 3×2 landscape grid (default, for vertical/side toolbars).
+	 * - `"vertical"`   – 2×3 portrait grid (for horizontal/top toolbars).
+	 */
+	handleOrientation?: DragHandleOrientation;
 	onReset?: () => void;
 	/** Minimum distance from viewport edge. Default 12. */
 	boundsPadding?: number;
@@ -36,9 +52,9 @@ export interface ToolbarDragHandle {
 }
 
 export function makeToolbarDraggable(options: ToolbarDragOptions): ToolbarDragHandle {
-	const { container, handleClassName, boundsPadding = 12 } = options;
+	const { container, handleClassName, handleOrientation, boundsPadding = 12 } = options;
 
-	const handle = createDragHandle(handleClassName);
+	const handle = createDragHandle(handleClassName, handleOrientation);
 	container.insertBefore(handle, container.firstChild);
 
 	let hasUserPosition = false;
