@@ -19,6 +19,12 @@
 	-webkit-backdrop-filter: blur(20px);
 }
 
+.ss-asset-toolbar-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
 .ss-asset-toolbar-btn {
 	width: 36px;
 	height: 36px;

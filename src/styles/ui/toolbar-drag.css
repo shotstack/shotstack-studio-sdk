@@ -1,0 +1,55 @@
+/* ─── Drag Handle ─────────────────────────────────────────────────────────── */
+
+.ss-toolbar-drag-handle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: grab;
+	touch-action: none;
+	padding: 4px 2px;
+	border-radius: 4px;
+	color: rgba(0, 0, 0, 0.15);
+	transition: color 0.15s ease;
+	flex-shrink: 0;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* Light theme (sidebar toolbars) */
+.ss-toolbar-drag-handle:hover {
+	color: rgba(0, 0, 0, 0.4);
+}
+
+/* Dark theme (top center toolbars) */
+.ss-toolbar-drag-handle--dark {
+	color: rgba(255, 255, 255, 0.2);
+}
+
+.ss-toolbar-drag-handle--dark:hover {
+	color: rgba(255, 255, 255, 0.5);
+}
+
+
+/* ─── Drag Active State ──────────────────────────────────────────────────── */
+
+.ss-toolbar--dragging {
+	box-shadow:
+		0 8px 32px rgba(0, 0, 0, 0.15),
+		0 0 0 1px rgba(0, 0, 0, 0.08);
+	z-index: 9999 !important;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.ss-toolbar-drag-handle:active,
+.ss-toolbar--dragging .ss-toolbar-drag-handle {
+	cursor: grabbing;
+}
+
+/* Global cursor override during drag */
+body.ss-dragging-toolbar,
+body.ss-dragging-toolbar * {
+	cursor: grabbing !important;
+	user-select: none !important;
+	-webkit-user-select: none !important;
+}

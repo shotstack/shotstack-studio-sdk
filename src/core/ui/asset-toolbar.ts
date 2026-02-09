@@ -1,15 +1,22 @@
 import { injectShotstackStyles } from "@styles/inject";
 
+import { makeToolbarDraggable, type ToolbarDragHandle, type ToolbarDragState } from "./toolbar-drag";
 import type { UIController } from "./ui-controller";
 
 export class AssetToolbar {
 	private container: HTMLDivElement | null = null;
+	private buttonsContainer: HTMLDivElement | null = null;
 	private ui: UIController;
 	private unsubscribe: (() => void) | null = null;
+	private dragResult: ToolbarDragHandle | null = null;
 
 	constructor(ui: UIController) {
 		this.ui = ui;
 		injectShotstackStyles();
+	}
+
+	getDragState(): ToolbarDragState | null {
+		return this.dragResult?.getState() ?? null;
 	}
 
 	setPosition(screenX: number, screenY: number): void {
@@ -19,29 +26,42 @@ export class AssetToolbar {
 		}
 	}
 
-	mount(parent: HTMLElement): void {
+	mount(parent: HTMLElement, options?: { onDragReset?: () => void }): void {
 		this.container?.remove();
 
 		this.container = document.createElement("div");
 		this.container.className = "ss-asset-toolbar";
 
+		// Create a dedicated wrapper for buttons so render() doesn't destroy the drag handle
+		this.buttonsContainer = document.createElement("div");
+		this.buttonsContainer.className = "ss-asset-toolbar-buttons";
+		this.container.appendChild(this.buttonsContainer);
+
 		this.render();
 
 		parent.appendChild(this.container);
+
+		// Wire up drag (handle prepended automatically)
+		if (options?.onDragReset) {
+			this.dragResult = makeToolbarDraggable({
+				container: this.container,
+				onReset: options.onDragReset
+			});
+		}
 
 		// Listen to UIController for button changes
 		this.unsubscribe = this.ui.onButtonsChanged(() => this.render());
 	}
 
 	private render(): void {
-		if (!this.container) return;
+		if (!this.container || !this.buttonsContainer) return;
 
 		const buttons = this.ui.getButtons();
 
 		// Hide toolbar if no buttons registered
 		this.container.style.display = buttons.length === 0 ? "none" : "flex";
 
-		this.container.innerHTML = buttons
+		this.buttonsContainer.innerHTML = buttons
 			.map(
 				btn => `
 			${btn.dividerBefore ? '<div class="ss-asset-toolbar-divider"></div>' : ""}
@@ -56,7 +76,7 @@ export class AssetToolbar {
 	}
 
 	private setupEventListeners(): void {
-		this.container?.querySelectorAll("[data-button-id]").forEach(btn => {
+		this.buttonsContainer?.querySelectorAll("[data-button-id]").forEach(btn => {
 			btn.addEventListener("click", () => {
 				const id = (btn as HTMLElement).dataset["buttonId"];
 				if (id) {
@@ -68,9 +88,12 @@ export class AssetToolbar {
 	}
 
 	dispose(): void {
+		this.dragResult?.dispose();
+		this.dragResult = null;
 		this.unsubscribe?.();
 		this.unsubscribe = null;
 		this.container?.remove();
 		this.container = null;
+		this.buttonsContainer = null;
 	}
 }

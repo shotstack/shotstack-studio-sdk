@@ -273,6 +273,7 @@ export class TextToolbar extends BaseToolbar {
 		this.buildFontPopup();
 		this.buildSizePopup();
 		this.setupEventListeners();
+		this.enableDrag();
 	}
 
 	private bindElements(): void {

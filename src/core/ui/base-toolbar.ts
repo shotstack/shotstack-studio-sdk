@@ -1,5 +1,10 @@
 import type { Edit } from "@core/edit-session";
 
+import { makeToolbarDraggable, type ToolbarDragHandle } from "./toolbar-drag";
+
+/** Default top offset for CSS-centered top toolbars */
+const DEFAULT_TOP_OFFSET = "12px";
+
 /** Preset font sizes used by text toolbars */
 export const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 96, 128];
 
@@ -47,9 +52,29 @@ export abstract class BaseToolbar {
 	protected selectedTrackIdx = -1;
 	protected selectedClipIdx = -1;
 	protected clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
+	protected dragResult: ToolbarDragHandle | null = null;
 
 	constructor(edit: Edit) {
 		this.edit = edit;
+	}
+
+	/**
+	 * Add a drag handle to the toolbar container and enable free-form dragging.
+	 */
+	protected enableDrag(): void {
+		if (!this.container) return;
+
+		this.dragResult = makeToolbarDraggable({
+			container: this.container,
+			handleClassName: "ss-toolbar-drag-handle ss-toolbar-drag-handle--dark",
+			onReset: () => {
+				if (!this.container) return;
+				// Restore CSS centering
+				this.container.style.left = "50%";
+				this.container.style.top = DEFAULT_TOP_OFFSET;
+				this.container.style.transform = "translateX(-50%)";
+			}
+		});
 	}
 
 	/**
@@ -90,6 +115,9 @@ export abstract class BaseToolbar {
 	 * Subclasses should call super.dispose() and then null their own references.
 	 */
 	dispose(): void {
+		this.dragResult?.dispose();
+		this.dragResult = null;
+
 		if (this.clickOutsideHandler) {
 			document.removeEventListener("click", this.clickOutsideHandler);
 			this.clickOutsideHandler = null;

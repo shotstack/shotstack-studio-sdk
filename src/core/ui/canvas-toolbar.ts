@@ -4,6 +4,8 @@ import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import { injectShotstackStyles } from "@styles/inject";
 
+import { makeToolbarDraggable, type ToolbarDragHandle, type ToolbarDragState } from "./toolbar-drag";
+
 interface CanvasToolbarOptions {
 	mergeFields?: boolean;
 	/** Maximum total pixels allowed for custom resolution input. Omit for unlimited. */
@@ -99,6 +101,9 @@ export class CanvasToolbar {
 	// Click outside handler
 	private clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
 
+	// Drag
+	private dragResult: ToolbarDragHandle | null = null;
+
 	// Feature flags
 	private showMergeFields: boolean;
 
@@ -128,6 +133,10 @@ export class CanvasToolbar {
 		return null;
 	}
 
+	getDragState(): ToolbarDragState | null {
+		return this.dragResult?.getState() ?? null;
+	}
+
 	setPosition(screenX: number, screenY: number): void {
 		if (this.container) {
 			this.container.style.left = `${screenX}px`;
@@ -135,7 +144,7 @@ export class CanvasToolbar {
 		}
 	}
 
-	mount(parent: HTMLElement): void {
+	mount(parent: HTMLElement, options?: { onDragReset?: () => void }): void {
 		this.container?.remove();
 
 		this.container = document.createElement("div");
@@ -264,6 +273,14 @@ export class CanvasToolbar {
 		// Sync toolbar state with actual edit size
 		if (this.edit) {
 			this.setResolution(this.edit.size.width, this.edit.size.height);
+		}
+
+		// Wire up drag (handle prepended automatically)
+		if (options?.onDragReset) {
+			this.dragResult = makeToolbarDraggable({
+				container: this.container,
+				onReset: options.onDragReset
+			});
 		}
 	}
 
@@ -631,6 +648,9 @@ export class CanvasToolbar {
 	}
 
 	dispose(): void {
+		this.dragResult?.dispose();
+		this.dragResult = null;
+
 		if (this.clickOutsideHandler) {
 			document.removeEventListener("click", this.clickOutsideHandler);
 			this.clickOutsideHandler = null;

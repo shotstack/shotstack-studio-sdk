@@ -334,6 +334,7 @@ export class MediaToolbar extends BaseToolbar {
 
 		this.setupEventListeners();
 		this.setupOutsideClickHandler();
+		this.enableDrag();
 	}
 
 	/**

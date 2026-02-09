@@ -13,6 +13,7 @@ import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
 import { SvgToolbar } from "./svg-toolbar";
 import { TextToolbar } from "./text-toolbar";
+import type { ToolbarDragState } from "./toolbar-drag";
 
 // Toolbar positioning constants
 const TOOLBAR_WIDTH = 48;
@@ -140,6 +141,12 @@ export class UIController {
 	private buttonEvents = new EventEmitter<UIButtonEventMap & { "buttons:changed": void }>();
 	private assetToolbar: AssetToolbar | null = null;
 	private canvasToolbar: CanvasToolbar | null = null;
+
+	// Track auto-calculated positions for sidebar offset computation
+	private lastAutoAssetX = 0;
+	private lastAutoAssetY = 0;
+	private lastAutoCanvasX = 0;
+	private lastAutoCanvasY = 0;
 
 	// ─── Static Factory Methods ─────────────────────────────────────────────────
 
@@ -323,9 +330,16 @@ export class UIController {
 		// Mount ClipToolbar to canvas container (managed separately for mode toggle)
 		this.clipToolbar?.mount(canvasContainer);
 
-		// Mount utilities (asset/canvas toolbars)
+		// Mount utilities, passing drag reset to sidebar toolbars
+		const resetPositions = () => this.updateToolbarPositions();
 		for (const utility of this.utilities) {
-			utility.mount(canvasContainer);
+			if (utility === this.assetToolbar) {
+				this.assetToolbar.mount(canvasContainer, { onDragReset: resetPositions });
+			} else if (utility === this.canvasToolbar) {
+				this.canvasToolbar.mount(canvasContainer, { onDragReset: resetPositions });
+			} else {
+				utility.mount(canvasContainer);
+			}
 		}
 
 		// Mount canvas overlays to the PixiJS overlay container
@@ -373,6 +387,22 @@ export class UIController {
 	}
 
 	/**
+	 * Position a sidebar toolbar at autoX/autoY, applying the user's drag offset if present.
+	 */
+	private applySidebarPosition(
+		toolbar: { getDragState(): ToolbarDragState | null; setPosition(x: number, y: number): void } | null,
+		autoX: number, autoY: number, lastAutoX: number, lastAutoY: number
+	): void {
+		if (!toolbar) return;
+		const drag = toolbar.getDragState();
+		if (drag?.hasUserPosition) {
+			toolbar.setPosition(autoX + (drag.userX - lastAutoX), autoY + (drag.userY - lastAutoY));
+		} else {
+			toolbar.setPosition(autoX, autoY);
+		}
+	}
+
+	/**
 	 * Update toolbar positions to be adjacent to the canvas content.
 	 * Uses position: fixed with screen coordinates for complete independence from parent CSS.
 	 * Called by Canvas after zoom, pan, or resize operations.
@@ -400,8 +430,14 @@ export class UIController {
 		const maxRightX = viewportWidth - TOOLBAR_WIDTH - TOOLBAR_PADDING;
 		const rightX = Math.min(maxRightX, videoRightScreen + TOOLBAR_PADDING);
 
-		this.assetToolbar?.setPosition(leftX, clampedY);
-		this.canvasToolbar?.setPosition(rightX, clampedY);
+		// Position sidebars with user drag offset applied
+		this.applySidebarPosition(this.assetToolbar, leftX, clampedY, this.lastAutoAssetX, this.lastAutoAssetY);
+		this.lastAutoAssetX = leftX;
+		this.lastAutoAssetY = clampedY;
+
+		this.applySidebarPosition(this.canvasToolbar, rightX, clampedY, this.lastAutoCanvasX, this.lastAutoCanvasY);
+		this.lastAutoCanvasX = rightX;
+		this.lastAutoCanvasY = clampedY;
 	}
 
 	/**

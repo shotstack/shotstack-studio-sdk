@@ -52,6 +52,7 @@ export class ClipToolbar extends BaseToolbar {
 		this.mountComponents();
 		this.setupOutsideClickHandler();
 		this.setupEventListeners();
+		this.enableDrag();
 	}
 
 	private setupEventListeners(): void {

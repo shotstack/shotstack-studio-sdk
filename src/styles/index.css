@@ -6,6 +6,7 @@
  */
 
 /* UI Component Styles */
+@import "./ui/toolbar-drag.css";
 @import "./ui/rich-text-toolbar.css";
 @import "./ui/svg-toolbar.css";
 @import "./ui/media-toolbar.css";

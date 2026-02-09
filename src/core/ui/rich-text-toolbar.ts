@@ -783,6 +783,7 @@ export class RichTextToolbar extends BaseToolbar {
 		});
 
 		this.setupOutsideClickHandler();
+		this.enableDrag();
 
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM parent styling
 		parent.style.position = "relative";
