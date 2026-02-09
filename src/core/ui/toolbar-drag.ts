@@ -2,10 +2,9 @@
  * Reusable drag utility for toolbar positioning.
  */
 
-const DRAG_HANDLE_SVG = `<svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
-	<circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
-	<circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/>
-	<circle cx="2" cy="10" r="1.2"/><circle cx="6" cy="10" r="1.2"/>
+const DRAG_HANDLE_SVG = `<svg width="12" height="8" viewBox="0 0 12 8" fill="currentColor">
+	<circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="10" cy="2" r="1.2"/>
+	<circle cx="2" cy="6" r="1.2"/><circle cx="6" cy="6" r="1.2"/><circle cx="10" cy="6" r="1.2"/>
 </svg>`;
 
 /** Create a drag handle DOM element with the standard 6-dot icon. */
