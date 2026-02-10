@@ -42,6 +42,7 @@ function createMockEditSession() {
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-123"),
 		getResolvedClip: jest.fn(),
+		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
 		commitClipUpdate: jest.fn()
@@ -157,86 +158,41 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 		});
 	});
 
-	describe("getScalingInfo - Pure function", () => {
-		it("calculates scaling with viewBox", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
+	describe("getMaxRadius - Pixel-based (Figma model)", () => {
+		// @ts-expect-error - accessing private static method for testing
+		const getMaxRadius = SvgToolbar.getMaxRadius.bind(SvgToolbar);
 
-			const svg = '<svg viewBox="0 0 200 200"><rect width="100" height="100"/></svg>';
-			const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+		it("returns half the shortest side regardless of viewBox", () => {
+			const doc = new DOMParser().parseFromString('<svg viewBox="0 0 200 200"><rect width="100" height="100"/></svg>', "image/svg+xml");
 			const shape = doc.querySelector("rect")!;
 
-			// @ts-expect-error - accessing private method for testing
-			const { scaleFactor, maxRadius } = toolbar.getScalingInfo(svg, shape);
-
-			expect(scaleFactor).toBe(2); // 200 / 100
-			expect(maxRadius).toBe(25); // (min(100, 100) / 2) / 2
-		});
-
-		it("defaults to scaleFactor 1 without viewBox", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
-			const svg = '<svg><rect width="100" height="100"/></svg>';
-			const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
-			const shape = doc.querySelector("rect")!;
-
-			// @ts-expect-error - accessing private method for testing
-			const { scaleFactor, maxRadius } = toolbar.getScalingInfo(svg, shape);
-
-			expect(scaleFactor).toBe(1);
-			expect(maxRadius).toBe(50); // min(100, 100) / 2
+			expect(getMaxRadius(shape)).toBe(50); // min(100, 100) / 2
 		});
 
 		it("uses smallest dimension for maxRadius", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
-			const svg = '<svg><rect width="200" height="100"/></svg>';
-			const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+			const doc = new DOMParser().parseFromString('<svg><rect width="200" height="100"/></svg>', "image/svg+xml");
 			const shape = doc.querySelector("rect")!;
 
-			// @ts-expect-error - accessing private method for testing
-			const { maxRadius } = toolbar.getScalingInfo(svg, shape);
-
-			expect(maxRadius).toBe(50); // min(200, 100) / 2
+			expect(getMaxRadius(shape)).toBe(50); // min(200, 100) / 2
 		});
 
 		it("handles missing width/height attributes", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
-			const svg = "<svg><rect/></svg>";
-			const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+			const doc = new DOMParser().parseFromString("<svg><rect/></svg>", "image/svg+xml");
 			const shape = doc.querySelector("rect")!;
 
-			// @ts-expect-error - accessing private method for testing
-			const { maxRadius } = toolbar.getScalingInfo(svg, shape);
-
-			expect(maxRadius).toBe(50); // defaults to 100x100, so 100/2
+			expect(getMaxRadius(shape)).toBe(50); // defaults to 100x100, so 100/2
 		});
 
 		it("is a pure function (no side effects)", () => {
-			const mockEdit = createMockEditSession();
-			const { toolbar } = createToolbar(mockEdit);
-
-			const svg = '<svg viewBox="0 0 200 200"><rect width="100" height="100"/></svg>';
-			const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+			const doc = new DOMParser().parseFromString('<svg viewBox="0 0 200 200"><rect width="100" height="100"/></svg>', "image/svg+xml");
 			const shape = doc.querySelector("rect")!;
 
-			// Call twice with same inputs
-			// @ts-expect-error - accessing private method for testing
-			const result1 = toolbar.getScalingInfo(svg, shape);
-			// @ts-expect-error - accessing private method for testing
-			const result2 = toolbar.getScalingInfo(svg, shape);
-
-			// Should return identical results
-			expect(result1).toEqual(result2);
+			expect(getMaxRadius(shape)).toEqual(getMaxRadius(shape));
 		});
 	});
 
 	describe("Separate initial state fields", () => {
-		it("maintains independent undo state for fill and corner radius", () => {
+		it("maintains independent drag sessions for fill and corner radius", () => {
 			const mockEdit = createMockEditSession();
 			const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect fill="red" width="50" height="50"/></svg>');
 			mockEdit.getResolvedClip.mockReturnValue(svgClip);
@@ -248,29 +204,28 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 			const fillInput = toolbar.fillColorInput as HTMLInputElement;
 			// @ts-expect-error - accessing private property
 			const cornerInput = toolbar.cornerRadiusInput as HTMLInputElement;
+			// @ts-expect-error - accessing private property
+			const { dragManager } = toolbar;
 
 			// Simulate fill color interaction
 			fillInput.dispatchEvent(new Event("pointerdown"));
 
-			// Verify fillInitialState is set, cornerInitialState is not
-			// @ts-expect-error - accessing private property
-			expect(toolbar.fillInitialState).toBeTruthy();
-			// @ts-expect-error - accessing private property
-			expect(toolbar.cornerInitialState).toBeNull();
+			// Verify fill drag session is active, corner is not
+			expect(dragManager.isDragging("fill")).toBe(true);
+			expect(dragManager.isDragging("corner")).toBe(false);
 
 			// Simulate corner radius interaction
 			cornerInput.value = "10";
 			cornerInput.dispatchEvent(new Event("input"));
 
-			// Verify cornerInitialState is now set independently
-			// @ts-expect-error - accessing private property
-			expect(toolbar.fillInitialState).toBeTruthy();
-			// @ts-expect-error - accessing private property
-			expect(toolbar.cornerInitialState).toBeTruthy();
+			// Verify both drag sessions are active independently
+			expect(dragManager.isDragging("fill")).toBe(true);
+			expect(dragManager.isDragging("corner")).toBe(true);
 
-			// Verify they're different objects (not same reference)
-			// @ts-expect-error - accessing private property
-			expect(toolbar.fillInitialState).not.toBe(toolbar.cornerInitialState);
+			// Verify they have separate sessions with different initial states
+			const fillSession = dragManager.get("fill");
+			const cornerSession = dragManager.get("corner");
+			expect(fillSession).not.toBe(cornerSession);
 		});
 
 		it("commits separate undo entries for fill and corner radius", () => {
@@ -303,7 +258,7 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 			expect(mockEdit.commitClipUpdate).toHaveBeenCalledTimes(2);
 		});
 
-		it("clears state fields after commit", () => {
+		it("clears drag session after commit", () => {
 			const mockEdit = createMockEditSession();
 			const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect fill="red" width="50" height="50"/></svg>');
 			mockEdit.getResolvedClip.mockReturnValue(svgClip);
@@ -312,15 +267,16 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 
 			// @ts-expect-error - accessing private property
 			const fillInput = toolbar.fillColorInput as HTMLInputElement;
+			// @ts-expect-error - accessing private property
+			const { dragManager } = toolbar;
 
 			fillInput.dispatchEvent(new Event("pointerdown"));
 			fillInput.value = "#0000ff";
 			fillInput.dispatchEvent(new Event("input"));
 			fillInput.dispatchEvent(new Event("change"));
 
-			// fillInitialState should be cleared after commit
-			// @ts-expect-error - accessing private property
-			expect(toolbar.fillInitialState).toBeNull();
+			// fill drag session should be ended after commit
+			expect(dragManager.isDragging("fill")).toBe(false);
 		});
 	});
 
@@ -341,8 +297,7 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 			const cornerInput = toolbar.cornerRadiusInput as HTMLInputElement;
 
 			// Max should be calculated from rect (50x50), not svg (100%)
-			// scaleFactor = 1 (viewBox 100 / 100), smallestDimension = 50
-			// maxRadius = (50/2)/1 = 25
+			// maxRadius = min(50, 50) / 2 = 25
 			expect(cornerInput.max).toBe("25");
 		});
 
@@ -424,7 +379,7 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 	});
 
 	describe("Error state cleanup", () => {
-		it("clears cornerInitialState on error", () => {
+		it("clears corner drag session on error", () => {
 			const mockEdit = createMockEditSession();
 			const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect width="50" height="50"/></svg>');
 			mockEdit.getResolvedClip.mockReturnValue(svgClip);
@@ -438,15 +393,16 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 
 			// @ts-expect-error - accessing private property
 			const cornerInput = toolbar.cornerRadiusInput as HTMLInputElement;
+			// @ts-expect-error - accessing private property
+			const { dragManager } = toolbar;
 
 			const consoleSpy = jest.spyOn(console, "error").mockImplementation();
 
 			cornerInput.value = "10";
 			cornerInput.dispatchEvent(new Event("input"));
 
-			// cornerInitialState should be cleared after error
-			// @ts-expect-error - accessing private property
-			expect(toolbar.cornerInitialState).toBeNull();
+			// corner drag session should be ended after error
+			expect(dragManager.isDragging("corner")).toBe(false);
 
 			consoleSpy.mockRestore();
 		});
@@ -477,37 +433,35 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 	});
 
 	describe("dispose cleanup", () => {
-		it("clears both initial state fields", () => {
+		it("clears all drag sessions on dispose", () => {
 			const mockEdit = createMockEditSession();
 			const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect fill="red" width="50" height="50"/></svg>');
 			mockEdit.getResolvedClip.mockReturnValue(svgClip);
 
 			const { toolbar } = createToolbar(mockEdit);
 
-			// Set both initial states
+			// Start both drag sessions
 			// @ts-expect-error - accessing private property
 			const fillInput = toolbar.fillColorInput as HTMLInputElement;
 			// @ts-expect-error - accessing private property
 			const cornerInput = toolbar.cornerRadiusInput as HTMLInputElement;
+			// @ts-expect-error - accessing private property
+			const { dragManager } = toolbar;
 
 			fillInput.dispatchEvent(new Event("pointerdown"));
 			cornerInput.value = "10";
 			cornerInput.dispatchEvent(new Event("input"));
 
-			// Verify both are set
-			// @ts-expect-error - accessing private property
-			expect(toolbar.fillInitialState).toBeTruthy();
-			// @ts-expect-error - accessing private property
-			expect(toolbar.cornerInitialState).toBeTruthy();
+			// Verify both drag sessions are active
+			expect(dragManager.isDragging("fill")).toBe(true);
+			expect(dragManager.isDragging("corner")).toBe(true);
 
 			// Dispose
 			toolbar.dispose();
 
-			// Both should be null
-			// @ts-expect-error - accessing private property
-			expect(toolbar.fillInitialState).toBeNull();
-			// @ts-expect-error - accessing private property
-			expect(toolbar.cornerInitialState).toBeNull();
+			// Both drag sessions should be cleared
+			expect(dragManager.isDragging("fill")).toBe(false);
+			expect(dragManager.isDragging("corner")).toBe(false);
 		});
 	});
 });
