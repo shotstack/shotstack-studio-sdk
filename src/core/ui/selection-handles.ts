@@ -33,6 +33,12 @@ type EdgeDirection = "left" | "right" | "top" | "bottom";
 const EDGE_HANDLE_LENGTH = 20;
 const EDGE_HANDLE_THICKNESS = 4;
 
+// Dimension label style
+const DIMENSION_FONT_SIZE = 11;
+const DIMENSION_PADDING_X = 6;
+const DIMENSION_PADDING_Y = 3;
+const DIMENSION_GAP = 8; // px below the clip outline
+
 export class SelectionHandles implements CanvasOverlayRegistration {
 	private container: pixi.Container;
 	private outline: pixi.Graphics;
@@ -40,6 +46,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private edgeHandles: Map<EdgeDirection, pixi.Graphics>;
 	private app: pixi.Application | null = null;
 	private positionBuilder: PositionBuilder;
+
+	// Dimension label shown during resize (lives in overlay parent, not rotated container)
+	private dimensionContainer: pixi.Container;
+	private dimensionBackground: pixi.Graphics;
+	private dimensionLabel: pixi.Text;
 
 	// Selection state
 	private selectedPlayer: Player | null = null;
@@ -88,6 +99,22 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.handles = new Map();
 		this.edgeHandles = new Map();
 
+		// Dimension label (axis-aligned, not rotated with the clip)
+		this.dimensionContainer = new pixi.Container();
+		this.dimensionContainer.zIndex = 20;
+		this.dimensionContainer.visible = false;
+		this.dimensionBackground = new pixi.Graphics();
+		this.dimensionLabel = new pixi.Text({
+			text: "",
+			style: {
+				fontFamily: "system-ui, -apple-system, sans-serif",
+				fontSize: DIMENSION_FONT_SIZE,
+				fill: "#ffffff"
+			}
+		});
+		this.dimensionContainer.addChild(this.dimensionBackground);
+		this.dimensionContainer.addChild(this.dimensionLabel);
+
 		this.positionBuilder = new PositionBuilder(edit.size);
 
 		// Bind event handlers
@@ -129,6 +156,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		}
 
 		parent.addChild(this.container);
+		parent.addChild(this.dimensionContainer);
 
 		// Setup pointer events on the stage
 		app.stage.on("pointerdown", this.onPointerDownBound);
@@ -174,6 +202,9 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			handle.destroy();
 		}
 		this.container.destroy();
+		this.dimensionLabel.destroy();
+		this.dimensionBackground.destroy();
+		this.dimensionContainer.destroy();
 	}
 
 	// ─── Selection Event Handlers ────────────────────────────────────────────────
@@ -549,6 +580,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			offset: { x: result.offsetX, y: result.offsetY }
 		});
 		this.edit.resolveClip(this.selectedClipId);
+
+		this.showDimensionLabel(rounded.width, rounded.height);
 	}
 
 	private startEdgeResize(event: pixi.FederatedPointerEvent, edge: EdgeDirection): void {
@@ -588,6 +621,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			offset: { x: result.offsetX, y: result.offsetY }
 		});
 		this.edit.resolveClip(this.selectedClipId);
+
+		this.showDimensionLabel(rounded.width, rounded.height);
 	}
 
 	private startRotation(event: pixi.FederatedPointerEvent, corner: CornerName): void {
@@ -630,6 +665,50 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			}
 		});
 		this.edit.resolveClip(this.selectedClipId);
+	}
+
+	// ─── Dimension Label ────────────────────────────────────────────────────────
+
+	private showDimensionLabel(width: number, height: number): void {
+		if (!this.selectedPlayer) return;
+
+		// Update text
+		this.dimensionLabel.text = `${width} \u00d7 ${height}`;
+
+		// Redraw background pill to fit text
+		const textWidth = this.dimensionLabel.width;
+		const textHeight = this.dimensionLabel.height;
+		const pillWidth = textWidth + DIMENSION_PADDING_X * 2;
+		const pillHeight = textHeight + DIMENSION_PADDING_Y * 2;
+
+		this.dimensionBackground.clear();
+		this.dimensionBackground.fillStyle = { color: 0x000000, alpha: 0.7 };
+		this.dimensionBackground.roundRect(0, 0, pillWidth, pillHeight, pillHeight / 2);
+		this.dimensionBackground.fill();
+
+		this.dimensionLabel.position.set(DIMENSION_PADDING_X, DIMENSION_PADDING_Y);
+
+		// Position at bottom-center of clip in overlay-parent space.
+		// The clip's container is rotated/scaled, so transform the bottom-center
+		// point through the worldTransform to get a screen-axis-aligned position.
+		const playerContainer = this.selectedPlayer.getContainer();
+		const size = this.selectedPlayer.getSize();
+		const bottomCenter = playerContainer.toGlobal({ x: size.width / 2, y: size.height });
+
+		// Convert from global to the overlay parent's local space
+		const overlayParent = this.dimensionContainer.parent;
+		const local = overlayParent ? overlayParent.toLocal(bottomCenter) : bottomCenter;
+
+		// Account for canvas zoom so the gap is constant screen-space pixels
+		const canvasZoom = this.edit.getCanvasZoom();
+		this.dimensionContainer.position.set(local.x - pillWidth / 2, local.y + DIMENSION_GAP / canvasZoom);
+
+		this.dimensionContainer.scale.set(1 / canvasZoom);
+		this.dimensionContainer.visible = true;
+	}
+
+	private hideDimensionLabel(): void {
+		this.dimensionContainer.visible = false;
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -740,5 +819,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.rotationStart = null;
 		this.rotationCorner = null;
 		this.initialClipConfiguration = null;
+		this.hideDimensionLabel();
 	}
 }
