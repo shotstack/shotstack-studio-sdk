@@ -326,6 +326,34 @@ export class EditDocument {
 	}
 
 	/**
+	 * Replace all properties on a clip while preserving its internal ID.
+	 * Unlike updateClip (which merges via Object.assign), this deletes properties
+	 * that exist on the current clip but not in the new state — ensuring undo
+	 * correctly removes properties that were added during a drag.
+	 */
+	replaceClipProperties(trackIndex: number, clipIndex: number, newProperties: Partial<Clip>): void {
+		const clip = this.getClip(trackIndex, clipIndex) as (Clip & { id?: string }) | null;
+		if (!clip) {
+			throw new Error(`Clip at track ${trackIndex}, index ${clipIndex} does not exist`);
+		}
+
+		const { id } = clip;
+
+		// Delete all own properties, then assign new ones
+		for (const key of Object.keys(clip)) {
+			if (key !== "id") {
+				delete (clip as Record<string, unknown>)[key];
+			}
+		}
+		Object.assign(clip, newProperties);
+
+		// Restore internal ID (in case newProperties contained id or didn't)
+		if (id) {
+			clip.id = id;
+		}
+	}
+
+	/**
 	 * Replace a clip entirely
 	 */
 	replaceClip(trackIndex: number, clipIndex: number, newClip: Clip): Clip | null {

@@ -21,7 +21,8 @@ export interface DragSession {
 }
 
 /**
- * Manages per-control drag sessions to handle browser timing quirks.
+ * Holds per-control drag sessions so the toolbar can snapshot clip state on
+ * pointerdown and commit a single undo entry on release.
  */
 export class DragStateManager {
 	private sessions = new Map<string, DragSession>();

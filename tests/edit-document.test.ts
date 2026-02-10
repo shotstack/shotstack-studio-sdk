@@ -476,6 +476,83 @@ describe("EditDocument", () => {
 
 			expect(doc.replaceClip(99, 0, newClip)).toBeNull();
 		});
+
+		// ── replaceClipProperties ────────────────────────────────────────────
+
+		it("replaceClipProperties sets new properties", () => {
+			const doc = new EditDocument(createEditWithTracks());
+
+			doc.replaceClipProperties(0, 0, { start: 10, length: 20, asset: { type: "image", src: "https://example.com/new.jpg" } });
+
+			const clip = doc.getClip(0, 0);
+			expect(clip?.start).toBe(10);
+			expect(clip?.length).toBe(20);
+		});
+
+		it("replaceClipProperties removes properties absent from new state", () => {
+			const doc = new EditDocument(createEditWithTracks());
+
+			// Clip at 0,0 has fit: "crop" initially
+			expect(doc.getClip(0, 0)?.fit).toBe("crop");
+
+			// Replace with state that has no fit property
+			doc.replaceClipProperties(0, 0, { start: 0, length: 5, asset: { type: "image", src: "https://example.com/image1.jpg" } });
+
+			// fit should be gone, not left over from the old state
+			expect(doc.getClip(0, 0)?.fit).toBeUndefined();
+		});
+
+		it("replaceClipProperties preserves internal clip ID", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const originalId = doc.getClipId(0, 0);
+
+			doc.replaceClipProperties(0, 0, { start: 99, length: 99, asset: { type: "image", src: "https://example.com/x.jpg" } });
+
+			expect(doc.getClipId(0, 0)).toBe(originalId);
+		});
+
+		it("replaceClipProperties preserves ID even when newProperties contains id", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const originalId = doc.getClipId(0, 0);
+
+			doc.replaceClipProperties(0, 0, { start: 0, length: 1, asset: { type: "image", src: "https://example.com/x.jpg" }, id: "injected-id" } as any);
+
+			// Internal ID must win over anything in newProperties
+			expect(doc.getClipId(0, 0)).toBe(originalId);
+		});
+
+		it("replaceClipProperties throws for invalid indices", () => {
+			const doc = new EditDocument(createEditWithTracks());
+
+			expect(() => doc.replaceClipProperties(99, 0, { start: 0 })).toThrow();
+		});
+
+		it("updateClip leaves extra properties — replaceClipProperties removes them (regression)", () => {
+			// This is the root cause of the undo bug: structuredClone drops undefined
+			// properties, so a snapshot of a clip with no opacity would not contain
+			// the opacity key. updateClip (Object.assign) would leave the drag's
+			// opacity in place because there's no key to overwrite it.
+			const doc = new EditDocument(createEditWithTracks());
+
+			// Simulate a drag adding opacity to a clip that had none
+			doc.updateClip(0, 0, { opacity: 0.5 });
+			expect(doc.getClip(0, 0)?.opacity).toBe(0.5);
+
+			// Simulate undo with updateClip — the bug: opacity sticks around
+			// because the initial snapshot has no opacity key
+			const snapshotWithoutOpacity: Partial<Clip> = {
+				start: 0,
+				length: 5,
+				fit: "crop",
+				asset: { type: "image", src: "https://example.com/image1.jpg" }
+			};
+			doc.updateClip(0, 0, snapshotWithoutOpacity);
+			expect(doc.getClip(0, 0)?.opacity).toBe(0.5); // BUG: still there
+
+			// Simulate undo with replaceClipProperties — the fix
+			doc.replaceClipProperties(0, 0, snapshotWithoutOpacity);
+			expect(doc.getClip(0, 0)?.opacity).toBeUndefined(); // FIXED: gone
+		});
 	});
 
 	// ─── Timeline Mutation Tests ──────────────────────────────────────────────

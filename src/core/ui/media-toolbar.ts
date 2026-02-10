@@ -1,11 +1,13 @@
 import type { Edit } from "@core/edit-session";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
+import type { ResolvedClip } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
+import { DragStateManager } from "./drag-state-manager";
 import { SliderControl } from "./primitives/SliderControl";
 
 type FitValue = "crop" | "cover" | "contain" | "none";
@@ -114,6 +116,7 @@ export class MediaToolbar extends BaseToolbar {
 	private dynamicInput: HTMLInputElement | null = null;
 
 	// ─── State ───────────────────────────────────────────────────────────────────
+	private dragManager = new DragStateManager();
 	private audioFadeEffect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut" = "";
 	private isDynamicSource: boolean = false;
 	private dynamicFieldName: string = "";
@@ -350,7 +353,7 @@ export class MediaToolbar extends BaseToolbar {
 	 * Mount composite UI components into their placeholder elements.
 	 */
 	private mountCompositeComponents(): void {
-		// Mount opacity slider
+		// Mount opacity slider (two-phase: live preview during drag, single undo on release)
 		const opacityMount = this.container?.querySelector("[data-opacity-slider-mount]");
 		if (opacityMount) {
 			this.opacitySlider = new SliderControl({
@@ -360,11 +363,13 @@ export class MediaToolbar extends BaseToolbar {
 				initialValue: 100,
 				formatValue: v => `${Math.round(v)}%`
 			});
+			this.opacitySlider.onDragStart(() => this.startSliderDrag("opacity"));
 			this.opacitySlider.onChange(value => this.handleOpacityChange(value));
+			this.opacitySlider.onDragEnd(() => this.endSliderDrag("opacity"));
 			this.opacitySlider.mount(opacityMount as HTMLElement);
 		}
 
-		// Mount scale slider
+		// Mount scale slider (two-phase: live preview during drag, single undo on release)
 		const scaleMount = this.container?.querySelector("[data-scale-slider-mount]");
 		if (scaleMount) {
 			this.scaleSlider = new SliderControl({
@@ -374,7 +379,9 @@ export class MediaToolbar extends BaseToolbar {
 				initialValue: 100,
 				formatValue: v => `${Math.round(v)}%`
 			});
+			this.scaleSlider.onDragStart(() => this.startSliderDrag("scale"));
 			this.scaleSlider.onChange(value => this.handleScaleChange(value));
+			this.scaleSlider.onDragEnd(() => this.endSliderDrag("scale"));
 			this.scaleSlider.mount(scaleMount as HTMLElement);
 		}
 
@@ -482,7 +489,8 @@ export class MediaToolbar extends BaseToolbar {
 			);
 		});
 
-		// Volume slider
+		// Volume slider (two-phase: live preview during drag, single undo on release)
+		this.volumeSlider?.addEventListener("pointerdown", () => this.startSliderDrag("volume"), { signal });
 		this.volumeSlider?.addEventListener(
 			"input",
 			() => {
@@ -491,6 +499,7 @@ export class MediaToolbar extends BaseToolbar {
 			},
 			{ signal }
 		);
+		this.volumeSlider?.addEventListener("change", () => this.endSliderDrag("volume"), { signal });
 
 		// Volume display input: commit on blur or Enter, revert on Escape
 		this.volumeDisplayInput?.addEventListener("blur", () => this.commitVolumeInputValue(), { signal });
@@ -649,6 +658,50 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
+	// ─── Two-Phase Drag Helpers ──────────────────────────────────────────────────
+	//
+	// Without this, every slider tick creates an undo command and Ctrl-Z steps
+	// through dozens of intermediate values instead of reverting the whole drag.
+	//
+	//   pointerdown → snapshot clip state
+	//   input       → live preview (bypass command system)
+	//   change      → commit one undo entry for the entire gesture
+	//
+	// Text-input commits (blur / Enter) skip the drag path and go straight
+	// through applyClipUpdate().
+
+	/**
+	 * Capture and deep-clone the current clip state for drag rollback.
+	 */
+	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
+	}
+
+	/**
+	 * Start a drag session for a slider control.
+	 */
+	private startSliderDrag(controlId: string): void {
+		const state = this.captureClipState();
+		if (state) {
+			this.dragManager.start(controlId, state.clipId, state.initialState);
+		}
+	}
+
+	/**
+	 * End a drag session and commit a single undo entry.
+	 */
+	private endSliderDrag(controlId: string): void {
+		const session = this.dragManager.end(controlId);
+		if (!session) return;
+
+		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (finalClip) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, structuredClone(finalClip));
+		}
+	}
+
 	// ─── Value Change Handlers ───────────────────────────────────────────────────
 
 	private handleFitChange(fit: FitValue): void {
@@ -661,24 +714,56 @@ export class MediaToolbar extends BaseToolbar {
 
 	private handleOpacityChange(value: number): void {
 		this.updateOpacityDisplay();
-		this.applyClipUpdate({ opacity: value / 100 });
+
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clipId) return;
+
+		const updates = { opacity: value / 100 };
+
+		if (this.dragManager.isDragging("opacity")) {
+			this.edit.updateClipInDocument(clipId, updates);
+			this.edit.resolveClip(clipId);
+		} else {
+			this.applyClipUpdate(updates);
+		}
 	}
 
 	private handleScaleChange(value: number): void {
 		this.updateScaleDisplay();
-		this.applyClipUpdate({ scale: value / 100 });
+
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clipId) return;
+
+		const updates = { scale: value / 100 };
+
+		if (this.dragManager.isDragging("scale")) {
+			this.edit.updateClipInDocument(clipId, updates);
+			this.edit.resolveClip(clipId);
+		} else {
+			this.applyClipUpdate(updates);
+		}
 	}
 
 	private handleVolumeChange(value: number): void {
 		this.currentVolume = value;
 		this.updateVolumeDisplay();
 
+		if (!VOLUME_ASSET_TYPES.has(this.assetType)) return;
+
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (clip && VOLUME_ASSET_TYPES.has(this.assetType)) {
-			const asset = clip.asset as Record<string, unknown>;
-			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
-				asset: { ...asset, volume: value / 100 } as typeof clip.asset
-			});
+		if (!clip) return;
+
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clipId) return;
+
+		const asset = clip.asset as Record<string, unknown>;
+		const updates = { asset: { ...asset, volume: value / 100 } as typeof clip.asset };
+
+		if (this.dragManager.isDragging("volume")) {
+			this.edit.updateClipInDocument(clipId, updates);
+			this.edit.resolveClip(clipId);
+		} else {
+			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
 		}
 	}
 
@@ -950,6 +1035,9 @@ export class MediaToolbar extends BaseToolbar {
 		// Abort all event listeners
 		this.abortController?.abort();
 		this.abortController = null;
+
+		// Clear any in-progress drag sessions
+		this.dragManager.clear();
 
 		// Dispose composite components
 		this.transitionPanel?.dispose();

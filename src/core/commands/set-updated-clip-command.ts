@@ -72,13 +72,10 @@ export class SetUpdatedClipCommand implements EditCommand {
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
 		const clipIndex = this.clipIndex >= 0 ? this.clipIndex : (context.getTracks()[trackIndex]?.indexOf(player) ?? -1);
 
-		// Update document with full configuration (all clip properties, not just timing/asset)
-		// Use stored config if available, otherwise fallback to constructor params (handles redo for canvas drags)
+		// Replace all clip properties with the final configuration.
 		const configToApply = this.storedFinalConfig ?? this.finalClipConfig;
 		if (configToApply) {
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars -- id is internal, don't update it
-			const { id: unusedId, ...clipUpdates } = configToApply as ResolvedClip & { id?: string };
-			doc.updateClip(trackIndex, clipIndex, clipUpdates);
+			doc.replaceClipProperties(trackIndex, clipIndex, configToApply as unknown as Partial<Clip>);
 		}
 
 		// Reconciler handles player updates
@@ -146,10 +143,8 @@ export class SetUpdatedClipCommand implements EditCommand {
 		// Capture document clip BEFORE undo mutation (source of truth for SDK events)
 		const currentDocClip = structuredClone(context.getDocumentClip(trackIndex, clipIndex));
 
-		// Update document with full initial configuration (all clip properties)
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars -- id is internal, don't update it
-		const { id: unusedId, ...clipUpdates } = configToRestore as ResolvedClip & { id?: string };
-		doc.updateClip(trackIndex, clipIndex, clipUpdates);
+		// Replace all clip properties with the initial configuration.
+		doc.replaceClipProperties(trackIndex, clipIndex, configToRestore as unknown as Partial<Clip>);
 
 		// Reconciler handles player updates
 		context.resolve();

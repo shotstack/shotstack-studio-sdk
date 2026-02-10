@@ -31,6 +31,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 	/**
 	 * Return the HTML string for this component.
 	 * Called during mount() to populate the container.
+	 * @internal
 	 */
 	abstract render(): string;
 
@@ -48,6 +49,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Mount the component to a parent element.
+	 * @internal
 	 */
 	mount(parent: HTMLElement): void {
 		if (this.mounted) return;
@@ -74,6 +76,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Remove the component from the DOM without disposing.
+	 * @internal
 	 */
 	unmount(): void {
 		this.container?.remove();
@@ -82,6 +85,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Register a callback for value changes.
+	 * @internal
 	 */
 	onChange(callback: ChangeCallback<T>): void {
 		this.changeCallbacks.push(callback);
@@ -98,6 +102,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Clean up all resources: event listeners, DOM, callbacks.
+	 * @internal
 	 */
 	dispose(): void {
 		this.events.dispose();
@@ -108,6 +113,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Get the root container element.
+	 * @internal
 	 */
 	getContainer(): HTMLElement | null {
 		return this.container;
@@ -115,6 +121,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Check if component is currently mounted.
+	 * @internal
 	 */
 	isMounted(): boolean {
 		return this.mounted;
@@ -122,6 +129,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Show the component (set display to default).
+	 * @internal
 	 */
 	show(): void {
 		if (this.container) {
@@ -131,6 +139,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Hide the component.
+	 * @internal
 	 */
 	hide(): void {
 		if (this.container) {
@@ -140,6 +149,7 @@ export abstract class UIComponent<T = void> implements Mountable, Disposable {
 
 	/**
 	 * Toggle visibility.
+	 * @internal
 	 */
 	toggle(visible?: boolean): void {
 		const shouldShow = visible ?? this.container?.style.display === "none";
