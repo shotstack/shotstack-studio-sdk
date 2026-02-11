@@ -178,8 +178,10 @@ export class Edit {
 				const fontFace = await this.assetLoader.load<FontFace>(identifier, loadOptions);
 
 				// Store normalized base family + weight (TTF might report "Lato Light" or "Lato")
+				// CSS FontFace.family wraps multi-word names in quotes — strip them
 				if (fontFace?.family) {
-					const { baseFontFamily, fontWeight } = parseFontFamily(fontFace.family);
+					const family = fontFace.family.replace(/^["']|["']$/g, "");
+					const { baseFontFamily, fontWeight } = parseFontFamily(family);
 					this.fontMetadata.set(identifier, { baseFamilyName: baseFontFamily, weight: fontWeight });
 				}
 
@@ -1819,6 +1821,15 @@ export class Edit {
 
 	public getTimelineFonts(): Array<{ src: string }> {
 		return this.document.getFonts();
+	}
+
+	/**
+	 * Get the font metadata map (URL → parsed binary name and weight).
+	 * Used by the font picker to display correct custom font names.
+	 * @internal
+	 */
+	public getFontMetadata(): ReadonlyMap<string, { baseFamilyName: string; weight: number }> {
+		return this.fontMetadata;
 	}
 
 	/**

@@ -1237,6 +1237,7 @@ export class RichTextToolbar extends BaseToolbar {
 		this.fontPicker = new FontPicker({
 			selectedFilename: currentFilename,
 			timelineFonts,
+			fontMetadata: this.edit.getFontMetadata(),
 			onSelect: font => this.selectFont(font),
 			onClose: () => this.closeAllPopups()
 		});
@@ -1251,6 +1252,24 @@ export class RichTextToolbar extends BaseToolbar {
 		if (googleFont) {
 			return googleFont.displayName;
 		}
+
+		// Check if this is a custom font with a binary name available.
+		// The stored fontFamily may be a URL-extracted name (e.g. "source") that doesn't
+		// match the real font name. Look up the binary name from fontMetadata.
+		const fontMetadata = this.edit.getFontMetadata();
+		for (const [url, meta] of fontMetadata) {
+			const binaryName = meta.baseFamilyName.replace(/^["']+|["']+$/g, "");
+			// Match if the stored family equals the binary name OR the URL-extracted name
+			const urlFilename =
+				url
+					.split("/")
+					.pop()
+					?.replace(/\.(ttf|otf|woff|woff2)$/i, "") ?? "";
+			if (fontFamily === urlFilename || fontFamily === binaryName) {
+				return binaryName;
+			}
+		}
+
 		// Fall back to cleaning up font names: "Oswald-VariableFont" → "Oswald"
 		return fontFamily.replace(/-VariableFont$/i, "").replace(/-/g, " ");
 	}

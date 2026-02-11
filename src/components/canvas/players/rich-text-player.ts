@@ -84,30 +84,36 @@ export class RichTextPlayer extends Player {
 			: undefined;
 
 		// Build customFonts array for the text engine
-		// If we found a matching font by filename, use it
-		// Otherwise, include ALL non-Google timeline fonts so the text engine can match by font metadata
+		// Match by URL filename first, then by binary font name from metadata
 		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
 		if (matchingFont && requestedFamily) {
 			customFonts = [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }];
 		} else if (requestedFamily) {
-			// Filename matching failed - include all non-Google fonts
-			// The text engine will parse font files and match by actual family name
+			// Filename matching failed — try matching by binary font name from metadata
+			const fontMetadata = this.edit.getFontMetadata();
+			const lowerRequested = (baseFontFamily || requestedFamily).toLowerCase();
 			const nonGoogleFonts = timelineFonts.filter(font => !isGoogleFontUrl(font.src));
-			if (nonGoogleFonts.length > 0) {
-				// Use the requested family name - the text engine will match it to the correct font file
-				customFonts = nonGoogleFonts.map(font => ({
-					src: font.src,
-					family: baseFontFamily || requestedFamily,
-					weight: fontWeight.toString()
-				}));
+
+			const metadataMatch = nonGoogleFonts.find(font => {
+				const meta = fontMetadata.get(font.src);
+				return meta?.baseFamilyName.toLowerCase() === lowerRequested;
+			});
+			if (metadataMatch) {
+				customFonts = [{ src: metadataMatch.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }];
 			}
+			// No match → no customFonts → text engine falls back to default font
 		}
+
+		// Determine the font family for the canvas payload:
+		// Use matched custom font name, or built-in font, or fall back to Roboto
+		const hasFontMatch = customFonts || (requestedFamily && resolveFontPath(requestedFamily));
+		const resolvedFamily = hasFontMatch ? baseFontFamily || requestedFamily : undefined;
 
 		return {
 			...richTextAsset,
 			width,
 			height,
-			font: richTextAsset.font ? { ...richTextAsset.font, family: baseFontFamily || richTextAsset.font.family, weight: fontWeight } : undefined,
+			font: richTextAsset.font ? { ...richTextAsset.font, family: resolvedFamily || "Roboto", weight: fontWeight } : undefined,
 			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};

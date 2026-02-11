@@ -50,6 +50,8 @@ export interface FontPickerOptions {
 	onClose?: () => void;
 	/** Timeline fonts for detecting custom fonts */
 	timelineFonts?: Array<{ src: string }>;
+	/** Font metadata from binary parsing (URL → family name) */
+	fontMetadata?: ReadonlyMap<string, { baseFamilyName: string; weight: number }>;
 }
 
 /**
@@ -72,6 +74,7 @@ export class FontPicker {
 	private searchQuery = "";
 	private recentFonts: string[] = [];
 	private timelineFonts: Array<{ src: string }> = [];
+	private fontMetadata?: ReadonlyMap<string, { baseFamilyName: string; weight: number }>;
 	private fontLoader = getFontPreviewLoader();
 
 	constructor(options: FontPickerOptions) {
@@ -79,6 +82,7 @@ export class FontPicker {
 		this.onSelect = options.onSelect;
 		this.onClose = options.onClose;
 		this.timelineFonts = options.timelineFonts ?? [];
+		this.fontMetadata = options.fontMetadata;
 
 		this.loadRecentFonts();
 		this.element = this.createElement();
@@ -358,6 +362,15 @@ export class FontPicker {
 	}
 
 	/**
+	 * Resolve the display name for a custom font URL.
+	 * Prefers the binary-parsed family name from fontMetadata, falls back to URL filename extraction.
+	 */
+	private resolveCustomFontName(src: string): string {
+		const name = this.fontMetadata?.get(src)?.baseFamilyName ?? extractFontDisplayName(src);
+		return name.replace(/^["']+|["']+$/g, "");
+	}
+
+	/**
 	 * Update the custom fonts section.
 	 * Shows non-Google fonts from timeline.fonts.
 	 */
@@ -383,7 +396,7 @@ export class FontPicker {
 		const list = this.customSection.querySelector(".ss-font-picker-custom-list") as HTMLElement;
 
 		for (const font of customFonts) {
-			const displayName = extractFontDisplayName(font.src);
+			const displayName = this.resolveCustomFontName(font.src);
 			const item = this.createCustomFontItem(font.src, displayName);
 			list.appendChild(item);
 		}
@@ -430,6 +443,9 @@ export class FontPicker {
 	 * Check if a font URL matches the selected filename.
 	 */
 	private isMatchingCustomFont(src: string, selectedFilename: string): boolean {
+		const binaryName = this.fontMetadata?.get(src)?.baseFamilyName;
+		if (binaryName && binaryName === selectedFilename) return true;
+
 		const urlFilename =
 			src
 				.split("/")
@@ -471,9 +487,10 @@ export class FontPicker {
 	private handleCustomFontSelect(src: string, displayName: string): void {
 		// Create a FontInfo object for consistency
 		// Custom fonts are assumed to support variable weights (user controls the font file)
+		const resolvedName = this.resolveCustomFontName(src);
 		const customFont: FontInfo = {
 			displayName,
-			filename: extractFontDisplayName(src),
+			filename: resolvedName,
 			category: "sans-serif", // Default category for custom fonts
 			url: src,
 			weight: 400,

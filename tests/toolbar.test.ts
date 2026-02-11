@@ -155,6 +155,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 			getFonts: jest.fn(() => []),
 			getClipBinding: jest.fn(() => null)
 		})),
+		getFontMetadata: jest.fn(() => new Map()),
 		getMergeFieldForProperty: jest.fn(() => null),
 		updateClip: jest.fn(),
 		getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
