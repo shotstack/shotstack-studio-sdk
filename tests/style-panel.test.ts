@@ -340,4 +340,236 @@ describe("StylePanel", () => {
 			);
 		});
 	});
+
+	// ============================================================================
+	// Drag Lifecycle (Two-Phase Pattern) Tests
+	// ============================================================================
+
+	describe("drag lifecycle", () => {
+		let onDragStart: jest.Mock;
+		let onDragEnd: jest.Mock;
+
+		beforeEach(() => {
+			onDragStart = jest.fn();
+			onDragEnd = jest.fn();
+			panel.onDragStart(onDragStart);
+			panel.onDragEnd(onDragEnd);
+			panel.mount(container);
+		});
+
+		// ─── Border drag ─────────────────────────────────────────────
+
+		it("should fire onDragStart on border width slider pointerdown", () => {
+			const slider = container.querySelector("[data-border-width-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).not.toHaveBeenCalled();
+		});
+
+		it("should fire onDragEnd on border width slider change", () => {
+			const slider = container.querySelector("[data-border-width-slider]") as HTMLInputElement;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should fire drag lifecycle for border color input", () => {
+			const input = container.querySelector("[data-border-color]")!;
+			input.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+
+			input.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should fire drag lifecycle for border opacity slider", () => {
+			const slider = container.querySelector("[data-border-opacity-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should fire drag lifecycle for border radius slider", () => {
+			const slider = container.querySelector("[data-border-radius-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should not double-fire onDragStart for consecutive border pointerdowns", () => {
+			const slider = container.querySelector("[data-border-width-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+		});
+
+		// ─── Padding drag ────────────────────────────────────────────
+
+		it("should fire onDragStart on padding top slider pointerdown", () => {
+			const slider = container.querySelector("[data-padding-top-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).not.toHaveBeenCalled();
+		});
+
+		it("should fire onDragEnd on padding right slider change", () => {
+			const slider = container.querySelector("[data-padding-right-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should fire drag lifecycle for all four padding sliders", () => {
+			const selectors = ["[data-padding-top-slider]", "[data-padding-right-slider]", "[data-padding-bottom-slider]", "[data-padding-left-slider]"];
+
+			selectors.forEach((sel, i) => {
+				const slider = container.querySelector(sel)!;
+				slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+				slider.dispatchEvent(new Event("change", { bubbles: true }));
+
+				expect(onDragStart).toHaveBeenCalledTimes(i + 1);
+				expect(onDragEnd).toHaveBeenCalledTimes(i + 1);
+			});
+		});
+
+		// ─── Shadow drag ─────────────────────────────────────────────
+
+		it("should fire onDragStart on shadow offsetX slider pointerdown", () => {
+			const slider = container.querySelector("[data-shadow-offset-x]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).not.toHaveBeenCalled();
+		});
+
+		it("should fire drag lifecycle for shadow offsetY slider", () => {
+			const slider = container.querySelector("[data-shadow-offset-y]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should fire drag lifecycle for shadow color input", () => {
+			const input = container.querySelector("[data-shadow-color]")!;
+			input.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			input.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		it("should fire drag lifecycle for shadow opacity slider", () => {
+			const slider = container.querySelector("[data-shadow-opacity]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+		});
+
+		// ─── Shadow toggle (discrete action) ─────────────────────────
+
+		it("should NOT fire onDragStart/onDragEnd when shadow toggle is changed", () => {
+			const toggle = container.querySelector("[data-shadow-toggle]") as HTMLInputElement;
+			toggle.checked = true;
+			toggle.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).not.toHaveBeenCalled();
+			expect(onDragEnd).not.toHaveBeenCalled();
+		});
+
+		// ─── Cross-section independence ──────────────────────────────
+
+		it("should allow independent border and padding drags", () => {
+			const borderSlider = container.querySelector("[data-border-width-slider]")!;
+			const paddingSlider = container.querySelector("[data-padding-top-slider]")!;
+
+			// Start border drag
+			borderSlider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(onDragStart).toHaveBeenCalledTimes(1);
+
+			// End border drag
+			borderSlider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(onDragEnd).toHaveBeenCalledTimes(1);
+
+			// Start padding drag (separate lifecycle)
+			paddingSlider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(onDragStart).toHaveBeenCalledTimes(2);
+
+			// End padding drag
+			paddingSlider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(onDragEnd).toHaveBeenCalledTimes(2);
+		});
+
+		it("should allow independent shadow and border drags", () => {
+			const shadowSlider = container.querySelector("[data-shadow-offset-x]")!;
+			const borderSlider = container.querySelector("[data-border-radius-slider]")!;
+
+			// Full shadow drag cycle
+			shadowSlider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			shadowSlider.dispatchEvent(new Event("change", { bubbles: true }));
+
+			// Full border drag cycle
+			borderSlider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			borderSlider.dispatchEvent(new Event("change", { bubbles: true }));
+
+			expect(onDragStart).toHaveBeenCalledTimes(2);
+			expect(onDragEnd).toHaveBeenCalledTimes(2);
+		});
+
+		// ─── isDragging() ────────────────────────────────────────────
+
+		it("should report isDragging() true during border drag", () => {
+			expect(panel.isDragging()).toBe(false);
+
+			const slider = container.querySelector("[data-border-width-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(panel.isDragging()).toBe(true);
+
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(panel.isDragging()).toBe(false);
+		});
+
+		it("should report isDragging() true during padding drag", () => {
+			const slider = container.querySelector("[data-padding-left-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(panel.isDragging()).toBe(true);
+
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(panel.isDragging()).toBe(false);
+		});
+
+		it("should report isDragging() true during shadow drag", () => {
+			const slider = container.querySelector("[data-shadow-opacity]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(panel.isDragging()).toBe(true);
+
+			slider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(panel.isDragging()).toBe(false);
+		});
+
+		// ─── Dispose clears drag state ───────────────────────────────
+
+		it("should clear drag state on dispose", () => {
+			const slider = container.querySelector("[data-border-width-slider]")!;
+			slider.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			expect(panel.isDragging()).toBe(true);
+
+			panel.dispose();
+			expect(panel.isDragging()).toBe(false);
+		});
+	});
 });
