@@ -27,6 +27,7 @@ const isGoogleFontUrl = (url: string): boolean => url.includes("fonts.gstatic.co
 
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
+	private static readonly fontCapabilityCache = new Map<string, Promise<boolean>>();
 	private textEngine: TextEngine | null = null;
 	private renderer: ReturnType<TextEngine["createRenderer"]> | null = null;
 	private canvas: HTMLCanvasElement | null = null;
@@ -39,12 +40,30 @@ export class RichTextPlayer extends Player {
 	private validatedAsset: CanvasRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
 	private loadComplete: boolean = false;
+	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
+
+	private static getFontSourceCacheKey(sourcePath: string): string {
+		const withoutHash = sourcePath.split("#", 1)[0];
+		return withoutHash.split("?", 1)[0];
+	}
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		// Remove fit property for rich-text assets
 		// This aligns with @shotstack/schemas v1.5.6 which filters fit at track validation
 		const { fit, ...configWithoutFit } = clipConfiguration;
 		super(edit, configWithoutFit, PlayerType.RichText);
+	}
+
+	private resolveFontWeight(richTextAsset: RichTextAsset, fallbackWeight: number): number {
+		const explicitWeight = richTextAsset.font?.weight;
+		if (typeof explicitWeight === "string") {
+			return parseInt(explicitWeight, 10) || fallbackWeight;
+		}
+		if (typeof explicitWeight === "number") {
+			return explicitWeight;
+		}
+
+		return fallbackWeight;
 	}
 
 	private buildCanvasPayload(
@@ -65,13 +84,7 @@ export class RichTextPlayer extends Player {
 			fontInfo ?? (requestedFamily ? parseFontFamily(requestedFamily) : { baseFontFamily: requestedFamily, fontWeight: 400 });
 
 		// Use explicit font.weight if set, otherwise fall back to parsed weight from family name
-		const explicitWeight = richTextAsset.font?.weight;
-		let fontWeight = parsedWeight;
-		if (typeof explicitWeight === "string") {
-			fontWeight = parseInt(explicitWeight, 10) || parsedWeight;
-		} else if (typeof explicitWeight === "number") {
-			fontWeight = explicitWeight;
-		}
+		const fontWeight = this.resolveFontWeight(richTextAsset, parsedWeight);
 
 		// Find matching timeline font for customFonts payload
 		const timelineFonts = this.edit.getTimelineFonts();
@@ -125,36 +138,65 @@ export class RichTextPlayer extends Player {
 		source: { type: "url"; path: string } | { type: "file"; path: string }
 	): Promise<boolean> {
 		if (!this.textEngine) return false;
-		try {
-			const fontDesc = { family, weight: weight.toString() };
-			if (source.type === "url") {
-				await this.textEngine.registerFontFromUrl(source.path, fontDesc);
-			} else {
-				await this.textEngine.registerFontFromFile(source.path, fontDesc);
+		const normalizedPath = RichTextPlayer.getFontSourceCacheKey(source.path);
+		const cacheKey = `${source.type}:${normalizedPath}|${family}|${weight}`;
+		const cached = this.fontRegistrationCache.get(cacheKey);
+		if (cached) return cached;
+
+		const registrationPromise = (async (): Promise<boolean> => {
+			try {
+				const fontDesc = { family, weight: weight.toString() };
+				if (source.type === "url") {
+					await this.textEngine!.registerFontFromUrl(source.path, fontDesc);
+				} else {
+					await this.textEngine!.registerFontFromFile(source.path, fontDesc);
+				}
+				return true;
+			} catch {
+				return false;
 			}
-			return true;
-		} catch {
-			return false;
-		}
+		})();
+		this.fontRegistrationCache.set(cacheKey, registrationPromise);
+		return registrationPromise;
 	}
 
-	private async checkFontCapabilities(fontUrl: string): Promise<void> {
-		try {
-			const response = await fetch(fontUrl);
-			const buffer = await response.arrayBuffer();
-			const font = opentype.parse(buffer);
+	private createFontCapabilityCheckPromise(fontUrl: string): Promise<boolean> {
+		return (async (): Promise<boolean> => {
+			try {
+				const response = await fetch(fontUrl);
+				if (!response.ok) {
+					throw new Error(`Failed to fetch font: ${response.status}`);
+				}
+				const buffer = await response.arrayBuffer();
+				const font = opentype.parse(buffer);
 
-			// Check for fvar table (variable font) with weight axis
-			const fvar = font.tables["fvar"] as { axes?: Array<{ tag: string }> } | undefined;
-			if (fvar?.axes) {
-				const weightAxis = fvar.axes.find(axis => axis.tag === "wght");
-				this.fontSupportsBold = !!weightAxis;
-			} else {
-				this.fontSupportsBold = false;
+				// Check for fvar table (variable font) with weight axis
+				const fvar = font.tables["fvar"] as { axes?: Array<{ tag: string }> } | undefined;
+				return !!fvar?.axes?.find(axis => axis.tag === "wght");
+			} catch (error) {
+				console.warn("Failed to check font capabilities:", error);
+				return false;
 			}
-		} catch (error) {
-			console.warn("Failed to check font capabilities:", error);
-			this.fontSupportsBold = false;
+		})();
+	}
+
+	private async prepareFontForAsset(richTextAsset: RichTextAsset, emitCapabilitiesEvent: boolean): Promise<void> {
+		const fontUrl = await this.ensureFontRegistered(richTextAsset);
+		if (!fontUrl) {
+			return;
+		}
+
+		const cacheKey = RichTextPlayer.getFontSourceCacheKey(fontUrl);
+		const cachedCheck = RichTextPlayer.fontCapabilityCache.get(cacheKey);
+		const capabilityCheck = cachedCheck ?? this.createFontCapabilityCheckPromise(fontUrl);
+		if (!cachedCheck) {
+			RichTextPlayer.fontCapabilityCache.set(cacheKey, capabilityCheck);
+		}
+
+		this.fontSupportsBold = await capabilityCheck;
+
+		if (emitCapabilitiesEvent) {
+			this.edit.events.emit(InternalEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
 		}
 	}
 
@@ -200,12 +242,7 @@ export class RichTextPlayer extends Player {
 	}
 
 	private async reconfigure(richTextAsset: RichTextAsset): Promise<void> {
-		const fontUrl = await this.ensureFontRegistered(richTextAsset);
-
-		if (fontUrl) {
-			await this.checkFontCapabilities(fontUrl);
-			this.edit.events.emit(InternalEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
-		}
+		await this.prepareFontForAsset(richTextAsset, true);
 
 		for (const texture of this.cachedFrames.values()) {
 			texture.destroy();
@@ -233,15 +270,7 @@ export class RichTextPlayer extends Player {
 		const resolved = this.resolveFont(family);
 		if (!resolved) return null;
 
-		// Use explicit weight from asset if set, otherwise use parsed weight from family name
-		const explicitWeight = richTextAsset.font?.weight;
-		let { fontWeight } = resolved;
-		if (typeof explicitWeight === "string") {
-			fontWeight = parseInt(explicitWeight, 10) || resolved.fontWeight;
-		} else if (typeof explicitWeight === "number") {
-			fontWeight = explicitWeight;
-		}
-
+		const fontWeight = this.resolveFontWeight(richTextAsset, resolved.fontWeight);
 		await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
 		return resolved.url;
 	}
@@ -277,23 +306,7 @@ export class RichTextPlayer extends Player {
 			this.canvas.height = canvasPayload.height;
 
 			this.renderer = this.textEngine!.createRenderer(this.canvas);
-
-			// Register font and check capabilities
-			if (requestedFamily) {
-				const resolved = this.resolveFont(requestedFamily);
-				if (resolved) {
-					// Use explicit weight from asset if set, otherwise use parsed weight from family name
-					const explicitWeight = richTextAsset.font?.weight;
-					let { fontWeight } = resolved;
-					if (typeof explicitWeight === "string") {
-						fontWeight = parseInt(explicitWeight, 10) || resolved.fontWeight;
-					} else if (typeof explicitWeight === "number") {
-						fontWeight = explicitWeight;
-					}
-					await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
-					await this.checkFontCapabilities(resolved.url);
-				}
-			}
+			await this.prepareFontForAsset(richTextAsset, false);
 
 			await this.renderFrame(0);
 			this.configureKeyframes();
