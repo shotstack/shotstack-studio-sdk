@@ -1819,6 +1819,7 @@ export class Edit {
 		return this.outputSettings.getAspectRatio();
 	}
 
+	/** @internal */
 	public getTimelineFonts(): Array<{ src: string }> {
 		return this.document.getFonts();
 	}
@@ -1955,6 +1956,7 @@ export class Edit {
 	/**
 	 * Get the content clip ID for a luma clip.
 	 */
+	/** @internal */
 	public getContentClipIdForLuma(lumaClipId: string): string | null {
 		return this.lumaContentRelations.get(lumaClipId) ?? null;
 	}

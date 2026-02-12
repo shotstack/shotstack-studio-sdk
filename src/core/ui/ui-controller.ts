@@ -385,6 +385,7 @@ export class UIController {
 	/**
 	 * Update all canvas overlays. Called by Canvas each tick.
 	 */
+	/** @internal */
 	updateOverlays(deltaTime: number, elapsed: number): void {
 		for (const overlay of this.canvasOverlays) {
 			overlay.update(deltaTime, elapsed);
@@ -416,6 +417,7 @@ export class UIController {
 	 * Uses position: fixed with screen coordinates for complete independence from parent CSS.
 	 * Called by Canvas after zoom, pan, or resize operations.
 	 */
+	/** @internal */
 	updateToolbarPositions(): void {
 		if (!this.canvas) return;
 
@@ -500,6 +502,7 @@ export class UIController {
 	/**
 	 * Get the toolbar registered for a specific asset type.
 	 */
+	/** @internal */
 	getToolbar(assetType: string): UIRegistration | undefined {
 		return this.toolbars.get(assetType);
 	}
@@ -507,6 +510,7 @@ export class UIController {
 	/**
 	 * Check if a toolbar is registered for an asset type.
 	 */
+	/** @internal */
 	hasToolbar(assetType: string): boolean {
 		return this.toolbars.has(assetType);
 	}

@@ -153,6 +153,7 @@ export class Timeline {
 	}
 
 	/** Render/draw component to DOM (called each frame after update) */
+	/** @internal */
 	public draw(): void {
 		// Derive state from Edit on-demand (single source of truth)
 		const viewport = this.stateManager.getViewport();
@@ -312,12 +313,14 @@ export class Timeline {
 	}
 
 	/** Mark interaction as started (enables render loop) */
+	/** @internal */
 	public beginInteraction(): void {
 		this.isInteracting = true;
 		this.startRenderLoop();
 	}
 
 	/** Mark interaction as ended (may stop render loop) */
+	/** @internal */
 	public endInteraction(): void {
 		this.isInteracting = false;
 		// Loop will stop on next tick if not playing
@@ -545,10 +548,12 @@ export class Timeline {
 		this.clipRenderers.set(type, renderer);
 	}
 
+	/** @internal */
 	public getEdit(): Edit {
 		return this.edit;
 	}
 
+	/** @internal */
 	public findClipAtPosition(x: number, y: number): ClipInfo | null {
 		if (!this.trackList) return null;
 

@@ -133,10 +133,12 @@ export class CanvasToolbar {
 		return null;
 	}
 
+	/** @internal */
 	getDragState(): ToolbarDragState | null {
 		return this.dragResult?.getState() ?? null;
 	}
 
+	/** @internal */
 	setPosition(screenX: number, screenY: number): void {
 		if (this.container) {
 			this.container.style.left = `${screenX}px`;

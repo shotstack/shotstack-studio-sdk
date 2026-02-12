@@ -37,6 +37,7 @@ export class Canvas {
 	private readonly edit: Edit;
 
 	/** Container for interactive overlays (handles, guides). Renders above content. */
+	/** @internal */
 	public readonly overlayContainer: pixi.Container;
 
 	private viewportContainer?: pixi.Container;
@@ -277,6 +278,7 @@ export class Canvas {
 	 * Get the pixel bounds of the canvas content (edit area) within the viewport.
 	 * Used for positioning toolbars adjacent to the canvas content.
 	 */
+	/** @internal */
 	public getContentBounds(): { left: number; right: number; top: number; bottom: number } {
 		const scaledWidth = this.edit.size.width * this.currentZoom;
 		const scaledHeight = this.edit.size.height * this.currentZoom;
@@ -291,6 +293,7 @@ export class Canvas {
 		};
 	}
 
+	/** @internal */
 	public registerTimeline(timeline: Timeline): void {
 		this.timeline = timeline;
 	}
@@ -300,6 +303,7 @@ export class Canvas {
 	 * Used by selection handles, export coordinator, and other components
 	 * that need to convert between viewport and world coordinates.
 	 */
+	/** @internal */
 	public getViewportContainer(): pixi.Container {
 		if (!this.viewportContainer) {
 			throw new Error("Viewport container not initialized. Call load() first.");
@@ -404,6 +408,7 @@ export class Canvas {
 	 * Update the edit background and viewport mask when size changes.
 	 * Called from Edit when output size is changed.
 	 */
+	/** @internal */
 	public updateViewportForSize(width: number, height: number, backgroundColor: string): void {
 		if (this.editBackground) {
 			this.editBackground.clear();
@@ -546,10 +551,12 @@ export class Canvas {
 		}
 	}
 
+	/** @internal */
 	public pauseTicker(): void {
 		this.application.ticker.remove(this.onTickBound);
 	}
 
+	/** @internal */
 	public resumeTicker(): void {
 		this.application.ticker.add(this.onTickBound);
 	}

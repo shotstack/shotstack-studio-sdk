@@ -23,7 +23,7 @@ export default defineConfig({
 		dts({
 			rollupTypes: true,
 			outDir: "dist",
-			exclude: ["src/main.ts"],
+			exclude: ["src/main.ts", "src/shotstack-main.ts"],
 			pathsToAliases: true
 		})
 	],

@@ -37,6 +37,100 @@ if (!allFilesExist) {
 }
 console.log("   ✅ Test 1 PASSED: All required files exist\n");
 
+console.log("🧬 Test 1b: Checking declaration surface...");
+const dtsPath = resolve(__dirname, "dist/index.d.ts");
+const dtsContent = readFileSync(dtsPath, "utf-8");
+
+const getClassBlock = className => {
+	const classToken = `export declare class ${className}`;
+	const start = dtsContent.indexOf(classToken);
+	if (start === -1) return null;
+
+	const nextStart = dtsContent.indexOf("export declare class ", start + classToken.length);
+	const end = nextStart === -1 ? dtsContent.length : nextStart;
+	return dtsContent.slice(start, end);
+};
+
+const hiddenMemberChecks = [
+	{ className: "AssetToolbar", tokens: ["getDragState(", "setPosition("] },
+	{ className: "CanvasToolbar", tokens: ["getDragState(", "setPosition("] },
+	{ className: "UIController", tokens: ["updateOverlays(", "updateToolbarPositions(", "getToolbar(", "hasToolbar("] },
+	{
+		className: "Canvas",
+		tokens: [
+			"overlayContainer:",
+			"getContentBounds(",
+			"registerTimeline(",
+			"getViewportContainer(",
+			"updateViewportForSize(",
+			"pauseTicker(",
+			"resumeTicker("
+		]
+	},
+	{ className: "Timeline", tokens: ["draw(): void;", "beginInteraction(", "endInteraction(", "getEdit(", "findClipAtPosition("] },
+	{ className: "Edit", tokens: ["getTimelineFonts(", "getContentClipIdForLuma("] },
+	{ className: "TranscriptionIndicator", tokens: ["getIsVisible(", "update(deltaTime:", "setPosition(", "getWidth("] }
+];
+
+let declarationSurfaceValid = true;
+for (const check of hiddenMemberChecks) {
+	const block = getClassBlock(check.className);
+	if (!block) {
+		console.log(`   ❌ Missing class declaration: ${check.className}`);
+		declarationSurfaceValid = false;
+		continue;
+	}
+
+	for (const token of check.tokens) {
+		if (block.includes(token)) {
+			console.log(`   ❌ Internal member leaked in ${check.className}: ${token}`);
+			declarationSurfaceValid = false;
+		}
+	}
+}
+
+const requiredPublicChecks = [
+	{ className: "Edit", tokens: ["load(): Promise<void>;", "getEdit(): Edit_2;"] },
+	{ className: "Canvas", tokens: ["load(): Promise<void>;", "zoomToFit(padding?: number): void;"] },
+	{
+		className: "UIController",
+		tokens: [
+			"registerToolbar(assetTypes: string | string[], toolbar: UIRegistration): this;",
+			"mount(container: HTMLElement): void;",
+			"registerButton(config: ToolbarButtonConfig): this;"
+		]
+	},
+	{ className: "Timeline", tokens: ["load(): Promise<void>;", "setZoom(pixelsPerSecond: number): void;"] },
+	{ className: "TextToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
+	{ className: "RichTextToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
+	{ className: "MediaToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
+	{ className: "ClipToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
+	{ className: "CanvasToolbar", tokens: ["mount(parent: HTMLElement", "dispose(): void;"] },
+	{ className: "AssetToolbar", tokens: ["mount(parent: HTMLElement", "dispose(): void;"] }
+];
+
+for (const check of requiredPublicChecks) {
+	const block = getClassBlock(check.className);
+	if (!block) {
+		console.log(`   ❌ Missing required public class: ${check.className}`);
+		declarationSurfaceValid = false;
+		continue;
+	}
+
+	for (const token of check.tokens) {
+		if (!block.includes(token)) {
+			console.log(`   ❌ Missing required public API in ${check.className}: ${token}`);
+			declarationSurfaceValid = false;
+		}
+	}
+}
+
+if (!declarationSurfaceValid) {
+	console.error("\n❌ Test 1b FAILED: Declaration surface guard failed\n");
+	process.exit(1);
+}
+console.log("   ✅ Test 1b PASSED: Declaration surface is locked\n");
+
 console.log("🔍 Test 2: Checking for unwanted chunk files...");
 const distPath = resolve(__dirname, "dist");
 const fs = await import("fs");

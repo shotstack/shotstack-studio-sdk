@@ -42,10 +42,12 @@ export class TranscriptionIndicator extends Entity {
 		this.getContainer().visible = false;
 	}
 
+	/** @internal */
 	public getIsVisible(): boolean {
 		return this.isVisible;
 	}
 
+	/** @internal */
 	public override update(deltaTime: number, _elapsed: number): void {
 		if (!this.isVisible || !this.spinner) return;
 
@@ -79,10 +81,12 @@ export class TranscriptionIndicator extends Entity {
 		this.statusText.position.set(padding + spinnerSize + gap, (height - this.statusText.height) / 2);
 	}
 
+	/** @internal */
 	public setPosition(x: number, y: number): void {
 		this.getContainer().position.set(x, y);
 	}
 
+	/** @internal */
 	public getWidth(): number {
 		if (!this.statusText) return 0;
 		const spinnerSize = 12;
