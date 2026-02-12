@@ -83,7 +83,6 @@ export class Edit {
 	// ─── Services ─────────────────────────────────────────────────────────────
 	/** @internal */
 	public assetLoader: AssetLoader;
-	/** @internal */
 	public events: EventEmitter<EditEventMap & InternalEventMap>;
 	private canvas: Canvas | null = null;
 
