@@ -9,7 +9,6 @@ export { UIController } from "@core/ui/ui-controller";
 export { EditEvent } from "@core/events/edit-events";
 
 export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-controller";
-export type { TimelineOptions, TimelineFeatures } from "@timeline/index";
 export type { EditConfig } from "@core/schemas";
 
 export {

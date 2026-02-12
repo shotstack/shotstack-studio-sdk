@@ -5,7 +5,7 @@ import { computeAiAssetNumber, type ResolvedClipWithId } from "@core/shared/ai-a
 import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
-import type { TimelineOptions, TimelineFeatures, ClipRenderer, ClipInfo } from "@timeline/timeline.types";
+import { DEFAULT_PIXELS_PER_SECOND, type ClipRenderer, type ClipInfo } from "@timeline/timeline.types";
 
 import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
@@ -16,13 +16,12 @@ import { MediaThumbnailRenderer } from "./media-thumbnail-renderer";
 import { ThumbnailGenerator } from "./thumbnail-generator";
 import { TimelineStateManager } from "./timeline-state";
 
+const DEFAULT_SNAP_THRESHOLD = 10;
+
 export class Timeline {
 	public readonly element: HTMLElement;
 	private readonly container: HTMLElement;
 	private readonly stateManager: TimelineStateManager;
-
-	// Feature flags
-	private features: Required<TimelineFeatures>;
 
 	// Custom renderers
 	private clipRenderers = new Map<string, ClipRenderer>();
@@ -61,22 +60,11 @@ export class Timeline {
 
 	constructor(
 		private readonly edit: Edit,
-		container: HTMLElement,
-		options: TimelineOptions = {}
+		container: HTMLElement
 	) {
 		this.element = document.createElement("div");
 		this.element.className = "ss-html-timeline";
 		this.container = container;
-
-		// Merge default features with provided options
-		this.features = {
-			toolbar: options.features?.toolbar ?? true,
-			ruler: options.features?.ruler ?? true,
-			playhead: options.features?.playhead ?? true,
-			snap: options.features?.snap ?? true,
-			badges: options.features?.badges ?? true,
-			multiSelect: options.features?.multiSelect ?? true
-		};
 
 		// Configure root element to fill container
 		this.element.style.width = "100%";
@@ -86,7 +74,7 @@ export class Timeline {
 		this.stateManager = new TimelineStateManager(edit, {
 			width: 800, // placeholder, updated in load()
 			height: 300, // placeholder, updated in load()
-			pixelsPerSecond: options.pixelsPerSecond ?? 50
+			pixelsPerSecond: DEFAULT_PIXELS_PER_SECOND
 		});
 
 		// Initialize media thumbnail generation (video and image)
@@ -335,19 +323,17 @@ export class Timeline {
 		const viewport = this.stateManager.getViewport();
 
 		// Build toolbar
-		if (this.features.toolbar) {
-			this.toolbar = new ToolbarComponent(
-				{
-					onPlay: () => this.edit.play(),
-					onPause: () => this.edit.pause(),
-					onSkipBack: () => this.edit.seek(sec(Math.max(0, this.edit.playbackTime - 1))),
-					onSkipForward: () => this.edit.seek(sec(this.edit.playbackTime + 1)),
-					onZoomChange: pps => this.setZoom(pps)
-				},
-				viewport.pixelsPerSecond
-			);
-			this.element.appendChild(this.toolbar.element);
-		}
+		this.toolbar = new ToolbarComponent(
+			{
+				onPlay: () => this.edit.play(),
+				onPause: () => this.edit.pause(),
+				onSkipBack: () => this.edit.seek(sec(Math.max(0, this.edit.playbackTime - 1))),
+				onSkipForward: () => this.edit.seek(sec(this.edit.playbackTime + 1)),
+				onZoomChange: pps => this.setZoom(pps)
+			},
+			viewport.pixelsPerSecond
+		);
+		this.element.appendChild(this.toolbar.element);
 
 		// Create wrapper for ruler + tracks + playhead (so playhead can span both)
 		this.rulerTracksWrapper = document.createElement("div");
@@ -355,28 +341,22 @@ export class Timeline {
 		this.element.appendChild(this.rulerTracksWrapper);
 
 		// Build ruler
-		if (this.features.ruler) {
-			this.ruler = new RulerComponent({
-				onSeek: timeSec => this.edit.seek(sec(timeSec)),
-				onWheel: e => {
-					if (this.trackList) {
-						this.trackList.element.scrollTop += e.deltaY;
-						this.trackList.element.scrollLeft += e.deltaX;
-					}
+		this.ruler = new RulerComponent({
+			onSeek: timeSec => this.edit.seek(sec(timeSec)),
+			onWheel: e => {
+				if (this.trackList) {
+					this.trackList.element.scrollTop += e.deltaY;
+					this.trackList.element.scrollLeft += e.deltaX;
 				}
-			});
-			this.rulerTracksWrapper.appendChild(this.ruler.element);
-		}
+			}
+		});
+		this.rulerTracksWrapper.appendChild(this.ruler.element);
 
 		// Build track list
 		this.trackList = new TrackListComponent({
-			showBadges: this.features.badges,
+			showBadges: true,
 			onClipSelect: (trackIndex, clipIndex, addToSelection) => {
-				if (this.features.multiSelect && addToSelection) {
-					this.stateManager.selectClip(trackIndex, clipIndex, true);
-				} else {
-					this.stateManager.selectClip(trackIndex, clipIndex, false);
-				}
+				this.stateManager.selectClip(trackIndex, clipIndex, addToSelection);
 				this.requestRender();
 			},
 			getClipRenderer: type => this.clipRenderers.get(type),
@@ -425,20 +405,18 @@ export class Timeline {
 		this.rulerTracksWrapper.appendChild(this.trackList.element);
 
 		// Build playhead (at wrapper level so it spans ruler + tracks)
-		if (this.features.playhead) {
-			this.playhead = new PlayheadComponent({
-				onSeek: timeSec => this.edit.seek(sec(timeSec))
-			});
-			this.playhead.setPixelsPerSecond(viewport.pixelsPerSecond);
-			this.rulerTracksWrapper.appendChild(this.playhead.element);
+		this.playhead = new PlayheadComponent({
+			onSeek: timeSec => this.edit.seek(sec(timeSec))
+		});
+		this.playhead.setPixelsPerSecond(viewport.pixelsPerSecond);
+		this.rulerTracksWrapper.appendChild(this.playhead.element);
 
-			// Build playhead ghost (hover preview)
-			this.playheadGhost = document.createElement("div");
-			this.playheadGhost.className = "ss-playhead-ghost";
-			this.rulerTracksWrapper.appendChild(this.playheadGhost);
+		// Build playhead ghost (hover preview)
+		this.playheadGhost = document.createElement("div");
+		this.playheadGhost.className = "ss-playhead-ghost";
+		this.rulerTracksWrapper.appendChild(this.playheadGhost);
 
-			this.rulerTracksWrapper.addEventListener("mousemove", this.handleRulerMouseMove);
-		}
+		this.rulerTracksWrapper.addEventListener("mousemove", this.handleRulerMouseMove);
 
 		// Build feedback layer (inside rulerTracksWrapper so coordinates align with tracks)
 		this.feedbackLayer = document.createElement("div");
@@ -447,7 +425,7 @@ export class Timeline {
 
 		// Initialize interaction controller
 		this.interactionController = new InteractionController(this.edit, this.stateManager, this.trackList.element, this.feedbackLayer, {
-			snapThreshold: this.features.snap ? 10 : 0,
+			snapThreshold: DEFAULT_SNAP_THRESHOLD,
 			onRequestRender: () => this.requestRender()
 		});
 		this.interactionController.mount();
@@ -527,20 +505,6 @@ export class Timeline {
 	public clearSelection(): void {
 		this.stateManager.clearSelection();
 		this.edit.clearSelection();
-		this.requestRender();
-	}
-
-	public enableFeature(feature: keyof TimelineFeatures): void {
-		this.features[feature] = true;
-		this.disposeComponents();
-		this.buildComponents();
-		this.requestRender();
-	}
-
-	public disableFeature(feature: keyof TimelineFeatures): void {
-		this.features[feature] = false;
-		this.disposeComponents();
-		this.buildComponents();
 		this.requestRender();
 	}
 

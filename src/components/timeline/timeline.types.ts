@@ -1,46 +1,6 @@
 import type { Seconds } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
-/** Configuration options for Timeline */
-export interface TimelineOptions {
-	/** Feature toggles */
-	features?: TimelineFeatures;
-	/** Interaction configuration */
-	interaction?: TimelineInteractionConfig;
-	/** Initial pixels per second (zoom level) */
-	pixelsPerSecond?: number;
-	/** Track height in pixels */
-	trackHeight?: number;
-}
-
-/** Feature toggles for Timeline */
-export interface TimelineFeatures {
-	/** Show toolbar with playback controls */
-	toolbar?: boolean;
-	/** Show time ruler */
-	ruler?: boolean;
-	/** Show playhead indicator */
-	playhead?: boolean;
-	/** Enable snap-to-grid/clips */
-	snap?: boolean;
-	/** Show timing intent badges on clips */
-	badges?: boolean;
-	/** Enable multi-select with shift/ctrl+click */
-	multiSelect?: boolean;
-}
-
-/** Interaction configuration */
-export interface TimelineInteractionConfig {
-	/** Minimum pixels to move before starting drag */
-	dragThreshold?: number;
-	/** Snap distance in pixels */
-	snapThreshold?: number;
-	/** Width of resize zone at clip edges */
-	resizeZone?: number;
-	/** Callback to request timeline re-render */
-	onRequestRender?: () => void;
-}
-
 /** Visual state for clips */
 export type ClipVisualState = "normal" | "selected" | "dragging" | "resizing";
 
@@ -117,28 +77,8 @@ export interface InteractionQuery {
 	isResizing(trackIndex: number, clipIndex: number): boolean;
 }
 
-/** Default feature settings */
-export const DEFAULT_FEATURES: Required<TimelineFeatures> = {
-	toolbar: true,
-	ruler: true,
-	playhead: true,
-	snap: true,
-	badges: true,
-	multiSelect: true
-};
-
-/** Default interaction settings (excludes optional callback) */
-export const DEFAULT_INTERACTION: Omit<Required<TimelineInteractionConfig>, "onRequestRender"> = {
-	dragThreshold: 3,
-	snapThreshold: 10,
-	resizeZone: 12
-};
-
 /** Default timeline settings */
 export const DEFAULT_PIXELS_PER_SECOND = 50;
-export const DEFAULT_TRACK_HEIGHT = 48;
-export const DEFAULT_TOOLBAR_HEIGHT = 40;
-export const DEFAULT_RULER_HEIGHT = 32;
 
 /** Track heights by asset type */
 export const TRACK_HEIGHTS: Record<string, number> = {

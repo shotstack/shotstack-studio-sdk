@@ -7,7 +7,7 @@ import { ResizeClipCommand } from "@core/commands/resize-clip-command";
 import type { Edit } from "@core/edit-session";
 import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
-import type { ClipState, TimelineInteractionConfig } from "@timeline/timeline.types";
+import type { ClipState } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
 
 import { TimelineStateManager } from "../timeline-state";
@@ -60,6 +60,13 @@ import {
 	createResizingState,
 	updateDragState
 } from "./interaction-state";
+
+interface TimelineInteractionConfig {
+	dragThreshold?: number;
+	snapThreshold?: number;
+	resizeZone?: number;
+	onRequestRender?: () => void;
+}
 
 /** Resolved config type - numeric properties required, callback optional */
 type ResolvedConfig = Required<Omit<TimelineInteractionConfig, "onRequestRender">> & Pick<TimelineInteractionConfig, "onRequestRender">;

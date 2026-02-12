@@ -80,16 +80,7 @@ ui.on("button:text", ({ position }) => {
 
 // 5) Timeline + controls
 const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-const timeline = new Timeline(edit, timelineContainer, {
-  features: {
-    toolbar: true,
-    ruler: true,
-    playhead: true,
-    snap: true,
-    badges: true,
-    multiSelect: true
-  }
-});
+const timeline = new Timeline(edit, timelineContainer);
 await timeline.load();
 
 const controls = new Controls(edit);
@@ -225,9 +216,7 @@ ui.dispose();
 import { Timeline } from "@shotstack/shotstack-studio";
 
 const container = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-const timeline = new Timeline(edit, container, {
-  features: { toolbar: true, ruler: true, playhead: true, snap: true, badges: true, multiSelect: true }
-});
+const timeline = new Timeline(edit, container);
 
 await timeline.load();
 timeline.zoomIn();

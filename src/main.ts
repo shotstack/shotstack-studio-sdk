@@ -1,7 +1,7 @@
 import { type Edit as EditSchema } from "@schemas";
 import { Timeline } from "@timeline/index";
 
-import template from "./templates/hello.json";
+import template from "./templates/test.json";
 
 import { Edit, Canvas, Controls, UIController } from "./index";
 
@@ -49,16 +49,7 @@ async function main() {
 
 		// 5. Initialize the Timeline
 		const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-		const timeline = new Timeline(edit, timelineContainer, {
-			features: {
-				toolbar: true,
-				ruler: true,
-				playhead: true,
-				snap: true,
-				badges: true,
-				multiSelect: true
-			}
-		});
+		const timeline = new Timeline(edit, timelineContainer);
 		await timeline.load();
 
 		// 6. Add keyboard controls
