@@ -46,6 +46,9 @@
 		"ffmpeg"
 	],
 	"license": "PolyForm Shield License 1.0.0",
+	"engines": {
+		"node": ">=22 <23"
+	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/shotstack/shotstack-studio-sdk"
@@ -65,7 +68,9 @@
 		"lint": "eslint --ignore-path .gitignore .",
 		"lint:fix": "eslint --ignore-path .gitignore --fix .",
 		"format": "prettier --ignore-path .gitignore --write .",
-		"prepublishOnly": "npm run build && npm run test && npm run test:package",
+		"verify:ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run test:package",
+		"release:check": "npm run verify:ci && npm pack --dry-run --json",
+		"prepublishOnly": "npm run release:check",
 		"generate:fonts": "npx tsx scripts/fetch-google-fonts.ts"
 	},
 	"devDependencies": {
