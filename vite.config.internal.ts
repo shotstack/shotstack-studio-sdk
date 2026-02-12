@@ -10,6 +10,7 @@ const globals = {
 	"@ffmpeg/ffmpeg": "FFmpeg",
 	harfbuzzjs: "createHarfBuzz"
 };
+const INTERNAL_TYPES_ENTRY_STUB = "export * from './internal'";
 
 export default defineConfig({
 	define: {
@@ -25,7 +26,23 @@ export default defineConfig({
 			outDir: "dist",
 			include: ["src/internal.ts", "src/core/**/*.ts"],
 			pathsToAliases: true,
-			entryRoot: "src"
+			entryRoot: "src",
+			beforeWriteFile: (filePath, content) => {
+				if (!filePath.endsWith("/dist/index.d.ts")) {
+					return { filePath, content };
+				}
+
+				// Keep the temporary stub at dist/index.d.ts so API Extractor can resolve its entry point.
+				if (content.includes(INTERNAL_TYPES_ENTRY_STUB)) {
+					return { filePath, content };
+				}
+
+				// Remap the rolled declaration output to dist/internal.d.ts for the ./internal export map.
+				return {
+					filePath: filePath.replace(/\/index\.d\.ts$/, "/internal.d.ts"),
+					content
+				};
+			}
 		})
 	],
 	resolve: {

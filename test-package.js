@@ -7,6 +7,9 @@ const __dirname = dirname(__filename);
 
 const CONTRACT = {
 	requiredFiles: [
+		"dist/internal.d.ts",
+		"dist/internal.es.js",
+		"dist/internal.umd.js",
 		"dist/index.d.ts",
 		"dist/schema/index.cjs",
 		"dist/schema/index.d.ts",
@@ -20,6 +23,11 @@ const CONTRACT = {
 			import: "./dist/shotstack-studio.es.js",
 			require: "./dist/shotstack-studio.umd.js"
 		},
+		"./internal": {
+			types: "./dist/internal.d.ts",
+			import: "./dist/internal.es.js",
+			require: "./dist/internal.umd.js"
+		},
 		"./schema": {
 			types: "./dist/schema/index.d.ts",
 			import: "./dist/schema/index.mjs",
@@ -27,6 +35,7 @@ const CONTRACT = {
 		}
 	},
 	runtimeExports: ["Edit", "Canvas", "Controls", "VideoExporter", "Timeline"],
+	internalRuntimeExports: ["Edit", "ShotstackEdit"],
 	dtsHiddenMembersByClass: {
 		AssetToolbar: ["getDragState(", "setPosition("],
 		CanvasToolbar: ["getDragState(", "setPosition("],
@@ -129,6 +138,33 @@ const checkDeclarationSurface = () => {
 	printResult("Declaration surface contract", true);
 };
 
+const checkInternalDeclarationSurface = () => {
+	const dtsPath = resolve(__dirname, "dist/internal.d.ts");
+	const dtsContent = readFileSync(dtsPath, "utf-8");
+	const errors = [];
+	const requiredTokens = [
+		"export declare class Edit",
+		"export declare class ShotstackEdit extends Edit",
+		"export declare class MergeFieldService"
+	];
+	const isEntryStubOnly = /^\s*export\s+\*\s+from\s+['"]\.\/internal['"]\s*;\s*export\s*\{\s*\}\s*;?\s*$/.test(dtsContent);
+
+	for (const token of requiredTokens) {
+		if (!dtsContent.includes(token)) {
+			errors.push(`Required internal declaration missing: ${token}`);
+		}
+	}
+
+	if (isEntryStubOnly) {
+		errors.push("dist/internal.d.ts is an entry stub, not rolled declarations.");
+	}
+
+	if (errors.length > 0) {
+		failWithDetails("Internal declaration surface contract", errors);
+	}
+	printResult("Internal declaration surface contract", true);
+};
+
 const checkNoChunkArtifactsOrImports = () => {
 	const errors = [];
 	const distFiles = readdirSync(resolve(__dirname, "dist"));
@@ -176,29 +212,29 @@ const checkPackageExports = () => {
 	printResult("package.json exports contract", true);
 };
 
-const checkRuntimeExports = async () => {
+const runRuntimeExportSmokeTest = async (name, modulePath, expectedExports) => {
 	try {
-		const module = await import("./dist/shotstack-studio.es.js");
-		const missing = CONTRACT.runtimeExports.filter(symbol => !module[symbol]);
+		const module = await import(modulePath);
+		const missing = expectedExports.filter(symbol => !module[symbol]);
 
 		if (missing.length > 0) {
-			failWithDetails("Runtime export smoke test", missing.map(symbol => `Missing runtime export: ${symbol}`));
+			failWithDetails(name, missing.map(symbol => `Missing runtime export: ${symbol}`));
 		}
-		printResult("Runtime export smoke test", true);
+		printResult(name, true);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
 
 		if (message.includes("index-") || code === "MODULE_NOT_FOUND") {
-			failWithDetails("Runtime export smoke test", [`Module import failed due to chunk/module resolution: ${message}`]);
+			failWithDetails(name, [`Module import failed due to chunk/module resolution: ${message}`]);
 		}
 
 		if (BROWSER_GLOBALS.some(global => message.includes(global))) {
-			printResult("Runtime export smoke test", true, ["Browser-only import limitation detected (acceptable in Node smoke test)."]);
+			printResult(name, true, ["Browser-only import limitation detected (acceptable in Node smoke test)."]);
 			return;
 		}
 
-		failWithDetails("Runtime export smoke test", [`Unexpected import failure: ${message}`]);
+		failWithDetails(name, [`Unexpected import failure: ${message}`]);
 	}
 };
 
@@ -206,9 +242,11 @@ console.log("Verifying Shotstack package contract\n");
 
 checkRequiredFiles();
 checkDeclarationSurface();
+checkInternalDeclarationSurface();
 checkNoChunkArtifactsOrImports();
 checkPackageExports();
-await checkRuntimeExports();
+await runRuntimeExportSmokeTest("Runtime export smoke test", "./dist/shotstack-studio.es.js", CONTRACT.runtimeExports);
+await runRuntimeExportSmokeTest("Internal runtime export smoke test", "./dist/internal.es.js", CONTRACT.internalRuntimeExports);
 
 console.log("\n--------------------------------------------------------");
 console.log("ALL PACKAGE CONTRACT CHECKS PASSED");

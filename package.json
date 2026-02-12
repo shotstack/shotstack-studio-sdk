@@ -56,7 +56,7 @@
 		"start": "npm run build && vite preview",
 		"build": "npm run build:main && npm run build:internal && npm run build:schema",
 		"build:main": "vite build",
-		"build:internal": "vite build --config vite.config.internal.ts",
+		"build:internal": "node scripts/build-internal.mjs",
 		"build:schema": "vite build --config vite.config.schema.ts",
 		"test": "jest",
 		"test:watch": "jest --watch",
