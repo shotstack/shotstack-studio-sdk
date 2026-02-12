@@ -23,12 +23,6 @@
 			"import": "./dist/internal.es.js",
 			"require": "./dist/internal.umd.js",
 			"default": "./dist/internal.es.js"
-		},
-		"./schema": {
-			"types": "./dist/schema/index.d.ts",
-			"import": "./dist/schema/index.mjs",
-			"require": "./dist/schema/index.cjs",
-			"default": "./dist/schema/index.mjs"
 		}
 	},
 	"files": [
@@ -36,7 +30,6 @@
 		"dist/shotstack-studio.es.js",
 		"dist/internal.umd.js",
 		"dist/internal.es.js",
-		"dist/schema/**",
 		"dist/**/*.d.ts"
 	],
 	"keywords": [
@@ -57,10 +50,9 @@
 		"dev": "vite",
 		"dev:shotstack": "vite --open /shotstack.html",
 		"start": "npm run build && vite preview",
-		"build": "npm run build:main && npm run build:internal && npm run build:schema",
+		"build": "npm run build:main && npm run build:internal",
 		"build:main": "vite build",
 		"build:internal": "node scripts/build-internal.mjs",
-		"build:schema": "vite build --config vite.config.schema.ts",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:package": "node test-package.js",

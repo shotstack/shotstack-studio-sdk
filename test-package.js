@@ -11,9 +11,6 @@ const CONTRACT = {
 		"dist/internal.es.js",
 		"dist/internal.umd.js",
 		"dist/index.d.ts",
-		"dist/schema/index.cjs",
-		"dist/schema/index.d.ts",
-		"dist/schema/index.mjs",
 		"dist/shotstack-studio.es.js",
 		"dist/shotstack-studio.umd.js"
 	],
@@ -27,17 +24,20 @@ const CONTRACT = {
 			types: "./dist/internal.d.ts",
 			import: "./dist/internal.es.js",
 			require: "./dist/internal.umd.js"
-		},
-		"./schema": {
-			types: "./dist/schema/index.d.ts",
-			import: "./dist/schema/index.mjs",
-			require: "./dist/schema/index.cjs"
 		}
 	},
 	runtimeExports: ["Edit", "Canvas", "Controls", "Timeline", "UIController", "VideoExporter", "VERSION"],
 	internalRuntimeExports: ["Edit", "ShotstackEdit"],
 	dtsHiddenMembersByClass: {
-		UIController: ["updateOverlays(", "updateToolbarPositions(", "registerToolbar(", "registerUtility(", "registerCanvasOverlay(", "getButtons()", "off<"],
+		UIController: [
+			"updateOverlays(",
+			"updateToolbarPositions(",
+			"registerToolbar(",
+			"registerUtility(",
+			"registerCanvasOverlay(",
+			"getButtons()",
+			"off<"
+		],
 		Canvas: [
 			"overlayContainer:",
 			"getContentBounds(",
@@ -162,7 +162,10 @@ const failWithDetails = (name, details) => {
 const checkRequiredFiles = () => {
 	const missing = CONTRACT.requiredFiles.filter(file => !existsSync(resolve(__dirname, file)));
 	if (missing.length > 0) {
-		failWithDetails("Required build artifacts", missing.map(file => `Missing file: ${file}`));
+		failWithDetails(
+			"Required build artifacts",
+			missing.map(file => `Missing file: ${file}`)
+		);
 	}
 	printResult("Required build artifacts", true);
 };
@@ -222,11 +225,7 @@ const checkInternalDeclarationSurface = () => {
 	const dtsPath = resolve(__dirname, "dist/internal.d.ts");
 	const dtsContent = readFileSync(dtsPath, "utf-8");
 	const errors = [];
-	const requiredTokens = [
-		"export declare class Edit",
-		"export declare class ShotstackEdit extends Edit",
-		"export declare class MergeFieldService"
-	];
+	const requiredTokens = ["export declare class Edit", "export declare class ShotstackEdit extends Edit", "export declare class MergeFieldService"];
 	const isEntryStubOnly = /^\s*export\s+\*\s+from\s+['"]\.\/internal['"]\s*;\s*export\s*\{\s*\}\s*;?\s*$/.test(dtsContent);
 
 	for (const token of requiredTokens) {
@@ -298,7 +297,10 @@ const runRuntimeExportSmokeTest = async (name, modulePath, expectedExports) => {
 		const missing = expectedExports.filter(symbol => !module[symbol]);
 
 		if (missing.length > 0) {
-			failWithDetails(name, missing.map(symbol => `Missing runtime export: ${symbol}`));
+			failWithDetails(
+				name,
+				missing.map(symbol => `Missing runtime export: ${symbol}`)
+			);
 		}
 		printResult(name, true);
 	} catch (error) {
