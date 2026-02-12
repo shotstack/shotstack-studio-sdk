@@ -36,8 +36,7 @@ export class Canvas {
 
 	private readonly edit: Edit;
 
-	/** Container for interactive overlays (handles, guides). Renders above content. */
-	/** @internal */
+	/** Container for interactive overlays (handles, guides). Renders above content. @internal */
 	public readonly overlayContainer: pixi.Container;
 
 	private viewportContainer?: pixi.Container;
@@ -277,8 +276,8 @@ export class Canvas {
 	/**
 	 * Get the pixel bounds of the canvas content (edit area) within the viewport.
 	 * Used for positioning toolbars adjacent to the canvas content.
+	 * @internal
 	 */
-	/** @internal */
 	public getContentBounds(): { left: number; right: number; top: number; bottom: number } {
 		const scaledWidth = this.edit.size.width * this.currentZoom;
 		const scaledHeight = this.edit.size.height * this.currentZoom;
@@ -302,8 +301,8 @@ export class Canvas {
 	 * Get the viewport container for coordinate transforms.
 	 * Used by selection handles, export coordinator, and other components
 	 * that need to convert between viewport and world coordinates.
+	 * @internal
 	 */
-	/** @internal */
 	public getViewportContainer(): pixi.Container {
 		if (!this.viewportContainer) {
 			throw new Error("Viewport container not initialized. Call load() first.");
@@ -407,8 +406,8 @@ export class Canvas {
 	/**
 	 * Update the edit background and viewport mask when size changes.
 	 * Called from Edit when output size is changed.
+	 * @internal
 	 */
-	/** @internal */
 	public updateViewportForSize(width: number, height: number, backgroundColor: string): void {
 		if (this.editBackground) {
 			this.editBackground.clear();
@@ -435,12 +434,13 @@ export class Canvas {
 	 * Canvas reacts to these events to update PIXI visuals.
 	 */
 	private subscribeToEditEvents(): void {
-		this.edit.events.on(InternalEvent.PlayerAddedToTrack, this.onPlayerAddedToTrack);
-		this.edit.events.on(InternalEvent.PlayerMovedBetweenTracks, this.onPlayerMovedBetweenTracks);
-		this.edit.events.on(InternalEvent.PlayerRemovedFromTrack, this.onPlayerRemovedFromTrack);
-		this.edit.events.on(InternalEvent.TrackContainerRemoved, this.onTrackContainerRemoved);
-		this.edit.events.on(InternalEvent.ViewportSizeChanged, this.onViewportSizeChanged);
-		this.edit.events.on(InternalEvent.ViewportNeedsZoomToFit, this.onViewportNeedsZoomToFit);
+		const internalEvents = this.edit.getInternalEvents();
+		internalEvents.on(InternalEvent.PlayerAddedToTrack, this.onPlayerAddedToTrack);
+		internalEvents.on(InternalEvent.PlayerMovedBetweenTracks, this.onPlayerMovedBetweenTracks);
+		internalEvents.on(InternalEvent.PlayerRemovedFromTrack, this.onPlayerRemovedFromTrack);
+		internalEvents.on(InternalEvent.TrackContainerRemoved, this.onTrackContainerRemoved);
+		internalEvents.on(InternalEvent.ViewportSizeChanged, this.onViewportSizeChanged);
+		internalEvents.on(InternalEvent.ViewportNeedsZoomToFit, this.onViewportNeedsZoomToFit);
 	}
 
 	private onPlayerAddedToTrack = ({ player, trackIndex }: { player: Player; trackIndex: number }): void => {
@@ -547,7 +547,7 @@ export class Canvas {
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
 		if (event.target === this.background) {
-			this.edit.events.emit(InternalEvent.CanvasBackgroundClicked);
+			this.edit.getInternalEvents().emit(InternalEvent.CanvasBackgroundClicked);
 		}
 	}
 
@@ -562,6 +562,15 @@ export class Canvas {
 	}
 
 	public dispose(): void {
+		// Unsubscribe from Edit internal events
+		const internalEvents = this.edit.getInternalEvents();
+		internalEvents.off(InternalEvent.PlayerAddedToTrack, this.onPlayerAddedToTrack);
+		internalEvents.off(InternalEvent.PlayerMovedBetweenTracks, this.onPlayerMovedBetweenTracks);
+		internalEvents.off(InternalEvent.PlayerRemovedFromTrack, this.onPlayerRemovedFromTrack);
+		internalEvents.off(InternalEvent.TrackContainerRemoved, this.onTrackContainerRemoved);
+		internalEvents.off(InternalEvent.ViewportSizeChanged, this.onViewportSizeChanged);
+		internalEvents.off(InternalEvent.ViewportNeedsZoomToFit, this.onViewportNeedsZoomToFit);
+
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
 		if (root && root.contains(this.application.canvas)) {
 			root.removeChild(this.application.canvas);

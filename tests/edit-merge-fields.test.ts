@@ -320,7 +320,7 @@ describe("Edit Merge Fields", () => {
 			}
 		});
 
-		events = edit.events;
+		events = edit.getInternalEvents();
 		emitSpy = jest.spyOn(events, "emit");
 	});
 
@@ -408,7 +408,7 @@ describe("Edit Merge Fields", () => {
 			expect(field?.defaultValue).toBe("https://example.com/value.jpg");
 		});
 
-		it("emits mergefield:applied event", async () => {
+		it("emits mergefield:changed event when applying a merge field", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 			emitSpy.mockClear();
@@ -418,12 +418,9 @@ describe("Edit Merge Fields", () => {
 			await Promise.resolve();
 
 			expect(emitSpy).toHaveBeenCalledWith(
-				"mergefield:applied",
+				"mergefield:changed",
 				expect.objectContaining({
-					propertyPath: "asset.src",
-					fieldName: "MEDIA_URL",
-					trackIndex: 0,
-					clipIndex: 0
+					fields: expect.any(Array)
 				})
 			);
 		});
@@ -542,7 +539,7 @@ describe("Edit Merge Fields", () => {
 			expect(afterIndex).toBe(beforeIndex);
 		});
 
-		it("emits mergefield:removed event on undo", async () => {
+		it("emits mergefield:changed event on undo", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
@@ -553,11 +550,9 @@ describe("Edit Merge Fields", () => {
 			await Promise.resolve();
 
 			expect(emitSpy).toHaveBeenCalledWith(
-				"mergefield:removed",
+				"mergefield:changed",
 				expect.objectContaining({
-					propertyPath: "asset.src",
-					trackIndex: 0,
-					clipIndex: 0
+					fields: expect.any(Array)
 				})
 			);
 		});
@@ -723,6 +718,34 @@ describe("Edit Merge Fields", () => {
 
 			await edit.deleteMergeFieldGlobally("DELETE_ME");
 			expect(edit.mergeFields.get("DELETE_ME")).toBeUndefined();
+		});
+
+		it("does not emit mergefield:removed and does emit mergefield:changed", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+			await edit.applyMergeField(0, 0, "asset.src", "DELETE_EVENT_CONTRACT", "https://example.com/value.jpg");
+			emitSpy.mockClear();
+
+			await edit.deleteMergeFieldGlobally("DELETE_EVENT_CONTRACT");
+
+			expect(emitSpy).not.toHaveBeenCalledWith("mergefield:removed", expect.anything());
+			expect(emitSpy).toHaveBeenCalledWith(
+				"mergefield:changed",
+				expect.objectContaining({
+					fields: expect.any(Array)
+				})
+			);
+		});
+
+		it("emits mergefield:changed once when removing a registry-only field", async () => {
+			edit.mergeFields.register({ name: "REGISTRY_ONLY", defaultValue: "value" });
+			emitSpy.mockClear();
+
+			await edit.deleteMergeFieldGlobally("REGISTRY_ONLY");
+
+			const changedCalls = emitSpy.mock.calls.filter(([eventName]) => eventName === "mergefield:changed");
+			expect(changedCalls).toHaveLength(1);
+			expect(emitSpy).not.toHaveBeenCalledWith("mergefield:removed", expect.anything());
 		});
 
 		it("restores defaultValue to affected clips", async () => {

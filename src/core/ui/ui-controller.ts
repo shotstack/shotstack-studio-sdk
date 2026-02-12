@@ -55,6 +55,7 @@ export type UIButtonEventMap = Record<`button:${string}`, ButtonClickPayload>;
  * Interface for HTML/DOM UI components that can be registered with UIController.
  * Toolbars, inspectors, and other UI elements should implement this interface.
  */
+/** @internal */
 export interface UIRegistration {
 	/** Mount the component to a parent container */
 	mount(container: HTMLElement): void;
@@ -70,6 +71,7 @@ export interface UIRegistration {
  * Interface for PixiJS-based overlays that render on the canvas.
  * Used for interactive elements like selection handles, alignment guides, etc.
  */
+/** @internal */
 export interface CanvasOverlayRegistration {
 	/** Mount to PixiJS container */
 	mount(container: pixi.Container, app: pixi.Application): void;
@@ -98,17 +100,12 @@ export interface UIControllerOptions {
  *
  * This enables:
  * - Pure preview mode (Canvas without UI)
- * - Custom toolbar registration
  * - Optional UI element loading
  *
  * @example
  * ```typescript
- * // Standard setup with all toolbars
  * const ui = UIController.create(edit, canvas, { mergeFields: true });
- *
- * // Minimal setup for custom toolbars
- * const ui = UIController.minimal(edit, canvas);
- * ui.registerToolbar('text', new CustomTextToolbar(edit));
+ * ui.registerButton({ id: "text", icon: "...", tooltip: "Add Text" });
  * ```
  */
 export class UIController {
@@ -185,7 +182,7 @@ export class UIController {
 
 	/**
 	 * Create a minimal UIController without pre-registered toolbars.
-	 * Use this when you want full control over which toolbars are registered.
+	 * Use this when you only need custom buttons without default toolbars.
 	 *
 	 * @param edit - The Edit instance
 	 * @param canvas - Optional Canvas instance
@@ -194,8 +191,7 @@ export class UIController {
 	 * @example
 	 * ```typescript
 	 * const ui = UIController.minimal(edit, canvas);
-	 * ui.registerToolbar('text', new CustomTextToolbar(edit));
-	 * ui.registerToolbar('video', new CustomVideoToolbar(edit));
+	 * ui.registerButton({ id: "text", icon: "...", tooltip: "Add Text" });
 	 * ```
 	 */
 	static minimal(edit: Edit, canvas?: Canvas): UIController {
@@ -279,6 +275,7 @@ export class UIController {
 	 * @param assetTypes - Single type or array of types (e.g., 'text', ['video', 'image'])
 	 * @param toolbar - The toolbar component implementing UIRegistration
 	 * @returns this (for chaining)
+	 * @internal
 	 */
 	registerToolbar(assetTypes: string | string[], toolbar: UIRegistration): this {
 		const types = Array.isArray(assetTypes) ? assetTypes : [assetTypes];
@@ -294,6 +291,7 @@ export class UIController {
 	 *
 	 * @param component - The utility component implementing UIRegistration
 	 * @returns this (for chaining)
+	 * @internal
 	 */
 	registerUtility(component: UIRegistration): this {
 		this.utilities.push(component);
@@ -306,6 +304,7 @@ export class UIController {
 	 *
 	 * @param overlay - The overlay component implementing CanvasOverlayRegistration
 	 * @returns this (for chaining)
+	 * @internal
 	 */
 	registerCanvasOverlay(overlay: CanvasOverlayRegistration): this {
 		this.canvasOverlays.push(overlay);
@@ -384,8 +383,8 @@ export class UIController {
 
 	/**
 	 * Update all canvas overlays. Called by Canvas each tick.
+	 * @internal
 	 */
-	/** @internal */
 	updateOverlays(deltaTime: number, elapsed: number): void {
 		for (const overlay of this.canvasOverlays) {
 			overlay.update(deltaTime, elapsed);
@@ -416,8 +415,8 @@ export class UIController {
 	 * Update toolbar positions to be adjacent to the canvas content.
 	 * Uses position: fixed with screen coordinates for complete independence from parent CSS.
 	 * Called by Canvas after zoom, pan, or resize operations.
+	 * @internal
 	 */
-	/** @internal */
 	updateToolbarPositions(): void {
 		if (!this.canvas) return;
 
@@ -549,6 +548,7 @@ export class UIController {
 
 	/**
 	 * Get all registered toolbar buttons.
+	 * @internal
 	 */
 	getButtons(): ToolbarButtonConfig[] {
 		return [...this.buttonRegistry];
@@ -574,6 +574,7 @@ export class UIController {
 
 	/**
 	 * Unsubscribe from a button click event.
+	 * @internal
 	 */
 	off<K extends `button:${string}`>(event: K, handler: (payload: ButtonClickPayload) => void): void {
 		this.buttonEvents.off(event as keyof UIButtonEventMap, handler);

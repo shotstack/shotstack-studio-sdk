@@ -102,13 +102,8 @@ export class SetMergeFieldCommand implements EditCommand {
 		// 4. Resolve → Reconciler handles player updates (reloadAsset, reconfigure, draw)
 		context.resolve();
 
-		// 5. Emit event
-		context.emitEvent(EditEvent.MergeFieldApplied, {
-			propertyPath: this.propertyPath,
-			fieldName: this.fieldName ?? "",
-			trackIndex: this.trackIndex,
-			clipIndex: this.clipIndex
-		});
+		// 5. Emit canonical merge field event
+		context.emitEvent(EditEvent.MergeFieldChanged, { fields: mergeFields.getAll() });
 
 		return CommandSuccess();
 	}
@@ -138,13 +133,8 @@ export class SetMergeFieldCommand implements EditCommand {
 		// 4. Resolve → Reconciler handles player updates
 		context.resolve();
 
-		// 5. Emit event
-		context.emitEvent(EditEvent.MergeFieldRemoved, {
-			propertyPath: this.propertyPath,
-			fieldName: this.previousFieldName,
-			trackIndex: this.trackIndex,
-			clipIndex: this.clipIndex
-		});
+		// 5. Emit canonical merge field event
+		context.emitEvent(EditEvent.MergeFieldChanged, { fields: mergeFields.getAll() });
 
 		return CommandSuccess();
 	}

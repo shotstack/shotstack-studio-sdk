@@ -101,7 +101,7 @@ export class OutputSettingsManager {
 
 		this.edit.updateCanvasForSize();
 
-		this.edit.events.emit(EditEvent.OutputResized, size);
+		this.edit.getInternalEvents().emit(EditEvent.OutputResized, size);
 		// Note: emitEditChanged is handled by executeCommand
 	}
 
@@ -131,7 +131,7 @@ export class OutputSettingsManager {
 		// Sync with document layer
 		this.edit.getDocument()?.setFps(result.data);
 
-		this.edit.events.emit(EditEvent.OutputFpsChanged, { fps });
+		this.edit.getInternalEvents().emit(EditEvent.OutputFpsChanged, { fps });
 		// Note: emitEditChanged is handled by executeCommand
 	}
 
@@ -158,7 +158,7 @@ export class OutputSettingsManager {
 		// Sync with document layer
 		this.edit.getDocument()?.setFormat(result.data);
 
-		this.edit.events.emit(EditEvent.OutputFormatChanged, { format: result.data });
+		this.edit.getInternalEvents().emit(EditEvent.OutputFormatChanged, { format: result.data });
 	}
 
 	getFormat(): string {
@@ -181,7 +181,7 @@ export class OutputSettingsManager {
 			};
 		}
 
-		this.edit.events.emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
+		this.edit.getInternalEvents().emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
 	}
 
 	getDestinations(): Destination[] {
@@ -220,8 +220,8 @@ export class OutputSettingsManager {
 
 		this.edit.updateCanvasForSize();
 
-		this.edit.events.emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
-		this.edit.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
+		this.edit.getInternalEvents().emit(EditEvent.OutputResolutionChanged, { resolution: validatedResolution });
+		this.edit.getInternalEvents().emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
 	}
 
 	getResolution(): string | undefined {
@@ -249,7 +249,7 @@ export class OutputSettingsManager {
 				};
 			}
 			this.edit.getDocument()?.setAspectRatio(validatedAspectRatio);
-			this.edit.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
+			this.edit.getInternalEvents().emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
 			return;
 		}
 
@@ -275,8 +275,8 @@ export class OutputSettingsManager {
 
 		this.edit.updateCanvasForSize();
 
-		this.edit.events.emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
-		this.edit.events.emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
+		this.edit.getInternalEvents().emit(EditEvent.OutputAspectRatioChanged, { aspectRatio: validatedAspectRatio });
+		this.edit.getInternalEvents().emit(EditEvent.OutputResized, { width: newSize.width, height: newSize.height });
 	}
 
 	getAspectRatio(): string | undefined {

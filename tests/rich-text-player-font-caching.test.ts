@@ -168,11 +168,13 @@ function createDeferred<T>(): Deferred<T> {
 
 function createMockEdit(fontUrlsByKey: Record<string, string>): Edit {
 	const fontUrls = Object.values(fontUrlsByKey);
+	const events = { emit: jest.fn(), on: jest.fn(), off: jest.fn() };
 	return {
 		size: { width: 1280, height: 720 },
 		playbackTime: 0,
 		isPlaying: false,
-		events: { emit: jest.fn(), on: jest.fn(), off: jest.fn() },
+		events,
+		getInternalEvents: jest.fn(() => events),
 		getTimelineFonts: jest.fn().mockReturnValue(fontUrls.map(src => ({ src }))),
 		getFontMetadata: jest.fn().mockReturnValue(new Map<string, { baseFamilyName: string; weight: number }>()),
 		getFontUrlByFamilyAndWeight: jest.fn().mockImplementation((family: string, weight: number) => fontUrlsByKey[`${family}|${weight}`] ?? null),

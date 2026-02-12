@@ -320,7 +320,7 @@ describe("Edit Clip Operations", () => {
 		// Schema validation happens at load time; runtime state can be empty
 		edit.deleteClip(0, 0);
 
-		events = edit.events;
+		events = edit.getInternalEvents();
 		emitSpy = jest.spyOn(events, "emit");
 	});
 

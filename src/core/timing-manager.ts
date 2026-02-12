@@ -139,7 +139,7 @@ export class TimingManager {
 		this.edit.updateTotalDuration();
 
 		// Notify SDK consumers of timeline changes
-		this.edit.events.emit(EditEvent.TimelineUpdated, {
+		this.edit.getInternalEvents().emit(EditEvent.TimelineUpdated, {
 			current: this.edit.getEdit()
 		});
 	}

@@ -1,5 +1,6 @@
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
 import { Edit } from "./edit-session";
+import { EditEvent } from "./events/edit-events";
 import { parseFontFamily } from "./fonts/font-config";
 import type { MergeFieldService } from "./merge";
 import type { Clip, RichTextAsset, TextAsset } from "./schemas";
@@ -244,7 +245,12 @@ export class ShotstackEdit extends Edit {
 		}
 
 		// Remove from registry
-		this.mergeFieldService.remove(fieldName);
+		// remove() emits mergefield:changed on success; this handles the case where
+		// the field was already removed from the registry by restoreMergeFieldInClip
+		const removedFromRegistry = this.mergeFieldService.remove(fieldName);
+		if (!removedFromRegistry) {
+			this.getInternalEvents().emit(EditEvent.MergeFieldChanged, { fields: this.mergeFieldService.getAll() });
+		}
 	}
 
 	// ─── Text Conversion API ───────────────────────────────────────────────────
@@ -342,6 +348,7 @@ export class ShotstackEdit extends Edit {
 		// Build style object
 		const style: RichTextAsset["style"] = {
 			letterSpacing: 0,
+			wordSpacing: 0,
 			lineHeight: textAsset.font?.lineHeight ?? 1.2,
 			textTransform: "none",
 			textDecoration: "none"

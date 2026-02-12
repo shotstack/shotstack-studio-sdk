@@ -71,7 +71,7 @@ export class CaptionPlayer extends Player {
 				throw new Error("Cannot resolve alias: edit not loaded");
 			}
 			const result = await resolveTranscriptionAlias(src, resolvedEdit, progress => {
-				this.edit.events.emit(EditEvent.TranscriptionProgress, {
+				this.edit.getInternalEvents().emit(EditEvent.TranscriptionProgress, {
 					clipAlias,
 					...progress
 				});
@@ -91,7 +91,7 @@ export class CaptionPlayer extends Player {
 
 			this.isTranscribing = false;
 
-			this.edit.events.emit(EditEvent.TranscriptionCompleted, {
+			this.edit.getInternalEvents().emit(EditEvent.TranscriptionCompleted, {
 				clipAlias,
 				cueCount: this.cues.length
 			});
@@ -99,7 +99,7 @@ export class CaptionPlayer extends Player {
 			this.isTranscribing = false;
 			console.error("Failed to transcribe:", error);
 
-			this.edit.events.emit(EditEvent.TranscriptionFailed, {
+			this.edit.getInternalEvents().emit(EditEvent.TranscriptionFailed, {
 				clipAlias,
 				error: error instanceof Error ? error.message : "Transcription failed"
 			});

@@ -352,7 +352,7 @@ describe("Edit loadEdit()", () => {
 		});
 		await edit.load();
 
-		events = edit.events;
+		events = edit.getInternalEvents();
 		emitSpy = jest.spyOn(events, "emit");
 	});
 

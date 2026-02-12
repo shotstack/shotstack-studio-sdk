@@ -44,6 +44,7 @@ function createMockEdit(tracks: unknown[][] = [], lumaRelations: Map<string, str
 
 	return {
 		events,
+		getInternalEvents: jest.fn(() => events),
 		playbackTime: sec(0),
 		isPlaying: false,
 		totalDuration: sec(10),
@@ -396,6 +397,7 @@ describe("Resolved event cache invalidation regression", () => {
 		const events = createMockEventEmitter();
 		const edit = {
 			events,
+			getInternalEvents: jest.fn(() => events),
 			playbackTime: sec(0),
 			isPlaying: false,
 			totalDuration: sec(10),

@@ -39,7 +39,7 @@ export class PlayerReconciler {
 	private enableCreation = true;
 
 	constructor(private readonly edit: Edit) {
-		this.edit.events.on(InternalEvent.Resolved, this.onResolved);
+		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.onResolved);
 	}
 
 	private onResolved = ({ edit: resolved }: { edit: ResolvedEdit }): void => {
@@ -197,7 +197,7 @@ export class PlayerReconciler {
 			.load()
 			.then(() => {
 				// Emit PlayerLoaded for all players
-				this.edit.events.emit(InternalEvent.PlayerLoaded, {
+				this.edit.getInternalEvents().emit(InternalEvent.PlayerLoaded, {
 					player,
 					trackIndex,
 					clipIndex
@@ -205,7 +205,7 @@ export class PlayerReconciler {
 
 				// Also emit ClipUnresolved for AI assets
 				if (AI_ASSET_TYPES.has(assetType)) {
-					this.edit.events.emit(EditEvent.ClipUnresolved, {
+					this.edit.getInternalEvents().emit(EditEvent.ClipUnresolved, {
 						trackIndex,
 						clipIndex,
 						assetType,
@@ -215,7 +215,7 @@ export class PlayerReconciler {
 			})
 			.catch(error => {
 				const errorMessage = error instanceof Error ? error.message : String(error);
-				this.edit.events.emit(EditEvent.ClipLoadFailed, {
+				this.edit.getInternalEvents().emit(EditEvent.ClipLoadFailed, {
 					trackIndex,
 					clipIndex,
 					error: errorMessage,
@@ -428,6 +428,6 @@ export class PlayerReconciler {
 	 * Clean up event subscriptions.
 	 */
 	public dispose(): void {
-		this.edit.events.off(InternalEvent.Resolved, this.onResolved);
+		this.edit.getInternalEvents().off(InternalEvent.Resolved, this.onResolved);
 	}
 }

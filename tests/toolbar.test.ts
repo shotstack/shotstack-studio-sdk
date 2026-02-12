@@ -139,6 +139,7 @@ function createMockUIController() {
 function createMockEdit(overrides: Record<string, unknown> = {}) {
 	const events = createMockEventEmitter();
 	return {
+		getInternalEvents: jest.fn(() => events),
 		getPlayerClip: jest.fn((): MockPlayer | null => null),
 		getClip: jest.fn(() => null),
 		getClipId: jest.fn(() => "mock-clip-id"),

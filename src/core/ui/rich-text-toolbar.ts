@@ -82,8 +82,9 @@ export class RichTextToolbar extends BaseToolbar {
 	private stylePopup: HTMLDivElement | null = null;
 	private stylePanel: StylePanel | null = null;
 
-	// Bound handler for proper cleanup
+	// Bound handlers for proper cleanup
 	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
+	private unsubFontCapabilities: (() => void) | null = null;
 
 	constructor(edit: Edit, options: RichTextToolbarOptions = {}) {
 		super(edit);
@@ -790,7 +791,7 @@ export class RichTextToolbar extends BaseToolbar {
 		parent.insertBefore(this.container, parent.firstChild);
 
 		// Re-sync when font capabilities change (async operation)
-		this.edit.events.on(InternalEvent.FontCapabilitiesChanged, () => {
+		this.unsubFontCapabilities = this.edit.getInternalEvents().on(InternalEvent.FontCapabilitiesChanged, () => {
 			if (this.container?.style.display !== "none") {
 				this.syncState();
 			}
@@ -1719,7 +1720,9 @@ export class RichTextToolbar extends BaseToolbar {
 		this.dragManager.clear();
 		this.lastSyncedClipId = null;
 
-		// Clean up event listener before super.dispose() removes container
+		// Clean up event listeners before super.dispose() removes container
+		this.unsubFontCapabilities?.();
+		this.unsubFontCapabilities = null;
 		if (this.boundHandleClick) {
 			this.container?.removeEventListener("click", this.boundHandleClick);
 			this.boundHandleClick = null;

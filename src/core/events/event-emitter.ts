@@ -2,6 +2,16 @@ export type Listener<TPayload = any> = (payload: TPayload) => void;
 
 export type EventPayloadMap<TPayload = any> = Record<string, TPayload>;
 
+/**
+ * Read-only view of an EventEmitter that only exposes subscription methods.
+ * Used as the public `events` type on Edit to prevent consumers from emitting events.
+ */
+export interface ReadonlyEventEmitter<TEventPayloadMap extends EventPayloadMap> {
+	on<K extends keyof TEventPayloadMap>(name: K, listener: Listener<TEventPayloadMap[K]>): () => void;
+	once<K extends keyof TEventPayloadMap>(name: K, listener: Listener<TEventPayloadMap[K]>): () => void;
+	off<K extends keyof TEventPayloadMap>(name: K, listener: Listener<TEventPayloadMap[K]>): void;
+}
+
 export class EventEmitter<TEventPayloadMap extends EventPayloadMap = EventPayloadMap> {
 	private readonly events: {
 		[K in keyof TEventPayloadMap]?: Set<Listener<TEventPayloadMap[K]>>;
@@ -43,10 +53,12 @@ export class EventEmitter<TEventPayloadMap extends EventPayloadMap = EventPayloa
 		delete this.events[name];
 	}
 
+	/** @internal */
 	public clear(name: keyof TEventPayloadMap): void {
 		delete this.events[name];
 	}
 
+	/** @internal */
 	public emit<TEventName extends keyof TEventPayloadMap>(
 		name: TEventName,
 		...args: TEventPayloadMap[TEventName] extends void ? [] : [TEventPayloadMap[TEventName]]

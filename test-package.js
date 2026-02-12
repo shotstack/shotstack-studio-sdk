@@ -34,10 +34,10 @@ const CONTRACT = {
 			require: "./dist/schema/index.cjs"
 		}
 	},
-	runtimeExports: ["Edit", "Canvas", "Controls", "VideoExporter", "Timeline"],
+	runtimeExports: ["Edit", "Canvas", "Controls", "Timeline", "UIController", "VideoExporter", "VERSION"],
 	internalRuntimeExports: ["Edit", "ShotstackEdit"],
 	dtsHiddenMembersByClass: {
-		UIController: ["updateOverlays(", "updateToolbarPositions(", "getToolbar(", "hasToolbar("],
+		UIController: ["updateOverlays(", "updateToolbarPositions(", "registerToolbar(", "registerUtility(", "registerCanvasOverlay(", "getButtons()", "off<"],
 		Canvas: [
 			"overlayContainer:",
 			"getContentBounds(",
@@ -47,8 +47,20 @@ const CONTRACT = {
 			"pauseTicker(",
 			"resumeTicker("
 		],
-		Timeline: ["draw(): void;", "beginInteraction(", "endInteraction(", "getEdit(", "findClipAtPosition("],
-		Edit: ["getTimelineFonts(", "getContentClipIdForLuma("]
+		Timeline: [
+			"draw(): void;",
+			"beginInteraction(",
+			"endInteraction(",
+			"getEdit(",
+			"findClipAtPosition(",
+			"setZoom(",
+			"scrollTo(",
+			"resize(): void;",
+			"selectClip(",
+			"clearSelection(",
+			"registerClipRenderer("
+		],
+		Edit: ["validateEdit(", "getTimelineFonts(", "getContentClipIdForLuma(", "getInternalEvents("]
 	},
 	dtsForbiddenTokens: [
 		"export declare class TranscriptionIndicator",
@@ -60,10 +72,65 @@ const CONTRACT = {
 		"export declare class CanvasToolbar",
 		"export declare class AssetToolbar"
 	],
+	dtsForbiddenRootExports: [
+		"export declare const EditEvent:",
+		"export { EditSchema }",
+		"export { TimelineSchema }",
+		"export { TrackSchema }",
+		"export { ClipSchema }",
+		"export { OutputSchema }",
+		"export { VideoAssetSchema }",
+		"export { AudioAssetSchema }",
+		"export { ImageAssetSchema }",
+		"export { TextAssetSchema }",
+		"export { RichTextAssetSchema }",
+		"export { HtmlAssetSchema }",
+		"export { CaptionAssetSchema }",
+		"export { ShapeAssetSchema }",
+		"export { LumaAssetSchema }",
+		"export { TextToImageAssetSchema }",
+		"export { ImageToVideoAssetSchema }",
+		"export { TextToSpeechAssetSchema }",
+		"export { AssetSchema }",
+		"export { tweenSchema as KeyframeSchema }",
+		"export { tweenSchema as TweenSchema }",
+		"export declare type Track =",
+		"export declare type Clip =",
+		"export declare type Output =",
+		"export declare type Asset =",
+		"export declare type MergeField =",
+		"export declare type Soundtrack =",
+		"export declare type Font =",
+		"export declare type VideoAsset =",
+		"export declare type AudioAsset =",
+		"export declare type ImageAsset =",
+		"export declare type TextAsset =",
+		"export declare type RichTextAsset =",
+		"export declare type HtmlAsset =",
+		"export declare type CaptionAsset =",
+		"export declare type ShapeAsset =",
+		"export declare type LumaAsset =",
+		"export declare type TitleAsset =",
+		"export declare type TextToImageAsset =",
+		"export declare type ImageToVideoAsset =",
+		"export declare type TextToSpeechAsset =",
+		"export declare type Crop =",
+		"export declare type Offset =",
+		"export declare type Transition =",
+		"export declare type Transformation =",
+		"export declare type ChromaKey =",
+		"export declare type Tween =",
+		"export declare type Destination =",
+		"export declare type ClipAnchor =",
+		"export declare type HtmlAssetPosition =",
+		"export { Keyframe_2 as Keyframe }",
+		"export declare type ExtendedCaptionAsset =",
+		"export declare interface NumericKeyframe"
+	],
 	dtsPublicAnchors: [
 		{ className: "Edit", tokens: ["load(): Promise<void>;"] },
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },
-		{ className: "UIController", tokens: ["registerToolbar(assetTypes: string | string[], toolbar: UIRegistration): this;"] },
+		{ className: "UIController", tokens: ["registerButton(config: ToolbarButtonConfig): this;"] },
 		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }
 	]
 };
@@ -122,6 +189,12 @@ const checkDeclarationSurface = () => {
 	for (const token of CONTRACT.dtsForbiddenTokens) {
 		if (dtsContent.includes(token)) {
 			errors.push(`Forbidden declaration found: ${token}`);
+		}
+	}
+
+	for (const token of CONTRACT.dtsForbiddenRootExports) {
+		if (dtsContent.includes(token)) {
+			errors.push(`Forbidden root export found: ${token}`);
 		}
 	}
 

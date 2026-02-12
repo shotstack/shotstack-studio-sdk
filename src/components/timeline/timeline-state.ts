@@ -26,7 +26,7 @@ export class TimelineStateManager {
 		};
 
 		// Document changes trigger Resolved event
-		this.edit.events.on(InternalEvent.Resolved, this.invalidateCache);
+		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.invalidateCache);
 
 		// Selection changes are UI state (not document mutations)
 		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
@@ -211,7 +211,7 @@ export class TimelineStateManager {
 
 	public dispose(): void {
 		// Remove event listeners
-		this.edit.events.off(InternalEvent.Resolved, this.invalidateCache);
+		this.edit.getInternalEvents().off(InternalEvent.Resolved, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
 

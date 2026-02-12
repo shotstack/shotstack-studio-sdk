@@ -10,7 +10,7 @@ import type { Clip, Destination, Edit as EditConfig, Output, ResolvedClip, Resol
 // Events are emitted from 4 different contexts, each with its own pattern:
 //
 // 1. EditSession (direct emit):
-//    this.events.emit(EditEvent.TimelineUpdated, { current });
+//    this.internalEvents.emit(EditEvent.TimelineUpdated, { current });
 //    → EditSession owns the EventEmitter, so it emits directly.
 //
 // 2. EditSession (emitEditChanged wrapper):
@@ -24,8 +24,8 @@ import type { Clip, Destination, Edit as EditConfig, Output, ResolvedClip, Resol
 //      This enables testing commands in isolation.
 //
 // 4. Managers (delegate through edit):
-//    this.edit.events.emit(EditEvent.OutputResized, { width, height });
-//    → Managers hold a reference to Edit and delegate to its emitter.
+//    this.edit.getInternalEvents().emit(EditEvent.OutputResized, { width, height });
+//    → Managers hold a reference to Edit and delegate via getInternalEvents().
 //
 // ─────────────────────────────────────────────────────────────
 
@@ -104,11 +104,7 @@ export const EditEvent = {
 	OutputDestinationsChanged: "output:destinationsChanged",
 
 	// Merge fields
-	MergeFieldRegistered: "mergefield:registered",
-	MergeFieldUpdated: "mergefield:updated",
-	MergeFieldRemoved: "mergefield:removed",
 	MergeFieldChanged: "mergefield:changed",
-	MergeFieldApplied: "mergefield:applied",
 
 	// Transcription (captions)
 	TranscriptionProgress: "transcription:progress",
@@ -202,11 +198,7 @@ export type EditEventMap = {
 	[EditEvent.OutputDestinationsChanged]: { destinations: Destination[] };
 
 	// Merge fields
-	[EditEvent.MergeFieldRegistered]: { field: MergeField };
-	[EditEvent.MergeFieldUpdated]: { field: MergeField };
-	[EditEvent.MergeFieldRemoved]: ClipLocation & { propertyPath: string; fieldName: string | null };
 	[EditEvent.MergeFieldChanged]: { fields: MergeField[] };
-	[EditEvent.MergeFieldApplied]: ClipLocation & { propertyPath: string; fieldName: string };
 
 	// Transcription
 	[EditEvent.TranscriptionProgress]: { clipAlias: string; message?: string };

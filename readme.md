@@ -140,7 +140,7 @@ const durationSeconds = edit.totalDuration;
 Listen using string event names:
 
 ```typescript
-edit.events.on("clip:selected", data => {
+const unsubscribeClipSelected = edit.events.on("clip:selected", data => {
   console.log("Selected clip", data.trackIndex, data.clipIndex);
 });
 
@@ -151,6 +151,9 @@ edit.events.on("clip:updated", data => {
 edit.events.on("playback:play", () => {
   console.log("Playback started");
 });
+
+// Unsubscribe when no longer needed
+unsubscribeClipSelected();
 ```
 
 Available event names:
@@ -163,7 +166,7 @@ Available event names:
 - Track: `track:added`, `track:removed`
 - Duration: `duration:changed`
 - Output: `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged`
-- Merge fields: `mergefield:registered`, `mergefield:updated`, `mergefield:removed`, `mergefield:changed`, `mergefield:applied`
+- Merge fields: `mergefield:changed`
 - Transcription: `transcription:progress`, `transcription:completed`, `transcription:failed`
 - Luma masking: `luma:attached`, `luma:detached`
 
@@ -268,8 +271,8 @@ const ui = UIController.create(edit, canvas, { mergeFields: true });
 You can also subscribe to merge field events when integrations update merge data:
 
 ```typescript
-edit.events.on("mergefield:updated", ({ field }) => {
-  console.log(field.name, field.defaultValue);
+edit.events.on("mergefield:changed", ({ fields }) => {
+  console.log("Merge fields updated:", fields.length);
 });
 ```
 

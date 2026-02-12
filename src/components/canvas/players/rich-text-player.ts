@@ -196,7 +196,7 @@ export class RichTextPlayer extends Player {
 		this.fontSupportsBold = await capabilityCheck;
 
 		if (emitCapabilitiesEvent) {
-			this.edit.events.emit(InternalEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
+			this.edit.getInternalEvents().emit(InternalEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
 		}
 	}
 

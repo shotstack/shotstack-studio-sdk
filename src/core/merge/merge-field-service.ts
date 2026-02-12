@@ -5,7 +5,7 @@
  * for merge fields throughout the SDK.
  */
 
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, type EditEventMap } from "@core/events/edit-events";
 import type { EventEmitter } from "@core/events/event-emitter";
 
 import { type MergeField, type SerializedMergeField, fromSerialized, toSerialized } from "./types";
@@ -16,19 +16,11 @@ export const MERGE_FIELD_PATTERN = /\{\{\s*([A-Z_0-9]+)\s*\}\}/gi;
 /** Regex pattern for testing if a string contains any merge field */
 export const MERGE_FIELD_TEST_PATTERN = /\{\{\s*[A-Z_0-9]+\s*\}\}/i;
 
-/** Event payloads emitted by the merge field service */
-export interface MergeFieldEvents {
-	"mergefield:registered": { field: MergeField };
-	"mergefield:updated": { field: MergeField };
-	"mergefield:removed": { name: string };
-	"mergefield:changed": { fields: MergeField[] };
-}
-
 export class MergeFieldService {
 	private fields: Map<string, MergeField> = new Map();
-	private events: EventEmitter;
+	private events: EventEmitter<EditEventMap>;
 
-	constructor(events: EventEmitter) {
+	constructor(events: EventEmitter<EditEventMap>) {
 		this.events = events;
 	}
 
@@ -40,11 +32,9 @@ export class MergeFieldService {
 	 * @param options.silent If true, suppresses event emission (for command-based operations)
 	 */
 	register(field: MergeField, options?: { silent?: boolean }): void {
-		const isNew = !this.fields.has(field.name);
 		this.fields.set(field.name, field);
 
 		if (!options?.silent) {
-			this.events.emit(isNew ? EditEvent.MergeFieldRegistered : EditEvent.MergeFieldUpdated, { field });
 			this.events.emit(EditEvent.MergeFieldChanged, { fields: this.getAll() });
 		}
 	}
@@ -57,7 +47,6 @@ export class MergeFieldService {
 	remove(name: string, options?: { silent?: boolean }): boolean {
 		const removed = this.fields.delete(name);
 		if (removed && !options?.silent) {
-			this.events.emit(EditEvent.MergeFieldRemoved, { name });
 			this.events.emit(EditEvent.MergeFieldChanged, { fields: this.getAll() });
 		}
 		return removed;

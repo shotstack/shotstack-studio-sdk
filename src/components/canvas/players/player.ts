@@ -478,7 +478,7 @@ export abstract class Player extends Entity {
 			return;
 		}
 
-		this.edit.events.emit(InternalEvent.CanvasClipClicked, { player: this });
+		this.edit.getInternalEvents().emit(InternalEvent.CanvasClipClicked, { player: this });
 	}
 
 	private clipHasKeyframes(): boolean {

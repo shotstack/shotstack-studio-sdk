@@ -140,8 +140,7 @@ export class Timeline {
 		this.isLoaded = true;
 	}
 
-	/** Render/draw component to DOM (called each frame after update) */
-	/** @internal */
+	/** Render/draw component to DOM (called each frame after update). @internal */
 	public draw(): void {
 		// Derive state from Edit on-demand (single source of truth)
 		const viewport = this.stateManager.getViewport();
@@ -300,15 +299,13 @@ export class Timeline {
 		this.draw();
 	}
 
-	/** Mark interaction as started (enables render loop) */
-	/** @internal */
+	/** Mark interaction as started (enables render loop). @internal */
 	public beginInteraction(): void {
 		this.isInteracting = true;
 		this.startRenderLoop();
 	}
 
-	/** Mark interaction as ended (may stop render loop) */
-	/** @internal */
+	/** Mark interaction as ended (may stop render loop). @internal */
 	public endInteraction(): void {
 		this.isInteracting = false;
 		// Loop will stop on next tick if not playing
@@ -463,6 +460,7 @@ export class Timeline {
 
 	// ========== Public API ==========
 
+	/** @internal */
 	public setZoom(pixelsPerSecond: number): void {
 		this.stateManager.setPixelsPerSecond(pixelsPerSecond);
 		this.toolbar?.setZoom(pixelsPerSecond);
@@ -480,6 +478,7 @@ export class Timeline {
 		this.setZoom(Math.max(10, current / 1.2));
 	}
 
+	/** @internal */
 	public scrollTo(time: Seconds): void {
 		if (!this.trackList) return;
 
@@ -487,7 +486,7 @@ export class Timeline {
 		this.trackList.setScrollPosition(time * pps, 0);
 	}
 
-	/** Recalculate size from container and re-render */
+	/** Recalculate size from container and re-render. @internal */
 	public resize(): void {
 		const rect = this.container.getBoundingClientRect();
 		if (rect.width <= 0 || rect.height <= 0) return;
@@ -496,18 +495,21 @@ export class Timeline {
 		this.requestRender();
 	}
 
+	/** @internal */
 	public selectClip(trackIndex: number, clipIndex: number): void {
 		this.stateManager.selectClip(trackIndex, clipIndex, false);
 		this.edit.selectClip(trackIndex, clipIndex);
 		this.requestRender();
 	}
 
+	/** @internal */
 	public clearSelection(): void {
 		this.stateManager.clearSelection();
 		this.edit.clearSelection();
 		this.requestRender();
 	}
 
+	/** @internal */
 	public registerClipRenderer(type: string, renderer: ClipRenderer): void {
 		this.clipRenderers.set(type, renderer);
 	}

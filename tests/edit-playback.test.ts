@@ -137,7 +137,7 @@ describe("Edit Playback", () => {
 		await edit.load();
 
 		// Access the internal events emitter
-		events = edit.events;
+		events = edit.getInternalEvents();
 		emitSpy = jest.spyOn(events, "emit");
 
 		// Set up a mock duration for testing (use Seconds branded type)

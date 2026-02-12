@@ -290,7 +290,7 @@ describe("Edit Command History", () => {
 		});
 		await edit.load();
 
-		events = edit.events;
+		events = edit.getInternalEvents();
 		emitSpy = jest.spyOn(events, "emit");
 	});
 
@@ -1002,7 +1002,7 @@ describe("Track Reordering Z-Index", () => {
 
 	it("emits PlayerMovedBetweenTracks event when moving clip to different track", async () => {
 		// Spy on event emission
-		const emitSpy = jest.spyOn(edit.events, "emit");
+		const emitSpy = jest.spyOn(edit.getInternalEvents(), "emit");
 
 		// Move clip from track 1 to track 0
 		const { MoveClipCommand } = await import("@core/commands/move-clip-command");
@@ -1041,7 +1041,7 @@ describe("Track Reordering Z-Index", () => {
 		edit.executeEditCommand(moveCommand);
 
 		// Spy on event emission after the first move
-		const emitSpy = jest.spyOn(edit.events, "emit");
+		const emitSpy = jest.spyOn(edit.getInternalEvents(), "emit");
 
 		// Undo the move (MoveClipCommand.undo is async, wait for it)
 		await edit.undo();

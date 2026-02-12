@@ -42,7 +42,7 @@ export class SelectionManager {
 			this.selectedClip = player;
 			const clip = this.edit.getDocumentClip(trackIndex, clipIndex);
 			if (clip) {
-				this.edit.events.emit(EditEvent.ClipSelected, {
+				this.edit.getInternalEvents().emit(EditEvent.ClipSelected, {
 					clip: stripInternalProperties(clip),
 					trackIndex,
 					clipIndex
@@ -66,7 +66,7 @@ export class SelectionManager {
 	 */
 	clearSelection(): void {
 		this.selectedClip = null;
-		this.edit.events.emit(EditEvent.SelectionCleared);
+		this.edit.getInternalEvents().emit(EditEvent.SelectionCleared);
 	}
 
 	/**
@@ -133,7 +133,7 @@ export class SelectionManager {
 				trackIndex: trackIdx,
 				clipConfiguration: structuredClone(clip)
 			};
-			this.edit.events.emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
+			this.edit.getInternalEvents().emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
 		}
 	}
 

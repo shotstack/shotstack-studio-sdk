@@ -123,7 +123,7 @@ describe("Output Resolution and AspectRatio", () => {
 	beforeEach(async () => {
 		edit = new Edit(createMinimalEdit());
 		await edit.load();
-		emitSpy = jest.spyOn(edit.events, "emit");
+		emitSpy = jest.spyOn(edit.getInternalEvents(), "emit");
 	});
 
 	afterEach(() => {

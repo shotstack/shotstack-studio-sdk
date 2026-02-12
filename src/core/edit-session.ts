@@ -19,7 +19,7 @@ import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
-import { EventEmitter } from "@core/events/event-emitter";
+import { EventEmitter, type ReadonlyEventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
@@ -83,7 +83,8 @@ export class Edit {
 	// ─── Services ─────────────────────────────────────────────────────────────
 	/** @internal */
 	public assetLoader: AssetLoader;
-	public events: EventEmitter<EditEventMap & InternalEventMap>;
+	private internalEvents: EventEmitter<EditEventMap & InternalEventMap>;
+	public events: ReadonlyEventEmitter<EditEventMap>;
 	private canvas: Canvas | null = null;
 
 	// ─── Subsystems ──────────────────────────────────────────────────────────-
@@ -128,15 +129,16 @@ export class Edit {
 		this.size = resolution ? calculateSizeFromPreset(resolution, aspectRatio) : this.document.getSize();
 
 		this.assetLoader = new AssetLoader();
-		this.events = new EventEmitter();
+		this.internalEvents = new EventEmitter();
+		this.events = this.internalEvents;
 
 		this.lumaMaskController = new LumaMaskController(
 			() => this.canvas,
 			() => this.tracks,
-			this.events
+			this.internalEvents
 		);
 		this.playerReconciler = new PlayerReconciler(this);
-		this.mergeFieldService = new MergeFieldService(this.events);
+		this.mergeFieldService = new MergeFieldService(this.internalEvents);
 		this.outputSettings = new OutputSettingsManager(this);
 		this.selectionManager = new SelectionManager(this);
 		this.timingManager = new TimingManager(this);
@@ -218,8 +220,13 @@ export class Edit {
 			await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
 		}
 
-		this.events.emit(EditEvent.TimelineUpdated, { current: this.getEdit() });
+		this.internalEvents.emit(EditEvent.TimelineUpdated, { current: this.getEdit() });
 		this.emitEditChanged(source);
+	}
+
+	/** @internal */
+	public getInternalEvents(): EventEmitter<EditEventMap & InternalEventMap> {
+		return this.internalEvents;
 	}
 
 	/** @internal */
@@ -256,22 +263,22 @@ export class Edit {
 
 	/* @internal Update canvas visuals after size change (viewport mask, background, zoom). */
 	public updateCanvasForSize(): void {
-		this.events.emit(InternalEvent.ViewportSizeChanged, {
+		this.internalEvents.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,
 			height: this.size.height,
 			backgroundColor: this.backgroundColor
 		});
-		this.events.emit(InternalEvent.ViewportNeedsZoomToFit);
+		this.internalEvents.emit(InternalEvent.ViewportNeedsZoomToFit);
 	}
 
 	public play(): void {
 		this.isPlaying = true;
-		this.events.emit(EditEvent.PlaybackPlay);
+		this.internalEvents.emit(EditEvent.PlaybackPlay);
 	}
 
 	public pause(): void {
 		this.isPlaying = false;
-		this.events.emit(EditEvent.PlaybackPause);
+		this.internalEvents.emit(EditEvent.PlaybackPause);
 	}
 
 	public seek(target: Seconds): void {
@@ -310,12 +317,12 @@ export class Edit {
 		this.size = newSize;
 		this.backgroundColor = this.document.getBackground() ?? "#000000";
 
-		this.events.emit(InternalEvent.ViewportSizeChanged, {
+		this.internalEvents.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,
 			height: this.size.height,
 			backgroundColor: this.backgroundColor
 		});
-		this.events.emit(InternalEvent.ViewportNeedsZoomToFit);
+		this.internalEvents.emit(InternalEvent.ViewportNeedsZoomToFit);
 		this.clearClips();
 
 		await this.initializeFromDocument("loadEdit");
@@ -348,6 +355,7 @@ export class Edit {
 
 	/**
 	 * Validates an edit configuration.
+	 * @internal
 	 */
 	public validateEdit(edit: unknown): { valid: boolean; errors: Array<{ path: string; message: string }> } {
 		const result = EditSchema.safeParse(edit);
@@ -414,7 +422,7 @@ export class Edit {
 		});
 
 		// Emit event for components to react
-		this.events.emit(InternalEvent.Resolved, { edit: this.lastResolved });
+		this.internalEvents.emit(InternalEvent.Resolved, { edit: this.lastResolved });
 
 		return this.lastResolved;
 	}
@@ -645,7 +653,7 @@ export class Edit {
 		// Remove from tracks array
 		this.tracks.splice(trackIndex, 1);
 
-		this.events.emit(InternalEvent.TrackContainerRemoved, { trackIndex });
+		this.internalEvents.emit(InternalEvent.TrackContainerRemoved, { trackIndex });
 
 		// Update layer numbers for all players in tracks above the removed one
 		for (let i = trackIndex; i < this.tracks.length; i += 1) {
@@ -768,7 +776,7 @@ export class Edit {
 					// Only decrement after successful completion
 					this.commandIndex -= 1;
 
-					this.events.emit(EditEvent.EditUndo, { command: command.name });
+					this.internalEvents.emit(EditEvent.EditUndo, { command: command.name });
 					this.emitEditChanged(`undo:${command.name}`);
 				}
 			}
@@ -786,7 +794,7 @@ export class Edit {
 				// Only increment after successful completion
 				this.commandIndex = nextIndex;
 
-				this.events.emit(EditEvent.EditRedo, { command: command.name });
+				this.internalEvents.emit(EditEvent.EditRedo, { command: command.name });
 				this.emitEditChanged(`redo:${command.name}`);
 			}
 		});
@@ -952,7 +960,7 @@ export class Edit {
 	 */
 	protected emitEditChanged(source: string): void {
 		if (this.isBatchingEvents) return;
-		this.events.emit(EditEvent.EditChanged, { source, timestamp: Date.now() });
+		this.internalEvents.emit(EditEvent.EditChanged, { source, timestamp: Date.now() });
 	}
 
 	/**
@@ -1226,7 +1234,7 @@ export class Edit {
 					const assetType = (clip.clipConfiguration?.asset as { type?: string })?.type ?? "unknown";
 					const errorMessage = error instanceof Error ? error.message : String(error);
 					this.clipErrors.set(`${trackIdx}-${insertIdx}`, { error: errorMessage, assetType });
-					this.events.emit(EditEvent.ClipLoadFailed, {
+					this.internalEvents.emit(EditEvent.ClipLoadFailed, {
 						trackIndex: trackIdx,
 						clipIndex: insertIdx,
 						error: errorMessage,
@@ -1258,7 +1266,7 @@ export class Edit {
 				}
 			},
 			updateDuration: () => this.updateTotalDuration(),
-			emitEvent: (name, ...args) => (this.events as EventEmitter<EditEventMap>).emit(name, ...args),
+			emitEvent: (name, ...args) => (this.internalEvents.emit as EventEmitter<EditEventMap>["emit"])(name, ...args),
 			findClipIndices: player => this.selectionManager.findClipIndices(player),
 			getClipAt: (trackIndex, clipIndex) => this.getClipAt(trackIndex, clipIndex),
 			getSelectedClip: () => this.selectionManager.getSelectedClip(),
@@ -1545,7 +1553,7 @@ export class Edit {
 
 		// Emit event if duration changed
 		if (previousDuration !== this.totalDuration) {
-			this.events.emit(EditEvent.DurationChanged, { duration: this.totalDuration });
+			this.internalEvents.emit(EditEvent.DurationChanged, { duration: this.totalDuration });
 		}
 	}
 
@@ -1586,12 +1594,12 @@ export class Edit {
 	 */
 	public addPlayerToContainer(trackIndex: number, player: Player): void {
 		// Emit event for Canvas to add player to track container
-		this.events.emit(InternalEvent.PlayerAddedToTrack, { player, trackIndex });
+		this.internalEvents.emit(InternalEvent.PlayerAddedToTrack, { player, trackIndex });
 	}
 
 	// Move a player's container to the appropriate track container
 	private movePlayerToTrackContainer(player: Player, fromTrackIdx: number, toTrackIdx: number): void {
-		this.events.emit(InternalEvent.PlayerMovedBetweenTracks, {
+		this.internalEvents.emit(InternalEvent.PlayerMovedBetweenTracks, {
 			player,
 			fromTrackIndex: fromTrackIdx,
 			toTrackIndex: toTrackIdx
@@ -1614,7 +1622,7 @@ export class Edit {
 
 		// Document sync is handled by AddClipCommand - don't duplicate here
 
-		this.events.emit(InternalEvent.PlayerAddedToTrack, { player: clipToAdd, trackIndex: trackIdx });
+		this.internalEvents.emit(InternalEvent.PlayerAddedToTrack, { player: clipToAdd, trackIndex: trackIdx });
 
 		await clipToAdd.load();
 
@@ -1883,13 +1891,13 @@ export class Edit {
 		// Sync with document layer
 		this.document.setBackground(result.data);
 
-		this.events.emit(InternalEvent.ViewportSizeChanged, {
+		this.internalEvents.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,
 			height: this.size.height,
 			backgroundColor: this.backgroundColor
 		});
 
-		this.events.emit(EditEvent.TimelineBackgroundChanged, { color: result.data });
+		this.internalEvents.emit(EditEvent.TimelineBackgroundChanged, { color: result.data });
 		// Note: emitEditChanged is handled by executeCommand
 	}
 
@@ -1954,8 +1962,8 @@ export class Edit {
 
 	/**
 	 * Get the content clip ID for a luma clip.
+	 * @internal
 	 */
-	/** @internal */
 	public getContentClipIdForLuma(lumaClipId: string): string | null {
 		return this.lumaContentRelations.get(lumaClipId) ?? null;
 	}
@@ -2051,11 +2059,11 @@ export class Edit {
 	// ─── Intent Listeners ────────────────────────────────────────────────────────
 
 	private setupIntentListeners(): void {
-		this.events.on(InternalEvent.CanvasClipClicked, data => {
+		this.internalEvents.on(InternalEvent.CanvasClipClicked, data => {
 			this.selectPlayer(data.player);
 		});
 
-		this.events.on(InternalEvent.CanvasBackgroundClicked, () => {
+		this.internalEvents.on(InternalEvent.CanvasBackgroundClicked, () => {
 			this.clearSelection();
 		});
 	}
