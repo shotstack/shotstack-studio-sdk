@@ -289,7 +289,7 @@ export class UIController {
 	}
 
 	/**
-	 * Register a utility component (Inspector, TranscriptionIndicator, etc.).
+	 * Register a utility component (Inspector, custom overlays, etc.).
 	 * Utilities are mounted but not tied to clip selection.
 	 *
 	 * @param component - The utility component implementing UIRegistration
@@ -497,22 +497,6 @@ export class UIController {
 		this.canvasOverlays = [];
 		this.container = null;
 		this.canvas = null;
-	}
-
-	/**
-	 * Get the toolbar registered for a specific asset type.
-	 */
-	/** @internal */
-	getToolbar(assetType: string): UIRegistration | undefined {
-		return this.toolbars.get(assetType);
-	}
-
-	/**
-	 * Check if a toolbar is registered for an asset type.
-	 */
-	/** @internal */
-	hasToolbar(assetType: string): boolean {
-		return this.toolbars.has(assetType);
 	}
 
 	// ─── Button Registry ─────────────────────────────────────────────────────────

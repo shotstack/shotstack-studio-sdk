@@ -37,8 +37,6 @@ const CONTRACT = {
 	runtimeExports: ["Edit", "Canvas", "Controls", "VideoExporter", "Timeline"],
 	internalRuntimeExports: ["Edit", "ShotstackEdit"],
 	dtsHiddenMembersByClass: {
-		AssetToolbar: ["getDragState(", "setPosition("],
-		CanvasToolbar: ["getDragState(", "setPosition("],
 		UIController: ["updateOverlays(", "updateToolbarPositions(", "getToolbar(", "hasToolbar("],
 		Canvas: [
 			"overlayContainer:",
@@ -50,20 +48,23 @@ const CONTRACT = {
 			"resumeTicker("
 		],
 		Timeline: ["draw(): void;", "beginInteraction(", "endInteraction(", "getEdit(", "findClipAtPosition("],
-		Edit: ["getTimelineFonts(", "getContentClipIdForLuma("],
-		TranscriptionIndicator: ["getIsVisible(", "update(deltaTime:", "setPosition(", "getWidth("]
+		Edit: ["getTimelineFonts(", "getContentClipIdForLuma("]
 	},
+	dtsForbiddenTokens: [
+		"export declare class TranscriptionIndicator",
+		"export declare class SelectionHandles",
+		"export declare class TextToolbar",
+		"export declare class RichTextToolbar",
+		"export declare class MediaToolbar",
+		"export declare class ClipToolbar",
+		"export declare class CanvasToolbar",
+		"export declare class AssetToolbar"
+	],
 	dtsPublicAnchors: [
 		{ className: "Edit", tokens: ["load(): Promise<void>;"] },
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },
 		{ className: "UIController", tokens: ["registerToolbar(assetTypes: string | string[], toolbar: UIRegistration): this;"] },
-		{ className: "Timeline", tokens: ["load(): Promise<void>;"] },
-		{ className: "TextToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
-		{ className: "RichTextToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
-		{ className: "MediaToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
-		{ className: "ClipToolbar", tokens: ["mount(parent: HTMLElement): void;", "dispose(): void;"] },
-		{ className: "CanvasToolbar", tokens: ["mount(parent: HTMLElement", "dispose(): void;"] },
-		{ className: "AssetToolbar", tokens: ["mount(parent: HTMLElement", "dispose(): void;"] }
+		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }
 	]
 };
 
@@ -115,6 +116,12 @@ const checkDeclarationSurface = () => {
 			if (block.includes(token)) {
 				errors.push(`Internal member leaked in ${className}: ${token}`);
 			}
+		}
+	}
+
+	for (const token of CONTRACT.dtsForbiddenTokens) {
+		if (dtsContent.includes(token)) {
+			errors.push(`Forbidden declaration found: ${token}`);
 		}
 	}
 
