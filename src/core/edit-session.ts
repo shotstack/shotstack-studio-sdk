@@ -33,8 +33,11 @@ import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
 import { FontLoadParser } from "@loaders/font-load-parser";
 import {
+	ClipSchema,
 	EditSchema,
 	HexColorSchema,
+	ResolvedClipSchema,
+	TrackSchema,
 	type Clip,
 	type Destination,
 	type Edit as EditConfig,
@@ -116,6 +119,9 @@ export class Edit {
 	 * Create an Edit instance from a template configuration.
 	 */
 	constructor(template: EditConfig) {
+		// Validate template eagerly so invalid configs fail at construction time
+		EditSchema.parse(template);
+
 		this.tracks = [];
 		this.playbackTime = sec(0);
 		this.totalDuration = sec(0);
@@ -295,17 +301,22 @@ export class Edit {
 	 * Reload the edit with a new configuration (hot-reload).
 	 */
 	public async loadEdit(edit: EditConfig): Promise<void> {
+		// Validate the incoming config before any mutations
+		EditSchema.parse(edit);
+
 		this.lastResolved = null; // Invalidate cache when document changes
 
 		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
-			this.preserveClipIdsForGranularUpdate(edit);
+			// Clone so preserveClipIdsForGranularUpdate doesn't mutate the caller's object
+			const cloned = structuredClone(edit);
+			this.preserveClipIdsForGranularUpdate(cloned);
 
 			const oldTracks = this.document.getTracks();
 			const oldOutput = this.document.getOutput();
 
-			this.document = new EditDocument(edit);
+			this.document = new EditDocument(cloned);
 			this.isBatchingEvents = true;
-			await this.applyGranularChanges(edit, oldTracks, oldOutput);
+			await this.applyGranularChanges(cloned, oldTracks, oldOutput);
 			this.isBatchingEvents = false;
 			this.emitEditChanged("loadEdit:granular");
 			return;
@@ -491,6 +502,7 @@ export class Edit {
 	}
 
 	public addClip(trackIdx: number, clip: Clip): void | Promise<void> {
+		ClipSchema.parse(clip);
 		// Cast to ResolvedClip - the Player and timing resolver handle "auto"/"end" at runtime
 		const command = new AddClipCommand(trackIdx, clip as unknown as ResolvedClip);
 		return this.executeCommand(command);
@@ -733,9 +745,7 @@ export class Edit {
 	}
 
 	public async addTrack(trackIdx: number, track: Track): Promise<void> {
-		if (!track?.clips?.length) {
-			throw new Error("Cannot add empty track - at least one clip required");
-		}
+		TrackSchema.parse(track);
 
 		const command = new AddTrackCommand(trackIdx);
 		await this.executeCommand(command);
@@ -840,6 +850,11 @@ export class Edit {
 			return;
 		}
 
+		// Validate the final state before committing to history.
+		// Live updates (updateClipInDocument) skip validation for performance,
+		// so this is the gate that catches corrupt data from drag/slider interactions.
+		ResolvedClipSchema.parse(finalConfig);
+
 		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(finalConfig), {
 			trackIndex: location.trackIndex,
 			clipIndex: location.clipIndex
@@ -893,6 +908,9 @@ export class Edit {
 		const currentConfig = structuredClone(documentClip ?? clip.clipConfiguration);
 		// Cast to ResolvedClip - the timing resolver handles "auto"/"end" at runtime
 		const mergedConfig = deepMerge(currentConfig, updates as unknown as Partial<ResolvedClip>) as ResolvedClip;
+
+		// Validate the merged clip before applying
+		ResolvedClipSchema.parse(mergedConfig);
 
 		const command = new SetUpdatedClipCommand(initialConfig, mergedConfig, {
 			trackIndex: trackIdx,
@@ -1881,15 +1899,12 @@ export class Edit {
 	}
 
 	private setTimelineBackgroundInternal(color: string): void {
-		const result = HexColorSchema.safeParse(color);
-		if (!result.success) {
-			throw new Error(`Invalid color: ${result.error.issues[0]?.message}`);
-		}
+		HexColorSchema.parse(color);
 
-		this.backgroundColor = result.data;
+		this.backgroundColor = color;
 
 		// Sync with document layer
-		this.document.setBackground(result.data);
+		this.document.setBackground(color);
 
 		this.internalEvents.emit(InternalEvent.ViewportSizeChanged, {
 			width: this.size.width,
@@ -1897,7 +1912,7 @@ export class Edit {
 			backgroundColor: this.backgroundColor
 		});
 
-		this.internalEvents.emit(EditEvent.TimelineBackgroundChanged, { color: result.data });
+		this.internalEvents.emit(EditEvent.TimelineBackgroundChanged, { color });
 		// Note: emitEditChanged is handled by executeCommand
 	}
 

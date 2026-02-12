@@ -175,3 +175,19 @@ export const OutputFpsSchema = outputSchema.shape.fps.unwrap(); // unwrap option
 export const OutputResolutionSchema = outputSchema.shape.resolution;
 export const OutputAspectRatioSchema = outputSchema.shape.aspectRatio;
 export const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$|^#[0-9A-Fa-f]{8}$/);
+
+// ─── Resolved Zod Schemas ───────────────────────────────────────────────────
+// Extended schemas that accept the SDK's internal `id` field on clips.
+// Used for validating data that has already entered the system and been resolved.
+
+export const ResolvedClipSchema = clipSchema.extend({ id: z.string() });
+
+export const ResolvedTrackSchema = trackSchema.extend({
+	clips: z.array(ResolvedClipSchema).min(1)
+});
+
+export const ResolvedEditSchema = editSchema.extend({
+	timeline: timelineSchema.extend({
+		tracks: z.array(ResolvedTrackSchema).min(1)
+	})
+});

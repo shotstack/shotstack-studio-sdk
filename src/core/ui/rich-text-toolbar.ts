@@ -1462,8 +1462,13 @@ export class RichTextToolbar extends BaseToolbar {
 				left: asset.padding
 			};
 		} else if (asset.padding) {
-			// Already object format
-			currentPadding = { ...asset.padding };
+			// Already object format — default any missing sides to 0
+			currentPadding = {
+				top: asset.padding.top ?? 0,
+				right: asset.padding.right ?? 0,
+				bottom: asset.padding.bottom ?? 0,
+				left: asset.padding.left ?? 0
+			};
 		} else {
 			// No padding set, use defaults
 			currentPadding = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -1647,7 +1652,7 @@ export class RichTextToolbar extends BaseToolbar {
 			this.stylePanel.setBorderState({
 				width: border.width,
 				color: border.color,
-				opacity: Math.round(border.opacity * 100),
+				opacity: Math.round((border.opacity ?? 1) * 100),
 				radius: border.radius
 			});
 
@@ -1659,7 +1664,7 @@ export class RichTextToolbar extends BaseToolbar {
 				offsetY: shadow?.offsetY ?? 0,
 				blur: shadow?.blur ?? 4,
 				color: shadow?.color ?? "#000000",
-				opacity: shadow ? Math.round(shadow.opacity * 100) : 50
+				opacity: shadow ? Math.round((shadow.opacity ?? 1) * 100) : 50
 			});
 
 			// Padding (handled below, needs special normalization)

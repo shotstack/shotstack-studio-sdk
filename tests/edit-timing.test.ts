@@ -303,7 +303,7 @@ function createVideoClip(start: number | "auto", length: number | "auto" | "end"
  */
 function createTextClip(start: number | "auto", length: number | "auto" | "end", text: string = "Hello"): ResolvedClip {
 	return {
-		asset: { type: "text", text, style: "minimal" },
+		asset: { type: "text", text },
 		start,
 		length,
 		fit: "none"

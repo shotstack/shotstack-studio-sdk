@@ -8,7 +8,7 @@
 import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip } from "@schemas";
+import type { Clip, ResolvedClip } from "@schemas";
 import { ms, sec } from "@core/timing/types";
 
 // Mock pixi-filters
@@ -266,12 +266,11 @@ function getEditState(edit: Edit): {
 /**
  * Create a simple video clip config for testing.
  */
-function createVideoClip(start: number, length: number): ResolvedClip {
+function createVideoClip(start: number, length: number): Clip {
 	return {
-		id: crypto.randomUUID(),
 		asset: { type: "video", src: "https://example.com/video.mp4", transcode: false },
-		start: sec(start),
-		length: sec(length),
+		start,
+		length,
 		fit: "crop"
 	};
 }
@@ -279,12 +278,11 @@ function createVideoClip(start: number, length: number): ResolvedClip {
 /**
  * Create a simple image clip config for testing.
  */
-function createImageClip(start: number, length: number): ResolvedClip {
+function createImageClip(start: number, length: number): Clip {
 	return {
-		id: crypto.randomUUID(),
 		asset: { type: "image", src: "https://example.com/image.jpg" },
-		start: sec(start),
-		length: sec(length),
+		start,
+		length,
 		fit: "crop"
 	};
 }
@@ -292,12 +290,11 @@ function createImageClip(start: number, length: number): ResolvedClip {
 /**
  * Create a text clip config for testing.
  */
-function createTextClip(start: number, length: number, text: string = "Hello"): ResolvedClip {
+function createTextClip(start: number, length: number, text: string = "Hello"): Clip {
 	return {
-		id: crypto.randomUUID(),
 		asset: { type: "text", text },
-		start: sec(start),
-		length: sec(length),
+		start,
+		length,
 		fit: "none"
 	};
 }

@@ -11,8 +11,7 @@
 import { ShotstackEdit } from "@core/shotstack-edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
-import type { ResolvedClip } from "@schemas";
-import { sec } from "@core/timing/types";
+import type { Clip, ResolvedClip } from "@schemas";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -268,12 +267,11 @@ function getEditState(edit: ShotstackEdit): {
 /**
  * Create a simple image clip config for testing.
  */
-function createImageClip(start: number, length: number, src: string = "https://example.com/image.jpg"): ResolvedClip {
+function createImageClip(start: number, length: number, src: string = "https://example.com/image.jpg"): Clip {
 	return {
-		id: crypto.randomUUID(),
 		asset: { type: "image", src },
-		start: sec(start),
-		length: sec(length),
+		start,
+		length,
 		fit: "crop"
 	};
 }
@@ -281,12 +279,11 @@ function createImageClip(start: number, length: number, src: string = "https://e
 /**
  * Create a text clip config for testing.
  */
-function createTextClip(start: number, length: number, text: string = "Hello World"): ResolvedClip {
+function createTextClip(start: number, length: number, text: string = "Hello World"): Clip {
 	return {
-		id: crypto.randomUUID(),
 		asset: { type: "text", text },
-		start: sec(start),
-		length: sec(length),
+		start,
+		length,
 		fit: "none"
 	};
 }

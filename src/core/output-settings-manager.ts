@@ -74,10 +74,7 @@ export class OutputSettingsManager {
 	 * Set output size (internal - called by SetOutputSizeCommand).
 	 */
 	setSize(width: number, height: number): void {
-		const result = OutputSizeSchema.safeParse({ width, height });
-		if (!result.success) {
-			throw new Error(`Invalid size: ${result.error.issues[0]?.message}`);
-		}
+		OutputSizeSchema.parse({ width, height });
 
 		const size: Size = { width, height };
 		this.edit.size = size;
@@ -115,21 +112,18 @@ export class OutputSettingsManager {
 	 * Set output FPS (internal - called by SetOutputFpsCommand).
 	 */
 	setFps(fps: number): void {
-		const result = OutputFpsSchema.safeParse(fps);
-		if (!result.success) {
-			throw new Error(`Invalid fps: ${result.error.issues[0]?.message}`);
-		}
+		const validated = OutputFpsSchema.parse(fps);
 
 		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
-				fps: result.data
+				fps: validated
 			};
 		}
 
 		// Sync with document layer
-		this.edit.getDocument()?.setFps(result.data);
+		this.edit.getDocument()?.setFps(validated);
 
 		this.edit.getInternalEvents().emit(EditEvent.OutputFpsChanged, { fps });
 		// Note: emitEditChanged is handled by executeCommand
@@ -142,23 +136,20 @@ export class OutputSettingsManager {
 	// ─── Format ───────────────────────────────────────────────────────────────
 
 	setFormat(format: string): void {
-		const result = OutputFormatSchema.safeParse(format);
-		if (!result.success) {
-			throw new Error(`Invalid format: ${result.error.issues[0]?.message}`);
-		}
+		const validated = OutputFormatSchema.parse(format);
 
 		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
-				format: result.data
+				format: validated
 			};
 		}
 
 		// Sync with document layer
-		this.edit.getDocument()?.setFormat(result.data);
+		this.edit.getDocument()?.setFormat(validated);
 
-		this.edit.getInternalEvents().emit(EditEvent.OutputFormatChanged, { format: result.data });
+		this.edit.getInternalEvents().emit(EditEvent.OutputFormatChanged, { format: validated });
 	}
 
 	getFormat(): string {
@@ -168,20 +159,17 @@ export class OutputSettingsManager {
 	// ─── Destinations ─────────────────────────────────────────────────────────
 
 	setDestinations(destinations: Destination[]): void {
-		const result = DestinationSchema.array().safeParse(destinations);
-		if (!result.success) {
-			throw new Error(`Invalid destinations: ${result.error.message}`);
-		}
+		const validated = DestinationSchema.array().parse(destinations);
 
 		const resolvedEdit = this.edit.getResolvedEdit();
 		if (resolvedEdit) {
 			resolvedEdit.output = {
 				...resolvedEdit.output,
-				destinations: result.data
+				destinations: validated
 			};
 		}
 
-		this.edit.getInternalEvents().emit(EditEvent.OutputDestinationsChanged, { destinations: result.data });
+		this.edit.getInternalEvents().emit(EditEvent.OutputDestinationsChanged, { destinations: validated });
 	}
 
 	getDestinations(): Destination[] {
@@ -191,12 +179,8 @@ export class OutputSettingsManager {
 	// ─── Resolution ───────────────────────────────────────────────────────────
 
 	setResolution(resolution: string): void {
-		const result = OutputResolutionSchema.safeParse(resolution);
-		if (!result.success || !result.data) {
-			throw new Error(`Invalid resolution: ${result.success ? "resolution is required" : result.error.issues[0]?.message}`);
-		}
-
-		const validatedResolution = result.data;
+		// Schema is optional in output, but required here — parse validates, ! narrows
+		const validatedResolution = OutputResolutionSchema.parse(resolution)!;
 		const resolvedEdit = this.edit.getResolvedEdit();
 		const aspectRatio = resolvedEdit?.output?.aspectRatio ?? "16:9";
 		const newSize = calculateSizeFromPreset(validatedResolution, aspectRatio);
@@ -231,12 +215,8 @@ export class OutputSettingsManager {
 	// ─── Aspect Ratio ─────────────────────────────────────────────────────────
 
 	setAspectRatio(aspectRatio: string): void {
-		const result = OutputAspectRatioSchema.safeParse(aspectRatio);
-		if (!result.success || !result.data) {
-			throw new Error(`Invalid aspectRatio: ${result.success ? "aspectRatio is required" : result.error.issues[0]?.message}`);
-		}
-
-		const validatedAspectRatio = result.data;
+		// Schema is optional in output, but required here — parse validates, ! narrows
+		const validatedAspectRatio = OutputAspectRatioSchema.parse(aspectRatio)!;
 		const resolvedEdit = this.edit.getResolvedEdit();
 		const resolution = resolvedEdit?.output?.resolution;
 
