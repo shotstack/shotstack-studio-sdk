@@ -78,7 +78,7 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 
 		const letterSpacingHtml = showLetterSpacing
 			? `
-			<div class="ss-toolbar-popup-label">Letter spacing</div>
+			<div class="ss-toolbar-popup-label" data-merge-path="asset.style.letterSpacing" data-merge-prefix="TEXT_LETTER_SPACING">Letter spacing</div>
 			<div class="ss-toolbar-popup-row">
 				<input type="range" class="ss-toolbar-slider" data-letter-spacing-slider
 					min="${letterSpacingMin}" max="${letterSpacingMax}" value="0" />
@@ -89,7 +89,7 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 
 		return `
 			${letterSpacingHtml}
-			<div class="ss-toolbar-popup-label">Line spacing</div>
+			<div class="ss-toolbar-popup-label" data-merge-path="asset.style.lineHeight" data-merge-prefix="TEXT_LINE_HEIGHT">Line spacing</div>
 			<div class="ss-toolbar-popup-row">
 				<input type="range" class="ss-toolbar-slider" data-line-height-slider
 					min="${lineHeightMin}" max="${lineHeightMax}" value="12" />

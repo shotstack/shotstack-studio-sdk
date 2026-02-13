@@ -1,12 +1,14 @@
 import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
-import { deepMerge } from "@core/shared/utils";
-import type { ResolvedClip } from "@schemas";
+import { setNestedValue } from "@core/shared/utils";
 
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess } from "./types";
 
 /**
  * Command to apply or remove a merge field on a clip property.
+ *
+ * Supports both asset-level paths (e.g. "asset.font.color") and
+ * clip-level paths (e.g. "opacity", "scale").
  */
 export class SetMergeFieldCommand implements EditCommand {
 	readonly name = "setMergeField";
@@ -21,50 +23,31 @@ export class SetMergeFieldCommand implements EditCommand {
 		private fieldName: string | null,
 		private previousFieldName: string | null,
 		previousValue: string,
-		newValue: string,
-		private trackIndex: number,
-		private clipIndex: number
+		newValue: string
 	) {
 		this.storedPreviousValue = previousValue;
 		this.storedNewValue = newValue;
 	}
 
 	/**
-	 * Build a partial asset update from a property path and value.
-	 * Converts "asset.src" → { src: value }
-	 * Converts "asset.font.family" → { font: { family: value } }
+	 * Write a value to the document clip at this command's property path.
+	 * When storing a placeholder (raw=true), the string is written as-is.
+	 * When storing a resolved value (raw=false), it is coerced to match
+	 * the existing property's type (e.g. string "5" → number 5).
 	 */
-	private buildPartialAssetUpdate(propertyPath: string, value: string): Record<string, unknown> {
-		if (!propertyPath.startsWith("asset.")) {
-			return {};
-		}
-
-		const assetProperty = propertyPath.slice(6); // Remove "asset." prefix
-		const parts = assetProperty.split(".");
-
-		if (parts.length === 1) {
-			return { [parts[0]]: value };
-		}
-
-		// Build nested object: { font: { family: value } }
-		let result: Record<string, unknown> = { [parts[parts.length - 1]]: value };
-		for (let i = parts.length - 2; i >= 0; i -= 1) {
-			result = { [parts[i]]: result };
-		}
-		return result;
-	}
-
-	/**
-	 * Get the full merged asset with the update applied.
-	 * Uses deep merge to preserve all existing asset properties.
-	 */
-	private getMergedAsset(context: CommandContext, partialUpdate: Record<string, unknown>): ResolvedClip["asset"] {
+	private updateDocumentClip(context: CommandContext, value: string, raw: boolean): void {
 		const document = context.getDocument();
-		const currentClip = document?.getClip(this.trackIndex, this.clipIndex);
-		const currentAsset = currentClip?.asset ?? {};
-
-		// Deep merge to preserve type, width, height, etc.
-		return deepMerge(currentAsset, partialUpdate) as ResolvedClip["asset"];
+		if (!document) return;
+		const lookup = document.getClipById(this.clipId);
+		if (!lookup) return;
+		const clip = lookup.clip as Record<string, unknown>;
+		if (raw) {
+			setNestedValue(clip, this.propertyPath, value);
+		} else {
+			const trimmed = typeof value === "string" ? value.trim() : "";
+			const num = trimmed.length > 0 ? Number(value) : NaN;
+			setNestedValue(clip, this.propertyPath, Number.isFinite(num) ? num : value);
+		}
 	}
 
 	async execute(context?: CommandContext): Promise<CommandResult> {
@@ -94,10 +77,15 @@ export class SetMergeFieldCommand implements EditCommand {
 			mergeFields.remove(this.previousFieldName, { silent: true });
 		}
 
-		// 3. Update document asset with resolved value (deep merge to preserve type, etc.)
-		const partialUpdate = this.buildPartialAssetUpdate(this.propertyPath, this.storedNewValue);
-		const mergedAsset = this.getMergedAsset(context, partialUpdate);
-		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: mergedAsset });
+		// 3. Update document with placeholder (not resolved value)
+		// This matches how templates are loaded - placeholders stored in document, resolved at runtime
+		if (this.fieldName) {
+			const placeholder = mergeFields.createTemplate(this.fieldName);
+			this.updateDocumentClip(context, placeholder, true);
+		} else {
+			// No merge field - store resolved value with type coercion
+			this.updateDocumentClip(context, this.storedNewValue, false);
+		}
 
 		// 4. Resolve → Reconciler handles player updates (reloadAsset, reconfigure, draw)
 		context.resolve();
@@ -125,10 +113,13 @@ export class SetMergeFieldCommand implements EditCommand {
 			mergeFields.register({ name: this.previousFieldName, defaultValue: this.storedPreviousValue }, { silent: true });
 		}
 
-		// 3. Restore document asset with previous value (deep merge to preserve type, etc.)
-		const partialUpdate = this.buildPartialAssetUpdate(this.propertyPath, this.storedPreviousValue);
-		const mergedAsset = this.getMergedAsset(context, partialUpdate);
-		context.documentUpdateClip(this.trackIndex, this.clipIndex, { asset: mergedAsset });
+		// 3. Restore document with previous value
+		// If there was a previous binding, store the placeholder; otherwise store resolved value
+		if (this.storedPreviousBinding) {
+			this.updateDocumentClip(context, this.storedPreviousBinding.placeholder, true);
+		} else {
+			this.updateDocumentClip(context, this.storedPreviousValue, false);
+		}
 
 		// 4. Resolve → Reconciler handles player updates
 		context.resolve();

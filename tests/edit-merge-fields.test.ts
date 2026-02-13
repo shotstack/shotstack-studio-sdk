@@ -265,6 +265,15 @@ function getEditState(edit: ShotstackEdit): {
 }
 
 /**
+ * Helper to resolve clipId from track/clip indices, throwing if not found.
+ */
+function getClipIdOrFail(edit: ShotstackEdit, trackIdx: number, clipIdx: number): string {
+	const clipId = edit.getClipId(trackIdx, clipIdx);
+	if (!clipId) throw new Error(`No clipId found at track ${trackIdx}, clip ${clipIdx}`);
+	return clipId;
+}
+
+/**
  * Create a simple image clip config for testing.
  */
 function createImageClip(start: number, length: number, src: string = "https://example.com/image.jpg"): Clip {
@@ -333,13 +342,12 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip);
 
 			// Apply merge field
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg");
 
 			// Check document has binding with template
-			const player = edit.getPlayerClip(0, 0);
 			const document = edit.getDocument();
-			const clipId = player?.clipId;
-			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
+			const binding = document?.getClipBinding(clipId, "asset.src");
 			expect(binding?.placeholder).toBe("{{ MEDIA_URL }}");
 			expect(binding?.resolvedValue).toBe("https://cdn.example.com/new.jpg");
 		});
@@ -348,7 +356,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg");
 
 			// Check player's clipConfiguration has resolved value
 			const player = edit.getPlayerClip(0, 0);
@@ -359,22 +368,24 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "IMAGE_SRC", "https://example.com/image.png");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "IMAGE_SRC", "https://example.com/image.png");
 
 			const player = edit.getPlayerClip(0, 0);
 			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/image.png");
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("IMAGE_SRC");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("IMAGE_SRC");
 		});
 
 		it("handles asset.text path", async () => {
 			const clip = createTextClip(0, 3, "Original text");
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.text", "HEADLINE", "New headline text");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.text", "HEADLINE", "New headline text");
 
 			const player = edit.getPlayerClip(0, 0);
 			expect(player?.clipConfiguration.asset).toHaveProperty("text", "New headline text");
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.text")).toBe("HEADLINE");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.text")).toBe("HEADLINE");
 		});
 
 		it("is undoable - restores previous value", async () => {
@@ -383,7 +394,8 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip);
 
 			// Apply merge field
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg", originalSrc);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg", originalSrc);
 
 			// Undo
 			await edit.undo();
@@ -398,7 +410,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "NEW_FIELD", "https://example.com/value.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "NEW_FIELD", "https://example.com/value.jpg");
 
 			const field = edit.mergeFields.get("NEW_FIELD");
 			expect(field).toBeDefined();
@@ -410,7 +423,8 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip);
 			emitSpy.mockClear();
 
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 			// Flush microtask queue - command.execute() is async
 			await Promise.resolve();
 
@@ -426,13 +440,15 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
 			// Apply first merge field
-			await edit.applyMergeField(0, 0, "asset.src", "FIELD_A", "https://a.example.com/a.jpg");
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("FIELD_A");
+			await edit.applyMergeField(clipId, "asset.src", "FIELD_A", "https://a.example.com/a.jpg");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("FIELD_A");
 
 			// Apply second merge field to same property
-			await edit.applyMergeField(0, 0, "asset.src", "FIELD_B", "https://b.example.com/b.jpg");
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("FIELD_B");
+			await edit.applyMergeField(clipId, "asset.src", "FIELD_B", "https://b.example.com/b.jpg");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("FIELD_B");
 		});
 
 		it("calls reloadAsset for src field changes", async () => {
@@ -442,19 +458,20 @@ describe("Edit Merge Fields", () => {
 			const player = edit.getPlayerClip(0, 0);
 			const reloadSpy = jest.spyOn(player!, "reloadAsset");
 
-			await edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 
 			expect(reloadSpy).toHaveBeenCalled();
 		});
 
-		it("is no-op for invalid track/clip indices", async () => {
+		it("is no-op for non-existent clipId", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
 			const { commandIndex: beforeIndex } = getEditState(edit);
 
 			// Try to apply to non-existent clip
-			edit.applyMergeField(99, 99, "asset.src", "FIELD", "value");
+			edit.applyMergeField("nonexistent-clip-id", "asset.src", "FIELD", "value");
 
 			const { commandIndex: afterIndex } = getEditState(edit);
 			// Command should not have been added
@@ -467,17 +484,17 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
 			// Apply merge field first
-			await edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			await edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 
 			// Remove merge field
-			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			await edit.removeMergeField(clipId, "asset.src", "https://example.com/restored.jpg");
 
 			// Check binding was removed from document
-			const player = edit.getPlayerClip(0, 0);
 			const document = edit.getDocument();
-			const clipId = player?.clipId;
-			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
+			const binding = document?.getClipBinding(clipId, "asset.src");
 			expect(binding).toBeUndefined();
 		});
 
@@ -485,8 +502,9 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			await edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
-			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			await edit.removeMergeField(clipId, "asset.src", "https://example.com/restored.jpg");
 
 			const player = edit.getPlayerClip(0, 0);
 			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/restored.jpg");
@@ -496,10 +514,11 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			await edit.applyMergeField(0, 0, "asset.src", "REMOVE_ME", "https://example.com/value.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "REMOVE_ME", "https://example.com/value.jpg");
 			expect(edit.mergeFields.get("REMOVE_ME")).toBeDefined();
 
-			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			await edit.removeMergeField(clipId, "asset.src", "https://example.com/restored.jpg");
 			expect(edit.mergeFields.get("REMOVE_ME")).toBeUndefined();
 		});
 
@@ -507,18 +526,17 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			await edit.applyMergeField(0, 0, "asset.src", "UNDO_TEST", "https://example.com/merged.jpg");
-			await edit.removeMergeField(0, 0, "asset.src", "https://example.com/original.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "UNDO_TEST", "https://example.com/merged.jpg");
+			await edit.removeMergeField(clipId, "asset.src", "https://example.com/original.jpg");
 
 			// Undo the remove
 			await edit.undo();
 			await Promise.resolve();
 
 			// Binding should be back in document
-			const player = edit.getPlayerClip(0, 0);
 			const document = edit.getDocument();
-			const clipId = player?.clipId;
-			const binding = clipId ? document?.getClipBinding(clipId, "asset.src") : undefined;
+			const binding = document?.getClipBinding(clipId, "asset.src");
 			expect(binding?.placeholder).toBe("{{ UNDO_TEST }}");
 		});
 
@@ -526,10 +544,11 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
+			const clipId = getClipIdOrFail(edit, 0, 0);
 			const { commandIndex: beforeIndex } = getEditState(edit);
 
 			// Try to remove non-existent merge field
-			edit.removeMergeField(0, 0, "asset.src", "https://example.com/restored.jpg");
+			edit.removeMergeField(clipId, "asset.src", "https://example.com/restored.jpg");
 
 			const { commandIndex: afterIndex } = getEditState(edit);
 			// No command should have been added
@@ -540,7 +559,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://example.com/new.jpg");
 			emitSpy.mockClear();
 
 			await edit.undo();
@@ -560,32 +580,34 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "IMAGE_URL", "https://example.com/image.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "IMAGE_URL", "https://example.com/image.jpg");
 
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("IMAGE_URL");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("IMAGE_URL");
 		});
 
 		it("returns null when no merge field", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBeNull();
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBeNull();
 		});
 
-		it("returns null for invalid track/clip indices", async () => {
+		it("returns null for non-existent clipId", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			expect(edit.getMergeFieldForProperty(99, 0, "asset.src")).toBeNull();
-			expect(edit.getMergeFieldForProperty(0, 99, "asset.src")).toBeNull();
+			expect(edit.getMergeFieldForProperty("nonexistent-clip-id", "asset.src")).toBeNull();
 		});
 
 		it("returns null for non-merge-field properties", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			// asset.src is not a merge field, so should return null
-			expect(edit.getMergeFieldForProperty(0, 0, "start")).toBeNull();
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			// start is not a merge field, so should return null
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBeNull();
 		});
 	});
 
@@ -594,7 +616,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "LIVE_UPDATE", "https://example.com/initial.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "LIVE_UPDATE", "https://example.com/initial.jpg");
 
 			edit.updateMergeFieldValueLive("LIVE_UPDATE", "https://example.com/updated.jpg");
 
@@ -606,7 +629,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "LIVE_UPDATE", "https://example.com/initial.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "LIVE_UPDATE", "https://example.com/initial.jpg");
 
 			edit.updateMergeFieldValueLive("LIVE_UPDATE", "https://example.com/updated.jpg");
 
@@ -618,7 +642,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			edit.applyMergeField(0, 0, "asset.src", "NO_UNDO", "https://example.com/initial.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.src", "NO_UNDO", "https://example.com/initial.jpg");
 
 			const { commandIndex: beforeIndex } = getEditState(edit);
 
@@ -648,9 +673,12 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip1);
 			await edit.addClip(0, clip2);
 
+			const clipId0 = getClipIdOrFail(edit, 0, 0);
+			const clipId1 = getClipIdOrFail(edit, 0, 1);
+
 			// Apply same merge field to both
-			await edit.applyMergeField(0, 0, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
-			await edit.applyMergeField(0, 1, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
+			await edit.applyMergeField(clipId0, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
+			await edit.applyMergeField(clipId1, "asset.src", "SHARED_FIELD", "https://example.com/initial.jpg");
 
 			// Update the field value
 			await edit.updateMergeFieldValueLive("SHARED_FIELD", "https://example.com/updated.jpg");
@@ -703,6 +731,44 @@ describe("Edit Merge Fields", () => {
 			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
 			expect((exportedClip?.asset as { text?: string }).text).toBe("Hello {{ NAME }}");
 		});
+
+		it("resolves clip-level numeric properties as numbers, not strings (regression)", async () => {
+			// Bug: updateMergeFieldValueLive for opacity/scale wrote a string "0.7" to the document
+			// clip because type coercion compared against the placeholder string "{{ OPACITY }}".
+			// The resolver then passed "0.7" through unchanged (not a template), and the player's
+			// configureKeyframes did typeof config.opacity === "number" → false → fell back to 1.
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "image", src: "https://example.com/img.jpg" },
+									start: 0,
+									length: 3,
+									fit: "crop",
+									opacity: "{{ OPACITY }}" as unknown as number
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "OPACITY", replace: 0.5 }]
+			});
+
+			const player = edit.getPlayerClip(0, 0);
+			// Before: resolved correctly from template
+			expect(player?.clipConfiguration.opacity).toBe(0.5);
+
+			// Change value via variables list
+			edit.updateMergeFieldValueLive("OPACITY", "0.7");
+
+			// After: must be the NUMBER 0.7, not the string "0.7"
+			const resolved = edit.getResolvedClip(0, 0);
+			expect(resolved?.opacity).toBe(0.7);
+			expect(typeof resolved?.opacity).toBe("number");
+		});
 	});
 
 	describe("deleteMergeFieldGlobally()", () => {
@@ -710,7 +776,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			await edit.applyMergeField(0, 0, "asset.src", "DELETE_ME", "https://example.com/value.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "DELETE_ME", "https://example.com/value.jpg");
 			expect(edit.mergeFields.get("DELETE_ME")).toBeDefined();
 
 			await edit.deleteMergeFieldGlobally("DELETE_ME");
@@ -720,7 +787,8 @@ describe("Edit Merge Fields", () => {
 		it("does not emit mergefield:removed and does emit mergefield:changed", async () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
-			await edit.applyMergeField(0, 0, "asset.src", "DELETE_EVENT_CONTRACT", "https://example.com/value.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "DELETE_EVENT_CONTRACT", "https://example.com/value.jpg");
 			emitSpy.mockClear();
 
 			await edit.deleteMergeFieldGlobally("DELETE_EVENT_CONTRACT");
@@ -749,7 +817,8 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3);
 			await edit.addClip(0, clip);
 
-			await edit.applyMergeField(0, 0, "asset.src", "RESTORE_TEST", "https://example.com/merged.jpg");
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "asset.src", "RESTORE_TEST", "https://example.com/merged.jpg");
 
 			await edit.deleteMergeFieldGlobally("RESTORE_TEST");
 
@@ -758,7 +827,7 @@ describe("Edit Merge Fields", () => {
 			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/merged.jpg");
 
 			// Merge field should be removed from property
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBeNull();
 		});
 
 		it("removes field from all clips using it", async () => {
@@ -768,16 +837,55 @@ describe("Edit Merge Fields", () => {
 			await edit.addClip(0, clip1);
 			await edit.addClip(0, clip2);
 
+			const clipId0 = getClipIdOrFail(edit, 0, 0);
+			const clipId1 = getClipIdOrFail(edit, 0, 1);
+
 			// Apply same merge field to both
-			await edit.applyMergeField(0, 0, "asset.src", "SHARED", "https://example.com/shared.jpg");
-			await edit.applyMergeField(0, 1, "asset.src", "SHARED", "https://example.com/shared.jpg");
+			await edit.applyMergeField(clipId0, "asset.src", "SHARED", "https://example.com/shared.jpg");
+			await edit.applyMergeField(clipId1, "asset.src", "SHARED", "https://example.com/shared.jpg");
 
 			// Delete globally
 			await edit.deleteMergeFieldGlobally("SHARED");
 
 			// Both should have merge field removed
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBeNull();
-			expect(edit.getMergeFieldForProperty(0, 1, "asset.src")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId0, "asset.src")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId1, "asset.src")).toBeNull();
+		});
+
+		it("removes binding after updateMergeFieldValueLive (regression)", async () => {
+			// Bug: After updateMergeFieldValueLive wrote resolved values into the document clip,
+			// deleteMergeFieldGlobally still needs to find and remove the binding from each clip.
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 10 }]
+			});
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			// Verify field is bound
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBe("START");
+
+			// Update the value live (this writes resolved value into document clip)
+			edit.updateMergeFieldValueLive("START", "5");
+
+			// Delete globally — should still find and remove the binding
+			await edit.deleteMergeFieldGlobally("START");
+
+			// Field should be gone from both registry and clip binding
+			expect(edit.mergeFields.get("START")).toBeUndefined();
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBeNull();
+
+			// Document clip should have the restore value, not a placeholder
+			const document = edit.getDocument();
+			const binding = document?.getClipBinding(clipId, "start");
+			expect(binding).toBeUndefined();
 		});
 
 		it("is no-op for non-existent field", async () => {
@@ -1071,7 +1179,7 @@ describe("Edit Merge Fields", () => {
 			expect(clipId && document?.getClipBinding(clipId, "asset.src")).toBeDefined();
 
 			// Remove merge field via API (updates document data AND removes binding)
-			await edit.removeMergeField(0, 0, "asset.src", "https://cdn.example.com/image.jpg");
+			await edit.removeMergeField(clipId!, "asset.src", "https://cdn.example.com/image.jpg");
 
 			// No binding should exist
 			expect(clipId && document?.getClipBinding(clipId, "asset.src")).toBeUndefined();
@@ -1088,42 +1196,769 @@ describe("Edit Merge Fields", () => {
 			const clip = createImageClip(0, 3, "https://original.example.com/image.jpg");
 			await edit.addClip(0, clip);
 
+			const clipId = getClipIdOrFail(edit, 0, 0);
 			const newValue = "https://new.example.com/image.jpg";
-			edit.applyMergeField(0, 0, "asset.src", "SEQUENCE_TEST", newValue, "https://original.example.com/image.jpg");
+			edit.applyMergeField(clipId, "asset.src", "SEQUENCE_TEST", newValue, "https://original.example.com/image.jpg");
 
 			// Verify applied
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("SEQUENCE_TEST");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("SEQUENCE_TEST");
 
 			// Undo
 			await edit.undo();
 			await Promise.resolve();
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBeNull();
 
 			// Redo
 			await edit.redo();
 			await Promise.resolve();
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.src")).toBe("SEQUENCE_TEST");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("SEQUENCE_TEST");
 		});
 
 		it("multiple merge field operations can be undone in sequence", async () => {
 			const clip = createTextClip(0, 3, "Original");
 			await edit.addClip(0, clip);
 
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
 			// Apply first merge field
-			edit.applyMergeField(0, 0, "asset.text", "FIELD_1", "Value 1", "Original");
+			edit.applyMergeField(clipId, "asset.text", "FIELD_1", "Value 1", "Original");
 
 			// Apply second merge field (replaces first)
-			edit.applyMergeField(0, 0, "asset.text", "FIELD_2", "Value 2");
+			edit.applyMergeField(clipId, "asset.text", "FIELD_2", "Value 2");
 
 			// Undo second
 			await edit.undo();
 			await Promise.resolve();
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.text")).toBe("FIELD_1");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.text")).toBe("FIELD_1");
 
 			// Undo first
 			await edit.undo();
 			await Promise.resolve();
-			expect(edit.getMergeFieldForProperty(0, 0, "asset.text")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId, "asset.text")).toBeNull();
+		});
+	});
+
+	describe("validateMergeFieldValue()", () => {
+		it("returns null for valid color value", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "Hello", font: { color: "{{ COLOR }}" } },
+									start: 0,
+									length: 3
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "COLOR", replace: "#ff0000" }]
+			});
+
+			expect(edit.validateMergeFieldValue("COLOR", "#00ff00")).toBeNull();
+		});
+
+		it("returns error for invalid color value", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "Hello", font: { color: "{{ COLOR }}" } },
+									start: 0,
+									length: 3
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "COLOR", replace: "#ff0000" }]
+			});
+
+			const error = edit.validateMergeFieldValue("COLOR", "not-a-color");
+			expect(error).toBeTruthy();
+		});
+
+		it("returns null for valid numeric value on start", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 5 }]
+			});
+
+			expect(edit.validateMergeFieldValue("START", "10")).toBeNull();
+		});
+
+		it("returns error for non-numeric value on start", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 5 }]
+			});
+
+			const error = edit.validateMergeFieldValue("START", "hello");
+			expect(error).toBeTruthy();
+		});
+
+		it("returns null for unknown field", async () => {
+			await edit.loadEdit({
+				timeline: { tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }] }] },
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+
+			// Field not bound to anything — should return null (no error)
+			expect(edit.validateMergeFieldValue("UNKNOWN", "anything")).toBeNull();
+		});
+
+		it("still rejects invalid values after a successful updateMergeFieldValueLive (regression)", async () => {
+			// Bug: After updateMergeFieldValueLive wrote the resolved value into the document
+			// clip (e.g., start: "5" instead of "{{ START }}"), validateMergeFieldValue could
+			// no longer substitute the candidate value and would pass through invalid input.
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 10 }]
+			});
+
+			// Step 1: Validation correctly rejects "fff" before any live update
+			expect(edit.validateMergeFieldValue("START", "fff")).toBeTruthy();
+
+			// Step 2: Successfully change to a valid numeric value
+			expect(edit.validateMergeFieldValue("START", "5")).toBeNull();
+			edit.updateMergeFieldValueLive("START", "5");
+
+			// Step 3: After the live update, validation must still reject "fff"
+			const error = edit.validateMergeFieldValue("START", "fff");
+			expect(error).toBeTruthy();
+		});
+	});
+
+	describe("clip-level merge fields", () => {
+		it("applies merge field to start property", async () => {
+			const clip = createImageClip(5, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "start", "START_TIME", "5");
+
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBe("START_TIME");
+			expect(edit.mergeFields.get("START_TIME")?.defaultValue).toBe("5");
+		});
+
+		it("applies merge field to opacity property", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "opacity", "CLIP_OPACITY", "0.5");
+
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("CLIP_OPACITY");
+			expect(edit.mergeFields.get("CLIP_OPACITY")?.defaultValue).toBe("0.5");
+		});
+
+		it("coerces numeric values when applying to start", async () => {
+			// Load edit with start as merge field to test coercion
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 10 }]
+			});
+
+			const player = edit.getPlayerClip(0, 0);
+			// The resolved value in clipConfiguration should be a number, not a string
+			expect(player?.clipConfiguration.start).toBe(10);
+			expect(typeof player?.clipConfiguration.start).toBe("number");
+		});
+
+		it("removes merge field from start property", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 5 }]
+			});
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBe("START");
+
+			await edit.removeMergeField(clipId, "start", "5");
+
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBeNull();
+		});
+
+		it("undo restores merge field on start property", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			await edit.applyMergeField(clipId, "start", "START_TIME", "5");
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBe("START_TIME");
+
+			await edit.undo();
+			await Promise.resolve();
+
+			expect(edit.getMergeFieldForProperty(clipId, "start")).toBeNull();
+		});
+	});
+
+	describe("updateMergeFieldValueLive() timeline update", () => {
+		it("emits TimelineUpdated event after value change", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 0 }]
+			});
+
+			emitSpy.mockClear();
+
+			edit.updateMergeFieldValueLive("START", "5");
+
+			expect(emitSpy).toHaveBeenCalledWith("timeline:updated", expect.any(Object));
+		});
+
+		it("resolves scale as number after live update (regression)", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "image", src: "https://example.com/img.jpg" },
+									start: 0,
+									length: 3,
+									fit: "crop",
+									scale: "{{ SCALE }}" as unknown as number
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "SCALE", replace: 1 }]
+			});
+
+			const resolved = edit.getResolvedClip(0, 0);
+			expect(resolved?.scale).toBe(1);
+
+			edit.updateMergeFieldValueLive("SCALE", "1.5");
+
+			const resolvedAfter = edit.getResolvedClip(0, 0);
+			expect(resolvedAfter?.scale).toBe(1.5);
+			expect(typeof resolvedAfter?.scale).toBe("number");
+		});
+	});
+
+	describe("loadEdit with multiple merge field types", () => {
+		it("resolves all merge field types simultaneously", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "image", src: "{{ URL }}" },
+									start: "{{ START }}" as unknown as number,
+									length: 3,
+									fit: "crop",
+									opacity: "{{ OPACITY }}" as unknown as number
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [
+					{ find: "URL", replace: "https://example.com/img.jpg" },
+					{ find: "START", replace: 2 },
+					{ find: "OPACITY", replace: 0.8 }
+				]
+			});
+
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { src: string }).src).toBe("https://example.com/img.jpg");
+			expect(player?.clipConfiguration.start).toBe(2);
+			expect(player?.clipConfiguration.opacity).toBe(0.8);
+
+			// All three should be registered
+			expect(edit.mergeFields.get("URL")).toBeDefined();
+			expect(edit.mergeFields.get("START")).toBeDefined();
+			expect(edit.mergeFields.get("OPACITY")).toBeDefined();
+
+			// All three should have bindings
+			const clipId = player?.clipId;
+			const document = edit.getDocument();
+			expect(clipId && document?.getClipBinding(clipId, "asset.src")).toBeDefined();
+			expect(clipId && document?.getClipBinding(clipId, "start")).toBeDefined();
+			expect(clipId && document?.getClipBinding(clipId, "opacity")).toBeDefined();
+		});
+
+		it("live-updating one field does not affect others", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "image", src: "{{ URL }}" },
+									start: "{{ START }}" as unknown as number,
+									length: 3,
+									fit: "crop",
+									opacity: "{{ OPACITY }}" as unknown as number
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [
+					{ find: "URL", replace: "https://example.com/img.jpg" },
+					{ find: "START", replace: 2 },
+					{ find: "OPACITY", replace: 0.8 }
+				]
+			});
+
+			// Update only OPACITY
+			edit.updateMergeFieldValueLive("OPACITY", "0.5");
+
+			const resolved = edit.getResolvedClip(0, 0);
+			expect(resolved?.opacity).toBe(0.5);
+			expect(resolved?.start).toBe(2);
+			expect((resolved?.asset as { src: string }).src).toBe("https://example.com/img.jpg");
+		});
+	});
+
+	describe("isValueCompatibleWithClipProperty()", () => {
+		it("returns true for valid numeric value on opacity", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "opacity", "0.5")).toBe(true);
+		});
+
+		it("returns false for non-numeric value on opacity", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "opacity", "bright")).toBe(false);
+		});
+
+		it("returns false for non-numeric value on start", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "start", "hello")).toBe(false);
+		});
+
+		it("returns true for valid string on asset.src", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "asset.src", "https://example.com/new.jpg")).toBe(true);
+		});
+
+		it("returns true for non-existent clipId (graceful fallback)", async () => {
+			expect(edit.isValueCompatibleWithClipProperty("nonexistent", "opacity", "0.5")).toBe(true);
+		});
+
+		it("returns true for valid color on rich-text font.color", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "Hello", font: { color: "#ff0000" } },
+									start: 0,
+									length: 3
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "asset.font.color", "#00ff00")).toBe(true);
+		});
+
+		it("returns false for invalid color on rich-text font.color", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "Hello", font: { color: "#ff0000" } },
+									start: 0,
+									length: 3
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "asset.font.color", "not-a-color")).toBe(false);
+		});
+	});
+
+	describe("export round-trip with clip-level merge fields", () => {
+		it("exports opacity placeholder back to template string", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "image", src: "https://example.com/img.jpg" },
+									start: 0,
+									length: 3,
+									fit: "crop",
+									opacity: "{{ OPACITY }}" as unknown as number
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "OPACITY", replace: 0.5 }]
+			});
+
+			// Resolved clip should have the number
+			const resolved = edit.getResolvedClip(0, 0);
+			expect(resolved?.opacity).toBe(0.5);
+
+			// Export should restore the placeholder string
+			const exported = edit.getDocument()?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect(exportedClip?.opacity).toBe("{{ OPACITY }}");
+		});
+
+		it("exports start placeholder back to template string", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: "{{ START }}", length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "START", replace: 5 }]
+			});
+
+			const resolved = edit.getResolvedClip(0, 0);
+			expect(resolved?.start).toBe(5);
+
+			const exported = edit.getDocument()?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect(exportedClip?.start).toBe("{{ START }}");
+		});
+
+		it("exports placeholders correctly after live value update", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "image", src: "https://example.com/img.jpg" },
+									start: 0,
+									length: 3,
+									fit: "crop",
+									opacity: "{{ OPACITY }}" as unknown as number
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "OPACITY", replace: 0.5 }]
+			});
+
+			// Live update changes the resolved value
+			edit.updateMergeFieldValueLive("OPACITY", "0.9");
+
+			const resolved = edit.getResolvedClip(0, 0);
+			expect(resolved?.opacity).toBe(0.9);
+
+			// Export should still have the placeholder, not the resolved value
+			const exported = edit.getDocument()?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			expect(exportedClip?.opacity).toBe("{{ OPACITY }}");
+		});
+	});
+
+	describe("undo after updateMergeFieldValueLive", () => {
+		it("undo of applyMergeField restores original state after live update", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			const originalSrc = "https://example.com/image.jpg";
+
+			// Apply merge field (creates undo entry)
+			await edit.applyMergeField(clipId, "asset.src", "MY_URL", "https://cdn.example.com/new.jpg", originalSrc);
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("MY_URL");
+
+			// Live update (no undo entry)
+			edit.updateMergeFieldValueLive("MY_URL", "https://cdn.example.com/updated.jpg");
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { src: string }).src).toBe("https://cdn.example.com/updated.jpg");
+
+			// Undo the apply — should fully restore pre-merge-field state
+			await edit.undo();
+			await Promise.resolve();
+
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBeNull();
+			expect((player?.clipConfiguration.asset as { src: string }).src).toBe(originalSrc);
+		});
+
+		it("undo of applyMergeField on numeric property restores original after live update", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/img.jpg" }, start: 0, length: 3, fit: "crop" }]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			// Apply merge field to opacity
+			await edit.applyMergeField(clipId, "opacity", "FADE", "0.5");
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("FADE");
+
+			// Live update
+			edit.updateMergeFieldValueLive("FADE", "0.3");
+
+			// Undo
+			await edit.undo();
+			await Promise.resolve();
+
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBeNull();
+		});
+	});
+
+	describe("numeric-first coercion edge cases", () => {
+		it("coerces '0' to number 0 (not string)", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "opacity", "FADE", "1");
+			edit.updateMergeFieldValueLive("FADE", "0");
+
+			const player = edit.getPlayerClip(0, 0);
+			expect(player?.clipConfiguration.opacity).toBe(0);
+			expect(typeof player?.clipConfiguration.opacity).toBe("number");
+		});
+
+		it("does NOT coerce empty string to 0 (preserves as string)", async () => {
+			const clip = createTextClip(0, 3, "World");
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "asset.text", "TITLE", "Hello");
+			edit.updateMergeFieldValueLive("TITLE", "");
+
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { text: string }).text).toBe("");
+			expect(typeof (player?.clipConfiguration.asset as { text: string }).text).toBe("string");
+		});
+
+		it("does NOT coerce 'Infinity' to number (stays string)", async () => {
+			const clip = createTextClip(0, 3, "Placeholder");
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "asset.text", "VAL", "Placeholder");
+			edit.updateMergeFieldValueLive("VAL", "Infinity");
+
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { text: string }).text).toBe("Infinity");
+			expect(typeof (player?.clipConfiguration.asset as { text: string }).text).toBe("string");
+		});
+
+		it("does NOT coerce 'NaN' to number (stays string)", async () => {
+			const clip = createTextClip(0, 3, "Placeholder");
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "asset.text", "VAL", "Placeholder");
+			edit.updateMergeFieldValueLive("VAL", "NaN");
+
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { text: string }).text).toBe("NaN");
+			expect(typeof (player?.clipConfiguration.asset as { text: string }).text).toBe("string");
+		});
+
+		it("coerces negative number string to number", async () => {
+			// Use asset.text to test coercion behavior since numeric clip properties
+			// have schema constraints (e.g., start >= 0). The coercion logic itself
+			// doesn't depend on the property — it applies to all merge field values.
+			const clip = createTextClip(0, 3, "Placeholder");
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "asset.text", "VAL", "99");
+			edit.updateMergeFieldValueLive("VAL", "-5");
+
+			const player = edit.getPlayerClip(0, 0);
+			// The coercion converts "-5" to -5 (number) since Number("-5") is finite.
+			// On a text property this means the value is stored as -5 (number), not "-5" (string).
+			expect((player?.clipConfiguration.asset as { text: number | string }).text).toBe(-5);
+			expect(typeof (player?.clipConfiguration.asset as { text: number | string }).text).toBe("number");
+		});
+
+		it("coerces float string to number", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "opacity", "ALPHA", "1");
+			edit.updateMergeFieldValueLive("ALPHA", "0.333");
+
+			const player = edit.getPlayerClip(0, 0);
+			expect(player?.clipConfiguration.opacity).toBe(0.333);
+			expect(typeof player?.clipConfiguration.opacity).toBe("number");
+		});
+
+		it("does NOT coerce whitespace-only string to 0", async () => {
+			const clip = createTextClip(0, 3, "Placeholder");
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			await edit.applyMergeField(clipId, "asset.text", "VAL", "Hello");
+			edit.updateMergeFieldValueLive("VAL", "   ");
+
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { text: string }).text).toBe("   ");
+			expect(typeof (player?.clipConfiguration.asset as { text: string }).text).toBe("string");
+		});
+	});
+
+	describe("multiple fields on the same clip", () => {
+		it("updating one field does not affect another field on the same clip", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			// Bind two different properties
+			await edit.applyMergeField(clipId, "asset.src", "IMAGE_URL", "https://example.com/img.jpg");
+			await edit.applyMergeField(clipId, "opacity", "FADE_LEVEL", "0.8");
+
+			// Update only IMAGE_URL
+			edit.updateMergeFieldValueLive("IMAGE_URL", "https://example.com/updated.jpg");
+
+			// FADE_LEVEL should be unaffected
+			const player = edit.getPlayerClip(0, 0);
+			expect((player?.clipConfiguration.asset as { src: string }).src).toBe("https://example.com/updated.jpg");
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("FADE_LEVEL");
+		});
+
+		it("deleting one field globally does not remove another field on the same clip", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			// Bind two different properties
+			await edit.applyMergeField(clipId, "asset.src", "IMAGE_URL", "https://example.com/img.jpg");
+			await edit.applyMergeField(clipId, "opacity", "FADE_LEVEL", "0.8");
+
+			// Delete only IMAGE_URL globally
+			await edit.deleteMergeFieldGlobally("IMAGE_URL");
+
+			// IMAGE_URL should be gone
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBeNull();
+			expect(edit.mergeFields.get("IMAGE_URL")).toBeUndefined();
+
+			// FADE_LEVEL should remain
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("FADE_LEVEL");
+			expect(edit.mergeFields.get("FADE_LEVEL")).toBeDefined();
+		});
+
+		it("undo of removing one field does not affect another field on the same clip", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			// Bind two properties
+			await edit.applyMergeField(clipId, "asset.src", "IMAGE_URL", "https://example.com/img.jpg");
+			await edit.applyMergeField(clipId, "opacity", "FADE_LEVEL", "0.8");
+
+			// Remove IMAGE_URL via removeMergeField
+			await edit.removeMergeField(clipId, "asset.src", "https://example.com/restored.jpg");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("FADE_LEVEL");
+
+			// Undo the remove
+			await edit.undo();
+			await Promise.resolve();
+
+			// Both should be back
+			expect(edit.getMergeFieldForProperty(clipId, "asset.src")).toBe("IMAGE_URL");
+			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("FADE_LEVEL");
 		});
 	});
 });

@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { EditEvent } from "@core/events/edit-events";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip } from "@schemas";
@@ -8,6 +9,7 @@ import { BaseToolbar } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { DragStateManager } from "./drag-state-manager";
+import { MergeFieldLabelManager, type MergeFieldLabelHost } from "./merge-field-label-manager";
 import { SliderControl } from "./primitives/SliderControl";
 
 type FitValue = "crop" | "cover" | "contain" | "none";
@@ -58,6 +60,13 @@ export interface MediaToolbarOptions {
 }
 
 export class MediaToolbar extends BaseToolbar {
+	/** Default values for merge-field-bindable media properties. */
+	private static readonly MEDIA_PROPERTY_DEFAULTS: Record<string, string> = {
+		opacity: "1",
+		scale: "1",
+		"asset.volume": "1"
+	};
+
 	private showMergeFields: boolean;
 	private assetType: MediaAssetType = "image";
 
@@ -80,6 +89,8 @@ export class MediaToolbar extends BaseToolbar {
 	private effectPanel: EffectPanel | null = null;
 	private opacitySlider: SliderControl | null = null;
 	private scaleSlider: SliderControl | null = null;
+	private mergeFieldManager: MergeFieldLabelManager | null = null;
+	private unsubMergeFieldChanged: (() => void) | null = null;
 
 	// ─── Button Elements ─────────────────────────────────────────────────────────
 	private fitBtn: HTMLButtonElement | null = null;
@@ -236,7 +247,7 @@ export class MediaToolbar extends BaseToolbar {
 						<span data-volume-value>100%</span>
 					</button>
 					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider" data-popup="volume">
-						<div class="ss-media-toolbar-popup-header">Volume</div>
+						<div class="ss-media-toolbar-popup-header"${this.showMergeFields ? ' data-merge-path="asset.volume" data-merge-prefix="MEDIA_VOLUME"' : ""}>Volume</div>
 						<div class="ss-media-toolbar-slider-row">
 							<input type="range" class="ss-media-toolbar-slider" data-volume-slider min="0" max="100" value="100" />
 							<input type="text" class="ss-media-toolbar-slider-value" data-volume-display value="100%" />
@@ -344,6 +355,19 @@ export class MediaToolbar extends BaseToolbar {
 		// ─── Mount Composite Components ──────────────────────────────────────────────
 		this.mountCompositeComponents();
 
+		// ─── Merge Field Labels ──────────────────────────────────────────────────────
+		if (this.showMergeFields) {
+			this.mergeFieldManager = new MergeFieldLabelManager(this as unknown as MergeFieldLabelHost, MediaToolbar.MEDIA_PROPERTY_DEFAULTS);
+			this.mergeFieldManager.init();
+
+			// Re-sync merge field labels when fields are added/removed globally
+			this.unsubMergeFieldChanged = this.edit.getInternalEvents().on(EditEvent.MergeFieldChanged, () => {
+				if (this.container?.style.display !== "none" && this.mergeFieldManager?.hasLabels) {
+					this.mergeFieldManager.sync();
+				}
+			});
+		}
+
 		this.setupEventListeners();
 		this.setupOutsideClickHandler();
 		this.enableDrag();
@@ -361,7 +385,8 @@ export class MediaToolbar extends BaseToolbar {
 				min: 0,
 				max: 100,
 				initialValue: 100,
-				formatValue: v => `${Math.round(v)}%`
+				formatValue: v => `${Math.round(v)}%`,
+				labelAttributes: this.showMergeFields ? { "data-merge-path": "opacity", "data-merge-prefix": "MEDIA_OPACITY" } : undefined
 			});
 			this.opacitySlider.onDragStart(() => this.startSliderDrag("opacity"));
 			this.opacitySlider.onChange(value => this.handleOpacityChange(value));
@@ -377,7 +402,8 @@ export class MediaToolbar extends BaseToolbar {
 				min: 10,
 				max: 200,
 				initialValue: 100,
-				formatValue: v => `${Math.round(v)}%`
+				formatValue: v => `${Math.round(v)}%`,
+				labelAttributes: this.showMergeFields ? { "data-merge-path": "scale", "data-merge-prefix": "MEDIA_SCALE" } : undefined
 			});
 			this.scaleSlider.onDragStart(() => this.startSliderDrag("scale"));
 			this.scaleSlider.onChange(value => this.handleScaleChange(value));
@@ -656,6 +682,11 @@ export class MediaToolbar extends BaseToolbar {
 		if (this.advancedBtn?.parentElement) {
 			this.advancedBtn.parentElement.classList.toggle("hidden", !VISUAL_ASSET_TYPES.has(this.assetType) || !this.showMergeFields);
 		}
+
+		// Sync merge field label bound states
+		if (this.showMergeFields && this.mergeFieldManager?.hasLabels) {
+			this.mergeFieldManager.sync();
+		}
 	}
 
 	// ─── Two-Phase Drag Helpers ──────────────────────────────────────────────────
@@ -921,7 +952,9 @@ export class MediaToolbar extends BaseToolbar {
 		}
 
 		const fieldName = shotstackEdit.mergeFields.generateUniqueName("MEDIA");
-		shotstackEdit.applyMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", fieldName, url, this.originalSrc);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clipId) return;
+		shotstackEdit.applyMergeField(clipId, "asset.src", fieldName, url, this.originalSrc);
 		this.dynamicFieldName = fieldName;
 	}
 
@@ -942,7 +975,10 @@ export class MediaToolbar extends BaseToolbar {
 	private clearDynamicSource(): void {
 		if (!this.dynamicFieldName) return;
 
-		this.getShotstackEdit()?.removeMergeField(this.selectedTrackIdx, this.selectedClipIdx, "asset.src", this.originalSrc);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (clipId) {
+			this.getShotstackEdit()?.removeMergeField(clipId, "asset.src", this.originalSrc);
+		}
 		this.dynamicFieldName = "";
 		if (this.dynamicInput) {
 			this.dynamicInput.value = "";
@@ -954,7 +990,8 @@ export class MediaToolbar extends BaseToolbar {
 		if (!clip) return;
 
 		const shotstackEdit = this.getShotstackEdit();
-		const fieldName = shotstackEdit?.getMergeFieldForProperty(this.selectedTrackIdx, this.selectedClipIdx, "asset.src") ?? null;
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		const fieldName = (clipId && shotstackEdit?.getMergeFieldForProperty(clipId, "asset.src")) ?? null;
 
 		if (fieldName) {
 			this.isDynamicSource = true;
@@ -1044,6 +1081,12 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectPanel?.dispose();
 		this.opacitySlider?.dispose();
 		this.scaleSlider?.dispose();
+
+		// Dispose merge field labels
+		this.unsubMergeFieldChanged?.();
+		this.unsubMergeFieldChanged = null;
+		this.mergeFieldManager?.dispose();
+		this.mergeFieldManager = null;
 
 		super.dispose();
 

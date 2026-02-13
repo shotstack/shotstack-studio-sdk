@@ -402,6 +402,20 @@ export class Edit {
 	}
 
 	/**
+	 * Get a resolved clip by its stable ID.
+	 * @internal
+	 */
+	public getResolvedClipById(clipId: string): ResolvedClip | null {
+		const resolved = this.getResolvedEdit();
+		for (const track of resolved.timeline.tracks) {
+			for (const clip of track.clips) {
+				if (clip.id === clipId) return clip;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Get the stable clip ID for a clip at a given position.
 	 * @internal
 	 */
@@ -1946,6 +1960,27 @@ export class Edit {
 				for (const [path, { placeholder }] of bindings) {
 					setNestedValue(clip as Record<string, unknown>, path, placeholder);
 				}
+			}
+		}
+
+		return clip as ResolvedClip;
+	}
+
+	/**
+	 * Get the exportable clip by its stable ID (with merge field placeholders restored).
+	 * @internal
+	 */
+	protected getTemplateClipById(clipId: string): ResolvedClip | null {
+		const player = this.getPlayerByClipId(clipId);
+		if (!player) return null;
+
+		const clip = player.getExportableClip();
+		if (!clip || !this.document) return null;
+
+		const bindings = this.document.getClipBindings(clipId);
+		if (bindings) {
+			for (const [path, { placeholder }] of bindings) {
+				setNestedValue(clip as Record<string, unknown>, path, placeholder);
 			}
 		}
 

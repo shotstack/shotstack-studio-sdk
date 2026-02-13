@@ -64,6 +64,53 @@ function createMockEditSession() {
 	};
 }
 
+/**
+ * Create a mock edit session with getInternalEvents() support for merge field tests.
+ * The returned object tracks event subscriptions so we can emit events in tests.
+ */
+function createMergeFieldMockEditSession() {
+	const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+	const unsubFns: Array<jest.Mock> = [];
+
+	const internalEvents = {
+		on: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
+			if (!listeners[event]) listeners[event] = [];
+			listeners[event].push(callback);
+			const unsub = jest.fn(() => {
+				const idx = listeners[event]?.indexOf(callback);
+				if (idx !== undefined && idx >= 0) listeners[event].splice(idx, 1);
+			});
+			unsubFns.push(unsub);
+			return unsub;
+		}),
+		emit: (event: string, ...args: unknown[]) => {
+			listeners[event]?.forEach(cb => cb(...args));
+		}
+	};
+
+	return {
+		mockEdit: {
+			getClipId: jest.fn().mockReturnValue("clip-1"),
+			getResolvedClip: jest.fn(),
+			getResolvedClipById: jest.fn(),
+			updateClip: jest.fn(),
+			updateClipInDocument: jest.fn(),
+			resolveClip: jest.fn(),
+			commitClipUpdate: jest.fn(),
+			getInternalEvents: jest.fn(() => internalEvents),
+			getMergeFieldForProperty: jest.fn(() => null),
+			isValueCompatibleWithClipProperty: jest.fn(() => true),
+			mergeFields: {
+				getAll: jest.fn(() => []),
+				get: jest.fn()
+			},
+			size: { width: 1920, height: 1080 }
+		},
+		internalEvents,
+		unsubFns
+	};
+}
+
 function createImageClip(overrides: Partial<ResolvedClip> = {}): ResolvedClip {
 	return {
 		id: "clip-1",
@@ -441,6 +488,78 @@ describe("MediaToolbar", () => {
 			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
 
 			toolbar.dispose();
+		});
+	});
+
+	describe("MergeFieldChanged event listener", () => {
+		function mountMergeFieldToolbar() {
+			const { mockEdit, internalEvents, unsubFns } = createMergeFieldMockEditSession();
+			const clip = createImageClip();
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+
+			const toolbar = new MediaToolbar(mockEdit as unknown as Edit, { mergeFields: true });
+			const parent = document.createElement("div");
+			document.body.appendChild(parent);
+			toolbar.mount(parent);
+			return { toolbar, mockEdit, internalEvents, parent, unsubFns };
+		}
+
+		it("subscribes to MergeFieldChanged event on mount with mergeFields enabled", () => {
+			const { toolbar, mockEdit } = mountMergeFieldToolbar();
+
+			expect(mockEdit.getInternalEvents).toHaveBeenCalled();
+			const internalEvents = mockEdit.getInternalEvents();
+			expect(internalEvents.on).toHaveBeenCalledWith("mergefield:changed", expect.any(Function));
+
+			toolbar.dispose();
+		});
+
+		it("calls mergeFieldManager.sync() when MergeFieldChanged fires and toolbar is visible", () => {
+			const { toolbar, internalEvents } = mountMergeFieldToolbar();
+			toolbar.show(0, 0);
+
+			const manager = (toolbar as any).mergeFieldManager; // eslint-disable-line @typescript-eslint/no-explicit-any
+			if (manager) {
+				const syncSpy = jest.spyOn(manager, "sync");
+				internalEvents.emit("mergefield:changed", {});
+				expect(syncSpy).toHaveBeenCalled();
+				syncSpy.mockRestore();
+			}
+
+			toolbar.dispose();
+		});
+
+		it("does NOT call sync() when toolbar container is display:none", () => {
+			const { toolbar, internalEvents } = mountMergeFieldToolbar();
+			toolbar.show(0, 0);
+
+			// Hide the container
+			const container = (toolbar as any).container as HTMLElement; // eslint-disable-line @typescript-eslint/no-explicit-any
+			container.style.display = "none";
+
+			const manager = (toolbar as any).mergeFieldManager; // eslint-disable-line @typescript-eslint/no-explicit-any
+			if (manager) {
+				const syncSpy = jest.spyOn(manager, "sync");
+				internalEvents.emit("mergefield:changed", {});
+				expect(syncSpy).not.toHaveBeenCalled();
+				syncSpy.mockRestore();
+			}
+
+			toolbar.dispose();
+		});
+
+		it("unsubscribes from MergeFieldChanged on dispose", () => {
+			const { toolbar, unsubFns } = mountMergeFieldToolbar();
+
+			// There should be at least one unsub function (for the MergeFieldChanged listener)
+			expect(unsubFns.length).toBeGreaterThan(0);
+
+			toolbar.dispose();
+
+			// All unsub functions should have been called
+			unsubFns.forEach(unsub => {
+				expect(unsub).toHaveBeenCalled();
+			});
 		});
 	});
 });

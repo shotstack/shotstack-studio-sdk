@@ -139,14 +139,14 @@ export class StylePanel extends UIComponent<StyleState> {
 		return `
 			<div class="ss-style-panel" data-tab-content="border" style="display: none;">
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Width</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.border.width" data-merge-prefix="TEXT_BORDER_WIDTH">Width</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-border-width-slider class="ss-toolbar-slider" min="0" max="20" step="1" value="0" />
 						<span data-border-width-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Color & Opacity</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.border.color" data-merge-prefix="TEXT_BORDER_COLOR">Color & Opacity</div>
 					<div class="ss-toolbar-popup-row">
 						<div class="ss-toolbar-color-wrap">
 							<input type="color" data-border-color class="ss-toolbar-color" value="#000000" />
@@ -156,7 +156,7 @@ export class StylePanel extends UIComponent<StyleState> {
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Corner Rounding</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.border.radius" data-merge-prefix="TEXT_BORDER_RADIUS">Corner Rounding</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-border-radius-slider class="ss-toolbar-slider" min="0" max="100" step="1" value="0" />
 						<span data-border-radius-value class="ss-toolbar-popup-value">0</span>
@@ -170,28 +170,28 @@ export class StylePanel extends UIComponent<StyleState> {
 		return `
 			<div class="ss-style-panel" data-tab-content="padding" style="display: none;">
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Top</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.padding.top" data-merge-prefix="TEXT_PADDING_TOP">Top</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-padding-top-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
 						<span data-padding-top-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Right</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.padding.right" data-merge-prefix="TEXT_PADDING_RIGHT">Right</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-padding-right-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
 						<span data-padding-right-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Bottom</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.padding.bottom" data-merge-prefix="TEXT_PADDING_BOTTOM">Bottom</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-padding-bottom-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
 						<span data-padding-bottom-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Left</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.padding.left" data-merge-prefix="TEXT_PADDING_LEFT">Left</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-padding-left-slider class="ss-toolbar-slider" min="0" max="100" value="0" />
 						<span data-padding-left-value class="ss-toolbar-popup-value">0</span>
@@ -211,21 +211,21 @@ export class StylePanel extends UIComponent<StyleState> {
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Offset X</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.shadow.offsetX" data-merge-prefix="TEXT_SHADOW_X">Offset X</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-shadow-offset-x class="ss-toolbar-slider" min="-20" max="20" value="0" />
 						<span data-shadow-offset-x-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Offset Y</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.shadow.offsetY" data-merge-prefix="TEXT_SHADOW_Y">Offset Y</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-shadow-offset-y class="ss-toolbar-slider" min="-20" max="20" value="0" />
 						<span data-shadow-offset-y-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Color & Opacity</div>
+					<div class="ss-toolbar-popup-label" data-merge-path="asset.shadow.color" data-merge-prefix="TEXT_SHADOW_COLOR">Color & Opacity</div>
 					<div class="ss-toolbar-popup-row">
 						<div class="ss-toolbar-color-wrap">
 							<input type="color" data-shadow-color class="ss-toolbar-color" value="#000000" />

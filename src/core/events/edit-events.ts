@@ -137,7 +137,7 @@ export const InternalEvent = {
 	// Resolution - document to resolved edit transformation
 	Resolved: "resolved",
 
-	// Edit → Canvas visual syn
+	// Edit → Canvas visual sync
 	PlayerAddedToTrack: "player:addedToTrack",
 	PlayerMovedBetweenTracks: "player:movedBetweenTracks",
 	PlayerRemovedFromTrack: "player:removedFromTrack",

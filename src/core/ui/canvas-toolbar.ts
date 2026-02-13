@@ -557,9 +557,18 @@ export class CanvasToolbar {
 							el.title = validation.error || "Invalid URL";
 							return;
 						}
-						el.classList.remove("error");
-						el.title = "";
 					}
+
+					// Validate type compatibility against all bound properties
+					const typeError = ssEdit.validateMergeFieldValue(name, el.value);
+					if (typeError) {
+						el.classList.add("error");
+						el.title = typeError;
+						return;
+					}
+
+					el.classList.remove("error");
+					el.title = "";
 
 					// Update the merge field value (resolve() handles canvas refresh)
 					ssEdit.updateMergeFieldValueLive(name, el.value);
@@ -568,13 +577,13 @@ export class CanvasToolbar {
 		});
 
 		this.variablesList.querySelectorAll("[data-delete-var]").forEach(btn => {
-			btn.addEventListener("click", e => {
+			btn.addEventListener("click", async e => {
 				e.stopPropagation();
 				const el = e.target as HTMLElement;
 				const name = el.dataset["deleteVar"];
 				const ssEdit = this.getShotstackEdit();
 				if (name && ssEdit) {
-					ssEdit.deleteMergeFieldGlobally(name);
+					await ssEdit.deleteMergeFieldGlobally(name);
 					this.renderVariablesList();
 				}
 			});

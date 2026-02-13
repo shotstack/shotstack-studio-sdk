@@ -385,18 +385,18 @@ export class FontColorPicker {
 
 			<div class="ss-font-color-tab-content active" data-content="color">
 				<div class="ss-font-color-section">
-					<div class="ss-font-color-label">Color</div>
+					<div class="ss-font-color-label" data-merge-path="asset.font.color" data-merge-prefix="TEXT_FONT_COLOR">Color</div>
 					<input type="color" class="ss-font-color-input" data-color-input value="#000000" />
 				</div>
 				<div class="ss-font-color-section">
-					<div class="ss-font-color-label">Opacity</div>
+					<div class="ss-font-color-label" data-merge-path="asset.font.opacity" data-merge-prefix="TEXT_FONT_OPACITY">Opacity</div>
 					<div class="ss-font-color-opacity-row">
 						<input type="range" class="ss-font-color-opacity" data-color-opacity min="0" max="100" value="100" />
 						<span class="ss-font-color-opacity-value" data-color-opacity-value>100%</span>
 					</div>
 				</div>
 				<div class="ss-font-color-section">
-					<div class="ss-font-color-label">Highlight</div>
+					<div class="ss-font-color-label" data-merge-path="asset.font.background" data-merge-prefix="TEXT_HIGHLIGHT">Highlight</div>
 					<input type="color" class="ss-font-color-input" data-highlight-color value="#FFFF00" />
 				</div>
 			</div>

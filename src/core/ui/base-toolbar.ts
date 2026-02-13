@@ -84,6 +84,11 @@ export abstract class BaseToolbar {
 	 */
 	abstract mount(parent: HTMLElement): void;
 
+	/** Resolve the stable clipId for the currently selected clip. */
+	getSelectedClipId(): string | null {
+		return this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+	}
+
 	/**
 	 * Show the toolbar for a specific clip.
 	 * Subclasses can override to add custom behavior.

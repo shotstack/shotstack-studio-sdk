@@ -21,10 +21,15 @@ export class SliderControl extends UIComponent<number> {
 	}
 
 	render(): string {
-		const { label, min, max, step = 1, initialValue } = this.sliderConfig;
+		const { label, min, max, step = 1, initialValue, labelAttributes } = this.sliderConfig;
 		const value = initialValue ?? min;
+		const labelAttrs = labelAttributes
+			? ` ${Object.entries(labelAttributes)
+					.map(([k, v]) => `${k}="${v}"`)
+					.join(" ")}`
+			: "";
 		return `
-			<div class="ss-toolbar-popup-label">${label}</div>
+			<div class="ss-toolbar-popup-label"${labelAttrs}>${label}</div>
 			<div class="ss-toolbar-popup-row">
 				<input type="range" class="ss-toolbar-slider"
 					min="${min}" max="${max}" step="${step}" value="${value}" />

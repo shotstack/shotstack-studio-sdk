@@ -242,22 +242,27 @@ export class RichTextPlayer extends Player {
 	}
 
 	private async reconfigure(richTextAsset: RichTextAsset): Promise<void> {
-		await this.prepareFontForAsset(richTextAsset, true);
+		try {
+			await this.prepareFontForAsset(richTextAsset, true);
 
-		for (const texture of this.cachedFrames.values()) {
-			texture.destroy();
-		}
-		this.cachedFrames.clear();
-		this.lastRenderedTime = -1;
+			for (const texture of this.cachedFrames.values()) {
+				texture.destroy();
+			}
+			this.cachedFrames.clear();
+			this.lastRenderedTime = -1;
 
-		if (this.textEngine) {
-			const canvasPayload = this.buildCanvasPayload(richTextAsset);
-			const { value: validated } = this.textEngine.validate(canvasPayload);
-			this.validatedAsset = validated;
-		}
+			if (this.textEngine) {
+				const canvasPayload = this.buildCanvasPayload(richTextAsset);
+				const { value: validated } = this.textEngine.validate(canvasPayload);
+				this.validatedAsset = validated;
+			}
 
-		if (this.textEngine && this.renderer) {
-			this.renderFrameSafe(this.getPlaybackTime());
+			if (this.textEngine && this.renderer) {
+				this.renderFrameSafe(this.getPlaybackTime());
+			}
+		} catch {
+			// Validation or font loading failed (e.g., incompatible merge field value).
+			// Keep rendering the last valid state — don't update validatedAsset.
 		}
 	}
 

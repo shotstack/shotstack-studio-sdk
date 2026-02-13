@@ -1,5 +1,5 @@
 import type { Edit } from "@core/edit-session";
-import { InternalEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import type { MergeField } from "@core/merge";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip, RichTextAsset } from "@schemas";
@@ -16,6 +16,7 @@ import { TransitionPanel } from "./composites/TransitionPanel";
 import { DragStateManager } from "./drag-state-manager";
 import { FontColorPicker } from "./font-color-picker";
 import { FontPicker, type FontInfo } from "./font-picker";
+import { MergeFieldLabelManager, type MergeFieldLabelHost } from "./merge-field-label-manager";
 
 export interface RichTextToolbarOptions {
 	mergeFields?: boolean;
@@ -82,9 +83,13 @@ export class RichTextToolbar extends BaseToolbar {
 	private stylePopup: HTMLDivElement | null = null;
 	private stylePanel: StylePanel | null = null;
 
+	// Merge field label manager (bound to data-merge-path annotated labels)
+	private mergeFieldManager: MergeFieldLabelManager | null = null;
+
 	// Bound handlers for proper cleanup
 	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
 	private unsubFontCapabilities: (() => void) | null = null;
+	private unsubMergeFieldChanged: (() => void) | null = null;
 
 	constructor(edit: Edit, options: RichTextToolbarOptions = {}) {
 		super(edit);
@@ -735,6 +740,12 @@ export class RichTextToolbar extends BaseToolbar {
 			}
 		}
 
+		// Replace annotated labels with MergeFieldLabel components when merge fields are enabled
+		if (this.showMergeFields) {
+			this.mergeFieldManager = new MergeFieldLabelManager(this as unknown as MergeFieldLabelHost, RichTextToolbar.PROPERTY_DEFAULTS);
+			this.mergeFieldManager.init();
+		}
+
 		// Text edit area handlers
 		this.textEditArea?.addEventListener("input", () => {
 			this.checkAutocomplete();
@@ -796,7 +807,35 @@ export class RichTextToolbar extends BaseToolbar {
 				this.syncState();
 			}
 		});
+
+		// Re-sync merge field labels when fields are added/removed globally
+		this.unsubMergeFieldChanged = this.edit.getInternalEvents().on(EditEvent.MergeFieldChanged, () => {
+			if (this.container?.style.display !== "none" && this.showMergeFields && this.mergeFieldManager?.hasLabels) {
+				this.mergeFieldManager.sync();
+			}
+		});
 	}
+
+	// ─── Merge Field Label Defaults ────────────────────────────────────────
+
+	/** Default values for merge-field-bindable properties when the property is undefined on the clip. */
+	private static readonly PROPERTY_DEFAULTS: Record<string, string> = {
+		"asset.font.color": "#ffffff",
+		"asset.font.opacity": "1",
+		"asset.font.background": "#FFFF00",
+		"asset.border.width": "0",
+		"asset.border.color": "#000000",
+		"asset.border.radius": "0",
+		"asset.padding.top": "0",
+		"asset.padding.right": "0",
+		"asset.padding.bottom": "0",
+		"asset.padding.left": "0",
+		"asset.shadow.offsetX": "0",
+		"asset.shadow.offsetY": "0",
+		"asset.shadow.color": "#000000",
+		"asset.style.letterSpacing": "0",
+		"asset.style.lineHeight": "1.2"
+	};
 
 	private handleClick(e: MouseEvent): void {
 		const target = e.target as HTMLElement;
@@ -1647,13 +1686,14 @@ export class RichTextToolbar extends BaseToolbar {
 
 		// Sync StylePanel (consolidated border/padding/shadow/fill)
 		if (this.stylePanel) {
-			// Border
-			const border = asset.border || { width: 0, color: "#000000", opacity: 1, radius: 0 };
+			// Border — default each property individually since partial border objects
+			// can exist (e.g. merge field sets only width, leaving color/radius undefined)
+			const { border } = asset;
 			this.stylePanel.setBorderState({
-				width: border.width,
-				color: border.color,
-				opacity: Math.round((border.opacity ?? 1) * 100),
-				radius: border.radius
+				width: border?.width ?? 0,
+				color: border?.color ?? "#000000",
+				opacity: Math.round((border?.opacity ?? 1) * 100),
+				radius: border?.radius ?? 0
 			});
 
 			// Shadow (blur fixed at 4 - canvas only checks blur > 0, doesn't implement actual blur)
@@ -1718,6 +1758,11 @@ export class RichTextToolbar extends BaseToolbar {
 		// Sync composite panels
 		this.transitionPanel?.setFromClip(clip?.transition as { in?: string; out?: string } | undefined);
 		this.effectPanel?.setFromClip((clip?.effect as string) ?? "");
+
+		// Sync merge field label bound states
+		if (this.showMergeFields && this.mergeFieldManager?.hasLabels) {
+			this.mergeFieldManager.sync();
+		}
 	}
 
 	override dispose(): void {
@@ -1728,6 +1773,8 @@ export class RichTextToolbar extends BaseToolbar {
 		// Clean up event listeners before super.dispose() removes container
 		this.unsubFontCapabilities?.();
 		this.unsubFontCapabilities = null;
+		this.unsubMergeFieldChanged?.();
+		this.unsubMergeFieldChanged = null;
 		if (this.boundHandleClick) {
 			this.container?.removeEventListener("click", this.boundHandleClick);
 			this.boundHandleClick = null;
@@ -1785,5 +1832,9 @@ export class RichTextToolbar extends BaseToolbar {
 		this.effectPanel?.dispose();
 		this.effectPanel = null;
 		this.effectPopup = null;
+
+		// Dispose merge field labels
+		this.mergeFieldManager?.dispose();
+		this.mergeFieldManager = null;
 	}
 }

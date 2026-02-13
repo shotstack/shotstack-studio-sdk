@@ -1756,6 +1756,159 @@ describe("ClipToolbar Timing (Regression)", () => {
 	});
 });
 
+// ============================================================================
+// getSelectedClipId Tests (BaseToolbar)
+// ============================================================================
+
+describe("getSelectedClipId (BaseToolbar)", () => {
+	it("returns clipId after show()", async () => {
+		const mockEdit = createMockEdit();
+		(mockEdit.getClipId as jest.Mock).mockReturnValue("test-clip-42");
+		setupMockClip(mockEdit, "rich-text");
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never);
+		const container = createTestContainer();
+		toolbar.mount(container);
+		toolbar.show(1, 2);
+
+		expect(toolbar.getSelectedClipId()).toBe("test-clip-42");
+		expect(mockEdit.getClipId).toHaveBeenCalled();
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	it("returns null before show() when indices are -1", async () => {
+		const mockEdit = createMockEdit();
+		// getClipId returns null for invalid indices
+		(mockEdit.getClipId as jest.Mock).mockReturnValue(null);
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never);
+		const container = createTestContainer();
+		toolbar.mount(container);
+
+		// Don't call show() — indices stay at -1
+		expect(toolbar.getSelectedClipId()).toBeNull();
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+});
+
+// ============================================================================
+// RichTextToolbar MergeFieldChanged Tests
+// ============================================================================
+
+describe("RichTextToolbar MergeFieldChanged", () => {
+	function createMergeFieldMockEdit() {
+		const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+		const unsubFns: Array<jest.Mock> = [];
+
+		const internalEvents = {
+			on: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
+				if (!listeners[event]) listeners[event] = [];
+				listeners[event].push(callback);
+				const unsub = jest.fn(() => {
+					const idx = listeners[event]?.indexOf(callback);
+					if (idx !== undefined && idx >= 0) listeners[event].splice(idx, 1);
+				});
+				unsubFns.push(unsub);
+				return unsub;
+			}),
+			emit: (event: string, ...args: unknown[]) => {
+				listeners[event]?.forEach(cb => cb(...args));
+			}
+		};
+
+		const events = createMockEventEmitter();
+		const mockEdit = {
+			getInternalEvents: jest.fn(() => internalEvents),
+			getPlayerClip: jest.fn((): MockPlayer | null => null),
+			getClip: jest.fn(() => null),
+			getClipId: jest.fn(() => "mock-clip-id"),
+			getResolvedClip: jest.fn(() => null),
+			getResolvedClipById: jest.fn(() => null),
+			getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+			getCurrentTime: jest.fn(() => 0),
+			getEdit: jest.fn(() => ({
+				timeline: {
+					fonts: [],
+					tracks: [{ clips: [{ asset: { type: "rich-text", text: "Hello" }, start: 0, length: 1 }] }]
+				}
+			})),
+			getDocument: jest.fn(() => ({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null)
+			})),
+			getFontMetadata: jest.fn(() => new Map()),
+			getMergeFieldForProperty: jest.fn(() => null),
+			isValueCompatibleWithClipProperty: jest.fn(() => true),
+			updateClip: jest.fn(),
+			getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
+			getSelectedClipInfo: jest.fn((): { trackIndex: number; clipIndex: number } | null => null),
+			mergeFields: {
+				getAll: jest.fn(() => []),
+				register: jest.fn(),
+				get: jest.fn(),
+				deleteMergeFieldGlobally: jest.fn()
+			},
+			events,
+			playbackTime: 0,
+			isSrcMergeField: jest.fn(() => false),
+			updateMergeFieldValueLive: jest.fn(),
+			setOutputSize: jest.fn(),
+			setOutputFps: jest.fn(),
+			getOutputFps: jest.fn(() => 25),
+			setTimelineBackground: jest.fn(),
+			getTimelineBackground: jest.fn(() => "#000000"),
+			size: { width: 1920, height: 1080 }
+		};
+
+		return { mockEdit, internalEvents, unsubFns };
+	}
+
+	it("subscribes to MergeFieldChanged event on mount", async () => {
+		const { mockEdit } = createMergeFieldMockEdit();
+
+		const richTextClip = createMockClip("rich-text");
+		mockEdit.getPlayerClip.mockReturnValue(richTextClip as never);
+		mockEdit.getResolvedClip.mockReturnValue(richTextClip.clipConfiguration as never);
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never, { mergeFields: true });
+		const container = createTestContainer();
+		toolbar.mount(container);
+
+		const internalEvents = mockEdit.getInternalEvents();
+		expect(internalEvents.on).toHaveBeenCalledWith("mergefield:changed", expect.any(Function));
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	it("unsubscribes from MergeFieldChanged on dispose", async () => {
+		const { mockEdit, unsubFns } = createMergeFieldMockEdit();
+
+		const richTextClip = createMockClip("rich-text");
+		mockEdit.getPlayerClip.mockReturnValue(richTextClip as never);
+		mockEdit.getResolvedClip.mockReturnValue(richTextClip.clipConfiguration as never);
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never, { mergeFields: true });
+		const container = createTestContainer();
+		toolbar.mount(container);
+
+		toolbar.dispose();
+
+		// At least one unsub should have been called (MergeFieldChanged)
+		expect(unsubFns.some(fn => fn.mock.calls.length > 0)).toBe(true);
+
+		cleanupTestContainer(container);
+	});
+});
+
 describe("Mode Toggle (Regression)", () => {
 	/**
 	 * REGRESSION TEST: Mode toggle buttons must be findable via document.querySelectorAll

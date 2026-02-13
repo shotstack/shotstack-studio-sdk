@@ -53,4 +53,19 @@ export interface SliderConfig extends UIComponentConfig {
 	step?: number;
 	initialValue?: number;
 	formatValue?: (value: number) => string;
+	/** HTML attributes to apply to the label element (e.g. data-merge-path) */
+	labelAttributes?: Record<string, string>;
+}
+
+/**
+ * Merge field label configuration.
+ * Replaces a static property label with one that supports merge field binding.
+ */
+export interface MergeFieldLabelConfig extends UIComponentConfig {
+	/** Display label for the property (e.g. "Opacity") */
+	label: string;
+	/** Dot-notation path to the clip property (e.g. "asset.font.opacity") */
+	propertyPath: string;
+	/** Prefix for auto-generated field names (e.g. "TEXT_OPACITY") */
+	namePrefix: string;
 }
