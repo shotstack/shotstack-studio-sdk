@@ -138,6 +138,30 @@ describe("TimelineStateManager", () => {
 			expect(tracks2).not.toBe(tracks1);
 		});
 
+		it("invalidates cache when ClipUpdated fires (single-clip resolve path)", () => {
+			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
+
+			const stateManager = new TimelineStateManager(edit as never);
+			const tracks1 = stateManager.getTracks();
+
+			edit.events.emit(EditEvent.ClipUpdated);
+
+			const tracks2 = stateManager.getTracks();
+			expect(tracks2).not.toBe(tracks1);
+		});
+
+		it("invalidates cache when TimelineUpdated fires (timing propagation)", () => {
+			const edit = createMockEdit([[{ asset: { type: "image", src: "test.jpg" }, start: 0, length: 5 }]]);
+
+			const stateManager = new TimelineStateManager(edit as never);
+			const tracks1 = stateManager.getTracks();
+
+			edit.events.emit(EditEvent.TimelineUpdated);
+
+			const tracks2 = stateManager.getTracks();
+			expect(tracks2).not.toBe(tracks1);
+		});
+
 		it("unsubscribes from events on dispose", () => {
 			const edit = createMockEdit();
 			const stateManager = new TimelineStateManager(edit as never);
@@ -145,6 +169,8 @@ describe("TimelineStateManager", () => {
 			stateManager.dispose();
 
 			expect(edit.events.off).toHaveBeenCalledWith(InternalEvent.Resolved, expect.any(Function));
+			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipUpdated, expect.any(Function));
+			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.TimelineUpdated, expect.any(Function));
 			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipSelected, expect.any(Function));
 			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.SelectionCleared, expect.any(Function));
 		});
@@ -390,6 +416,111 @@ describe("TimelineStateManager", () => {
  * the current resolved state of the document.
  */
 describe("Resolved event cache invalidation regression", () => {
+	/**
+	 * Regression: Single-clip resolve path (resolveClip) does NOT emit InternalEvent.Resolved.
+	 * Before the fix, TimelineStateManager only invalidated on Resolved, so getTracks()
+	 * returned stale cached data after timing updates via the ClipToolbar.
+	 *
+	 * The fix added ClipUpdated and TimelineUpdated as additional invalidation triggers.
+	 */
+	it("getTracks returns fresh data after ClipUpdated (single-clip resolve path)", () => {
+		let currentLength = 5;
+
+		const events = createMockEventEmitter();
+		const edit = {
+			events,
+			getInternalEvents: jest.fn(() => events),
+			playbackTime: sec(0),
+			isPlaying: false,
+			totalDuration: sec(10),
+			getResolvedEdit: jest.fn(() => ({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "video", src: "test.mp4" }, start: 0, length: currentLength }]
+						}
+					]
+				}
+			})),
+			getEdit: jest.fn(() => ({
+				timeline: {
+					tracks: [{ clips: [{ start: 0, length: currentLength }] }]
+				}
+			})),
+			isClipSelected: jest.fn(() => false),
+			selectClip: jest.fn(),
+			clearSelection: jest.fn(),
+			getPlayerClip: jest.fn()
+		};
+
+		const stateManager = new TimelineStateManager(edit as never);
+
+		// Initial: clip length is 5
+		const tracks1 = stateManager.getTracks();
+		expect(tracks1[0].clips[0].config.length).toBe(5);
+
+		// Simulate single-clip resolve updating the document (no Resolved event)
+		currentLength = 8.9;
+
+		// Still cached — stale
+		expect(stateManager.getTracks()[0].clips[0].config.length).toBe(5);
+
+		// ClipUpdated fires (UpdateClipTimingCommand emits this)
+		events.emit(EditEvent.ClipUpdated, {});
+
+		// Cache invalidated — fresh data
+		expect(stateManager.getTracks()[0].clips[0].config.length).toBe(8.9);
+	});
+
+	it("getTracks returns fresh data after TimelineUpdated (timing propagation)", () => {
+		let currentLength = 5;
+
+		const events = createMockEventEmitter();
+		const edit = {
+			events,
+			getInternalEvents: jest.fn(() => events),
+			playbackTime: sec(0),
+			isPlaying: false,
+			totalDuration: sec(10),
+			getResolvedEdit: jest.fn(() => ({
+				timeline: {
+					tracks: [
+						{
+							clips: [{ asset: { type: "video", src: "test.mp4" }, start: 0, length: currentLength }]
+						}
+					]
+				}
+			})),
+			getEdit: jest.fn(() => ({
+				timeline: {
+					tracks: [{ clips: [{ start: 0, length: currentLength }] }]
+				}
+			})),
+			isClipSelected: jest.fn(() => false),
+			selectClip: jest.fn(),
+			clearSelection: jest.fn(),
+			getPlayerClip: jest.fn()
+		};
+
+		const stateManager = new TimelineStateManager(edit as never);
+
+		// Initial
+		const tracks1 = stateManager.getTracks();
+		expect(tracks1[0].clips[0].config.length).toBe(5);
+
+		// Simulate timing propagation updating resolved data (no Resolved event)
+		currentLength = 12;
+
+		// Still cached
+		expect(stateManager.getTracks()[0].clips[0].config.length).toBe(5);
+
+		// TimelineUpdated fires (propagateTimingChanges emits this on internalEvents)
+		events.emit(EditEvent.TimelineUpdated, {});
+
+		// Cache invalidated — fresh data
+		expect(stateManager.getTracks()[0].clips[0].config.length).toBe(12);
+	});
+
 	it("getTracks returns updated asset type after Resolved event fires", () => {
 		// Initial state: image clip
 		let currentAssetType = "image";

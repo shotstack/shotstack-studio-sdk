@@ -28,6 +28,10 @@ export class TimelineStateManager {
 		// Document changes trigger Resolved event
 		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.invalidateCache);
 
+		// Listen on clip/timeline events
+		this.edit.events.on(EditEvent.ClipUpdated, this.invalidateCache);
+		this.edit.events.on(EditEvent.TimelineUpdated, this.invalidateCache);
+
 		// Selection changes are UI state (not document mutations)
 		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.on(EditEvent.SelectionCleared, this.invalidateCache);
@@ -43,7 +47,6 @@ export class TimelineStateManager {
 		if (this.cachedTracks) {
 			return this.cachedTracks;
 		}
-
 		const resolvedEdit = this.edit.getResolvedEdit();
 		if (!resolvedEdit?.timeline?.tracks) return [];
 
@@ -212,6 +215,8 @@ export class TimelineStateManager {
 	public dispose(): void {
 		// Remove event listeners
 		this.edit.getInternalEvents().off(InternalEvent.Resolved, this.invalidateCache);
+		this.edit.events.off(EditEvent.ClipUpdated, this.invalidateCache);
+		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
 
