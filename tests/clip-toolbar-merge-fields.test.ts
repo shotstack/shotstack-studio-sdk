@@ -423,4 +423,153 @@ describe("ClipToolbar merge field integration", () => {
 
 		expect(edit.events.off).toHaveBeenCalledWith(EditEvent.MergeFieldChanged, expect.any(Function));
 	});
+
+	// ────────────────────────────────────────────────────────────────────────
+	// wireBindCallback / wireClearCallback regression tests
+	// ────────────────────────────────────────────────────────────────────────
+
+	it("bind via Create & Select generates unique name and calls applyMergeField with resolved value", async () => {
+		const edit = createMockShotstackEdit({
+			getResolvedClipById: jest.fn(() => ({ start: 7.5, length: 3 }))
+		});
+		(edit.mergeFields.get as jest.Mock).mockReturnValue(null); // no existing field
+		(edit.mergeFields.generateUniqueName as jest.Mock).mockReturnValue("START_1");
+
+		const toolbar = new ClipToolbar(edit as never);
+		toolbar.mount(container);
+		toolbar.show(0, 0);
+
+		// Open the start merge field dropdown
+		const startIcon = container.querySelector("[data-start-mount] .ss-merge-label__icon") as HTMLElement;
+		startIcon.click();
+
+		// Click "Create & Select"
+		const createBtn = container.querySelector("[data-start-mount] .ss-merge-label__create") as HTMLElement;
+		createBtn.click();
+
+		// Wait for the async applyMergeField promise
+		await Promise.resolve();
+
+		expect(edit.mergeFields.generateUniqueName).toHaveBeenCalledWith("START");
+		expect(edit.applyMergeField).toHaveBeenCalledWith("test-clip-id", "start", "START_1", "7.5");
+
+		toolbar.dispose();
+	});
+
+	it("bind via existing field calls applyMergeField with existing field name and value", async () => {
+		const existingField = { name: "MY_START", defaultValue: "5" };
+		const edit = createMockShotstackEdit();
+		(edit.mergeFields.get as jest.Mock).mockImplementation((...args: unknown[]) => (args[0] === "MY_START" ? existingField : null));
+		(edit.mergeFields.getAll as jest.Mock).mockReturnValue([existingField]);
+
+		const toolbar = new ClipToolbar(edit as never);
+		toolbar.mount(container);
+		toolbar.show(0, 0);
+
+		// Open the start merge field dropdown
+		const startIcon = container.querySelector("[data-start-mount] .ss-merge-label__icon") as HTMLElement;
+		startIcon.click();
+
+		// The field list should contain the existing field — click it
+		const fieldBtn = container.querySelector("[data-start-mount] .ss-merge-label__field") as HTMLElement;
+		expect(fieldBtn).toBeTruthy();
+		fieldBtn.click();
+
+		await Promise.resolve();
+
+		expect(edit.applyMergeField).toHaveBeenCalledWith("test-clip-id", "start", "MY_START", "5");
+
+		toolbar.dispose();
+	});
+
+	it("bind rejects incompatible existing field without calling applyMergeField", async () => {
+		const incompatibleField = { name: "BAD_FIELD", defaultValue: "not-a-number" };
+		const edit = createMockShotstackEdit();
+		(edit.mergeFields.get as jest.Mock).mockImplementation((...args: unknown[]) => (args[0] === "BAD_FIELD" ? incompatibleField : null));
+		(edit.mergeFields.getAll as jest.Mock).mockReturnValue([incompatibleField]);
+		// Mark as incompatible
+		(edit.isValueCompatibleWithClipProperty as jest.Mock).mockReturnValue(false);
+
+		const toolbar = new ClipToolbar(edit as never);
+		toolbar.mount(container);
+		toolbar.show(0, 0);
+
+		// Open the start merge field dropdown
+		const startIcon = container.querySelector("[data-start-mount] .ss-merge-label__icon") as HTMLElement;
+		startIcon.click();
+
+		// The field should be rendered but disabled (no click handler attached)
+		const fieldBtn = container.querySelector("[data-start-mount] .ss-merge-label__field") as HTMLElement;
+		expect(fieldBtn?.classList.contains("ss-merge-label__field--disabled")).toBe(true);
+		fieldBtn.click();
+
+		await Promise.resolve();
+
+		expect(edit.applyMergeField).not.toHaveBeenCalled();
+
+		toolbar.dispose();
+	});
+
+	it("clear callback calls removeMergeField with field default value as restore value", async () => {
+		mockGetMergeFieldForProperty.mockImplementation((_clipId: string, path: string) => {
+			if (path === "length") return "CLIP_LENGTH";
+			return null;
+		});
+
+		const boundField = { name: "CLIP_LENGTH", defaultValue: "12" };
+		const edit = createMockShotstackEdit({
+			getDocumentClip: jest.fn(() => ({ start: 0, length: "{{CLIP_LENGTH}}" })),
+			getResolvedClipById: jest.fn(() => ({ start: 0, length: 12 }))
+		});
+		(edit.mergeFields.get as jest.Mock).mockImplementation((...args: unknown[]) => (args[0] === "CLIP_LENGTH" ? boundField : null));
+		(edit.mergeFields.getAll as jest.Mock).mockReturnValue([boundField]);
+
+		const toolbar = new ClipToolbar(edit as never);
+		toolbar.mount(container);
+		toolbar.show(0, 0);
+
+		// Open the length merge field dropdown
+		const lengthIcon = container.querySelector("[data-length-mount] .ss-merge-label__icon") as HTMLElement;
+		lengthIcon.click();
+
+		// The "Clear" button should be present because the label is in bound state
+		const clearBtn = container.querySelector("[data-length-mount] .ss-merge-label__clear") as HTMLElement;
+		expect(clearBtn).toBeTruthy();
+		clearBtn.click();
+
+		await Promise.resolve();
+
+		expect(edit.removeMergeField).toHaveBeenCalledWith("test-clip-id", "length", "12");
+
+		toolbar.dispose();
+	});
+
+	it("mixed bound/unbound: bound property reads resolved clip, unbound reads document clip", () => {
+		// Only start is bound, length is not
+		mockGetMergeFieldForProperty.mockImplementation((_clipId: string, path: string) => {
+			if (path === "start") return "MY_START";
+			return null;
+		});
+
+		const edit = createMockShotstackEdit({
+			// Document has placeholder for start, normal value for length
+			getDocumentClip: jest.fn(() => ({ start: "{{MY_START}}", length: 8 })),
+			// Resolved has merge field default applied for start
+			getResolvedClipById: jest.fn(() => ({ start: 15, length: 8 }))
+		});
+
+		const toolbar = new ClipToolbar(edit as never);
+		toolbar.mount(container);
+		toolbar.show(0, 0);
+
+		const startValue = container.querySelector("[data-start-mount] .ss-timing-value") as HTMLInputElement;
+		const lengthValue = container.querySelector("[data-length-mount] .ss-timing-value") as HTMLInputElement;
+
+		// Start should read from resolved clip (15s)
+		expect(startValue?.value).toBe("15.0s");
+		// Length should read from document clip (8s)
+		expect(lengthValue?.value).toBe("8.0s");
+
+		toolbar.dispose();
+	});
 });
