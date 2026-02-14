@@ -334,6 +334,27 @@ function createMinimalEdit(tracks: { clips: TestClip[] }[] = [{ clips: [MINIMAL_
 	};
 }
 
+/**
+ * Create a minimal edit with resolution preset instead of explicit size.
+ * Uses 2 tracks to force structural change (full reload path).
+ */
+function createMinimalEditWithResolution(
+	tracks: { clips: TestClip[] }[],
+	resolution: string = "hd",
+	aspectRatio?: string
+): EditConfig {
+	return {
+		timeline: {
+			tracks: tracks as EditConfig["timeline"]["tracks"]
+		},
+		output: {
+			format: "mp4",
+			resolution,
+			...(aspectRatio ? { aspectRatio } : {})
+		}
+	} as EditConfig;
+}
+
 describe("Edit loadEdit()", () => {
 	let edit: Edit;
 	let events: EventEmitter;
@@ -817,6 +838,56 @@ describe("Edit loadEdit()", () => {
 
 			const { size } = getEditState(edit);
 			expect(size).toEqual({ width: 1280, height: 720 });
+		});
+
+		it("loadEdit resolves size from resolution preset when output.size is absent", async () => {
+			// Use 2 tracks to force structural change (full-reload path)
+			const editConfig = createMinimalEditWithResolution([
+				{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
+				{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+			], "hd");
+
+			await edit.loadEdit(editConfig);
+
+			const { size } = getEditState(edit);
+			expect(size).toEqual({ width: 1280, height: 720 });
+		});
+
+		it("loadEdit resolves size from resolution + aspectRatio", async () => {
+			const editConfig = createMinimalEditWithResolution([
+				{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
+				{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+			], "hd", "9:16");
+
+			await edit.loadEdit(editConfig);
+
+			const { size } = getEditState(edit);
+			expect(size).toEqual({ width: 720, height: 1280 });
+		});
+
+		it("loadEdit rolls back state on initialization failure", async () => {
+			const originalState = getEditState(edit);
+			const originalSize = { ...originalState.size };
+			const originalBg = originalState.backgroundColor;
+
+			// Make initializeFromDocument reject once
+			const initSpy = jest.spyOn(edit as unknown as { initializeFromDocument: () => Promise<void> }, "initializeFromDocument")
+				.mockRejectedValueOnce(new Error("test initialization failure"));
+
+			// Use 2 tracks to force structural change (full-reload path)
+			const editConfig = createMinimalEditWithResolution([
+				{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
+				{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+			], "hd");
+
+			await expect(edit.loadEdit(editConfig)).rejects.toThrow("test initialization failure");
+
+			// State should be rolled back
+			const restoredState = getEditState(edit);
+			expect(restoredState.size).toEqual(originalSize);
+			expect(restoredState.backgroundColor).toBe(originalBg);
+
+			initSpy.mockRestore();
 		});
 	});
 

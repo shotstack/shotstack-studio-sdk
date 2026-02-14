@@ -304,9 +304,9 @@ export class Edit {
 		// Validate the incoming config before any mutations
 		EditSchema.parse(edit);
 
-		this.lastResolved = null; // Invalidate cache when document changes
-
 		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
+			this.lastResolved = null;
+
 			// Clone so preserveClipIdsForGranularUpdate doesn't mutate the caller's object
 			const cloned = structuredClone(edit);
 			this.preserveClipIdsForGranularUpdate(cloned);
@@ -322,21 +322,38 @@ export class Edit {
 			return;
 		}
 
-		this.document = new EditDocument(edit);
+		// Save state for rollback — if initialization fails after mutation,
+		// we restore so the session remains usable for a retry
+		const prevDocument = this.document;
+		const prevLastResolved = this.lastResolved;
+		const prevSize = this.size;
+		const prevBackgroundColor = this.backgroundColor;
 
-		const newSize = this.document.getSize();
-		this.size = newSize;
-		this.backgroundColor = this.document.getBackground() ?? "#000000";
+		try {
+			this.lastResolved = null;
+			this.document = new EditDocument(edit);
 
-		this.internalEvents.emit(InternalEvent.ViewportSizeChanged, {
-			width: this.size.width,
-			height: this.size.height,
-			backgroundColor: this.backgroundColor
-		});
-		this.internalEvents.emit(InternalEvent.ViewportNeedsZoomToFit);
-		this.clearClips();
+			const resolution = this.document.getResolution();
+			const aspectRatio = this.document.getAspectRatio();
+			this.size = resolution ? calculateSizeFromPreset(resolution, aspectRatio) : this.document.getSize();
+			this.backgroundColor = this.document.getBackground() ?? "#000000";
 
-		await this.initializeFromDocument("loadEdit");
+			this.internalEvents.emit(InternalEvent.ViewportSizeChanged, {
+				width: this.size.width,
+				height: this.size.height,
+				backgroundColor: this.backgroundColor
+			});
+			this.internalEvents.emit(InternalEvent.ViewportNeedsZoomToFit);
+			this.clearClips();
+
+			await this.initializeFromDocument("loadEdit");
+		} catch (error) {
+			this.document = prevDocument;
+			this.lastResolved = prevLastResolved;
+			this.size = prevSize;
+			this.backgroundColor = prevBackgroundColor;
+			throw error;
+		}
 	}
 
 	private async loadSoundtrack(soundtrack: Soundtrack): Promise<void> {
