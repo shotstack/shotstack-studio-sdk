@@ -210,6 +210,86 @@
 	cursor: ew-resize !important;
 }
 
+/* ─── Merge Field Mount Point ────────────────────────────────────────────── */
+
+.ss-timing-merge-mount {
+	display: inline-flex;
+	align-items: center;
+	position: relative;
+	flex-shrink: 0;
+}
+
+/* Hide empty mount point (before MergeFieldLabel is mounted) */
+.ss-timing-merge-mount:empty {
+	display: none;
+}
+
+/* Compact the MergeFieldLabel inside the timing control */
+.ss-timing-merge-mount .ss-merge-label {
+	font-size: 0;
+	gap: 0;
+}
+
+/* Hide the text label — TimingControl already has START/LENGTH */
+.ss-timing-merge-mount .ss-merge-label__text {
+	display: none;
+}
+
+/* Hide the bound-name badge — too verbose for compact toolbar */
+.ss-timing-merge-mount .ss-merge-label__bound-name {
+	display: none;
+}
+
+/* Shrink the icon to fit the 26px-tall control */
+.ss-timing-merge-mount .ss-merge-label__icon {
+	width: 16px;
+	height: 16px;
+}
+
+.ss-timing-merge-mount .ss-merge-label__icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* Position dropdown below the toolbar, not inside it */
+.ss-timing-merge-mount .ss-merge-label__dropdown {
+	top: calc(100% + 8px);
+	right: auto;
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+/* ─── Merge Field Bound State ────────────────────────────────────────────── */
+
+/* Container: remove scrub cursor when bound */
+.ss-timing-control[data-merge-bound] {
+	cursor: default;
+}
+
+/* Label: teal accent (overrides green/indigo per-type colors) */
+.ss-timing-control[data-merge-bound] .ss-timing-label {
+	background: rgba(78, 205, 196, 0.12);
+	color: rgba(78, 205, 196, 0.75);
+}
+
+/* Mode icon area: teal accent when bound */
+.ss-timing-control[data-merge-bound] .ss-timing-mode {
+	color: #4ecdc4;
+	cursor: default;
+}
+.ss-timing-control[data-merge-bound] .ss-timing-mode:hover {
+	color: #5df5eb;
+}
+.ss-timing-control[data-merge-bound] .ss-timing-mode:hover .ss-timing-label {
+	color: rgba(78, 205, 196, 0.85);
+}
+
+/* Value: dimmed and non-interactive */
+.ss-timing-control[data-merge-bound] .ss-timing-value {
+	color: rgba(255, 255, 255, 0.45);
+	cursor: default;
+}
+
 /* ─── Integrated Mode Toggle (Inside Toolbar) ──────────────────────────────── */
 
 .ss-toolbar-mode-toggle {

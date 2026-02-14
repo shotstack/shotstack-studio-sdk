@@ -82,12 +82,16 @@ export class TimingControl extends UIComponent<TimingControlState> {
 	private modeBtn: HTMLButtonElement | null = null;
 	private valueInput: HTMLInputElement | null = null;
 	private tooltipEl: HTMLDivElement | null = null;
+	private mergeMountEl: HTMLDivElement | null = null;
 
 	// Scrub state
 	private isDragging = false;
 	private dragStartX = 0;
 	private dragStartValue = 0;
 	private tooltipTimeout: number | null = null;
+
+	// Merge field bound state
+	private mergeFieldName: string | null = null;
 
 	constructor(type: TimingType) {
 		super({ className: "ss-timing-control", attributes: { "data-type": type } });
@@ -113,6 +117,7 @@ export class TimingControl extends UIComponent<TimingControlState> {
 				data-ms="${this.state.value}"
 				readonly
 			/>
+			<div class="ss-timing-merge-mount"></div>
 			<div class="ss-timing-tooltip">${mode.tooltip}</div>
 		`;
 	}
@@ -120,13 +125,15 @@ export class TimingControl extends UIComponent<TimingControlState> {
 	protected bindElements(): void {
 		this.modeBtn = this.container?.querySelector(".ss-timing-mode") ?? null;
 		this.valueInput = this.container?.querySelector(".ss-timing-value") ?? null;
+		this.mergeMountEl = this.container?.querySelector(".ss-timing-merge-mount") ?? null;
 		this.tooltipEl = this.container?.querySelector(".ss-timing-tooltip") ?? null;
 	}
 
 	protected setupEvents(): void {
-		// Mode cycling (click to cycle)
+		// Mode cycling (click to cycle) — disabled when merge field bound
 		this.events.on(this.modeBtn, "click", e => {
 			e.preventDefault();
+			if (this.mergeFieldName) return;
 			this.cycleMode();
 		});
 
@@ -136,8 +143,9 @@ export class TimingControl extends UIComponent<TimingControlState> {
 
 		// Value input events
 		if (this.valueInput) {
-			// Scrub: mousedown starts drag
+			// Scrub: mousedown starts drag — disabled when merge field bound
 			this.events.on(this.valueInput, "mousedown", (e: Event) => {
+				if (this.mergeFieldName) return;
 				const mouseEvent = e as MouseEvent;
 				// Only start drag if not already editing
 				if (this.valueInput?.readOnly && this.state.mode === "manual") {
@@ -145,8 +153,9 @@ export class TimingControl extends UIComponent<TimingControlState> {
 				}
 			});
 
-			// Double-click to enter edit mode
+			// Double-click to enter edit mode — disabled when merge field bound
 			this.events.on(this.valueInput, "dblclick", () => {
+				if (this.mergeFieldName) return;
 				if (this.state.mode === "manual") {
 					this.enterEditMode();
 				}
@@ -281,6 +290,7 @@ export class TimingControl extends UIComponent<TimingControlState> {
 
 	private handleKeydown(e: KeyboardEvent): void {
 		if (!this.valueInput) return;
+		if (this.mergeFieldName) return;
 
 		// Handle edit mode keys
 		if (!this.valueInput.readOnly) {
@@ -455,6 +465,49 @@ export class TimingControl extends UIComponent<TimingControlState> {
 	 */
 	getState(): TimingControlState {
 		return { ...this.state };
+	}
+
+	/**
+	 * Set merge field bound state.
+	 * When bound, the micro-label turns teal, the value becomes non-interactive,
+	 * and the tooltip shows the bound field name. The MergeFieldLabel component
+	 * (mounted externally into the merge mount point) handles its own icon state.
+	 * Pass `null` to clear.
+	 */
+	setMergeFieldBound(fieldName: string | null): void {
+		this.mergeFieldName = fieldName;
+		const isBound = fieldName !== null;
+
+		// Toggle data attribute for CSS styling
+		if (isBound) {
+			this.container?.setAttribute("data-merge-bound", "");
+		} else {
+			this.container?.removeAttribute("data-merge-bound");
+		}
+
+		// Update tooltip
+		if (this.tooltipEl) {
+			if (isBound) {
+				this.tooltipEl.textContent = `Merge field: {{ ${fieldName} }}`;
+			} else {
+				const mode = this.modes.find(m => m.id === this.state.mode) ?? this.modes[0];
+				this.tooltipEl.textContent = mode.tooltip;
+			}
+		}
+	}
+
+	/**
+	 * Whether this control is currently bound to a merge field.
+	 */
+	isMergeFieldBound(): boolean {
+		return this.mergeFieldName !== null;
+	}
+
+	/**
+	 * Get the mount point element for an external MergeFieldLabel component.
+	 */
+	getMergeMountPoint(): HTMLElement | null {
+		return this.mergeMountEl;
 	}
 
 	override dispose(): void {
