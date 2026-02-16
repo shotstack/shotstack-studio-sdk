@@ -135,7 +135,10 @@ export class ClipToolbar extends BaseToolbar {
 
 	/** Get the edit as ShotstackEdit if it has merge field capabilities. */
 	private getShotstackEdit(): ShotstackEdit | null {
-		return this.edit instanceof ShotstackEdit ? this.edit : null;
+		if (this.edit && "mergeFields" in this.edit) {
+			return this.edit as ShotstackEdit;
+		}
+		return null;
 	}
 
 	private wireBindCallback(label: MergeFieldLabel, propertyPath: string): void {

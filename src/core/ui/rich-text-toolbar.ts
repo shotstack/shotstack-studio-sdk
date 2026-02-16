@@ -97,7 +97,10 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	private getShotstackEdit(): ShotstackEdit | null {
-		return this.edit instanceof ShotstackEdit ? this.edit : null;
+		if (this.edit && "mergeFields" in this.edit) {
+			return this.edit as ShotstackEdit;
+		}
+		return null;
 	}
 
 	override mount(parent: HTMLElement): void {

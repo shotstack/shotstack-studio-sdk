@@ -115,7 +115,10 @@ export class MergeFieldLabelManager {
 	// ─── Private ───────────────────────────────────────────────────────────
 
 	private getShotstackEdit(): ShotstackEdit | null {
-		return this.host.edit instanceof ShotstackEdit ? this.host.edit : null;
+		if (this.host.edit && "mergeFields" in this.host.edit) {
+			return this.host.edit as ShotstackEdit;
+		}
+		return null;
 	}
 
 	/** Resolve the stable clipId for the currently selected clip. */
