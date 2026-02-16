@@ -729,7 +729,7 @@ describe("InteractionController", () => {
 
 			const mockLumaPlayer = { id: "luma-player" };
 			(mockStateManager as { getAttachedLumaPlayer: jest.Mock }).getAttachedLumaPlayer = jest.fn(() => mockLumaPlayer);
-			mockEdit.findClipIndices = jest.fn((_player: unknown) => ({ trackIndex: 0, clipIndex: 1 }));
+			mockEdit.findClipIndices = jest.fn().mockReturnValue({ trackIndex: 0, clipIndex: 1 });
 
 			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
@@ -814,7 +814,7 @@ describe("InteractionController", () => {
 			// Setup with luma attachment
 			const mockLumaPlayer = { id: "luma-player" };
 			(mockStateManager as { getAttachedLumaPlayer: jest.Mock }).getAttachedLumaPlayer = jest.fn(() => mockLumaPlayer);
-			mockEdit.findClipIndices = jest.fn((_player: unknown) => ({ trackIndex: 0, clipIndex: 1 }));
+			mockEdit.findClipIndices = jest.fn().mockReturnValue({ trackIndex: 0, clipIndex: 1 });
 
 			controller = new InteractionController(mockEdit as never, mockStateManager as never, mockDOM.tracksContainer, mockDOM.feedbackLayer);
 			controller.mount();
