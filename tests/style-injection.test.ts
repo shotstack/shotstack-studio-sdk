@@ -1,7 +1,6 @@
 /**
  * @jest-environment jsdom
  */
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 import { injectShotstackStyles, resetStyleInjection } from "../src/styles/inject";
 
 describe("Style Injection", () => {

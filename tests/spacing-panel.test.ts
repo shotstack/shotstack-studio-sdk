@@ -18,7 +18,6 @@
  * 7. Dispose clears drag state
  */
 
-import { describe, it, expect, jest, afterEach } from "@jest/globals";
 import { SpacingPanel } from "../src/core/ui/composites/SpacingPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────

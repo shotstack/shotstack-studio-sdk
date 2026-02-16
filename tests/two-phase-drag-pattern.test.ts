@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 /* eslint-disable import/first */
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { DragStateManager } from "../src/core/ui/drag-state-manager";
 
 // Polyfill clone for older Node versions

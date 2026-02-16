@@ -1,4 +1,3 @@
-import { describe, it, expect } from "@jest/globals";
 // @ts-expect-error - Jest transforms this via moduleNameMapper to css-inline.js mock
 import styles from "../src/styles/index.css?inline";
 

@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { sec } from "../src/core/timing/types";
 import { Timeline } from "../src/components/timeline/timeline";
 

@@ -2,7 +2,6 @@
  * TimelineStateManager Tests
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
 import { TimelineStateManager } from "../src/components/timeline/timeline-state";
 import { EditEvent, InternalEvent } from "../src/core/events/edit-events";
 import { sec } from "../src/core/timing/types";

@@ -1,4 +1,3 @@
-import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { LumaMaskController } from "../src/core/luma-mask-controller";
 
 // Define PlayerType enum locally since we're mocking the module

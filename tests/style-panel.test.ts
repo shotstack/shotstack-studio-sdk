@@ -1,7 +1,6 @@
 /**
  * @jest-environment jsdom
  */
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 import { StylePanel } from "../src/core/ui/composites/StylePanel";
 
 // ============================================================================

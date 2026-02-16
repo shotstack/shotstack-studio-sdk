@@ -1,4 +1,3 @@
-import { describe, it, expect } from "@jest/globals";
 import { serializeClipForExport, serializeEditForExport, type ClipExportData } from "../src/core/shared/serialize-edit";
 import { EditSchema, type ResolvedClip, type Clip } from "../src/core/schemas";
 

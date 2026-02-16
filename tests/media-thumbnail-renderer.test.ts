@@ -2,7 +2,6 @@
  * MediaThumbnailRenderer Tests
  */
 
-import { describe, it, expect, jest } from "@jest/globals";
 import type { ResolvedClip } from "../src/core/schemas";
 import { sec } from "../src/core/timing/types";
 import { MediaThumbnailRenderer } from "../src/components/timeline/media-thumbnail-renderer";

@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 /* eslint-disable import/first, max-classes-per-file */
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 
 // Mock pixi.js before any imports that use it
 jest.mock("pixi.js", () => ({
@@ -70,7 +69,7 @@ import type { ToolbarButtonConfig } from "../src/core/ui/ui-controller";
 
 type MockPlayer = {
 	clipConfiguration: Record<string, unknown>;
-	getMergeFieldBinding: ReturnType<typeof jest.fn<() => null>>;
+	getMergeFieldBinding: jest.Mock;
 };
 
 // ============================================================================

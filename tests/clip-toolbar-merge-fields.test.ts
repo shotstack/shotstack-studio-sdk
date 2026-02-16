@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 /* eslint-disable import/first, max-classes-per-file */
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 
 // Mock pixi.js before any imports that use it
 jest.mock("pixi.js", () => ({

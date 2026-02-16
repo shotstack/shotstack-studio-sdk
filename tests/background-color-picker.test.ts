@@ -19,7 +19,6 @@
  * 7. Dispose cleanup
  */
 
-import { describe, it, expect, jest, afterEach } from "@jest/globals";
 
 // Mock style injection
 jest.mock("@styles/inject", () => ({

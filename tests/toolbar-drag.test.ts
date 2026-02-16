@@ -17,7 +17,6 @@
  * - Right-click / non-primary button ignored
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals";
 
 import { makeToolbarDraggable, type ToolbarDragHandle } from "@core/ui/toolbar-drag";
 
