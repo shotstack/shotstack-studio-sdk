@@ -338,11 +338,7 @@ function createMinimalEdit(tracks: { clips: TestClip[] }[] = [{ clips: [MINIMAL_
  * Create a minimal edit with resolution preset instead of explicit size.
  * Uses 2 tracks to force structural change (full reload path).
  */
-function createMinimalEditWithResolution(
-	tracks: { clips: TestClip[] }[],
-	resolution: string = "hd",
-	aspectRatio?: string
-): EditConfig {
+function createMinimalEditWithResolution(tracks: { clips: TestClip[] }[], resolution: string = "hd", aspectRatio?: string): EditConfig {
 	return {
 		timeline: {
 			tracks: tracks as EditConfig["timeline"]["tracks"]
@@ -842,10 +838,13 @@ describe("Edit loadEdit()", () => {
 
 		it("loadEdit resolves size from resolution preset when output.size is absent", async () => {
 			// Use 2 tracks to force structural change (full-reload path)
-			const editConfig = createMinimalEditWithResolution([
-				{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
-				{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
-			], "hd");
+			const editConfig = createMinimalEditWithResolution(
+				[
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				],
+				"hd"
+			);
 
 			await edit.loadEdit(editConfig);
 
@@ -854,10 +853,14 @@ describe("Edit loadEdit()", () => {
 		});
 
 		it("loadEdit resolves size from resolution + aspectRatio", async () => {
-			const editConfig = createMinimalEditWithResolution([
-				{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
-				{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
-			], "hd", "9:16");
+			const editConfig = createMinimalEditWithResolution(
+				[
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				],
+				"hd",
+				"9:16"
+			);
 
 			await edit.loadEdit(editConfig);
 
@@ -871,14 +874,18 @@ describe("Edit loadEdit()", () => {
 			const originalBg = originalState.backgroundColor;
 
 			// Make initializeFromDocument reject once
-			const initSpy = jest.spyOn(edit as unknown as { initializeFromDocument: () => Promise<void> }, "initializeFromDocument")
+			const initSpy = jest
+				.spyOn(edit as unknown as { initializeFromDocument: () => Promise<void> }, "initializeFromDocument")
 				.mockRejectedValueOnce(new Error("test initialization failure"));
 
 			// Use 2 tracks to force structural change (full-reload path)
-			const editConfig = createMinimalEditWithResolution([
-				{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
-				{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
-			], "hd");
+			const editConfig = createMinimalEditWithResolution(
+				[
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img1.jpg" }, start: 0, length: 3, fit: "crop" }] },
+					{ clips: [{ asset: { type: "image", src: "https://example.com/img2.jpg" }, start: 0, length: 3, fit: "crop" }] }
+				],
+				"hd"
+			);
 
 			await expect(edit.loadEdit(editConfig)).rejects.toThrow("test initialization failure");
 

@@ -1961,4 +1961,166 @@ describe("Edit Merge Fields", () => {
 			expect(edit.getMergeFieldForProperty(clipId, "opacity")).toBe("FADE_LEVEL");
 		});
 	});
+
+	// ─── Deep property paths (border/padding/shadow/style) ────────────────────
+	// These properties are optional on rich-text assets and absent by default.
+	// setNestedValue must auto-create intermediate objects for merge fields to work.
+
+	describe("merge fields on deep property paths (border/padding/shadow)", () => {
+		/** Load a rich-text clip with NO border/padding/shadow/style properties. */
+		async function loadRichTextClip(): Promise<string> {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "Hello", font: { color: "#ffffff" } },
+									start: 0,
+									length: 3
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			return getClipIdOrFail(edit, 0, 0);
+		}
+
+		it("applies merge field on asset.border.width when border does not exist", async () => {
+			const clipId = await loadRichTextClip();
+
+			await edit.applyMergeField(clipId, "asset.border.width", "BORDER_W", "2");
+
+			// Binding should be stored
+			const binding = edit.getDocument()?.getClipBinding(clipId, "asset.border.width");
+			expect(binding?.placeholder).toBe("{{ BORDER_W }}");
+			expect(binding?.resolvedValue).toBe("2");
+
+			// getMergeFieldForProperty should detect the bound field
+			expect(edit.getMergeFieldForProperty(clipId, "asset.border.width")).toBe("BORDER_W");
+
+			// Field should be in the registry
+			expect(edit.mergeFields.get("BORDER_W")).toBeDefined();
+		});
+
+		it("applies merge field on asset.padding.top when padding does not exist", async () => {
+			const clipId = await loadRichTextClip();
+
+			await edit.applyMergeField(clipId, "asset.padding.top", "PAD_TOP", "10");
+
+			expect(edit.getMergeFieldForProperty(clipId, "asset.padding.top")).toBe("PAD_TOP");
+			expect(edit.mergeFields.get("PAD_TOP")?.defaultValue).toBe("10");
+		});
+
+		it("removes merge field from deep path and restores value", async () => {
+			const clipId = await loadRichTextClip();
+
+			await edit.applyMergeField(clipId, "asset.border.width", "BORDER_W", "2");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.border.width")).toBe("BORDER_W");
+
+			await edit.removeMergeField(clipId, "asset.border.width", "2");
+
+			// Field should no longer be bound
+			expect(edit.getMergeFieldForProperty(clipId, "asset.border.width")).toBeNull();
+
+			// Binding should be removed
+			const binding = edit.getDocument()?.getClipBinding(clipId, "asset.border.width");
+			expect(binding).toBeUndefined();
+		});
+
+		it("undo of apply on deep path removes the merge field", async () => {
+			const clipId = await loadRichTextClip();
+
+			await edit.applyMergeField(clipId, "asset.padding.left", "PAD_LEFT", "8");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.padding.left")).toBe("PAD_LEFT");
+
+			await edit.undo();
+			await Promise.resolve();
+
+			expect(edit.getMergeFieldForProperty(clipId, "asset.padding.left")).toBeNull();
+		});
+
+		it("redo after undo re-applies deep path merge field", async () => {
+			const clipId = await loadRichTextClip();
+
+			await edit.applyMergeField(clipId, "asset.shadow.color", "SHADOW_CLR", "#000000");
+			expect(edit.getMergeFieldForProperty(clipId, "asset.shadow.color")).toBe("SHADOW_CLR");
+
+			await edit.undo();
+			await Promise.resolve();
+			expect(edit.getMergeFieldForProperty(clipId, "asset.shadow.color")).toBeNull();
+
+			await edit.redo();
+			await Promise.resolve();
+			expect(edit.getMergeFieldForProperty(clipId, "asset.shadow.color")).toBe("SHADOW_CLR");
+		});
+
+		it("export round-trip preserves placeholder on deep path", async () => {
+			const clipId = await loadRichTextClip();
+
+			await edit.applyMergeField(clipId, "asset.padding.left", "PAD_LEFT", "16");
+
+			const exported = edit.getDocument()?.toJSON();
+			const exportedClip = exported?.timeline?.tracks?.[0]?.clips?.[0];
+			const asset = exportedClip?.asset as Record<string, unknown>;
+			const padding = asset["padding"] as Record<string, unknown>;
+			expect(padding["left"]).toBe("{{ PAD_LEFT }}");
+		});
+
+		it("isValueCompatibleWithClipProperty works for deep path when intermediate absent", async () => {
+			const clipId = await loadRichTextClip();
+
+			// On a clip with no border, a numeric string should be valid for border.width
+			expect(edit.isValueCompatibleWithClipProperty(clipId, "asset.border.width", "5")).toBe(true);
+		});
+
+		it("deleteMergeFieldGlobally removes deep-path merge field from all clips", async () => {
+			await edit.loadEdit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "Hello", font: { color: "#ffffff" } },
+									start: 0,
+									length: 3
+								}
+							]
+						},
+						{
+							clips: [
+								{
+									asset: { type: "rich-text", text: "World", font: { color: "#000000" } },
+									start: 0,
+									length: 3
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+
+			const clipId1 = getClipIdOrFail(edit, 0, 0);
+			const clipId2 = getClipIdOrFail(edit, 1, 0);
+
+			// Bind the same field to both clips on a deep path
+			await edit.applyMergeField(clipId1, "asset.shadow.offsetX", "SHADOW_X", "4");
+			await edit.applyMergeField(clipId2, "asset.shadow.offsetX", "SHADOW_X", "4");
+
+			expect(edit.getMergeFieldForProperty(clipId1, "asset.shadow.offsetX")).toBe("SHADOW_X");
+			expect(edit.getMergeFieldForProperty(clipId2, "asset.shadow.offsetX")).toBe("SHADOW_X");
+
+			await edit.deleteMergeFieldGlobally("SHADOW_X");
+
+			// Both clips should be unbound
+			expect(edit.getMergeFieldForProperty(clipId1, "asset.shadow.offsetX")).toBeNull();
+			expect(edit.getMergeFieldForProperty(clipId2, "asset.shadow.offsetX")).toBeNull();
+
+			// Field should be removed from registry
+			expect(edit.mergeFields.get("SHADOW_X")).toBeUndefined();
+		});
+	});
 });

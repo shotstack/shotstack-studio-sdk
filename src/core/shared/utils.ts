@@ -47,7 +47,10 @@ export function setNestedValue(obj: unknown, path: string, value: unknown): void
 	let current: unknown = obj;
 	for (let i = 0; i < parts.length - 1; i += 1) {
 		if (current === null || current === undefined || typeof current !== "object") return;
-		current = (current as Record<string, unknown>)[parts[i]];
+		const key = parts[i];
+		const next = (current as Record<string, unknown>)[key];
+		if (next == null || typeof next !== "object") (current as Record<string, unknown>)[key] = {};
+		current = (current as Record<string, unknown>)[key];
 	}
 	if (current !== null && current !== undefined && typeof current === "object") {
 		(current as Record<string, unknown>)[parts[parts.length - 1]] = value;
