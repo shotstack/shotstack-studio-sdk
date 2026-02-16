@@ -26,7 +26,7 @@ jest.mock("../src/components/canvas/players/player", () => {
 	return { Player: MockPlayer, PlayerType: {} };
 });
 
-// Mock ShotstackEdit as a class so instanceof checks work
+// Mock ShotstackEdit module (prevents loading pixi.js dependency chain)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockGetMergeFieldForProperty = jest.fn((_clipId: string, _path: string): string | null => null);
 jest.mock("../src/core/shotstack-edit", () => ({
@@ -51,7 +51,6 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 
 import { TimingControl } from "../src/core/ui/composites/TimingControl";
 import { ClipToolbar } from "../src/core/ui/clip-toolbar";
-import { ShotstackEdit } from "../src/core/shotstack-edit";
 import { EditEvent } from "../src/core/events/edit-events";
 
 // ============================================================================
@@ -234,7 +233,9 @@ describe("ClipToolbar merge field integration", () => {
 
 	function createMockShotstackEdit(overrides: Record<string, unknown> = {}) {
 		const events = createMockEventEmitter();
-		const edit = Object.assign(Object.create(ShotstackEdit.prototype), {
+		// Plain object (no ShotstackEdit prototype) — simulates cross-bundle scenario where
+		// instanceof fails but duck typing via "mergeFields" in edit succeeds.
+		const edit = {
 			events,
 			getInternalEvents: jest.fn(() => events),
 			getClipId: jest.fn(() => "test-clip-id"),
@@ -251,7 +252,7 @@ describe("ClipToolbar merge field integration", () => {
 			applyMergeField: jest.fn(() => Promise.resolve()),
 			removeMergeField: jest.fn(() => Promise.resolve()),
 			...overrides
-		});
+		};
 		return edit;
 	}
 

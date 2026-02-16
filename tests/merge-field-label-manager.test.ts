@@ -37,7 +37,6 @@ jest.mock("../src/core/edit-session", () => ({}));
 
 import { MergeFieldLabelManager } from "@core/ui/merge-field-label-manager";
 import type { MergeFieldLabelHost } from "@core/ui/merge-field-label-manager";
-import { ShotstackEdit } from "@core/shotstack-edit";
 import type { MergeField } from "@core/merge/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,9 +74,9 @@ function buildContainer(...labels: Array<{ path: string; prefix: string; text: s
 }
 
 function createMockHost(container: HTMLDivElement | null, overrides: Partial<MergeFieldLabelHost> = {}): MergeFieldLabelHost {
-	// Build a mock ShotstackEdit that passes instanceof check by inheriting from the mocked class
-	const mockEdit = Object.create(ShotstackEdit.prototype);
-	Object.assign(mockEdit, {
+	// Plain object (no ShotstackEdit prototype) — simulates cross-bundle scenario where
+	// instanceof fails but duck typing via "mergeFields" in edit succeeds.
+	const mockEdit = {
 		getResolvedClipById: jest.fn(() => ({ opacity: 1, scale: 1, asset: { type: "image", src: "https://example.com/img.jpg" } })),
 		getMergeFieldForProperty: jest.fn(() => null),
 		isValueCompatibleWithClipProperty: jest.fn(() => true),
@@ -88,7 +87,7 @@ function createMockHost(container: HTMLDivElement | null, overrides: Partial<Mer
 			get: jest.fn(),
 			generateUniqueName: jest.fn((prefix: string) => prefix)
 		}
-	});
+	};
 
 	return {
 		container,
