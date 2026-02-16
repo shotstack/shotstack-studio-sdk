@@ -99,6 +99,7 @@ function createMergeFieldMockEditSession() {
 			commitClipUpdate: jest.fn(),
 			getInternalEvents: jest.fn(() => internalEvents),
 			getMergeFieldForProperty: jest.fn(() => null),
+			removeMergeField: jest.fn().mockResolvedValue(undefined),
 			isValueCompatibleWithClipProperty: jest.fn(() => true),
 			mergeFields: {
 				getAll: jest.fn(() => []),
@@ -560,6 +561,40 @@ describe("MediaToolbar", () => {
 			unsubFns.forEach(unsub => {
 				expect(unsub).toHaveBeenCalled();
 			});
+		});
+	});
+
+	describe("Dynamic source toggle-off restores default URL", () => {
+		it("passes merge field defaultValue to removeMergeField, not empty string", () => {
+			const defaultUrl = "https://shotstack-assets.s3.amazonaws.com/footage/night-sky.mp4";
+			const { mockEdit, internalEvents, unsubFns } = createMergeFieldMockEditSession();
+
+			// Template loads with a merge field already bound to asset.src
+			mockEdit.getMergeFieldForProperty.mockReturnValue("MEDIA_1");
+			mockEdit.mergeFields.get.mockReturnValue({ name: "MEDIA_1", defaultValue: defaultUrl });
+
+			const clip = createImageClip({ asset: { type: "image", src: "{{MEDIA_1}}" } as ImageAsset });
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+
+			const toolbar = new MediaToolbar(mockEdit as unknown as Edit, { mergeFields: true });
+			const parent = document.createElement("div");
+			document.body.appendChild(parent);
+			toolbar.mount(parent);
+
+			// show() triggers updateDynamicSourceUI() which should capture originalSrc from defaultValue
+			toolbar.show(0, 0);
+
+			// Toggle OFF dynamic source
+			const toggle = parent.querySelector<HTMLInputElement>("[data-dynamic-toggle]")!;
+			expect(toggle.checked).toBe(true); // sanity: was checked by updateDynamicSourceUI
+			toggle.checked = false;
+			toggle.dispatchEvent(new Event("change"));
+
+			// removeMergeField should receive the default URL, not ""
+			expect(mockEdit.removeMergeField).toHaveBeenCalledWith("clip-1", "asset.src", defaultUrl);
+
+			toolbar.dispose();
+			document.body.removeChild(parent);
 		});
 	});
 });

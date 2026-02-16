@@ -980,7 +980,16 @@ export class MediaToolbar extends BaseToolbar {
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		if (clipId) {
-			this.getShotstackEdit()?.removeMergeField(clipId, "asset.src", this.originalSrc);
+			let restoreValue = this.originalSrc;
+			if (!restoreValue) {
+				const field = this.getShotstackEdit()?.mergeFields.get(this.dynamicFieldName);
+				restoreValue = field?.defaultValue || "";
+			}
+			if (!restoreValue) {
+				const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+				restoreValue = (clip?.asset as { src?: string })?.src || "";
+			}
+			this.getShotstackEdit()?.removeMergeField(clipId, "asset.src", restoreValue);
 		}
 		this.dynamicFieldName = "";
 		if (this.dynamicInput) {
@@ -999,10 +1008,10 @@ export class MediaToolbar extends BaseToolbar {
 		if (fieldName) {
 			this.isDynamicSource = true;
 			this.dynamicFieldName = fieldName;
+			const mergeField = shotstackEdit?.mergeFields.get(fieldName);
+			this.originalSrc = mergeField?.defaultValue || "";
 			if (this.dynamicToggle) this.dynamicToggle.checked = true;
 			if (this.dynamicPanel) this.dynamicPanel.style.display = "block";
-
-			const mergeField = shotstackEdit?.mergeFields.get(fieldName);
 			if (this.dynamicInput) {
 				this.dynamicInput.value = mergeField?.defaultValue || "";
 			}
