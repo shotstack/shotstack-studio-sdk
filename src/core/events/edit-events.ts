@@ -106,11 +106,6 @@ export const EditEvent = {
 	// Merge fields
 	MergeFieldChanged: "mergefield:changed",
 
-	// Transcription (captions)
-	TranscriptionProgress: "transcription:progress",
-	TranscriptionCompleted: "transcription:completed",
-	TranscriptionFailed: "transcription:failed",
-
 	// Luma masking
 	LumaAttached: "luma:attached",
 	LumaDetached: "luma:detached"
@@ -199,11 +194,6 @@ export type EditEventMap = {
 
 	// Merge fields
 	[EditEvent.MergeFieldChanged]: { fields: MergeField[] };
-
-	// Transcription
-	[EditEvent.TranscriptionProgress]: { clipAlias: string; message?: string };
-	[EditEvent.TranscriptionCompleted]: { clipAlias: string; cueCount: number };
-	[EditEvent.TranscriptionFailed]: { clipAlias: string; error: string };
 
 	// Luma masking
 	[EditEvent.LumaAttached]: ClipLocation & { lumaSrc: string; lumaClipIndex: number };

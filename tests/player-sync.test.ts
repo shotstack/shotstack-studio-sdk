@@ -142,10 +142,7 @@ jest.mock("@canvas/system/alignment-guides", () => ({
 
 // Mock captions module
 jest.mock("@core/captions", () => ({
-	findActiveCue: jest.fn().mockReturnValue(null),
-	isAliasReference: jest.fn().mockReturnValue(false),
-	resolveTranscriptionAlias: jest.fn(),
-	revokeVttUrl: jest.fn()
+	findActiveCue: jest.fn().mockReturnValue(null)
 }));
 
 // Mock subtitle loader

@@ -63,7 +63,6 @@ const CONTRACT = {
 		Edit: ["validateEdit(", "getTimelineFonts(", "getContentClipIdForLuma(", "getInternalEvents("]
 	},
 	dtsForbiddenTokens: [
-		"export declare class TranscriptionIndicator",
 		"export declare class SelectionHandles",
 		"export declare class TextToolbar",
 		"export declare class RichTextToolbar",

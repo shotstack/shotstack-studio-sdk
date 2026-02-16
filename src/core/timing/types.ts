@@ -57,7 +57,7 @@ export function ms(value: number): Milliseconds {
 
 /**
  * Alias reference format: `alias://name` (alphanumeric, underscore, hyphen).
- * Used in `start`/`length` for timing, and in caption `asset.src` for transcription.
+ * Used in `start`/`length` for timing.
  */
 export type AliasReference = `alias://${string}`;
 

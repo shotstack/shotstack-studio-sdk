@@ -1,30 +1,29 @@
 import { Player, PlayerType } from "@canvas/players/player";
-import { type Cue, findActiveCue, isAliasReference, resolveTranscriptionAlias, revokeVttUrl } from "@core/captions";
+import { type Cue, findActiveCue } from "@core/captions";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { isAliasReference } from "@core/timing/types";
 import { type Size, type Vector } from "@layouts/geometry";
 import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
 import { type ExtendedCaptionAsset, type ResolvedClip } from "@schemas";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
+const PLACEHOLDER_TEXT = "Captions will appear here";
+
+type CaptionState = { readonly kind: "loaded"; readonly cues: Cue[] } | { readonly kind: "placeholder" };
+
 /**
  * CaptionPlayer renders timed subtitle cues from SRT/VTT files.
  * Captions are shown/hidden based on the current playback time.
- * Transcription runs in the background without blocking timeline loading.
  */
 export class CaptionPlayer extends Player {
 	private static loadedFonts = new Set<string>();
 
-	private cues: Cue[] = [];
+	private state: CaptionState = { kind: "loaded", cues: [] };
 	private currentCue: Cue | null = null;
 	private background: pixi.Graphics | null = null;
 	private text: pixi.Text | null = null;
-	private vttBlobUrl: string | null = null;
-
-	private pendingTranscription: Promise<void> | null = null;
-	private isTranscribing = false;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Caption);
@@ -38,12 +37,7 @@ export class CaptionPlayer extends Player {
 		const fontFamily = captionAsset.font?.family ?? "Open Sans";
 		await this.loadFont(fontFamily);
 
-		if (isAliasReference(captionAsset.src)) {
-			this.isTranscribing = true;
-			this.pendingTranscription = this.loadTranscriptionInBackground(captionAsset.src);
-		} else {
-			await this.loadSubtitles(captionAsset.src);
-		}
+		this.state = isAliasReference(captionAsset.src) ? { kind: "placeholder" } : await this.loadSubtitles(captionAsset.src);
 
 		this.background = new pixi.Graphics();
 		this.contentContainer.addChild(this.background);
@@ -60,66 +54,18 @@ export class CaptionPlayer extends Player {
 		}
 
 		this.contentContainer.addChild(this.text);
+
+		if (this.state.kind === "placeholder") {
+			this.showPlaceholder(captionAsset);
+		}
+
 		this.configureKeyframes();
-	}
-
-	private async loadTranscriptionInBackground(src: string): Promise<void> {
-		const clipAlias = this.clipConfiguration.alias ?? "";
-		try {
-			const resolvedEdit = this.edit.getResolvedEdit();
-			if (!resolvedEdit) {
-				throw new Error("Cannot resolve alias: edit not loaded");
-			}
-			const result = await resolveTranscriptionAlias(src, resolvedEdit, progress => {
-				this.edit.getInternalEvents().emit(EditEvent.TranscriptionProgress, {
-					clipAlias,
-					...progress
-				});
-			});
-
-			this.vttBlobUrl = result.vttUrl;
-
-			const loadOptions: pixi.UnresolvedAsset = {
-				src: result.vttUrl,
-				parser: SubtitleLoadParser.Name
-			};
-			const subtitle = await this.edit.assetLoader.load<SubtitleAsset>(result.vttUrl, loadOptions);
-
-			if (subtitle) {
-				this.cues = subtitle.cues;
-			}
-
-			this.isTranscribing = false;
-
-			this.edit.getInternalEvents().emit(EditEvent.TranscriptionCompleted, {
-				clipAlias,
-				cueCount: this.cues.length
-			});
-		} catch (error) {
-			this.isTranscribing = false;
-			console.error("Failed to transcribe:", error);
-
-			this.edit.getInternalEvents().emit(EditEvent.TranscriptionFailed, {
-				clipAlias,
-				error: error instanceof Error ? error.message : "Transcription failed"
-			});
-		}
-	}
-
-	public isTranscriptionPending(): boolean {
-		return this.isTranscribing;
-	}
-
-	public async waitForTranscription(): Promise<void> {
-		if (this.pendingTranscription) {
-			await this.pendingTranscription;
-		}
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
 
-		if (!this.text) return;
+		if (!this.text || this.state.kind === "placeholder") return;
 
 		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
 		const trim = captionAsset.trim ?? 0;
@@ -127,7 +73,7 @@ export class CaptionPlayer extends Player {
 		// getPlaybackTime() already returns seconds
 		const time = this.getPlaybackTime() + trim;
 
-		const activeCue = findActiveCue(this.cues, time);
+		const activeCue = findActiveCue(this.state.cues, time);
 
 		if (activeCue !== this.currentCue) {
 			this.currentCue = activeCue;
@@ -144,12 +90,7 @@ export class CaptionPlayer extends Player {
 		this.text?.destroy();
 		this.text = null;
 
-		if (this.vttBlobUrl) {
-			revokeVttUrl(this.vttBlobUrl);
-			this.vttBlobUrl = null;
-		}
-
-		this.cues = [];
+		this.state = { kind: "loaded", cues: [] };
 		this.currentCue = null;
 	}
 
@@ -171,7 +112,7 @@ export class CaptionPlayer extends Player {
 		return { x: scale, y: scale };
 	}
 
-	private async loadSubtitles(src: string): Promise<void> {
+	private async loadSubtitles(src: string): Promise<CaptionState> {
 		try {
 			const loadOptions: pixi.UnresolvedAsset = {
 				src,
@@ -180,15 +121,20 @@ export class CaptionPlayer extends Player {
 			const subtitle = await this.edit.assetLoader.load<SubtitleAsset>(src, loadOptions);
 
 			if (subtitle) {
-				this.cues = subtitle.cues;
-			} else {
-				console.error("Failed to load subtitles");
-				this.cues = [];
+				return { kind: "loaded", cues: subtitle.cues };
 			}
+
+			console.warn("Failed to load subtitles");
+			return { kind: "placeholder" };
 		} catch (error) {
-			console.error("Failed to load subtitles:", error);
-			this.cues = [];
+			console.warn("Failed to load subtitles:", error);
+			return { kind: "placeholder" };
 		}
+	}
+
+	private showPlaceholder(captionAsset: ExtendedCaptionAsset): void {
+		const placeholderCue: Cue = { start: 0, end: Infinity, text: PLACEHOLDER_TEXT };
+		this.updateDisplay(placeholderCue, captionAsset);
 	}
 
 	private createTextStyle(captionAsset: ExtendedCaptionAsset): pixi.TextStyle {
