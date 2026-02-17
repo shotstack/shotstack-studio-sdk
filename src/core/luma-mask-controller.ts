@@ -219,12 +219,15 @@ export class LumaMaskController {
 		this.events.on(InternalEvent.PlayerLoaded, this.onPlayerLoadedBound);
 		// ClipUpdated handles property changes to existing masks
 		this.events.on(EditEvent.ClipUpdated, this.onClipChangedBound);
+		// PlayerMovedBetweenTracks re-detaches luma containers after track reparenting
+		this.events.on(InternalEvent.PlayerMovedBetweenTracks, this.onClipChangedBound);
 		// Note: ClipAdded and ClipRestored trigger PlayerLoaded, so no need to subscribe separately
 	}
 
 	private removeEventListeners(): void {
 		this.events.off(InternalEvent.PlayerLoaded, this.onPlayerLoadedBound);
 		this.events.off(EditEvent.ClipUpdated, this.onClipChangedBound);
+		this.events.off(InternalEvent.PlayerMovedBetweenTracks, this.onClipChangedBound);
 	}
 
 	private processPendingMaskCleanup(): void {
