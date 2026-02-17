@@ -1,7 +1,7 @@
 /**
  * Edit Class Clip Operations Tests
  *
- * Tests clip CRUD operations: addClip, deleteClip, updateClip, splitClip
+ * Tests clip CRUD operations: addClip, deleteClip, updateClip
  * These are the core editing operations that modify timeline content.
  */
 

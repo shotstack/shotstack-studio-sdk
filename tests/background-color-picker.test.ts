@@ -19,7 +19,6 @@
  * 7. Dispose cleanup
  */
 
-
 // Mock style injection
 jest.mock("@styles/inject", () => ({
 	injectShotstackStyles: jest.fn()

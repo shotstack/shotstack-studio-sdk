@@ -225,7 +225,6 @@ export class Timeline {
 		this.edit.events.on(EditEvent.ClipAdded, this.handleTimelineUpdated);
 		this.edit.events.on(EditEvent.ClipDeleted, this.handleTimelineUpdated);
 		this.edit.events.on(EditEvent.ClipRestored, this.handleTimelineUpdated);
-		this.edit.events.on(EditEvent.ClipSplit, this.handleTimelineUpdated);
 		this.edit.events.on(EditEvent.TrackAdded, this.handleTimelineUpdated);
 		this.edit.events.on(EditEvent.TrackRemoved, this.handleTimelineUpdated);
 
@@ -248,7 +247,6 @@ export class Timeline {
 		this.edit.events.off(EditEvent.ClipAdded, this.handleTimelineUpdated);
 		this.edit.events.off(EditEvent.ClipDeleted, this.handleTimelineUpdated);
 		this.edit.events.off(EditEvent.ClipRestored, this.handleTimelineUpdated);
-		this.edit.events.off(EditEvent.ClipSplit, this.handleTimelineUpdated);
 		this.edit.events.off(EditEvent.TrackAdded, this.handleTimelineUpdated);
 		this.edit.events.off(EditEvent.TrackRemoved, this.handleTimelineUpdated);
 		this.edit.events.off(EditEvent.PlaybackPlay, this.handlePlaybackPlay);

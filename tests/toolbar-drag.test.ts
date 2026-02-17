@@ -17,7 +17,6 @@
  * - Right-click / non-primary button ignored
  */
 
-
 import { makeToolbarDraggable, type ToolbarDragHandle } from "@core/ui/toolbar-drag";
 
 // Polyfill PointerEvent for jsdom (not natively available)

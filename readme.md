@@ -130,7 +130,6 @@ await edit.undo();
 await edit.redo();
 
 // Clip operations
-await edit.splitClip(0, 0, 2.5);
 await edit.deleteTrack(0);
 
 // Output settings
@@ -175,7 +174,7 @@ Available event names:
 
 - Playback: `playback:play`, `playback:pause`
 - Timeline: `timeline:updated`, `timeline:backgroundChanged`
-- Clip lifecycle: `clip:added`, `clip:split`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved`
+- Clip lifecycle: `clip:added`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved`
 - Selection: `selection:cleared`
 - Edit state: `edit:changed`, `edit:undo`, `edit:redo`
 - Track: `track:added`, `track:removed`

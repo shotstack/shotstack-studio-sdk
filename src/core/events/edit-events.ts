@@ -71,7 +71,6 @@ export const EditEvent = {
 
 	// Clip lifecycle
 	ClipAdded: "clip:added",
-	ClipSplit: "clip:split",
 	ClipSelected: "clip:selected",
 	ClipUpdated: "clip:updated",
 	ClipDeleted: "clip:deleted",
@@ -160,7 +159,6 @@ export type EditEventMap = {
 
 	// Clip lifecycle
 	[EditEvent.ClipAdded]: ClipLocation;
-	[EditEvent.ClipSplit]: { trackIndex: number; originalClipIndex: number; newClipIndex: number };
 	[EditEvent.ClipSelected]: ClipReference;
 	[EditEvent.ClipUpdated]: { previous: ClipReference; current: ClipReference };
 	[EditEvent.ClipDeleted]: ClipLocation;

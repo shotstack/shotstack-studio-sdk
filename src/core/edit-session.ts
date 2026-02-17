@@ -14,7 +14,6 @@ import { SetOutputResolutionCommand } from "@core/commands/set-output-resolution
 import { SetOutputSizeCommand } from "@core/commands/set-output-size-command";
 import { SetTimelineBackgroundCommand } from "@core/commands/set-timeline-background-command";
 import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
-import { SplitClipCommand } from "@core/commands/split-clip-command";
 import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands/update-clip-timing-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import type { MergeFieldBinding } from "@core/edit-document";
@@ -768,11 +767,6 @@ export class Edit {
 		// No luma attachment or deleting a luma directly - just delete the clip
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
 		await this.executeCommand(command);
-	}
-
-	public splitClip(trackIndex: number, clipIndex: number, splitTime: number): Promise<void> {
-		const command = new SplitClipCommand(trackIndex, clipIndex, splitTime);
-		return this.executeCommand(command);
 	}
 
 	public async addTrack(trackIdx: number, track: Track): Promise<void> {

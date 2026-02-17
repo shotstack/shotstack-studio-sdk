@@ -292,44 +292,84 @@ export class TextToSpeechToolbar extends BaseToolbar {
 		const { signal } = this.abortController;
 
 		// Popup toggles
-		this.voiceBtn?.addEventListener("click", e => { e.stopPropagation(); this.togglePopupByName("voice"); }, { signal });
-		this.textBtn?.addEventListener("click", e => { e.stopPropagation(); this.togglePopupByName("text"); }, { signal });
-		this.volumeBtn?.addEventListener("click", e => { e.stopPropagation(); this.togglePopupByName("volume"); }, { signal });
-		this.audioFadeBtn?.addEventListener("click", e => { e.stopPropagation(); this.togglePopupByName("audio-fade"); }, { signal });
+		this.voiceBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("voice");
+			},
+			{ signal }
+		);
+		this.textBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("text");
+			},
+			{ signal }
+		);
+		this.volumeBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("volume");
+			},
+			{ signal }
+		);
+		this.audioFadeBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("audio-fade");
+			},
+			{ signal }
+		);
 
 		// Text area (debounced)
 		this.textArea?.addEventListener("input", () => this.debouncedApplyTextEdit(), { signal });
 
 		// Volume slider (two-phase drag)
 		this.volumeSlider?.addEventListener("pointerdown", () => this.startSliderDrag("volume"), { signal });
-		this.volumeSlider?.addEventListener("input", () => {
-			const value = parseInt(this.volumeSlider!.value, 10);
-			this.handleVolumeChange(value);
-		}, { signal });
+		this.volumeSlider?.addEventListener(
+			"input",
+			() => {
+				const value = parseInt(this.volumeSlider!.value, 10);
+				this.handleVolumeChange(value);
+			},
+			{ signal }
+		);
 		this.volumeSlider?.addEventListener("change", () => this.endSliderDrag("volume"), { signal });
 
 		// Volume display input
 		this.volumeDisplayInput?.addEventListener("blur", () => this.commitVolumeInputValue(), { signal });
-		this.volumeDisplayInput?.addEventListener("keydown", (e: KeyboardEvent) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				this.commitVolumeInputValue();
-				this.volumeDisplayInput?.blur();
-			} else if (e.key === "Escape") {
-				e.preventDefault();
-				this.updateVolumeDisplay();
-				this.volumeDisplayInput?.blur();
-			}
-		}, { signal });
+		this.volumeDisplayInput?.addEventListener(
+			"keydown",
+			(e: KeyboardEvent) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					this.commitVolumeInputValue();
+					this.volumeDisplayInput?.blur();
+				} else if (e.key === "Escape") {
+					e.preventDefault();
+					this.updateVolumeDisplay();
+					this.volumeDisplayInput?.blur();
+				}
+			},
+			{ signal }
+		);
 		this.volumeDisplayInput?.addEventListener("focus", () => this.volumeDisplayInput?.select(), { signal });
 
 		// Audio fade options
 		this.audioFadePopup?.querySelectorAll("[data-audio-fade]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLElement;
-				const fadeValue = el.dataset["audioFade"] || "";
-				this.handleAudioFadeSelect(fadeValue as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut");
-			}, { signal });
+			btn.addEventListener(
+				"click",
+				e => {
+					const el = e.currentTarget as HTMLElement;
+					const fadeValue = el.dataset["audioFade"] || "";
+					this.handleAudioFadeSelect(fadeValue as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut");
+				},
+				{ signal }
+			);
 		});
 	}
 
