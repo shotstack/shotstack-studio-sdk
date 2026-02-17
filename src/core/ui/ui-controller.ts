@@ -13,6 +13,7 @@ import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
 import { SvgToolbar } from "./svg-toolbar";
 import { TextToImageToolbar } from "./text-to-image-toolbar";
+import { TextToSpeechToolbar } from "./text-to-speech-toolbar";
 import { TextToolbar } from "./text-toolbar";
 import type { ToolbarDragState } from "./toolbar-drag";
 
@@ -245,7 +246,7 @@ export class UIController {
 		// AI asset toolbars
 		this.registerToolbar("text-to-image", new TextToImageToolbar(this.edit));
 		this.registerToolbar("image-to-video", new MediaToolbar(this.edit));
-		this.registerToolbar("text-to-speech", new MediaToolbar(this.edit));
+		this.registerToolbar("text-to-speech", new TextToSpeechToolbar(this.edit));
 
 		// Utilities
 		this.canvasToolbar = new CanvasToolbar(this.edit, {

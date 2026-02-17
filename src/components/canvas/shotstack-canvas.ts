@@ -148,9 +148,9 @@ export class Canvas {
 	}
 
 	private onWheel(e: WheelEvent): void {
-		// Allow scrolling in toolbar popups
+		// Allow native scrolling inside toolbar popups (font picker, TTS voice list, etc.).
 		const target = e.target as HTMLElement;
-		if (target.closest(".ss-toolbar-popup") || target.closest(".ss-canvas-toolbar-popup")) {
+		if (target.closest(".ss-toolbar-popup") || target.closest(".ss-media-toolbar-popup") || target.closest(".ss-canvas-toolbar-popup")) {
 			return;
 		}
 

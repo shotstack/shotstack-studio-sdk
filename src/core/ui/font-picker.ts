@@ -4,6 +4,10 @@
  * A refined, editorial-style font picker for the video editing SDK.
  * Features search, category filtering, recently used fonts, and
  * virtual scrolling for smooth performance with 200+ fonts.
+ *
+ * Trackpad scrolling works because the picker is mounted inside a
+ * `.ss-toolbar-popup` ancestor, which is exempted from the canvas's
+ * capturing wheel handler (shotstack-canvas.ts `onWheel`).
  */
 
 import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME, type FontInfo, type GoogleFontCategory } from "../fonts/google-fonts";

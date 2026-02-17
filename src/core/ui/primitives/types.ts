@@ -69,3 +69,39 @@ export interface MergeFieldLabelConfig extends UIComponentConfig {
 	/** Prefix for auto-generated field names (e.g. "TEXT_OPACITY") */
 	namePrefix: string;
 }
+
+/**
+ * A single item in a ScrollableList.
+ */
+export interface ScrollableListItem {
+	/** Value identifier (emitted on selection) */
+	value: string;
+	/** Display label */
+	label: string;
+	/** Optional data attributes to apply to the item element */
+	data?: Record<string, string>;
+}
+
+/**
+ * A group of items with a header in a ScrollableList.
+ */
+export interface ScrollableListGroup {
+	/** Group header text */
+	header: string;
+	/** Optional secondary text displayed alongside the header */
+	headerDetail?: string;
+	/** Items in this group */
+	items: ScrollableListItem[];
+}
+
+/**
+ * Configuration for the ScrollableList component.
+ */
+export interface ScrollableListConfig extends UIComponentConfig {
+	/** Groups of items to display */
+	groups: ScrollableListGroup[];
+	/** Fixed height in pixels (required for scroll containment) */
+	height?: number;
+	/** Currently selected value */
+	selectedValue?: string;
+}

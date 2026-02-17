@@ -1,0 +1,96 @@
+/* ─────────────────────────────────────────────────────────────
+   ScrollableList Primitive
+   Three-layer scroll containment matching font picker pattern.
+   ───────────────────────────────────────────────────────────── */
+
+.ss-scrollable-list {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.ss-scrollable-list-body {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.ss-scrollable-list-viewport {
+	height: 100%;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+/* Scrollbar */
+.ss-scrollable-list-viewport::-webkit-scrollbar {
+	width: 6px;
+}
+
+.ss-scrollable-list-viewport::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.ss-scrollable-list-viewport::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.15);
+	border-radius: 3px;
+}
+
+.ss-scrollable-list-viewport::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+/* Group */
+.ss-scrollable-list-group {
+	padding: 4px 0;
+}
+
+.ss-scrollable-list-group + .ss-scrollable-list-group {
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Group header */
+.ss-scrollable-list-group-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px 4px;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: rgba(255, 255, 255, 0.4);
+}
+
+.ss-scrollable-list-group-detail {
+	font-weight: 400;
+	text-transform: none;
+	letter-spacing: normal;
+	color: rgba(255, 255, 255, 0.25);
+}
+
+/* Item */
+.ss-scrollable-list-item {
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 400;
+	color: rgba(255, 255, 255, 0.75);
+	cursor: pointer;
+	border-radius: 6px;
+	margin: 0 4px;
+	transition: background 0.12s ease;
+}
+
+.ss-scrollable-list-item:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.95);
+}
+
+.ss-scrollable-list-item--selected {
+	background: rgba(255, 255, 255, 0.12);
+	color: #fff;
+	font-weight: 500;
+}
+
+.ss-scrollable-list-item--selected:hover {
+	background: rgba(255, 255, 255, 0.16);
+}

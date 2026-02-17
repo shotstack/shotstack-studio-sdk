@@ -7,10 +7,12 @@
 
 /* UI Component Styles */
 @import "./ui/toolbar-drag.css";
+@import "./ui/scrollable-list.css";
 @import "./ui/rich-text-toolbar.css";
 @import "./ui/svg-toolbar.css";
 @import "./ui/media-toolbar.css";
 @import "./ui/text-to-image-toolbar.css";
+@import "./ui/text-to-speech-toolbar.css";
 @import "./ui/clip-toolbar.css";
 @import "./ui/canvas-toolbar.css";
 @import "./ui/asset-toolbar.css";

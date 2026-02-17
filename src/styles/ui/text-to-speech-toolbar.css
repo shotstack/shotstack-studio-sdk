@@ -1,0 +1,83 @@
+/* ─────────────────────────────────────────────────────────────
+   Text-to-Speech Toolbar
+   Dedicated toolbar for TTS asset clips with voice selection.
+   ───────────────────────────────────────────────────────────── */
+
+.ss-tts-toolbar {
+	display: none;
+	position: absolute;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(24, 24, 27, 0.95);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	padding: 6px 8px;
+	gap: 2px;
+	z-index: 10;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	align-items: center;
+	box-shadow:
+		0 4px 24px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(0, 0, 0, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ss-tts-toolbar.visible {
+	display: flex;
+}
+
+/* Voice popup — zero padding so ScrollableList fills edge-to-edge */
+.ss-tts-voice-popup {
+	padding: 0;
+	min-width: 240px;
+}
+
+.ss-tts-voice-popup .ss-media-toolbar-popup-header {
+	padding: 12px 12px 8px;
+}
+
+/* Text section */
+.ss-tts-text-btn {
+	max-width: 140px;
+}
+
+.ss-tts-text-preview {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100px;
+}
+
+/* Text popup */
+.ss-tts-text-popup {
+	min-width: 280px;
+	padding: 14px 16px;
+}
+
+.ss-tts-textarea {
+	width: 100%;
+	min-height: 80px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	padding: 10px 12px;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 13px;
+	font-family: inherit;
+	line-height: 1.5;
+	resize: vertical;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.ss-tts-textarea:focus {
+	border-color: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.ss-tts-textarea::placeholder {
+	color: rgba(255, 255, 255, 0.4);
+}
