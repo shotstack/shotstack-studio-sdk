@@ -3,9 +3,10 @@
 	"author": "Shotstack <support@shotstack.io>",
 	"contributors": [
 		"cpuccino",
-		"dazzatron"
+		"dazzatron",
+		"kratos2k7"
 	],
-	"version": "2.0.0",
+	"version": "2.0.0-rc.4",
 	"description": "A video editing library for creating and editing videos with Shotstack",
 	"type": "module",
 	"main": "dist/shotstack-studio.umd.js",
