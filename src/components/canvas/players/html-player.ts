@@ -1,11 +1,10 @@
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
-import { type HtmlAsset, HtmlAssetPosition } from "@schemas/html-asset";
-import type { Edit } from "core/edit";
+import { type ResolvedClip, type HtmlAsset, HtmlAssetPosition } from "@schemas";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 type HtmlDocumentFont = {
 	color?: string;
@@ -45,8 +44,8 @@ export class HtmlPlayer extends Player {
 	private background: pixi.Graphics | null;
 	private text: pixi.Text | null;
 
-	constructor(timeline: Edit, clipConfiguration: Clip) {
-		super(timeline, clipConfiguration);
+	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
+		super(timeline, clipConfiguration, PlayerType.Html);
 
 		this.background = null;
 		this.text = null;
@@ -134,10 +133,6 @@ export class HtmlPlayer extends Player {
 		super.update(deltaTime, elapsed);
 	}
 
-	public override draw(): void {
-		super.draw();
-	}
-
 	public override dispose(): void {
 		super.dispose();
 
@@ -163,7 +158,7 @@ export class HtmlPlayer extends Player {
 
 	private async parseDocument(): Promise<HtmlDocumentParseResult | null> {
 		const htmlAsset = this.clipConfiguration.asset as HtmlAsset;
-		const { html, css, position } = htmlAsset;
+		const { html, css = "", position } = htmlAsset;
 
 		if (!html.includes('data-html-type="text"')) {
 			console.warn("Unsupported html format.");

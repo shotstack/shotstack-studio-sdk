@@ -1,0 +1,159 @@
+/* Text-to-Image Toolbar */
+.ss-tti-toolbar {
+	display: none;
+	position: absolute;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(24, 24, 27, 0.95);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	padding: 6px 8px;
+	gap: 2px;
+	z-index: 10;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	align-items: center;
+	box-shadow:
+		0 4px 24px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(0, 0, 0, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ss-tti-toolbar.visible {
+	display: flex;
+}
+
+/* Reuse media toolbar button styles */
+.ss-tti-toolbar .ss-media-toolbar-btn,
+.ss-tti-toolbar .ss-media-toolbar-divider,
+.ss-tti-toolbar .ss-media-toolbar-dropdown,
+.ss-tti-toolbar .ss-media-toolbar-popup,
+.ss-tti-toolbar .ss-media-toolbar-popup.visible,
+.ss-tti-toolbar .ss-media-toolbar-popup::before,
+.ss-tti-toolbar .ss-media-toolbar-popup-item,
+.ss-tti-toolbar .ss-media-toolbar-popup-item:hover,
+.ss-tti-toolbar .ss-media-toolbar-popup-item.active,
+.ss-tti-toolbar .ss-media-toolbar-popup-item .checkmark,
+.ss-tti-toolbar .ss-media-toolbar-popup-item.active .checkmark,
+.ss-tti-toolbar .ss-media-toolbar-popup-item-label,
+.ss-tti-toolbar .ss-media-toolbar-popup-item-sublabel {
+	/* Inherited from media-toolbar.css via shared class names */
+}
+
+/* Prompt section */
+.ss-tti-prompt-section {
+	display: flex;
+	align-items: center;
+}
+
+/* Prompt button - shows truncated prompt text */
+.ss-tti-prompt-btn {
+	max-width: 180px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ss-tti-prompt-btn .ss-tti-prompt-text {
+	max-width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+/* Prompt popup */
+.ss-tti-prompt-popup {
+	min-width: 320px;
+	padding: 12px;
+}
+
+.ss-tti-prompt-popup .ss-media-toolbar-popup-header {
+	font-size: 11px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 8px;
+}
+
+.ss-tti-prompt-textarea {
+	width: 100%;
+	min-height: 80px;
+	max-height: 200px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	padding: 10px 12px;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 13px;
+	font-family: inherit;
+	line-height: 1.5;
+	outline: none;
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+.ss-tti-prompt-textarea:focus {
+	border-color: rgba(255, 255, 255, 0.25);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.ss-tti-prompt-textarea::placeholder {
+	color: rgba(255, 255, 255, 0.3);
+}
+
+.ss-tti-prompt-hint {
+	margin-top: 6px;
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.3);
+}
+
+/* Dimensions section */
+.ss-tti-dimensions-section {
+	display: flex;
+	align-items: center;
+}
+
+.ss-tti-dim-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	color: rgba(255, 255, 255, 0.4);
+	margin-right: 4px;
+	flex-shrink: 0;
+	cursor: default;
+}
+
+.ss-tti-dim-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.ss-tti-dim-separator {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.3);
+	margin: 0 2px;
+}
+
+.ss-tti-dim-btn {
+	min-width: 48px;
+	font-variant-numeric: tabular-nums;
+}
+
+.ss-tti-dim-description {
+	font-size: 11px;
+	font-weight: 400;
+	color: rgba(255, 255, 255, 0.35);
+	margin-bottom: 8px;
+}
+
+/* Visual controls section (same layout as media toolbar) */
+.ss-tti-visual-section {
+	display: flex;
+	align-items: center;
+}

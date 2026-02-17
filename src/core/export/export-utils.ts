@@ -41,7 +41,7 @@ export class ExportError extends Error {
 	constructor(
 		message: string,
 		public readonly phase: string = "unknown",
-		public readonly context: Record<string, any> = {},
+		public readonly context: Record<string, unknown> = {},
 		cause?: Error
 	) {
 		super(message);

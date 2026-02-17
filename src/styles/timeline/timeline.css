@@ -1,0 +1,1056 @@
+/* Main container */
+.ss-html-timeline {
+	--ss-timeline-pixels-per-second: 50;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	background: #ffffff;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	font-size: 12px;
+	color: #1f2937;
+	overflow: hidden;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* Toolbar */
+.ss-timeline-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 64px;
+	padding: 12px;
+	background: #ffffff;
+	border-bottom: 1px solid #e5e7eb;
+	flex-shrink: 0;
+	position: relative;
+}
+
+.ss-toolbar-section {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Left section - positioned absolute to not affect center */
+.ss-toolbar-section:first-child {
+	position: absolute;
+	left: 12px;
+}
+
+/* Right section - positioned absolute to not affect center */
+.ss-toolbar-section:last-child {
+	position: absolute;
+	right: 12px;
+}
+
+/* Playback controls group - centered */
+.ss-playback-controls {
+	gap: 8px;
+}
+
+/* Large circular play button */
+.ss-toolbar-btn.ss-play-btn {
+	width: 40px;
+	height: 40px;
+	background: #374151;
+	border-radius: 50%;
+	color: #ffffff;
+}
+
+.ss-toolbar-btn.ss-play-btn:hover {
+	background: #4b5563;
+	color: #ffffff;
+}
+
+.ss-toolbar-btn.ss-play-btn svg {
+	width: 20px;
+	height: 20px;
+}
+
+.ss-toolbar-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	color: #6b7280;
+	cursor: pointer;
+	transition:
+		background 0.1s ease,
+		color 0.1s ease;
+}
+
+.ss-toolbar-btn:hover {
+	background: #e5e7eb;
+	color: #1f2937;
+}
+
+.ss-toolbar-btn:active,
+.ss-toolbar-btn.active {
+	background: #d1d5db;
+}
+
+.ss-toolbar-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+.ss-time-display {
+	font-variant-numeric: tabular-nums;
+	font-size: 11px;
+	color: #6b7280;
+	min-width: 120px;
+	text-align: center;
+}
+
+.ss-zoom-slider {
+	width: 80px;
+	height: 4px;
+	-webkit-appearance: none;
+	appearance: none;
+	background: #e5e7eb;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+.ss-zoom-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 12px;
+	height: 12px;
+	background: #3b82f6;
+	border-radius: 50%;
+	cursor: grab;
+}
+
+/* Ruler + Tracks Wrapper (for playhead to span both) */
+.ss-ruler-tracks-wrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	overflow: hidden;
+}
+
+/* Ruler */
+.ss-timeline-ruler {
+	position: relative;
+	height: 32px;
+	background: #ffffff;
+	border-bottom: 1px solid #e5e7eb;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.ss-ruler-content {
+	position: relative;
+	height: 100%;
+}
+
+.ss-ruler-marker {
+	position: absolute;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	transform: translateX(-50%);
+}
+
+.ss-ruler-marker-line {
+	width: 1px;
+	height: 8px;
+	background: #d1d5db;
+}
+
+.ss-ruler-marker-label {
+	font-size: 10px;
+	color: #6b7280;
+	white-space: nowrap;
+	margin-bottom: 2px;
+}
+
+.ss-ruler-marker.minor .ss-ruler-marker-line {
+	height: 4px;
+}
+
+.ss-ruler-marker.minor .ss-ruler-marker-label {
+	display: none;
+}
+
+/* Tracks container */
+.ss-timeline-tracks {
+	position: relative;
+	flex: 1;
+	overflow: auto;
+	outline: none;
+	background: #ffffff;
+}
+
+.ss-tracks-content {
+	position: relative;
+	min-height: 100%;
+}
+
+/* Track - height set dynamically via inline style */
+.ss-track {
+	position: relative;
+	border-bottom: 1px solid #f3f4f6;
+	transition: background 0.15s ease;
+	background: #ffffff;
+}
+
+/* Track backgrounds by asset type - subtle tints on white */
+.ss-track[data-asset-type="video"] {
+	background: rgba(232, 222, 248, 0.3);
+}
+.ss-track[data-asset-type="image"] {
+	background: rgba(209, 232, 255, 0.3);
+}
+.ss-track[data-asset-type="audio"] {
+	background: rgba(184, 230, 212, 0.3);
+}
+.ss-track[data-asset-type="text"],
+.ss-track[data-asset-type="rich-text"] {
+	background: rgba(255, 228, 201, 0.3);
+}
+.ss-track[data-asset-type="shape"] {
+	background: rgba(255, 243, 184, 0.3);
+}
+.ss-track[data-asset-type="caption"] {
+	background: rgba(252, 228, 236, 0.3);
+}
+.ss-track[data-asset-type="svg"] {
+	background: rgba(251, 233, 231, 0.3);
+}
+.ss-track[data-asset-type="html"] {
+	background: rgba(179, 229, 252, 0.3);
+}
+.ss-track[data-asset-type="luma"] {
+	background: rgba(207, 216, 220, 0.3);
+}
+.ss-track[data-asset-type="text-to-image"] {
+	background: rgba(232, 234, 246, 0.3);
+}
+.ss-track[data-asset-type="image-to-video"] {
+	background: rgba(237, 231, 246, 0.3);
+}
+.ss-track[data-asset-type="text-to-speech"] {
+	background: rgba(243, 229, 245, 0.3);
+}
+.ss-track[data-asset-type="empty"] {
+	background: #f9fafb;
+}
+
+.ss-track.drop-target {
+	background: rgba(59, 130, 246, 0.15);
+}
+
+/* Clip - height adjusts to track via top/bottom */
+.ss-clip {
+	position: absolute;
+	top: 4px;
+	bottom: 4px;
+	left: calc(var(--clip-start, 0) * var(--ss-timeline-pixels-per-second) * 1px);
+	width: calc(var(--clip-length, 1) * var(--ss-timeline-pixels-per-second) * 1px);
+	min-width: 20px;
+	background: var(--clip-bg, #71717a);
+	border-left: 3px solid var(--clip-border, #555);
+	border-radius: 4px;
+	cursor: grab;
+	overflow: hidden;
+	transition:
+		box-shadow 0.15s ease,
+		transform 0.1s ease;
+}
+
+.ss-clip:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.ss-clip.selected {
+	/* Solid selection ring - professional, non-distracting */
+	outline: 2px solid var(--clip-border, #3b82f6);
+	outline-offset: 0px;
+
+	/* Subtle lift with soft glow */
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+		0 2px 8px rgba(0, 0, 0, 0.2),
+		0 0 0 3px color-mix(in srgb, var(--clip-border, #3b82f6) 25%, transparent);
+}
+
+.ss-clip.dragging {
+	opacity: 0.6;
+	cursor: grabbing;
+	transform: scale(1.02);
+}
+
+.ss-clip.resizing {
+	cursor: ew-resize;
+}
+
+/* Clip colors - light pastel backgrounds with dark text */
+.ss-clip[data-asset-type="video"] {
+	--clip-bg: #e8def8;
+	--clip-fg: #4a148c;
+	--clip-border: #7c4dff;
+}
+.ss-clip[data-asset-type="image"] {
+	--clip-bg: #d1e8ff;
+	--clip-fg: #0d47a1;
+	--clip-border: #2196f3;
+}
+.ss-clip[data-asset-type="audio"] {
+	--clip-bg: #b8e6d4;
+	--clip-fg: #004d40;
+	--clip-border: #00897b;
+}
+.ss-clip[data-asset-type="text"],
+.ss-clip[data-asset-type="rich-text"] {
+	--clip-bg: #ffe4c9;
+	--clip-fg: #bf360c;
+	--clip-border: #e65100;
+}
+.ss-clip[data-asset-type="shape"] {
+	--clip-bg: #fff3b8;
+	--clip-fg: #f57f17;
+	--clip-border: #f9a825;
+}
+.ss-clip[data-asset-type="caption"] {
+	--clip-bg: #fce4ec;
+	--clip-fg: #880e4f;
+	--clip-border: #c2185b;
+}
+.ss-clip[data-asset-type="svg"] {
+	--clip-bg: #fbe9e7;
+	--clip-fg: #bf360c;
+	--clip-border: #e64a19;
+}
+.ss-clip[data-asset-type="html"] {
+	--clip-bg: #b3e5fc;
+	--clip-fg: #006064;
+	--clip-border: #0097a7;
+}
+.ss-clip[data-asset-type="luma"] {
+	--clip-bg: #cfd8dc;
+	--clip-fg: #37474f;
+	--clip-border: #546e7a;
+}
+/* AI asset types - violet spectrum */
+.ss-clip[data-asset-type="text-to-image"] {
+	--clip-bg: #e8eaf6;
+	--clip-fg: #1a237e;
+	--clip-border: #5c6bc0;
+}
+.ss-clip[data-asset-type="image-to-video"] {
+	--clip-bg: #ede7f6;
+	--clip-fg: #311b92;
+	--clip-border: #7e57c2;
+}
+.ss-clip[data-asset-type="text-to-speech"] {
+	--clip-bg: #f3e5f5;
+	--clip-fg: #4a148c;
+	--clip-border: #ab47bc;
+}
+
+/* Video thumbnail strips */
+.ss-clip.ss-clip--thumbnails {
+	background-color: #0d0d0d;
+}
+
+/* Cinematic vignette overlay for polished film-strip aesthetic */
+.ss-clip.ss-clip--thumbnails::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, rgba(0, 0, 0, 0.4) 0%, transparent 8%, transparent 92%, rgba(0, 0, 0, 0.4) 100%);
+	pointer-events: none;
+	z-index: 1;
+	border-radius: inherit;
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-content {
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.15) 20%, rgba(0, 0, 0, 0.15) 80%, rgba(0, 0, 0, 0.6) 100%);
+	z-index: 1;
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-icon,
+.ss-clip.ss-clip--thumbnails .ss-clip-label {
+	color: #ffffff;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-badge {
+	background: rgba(0, 0, 0, 0.5);
+	color: #ffffff;
+}
+
+/* Loading state for thumbnails */
+.ss-clip.ss-clip--loading-thumbnails {
+	background: linear-gradient(90deg, var(--clip-bg) 0%, color-mix(in srgb, var(--clip-bg) 70%, white) 50%, var(--clip-bg) 100%);
+	background-size: 200% 100%;
+	animation: ss-thumbnail-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes ss-thumbnail-loading {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+/* Clip content */
+.ss-clip-content {
+	display: flex;
+	align-items: center;
+	padding: 0 8px;
+	height: 100%;
+	gap: 6px;
+}
+
+/* Clip icon */
+.ss-clip-icon {
+	font-size: 12px;
+	color: var(--clip-fg, #333);
+	opacity: 0.7;
+	flex-shrink: 0;
+	font-weight: 600;
+}
+
+.ss-clip-icon svg {
+	width: 12px;
+	height: 12px;
+	fill: currentColor;
+	vertical-align: middle;
+}
+
+/* Clip label - dark text on light background */
+.ss-clip-label {
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--clip-fg, #333);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Timing badge */
+.ss-clip-badge {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 16px;
+	height: 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.15);
+	border-radius: 3px;
+	font-size: 10px;
+	color: var(--clip-fg, #333);
+	opacity: 0.6;
+	transition: opacity 0.1s ease;
+}
+
+.ss-clip:hover .ss-clip-badge {
+	opacity: 1;
+}
+
+.ss-clip-badge[data-intent="fixed"] {
+	display: none;
+}
+
+/* Mask badge (for clips with attached luma) */
+.ss-clip-mask-badge {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	width: 18px;
+	height: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.4);
+	border-radius: 3px;
+	font-size: 11px;
+	color: #fff;
+	cursor: pointer;
+	z-index: 2;
+	transition: background 0.1s ease;
+}
+
+.ss-clip-mask-badge:hover {
+	background: rgba(0, 0, 0, 0.6);
+}
+
+/* Resize handle */
+.ss-clip-resize-handle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 12px;
+	cursor: ew-resize;
+	z-index: 2;
+}
+
+.ss-clip-resize-handle.left {
+	left: 0;
+	border-radius: 4px 0 0 4px;
+}
+
+.ss-clip-resize-handle.right {
+	right: 0;
+	border-radius: 0 4px 4px 0;
+}
+
+.ss-clip-resize-handle:hover {
+	background: rgba(0, 0, 0, 0.08);
+}
+
+/* Visible resize handles when selected */
+.ss-clip.selected .ss-clip-resize-handle {
+	background: rgba(0, 0, 0, 0.06);
+}
+
+.ss-clip.selected .ss-clip-resize-handle:hover {
+	background: rgba(0, 0, 0, 0.12);
+}
+
+/* Playhead */
+.ss-playhead {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: calc(var(--playhead-time, 0) * var(--ss-timeline-pixels-per-second) * 1px);
+	width: 2px;
+	pointer-events: none;
+	z-index: 4;
+}
+
+.ss-playhead-line {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: 2px;
+	background: #3b82f6;
+}
+
+.ss-playhead-handle {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 12px;
+	height: 12px;
+	background: #3b82f6;
+	border-radius: 2px 2px 50% 50%;
+	cursor: grab;
+	pointer-events: auto;
+}
+
+.ss-playhead-handle:hover {
+	transform: translateX(-50%) scale(1.15);
+}
+
+.ss-playhead-handle:active {
+	cursor: grabbing;
+}
+
+/* Playhead ghost (hover preview) */
+.ss-playhead-ghost {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: rgba(59, 130, 246, 0.4);
+	pointer-events: none;
+	z-index: 3;
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.ss-ruler-tracks-wrapper:hover .ss-playhead-ghost {
+	opacity: 1;
+}
+
+/* Feedback layer */
+.ss-feedback-layer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+	z-index: 5;
+}
+
+/* Snap line */
+.ss-snap-line {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	background: #22c55e;
+	box-shadow: 0 0 4px #22c55e;
+}
+
+/* Drop zone indicator */
+.ss-drop-zone {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: #3b82f6;
+	box-shadow: 0 0 8px #3b82f6;
+	animation: ss-pulse 0.8s ease-in-out infinite;
+	z-index: 2;
+}
+
+@keyframes ss-pulse {
+	0%,
+	100% {
+		opacity: 0.6;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+/* Drag ghost - drop target preview */
+.ss-drag-ghost {
+	position: absolute;
+	pointer-events: none;
+	opacity: 0.4;
+	background: transparent !important;
+	border: 2px dashed var(--clip-border, #6b7280);
+	border-left-width: 2px;
+	box-shadow: none;
+	z-index: 7;
+}
+
+/* Drag time tooltip */
+.ss-drag-time-tooltip {
+	position: absolute;
+	background: #1a1a2e;
+	color: #fff;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+	font-family: monospace;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 8;
+	transform: translateX(-50%);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Selection box */
+.ss-selection-box {
+	position: absolute;
+	border: 1px solid #3b82f6;
+	background: rgba(59, 130, 246, 0.15);
+	pointer-events: none;
+	z-index: 6;
+}
+
+/* Empty state */
+.ss-timeline-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	color: #9ca3af;
+	font-size: 13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ERROR STATE - Clean Industrial
+   Single badge indicator. Muted content. Subtle atmosphere.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Error badge - compact, high-contrast indicator */
+.ss-clip-error-badge {
+	position: absolute;
+	top: 50%;
+	left: 6px;
+	transform: translateY(-50%);
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #dc2626;
+	border-radius: 4px;
+	font-size: 12px;
+	color: #fff;
+	z-index: 10;
+	cursor: help;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Error state base */
+.ss-clip.ss-clip--error {
+	--clip-bg: #fef2f2;
+	--clip-fg: #991b1b;
+	--clip-border: #fca5a5;
+	border-color: var(--clip-border) !important;
+	border-left-width: 3px;
+	border-left-color: #dc2626 !important;
+}
+
+/* Diagonal hazard stripes */
+.ss-clip.ss-clip--error::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(220, 38, 38, 0.06) 8px, rgba(220, 38, 38, 0.06) 16px);
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Content visible but muted - user sees which clip failed */
+.ss-clip.ss-clip--error .ss-clip-content {
+	opacity: 0.6;
+	padding-left: 28px;
+}
+
+/* Mute the icon */
+.ss-clip.ss-clip--error .ss-clip-icon {
+	color: var(--clip-fg);
+	opacity: 0.5;
+}
+
+/* Style the label */
+.ss-clip.ss-clip--error .ss-clip-label {
+	color: var(--clip-fg);
+}
+
+/* Hide thumbnails on error */
+.ss-clip.ss-clip--error.ss-clip--thumbnails {
+	background-image: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMA MASK ATTACHMENT UX - Precision Luminescence
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CSS Variables - Luma Attachment Theme
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+	/* Core attachment colors */
+	--luma-accent: #00d4aa;
+	--luma-accent-dim: rgba(0, 212, 170, 0.15);
+	--luma-accent-glow: rgba(0, 212, 170, 0.4);
+
+	/* Badge colors */
+	--luma-badge-bg: linear-gradient(135deg, rgba(0, 212, 170, 0.9) 0%, rgba(0, 180, 150, 0.95) 100%);
+	--luma-badge-shadow: 0 2px 8px rgba(0, 212, 170, 0.3), 0 0 1px rgba(0, 0, 0, 0.5);
+
+	/* Animation timing */
+	--luma-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--luma-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. VALID DROP TARGET - Hover State
+   When luma clip hovers over a content clip
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-target {
+	/* Solid border + soft outer glow */
+	box-shadow:
+		0 0 0 3px var(--luma-accent),
+		0 0 12px var(--luma-accent-glow);
+
+	/* Subtle breathing animation */
+	animation: luma-target-breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes luma-target-breathe {
+	0%,
+	100% {
+		box-shadow:
+			0 0 0 3px var(--luma-accent),
+			0 0 12px var(--luma-accent-glow);
+	}
+	50% {
+		box-shadow:
+			0 0 0 3px var(--luma-accent),
+			0 0 20px var(--luma-accent-glow);
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1b. DRAGGING LUMA CLIP - Shows mask icon when dwell timer ready
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-has-target::after {
+	content: "◐";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+
+	/* Compact pill shape */
+	padding: 4px 10px;
+	background: rgba(0, 212, 170, 0.9);
+	border-radius: 12px;
+
+	/* Typography */
+	font-size: 14px;
+	color: #0a1a15;
+	font-weight: 600;
+
+	/* Subtle shadow for depth */
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+	pointer-events: none;
+	z-index: 10;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. ATTACHMENT ANIMATION - Drop Effect
+   Triggered when luma is dropped onto target
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-attaching {
+	animation: luma-attach-snap 0.4s var(--luma-ease-snap) forwards;
+}
+
+@keyframes luma-attach-snap {
+	0% {
+		transform: scale(1.02);
+		box-shadow:
+			0 0 0 2px var(--luma-accent),
+			0 0 30px var(--luma-accent-glow);
+	}
+	40% {
+		transform: scale(0.98);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: none;
+	}
+}
+
+/* Successful attachment animation (after drop) */
+.ss-clip.ss-clip-luma-attached {
+	animation: luma-attached-success 0.6s var(--luma-ease-snap) forwards;
+}
+
+@keyframes luma-attached-success {
+	0% {
+		box-shadow:
+			0 0 0 3px var(--luma-accent),
+			0 0 40px var(--luma-accent-glow);
+	}
+	30% {
+		transform: scale(1.02);
+	}
+	60% {
+		transform: scale(0.99);
+		box-shadow:
+			0 0 0 1px var(--luma-accent),
+			0 0 15px var(--luma-accent-glow);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: none;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. MASK BADGE - Premium Attached Indicator
+   Shows on clips with luma masks attached
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip-mask-badge {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+
+	/* Size and shape */
+	width: 20px;
+	height: 20px;
+	border-radius: 5px;
+
+	/* Visual styling */
+	background: var(--luma-badge-bg);
+	box-shadow: var(--luma-badge-shadow);
+
+	/* Icon */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 11px;
+	font-weight: 600;
+	color: #0a1a15;
+	font-family:
+		system-ui,
+		-apple-system,
+		sans-serif;
+
+	/* Interaction */
+	cursor: pointer;
+	transition:
+		transform 0.15s var(--luma-ease-out),
+		box-shadow 0.15s var(--luma-ease-out),
+		background 0.15s ease;
+
+	/* Subtle inner highlight */
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	z-index: 2;
+}
+
+.ss-clip-mask-badge:hover {
+	transform: scale(1.1);
+	box-shadow:
+		var(--luma-badge-shadow),
+		0 0 12px var(--luma-accent-glow);
+}
+
+.ss-clip-mask-badge:active {
+	transform: scale(0.95);
+	background: linear-gradient(135deg, rgba(0, 180, 150, 1) 0%, rgba(0, 160, 130, 1) 100%);
+}
+
+/* Badge entrance animation */
+.ss-clip-mask-badge.ss-badge-entering {
+	animation: badge-enter 0.35s var(--luma-ease-snap) forwards;
+}
+
+@keyframes badge-enter {
+	0% {
+		opacity: 0;
+		transform: scale(0) rotate(-90deg);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) rotate(0deg);
+	}
+}
+
+/* Subtle idle breathing for visibility */
+.ss-clip-mask-badge::after {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: 7px;
+	border: 1px solid var(--luma-accent-dim);
+	opacity: 0;
+	animation: badge-breathe 3s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes badge-breathe {
+	0%,
+	100% {
+		opacity: 0;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. LUMA CLIP GHOST - During Drag
+   The dragged luma clip styling
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip.ss-clip-luma-dragging {
+	opacity: 0.85;
+	box-shadow:
+		0 0 0 1px var(--luma-accent),
+		0 8px 32px rgba(0, 0, 0, 0.4),
+		0 0 24px var(--luma-accent-dim);
+
+	/* Subtle magnetic wobble during drag */
+	animation: luma-drag-float 0.8s ease-in-out infinite;
+}
+
+@keyframes luma-drag-float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-2px);
+	}
+}
+
+/* Snap-to-target transition */
+.ss-clip.ss-clip-luma-snapping {
+	transition:
+		transform 0.2s var(--luma-ease-magnetic),
+		left 0.2s var(--luma-ease-magnetic),
+		top 0.2s var(--luma-ease-magnetic);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. CONNECTION LINE - Magnetic Link Visual
+   Optional: Line connecting luma to target during hover
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-luma-connection-line {
+	position: absolute;
+	pointer-events: none;
+	z-index: 2;
+
+	/* Line styling */
+	height: 2px;
+	background: linear-gradient(90deg, var(--luma-accent) 0%, var(--luma-accent-glow) 50%, var(--luma-accent) 100%);
+	border-radius: 1px;
+
+	/* Glow effect */
+	box-shadow: 0 0 8px var(--luma-accent-glow);
+
+	/* Animated dash pattern */
+	background-size: 200% 100%;
+	animation: luma-line-flow 1s linear infinite;
+
+	/* Smooth entry */
+	opacity: 0;
+	transform-origin: left center;
+	transition: opacity 0.2s ease;
+}
+
+.ss-luma-connection-line.active {
+	opacity: 1;
+}
+
+@keyframes luma-line-flow {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: 0% 0;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. DETACH STATE - Remove Mask Hover
+   When hovering badge with intent to remove
+   ─────────────────────────────────────────────────────────────────────────── */
+.ss-clip-mask-badge.ss-badge-removing {
+	background: linear-gradient(135deg, rgba(255, 90, 90, 0.9) 0%, rgba(200, 60, 60, 0.95) 100%);
+	animation: badge-shake 0.4s ease;
+}
+
+@keyframes badge-shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20%,
+	60% {
+		transform: translateX(-2px);
+	}
+	40%,
+	80% {
+		transform: translateX(2px);
+	}
+}

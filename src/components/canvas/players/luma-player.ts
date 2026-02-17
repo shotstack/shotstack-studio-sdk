@@ -1,10 +1,9 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
-import { type LumaAsset } from "@schemas/luma-asset";
+import { type ResolvedClip, type LumaAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 type LumaSource = pixi.ImageSource | pixi.VideoSource;
 
@@ -13,8 +12,8 @@ export class LumaPlayer extends Player {
 	private sprite: pixi.Sprite | null;
 	private isPlaying: boolean;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
-		super(edit, clipConfiguration);
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		super(edit, clipConfiguration, PlayerType.Luma);
 
 		this.texture = null;
 		this.sprite = null;
@@ -32,7 +31,18 @@ export class LumaPlayer extends Player {
 
 		const isValidLumaSource = texture?.source instanceof pixi.ImageSource || texture?.source instanceof pixi.VideoSource;
 		if (!isValidLumaSource) {
+			// Clean up ref if texture loaded but has invalid source type
+			// (if texture was null, AssetLoader already decremented on failure)
+			if (texture) {
+				this.edit.assetLoader.decrementRef(identifier);
+			}
 			throw new Error(`Invalid luma source '${lumaAsset.src}'.`);
+		}
+
+		// Fix alpha channel rendering for WebM VP9 videos
+		// PixiJS 8's auto-detection is buggy, causing invisible rendering
+		if (texture.source instanceof pixi.VideoSource) {
+			texture.source.alphaMode = "no-premultiply-alpha";
 		}
 
 		this.texture = texture;
@@ -59,7 +69,7 @@ export class LumaPlayer extends Player {
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-				this.texture.source.resource.currentTime = playbackTime / 1000;
+				this.texture.source.resource.currentTime = playbackTime;
 				this.texture.source.resource.play().catch(console.error);
 			}
 
@@ -67,11 +77,11 @@ export class LumaPlayer extends Player {
 				this.texture.source.resource.volume = this.getVolume();
 			}
 
-			const desyncThreshold = 100;
-			const shouldSync = Math.abs(this.texture.source.resource.currentTime * 1000 - playbackTime) > desyncThreshold;
+			const desyncThreshold = 0.1;
+			const shouldSync = Math.abs(this.texture.source.resource.currentTime - playbackTime) > desyncThreshold;
 
 			if (shouldSync) {
-				this.texture.source.resource.currentTime = playbackTime / 1000;
+				this.texture.source.resource.currentTime = playbackTime;
 			}
 		}
 
@@ -81,12 +91,8 @@ export class LumaPlayer extends Player {
 		}
 
 		if (!this.edit.isPlaying && this.isActive()) {
-			this.texture.source.resource.currentTime = playbackTime / 1000;
+			this.texture.source.resource.currentTime = playbackTime;
 		}
-	}
-
-	public override draw(): void {
-		super.draw();
 	}
 
 	public override dispose(): void {
@@ -95,11 +101,18 @@ export class LumaPlayer extends Player {
 		this.sprite?.destroy();
 		this.sprite = null;
 
-		this.texture?.destroy();
+		// DON'T destroy the texture - it's managed by Assets
+		// The unloadClipAssets() method in Edit already calls Assets.unload()
 		this.texture = null;
 	}
 
 	public override getSize(): Size {
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			return {
+				width: this.clipConfiguration.width,
+				height: this.clipConfiguration.height
+			};
+		}
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 
@@ -107,7 +120,18 @@ export class LumaPlayer extends Player {
 		return 0;
 	}
 
-	public getMask(): pixi.Sprite | null {
+	public getSprite(): pixi.Sprite | null {
 		return this.sprite;
+	}
+
+	public isVideoSource(): boolean {
+		return this.texture?.source instanceof pixi.VideoSource;
+	}
+
+	public getVideoCurrentTime(): number {
+		if (this.texture?.source instanceof pixi.VideoSource) {
+			return this.texture.source.resource.currentTime;
+		}
+		return -1;
 	}
 }

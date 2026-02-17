@@ -134,7 +134,7 @@ export class TextInputHandler {
 			position: "absolute",
 			opacity: "0.01",
 			pointerEvents: "none",
-			zIndex: "999",
+			zIndex: "18",
 			left: "0px",
 			top: "0px",
 			width: "1px",

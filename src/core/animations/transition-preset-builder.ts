@@ -1,5 +1,4 @@
-import { type ResolvedClipConfig } from "../schemas/clip";
-import { type Keyframe } from "../schemas/keyframe";
+import { type ResolvedClip, type Keyframe } from "@schemas";
 
 export type TransitionKeyframeSet = {
 	offsetXKeyframes: Keyframe[];
@@ -7,297 +6,154 @@ export type TransitionKeyframeSet = {
 	opacityKeyframes: Keyframe[];
 	scaleKeyframes: Keyframe[];
 	rotationKeyframes: Keyframe[];
+	maskXKeyframes: Keyframe[];
 };
 
+export type RelativeTransitionKeyframeSet = {
+	in: TransitionKeyframeSet;
+	out: TransitionKeyframeSet;
+};
+
+type ParsedTransition = { name: string; speed: string | undefined };
+
 export class TransitionPresetBuilder {
-	private clipConfiguration: ResolvedClipConfig;
+	private readonly clipConfiguration: ResolvedClip;
+	private readonly inPreset: ParsedTransition;
+	private readonly outPreset: ParsedTransition;
 
-	constructor(clipConfiguration: ResolvedClipConfig) {
+	constructor(clipConfiguration: ResolvedClip) {
 		this.clipConfiguration = clipConfiguration;
+
+		this.inPreset = this.parseTransition(clipConfiguration.transition?.in);
+		this.outPreset = this.parseTransition(clipConfiguration.transition?.out);
 	}
 
-	public build(): TransitionKeyframeSet {
-		const offsetXKeyframes: Keyframe[] = [];
-		const offsetYKeyframes: Keyframe[] = [];
-		const opacityKeyframes: Keyframe[] = [];
-		const scaleKeyframes: Keyframe[] = [];
-		const rotationKeyframes: Keyframe[] = [];
-
-		const inPresetKeyframeSet = this.buildInPreset();
-		offsetXKeyframes.push(...inPresetKeyframeSet.offsetXKeyframes);
-		offsetYKeyframes.push(...inPresetKeyframeSet.offsetYKeyframes);
-		opacityKeyframes.push(...inPresetKeyframeSet.opacityKeyframes);
-		scaleKeyframes.push(...inPresetKeyframeSet.scaleKeyframes);
-		rotationKeyframes.push(...inPresetKeyframeSet.rotationKeyframes);
-
-		const outPresetKeyframeSet = this.buildOutPreset();
-
-		offsetXKeyframes.push(...outPresetKeyframeSet.offsetXKeyframes);
-		offsetYKeyframes.push(...outPresetKeyframeSet.offsetYKeyframes);
-		opacityKeyframes.push(...outPresetKeyframeSet.opacityKeyframes);
-		scaleKeyframes.push(...outPresetKeyframeSet.scaleKeyframes);
-		rotationKeyframes.push(...outPresetKeyframeSet.rotationKeyframes);
-
-		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+	private parseTransition(value: string | undefined): ParsedTransition {
+		const [name, speed] = (value ?? "").split(/(Slow|Fast|VeryFast)/);
+		return { name, speed };
 	}
 
-	private buildInPreset(): TransitionKeyframeSet {
-		const offsetXKeyframes: Keyframe[] = [];
-		const offsetYKeyframes: Keyframe[] = [];
-		const opacityKeyframes: Keyframe[] = [];
-		const scaleKeyframes: Keyframe[] = [];
-		const rotationKeyframes: Keyframe[] = [];
+	public buildRelative(): RelativeTransitionKeyframeSet {
+		return {
+			in: this.buildTransitionKeyframes("in"),
+			out: this.buildTransitionKeyframes("out")
+		};
+	}
 
-		if (!this.clipConfiguration.transition?.in) {
-			return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
-		}
+	private createEmptyKeyframeSet(): TransitionKeyframeSet {
+		return {
+			offsetXKeyframes: [],
+			offsetYKeyframes: [],
+			opacityKeyframes: [],
+			scaleKeyframes: [],
+			rotationKeyframes: [],
+			maskXKeyframes: []
+		};
+	}
 
-		const start = 0;
-		const length = this.getInPresetLength();
-		const transitionName = this.getInPresetName();
+	private buildTransitionKeyframes(direction: "in" | "out"): TransitionKeyframeSet {
+		const keyframes = this.createEmptyKeyframeSet();
+		const transitionValue = direction === "in" ? this.clipConfiguration.transition?.in : this.clipConfiguration.transition?.out;
+
+		if (!transitionValue) return keyframes;
+
+		const length = this.getPresetLength(direction);
+		const start = direction === "in" ? 0 : this.clipConfiguration.length - length;
+		const transitionName = this.getPresetName(direction);
+		const isIn = direction === "in";
 
 		switch (transitionName) {
 			case "fade": {
-				const initialOpacity = 0;
-				const targetOpacity = Math.max(0, Math.min((this.clipConfiguration.opacity as number) ?? 1, 1));
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "linear" });
-
+				const [from, to] = isIn ? [0, 1] : [1, 0];
+				keyframes.opacityKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "zoom": {
-				const zoomScaleDistance = 9;
-				const rawScale = this.clipConfiguration.scale;
-				const scale = typeof rawScale === "number" ? rawScale : 1;
-
-				const initialScale = scale + zoomScaleDistance;
-				const targetScale = scale;
-				scaleKeyframes.push({ from: initialScale, to: targetScale, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				const initialOpacity = 0;
-				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
-
+				const [scaleFrom, scaleTo] = isIn ? [10, 1] : [1, 10];
+				const [opacityFrom, opacityTo] = isIn ? [0, 1] : [1, 0];
+				const easing = isIn ? "easeIn" : "easeOut";
+				keyframes.scaleKeyframes.push({ from: scaleFrom, to: scaleTo, start, length, interpolation: "bezier", easing });
+				keyframes.opacityKeyframes.push({ from: opacityFrom, to: opacityTo, start, length, interpolation: "bezier", easing });
 				break;
 			}
-			case "slideLeft": {
-				const rawOffsetX = this.clipConfiguration.offset?.x;
-				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
-				const initialOffsetX = offsetX + 0.025;
-				const targetOffsetX = offsetX;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				const initialOpacity = 0;
-				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				break;
-			}
-			case "slideRight": {
-				const rawOffsetX = this.clipConfiguration.offset?.x;
-				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
-				const initialOffsetX = offsetX - 0.025;
-				const targetOffsetX = offsetX;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				const initialOpacity = 0;
-				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				break;
-			}
-			case "slideUp": {
-				const rawOffsetY = this.clipConfiguration.offset?.y;
-				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
-				const initialOffsetY = offsetY + 0.025;
-				const targetOffsetY = offsetY;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				const initialOpacity = 0;
-				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				break;
-			}
+			case "slideLeft":
+			case "slideRight":
+			case "slideUp":
 			case "slideDown": {
-				const rawOffsetY = this.clipConfiguration.offset?.y;
-				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
-				const initialOffsetY = offsetY - 0.025;
-				const targetOffsetY = offsetY;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeOut" });
+				const isHorizontal = transitionName === "slideLeft" || transitionName === "slideRight";
+				const isNegative = transitionName === "slideLeft" || transitionName === "slideUp";
+				const offset = 0.025;
 
-				const initialOpacity = 0;
-				const targetOpacity = 1;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
+				const [offsetFrom, offsetTo] = isIn ? [isNegative ? offset : -offset, 0] : [0, isNegative ? -offset : offset];
+				const interpolation = isIn ? "linear" : "bezier";
+				const [opacityFrom, opacityTo] = isIn ? [0, 1] : [1, 0];
 
+				const targetKeyframes = isHorizontal ? keyframes.offsetXKeyframes : keyframes.offsetYKeyframes;
+				targetKeyframes.push(
+					isIn
+						? { from: offsetFrom, to: offsetTo, start, length, interpolation }
+						: { from: offsetFrom, to: offsetTo, start, length, interpolation, easing: "ease" }
+				);
+				keyframes.opacityKeyframes.push({ from: opacityFrom, to: opacityTo, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
 			case "carouselLeft":
 			case "carouselRight":
 			case "carouselUp":
-			case "carouselDown":
-			case "shuffleTopRight":
-			case "shuffleRightTop":
-			case "shuffleRightBottom":
-			case "shuffleBottomRight":
-			case "shuffleBottomLeft":
-			case "shuffleLeftBottom":
-			case "shuffleLeftTop":
-			case "shuffleTopLeft":
+			case "carouselDown": {
+				const isHorizontal = transitionName === "carouselLeft" || transitionName === "carouselRight";
+				const isNegative = transitionName === "carouselLeft" || transitionName === "carouselUp";
+
+				// Carousel uses different offsets for in vs out, and different interpolation
+				const baseOffset = (isHorizontal && 1) || (isIn ? 1.05 : 1.1);
+				const [offsetFrom, offsetTo] = isIn ? [isNegative ? baseOffset : -baseOffset, 0] : [0, isNegative ? -baseOffset : baseOffset];
+
+				const targetKeyframes = isHorizontal ? keyframes.offsetXKeyframes : keyframes.offsetYKeyframes;
+				targetKeyframes.push(
+					isIn
+						? { from: offsetFrom, to: offsetTo, start, length, interpolation: "linear" }
+						: { from: offsetFrom, to: offsetTo, start, length, interpolation: "bezier", easing: "ease" }
+				);
+				break;
+			}
+			case "reveal":
+			case "wipeRight": {
+				const [from, to] = isIn ? [0, 1] : [1, 0];
+				keyframes.maskXKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "ease" });
+				break;
+			}
+			case "wipeLeft": {
+				const [from, to] = isIn ? [1, 0] : [0, 1];
+				keyframes.maskXKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "ease" });
+				break;
+			}
 			default:
-				console.warn(`Unimplemented transition:in preset "${this.clipConfiguration.transition.in}"`);
 				break;
 		}
 
-		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+		return keyframes;
 	}
 
-	private buildOutPreset(): TransitionKeyframeSet {
-		const offsetXKeyframes: Keyframe[] = [];
-		const offsetYKeyframes: Keyframe[] = [];
-		const opacityKeyframes: Keyframe[] = [];
-		const scaleKeyframes: Keyframe[] = [];
-		const rotationKeyframes: Keyframe[] = [];
-
-		if (!this.clipConfiguration.transition?.out) {
-			return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
-		}
-
-		const length = this.getOutPresetLength();
-		const start = this.clipConfiguration.length - length;
-		const transitionName = this.getOutPresetName();
-
-		switch (transitionName) {
-			case "fade": {
-				const initialOpacity = Math.max(0, Math.min((this.clipConfiguration.opacity as number) ?? 1, 1));
-				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "linear" });
-
-				break;
-			}
-			case "zoom": {
-				const zoomScaleDistance = 9;
-				const rawScale = this.clipConfiguration.scale;
-				const scale = typeof rawScale === "number" ? rawScale : 1;
-
-				const initialScale = scale;
-				const targetScale = scale + zoomScaleDistance;
-				scaleKeyframes.push({ from: initialScale, to: targetScale, start, length, interpolation: "bezier", easing: "easeOut" });
-
-				const initialOpacity = 1;
-				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
-
-				break;
-			}
-			case "slideLeft": {
-				const rawOffsetX = this.clipConfiguration.offset?.x;
-				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
-				const initialOffsetX = offsetX;
-				const targetOffsetX = offsetX - 0.025;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeOut" });
-
-				const initialOpacity = 1;
-				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
-
-				break;
-			}
-			case "slideRight": {
-				const rawOffsetX = this.clipConfiguration.offset?.x;
-				const offsetX = typeof rawOffsetX === "number" ? rawOffsetX : 0;
-				const initialOffsetX = offsetX;
-				const targetOffsetX = offsetX + 0.025;
-				offsetXKeyframes.push({ from: initialOffsetX, to: targetOffsetX, start, length, interpolation: "bezier", easing: "easeOut" });
-
-				const initialOpacity = 1;
-				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeOut" });
-
-				break;
-			}
-			case "slideUp": {
-				const rawOffsetY = this.clipConfiguration.offset?.y;
-				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
-				const initialOffsetY = offsetY;
-				const targetOffsetY = offsetY - 0.025;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				const initialOpacity = 1;
-				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				break;
-			}
-			case "slideDown": {
-				const rawOffsetY = this.clipConfiguration.offset?.y;
-				const offsetY = typeof rawOffsetY === "number" ? rawOffsetY : 0;
-				const initialOffsetY = offsetY;
-				const targetOffsetY = offsetY + 0.025;
-				offsetYKeyframes.push({ from: initialOffsetY, to: targetOffsetY, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				const initialOpacity = 1;
-				const targetOpacity = 0;
-				opacityKeyframes.push({ from: initialOpacity, to: targetOpacity, start, length, interpolation: "bezier", easing: "easeIn" });
-
-				break;
-			}
-			case "carouselLeft":
-			case "carouselRight":
-			case "carouselUp":
-			case "carouselDown":
-			case "shuffleTopRight":
-			case "shuffleRightTop":
-			case "shuffleRightBottom":
-			case "shuffleBottomRight":
-			case "shuffleBottomLeft":
-			case "shuffleLeftBottom":
-			case "shuffleLeftTop":
-			case "shuffleTopLeft":
-			default:
-				console.warn(`Unimplemented transition:out preset "${this.clipConfiguration.transition.out}"`);
-				break;
-		}
-
-		return { offsetXKeyframes, offsetYKeyframes, opacityKeyframes, scaleKeyframes, rotationKeyframes };
+	private getPresetName(direction: "in" | "out"): string {
+		return direction === "in" ? this.inPreset.name : this.outPreset.name;
 	}
 
-	private getInPresetName(): string {
-		const [transitionName] = (this.clipConfiguration.transition?.in ?? "").split(/(Slow|Fast|VeryFast)/);
-		return transitionName;
-	}
+	private getPresetLength(direction: "in" | "out"): number {
+		const { name, speed } = direction === "in" ? this.inPreset : this.outPreset;
+		const isCarousel = name.startsWith("carousel");
+		const isSlide = name.startsWith("slide");
 
-	private getOutPresetName(): string {
-		const [transitionName] = (this.clipConfiguration.transition?.out ?? "").split(/(Slow|Fast|VeryFast)/);
-		return transitionName;
-	}
+		if (name === "zoom") return 0.4;
 
-	private getInPresetLength(): number {
-		const [, transitionSpeed] = (this.clipConfiguration.transition?.in ?? "").split(/(Slow|Fast|VeryFast)/);
-
-		switch (transitionSpeed) {
+		switch (speed) {
 			case "Slow":
 				return 2;
 			case "Fast":
-				return 0.5;
+				return isCarousel || isSlide ? 0.25 : 0.5;
 			case "VeryFast":
 				return 0.25;
 			default:
-				return 1;
-		}
-	}
-
-	private getOutPresetLength(): number {
-		const [, transitionSpeed] = (this.clipConfiguration.transition?.out ?? "").split(/(Slow|Fast|VeryFast)/);
-
-		switch (transitionSpeed) {
-			case "Slow":
-				return 2;
-			case "Fast":
-				return 0.5;
-			case "VeryFast":
-				return 0.25;
-			default:
-				return 1;
+				return isCarousel || isSlide ? 0.5 : 1;
 		}
 	}
 }

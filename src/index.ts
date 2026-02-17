@@ -1,15 +1,13 @@
 import pkg from "../package.json";
 
-export { Edit } from "@core/edit";
+export { Edit } from "@core/edit-session";
 export { Canvas } from "@canvas/shotstack-canvas";
 export { Controls } from "@core/inputs/controls";
 export { VideoExporter } from "@core/export";
-export { Timeline } from "./components/timeline/timeline";
+export { Timeline } from "@timeline/index";
+export { UIController } from "@core/ui/ui-controller";
 
-// Export theme types for library users
-export type { TimelineTheme, TimelineThemeInput } from "./core/theme/theme.types";
-
-// Export Zod schemas for library users
-export * from "./core/schemas";
+export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-controller";
+export type { EditConfig } from "@core/schemas";
 
 export const VERSION = pkg.version;

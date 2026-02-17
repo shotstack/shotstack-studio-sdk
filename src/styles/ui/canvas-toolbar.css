@@ -1,0 +1,519 @@
+.ss-canvas-toolbar {
+	position: fixed;
+	/* left/top set by JS via setPosition() */
+	width: fit-content;
+	transform: translateY(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 2px;
+	padding: 6px;
+	background: rgba(255, 255, 255, 0.98);
+	border: 1px solid rgba(0, 0, 0, 0.06);
+	border-radius: 14px;
+	box-shadow:
+		0 2px 8px rgba(0, 0, 0, 0.06),
+		0 8px 24px rgba(0, 0, 0, 0.08);
+	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+	z-index: 9;
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+}
+
+.ss-canvas-toolbar-btn {
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	border-radius: 8px;
+	color: rgba(0, 0, 0, 0.65);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	position: relative;
+}
+
+.ss-canvas-toolbar-btn:hover {
+	background: rgba(0, 0, 0, 0.06);
+	color: rgba(0, 0, 0, 0.9);
+}
+
+.ss-canvas-toolbar-btn:active {
+	background: rgba(0, 0, 0, 0.1);
+	transform: scale(0.95);
+}
+
+.ss-canvas-toolbar-btn.active {
+	background: rgba(0, 0, 0, 0.06);
+}
+
+.ss-canvas-toolbar-btn svg {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+}
+
+/* Tooltip */
+.ss-canvas-toolbar-btn::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	right: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%);
+	padding: 6px 10px;
+	background: rgba(24, 24, 27, 0.95);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+	border-radius: 6px;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
+	pointer-events: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ss-canvas-toolbar-btn::before {
+	content: "";
+	position: absolute;
+	right: calc(100% + 4px);
+	top: 50%;
+	transform: translateY(-50%);
+	border: 5px solid transparent;
+	border-left-color: rgba(24, 24, 27, 0.95);
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		opacity 0.15s ease,
+		visibility 0.15s ease;
+}
+
+.ss-canvas-toolbar-btn:hover::after,
+.ss-canvas-toolbar-btn:hover::before {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* Hide tooltip when popup is open */
+.ss-canvas-toolbar-btn.active::after,
+.ss-canvas-toolbar-btn.active::before {
+	opacity: 0;
+	visibility: hidden;
+}
+
+.ss-canvas-toolbar-fps-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.01em;
+}
+
+.ss-canvas-toolbar-color-dot {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	border: 1.5px solid rgba(0, 0, 0, 0.15);
+	flex-shrink: 0;
+}
+
+.ss-canvas-toolbar-divider {
+	width: 24px;
+	height: 1px;
+	background: rgba(0, 0, 0, 0.08);
+	margin: 4px auto;
+	flex-shrink: 0;
+}
+
+/* Dropdown wrapper */
+.ss-canvas-toolbar-dropdown {
+	position: relative;
+}
+
+/* Popup styling */
+.ss-canvas-toolbar-popup {
+	display: none;
+	position: absolute;
+	right: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%);
+	background: #fff;
+	border-radius: 14px;
+	padding: 8px;
+	min-width: 180px;
+	z-index: 13;
+	filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.ss-canvas-toolbar-popup.visible {
+	display: block;
+}
+
+.ss-canvas-toolbar-popup::after {
+	content: "";
+	position: absolute;
+	right: -6px;
+	top: 50%;
+	transform: translateY(-50%) rotate(45deg);
+	width: 12px;
+	height: 12px;
+	background: #fff;
+}
+
+/* Popup items */
+.ss-canvas-toolbar-popup-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background 0.12s ease;
+	font-size: 13px;
+	font-weight: 500;
+	color: #1a1a1a;
+}
+
+.ss-canvas-toolbar-popup-item:hover {
+	background: rgba(0, 0, 0, 0.04);
+}
+
+.ss-canvas-toolbar-popup-item.active {
+	background: rgba(0, 0, 0, 0.06);
+}
+
+.ss-canvas-toolbar-popup-item-label {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.ss-canvas-toolbar-popup-item-sublabel {
+	font-size: 11px;
+	font-weight: 400;
+	color: rgba(0, 0, 0, 0.45);
+}
+
+.ss-canvas-toolbar-popup-item .checkmark {
+	width: 16px;
+	height: 16px;
+	opacity: 0;
+}
+
+.ss-canvas-toolbar-popup-item.active .checkmark {
+	opacity: 1;
+}
+
+/* Popup header */
+.ss-canvas-toolbar-popup-header {
+	font-size: 11px;
+	font-weight: 600;
+	color: rgba(0, 0, 0, 0.4);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	padding: 8px 12px 6px;
+}
+
+/* Popup divider */
+.ss-canvas-toolbar-popup-divider {
+	height: 1px;
+	background: rgba(0, 0, 0, 0.06);
+	margin: 6px 0;
+}
+
+/* Custom resolution section */
+.ss-canvas-toolbar-custom-size {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+}
+
+.ss-canvas-toolbar-custom-input {
+	width: 70px;
+	padding: 8px 10px;
+	background: rgba(0, 0, 0, 0.04);
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #1a1a1a;
+	text-align: center;
+	outline: none;
+	-moz-appearance: textfield;
+}
+
+.ss-canvas-toolbar-custom-input::-webkit-outer-spin-button,
+.ss-canvas-toolbar-custom-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.ss-canvas-toolbar-custom-input:focus {
+	border-color: rgba(0, 0, 0, 0.2);
+	background: rgba(0, 0, 0, 0.02);
+}
+
+/* Warning state - template loaded over limit, user can edit to fix */
+.ss-canvas-toolbar-custom-input.warning {
+	border-color: rgba(217, 119, 6, 0.5);
+	background: rgba(217, 119, 6, 0.06);
+	color: rgba(180, 83, 9, 1);
+}
+
+.ss-canvas-toolbar-custom-input.warning:focus {
+	border-color: rgba(217, 119, 6, 0.7);
+	box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+/* Error state - user entered invalid value exceeding limit */
+.ss-canvas-toolbar-custom-input.error {
+	border-color: rgba(239, 68, 68, 0.5);
+	background: rgba(239, 68, 68, 0.06);
+	color: rgba(220, 38, 38, 1);
+}
+
+.ss-canvas-toolbar-custom-input.error:focus {
+	border-color: rgba(239, 68, 68, 0.7);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.ss-canvas-toolbar-custom-separator {
+	color: rgba(0, 0, 0, 0.3);
+	font-size: 13px;
+	font-weight: 500;
+}
+
+/* Background popup - color picker */
+.ss-canvas-toolbar-color-picker {
+	padding: 4px;
+}
+
+.ss-canvas-toolbar-color-input {
+	width: 100%;
+	height: 120px;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 10px;
+	cursor: pointer;
+	padding: 0;
+}
+
+.ss-canvas-toolbar-color-input::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+.ss-canvas-toolbar-color-input::-webkit-color-swatch {
+	border: none;
+	border-radius: 9px;
+}
+
+.ss-canvas-toolbar-color-input::-moz-color-swatch {
+	border: none;
+	border-radius: 9px;
+}
+
+/* Color swatches grid */
+.ss-canvas-toolbar-color-swatches {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 6px;
+	padding: 8px 4px;
+}
+
+.ss-canvas-toolbar-color-swatch {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition:
+		transform 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.ss-canvas-toolbar-color-swatch:hover {
+	transform: scale(1.1);
+}
+
+.ss-canvas-toolbar-color-swatch.active {
+	border-color: rgba(0, 0, 0, 0.3);
+}
+
+/* ===========================================
+   MERGE FIELDS POPUP
+   Rebuilt with proper scroll architecture
+   =========================================== */
+
+/* Variables popup - sizing and layout only, inherits positioning from base popup */
+.ss-canvas-toolbar-popup--variables {
+	width: 300px;
+	max-height: 400px;
+	flex-direction: column;
+	overflow: visible;
+}
+
+/* Only display as flex when visible */
+.ss-canvas-toolbar-popup--variables.visible {
+	display: flex;
+}
+
+/* Header - fixed, never scrolls */
+.ss-variables-header {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px 8px;
+}
+
+.ss-variables-add-btn {
+	width: 26px;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.05);
+	border: none;
+	border-radius: 8px;
+	color: rgba(0, 0, 0, 0.5);
+	font-size: 18px;
+	font-weight: 400;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.ss-variables-add-btn:hover {
+	background: rgba(0, 0, 0, 0.1);
+	color: rgba(0, 0, 0, 0.8);
+}
+
+/* THE scroll container - single source of scroll */
+.ss-variables-list {
+	flex: 1 1 auto;
+	min-height: 0; /* Critical for flex scroll */
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 4px 8px 8px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+	border-radius: 0 0 10px 10px;
+}
+
+/* Custom scrollbar */
+.ss-variables-list::-webkit-scrollbar {
+	width: 5px;
+}
+
+.ss-variables-list::-webkit-scrollbar-track {
+	background: transparent;
+	margin: 4px 0;
+}
+
+.ss-variables-list::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.12);
+	border-radius: 3px;
+}
+
+.ss-variables-list::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+/* Empty state */
+.ss-variables-empty {
+	padding: 20px 12px;
+	text-align: center;
+	font-size: 13px;
+	color: rgba(0, 0, 0, 0.35);
+}
+
+/* Field item container */
+.ss-variable-item {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px;
+	background: rgba(0, 0, 0, 0.025);
+	border-radius: 10px;
+	border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* Field header row */
+.ss-variable-item-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+/* Variable name label */
+.ss-variable-name {
+	font-size: 11px;
+	font-weight: 600;
+	color: rgba(99, 102, 241, 0.85);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+	letter-spacing: 0.02em;
+}
+
+/* Value input */
+.ss-variable-value {
+	width: 100%;
+	padding: 8px 10px;
+	background: #fff;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 8px;
+	font-size: 13px;
+	color: #1a1a1a;
+	outline: none;
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.ss-variable-value:focus {
+	border-color: rgba(99, 102, 241, 0.5);
+	box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+.ss-variable-value::placeholder {
+	color: rgba(0, 0, 0, 0.3);
+}
+
+.ss-variable-value.error {
+	border-color: rgba(239, 68, 68, 0.5);
+	background: rgba(239, 68, 68, 0.03);
+}
+
+.ss-variable-value.error:focus {
+	border-color: rgba(239, 68, 68, 0.7);
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
+}
+
+/* Delete button */
+.ss-variable-delete {
+	width: 22px;
+	height: 22px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	color: rgba(0, 0, 0, 0.25);
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+}
+
+.ss-variable-delete:hover {
+	background: rgba(239, 68, 68, 0.1);
+	color: #ef4444;
+}

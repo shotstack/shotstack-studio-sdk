@@ -1,15 +1,15 @@
-import { Player } from "@canvas/players/player";
-import { type Size } from "@layouts/geometry";
-import { RichTextAssetSchema, type RichTextAsset } from "@schemas/rich-text-asset";
-import { createTextEngine } from "@shotstack/shotstack-canvas";
-import { TextEngine, TextRenderer, ValidatedRichTextAsset } from "@timeline/types";
+import { Player, PlayerType } from "@canvas/players/player";
+import { Edit } from "@core/edit-session";
+import { InternalEvent } from "@core/events/edit-events";
+import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { type Size, type Vector } from "@layouts/geometry";
+import { RichTextAssetSchema, type RichTextAsset, type ResolvedClip } from "@schemas";
+import { createTextEngine, type CanvasRichTextAsset } from "@shotstack/shotstack-canvas";
+import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
 
-interface CanvasRichTextPayload extends RichTextAsset {
-	width: number;
-	height: number;
-	customFonts?: Array<{ src: string; family: string; weight: string }>;
-}
+// Derive TextEngine type from createTextEngine return type
+type TextEngine = Awaited<ReturnType<typeof createTextEngine>>;
 
 const extractFontNames = (url: string): { full: string; base: string } => {
 	const filename = url.split("/").pop() || "";
@@ -22,111 +22,262 @@ const extractFontNames = (url: string): { full: string; base: string } => {
 	};
 };
 
+/** Check if a font URL is from Google Fonts CDN */
+const isGoogleFontUrl = (url: string): boolean => url.includes("fonts.gstatic.com");
+
 export class RichTextPlayer extends Player {
+	private static readonly PREVIEW_FPS = 60;
+	private static readonly fontCapabilityCache = new Map<string, Promise<boolean>>();
 	private textEngine: TextEngine | null = null;
-	private renderer: TextRenderer | null = null;
+	private renderer: ReturnType<TextEngine["createRenderer"]> | null = null;
 	private canvas: HTMLCanvasElement | null = null;
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
 	private lastRenderedTime: number = -1;
 	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
-	private targetFPS: number = 30;
-	private validatedAsset: ValidatedRichTextAsset | null = null;
+	private pendingRenderTime: number | null = null; // Stores time requested while rendering (race condition fix)
+	private validatedAsset: CanvasRichTextAsset | null = null;
+	private fontSupportsBold: boolean = false;
+	private loadComplete: boolean = false;
+	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
 
-	constructor(edit: any, clipConfiguration: any) {
-		// Default fit to "cover" for rich-text assets if not provided
-		if (!clipConfiguration.fit) {
-			clipConfiguration.fit = "cover";
-		}
-		super(edit, clipConfiguration);
+	private static getFontSourceCacheKey(sourcePath: string): string {
+		const withoutHash = sourcePath.split("#", 1)[0];
+		return withoutHash.split("?", 1)[0];
 	}
 
-	private buildCanvasPayload(richTextAsset: RichTextAsset): any {
-		const editData = this.edit.getEdit();
-		const width = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
-		const height = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		// Remove fit property for rich-text assets
+		// This aligns with @shotstack/schemas v1.5.6 which filters fit at track validation
+		const { fit, ...configWithoutFit } = clipConfiguration;
+		super(edit, configWithoutFit, PlayerType.RichText);
+	}
 
-		// Build customFonts array internally
-		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
-		if (Array.isArray(editData?.timeline?.fonts) && editData.timeline.fonts.length > 0) {
-			const requestedFamily = richTextAsset.font?.family;
-			if (requestedFamily) {
-				const matchingFont = editData.timeline.fonts?.find(font => {
+	private resolveFontWeight(richTextAsset: RichTextAsset, fallbackWeight: number): number {
+		const explicitWeight = richTextAsset.font?.weight;
+		if (typeof explicitWeight === "string") {
+			return parseInt(explicitWeight, 10) || fallbackWeight;
+		}
+		if (typeof explicitWeight === "number") {
+			return explicitWeight;
+		}
+
+		return fallbackWeight;
+	}
+
+	private buildCanvasPayload(
+		richTextAsset: RichTextAsset,
+		fontInfo?: { baseFontFamily: string; fontWeight: number }
+	): RichTextAsset & {
+		width: number;
+		height: number;
+		font?: RichTextAsset["font"] & { family: string; weight: number };
+		customFonts?: Array<{ src: string; family: string; weight: string }>;
+	} {
+		const width = this.clipConfiguration.width || this.edit.size.width;
+		const height = this.clipConfiguration.height || this.edit.size.height;
+
+		// Use provided font info or parse fresh (for reconfigure/updateTextContent calls)
+		const requestedFamily = richTextAsset.font?.family;
+		const { baseFontFamily, fontWeight: parsedWeight } =
+			fontInfo ?? (requestedFamily ? parseFontFamily(requestedFamily) : { baseFontFamily: requestedFamily, fontWeight: 400 });
+
+		// Use explicit font.weight if set, otherwise fall back to parsed weight from family name
+		const fontWeight = this.resolveFontWeight(richTextAsset, parsedWeight);
+
+		// Find matching timeline font for customFonts payload
+		const timelineFonts = this.edit.getTimelineFonts();
+		const matchingFont = requestedFamily
+			? timelineFonts.find(font => {
 					const { full, base } = extractFontNames(font.src);
 					const requested = requestedFamily.toLowerCase();
 					return full.toLowerCase() === requested || base.toLowerCase() === requested;
-				});
+				})
+			: undefined;
 
-				if (matchingFont) {
-					customFonts = [
-						{
-							src: matchingFont.src,
-							family: requestedFamily,
-							weight: richTextAsset.font?.weight?.toString() || "400"
-						}
-					];
-				}
+		// Build customFonts array for the text engine
+		// Match by URL filename first, then by binary font name from metadata
+		let customFonts: Array<{ src: string; family: string; weight: string }> | undefined;
+		if (matchingFont && requestedFamily) {
+			customFonts = [{ src: matchingFont.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }];
+		} else if (requestedFamily) {
+			// Filename matching failed — try matching by binary font name from metadata
+			const fontMetadata = this.edit.getFontMetadata();
+			const lowerRequested = (baseFontFamily || requestedFamily).toLowerCase();
+			const nonGoogleFonts = timelineFonts.filter(font => !isGoogleFontUrl(font.src));
+
+			const metadataMatch = nonGoogleFonts.find(font => {
+				const meta = fontMetadata.get(font.src);
+				return meta?.baseFamilyName.toLowerCase() === lowerRequested;
+			});
+			if (metadataMatch) {
+				customFonts = [{ src: metadataMatch.src, family: baseFontFamily || requestedFamily, weight: fontWeight.toString() }];
 			}
+			// No match → no customFonts → text engine falls back to default font
 		}
 
-		// Build payload with stroke extracted from font and placed at root level for canvas compatibility
-		const payload: any = {
+		// Determine the font family for the canvas payload:
+		// Use matched custom font name, or built-in font, or fall back to Roboto
+		const hasFontMatch = customFonts || (requestedFamily && resolveFontPath(requestedFamily));
+		const resolvedFamily = hasFontMatch ? baseFontFamily || requestedFamily : undefined;
+
+		return {
 			...richTextAsset,
 			width,
 			height,
-			// Extract stroke from font property and place at root level for canvas compatibility
+			font: richTextAsset.font ? { ...richTextAsset.font, family: resolvedFamily || "Roboto", weight: fontWeight } : undefined,
 			stroke: richTextAsset.font?.stroke,
 			...(customFonts && { customFonts })
 		};
-
-		return payload;
 	}
 
-	private createFontMapping(): Map<string, string> {
-		const fontMap = new Map<string, string>();
+	private async registerFont(
+		family: string,
+		weight: number,
+		source: { type: "url"; path: string } | { type: "file"; path: string }
+	): Promise<boolean> {
+		if (!this.textEngine) return false;
+		const normalizedPath = RichTextPlayer.getFontSourceCacheKey(source.path);
+		const cacheKey = `${source.type}:${normalizedPath}|${family}|${weight}`;
+		const cached = this.fontRegistrationCache.get(cacheKey);
+		if (cached) return cached;
 
-		fontMap.set("Arapey", "/assets/fonts/Arapey-Regular.ttf");
-		fontMap.set("ClearSans", "/assets/fonts/ClearSans-Regular.ttf");
-		fontMap.set("Clear Sans", "/assets/fonts/ClearSans-Regular.ttf");
-		fontMap.set("DidactGothic", "/assets/fonts/DidactGothic-Regular.ttf");
-		fontMap.set("Didact Gothic", "/assets/fonts/DidactGothic-Regular.ttf");
-		fontMap.set("Montserrat", "/assets/fonts/Montserrat-SemiBold.ttf");
-		fontMap.set("MovLette", "/assets/fonts/MovLette.ttf");
-		fontMap.set("OpenSans", "/assets/fonts/OpenSans-Bold.ttf");
-		fontMap.set("Open Sans", "/assets/fonts/OpenSans-Bold.ttf");
-		fontMap.set("PermanentMarker", "/assets/fonts/PermanentMarker-Regular.ttf");
-		fontMap.set("Permanent Marker", "/assets/fonts/PermanentMarker-Regular.ttf");
-		fontMap.set("Roboto", "/assets/fonts/Roboto.ttf");
-		fontMap.set("SueEllenFrancisco", "/assets/fonts/SueEllenFrancisco.ttf");
-		fontMap.set("Sue Ellen Francisco", "/assets/fonts/SueEllenFrancisco.ttf");
-		fontMap.set("UniNeue", "/assets/fonts/UniNeue-Bold.otf");
-		fontMap.set("Uni Neue", "/assets/fonts/UniNeue-Bold.otf");
-		fontMap.set("WorkSans", "/assets/fonts/WorkSans-Light.ttf");
-		fontMap.set("Work Sans", "/assets/fonts/WorkSans-Light.ttf");
+		const registrationPromise = (async (): Promise<boolean> => {
+			try {
+				const fontDesc = { family, weight: weight.toString() };
+				if (source.type === "url") {
+					await this.textEngine!.registerFontFromUrl(source.path, fontDesc);
+				} else {
+					await this.textEngine!.registerFontFromFile(source.path, fontDesc);
+				}
+				return true;
+			} catch {
+				return false;
+			}
+		})();
+		this.fontRegistrationCache.set(cacheKey, registrationPromise);
+		return registrationPromise;
+	}
 
-		return fontMap;
+	private createFontCapabilityCheckPromise(fontUrl: string): Promise<boolean> {
+		return (async (): Promise<boolean> => {
+			try {
+				const response = await fetch(fontUrl);
+				if (!response.ok) {
+					throw new Error(`Failed to fetch font: ${response.status}`);
+				}
+				const buffer = await response.arrayBuffer();
+				const font = opentype.parse(buffer);
+
+				// Check for fvar table (variable font) with weight axis
+				const fvar = font.tables["fvar"] as { axes?: Array<{ tag: string }> } | undefined;
+				return !!fvar?.axes?.find(axis => axis.tag === "wght");
+			} catch (error) {
+				console.warn("Failed to check font capabilities:", error);
+				return false;
+			}
+		})();
+	}
+
+	private async prepareFontForAsset(richTextAsset: RichTextAsset, emitCapabilitiesEvent: boolean): Promise<void> {
+		const fontUrl = await this.ensureFontRegistered(richTextAsset);
+		if (!fontUrl) {
+			return;
+		}
+
+		const cacheKey = RichTextPlayer.getFontSourceCacheKey(fontUrl);
+		const cachedCheck = RichTextPlayer.fontCapabilityCache.get(cacheKey);
+		const capabilityCheck = cachedCheck ?? this.createFontCapabilityCheckPromise(fontUrl);
+		if (!cachedCheck) {
+			RichTextPlayer.fontCapabilityCache.set(cacheKey, capabilityCheck);
+		}
+
+		this.fontSupportsBold = await capabilityCheck;
+
+		if (emitCapabilitiesEvent) {
+			this.edit.getInternalEvents().emit(InternalEvent.FontCapabilitiesChanged, { supportsBold: this.fontSupportsBold });
+		}
+	}
+
+	public supportsBold(): boolean {
+		return this.fontSupportsBold;
+	}
+
+	private resolveFont(family: string): { url: string; baseFontFamily: string; fontWeight: number } | null {
+		const { baseFontFamily, fontWeight } = parseFontFamily(family);
+
+		// Check stored font metadata first (for template fonts with UUID-based URLs)
+		// Uses normalized base family + weight to match the correct font file
+		const metadataUrl = this.edit.getFontUrlByFamilyAndWeight(baseFontFamily, fontWeight);
+		if (metadataUrl) {
+			return { url: metadataUrl, baseFontFamily, fontWeight };
+		}
+
+		// Check timeline fonts by filename matching (legacy fallback)
+		const editData = this.edit.getEdit();
+		const timelineFonts = editData?.timeline?.fonts || [];
+		const matchingFont = timelineFonts.find(font => {
+			const { full, base } = extractFontNames(font.src);
+			const requested = family.toLowerCase();
+			return full.toLowerCase() === requested || base.toLowerCase() === requested;
+		});
+
+		if (matchingFont) {
+			return { url: matchingFont.src, baseFontFamily, fontWeight };
+		}
+
+		// Fall back to built-in fonts from FONT_PATHS
+		const builtInPath = resolveFontPath(family);
+		if (builtInPath) {
+			return { url: builtInPath, baseFontFamily, fontWeight };
+		}
+
+		return null;
 	}
 
 	public override reconfigureAfterRestore(): void {
 		super.reconfigureAfterRestore();
+		this.reconfigure(this.clipConfiguration.asset as RichTextAsset);
+	}
 
-		for (const texture of this.cachedFrames.values()) {
-			texture.destroy();
-		}
-		this.cachedFrames.clear();
-		this.lastRenderedTime = -1;
+	private async reconfigure(richTextAsset: RichTextAsset): Promise<void> {
+		try {
+			await this.prepareFontForAsset(richTextAsset, true);
 
-		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
-		if (this.textEngine) {
-			const canvasPayload = this.buildCanvasPayload(richTextAsset);
-			const { value: validated } = this.textEngine.validate(canvasPayload);
-			this.validatedAsset = validated;
-		}
+			for (const texture of this.cachedFrames.values()) {
+				texture.destroy();
+			}
+			this.cachedFrames.clear();
+			this.lastRenderedTime = -1;
 
-		if (this.textEngine && this.renderer) {
-			this.renderFrameSafe(this.getCurrentTime() / 1000);
+			if (this.textEngine) {
+				const canvasPayload = this.buildCanvasPayload(richTextAsset);
+				const { value: validated } = this.textEngine.validate(canvasPayload);
+				this.validatedAsset = validated;
+			}
+
+			if (this.textEngine && this.renderer) {
+				this.renderFrameSafe(this.getPlaybackTime());
+			}
+		} catch {
+			// Validation or font loading failed (e.g., incompatible merge field value).
+			// Keep rendering the last valid state — don't update validatedAsset.
 		}
+	}
+
+	private async ensureFontRegistered(richTextAsset: RichTextAsset): Promise<string | null> {
+		if (!this.textEngine) return null;
+
+		const family = richTextAsset.font?.family;
+		if (!family) return null;
+
+		const resolved = this.resolveFont(family);
+		if (!resolved) return null;
+
+		const fontWeight = this.resolveFontWeight(richTextAsset, resolved.fontWeight);
+		await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
+		return resolved.url;
 	}
 
 	public override async load(): Promise<void> {
@@ -135,86 +286,38 @@ export class RichTextPlayer extends Player {
 		const richTextAsset = this.clipConfiguration.asset as RichTextAsset;
 
 		try {
-			const editData = this.edit.getEdit();
-			this.targetFPS = editData?.output?.fps || 30;
-
-			// Validate the rich-text asset schema (without width, height, customFonts)
 			const validationResult = RichTextAssetSchema.safeParse(richTextAsset);
 			if (!validationResult.success) {
-				console.error("Rich-text asset validation failed:", validationResult.error);
 				this.createFallbackText(richTextAsset);
 				return;
 			}
 
-			// Build canvas payload with dimensions and customFonts
-			const canvasPayload = this.buildCanvasPayload(richTextAsset);
+			// Parse font info once, reuse throughout
+			const requestedFamily = richTextAsset.font?.family;
+			const fontInfo = requestedFamily ? parseFontFamily(requestedFamily) : undefined;
+			const canvasPayload = this.buildCanvasPayload(richTextAsset, fontInfo);
 
 			this.textEngine = (await createTextEngine({
 				width: canvasPayload.width,
 				height: canvasPayload.height,
-				fps: this.targetFPS
+				fps: RichTextPlayer.PREVIEW_FPS
 			})) as TextEngine;
 
 			const { value: validated } = this.textEngine!.validate(canvasPayload);
 			this.validatedAsset = validated;
-
-			const fontMap = this.createFontMapping();
 
 			this.canvas = document.createElement("canvas");
 			this.canvas.width = canvasPayload.width;
 			this.canvas.height = canvasPayload.height;
 
 			this.renderer = this.textEngine!.createRenderer(this.canvas);
-
-			const timelineFonts = editData?.timeline?.fonts || [];
-
-			if (timelineFonts.length > 0) {
-				const requestedFamily = richTextAsset.font?.family;
-				if (requestedFamily) {
-					const matchingFont = timelineFonts.find(font => {
-						const { full, base } = extractFontNames(font.src);
-						const requested = requestedFamily.toLowerCase();
-						return full.toLowerCase() === requested || base.toLowerCase() === requested;
-					});
-
-					if (matchingFont) {
-						try {
-							const fontDesc = {
-								family: requestedFamily,
-								weight: richTextAsset.font?.weight?.toString() || "400"
-							};
-							await this.textEngine!.registerFontFromUrl(matchingFont.src, fontDesc);
-						} catch (error) {
-							console.warn(`Failed to load font ${requestedFamily}:`, error);
-						}
-					}
-				}
-			} else if (richTextAsset.font?.family) {
-				const fontFamily = richTextAsset.font.family;
-				const fontPath = fontMap.get(fontFamily);
-
-				if (fontPath) {
-					try {
-						const fontDesc = {
-							family: richTextAsset.font.family,
-							weight: richTextAsset.font.weight || "400"
-						};
-						await this.textEngine!.registerFontFromFile(fontPath, fontDesc);
-					} catch (error) {
-						console.warn(`Failed to load local font: ${fontFamily}`, error);
-					}
-				} else {
-					console.warn(`Font ${fontFamily} not found in local assets. Available fonts:`, Array.from(fontMap.keys()));
-				}
-			}
+			await this.prepareFontForAsset(richTextAsset, false);
 
 			await this.renderFrame(0);
 			this.configureKeyframes();
-		} catch (error) {
-			console.error("Failed to initialize rich text player:", error);
-
+			this.loadComplete = true;
+		} catch {
 			this.cleanupResources();
-
 			this.createFallbackText(richTextAsset);
 		}
 	}
@@ -237,7 +340,7 @@ export class RichTextPlayer extends Player {
 	private async renderFrame(timeSeconds: number): Promise<void> {
 		if (!this.textEngine || !this.renderer || !this.canvas || !this.validatedAsset) return;
 
-		const cacheKey = Math.floor(timeSeconds * this.targetFPS);
+		const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
 
 		if (this.cachedFrames.has(cacheKey)) {
 			const cachedTexture = this.cachedFrames.get(cacheKey)!;
@@ -249,7 +352,9 @@ export class RichTextPlayer extends Player {
 		}
 
 		try {
-			const ops = await this.textEngine.renderFrame(this.validatedAsset, timeSeconds);
+			// Pass clip duration so animations can cap their length appropriately
+			const clipDuration = this.getLength();
+			const ops = await this.textEngine.renderFrame(this.validatedAsset, timeSeconds, clipDuration);
 
 			const ctx = this.canvas.getContext("2d");
 			if (ctx) ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -326,13 +431,33 @@ export class RichTextPlayer extends Player {
 		this.contentContainer.addChild(fallbackText);
 	}
 	private renderFrameSafe(timeSeconds: number): void {
-		if (this.isRendering) return;
+		if (this.isRendering) {
+			// Store pending time to render after current render completes (race condition fix)
+			this.pendingRenderTime = timeSeconds;
+
+			// Show nearest cached frame instead of skipping entirely
+			const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
+			const cachedTexture = this.cachedFrames.get(cacheKey);
+			if (cachedTexture && this.sprite && this.sprite.texture !== cachedTexture) {
+				this.sprite.texture = cachedTexture;
+			}
+			return;
+		}
 
 		this.isRendering = true;
+		this.pendingRenderTime = null;
+
 		this.renderFrame(timeSeconds)
 			.catch(err => console.error("Failed to render rich text frame:", err))
 			.finally(() => {
 				this.isRendering = false;
+
+				// Check if a render was requested while we were busy
+				if (this.pendingRenderTime !== null && this.pendingRenderTime !== timeSeconds) {
+					const pending = this.pendingRenderTime;
+					this.pendingRenderTime = null;
+					this.renderFrameSafe(pending);
+				}
 			});
 	}
 
@@ -340,16 +465,24 @@ export class RichTextPlayer extends Player {
 		super.update(deltaTime, elapsed);
 
 		// Reset render state on seek to prevent race conditions
-		if (elapsed === 101) {
+		if (elapsed === Edit.SEEK_ELAPSED_MARKER) {
 			this.isRendering = false;
+			this.pendingRenderTime = null;
 			this.lastRenderedTime = -1;
 		}
 
+		if (!this.isActive()) {
+			return;
+		}
+
+		// Guard against rendering before load() completes (font may not be registered yet)
+		if (!this.loadComplete) {
+			return;
+		}
+
 		if (this.textEngine && this.renderer && !this.isRendering) {
-			const currentTimeSeconds = this.getCurrentTime() / 1000;
-			const editData = this.edit.getEdit();
-			const targetFPS = editData?.output?.fps || 30;
-			const frameInterval = 1 / targetFPS;
+			const currentTimeSeconds = this.getPlaybackTime();
+			const frameInterval = 1 / 60; // Always render at 60fps for smooth preview
 
 			if (Math.abs(currentTimeSeconds - this.lastRenderedTime) > frameInterval) {
 				this.renderFrameSafe(currentTimeSeconds);
@@ -359,13 +492,14 @@ export class RichTextPlayer extends Player {
 
 	public override dispose(): void {
 		super.dispose();
+		this.loadComplete = false;
 
 		for (const texture of this.cachedFrames.values()) {
 			texture.destroy();
 		}
 		this.cachedFrames.clear();
 
-		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * this.targetFPS))) {
+		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * RichTextPlayer.PREVIEW_FPS))) {
 			this.texture.destroy();
 		}
 		this.texture = null;
@@ -396,11 +530,24 @@ export class RichTextPlayer extends Player {
 		};
 	}
 
+	public override getContentSize(): Size {
+		return {
+			width: this.clipConfiguration.width || this.canvas?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || this.canvas?.height || this.edit.size.height
+		};
+	}
+
 	protected override getFitScale(): number {
 		return 1;
 	}
 
-	protected override supportsEdgeResize(): boolean {
+	protected override getContainerScale(): Vector {
+		// Rich text should not be fit-scaled - use only the user-defined scale
+		const scale = this.getScale();
+		return { x: scale, y: scale };
+	}
+
+	public override supportsEdgeResize(): boolean {
 		return true;
 	}
 
@@ -423,7 +570,7 @@ export class RichTextPlayer extends Player {
 		const { value: validated } = this.textEngine.validate(canvasPayload);
 		this.validatedAsset = validated;
 
-		this.renderFrameSafe(this.getCurrentTime() / 1000);
+		this.renderFrameSafe(this.getPlaybackTime());
 	}
 
 	public updateTextContent(newText: string): void {
@@ -443,11 +590,11 @@ export class RichTextPlayer extends Player {
 
 		this.lastRenderedTime = -1;
 		if (this.textEngine && this.renderer) {
-			this.renderFrameSafe(this.getCurrentTime() / 1000);
+			this.renderFrameSafe(this.getPlaybackTime());
 		}
 	}
 
-	private getCurrentTime(): number {
-		return this.edit.playbackTime;
+	public getCacheSize(): number {
+		return this.cachedFrames.size;
 	}
 }

@@ -1,0 +1,1843 @@
+import type { Edit } from "@core/edit-session";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
+import type { MergeField } from "@core/merge";
+import { ShotstackEdit } from "@core/shotstack-edit";
+import type { ResolvedClip, RichTextAsset } from "@schemas";
+import { injectShotstackStyles } from "@styles/inject";
+
+import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
+
+import { BackgroundColorPicker } from "./background-color-picker";
+import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
+import { EffectPanel } from "./composites/EffectPanel";
+import { SpacingPanel } from "./composites/SpacingPanel";
+import { StylePanel } from "./composites/StylePanel";
+import { TransitionPanel } from "./composites/TransitionPanel";
+import { DragStateManager } from "./drag-state-manager";
+import { FontColorPicker } from "./font-color-picker";
+import { FontPicker, type FontInfo } from "./font-picker";
+import { MergeFieldLabelManager, type MergeFieldLabelHost } from "./merge-field-label-manager";
+
+export interface RichTextToolbarOptions {
+	mergeFields?: boolean;
+}
+
+export class RichTextToolbar extends BaseToolbar {
+	private showMergeFields: boolean;
+	private fontPopup: HTMLDivElement | null = null;
+	private fontPreview: HTMLSpanElement | null = null;
+	private fontPicker: FontPicker | null = null;
+	private sizeInput: HTMLInputElement | null = null;
+	private sizePopup: HTMLDivElement | null = null;
+	private weightDropdown: HTMLElement | null = null;
+	private weightPopup: HTMLDivElement | null = null;
+	private weightPreview: HTMLSpanElement | null = null;
+	private spacingPopup: HTMLDivElement | null = null;
+	private spacingPanel: SpacingPanel | null = null;
+	private anchorTopBtn: HTMLButtonElement | null = null;
+	private anchorMiddleBtn: HTMLButtonElement | null = null;
+	private anchorBottomBtn: HTMLButtonElement | null = null;
+	private alignIcon: SVGElement | null = null;
+	private transformBtn: HTMLButtonElement | null = null;
+	private underlineBtn: HTMLButtonElement | null = null;
+	private linethroughBtn: HTMLButtonElement | null = null;
+	private textEditPopup: HTMLDivElement | null = null;
+	private textEditArea: HTMLTextAreaElement | null = null;
+	private textEditDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Autocomplete for merge field variables
+	private autocompletePopup: HTMLDivElement | null = null;
+	private autocompleteItems: HTMLDivElement | null = null;
+	private autocompleteVisible: boolean = false;
+	private autocompleteFilter: string = "";
+	private autocompleteStartPos: number = 0;
+	private selectedAutocompleteIndex: number = 0;
+	private backgroundPopup: HTMLDivElement | null = null;
+	private backgroundColorPicker: BackgroundColorPicker | null = null;
+
+	private fontColorPopup: HTMLDivElement | null = null;
+	private fontColorPicker: FontColorPicker | null = null;
+	private colorDisplay: HTMLButtonElement | null = null;
+
+	private animationPopup: HTMLDivElement | null = null;
+	private animationDurationSlider: HTMLInputElement | null = null;
+	private animationDurationValue: HTMLSpanElement | null = null;
+	private animationStyleSection: HTMLDivElement | null = null;
+	private animationDirectionSection: HTMLDivElement | null = null;
+
+	/**
+	 * Per-control drag state manager.
+	 */
+	private dragManager = new DragStateManager();
+
+	private lastSyncedClipId: string | null = null;
+
+	// Current animation duration during drag (for explicit final config)
+	private currentAnimationDuration: number = 1;
+
+	// Composite panels (replace ~400 lines of duplicated transition/effect code)
+	private transitionPopup: HTMLDivElement | null = null;
+	private transitionPanel: TransitionPanel | null = null;
+	private effectPopup: HTMLDivElement | null = null;
+	private effectPanel: EffectPanel | null = null;
+	private stylePopup: HTMLDivElement | null = null;
+	private stylePanel: StylePanel | null = null;
+
+	// Merge field label manager (bound to data-merge-path annotated labels)
+	private mergeFieldManager: MergeFieldLabelManager | null = null;
+
+	// Bound handlers for proper cleanup
+	private boundHandleClick: ((e: MouseEvent) => void) | null = null;
+	private unsubFontCapabilities: (() => void) | null = null;
+	private unsubMergeFieldChanged: (() => void) | null = null;
+
+	constructor(edit: Edit, options: RichTextToolbarOptions = {}) {
+		super(edit);
+		this.showMergeFields = options.mergeFields ?? false;
+	}
+
+	private getShotstackEdit(): ShotstackEdit | null {
+		if (this.edit && "mergeFields" in this.edit) {
+			return this.edit as ShotstackEdit;
+		}
+		return null;
+	}
+
+	override mount(parent: HTMLElement): void {
+		injectShotstackStyles();
+
+		this.container = document.createElement("div");
+		this.container.className = "ss-toolbar";
+
+		this.container.innerHTML = `
+			<!-- Mode Toggle -->
+			<div class="ss-toolbar-mode-toggle" data-mode="asset">
+				<button class="ss-toolbar-mode-btn active" data-mode="asset" title="Asset properties (\`)">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<rect x="2" y="2" width="12" height="12" rx="1.5"/>
+						<path d="M2 6h12M6 6v8"/>
+					</svg>
+				</button>
+				<button class="ss-toolbar-mode-btn" data-mode="clip" title="Clip timing (\`)">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<circle cx="8" cy="8" r="6"/>
+						<path d="M8 5v3l2 2"/>
+					</svg>
+				</button>
+				<span class="ss-toolbar-mode-indicator"></span>
+			</div>
+			<div class="ss-toolbar-mode-divider"></div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">Text</button>
+				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
+					<div class="ss-toolbar-popup-header">Edit Text</div>
+					<div class="ss-toolbar-text-area-wrapper">
+						<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
+						<div class="ss-autocomplete-popup" data-autocomplete-popup>
+							<div class="ss-autocomplete-items" data-autocomplete-items></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-group ss-toolbar-group--bordered">
+				<button data-action="size-down" class="ss-toolbar-btn" title="Decrease font size">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+				</button>
+				<div class="ss-toolbar-dropdown ss-toolbar-dropdown--size">
+					<input type="text" data-size-input class="ss-toolbar-size-input" value="48" />
+					<div data-size-popup class="ss-toolbar-popup ss-toolbar-popup--size"></div>
+				</div>
+				<button data-action="size-up" class="ss-toolbar-btn" title="Increase font size">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="12" y1="5" x2="12" y2="19"/>
+						<line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="ss-toolbar-dropdown ss-toolbar-dropdown--weight">
+				<button data-action="weight-toggle" class="ss-toolbar-font-btn ss-toolbar-font-btn--weight" title="Font weight">
+					<span data-weight-preview>Regular</span>
+					<svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5;">
+						<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+					</svg>
+				</button>
+				<div data-weight-popup class="ss-toolbar-popup ss-toolbar-popup--weight"></div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="font-toggle" class="ss-toolbar-font-btn" title="Font">
+					<span data-font-preview></span>
+					<svg width="8" height="8" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5;">
+						<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+					</svg>
+				</button>
+				<div data-font-popup class="ss-toolbar-popup ss-toolbar-popup--font"></div>
+			</div>
+
+			<div class="ss-toolbar-color-wrap">
+				<button data-action="font-color-toggle" class="ss-toolbar-color" title="Font color" data-color-display></button>
+				<div data-font-color-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+					<div data-font-color-picker></div>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="spacing-toggle" class="ss-toolbar-btn" title="Spacing">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M17.952 15.75a.75.75 0 0 1 .535.238l2.147 2.146a1.255 1.255 0 0 1 0 1.77l-2.147 2.145a.75.75 0 0 1-1.06-1.06l1.22-1.22H5.352l1.22 1.22a.753.753 0 0 1 .019 1.078.752.752 0 0 1-1.08-.018l-2.146-2.146a1.255 1.255 0 0 1-.342-.64 1.253 1.253 0 0 1-.02-.225L3 19.018c0-.02.002-.041.004-.062a1.25 1.25 0 0 1 .09-.416 1.25 1.25 0 0 1 .27-.406l2.147-2.146a.751.751 0 0 1 1.279.53c0 .2-.08.39-.22.53l-1.22 1.22h13.298l-1.22-1.22a.752.752 0 0 1-.02-1.078.752.752 0 0 1 .544-.22ZM15.854 3c.725 0 1.313.588 1.313 1.313v1.31a.782.782 0 0 1-1.563 0v-.956a.104.104 0 0 0-.104-.104l-2.754.005.007 8.245c0 .252.206.457.459.457h.996a.782.782 0 0 1 0 1.563H9.736a.781.781 0 0 1 0-1.563h.996a.458.458 0 0 0 .458-.457l-.006-8.245-2.767-.005a.104.104 0 0 0-.104.104v.976a.781.781 0 0 1-1.563 0v-1.33C6.75 3.587 7.338 3 8.063 3h7.791Z"/>
+					</svg>
+				</button>
+				<div data-spacing-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+					<div data-spacing-panel-container class="ss-toolbar-popup-section"></div>
+					<div class="ss-toolbar-popup-divider"></div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Anchor text box</div>
+						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
+							<button data-action="anchor-top" class="ss-toolbar-anchor-btn" title="Top">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="12" y1="5" x2="12" y2="19"/>
+									<polyline points="5 12 12 5 19 12"/>
+								</svg>
+							</button>
+							<button data-action="anchor-middle" class="ss-toolbar-anchor-btn" title="Middle">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="12" y1="5" x2="12" y2="19"/>
+									<polyline points="5 9 12 5 19 9"/>
+									<polyline points="5 15 12 19 19 15"/>
+								</svg>
+							</button>
+							<button data-action="anchor-bottom" class="ss-toolbar-anchor-btn" title="Bottom">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="12" y1="5" x2="12" y2="19"/>
+									<polyline points="5 12 12 19 19 12"/>
+								</svg>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-divider"></div>
+
+			<!-- Formatting Group -->
+			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
+				<svg data-align-icon width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/>
+				</svg>
+			</button>
+			<button data-action="transform" class="ss-toolbar-btn ss-toolbar-btn--text" title="Text transform">Aa</button>
+			<button data-action="underline" class="ss-toolbar-btn ss-toolbar-btn--text ss-toolbar-btn--underline" title="Underline">U</button>
+			<button data-action="linethrough" class="ss-toolbar-btn" title="Strikethrough">
+				<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+					<path d="M7.349 15.508c0 1.263.43 2.249 1.292 2.957.861.708 2.01 1.063 3.445 1.063 1.436 0 2.571-.355 3.407-1.063.836-.708 1.254-1.636 1.254-2.785 0-.885-.205-1.611-.614-2.18H18V12H6.432v1.5h7.175c.388.185.688.367.9.544.492.408.737.957.737 1.646 0 .753-.27 1.362-.813 1.828-.542.46-1.324.689-2.345.689-1.02 0-1.815-.227-2.383-.68-.561-.453-.842-1.126-.842-2.019v-.23H7.349v.23ZM8.351 11h2.918c-.667-.268-1.147-.523-1.441-.765-.473-.396-.709-.916-.709-1.56 0-.715.233-1.28.699-1.694.466-.415 1.193-.622 2.182-.622.983 0 1.723.242 2.22.727.498.485.747 1.117.747 1.895v.21h1.512v-.21c0-1.148-.405-2.093-1.215-2.833-.804-.74-1.892-1.11-3.264-1.11-1.372 0-2.447.348-3.225 1.043-.772.69-1.158 1.573-1.158 2.651 0 .948.245 1.704.734 2.268Z"/>
+				</svg>
+			</button>
+
+			<div class="ss-toolbar-divider"></div>
+
+			<!-- Box Styling Group - Consolidated Style Panel -->
+			<div class="ss-toolbar-dropdown">
+				<button data-action="style-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Style">Style</button>
+				<div data-style-popup class="ss-toolbar-popup ss-toolbar-popup--style"></div>
+			</div>
+
+			<div class="ss-toolbar-divider"></div>
+
+			<!-- Animation & Effects Group -->
+			<div class="ss-toolbar-dropdown">
+				<button data-action="animation-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Animation">Animate</button>
+				<div data-animation-popup class="ss-toolbar-popup ss-toolbar-popup--animation">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Preset</div>
+						<div class="ss-animation-presets">
+							<button class="ss-animation-preset" data-preset="typewriter">Typewriter</button>
+							<button class="ss-animation-preset" data-preset="fadeIn">Fade In</button>
+							<button class="ss-animation-preset" data-preset="slideIn">Slide In</button>
+							<button class="ss-animation-preset" data-preset="ascend">Ascend</button>
+							<button class="ss-animation-preset" data-preset="shift">Shift</button>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Duration</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-animation-duration class="ss-toolbar-slider" min="0.1" max="10" step="0.1" value="1" />
+							<span data-animation-duration-value class="ss-toolbar-popup-value">1.0s</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section" data-animation-style-section>
+						<div class="ss-toolbar-popup-label">Writing Style</div>
+						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
+							<button class="ss-toolbar-anchor-btn" data-animation-style="character">Character</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-style="word">Word</button>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section" data-animation-direction-section>
+						<div class="ss-toolbar-popup-label">Direction</div>
+						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="left">←</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="right">→</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="up">↑</button>
+							<button class="ss-toolbar-anchor-btn" data-animation-direction="down">↓</button>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-divider"></div>
+					<button class="ss-toolbar-anchor-btn" data-action="animation-clear" style="width: 100%;">Clear Animation</button>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="transition-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Transition">Transition</button>
+				<div data-transition-popup class="ss-toolbar-popup ss-toolbar-popup--transition"></div>
+			</div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="effect-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Effect">Effect</button>
+				<div data-effect-popup class="ss-toolbar-popup ss-toolbar-popup--effect"></div>
+			</div>
+		`;
+
+		this.sizeInput = this.container.querySelector("[data-size-input]");
+		this.sizePopup = this.container.querySelector("[data-size-popup]");
+		this.weightDropdown = this.container.querySelector(".ss-toolbar-dropdown--weight");
+		this.weightPopup = this.container.querySelector("[data-weight-popup]");
+		this.weightPreview = this.container.querySelector("[data-weight-preview]");
+		this.buildWeightPopup();
+		this.fontPopup = this.container.querySelector("[data-font-popup]");
+		this.fontPreview = this.container.querySelector("[data-font-preview]");
+		this.alignIcon = this.container.querySelector("[data-align-icon]");
+		this.transformBtn = this.container.querySelector("[data-action='transform']");
+		this.underlineBtn = this.container.querySelector("[data-action='underline']");
+		this.linethroughBtn = this.container.querySelector("[data-action='linethrough']");
+		this.textEditPopup = this.container.querySelector("[data-text-edit-popup]");
+		this.textEditArea = this.container.querySelector("[data-text-edit-area]");
+		this.autocompletePopup = this.container.querySelector("[data-autocomplete-popup]");
+		this.autocompleteItems = this.container.querySelector("[data-autocomplete-items]");
+
+		// Delegated click handler for autocomplete items (set up once, no leak on repeated shows)
+		this.autocompleteItems?.addEventListener("click", (e: MouseEvent) => {
+			const item = (e.target as HTMLElement).closest("[data-var-name]") as HTMLElement | null;
+			if (!item) return;
+			e.stopPropagation();
+			const { varName } = item.dataset;
+			if (varName) {
+				this.insertVariable(varName);
+			}
+		});
+
+		this.boundHandleClick = this.handleClick.bind(this);
+		this.container.addEventListener("click", this.boundHandleClick);
+
+		// Size input handlers
+		this.sizeInput?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.toggleSizePopup();
+		});
+		this.sizeInput?.addEventListener("blur", () => this.applyManualSize());
+		this.sizeInput?.addEventListener("keydown", e => {
+			if (e.key === "Enter") {
+				this.applyManualSize();
+				this.sizeInput?.blur();
+				this.closeAllPopups();
+			}
+		});
+		this.buildSizePopup();
+
+		// Font color picker
+		this.colorDisplay = this.container.querySelector("[data-color-display]");
+		this.fontColorPopup = this.container.querySelector("[data-font-color-popup]");
+		const fontColorPickerContainer = this.container.querySelector("[data-font-color-picker]");
+
+		if (fontColorPickerContainer) {
+			this.fontColorPicker = new FontColorPicker();
+			this.fontColorPicker.mount(fontColorPickerContainer as HTMLElement);
+			this.fontColorPicker.onChange(updates => {
+				this.updateFontColorProperty(updates);
+			});
+		}
+
+		this.spacingPopup = this.container.querySelector("[data-spacing-popup]");
+		this.anchorTopBtn = this.container.querySelector("[data-action='anchor-top']");
+		this.anchorMiddleBtn = this.container.querySelector("[data-action='anchor-middle']");
+		this.anchorBottomBtn = this.container.querySelector("[data-action='anchor-bottom']");
+
+		// Mount SpacingPanel composite (letter spacing + line height)
+		const spacingContainer = this.container.querySelector("[data-spacing-panel-container]") as HTMLElement | null;
+		if (spacingContainer) {
+			this.spacingPanel = new SpacingPanel();
+
+			// Phase 1: Capture initial state when drag starts
+			this.spacingPanel.onDragStart(() => {
+				const state = this.captureClipState();
+				if (state) {
+					this.dragManager.start("spacing-panel", state.clipId, state.initialState);
+				}
+			});
+
+			// Phase 2: Live updates during drag
+			this.spacingPanel.onChange(state => {
+				const isDragging = this.spacingPanel?.isDragging() ?? false;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = {
+						...asset,
+						style: {
+							...(asset.style || {}),
+							letterSpacing: state.letterSpacing,
+							lineHeight: state.lineHeight
+						}
+					};
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					// Discrete update (creates command)
+					this.updateClipProperty({
+						style: { letterSpacing: state.letterSpacing, lineHeight: state.lineHeight }
+					});
+				}
+			});
+
+			// Phase 3: Commit single command when drag ends
+			this.spacingPanel.onDragEnd(() => {
+				const session = this.dragManager.end("spacing-panel");
+				if (!session || !this.spacingPanel) return;
+
+				// Use clipId from session (user may have switched clips during drag)
+				const { clipId } = session;
+
+				// Read final state from SpacingPanel
+				const finalState = this.spacingPanel.getState();
+
+				// Construct final clip state
+				const finalClip = structuredClone(session.initialState);
+				if (finalClip.asset && finalClip.asset.type === "rich-text" && finalClip.asset.style) {
+					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
+					finalClip.asset.style.lineHeight = finalState.lineHeight;
+				}
+
+				this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
+			});
+
+			this.spacingPanel.mount(spacingContainer);
+		}
+
+		// Animation controls
+		this.animationPopup = this.container.querySelector("[data-animation-popup]");
+		this.animationDurationSlider = this.container.querySelector("[data-animation-duration]");
+		this.animationDurationValue = this.container.querySelector("[data-animation-duration-value]");
+		this.animationStyleSection = this.container.querySelector("[data-animation-style-section]");
+		this.animationDirectionSection = this.container.querySelector("[data-animation-direction-section]");
+
+		// Composite panels for transition/effect (mount containers)
+		this.transitionPopup = this.container.querySelector("[data-transition-popup]");
+		this.effectPopup = this.container.querySelector("[data-effect-popup]");
+
+		// Mount TransitionPanel composite
+		if (this.transitionPopup) {
+			this.transitionPanel = new TransitionPanel();
+			this.transitionPanel.onChange(() => {
+				const transitionValue = this.transitionPanel?.getClipValue();
+				this.applyClipUpdate({ transition: transitionValue });
+			});
+			this.transitionPanel.mount(this.transitionPopup);
+		}
+
+		// Mount EffectPanel composite
+		if (this.effectPopup) {
+			this.effectPanel = new EffectPanel();
+			this.effectPanel.onChange(() => {
+				const effectValue = this.effectPanel?.getClipValue();
+				this.applyClipUpdate({ effect: effectValue });
+			});
+			this.effectPanel.mount(this.effectPopup);
+		}
+
+		// Preset buttons
+		this.container.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const preset = btn.dataset["preset"] as "typewriter" | "fadeIn" | "slideIn" | "ascend" | "shift" | "movingLetters";
+				if (preset) this.updateAnimationProperty({ preset });
+			});
+		});
+
+		// Duration slider - Two-phase pattern (creates exactly 1 command per drag)
+		// Phase 1: Capture initial state on pointerdown
+		this.animationDurationSlider?.addEventListener("pointerdown", () => {
+			const state = this.captureClipState();
+			if (state) {
+				this.dragManager.start("animation-duration", state.clipId, state.initialState);
+			}
+		});
+
+		// Phase 2: Live update during drag (no command)
+		this.animationDurationSlider?.addEventListener("input", e => {
+			const value = parseFloat((e.target as HTMLInputElement).value);
+			this.currentAnimationDuration = value; // Track locally
+			if (this.animationDurationValue) this.animationDurationValue.textContent = `${value.toFixed(1)}s`;
+			this.updateAnimationLive({ duration: value });
+		});
+
+		// Phase 3: Commit single command on release
+		this.animationDurationSlider?.addEventListener("change", () => {
+			const session = this.dragManager.end("animation-duration");
+			if (!session) return;
+
+			// Use clipId from session (user may have switched clips during drag)
+			const { clipId } = session;
+
+			// Construct final clip state with explicit animation duration
+			const finalClip = structuredClone(session.initialState);
+			if (finalClip.asset && finalClip.asset.type === "rich-text") {
+				if (!finalClip.asset.animation) {
+					finalClip.asset.animation = { preset: "fadeIn" };
+				}
+				finalClip.asset.animation.duration = this.currentAnimationDuration;
+			}
+
+			this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
+		});
+
+		// Style buttons
+		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const style = btn.dataset["animationStyle"] as "character" | "word";
+				if (style) this.updateAnimationProperty({ style });
+			});
+		});
+
+		// Direction buttons
+		this.container.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach(btn => {
+			btn.addEventListener("click", () => {
+				const direction = btn.dataset["animationDirection"] as "left" | "right" | "up" | "down";
+				if (direction) this.updateAnimationProperty({ direction });
+			});
+		});
+
+		// Mount StylePanel composite (consolidated fill/border/padding/shadow)
+		this.stylePopup = this.container.querySelector("[data-style-popup]");
+		if (this.stylePopup) {
+			this.stylePanel = new StylePanel();
+
+			// Phase 1: Capture initial state when drag starts
+			this.stylePanel.onDragStart(() => {
+				const state = this.captureClipState();
+				if (state) {
+					this.dragManager.start("style-panel", state.clipId, state.initialState);
+				}
+			});
+
+			// Phase 2: Live updates during drag (no commands)
+			this.stylePanel.onBorderChange(border => {
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = {
+						...asset,
+						border: {
+							width: border.width,
+							color: border.color,
+							opacity: border.opacity / 100,
+							radius: border.radius
+						}
+					};
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					// Discrete update (creates command)
+					this.updateBorderProperty({
+						width: border.width,
+						color: border.color,
+						opacity: border.opacity / 100,
+						radius: border.radius
+					});
+				}
+			});
+
+			this.stylePanel.onPaddingChange(padding => {
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = { ...asset, padding };
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					// Discrete update (creates command)
+					this.updatePaddingProperty(padding);
+				}
+			});
+
+			this.stylePanel.onShadowChange(shadow => {
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+				const shadowValue = shadow.enabled
+					? {
+							offsetX: shadow.offsetX,
+							offsetY: shadow.offsetY,
+							blur: shadow.blur,
+							color: shadow.color,
+							opacity: shadow.opacity / 100
+						}
+					: undefined;
+
+				if (isDragging) {
+					// Live update during drag (no command)
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = { ...asset, shadow: shadowValue };
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else if (shadow.enabled) {
+					// Discrete update (creates command)
+					this.updateShadowProperty(shadowValue!);
+				} else {
+					this.updateClipProperty({ shadow: undefined });
+				}
+			});
+
+			// Phase 3: Commit single command when drag ends
+			this.stylePanel.onDragEnd(() => {
+				const session = this.dragManager.end("style-panel");
+				if (!session) return;
+
+				// Use clipId from session (user may have switched clips during drag)
+				const { clipId } = session;
+				if (!this.stylePanel) return;
+
+				// Read final state from StylePanel (source of truth)
+				const finalState = this.stylePanel.getState();
+
+				// Construct final clip state with actual user-selected values
+				const finalClip = structuredClone(session.initialState);
+				if (finalClip.asset && finalClip.asset.type === "rich-text") {
+					// Border: Convert opacity from percentage (0-100) to decimal (0-1)
+					finalClip.asset.border = {
+						width: finalState.border.width,
+						color: finalState.border.color,
+						opacity: finalState.border.opacity / 100,
+						radius: finalState.border.radius
+					};
+					finalClip.asset.padding = finalState.padding;
+					finalClip.asset.shadow = finalState.shadow.enabled
+						? {
+								offsetX: finalState.shadow.offsetX,
+								offsetY: finalState.shadow.offsetY,
+								blur: finalState.shadow.blur,
+								color: finalState.shadow.color,
+								opacity: finalState.shadow.opacity / 100
+							}
+						: undefined;
+					// Note: fill is handled by BackgroundColorPicker, not StylePanel
+				}
+
+				// Commit with explicit final state (avoids race condition)
+				this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
+			});
+
+			this.stylePanel.mount(this.stylePopup);
+
+			// Mount BackgroundColorPicker inside StylePanel's fill tab
+			const fillMount = this.stylePanel.getFillColorPickerMount();
+			if (fillMount) {
+				this.backgroundColorPicker = new BackgroundColorPicker();
+				this.backgroundColorPicker.mount(fillMount);
+
+				// Drag start - capture initial state
+				this.backgroundColorPicker.onDragStart(controlId => {
+					const state = this.captureClipState();
+					if (state) {
+						this.dragManager.start(controlId, state.clipId, state.initialState);
+					}
+				});
+
+				// Live updates during drag (or discrete commands outside drag)
+				this.backgroundColorPicker.onChange((controlId, enabled, color, opacity) => {
+					const session = this.dragManager.get(controlId);
+
+					if (session) {
+						// During drag: live updates only (no commands)
+						const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+						if (!clipId) return;
+
+						const asset = this.getCurrentAsset();
+						if (!asset) return;
+
+						if (enabled) {
+							const currentBackground = asset.background || { color: "#FFFFFF", opacity: 1, borderRadius: 0 };
+							const updatedAsset = {
+								...asset,
+								background: { ...currentBackground, color, opacity }
+							};
+							this.edit.updateClipInDocument(clipId, { asset: updatedAsset });
+						} else {
+							const updatedAsset = { ...asset };
+							delete updatedAsset.background;
+							this.edit.updateClipInDocument(clipId, { asset: updatedAsset });
+						}
+						this.edit.resolveClip(clipId);
+					} else if (enabled) {
+						// Outside drag: discrete command (e.g., toggle checkbox without drag)
+						this.updateBackgroundProperty({ color, opacity });
+					} else {
+						this.removeBackgroundProperty();
+					}
+				});
+
+				// Drag end - commit the final state as a single command
+				this.backgroundColorPicker.onDragEnd(controlId => {
+					const session = this.dragManager.end(controlId);
+					if (!session) {
+						return;
+					}
+
+					// Use clipId from session (user may have switched clips during drag)
+					const { clipId } = session;
+
+					// Build final state
+					const finalClip = structuredClone(session.initialState);
+					if (finalClip.asset && finalClip.asset.type === "rich-text") {
+						const enabled = this.backgroundColorPicker?.isEnabled() ?? false;
+						const color = this.backgroundColorPicker?.getColor() ?? "#FFFFFF";
+						const opacity = this.backgroundColorPicker?.getOpacity() ?? 1;
+						if (enabled) {
+							finalClip.asset.background = {
+								color,
+								opacity,
+								borderRadius: finalClip.asset.background?.borderRadius ?? 0
+							};
+						} else {
+							delete finalClip.asset.background;
+						}
+					}
+
+					// Commit command to history
+					this.edit.commitClipUpdate(clipId, session.initialState, finalClip);
+				});
+			}
+		}
+
+		// Replace annotated labels with MergeFieldLabel components when merge fields are enabled
+		if (this.showMergeFields) {
+			this.mergeFieldManager = new MergeFieldLabelManager(this as unknown as MergeFieldLabelHost, RichTextToolbar.PROPERTY_DEFAULTS);
+			this.mergeFieldManager.init();
+		}
+
+		// Text edit area handlers
+		this.textEditArea?.addEventListener("input", () => {
+			this.checkAutocomplete();
+			this.debouncedApplyTextEdit();
+		});
+		this.textEditArea?.addEventListener("keydown", e => {
+			// Handle autocomplete navigation when visible
+			if (this.autocompleteVisible) {
+				if (e.key === "ArrowDown") {
+					e.preventDefault();
+					const count = this.getFilteredFieldCount();
+					this.selectedAutocompleteIndex = Math.min(this.selectedAutocompleteIndex + 1, count - 1);
+					this.showAutocomplete();
+					return;
+				}
+				if (e.key === "ArrowUp") {
+					e.preventDefault();
+					this.selectedAutocompleteIndex = Math.max(this.selectedAutocompleteIndex - 1, 0);
+					this.showAutocomplete();
+					return;
+				}
+				if (e.key === "Enter" || e.key === "Tab") {
+					e.preventDefault();
+					this.insertSelectedVariable();
+					return;
+				}
+				if (e.key === "Escape") {
+					e.preventDefault();
+					this.hideAutocomplete();
+					return;
+				}
+			}
+
+			// Apply on Ctrl/Cmd+Enter (allow normal Enter for newlines)
+			if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+				e.preventDefault();
+				if (this.textEditDebounceTimer) {
+					clearTimeout(this.textEditDebounceTimer);
+					this.textEditDebounceTimer = null;
+				}
+				this.applyTextEdit();
+				this.closeAllPopups();
+			}
+			if (e.key === "Escape") {
+				this.closeAllPopups();
+			}
+		});
+
+		this.setupOutsideClickHandler();
+		this.enableDrag();
+
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM parent styling
+		parent.style.position = "relative";
+		parent.insertBefore(this.container, parent.firstChild);
+
+		// Re-sync when font capabilities change (async operation)
+		this.unsubFontCapabilities = this.edit.getInternalEvents().on(InternalEvent.FontCapabilitiesChanged, () => {
+			if (this.container?.style.display !== "none") {
+				this.syncState();
+			}
+		});
+
+		// Re-sync merge field labels when fields are added/removed globally
+		this.unsubMergeFieldChanged = this.edit.getInternalEvents().on(EditEvent.MergeFieldChanged, () => {
+			if (this.container?.style.display !== "none" && this.showMergeFields && this.mergeFieldManager?.hasLabels) {
+				this.mergeFieldManager.sync();
+			}
+		});
+	}
+
+	// ─── Merge Field Label Defaults ────────────────────────────────────────
+
+	/** Default values for merge-field-bindable properties when the property is undefined on the clip. */
+	private static readonly PROPERTY_DEFAULTS: Record<string, string> = {
+		"asset.font.color": "#ffffff",
+		"asset.font.opacity": "1",
+		"asset.font.background": "#FFFF00",
+		"asset.border.width": "0",
+		"asset.border.color": "#000000",
+		"asset.border.radius": "0",
+		"asset.padding.top": "0",
+		"asset.padding.right": "0",
+		"asset.padding.bottom": "0",
+		"asset.padding.left": "0",
+		"asset.shadow.offsetX": "0",
+		"asset.shadow.offsetY": "0",
+		"asset.shadow.color": "#000000",
+		"asset.style.letterSpacing": "0",
+		"asset.style.lineHeight": "1.2"
+	};
+
+	private handleClick(e: MouseEvent): void {
+		const target = e.target as HTMLElement;
+		const button = target.closest("button");
+		if (!button) return;
+
+		const { action } = button.dataset;
+		if (!action) return;
+
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		switch (action) {
+			case "size-down":
+				this.updateSize((asset.font?.size ?? 48) - 4);
+				break;
+			case "size-up":
+				this.updateSize((asset.font?.size ?? 48) + 4);
+				break;
+			case "weight-toggle":
+				this.toggleWeightPopup();
+				break;
+			case "font-toggle":
+				this.toggleFontPopup();
+				break;
+			case "text-edit-toggle":
+				this.toggleTextEditPopup();
+				break;
+			case "spacing-toggle":
+				this.toggleSpacingPopup();
+				break;
+			case "style-toggle":
+				this.togglePopup(this.stylePopup);
+				break;
+			case "font-color-toggle":
+				this.toggleFontColorPopup();
+				break;
+			case "anchor-top":
+				this.updateVerticalAlign("top");
+				break;
+			case "anchor-middle":
+				this.updateVerticalAlign("middle");
+				break;
+			case "anchor-bottom":
+				this.updateVerticalAlign("bottom");
+				break;
+			case "align-cycle":
+				this.cycleAlignment(asset);
+				break;
+			case "transform":
+				this.cycleTransform(asset);
+				break;
+			case "underline":
+				this.toggleUnderline(asset);
+				break;
+			case "linethrough":
+				this.toggleLinethrough(asset);
+				break;
+			case "animation-toggle":
+				this.toggleAnimationPopup();
+				break;
+			case "animation-clear":
+				this.updateClipProperty({ animation: undefined });
+				this.closeAllPopups();
+				break;
+			case "transition-toggle":
+				this.togglePopup(this.transitionPopup);
+				break;
+			case "effect-toggle":
+				this.togglePopup(this.effectPopup);
+				break;
+			default:
+				break;
+		}
+	}
+
+	private getCurrentAsset(): RichTextAsset | null {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip) return null;
+		return clip.asset as RichTextAsset;
+	}
+
+	private updateSize(newSize: number): void {
+		const clampedSize = Math.max(8, Math.min(500, newSize));
+		this.updateClipProperty({ font: { size: clampedSize } });
+	}
+
+	// Font weight options: name → numeric value
+	private static readonly FONT_WEIGHTS: Array<{ name: string; value: number }> = [
+		{ name: "Light", value: 300 },
+		{ name: "Regular", value: 400 },
+		{ name: "Medium", value: 500 },
+		{ name: "Bold", value: 700 },
+		{ name: "Black", value: 900 }
+	];
+
+	// Checkmark SVG (constant to avoid rebuilding string)
+	private static readonly CHECKMARK_SVG =
+		'<svg class="ss-toolbar-weight-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+
+	/** Single source of truth for weight normalization - handles string, number, or object */
+	private normalizeWeight(raw: unknown): number {
+		if (typeof raw === "number") return raw;
+		if (typeof raw === "string") return parseInt(raw, 10) || 400;
+		return 400;
+	}
+
+	private getWeightName(weight: unknown): string {
+		const numWeight = this.normalizeWeight(weight);
+		const found = RichTextToolbar.FONT_WEIGHTS.find(w => w.value === numWeight);
+		return found?.name ?? "Regular";
+	}
+
+	private toggleWeightPopup(): void {
+		this.togglePopup(this.weightPopup, () => this.updateWeightPopupState());
+	}
+
+	/** Build popup once at mount - uses event delegation (no per-item listeners) */
+	private buildWeightPopup(): void {
+		if (!this.weightPopup) return;
+
+		// Build static HTML once
+		this.weightPopup.innerHTML = RichTextToolbar.FONT_WEIGHTS.map(
+			({ name, value }) => `
+				<div class="ss-toolbar-weight-item" data-weight="${value}">
+					<span class="ss-toolbar-weight-name" style="font-weight: ${value}">${name}</span>
+					<span class="ss-toolbar-weight-check-slot"></span>
+				</div>
+			`
+		).join("");
+
+		// Single delegated click handler (no leak on repeated opens)
+		this.weightPopup.addEventListener("click", (e: MouseEvent) => {
+			const item = (e.target as HTMLElement).closest("[data-weight]") as HTMLElement | null;
+			if (!item) return;
+			const weight = parseInt(item.dataset["weight"]!, 10);
+			this.setFontWeight(weight);
+			this.closeAllPopups();
+		});
+
+		this.updateWeightPopupState();
+	}
+
+	/** Update active state without rebuilding DOM */
+	private updateWeightPopupState(): void {
+		if (!this.weightPopup) return;
+		const asset = this.getCurrentAsset();
+		const currentWeight = this.normalizeWeight(asset?.font?.weight);
+
+		this.weightPopup.querySelectorAll("[data-weight]").forEach(item => {
+			const el = item as HTMLElement;
+			const value = parseInt(el.dataset["weight"]!, 10);
+			const isActive = value === currentWeight;
+			el.classList.toggle("active", isActive);
+
+			// Update checkmark slot
+			const slot = el.querySelector(".ss-toolbar-weight-check-slot");
+			if (slot) {
+				slot.innerHTML = isActive ? RichTextToolbar.CHECKMARK_SVG : "";
+			}
+		});
+	}
+
+	private setFontWeight(weight: number): void {
+		this.updateClipProperty({ font: { weight } });
+	}
+
+	private toggleSizePopup(): void {
+		this.togglePopup(this.sizePopup, () => this.updateSizePopupState());
+	}
+
+	/** Build popup once at mount - uses event delegation (no per-item listeners) */
+	private buildSizePopup(): void {
+		if (!this.sizePopup) return;
+
+		// Build static HTML once
+		this.sizePopup.innerHTML = FONT_SIZES.map(size => `<div class="ss-toolbar-size-item" data-size="${size}">${size}</div>`).join("");
+
+		// Single delegated click handler (no leak on repeated opens)
+		this.sizePopup.addEventListener("click", (e: MouseEvent) => {
+			const item = (e.target as HTMLElement).closest("[data-size]") as HTMLElement | null;
+			if (!item) return;
+			const size = parseInt(item.dataset["size"]!, 10);
+			this.updateSize(size);
+			this.closeAllPopups();
+		});
+
+		this.updateSizePopupState();
+	}
+
+	/** Update active state without rebuilding DOM */
+	private updateSizePopupState(): void {
+		if (!this.sizePopup) return;
+		const asset = this.getCurrentAsset();
+		const currentSize = asset?.font?.size ?? 48;
+
+		this.sizePopup.querySelectorAll("[data-size]").forEach(item => {
+			const el = item as HTMLElement;
+			const size = parseInt(el.dataset["size"]!, 10);
+			el.classList.toggle("active", size === currentSize);
+		});
+	}
+
+	private applyManualSize(): void {
+		if (!this.sizeInput) return;
+		const value = parseInt(this.sizeInput.value, 10);
+		if (!Number.isNaN(value) && value > 0) {
+			this.updateSize(value);
+		}
+		this.syncState();
+	}
+
+	private toggleSpacingPopup(): void {
+		this.togglePopup(this.spacingPopup);
+	}
+
+	private toggleAnimationPopup(): void {
+		this.togglePopup(this.animationPopup, () => {
+			const asset = this.getCurrentAsset();
+			this.updateAnimationSections(asset?.animation?.preset);
+		});
+	}
+
+	private toggleFontColorPopup(): void {
+		this.togglePopup(this.fontColorPopup, () => {
+			if (this.fontColorPicker) {
+				const asset = this.getCurrentAsset();
+				const font = asset?.font;
+				const style = asset?.style;
+
+				if (style?.gradient) {
+					this.fontColorPicker.setMode("gradient");
+				} else {
+					this.fontColorPicker.setMode("color");
+					this.fontColorPicker.setColor(font?.color || "#000000", font?.opacity ?? 1);
+					// Check for SDK-extended background property (not in external schema)
+					const fontExt = font as typeof font & { background?: string };
+					if (fontExt?.background) {
+						this.fontColorPicker.setHighlight(fontExt.background);
+					}
+				}
+			}
+		});
+	}
+
+	private toggleFontPopup(): void {
+		this.togglePopup(this.fontPopup, () => this.buildFontPicker());
+	}
+
+	private toggleTextEditPopup(): void {
+		this.togglePopup(this.textEditPopup, () => {
+			if (this.textEditArea) {
+				const templateText = this.edit.getTemplateClipText(this.selectedTrackIdx, this.selectedClipIdx);
+				const asset = this.getCurrentAsset();
+				this.textEditArea.value = templateText ?? asset?.text ?? "";
+				this.textEditArea.focus();
+			}
+		});
+	}
+
+	private debouncedApplyTextEdit(): void {
+		if (this.textEditDebounceTimer) {
+			clearTimeout(this.textEditDebounceTimer);
+		}
+		this.textEditDebounceTimer = setTimeout(() => {
+			this.applyTextEdit();
+			this.textEditDebounceTimer = null;
+		}, 150);
+	}
+
+	private applyTextEdit(): void {
+		if (!this.textEditArea) return;
+		const templateText = this.textEditArea.value;
+
+		const shotstackEdit = this.getShotstackEdit();
+
+		// Resolve any merge field templates in the text for canvas rendering
+		const resolvedText = shotstackEdit?.mergeFields.resolve(templateText) ?? templateText;
+
+		// Update merge field binding for export to preserve templates
+		const document = this.edit.getDocument();
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+
+		if (shotstackEdit?.mergeFields.isMergeFieldTemplate(templateText)) {
+			const binding = {
+				placeholder: templateText,
+				resolvedValue: resolvedText
+			};
+			// Document binding (source of truth)
+			if (clipId && document) {
+				document.setClipBinding(clipId, "asset.text", binding);
+			}
+		} else if (clipId && document) {
+			// Document binding (source of truth)
+			document.removeClipBinding(clipId, "asset.text");
+		}
+
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
+			asset: { text: resolvedText } as ResolvedClip["asset"]
+		});
+		this.syncState();
+	}
+
+	// ─── Autocomplete for Merge Field Variables ─────────────────────────────────
+
+	private checkAutocomplete(): void {
+		if (!this.showMergeFields) return;
+		if (!this.textEditArea) return;
+
+		const pos = this.textEditArea.selectionStart;
+		const text = this.textEditArea.value.substring(0, pos);
+		const match = text.match(/\{\{\s*([A-Z_0-9]*)$/i);
+
+		if (match) {
+			this.autocompleteStartPos = pos - match[0].length;
+			this.autocompleteFilter = match[1].toUpperCase();
+			this.showAutocomplete();
+		} else {
+			this.hideAutocomplete();
+		}
+	}
+
+	private showAutocomplete(): void {
+		if (!this.autocompletePopup || !this.autocompleteItems) return;
+
+		const fields = this.getShotstackEdit()?.mergeFields.getAll() ?? [];
+		const filtered = fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter));
+
+		if (filtered.length === 0) {
+			this.hideAutocomplete();
+			return;
+		}
+
+		// Reset selection if out of bounds
+		if (this.selectedAutocompleteIndex >= filtered.length) {
+			this.selectedAutocompleteIndex = 0;
+		}
+
+		// Update HTML content only - click handler is delegated at mount time
+		this.autocompleteItems.innerHTML = filtered
+			.map(
+				(f: MergeField, i: number) => `
+			<div class="ss-autocomplete-item${i === this.selectedAutocompleteIndex ? " selected" : ""}"
+				 data-var-name="${f.name}">
+				<span class="ss-autocomplete-var">{{ ${f.name} }}</span>
+				${f.defaultValue ? `<span class="ss-autocomplete-preview">${f.defaultValue}</span>` : ""}
+			</div>
+		`
+			)
+			.join("");
+
+		this.autocompletePopup.classList.add("visible");
+		this.autocompleteVisible = true;
+	}
+
+	private hideAutocomplete(): void {
+		if (this.autocompletePopup) {
+			this.autocompletePopup.classList.remove("visible");
+		}
+		this.autocompleteVisible = false;
+		this.selectedAutocompleteIndex = 0;
+	}
+
+	private insertVariable(varName: string): void {
+		if (!this.textEditArea) return;
+
+		const before = this.textEditArea.value.substring(0, this.autocompleteStartPos);
+		const after = this.textEditArea.value.substring(this.textEditArea.selectionStart);
+
+		// Build template string (keeps {{ VAR }})
+		const templateText = `${before}{{ ${varName} }}${after}`;
+
+		// Resolve for clipConfiguration (canvas rendering)
+		const field = this.getShotstackEdit()?.mergeFields.get(varName);
+		const resolvedValue = field?.defaultValue ?? `{{ ${varName} }}`;
+		const resolvedText = `${before}${resolvedValue}${after}`;
+
+		// Keep template in text area (user can see merge fields)
+		this.textEditArea.value = templateText;
+
+		// Position cursor after inserted template
+		const newPos = this.autocompleteStartPos + varName.length + 6; // "{{ " + name + " }}"
+		this.textEditArea.selectionStart = newPos;
+		this.textEditArea.selectionEnd = newPos;
+		this.textEditArea.focus();
+
+		this.hideAutocomplete();
+
+		// Update merge field binding for export to preserve templates
+		const document = this.edit.getDocument();
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+
+		// Document binding (source of truth)
+		if (clipId && document) {
+			const binding = {
+				placeholder: templateText,
+				resolvedValue: resolvedText
+			};
+			document.setClipBinding(clipId, "asset.text", binding);
+		}
+
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
+			asset: { text: resolvedText } as ResolvedClip["asset"]
+		});
+		this.syncState();
+	}
+
+	private insertSelectedVariable(): void {
+		const selected = this.autocompleteItems?.querySelector(".selected") as HTMLElement | null;
+		if (!selected) return;
+
+		const { varName } = selected.dataset;
+		if (varName) {
+			this.insertVariable(varName);
+		}
+	}
+
+	private getFilteredFieldCount(): number {
+		const fields = this.getShotstackEdit()?.mergeFields.getAll() ?? [];
+		return fields.filter((f: MergeField) => f.name.toUpperCase().includes(this.autocompleteFilter)).length;
+	}
+
+	private buildFontPicker(): void {
+		if (!this.fontPopup) return;
+
+		// Clean up existing picker
+		if (this.fontPicker) {
+			this.fontPicker.destroy();
+			this.fontPicker = null;
+		}
+
+		const asset = this.getCurrentAsset();
+		const currentFilename = asset?.font?.family;
+
+		// Get timeline fonts for custom fonts section
+		const document = this.edit.getDocument();
+		const timelineFonts = document?.getFonts() ?? [];
+
+		this.fontPicker = new FontPicker({
+			selectedFilename: currentFilename,
+			timelineFonts,
+			fontMetadata: this.edit.getFontMetadata(),
+			onSelect: font => this.selectFont(font),
+			onClose: () => this.closeAllPopups()
+		});
+
+		this.fontPopup.innerHTML = "";
+		this.fontPopup.appendChild(this.fontPicker.getElement());
+	}
+
+	private getDisplayName(fontFamily: string): string {
+		// First check if it's a Google Font filename (hash)
+		const googleFont = GOOGLE_FONTS_BY_FILENAME.get(fontFamily);
+		if (googleFont) {
+			return googleFont.displayName;
+		}
+
+		// Check if this is a custom font with a binary name available.
+		// The stored fontFamily may be a URL-extracted name (e.g. "source") that doesn't
+		// match the real font name. Look up the binary name from fontMetadata.
+		const fontMetadata = this.edit.getFontMetadata();
+		for (const [url, meta] of fontMetadata) {
+			const binaryName = meta.baseFamilyName.replace(/^["']+|["']+$/g, "");
+			// Match if the stored family equals the binary name OR the URL-extracted name
+			const urlFilename =
+				url
+					.split("/")
+					.pop()
+					?.replace(/\.(ttf|otf|woff|woff2)$/i, "") ?? "";
+			if (fontFamily === urlFilename || fontFamily === binaryName) {
+				return binaryName;
+			}
+		}
+
+		// Fall back to cleaning up font names: "Oswald-VariableFont" → "Oswald"
+		return fontFamily.replace(/-VariableFont$/i, "").replace(/-/g, " ");
+	}
+
+	// ─── Phase 2 Helper Methods ────────────────────────────────────
+
+	// TODO: Audit all command history routes for two-phase pattern consistency
+	// After refactoring to explicit updateClipInDocument() + resolveClip() calls,
+	// verify that all other property update paths (not using two-phase drag) are
+	// also consistent with the pattern. Check for any remaining command creation
+	// inconsistencies or places where UI updates should happen before commitClipUpdate().
+
+	/**
+	 * Live update animation property during drag.
+	 */
+	private updateAnimationLive(updates: Partial<{ duration: number }>): void {
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clipId) return;
+
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		const currentAnimation = asset.animation || { preset: "fadeIn" as const };
+		const updatedAnimation = { ...currentAnimation, ...updates } as typeof currentAnimation;
+		const updatedAsset = { ...asset, animation: updatedAnimation } as RichTextAsset;
+
+		this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+		this.edit.resolveClip(clipId);
+	}
+
+	/**
+	 * Capture current clip state for two-phase drag pattern (Phase 1).
+	 * Creates a deep clone of the clip's current state to enable command rollback on drag end.
+	 *
+	 * @returns Object with clipId and cloned initial state, or null if no clip selected
+	 */
+	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
+	}
+
+	private selectFont(font: FontInfo): void {
+		// Add font URL to timeline.fonts via document layer (persists properly)
+		const document = this.edit.getDocument();
+		if (document) {
+			document.addFont(font.url);
+		}
+
+		// Set the filename (hash) as the font family - this is what the backend expects
+		this.updateClipProperty({ font: { family: font.filename } });
+
+		// Clean up old font if no longer used by any clip
+		this.edit.pruneUnusedFonts();
+
+		this.closeAllPopups();
+	}
+
+	private updateVerticalAlign(align: "top" | "middle" | "bottom"): void {
+		this.updateClipProperty({ align: { vertical: align } });
+	}
+
+	private cycleAlignment(asset: RichTextAsset): void {
+		const current = asset.align?.horizontal ?? "center";
+		const cycle: Array<"left" | "center" | "right"> = ["left", "center", "right"];
+		const currentIdx = cycle.indexOf(current as "left" | "center" | "right");
+		const nextIdx = (currentIdx + 1) % cycle.length;
+		this.updateAlignment(cycle[nextIdx]);
+	}
+
+	private updateAlignment(align: "left" | "center" | "right"): void {
+		this.updateClipProperty({ align: { horizontal: align } });
+		this.updateAlignIcon(align);
+	}
+
+	private updateAlignIcon(align: "left" | "center" | "right"): void {
+		if (!this.alignIcon) return;
+		const paths: Record<string, string> = {
+			left: "M3 5h18v2H3V5zm0 4h12v2H3V9zm0 4h18v2H3v-2zm0 4h12v2H3v-2z",
+			center: "M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z",
+			right: "M3 5h18v2H3V5zm6 4h12v2H9V9zm-6 4h18v2H3v-2zm6 4h12v2H9v-2z"
+		};
+		const path = this.alignIcon.querySelector("path");
+		if (path) {
+			path.setAttribute("d", paths[align]);
+		}
+	}
+
+	private cycleTransform(asset: RichTextAsset): void {
+		const current = asset.style?.textTransform ?? "none";
+		const cycle: Array<"none" | "uppercase" | "lowercase"> = ["none", "uppercase", "lowercase"];
+		const currentIdx = cycle.indexOf(current as "none" | "uppercase" | "lowercase");
+		const nextIdx = (currentIdx + 1) % cycle.length;
+		this.updateClipProperty({ style: { textTransform: cycle[nextIdx] } });
+	}
+
+	private toggleUnderline(asset: RichTextAsset): void {
+		const current = asset.style?.textDecoration ?? "none";
+		const newValue = current === "underline" ? "none" : "underline";
+		this.updateClipProperty({ style: { textDecoration: newValue } });
+	}
+
+	private toggleLinethrough(asset: RichTextAsset): void {
+		const current = asset.style?.textDecoration ?? "none";
+		const newValue = current === "line-through" ? "none" : "line-through";
+		this.updateClipProperty({ style: { textDecoration: newValue } });
+	}
+
+	private updateBorderProperty(updates: Partial<{ width: number; color: string; opacity: number; radius: number }>): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		const currentBorder = asset.border || { width: 0, color: "#000000", opacity: 1, radius: 0 };
+		const updatedBorder = { ...currentBorder, ...updates };
+		this.updateClipProperty({ border: updatedBorder });
+	}
+
+	private updateShadowProperty(updates: Partial<{ offsetX: number; offsetY: number; blur: number; color: string; opacity: number }>): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		const currentShadow = asset.shadow || { offsetX: 0, offsetY: 0, blur: 0, color: "#000000", opacity: 0.5 };
+		const updatedShadow = { ...currentShadow, ...updates };
+		this.updateClipProperty({ shadow: updatedShadow });
+	}
+
+	private updateAnimationProperty(updates: Partial<{ preset: string; duration: number; style: string; direction: string }>): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		const currentAnimation = asset.animation || { preset: "fadeIn" as const };
+		const updatedAnimation = { ...currentAnimation, ...updates };
+		this.updateClipProperty({ animation: updatedAnimation });
+
+		// Update UI sections visibility when preset changes
+		if (updates.preset) {
+			this.updateAnimationSections(updates.preset);
+		}
+	}
+
+	private updateAnimationSections(preset?: string): void {
+		// style is allowed for: typewriter, shift, fadeIn, slideIn
+		const stylePresets = ["typewriter", "shift", "fadeIn", "slideIn"];
+		// direction is allowed for: ascend, shift, slideIn
+		const directionPresets = ["ascend", "shift", "slideIn"];
+
+		if (this.animationStyleSection) {
+			this.animationStyleSection.style.display = preset && stylePresets.includes(preset) ? "block" : "none";
+		}
+		if (this.animationDirectionSection) {
+			this.animationDirectionSection.style.display = preset && directionPresets.includes(preset) ? "block" : "none";
+		}
+	}
+
+	private updateBackgroundProperty(updates: Partial<{ color?: string; opacity: number }>): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		const currentBackground = asset.background || { color: "#FFFFFF", opacity: 1, borderRadius: 0 };
+		const updatedBackground = { ...currentBackground, ...updates };
+
+		this.updateClipProperty({ background: updatedBackground });
+	}
+
+	/**
+	 * Remove background property entirely (sets to undefined).
+	 */
+	private removeBackgroundProperty(): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		// Explicitly set background to undefined to remove it
+		this.updateClipProperty({ background: undefined });
+	}
+
+	private updatePaddingProperty(updates: Partial<{ top: number; right: number; bottom: number; left: number }>): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		// Get current padding (handle both number and object formats)
+		let currentPadding: { top: number; right: number; bottom: number; left: number };
+
+		if (typeof asset.padding === "number") {
+			// Convert uniform padding to object format
+			currentPadding = {
+				top: asset.padding,
+				right: asset.padding,
+				bottom: asset.padding,
+				left: asset.padding
+			};
+		} else if (asset.padding) {
+			// Already object format — default any missing sides to 0
+			currentPadding = {
+				top: asset.padding.top ?? 0,
+				right: asset.padding.right ?? 0,
+				bottom: asset.padding.bottom ?? 0,
+				left: asset.padding.left ?? 0
+			};
+		} else {
+			// No padding set, use defaults
+			currentPadding = { top: 0, right: 0, bottom: 0, left: 0 };
+		}
+
+		// Merge updates
+		const updatedPadding = { ...currentPadding, ...updates };
+
+		// Check if all sides are equal (can simplify to uniform padding)
+		const allEqual =
+			updatedPadding.top === updatedPadding.right && updatedPadding.right === updatedPadding.bottom && updatedPadding.bottom === updatedPadding.left;
+
+		// If all sides are 0, remove padding entirely
+		if (updatedPadding.top === 0 && updatedPadding.right === 0 && updatedPadding.bottom === 0 && updatedPadding.left === 0) {
+			const { padding, ...assetWithoutPadding } = asset;
+			this.updateClipProperty(assetWithoutPadding);
+		}
+		// If all sides are equal, use uniform padding (simpler format)
+		else if (allEqual) {
+			this.updateClipProperty({ padding: updatedPadding.top });
+		}
+		// Otherwise use object format
+		else {
+			this.updateClipProperty({ padding: updatedPadding });
+		}
+	}
+
+	private updateFontColorProperty(updates: {
+		color?: string;
+		opacity?: number;
+		background?: string;
+		gradient?: { type: "linear" | "radial"; angle: number; stops: Array<{ offset: number; color: string }> };
+	}): void {
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		const currentFont = asset.font || {};
+
+		const fontUpdates: Record<string, unknown> = { ...currentFont };
+
+		// Handle solid color and opacity
+		if (updates.color !== undefined) {
+			fontUpdates["color"] = updates.color;
+		}
+		if (updates.opacity !== undefined) {
+			fontUpdates["opacity"] = updates.opacity;
+		}
+
+		// Handle text highlight (font.background)
+		if (updates.background !== undefined) {
+			fontUpdates["background"] = updates.background;
+		}
+
+		// Handle gradient (stored in style.gradient)
+		if (updates.gradient !== undefined) {
+			const currentStyle = asset.style || {};
+			this.updateClipProperty({
+				font: fontUpdates,
+				style: { ...currentStyle, gradient: updates.gradient }
+			});
+			return;
+		}
+
+		// Clear gradient when setting solid color
+		const currentStyle = asset.style || ({} as Record<string, unknown>);
+		if ((updates.color !== undefined || updates.opacity !== undefined) && currentStyle.gradient) {
+			this.updateClipProperty({
+				font: fontUpdates,
+				style: { ...currentStyle, gradient: undefined }
+			});
+			return;
+		}
+
+		// Apply updates
+		this.updateClipProperty({
+			font: fontUpdates
+		});
+	}
+
+	private updateClipProperty(assetUpdates: Record<string, unknown>): void {
+		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
+		this.syncState();
+	}
+
+	private applyClipUpdate(updates: Record<string, unknown>): void {
+		if (this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0) {
+			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
+		}
+	}
+
+	protected override getPopupList(): (HTMLElement | null)[] {
+		return [
+			this.sizePopup,
+			this.weightPopup,
+			this.spacingPopup,
+			this.stylePopup,
+			this.fontPopup,
+			this.textEditPopup,
+			this.fontColorPopup,
+			this.animationPopup,
+			this.transitionPopup,
+			this.effectPopup
+		];
+	}
+
+	protected override syncState(): void {
+		const currentClipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipChanged = this.lastSyncedClipId !== currentClipId;
+
+		if (clipChanged) {
+			// CRITICAL: Clear all drag sessions when clip selection changes
+			this.dragManager.clear();
+			this.lastSyncedClipId = currentClipId;
+		}
+
+		const asset = this.getCurrentAsset();
+		if (!asset) return;
+
+		// Update weight preview to show current weight name
+		if (this.weightPreview) {
+			this.weightPreview.textContent = this.getWeightName(asset.font?.weight);
+		}
+
+		// Hide weight dropdown for non-variable fonts (they only support one weight)
+		if (this.weightDropdown) {
+			const currentFont = GOOGLE_FONTS_BY_FILENAME.get(asset.font?.family ?? "");
+			// Show for variable fonts, custom fonts (no match = assume variable), or when no font info
+			const supportsWeights = !currentFont || currentFont.isVariable;
+			this.weightDropdown.style.display = supportsWeights ? "" : "none";
+		}
+
+		if (this.sizeInput) {
+			this.sizeInput.value = String(asset.font?.size ?? 48);
+		}
+
+		if (this.fontPreview) {
+			const fontFamily = asset.font?.family ?? "Roboto";
+			this.fontPreview.textContent = this.getDisplayName(fontFamily);
+			this.fontPreview.style.fontFamily = `'${fontFamily}', sans-serif`;
+		}
+
+		if (this.colorDisplay) {
+			const color = asset.font?.color ?? "#000000";
+			this.colorDisplay.style.backgroundColor = color;
+		}
+
+		// Sync spacing panel
+		this.spacingPanel?.setState(asset.style?.letterSpacing ?? 0, asset.style?.lineHeight ?? 1.2);
+
+		const verticalAlign = asset.align?.vertical ?? "middle";
+		this.setButtonActive(this.anchorTopBtn, verticalAlign === "top");
+		this.setButtonActive(this.anchorMiddleBtn, verticalAlign === "middle");
+		this.setButtonActive(this.anchorBottomBtn, verticalAlign === "bottom");
+
+		const align = asset.align?.horizontal ?? "center";
+		this.updateAlignIcon(align as "left" | "center" | "right");
+
+		const transform = asset.style?.textTransform ?? "none";
+		if (this.transformBtn) {
+			let transformLabel = "Aa";
+			if (transform === "uppercase") {
+				transformLabel = "AA";
+			} else if (transform === "lowercase") {
+				transformLabel = "aa";
+			}
+			this.transformBtn.textContent = transformLabel;
+			this.setButtonActive(this.transformBtn, transform !== "none");
+		}
+
+		const isUnderline = asset.style?.textDecoration === "underline";
+		this.setButtonActive(this.underlineBtn, isUnderline);
+
+		const isLinethrough = asset.style?.textDecoration === "line-through";
+		this.setButtonActive(this.linethroughBtn, isLinethrough);
+
+		// Sync StylePanel (consolidated border/padding/shadow/fill)
+		if (this.stylePanel) {
+			// Border — default each property individually since partial border objects
+			// can exist (e.g. merge field sets only width, leaving color/radius undefined)
+			const { border } = asset;
+			this.stylePanel.setBorderState({
+				width: border?.width ?? 0,
+				color: border?.color ?? "#000000",
+				opacity: Math.round((border?.opacity ?? 1) * 100),
+				radius: border?.radius ?? 0
+			});
+
+			// Shadow (blur fixed at 4 - canvas only checks blur > 0, doesn't implement actual blur)
+			const { shadow } = asset;
+			this.stylePanel.setShadowState({
+				enabled: !!shadow,
+				offsetX: shadow?.offsetX ?? 0,
+				offsetY: shadow?.offsetY ?? 0,
+				blur: shadow?.blur ?? 4,
+				color: shadow?.color ?? "#000000",
+				opacity: shadow ? Math.round((shadow.opacity ?? 1) * 100) : 50
+			});
+
+			// Padding (handled below, needs special normalization)
+		}
+
+		// Background fill sync
+		if (this.backgroundColorPicker) {
+			const { background } = asset;
+			const hasBackground = !!background;
+
+			this.backgroundColorPicker.setEnabled(hasBackground);
+			this.backgroundColorPicker.setColor(background?.color || "#FFFFFF");
+			this.backgroundColorPicker.setOpacity((background?.opacity ?? 1) * 100);
+		}
+
+		// Animation
+		const { animation } = asset;
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach(btn => {
+			this.setButtonActive(btn, btn.dataset["preset"] === animation?.preset);
+		});
+		if (this.animationDurationSlider && this.animationDurationValue) {
+			const duration = animation?.duration ?? 1;
+			this.animationDurationSlider.value = String(duration);
+			this.animationDurationValue.textContent = `${duration.toFixed(1)}s`;
+		}
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-style]").forEach(btn => {
+			this.setButtonActive(btn, btn.dataset["animationStyle"] === animation?.style);
+		});
+		this.container?.querySelectorAll<HTMLButtonElement>("[data-animation-direction]").forEach(btn => {
+			this.setButtonActive(btn, btn.dataset["animationDirection"] === animation?.direction);
+		});
+		this.updateAnimationSections(animation?.preset);
+
+		// Padding - sync with StylePanel
+		if (this.stylePanel) {
+			const padding =
+				typeof asset.padding === "number"
+					? { top: asset.padding, right: asset.padding, bottom: asset.padding, left: asset.padding }
+					: {
+							top: asset.padding?.top ?? 0,
+							right: asset.padding?.right ?? 0,
+							bottom: asset.padding?.bottom ?? 0,
+							left: asset.padding?.left ?? 0
+						};
+			this.stylePanel.setPaddingState(padding);
+		}
+
+		// Get clip for transition and effect values
+		const clip = this.edit.getClip(this.selectedTrackIdx, this.selectedClipIdx);
+
+		// Sync composite panels
+		this.transitionPanel?.setFromClip(clip?.transition as { in?: string; out?: string } | undefined);
+		this.effectPanel?.setFromClip((clip?.effect as string) ?? "");
+
+		// Sync merge field label bound states
+		if (this.showMergeFields && this.mergeFieldManager?.hasLabels) {
+			this.mergeFieldManager.sync();
+		}
+	}
+
+	override dispose(): void {
+		// Clear all drag sessions
+		this.dragManager.clear();
+		this.lastSyncedClipId = null;
+
+		// Clean up event listeners before super.dispose() removes container
+		this.unsubFontCapabilities?.();
+		this.unsubFontCapabilities = null;
+		this.unsubMergeFieldChanged?.();
+		this.unsubMergeFieldChanged = null;
+		if (this.boundHandleClick) {
+			this.container?.removeEventListener("click", this.boundHandleClick);
+			this.boundHandleClick = null;
+		}
+		super.dispose();
+		this.sizeInput = null;
+		this.sizePopup = null;
+		this.weightPopup = null;
+		this.weightPreview = null;
+		this.fontPopup = null;
+		this.fontPreview = null;
+		this.fontPicker?.destroy();
+		this.fontPicker = null;
+
+		this.fontColorPicker?.dispose();
+		this.fontColorPicker = null;
+		this.fontColorPopup = null;
+		this.colorDisplay = null;
+
+		this.spacingPopup = null;
+		this.spacingPanel?.dispose();
+		this.spacingPanel = null;
+		this.stylePopup = null;
+		this.stylePanel?.dispose();
+		this.stylePanel = null;
+		this.anchorTopBtn = null;
+		this.anchorMiddleBtn = null;
+		this.anchorBottomBtn = null;
+		this.alignIcon = null;
+		this.transformBtn = null;
+		this.underlineBtn = null;
+		this.linethroughBtn = null;
+		this.textEditPopup = null;
+		this.textEditArea = null;
+		if (this.textEditDebounceTimer) {
+			clearTimeout(this.textEditDebounceTimer);
+			this.textEditDebounceTimer = null;
+		}
+
+		this.animationPopup = null;
+		this.animationDurationSlider = null;
+		this.animationDurationValue = null;
+		this.animationStyleSection = null;
+		this.animationDirectionSection = null;
+
+		this.backgroundColorPicker?.dispose();
+		this.backgroundColorPicker = null;
+		this.backgroundPopup = null;
+
+		// Dispose composite panels (auto-cleans events via EventManager)
+		this.transitionPanel?.dispose();
+		this.transitionPanel = null;
+		this.transitionPopup = null;
+
+		this.effectPanel?.dispose();
+		this.effectPanel = null;
+		this.effectPopup = null;
+
+		// Dispose merge field labels
+		this.mergeFieldManager?.dispose();
+		this.mergeFieldManager = null;
+	}
+}

@@ -1,18 +1,17 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
-import { type ShapeAsset } from "@schemas/shape-asset";
+import { type ResolvedClip, type ShapeAsset } from "@schemas";
 import * as pixiFilters from "pixi-filters";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class ShapePlayer extends Player {
 	private shape: pixi.Graphics | null;
 	private shapeBackground: pixi.Graphics | null;
 
-	constructor(timeline: Edit, clipConfiguration: Clip) {
-		super(timeline, clipConfiguration);
+	constructor(timeline: Edit, clipConfiguration: ResolvedClip) {
+		super(timeline, clipConfiguration, PlayerType.Shape);
 
 		this.shape = null;
 		this.shapeBackground = null;
@@ -91,10 +90,6 @@ export class ShapePlayer extends Player {
 
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
-	}
-
-	public override draw(): void {
-		super.draw();
 	}
 
 	public override dispose(): void {

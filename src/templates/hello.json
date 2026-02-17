@@ -1,57 +1,724 @@
 {
 	"timeline": {
-		"fonts": [
-			{
-				"src": "https://shotstack-ingest-api-dev-sources.s3.ap-southeast-2.amazonaws.com/euo5r93oyr/zzz01k5s-0qvt9-ck9d4-950ts-hbsa9x/source.ttf"
-			}
-		],
+		"fonts": [{ "src": "https://fonts.gstatic.com/s/titilliumweb/v19/NaPecZTIAOhVxoMyOr9n_E7fRMTsDIRSfr0.ttf" }],
+		"background": "#8B5CF6",
 		"tracks": [
 			{
 				"clips": [
 					{
 						"asset": {
 							"type": "rich-text",
-							"text": "Hello World!",
-							"font": {
-								"family": "Roboto",
-								"size": 48,
-								"weight": "400",
-								"color": "#ffffff",
-								"opacity": 1
-							},
-							"style": {
-								"letterSpacing": 0,
-								"lineHeight": 1.5,
-								"textTransform": "none"
-							},
-							"background": {
-								"color": "#1a1a2e",
-								"opacity": 1
-							},
-							"align": {
-								"horizontal": "center",
-								"vertical": "middle"
-							},
-							"animation": {
-								"preset": "typewriter",
-								"duration": 3,
-								"style": "character"
-							}
+							"text": "Title",
+							"font": { "family": "NaPecZTIAOhVxoMyOr9n_E7fRMTsDIRSfr0", "size": 72, "weight": 700, "color": "#000000", "opacity": 1 },
+							"background": { "color": "#aa5555", "opacity": 1, "borderRadius": 0 },
+							"border": { "width": 2, "color": "#000000", "opacity": 1, "radius": 11 },
+							"padding": { "top": 3, "right": 0, "bottom": 0, "left": 0 },
+							"align": { "horizontal": "center", "vertical": "middle" }
+						},
+						"start": 13.07,
+						"length": 5,
+						"fit": "none",
+						"width": 600,
+						"height": 200,
+						"offset": { "x": 0.1620370370370371, "y": -0.1953125 }
+					}
+				]
+			},
+			{ "clips": [{ "length": "end", "asset": { "type": "audio", "src": "{{ AUDIO }}", "volume": 1 }, "start": 0 }] },
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "rich-text",
+							"text": "{{S3_Subtitle}}",
+							"font": { "family": "Montserrat SemiBold", "size": 62, "weight": 600, "color": "{{ FONT_COLOR_3 }}", "opacity": 1 },
+							"style": { "letterSpacing": 0, "lineHeight": 1, "textTransform": "none", "textDecoration": "none" },
+							"align": { "horizontal": "center", "vertical": "middle" }
+						},
+						"start": 13.19,
+						"length": "end",
+						"position": "center",
+						"offset": { "x": 0, "y": 0.02300000000000002 },
+						"transition": { "in": "slideUp" },
+						"width": 696,
+						"height": 312,
+						"fit": "cover"
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S3_Body}}",
+							"width": 600,
+							"height": 200,
+							"font": { "family": "Montserrat SemiBold", "color": "{{ FONT_COLOR_3 }}", "size": 30, "lineHeight": 1 },
+							"alignment": { "horizontal": "center", "vertical": "center" }
+						},
+						"start": 13.07,
+						"length": "end",
+						"position": "center",
+						"transition": { "in": "slideUp" },
+						"offset": { "x": 0, "y": -0.14322916666666663 }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#000000", "family": "Montserrat SemiBold", "size": 24, "lineHeight": 1 },
+							"width": 800,
+							"height": 528,
+							"background": { "color": "{{ TEXT_BACKGROUND_COLOR }}", "opacity": 0.44, "borderRadius": 91 }
+						},
+						"start": 13.04,
+						"length": "end",
+						"offset": { "x": 0, "y": 0.023 },
+						"position": "center",
+						"transition": { "in": "slideUp" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#000000", "family": "Montserrat SemiBold", "size": 24, "lineHeight": 1 },
+							"width": 1080,
+							"height": 1920,
+							"background": { "color": "{{ FONT_COLOR_3 }}", "opacity": 0.39 }
+						},
+						"start": 13,
+						"length": "end",
+						"transition": { "in": "fadeFast" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/352f3f02-5665-4a9b-940d-5dc5c1fcee47/source.png"
+						},
+						"start": 5.34,
+						"length": 2.66,
+						"scale": 0.08,
+						"transition": { "in": "slideUp", "out": "fade" },
+						"offset": { "x": 0, "y": 0.012446622670807483 }
+					},
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/4c41b1a9-4aa8-40ad-8f96-e4557a2dfb82/source.png"
+						},
+						"start": 8.36,
+						"length": 2.64,
+						"scale": 2,
+						"transition": { "in": "slideUp", "out": "fade" },
+						"offset": { "x": -0.047979880081604254, "y": 0.12810647466519914 }
+					},
+					{
+						"length": "end",
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/260ff36d-33f8-406c-9ad3-ab123b91ef42/source.png"
+						},
+						"start": 11,
+						"scale": 0.08,
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"length": 2.45,
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/4c1f1ca3-6acd-40ac-93a0-20cc590a8980/source.png"
+						},
+						"start": 5.55,
+						"scale": 0.08,
+						"offset": { "x": -0.327, "y": -0.285 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" },
+						"transform": { "rotate": { "angle": -13 } }
+					},
+					{
+						"length": 2.78,
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/4ddf86ae-ea9c-497a-ade1-b4bc9acbf28a/source.png"
+						},
+						"start": 8.22,
+						"scale": 0.08,
+						"offset": { "x": -0.297, "y": -0.248 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" },
+						"transform": { "rotate": { "angle": -13 } }
+					},
+					{
+						"length": "end",
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/8adf4035-e07a-48e6-9bff-2292b385d6c6/source.png"
+						},
+						"start": 11.29,
+						"scale": 0.08,
+						"offset": { "x": -0.257, "y": -0.153 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" },
+						"transform": { "rotate": { "angle": -13 } }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"length": 2.8,
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/a1780263-d0a4-4e94-939e-77ba7defbcc3/source.png"
+						},
+						"start": 5.2,
+						"scale": 0.07,
+						"offset": { "x": 0.28, "y": 0.177 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					},
+					{
+						"length": 3,
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/4503cf03-ab2b-46cd-a32c-3b5a60b6a41e/source.png"
+						},
+						"start": 8,
+						"scale": 0.07,
+						"offset": { "x": 0.28, "y": 0.177 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					},
+					{
+						"length": "end",
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/04c8d948-dd60-493f-b02b-f928f0c14590/source.png"
+						},
+						"start": 11.54,
+						"scale": 0.07,
+						"offset": { "x": 0.28, "y": 0.177 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": { "type": "video", "src": "{{ S2_VIDEO_1 }}", "volume": 1 },
+						"start": 5,
+						"length": 3,
+						"scale": 0.74,
+						"position": "center",
+						"transition": { "in": "slideLeft", "out": "fade" },
+						"offset": { "x": 0.18518518518518523, "y": -0.10605325888192274 }
+					},
+					{
+						"asset": { "type": "video", "src": "{{ S3_VIDEO_2 }}", "volume": 1 },
+						"start": 8,
+						"length": 3,
+						"scale": 0.74,
+						"transition": { "in": "fade", "out": "fade" },
+						"offset": { "x": 0.06018518518518523, "y": -0.0603935253348008 }
+					},
+					{
+						"length": 5.065957142857142,
+						"asset": { "type": "video", "src": "{{ S4_VIDEO_3 }}", "volume": 1 },
+						"start": 11,
+						"scale": 0.74,
+						"transition": { "in": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S2_Title}}",
+							"width": 400,
+							"height": 72,
+							"font": { "family": "Clear Sans", "color": "{{ FONT_COLOR_2 }}", "size": 30, "lineHeight": 1, "weight": 400 },
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"stroke": { "width": 0, "color": "#000000" },
+							"background": { "color": "#c26161", "opacity": 1 }
+						},
+						"start": 5,
+						"length": "end",
+						"position": "center",
+						"offset": { "x": 0, "y": 0.403 },
+						"transition": { "in": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#000000", "family": "Montserrat SemiBold", "size": 24, "lineHeight": 1 },
+							"width": 950,
+							"height": 1704,
+							"background": { "color": "{{ FONT_COLOR_3 }}", "borderRadius": 100 }
+						},
+						"start": 5,
+						"length": "end",
+						"transition": { "in": "slideLeft" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"length": 5,
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/6b060247-b241-4c1d-aaaf-4e8750b8e02e/source.png"
 						},
 						"start": 0,
-						"length": 4,
-						"width": 800,
-						"height": 400
+						"scale": 0.03,
+						"offset": { "x": 0.4, "y": -0.079 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Folder_4}}",
+							"alignment": { "horizontal": "left", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_3 }}", "family": "DM Sans 9pt", "size": 24, "lineHeight": 1 },
+							"width": 200,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.359, "y": -0.079 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Folder_2}}",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_3 }}", "family": "DM Sans 9pt", "size": 24, "lineHeight": 1 },
+							"width": 200,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.365, "y": 0.052 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Folder_3}}",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_3 }}", "family": "DM Sans 9pt", "size": 24, "lineHeight": 1 },
+							"width": 200,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.128, "y": -0.079 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Folder_1}}",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_3 }}", "family": "DM Sans 9pt", "size": 24, "lineHeight": 1 },
+							"width": 200,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.131, "y": 0.052 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "First Date",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#ffffff", "family": "DM Sans 9pt", "size": 24, "lineHeight": 1 },
+							"width": 200,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.131, "y": 0.052 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Event}}",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_2 }}", "family": "DM Sans 9pt", "size": "28", "lineHeight": 1 },
+							"width": 400,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": -0.248, "y": 0.361 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Date}}",
+							"alignment": { "horizontal": "left", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_2 }}", "family": "DM Sans 9pt", "size": "90", "lineHeight": 1 },
+							"width": 400,
+							"height": 100
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": -0.24, "y": 0.407 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "{{S1_Day}}",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "{{ FONT_COLOR_1 }}", "family": "DM Sans 9pt", "size": 24, "lineHeight": 1 },
+							"width": 200,
+							"height": 72
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": -0.341, "y": 0.442 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#000000", "family": "Montserrat ExtraBold", "size": 46, "lineHeight": 1 },
+							"width": 207,
+							"height": 207,
+							"background": { "color": "{{ FOLDER_COLOR }}" }
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.362, "y": -0.014 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/62e3c2f1-d15b-4fe1-ae26-baa417011cfa/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#000000", "family": "Montserrat ExtraBold", "size": 46, "lineHeight": 1 },
+							"width": 207,
+							"height": 207,
+							"background": { "color": "{{ FOLDER_COLOR }}" }
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": 0.362, "y": 0.12 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/d67eb9fc-5212-4ba3-92f9-b4d1aaf30293/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"width": 207,
+							"height": 207,
+							"font": { "family": "Montserrat ExtraBold", "color": "#000000", "size": 96, "lineHeight": 1 },
+							"background": { "color": "{{ FOLDER_COLOR }}" },
+							"alignment": { "horizontal": "center", "vertical": "center" }
+						},
+						"start": 0,
+						"length": 5,
+						"position": "center",
+						"offset": { "x": 0.128, "y": -0.015 },
+						"transition": { "in": "slideUp", "out": "fade" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/0901b167-9a7e-4031-a423-1f4fbb11ec2c/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"width": 207,
+							"height": 207,
+							"font": { "family": "Montserrat ExtraBold", "color": "#000000", "size": 46, "lineHeight": 1 },
+							"background": { "color": "{{ FOLDER_COLOR }}" },
+							"alignment": { "horizontal": "center", "vertical": "center" }
+						},
+						"start": 0,
+						"length": 5,
+						"width": 207,
+						"height": 207,
+						"position": "center",
+						"offset": { "x": -0.09583333333333333, "y": 0.17390624999999998 },
+						"transition": { "in": "slideUp", "out": "fade" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/b373a06d-b9ed-4318-947a-13496ff2abcf/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"length": 5,
+						"asset": { "type": "video", "src": "{{ S2_VIDEO_2 }}", "volume": 1 },
+						"start": 0,
+						"scale": 0.25,
+						"offset": { "x": 0.244, "y": 0.342 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/9ec88d85-4586-4f0b-a9c8-c252de7e7795/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"length": 5,
+						"asset": { "type": "video", "src": "{{ S1_Video_1 }}", "volume": 1 },
+						"start": 0,
+						"scale": 0.4,
+						"offset": { "x": -0.24, "y": 0.102 },
+						"position": "center",
+						"transition": { "out": "fade", "in": "slideUp" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/2b85a5ed-fce2-4f20-a9f6-257a00a64614/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#000000", "family": "Montserrat SemiBold", "size": 24, "lineHeight": 1 },
+							"width": 424,
+							"height": 265,
+							"background": { "borderRadius": 55, "color": "#ffffff" }
+						},
+						"start": 0,
+						"length": 5,
+						"offset": { "x": -0.251, "y": 0.4 },
+						"position": "center",
+						"transition": { "in": "slideUp", "out": "fade" }
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": { "type": "video", "src": "{{ S1_VIDEO_3 }}", "volume": 0 },
+						"start": 0,
+						"length": 5,
+						"scale": 0.35,
+						"position": "center",
+						"offset": { "x": 0, "y": -0.2749999999999999 },
+						"transition": { "in": "slideUp", "out": "fade" }
+					},
+					{
+						"asset": {
+							"type": "luma",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/53a7077c-ab9a-46fb-bd70-853e67659e17/source.png"
+						},
+						"start": 0,
+						"length": 5
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "",
+							"alignment": { "horizontal": "center", "vertical": "center" },
+							"font": { "color": "#dbd2d2", "family": "Montserrat SemiBold", "size": 24, "lineHeight": 1 },
+							"width": 1080,
+							"height": 1920,
+							"background": { "color": "#000000" }
+						},
+						"start": 0,
+						"length": 16,
+						"position": "center"
 					}
 				]
 			}
 		]
 	},
-	"output": {
-		"format": "mp4",
-		"size": {
-			"width": 1920,
-			"height": 1080
-		}
-	}
+	"output": { "format": "mp4", "fps": 25, "size": { "width": 1080, "height": 1920 } },
+	"merge": [
+		{ "find": "S1_Day", "replace": "TUESTDAY" },
+		{ "find": "S1_Date", "replace": "26 MAY" },
+		{ "find": "S1_Event", "replace": "Remember this day" },
+		{ "find": "S1_Folder_1", "replace": "First Date" },
+		{ "find": "S1_Folder_2", "replace": "Love Throwback" },
+		{ "find": "S1_Folder_3", "replace": "Beautiful Moment" },
+		{ "find": "S1_Folder_4", "replace": "Favorite" },
+		{
+			"find": "S1_Video_1",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/f610868b-ebc7-4081-851d-dc2759638ba5/source.mp4"
+		},
+		{
+			"find": "S2_VIDEO_2",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/42ebb9f2-7c2b-4c6b-b1cd-4e11d4366bbf/source.mp4"
+		},
+		{
+			"find": "S1_VIDEO_3",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/605afd06-0243-4403-b5e4-80538ef6da46/source.mp4"
+		},
+		{ "find": "S2_Title", "replace": "Romantic Holiday" },
+		{
+			"find": "S2_VIDEO_1",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/1dd9fdd7-040b-4822-9ec1-1e9a594846bc/source.mp4"
+		},
+		{
+			"find": "S3_VIDEO_2",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/14ff00a9-a4cc-4f8d-9702-7cb0d464614b/source.mp4"
+		},
+		{
+			"find": "S4_VIDEO_3",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/20f5fe59-3e91-4c51-aaae-1de4b6173e48/source.mp4"
+		},
+		{ "find": "FONT_COLOR_1", "replace": "#ff0000" },
+		{ "find": "FONT_COLOR_2", "replace": "#000000" },
+		{ "find": "CALENDER_COLOR", "replace": "#efefef" },
+		{ "find": "FOLDER_COLOR", "replace": "#eea50d" },
+		{ "find": "FONT_COLOR_3", "replace": "#ffffff" },
+		{ "find": "TEXT_BACKGROUND_COLOR", "replace": "#000000" },
+		{ "find": "S3_Body", "replace": "From sunsets by the shore to laughter under the stars, our holiday gave us more than memories" },
+		{
+			"find": "AUDIO",
+			"replace": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/5f6210e5-73f0-4bcc-b8e4-292a94585f55/source.mp3"
+		},
+		{ "find": "S3_Subtitle", "replace": "Love, Promise, Gratitude." }
+	]
 }

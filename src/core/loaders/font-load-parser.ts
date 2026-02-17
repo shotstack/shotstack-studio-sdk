@@ -1,3 +1,4 @@
+import * as opentype from "opentype.js";
 import * as pixi from "pixi.js";
 
 type Woff2Decompressor = {
@@ -33,13 +34,13 @@ export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 	}
 
 	public async load(url: string, _?: pixi.ResolvedAsset<FontFace>, __?: pixi.Loader): Promise<FontFace | null> {
-		const urlWithoutQuery = url.split("?")[0] ?? "";
-		const extension = urlWithoutQuery.split(".").pop()?.toLowerCase() ?? "";
-
-		const filename = urlWithoutQuery.split("/").pop() || "";
-		const familyName = filename.replace(/\.(ttf|otf|woff|woff2)$/i, "");
+		const extension = url.split("?")[0]?.split(".").pop()?.toLowerCase() ?? "";
+		const buffer = await fetch(url).then(res => res.arrayBuffer());
 
 		if (extension !== "woff2") {
+			const font = opentype.parse(new Uint8Array(buffer).buffer);
+			const familyName = font.names.fontFamily["en"] || font.names.fontFamily[Object.keys(font.names.fontFamily)[0]];
+
 			const fontFace = new FontFace(familyName, `url(${url})`);
 			await fontFace.load();
 
@@ -47,14 +48,15 @@ export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 			return fontFace;
 		}
 
-		const buffer = await fetch(url).then(res => res.arrayBuffer());
-
 		await this.loadWoff2Decompressor();
 		if (!this.woff2Decompressor) {
 			throw new Error("Cannot initialize Woff2 decompressor.");
 		}
 
 		const decompressed = this.woff2Decompressor.decompress(buffer);
+
+		const font = opentype.parse(new Uint8Array(decompressed).buffer);
+		const familyName = font.names.fontFamily["en"] || font.names.fontFamily[Object.keys(font.names.fontFamily)[0]];
 
 		const blob = new Blob([decompressed], { type: "font/ttf" });
 		const blobUrl = URL.createObjectURL(blob);

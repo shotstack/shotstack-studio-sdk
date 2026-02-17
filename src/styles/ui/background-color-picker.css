@@ -1,0 +1,111 @@
+.ss-color-picker {
+	padding: 16px;
+}
+
+.ss-color-picker-header {
+	font-size: 11px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 14px;
+}
+
+.ss-color-picker-enable-row {
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ss-color-picker-enable-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.9);
+	user-select: none;
+}
+
+.ss-color-picker-enable-checkbox {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	accent-color: #007aff;
+}
+
+.ss-color-picker-controls {
+	transition: opacity 0.2s ease;
+}
+
+.ss-color-picker-controls.disabled {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.ss-color-picker-color-section,
+.ss-color-picker-opacity-section {
+	margin-bottom: 16px;
+}
+
+.ss-color-picker-color-section:last-child,
+.ss-color-picker-opacity-section:last-child {
+	margin-bottom: 0;
+}
+
+.ss-color-picker-label {
+	font-size: 13px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.9);
+	margin-bottom: 8px;
+}
+
+.ss-color-picker-color-wrap {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.ss-color-picker-color {
+	width: 100%;
+	height: 40px;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	cursor: pointer;
+	background: transparent;
+}
+
+.ss-color-picker-color::-webkit-color-swatch-wrapper {
+	padding: 4px;
+}
+
+.ss-color-picker-color::-webkit-color-swatch {
+	border: none;
+	border-radius: 4px;
+}
+
+.ss-color-picker-color::-moz-color-swatch {
+	border: none;
+	border-radius: 4px;
+}
+
+.ss-color-picker-opacity-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.ss-color-picker-opacity {
+	flex: 1;
+}
+
+.ss-color-picker-opacity-value {
+	min-width: 42px;
+	text-align: right;
+	font-size: 13px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.9);
+	font-variant-numeric: tabular-nums;
+}

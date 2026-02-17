@@ -1,64 +1,55 @@
-import * as pixi from "pixi.js";
+import { EditEvent } from "@core/events/edit-events";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess } from "./types";
 
+/**
+ * Document-only command that adds a new empty track.
+ */
 export class AddTrackCommand implements EditCommand {
-	name = "addTrack";
+	readonly name = "addTrack";
 
 	constructor(private trackIdx: number) {}
 
-	execute(context?: CommandContext): void {
-		if (!context) return;
-		const tracks = context.getTracks();
-		const clips = context.getClips();
+	execute(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("AddTrackCommand.execute: context is required");
 
-		tracks.splice(this.trackIdx, 0, []);
+		const doc = context.getDocument();
+		if (!doc) throw new Error("AddTrackCommand.execute: document is required");
 
-		// Update layers for all clips that are on tracks at or after the insertion point
-		// Since we're inserting a track, all tracks at or after trackIdx shift down
-		clips.forEach(clip => {
-			if (clip.layer >= this.trackIdx) {
-				// Remove from old container
-				const oldZIndex = 100000 - clip.layer * 100;
-				const oldContainer = context.getContainer().getChildByLabel(`shotstack-track-${oldZIndex}`, false);
-				if (oldContainer) {
-					oldContainer.removeChild(clip.getContainer());
-				}
+		// Document-only mutation
+		doc.addTrack(this.trackIdx);
 
-				// Update layer (track index + 1)
-				// eslint-disable-next-line no-param-reassign
-				clip.layer += 1;
+		// Reconciler handles track container creation and player layer updates
+		context.resolve();
 
-				// Add to new container
-				const newZIndex = 100000 - clip.layer * 100;
-				let newContainer = context.getContainer().getChildByLabel(`shotstack-track-${newZIndex}`, false);
-				if (!newContainer) {
-					newContainer = new pixi.Container({ label: `shotstack-track-${newZIndex}`, zIndex: newZIndex });
-					context.getContainer().addChild(newContainer);
-				}
-				newContainer.addChild(clip.getContainer());
-			}
-		});
 		context.updateDuration();
 
-		// Emit track creation event to trigger timeline visual updates
-		context.emitEvent("track:added", {
+		context.emitEvent(EditEvent.TrackAdded, {
 			trackIndex: this.trackIdx,
-			totalTracks: tracks.length
+			totalTracks: doc.getTrackCount()
 		});
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
-		if (!context) return;
-		const tracks = context.getTracks();
-		const clips = context.getClips();
-		tracks.splice(this.trackIdx, 1);
-		clips.forEach(clip => {
-			if (clip.layer > this.trackIdx) {
-				// eslint-disable-next-line no-param-reassign
-				clip.layer -= 1;
-			}
-		});
+	undo(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("AddTrackCommand.undo: context is required");
+
+		const doc = context.getDocument();
+		if (!doc) throw new Error("AddTrackCommand.undo: document is required");
+
+		// Document-only mutation
+		doc.removeTrack(this.trackIdx);
+
+		// Reconciler handles track container removal and player layer updates
+		context.resolve();
+
 		context.updateDuration();
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		// No resources to release
 	}
 }

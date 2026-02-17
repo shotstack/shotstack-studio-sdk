@@ -25,17 +25,20 @@ export function hexToPixiColor(hex: string): number {
  * Convert a TimelineThemeInput (with hex strings) to TimelineTheme (with PIXI numbers)
  */
 export function convertThemeColors(themeInput: TimelineThemeInput): TimelineTheme {
-	const convertColors = (obj: any): any => {
+	const convertColors = (obj: unknown): unknown => {
 		if (typeof obj === "string") {
 			return hexToPixiColor(obj);
 		}
 
 		if (typeof obj === "object" && obj !== null) {
-			const converted: any = Array.isArray(obj) ? [] : {};
+			if (Array.isArray(obj)) {
+				return obj.map(item => convertColors(item));
+			}
 
+			const converted: Record<string, unknown> = {};
 			for (const key in obj) {
 				if (Object.prototype.hasOwnProperty.call(obj, key)) {
-					converted[key] = convertColors(obj[key]);
+					converted[key] = convertColors((obj as Record<string, unknown>)[key]);
 				}
 			}
 
@@ -53,19 +56,22 @@ export function convertThemeColors(themeInput: TimelineThemeInput): TimelineThem
  */
 export function convertThemeColorsGeneric<T>(theme: T): T {
 	if (typeof theme === "string") {
-		return hexToPixiColor(theme) as any;
+		return hexToPixiColor(theme) as T;
 	}
 
 	if (typeof theme === "object" && theme !== null) {
-		const converted: any = Array.isArray(theme) ? [] : {};
+		if (Array.isArray(theme)) {
+			return theme.map(item => convertThemeColorsGeneric(item)) as T;
+		}
 
+		const converted: Record<string, unknown> = {};
 		for (const key in theme) {
 			if (Object.prototype.hasOwnProperty.call(theme, key)) {
-				converted[key] = convertThemeColorsGeneric(theme[key]);
+				converted[key] = convertThemeColorsGeneric((theme as Record<string, unknown>)[key]);
 			}
 		}
 
-		return converted;
+		return converted as T;
 	}
 
 	return theme;

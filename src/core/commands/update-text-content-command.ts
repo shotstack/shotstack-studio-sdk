@@ -1,72 +1,116 @@
-import type { Player } from "@canvas/players/player";
-import type { ClipSchema } from "@schemas/clip";
-import type { TextAsset } from "@schemas/text-asset";
-import type { z } from "zod";
+import { EditEvent } from "@core/events/edit-events";
+import { stripInternalProperties } from "@core/shared/clip-utils";
+import type { Clip, TextAsset } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
-type ClipType = z.infer<typeof ClipSchema>;
-
+/**
+ * Document-only command to update text content in a text clip.
+ */
 export class UpdateTextContentCommand implements EditCommand {
-	name = "updateTextContent";
-	private previousText: string;
+	readonly name = "updateTextContent";
+
+	private clipId: string | null = null;
+	private previousText = "";
+	/** Document clip state before mutation (source of truth for SDK events) */
+	private previousDocClip?: Clip;
 
 	constructor(
-		private clip: Player,
-		private newText: string,
-		private initialConfig: ClipType
-	) {
-		const { asset } = this.clip.clipConfiguration;
-		this.previousText = asset && "text" in asset ? (asset as TextAsset).text : "";
+		private trackIndex: number,
+		private clipIndex: number,
+		private newText: string
+	) {}
+
+	execute(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("UpdateTextContentCommand.execute: context is required");
+
+		const doc = context.getDocument();
+		if (!doc) throw new Error("UpdateTextContentCommand.execute: document is required");
+
+		// Get current player for config and ID
+		const player = context.getClipAt(this.trackIndex, this.clipIndex);
+		if (!player) {
+			return CommandNoop(`Invalid clip at ${this.trackIndex}/${this.clipIndex}`);
+		}
+
+		// Get document clip BEFORE mutation (source of truth for SDK events)
+		const docClip = doc.getClip(this.trackIndex, this.clipIndex);
+		if (!docClip) return CommandNoop("Clip not found in document");
+
+		// Store for undo
+		this.clipId = player.clipId;
+		this.previousDocClip = structuredClone(docClip);
+		const docAsset = docClip.asset as TextAsset;
+		this.previousText = docAsset && "text" in docAsset ? (docAsset.text ?? "") : "";
+
+		// Update document with new text
+		const currentAsset = docClip.asset as TextAsset;
+		const newAsset = { ...currentAsset, text: this.newText };
+		doc.updateClip(this.trackIndex, this.clipIndex, { asset: newAsset });
+
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
+
+		// Get document clip AFTER mutation (source of truth for SDK events)
+		const currentDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+		if (!this.previousDocClip || !currentDocClip)
+			throw new Error(`UpdateTextContentCommand: document clip not found after mutation at ${this.trackIndex}/${this.clipIndex}`);
+
+		context.emitEvent(EditEvent.ClipUpdated, {
+			previous: { clip: stripInternalProperties(this.previousDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+			current: { clip: stripInternalProperties(currentDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex }
+		});
+
+		return CommandSuccess();
 	}
 
-	execute(context?: CommandContext): void {
-		if (!context) return;
-		if (this.clip.clipConfiguration.asset && "text" in this.clip.clipConfiguration.asset) {
-			(this.clip.clipConfiguration.asset as TextAsset).text = this.newText;
+	undo(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("UpdateTextContentCommand.undo: context is required");
 
-			const textSprite = (this.clip as any).text;
-			if (textSprite) {
-				textSprite.text = this.newText;
-				(this.clip as any).positionText(this.clip.clipConfiguration.asset as TextAsset);
+		const doc = context.getDocument();
+		if (!doc) throw new Error("UpdateTextContentCommand.undo: document is required");
+
+		// Get document clip BEFORE undo mutation (source of truth for SDK events)
+		const currentDocClip = structuredClone(context.getDocumentClip(this.trackIndex, this.clipIndex));
+
+		// Get current clip from document
+		const clip = doc.getClip(this.trackIndex, this.clipIndex);
+		if (!clip) return CommandNoop("Clip not found for undo");
+
+		// Restore previous text in document
+		const currentAsset = clip.asset as TextAsset;
+		const restoredAsset = { ...currentAsset, text: this.previousText };
+		doc.updateClip(this.trackIndex, this.clipIndex, { asset: restoredAsset });
+
+		// Single-clip resolution (O(1) instead of O(n) full resolve)
+		if (this.clipId) {
+			context.resolveClip(this.clipId);
+		} else {
+			context.resolve();
+		}
+
+		// Get document clip AFTER undo mutation (restored state)
+		const restoredDocClip = context.getDocumentClip(this.trackIndex, this.clipIndex);
+
+		if (this.previousDocClip) {
+			if (!currentDocClip || !restoredDocClip) {
+				throw new Error(`UpdateTextContentCommand: document clip not found after undo at ${this.trackIndex}/${this.clipIndex}`);
 			}
-
-			context.setUpdatedClip(this.clip);
-
-			const trackIndex = this.clip.layer - 1;
-			const clips = context.getClips();
-			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
-			const clipIndex = clipsByTrack.indexOf(this.clip);
-
-			context.emitEvent("clip:updated", {
-				previous: { clip: this.initialConfig, trackIndex, clipIndex },
-				current: { clip: this.clip.clipConfiguration, trackIndex, clipIndex }
+			context.emitEvent(EditEvent.ClipUpdated, {
+				previous: { clip: stripInternalProperties(currentDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex },
+				current: { clip: stripInternalProperties(restoredDocClip), trackIndex: this.trackIndex, clipIndex: this.clipIndex }
 			});
 		}
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
-		if (!context) return;
-		if (this.clip.clipConfiguration.asset && "text" in this.clip.clipConfiguration.asset) {
-			(this.clip.clipConfiguration.asset as TextAsset).text = this.previousText;
-
-			const textSprite = (this.clip as any).text;
-			if (textSprite) {
-				textSprite.text = this.previousText;
-				(this.clip as any).positionText(this.clip.clipConfiguration.asset as TextAsset);
-			}
-
-			context.setUpdatedClip(this.clip);
-
-			const trackIndex = this.clip.layer - 1;
-			const clips = context.getClips();
-			const clipsByTrack = clips.filter((c: Player) => c.layer === this.clip.layer);
-			const clipIndex = clipsByTrack.indexOf(this.clip);
-
-			context.emitEvent("clip:updated", {
-				previous: { clip: this.clip.clipConfiguration, trackIndex, clipIndex },
-				current: { clip: this.initialConfig, trackIndex, clipIndex }
-			});
-		}
+	dispose(): void {
+		this.clipId = null;
+		this.previousDocClip = undefined;
 	}
 }

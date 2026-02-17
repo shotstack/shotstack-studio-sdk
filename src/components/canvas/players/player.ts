@@ -1,286 +1,233 @@
+import { ComposedKeyframeBuilder } from "@animations/composed-keyframe-builder";
 import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
-import { type Edit } from "@core/edit";
-import { type ResolvedTiming, type TimingIntent } from "@core/timing/types";
+import { type Edit } from "@core/edit-session";
+import { InternalEvent } from "@core/events/edit-events";
+import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
+import {
+	type AliasReference,
+	type ResolvedTiming,
+	type Seconds,
+	type TimingIntent,
+	type TimingValue,
+	isAliasReference,
+	sec
+} from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { PositionBuilder } from "@layouts/position-builder";
-import { type Clip, type ResolvedClipConfig } from "@schemas/clip";
-import { type Keyframe } from "@schemas/keyframe";
+import { type Clip, type ResolvedClip, type Keyframe } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
 
 /**
- * TODO: Move handles on UI level (screen space)
- * TODO: Handle overlapping frames - ex: length of a clip is 1.5s but there's an in (1s) and out (1s) transition
- * TODO: Scale X and Y needs to be implemented separately for getFitScale cover
- * TODO: Move animation effects and transitions out of player
- * TODO: On pointer down and custom keyframe, add a keyframe at the current time. Get current and time and push a keyframe into the state, and then reconfigure the keyframes.
- * TODO: Move bounding box to a separate entity
+ * Tracks a merge field binding for a specific property path.
+ * Used to restore placeholders on export for properties that haven't changed.
  */
+export interface MergeFieldBinding {
+	/** The original placeholder string, e.g., "{{ HERO_IMAGE }}" */
+	placeholder: string;
+	/** The resolved value at binding time, used for change detection */
+	resolvedValue: string;
+}
 
+export enum PlayerType {
+	Video = "video",
+	Image = "image",
+	Audio = "audio",
+	Text = "text",
+	RichText = "rich-text",
+	Luma = "luma",
+	Html = "html",
+	Shape = "shape",
+	Caption = "caption",
+	Svg = "svg",
+	TextToImage = "text-to-image",
+	ImageToVideo = "image-to-video",
+	TextToSpeech = "text-to-speech"
+}
+
+/**
+ * Base class for all visual content players in the canvas.
+ *
+ * Player is responsible for rendering clip content (video, image, text, etc.)
+ * and applying keyframe animations.
+ *
+ */
 export abstract class Player extends Entity {
-	private static readonly SnapThreshold = 20;
-
-	private static readonly DiscardedFrameCount = Math.ceil((1 / 30) * 1000);
-
-	private static readonly ScaleHandleRadius = 10;
-	private static readonly RotationHandleRadius = 10;
-	private static readonly RotationHandleOffset = 50;
-	private static readonly OutlineWidth = 5;
-
-	private static readonly MinScale = 0.1;
-	private static readonly MaxScale = 5;
-
-	private static readonly EdgeHandleLength = 30;
-	private static readonly EdgeHandleThickness = 8;
-	private static readonly MinDimension = 50;
-	private static readonly MaxDimension = 3840;
-
-	private static readonly RotationCursorSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 3a7 7 0 1 0 7 7' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M10 3a7 7 0 1 0 7 7' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M14 3 L10 0 L10 6 Z' fill='black' stroke='white' stroke-width='0.75' stroke-linejoin='round'/%3E%3C/svg%3E") 10 10, auto`;
+	private static readonly DiscardedFrameCount = 0;
 
 	public layer: number;
 	public shouldDispose: boolean;
+	public readonly playerType: PlayerType;
+
+	/**
+	 * Stable ID from the document for reconciliation.
+	 * Used to track this Player across document changes.
+	 */
+	public clipId: string | null = null;
 
 	protected edit: Edit;
-	public clipConfiguration: Clip;
+	public clipConfiguration: ResolvedClip;
 
-	private timingIntent: TimingIntent;
 	private resolvedTiming: ResolvedTiming;
 
 	private positionBuilder: PositionBuilder;
-	private offsetXKeyframeBuilder?: KeyframeBuilder;
-	private offsetYKeyframeBuilder?: KeyframeBuilder;
-	private scaleKeyframeBuilder?: KeyframeBuilder;
-	private opacityKeyframeBuilder?: KeyframeBuilder;
-	private rotationKeyframeBuilder?: KeyframeBuilder;
+	private offsetXKeyframeBuilder?: ComposedKeyframeBuilder;
+	private offsetYKeyframeBuilder?: ComposedKeyframeBuilder;
+	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
+	private opacityKeyframeBuilder?: ComposedKeyframeBuilder;
+	private rotationKeyframeBuilder?: ComposedKeyframeBuilder;
+	private skewXKeyframeBuilder?: ComposedKeyframeBuilder;
+	private skewYKeyframeBuilder?: ComposedKeyframeBuilder;
+	private maskXKeyframeBuilder?: KeyframeBuilder;
 
-	private outline: pixi.Graphics | null;
-	private topLeftScaleHandle: pixi.Graphics | null;
-	private topRightScaleHandle: pixi.Graphics | null;
-	private bottomLeftScaleHandle: pixi.Graphics | null;
-	private bottomRightScaleHandle: pixi.Graphics | null;
-	private rotationHandle: pixi.Graphics | null;
-
-	private leftEdgeHandle: pixi.Graphics | null;
-	private rightEdgeHandle: pixi.Graphics | null;
-	private topEdgeHandle: pixi.Graphics | null;
-	private bottomEdgeHandle: pixi.Graphics | null;
-
-	private isHovering: boolean;
-	private isDragging: boolean;
-	private dragOffset: Vector;
-
-	private scaleDirection: "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | null;
-	private scaleStart: number | null;
-	private scaleOffset: Vector;
-
-	private isRotating: boolean;
-	private rotationStart: number | null;
-	private rotationOffset: Vector;
-
-	private edgeDragDirection: "left" | "right" | "top" | "bottom" | null;
-	private edgeDragStart: Vector;
-	private originalDimensions: { width: number; height: number; offsetX: number; offsetY: number } | null;
-
-	private initialClipConfiguration: Clip | null;
+	private wipeMask: pixi.Graphics | null;
+	protected lumaWrapper: pixi.Container;
 	protected contentContainer: pixi.Container;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
+	constructor(edit: Edit, clipConfiguration: ResolvedClip, playerType: PlayerType) {
 		super();
 
 		this.edit = edit;
 		this.layer = 0;
 		this.shouldDispose = false;
+		this.playerType = playerType;
 
 		this.clipConfiguration = clipConfiguration;
 		this.positionBuilder = new PositionBuilder(edit.size);
 
-		this.timingIntent = {
-			start: clipConfiguration.start,
-			length: clipConfiguration.length
-		};
+		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
 
-		const startValue = typeof clipConfiguration.start === "number" ? clipConfiguration.start * 1000 : 0;
-		const lengthValue = typeof clipConfiguration.length === "number" ? clipConfiguration.length * 1000 : 3000;
-		this.resolvedTiming = { start: startValue, length: lengthValue };
+		this.wipeMask = null;
 
-		this.outline = null;
-		this.topLeftScaleHandle = null;
-		this.topRightScaleHandle = null;
-		this.bottomRightScaleHandle = null;
-		this.bottomLeftScaleHandle = null;
-		this.rotationHandle = null;
-
-		this.leftEdgeHandle = null;
-		this.rightEdgeHandle = null;
-		this.topEdgeHandle = null;
-		this.bottomEdgeHandle = null;
-
-		this.isHovering = false;
-
-		this.isDragging = false;
-		this.dragOffset = { x: 0, y: 0 };
-
-		this.scaleDirection = null;
-		this.scaleStart = null;
-		this.scaleOffset = { x: 0, y: 0 };
-
-		this.isRotating = false;
-		this.rotationStart = null;
-		this.rotationOffset = { x: 0, y: 0 };
-
-		this.edgeDragDirection = null;
-		this.edgeDragStart = { x: 0, y: 0 };
-		this.originalDimensions = null;
-
-		this.initialClipConfiguration = null;
-
+		// TODO: Lazy-init lumaWrapper in getLumaWrapper() to avoid allocating per player when unused
+		this.lumaWrapper = new pixi.Container();
 		this.contentContainer = new pixi.Container();
-		this.getContainer().addChild(this.contentContainer);
+		this.lumaWrapper.addChild(this.contentContainer);
+		this.getContainer().addChild(this.lumaWrapper);
 	}
 
 	public reconfigureAfterRestore(): void {
 		this.configureKeyframes();
 	}
 
-	protected configureKeyframes() {
-		this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset?.x ?? 0, this.getLength());
-		this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset?.y ?? 0, this.getLength());
-		this.scaleKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.scale ?? 1, this.getLength(), 1);
-		this.opacityKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.opacity ?? 1, this.getLength(), 1);
-		this.rotationKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.transform?.rotate?.angle ?? 0, this.getLength());
+	/**
+	 * Reload the asset for this player (e.g., when asset.src changes).
+	 * Override in subclasses that have loadable assets (image, video).
+	 * Default implementation is a no-op.
+	 */
+	public async reloadAsset(): Promise<void> {
+		// Default: no-op. Override in ImagePlayer, VideoPlayer, etc.
+	}
 
+	protected configureKeyframes() {
+		const length = this.getLength();
+		const config = this.clipConfiguration;
+
+		// Extract base values from clip configuration
+		const baseOffsetX = typeof config.offset?.x === "number" ? config.offset.x : 0;
+		const baseOffsetY = typeof config.offset?.y === "number" ? config.offset.y : 0;
+		const baseScale = typeof config.scale === "number" ? config.scale : 1;
+		const baseOpacity = typeof config.opacity === "number" ? config.opacity : 1;
+		const baseRotation = typeof config.transform?.rotate?.angle === "number" ? config.transform.rotate.angle : 0;
+		const baseSkewX = typeof config.transform?.skew?.x === "number" ? config.transform.skew.x : 0;
+		const baseSkewY = typeof config.transform?.skew?.y === "number" ? config.transform.skew.y : 0;
+
+		// Create composed builders with base values
+		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, length, "additive");
+		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, length, "additive");
+		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, length, "multiplicative");
+		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, length, "multiplicative", { min: 0, max: 1 });
+		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, length, "additive");
+		this.skewXKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewX, length, "additive");
+		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, length, "additive");
+
+		// If user has custom keyframes, add them and skip effect/transition layers
 		if (this.clipHasKeyframes()) {
+			if (Array.isArray(config.scale)) {
+				this.scaleKeyframeBuilder.addLayer(config.scale);
+			}
+			if (Array.isArray(config.opacity)) {
+				this.opacityKeyframeBuilder.addLayer(config.opacity);
+			}
+			if (Array.isArray(config.offset?.x)) {
+				this.offsetXKeyframeBuilder.addLayer(config.offset.x);
+			}
+			if (Array.isArray(config.offset?.y)) {
+				this.offsetYKeyframeBuilder.addLayer(config.offset.y);
+			}
+			if (Array.isArray(config.transform?.rotate?.angle)) {
+				this.rotationKeyframeBuilder.addLayer(config.transform.rotate.angle);
+			}
+			if (Array.isArray(config.transform?.skew?.x)) {
+				this.skewXKeyframeBuilder.addLayer(config.transform.skew.x);
+			}
+			if (Array.isArray(config.transform?.skew?.y)) {
+				this.skewYKeyframeBuilder.addLayer(config.transform.skew.y);
+			}
 			return;
 		}
 
-		const offsetXKeyframes: Keyframe[] = [];
-		const offsetYKeyframes: Keyframe[] = [];
-		const opacityKeyframes: Keyframe[] = [];
-		const scaleKeyframes: Keyframe[] = [];
-		const rotationKeyframes: Keyframe[] = [];
-
-		const resolvedClipConfig: ResolvedClipConfig = {
-			...this.clipConfiguration,
-			start: this.getStart() / 1000,
-			length: this.getLength() / 1000
+		// Build resolved clip config for preset builders
+		const resolvedClipConfig: ResolvedClip = {
+			...config,
+			start: this.getStart(),
+			length
 		};
 
-		const effectKeyframeSet = new EffectPresetBuilder(resolvedClipConfig).build(this.edit.size, this.getSize());
-		offsetXKeyframes.push(...effectKeyframeSet.offsetXKeyframes);
-		offsetYKeyframes.push(...effectKeyframeSet.offsetYKeyframes);
-		opacityKeyframes.push(...effectKeyframeSet.opacityKeyframes);
-		scaleKeyframes.push(...effectKeyframeSet.scaleKeyframes);
-		rotationKeyframes.push(...effectKeyframeSet.rotationKeyframes);
+		// Build relative effect keyframes (factors/deltas)
+		const effectSet = new EffectPresetBuilder(resolvedClipConfig).buildRelative(this.edit.size, this.getSize());
 
-		const transitionKeyframeSet = new TransitionPresetBuilder(resolvedClipConfig).build();
-		offsetXKeyframes.push(...transitionKeyframeSet.offsetXKeyframes);
-		offsetYKeyframes.push(...transitionKeyframeSet.offsetYKeyframes);
-		opacityKeyframes.push(...transitionKeyframeSet.opacityKeyframes);
-		scaleKeyframes.push(...transitionKeyframeSet.scaleKeyframes);
-		rotationKeyframes.push(...transitionKeyframeSet.rotationKeyframes);
+		// Build relative transition keyframes (separate in/out sets)
+		const transitionSet = new TransitionPresetBuilder(resolvedClipConfig).buildRelative();
 
-		if (offsetXKeyframes.length) {
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(offsetXKeyframes, this.getLength());
-		}
+		// Add effect layer
+		this.offsetXKeyframeBuilder.addLayer(effectSet.offsetXKeyframes);
+		this.offsetYKeyframeBuilder.addLayer(effectSet.offsetYKeyframes);
+		this.scaleKeyframeBuilder.addLayer(effectSet.scaleKeyframes);
+		this.opacityKeyframeBuilder.addLayer(effectSet.opacityKeyframes);
+		this.rotationKeyframeBuilder.addLayer(effectSet.rotationKeyframes);
 
-		if (offsetYKeyframes.length) {
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(offsetYKeyframes, this.getLength());
-		}
+		// Add transition-in layer
+		this.offsetXKeyframeBuilder.addLayer(transitionSet.in.offsetXKeyframes);
+		this.offsetYKeyframeBuilder.addLayer(transitionSet.in.offsetYKeyframes);
+		this.scaleKeyframeBuilder.addLayer(transitionSet.in.scaleKeyframes);
+		this.opacityKeyframeBuilder.addLayer(transitionSet.in.opacityKeyframes);
+		this.rotationKeyframeBuilder.addLayer(transitionSet.in.rotationKeyframes);
 
-		if (opacityKeyframes.length) {
-			this.opacityKeyframeBuilder = new KeyframeBuilder(opacityKeyframes, this.getLength(), 1);
-		}
+		// Add transition-out layer
+		this.offsetXKeyframeBuilder.addLayer(transitionSet.out.offsetXKeyframes);
+		this.offsetYKeyframeBuilder.addLayer(transitionSet.out.offsetYKeyframes);
+		this.scaleKeyframeBuilder.addLayer(transitionSet.out.scaleKeyframes);
+		this.opacityKeyframeBuilder.addLayer(transitionSet.out.opacityKeyframes);
+		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
-		if (scaleKeyframes.length) {
-			this.scaleKeyframeBuilder = new KeyframeBuilder(scaleKeyframes, this.getLength(), 1);
-		}
-
-		if (rotationKeyframes.length) {
-			this.rotationKeyframeBuilder = new KeyframeBuilder(rotationKeyframes, this.getLength());
+		// Mask keyframes (wipe/reveal effects)
+		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
+		if (maskXKeyframes.length) {
+			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
 		}
 	}
 
 	public override async load(): Promise<void> {
+		if (this.lumaWrapper?.destroyed) {
+			this.lumaWrapper = new pixi.Container();
+			this.getContainer().addChild(this.lumaWrapper);
+		}
 		if (this.contentContainer?.destroyed) {
 			this.contentContainer = new pixi.Container();
-			this.getContainer().addChild(this.contentContainer);
-		}
-
-		this.outline = new pixi.Graphics();
-		this.getContainer().addChild(this.outline);
-
-		// Only create corner scale handles for assets that don't use edge resize
-		if (!this.supportsEdgeResize()) {
-			this.topLeftScaleHandle = new pixi.Graphics();
-			this.topRightScaleHandle = new pixi.Graphics();
-			this.bottomRightScaleHandle = new pixi.Graphics();
-			this.bottomLeftScaleHandle = new pixi.Graphics();
-
-			this.topLeftScaleHandle.zIndex = 1000;
-			this.topRightScaleHandle.zIndex = 1000;
-			this.bottomRightScaleHandle.zIndex = 1000;
-			this.bottomLeftScaleHandle.zIndex = 1000;
-
-			this.getContainer().addChild(this.topLeftScaleHandle);
-			this.getContainer().addChild(this.topRightScaleHandle);
-			this.getContainer().addChild(this.bottomRightScaleHandle);
-			this.getContainer().addChild(this.bottomLeftScaleHandle);
-		}
-
-		this.rotationHandle = new pixi.Graphics();
-		this.rotationHandle.zIndex = 1000;
-		this.rotationHandle.eventMode = "static";
-		this.rotationHandle.cursor = Player.RotationCursorSvg;
-		this.getContainer().addChild(this.rotationHandle);
-
-		// Create edge handles for text/rich-text assets
-		if (this.supportsEdgeResize()) {
-			this.leftEdgeHandle = new pixi.Graphics();
-			this.rightEdgeHandle = new pixi.Graphics();
-			this.topEdgeHandle = new pixi.Graphics();
-			this.bottomEdgeHandle = new pixi.Graphics();
-
-			this.leftEdgeHandle.zIndex = 1000;
-			this.rightEdgeHandle.zIndex = 1000;
-			this.topEdgeHandle.zIndex = 1000;
-			this.bottomEdgeHandle.zIndex = 1000;
-
-			// Enable interactivity and set resize cursors
-			this.leftEdgeHandle.eventMode = "static";
-			this.leftEdgeHandle.cursor = "ew-resize";
-
-			this.rightEdgeHandle.eventMode = "static";
-			this.rightEdgeHandle.cursor = "ew-resize";
-
-			this.topEdgeHandle.eventMode = "static";
-			this.topEdgeHandle.cursor = "ns-resize";
-
-			this.bottomEdgeHandle.eventMode = "static";
-			this.bottomEdgeHandle.cursor = "ns-resize";
-
-			this.getContainer().addChild(this.leftEdgeHandle);
-			this.getContainer().addChild(this.rightEdgeHandle);
-			this.getContainer().addChild(this.topEdgeHandle);
-			this.getContainer().addChild(this.bottomEdgeHandle);
+			this.lumaWrapper.addChild(this.contentContainer);
 		}
 
 		this.getContainer().sortableChildren = true;
 
+		// Enable pointer events for click-to-select
 		this.getContainer().cursor = "pointer";
 		this.getContainer().eventMode = "static";
-
-		this.getContainer().on("pointerdown", this.onPointerStart.bind(this));
-		this.getContainer().on("pointermove", this.onPointerMove.bind(this));
-		this.getContainer().on("globalpointermove", this.onPointerMove.bind(this));
-		this.getContainer().on("pointerup", this.onPointerUp.bind(this));
-		this.getContainer().on("pointerupoutside", this.onPointerUp.bind(this));
-
-		this.getContainer().on("pointerover", this.onPointerOver.bind(this));
-		this.getContainer().on("pointerout", this.onPointerOut.bind(this));
+		this.getContainer().on?.("pointerdown", this.onPointerDown.bind(this));
 	}
 
 	public override update(_: number, __: number): void {
@@ -303,194 +250,101 @@ export abstract class Player extends Entity {
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
 
+		const skew = this.getSkew();
+		this.getContainer().skew?.set(skew.x * (Math.PI / 180), skew.y * (Math.PI / 180));
+
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			this.applyFixedDimensions();
 		}
+
+		// Update wipe/reveal mask animation
+		this.updateWipeMask();
 
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
 		}
 	}
 
-	public override draw(): void {
-		if (!this.outline) {
+	private updateWipeMask(): void {
+		if (!this.maskXKeyframeBuilder) {
+			if (this.wipeMask) {
+				this.getContainer().mask = null;
+				this.wipeMask.destroy();
+				this.wipeMask = null;
+			}
 			return;
 		}
 
-		const isSelected = this.edit.isPlayerSelected(this);
-
-		const isExporting = this.edit.isInExportMode();
-
-		if (((!this.isActive() || !isSelected) && !this.isHovering) || isExporting) {
-			this.outline.clear();
-			this.topLeftScaleHandle?.clear();
-			this.topRightScaleHandle?.clear();
-			this.bottomRightScaleHandle?.clear();
-			this.bottomLeftScaleHandle?.clear();
-			this.rotationHandle?.clear();
-			this.leftEdgeHandle?.clear();
-			this.rightEdgeHandle?.clear();
-			this.topEdgeHandle?.clear();
-			this.bottomEdgeHandle?.clear();
-			return;
-		}
-
-		const color = this.isHovering || this.isDragging ? 0x00ffff : 0xffffff;
+		const maskProgress = this.maskXKeyframeBuilder.getValue(this.getPlaybackTime());
 		const size = this.getSize();
 
-		const scale = this.getScale();
-
-		this.outline.clear();
-		this.outline.strokeStyle = { width: Player.OutlineWidth / scale, color };
-		this.outline.rect(0, 0, size.width, size.height);
-		this.outline.stroke();
-
-		if (!this.isActive() || !isSelected) {
-			return;
+		// Create mask if it doesn't exist
+		if (!this.wipeMask) {
+			this.wipeMask = new pixi.Graphics();
+			this.getContainer().addChild(this.wipeMask);
+			this.getContainer().mask = this.wipeMask;
 		}
 
-		// Draw corner scale handles (only for assets that don't support edge resize)
-		if (
-			this.topLeftScaleHandle &&
-			this.topRightScaleHandle &&
-			this.bottomRightScaleHandle &&
-			this.bottomLeftScaleHandle
-		) {
-			const handleSize = (Player.ScaleHandleRadius * 2) / scale;
-
-			this.topLeftScaleHandle.fillStyle = { color };
-			this.topLeftScaleHandle.clear();
-			this.topLeftScaleHandle.rect(-handleSize / 2, -handleSize / 2, handleSize, handleSize);
-			this.topLeftScaleHandle.fill();
-
-			this.topRightScaleHandle.fillStyle = { color };
-			this.topRightScaleHandle.clear();
-			this.topRightScaleHandle.rect(size.width - handleSize / 2, -handleSize / 2, handleSize, handleSize);
-			this.topRightScaleHandle.fill();
-
-			this.bottomRightScaleHandle.fillStyle = { color };
-			this.bottomRightScaleHandle.clear();
-			this.bottomRightScaleHandle.rect(size.width - handleSize / 2, size.height - handleSize / 2, handleSize, handleSize);
-			this.bottomRightScaleHandle.fill();
-
-			this.bottomLeftScaleHandle.fillStyle = { color };
-			this.bottomLeftScaleHandle.clear();
-			this.bottomLeftScaleHandle.rect(-handleSize / 2, size.height - handleSize / 2, handleSize, handleSize);
-			this.bottomLeftScaleHandle.fill();
-		}
-
-		// Draw rotation handle (for all asset types)
-		if (this.rotationHandle) {
-			const rotationHandleX = size.width / 2;
-			const rotationHandleY = -Player.RotationHandleOffset / scale;
-
-			this.rotationHandle.clear();
-			this.rotationHandle.fillStyle = { color };
-			this.rotationHandle.circle(rotationHandleX, rotationHandleY, Player.RotationHandleRadius / scale);
-			this.rotationHandle.fill();
-
-			this.outline.strokeStyle = { width: Player.OutlineWidth / scale, color };
-			this.outline.moveTo(rotationHandleX, 0);
-			this.outline.lineTo(rotationHandleX, rotationHandleY);
-			this.outline.stroke();
-		}
-
-		// Draw edge handles for text/rich-text assets
-		if (this.supportsEdgeResize()) {
-			const edgeLength = Player.EdgeHandleLength / scale;
-			const edgeThickness = Player.EdgeHandleThickness / scale;
-
-			// Left edge handle (vertical bar on left edge, centered)
-			if (this.leftEdgeHandle) {
-				this.leftEdgeHandle.clear();
-				this.leftEdgeHandle.fillStyle = { color };
-				this.leftEdgeHandle.rect(-edgeThickness / 2, size.height / 2 - edgeLength / 2, edgeThickness, edgeLength);
-				this.leftEdgeHandle.fill();
-			}
-
-			// Right edge handle (vertical bar on right edge, centered)
-			if (this.rightEdgeHandle) {
-				this.rightEdgeHandle.clear();
-				this.rightEdgeHandle.fillStyle = { color };
-				this.rightEdgeHandle.rect(size.width - edgeThickness / 2, size.height / 2 - edgeLength / 2, edgeThickness, edgeLength);
-				this.rightEdgeHandle.fill();
-			}
-
-			// Top edge handle (horizontal bar on top edge, centered)
-			if (this.topEdgeHandle) {
-				this.topEdgeHandle.clear();
-				this.topEdgeHandle.fillStyle = { color };
-				this.topEdgeHandle.rect(size.width / 2 - edgeLength / 2, -edgeThickness / 2, edgeLength, edgeThickness);
-				this.topEdgeHandle.fill();
-			}
-
-			// Bottom edge handle (horizontal bar on bottom edge, centered)
-			if (this.bottomEdgeHandle) {
-				this.bottomEdgeHandle.clear();
-				this.bottomEdgeHandle.fillStyle = { color };
-				this.bottomEdgeHandle.rect(size.width / 2 - edgeLength / 2, size.height - edgeThickness / 2, edgeLength, edgeThickness);
-				this.bottomEdgeHandle.fill();
-			}
-		}
+		// Update mask to create wipe effect
+		this.wipeMask.clear();
+		this.wipeMask.rect(0, 0, size.width * maskProgress, size.height);
+		this.wipeMask.fill(0xffffff);
 	}
 
 	public override dispose(): void {
-		this.outline?.destroy();
-		this.outline = null;
-
-		this.topLeftScaleHandle?.destroy();
-		this.topLeftScaleHandle = null;
-
-		this.topRightScaleHandle?.destroy();
-		this.topRightScaleHandle = null;
-
-		this.bottomLeftScaleHandle?.destroy();
-		this.bottomLeftScaleHandle = null;
-
-		this.bottomRightScaleHandle?.destroy();
-		this.bottomRightScaleHandle = null;
-
-		this.rotationHandle?.destroy();
-		this.rotationHandle = null;
-
-		this.leftEdgeHandle?.destroy();
-		this.leftEdgeHandle = null;
-
-		this.rightEdgeHandle?.destroy();
-		this.rightEdgeHandle = null;
-
-		this.topEdgeHandle?.destroy();
-		this.topEdgeHandle = null;
-
-		this.bottomEdgeHandle?.destroy();
-		this.bottomEdgeHandle = null;
+		this.wipeMask?.destroy();
+		this.wipeMask = null;
 
 		this.contentContainer?.destroy();
+		this.lumaWrapper?.destroy();
 	}
 
-	public getStart(): number {
+	public getStart(): Seconds {
 		return this.resolvedTiming.start;
 	}
 
-	public getLength(): number {
+	public getLength(): Seconds {
 		return this.resolvedTiming.length;
 	}
 
-	public getEnd(): number {
-		return this.resolvedTiming.start + this.resolvedTiming.length;
+	public getEnd(): Seconds {
+		return sec(this.resolvedTiming.start + this.resolvedTiming.length);
 	}
 
+	/**
+	 * Get timing intent from document (source of truth).
+	 * Returns "auto"/"end"/"alias://x" strings as stored in the document, not resolved numeric values.
+	 */
 	public getTimingIntent(): TimingIntent {
-		return { ...this.timingIntent };
-	}
+		if (this.clipId) {
+			const docClip = this.edit.getDocumentClipById(this.clipId);
+			if (docClip) {
+				let startIntent: Seconds | "auto" | AliasReference;
+				if (docClip.start === "auto") {
+					startIntent = "auto";
+				} else if (isAliasReference(docClip.start)) {
+					startIntent = docClip.start as AliasReference;
+				} else {
+					startIntent = docClip.start as Seconds;
+				}
 
-	public setTimingIntent(intent: Partial<TimingIntent>): void {
-		if (intent.start !== undefined) {
-			this.timingIntent.start = intent.start;
+				let lengthIntent: TimingValue;
+				if (docClip.length === "auto" || docClip.length === "end") {
+					lengthIntent = docClip.length;
+				} else if (isAliasReference(docClip.length)) {
+					lengthIntent = docClip.length as AliasReference;
+				} else {
+					lengthIntent = docClip.length as Seconds;
+				}
+
+				return { start: startIntent, length: lengthIntent };
+			}
 		}
-		if (intent.length !== undefined) {
-			this.timingIntent.length = intent.length;
-		}
+		// Fallback: use resolved timing from clipConfiguration
+		return {
+			start: this.clipConfiguration.start,
+			length: this.clipConfiguration.length
+		};
 	}
 
 	public getResolvedTiming(): ResolvedTiming {
@@ -499,15 +353,31 @@ export abstract class Player extends Entity {
 
 	public setResolvedTiming(timing: ResolvedTiming): void {
 		this.resolvedTiming = { ...timing };
+		this.clipConfiguration.start = timing.start;
+		this.clipConfiguration.length = timing.length;
 	}
 
-	public convertToFixedTiming(): void {
-		this.timingIntent = {
-			start: this.resolvedTiming.start / 1000,
-			length: this.resolvedTiming.length / 1000
-		};
+	/**
+	 * Get the clip configuration with timing intent applied.
+	 * Note: Placeholder restoration is handled by document.toJSON() for export,
+	 * or by EditSession.getTemplateClip() for API callers.
+	 */
+	public getExportableClip(): Clip {
+		const exported = structuredClone(this.clipConfiguration) as Record<string, unknown>;
+
+		// Apply timing intent (preserves "auto", "end" strings)
+		const intent = this.getTimingIntent();
+		exported["start"] = intent.start;
+		exported["length"] = intent.length;
+
+		return exported as Clip;
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	/**
+	 * Get the playback time relative to clip start, in seconds.
+	 */
 	public getPlaybackTime(): number {
 		const clipTime = this.edit.playbackTime - this.getStart();
 
@@ -518,6 +388,23 @@ export abstract class Player extends Entity {
 	}
 
 	public abstract getSize(): Size;
+
+	/**
+	 * Returns the source content dimensions (before fit scaling).
+	 */
+	public getContentSize(): Size {
+		return this.getSize();
+	}
+
+	/** @internal */
+	public getContentContainer(): pixi.Container {
+		return this.contentContainer;
+	}
+
+	/** @internal */
+	public getLumaWrapper(): pixi.Container {
+		return this.lumaWrapper;
+	}
 
 	public getOpacity(): number {
 		return this.opacityKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
@@ -537,26 +424,30 @@ export abstract class Player extends Entity {
 		return { x: size.width / 2, y: size.height / 2 };
 	}
 
-	protected getFitScale(): number {
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			return 1;
-		}
+	/**
+	 * Calculate the new offset position after moving by a pixel delta.
+	 * Returns the new offset without mutating player state.
+	 * Used for keyboard arrow key positioning.
+	 * @internal
+	 */
+	public calculateMoveOffset(deltaX: number, deltaY: number): { x: number; y: number } {
+		const currentPos = this.getPosition();
+		const newAbsolutePos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
 
-		switch (this.clipConfiguration.fit ?? "crop") {
-			case "crop": {
-				const ratioX = this.edit.size.width / this.getSize().width;
-				const ratioY = this.edit.size.height / this.getSize().height;
-				const isPortrait = this.edit.size.height >= this.edit.size.width;
-				return isPortrait ? ratioY : ratioX;
-			}
-			case "cover":
-				return Math.max(this.edit.size.width / this.getSize().width, this.edit.size.height / this.getSize().height);
-			case "contain":
-				return Math.min(this.edit.size.width / this.getSize().width, this.edit.size.height / this.getSize().height);
-			case "none":
-			default:
-				return 1;
-		}
+		const relativePos = this.positionBuilder.absoluteToRelative(this.getSize(), this.clipConfiguration.position ?? "center", newAbsolutePos);
+
+		return { x: relativePos.x, y: relativePos.y };
+	}
+
+	protected getFitScale(): number {
+		const targetSize = {
+			width: this.clipConfiguration.width ?? this.edit.size.width,
+			height: this.clipConfiguration.height ?? this.edit.size.height
+		};
+		const contentSize = this.getContentSize();
+		const fit = (this.clipConfiguration.fit ?? "crop") as FitMode;
+
+		return calculateFitScale(contentSize, targetSize, fit);
 	}
 
 	public getScale(): number {
@@ -564,45 +455,27 @@ export abstract class Player extends Entity {
 	}
 
 	protected getContainerScale(): Vector {
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			return { x: 1, y: 1 };
-		}
-
 		const baseScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
-		const size = this.getSize();
-		const fit = this.clipConfiguration.fit ?? "crop";
+		const contentSize = this.getContentSize();
+		const fit = (this.clipConfiguration.fit ?? "crop") as FitMode;
+		const hasFixedDimensions = Boolean(this.clipConfiguration.width && this.clipConfiguration.height);
 
-		if (size.width === 0 || size.height === 0) {
-			return { x: baseScale, y: baseScale };
-		}
-
-		const ratioX = this.edit.size.width / size.width;
-		const ratioY = this.edit.size.height / size.height;
-
-		switch (fit) {
-			case "contain": {
-				const uniform = Math.min(ratioX, ratioY) * baseScale;
-				return { x: uniform, y: uniform };
-			}
-			case "crop": {
-				const isPortrait = this.edit.size.height >= this.edit.size.width;
-				const uniform = (isPortrait ? ratioY : ratioX) * baseScale;
-				return { x: uniform, y: uniform };
-			}
-			case "cover": {
-				return { x: ratioX * baseScale, y: ratioY * baseScale };
-			}
-			case "none":
-			default:
-				return { x: baseScale, y: baseScale };
-		}
+		return calculateContainerScale(contentSize, this.edit.size, fit, baseScale, hasFixedDimensions);
 	}
 
 	public getRotation(): number {
 		return this.rotationKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
 	}
 
+	public getSkew(): { x: number; y: number } {
+		return {
+			x: this.skewXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0,
+			y: this.skewYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0
+		};
+	}
+
 	public isActive(): boolean {
+		// playbackTime is in seconds, matching clip start/end
 		return this.edit.playbackTime >= this.getStart() && this.edit.playbackTime < this.getEnd();
 	}
 
@@ -610,363 +483,28 @@ export abstract class Player extends Entity {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
 
-	private onPointerStart(event: pixi.FederatedPointerEvent): void {
+	/**
+	 * Handle pointer down - emit click event for selection handling.
+	 * All drag/resize/rotate interaction is handled by SelectionHandles.
+	 */
+	private onPointerDown(event: pixi.FederatedPointerEvent): void {
 		if (event.button !== Pointer.ButtonLeftClick) {
 			return;
 		}
 
-		this.edit.events.emit("canvas:clip:clicked", { player: this });
-
-		this.initialClipConfiguration = structuredClone(this.clipConfiguration);
-
-		if (this.clipHasKeyframes()) {
-			return;
-		}
-
-		this.scaleDirection = null;
-
-		const isTopLeftScaling = this.topLeftScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isTopLeftScaling) {
-			this.scaleDirection = "topLeft";
-		}
-
-		const isTopRightScaling = this.topRightScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isTopRightScaling) {
-			this.scaleDirection = "topRight";
-		}
-
-		const isBottomRightScaling = this.bottomRightScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isBottomRightScaling) {
-			this.scaleDirection = "bottomRight";
-		}
-
-		const isBottomLeftScaling = this.bottomLeftScaleHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isBottomLeftScaling) {
-			this.scaleDirection = "bottomLeft";
-		}
-
-		if (this.scaleDirection !== null) {
-			this.scaleStart = this.getScale() / this.getFitScale();
-
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-			this.scaleOffset = timelinePoint;
-
-			return;
-		}
-
-		const isRotating = this.rotationHandle?.getBounds().containsPoint(event.globalX, event.globalY);
-		if (isRotating) {
-			this.isRotating = true;
-			this.rotationStart = this.getRotation();
-
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-			this.rotationOffset = timelinePoint;
-
-			return;
-		}
-
-		// Check for edge handle interactions (for text/rich-text assets)
-		if (this.supportsEdgeResize()) {
-			this.edgeDragDirection = null;
-
-			if (this.leftEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
-				this.edgeDragDirection = "left";
-			} else if (this.rightEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
-				this.edgeDragDirection = "right";
-			} else if (this.topEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
-				this.edgeDragDirection = "top";
-			} else if (this.bottomEdgeHandle?.getBounds().containsPoint(event.globalX, event.globalY)) {
-				this.edgeDragDirection = "bottom";
-			}
-
-			if (this.edgeDragDirection !== null) {
-				const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-				this.edgeDragStart = timelinePoint;
-
-				const currentSize = this.getSize();
-				// Get current offset values from keyframe builders (handles both numeric and keyframe array cases)
-				const currentOffsetX = this.offsetXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
-				const currentOffsetY = this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0;
-				this.originalDimensions = {
-					width: currentSize.width,
-					height: currentSize.height,
-					offsetX: currentOffsetX,
-					offsetY: currentOffsetY
-				};
-
-				return;
-			}
-		}
-
-		this.isDragging = true;
-
-		const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-		this.dragOffset = {
-			x: timelinePoint.x - this.getContainer().position.x,
-			y: timelinePoint.y - this.getContainer().position.y
-		};
-	}
-
-	private onPointerMove(event: pixi.FederatedPointerEvent): void {
-		if (this.scaleDirection !== null && this.scaleStart !== null) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-
-			const position = this.getPosition();
-			const pivot = this.getPivot();
-
-			const center: Vector = { x: position.x + pivot.x, y: position.y + pivot.y };
-
-			const initialDistance = Math.sqrt((this.scaleOffset.x - center.x) ** 2 + (this.scaleOffset.y - center.y) ** 2);
-			const currentDistance = Math.sqrt((timelinePoint.x - center.x) ** 2 + (timelinePoint.y - center.y) ** 2);
-
-			const scaleRatio = currentDistance / initialDistance;
-			const targetScale = this.scaleStart * scaleRatio;
-
-			this.clipConfiguration.scale = Math.max(Player.MinScale, Math.min(targetScale, Player.MaxScale));
-			this.scaleKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.scale, this.getLength(), 1);
-
-			return;
-		}
-
-		if (this.isRotating && this.rotationStart !== null) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-
-			const position = this.getPosition();
-			const pivot = this.getPivot();
-
-			const center: Vector = { x: position.x + pivot.x, y: position.y + pivot.y };
-
-			const initialAngle = Math.atan2(this.rotationOffset.y - center.y, this.rotationOffset.x - center.x);
-			const currentAngle = Math.atan2(timelinePoint.y - center.y, timelinePoint.x - center.x);
-
-			const angleDelta = (currentAngle - initialAngle) * (180 / Math.PI);
-
-			let targetAngle = this.rotationStart + angleDelta;
-			const snapAngle = 45;
-			const angleModulo = targetAngle % snapAngle;
-			const snapThreshold = 2;
-
-			if (Math.abs(angleModulo) < snapThreshold) {
-				targetAngle = Math.floor(targetAngle / snapAngle) * snapAngle;
-			} else if (Math.abs(angleModulo - snapAngle) < snapThreshold) {
-				targetAngle = Math.ceil(targetAngle / snapAngle) * snapAngle;
-			}
-
-			if (!this.clipConfiguration.transform) {
-				this.clipConfiguration.transform = { rotate: { angle: 0 } };
-			}
-			if (!this.clipConfiguration.transform.rotate) {
-				this.clipConfiguration.transform.rotate = { angle: 0 };
-			}
-			this.clipConfiguration.transform.rotate.angle = targetAngle;
-			this.rotationKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.transform.rotate.angle, this.getLength());
-
-			return;
-		}
-
-		// Handle edge resize dragging
-		if (this.edgeDragDirection !== null && this.originalDimensions !== null) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-
-			const deltaX = timelinePoint.x - this.edgeDragStart.x;
-			const deltaY = timelinePoint.y - this.edgeDragStart.y;
-
-			let newWidth = this.originalDimensions.width;
-			let newHeight = this.originalDimensions.height;
-			let newOffsetX = this.originalDimensions.offsetX;
-			let newOffsetY = this.originalDimensions.offsetY;
-
-			switch (this.edgeDragDirection) {
-				case "left":
-					// Dragging left edge: width decreases, offset shifts right to keep right edge fixed
-					newWidth = this.originalDimensions.width - deltaX;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					break;
-				case "right":
-					// Dragging right edge: width increases, offset shifts right to keep left edge fixed
-					newWidth = this.originalDimensions.width + deltaX;
-					newOffsetX = this.originalDimensions.offsetX + deltaX / 2 / this.edit.size.width;
-					break;
-				case "top":
-					// Dragging top edge: height decreases, offset shifts up to keep bottom edge fixed
-					newHeight = this.originalDimensions.height - deltaY;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-				case "bottom":
-					// Dragging bottom edge: height increases, offset shifts down to keep top edge fixed
-					newHeight = this.originalDimensions.height + deltaY;
-					newOffsetY = this.originalDimensions.offsetY - deltaY / 2 / this.edit.size.height;
-					break;
-			}
-
-			// Clamp dimensions to valid bounds
-			newWidth = Math.max(Player.MinDimension, Math.min(newWidth, Player.MaxDimension));
-			newHeight = Math.max(Player.MinDimension, Math.min(newHeight, Player.MaxDimension));
-
-			// Update clip configuration
-			this.clipConfiguration.width = Math.round(newWidth);
-			this.clipConfiguration.height = Math.round(newHeight);
-
-			if (!this.clipConfiguration.offset) {
-				this.clipConfiguration.offset = { x: 0, y: 0 };
-			}
-			this.clipConfiguration.offset.x = newOffsetX;
-			this.clipConfiguration.offset.y = newOffsetY;
-
-			// Update keyframe builders for position
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.x, this.getLength());
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
-
-			// Notify subclass about dimension change for re-rendering
-			this.onDimensionsChanged();
-
-			return;
-		}
-
-		if (this.isDragging) {
-			const timelinePoint = event.getLocalPosition(this.edit.getContainer());
-
-			const pivot = this.getPivot();
-
-			const cursorPosition: Vector = { x: timelinePoint.x - this.dragOffset.x, y: timelinePoint.y - this.dragOffset.y };
-			const updatedPosition: Vector = { x: cursorPosition.x - pivot.x, y: cursorPosition.y - pivot.y };
-
-			const timelineCorners = [
-				{ x: 0, y: 0 },
-				{ x: this.edit.size.width, y: 0 },
-				{ x: 0, y: this.edit.size.height },
-				{ x: this.edit.size.width, y: this.edit.size.height }
-			];
-			const timelineCenter = { x: this.edit.size.width / 2, y: this.edit.size.height / 2 };
-			const timelineSnapPositions: Vector[] = [...timelineCorners, timelineCenter];
-
-			const clipCorners = [
-				{ x: updatedPosition.x, y: updatedPosition.y },
-				{ x: updatedPosition.x + this.getSize().width, y: updatedPosition.y },
-				{ x: updatedPosition.x, y: updatedPosition.y + this.getSize().height },
-				{ x: updatedPosition.x + this.getSize().width, y: updatedPosition.y + this.getSize().height }
-			];
-			const clipCenter = { x: updatedPosition.x + this.getSize().width / 2, y: updatedPosition.y + this.getSize().height / 2 };
-			const clipSnapPositions: Vector[] = [...clipCorners, clipCenter];
-
-			let closestDistanceX = Player.SnapThreshold;
-			let closestDistanceY = Player.SnapThreshold;
-
-			let snapPositionX: number | null = null;
-			let snapPositionY: number | null = null;
-
-			for (const clipSnapPosition of clipSnapPositions) {
-				for (const timelineSnapPosition of timelineSnapPositions) {
-					const distanceX = Math.abs(clipSnapPosition.x - timelineSnapPosition.x);
-					if (distanceX < closestDistanceX) {
-						closestDistanceX = distanceX;
-						snapPositionX = updatedPosition.x + (timelineSnapPosition.x - clipSnapPosition.x);
-					}
-
-					const distanceY = Math.abs(clipSnapPosition.y - timelineSnapPosition.y);
-					if (distanceY < closestDistanceY) {
-						closestDistanceY = distanceY;
-						snapPositionY = updatedPosition.y + (timelineSnapPosition.y - clipSnapPosition.y);
-					}
-				}
-			}
-
-			if (snapPositionX !== null) {
-				updatedPosition.x = snapPositionX;
-			}
-
-			if (snapPositionY !== null) {
-				updatedPosition.y = snapPositionY;
-			}
-
-			const updatedRelativePosition = this.positionBuilder.absoluteToRelative(
-				this.getSize(),
-				this.clipConfiguration.position ?? "center",
-				updatedPosition
-			);
-
-			if (!this.clipConfiguration.offset) {
-				this.clipConfiguration.offset = { x: 0, y: 0 };
-			}
-			this.clipConfiguration.offset.x = updatedRelativePosition.x;
-			this.clipConfiguration.offset.y = updatedRelativePosition.y;
-
-			this.offsetXKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.x, this.getLength());
-			this.offsetYKeyframeBuilder = new KeyframeBuilder(this.clipConfiguration.offset.y, this.getLength());
-		}
-	}
-
-	private onPointerUp(): void {
-		if ((this.isDragging || this.scaleDirection !== null || this.isRotating || this.edgeDragDirection !== null) && this.hasStateChanged()) {
-			this.edit.setUpdatedClip(this, this.initialClipConfiguration, structuredClone(this.clipConfiguration));
-		}
-
-		this.isDragging = false;
-		this.dragOffset = { x: 0, y: 0 };
-
-		this.scaleDirection = null;
-		this.scaleStart = null;
-		this.scaleOffset = { x: 0, y: 0 };
-
-		this.isRotating = false;
-		this.rotationStart = null;
-		this.rotationOffset = { x: 0, y: 0 };
-
-		this.edgeDragDirection = null;
-		this.edgeDragStart = { x: 0, y: 0 };
-		this.originalDimensions = null;
-
-		this.initialClipConfiguration = null;
-	}
-
-	private onPointerOver(): void {
-		this.isHovering = true;
-	}
-
-	private onPointerOut(): void {
-		this.isHovering = false;
-	}
-
-	private clipHasPresets(): boolean {
-		return (
-			Boolean(this.clipConfiguration.effect) || Boolean(this.clipConfiguration.transition?.in) || Boolean(this.clipConfiguration.transition?.out)
-		);
+		this.edit.getInternalEvents().emit(InternalEvent.CanvasClipClicked, { player: this });
 	}
 
 	private clipHasKeyframes(): boolean {
 		return [
 			this.clipConfiguration.scale,
+			this.clipConfiguration.opacity,
 			this.clipConfiguration.offset?.x,
 			this.clipConfiguration.offset?.y,
-			this.clipConfiguration.transform?.rotate?.angle
+			this.clipConfiguration.transform?.rotate?.angle,
+			this.clipConfiguration.transform?.skew?.x,
+			this.clipConfiguration.transform?.skew?.y
 		].some(property => property && typeof property !== "number");
-	}
-
-	private hasStateChanged(): boolean {
-		if (!this.initialClipConfiguration) return false;
-
-		const currentOffsetX = this.clipConfiguration.offset?.x as number;
-		const currentOffsetY = this.clipConfiguration.offset?.y as number;
-		const currentScale = this.clipConfiguration.scale as number;
-		const currentRotation = Number(this.clipConfiguration.transform?.rotate?.angle ?? 0);
-		const currentWidth = this.clipConfiguration.width;
-		const currentHeight = this.clipConfiguration.height;
-
-		const initialOffsetX = this.initialClipConfiguration.offset?.x as number;
-		const initialOffsetY = this.initialClipConfiguration.offset?.y as number;
-		const initialScale = this.initialClipConfiguration.scale as number;
-		const initialRotation = Number(this.initialClipConfiguration.transform?.rotate?.angle ?? 0);
-		const initialWidth = this.initialClipConfiguration.width;
-		const initialHeight = this.initialClipConfiguration.height;
-
-		return (
-			(initialOffsetX !== undefined && currentOffsetX !== initialOffsetX) ||
-			(initialOffsetY !== undefined && currentOffsetY !== initialOffsetY) ||
-			(initialScale !== undefined && currentScale !== initialScale) ||
-			currentRotation !== initialRotation ||
-			currentWidth !== initialWidth ||
-			currentHeight !== initialHeight
-		);
 	}
 
 	protected applyFixedDimensions(): void {
@@ -974,90 +512,50 @@ export abstract class Player extends Entity {
 		const clipHeight = this.clipConfiguration.height;
 		if (!clipWidth || !clipHeight) return;
 
-		const sprite = this.contentContainer.children[0] as pixi.Sprite;
-		if (!sprite || !sprite.texture) return;
+		// Find sprite by type, not index (mask may be children[0] after refresh)
+		const sprite = this.contentContainer.children.find(child => child instanceof pixi.Sprite) as pixi.Sprite | undefined;
+		if (!sprite?.texture) return;
 
 		const nativeWidth = sprite.texture.width;
 		const nativeHeight = sprite.texture.height;
 		const fit = this.clipConfiguration.fit || "crop";
 
-		if (!this.contentContainer.mask) {
-			const clipMask = new pixi.Graphics();
-			clipMask.rect(0, 0, clipWidth, clipHeight);
-			clipMask.fill(0xffffff);
+		// Get or create the crop mask
+		const existingMask = this.contentContainer.mask;
+		let clipMask: pixi.Graphics;
+		if (existingMask instanceof pixi.Graphics) {
+			clipMask = existingMask;
+		} else if (!existingMask) {
+			clipMask = new pixi.Graphics();
 			this.contentContainer.addChild(clipMask);
 			this.contentContainer.mask = clipMask;
+		} else {
+			return;
 		}
+
+		// Expand mask to accommodate centered border strokes
+		// Canvas library renders borders centered on content boundary (half extends outward)
+		const { asset } = this.clipConfiguration;
+		const borderWidth = asset && "border" in asset && asset.border && typeof asset.border === "object" ? (asset.border.width ?? 0) : 0;
+
+		const halfBorder = borderWidth / 2;
+
+		clipMask.clear();
+		clipMask.rect(-halfBorder, -halfBorder, clipWidth + borderWidth, clipHeight + borderWidth);
+		clipMask.fill(0xffffff);
 
 		// keep animation code exactly as-is
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
 
 		sprite.anchor.set(0.5, 0.5);
 
-		switch (fit) {
-			// 🟢 cover → non-uniform stretch to exactly fill (distort)
-			case "cover": {
-				const scaleX = clipWidth / nativeWidth;
-				const scaleY = clipHeight / nativeHeight;
+		// Use pure function for sprite transform calculation
+		const nativeSize = { width: nativeWidth, height: nativeHeight };
+		const targetSize = { width: clipWidth, height: clipHeight };
+		const transform = calculateSpriteTransform(nativeSize, targetSize, fit as FitMode);
 
-				// backend “cover” stretches image to fill without cropping
-				sprite.scale.set(scaleX, scaleY);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-
-			// 🟢 crop → uniform fill but never downscale (only upscale if smaller)
-			case "crop": {
-				// Viewport (output) dimensions — same concept as backend "canvas"
-				const outW = this.edit.size.width;
-				const outH = this.edit.size.height;
-
-				// 1) Pre-downscale to fit the viewport if the source is larger (preserve AR)
-				let prescale = 1;
-				if (nativeWidth > outW || nativeHeight > outH) {
-					prescale = Math.min(outW / nativeWidth, outH / nativeHeight);
-				}
-
-				// Adjusted (virtual) native after prescale
-				const adjW = nativeWidth * prescale;
-				const adjH = nativeHeight * prescale;
-
-				// 2) Uniform fill to cover the clip box (may overflow → mask crops)
-				const fill = Math.max(clipWidth / adjW, clipHeight / adjH);
-
-				// 3) Effective scale to apply to the *original* texture:
-				//    - Large images: prescale * fill (we normalized to viewport first)
-				//    - Small images: never downscale below native => clamp to >= 1
-				const effective = prescale < 1 ? prescale * fill : Math.max(1, fill);
-
-				// Apply base fit (animation is applied separately via contentContainer in your code)
-				sprite.scale.set(effective, effective);
-				sprite.anchor.set(0.5, 0.5);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-
-				break;
-			}
-
-			// 🟢 contain → uniform fit fully inside (may letterbox)
-			case "contain": {
-				const sx = clipWidth / nativeWidth;
-				const sy = clipHeight / nativeHeight;
-
-				const baseScale = Math.min(sx, sy);
-
-				sprite.scale.set(baseScale, baseScale);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-
-			// 🟢 none → no fitting, use native size, cropped by mask
-			case "none":
-			default: {
-				sprite.scale.set(1, 1);
-				sprite.position.set(clipWidth / 2, clipHeight / 2);
-				break;
-			}
-		}
+		sprite.scale.set(transform.scaleX, transform.scaleY);
+		sprite.position.set(transform.positionX, transform.positionY);
 
 		// 🟣 keep animation logic untouched
 		this.contentContainer.scale.set(currentUserScale, currentUserScale);
@@ -1102,7 +600,7 @@ export abstract class Player extends Entity {
 	 * Override in subclasses to enable edge resize handles for dimension changes.
 	 * When true, edge handles will be shown instead of corner scale handles.
 	 */
-	protected supportsEdgeResize(): boolean {
+	public supportsEdgeResize(): boolean {
 		return false;
 	}
 
@@ -1111,5 +609,13 @@ export abstract class Player extends Entity {
 	 */
 	protected onDimensionsChanged(): void {
 		// Default implementation does nothing - subclasses override this
+	}
+
+	/**
+	 * Public wrapper for notifying dimension changes.
+	 * Called by SelectionHandles after edge resize operations.
+	 */
+	public notifyDimensionsChanged(): void {
+		this.onDimensionsChanged();
 	}
 }

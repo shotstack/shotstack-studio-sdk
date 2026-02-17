@@ -1,17 +1,16 @@
-import { describe, it, expect } from "@jest/globals";
 import {
 	ClipSchema,
 	EditSchema,
+	TimelineSchema,
+	OutputSchema,
+	TrackSchema,
 	VideoAssetSchema,
 	AudioAssetSchema,
 	TextAssetSchema,
 	ImageAssetSchema,
 	ShapeAssetSchema,
-	HtmlAssetSchema,
-	TrackSchema,
-	TimelineSchema,
-	OutputSchema
-} from "@shotstack/shotstack-studio/schema";
+	HtmlAssetSchema
+} from "../src/core/schemas";
 
 describe("Schema Imports", () => {
 	it("should import all schemas without WASM errors", () => {
@@ -44,8 +43,9 @@ describe("ClipSchema Validation", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("should reject invalid clip with negative start", () => {
-		const invalidClip = {
+	it("rejects clip with negative start", () => {
+		// Centralized schema now enforces non-negative start
+		const clip = {
 			asset: {
 				type: "video",
 				src: "https://example.com/video.mp4"
@@ -54,12 +54,13 @@ describe("ClipSchema Validation", () => {
 			length: 5
 		};
 
-		const result = ClipSchema.safeParse(invalidClip);
+		const result = ClipSchema.safeParse(clip);
 		expect(result.success).toBe(false);
 	});
 
-	it("should reject invalid clip with zero length", () => {
-		const invalidClip = {
+	it("accepts clip with zero length (backend validates)", () => {
+		// Note: External schema allows zero length; backend performs semantic validation
+		const clip = {
 			asset: {
 				type: "video",
 				src: "https://example.com/video.mp4"
@@ -68,8 +69,8 @@ describe("ClipSchema Validation", () => {
 			length: 0
 		};
 
-		const result = ClipSchema.safeParse(invalidClip);
-		expect(result.success).toBe(false);
+		const result = ClipSchema.safeParse(clip);
+		expect(result.success).toBe(true);
 	});
 
 	it("should validate clip with all optional properties", () => {
@@ -227,6 +228,32 @@ describe("Asset Schema Validation", () => {
 		};
 
 		const result = TextAssetSchema.safeParse(textAsset);
+		expect(result.success).toBe(true);
+	});
+
+	it("accepts text asset with empty string", () => {
+		// Shotstack schema allows empty text strings - the SDK renders them as empty text elements
+		const textAssetWithEmptyText = {
+			type: "text",
+			text: "",
+			width: 1080,
+			height: 325,
+			font: {
+				color: "#000000",
+				family: "Montserrat ExtraBold",
+				size: 72,
+				lineHeight: 1
+			},
+			alignment: {
+				horizontal: "center",
+				vertical: "center"
+			},
+			background: {
+				color: "#ffffff"
+			}
+		};
+
+		const result = TextAssetSchema.safeParse(textAssetWithEmptyText);
 		expect(result.success).toBe(true);
 	});
 

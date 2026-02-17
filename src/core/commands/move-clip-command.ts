@@ -1,264 +1,206 @@
-import type { Player } from "@canvas/players/player";
-import type { TimingIntent } from "@core/timing/types";
+import { EditEvent } from "@core/events/edit-events";
+import { stripInternalProperties } from "@core/shared/clip-utils";
+import type { Seconds } from "@core/timing/types";
+import type { Clip } from "@schemas";
 
-import type { EditCommand, CommandContext } from "./types";
+import { DeleteTrackCommand } from "./delete-track-command";
+import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
+/**
+ * Document-only command that moves a clip to a different track and/or position.
+ */
 export class MoveClipCommand implements EditCommand {
-	name = "moveClip";
-	private player?: Player;
-	private originalTrackIndex: number;
-	private originalClipIndex: number;
-	private originalStart?: number | "auto";
-	private originalTimingIntent?: TimingIntent;
+	readonly name = "moveClip";
+
+	private clipId: string | null = null;
+	private originalStart?: Clip["start"];
+	private previousDocClip?: Clip;
+	private deleteTrackCommand?: DeleteTrackCommand;
+	private sourceTrackWasDeleted = false;
+	/** Effective destination track index, adjusted if source track was deleted */
+	private effectiveToTrackIndex: number;
+	/** The final clip index after moving (for events and undo) */
+	private newClipIndex = 0;
 
 	constructor(
-		private fromTrackIndex: number,
-		private fromClipIndex: number,
-		private toTrackIndex: number,
-		private newStart: number
+		private readonly fromTrackIndex: number,
+		private readonly fromClipIndex: number,
+		private readonly toTrackIndex: number,
+		private readonly newStart: Seconds
 	) {
-		this.originalTrackIndex = fromTrackIndex;
-		this.originalClipIndex = fromClipIndex;
+		this.effectiveToTrackIndex = toTrackIndex;
 	}
 
-	execute(context?: CommandContext): void {
-		if (!context) return;
+	execute(context?: CommandContext): CommandResult {
+		if (!context) throw new Error("MoveClipCommand.execute: context is required");
 
-		// Get the player by indices
-		const tracks = context.getTracks();
+		const doc = context.getDocument();
+		if (!doc) throw new Error("MoveClipCommand.execute: document is required");
 
-		if (this.fromTrackIndex < 0 || this.fromTrackIndex >= tracks.length) {
-			console.warn(`Invalid source track index: ${this.fromTrackIndex}`);
-			return;
+		// Get player for ID and timing intent
+		const player = context.getClipAt(this.fromTrackIndex, this.fromClipIndex);
+		if (!player) {
+			return CommandNoop(`Invalid clip at ${this.fromTrackIndex}/${this.fromClipIndex}`);
 		}
 
-		const fromTrack = tracks[this.fromTrackIndex];
-		if (this.fromClipIndex < 0 || this.fromClipIndex >= fromTrack.length) {
-			console.warn(`Invalid clip index: ${this.fromClipIndex}`);
-			return;
-		}
+		// Get document clip
+		const docClip = doc.getClip(this.fromTrackIndex, this.fromClipIndex);
+		if (!docClip) return CommandNoop(`Document clip not found at ${this.fromTrackIndex}/${this.fromClipIndex}`);
 
-		// Get the clip to move
-		this.player = fromTrack[this.fromClipIndex];
-		this.originalStart = this.player.clipConfiguration.start;
+		// Store for undo and events
+		this.clipId = player.clipId;
+		this.previousDocClip = structuredClone(docClip);
+		this.originalStart = docClip.start;
 
-		// Store original timing intent for undo
-		this.originalTimingIntent = this.player.getTimingIntent();
+		// Determine effective destination track index
+		this.effectiveToTrackIndex = this.toTrackIndex;
 
-		// If moving to a different track
+		// Document-only mutations - always use moveClip since it handles reordering by start time
+		doc.moveClip(this.fromTrackIndex, this.fromClipIndex, this.toTrackIndex, { start: this.newStart });
+
 		if (this.fromTrackIndex !== this.toTrackIndex) {
-			// Validate destination track
-			if (this.toTrackIndex < 0 || this.toTrackIndex >= tracks.length) {
-				console.warn(`Invalid destination track index: ${this.toTrackIndex}`);
-				return;
-			}
+			// Cross-track move: check if source track is now empty and should be deleted
+			const sourceTrackClips = doc.getClipsInTrack(this.fromTrackIndex);
+			if (sourceTrackClips.length === 0) {
+				// Source track is empty - delete it
+				this.deleteTrackCommand = new DeleteTrackCommand(this.fromTrackIndex);
+				const result = this.deleteTrackCommand.execute(context);
 
-			// Remove from current track
-			fromTrack.splice(this.fromClipIndex, 1);
+				// Only set sourceTrackWasDeleted if the command succeeded (not noop)
+				if (result.status === "success") {
+					this.sourceTrackWasDeleted = true;
 
-			// Update the player's layer
-			this.player.layer = this.toTrackIndex + 1;
-
-			// Add to new track at the correct position (sorted by start time)
-			const toTrack = tracks[this.toTrackIndex];
-
-			// Find the correct insertion point based on start time
-			let insertIndex = 0;
-			for (let i = 0; i < toTrack.length; i += 1) {
-				const clip = toTrack[i];
-				const clipStart = clip.getStart() / 1000; // Use resolved start time in seconds
-				if (this.newStart < clipStart) {
-					break;
+					// Adjust effective destination track index if it was after the deleted track
+					if (this.toTrackIndex > this.fromTrackIndex) {
+						this.effectiveToTrackIndex = this.toTrackIndex - 1;
+					}
 				}
-				insertIndex += 1;
 			}
-
-			// Insert at the correct position
-			toTrack.splice(insertIndex, 0, this.player);
-
-			// Store the new clip index for undo
-			this.originalClipIndex = insertIndex;
-		} else {
-			// Same track - need to reorder if position changed
-			const track = fromTrack;
-
-			// Remove from current position
-			track.splice(this.fromClipIndex, 1);
-
-			// Find new insertion point based on start time
-			let insertIndex = 0;
-			for (let i = 0; i < track.length; i += 1) {
-				const clip = track[i];
-				const clipStart = clip.getStart() / 1000;
-				if (this.newStart < clipStart) {
-					break;
-				}
-				insertIndex += 1;
-			}
-
-			// Insert at correct position
-			track.splice(insertIndex, 0, this.player);
-
-			// Store new index
-			this.originalClipIndex = insertIndex;
 		}
 
-		// Update the clip position
-		this.player.clipConfiguration.start = this.newStart;
+		// Reconciler handles player layer update, container move, timing update
+		context.resolve();
 
-		// Update resolved timing to match the new position
-		this.player.setResolvedTiming({
-			start: this.newStart * 1000,
-			length: this.player.getLength()
-		});
+		// Find the new clip index after move (for events)
+		const clipInfo = this.clipId ? doc.getClipById(this.clipId) : null;
+		this.newClipIndex = clipInfo?.clipIndex ?? 0;
 
-		// Update timing intent to match new position
-		this.player.setTimingIntent({
-			start: this.newStart,
-			length: this.player.getTimingIntent().length
-		});
-
-		// If timing intent changed from "end" to fixed, untrack from endLengthClips Set
-		if (this.originalTimingIntent?.length === "end" && this.player.getTimingIntent().length !== "end") {
-			context.untrackEndLengthClip(this.player);
-		}
-
-		// Move the player container to the new track container if needed
-		context.movePlayerToTrackContainer(this.player, this.fromTrackIndex, this.toTrackIndex);
-
-		// Reconfigure and redraw the player
-		this.player.reconfigureAfterRestore();
-		this.player.draw();
-
-		// Update total duration and emit event
 		context.updateDuration();
 
-		// If we moved tracks, we need to update all clips in both tracks
-		if (this.fromTrackIndex !== this.toTrackIndex) {
-			// Force all clips in the affected tracks to redraw
-			const sourceTrack = tracks[this.fromTrackIndex];
-			const destTrack = tracks[this.toTrackIndex];
-
-			[...sourceTrack, ...destTrack].forEach(clip => {
-				if (clip && clip !== this.player) {
-					clip.draw();
-				}
-			});
-		}
-
 		// Propagate timing changes to dependent clips
-		// Need to propagate on both source and destination tracks if they differ
-		if (this.fromTrackIndex !== this.toTrackIndex) {
+		if (this.fromTrackIndex !== this.toTrackIndex && !this.sourceTrackWasDeleted) {
 			context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex - 1);
 		}
-		context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex);
+		context.propagateTimingChanges(this.effectiveToTrackIndex, this.newClipIndex);
 
-		// Emit events AFTER all changes complete to avoid partial rebuilds
-		context.emitEvent("clip:updated", {
+		// Get document clip AFTER mutation
+		const currentDocClip = doc.getClip(this.effectiveToTrackIndex, this.newClipIndex);
+		if (!this.previousDocClip || !currentDocClip)
+			throw new Error(`MoveClipCommand: document clip not found after mutation at ${this.effectiveToTrackIndex}/${this.newClipIndex}`);
+
+		context.emitEvent(EditEvent.ClipUpdated, {
 			previous: {
-				clip: { ...this.player.clipConfiguration, start: this.originalStart },
+				clip: stripInternalProperties(this.previousDocClip),
 				trackIndex: this.fromTrackIndex,
 				clipIndex: this.fromClipIndex
 			},
 			current: {
-				clip: this.player.clipConfiguration,
-				trackIndex: this.toTrackIndex,
-				clipIndex: this.originalClipIndex
+				clip: stripInternalProperties(currentDocClip),
+				trackIndex: this.effectiveToTrackIndex,
+				clipIndex: this.newClipIndex
 			}
 		});
 
 		// Re-select the moved clip at its new position
-		context.setSelectedClip(this.player);
-		context.emitEvent("clip:selected", {
-			trackIndex: this.toTrackIndex,
-			clipIndex: this.originalClipIndex
-		});
+		const updatedPlayer = this.clipId ? context.getPlayerByClipId(this.clipId) : player;
+		if (updatedPlayer) {
+			context.setSelectedClip(updatedPlayer);
+			context.emitEvent(EditEvent.ClipSelected, {
+				clip: stripInternalProperties(currentDocClip),
+				trackIndex: this.effectiveToTrackIndex,
+				clipIndex: this.newClipIndex
+			});
+		}
+
+		return CommandSuccess();
 	}
 
-	undo(context?: CommandContext): void {
-		if (!context || !this.player || this.originalStart === undefined) return;
+	async undo(context?: CommandContext): Promise<CommandResult> {
+		if (!context) throw new Error("MoveClipCommand.undo: context is required");
+		if (!this.clipId || this.originalStart === undefined) return CommandNoop("No clip state stored");
 
-		const tracks = context.getTracks();
+		const doc = context.getDocument();
+		if (!doc) throw new Error("MoveClipCommand.undo: document is required");
 
-		// If we moved tracks, move it back
-		if (this.fromTrackIndex !== this.toTrackIndex) {
-			// Remove from current track
-			const currentTrack = tracks[this.toTrackIndex];
-			const clipIndex = currentTrack.indexOf(this.player);
-			if (clipIndex !== -1) {
-				currentTrack.splice(clipIndex, 1);
-			}
+		// If source track was deleted, recreate it first
+		if (this.sourceTrackWasDeleted && this.deleteTrackCommand) {
+			this.deleteTrackCommand.undo(context);
+			this.sourceTrackWasDeleted = false;
 
-			// Restore original layer
-			this.player.layer = this.fromTrackIndex + 1;
-
-			// Add back to original track at original position
-			const originalTrack = tracks[this.fromTrackIndex];
-			originalTrack.splice(this.fromClipIndex, 0, this.player);
-		} else {
-			// Same track - need to reorder back to original position
-			const track = tracks[this.fromTrackIndex];
-			const currentIndex = track.indexOf(this.player);
-			if (currentIndex !== -1) {
-				track.splice(currentIndex, 1);
-			}
-
-			// Insert at original position
-			track.splice(this.fromClipIndex, 0, this.player);
-		}
-
-		// Restore original position
-		this.player.clipConfiguration.start = this.originalStart;
-
-		// Restore original timing intent
-		if (this.originalTimingIntent) {
-			this.player.setTimingIntent(this.originalTimingIntent);
-			// Update resolved timing to match
-			this.player.setResolvedTiming({
-				start: typeof this.originalTimingIntent.start === "number" ? this.originalTimingIntent.start * 1000 : this.player.getStart(),
-				length: typeof this.originalTimingIntent.length === "number" ? this.originalTimingIntent.length * 1000 : this.player.getLength()
-			});
-
-			// If restoring "end" length, re-track in endLengthClips Set
-			if (this.originalTimingIntent.length === "end") {
-				context.trackEndLengthClip(this.player);
+			// Restore effective track index now that the deleted track is back
+			if (this.toTrackIndex > this.fromTrackIndex) {
+				this.effectiveToTrackIndex = this.toTrackIndex;
 			}
 		}
 
-		// Move the player container back to the original track container if needed
-		context.movePlayerToTrackContainer(this.player, this.toTrackIndex, this.fromTrackIndex);
+		// Find current clip position in document
+		const clipInfo = doc.getClipById(this.clipId);
+		if (!clipInfo) return CommandNoop(`Clip ${this.clipId} not found in document`);
+		const currentDocClip = structuredClone(doc.getClip(clipInfo.trackIndex, clipInfo.clipIndex));
 
-		// Reconfigure and redraw the player
-		this.player.reconfigureAfterRestore();
-		this.player.draw();
+		// Document-only mutations: move back to original position (always use moveClip for reordering)
+		doc.moveClip(clipInfo.trackIndex, clipInfo.clipIndex, this.fromTrackIndex, {
+			start: this.originalStart
+		});
+
+		// Reconciler handles player layer update, container move, timing update
+		context.resolve();
 
 		context.updateDuration();
 
 		// Propagate timing changes on both tracks
-		if (this.fromTrackIndex !== this.toTrackIndex) {
-			context.propagateTimingChanges(this.toTrackIndex, this.originalClipIndex - 1);
+		if (this.fromTrackIndex !== this.effectiveToTrackIndex) {
+			context.propagateTimingChanges(this.effectiveToTrackIndex, this.newClipIndex - 1);
 		}
 		context.propagateTimingChanges(this.fromTrackIndex, this.fromClipIndex);
 
-		// Emit events AFTER all changes complete to avoid partial rebuilds
-		context.emitEvent("clip:updated", {
-			previous: {
-				clip: { ...this.player.clipConfiguration, start: this.newStart },
-				trackIndex: this.toTrackIndex,
-				clipIndex: this.originalClipIndex
-			},
-			current: {
-				clip: this.player.clipConfiguration,
-				trackIndex: this.fromTrackIndex,
-				clipIndex: this.fromClipIndex
-			}
-		});
+		// Get document clip AFTER undo mutation (restored state)
+		const restoredDocClip = doc.getClip(this.fromTrackIndex, this.fromClipIndex);
+
+		if (this.previousDocClip) {
+			context.emitEvent(EditEvent.ClipUpdated, {
+				previous: {
+					clip: stripInternalProperties(currentDocClip ?? this.previousDocClip),
+					trackIndex: this.effectiveToTrackIndex,
+					clipIndex: this.newClipIndex
+				},
+				current: {
+					clip: stripInternalProperties(restoredDocClip ?? this.previousDocClip),
+					trackIndex: this.fromTrackIndex,
+					clipIndex: this.fromClipIndex
+				}
+			});
+		}
 
 		// Re-select the clip at its restored position
-		context.setSelectedClip(this.player);
-		context.emitEvent("clip:selected", {
-			trackIndex: this.fromTrackIndex,
-			clipIndex: this.fromClipIndex
-		});
+		const updatedPlayer = context.getPlayerByClipId(this.clipId);
+		if (updatedPlayer && restoredDocClip) {
+			context.setSelectedClip(updatedPlayer);
+			context.emitEvent(EditEvent.ClipSelected, {
+				clip: stripInternalProperties(restoredDocClip),
+				trackIndex: this.fromTrackIndex,
+				clipIndex: this.fromClipIndex
+			});
+		}
+
+		// Reset effective track index for potential re-execute
+		this.effectiveToTrackIndex = this.toTrackIndex;
+
+		return CommandSuccess();
+	}
+
+	dispose(): void {
+		this.clipId = null;
+		this.deleteTrackCommand = undefined;
 	}
 }

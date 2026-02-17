@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-PolyForm_Shield-blue.svg)](https://polyformproject.org/licenses/shield/1.0.0/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
 
-A JavaScript library for creating and editing videos in the browser.
+A JavaScript SDK for browser-based video editing with timeline, canvas preview, and export.
 
 ## Interactive Examples
 
@@ -18,12 +18,11 @@ Try Shotstack Studio in your preferred framework:
 
 ## Features
 
-- Create video compositions with multiple tracks and clips
-- Visual timeline interface
-- WYSIWYG text editing
-- Multi-track, drag-and-drop clip manipulation with snap-to-grid
-- Use in conjunction with the [Shotstack Edit API](https://shotstack.io/docs/guide/getting-started/hello-world-using-curl/) to render video
-- Export to video via the browser
+- Template-driven editing with undo/redo command model
+- Canvas preview rendering
+- Visual timeline with drag, resize, selection, and snapping
+- Extensible UI via `UIController` button API
+- Browser export pipeline via `VideoExporter`
 
 ## Installation
 
@@ -38,33 +37,58 @@ yarn add @shotstack/shotstack-studio
 ## Quick Start
 
 ```typescript
-import { Edit, Canvas, Controls, Timeline } from "@shotstack/shotstack-studio";
+import { Edit, Canvas, Controls, Timeline, UIController, VERSION } from "@shotstack/shotstack-studio";
+import type { EditConfig, UIControllerOptions, ToolbarButtonConfig } from "@shotstack/shotstack-studio";
 
-// 1. Load a template
+// 1) Load a template
 const response = await fetch("https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json");
 const template = await response.json();
 
-// 2. Initialize the edit
-const edit = new Edit(template.output.size, template.timeline.background);
+// 2) Create core components
+const edit = new Edit(template);
+const canvas = new Canvas(edit);
+const ui = UIController.create(edit, canvas);
+
+// 3) Load runtime
+await canvas.load();
 await edit.load();
 
-// 3. Create a canvas to display the edit
-const canvas = new Canvas(template.output.size, edit);
-await canvas.load(); // Renders to [data-shotstack-studio] element
+// 4) Add one custom UI button
+ui.registerButton({
+  id: "text",
+  icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H13"/><path d="M8 3V13"/><path d="M5 13H11"/></svg>`,
+  tooltip: "Add Text"
+});
 
-// 4. Load the template
-await edit.loadEdit(template);
+ui.on("button:text", ({ position }) => {
+  edit.addTrack(0, {
+    clips: [
+      {
+        asset: {
+          type: "rich-text",
+          text: "Title",
+          font: { family: "Work Sans", size: 72, weight: 600, color: "#ffffff", opacity: 1 },
+          align: { horizontal: "center", vertical: "middle" }
+        },
+        start: position,
+        length: 5,
+        width: 500,
+        height: 200
+      }
+    ]
+  });
+});
 
-// 5. Initialize the Timeline
-const timeline = new Timeline(edit, { width: 1280, height: 300 });
-await timeline.load(); // Renders to [data-shotstack-timeline] element
+// 5) Timeline + controls
+const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
+const timeline = new Timeline(edit, timelineContainer);
+await timeline.load();
 
-// 6. Add keyboard controls
 const controls = new Controls(edit);
 await controls.load();
 ```
 
-Your HTML should include containers for both the canvas and timeline:
+Your HTML must include both containers:
 
 ```html
 <div data-shotstack-studio></div>
@@ -75,286 +99,219 @@ Your HTML should include containers for both the canvas and timeline:
 
 ### Edit
 
-The Edit class represents a video project with its timeline, clips, and properties.
+`Edit` is the runtime editing session and source of truth for document mutations.
 
 ```typescript
 import { Edit } from "@shotstack/shotstack-studio";
 
-// For schema validation only (e.g., in tests):
-import { EditSchema, ClipSchema } from "@shotstack/shotstack-studio/schema";
-// Create an edit with dimensions and background
-const edit = new Edit({ width: 1280, height: 720 }, "#000000");
+const edit = new Edit(templateJson);
 await edit.load();
 
-// Load from template
-await edit.loadEdit(templateJson);
+await edit.loadEdit(nextTemplateJson);
 
-// Playback controls
+// Playback (seconds)
 edit.play();
 edit.pause();
-edit.seek(2000); // Seek to 2 seconds (in milliseconds)
-edit.stop(); // Stop and return to beginning
+edit.seek(2);
+edit.stop();
 
-// Editing functions
-edit.addClip(0, {
-  asset: {
-    type: "image",
-    src: "https://example.com/image.jpg"
-  },
+// Mutations
+await edit.addTrack(0, { clips: [] });
+await edit.addClip(0, {
+  asset: { type: "image", src: "https://example.com/image.jpg" },
   start: 0,
   length: 5
 });
+await edit.updateClip(0, 0, { length: 6 });
+await edit.deleteClip(0, 0);
 
-edit.addTrack(1, { clips: [] });
-edit.deleteClip(0, 0);
-edit.deleteTrack(1);
+// History
+await edit.undo();
+await edit.redo();
 
-// Undo/Redo
-edit.undo();
-edit.redo();
+// Clip operations
+await edit.deleteTrack(0);
 
-// Get edit information
+// Output settings
+await edit.setOutputSize(1920, 1080);
+await edit.setOutputFps(30);
+await edit.setOutputFormat("mp4");
+await edit.setOutputResolution("hd");
+await edit.setOutputAspectRatio("16:9");
+await edit.setTimelineBackground("#000000");
+
+// Read state
+const time = edit.playbackTime;
+const playing = edit.isPlaying;
 const clip = edit.getClip(0, 0);
 const track = edit.getTrack(0);
-const editJson = edit.getEdit();
-const duration = edit.totalDuration; // in milliseconds
+const snapshot = edit.getEdit();
+const durationSeconds = edit.totalDuration;
 ```
 
 #### Events
 
-The Edit class provides an event system to listen for specific actions:
+Listen using string event names:
 
 ```typescript
-// Listen for clip selection events
-edit.events.on("clip:selected", data => {
-  console.log("Clip selected:", data.clip);
-  console.log("Track index:", data.trackIndex);
-  console.log("Clip index:", data.clipIndex);
+const unsubscribeClipSelected = edit.events.on("clip:selected", data => {
+  console.log("Selected clip", data.trackIndex, data.clipIndex);
 });
 
-// Listen for clip update events
 edit.events.on("clip:updated", data => {
-  console.log("Previous state:", data.previous); // { clip, trackIndex, clipIndex }
-  console.log("Current state:", data.current); // { clip, trackIndex, clipIndex }
+  console.log("Updated from", data.previous, "to", data.current);
 });
+
+edit.events.on("playback:play", () => {
+  console.log("Playback started");
+});
+
+// Unsubscribe when no longer needed
+unsubscribeClipSelected();
 ```
 
-Available events:
+Available event names:
 
-- `clip:selected` - Emitted when a clip is initially selected, providing data about the clip, its track index, and clip index.
-- `clip:updated` - Emitted when a clip's properties are modified, providing both previous and current states.
+- Playback: `playback:play`, `playback:pause`
+- Timeline: `timeline:updated`, `timeline:backgroundChanged`
+- Clip lifecycle: `clip:added`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved`
+- Selection: `selection:cleared`
+- Edit state: `edit:changed`, `edit:undo`, `edit:redo`
+- Track: `track:added`, `track:removed`
+- Duration: `duration:changed`
+- Output: `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged`
+- Merge fields: `mergefield:changed`
 
 ### Canvas
 
-The Canvas class provides the visual rendering of the edit.
+`Canvas` renders the current edit.
 
 ```typescript
-// Create and load the canvas
-const canvas = new Canvas(edit.size, edit);
+import { Canvas } from "@shotstack/shotstack-studio";
+
+const canvas = new Canvas(edit);
 await canvas.load();
 
-// Zoom and positioning
 canvas.centerEdit();
 canvas.zoomToFit();
-canvas.setZoom(1.5); // 1.0 is 100%, 0.5 is 50%, etc.
-canvas.dispose(); // Clean up resources when done
+canvas.setZoom(1.25);
+canvas.resize();
+const zoom = canvas.getZoom();
+canvas.dispose();
 ```
 
-### Controls
+### UIController
 
-The Controls class adds keyboard controls for playback.
+`UIController` manages built-in UI wiring and extensible button events.
 
 ```typescript
-const controls = new Controls(edit);
-await controls.load();
+import { UIController } from "@shotstack/shotstack-studio";
 
-// Available keyboard controls:
-// Space - Play/Pause
-// J - Stop
-// K - Pause
-// L - Play
-// Left Arrow - Seek backward
-// Right Arrow - Seek forward
-// Shift + Arrow - Seek larger amount
-// Comma - Step backward one frame
-// Period - Step forward one frame
-// Cmd/Ctrl + Z - Undo
-// Cmd/Ctrl + Shift + Z - Redo
-// Cmd/Ctrl + E - Export/download video
+const ui = UIController.create(edit, canvas, { mergeFields: true });
+
+ui.registerButton({
+  id: "add-title",
+  icon: `<svg viewBox="0 0 16 16">...</svg>`,
+  tooltip: "Add Title"
+});
+
+const unsubscribe = ui.on("button:add-title", ({ position }) => {
+  console.log("Button clicked at", position, "seconds");
+});
+
+ui.unregisterButton("add-title");
+unsubscribe();
+ui.dispose();
 ```
 
 ### Timeline
 
-The Timeline class provides a visual timeline interface for editing.
+`Timeline` provides visual clip editing.
 
 ```typescript
 import { Timeline } from "@shotstack/shotstack-studio";
 
-const timeline = new Timeline(edit, { width: 1280, height: 300 });
-await timeline.load();
+const container = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
+const timeline = new Timeline(edit, container);
 
-// Timeline features:
-// - Visual track and clip representation
-// - Drag-and-drop clip manipulation
-// - Clip resizing with edge detection
-// - Playhead control for navigation
-// - Snap-to-grid functionality
-// - Zoom and scroll controls
+await timeline.load();
+timeline.zoomIn();
+timeline.zoomOut();
+timeline.dispose();
+```
+
+### Controls
+
+`Controls` enables keyboard playback/edit shortcuts.
+
+```typescript
+import { Controls } from "@shotstack/shotstack-studio";
+
+const controls = new Controls(edit);
+await controls.load();
 ```
 
 ### VideoExporter
 
-The VideoExporter class exports the Edit to a MP4 video file encoded in h264 and AAC.
+`VideoExporter` exports a timeline render from the browser runtime.
 
 ```typescript
+import { VideoExporter } from "@shotstack/shotstack-studio";
+
 const exporter = new VideoExporter(edit, canvas);
-await exporter.export("my-video.mp4", 25); // filename, fps
+await exporter.export("my-video.mp4", 25);
 ```
 
-## Theming
+## Merge Fields
 
-Shotstack Studio supports theming for visual components. Currently, theming is available for the Timeline component, with Canvas theming coming in a future releases.
+Merge fields are template placeholders, typically in the form `{{ FIELD_NAME }}`.
 
-### Built-in Themes
-
-The library includes pre-designed themes that you can use immediately:
-
-```typescript
-import { Timeline } from "@shotstack/shotstack-studio";
-import darkTheme from "@shotstack/shotstack-studio/themes/dark.json";
-import minimalTheme from "@shotstack/shotstack-studio/themes/minimal.json";
-
-// Apply a theme when creating the timeline
-const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: darkTheme });
-```
-
-### Custom Themes
-
-Create your own theme by defining colors and dimensions for each component:
-
-```typescript
-const customTheme = {
-  timeline: {
-    // Main timeline colors
-    background: "#1e1e1e",
-    divider: "#1a1a1a",
-    playhead: "#ff4444",
-    snapGuide: "#888888",
-    dropZone: "#00ff00",
-    trackInsertion: "#00ff00",
-
-    // Toolbar styling
-    toolbar: {
-      background: "#1a1a1a",
-      surface: "#2a2a2a", // Button backgrounds
-      hover: "#3a3a3a", // Button hover state
-      active: "#007acc", // Button active state
-      divider: "#3a3a3a", // Separator lines
-      icon: "#888888", // Icon colors
-      text: "#ffffff", // Text color
-      height: 36 // Toolbar height in pixels
-    },
-
-    // Ruler styling
-    ruler: {
-      background: "#404040",
-      text: "#ffffff", // Time labels
-      markers: "#666666", // Time marker dots
-      height: 40 // Ruler height in pixels
-    },
-
-    // Track styling
-    tracks: {
-      surface: "#2d2d2d", // Primary track color
-      surfaceAlt: "#252525", // Alternating track color
-      border: "#3a3a3a", // Track borders
-      height: 60 // Track height in pixels
-    },
-
-    // Clip colors by asset type
-    clips: {
-      video: "#4a9eff",
-      audio: "#00d4aa",
-      image: "#f5a623",
-      text: "#d0021b",
-      shape: "#9013fe",
-      html: "#50e3c2",
-      luma: "#b8e986",
-      default: "#8e8e93", // Unknown asset types
-      selected: "#007acc", // Selection border
-      radius: 4 // Corner radius in pixels
-    }
-  }
-  // Canvas theming will be available in future releases
-  // canvas: { ... }
-};
-
-const timeline = new Timeline(edit, { width: 1280, height: 300 }, { theme: customTheme });
-```
-
-### Theme Structure
-
-Themes are organized by component, making it intuitive to customize specific parts of the interface:
-
-- **Timeline**: Controls the appearance of the timeline interface
-  - `toolbar`: Playback controls and buttons
-  - `ruler`: Time markers and labels
-  - `tracks`: Track backgrounds and borders
-  - `clips`: Asset-specific colors and selection states
-  - Global timeline properties (background, playhead, etc.)
-
-- **Canvas** (coming soon): Will control the appearance of the video preview area
-
-## Template Format
-
-Templates use a JSON format with the following structure:
-
-```typescript
+```json
 {
-  timeline: {
-    background: "#000000",
-    fonts: [
-      { src: "https://example.com/font.ttf" }
-    ],
-    tracks: [
-      {
-        clips: [
-          {
-            asset: {
-              type: "image", // image, video, text, shape, audio
-              src: "https://example.com/image.jpg",
-              // Other asset properties depend on type
-            },
-            start: 0,        // Start time in seconds
-            length: 5,       // Duration in seconds
-            transition: {    // Optional transitions
-              in: "fade",
-              out: "fade"
-            },
-            position: "center", // Positioning
-            scale: 1,           // Scale factor
-			offset: {
-				x: 0.1,         // X-axis offset relative to position
-				y: 0            // Y-axis offset relative to position
-			}
-          }
-        ]
-      }
-    ]
-  },
-  output: {
-    format: "mp4",
-    size: {
-      width: 1280,
-      height: 720
-    }
+  "asset": {
+    "type": "text",
+    "text": "{{ TITLE }}"
   }
 }
 ```
 
+When merge-field-aware UI is required, enable it via `UIController` options:
+
+```typescript
+const ui = UIController.create(edit, canvas, { mergeFields: true });
+```
+
+You can also subscribe to merge field events when integrations update merge data:
+
+```typescript
+edit.events.on("mergefield:changed", ({ fields }) => {
+  console.log("Merge fields updated:", fields.length);
+});
+```
+
+## Custom UI Buttons
+
+Use `UIController` to register and handle custom button actions.
+
+```typescript
+ui.registerButton({
+  id: "text",
+  icon: `<svg viewBox="0 0 16 16">...</svg>`,
+  tooltip: "Add Text",
+  dividerBefore: true
+});
+
+ui.on("button:text", ({ position, selectedClip }) => {
+  console.log("Current time (seconds):", position);
+  console.log("Current selection:", selectedClip);
+});
+
+ui.unregisterButton("text");
+```
+
 ## API Reference
 
-For complete schema and type definitions, see the [Shotstack API Reference](https://shotstack.io/docs/api/#tocs_edit).
+For schema-level details and type definitions, see the [Shotstack API Reference](https://shotstack.io/docs/api/#tocs_edit).
 
 ## License
 

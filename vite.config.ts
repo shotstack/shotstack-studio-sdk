@@ -3,8 +3,6 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 import dts from "vite-plugin-dts";
 
-const external = ["pixi.js", "howler", "opentype.js", "@ffmpeg/ffmpeg", "harfbuzzjs"];
-
 const globals = {
 	"pixi.js": "PIXI",
 	howler: "Howler",
@@ -14,11 +12,18 @@ const globals = {
 };
 
 export default defineConfig({
+	define: {
+		// Make process.env.NODE_ENV available in browser for __DEV__ checks
+		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] || "development")
+	},
+	worker: {
+		format: "es"
+	},
 	plugins: [
 		dts({
 			rollupTypes: true,
 			outDir: "dist",
-			exclude: ["src/main.ts"],
+			exclude: ["src/main.ts", "src/shotstack-main.ts"],
 			pathsToAliases: true
 		})
 	],
@@ -29,6 +34,7 @@ export default defineConfig({
 			"@timeline": resolve(__dirname, "src/components/timeline"),
 			"@shared": resolve(__dirname, "src/core/shared"),
 			"@schemas": resolve(__dirname, "src/core/schemas"),
+			"@timing": resolve(__dirname, "src/core/timing"),
 			"@layouts": resolve(__dirname, "src/core/layouts"),
 			"@animations": resolve(__dirname, "src/core/animations"),
 			"@events": resolve(__dirname, "src/core/events"),
@@ -48,7 +54,10 @@ export default defineConfig({
 			formats: ["es", "umd"]
 		},
 		rollupOptions: {
-			external,
+			external: id => {
+				if (id === "pixi.js" || id.startsWith("pixi.js/")) return true;
+				return ["harfbuzzjs", "opentype.js", "howler"].includes(id);
+			},
 			output: {
 				globals,
 				inlineDynamicImports: true

@@ -1,69 +1,40 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
-import { type VideoAsset } from "@schemas/video-asset";
+import { type ResolvedClip, type VideoAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;
 	private sprite: pixi.Sprite | null;
 	private isPlaying: boolean;
-	private originalSize: Size | null;
 
 	private volumeKeyframeBuilder: KeyframeBuilder;
 
 	private syncTimer: number;
+	private activeSyncTimer: number;
 	private skipVideoUpdate: boolean;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
-		super(edit, clipConfiguration);
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		super(edit, clipConfiguration, PlayerType.Video);
 
 		this.texture = null;
 		this.sprite = null;
 		this.isPlaying = false;
-		this.originalSize = null;
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
 		this.syncTimer = 0;
+		this.activeSyncTimer = 0;
 		this.skipVideoUpdate = false;
 	}
 
-	/**
-	 * TODO: Add support for .mov and .webm files
-	 */
 	public override async load(): Promise<void> {
 		await super.load();
-
-		const videoAsset = this.clipConfiguration.asset as VideoAsset;
-
-		const identifier = videoAsset.src;
-
-		if (identifier.endsWith(".mov") || identifier.endsWith(".webm")) {
-			throw new Error(`Video source '${videoAsset.src}' is not supported. .mov and .webm files are currently not supported.`);
-		}
-
-		const loadOptions: pixi.UnresolvedAsset = { src: identifier, data: { autoPlay: false, muted: false } };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.VideoSource>>(identifier, loadOptions);
-
-		const isValidVideoSource = texture?.source instanceof pixi.VideoSource;
-		if (!isValidVideoSource) {
-			throw new Error(`Invalid video source '${videoAsset.src}'.`);
-		}
-
-		this.texture = this.createCroppedTexture(texture);
-		this.sprite = new pixi.Sprite(this.texture);
-
-		this.contentContainer.addChild(this.sprite);
-
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			this.applyFixedDimensions();
-		}
-
+		await this.loadVideo();
 		this.configureKeyframes();
 	}
 
@@ -82,13 +53,16 @@ export class VideoPlayer extends Player {
 			return;
 		}
 
+		// getPlaybackTime() returns seconds
 		const playbackTime = this.getPlaybackTime();
 		const shouldClipPlay = this.edit.isPlaying && this.isActive();
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-				this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+				this.activeSyncTimer = 0;
+				// playbackTime is already in seconds
+				this.texture.source.resource.currentTime = playbackTime + trim;
 				this.texture.source.resource.play().catch(console.error);
 			}
 
@@ -96,11 +70,17 @@ export class VideoPlayer extends Player {
 				this.texture.source.resource.volume = this.getVolume();
 			}
 
-			const desyncThreshold = 100;
-			const shouldSync = Math.abs((this.texture.source.resource.currentTime - trim) * 1000 - playbackTime) > desyncThreshold;
-
-			if (shouldSync) {
-				this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+			// Rate-limit sync checks to once per second to prevent audio stuttering
+			this.activeSyncTimer += elapsed;
+			if (this.activeSyncTimer > 1000) {
+				this.activeSyncTimer = 0;
+				// Desync threshold: 0.3 seconds (300ms)
+				const desyncThreshold = 0.3;
+				// Both currentTime and playbackTime are in seconds
+				const drift = Math.abs(this.texture.source.resource.currentTime - trim - playbackTime);
+				if (drift > desyncThreshold) {
+					this.texture.source.resource.currentTime = playbackTime + trim;
+				}
 			}
 		}
 
@@ -109,27 +89,17 @@ export class VideoPlayer extends Player {
 			this.texture.source.resource.pause();
 		}
 
+		// When paused, sync every 100ms for scrubbing
 		const shouldSync = this.syncTimer > 100;
 		if (!this.edit.isPlaying && this.isActive() && shouldSync) {
 			this.syncTimer = 0;
-			this.texture.source.resource.currentTime = playbackTime / 1000 + trim;
+			this.texture.source.resource.currentTime = playbackTime + trim;
 		}
-	}
-
-	public override draw(): void {
-		super.draw();
 	}
 
 	public override dispose(): void {
 		super.dispose();
-
-		this.sprite?.destroy();
-		this.sprite = null;
-
-		this.texture?.destroy();
-		this.texture = null;
-
-		this.originalSize = null;
+		this.disposeVideo();
 	}
 
 	public override getSize(): Size {
@@ -143,8 +113,93 @@ export class VideoPlayer extends Player {
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
 	}
 
+	public override supportsEdgeResize(): boolean {
+		return true;
+	}
+
+	/** Reload the video asset when asset.src changes (e.g., merge field update) */
+	public override async reloadAsset(): Promise<void> {
+		this.skipVideoUpdate = true;
+		this.disposeVideo();
+		await this.loadVideo();
+		this.isPlaying = false;
+		this.syncTimer = 0;
+		this.activeSyncTimer = 0;
+		this.skipVideoUpdate = false;
+	}
+
+	private async loadVideo(): Promise<void> {
+		const videoAsset = this.clipConfiguration.asset as VideoAsset;
+		const { src } = videoAsset;
+
+		if (src.endsWith(".mov")) {
+			throw new Error(`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`);
+		}
+
+		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
+		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, data: { autoPlay: false, muted: false } };
+
+		// Use unique loader to create independent video element per player
+		// This prevents conflicts when multiple clips use the same video source
+		const texture = await this.edit.assetLoader.loadVideoUnique(corsUrl, loadOptions);
+
+		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
+			throw new Error(`Invalid video source '${src}'.`);
+		}
+
+		// Fix alpha channel rendering for WebM VP9 videos (PixiJS 8 auto-detection is buggy)
+		texture.source.alphaMode = "no-premultiply-alpha";
+
+		this.texture = this.createCroppedTexture(texture);
+
+		// Ensure the video has at least one decoded frame before adding to render tree
+		// This prevents WebGL errors when GPU tries to upload uninitialized texture data
+		const video = (this.texture.source as pixi.VideoSource).resource;
+		if (video instanceof HTMLVideoElement && video.readyState < 2) {
+			await new Promise<void>(resolve => {
+				const onReady = () => {
+					video.removeEventListener("loadeddata", onReady);
+					resolve();
+				};
+				video.addEventListener("loadeddata", onReady);
+				if (video.readyState >= 2) resolve();
+			});
+		}
+
+		this.sprite = new pixi.Sprite(this.texture);
+		this.contentContainer.addChild(this.sprite);
+	}
+
+	private disposeVideo(): void {
+		if (this.texture?.source?.resource) {
+			this.texture.source.resource.pause();
+			// Release video resource - each player owns its own video element
+			this.texture.source.resource.src = "";
+			this.texture.source.resource.load();
+		}
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		// Destroy the texture since we own it (created via loadVideoUnique)
+		if (this.texture) {
+			this.texture.destroy(true);
+			this.texture = null;
+		}
+	}
+
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	public getCurrentDrift(): number {
+		if (!this.texture?.source?.resource) return 0;
+		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
+		const videoTime = this.texture.source.resource.currentTime;
+		// getPlaybackTime() returns seconds, videoTime is also seconds
+		const playbackTime = this.getPlaybackTime();
+		return Math.abs(videoTime - trim - playbackTime);
 	}
 
 	private createCroppedTexture(texture: pixi.Texture<pixi.VideoSource>): pixi.Texture<pixi.VideoSource> {
@@ -156,6 +211,11 @@ export class VideoPlayer extends Player {
 
 		const originalWidth = texture.width;
 		const originalHeight = texture.height;
+
+		// Guard against uninitialized textures - skip cropping until GPU upload completes
+		if (originalWidth <= 0 || originalHeight <= 0) {
+			return texture;
+		}
 
 		const left = Math.floor((videoAsset.crop?.left ?? 0) * originalWidth);
 		const right = Math.floor((videoAsset.crop?.right ?? 0) * originalWidth);

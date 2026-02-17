@@ -1,6 +1,7 @@
 import { Canvas } from "@canvas/shotstack-canvas";
 import { ExportCommand } from "@core/commands/export-command";
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource } from "mediabunny";
 import * as pixi from "pixi.js";
 
@@ -55,10 +56,11 @@ export class ExportCoordinator {
 			this.progressUI.create();
 			this.canvas.pauseTicker();
 
+			this.edit.executeEditCommand(this.exportCommand);
+
 			const cfg = this.prepareConfig(fps ?? this.edit.getEdit().output?.fps ?? 30);
 			this.progressUI.update(0, 100, "Preparing...");
 
-			this.edit.executeEditCommand(this.exportCommand);
 			await this.videoProcessor.initialize(this.exportCommand.getClips());
 			this.progressUI.update(10, 100, "Video ready");
 
@@ -116,7 +118,7 @@ export class ExportCoordinator {
 		_canvas: HTMLCanvasElement,
 		ctx: CanvasRenderingContext2D
 	): Promise<void> {
-		const container = this.edit.getContainer();
+		const container = this.edit.getViewportContainer();
 		this.edit.pause();
 		Object.assign(container.position, { x: 0, y: 0 });
 		Object.assign(container.scale, { x: 1, y: 1 });
@@ -126,7 +128,7 @@ export class ExportCoordinator {
 
 		for (let i = 0; i < cfg.frames; i += 1) {
 			const frameTime = i * cfg.frameDuration;
-			this.edit.playbackTime = frameTime;
+			this.edit.playbackTime = sec(frameTime);
 
 			for (const clip of this.exportCommand.getClips()) {
 				clip.update(0, 0);
@@ -140,7 +142,6 @@ export class ExportCoordinator {
 				}
 			}
 
-			this.edit.draw();
 			this.app.renderer.render(this.app.stage);
 
 			const pixels = this.app.renderer.extract.pixels({
@@ -173,18 +174,19 @@ export class ExportCoordinator {
 	}
 
 	private prepareConfig(fps: number): ExportConfig {
-		const size = this.edit.getEdit().output?.size || { width: 1920, height: 1080 };
-		const durationSec = this.edit.totalDuration / 1000;
+		const outputSize = this.edit.getEdit().output?.size;
+		const size = { width: outputSize?.width ?? 1920, height: outputSize?.height ?? 1080 };
+		// totalDuration is in seconds
 		return {
 			fps,
 			size,
-			frames: Math.ceil(durationSec * fps),
-			frameDuration: 1000 / fps
+			frames: Math.ceil(this.edit.totalDuration * fps),
+			frameDuration: 1 / fps // seconds per frame
 		};
 	}
 
 	private saveEditState(): EditState {
-		const c = this.edit.getContainer();
+		const c = this.edit.getViewportContainer();
 		return {
 			wasPlaying: this.edit.isPlaying,
 			time: this.edit.playbackTime,
@@ -195,7 +197,7 @@ export class ExportCoordinator {
 	}
 
 	private restoreEditState(state: EditState): void {
-		const c = this.edit.getContainer();
+		const c = this.edit.getViewportContainer();
 		this.edit.setExportMode(false);
 
 		for (const clip of this.exportCommand.getClips()) {
@@ -220,7 +222,7 @@ export class ExportCoordinator {
 		Object.assign(c.position, state.pos);
 		Object.assign(c.scale, state.scale);
 		c.visible = state.visible;
-		this.edit.seek(state.time);
+		this.edit.seek(sec(state.time));
 		if (state.wasPlaying) this.edit.play();
 	}
 

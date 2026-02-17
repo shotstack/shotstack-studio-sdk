@@ -9,6 +9,7 @@ export { RichTextPlayer } from "./players/rich-text-player";
 export { ImagePlayer } from "./players/image-player";
 export { LumaPlayer } from "./players/luma-player";
 export { ShapePlayer } from "./players/shape-player";
+export { SvgPlayer } from "./players/svg-player";
 export { TextPlayer } from "./players/text-player";
 export { VideoPlayer } from "./players/video-player";
 
@@ -18,5 +19,5 @@ export { TextEditor } from "./text/text-editor";
 export { TextInputHandler } from "./text/text-input-handler";
 
 // System management
-export { Edit } from "@core/edit";
+export { Edit } from "@core/edit-session";
 export { Inspector } from "./system/inspector";

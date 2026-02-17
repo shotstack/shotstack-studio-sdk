@@ -1,37 +1,26 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
-import { type AudioAsset } from "@schemas/audio-asset";
-import { type Clip } from "@schemas/clip";
-import { type Keyframe } from "@schemas/keyframe";
+import { type AudioAsset, type ResolvedClip, type Keyframe } from "@schemas";
 import * as howler from "howler";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class AudioPlayer extends Player {
 	private audioResource: howler.Howl | null;
 	private isPlaying: boolean;
 
-	private volumeKeyframeBuilder: KeyframeBuilder;
+	private volumeKeyframeBuilder!: KeyframeBuilder;
 
 	private syncTimer: number;
 
-	constructor(edit: Edit, clipConfiguration: Clip) {
-		super(edit, clipConfiguration);
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		super(edit, clipConfiguration, PlayerType.Audio);
 
 		this.audioResource = null;
 		this.isPlaying = false;
-
-		const audioAsset = clipConfiguration.asset as AudioAsset;
-		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
-
-		this.volumeKeyframeBuilder = new KeyframeBuilder(
-			this.createVolumeKeyframes(audioAsset, baseVolume),
-			this.getLength(),
-			baseVolume
-		);
 		this.syncTimer = 0;
 	}
 
@@ -41,7 +30,7 @@ export class AudioPlayer extends Player {
 		const audioClipConfiguration = this.clipConfiguration.asset as AudioAsset;
 
 		const identifier = audioClipConfiguration.src;
-		const loadOptions: pixi.UnresolvedAsset = { src: identifier, loadParser: AudioLoadParser.Name };
+		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(identifier, loadOptions);
 
 		const isValidAudioSource = audioResource instanceof howler.Howl;
@@ -50,6 +39,11 @@ export class AudioPlayer extends Player {
 		}
 
 		this.audioResource = audioResource;
+
+		// Create volume keyframes after timing is resolved (not in constructor)
+		const baseVolume = typeof audioClipConfiguration.volume === "number" ? audioClipConfiguration.volume : 1;
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioClipConfiguration, baseVolume), this.getLength(), baseVolume);
+
 		this.configureKeyframes();
 	}
 
@@ -67,13 +61,14 @@ export class AudioPlayer extends Player {
 		}
 
 		const shouldClipPlay = this.edit.isPlaying && this.isActive();
+		// getPlaybackTime() returns seconds
 		const playbackTime = this.getPlaybackTime();
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-
-				this.audioResource.seek(playbackTime / 1000 + trim);
+				// playbackTime is already in seconds
+				this.audioResource.seek(playbackTime + trim);
 				this.audioResource.play();
 			}
 
@@ -81,11 +76,13 @@ export class AudioPlayer extends Player {
 				this.audioResource.volume(this.getVolume());
 			}
 
-			const desyncThreshold = 100;
-			const shouldSync = Math.abs((this.audioResource.seek() - trim) * 1000 - playbackTime) > desyncThreshold;
+			// Desync threshold: 0.1 seconds (100ms)
+			const desyncThreshold = 0.1;
+			// Both audioResource.seek() and playbackTime are in seconds
+			const shouldSync = Math.abs(this.audioResource.seek() - trim - playbackTime) > desyncThreshold;
 
 			if (shouldSync) {
-				this.audioResource.seek(playbackTime / 1000 + trim);
+				this.audioResource.seek(playbackTime + trim);
 			}
 		}
 
@@ -94,20 +91,26 @@ export class AudioPlayer extends Player {
 			this.audioResource.pause();
 		}
 
+		// When paused, sync every 100ms for scrubbing
 		const shouldSync = this.syncTimer > 100;
 		if (!this.edit.isPlaying && this.isActive() && shouldSync) {
 			this.syncTimer = 0;
-			this.audioResource.seek(playbackTime / 1000 + trim);
+			this.audioResource.seek(playbackTime + trim);
 		}
-	}
-
-	public override draw(): void {
-		super.draw();
 	}
 
 	public override dispose(): void {
 		this.audioResource?.unload();
 		this.audioResource = null;
+	}
+
+	public override reconfigureAfterRestore(): void {
+		super.reconfigureAfterRestore();
+
+		// Rebuild volume keyframes with updated timing
+		const audioAsset = this.clipConfiguration.asset as AudioAsset;
+		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
 	}
 
 	public override getSize(): Size {
@@ -116,6 +119,15 @@ export class AudioPlayer extends Player {
 
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	public getCurrentDrift(): number {
+		if (!this.audioResource) return 0;
+		const { trim = 0 } = this.clipConfiguration.asset as AudioAsset;
+		const audioTime = this.audioResource.seek() as number;
+		// getPlaybackTime() returns seconds, audioTime is also seconds
+		const playbackTime = this.getPlaybackTime();
+		return Math.abs(audioTime - trim - playbackTime);
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {

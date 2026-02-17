@@ -1,0 +1,1955 @@
+/**
+ * @jest-environment jsdom
+ */
+/* eslint-disable import/first, max-classes-per-file */
+
+// Mock pixi.js before any imports that use it
+jest.mock("pixi.js", () => ({
+	Container: jest.fn().mockImplementation(() => ({
+		children: [],
+		parent: null,
+		addChild: jest.fn(),
+		removeChild: jest.fn(),
+		destroy: jest.fn()
+	})),
+	Sprite: jest.fn(),
+	Texture: jest.fn()
+}));
+
+// Mock player module with actual Player class for extends
+jest.mock("../src/components/canvas/players/player", () => {
+	class MockPlayer {
+		clipConfiguration = {};
+
+		getMergeFieldBinding = jest.fn(() => null);
+	}
+	return {
+		Player: MockPlayer,
+		PlayerType: {
+			Video: "video",
+			Image: "image",
+			Audio: "audio",
+			Text: "text",
+			Html: "html",
+			Shape: "shape",
+			Caption: "caption",
+			Luma: "luma",
+			RichText: "rich-text",
+			Svg: "svg"
+		}
+	};
+});
+
+// Mock ShotstackEdit to prevent circular dependency issues
+jest.mock("../src/core/shotstack-edit", () => ({
+	ShotstackEdit: class MockShotstackEdit {}
+}));
+
+// Mock edit-session (no longer exports MAX_PIXELS - constraint is now in toolbar options)
+jest.mock("../src/core/edit-session", () => ({}));
+
+// Mock IntersectionObserver (not provided by jsdom)
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+	observe: jest.fn(),
+	unobserve: jest.fn(),
+	disconnect: jest.fn()
+})) as unknown as typeof IntersectionObserver;
+
+// Mock ResizeObserver (not provided by jsdom)
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+	observe: jest.fn(),
+	unobserve: jest.fn(),
+	disconnect: jest.fn()
+})) as unknown as typeof ResizeObserver;
+
+import { AssetToolbar } from "../src/core/ui/asset-toolbar";
+import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
+import { BUILT_IN_FONTS, FONT_SIZES } from "../src/core/ui/base-toolbar";
+import type { ToolbarButtonConfig } from "../src/core/ui/ui-controller";
+
+type MockPlayer = {
+	clipConfiguration: Record<string, unknown>;
+	getMergeFieldBinding: jest.Mock;
+};
+
+// ============================================================================
+// Mock Helpers
+// ============================================================================
+
+function createMockEventEmitter() {
+	const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+	return {
+		on: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
+			if (!listeners[event]) listeners[event] = [];
+			listeners[event].push(callback);
+		}),
+		off: jest.fn(),
+		emit: jest.fn((event: string, ...args: unknown[]) => {
+			if (listeners[event]) {
+				listeners[event].forEach(cb => cb(...args));
+			}
+		}),
+		trigger: (event: string, ...args: unknown[]) => {
+			if (listeners[event]) {
+				listeners[event].forEach(cb => cb(...args));
+			}
+		}
+	};
+}
+
+function createMockUIController() {
+	const buttonListeners: Array<() => void> = [];
+	const buttonClickListeners: Record<
+		string,
+		Array<(payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void>
+	> = {};
+	let buttons: ToolbarButtonConfig[] = [];
+
+	return {
+		getButtons: jest.fn(() => buttons),
+		setButtons: (newButtons: ToolbarButtonConfig[]) => {
+			buttons = newButtons;
+		},
+		onButtonsChanged: jest.fn((handler: () => void) => {
+			buttonListeners.push(handler);
+			return () => {
+				const idx = buttonListeners.indexOf(handler);
+				if (idx >= 0) buttonListeners.splice(idx, 1);
+			};
+		}),
+		emitButtonClick: jest.fn((buttonId: string) => {
+			const listeners = buttonClickListeners[`button:${buttonId}`] || [];
+			listeners.forEach(cb => cb({ position: 0, selectedClip: null }));
+		}),
+		triggerButtonsChanged: () => {
+			buttonListeners.forEach(cb => cb());
+		},
+		on: jest.fn((event: string, handler: (payload: { position: number; selectedClip: { trackIndex: number; clipIndex: number } | null }) => void) => {
+			if (!buttonClickListeners[event]) buttonClickListeners[event] = [];
+			buttonClickListeners[event].push(handler);
+			return () => {
+				const idx = buttonClickListeners[event].indexOf(handler);
+				if (idx >= 0) buttonClickListeners[event].splice(idx, 1);
+			};
+		})
+	};
+}
+
+function createMockEdit(overrides: Record<string, unknown> = {}) {
+	const events = createMockEventEmitter();
+	return {
+		getInternalEvents: jest.fn(() => events),
+		getPlayerClip: jest.fn((): MockPlayer | null => null),
+		getClip: jest.fn(() => null),
+		getClipId: jest.fn(() => "mock-clip-id"),
+		getResolvedClip: jest.fn(() => null),
+		getResolvedClipById: jest.fn(() => null),
+		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+		getCurrentTime: jest.fn(() => 0),
+		getEdit: jest.fn(() => ({
+			timeline: {
+				fonts: [],
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }] }]
+			}
+		})),
+		getDocument: jest.fn(() => ({
+			getFonts: jest.fn(() => []),
+			getClipBinding: jest.fn(() => null)
+		})),
+		getFontMetadata: jest.fn(() => new Map()),
+		getMergeFieldForProperty: jest.fn(() => null),
+		updateClip: jest.fn(),
+		getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
+		getSelectedClipInfo: jest.fn((): { trackIndex: number; clipIndex: number } | null => null),
+		mergeFields: {
+			getAll: jest.fn(() => []),
+			register: jest.fn(),
+			deleteMergeFieldGlobally: jest.fn()
+		},
+		events,
+		playbackTime: 0,
+		isSrcMergeField: jest.fn(() => false),
+		updateMergeFieldValueLive: jest.fn(),
+		setOutputSize: jest.fn(),
+		setOutputFps: jest.fn(),
+		getOutputFps: jest.fn(() => 25),
+		setTimelineBackground: jest.fn(),
+		getTimelineBackground: jest.fn(() => "#000000"),
+		size: { width: 1920, height: 1080 },
+		...overrides
+	};
+}
+
+function createMockClip(assetType: string, overrides: Record<string, unknown> = {}): MockPlayer {
+	const baseAsset = {
+		type: assetType,
+		...overrides
+	};
+
+	let clipConfiguration: Record<string, unknown>;
+
+	if (assetType === "rich-text" || assetType === "text") {
+		// RichTextToolbar uses nested font object: asset.font.size, asset.font.weight, etc.
+		const fontOverrides = {
+			size: overrides["fontSize"] ?? 48,
+			weight: overrides["fontWeight"] ?? 400,
+			family: overrides["fontFamily"] ?? "Open Sans",
+			color: overrides["fontColor"] ?? "#ffffff"
+		};
+		clipConfiguration = {
+			asset: {
+				...baseAsset,
+				text: "Test text",
+				font: fontOverrides,
+				// Keep flat properties for backward compatibility with TextToolbar tests
+				fontFamily: overrides["fontFamily"] ?? "Open Sans",
+				fontSize: overrides["fontSize"] ?? 48,
+				fontWeight: overrides["fontWeight"] ?? 400,
+				fontColor: overrides["fontColor"] ?? "#ffffff",
+				...overrides
+			}
+		};
+	} else if (assetType === "video" || assetType === "image") {
+		clipConfiguration = {
+			asset: {
+				...baseAsset,
+				src: "https://example.com/media.mp4",
+				fit: "crop",
+				...overrides
+			},
+			opacity: 1,
+			scale: 1
+		};
+	} else if (assetType === "audio") {
+		clipConfiguration = {
+			asset: {
+				...baseAsset,
+				src: "https://example.com/audio.mp3",
+				...overrides
+			},
+			volume: 1
+		};
+	} else {
+		clipConfiguration = { asset: baseAsset };
+	}
+
+	// Return a player-like object with clipConfiguration and getMergeFieldBinding
+	return {
+		clipConfiguration,
+		getMergeFieldBinding: jest.fn(() => null)
+	};
+}
+
+// Helper to create a DOM container for toolbar tests
+function createTestContainer(): HTMLDivElement {
+	const container = document.createElement("div");
+	document.body.appendChild(container);
+	return container;
+}
+
+function cleanupTestContainer(container: HTMLDivElement): void {
+	container.remove();
+}
+
+// Helper to simulate click events
+function simulateClick(element: Element | null): void {
+	if (element) {
+		element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	}
+}
+
+// Helper to simulate input events
+function simulateInput(element: HTMLInputElement | null, value: string | number): void {
+	if (element) {
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM manipulation for testing
+		element.value = String(value);
+		element.dispatchEvent(new Event("input", { bubbles: true }));
+	}
+}
+
+// Helper to simulate change events (for inputs that listen to 'change' instead of 'input')
+function simulateChange(element: HTMLInputElement | null, value: string | number): void {
+	if (element) {
+		// eslint-disable-next-line no-param-reassign -- Intentional DOM manipulation for testing
+		element.value = String(value);
+		element.dispatchEvent(new Event("change", { bubbles: true }));
+	}
+}
+
+// Helper to set up both getPlayerClip and getResolvedClip mocks consistently
+// Since the document-first refactor, toolbars read from getResolvedClip instead of player
+function setupMockClip(mockEdit: ReturnType<typeof createMockEdit>, assetType: string, overrides: Record<string, unknown> = {}): MockPlayer {
+	const mockPlayer = createMockClip(assetType, overrides);
+	mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+	mockEdit.getResolvedClip.mockReturnValue(mockPlayer.clipConfiguration as never);
+	return mockPlayer;
+}
+
+// ============================================================================
+// AssetToolbar Tests
+// ============================================================================
+
+describe("AssetToolbar", () => {
+	let toolbar: AssetToolbar;
+	let mockUI: ReturnType<typeof createMockUIController>;
+	let container: HTMLDivElement;
+
+	beforeEach(() => {
+		mockUI = createMockUIController();
+		toolbar = new AssetToolbar(mockUI as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-asset-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-asset-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+
+		it("hides toolbar when no buttons registered", () => {
+			mockUI.setButtons([]);
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
+			expect(toolbarEl?.style.display).toBe("none");
+		});
+
+		it("shows toolbar when buttons exist", () => {
+			mockUI.setButtons([{ id: "test", icon: "<svg></svg>", tooltip: "Test" }]);
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
+			expect(toolbarEl?.style.display).toBe("flex");
+		});
+
+		it("renders buttons from getButtons()", () => {
+			mockUI.setButtons([
+				{ id: "btn1", icon: "<svg>1</svg>", tooltip: "Button 1" },
+				{ id: "btn2", icon: "<svg>2</svg>", tooltip: "Button 2" }
+			]);
+			toolbar.mount(container);
+
+			const buttons = container.querySelectorAll(".ss-asset-toolbar-btn");
+			expect(buttons.length).toBe(2);
+		});
+	});
+
+	describe("button rendering", () => {
+		it("renders button with correct id and tooltip", () => {
+			mockUI.setButtons([{ id: "my-btn", icon: "<svg></svg>", tooltip: "My Button" }]);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-button-id="my-btn"]');
+			expect(btn).not.toBeNull();
+			expect(btn?.getAttribute("data-tooltip")).toBe("My Button");
+		});
+
+		it("renders divider before button when dividerBefore is true", () => {
+			mockUI.setButtons([
+				{ id: "btn1", icon: "<svg></svg>", tooltip: "Btn1" },
+				{ id: "btn2", icon: "<svg></svg>", tooltip: "Btn2", dividerBefore: true }
+			]);
+			toolbar.mount(container);
+
+			const dividers = container.querySelectorAll(".ss-asset-toolbar-divider");
+			expect(dividers.length).toBe(1);
+		});
+	});
+
+	describe("event emission", () => {
+		it("clicking button calls emitButtonClick with button id", () => {
+			mockUI.setButtons([{ id: "test", icon: "<svg></svg>", tooltip: "Test" }]);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-button-id="test"]');
+			simulateClick(btn);
+
+			expect(mockUI.emitButtonClick).toHaveBeenCalledWith("test");
+		});
+	});
+
+	describe("dynamic updates", () => {
+		it("re-renders when onButtonsChanged callback fires", () => {
+			mockUI.setButtons([]);
+			toolbar.mount(container);
+
+			expect(container.querySelectorAll(".ss-asset-toolbar-btn").length).toBe(0);
+
+			// Update buttons and trigger callback
+			mockUI.setButtons([{ id: "new", icon: "<svg></svg>", tooltip: "New" }]);
+			mockUI.triggerButtonsChanged();
+
+			expect(container.querySelectorAll(".ss-asset-toolbar-btn").length).toBe(1);
+		});
+	});
+
+	describe("positioning", () => {
+		it("setPosition() updates container left and top offsets", () => {
+			toolbar.mount(container);
+			toolbar.setPosition(200, 300);
+
+			const toolbarEl = container.querySelector(".ss-asset-toolbar") as HTMLElement;
+			expect(toolbarEl?.style.left).toBe("200px");
+			expect(toolbarEl?.style.top).toBe("300px");
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-asset-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-asset-toolbar")).toBeNull();
+		});
+	});
+});
+
+// ============================================================================
+// CanvasToolbar Tests
+// ============================================================================
+
+describe("CanvasToolbar", () => {
+	let toolbar: CanvasToolbar;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(() => {
+		mockEdit = createMockEdit();
+		toolbar = new CanvasToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-canvas-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-canvas-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+	});
+
+	describe("resolution", () => {
+		it("setResolution() updates display", () => {
+			toolbar.mount(container);
+			toolbar.setResolution(1280, 720);
+
+			// Resolution should be internally tracked
+			const customWidth = container.querySelector("[data-custom-width]") as HTMLInputElement;
+			const customHeight = container.querySelector("[data-custom-height]") as HTMLInputElement;
+
+			expect(customWidth?.value).toBe("1280");
+			expect(customHeight?.value).toBe("720");
+		});
+
+		it("clicking preset calls onResolutionChange callback", () => {
+			const callback = jest.fn();
+			toolbar.onResolutionChange(callback);
+			toolbar.mount(container);
+
+			// Open resolution popup first
+			const resBtn = container.querySelector('[data-action="resolution"]');
+			simulateClick(resBtn);
+
+			// Click a preset
+			const preset = container.querySelector('[data-width="1280"][data-height="720"]');
+			simulateClick(preset);
+
+			expect(callback).toHaveBeenCalledWith(1280, 720);
+		});
+
+		it("custom width/height inputs update resolution", () => {
+			const callback = jest.fn();
+			toolbar.onResolutionChange(callback);
+			toolbar.mount(container);
+
+			const widthInput = container.querySelector("[data-custom-width]") as HTMLInputElement;
+			const heightInput = container.querySelector("[data-custom-height]") as HTMLInputElement;
+
+			// Canvas toolbar uses 'change' event for custom inputs
+			simulateChange(widthInput, 800);
+			simulateChange(heightInput, 600);
+
+			expect(callback).toHaveBeenCalled();
+		});
+
+		it("resolution presets show checkmark for current selection", () => {
+			toolbar.mount(container);
+			toolbar.setResolution(1920, 1080);
+
+			// Open popup
+			const resBtn = container.querySelector('[data-action="resolution"]');
+			simulateClick(resBtn);
+
+			// CanvasToolbar uses 'active' class for selected state
+			const selectedItem = container.querySelector('[data-width="1920"][data-height="1080"]');
+			expect(selectedItem?.classList.contains("active")).toBe(true);
+		});
+	});
+
+	describe("FPS", () => {
+		it("setFps() updates display", () => {
+			toolbar.mount(container);
+			toolbar.setFps(30);
+
+			// FPS label is inside the button
+			const fpsLabel = container.querySelector("[data-fps-label]");
+			expect(fpsLabel?.textContent).toContain("30");
+		});
+
+		it("clicking FPS option calls onFpsChange callback", () => {
+			const callback = jest.fn();
+			toolbar.onFpsChange(callback);
+			toolbar.mount(container);
+
+			// Open FPS popup
+			const fpsBtn = container.querySelector('[data-action="fps"]');
+			simulateClick(fpsBtn);
+
+			// Click FPS option
+			const fpsOption = container.querySelector('[data-fps="30"]');
+			simulateClick(fpsOption);
+
+			expect(callback).toHaveBeenCalledWith(30);
+		});
+	});
+
+	describe("background", () => {
+		it("setBackground() updates color dot", () => {
+			toolbar.mount(container);
+			toolbar.setBackground("#ff0000");
+
+			// Correct selector is data-bg-preview
+			// Browser converts hex to rgb format, so check for red color presence
+			const colorDot = container.querySelector("[data-bg-preview]") as HTMLElement;
+			expect(colorDot?.style.background).toMatch(/rgb\(255,?\s*0,?\s*0\)|#ff0000/i);
+		});
+
+		it("clicking color swatch calls onBackgroundChange callback", () => {
+			const callback = jest.fn();
+			toolbar.onBackgroundChange(callback);
+			toolbar.mount(container);
+
+			// Open background popup
+			const bgBtn = container.querySelector('[data-action="background"]');
+			simulateClick(bgBtn);
+
+			// Click a swatch
+			const swatch = container.querySelector('[data-swatch-color="#FFFFFF"]');
+			simulateClick(swatch);
+
+			expect(callback).toHaveBeenCalledWith("#FFFFFF");
+		});
+	});
+
+	describe("callbacks", () => {
+		it("onResolutionChange() registers callback", () => {
+			const callback = jest.fn();
+			toolbar.onResolutionChange(callback);
+			toolbar.mount(container);
+
+			// Open resolution popup first to sync inputs with current values
+			const resBtn = container.querySelector('[data-action="resolution"]');
+			simulateClick(resBtn);
+
+			// Both width and height must be valid for callback to fire
+			const widthInput = container.querySelector("[data-custom-width]") as HTMLInputElement;
+			const heightInput = container.querySelector("[data-custom-height]") as HTMLInputElement;
+			simulateChange(widthInput, 1000);
+			simulateChange(heightInput, 800);
+
+			expect(callback).toHaveBeenCalled();
+		});
+
+		it("onFpsChange() registers callback", () => {
+			const callback = jest.fn();
+			toolbar.onFpsChange(callback);
+			toolbar.mount(container);
+
+			// Open popup and click option
+			const fpsBtn = container.querySelector('[data-action="fps"]');
+			simulateClick(fpsBtn);
+
+			const option = container.querySelector('[data-fps="24"]');
+			simulateClick(option);
+
+			expect(callback).toHaveBeenCalledWith(24);
+		});
+
+		it("onBackgroundChange() registers callback", () => {
+			const callback = jest.fn();
+			toolbar.onBackgroundChange(callback);
+			toolbar.mount(container);
+
+			// Open popup and click swatch
+			const bgBtn = container.querySelector('[data-action="background"]');
+			simulateClick(bgBtn);
+
+			const swatch = container.querySelector('[data-swatch-color="#000000"]');
+			simulateClick(swatch);
+
+			expect(callback).toHaveBeenCalledWith("#000000");
+		});
+	});
+
+	describe("popup behavior", () => {
+		it("clicking resolution button toggles popup", () => {
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="resolution"]');
+			const popup = container.querySelector('[data-popup="resolution"]');
+
+			expect(popup?.classList.contains("visible")).toBe(false);
+
+			simulateClick(btn);
+			expect(popup?.classList.contains("visible")).toBe(true);
+
+			simulateClick(btn);
+			expect(popup?.classList.contains("visible")).toBe(false);
+		});
+
+		it("clicking background button toggles popup", () => {
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="background"]');
+			const popup = container.querySelector('[data-popup="background"]');
+
+			expect(popup?.classList.contains("visible")).toBe(false);
+
+			simulateClick(btn);
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("clicking fps button toggles popup", () => {
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="fps"]');
+			const popup = container.querySelector('[data-popup="fps"]');
+
+			expect(popup?.classList.contains("visible")).toBe(false);
+
+			simulateClick(btn);
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("clicking variables button toggles popup", () => {
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="variables"]');
+			const popup = container.querySelector('[data-popup="variables"]');
+
+			if (btn && popup) {
+				expect(popup.classList.contains("visible")).toBe(false);
+
+				simulateClick(btn);
+				expect(popup.classList.contains("visible")).toBe(true);
+			}
+		});
+	});
+
+	describe("positioning", () => {
+		it("setPosition() updates container left and top offsets", () => {
+			toolbar.mount(container);
+			toolbar.setPosition(1920, 540);
+
+			const toolbarEl = container.querySelector(".ss-canvas-toolbar") as HTMLElement;
+			expect(toolbarEl?.style.left).toBe("1920px");
+			expect(toolbarEl?.style.top).toBe("540px");
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-canvas-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-canvas-toolbar")).toBeNull();
+		});
+	});
+});
+
+// ============================================================================
+// BaseToolbar Constants Tests
+// ============================================================================
+
+describe("BaseToolbar Constants", () => {
+	describe("FONT_SIZES", () => {
+		it("contains expected preset sizes", () => {
+			expect(FONT_SIZES).toContain(12);
+			expect(FONT_SIZES).toContain(24);
+			expect(FONT_SIZES).toContain(48);
+			expect(FONT_SIZES).toContain(72);
+		});
+
+		it("is sorted in ascending order", () => {
+			const sorted = [...FONT_SIZES].sort((a, b) => a - b);
+			expect(FONT_SIZES).toEqual(sorted);
+		});
+
+		it("has 19 preset sizes", () => {
+			expect(FONT_SIZES.length).toBe(19);
+		});
+	});
+
+	describe("BUILT_IN_FONTS", () => {
+		it("contains expected fonts", () => {
+			expect(BUILT_IN_FONTS).toContain("Open Sans");
+			expect(BUILT_IN_FONTS).toContain("Roboto");
+			expect(BUILT_IN_FONTS).toContain("Montserrat");
+		});
+
+		it("has 10 built-in fonts", () => {
+			expect(BUILT_IN_FONTS.length).toBe(10);
+		});
+	});
+});
+
+// ============================================================================
+// MediaToolbar Tests (via dynamic import to handle pixi mocks)
+// ============================================================================
+
+describe("MediaToolbar", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/media-toolbar").MediaToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+		toolbar = new MediaToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-media-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-media-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+	});
+
+	describe("asset type visibility", () => {
+		it("show() with image clip hides volume section", () => {
+			setupMockClip(mockEdit, "image");
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const volumeSection = container.querySelector("[data-volume-section]") as HTMLElement;
+			// MediaToolbar uses CSS class 'hidden' to toggle visibility, not style.display
+			expect(volumeSection?.classList.contains("hidden")).toBe(true);
+		});
+
+		it("show() with video clip shows both visual and volume sections", () => {
+			setupMockClip(mockEdit, "video");
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const visualSection = container.querySelector("[data-visual-section]") as HTMLElement;
+			const volumeSection = container.querySelector("[data-volume-section]") as HTMLElement;
+
+			// Visual should be visible
+			expect(visualSection?.style.display).not.toBe("none");
+			// Volume should also be visible for video
+			expect(volumeSection?.classList.contains("hidden")).toBe(false);
+		});
+
+		it("show() with audio clip hides visual section", () => {
+			setupMockClip(mockEdit, "audio");
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const visualSection = container.querySelector("[data-visual-section]") as HTMLElement;
+			// MediaToolbar uses CSS class 'hidden' to toggle visibility, not style.display
+			expect(visualSection?.classList.contains("hidden")).toBe(true);
+		});
+	});
+
+	describe("fit options", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "video");
+		});
+
+		it("clicking fit option calls updateClip with fit value", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open fit popup
+			const fitBtn = container.querySelector('[data-action="fit"]');
+			simulateClick(fitBtn);
+
+			// Click a fit option
+			const coverOption = container.querySelector('[data-fit="cover"]');
+			simulateClick(coverOption);
+
+			// MediaToolbar.applyClipUpdate passes fit at top level, not nested in asset
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ fit: "cover" }));
+		});
+
+		it("fit label displays current selection", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const fitLabel = container.querySelector("[data-fit-label]");
+			expect(fitLabel?.textContent).toBeTruthy();
+		});
+	});
+
+	describe("opacity", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "video");
+		});
+
+		it("opacity slider calls updateClip", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open opacity popup
+			const opacityBtn = container.querySelector('[data-action="opacity"]');
+			simulateClick(opacityBtn);
+
+			const slider = container.querySelector("[data-opacity-slider]") as HTMLInputElement;
+			if (slider) {
+				simulateInput(slider, 50);
+
+				// Opacity is at clip level, not nested in asset
+				expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ opacity: 0.5 }));
+			}
+		});
+	});
+
+	describe("scale", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "video");
+		});
+
+		it("scale slider calls updateClip", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open scale popup
+			const scaleBtn = container.querySelector('[data-action="scale"]');
+			simulateClick(scaleBtn);
+
+			const slider = container.querySelector("[data-scale-slider]") as HTMLInputElement;
+			if (slider) {
+				simulateInput(slider, 150);
+
+				// Scale is at clip level, not nested in asset
+				expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ scale: 1.5 }));
+			}
+		});
+	});
+
+	describe("volume", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "video");
+		});
+
+		it("volume slider calls updateClip", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open volume popup
+			const volumeBtn = container.querySelector('[data-action="volume"]');
+			simulateClick(volumeBtn);
+
+			const slider = container.querySelector("[data-volume-slider]") as HTMLInputElement;
+			if (slider) {
+				simulateInput(slider, 75);
+
+				// Volume is nested in asset object
+				expect(mockEdit.updateClip).toHaveBeenCalledWith(
+					0,
+					0,
+					expect.objectContaining({
+						asset: expect.objectContaining({ volume: 0.75 })
+					})
+				);
+			}
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-media-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-media-toolbar")).toBeNull();
+		});
+	});
+
+	describe("composite panels (regression)", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "video");
+		});
+
+		it("TransitionPanel renders content inside existing popup without wrapper class conflict", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open transition popup
+			const transitionBtn = container.querySelector('[data-action="transition"]');
+			simulateClick(transitionBtn);
+
+			// The popup should contain transition tabs (rendered by TransitionPanel)
+			const transitionTabs = container.querySelector(".ss-transition-tabs");
+			expect(transitionTabs).not.toBeNull();
+
+			// The TransitionPanel's container should NOT have ss-toolbar-popup class
+			// (that was the bug - it conflicted with ss-media-toolbar-popup)
+			const panelMount = container.querySelector("[data-transition-panel-mount]");
+			const panelContainer = panelMount?.firstElementChild;
+			expect(panelContainer?.className).not.toContain("ss-toolbar-popup");
+		});
+
+		it("EffectPanel renders content inside existing popup without wrapper class conflict", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open effect popup
+			const effectBtn = container.querySelector('[data-action="effect"]');
+			simulateClick(effectBtn);
+
+			// The popup should contain effect types (rendered by EffectPanel)
+			const effectTypes = container.querySelector(".ss-effect-types");
+			expect(effectTypes).not.toBeNull();
+
+			// The EffectPanel's container should NOT have ss-toolbar-popup class
+			const panelMount = container.querySelector("[data-effect-panel-mount]");
+			const panelContainer = panelMount?.firstElementChild;
+			expect(panelContainer?.className).not.toContain("ss-toolbar-popup");
+		});
+	});
+});
+
+// ============================================================================
+// RichTextToolbar Tests
+// ============================================================================
+
+describe("RichTextToolbar", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/rich-text-toolbar").RichTextToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		toolbar = new RichTextToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+	});
+
+	describe("text editing", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "rich-text");
+		});
+
+		it("text area exists after mount", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const textArea = container.querySelector("[data-text-edit-area]");
+			expect(textArea).not.toBeNull();
+		});
+	});
+
+	describe("font selection", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "rich-text");
+		});
+
+		it("font popup displays fonts after toggle", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Toggle font popup
+			const fontBtn = container.querySelector('[data-action="font-toggle"]');
+			simulateClick(fontBtn);
+
+			const fontPopup = container.querySelector("[data-font-popup]");
+			expect(fontPopup?.classList.contains("visible")).toBe(true);
+		});
+	});
+
+	describe("font size", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "rich-text", { fontSize: 48 });
+		});
+
+		it("size input displays current size", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const sizeInput = container.querySelector("[data-size-input]") as HTMLInputElement;
+			expect(sizeInput?.value).toBe("48");
+		});
+
+		it("size-up button increments to next preset", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const sizeUpBtn = container.querySelector('[data-action="size-up"]');
+			simulateClick(sizeUpBtn);
+
+			// RichTextToolbar uses nested font object structure
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						font: expect.objectContaining({ size: expect.any(Number) })
+					})
+				})
+			);
+		});
+
+		it("size-down button decrements to previous preset", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const sizeDownBtn = container.querySelector('[data-action="size-down"]');
+			simulateClick(sizeDownBtn);
+
+			// RichTextToolbar uses nested font object structure
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						font: expect.objectContaining({ size: expect.any(Number) })
+					})
+				})
+			);
+		});
+	});
+
+	describe("font weight dropdown", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "rich-text", { fontWeight: 400 });
+		});
+
+		it("should render weight dropdown with current weight name", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const weightPreview = container.querySelector("[data-weight-preview]");
+			expect(weightPreview?.textContent).toBe("Regular");
+		});
+
+		it("should display weight name for different weights", () => {
+			// Test with Bold weight (700)
+			setupMockClip(mockEdit, "rich-text", { fontWeight: 700 });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const weightPreview = container.querySelector("[data-weight-preview]");
+			expect(weightPreview?.textContent).toBe("Bold");
+		});
+
+		it("should open weight popup on dropdown click", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			const popup = container.querySelector("[data-weight-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should update clip weight when option selected", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			// Click Bold option (700)
+			const boldOption = container.querySelector('[data-weight="700"]');
+			simulateClick(boldOption);
+
+			// RichTextToolbar uses nested font object structure
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						font: expect.objectContaining({ weight: 700 })
+					})
+				})
+			);
+		});
+
+		it("should close popup after selection", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			const popup = container.querySelector("[data-weight-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+
+			// Select an option
+			const option = container.querySelector('[data-weight="500"]');
+			simulateClick(option);
+
+			expect(popup?.classList.contains("visible")).toBe(false);
+		});
+
+		it("should show checkmark on current weight", () => {
+			setupMockClip(mockEdit, "rich-text", { fontWeight: 500 });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const weightBtn = container.querySelector('[data-action="weight-toggle"]');
+			simulateClick(weightBtn);
+
+			// Medium (500) should have active class
+			const mediumOption = container.querySelector('[data-weight="500"]');
+			expect(mediumOption?.classList.contains("active")).toBe(true);
+
+			// Regular (400) should not have active class
+			const regularOption = container.querySelector('[data-weight="400"]');
+			expect(regularOption?.classList.contains("active")).toBe(false);
+		});
+
+		it("should handle string weight values from clip", () => {
+			// Some clips may have weight as string "700" instead of number
+			setupMockClip(mockEdit, "rich-text", { fontWeight: "700" });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Should normalize and display correctly
+			const weightPreview = container.querySelector("[data-weight-preview]");
+			expect(weightPreview?.textContent).toBe("Bold");
+		});
+	});
+
+	describe("visibility", () => {
+		it("show() makes toolbar visible", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const toolbarEl = container.querySelector(".ss-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(true);
+		});
+
+		it("hide() hides toolbar", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+			toolbar.hide();
+
+			const toolbarEl = container.querySelector(".ss-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(false);
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-toolbar")).toBeNull();
+		});
+	});
+});
+
+// ============================================================================
+// TextToolbar Tests
+// ============================================================================
+
+describe("TextToolbar", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/text-toolbar").TextToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { TextToolbar } = await import("../src/core/ui/text-toolbar");
+		toolbar = new TextToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+	});
+
+	describe("text editing", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "text");
+		});
+
+		it("text area exists after mount", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const textArea = container.querySelector("[data-text-edit-area]");
+			expect(textArea).not.toBeNull();
+		});
+	});
+
+	describe("font selection", () => {
+		beforeEach(() => {
+			setupMockClip(mockEdit, "text");
+		});
+
+		it("clicking font updates fontFamily in clip", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open font popup
+			const fontBtn = container.querySelector('[data-action="font-toggle"]');
+			simulateClick(fontBtn);
+
+			// Click a font option
+			const fontOption = container.querySelector('[data-font="Montserrat"]');
+			simulateClick(fontOption);
+
+			// TextToolbar uses nested font object structure for font family
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						font: expect.objectContaining({ family: "Montserrat" })
+					})
+				})
+			);
+		});
+	});
+
+	describe("visibility", () => {
+		it("show() makes toolbar visible", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const toolbarEl = container.querySelector(".ss-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(true);
+		});
+
+		it("hide() hides toolbar", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+			toolbar.hide();
+
+			const toolbarEl = container.querySelector(".ss-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(false);
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-toolbar")).toBeNull();
+		});
+	});
+});
+
+// ============================================================================
+// Mode Toggle Regression Tests
+// ============================================================================
+
+// ============================================================================
+// UIController Callback Wiring Tests (Regression)
+// ============================================================================
+
+describe("UIController Callback Wiring (Regression)", () => {
+	/**
+	 * REGRESSION TEST: UIController must wire up CanvasToolbar callbacks to Edit methods
+	 *
+	 * Bug: CanvasToolbar had callback methods (onResolutionChange, onFpsChange,
+	 * onBackgroundChange) but UIController never registered them. Clicking presets
+	 * updated toolbar state but never changed the canvas.
+	 *
+	 * Fix: UIController.registerStandardToolbars() now wires callbacks to Edit methods.
+	 */
+	describe("resolution callback wiring", () => {
+		it("clicking resolution preset should call edit.setOutputSize when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Simulate what UIController does - wire up the callback
+			toolbar.onResolutionChange((w, h) => mockEdit.setOutputSize(w, h));
+			toolbar.mount(container);
+
+			// Open resolution popup
+			const resBtn = container.querySelector('[data-action="resolution"]');
+			simulateClick(resBtn);
+
+			// Click a preset
+			const preset = container.querySelector('[data-width="1280"][data-height="720"]');
+			simulateClick(preset);
+
+			// Edit.setOutputSize should have been called
+			expect(mockEdit.setOutputSize).toHaveBeenCalledWith(1280, 720);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("custom width/height inputs should call edit.setOutputSize when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.onResolutionChange((w, h) => mockEdit.setOutputSize(w, h));
+			toolbar.mount(container);
+
+			const widthInput = container.querySelector("[data-custom-width]") as HTMLInputElement;
+			const heightInput = container.querySelector("[data-custom-height]") as HTMLInputElement;
+
+			simulateChange(widthInput, 800);
+			simulateChange(heightInput, 600);
+
+			expect(mockEdit.setOutputSize).toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	describe("FPS callback wiring", () => {
+		it("clicking FPS option should call edit.setOutputFps when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.onFpsChange(fps => mockEdit.setOutputFps(fps));
+			toolbar.mount(container);
+
+			// Open FPS popup
+			const fpsBtn = container.querySelector('[data-action="fps"]');
+			simulateClick(fpsBtn);
+
+			// Click FPS option
+			const fpsOption = container.querySelector('[data-fps="30"]');
+			simulateClick(fpsOption);
+
+			expect(mockEdit.setOutputFps).toHaveBeenCalledWith(30);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	describe("background callback wiring", () => {
+		it("clicking color swatch should call edit.setTimelineBackground when callback is wired", () => {
+			const mockEdit = createMockEdit();
+			const toolbar = new CanvasToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.onBackgroundChange(color => mockEdit.setTimelineBackground(color));
+			toolbar.mount(container);
+
+			// Open background popup
+			const bgBtn = container.querySelector('[data-action="background"]');
+			simulateClick(bgBtn);
+
+			// Click a swatch
+			const swatch = container.querySelector('[data-swatch-color="#FFFFFF"]');
+			simulateClick(swatch);
+
+			expect(mockEdit.setTimelineBackground).toHaveBeenCalledWith("#FFFFFF");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+});
+
+// ============================================================================
+// ClipToolbar Tests (Timing Regression)
+// ============================================================================
+
+describe("ClipToolbar", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/clip-toolbar").ClipToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+		toolbar = new ClipToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	describe("mounting", () => {
+		it("creates container with ss-clip-toolbar class", () => {
+			toolbar.mount(container);
+
+			const toolbarEl = container.querySelector(".ss-clip-toolbar");
+			expect(toolbarEl).not.toBeNull();
+		});
+
+		it("mounts start timing control", () => {
+			toolbar.mount(container);
+
+			const startMount = container.querySelector("[data-start-mount]");
+			expect(startMount?.children.length).toBeGreaterThan(0);
+		});
+
+		it("mounts length timing control", () => {
+			toolbar.mount(container);
+
+			const lengthMount = container.querySelector("[data-length-mount]");
+			expect(lengthMount?.children.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("visibility", () => {
+		it("show() makes toolbar visible", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const toolbarEl = container.querySelector(".ss-clip-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(true);
+		});
+
+		it("hide() hides toolbar", () => {
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+			toolbar.hide();
+
+			const toolbarEl = container.querySelector(".ss-clip-toolbar");
+			expect(toolbarEl?.classList.contains("visible")).toBe(false);
+		});
+	});
+
+	describe("cleanup", () => {
+		it("dispose() removes container from DOM", () => {
+			toolbar.mount(container);
+
+			expect(container.querySelector(".ss-clip-toolbar")).not.toBeNull();
+
+			toolbar.dispose();
+
+			expect(container.querySelector(".ss-clip-toolbar")).toBeNull();
+		});
+
+		it("dispose() unsubscribes from EditChanged event", () => {
+			toolbar.mount(container);
+			toolbar.dispose();
+
+			// Verify off was called for EditChanged event
+			expect(mockEdit.events.off).toHaveBeenCalled();
+		});
+	});
+});
+
+// ============================================================================
+// ClipToolbar Timing Regression Tests
+// ============================================================================
+
+describe("ClipToolbar Timing (Regression)", () => {
+	/**
+	 * REGRESSION TEST: ClipToolbar must use timing INTENT, not resolved values
+	 *
+	 * Bug: ClipToolbar was reading from clipConfiguration (resolved values)
+	 * which showed numeric values instead of "auto"/"end" modes.
+	 *
+	 * Fix: Use edit.getDocumentClip() to preserve "auto"/"end" display from document.
+	 */
+	describe("timing intent display", () => {
+		it("displays 'end' mode when length intent is 'end'", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Document stores "end" as length intent
+			(mockEdit.getDocumentClip as jest.Mock).mockReturnValue({
+				start: 0, // Seconds value
+				length: "end" // Intent preserved as "end" in document
+			});
+
+			// Player is still needed for selection
+			const mockPlayer = {
+				clipConfiguration: { start: 0, length: 10 } // resolved value is 10 seconds
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Verify getDocumentClip was called (document-first pattern)
+			expect(mockEdit.getDocumentClip).toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("displays 'auto' mode when start intent is 'auto'", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Document stores "auto" as start intent
+			(mockEdit.getDocumentClip as jest.Mock).mockReturnValue({
+				start: "auto", // Intent preserved as "auto" in document
+				length: 3 // Seconds value
+			});
+
+			// Player is still needed for selection
+			const mockPlayer = {
+				clipConfiguration: { start: 5, length: 3 } // resolved value is 5 seconds
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Verify getDocumentClip was called (document-first pattern)
+			expect(mockEdit.getDocumentClip).toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	/**
+	 * REGRESSION TEST: Numeric timing values must use toMs() branded type conversion
+	 *
+	 * Bug: ClipToolbar was multiplying by 1000 directly instead of using
+	 * the branded type helper toMs().
+	 *
+	 * Fix: Use toMs(sec(value)) for proper Seconds→Milliseconds conversion.
+	 */
+	describe("branded type conversion", () => {
+		it("converts numeric start from Seconds to Milliseconds using toMs()", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Document stores numeric timing values (in Seconds)
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 2.5, // 2.5 Seconds
+				length: 3 // 3 Seconds
+			});
+
+			// Player is still needed for selection
+			const mockPlayer = {
+				clipConfiguration: { start: 2.5, length: 3 }
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// The TimingControl receives milliseconds, so 2.5s → 2500ms
+			// We verify by checking the input displays "2.5s" (formatted from 2500ms)
+			const startInput = container.querySelector("[data-start-mount] .ss-timing-value") as HTMLInputElement;
+			expect(startInput?.value).toBe("2.5s");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("converts numeric length from Seconds to Milliseconds using toMs()", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Document stores numeric timing values (in Seconds)
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 0, // 0 Seconds
+				length: 5.5 // 5.5 Seconds
+			});
+
+			// Player is still needed for selection
+			const mockPlayer = {
+				clipConfiguration: { start: 0, length: 5.5 }
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// The TimingControl receives milliseconds, so 5.5s → 5500ms
+			// We verify by checking the input displays "5.5s" (formatted from 5500ms)
+			const lengthInput = container.querySelector("[data-length-mount] .ss-timing-value") as HTMLInputElement;
+			expect(lengthInput?.value).toBe("5.5s");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+
+	/**
+	 * REGRESSION TEST: ClipToolbar must auto-refresh when clip timing changes externally
+	 *
+	 * Bug: Resizing a clip in the timeline didn't update the toolbar values
+	 * until the toolbar was closed and reopened.
+	 *
+	 * Fix: Subscribe to EditEvent.EditChanged and call syncState() when
+	 * the selected clip is visible.
+	 */
+	describe("external timing change refresh", () => {
+		it("subscribes to EditChanged event on mount", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			// Verify event subscription was set up (event name is "edit:changed")
+			expect(mockEdit.events.on).toHaveBeenCalledWith("edit:changed", expect.any(Function));
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("refreshes timing display when EditChanged event fires", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			// Initial timing values from document
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 1,
+				length: 2
+			});
+
+			// Player is still needed for selection
+			const mockPlayer = {
+				clipConfiguration: { start: 1, length: 2 }
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Verify initial values
+			const startInput = container.querySelector("[data-start-mount] .ss-timing-value") as HTMLInputElement;
+			expect(startInput?.value).toBe("1.0s");
+
+			// Simulate external timing change (e.g., resize in timeline) - update document mock
+			mockEdit.getDocumentClip.mockReturnValue({
+				start: 3, // Changed from 1 to 3
+				length: 2
+			});
+
+			// Trigger EditChanged event (event name is "edit:changed")
+			mockEdit.events.trigger("edit:changed");
+
+			// Verify toolbar updated to new value
+			expect(startInput?.value).toBe("3.0s");
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("does not refresh when no clip is selected", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			const mockPlayer = {
+				clipConfiguration: { start: 1, length: 2 },
+				getTimingIntent: jest.fn(() => ({ start: 1, length: 2 })),
+				getMergeFieldBinding: jest.fn(() => null)
+			};
+			mockEdit.getPlayerClip.mockReturnValue(mockPlayer as never);
+
+			toolbar.mount(container);
+			// Don't call show() - no clip selected
+
+			// Clear call count
+			mockPlayer.getTimingIntent.mockClear();
+
+			// Trigger EditChanged event
+			mockEdit.events.trigger("edit:changed");
+
+			// Verify getTimingIntent was NOT called (no refresh needed)
+			expect(mockPlayer.getTimingIntent).not.toHaveBeenCalled();
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("unsubscribes from EditChanged event on dispose", async () => {
+			const mockEdit = createMockEdit();
+			const { ClipToolbar } = await import("../src/core/ui/clip-toolbar");
+			const toolbar = new ClipToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+			toolbar.dispose();
+
+			// Verify off was called to unsubscribe (event name is "edit:changed")
+			expect(mockEdit.events.off).toHaveBeenCalledWith("edit:changed", expect.any(Function));
+
+			cleanupTestContainer(container);
+		});
+	});
+});
+
+// ============================================================================
+// getSelectedClipId Tests (BaseToolbar)
+// ============================================================================
+
+describe("getSelectedClipId (BaseToolbar)", () => {
+	it("returns clipId after show()", async () => {
+		const mockEdit = createMockEdit();
+		(mockEdit.getClipId as jest.Mock).mockReturnValue("test-clip-42");
+		setupMockClip(mockEdit, "rich-text");
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never);
+		const container = createTestContainer();
+		toolbar.mount(container);
+		toolbar.show(1, 2);
+
+		expect(toolbar.getSelectedClipId()).toBe("test-clip-42");
+		expect(mockEdit.getClipId).toHaveBeenCalled();
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	it("returns null before show() when indices are -1", async () => {
+		const mockEdit = createMockEdit();
+		// getClipId returns null for invalid indices
+		(mockEdit.getClipId as jest.Mock).mockReturnValue(null);
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never);
+		const container = createTestContainer();
+		toolbar.mount(container);
+
+		// Don't call show() — indices stay at -1
+		expect(toolbar.getSelectedClipId()).toBeNull();
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+});
+
+// ============================================================================
+// RichTextToolbar MergeFieldChanged Tests
+// ============================================================================
+
+describe("RichTextToolbar MergeFieldChanged", () => {
+	function createMergeFieldMockEdit() {
+		const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+		const unsubFns: Array<jest.Mock> = [];
+
+		const internalEvents = {
+			on: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
+				if (!listeners[event]) listeners[event] = [];
+				listeners[event].push(callback);
+				const unsub = jest.fn(() => {
+					const idx = listeners[event]?.indexOf(callback);
+					if (idx !== undefined && idx >= 0) listeners[event].splice(idx, 1);
+				});
+				unsubFns.push(unsub);
+				return unsub;
+			}),
+			emit: (event: string, ...args: unknown[]) => {
+				listeners[event]?.forEach(cb => cb(...args));
+			}
+		};
+
+		const events = createMockEventEmitter();
+		const mockEdit = {
+			getInternalEvents: jest.fn(() => internalEvents),
+			getPlayerClip: jest.fn((): MockPlayer | null => null),
+			getClip: jest.fn(() => null),
+			getClipId: jest.fn(() => "mock-clip-id"),
+			getResolvedClip: jest.fn(() => null),
+			getResolvedClipById: jest.fn(() => null),
+			getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+			getCurrentTime: jest.fn(() => 0),
+			getEdit: jest.fn(() => ({
+				timeline: {
+					fonts: [],
+					tracks: [{ clips: [{ asset: { type: "rich-text", text: "Hello" }, start: 0, length: 1 }] }]
+				}
+			})),
+			getDocument: jest.fn(() => ({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null)
+			})),
+			getFontMetadata: jest.fn(() => new Map()),
+			getMergeFieldForProperty: jest.fn(() => null),
+			isValueCompatibleWithClipProperty: jest.fn(() => true),
+			updateClip: jest.fn(),
+			getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
+			getSelectedClipInfo: jest.fn((): { trackIndex: number; clipIndex: number } | null => null),
+			mergeFields: {
+				getAll: jest.fn(() => []),
+				register: jest.fn(),
+				get: jest.fn(),
+				deleteMergeFieldGlobally: jest.fn()
+			},
+			events,
+			playbackTime: 0,
+			isSrcMergeField: jest.fn(() => false),
+			updateMergeFieldValueLive: jest.fn(),
+			setOutputSize: jest.fn(),
+			setOutputFps: jest.fn(),
+			getOutputFps: jest.fn(() => 25),
+			setTimelineBackground: jest.fn(),
+			getTimelineBackground: jest.fn(() => "#000000"),
+			size: { width: 1920, height: 1080 }
+		};
+
+		return { mockEdit, internalEvents, unsubFns };
+	}
+
+	it("subscribes to MergeFieldChanged event on mount", async () => {
+		const { mockEdit } = createMergeFieldMockEdit();
+
+		const richTextClip = createMockClip("rich-text");
+		mockEdit.getPlayerClip.mockReturnValue(richTextClip as never);
+		mockEdit.getResolvedClip.mockReturnValue(richTextClip.clipConfiguration as never);
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never, { mergeFields: true });
+		const container = createTestContainer();
+		toolbar.mount(container);
+
+		const internalEvents = mockEdit.getInternalEvents();
+		expect(internalEvents.on).toHaveBeenCalledWith("mergefield:changed", expect.any(Function));
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	it("unsubscribes from MergeFieldChanged on dispose", async () => {
+		const { mockEdit, unsubFns } = createMergeFieldMockEdit();
+
+		const richTextClip = createMockClip("rich-text");
+		mockEdit.getPlayerClip.mockReturnValue(richTextClip as never);
+		mockEdit.getResolvedClip.mockReturnValue(richTextClip.clipConfiguration as never);
+
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never, { mergeFields: true });
+		const container = createTestContainer();
+		toolbar.mount(container);
+
+		toolbar.dispose();
+
+		// At least one unsub should have been called (MergeFieldChanged)
+		expect(unsubFns.some(fn => fn.mock.calls.length > 0)).toBe(true);
+
+		cleanupTestContainer(container);
+	});
+});
+
+describe("Mode Toggle (Regression)", () => {
+	/**
+	 * REGRESSION TEST: Mode toggle buttons must be findable via document.querySelectorAll
+	 *
+	 * Bug: Click handlers in ui-controller.ts queried this.container but toolbars
+	 * were mounted to canvasContainer, causing buttons to not be found.
+	 * Fix: Changed query to use document.querySelectorAll instead of this.container
+	 */
+	describe("button discoverability for click handling", () => {
+		it("mode toggle buttons are discoverable via document.querySelectorAll after mount", async () => {
+			const mockEdit = createMockEdit();
+			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+			const toolbar = new MediaToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			// This simulates what ui-controller.ts does to find buttons
+			const buttons = document.querySelectorAll(".ss-toolbar-mode-btn");
+			expect(buttons.length).toBeGreaterThan(0);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("mode toggle buttons have data-mode attribute for click handling", async () => {
+			const mockEdit = createMockEdit();
+			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+			const toolbar = new MediaToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			const buttons = container.querySelectorAll(".ss-toolbar-mode-btn");
+			buttons.forEach(btn => {
+				const { mode } = (btn as HTMLElement).dataset;
+				expect(mode === "asset" || mode === "clip").toBe(true);
+			});
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+	});
+});

@@ -1,13 +1,14 @@
-import { Edit } from "@core/edit";
+import { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 
 export class Controls {
 	private edit: Edit;
-	private seekDistance: number = 50;
-	private seekDistanceLarge: number = 500;
-	private frameTime: number = 16.67;
+	private seekDistance: number = 0.05; // 50ms in seconds
+	private seekDistanceLarge: number = 0.5; // 500ms in seconds
+	private frameTime: number = 1 / 60; // ~16.67ms in seconds
 
-	constructor(timeline: Edit) {
-		this.edit = timeline;
+	constructor(edit: Edit) {
+		this.edit = edit;
 	}
 
 	public async load(): Promise<void> {
@@ -21,13 +22,32 @@ export class Controls {
 		document.removeEventListener("keyup", this.handleKeyUp);
 	}
 
+	private shouldIgnoreKeyboardEvent(event: KeyboardEvent): boolean {
+		const target = event.target as HTMLElement;
+
+		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+			return true;
+		}
+
+		if (target.isContentEditable) {
+			return true;
+		}
+
+		if (target.getAttribute?.("role") === "textbox") {
+			return true;
+		}
+
+		return false;
+	}
+
 	private handleKeyDown = (event: KeyboardEvent): void => {
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+		if (this.shouldIgnoreKeyboardEvent(event)) {
 			return;
 		}
 
 		switch (event.code) {
 			case "Space": {
+				event.preventDefault();
 				if (!this.edit.isPlaying) {
 					this.edit.play();
 				} else {
@@ -36,20 +56,44 @@ export class Controls {
 				break;
 			}
 			case "ArrowLeft": {
-				if (event.metaKey) {
-					this.edit.seek(0);
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(-delta, 0);
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
-					this.edit.seek(this.edit.playbackTime - seekAmount);
+					this.edit.seek(sec(this.edit.playbackTime - seekAmount));
 				}
 				break;
 			}
 			case "ArrowRight": {
-				if (event.metaKey) {
-					this.edit.seek(this.edit.getTotalDuration());
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(delta, 0);
 				} else {
 					const seekAmount = event.shiftKey ? this.seekDistanceLarge : this.seekDistance;
-					this.edit.seek(this.edit.playbackTime + seekAmount);
+					this.edit.seek(sec(this.edit.playbackTime + seekAmount));
+				}
+				break;
+			}
+			case "ArrowUp": {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(0, -delta);
+				}
+				break;
+			}
+			case "ArrowDown": {
+				const selected = this.edit.getSelectedClipInfo();
+				if (selected) {
+					event.preventDefault();
+					const delta = event.shiftKey ? 10 : 1;
+					this.edit.moveSelectedClip(0, delta);
 				}
 				break;
 			}
@@ -67,12 +111,36 @@ export class Controls {
 			}
 			case "Comma": {
 				// Frame step backward
-				this.edit.seek(this.edit.playbackTime - this.frameTime);
+				this.edit.seek(sec(this.edit.playbackTime - this.frameTime));
 				break;
 			}
 			case "Period": {
 				// Frame step forward
-				this.edit.seek(this.edit.playbackTime + this.frameTime);
+				this.edit.seek(sec(this.edit.playbackTime + this.frameTime));
+				break;
+			}
+			case "Home": {
+				event.preventDefault();
+				const selected = this.edit.getSelectedClipInfo();
+				if (event.shiftKey && selected) {
+					// Go to selected clip start
+					this.edit.seek(sec(selected.player.getStart()));
+				} else {
+					// Go to timeline start
+					this.edit.seek(sec(0));
+				}
+				break;
+			}
+			case "End": {
+				event.preventDefault();
+				const selected = this.edit.getSelectedClipInfo();
+				if (event.shiftKey && selected) {
+					// Go to selected clip end
+					this.edit.seek(sec(selected.player.getEnd()));
+				} else {
+					// Go to timeline end
+					this.edit.seek(this.edit.totalDuration);
+				}
 				break;
 			}
 			case "KeyZ": {
@@ -95,6 +163,23 @@ export class Controls {
 				}
 				break;
 			}
+			case "KeyC": {
+				if (event.metaKey || event.ctrlKey) {
+					event.preventDefault();
+					const selected = this.edit.getSelectedClipInfo();
+					if (selected) {
+						this.edit.copyClip(selected.trackIndex, selected.clipIndex);
+					}
+				}
+				break;
+			}
+			case "KeyV": {
+				if (event.metaKey || event.ctrlKey) {
+					event.preventDefault();
+					this.edit.pasteClip();
+				}
+				break;
+			}
 			default: {
 				break;
 			}
@@ -102,8 +187,7 @@ export class Controls {
 	};
 
 	private handleKeyUp = (event: KeyboardEvent): void => {
-		// Skip if inside input elements
-		if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+		if (this.shouldIgnoreKeyboardEvent(event)) {
 			return;
 		}
 

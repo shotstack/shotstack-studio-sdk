@@ -1,5 +1,6 @@
 import { AudioPlayer } from "@canvas/players/audio-player";
-import type { AudioAsset } from "@schemas/audio-asset";
+import { PlayerType } from "@canvas/players/player";
+import type { AudioAsset } from "@schemas";
 import { Output, AudioSampleSource, AudioSample } from "mediabunny";
 
 export class AudioProcessor {
@@ -87,13 +88,11 @@ export class AudioProcessor {
 	}
 
 	private isAudioPlayer(clip: unknown): clip is AudioPlayer {
-		if (clip instanceof AudioPlayer) return true;
 		if (!clip || typeof clip !== "object") return false;
-		const c = clip as Record<string, unknown>;
-		const hasAudioConstructor = c.constructor?.name === "AudioPlayer";
-		const config = c["clipConfiguration"] as Record<string, unknown> | undefined;
-		const asset = config?.["asset"] as Record<string, unknown> | undefined;
-		const hasAudioAsset = asset?.["type"] === "audio";
-		return hasAudioConstructor || hasAudioAsset;
+		const c = clip as { playerType?: string };
+		if (c.playerType === PlayerType.Audio) return true;
+		// Fallback for cases where playerType might not exist
+		const config = (clip as { clipConfiguration?: { asset?: { type?: string } } }).clipConfiguration;
+		return config?.asset?.type === "audio";
 	}
 }

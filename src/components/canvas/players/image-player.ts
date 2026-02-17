@@ -1,51 +1,24 @@
-import type { Edit } from "@core/edit";
+import type { Edit } from "@core/edit-session";
 import { type Size } from "@layouts/geometry";
-import { type Clip } from "@schemas/clip";
-import { type ImageAsset } from "@schemas/image-asset";
+import { type ResolvedClip, type ImageAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
-import { Player } from "./player";
+import { Player, PlayerType } from "./player";
 
 export class ImagePlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null;
 	private sprite: pixi.Sprite | null;
-	private originalSize: Size | null;
 
-	constructor(timeline: Edit, clipConfiguration: Clip) {
-		super(timeline, clipConfiguration);
+	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
+		super(edit, clipConfiguration, PlayerType.Image);
 
 		this.texture = null;
 		this.sprite = null;
-		this.originalSize = null;
 	}
 
 	public override async load(): Promise<void> {
 		await super.load();
-
-		const imageAsset = this.clipConfiguration.asset as ImageAsset;
-
-		const identifier = imageAsset.src;
-		const loadOptions: pixi.UnresolvedAsset = {
-			src: identifier,
-			crossovern: "anonymous",
-			data: {}
-		};
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(identifier, loadOptions);
-
-		const isValidImageSource = texture?.source instanceof pixi.ImageSource;
-		if (!isValidImageSource) {
-			throw new Error(`Invalid image source '${imageAsset.src}'.`);
-		}
-
-		this.texture = this.createCroppedTexture(texture);
-		this.sprite = new pixi.Sprite(this.texture);
-
-		this.contentContainer.addChild(this.sprite);
-
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			this.applyFixedDimensions();
-		}
-
+		await this.loadTexture();
 		this.configureKeyframes();
 	}
 
@@ -53,20 +26,9 @@ export class ImagePlayer extends Player {
 		super.update(deltaTime, elapsed);
 	}
 
-	public override draw(): void {
-		super.draw();
-	}
-
 	public override dispose(): void {
 		super.dispose();
-
-		this.sprite?.destroy();
-		this.sprite = null;
-
-		this.texture?.destroy();
-		this.texture = null;
-
-		this.originalSize = null;
+		this.disposeTexture();
 	}
 
 	public override getSize(): Size {
@@ -78,6 +40,56 @@ export class ImagePlayer extends Player {
 		}
 
 		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
+	}
+
+	public override getContentSize(): Size {
+		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
+	}
+
+	/** Reload the image asset when asset.src changes (e.g., merge field update) */
+	public override async reloadAsset(): Promise<void> {
+		this.disposeTexture();
+		await this.loadTexture();
+	}
+
+	private async loadTexture(): Promise<void> {
+		const imageAsset = this.clipConfiguration.asset as ImageAsset;
+		const { src } = imageAsset;
+
+		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
+		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
+		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
+
+		if (!(texture?.source instanceof pixi.ImageSource)) {
+			if (texture) {
+				texture.destroy(true);
+				// Asset unloading handled by ref counting in edit-session.unloadClipAssets()
+			}
+			throw new Error(`Invalid image source '${src}'.`);
+		}
+
+		this.texture = this.createCroppedTexture(texture);
+		this.sprite = new pixi.Sprite(this.texture);
+		this.contentContainer.addChild(this.sprite);
+
+		if (this.clipConfiguration.width && this.clipConfiguration.height) {
+			this.applyFixedDimensions();
+		}
+	}
+
+	private disposeTexture(): void {
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		// DON'T destroy the texture - it's managed by Assets
+		// The unloadClipAssets() method handles proper cleanup via Assets.unload()
+		this.texture = null;
+	}
+
+	public override supportsEdgeResize(): boolean {
+		return true;
 	}
 
 	private createCroppedTexture(texture: pixi.Texture<pixi.ImageSource>): pixi.Texture<pixi.ImageSource> {

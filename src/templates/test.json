@@ -1,0 +1,48 @@
+{
+	"timeline": {
+		"background": "#FFFFFF",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "rich-text",
+							"text": "Hello World",
+							"font": {
+								"family": "source"
+							}
+						},
+						"start": 0,
+						"length": 5,
+						"width": 500,
+						"height": 300,
+						"offset": {
+							"x": 0,
+							"y": 0
+						}
+					}
+				]
+			}
+		],
+		"fonts": [
+			{
+				"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/010uzt2uca/zzz01kh5-3x11z-gyhmj-w7w59-3kb9ng/source.ttf"
+			},
+			{
+				"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/010uzt2uca/zzz01kh5-6kb4e-ft9gg-xgvsd-96qcr7/source.ttf"
+			}
+		]
+	},
+	"output": {
+		"size": {
+			"width": 1024,
+			"height": 576
+		},
+		"format": "mp4",
+		"destinations": [
+			{
+				"provider": "shotstack"
+			}
+		]
+	}
+}

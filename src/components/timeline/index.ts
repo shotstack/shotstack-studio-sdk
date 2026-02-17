@@ -1,21 +1,7 @@
-// Timeline v2 Core
-export { Timeline } from "./timeline";
+/** Timeline Component */
 
-// Timeline v2 Visual Components
-export { VisualClip } from "./visual/visual-clip";
-export { VisualTrack } from "./visual/visual-track";
+export { Timeline } from "@timeline/timeline";
 
-// Timeline v2 Types
-export type { EditType, TimelineOptions, ClipConfig, ClipInfo, DropPosition } from "./types";
+export type { ClipState, TrackState, ViewportState, PlaybackState, ClipInfo, ClipRenderer } from "@timeline/timeline.types";
 
-// Timeline v2 Features and Layout
-export { RulerFeature, PlayheadFeature, ScrollManager } from "./features";
-export { TimelineLayout } from "./timeline-layout";
-
-// Timeline v2 Interaction
-export { InteractionController } from "./interaction";
-
-// Note: Additional components will be exported as they are implemented
-// export { DragTool } from './drag-tool';
-// export { SelectionTool } from './selection-tool';
-// export { ResizeTool } from './resize-tool';
+export { DEFAULT_PIXELS_PER_SECOND, TRACK_HEIGHTS, getTrackHeight } from "@timeline/timeline.types";
