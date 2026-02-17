@@ -226,6 +226,7 @@ describe("LumaMaskController", () => {
 
 			expect(events.on).toHaveBeenCalledWith("player:loaded", expect.any(Function));
 			expect(events.on).toHaveBeenCalledWith("clip:updated", expect.any(Function));
+			expect(events.on).toHaveBeenCalledWith("player:movedBetweenTracks", expect.any(Function));
 		});
 	});
 
@@ -515,6 +516,20 @@ describe("LumaMaskController", () => {
 			expect(() => controller.update()).not.toThrow();
 		});
 
+		it("unsubscribes from player:movedBetweenTracks on dispose", () => {
+			const events = createMockEventEmitter();
+			const controller = new LumaMaskController(
+				() => null,
+				() => [],
+				events as never
+			);
+
+			controller.initialize();
+			controller.dispose();
+
+			expect(events.off).toHaveBeenCalledWith("player:movedBetweenTracks", expect.any(Function));
+		});
+
 		it("handles errors during cleanup gracefully", () => {
 			const canvas = createMockCanvas();
 			const lumaPlayer = createMockLumaPlayer();
@@ -661,6 +676,77 @@ describe("LumaMaskController", () => {
 			// Mask should still exist because we didn't call cleanupForPlayer
 			// This tests that the event fires, not that it removes masks
 			expect(controller.getActiveMaskCount()).toBe(1);
+		});
+
+		it("player:movedBetweenTracks triggers rebuildLumaMasksIfNeeded", async () => {
+			const canvas = createMockCanvas();
+			const events = createMockEventEmitter();
+			const lumaPlayer = createMockLumaPlayer();
+			const contentPlayer = createMockContentPlayer();
+			let tracks: unknown[][] = [[contentPlayer]]; // Initially no luma
+
+			const controller = new LumaMaskController(
+				() => canvas as never,
+				() => tracks as never,
+				events as never
+			);
+
+			controller.initialize();
+			expect(controller.getActiveMaskCount()).toBe(0);
+
+			// Move luma player into the track
+			tracks = [[lumaPlayer, contentPlayer]];
+
+			// Trigger the event that fires after movePlayerBetweenTracks
+			events.emit("player:movedBetweenTracks", {
+				player: lumaPlayer,
+				fromTrackIndex: 1,
+				toTrackIndex: 0
+			});
+
+			await delay(10);
+
+			expect(controller.getActiveMaskCount()).toBe(1);
+		});
+
+		it("player:movedBetweenTracks re-detaches luma container after track reparenting", async () => {
+			const canvas = createMockCanvas();
+			const events = createMockEventEmitter();
+			const lumaPlayer = createMockLumaPlayer();
+			const contentPlayer = createMockContentPlayer();
+			const tracks: unknown[][] = [[lumaPlayer, contentPlayer]];
+
+			const controller = new LumaMaskController(
+				() => canvas as never,
+				() => tracks as never,
+				events as never
+			);
+
+			controller.initialize();
+			// Create the initial mask
+			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
+			expect(controller.getActiveMaskCount()).toBe(1);
+
+			// Simulate what movePlayerBetweenTracks does: PIXI's addChild
+			// reparents the container, giving it a new parent
+			const newParent = createMockContainer();
+			const lumaContainer = lumaPlayer.getContainer();
+			newParent.addChild(lumaContainer);
+
+			// The luma container now has a parent again (the new track container)
+			expect(lumaContainer.parent).toBe(newParent);
+
+			// Emit the event — the controller should re-detach the container
+			events.emit("player:movedBetweenTracks", {
+				player: lumaPlayer,
+				fromTrackIndex: 0,
+				toTrackIndex: 1
+			});
+
+			await delay(10);
+
+			// The controller should have called removeChild to detach the luma container
+			expect(newParent.removeChild).toHaveBeenCalledWith(lumaContainer);
 		});
 	});
 });
