@@ -7,8 +7,8 @@ export class Controls {
 	private seekDistanceLarge: number = 0.5; // 500ms in seconds
 	private frameTime: number = 1 / 60; // ~16.67ms in seconds
 
-	constructor(timeline: Edit) {
-		this.edit = timeline;
+	constructor(edit: Edit) {
+		this.edit = edit;
 	}
 
 	public async load(): Promise<void> {

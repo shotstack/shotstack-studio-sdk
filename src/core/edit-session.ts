@@ -73,8 +73,8 @@ export class Edit {
 
 	// ─── Primary State ────────────────────────────────────────────────────────
 	private tracks: Player[][];
-	public playbackTime: Seconds;
-	public totalDuration: Seconds;
+	public playbackTime: number;
+	public totalDuration: number;
 	public isPlaying: boolean;
 
 	// ─── Derived State ────────────────────────────────────────────────────────
@@ -285,7 +285,7 @@ export class Edit {
 		this.internalEvents.emit(EditEvent.PlaybackPause);
 	}
 
-	public seek(target: Seconds): void {
+	public seek(target: number): void {
 		this.playbackTime = sec(Math.max(0, Math.min(target, this.totalDuration)));
 		this.pause();
 		this.update(0, Edit.SEEK_ELAPSED_MARKER);
@@ -1903,11 +1903,7 @@ export class Edit {
 		return null;
 	}
 
-	/**
-	 * Remove any fonts from timeline.fonts that are no longer used by clips.
-	 * Call this after changing a clip's font to clean up the old font.
-	 * @internal
-	 */
+	/** @internal */
 	public pruneUnusedFonts(): void {
 		this.cleanupUnusedFonts();
 	}

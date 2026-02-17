@@ -60,7 +60,7 @@ const CONTRACT = {
 			"clearSelection(",
 			"registerClipRenderer("
 		],
-		Edit: ["validateEdit(", "getTimelineFonts(", "getContentClipIdForLuma(", "getInternalEvents("]
+		Edit: ["validateEdit(", "getTimelineFonts(", "getContentClipIdForLuma(", "getInternalEvents(", "pruneUnusedFonts("]
 	},
 	dtsForbiddenTokens: [
 		"export declare class SelectionHandles",
@@ -124,14 +124,15 @@ const CONTRACT = {
 		"export declare type HtmlAssetPosition =",
 		"export { Keyframe_2 as Keyframe }",
 		"export declare type ExtendedCaptionAsset =",
-		"export declare interface NumericKeyframe"
+		"export declare interface NumericKeyframe",
+		"export declare type Seconds ="
 	],
 	dtsPublicAnchors: [
 		{ className: "Edit", tokens: ["load(): Promise<void>;"] },
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },
 		{ className: "UIController", tokens: ["registerButton(config: ToolbarButtonConfig): this;"] },
 		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }
-	]
+	],
 };
 
 const BROWSER_GLOBALS = ["self", "window", "document", "navigator", "HTMLCanvasElement"];

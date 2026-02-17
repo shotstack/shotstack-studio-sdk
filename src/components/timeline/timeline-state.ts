@@ -67,9 +67,9 @@ export class TimelineStateManager {
 
 	public getPlayback(): PlaybackState {
 		return {
-			time: this.edit.playbackTime,
+			time: this.edit.playbackTime as Seconds,
 			isPlaying: this.edit.isPlaying,
-			duration: this.edit.totalDuration
+			duration: this.edit.totalDuration as Seconds
 		};
 	}
 
@@ -119,7 +119,7 @@ export class TimelineStateManager {
 	// ========== Utilities ==========
 
 	public getTimelineDuration(): Seconds {
-		return this.edit.totalDuration;
+		return this.edit.totalDuration as Seconds;
 	}
 
 	public getExtendedDuration(): Seconds {

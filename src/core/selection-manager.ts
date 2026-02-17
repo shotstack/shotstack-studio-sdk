@@ -7,6 +7,7 @@ import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@core/schemas";
 import { stripInternalProperties } from "@core/shared/clip-utils";
+import type { Seconds } from "@core/timing/types";
 
 import type { Edit } from "./edit-session";
 
@@ -144,7 +145,7 @@ export class SelectionManager {
 		if (!this.copiedClip) return;
 
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
-		pastedClip.start = this.edit.playbackTime;
+		pastedClip.start = this.edit.playbackTime as Seconds;
 
 		// Remove ID so document generates a new one (otherwise reconciler
 		// would see duplicate IDs and update instead of create)
