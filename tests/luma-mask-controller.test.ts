@@ -164,11 +164,13 @@ function createMockLumaPlayer(options: { isVideo?: boolean; videoTime?: number; 
 function createMockContentPlayer() {
 	const container = createMockContainer();
 	const contentContainer = createMockContentContainer();
+	const lumaWrapper = createMockContentContainer();
 
 	return {
 		playerType: PlayerType.Video,
 		getContainer: jest.fn(() => container),
 		getContentContainer: jest.fn(() => contentContainer),
+		getLumaWrapper: jest.fn(() => lumaWrapper),
 		getSize: jest.fn(() => ({ width: 200, height: 200 }))
 	};
 }
@@ -393,11 +395,11 @@ describe("LumaMaskController", () => {
 		});
 
 		it("removes mask from content clip", () => {
-			const contentContainer = contentPlayer.getContentContainer();
+			const lumaWrapper = contentPlayer.getLumaWrapper();
 
 			controller.cleanupForPlayer(lumaPlayer as never);
 
-			expect(contentContainer.mask).toBeNull();
+			expect(lumaWrapper.mask).toBeNull();
 		});
 
 		it("removes mask from activeLumaMasks array", () => {

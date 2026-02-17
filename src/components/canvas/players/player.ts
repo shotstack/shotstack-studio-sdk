@@ -85,6 +85,7 @@ export abstract class Player extends Entity {
 	private maskXKeyframeBuilder?: KeyframeBuilder;
 
 	private wipeMask: pixi.Graphics | null;
+	protected lumaWrapper: pixi.Container;
 	protected contentContainer: pixi.Container;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip, playerType: PlayerType) {
@@ -102,8 +103,11 @@ export abstract class Player extends Entity {
 
 		this.wipeMask = null;
 
+		// TODO: Lazy-init lumaWrapper in getLumaWrapper() to avoid allocating per player when unused
+		this.lumaWrapper = new pixi.Container();
 		this.contentContainer = new pixi.Container();
-		this.getContainer().addChild(this.contentContainer);
+		this.lumaWrapper.addChild(this.contentContainer);
+		this.getContainer().addChild(this.lumaWrapper);
 	}
 
 	public reconfigureAfterRestore(): void {
@@ -209,9 +213,13 @@ export abstract class Player extends Entity {
 	}
 
 	public override async load(): Promise<void> {
+		if (this.lumaWrapper?.destroyed) {
+			this.lumaWrapper = new pixi.Container();
+			this.getContainer().addChild(this.lumaWrapper);
+		}
 		if (this.contentContainer?.destroyed) {
 			this.contentContainer = new pixi.Container();
-			this.getContainer().addChild(this.contentContainer);
+			this.lumaWrapper.addChild(this.contentContainer);
 		}
 
 		this.getContainer().sortableChildren = true;
@@ -288,6 +296,7 @@ export abstract class Player extends Entity {
 		this.wipeMask = null;
 
 		this.contentContainer?.destroy();
+		this.lumaWrapper?.destroy();
 	}
 
 	public getStart(): Seconds {
@@ -390,6 +399,11 @@ export abstract class Player extends Entity {
 	/** @internal */
 	public getContentContainer(): pixi.Container {
 		return this.contentContainer;
+	}
+
+	/** @internal */
+	public getLumaWrapper(): pixi.Container {
+		return this.lumaWrapper;
 	}
 
 	public getOpacity(): number {
@@ -506,32 +520,29 @@ export abstract class Player extends Entity {
 		const nativeHeight = sprite.texture.height;
 		const fit = this.clipConfiguration.fit || "crop";
 
-		// Get or create the mask - only if it's a Graphics mask or doesn't exist
-		// Luma masks are Sprites and should not be replaced
+		// Get or create the crop mask
 		const existingMask = this.contentContainer.mask;
-		let clipMask: pixi.Graphics | null = null;
-
+		let clipMask: pixi.Graphics;
 		if (existingMask instanceof pixi.Graphics) {
 			clipMask = existingMask;
 		} else if (!existingMask) {
 			clipMask = new pixi.Graphics();
 			this.contentContainer.addChild(clipMask);
 			this.contentContainer.mask = clipMask;
+		} else {
+			return;
 		}
 
-		// Update Graphics mask to current dimensions (skip if it's a luma Sprite mask)
-		if (clipMask) {
-			// Expand mask to accommodate centered border strokes
-			// Canvas library renders borders centered on content boundary (half extends outward)
-			const { asset } = this.clipConfiguration;
-			const borderWidth = asset && "border" in asset && asset.border && typeof asset.border === "object" ? (asset.border.width ?? 0) : 0;
+		// Expand mask to accommodate centered border strokes
+		// Canvas library renders borders centered on content boundary (half extends outward)
+		const { asset } = this.clipConfiguration;
+		const borderWidth = asset && "border" in asset && asset.border && typeof asset.border === "object" ? (asset.border.width ?? 0) : 0;
 
-			const halfBorder = borderWidth / 2;
+		const halfBorder = borderWidth / 2;
 
-			clipMask.clear();
-			clipMask.rect(-halfBorder, -halfBorder, clipWidth + borderWidth, clipHeight + borderWidth);
-			clipMask.fill(0xffffff);
-		}
+		clipMask.clear();
+		clipMask.rect(-halfBorder, -halfBorder, clipWidth + borderWidth, clipHeight + borderWidth);
+		clipMask.fill(0xffffff);
 
 		// keep animation code exactly as-is
 		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;

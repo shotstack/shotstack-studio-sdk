@@ -100,7 +100,7 @@ export class LumaMaskController {
 		const mask = this.activeLumaMasks[maskIndex];
 
 		if (mask.contentClip) {
-			mask.contentClip.getContentContainer().mask = null;
+			mask.contentClip.getLumaWrapper().mask = null;
 		}
 
 		mask.maskSprite.parent?.removeChild(mask.maskSprite);
@@ -182,8 +182,8 @@ export class LumaMaskController {
 
 		contentClip.getContainer().addChild(maskSprite);
 
-		const contentContainer = contentClip.getContentContainer();
-		contentContainer.mask = maskSprite;
+		const lumaWrapper = contentClip.getLumaWrapper();
+		lumaWrapper.mask = maskSprite;
 
 		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer, contentClip, lastVideoTime: -1 });
 	}
