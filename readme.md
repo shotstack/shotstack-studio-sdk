@@ -37,8 +37,7 @@ yarn add @shotstack/shotstack-studio
 ## Quick Start
 
 ```typescript
-import { Edit, Canvas, Controls, Timeline, UIController, VERSION } from "@shotstack/shotstack-studio";
-import type { EditConfig, UIControllerOptions, ToolbarButtonConfig } from "@shotstack/shotstack-studio";
+import { Edit, Canvas, Controls, Timeline, UIController } from "@shotstack/shotstack-studio";
 
 // 1) Load a template
 const response = await fetch("https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json");
@@ -49,17 +48,18 @@ const edit = new Edit(template);
 const canvas = new Canvas(edit);
 const ui = UIController.create(edit, canvas);
 
-// 3) Load runtime
+// 3) Load canvas and edit
 await canvas.load();
 await edit.load();
 
-// 4) Add one custom UI button
+// 4) Register toolbar buttons
 ui.registerButton({
   id: "text",
   icon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3H13"/><path d="M8 3V13"/><path d="M5 13H11"/></svg>`,
   tooltip: "Add Text"
 });
 
+// 5) Handle button clicks
 ui.on("button:text", ({ position }) => {
   edit.addTrack(0, {
     clips: [
@@ -79,13 +79,19 @@ ui.on("button:text", ({ position }) => {
   });
 });
 
-// 5) Timeline + controls
+// 6) Initialize the Timeline
 const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
 const timeline = new Timeline(edit, timelineContainer);
 await timeline.load();
 
+// 7) Add keyboard controls
 const controls = new Controls(edit);
 await controls.load();
+
+// 8) Add event handlers
+edit.events.on("clip:selected", data => {
+  console.log("Clip selected:", data);
+});
 ```
 
 Your HTML must include both containers:
@@ -172,15 +178,17 @@ unsubscribeClipSelected();
 
 Available event names:
 
-- Playback: `playback:play`, `playback:pause`
-- Timeline: `timeline:updated`, `timeline:backgroundChanged`
-- Clip lifecycle: `clip:added`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved`
-- Selection: `selection:cleared`
-- Edit state: `edit:changed`, `edit:undo`, `edit:redo`
-- Track: `track:added`, `track:removed`
-- Duration: `duration:changed`
-- Output: `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged`
-- Merge fields: `mergefield:changed`
+| Category | Event Names |
+| --- | --- |
+| Playback | `playback:play`, `playback:pause` |
+| Timeline | `timeline:updated`, `timeline:backgroundChanged` |
+| Clip lifecycle | `clip:added`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved` |
+| Selection | `selection:cleared` |
+| Edit state | `edit:changed`, `edit:undo`, `edit:redo` |
+| Track | `track:added`, `track:removed` |
+| Duration | `duration:changed` |
+| Output | `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged` |
+| Merge fields | `mergefield:changed` |
 
 ### Canvas
 
