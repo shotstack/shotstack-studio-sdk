@@ -110,7 +110,6 @@ export class Edit {
 	private lumaContentRelations = new Map<string, string>();
 	private fontMetadata = new Map<string, { baseFamilyName: string; weight: number }>();
 	private isBatchingEvents: boolean = false;
-	private syncCorrectionCount: number = 0;
 	private isExporting: boolean = false;
 	private lastResolved: ResolvedEdit | null = null;
 
@@ -793,11 +792,6 @@ export class Edit {
 	public deleteTrack(trackIdx: number): void {
 		const command = new DeleteTrackCommand(trackIdx);
 		this.executeCommand(command);
-	}
-
-	/** @internal */
-	public recordSyncCorrection(): void {
-		this.syncCorrectionCount += 1;
 	}
 
 	public undo(): Promise<void> {
@@ -2134,15 +2128,5 @@ export class Edit {
 	/** @internal Get the tracks array for subclass and reconciler access */
 	public getTracks(): Player[][] {
 		return this.tracks;
-	}
-
-	/** @internal Get the number of tracks */
-	protected getTrackCount(): number {
-		return this.document.getTrackCount();
-	}
-
-	/** @internal Get the number of clips in a track */
-	protected getClipCountInTrack(trackIndex: number): number {
-		return this.document.getClipCountInTrack(trackIndex);
 	}
 }

@@ -80,7 +80,6 @@ export class VideoPlayer extends Player {
 				const drift = Math.abs(this.texture.source.resource.currentTime - trim - playbackTime);
 				if (drift > desyncThreshold) {
 					this.texture.source.resource.currentTime = playbackTime + trim;
-					this.edit.recordSyncCorrection();
 				}
 			}
 		}

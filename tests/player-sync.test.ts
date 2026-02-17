@@ -182,7 +182,6 @@ function createMockEdit(playbackTimeSec: number): Edit {
 	return {
 		playbackTime: sec(playbackTimeSec) as Seconds, // Use Seconds branded type
 		isPlaying: true,
-		recordSyncCorrection: jest.fn(),
 		assetLoader: {
 			load: jest.fn(),
 			loadVideoUnique: jest.fn(),

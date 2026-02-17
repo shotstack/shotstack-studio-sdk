@@ -181,7 +181,6 @@ Available event names:
 - Duration: `duration:changed`
 - Output: `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged`
 - Merge fields: `mergefield:changed`
-- Luma masking: `luma:attached`, `luma:detached`
 
 ### Canvas
 

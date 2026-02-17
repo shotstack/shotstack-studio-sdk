@@ -1,7 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import type { MergeField } from "@core/merge/types";
-import type { ToolbarButtonConfig } from "@core/ui/toolbar-button.types";
-import type { Clip, Destination, Edit as EditConfig, Output, ResolvedClip, ResolvedEdit } from "@schemas";
+import type { Clip, Destination, Edit as EditConfig, Output, ResolvedEdit } from "@schemas";
 
 // ─────────────────────────────────────────────────────────────
 // Event Emission Patterns
@@ -45,15 +44,6 @@ export type ClipLocation = {
  */
 export type ClipReference = ClipLocation & {
 	clip: Clip;
-};
-
-/**
- * Reference to a resolved clip with computed timing values.
- * Used internally for rendering and playback.
- * @internal
- */
-export type ResolvedClipReference = ClipLocation & {
-	clip: ResolvedClip;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -103,11 +93,7 @@ export const EditEvent = {
 	OutputDestinationsChanged: "output:destinationsChanged",
 
 	// Merge fields
-	MergeFieldChanged: "mergefield:changed",
-
-	// Luma masking
-	LumaAttached: "luma:attached",
-	LumaDetached: "luma:detached"
+	MergeFieldChanged: "mergefield:changed"
 } as const;
 
 export type EditEventName = (typeof EditEvent)[keyof typeof EditEvent];
@@ -125,9 +111,6 @@ export const InternalEvent = {
 	// Font capability detection
 	FontCapabilitiesChanged: "font:capabilitiesChanged",
 
-	// Toolbar updates
-	ToolbarButtonsChanged: "toolbar:buttonsChanged",
-
 	// Resolution - document to resolved edit transformation
 	Resolved: "resolved",
 
@@ -140,8 +123,6 @@ export const InternalEvent = {
 	ViewportSizeChanged: "viewport:sizeChanged",
 	ViewportNeedsZoomToFit: "viewport:needsZoomToFit"
 } as const;
-
-export type InternalEventName = (typeof InternalEvent)[keyof typeof InternalEvent];
 
 // ─────────────────────────────────────────────────────────────
 // Event Payload Maps
@@ -192,10 +173,6 @@ export type EditEventMap = {
 
 	// Merge fields
 	[EditEvent.MergeFieldChanged]: { fields: MergeField[] };
-
-	// Luma masking
-	[EditEvent.LumaAttached]: ClipLocation & { lumaSrc: string; lumaClipIndex: number };
-	[EditEvent.LumaDetached]: ClipLocation;
 };
 
 // Internal event payloads - not part of public API
@@ -206,9 +183,6 @@ export type InternalEventMap = {
 
 	// Font
 	[InternalEvent.FontCapabilitiesChanged]: { supportsBold: boolean };
-
-	// Toolbar
-	[InternalEvent.ToolbarButtonsChanged]: { buttons: ToolbarButtonConfig[] };
 
 	// Resolution
 	[InternalEvent.Resolved]: { edit: ResolvedEdit };

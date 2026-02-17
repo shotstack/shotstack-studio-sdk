@@ -83,7 +83,6 @@ export class AudioPlayer extends Player {
 
 			if (shouldSync) {
 				this.audioResource.seek(playbackTime + trim);
-				this.edit.recordSyncCorrection();
 			}
 		}
 

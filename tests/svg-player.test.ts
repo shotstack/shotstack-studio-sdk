@@ -243,7 +243,6 @@ function createMockEdit(playbackTimeMs = 0): Edit {
 		playbackTime: playbackTimeMs,
 		isPlaying: false,
 		size: { width: 1920, height: 1080 },
-		recordSyncCorrection: jest.fn(),
 		resolveMergeFields: jest.fn((value: string) => value),
 		assetLoader: {
 			load: jest.fn(),
