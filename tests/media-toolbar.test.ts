@@ -98,7 +98,7 @@ function createMergeFieldMockEditSession() {
 			resolveClip: jest.fn(),
 			commitClipUpdate: jest.fn(),
 			getInternalEvents: jest.fn(() => internalEvents),
-			getMergeFieldForProperty: jest.fn(() => null),
+			getMergeFieldForProperty: jest.fn((): string | null => null),
 			removeMergeField: jest.fn().mockResolvedValue(undefined),
 			isValueCompatibleWithClipProperty: jest.fn(() => true),
 			mergeFields: {
@@ -567,7 +567,7 @@ describe("MediaToolbar", () => {
 	describe("Dynamic source toggle-off restores default URL", () => {
 		it("passes merge field defaultValue to removeMergeField, not empty string", () => {
 			const defaultUrl = "https://shotstack-assets.s3.amazonaws.com/footage/night-sky.mp4";
-			const { mockEdit, internalEvents, unsubFns } = createMergeFieldMockEditSession();
+			const { mockEdit } = createMergeFieldMockEditSession();
 
 			// Template loads with a merge field already bound to asset.src
 			mockEdit.getMergeFieldForProperty.mockReturnValue("MEDIA_1");

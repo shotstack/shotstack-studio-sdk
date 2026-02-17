@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-/* eslint-disable import/first */
+/* eslint-disable import/first, max-classes-per-file */
 
 /**
  * Cross-Bundle Merge Field Regression Tests

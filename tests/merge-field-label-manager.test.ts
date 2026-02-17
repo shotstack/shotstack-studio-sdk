@@ -37,6 +37,7 @@ jest.mock("../src/core/edit-session", () => ({}));
 
 import { MergeFieldLabelManager } from "@core/ui/merge-field-label-manager";
 import type { MergeFieldLabelHost } from "@core/ui/merge-field-label-manager";
+import type { Edit } from "@core/edit-session";
 import type { MergeField } from "@core/merge/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -91,7 +92,7 @@ function createMockHost(container: HTMLDivElement | null, overrides: Partial<Mer
 
 	return {
 		container,
-		edit: mockEdit,
+		edit: mockEdit as unknown as Edit,
 		getSelectedClipId: jest.fn(() => "clip-1"),
 		syncState: jest.fn(),
 		...overrides

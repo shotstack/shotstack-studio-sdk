@@ -82,7 +82,7 @@ export class ScrollableList extends UIComponent<string> {
 			const item = (e.target as HTMLElement).closest<HTMLElement>(".ss-scrollable-list-item");
 			if (!item) return;
 
-			const value = item.dataset["value"];
+			const { value } = item.dataset;
 			if (value !== undefined) {
 				this.setSelected(value);
 				this.emit(value);
