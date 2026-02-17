@@ -2,6 +2,139 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-02-17
+
+### Added
+
+**Timeline**
+
+- **HTML/CSS timeline rebuild** - Replaced the 1.x timeline with a fully rewritten HTML/CSS implementation
+  - Asset type icons with variable track heights based on content type
+  - Playhead ghost hover preview
+  - Home/End key navigation (replaces meta+arrow keys)
+- **Copy-paste** - Duplicate clips on the timeline using standard keyboard shortcuts
+- **Collision detection** - Automatic clip pushing during drag operations to prevent overlapping
+- **Thumbnail rendering** - Video and image thumbnails displayed directly on timeline clips
+- **Soundtrack support** - Integrated audio player for soundtrack assets on the timeline
+- **Graceful error handling** - Visual error indicators on clips that fail to load
+- **Seconds-based timing** - Unified all time values to a branded `Seconds` type throughout the timeline
+
+**UI Toolbars**
+
+- **Rich text toolbar** - Full formatting toolbar with font picker, text shadow, padding, background color, animation presets, and strikethrough
+- **Media toolbar** - Editing controls for video and image clips including audio, fade effects, zoom/slide transitions, and effects
+- **SVG toolbar** - Fill color, corner radius, and clip-level controls (opacity, scale, transition, effect)
+- **Canvas toolbar** - Resolution, FPS, and background color controls in a vertical layout on the right edge
+- **Asset toolbar** - Quick text and media insertion controls on the canvas
+- **Text-to-Speech toolbar** - Voice selection and audio generation controls
+- **Text-to-image toolbar** - Prompt editing and AI image generation controls
+- **Draggable toolbars** - All toolbars support drag repositioning with reset capability
+- **Extensible toolbar buttons** - Registry system for adding custom toolbar buttons
+
+**AI-Powered Assets**
+
+- **AI asset players** - Aurora loading animations for text-to-image and text-to-speech assets during generation
+- **AI asset overlays** - Asset number badges and prompt preview overlays on AI-generated content
+
+**Merge Fields**
+
+- **Merge field system** - Template variable substitution across Edit properties
+  - Redesigned merge field popup with scroll architecture
+
+**Font System**
+
+- **Font Picker** - Virtual scrolling font selector with recent fonts tracking
+- **Font color picker** - Color and highlight controls with gradient presets
+- **Font weight selector** - Dropdown with full weight range, replacing the simple bold toggle
+- **OpenType integration** - Font family name extraction using `opentype.js` for accurate metadata
+- **CDN font hosting** - Migrated default font assets to CDN with expanded weight and style variants
+
+**Rotation, Resize & Alignment**
+
+- **Rotation** - Full rotation support for canvas objects with snapping to fixed angles
+- **8-point resize handles** - Corner and edge resize with proper dimension handling for SVG and rich text assets
+- **Alignment guides** - Drag snapping to alignment guides integrated into the canvas
+- **Dimension labels** - Live dimension display during resize operations
+- **Drag time tooltips** - Time position display during clip drag and resize on the timeline
+
+**Luma Mask**
+
+- **Luma mask system** - Attach luma masks to clips using Alt+drag with automatic asset type transformation
+
+**Output & Resolution**
+
+- **Output configuration commands** - Commands for setting format, resolution, aspect ratio, and destinations
+- **Resolution presets** - Predefined resolution options with rollback handling
+- **Multi-provider destinations** - Output schema supports multiple render destinations
+
+**Canvas & Rendering**
+
+- **Responsive canvas zoom** - Automatic zoom scaling to fit the container
+- **Alpha channel support** - Correct rendering for WebM VP9 transparent videos
+
+**Clip Management**
+
+- **Clip reconciliation** - Unidirectional data flow with unified resolution for predictable clip tracking across undo/redo
+- **Clip timing controls** - Asset/clip mode toggle for timing configuration
+- **Smart loadEdit** - Structural diffing with unified event dispatch when reloading an edit
+- **Drag-to-create track** - Drop zone indicators for creating new tracks during clip drag
+- **Alias resolution** - Clip reference system using aliases
+- **Caption rendering** - Subtitle player with VTT/SRT parser for caption assets
+
+**Keyframes & Animations**
+
+- **Layered animation composition** - Effects and transitions composed as independent animation layers
+- **Skew transform** - New skew property for clip transforms with animation builder support
+- **Smooth easing** - New easing curve for improved carousel and slide transitions
+
+**SDK Architecture**
+
+- **EditDocument** - Pure data layer for edit configuration management, separating data from rendering
+- **Composite UI components** - Reusable panels for effects, transitions, spacing, and style controls
+- **SVG asset support** - Full SVG asset rendering, editing, and shared SVG utilities
+- **Keyboard arrow positioning** - Arrow keys move selected clips on the canvas
+
+### Changed
+
+- Migrated to `@shotstack/schemas` as canonical type source
+- Upgraded `@shotstack/shotstack-canvas` from ^1.6.5 to ^1.9.6
+- Upgraded `pixi.js` from ^8.5.2 to ^8.15.0
+- Upgraded `zod` from ^3.23.8 to ^4.0.0
+- Requires Node.js 22 (previously unconstrained)
+- Timeline API simplified — feature toggles and constructor options removed
+- Default preview framerate updated to 25fps
+- Switched to light theme as default
+
+### Fixed
+
+- Corrected playback time unit conversions across all player types
+- Fixed memory leaks from event listener accumulation and recursive handlers
+- Resolved race conditions in render updates during clip selection changes
+- Fixed audio stuttering caused by excessive video sync checks (now rate-limited)
+- Added cache invalidation for clip and track mutations
+- Corrected track layer calculation and z-index sorting for multi-track compositions
+- Performance and rendering improvements
+- Fixed crop scaling logic to use max ratio consistently
+- Deferred audio volume keyframe initialization until timing is resolved
+- Fixed left-edge clip resize to correctly adjust start position and duration
+- Added track existence validation before clip reorder on same-track moves
+- Corrected carousel offset calculation logic
+- Normalized z-index hierarchy across UI layers
+- Improved `.mov` video error messaging
+- Included opacity in clip keyframe detection
+- Prevented toolbar container duplication on remount
+- Fixed SVG icons intercepting pointer events on toolbar buttons
+- Fixed clip mask offset to account for centered border strokes
+
+### Removed
+
+- `./schema` package export — schemas now provided by the `@shotstack/schemas` package
+- `TimelineOptions` — Timeline constructor options removed in favour of simplified API
+- `fast-deep-equal` dependency — replaced by internal structural diffing
+- Schema build configuration (`vite.config.schema.ts`)
+- Internal UI component exports from the public API surface
+- `.webm` browser support check
+
 ## [1.10.1] - 2025-11-27
 
 ### Changed

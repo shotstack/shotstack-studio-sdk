@@ -37,7 +37,8 @@ yarn add @shotstack/shotstack-studio
 ## Quick Start
 
 ```typescript
-import { Edit, Canvas, Controls, Timeline, UIController } from "@shotstack/shotstack-studio";
+import { Edit, Canvas, Controls, Timeline, UIController, VERSION } from "@shotstack/shotstack-studio";
+import type { EditConfig, UIControllerOptions, ToolbarButtonConfig } from "@shotstack/shotstack-studio";
 
 // 1) Load a template
 const response = await fetch("https://shotstack-assets.s3.amazonaws.com/templates/hello-world/hello.json");
@@ -128,7 +129,21 @@ await edit.deleteClip(0, 0);
 await edit.undo();
 await edit.redo();
 
+// Clip operations
+await edit.splitClip(0, 0, 2.5);
+await edit.deleteTrack(0);
+
+// Output settings
+await edit.setOutputSize(1920, 1080);
+await edit.setOutputFps(30);
+await edit.setOutputFormat("mp4");
+await edit.setOutputResolution("hd");
+await edit.setOutputAspectRatio("16:9");
+await edit.setTimelineBackground("#000000");
+
 // Read state
+const time = edit.playbackTime;
+const playing = edit.isPlaying;
 const clip = edit.getClip(0, 0);
 const track = edit.getTrack(0);
 const snapshot = edit.getEdit();
@@ -183,6 +198,7 @@ canvas.centerEdit();
 canvas.zoomToFit();
 canvas.setZoom(1.25);
 canvas.resize();
+const zoom = canvas.getZoom();
 canvas.dispose();
 ```
 
