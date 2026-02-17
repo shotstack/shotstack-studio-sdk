@@ -6,7 +6,7 @@
 		"dazzatron",
 		"kratos2k7"
 	],
-	"version": "2.0.0-rc.4",
+	"version": "2.0.0-rc.5",
 	"description": "A video editing library for creating and editing videos with Shotstack",
 	"type": "module",
 	"main": "dist/shotstack-studio.umd.js",
