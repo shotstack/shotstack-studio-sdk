@@ -92,6 +92,7 @@ export class RichCaptionPlayer extends Player {
 			const canvasPayload = this.buildCanvasPayload(richCaptionAsset, words);
 			const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
 			if (!canvasValidation.success) {
+				console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
 				this.createFallbackGraphic("Caption validation failed");
 				return;
 			}
@@ -180,7 +181,6 @@ export class RichCaptionPlayer extends Player {
 	private async fetchAndParseSubtitle(src: string): Promise<WordTiming[]> {
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), SUBTITLE_FETCH_TIMEOUT_MS);
-
 		try {
 			const response = await fetch(src, { signal: controller.signal });
 			if (!response.ok) {
@@ -336,9 +336,10 @@ export class RichCaptionPlayer extends Player {
 	private buildCanvasPayload(asset: RichCaptionAsset, words: WordTiming[]): Record<string, unknown> {
 		const { width, height } = this.getSize();
 		const customFonts = this.buildCustomFontsFromTimeline(asset);
+		const { src, ...assetWithoutSrc } = asset;
 
 		return {
-			...asset,
+			...assetWithoutSrc,
 			words: words.map(w => ({ text: w.text, start: w.start, end: w.end, confidence: w.confidence })),
 			width,
 			height,
