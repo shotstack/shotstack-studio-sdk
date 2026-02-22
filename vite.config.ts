@@ -56,6 +56,7 @@ export default defineConfig({
 		rollupOptions: {
 			external: id => {
 				if (id === "pixi.js" || id.startsWith("pixi.js/")) return true;
+				if (id.startsWith("@napi-rs/")) return true;
 				return ["harfbuzzjs", "opentype.js", "howler"].includes(id);
 			},
 			output: {
