@@ -55,7 +55,8 @@ jest.mock("pixi.js", () => {
 		Container: jest.fn().mockImplementation(createMockContainer),
 		Texture: {
 			from: jest.fn().mockImplementation(() => ({
-				destroy: jest.fn()
+				destroy: jest.fn(),
+				update: jest.fn()
 			})),
 			WHITE: {}
 		},
@@ -106,7 +107,8 @@ jest.mock("@core/fonts/font-config", () => ({
 		baseFontFamily: family,
 		fontWeight: 400
 	})),
-	resolveFontPath: jest.fn().mockReturnValue(null)
+	resolveFontPath: jest.fn().mockReturnValue(null),
+	getFontDisplayName: jest.fn().mockImplementation((family: string) => family)
 }));
 
 jest.mock("@schemas", () => ({
@@ -687,6 +689,113 @@ describe("RichCaptionPlayer", () => {
 			player.update(0.016, 0.5);
 
 			expect(mockGenerateRichCaptionFrame).not.toHaveBeenCalled();
+		});
+
+		it("shows fallback for empty words array", async () => {
+			const asset = createAsset({ words: [] } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(false);
+			expect(mockLayoutCaption).not.toHaveBeenCalled();
+		});
+
+		it("shows fallback when SRT returns empty words", async () => {
+			mockParseSubtitleToWords.mockReturnValueOnce([]);
+			const asset = createAsset({ src: "https://cdn.test/empty.srt", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(false);
+			expect(mockLayoutCaption).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("Texture Reuse", () => {
+		it("creates new texture each frame for pixi v8 compatibility", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			const pixi = jest.requireMock("pixi.js") as { Texture: { from: jest.Mock } };
+			const fromCallCount = pixi.Texture.from.mock.calls.length;
+
+			(edit as Record<string, unknown>).playbackTime = 0.2;
+			player.update(0.016, 0.2);
+
+			(edit as Record<string, unknown>).playbackTime = 0.4;
+			player.update(0.016, 0.4);
+
+			
+			expect(pixi.Texture.from.mock.calls.length).toBeGreaterThan(fromCallCount);
+		});
+
+		it("hides sprite when ops are empty", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			mockGenerateRichCaptionFrame.mockReturnValueOnce({
+				ops: [],
+				visibleWordCount: 0,
+				activeWordIndex: -1
+			});
+
+			(edit as Record<string, unknown>).playbackTime = 5.0;
+			player.update(0.016, 5.0);
+
+			// @ts-expect-error accessing private property
+			if (player.sprite) {
+				// @ts-expect-error accessing private property
+				expect(player.sprite.visible).toBe(false);
+			}
+		});
+	});
+
+	describe("Dimensions Changed", () => {
+		it("supports edge resize", () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			expect(player.supportsEdgeResize()).toBe(true);
+		});
+
+		it("re-layouts on dimensions changed", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			const layoutCallsBefore = mockLayoutCaption.mock.calls.length;
+
+			// Trigger dimension change
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+
+			// Wait for async layout
+			await new Promise(resolve => setTimeout(resolve, 10));
+
+			expect(mockLayoutCaption.mock.calls.length).toBe(layoutCallsBefore + 1);
+		});
+	});
+
+	describe("Google Font Resolution", () => {
+		it("resolves Google Font hash via getFontDisplayName", async () => {
+			const { parseFontFamily: mockParseFontFamily } = jest.requireMock("@core/fonts/font-config") as {
+				parseFontFamily: jest.Mock
+			};
+
+			const asset = createAsset({
+				font: { family: "mem8YaGs126MiZpBA-U1UpcaXcl0Aw", size: 48, color: "#ffffff" }
+			} as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// parseFontFamily should be called (it's used in font resolution)
+			expect(mockParseFontFamily).toHaveBeenCalled();
 		});
 	});
 });

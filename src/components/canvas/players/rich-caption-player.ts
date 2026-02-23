@@ -1,6 +1,6 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import { Edit } from "@core/edit-session";
-import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { parseFontFamily, resolveFontPath, getFontDisplayName } from "@core/fonts/font-config";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichCaptionAssetSchema, type RichCaptionAsset, type ResolvedClip } from "@schemas";
 import {
@@ -48,6 +48,7 @@ export class RichCaptionPlayer extends Player {
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
 
+	private words: WordTiming[] = [];
 	private loadComplete: boolean = false;
 
 	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
@@ -81,6 +82,11 @@ export class RichCaptionPlayer extends Player {
 				}));
 			}
 
+			if (words.length === 0) {
+				this.createFallbackGraphic("No caption words found");
+				return;
+			}
+
 			if (words.length > HARD_WORD_LIMIT) {
 				this.createFallbackGraphic(`Word count (${words.length}) exceeds limit of ${HARD_WORD_LIMIT}`);
 				return;
@@ -97,6 +103,7 @@ export class RichCaptionPlayer extends Player {
 				return;
 			}
 			this.validatedAsset = canvasValidation.data;
+			this.words = words;
 
 			this.fontRegistry = await FontRegistry.getSharedInstance();
 			await this.registerFonts(richCaptionAsset);
@@ -155,6 +162,11 @@ export class RichCaptionPlayer extends Player {
 				this.generatorConfig
 			);
 
+			if (ops.length === 0 && this.sprite) {
+				this.sprite.visible = false;
+				return;
+			}
+
 			const ctx = this.canvas.getContext("2d");
 			if (ctx) ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -166,13 +178,15 @@ export class RichCaptionPlayer extends Player {
 				this.sprite = new pixi.Sprite(tex);
 				this.contentContainer.addChild(this.sprite);
 			} else {
-				if (this.texture) {
-					this.texture.destroy();
-				}
 				this.sprite.texture = tex;
 			}
 
+			if (this.texture) {
+				this.texture.destroy();
+			}
 			this.texture = tex;
+
+			this.sprite.visible = true;
 		} catch (err) {
 			console.error("Failed to render rich caption frame:", err);
 		}
@@ -245,7 +259,8 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	private resolveFontWithWeight(family: string, requestedWeight: number): { url: string; baseFontFamily: string; fontWeight: number } | null {
-		const { baseFontFamily, fontWeight: parsedWeight } = parseFontFamily(family);
+		const resolvedFamily = getFontDisplayName(family);
+		const { baseFontFamily, fontWeight: parsedWeight } = parseFontFamily(resolvedFamily);
 		const effectiveWeight = parsedWeight !== 400 ? parsedWeight : requestedWeight;
 
 		const metadataUrl = this.edit.getFontUrlByFamilyAndWeight(baseFontFamily, effectiveWeight);
@@ -301,9 +316,10 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	private buildCustomFontsFromTimeline(asset: RichCaptionAsset): Array<{ src: string; family: string; weight: string }> {
-		const requestedFamily = asset.font?.family;
-		if (!requestedFamily) return [];
+		const rawFamily = asset.font?.family;
+		if (!rawFamily) return [];
 
+		const requestedFamily = getFontDisplayName(rawFamily);
 		const { baseFontFamily, fontWeight } = parseFontFamily(requestedFamily);
 
 		const timelineFonts = this.edit.getTimelineFonts();
@@ -337,12 +353,14 @@ export class RichCaptionPlayer extends Player {
 		const { width, height } = this.getSize();
 		const customFonts = this.buildCustomFontsFromTimeline(asset);
 		const { src, ...assetWithoutSrc } = asset;
+		const resolvedFamily = getFontDisplayName(asset.font?.family ?? "Open Sans");
 
 		return {
 			...assetWithoutSrc,
 			words: words.map(w => ({ text: w.text, start: w.start, end: w.end, confidence: w.confidence })),
 			width,
 			height,
+			...(asset.font && { font: { ...asset.font, family: resolvedFamily } }),
 			...(customFonts.length > 0 && { customFonts }),
 		};
 	}
@@ -358,7 +376,7 @@ export class RichCaptionPlayer extends Player {
 			maxLines: asset.maxLines ?? 2,
 			position: asset.position ?? "bottom",
 			fontSize: font?.size ?? 24,
-			fontFamily: font?.family ?? "Roboto",
+			fontFamily: getFontDisplayName(font?.family ?? "Roboto"),
 			fontWeight: String(font?.weight ?? "400"),
 			letterSpacing: style?.letterSpacing ?? 0,
 			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
@@ -460,6 +478,33 @@ export class RichCaptionPlayer extends Player {
 	protected override getContainerScale(): Vector {
 		const scale = this.getScale();
 		return { x: scale, y: scale };
+	}
+
+	protected override onDimensionsChanged(): void {
+		if (!this.layoutEngine || !this.validatedAsset || !this.canvas || !this.painter) return;
+
+		const { width, height } = this.getSize();
+
+		this.canvas.width = width;
+		this.canvas.height = height;
+
+		if (this.texture) {
+			this.texture.destroy();
+			this.texture = null;
+		}
+
+		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+
+		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+		const canvasTextMeasurer = this.createCanvasTextMeasurer();
+		if (canvasTextMeasurer) {
+			layoutConfig.measureTextWidth = canvasTextMeasurer;
+		}
+
+		this.layoutEngine.layoutCaption(this.words, layoutConfig).then((layout) => {
+			this.captionLayout = layout;
+			this.renderFrameSync(this.getPlaybackTime() * 1000);
+		});
 	}
 
 	public override supportsEdgeResize(): boolean {
