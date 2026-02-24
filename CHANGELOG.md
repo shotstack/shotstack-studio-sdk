@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2026-02-24
+
+### Fixed
+
+- Fixed toolbar positioning when SDK is embedded in a page with surrounding content. Toolbars now use `position: absolute` within the canvas container instead of `position: fixed` relative to the viewport.
+
 ## [2.0.0] - 2026-02-17
 
 ### Added

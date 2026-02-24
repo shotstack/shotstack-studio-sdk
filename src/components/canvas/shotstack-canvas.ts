@@ -135,6 +135,7 @@ export class Canvas {
 		this.setupTouchHandling(root);
 		this.zoomToFit();
 
+		root.style.position = "relative";
 		root.appendChild(this.application.canvas);
 
 		// Auto-mount UIController to canvas root (toolbars sit inside canvas)

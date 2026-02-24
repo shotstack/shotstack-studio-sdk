@@ -71,11 +71,12 @@ export function makeToolbarDraggable(options: ToolbarDragOptions): ToolbarDragHa
 
 	function clamp(x: number, y: number): { x: number; y: number } {
 		const rect = container.getBoundingClientRect();
-		const vw = window.innerWidth;
-		const vh = window.innerHeight;
+		const parent = container.offsetParent as HTMLElement | null;
+		const pw = parent?.clientWidth ?? window.innerWidth;
+		const ph = parent?.clientHeight ?? window.innerHeight;
 		return {
-			x: Math.max(boundsPadding, Math.min(vw - rect.width - boundsPadding, x)),
-			y: Math.max(boundsPadding, Math.min(vh - rect.height - boundsPadding, y))
+			x: Math.max(boundsPadding, Math.min(pw - rect.width - boundsPadding, x)),
+			y: Math.max(boundsPadding, Math.min(ph - rect.height - boundsPadding, y))
 		};
 	}
 
@@ -142,19 +143,12 @@ export function makeToolbarDraggable(options: ToolbarDragOptions): ToolbarDragHa
 		startPointerX = e.clientX;
 		startPointerY = e.clientY;
 
-		// Resolve current position from the rendered rect
+		// Resolve current position relative to the offset parent (position: absolute container)
 		const rect = container.getBoundingClientRect();
 		const parent = container.offsetParent as HTMLElement | null;
 		const parentRect = parent?.getBoundingClientRect() ?? { left: 0, top: 0 };
-
-		// For position:fixed containers, offsetParent is null, use viewport coords directly
-		if (container.style.position === "fixed" || getComputedStyle(container).position === "fixed") {
-			startLeft = rect.left;
-			startTop = rect.top;
-		} else {
-			startLeft = rect.left - parentRect.left;
-			startTop = rect.top - parentRect.top;
-		}
+		startLeft = rect.left - parentRect.left;
+		startTop = rect.top - parentRect.top;
 
 		document.addEventListener("pointermove", onPointerMove);
 		document.addEventListener("pointerup", onPointerUp);

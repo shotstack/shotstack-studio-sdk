@@ -414,32 +414,30 @@ export class UIController {
 
 	/**
 	 * Update toolbar positions to be adjacent to the canvas content.
-	 * Uses position: fixed with screen coordinates for complete independence from parent CSS.
+	 * Uses position: absolute within the canvas container.
 	 * Called by Canvas after zoom, pan, or resize operations.
 	 * @internal
 	 */
 	updateToolbarPositions(): void {
 		if (!this.canvas) return;
 
-		const canvasRect = this.canvas.application.canvas.getBoundingClientRect();
 		const bounds = this.canvas.getContentBounds();
-		const viewportWidth = window.innerWidth;
-		const viewportHeight = window.innerHeight;
+		const containerEl = document.querySelector<HTMLElement>(Canvas.CanvasSelector);
+		const containerWidth = containerEl?.clientWidth ?? window.innerWidth;
+		const containerHeight = containerEl?.clientHeight ?? window.innerHeight;
 
-		// Calculate raw screen coordinates
-		const videoLeftScreen = canvasRect.left + bounds.left;
-		const videoRightScreen = canvasRect.left + bounds.right;
-		const videoCenterYScreen = canvasRect.top + (bounds.top + bounds.bottom) / 2;
+		// Coordinates are already relative to the container (bounds come from PixiJS viewport)
+		const videoCenterY = (bounds.top + bounds.bottom) / 2;
 
-		// Clamp Y to stay within viewport (avoiding top nav and bottom timeline)
-		const clampedY = Math.max(TOOLBAR_MIN_Y, Math.min(viewportHeight - TOOLBAR_MIN_Y, videoCenterYScreen));
+		// Clamp Y within container bounds
+		const clampedY = Math.max(TOOLBAR_MIN_Y, Math.min(containerHeight - TOOLBAR_MIN_Y, videoCenterY));
 
-		// Left toolbar: position to the left of video, clamped to viewport
-		const leftX = Math.max(TOOLBAR_PADDING, videoLeftScreen - TOOLBAR_WIDTH - TOOLBAR_PADDING);
+		// Left toolbar: to the left of video content
+		const leftX = Math.max(TOOLBAR_PADDING, bounds.left - TOOLBAR_WIDTH - TOOLBAR_PADDING);
 
-		// Right toolbar: position to the right of video, clamped to viewport
-		const maxRightX = viewportWidth - TOOLBAR_WIDTH - TOOLBAR_PADDING;
-		const rightX = Math.min(maxRightX, videoRightScreen + TOOLBAR_PADDING);
+		// Right toolbar: to the right of video content
+		const maxRightX = containerWidth - TOOLBAR_WIDTH - TOOLBAR_PADDING;
+		const rightX = Math.min(maxRightX, bounds.right + TOOLBAR_PADDING);
 
 		// Position sidebars with user drag offset applied
 		this.applySidebarPosition(this.assetToolbar, leftX, clampedY, this.lastAutoAssetX, this.lastAutoAssetY);
