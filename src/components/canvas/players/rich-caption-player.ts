@@ -15,7 +15,7 @@ import {
 	type CaptionLayout,
 	type CaptionLayoutConfig,
 	type RichCaptionGeneratorConfig,
-	type WordTiming,
+	type WordTiming
 } from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
@@ -78,7 +78,7 @@ export class RichCaptionPlayer extends Player {
 					text: w.text,
 					start: w.start,
 					end: w.end,
-					confidence: w.confidence,
+					confidence: w.confidence
 				}));
 			}
 
@@ -148,19 +148,52 @@ export class RichCaptionPlayer extends Player {
 		this.renderFrameSync(currentTimeMs);
 	}
 
+	public override reconfigureAfterRestore(): void {
+		super.reconfigureAfterRestore();
+		this.reconfigure();
+	}
+
+	private async reconfigure(): Promise<void> {
+		if (!this.loadComplete || !this.layoutEngine || !this.canvas || !this.painter) {
+			return;
+		}
+
+		try {
+			const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+			await this.registerFonts(asset);
+
+			const canvasPayload = this.buildCanvasPayload(asset, this.words);
+			const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
+			if (!canvasValidation.success) {
+				console.error("Caption reconfigure validation failed:", canvasValidation.error?.issues);
+				return;
+			}
+			this.validatedAsset = canvasValidation.data;
+
+			const { width, height } = this.getSize();
+			const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+			const canvasTextMeasurer = this.createCanvasTextMeasurer();
+			if (canvasTextMeasurer) {
+				layoutConfig.measureTextWidth = canvasTextMeasurer;
+			}
+			this.captionLayout = await this.layoutEngine.layoutCaption(this.words, layoutConfig);
+
+			this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+
+			this.renderFrameSync(this.getPlaybackTime() * 1000);
+		} catch (error) {
+			console.error("RichCaptionPlayer reconfigure failed:", error);
+		}
+	}
+
 	private renderFrameSync(timeMs: number): void {
 		if (!this.layoutEngine || !this.captionLayout || !this.canvas || !this.painter || !this.validatedAsset || !this.generatorConfig) {
 			return;
 		}
 
 		try {
-			const { ops } = generateRichCaptionFrame(
-				this.validatedAsset,
-				this.captionLayout,
-				timeMs,
-				this.layoutEngine,
-				this.generatorConfig
-			);
+			const { ops } = generateRichCaptionFrame(this.validatedAsset, this.captionLayout, timeMs, this.layoutEngine, this.generatorConfig);
 
 			if (ops.length === 0 && this.sprite) {
 				this.sprite.visible = false;
@@ -240,7 +273,7 @@ export class RichCaptionPlayer extends Player {
 
 				try {
 					const fontFace = new FontFace(family, `url(${url})`, {
-						weight: weight.toString(),
+						weight: weight.toString()
 					});
 					await fontFace.load();
 					document.fonts.add(fontFace);
@@ -306,7 +339,7 @@ export class RichCaptionPlayer extends Player {
 			600: "SemiBold",
 			700: "Bold",
 			800: "ExtraBold",
-			900: "Black",
+			900: "Black"
 		};
 
 		const modifier = WEIGHT_TO_MODIFIER[weight];
@@ -361,7 +394,7 @@ export class RichCaptionPlayer extends Player {
 			width,
 			height,
 			...(asset.font && { font: { ...asset.font, family: resolvedFamily } }),
-			...(customFonts.length > 0 && { customFonts }),
+			...(customFonts.length > 0 && { customFonts })
 		};
 	}
 
@@ -376,13 +409,13 @@ export class RichCaptionPlayer extends Player {
 			maxLines: asset.maxLines ?? 2,
 			position: asset.position ?? "bottom",
 			fontSize: font?.size ?? 24,
-			fontFamily: getFontDisplayName(font?.family ?? "Roboto"),
+			fontFamily: font?.family ?? "Open Sans",
 			fontWeight: String(font?.weight ?? "400"),
 			letterSpacing: style?.letterSpacing ?? 0,
 			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
 			lineHeight: style?.lineHeight ?? 1.2,
 			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
-			pauseThreshold: 500,
+			pauseThreshold: 500
 		};
 	}
 
@@ -501,7 +534,7 @@ export class RichCaptionPlayer extends Player {
 			layoutConfig.measureTextWidth = canvasTextMeasurer;
 		}
 
-		this.layoutEngine.layoutCaption(this.words, layoutConfig).then((layout) => {
+		this.layoutEngine.layoutCaption(this.words, layoutConfig).then(layout => {
 			this.captionLayout = layout;
 			this.renderFrameSync(this.getPlaybackTime() * 1000);
 		});

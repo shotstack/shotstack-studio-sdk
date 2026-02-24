@@ -9,6 +9,7 @@ import { AssetToolbar } from "./asset-toolbar";
 import { CanvasToolbar } from "./canvas-toolbar";
 import { ClipToolbar } from "./clip-toolbar";
 import { MediaToolbar } from "./media-toolbar";
+import { RichCaptionToolbar } from "./rich-caption-toolbar";
 import { RichTextToolbar } from "./rich-text-toolbar";
 import { SelectionHandles } from "./selection-handles";
 import { SvgToolbar } from "./svg-toolbar";
@@ -239,6 +240,7 @@ export class UIController {
 		// Asset-specific toolbars
 		this.registerToolbar("text", new TextToolbar(this.edit));
 		this.registerToolbar("rich-text", new RichTextToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
+		this.registerToolbar("rich-caption", new RichCaptionToolbar(this.edit));
 		this.registerToolbar("svg", new SvgToolbar(this.edit));
 		this.registerToolbar(["video", "image"], new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));
 		this.registerToolbar("audio", new MediaToolbar(this.edit, { mergeFields: this.mergeFieldsEnabled }));

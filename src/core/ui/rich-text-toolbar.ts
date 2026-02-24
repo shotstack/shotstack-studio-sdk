@@ -68,7 +68,7 @@ export class RichTextToolbar extends BaseToolbar {
 	/**
 	 * Per-control drag state manager.
 	 */
-	private dragManager = new DragStateManager();
+	protected dragManager = new DragStateManager();
 
 	private lastSyncedClipId: string | null = null;
 
@@ -421,7 +421,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 				// Construct final clip state
 				const finalClip = structuredClone(session.initialState);
-				if (finalClip.asset && finalClip.asset.type === "rich-text" && finalClip.asset.style) {
+				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption") && finalClip.asset.style) {
 					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
 					finalClip.asset.style.lineHeight = finalState.lineHeight;
 				}
@@ -636,16 +636,18 @@ export class RichTextToolbar extends BaseToolbar {
 
 				// Construct final clip state with actual user-selected values
 				const finalClip = structuredClone(session.initialState);
-				if (finalClip.asset && finalClip.asset.type === "rich-text") {
+				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption")) {
 					// Border: Convert opacity from percentage (0-100) to decimal (0-1)
-					finalClip.asset.border = {
+					// Cast needed: rich-caption shares border/padding/shadow at runtime via $ref
+					const asset = finalClip.asset as Record<string, unknown>;
+					asset["border"] = {
 						width: finalState.border.width,
 						color: finalState.border.color,
 						opacity: finalState.border.opacity / 100,
 						radius: finalState.border.radius
 					};
-					finalClip.asset.padding = finalState.padding;
-					finalClip.asset.shadow = finalState.shadow.enabled
+					asset["padding"] = finalState.padding;
+					asset["shadow"] = finalState.shadow.enabled
 						? {
 								offsetX: finalState.shadow.offsetX,
 								offsetY: finalState.shadow.offsetY,
@@ -722,7 +724,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 					// Build final state
 					const finalClip = structuredClone(session.initialState);
-					if (finalClip.asset && finalClip.asset.type === "rich-text") {
+					if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption")) {
 						const enabled = this.backgroundColorPicker?.isEnabled() ?? false;
 						const color = this.backgroundColorPicker?.getColor() ?? "#FFFFFF";
 						const opacity = this.backgroundColorPicker?.getOpacity() ?? 1;
@@ -840,7 +842,7 @@ export class RichTextToolbar extends BaseToolbar {
 		"asset.style.lineHeight": "1.2"
 	};
 
-	private handleClick(e: MouseEvent): void {
+	protected handleClick(e: MouseEvent): void {
 		const target = e.target as HTMLElement;
 		const button = target.closest("button");
 		if (!button) return;
@@ -915,7 +917,7 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 	}
 
-	private getCurrentAsset(): RichTextAsset | null {
+	protected getCurrentAsset(): RichTextAsset | null {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clip) return null;
 		return clip.asset as RichTextAsset;
@@ -1349,7 +1351,7 @@ export class RichTextToolbar extends BaseToolbar {
 	 *
 	 * @returns Object with clipId and cloned initial state, or null if no clip selected
 	 */
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
+	protected captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
@@ -1590,7 +1592,7 @@ export class RichTextToolbar extends BaseToolbar {
 		});
 	}
 
-	private updateClipProperty(assetUpdates: Record<string, unknown>): void {
+	protected updateClipProperty(assetUpdates: Record<string, unknown>): void {
 		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
 		this.syncState();
@@ -1648,7 +1650,7 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		if (this.fontPreview) {
-			const fontFamily = asset.font?.family ?? "Roboto";
+			const fontFamily = asset.font?.family ?? "Open Sans";
 			this.fontPreview.textContent = this.getDisplayName(fontFamily);
 			this.fontPreview.style.fontFamily = `'${fontFamily}', sans-serif`;
 		}
