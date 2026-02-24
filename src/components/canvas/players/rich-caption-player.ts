@@ -386,7 +386,7 @@ export class RichCaptionPlayer extends Player {
 		const { width, height } = this.getSize();
 		const customFonts = this.buildCustomFontsFromTimeline(asset);
 		const { src, ...assetWithoutSrc } = asset;
-		const resolvedFamily = getFontDisplayName(asset.font?.family ?? "Open Sans");
+		const resolvedFamily = getFontDisplayName(asset.font?.family ?? "Roboto");
 
 		return {
 			...assetWithoutSrc,
@@ -409,7 +409,7 @@ export class RichCaptionPlayer extends Player {
 			maxLines: asset.maxLines ?? 2,
 			position: asset.position ?? "bottom",
 			fontSize: font?.size ?? 24,
-			fontFamily: font?.family ?? "Open Sans",
+			fontFamily: font?.family ?? "Roboto",
 			fontWeight: String(font?.weight ?? "400"),
 			letterSpacing: style?.letterSpacing ?? 0,
 			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
