@@ -34,6 +34,10 @@ export class DeleteClipCommand implements EditCommand {
 			return CommandNoop(`No clip at track ${this.trackIdx}, index ${this.clipIdx}`);
 		}
 
+		if (document.getClipCount() <= 1) {
+			return CommandNoop("Cannot delete the last clip");
+		}
+
 		// Save config for undo
 		this.deletedClipConfig = structuredClone(clip);
 		this.deletedClipId = (clip as { id?: string }).id;
