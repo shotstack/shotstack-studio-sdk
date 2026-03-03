@@ -1,0 +1,616 @@
+/**
+ * @jest-environment jsdom
+ */
+/* eslint-disable import/first, max-classes-per-file */
+
+// Mock pixi.js before any imports that use it
+jest.mock("pixi.js", () => ({
+	Container: jest.fn().mockImplementation(() => ({
+		children: [],
+		parent: null,
+		addChild: jest.fn(),
+		removeChild: jest.fn(),
+		destroy: jest.fn()
+	})),
+	Sprite: jest.fn(),
+	Texture: jest.fn()
+}));
+
+jest.mock("../src/components/canvas/players/player", () => {
+	class MockPlayer {
+		clipConfiguration = {};
+
+		getMergeFieldBinding = jest.fn(() => null);
+	}
+	return {
+		Player: MockPlayer,
+		PlayerType: {
+			Video: "video",
+			Image: "image",
+			Audio: "audio",
+			Text: "text",
+			Html: "html",
+			Shape: "shape",
+			Caption: "caption",
+			Luma: "luma",
+			RichText: "rich-text",
+			Svg: "svg"
+		}
+	};
+});
+
+jest.mock("../src/core/shotstack-edit", () => ({
+	ShotstackEdit: class MockShotstackEdit {}
+}));
+
+jest.mock("../src/core/edit-session", () => ({}));
+
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+	observe: jest.fn(),
+	unobserve: jest.fn(),
+	disconnect: jest.fn()
+})) as unknown as typeof IntersectionObserver;
+
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+	observe: jest.fn(),
+	unobserve: jest.fn(),
+	disconnect: jest.fn()
+})) as unknown as typeof ResizeObserver;
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function createMockEventEmitter() {
+	const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+	return {
+		on: jest.fn((event: string, callback: (...args: unknown[]) => void) => {
+			if (!listeners[event]) listeners[event] = [];
+			listeners[event].push(callback);
+		}),
+		off: jest.fn(),
+		emit: jest.fn((event: string, ...args: unknown[]) => {
+			if (listeners[event]) listeners[event].forEach(cb => cb(...args));
+		}),
+		trigger: (event: string, ...args: unknown[]) => {
+			if (listeners[event]) listeners[event].forEach(cb => cb(...args));
+		}
+	};
+}
+
+function createMockEdit(overrides: Record<string, unknown> = {}) {
+	const events = createMockEventEmitter();
+	return {
+		getInternalEvents: jest.fn(() => events),
+		getPlayerClip: jest.fn(() => null),
+		getClip: jest.fn(() => null),
+		getClipId: jest.fn(() => "mock-clip-id"),
+		getResolvedClip: jest.fn(() => null),
+		getResolvedClipById: jest.fn(() => null),
+		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+		getCurrentTime: jest.fn(() => 0),
+		getEdit: jest.fn(() => ({
+			timeline: {
+				fonts: [],
+				tracks: [{ clips: [{ asset: { type: "rich-caption" }, start: 0, length: 5 }] }]
+			}
+		})),
+		getDocument: jest.fn(() => ({
+			getFonts: jest.fn(() => []),
+			getClipBinding: jest.fn(() => null)
+		})),
+		getFontMetadata: jest.fn(() => new Map()),
+		getMergeFieldForProperty: jest.fn(() => null),
+		updateClip: jest.fn(),
+		updateClipInDocument: jest.fn(),
+		resolveClip: jest.fn(),
+		commitClipUpdate: jest.fn(),
+		getToolbarButtons: jest.fn(() => []),
+		getSelectedClipInfo: jest.fn(() => null),
+		mergeFields: {
+			getAll: jest.fn(() => []),
+			register: jest.fn(),
+			deleteMergeFieldGlobally: jest.fn()
+		},
+		events,
+		playbackTime: 0,
+		isSrcMergeField: jest.fn(() => false),
+		updateMergeFieldValueLive: jest.fn(),
+		setOutputSize: jest.fn(),
+		setOutputFps: jest.fn(),
+		getOutputFps: jest.fn(() => 25),
+		setTimelineBackground: jest.fn(),
+		getTimelineBackground: jest.fn(() => "#000000"),
+		size: { width: 1920, height: 1080 },
+		...overrides
+	};
+}
+
+function createCaptionAsset(overrides: Record<string, unknown> = {}) {
+	return {
+		type: "rich-caption",
+		maxLines: 2,
+		wordAnimation: { style: "karaoke", speed: 1, direction: "up" },
+		active: {
+			font: { color: "#ffff00", opacity: 1 },
+			stroke: { width: 2, color: "#000000", opacity: 1 },
+			scale: 1
+		},
+		font: { family: "Open Sans", size: 48, color: "#ffffff", weight: 400 },
+		...overrides
+	};
+}
+
+function setupCaptionClip(mockEdit: ReturnType<typeof createMockEdit>, assetOverrides: Record<string, unknown> = {}) {
+	const asset = createCaptionAsset(assetOverrides);
+	const clip = { asset, start: 0, length: 5 };
+	mockEdit.getPlayerClip.mockReturnValue({ clipConfiguration: clip, getMergeFieldBinding: jest.fn(() => null) } as never);
+	mockEdit.getResolvedClip.mockReturnValue(clip as never);
+	return asset;
+}
+
+function createTestContainer(): HTMLDivElement {
+	const container = document.createElement("div");
+	document.body.appendChild(container);
+	return container;
+}
+
+function cleanupTestContainer(container: HTMLDivElement): void {
+	container.remove();
+}
+
+function simulateClick(el: Element | null): void {
+	el?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
+function simulateInput(el: HTMLInputElement | null, value: string | number): void {
+	if (!el) return;
+	el.value = String(value); // eslint-disable-line no-param-reassign
+	el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+// ============================================================================
+// RichCaptionToolbar Tests
+// ============================================================================
+
+describe("RichCaptionToolbar", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/rich-caption-toolbar").RichCaptionToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { RichCaptionToolbar } = await import("../src/core/ui/rich-caption-toolbar");
+		toolbar = new RichCaptionToolbar(mockEdit as never);
+		container = createTestContainer();
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	// ── DOM Structure ──────────────────────────────────────────────────
+
+	describe("injected caption controls", () => {
+		beforeEach(() => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+		});
+
+		it("should inject Layout dropdown with max-lines buttons", () => {
+			const btn = container.querySelector('[data-action="caption-layout-toggle"]');
+			expect(btn).not.toBeNull();
+			expect(btn?.textContent).toBe("Layout");
+
+			const maxLinesBtns = container.querySelectorAll("[data-caption-max-lines]");
+			expect(maxLinesBtns.length).toBe(4);
+
+			const values = Array.from(maxLinesBtns).map(b => (b as HTMLElement).dataset["captionMaxLines"]);
+			expect(values).toEqual(["1", "2", "3", "4"]);
+		});
+
+		it("should inject Words dropdown with animation style buttons", () => {
+			const btn = container.querySelector('[data-action="caption-word-anim-toggle"]');
+			expect(btn).not.toBeNull();
+			expect(btn?.textContent).toBe("Words");
+
+			const styleButtons = container.querySelectorAll("[data-caption-word-style]");
+			expect(styleButtons.length).toBe(8);
+
+			const styles = Array.from(styleButtons).map(b => (b as HTMLElement).dataset["captionWordStyle"]);
+			expect(styles).toContain("karaoke");
+			expect(styles).toContain("pop");
+			expect(styles).toContain("typewriter");
+			expect(styles).toContain("none");
+		});
+
+		it("should inject Words dropdown with speed slider", () => {
+			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
+			expect(slider).not.toBeNull();
+			expect(slider?.type).toBe("range");
+			expect(slider?.min).toBe("0.5");
+			expect(slider?.max).toBe("2");
+		});
+
+		it("should inject Words dropdown with direction buttons", () => {
+			const directionBtns = container.querySelectorAll("[data-caption-word-direction]");
+			expect(directionBtns.length).toBe(4);
+
+			const directions = Array.from(directionBtns).map(b => (b as HTMLElement).dataset["captionWordDirection"]);
+			expect(directions).toEqual(["left", "right", "up", "down"]);
+		});
+
+		it("should inject Active Word dropdown with color, opacity, highlight controls", () => {
+			const btn = container.querySelector('[data-action="active-word-toggle"]');
+			expect(btn).not.toBeNull();
+			expect(btn?.textContent).toBe("Active Word");
+
+			expect(container.querySelector("[data-active-font-color]")).not.toBeNull();
+			expect(container.querySelector("[data-active-font-opacity]")).not.toBeNull();
+			expect(container.querySelector("[data-active-font-highlight]")).not.toBeNull();
+		});
+
+		it("should inject Active Word dropdown with stroke controls", () => {
+			expect(container.querySelector("[data-active-stroke-width]")).not.toBeNull();
+			expect(container.querySelector("[data-active-stroke-color]")).not.toBeNull();
+			expect(container.querySelector("[data-active-stroke-opacity]")).not.toBeNull();
+		});
+
+		it("should inject Active Word dropdown with scale section (initially hidden)", () => {
+			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
+			expect(scaleSection).not.toBeNull();
+			expect(scaleSection?.style.display).toBe("none");
+		});
+
+		it("should hide irrelevant rich-text controls", () => {
+			["text-edit-toggle", "animation-toggle", "transition-toggle", "effect-toggle"].forEach(action => {
+				const btn = container.querySelector(`[data-action="${action}"]`);
+				if (btn) {
+					const dropdown = btn.closest(".ss-toolbar-dropdown") as HTMLElement | null;
+					const target = dropdown ?? (btn as HTMLElement);
+					expect(target.style.display).toBe("none");
+				}
+			});
+		});
+	});
+
+	// ── Popup Toggling ─────────────────────────────────────────────────
+
+	describe("popup management", () => {
+		beforeEach(() => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+		});
+
+		it("should toggle Layout popup on click", () => {
+			const btn = container.querySelector('[data-action="caption-layout-toggle"]');
+			simulateClick(btn);
+
+			const popup = container.querySelector("[data-caption-layout-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should toggle Words popup on click", () => {
+			const btn = container.querySelector('[data-action="caption-word-anim-toggle"]');
+			simulateClick(btn);
+
+			const popup = container.querySelector("[data-caption-word-anim-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should toggle Active Word popup on click", () => {
+			const btn = container.querySelector('[data-action="active-word-toggle"]');
+			simulateClick(btn);
+
+			const popup = container.querySelector("[data-active-word-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should close other popups when opening a new one", () => {
+			// Open Layout
+			simulateClick(container.querySelector('[data-action="caption-layout-toggle"]'));
+			expect(container.querySelector("[data-caption-layout-popup]")?.classList.contains("visible")).toBe(true);
+
+			// Open Words — Layout should close
+			simulateClick(container.querySelector('[data-action="caption-word-anim-toggle"]'));
+			expect(container.querySelector("[data-caption-layout-popup]")?.classList.contains("visible")).toBe(false);
+			expect(container.querySelector("[data-caption-word-anim-popup]")?.classList.contains("visible")).toBe(true);
+		});
+	});
+
+	// ── State Sync ─────────────────────────────────────────────────────
+
+	describe("syncState", () => {
+		it("should sync max-lines buttons from asset", () => {
+			setupCaptionClip(mockEdit, { maxLines: 3 });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const activeBtn = container.querySelector('[data-caption-max-lines="3"]');
+			expect(activeBtn?.classList.contains("active")).toBe(true);
+
+			const inactiveBtn = container.querySelector('[data-caption-max-lines="2"]');
+			expect(inactiveBtn?.classList.contains("active")).toBe(false);
+		});
+
+		it("should sync word animation style buttons", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const popBtn = container.querySelector('[data-caption-word-style="pop"]');
+			expect(popBtn?.classList.contains("active")).toBe(true);
+
+			const karaokeBtn = container.querySelector('[data-caption-word-style="karaoke"]');
+			expect(karaokeBtn?.classList.contains("active")).toBe(false);
+		});
+
+		it("should sync word animation speed slider and display", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1.5 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
+			expect(slider?.value).toBe("1.5");
+
+			const display = container.querySelector("[data-caption-word-speed-value]");
+			expect(display?.textContent).toBe("1.5x");
+		});
+
+		it("should show direction section only for 'slide' animation", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", speed: 1, direction: "left" } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const dirSection = container.querySelector("[data-caption-word-direction-section]") as HTMLElement;
+			expect(dirSection?.style.display).toBe("");
+		});
+
+		it("should hide direction section for non-slide animations", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const dirSection = container.querySelector("[data-caption-word-direction-section]") as HTMLElement;
+			expect(dirSection?.style.display).toBe("none");
+		});
+
+		it("should sync active word color input", () => {
+			setupCaptionClip(mockEdit, { active: { font: { color: "#ff0000", opacity: 1 } } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const input = container.querySelector("[data-active-font-color]") as HTMLInputElement;
+			expect(input?.value).toBe("#ff0000");
+		});
+
+		it("should sync active word opacity slider", () => {
+			setupCaptionClip(mockEdit, { active: { font: { color: "#ffff00", opacity: 0.5 } } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-active-font-opacity]") as HTMLInputElement;
+			expect(slider?.value).toBe("50");
+
+			const display = container.querySelector("[data-active-font-opacity-value]");
+			expect(display?.textContent).toBe("50%");
+		});
+
+		it("should sync active stroke width slider", () => {
+			setupCaptionClip(mockEdit, { active: { stroke: { width: 4, color: "#00ff00", opacity: 0.75 } } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const widthSlider = container.querySelector("[data-active-stroke-width]") as HTMLInputElement;
+			expect(widthSlider?.value).toBe("4");
+
+			const colorInput = container.querySelector("[data-active-stroke-color]") as HTMLInputElement;
+			expect(colorInput?.value).toBe("#00ff00");
+
+			const opacitySlider = container.querySelector("[data-active-stroke-opacity]") as HTMLInputElement;
+			expect(opacitySlider?.value).toBe("75");
+		});
+
+		it("should show scale section when word animation is 'pop'", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 }, active: { scale: 1.5 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
+			expect(scaleSection?.style.display).toBe("");
+
+			const scaleSlider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
+			expect(scaleSlider?.value).toBe("1.5");
+		});
+
+		it("should hide scale section when word animation is not 'pop'", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
+			expect(scaleSection?.style.display).toBe("none");
+		});
+	});
+
+	// ── User Interactions ──────────────────────────────────────────────
+
+	describe("layout controls", () => {
+		it("should call updateClip when max-lines button is clicked", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const btn3 = container.querySelector('[data-caption-max-lines="3"]');
+			simulateClick(btn3);
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({ asset: expect.objectContaining({ maxLines: 3 }) })
+			);
+		});
+	});
+
+	describe("word animation controls", () => {
+		it("should call updateClip when animation style button is clicked", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const popBtn = container.querySelector('[data-caption-word-style="pop"]');
+			simulateClick(popBtn);
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						wordAnimation: expect.objectContaining({ style: "pop" })
+					})
+				})
+			);
+		});
+
+		it("should call updateClip when direction button is clicked", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", speed: 1, direction: "up" } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const leftBtn = container.querySelector('[data-caption-word-direction="left"]');
+			simulateClick(leftBtn);
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						wordAnimation: expect.objectContaining({ direction: "left" })
+					})
+				})
+			);
+		});
+
+		it("should update speed display on slider input", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
+			simulateInput(slider, "1.5");
+
+			const display = container.querySelector("[data-caption-word-speed-value]");
+			expect(display?.textContent).toBe("1.5x");
+		});
+	});
+
+	describe("active word controls", () => {
+		it("should call updateClip when active color changes", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const input = container.querySelector("[data-active-font-color]") as HTMLInputElement;
+			simulateInput(input, "#00ff00");
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						active: expect.objectContaining({
+							font: expect.objectContaining({ color: "#00ff00" })
+						})
+					})
+				})
+			);
+		});
+
+		it("should call updateClip when opacity slider changes", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-active-font-opacity]") as HTMLInputElement;
+			simulateInput(slider, "75");
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						active: expect.objectContaining({
+							font: expect.objectContaining({ opacity: 0.75 })
+						})
+					})
+				})
+			);
+		});
+
+		it("should call updateClip when stroke width slider changes", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-active-stroke-width]") as HTMLInputElement;
+			simulateInput(slider, "5");
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						active: expect.objectContaining({
+							stroke: expect.objectContaining({ width: 5 })
+						})
+					})
+				})
+			);
+		});
+
+		it("should update scale display on slider input", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 }, active: { scale: 1 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
+			simulateInput(slider, "1.5");
+
+			const display = container.querySelector("[data-caption-active-scale-value]");
+			expect(display?.textContent).toBe("1.5x");
+		});
+	});
+
+	// ── StylePanel Override ────────────────────────────────────────────
+
+	describe("createStylePanel override", () => {
+		it("should create a StylePanel with border tab hidden", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+
+			const borderTab = container.querySelector('[data-style-tab="border"]') as HTMLElement;
+			expect(borderTab?.style.display).toBe("none");
+		});
+
+		it("should keep stroke tab visible", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+
+			const strokeTab = container.querySelector('[data-style-tab="stroke"]') as HTMLElement;
+			expect(strokeTab?.style.display).not.toBe("none");
+		});
+	});
+
+	// ── Dispose ────────────────────────────────────────────────────────
+
+	describe("dispose", () => {
+		it("should null all caption-specific refs", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.dispose();
+
+			// After dispose, mounting a new container should work without errors
+			const newContainer = createTestContainer();
+			const { RichCaptionToolbar } = jest.requireActual("../src/core/ui/rich-caption-toolbar") as typeof import("../src/core/ui/rich-caption-toolbar");
+			const newToolbar = new RichCaptionToolbar(mockEdit as never);
+			expect(() => newToolbar.mount(newContainer)).not.toThrow();
+			newToolbar.dispose();
+			cleanupTestContainer(newContainer);
+		});
+	});
+});

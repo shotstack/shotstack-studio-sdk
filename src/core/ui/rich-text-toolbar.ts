@@ -11,7 +11,7 @@ import { BackgroundColorPicker } from "./background-color-picker";
 import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
-import { StylePanel } from "./composites/StylePanel";
+import { StylePanel, type StylePanelOptions } from "./composites/StylePanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { DragStateManager } from "./drag-state-manager";
 import { FontColorPicker } from "./font-color-picker";
@@ -80,8 +80,8 @@ export class RichTextToolbar extends BaseToolbar {
 	private transitionPanel: TransitionPanel | null = null;
 	private effectPopup: HTMLDivElement | null = null;
 	private effectPanel: EffectPanel | null = null;
-	private stylePopup: HTMLDivElement | null = null;
-	private stylePanel: StylePanel | null = null;
+	protected stylePopup: HTMLDivElement | null = null;
+	protected stylePanel: StylePanel | null = null;
 
 	// Merge field label manager (bound to data-merge-path annotated labels)
 	private mergeFieldManager: MergeFieldLabelManager | null = null;
@@ -527,7 +527,7 @@ export class RichTextToolbar extends BaseToolbar {
 		// Mount StylePanel composite (consolidated fill/border/padding/shadow)
 		this.stylePopup = this.container.querySelector("[data-style-popup]");
 		if (this.stylePopup) {
-			this.stylePanel = new StylePanel();
+			this.stylePanel = this.createStylePanel();
 
 			// Phase 1: Capture initial state when drag starts
 			this.stylePanel.onDragStart(() => {
@@ -568,6 +568,27 @@ export class RichTextToolbar extends BaseToolbar {
 						opacity: border.opacity / 100,
 						radius: border.radius
 					});
+				}
+			});
+
+			this.stylePanel.onStrokeChange(stroke => {
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+				const strokeValue = stroke.width > 0
+					? { width: stroke.width, color: stroke.color, opacity: stroke.opacity / 100 }
+					: undefined;
+
+				if (isDragging) {
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = { ...asset, stroke: strokeValue };
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					this.updateClipProperty({ stroke: strokeValue });
 				}
 			});
 
@@ -654,6 +675,14 @@ export class RichTextToolbar extends BaseToolbar {
 								blur: finalState.shadow.blur,
 								color: finalState.shadow.color,
 								opacity: finalState.shadow.opacity / 100
+							}
+						: undefined;
+					// Stroke: persist if width > 0
+					asset["stroke"] = finalState.stroke.width > 0
+						? {
+								width: finalState.stroke.width,
+								color: finalState.stroke.color,
+								opacity: finalState.stroke.opacity / 100
 							}
 						: undefined;
 					// Note: fill is handled by BackgroundColorPicker, not StylePanel
@@ -915,6 +944,14 @@ export class RichTextToolbar extends BaseToolbar {
 			default:
 				break;
 		}
+	}
+
+	/**
+	 * Factory method for StylePanel instantiation.
+	 * Override in subclasses to pass custom options (e.g. hideTabs).
+	 */
+	protected createStylePanel(options: StylePanelOptions = {}): StylePanel {
+		return new StylePanel(options);
 	}
 
 	protected getCurrentAsset(): RichTextAsset | null {
@@ -1710,6 +1747,14 @@ export class RichTextToolbar extends BaseToolbar {
 				blur: shadow?.blur ?? 4,
 				color: shadow?.color ?? "#000000",
 				opacity: shadow ? Math.round((shadow.opacity ?? 1) * 100) : 50
+			});
+
+			// Stroke
+			const { stroke } = asset;
+			this.stylePanel.setStrokeState({
+				width: stroke?.width ?? 0,
+				color: stroke?.color ?? "#000000",
+				opacity: Math.round((stroke?.opacity ?? 1) * 100)
 			});
 
 			// Padding (handled below, needs special normalization)

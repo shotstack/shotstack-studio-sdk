@@ -1,6 +1,6 @@
-import type { Edit } from "@core/edit-session";
 import type { RichCaptionAsset, ResolvedClip } from "@schemas";
 
+import { StylePanel } from "./composites/StylePanel";
 import { RichTextToolbar } from "./rich-text-toolbar";
 
 /**
@@ -15,31 +15,33 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private wordAnimPopup: HTMLDivElement | null = null;
 	private activeWordPopup: HTMLDivElement | null = null;
 
-	// Layout slider refs
-	private maxWidthSlider: HTMLInputElement | null = null;
-	private maxWidthValue: HTMLSpanElement | null = null;
-
 	// Word Animation slider refs
 	private wordAnimSpeedSlider: HTMLInputElement | null = null;
 	private wordAnimSpeedValue: HTMLSpanElement | null = null;
 	private wordAnimDirectionSection: HTMLDivElement | null = null;
 
-	// Active Word control refs
+	// Active-mode scale control
+	private scaleSlider: HTMLInputElement | null = null;
+	private scaleValue: HTMLSpanElement | null = null;
+
+	// Active-word dedicated controls
 	private activeColorInput: HTMLInputElement | null = null;
 	private activeOpacitySlider: HTMLInputElement | null = null;
 	private activeOpacityValue: HTMLSpanElement | null = null;
-	private activeBgColorInput: HTMLInputElement | null = null;
-	private activeScaleSlider: HTMLInputElement | null = null;
-	private activeScaleValue: HTMLSpanElement | null = null;
+	private activeHighlightInput: HTMLInputElement | null = null;
+
+	private activeStrokeWidthSlider: HTMLInputElement | null = null;
+	private activeStrokeWidthValue: HTMLSpanElement | null = null;
+	private activeStrokeColorInput: HTMLInputElement | null = null;
+	private activeStrokeOpacitySlider: HTMLInputElement | null = null;
+	private activeStrokeOpacityValue: HTMLSpanElement | null = null;
 
 	// Current slider values during drag (for final commit)
-	private currentMaxWidth = 0.9;
 	private currentWordAnimSpeed = 1;
-	private currentActiveOpacity = 1;
 	private currentActiveScale = 1;
 
-	constructor(edit: Edit) {
-		super(edit);
+	protected override createStylePanel(): StylePanel {
+		return new StylePanel({ hideTabs: ["border"] });
 	}
 
 	// ─── Lifecycle ─────────────────────────────────────────────────────
@@ -49,12 +51,12 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!this.container) return;
 
 		// Hide rich-text controls irrelevant to captions
-		for (const action of ["text-edit-toggle", "animation-toggle", "transition-toggle", "effect-toggle", "underline", "linethrough"]) {
-			const btn = this.container.querySelector(`[data-action="${action}"]`) as HTMLElement | null;
-			if (!btn) continue;
+		["text-edit-toggle", "animation-toggle", "transition-toggle", "effect-toggle", "align-cycle", "anchor-top", "anchor-middle", "anchor-bottom", "underline", "linethrough"].forEach(action => {
+			const btn = this.container!.querySelector(`[data-action="${action}"]`) as HTMLElement | null;
+			if (!btn) return;
 			const dropdown = btn.closest(".ss-toolbar-dropdown") as HTMLElement | null;
 			(dropdown ?? btn).style.display = "none";
-		}
+		});
 
 		this.injectCaptionControls();
 	}
@@ -64,17 +66,20 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.layoutPopup = null;
 		this.wordAnimPopup = null;
 		this.activeWordPopup = null;
-		this.maxWidthSlider = null;
-		this.maxWidthValue = null;
 		this.wordAnimSpeedSlider = null;
 		this.wordAnimSpeedValue = null;
 		this.wordAnimDirectionSection = null;
+		this.scaleSlider = null;
+		this.scaleValue = null;
 		this.activeColorInput = null;
 		this.activeOpacitySlider = null;
 		this.activeOpacityValue = null;
-		this.activeBgColorInput = null;
-		this.activeScaleSlider = null;
-		this.activeScaleValue = null;
+		this.activeHighlightInput = null;
+		this.activeStrokeWidthSlider = null;
+		this.activeStrokeWidthValue = null;
+		this.activeStrokeColorInput = null;
+		this.activeStrokeOpacitySlider = null;
+		this.activeStrokeOpacityValue = null;
 	}
 
 	// ─── Overrides ─────────────────────────────────────────────────────
@@ -93,9 +98,11 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			case "caption-word-anim-toggle":
 				this.togglePopup(this.wordAnimPopup);
 				return;
-			case "caption-active-word-toggle":
+			case "active-word-toggle":
 				this.togglePopup(this.activeWordPopup);
 				return;
+			default:
+				break;
 		}
 
 		super.handleClick(e);
@@ -112,15 +119,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!asset) return;
 
 		// ─── Layout ────────────────────────────────────────
-		const position = asset.position ?? "bottom";
-		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-position]").forEach(btn => {
-			this.setButtonActive(btn, btn.dataset["captionPosition"] === position);
-		});
-
-		const maxWidth = asset.maxWidth ?? 0.9;
-		if (this.maxWidthSlider) this.maxWidthSlider.value = String(maxWidth);
-		if (this.maxWidthValue) this.maxWidthValue.textContent = `${Math.round(maxWidth * 100)}%`;
-
 		const maxLines = asset.maxLines ?? 2;
 		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-max-lines]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["captionMaxLines"] === String(maxLines));
@@ -146,18 +144,30 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.setButtonActive(btn, btn.dataset["captionWordDirection"] === direction);
 		});
 
-		// ─── Active Word ───────────────────────────────────
-		if (this.activeColorInput) this.activeColorInput.value = asset.active?.font?.color ?? "#ffff00";
+		// ─── Active Word Controls ───────────────────────────
+		const activeData = asset.active;
 
-		const opacity = asset.active?.font?.opacity ?? 1;
+		if (this.activeColorInput) this.activeColorInput.value = activeData?.font?.color ?? "#ffff00";
+		const opacity = Math.round((activeData?.font?.opacity ?? 1) * 100);
 		if (this.activeOpacitySlider) this.activeOpacitySlider.value = String(opacity);
-		if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
+		if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${opacity}%`;
+		if (this.activeHighlightInput)
+			this.activeHighlightInput.value = ((activeData?.font as Record<string, unknown> | undefined)?.["background"] as string) ?? "#000000";
 
-		if (this.activeBgColorInput) this.activeBgColorInput.value = asset.active?.font?.background ?? "#000000";
+		if (this.activeStrokeWidthSlider) this.activeStrokeWidthSlider.value = String(activeData?.stroke?.width ?? 0);
+		if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = String(activeData?.stroke?.width ?? 0);
+		if (this.activeStrokeColorInput) this.activeStrokeColorInput.value = activeData?.stroke?.color ?? "#000000";
+		const strokeOpacity = Math.round((activeData?.stroke?.opacity ?? 1) * 100);
+		if (this.activeStrokeOpacitySlider) this.activeStrokeOpacitySlider.value = String(strokeOpacity);
+		if (this.activeStrokeOpacityValue) this.activeStrokeOpacityValue.textContent = `${strokeOpacity}%`;
 
-		const scale = asset.active?.scale ?? 1;
-		if (this.activeScaleSlider) this.activeScaleSlider.value = String(scale);
-		if (this.activeScaleValue) this.activeScaleValue.textContent = `${scale.toFixed(1)}x`;
+		const scale = activeData?.scale ?? 1;
+		if (this.scaleSlider) this.scaleSlider.value = String(scale);
+		if (this.scaleValue) this.scaleValue.textContent = `${scale.toFixed(1)}x`;
+
+		// Show scale section only when word animation is "pop"
+		const scaleSection = this.container?.querySelector("[data-caption-scale-section]") as HTMLElement | null;
+		if (scaleSection) scaleSection.style.display = animStyle === "pop" ? "" : "none";
 	}
 
 	// ─── Caption Asset Helper ──────────────────────────────────────────
@@ -181,21 +191,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			<button data-action="caption-layout-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Caption layout">Layout</button>
 			<div data-caption-layout-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Position</div>
-					<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
-						<button class="ss-toolbar-anchor-btn" data-caption-position="top">Top</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-position="center">Center</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-position="bottom">Bottom</button>
-					</div>
-				</div>
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Max Width</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-caption-max-width class="ss-toolbar-slider" min="0.1" max="1" step="0.05" value="0.9" />
-						<span data-caption-max-width-value class="ss-toolbar-popup-value">90%</span>
-					</div>
-				</div>
-				<div class="ss-toolbar-popup-section">
 					<div class="ss-toolbar-popup-label">Max Lines</div>
 					<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
 						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="1">1</button>
@@ -207,8 +202,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			</div>
 		`;
 		this.layoutPopup = layoutDropdown.querySelector("[data-caption-layout-popup]");
-		this.maxWidthSlider = layoutDropdown.querySelector("[data-caption-max-width]");
-		this.maxWidthValue = layoutDropdown.querySelector("[data-caption-max-width-value]");
 		fragment.appendChild(layoutDropdown);
 
 		// ── Word Animation Group ───────────────────────────
@@ -254,34 +247,50 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.wordAnimDirectionSection = wordAnimDropdown.querySelector("[data-caption-word-direction-section]");
 		fragment.appendChild(wordAnimDropdown);
 
-		// ── Active Word Group ──────────────────────────────
+		// ── Active Word Dropdown ──────────────────────────
 		const activeWordDropdown = document.createElement("div");
 		activeWordDropdown.className = "ss-toolbar-dropdown";
 		activeWordDropdown.innerHTML = `
-			<button data-action="caption-active-word-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Active word style">Active</button>
-			<div data-caption-active-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+			<button data-action="active-word-toggle"
+				class="ss-toolbar-btn ss-toolbar-btn--text-edit"
+				title="Active word style">Active Word</button>
+			<div data-active-word-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
 				<div class="ss-toolbar-popup-section">
 					<div class="ss-toolbar-popup-label">Color</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="color" data-caption-active-color value="#ffff00"
-							style="width:32px;height:24px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:none;cursor:pointer;padding:0;" />
-					</div>
+					<input type="color" data-active-font-color value="#ffff00" class="ss-font-color-input" />
 				</div>
 				<div class="ss-toolbar-popup-section">
 					<div class="ss-toolbar-popup-label">Opacity</div>
 					<div class="ss-toolbar-popup-row">
-						<input type="range" data-caption-active-opacity class="ss-toolbar-slider" min="0" max="1" step="0.05" value="1" />
-						<span data-caption-active-opacity-value class="ss-toolbar-popup-value">100%</span>
+						<input type="range" data-active-font-opacity class="ss-toolbar-slider" min="0" max="100" value="100" />
+						<span data-active-font-opacity-value class="ss-toolbar-popup-value">100%</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Background</div>
+					<div class="ss-toolbar-popup-label">Highlight</div>
+					<input type="color" data-active-font-highlight value="#000000" class="ss-font-color-input" />
+				</div>
+				<div class="ss-toolbar-popup-divider"></div>
+				<div class="ss-toolbar-popup-section">
+					<div class="ss-toolbar-popup-label">Stroke Width</div>
 					<div class="ss-toolbar-popup-row">
-						<input type="color" data-caption-active-bg value="#000000"
-							style="width:32px;height:24px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:none;cursor:pointer;padding:0;" />
+						<input type="range" data-active-stroke-width class="ss-toolbar-slider" min="0" max="10" step="1" value="0" />
+						<span data-active-stroke-width-value class="ss-toolbar-popup-value">0</span>
 					</div>
 				</div>
 				<div class="ss-toolbar-popup-section">
+					<div class="ss-toolbar-popup-label">Stroke Color</div>
+					<input type="color" data-active-stroke-color value="#000000" class="ss-font-color-input" />
+				</div>
+				<div class="ss-toolbar-popup-section">
+					<div class="ss-toolbar-popup-label">Stroke Opacity</div>
+					<div class="ss-toolbar-popup-row">
+						<input type="range" data-active-stroke-opacity class="ss-toolbar-slider" min="0" max="100" value="100" />
+						<span data-active-stroke-opacity-value class="ss-toolbar-popup-value">100%</span>
+					</div>
+				</div>
+				<div data-caption-scale-section class="ss-toolbar-popup-section" style="display: none;">
+					<div class="ss-toolbar-popup-divider"></div>
 					<div class="ss-toolbar-popup-label">Scale</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-caption-active-scale class="ss-toolbar-slider" min="0.5" max="2" step="0.05" value="1" />
@@ -290,51 +299,32 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				</div>
 			</div>
 		`;
-		this.activeWordPopup = activeWordDropdown.querySelector("[data-caption-active-popup]");
-		this.activeColorInput = activeWordDropdown.querySelector("[data-caption-active-color]");
-		this.activeOpacitySlider = activeWordDropdown.querySelector("[data-caption-active-opacity]");
-		this.activeOpacityValue = activeWordDropdown.querySelector("[data-caption-active-opacity-value]");
-		this.activeBgColorInput = activeWordDropdown.querySelector("[data-caption-active-bg]");
-		this.activeScaleSlider = activeWordDropdown.querySelector("[data-caption-active-scale]");
-		this.activeScaleValue = activeWordDropdown.querySelector("[data-caption-active-scale-value]");
+		this.activeWordPopup = activeWordDropdown.querySelector("[data-active-word-popup]");
+		this.activeColorInput = activeWordDropdown.querySelector("[data-active-font-color]");
+		this.activeOpacitySlider = activeWordDropdown.querySelector("[data-active-font-opacity]");
+		this.activeOpacityValue = activeWordDropdown.querySelector("[data-active-font-opacity-value]");
+		this.activeHighlightInput = activeWordDropdown.querySelector("[data-active-font-highlight]");
+		this.activeStrokeWidthSlider = activeWordDropdown.querySelector("[data-active-stroke-width]");
+		this.activeStrokeWidthValue = activeWordDropdown.querySelector("[data-active-stroke-width-value]");
+		this.activeStrokeColorInput = activeWordDropdown.querySelector("[data-active-stroke-color]");
+		this.activeStrokeOpacitySlider = activeWordDropdown.querySelector("[data-active-stroke-opacity]");
+		this.activeStrokeOpacityValue = activeWordDropdown.querySelector("[data-active-stroke-opacity-value]");
+		this.scaleSlider = activeWordDropdown.querySelector("[data-caption-active-scale]");
+		this.scaleValue = activeWordDropdown.querySelector("[data-caption-active-scale-value]");
 		fragment.appendChild(activeWordDropdown);
 
 		this.container.appendChild(fragment);
 
 		this.wireLayoutControls(layoutDropdown);
 		this.wireWordAnimControls(wordAnimDropdown);
-		this.wireActiveWordControls();
+		this.wireScaleControl();
+		this.wireActiveColorControls();
+		this.wireActiveStrokeControls();
 	}
 
 	// ─── Layout Wiring ─────────────────────────────────────────────────
 
 	private wireLayoutControls(root: HTMLElement): void {
-		// Position buttons (discrete command)
-		root.querySelectorAll<HTMLButtonElement>("[data-caption-position]").forEach(btn => {
-			btn.addEventListener("click", () => {
-				const pos = btn.dataset["captionPosition"];
-				if (pos) this.updateClipProperty({ position: pos });
-			});
-		});
-
-		// Max Width slider (two-phase drag)
-		this.maxWidthSlider?.addEventListener("pointerdown", () => {
-			const state = this.captureClipState();
-			if (state) this.dragManager.start("caption-max-width", state.clipId, state.initialState);
-		});
-		this.maxWidthSlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value);
-			this.currentMaxWidth = value;
-			if (this.maxWidthValue) this.maxWidthValue.textContent = `${Math.round(value * 100)}%`;
-			this.liveCaptionUpdate(asset => ({ ...asset, maxWidth: value }));
-		});
-		this.maxWidthSlider?.addEventListener("change", () => {
-			this.commitCaptionDrag("caption-max-width", a => {
-				a["maxWidth"] = this.currentMaxWidth;
-			});
-		});
-
-		// Max Lines buttons (discrete command)
 		root.querySelectorAll<HTMLButtonElement>("[data-caption-max-lines]").forEach(btn => {
 			btn.addEventListener("click", () => {
 				const lines = parseInt(btn.dataset["captionMaxLines"]!, 10);
@@ -374,7 +364,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.commitCaptionDrag("caption-word-speed", a => {
 				const wa = { ...((a["wordAnimation"] as Record<string, unknown>) ?? {}) };
 				wa["speed"] = this.currentWordAnimSpeed;
-				a["wordAnimation"] = wa;
+				a["wordAnimation"] = wa; // eslint-disable-line no-param-reassign -- mutating structuredClone
 			});
 		});
 
@@ -389,79 +379,92 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		});
 	}
 
-	// ─── Active Word Wiring ────────────────────────────────────────────
+	// ─── Scale Wiring (active mode) ───────────────────────────────────
 
-	private wireActiveWordControls(): void {
-		// Color (discrete command on change)
-		this.activeColorInput?.addEventListener("change", () => {
-			const color = this.activeColorInput!.value;
-			const asset = this.getCaptionAsset();
-			this.updateClipProperty({
-				active: { ...(asset?.active ?? {}), font: { ...(asset?.active?.font ?? {}), color } }
-			});
-		});
-
-		// Opacity slider (two-phase drag)
-		this.activeOpacitySlider?.addEventListener("pointerdown", () => {
-			const state = this.captureClipState();
-			if (state) this.dragManager.start("caption-active-opacity", state.clipId, state.initialState);
-		});
-		this.activeOpacitySlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value);
-			this.currentActiveOpacity = value;
-			if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${Math.round(value * 100)}%`;
-			this.liveCaptionUpdate(asset => ({
-				...asset,
-				active: { ...(asset.active ?? {}), font: { ...(asset.active?.font ?? {}), opacity: value } }
-			}));
-		});
-		this.activeOpacitySlider?.addEventListener("change", () => {
-			this.commitCaptionDrag("caption-active-opacity", a => {
-				const active = { ...((a["active"] as Record<string, unknown>) ?? {}) };
-				const font = { ...((active["font"] as Record<string, unknown>) ?? {}) };
-				font["opacity"] = this.currentActiveOpacity;
-				active["font"] = font;
-				a["active"] = active;
-			});
-		});
-
-		// Background color (discrete command on change)
-		this.activeBgColorInput?.addEventListener("change", () => {
-			const bg = this.activeBgColorInput!.value;
-			const asset = this.getCaptionAsset();
-			this.updateClipProperty({
-				active: { ...(asset?.active ?? {}), font: { ...(asset?.active?.font ?? {}), background: bg } }
-			});
-		});
-
-		// Scale slider (two-phase drag)
-		this.activeScaleSlider?.addEventListener("pointerdown", () => {
+	private wireScaleControl(): void {
+		this.scaleSlider?.addEventListener("pointerdown", () => {
 			const state = this.captureClipState();
 			if (state) this.dragManager.start("caption-active-scale", state.clipId, state.initialState);
 		});
-		this.activeScaleSlider?.addEventListener("input", e => {
+		this.scaleSlider?.addEventListener("input", e => {
 			const value = parseFloat((e.target as HTMLInputElement).value);
 			this.currentActiveScale = value;
-			if (this.activeScaleValue) this.activeScaleValue.textContent = `${value.toFixed(1)}x`;
+			if (this.scaleValue) this.scaleValue.textContent = `${value.toFixed(1)}x`;
 			this.liveCaptionUpdate(asset => ({
 				...asset,
 				active: { ...(asset.active ?? {}), scale: value }
 			}));
 		});
-		this.activeScaleSlider?.addEventListener("change", () => {
+		this.scaleSlider?.addEventListener("change", () => {
 			this.commitCaptionDrag("caption-active-scale", a => {
 				const active = { ...((a["active"] as Record<string, unknown>) ?? {}) };
 				active["scale"] = this.currentActiveScale;
-				a["active"] = active;
+				a["active"] = active; // eslint-disable-line no-param-reassign -- mutating structuredClone
 			});
+		});
+	}
+
+	// ─── Active Color Wiring ──────────────────────────────────────────
+
+	private wireActiveColorControls(): void {
+		this.activeColorInput?.addEventListener("input", () => {
+			const color = this.activeColorInput!.value;
+			const asset = this.getCaptionAsset();
+			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+			const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+			currentFont["color"] = color;
+			this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+		});
+
+		this.activeOpacitySlider?.addEventListener("input", () => {
+			const opacity = parseInt(this.activeOpacitySlider!.value, 10) / 100;
+			if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
+			const asset = this.getCaptionAsset();
+			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+			const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+			currentFont["opacity"] = opacity;
+			this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+		});
+
+		this.activeHighlightInput?.addEventListener("input", () => {
+			const background = this.activeHighlightInput!.value;
+			const asset = this.getCaptionAsset();
+			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+			const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+			currentFont["background"] = background;
+			this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+		});
+	}
+
+	// ─── Active Stroke Wiring ─────────────────────────────────────────
+
+	private wireActiveStrokeControls(): void {
+		const writeStroke = () => {
+			const width = parseInt(this.activeStrokeWidthSlider?.value ?? "0", 10);
+			const color = this.activeStrokeColorInput?.value ?? "#000000";
+			const opacity = parseInt(this.activeStrokeOpacitySlider?.value ?? "100", 10) / 100;
+
+			const asset = this.getCaptionAsset();
+			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+			const strokeValue = width > 0 ? { width, color, opacity } : undefined;
+			this.updateClipProperty({ active: { ...currentActive, stroke: strokeValue } });
+		};
+
+		this.activeStrokeWidthSlider?.addEventListener("input", () => {
+			if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = this.activeStrokeWidthSlider!.value;
+			writeStroke();
+		});
+
+		this.activeStrokeColorInput?.addEventListener("input", writeStroke);
+
+		this.activeStrokeOpacitySlider?.addEventListener("input", () => {
+			if (this.activeStrokeOpacityValue) this.activeStrokeOpacityValue.textContent = `${this.activeStrokeOpacitySlider!.value}%`;
+			writeStroke();
 		});
 	}
 
 	// ─── Two-Phase Drag Helpers ────────────────────────────────────────
 
-	/**
-	 * Live-update the caption asset during a slider drag (no undo command).
-	 */
 	private liveCaptionUpdate(mutate: (asset: RichCaptionAsset) => Record<string, unknown>): void {
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clipId) return;
@@ -472,9 +475,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.edit.resolveClip(clipId);
 	}
 
-	/**
-	 * End a drag session and commit a single undo command.
-	 */
 	private commitCaptionDrag(controlId: string, applyFinal: (asset: Record<string, unknown>) => void): void {
 		const session = this.dragManager.end(controlId);
 		if (!session) return;

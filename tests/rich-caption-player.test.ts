@@ -259,10 +259,10 @@ describe("RichCaptionPlayer", () => {
 		global.fetch = mockFetch as unknown as typeof fetch;
 
 		// Mock FontFace
-		(global as Record<string, unknown>).FontFace = jest.fn().mockImplementation(() => ({
+		(global as Record<string, unknown>)["FontFace"] = jest.fn().mockImplementation(() => ({
 			load: jest.fn().mockResolvedValue(undefined)
 		}));
-		(document as Record<string, unknown>).fonts = {
+		(document as unknown as Record<string, unknown>)["fonts"] = {
 			add: jest.fn()
 		};
 	});
@@ -272,8 +272,8 @@ describe("RichCaptionPlayer", () => {
 			const edit = createMockEdit();
 			const clip = createClip(createAsset(), { fit: "cover" } as Partial<ResolvedClip>);
 			const player = new RichCaptionPlayer(edit, clip);
-			// @ts-expect-error accessing private property
-			expect(player.clipConfiguration.fit).toBeUndefined();
+			expect((player as unknown as Record<string, unknown>)["clipConfiguration"]).toBeDefined();
+			expect((player as unknown as { clipConfiguration: Record<string, unknown> }).clipConfiguration["fit"]).toBeUndefined();
 		});
 
 		it("loads successfully with valid inline words", async () => {
@@ -448,7 +448,7 @@ describe("RichCaptionPlayer", () => {
 			mockGenerateRichCaptionFrame.mockClear();
 			mockPainterRender.mockClear();
 
-			(edit as Record<string, unknown>).playbackTime = 0.2;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.2;
 			player.update(0.016, 0.2);
 
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(1);
@@ -461,10 +461,10 @@ describe("RichCaptionPlayer", () => {
 
 			mockGenerateRichCaptionFrame.mockClear();
 
-			(edit as Record<string, unknown>).playbackTime = 0.2;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.2;
 			player.update(0.016, 0.2);
 
-			(edit as Record<string, unknown>).playbackTime = 0.6;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.6;
 			player.update(0.016, 0.6);
 
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(2);
@@ -480,7 +480,7 @@ describe("RichCaptionPlayer", () => {
 
 			mockGenerateRichCaptionFrame.mockClear();
 
-			(edit as Record<string, unknown>).playbackTime = 0.1;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.1;
 			player.update(0.016, 0.1);
 			player.update(0.016, 0.116);
 
@@ -495,13 +495,13 @@ describe("RichCaptionPlayer", () => {
 			mockGenerateRichCaptionFrame.mockClear();
 			mockPainterRender.mockClear();
 
-			(edit as Record<string, unknown>).playbackTime = 0.5;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.5;
 			player.update(0.016, 0.5);
 
-			(edit as Record<string, unknown>).playbackTime = 1.0;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 1.0;
 			player.update(0.016, 1.0);
 
-			(edit as Record<string, unknown>).playbackTime = 1.5;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 1.5;
 			player.update(0.016, 1.5);
 
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(3);
@@ -515,7 +515,7 @@ describe("RichCaptionPlayer", () => {
 
 			mockGenerateRichCaptionFrame.mockClear();
 
-			(edit as Record<string, unknown>).playbackTime = 1.0;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 1.0;
 			player.update(0.016, 1.0);
 
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(1);
@@ -572,8 +572,8 @@ describe("RichCaptionPlayer", () => {
 		it("falls back to edit size when clip has no dimensions", () => {
 			const edit = createMockEdit();
 			const clip = createClip(createAsset());
-			delete (clip as Record<string, unknown>).width;
-			delete (clip as Record<string, unknown>).height;
+			delete (clip as Record<string, unknown>)["width"];
+			delete (clip as Record<string, unknown>)["height"];
 
 			const player = new RichCaptionPlayer(edit, clip);
 			const size = player.getSize();
@@ -669,7 +669,7 @@ describe("RichCaptionPlayer", () => {
 
 		it("does not render when not active", async () => {
 			const edit = createMockEdit();
-			(edit as Record<string, unknown>).playbackTime = -1;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = -1;
 
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
 			await player.load();
@@ -685,7 +685,7 @@ describe("RichCaptionPlayer", () => {
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
 
 			// Don't call load - update should be a no-op
-			(edit as Record<string, unknown>).playbackTime = 0.5;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.5;
 			player.update(0.016, 0.5);
 
 			expect(mockGenerateRichCaptionFrame).not.toHaveBeenCalled();
@@ -724,10 +724,10 @@ describe("RichCaptionPlayer", () => {
 			const pixi = jest.requireMock("pixi.js") as { Texture: { from: jest.Mock } };
 			const fromCallCount = pixi.Texture.from.mock.calls.length;
 
-			(edit as Record<string, unknown>).playbackTime = 0.2;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.2;
 			player.update(0.016, 0.2);
 
-			(edit as Record<string, unknown>).playbackTime = 0.4;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.4;
 			player.update(0.016, 0.4);
 
 			
@@ -745,7 +745,7 @@ describe("RichCaptionPlayer", () => {
 				activeWordIndex: -1
 			});
 
-			(edit as Record<string, unknown>).playbackTime = 5.0;
+			(edit as unknown as Record<string, unknown>)["playbackTime"] = 5.0;
 			player.update(0.016, 5.0);
 
 			// @ts-expect-error accessing private property
@@ -775,7 +775,7 @@ describe("RichCaptionPlayer", () => {
 			player.onDimensionsChanged();
 
 			// Wait for async layout
-			await new Promise(resolve => setTimeout(resolve, 10));
+			await new Promise(resolve => { setTimeout(resolve, 10); });
 
 			expect(mockLayoutCaption.mock.calls.length).toBe(layoutCallsBefore + 1);
 		});

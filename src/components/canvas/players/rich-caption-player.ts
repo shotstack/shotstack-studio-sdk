@@ -399,8 +399,7 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number): CaptionLayoutConfig {
-		const font = asset.font;
-		const style = asset.style;
+		const { font, style } = asset;
 
 		return {
 			frameWidth,
