@@ -458,10 +458,6 @@ describe("Edit Timing Integration", () => {
 		});
 		await edit.load();
 
-		// Delete the initial minimal clip so timing tests start with a clean slate
-		// Schema validation happens at load time; runtime state can be empty
-		edit.deleteClip(0, 0);
-
 		events = edit.getInternalEvents();
 		emitSpy = jest.spyOn(events, "emit");
 	});
@@ -472,18 +468,18 @@ describe("Edit Timing Integration", () => {
 	});
 
 	describe("start: 'auto' resolution", () => {
-		it("first clip with auto start resolves to 0ms", async () => {
-			// When adding a clip with start: "auto", it defaults to 0 for first clip
+		it("clip with auto start resolves to end of previous clip", async () => {
+			// Auto start resolves to end of previous clip (initial image: 0-1s)
 			await edit.addClip(0, createVideoClip("auto", 5));
 
-			const clip = edit.getPlayerClip(0, 0);
-			expect(clip?.getStart()).toBe(0);
+			const clip = edit.getPlayerClip(0, 1);
+			expect(clip?.getStart()).toBe(1);
 		});
 
 		it("preserves timing intent for auto start clips", async () => {
 			await edit.addClip(0, createVideoClip("auto", 5));
 
-			const clip = edit.getPlayerClip(0, 0);
+			const clip = edit.getPlayerClip(0, 1);
 			expect(clip?.getTimingIntent().start).toBe("auto");
 		});
 
@@ -500,14 +496,14 @@ describe("Edit Timing Integration", () => {
 		it("defaults to 3s for text assets without duration", async () => {
 			await edit.addClip(0, createTextClip(0, "auto"));
 
-			const clip = edit.getPlayerClip(0, 0);
+			const clip = edit.getPlayerClip(0, 1);
 			expect(clip?.getLength()).toBe(3);
 		});
 
 		it("preserves timing intent for auto length clips", async () => {
 			await edit.addClip(0, createTextClip(0, "auto"));
 
-			const clip = edit.getPlayerClip(0, 0);
+			const clip = edit.getPlayerClip(0, 1);
 			expect(clip?.getTimingIntent().length).toBe("auto");
 		});
 	});
@@ -542,7 +538,7 @@ describe("Edit Timing Integration", () => {
 			const { endLengthClips: before } = getEditState(edit);
 			expect(before.length).toBe(1);
 
-			edit.deleteClip(0, 0);
+			edit.deleteClip(0, 1);
 
 			const { endLengthClips: after } = getEditState(edit);
 			expect(after.length).toBe(0);
@@ -570,9 +566,9 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createVideoClip("auto", 5));
 
 			// Updating other properties shouldn't change timing intent
-			edit.updateClip(0, 0, { opacity: 0.5 });
+			edit.updateClip(0, 1, { opacity: 0.5 });
 
-			const clip = edit.getPlayerClip(0, 0);
+			const clip = edit.getPlayerClip(0, 1);
 			expect(clip?.getTimingIntent().start).toBe("auto");
 		});
 	});
@@ -585,8 +581,8 @@ describe("Edit Timing Integration", () => {
 			expect(edit.totalDuration).toBe(8); // in seconds
 		});
 
-		it("duration is 0 with no clips", () => {
-			expect(edit.totalDuration).toBe(0);
+		it("duration reflects initial clip", () => {
+			expect(edit.totalDuration).toBe(1);
 		});
 
 		it("duration updates when clip is deleted", async () => {
@@ -608,24 +604,24 @@ describe("Edit Timing Integration", () => {
 		it("first clip with auto start resolves to 0 after updateClipTiming", async () => {
 			// Add clip with manual start at 5s
 			await edit.addClip(0, createVideoClip(5, 3));
-			expect(edit.getPlayerClip(0, 0)?.getStart()).toBe(5);
+			expect(edit.getPlayerClip(0, 1)?.getStart()).toBe(5);
 
 			// Change to auto start via updateClipTiming
-			edit.updateClipTiming(0, 0, { start: "auto" });
+			edit.updateClipTiming(0, 1, { start: "auto" });
 
-			// Should resolve to 0 (first clip on track)
-			expect(edit.getPlayerClip(0, 0)?.getStart()).toBe(0);
+			// Should resolve to 0 (first added clip, auto resolves after initial image)
+			expect(edit.getPlayerClip(0, 1)?.getStart()).toBe(1);
 		});
 
 		it("second clip with auto start resolves to end of first clip", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
 			await edit.addClip(0, createVideoClip(10, 3)); // Manual start at 10s
 
-			// Change second clip to auto start
-			edit.updateClipTiming(0, 1, { start: "auto" });
+			// Change third clip to auto start
+			edit.updateClipTiming(0, 2, { start: "auto" });
 
-			// Should resolve to 5 (end of first clip)
-			expect(edit.getPlayerClip(0, 1)?.getStart()).toBe(5);
+			// Should resolve to 5 (end of second clip: video 0-5s)
+			expect(edit.getPlayerClip(0, 2)?.getStart()).toBe(5);
 		});
 	});
 
@@ -633,10 +629,10 @@ describe("Edit Timing Integration", () => {
 		it("clipConfiguration.length updates after auto length resolution", async () => {
 			// Add text clip with manual length 5s
 			await edit.addClip(0, createTextClip(0, 5));
-			expect(edit.getPlayerClip(0, 0)?.clipConfiguration.length).toBe(5);
+			expect(edit.getPlayerClip(0, 1)?.clipConfiguration.length).toBe(5);
 
 			// Change to auto length
-			edit.updateClipTiming(0, 0, { length: "auto" });
+			edit.updateClipTiming(0, 1, { length: "auto" });
 
 			// Wait for async resolution
 			await new Promise(resolve => {
@@ -644,7 +640,7 @@ describe("Edit Timing Integration", () => {
 			});
 
 			// clipConfiguration.length should now be 3 (default for text)
-			const clip = edit.getPlayerClip(0, 0);
+			const clip = edit.getPlayerClip(0, 1);
 			expect(clip?.clipConfiguration.length).toBe(3);
 		});
 
@@ -670,7 +666,7 @@ describe("Edit Timing Integration", () => {
 			emitSpy.mockClear();
 
 			// Change length from 5s to 3s (use Seconds branded type)
-			edit.updateClipTiming(0, 0, { length: sec(3) });
+			edit.updateClipTiming(0, 1, { length: sec(3) });
 
 			const clipUpdatedCalls = emitSpy.mock.calls.filter(call => call[0] === "clip:updated");
 			expect(clipUpdatedCalls.length).toBeGreaterThan(0);
@@ -707,13 +703,13 @@ describe("Edit Timing Integration", () => {
 
 			// Second clip initially at 0
 			await edit.addClip(0, createTextClip(0, 3));
-			expect(edit.getPlayerClip(0, 1)?.getStart()).toBe(0);
+			expect(edit.getPlayerClip(0, 2)?.getStart()).toBe(0);
 
 			// Change to auto start
-			edit.updateClipTiming(0, 1, { start: "auto" });
+			edit.updateClipTiming(0, 2, { start: "auto" });
 
-			// Should now be at 5s (after first clip)
-			const secondClip = edit.getPlayerClip(0, 1);
+			// Should now be at 5s (after video clip 0-5s)
+			const secondClip = edit.getPlayerClip(0, 2);
 			expect(secondClip?.getStart()).toBe(5);
 			expect(secondClip?.getEnd()).toBe(8);
 		});
@@ -726,11 +722,11 @@ describe("Edit Timing Integration", () => {
 			await edit.addClip(0, createTextClip(0, 3));
 
 			// Change to auto start AND end length in one call
-			edit.updateClipTiming(0, 1, { start: "auto", length: "end" });
+			edit.updateClipTiming(0, 2, { start: "auto", length: "end" });
 
-			const endClip = edit.getPlayerClip(0, 1);
+			const endClip = edit.getPlayerClip(0, 2);
 
-			// KEY TEST: Start should be 5s (after first clip)
+			// KEY TEST: Start should be 5s (after video clip 0-5s)
 			// This verifies that start is resolved BEFORE length calculations
 			expect(endClip?.getStart()).toBe(5);
 

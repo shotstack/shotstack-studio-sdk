@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.2] - 2026-03-04
+
+### Fixed
+
+- Prevent deletion of the last clip in a document.
+
 ## [2.0.1] - 2026-02-24
 
 ### Fixed
