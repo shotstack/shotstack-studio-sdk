@@ -44,6 +44,9 @@ export class AudioPlayer extends Player {
 		const baseVolume = typeof audioClipConfiguration.volume === "number" ? audioClipConfiguration.volume : 1;
 		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioClipConfiguration, baseVolume), this.getLength(), baseVolume);
 
+		// Set initial volume immediately so the Howl never sits at the default of 1.0
+		this.audioResource.volume(this.getVolume());
+
 		this.configureKeyframes();
 	}
 
@@ -67,7 +70,7 @@ export class AudioPlayer extends Player {
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-				// playbackTime is already in seconds
+				this.audioResource.volume(this.getVolume());
 				this.audioResource.seek(playbackTime + trim);
 				this.audioResource.play();
 			}
