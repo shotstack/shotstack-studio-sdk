@@ -8,6 +8,7 @@ import { ImagePlayer } from "./image-player";
 import { ImageToVideoPlayer } from "./image-to-video-player";
 import { LumaPlayer } from "./luma-player";
 import type { Player } from "./player";
+import { RichCaptionPlayer } from "./rich-caption-player";
 import { RichTextPlayer } from "./rich-text-player";
 import { ShapePlayer } from "./shape-player";
 import { SvgPlayer } from "./svg-player";
@@ -44,6 +45,8 @@ export class PlayerFactory {
 				return new LumaPlayer(edit, clipConfiguration);
 			case "caption":
 				return new CaptionPlayer(edit, clipConfiguration);
+			case "rich-caption":
+				return new RichCaptionPlayer(edit, clipConfiguration);
 			case "svg":
 				return new SvgPlayer(edit, clipConfiguration);
 			case "text-to-image":
