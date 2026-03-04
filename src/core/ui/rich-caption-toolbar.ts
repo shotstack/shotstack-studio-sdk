@@ -40,7 +40,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private currentActiveScale = 1;
 
 	protected override createStylePanel(): StylePanel {
-		return new StylePanel({ hideTabs: ["border"] });
+		return new StylePanel({});
 	}
 
 	// ─── Lifecycle ─────────────────────────────────────────────────────

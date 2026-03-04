@@ -1,6 +1,7 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath, getFontDisplayName } from "@core/fonts/font-config";
+import { extractFontNames, isGoogleFontUrl } from "@core/fonts/font-utils";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichCaptionAssetSchema, type RichCaptionAsset, type ResolvedClip } from "@schemas";
 import {
@@ -23,19 +24,6 @@ const SOFT_WORD_LIMIT = 1500;
 const HARD_WORD_LIMIT = 5000;
 const SUBTITLE_FETCH_TIMEOUT_MS = 10_000;
 
-const extractFontNames = (url: string): { full: string; base: string } => {
-	const filename = url.split("/").pop() || "";
-	const withoutExtension = filename.replace(/\.(ttf|otf|woff|woff2)$/i, "");
-	const baseFamily = withoutExtension.replace(/-(Bold|Light|Regular|Italic|Medium|SemiBold|Black|Thin|ExtraLight|ExtraBold|Heavy)$/i, "");
-
-	return {
-		full: withoutExtension,
-		base: baseFamily
-	};
-};
-
-const isGoogleFontUrl = (url: string): boolean => url.includes("fonts.gstatic.com");
-
 export class RichCaptionPlayer extends Player {
 	private fontRegistry: FontRegistry | null = null;
 	private layoutEngine: CaptionLayoutEngine | null = null;
@@ -52,6 +40,8 @@ export class RichCaptionPlayer extends Player {
 	private loadComplete: boolean = false;
 
 	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
+	private lastRegisteredFontKey: string = "";
+	private pendingLayoutId: number = 0;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		const { fit, ...configWithoutFit } = clipConfiguration;
@@ -73,6 +63,7 @@ export class RichCaptionPlayer extends Player {
 			let words: WordTiming[];
 			if (richCaptionAsset.src) {
 				words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
+				(richCaptionAsset as Record<string, unknown>)['pauseThreshold'] = 5;
 			} else {
 				words = ((richCaptionAsset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map((w: WordTiming) => ({
 					text: w.text,
@@ -107,6 +98,7 @@ export class RichCaptionPlayer extends Player {
 
 			this.fontRegistry = await FontRegistry.getSharedInstance();
 			await this.registerFonts(richCaptionAsset);
+			this.lastRegisteredFontKey = `${richCaptionAsset.font?.family ?? "Roboto"}|${richCaptionAsset.font?.weight ?? 400}`;
 
 			this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
 
@@ -161,7 +153,11 @@ export class RichCaptionPlayer extends Player {
 		try {
 			const asset = this.clipConfiguration.asset as RichCaptionAsset;
 
-			await this.registerFonts(asset);
+			const fontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
+			if (fontKey !== this.lastRegisteredFontKey) {
+				await this.registerFonts(asset);
+				this.lastRegisteredFontKey = fontKey;
+			}
 
 			const canvasPayload = this.buildCanvasPayload(asset, this.words);
 			const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
@@ -205,19 +201,16 @@ export class RichCaptionPlayer extends Player {
 
 			this.painter.render(ops);
 
-			const tex = pixi.Texture.from(this.canvas);
+			if (!this.texture) {
+				this.texture = pixi.Texture.from(this.canvas);
+			} else {
+				this.texture.source.update();
+			}
 
 			if (!this.sprite) {
-				this.sprite = new pixi.Sprite(tex);
+				this.sprite = new pixi.Sprite(this.texture);
 				this.contentContainer.addChild(this.sprite);
-			} else {
-				this.sprite.texture = tex;
 			}
-
-			if (this.texture) {
-				this.texture.destroy();
-			}
-			this.texture = tex;
 
 			this.sprite.visible = true;
 		} catch (err) {
@@ -270,7 +263,7 @@ export class RichCaptionPlayer extends Player {
 				await this.fontRegistry!.registerFromBytes(bytes, { family, weight: weight.toString() });
 
 				try {
-					const fontFace = new FontFace(family, `url(${url})`, {
+					const fontFace = new FontFace(family, bytes, {
 						weight: weight.toString()
 					});
 					await fontFace.load();
@@ -383,17 +376,40 @@ export class RichCaptionPlayer extends Player {
 	private buildCanvasPayload(asset: RichCaptionAsset, words: WordTiming[]): Record<string, unknown> {
 		const { width, height } = this.getSize();
 		const customFonts = this.buildCustomFontsFromTimeline(asset);
-		const { src, ...assetWithoutSrc } = asset;
 		const resolvedFamily = getFontDisplayName(asset.font?.family ?? "Roboto");
 
-		return {
-			...assetWithoutSrc,
+		const payload: Record<string, unknown> = {
+			type: asset.type,
 			words: words.map(w => ({ text: w.text, start: w.start, end: w.end, confidence: w.confidence })),
+			font: { family: resolvedFamily, ...asset.font },
 			width,
 			height,
-			...(asset.font && { font: { ...asset.font, family: resolvedFamily } }),
-			...(customFonts.length > 0 && { customFonts })
 		};
+
+		const optionalFields: Record<string, unknown> = {
+			active: asset.active,
+			stroke: asset.stroke,
+			shadow: asset.shadow,
+			background: asset.background,
+			border: asset.border,
+			padding: asset.padding,
+			style: asset.style,
+			wordAnimation: asset.wordAnimation,
+			align: asset.align,
+			pauseThreshold: (asset as Record<string, unknown>)['pauseThreshold'],
+		};
+
+		for (const [key, value] of Object.entries(optionalFields)) {
+			if (value !== undefined) {
+				payload[key] = value;
+			}
+		}
+
+		if (customFonts.length > 0) {
+			payload['customFonts'] = customFonts;
+		}
+
+		return payload;
 	}
 
 	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number): CaptionLayoutConfig {
@@ -415,7 +431,7 @@ export class RichCaptionPlayer extends Player {
 			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
 			lineHeight: style?.lineHeight ?? 1.2,
 			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
-			pauseThreshold: 500
+			pauseThreshold: asset.pauseThreshold ?? 500
 		};
 	}
 
@@ -534,7 +550,9 @@ export class RichCaptionPlayer extends Player {
 			layoutConfig.measureTextWidth = canvasTextMeasurer;
 		}
 
+		const layoutId = ++this.pendingLayoutId;
 		this.layoutEngine.layoutCaption(this.words, layoutConfig).then(layout => {
+			if (layoutId !== this.pendingLayoutId) return;
 			this.captionLayout = layout;
 			this.renderFrameSync(this.getPlaybackTime() * 1000);
 		});

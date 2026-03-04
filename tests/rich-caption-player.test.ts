@@ -428,6 +428,17 @@ describe("RichCaptionPlayer", () => {
 			expect(player.loadComplete).toBe(false);
 			errorSpy.mockRestore();
 		});
+
+		it("sets pauseThreshold to 5 when loading from SRT src", async () => {
+			const asset = createAsset({ src: "https://cdn.test/captions.srt", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const clip = createClip(asset);
+			const player = new RichCaptionPlayer(edit, clip);
+			await player.load();
+
+			expect((clip.asset as Record<string, unknown>)['pauseThreshold']).toBe(5);
+		});
+
 	});
 
 		describe("Rendering", () => {
@@ -716,7 +727,7 @@ describe("RichCaptionPlayer", () => {
 	});
 
 	describe("Texture Reuse", () => {
-		it("creates new texture each frame for pixi v8 compatibility", async () => {
+		it("reuses single texture across frames via source.update()", async () => {
 			const edit = createMockEdit();
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
 			await player.load();
@@ -731,7 +742,7 @@ describe("RichCaptionPlayer", () => {
 			player.update(0.016, 0.4);
 
 			
-			expect(pixi.Texture.from.mock.calls.length).toBeGreaterThan(fromCallCount);
+			expect(pixi.Texture.from.mock.calls.length).toBe(fromCallCount);
 		});
 
 		it("hides sprite when ops are empty", async () => {
@@ -796,6 +807,159 @@ describe("RichCaptionPlayer", () => {
 
 			// parseFontFamily should be called (it's used in font resolution)
 			expect(mockParseFontFamily).toHaveBeenCalled();
+		});
+	});
+
+	describe("Font Undefined Path", () => {
+		it("loads successfully when asset has no font property", async () => {
+			const asset = createAsset({ font: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(true);
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
+		});
+
+		it("uses Roboto as default when font is undefined", async () => {
+			const asset = createAsset({ font: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit({
+				getFontUrlByFamilyAndWeight: jest.fn().mockReturnValue("https://cdn.test/roboto.ttf")
+			});
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			expect(edit.getFontUrlByFamilyAndWeight).toHaveBeenCalledWith("Roboto", 400);
+		});
+	});
+
+	describe("FontFace ArrayBuffer", () => {
+		it("passes ArrayBuffer bytes to FontFace constructor instead of URL", async () => {
+			const MockFontFace = jest.fn().mockImplementation(() => ({
+				load: jest.fn().mockResolvedValue(undefined)
+			}));
+			(global as Record<string, unknown>)["FontFace"] = MockFontFace;
+
+			const edit = createMockEdit({
+				getFontUrlByFamilyAndWeight: jest.fn().mockReturnValue("https://cdn.test/roboto.ttf")
+			});
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			expect(MockFontFace).toHaveBeenCalledWith(
+				"Roboto",
+				expect.any(ArrayBuffer),
+				expect.objectContaining({ weight: "400" })
+			);
+		});
+	});
+
+	describe("buildCanvasPayload Field Stripping", () => {
+		it("always includes font with resolved family even when asset.font is undefined", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+			};
+
+			const asset = createAsset({ font: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			const parsedPayload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			expect(parsedPayload).toBeDefined();
+			expect(parsedPayload.font).toBeDefined();
+			expect(parsedPayload.font.family).toBe("Roboto");
+		});
+
+		it("includes only allowlisted fields in canvas payload", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+			};
+
+			const asset = createAsset({
+				font: { family: "Roboto", size: 48, color: "#ffffff" },
+				stroke: { width: 2, color: "#000000" },
+				shadow: { offsetX: 2, offsetY: 2, blur: 4, color: "#000000" },
+				background: { color: "#333333" },
+			} as Partial<RichCaptionAsset>);
+
+			// Add non-allowlisted fields that should be stripped
+			(asset as Record<string, unknown>)["unknownField"] = "should-be-stripped";
+			(asset as Record<string, unknown>)["src"] = "https://cdn.test/captions.srt";
+
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			const parsedPayload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			expect(parsedPayload).toBeDefined();
+			expect(parsedPayload.type).toBe("rich-caption");
+			expect(parsedPayload.font).toBeDefined();
+			expect(parsedPayload.stroke).toBeDefined();
+			expect(parsedPayload.shadow).toBeDefined();
+			expect(parsedPayload.background).toBeDefined();
+			expect(parsedPayload.words).toBeDefined();
+			expect(parsedPayload.width).toBeDefined();
+			expect(parsedPayload.height).toBeDefined();
+			expect(parsedPayload.unknownField).toBeUndefined();
+			expect(parsedPayload.src).toBeUndefined();
+		});
+
+		it("excludes undefined optional fields from canvas payload", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+			};
+
+			const asset = createAsset();
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			const parsedPayload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			expect(parsedPayload).toBeDefined();
+			expect(parsedPayload).not.toHaveProperty("stroke");
+			expect(parsedPayload).not.toHaveProperty("shadow");
+			expect(parsedPayload).not.toHaveProperty("background");
+			expect(parsedPayload).not.toHaveProperty("border");
+		});
+	});
+
+	describe("PERF-2: Font Registration Caching", () => {
+		it("skips font registration in reconfigure when family+weight unchanged", async () => {
+			const edit = createMockEdit({
+				getFontUrlByFamilyAndWeight: jest.fn().mockReturnValue("https://cdn.test/roboto.ttf")
+			});
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			const registerCallsBefore = mockRegisterFromBytes.mock.calls.length;
+
+			// Trigger reconfigure with same font
+			// @ts-expect-error accessing private method
+			await player.reconfigure();
+
+			expect(mockRegisterFromBytes.mock.calls.length).toBe(registerCallsBefore);
+		});
+	});
+
+	describe("PERF-3: Pending Layout Guard", () => {
+		it("cancels stale layout when dimensions change rapidly", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			const initialLayoutId = player.pendingLayoutId;
+
+			// Trigger two rapid dimension changes
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+
+			// @ts-expect-error accessing private property
+			expect(player.pendingLayoutId).toBe(initialLayoutId + 2);
 		});
 	});
 });

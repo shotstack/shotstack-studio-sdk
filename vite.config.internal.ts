@@ -8,14 +8,12 @@ const globals = {
 	howler: "Howler",
 	"opentype.js": "opentype",
 	"@ffmpeg/ffmpeg": "FFmpeg",
-	harfbuzzjs: "createHarfBuzz",
-	"@napi-rs/canvas": "Canvas"
+	harfbuzzjs: "createHarfBuzz"
 };
 const INTERNAL_TYPES_ENTRY_STUB = "export * from './internal'";
 
 export default defineConfig({
 	define: {
-		// Make process.env.NODE_ENV available in browser for __DEV__ checks
 		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] || "development")
 	},
 	worker: {
@@ -33,12 +31,10 @@ export default defineConfig({
 					return { filePath, content };
 				}
 
-				// Keep the temporary stub at dist/index.d.ts so API Extractor can resolve its entry point.
 				if (content.includes(INTERNAL_TYPES_ENTRY_STUB)) {
 					return { filePath, content };
 				}
 
-				// Remap the rolled declaration output to dist/internal.d.ts for the ./internal export map.
 				return {
 					filePath: filePath.replace(/\/index\.d\.ts$/, "/internal.d.ts"),
 					content
@@ -61,7 +57,8 @@ export default defineConfig({
 			"@loaders": resolve(__dirname, "src/core/loaders"),
 			"@export": resolve(__dirname, "src/core/export"),
 			"@styles": resolve(__dirname, "src/styles"),
-			"@templates": resolve(__dirname, "src/templates")
+			"@templates": resolve(__dirname, "src/templates"),
+			"@shotstack/shotstack-canvas": resolve(__dirname, "node_modules/@shotstack/shotstack-canvas/dist/entry.web.js")
 		}
 	},
 	build: {

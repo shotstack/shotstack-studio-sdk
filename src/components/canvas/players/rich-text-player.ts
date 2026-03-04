@@ -2,6 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { extractFontNames, isGoogleFontUrl } from "@core/fonts/font-utils";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset, type ResolvedClip } from "@schemas";
 import { createTextEngine, type CanvasRichTextAsset } from "@shotstack/shotstack-canvas";
@@ -11,19 +12,7 @@ import * as pixi from "pixi.js";
 // Derive TextEngine type from createTextEngine return type
 type TextEngine = Awaited<ReturnType<typeof createTextEngine>>;
 
-const extractFontNames = (url: string): { full: string; base: string } => {
-	const filename = url.split("/").pop() || "";
-	const withoutExtension = filename.replace(/\.(ttf|otf|woff|woff2)$/i, "");
-	const baseFamily = withoutExtension.replace(/-(Bold|Light|Regular|Italic|Medium|SemiBold|Black|Thin|ExtraLight|ExtraBold|Heavy)$/i, "");
 
-	return {
-		full: withoutExtension,
-		base: baseFamily
-	};
-};
-
-/** Check if a font URL is from Google Fonts CDN */
-const isGoogleFontUrl = (url: string): boolean => url.includes("fonts.gstatic.com");
 
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;

@@ -8,13 +8,11 @@ const globals = {
 	howler: "Howler",
 	"opentype.js": "opentype",
 	"@ffmpeg/ffmpeg": "FFmpeg",
-	harfbuzzjs: "createHarfBuzz",
-	"@napi-rs/canvas": "Canvas"
+	harfbuzzjs: "createHarfBuzz"
 };
 
 export default defineConfig({
 	define: {
-		// Make process.env.NODE_ENV available in browser for __DEV__ checks
 		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] || "development")
 	},
 	worker: {
@@ -43,7 +41,8 @@ export default defineConfig({
 			"@loaders": resolve(__dirname, "src/core/loaders"),
 			"@export": resolve(__dirname, "src/core/export"),
 			"@styles": resolve(__dirname, "src/styles"),
-			"@templates": resolve(__dirname, "src/templates")
+			"@templates": resolve(__dirname, "src/templates"),
+			"@shotstack/shotstack-canvas": resolve(__dirname, "node_modules/@shotstack/shotstack-canvas/dist/entry.web.js")
 		}
 	},
 	build: {
