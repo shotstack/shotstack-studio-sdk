@@ -8,7 +8,9 @@ import { createTimelineResizeHandle } from "../src/components/timeline/timeline-
 if (typeof PointerEvent === "undefined") {
 	(global as any).PointerEvent = class PointerEvent extends MouseEvent {
 		readonly pointerId: number;
+
 		readonly pointerType: string;
+
 		constructor(type: string, params: PointerEventInit = {}) {
 			super(type, params);
 			this.pointerId = params.pointerId ?? 0;
