@@ -69,19 +69,24 @@ interface ClipLocation {
  * - Tries numeric conversion first (for timing, scale, offset, etc.)
  * - Falls back to string resolution (for text content)
  */
+const STRING_ONLY_KEYS = new Set(["text", "src"]);
+
 function resolveMergeFieldsInClip(clip: InternalClip, mergeFields: MergeFieldService): InternalClip {
-	function processValue(value: unknown): unknown {
+	function processValue(value: unknown, key?: string): unknown {
 		if (typeof value === "string" && mergeFields.isMergeFieldTemplate(value)) {
+			if (key && STRING_ONLY_KEYS.has(key)) {
+				return mergeFields.resolve(value);
+			}
 			const num = mergeFields.resolveToNumber(value);
 			return num !== null ? num : mergeFields.resolve(value);
 		}
 		if (Array.isArray(value)) {
-			return value.map(processValue);
+			return value.map((item) => processValue(item, key));
 		}
 		if (value !== null && typeof value === "object") {
 			const result: Record<string, unknown> = {};
 			for (const [k, v] of Object.entries(value)) {
-				result[k] = processValue(v);
+				result[k] = processValue(v, k);
 			}
 			return result;
 		}
