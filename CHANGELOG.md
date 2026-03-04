@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-03-05
+
+### Fixed
+
+- Recalculate total timeline duration after granular `loadEdit()` updates so the toolbar displays the correct time
+
 ## [2.1.0] - 2026-03-04
 
 ### Added
