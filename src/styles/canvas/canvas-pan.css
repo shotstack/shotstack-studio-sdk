@@ -1,0 +1,4 @@
+.ss-canvas-panning,
+.ss-canvas-panning * {
+	cursor: grabbing !important;
+}

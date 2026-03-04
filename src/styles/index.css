@@ -21,5 +21,8 @@
 @import "./ui/font-picker.css";
 @import "./ui/webgl-error.css";
 
+/* Canvas Styles */
+@import "./canvas/canvas-pan.css";
+
 /* Timeline Styles */
 @import "./timeline/timeline.css";
