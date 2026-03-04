@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.3] - 2026-03-04
+
+### Added
+
+- Externalize `@napi-rs/canvas` in Vite/Rollup build configs to prevent bundling of native Node addons
+
 ## [2.0.2] - 2026-03-04
 
 ### Fixed
