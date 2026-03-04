@@ -22,4 +22,5 @@
 @import "./ui/webgl-error.css";
 
 /* Timeline Styles */
+@import "./timeline/timeline-resize-handle.css";
 @import "./timeline/timeline.css";

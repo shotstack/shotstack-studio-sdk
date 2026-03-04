@@ -1,6 +1,7 @@
 /** Timeline Component */
 
 export { Timeline } from "@timeline/timeline";
+export type { TimelineOptions } from "@timeline/timeline";
 
 export type { ClipState, TrackState, ViewportState, PlaybackState, ClipInfo, ClipRenderer } from "@timeline/timeline.types";
 

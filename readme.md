@@ -81,7 +81,7 @@ ui.on("button:text", ({ position }) => {
 
 // 6) Initialize the Timeline
 const timelineContainer = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-const timeline = new Timeline(edit, timelineContainer);
+const timeline = new Timeline(edit, timelineContainer, { resizable: true });
 await timeline.load();
 
 // 7) Add keyboard controls
@@ -181,7 +181,7 @@ Available event names:
 | Category | Event Names |
 | --- | --- |
 | Playback | `playback:play`, `playback:pause` |
-| Timeline | `timeline:updated`, `timeline:backgroundChanged` |
+| Timeline | `timeline:updated`, `timeline:backgroundChanged`, `timeline:resized` |
 | Clip lifecycle | `clip:added`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved` |
 | Selection | `selection:cleared` |
 | Edit state | `edit:changed`, `edit:undo`, `edit:redo` |
@@ -236,17 +236,21 @@ ui.dispose();
 
 `Timeline` provides visual clip editing.
 
+The container must have an explicit CSS `height` (e.g. `height: 300px`) and `overflow: hidden`. Avoid `flex-grow` or `!important` on height — the resize handle sets height via inline style.
+
 ```typescript
 import { Timeline } from "@shotstack/shotstack-studio";
 
 const container = document.querySelector("[data-shotstack-timeline]") as HTMLElement;
-const timeline = new Timeline(edit, container);
+const timeline = new Timeline(edit, container, { resizable: true });
 
 await timeline.load();
 timeline.zoomIn();
 timeline.zoomOut();
 timeline.dispose();
 ```
+
+Pass `{ resizable: false }` to hide the drag handle. When enabled (default), a `timeline:resized` event fires with `{ height }` after the user finishes dragging or double-clicks to reset.
 
 ### Controls
 

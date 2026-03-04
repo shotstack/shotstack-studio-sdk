@@ -6,13 +6,20 @@ body {
 	overscroll-behavior: none;
 }
 
+body {
+	display: flex;
+	flex-direction: column;
+}
+
 /* SDK demo styles - only used by index.html */
 .c-shotstack-studio {
 	width: 100%;
-	height: calc(100vh - 300px);
-	min-height: 400px;
+	flex: 1;
+	min-height: 200px;
+	overflow: hidden;
 }
 
 .c-shotstack-timeline {
 	height: 300px;
+	flex-shrink: 0;
 }
