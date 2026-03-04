@@ -77,7 +77,7 @@ export default defineConfig({
 			external: id => {
 				if (id === "pixi.js" || id.startsWith("pixi.js/")) return true;
 				if (id.startsWith("@napi-rs/")) return true;
-				return ["harfbuzzjs", "opentype.js", "howler"].includes(id);
+				return ["harfbuzzjs", "opentype.js", "howler", "canvas"].includes(id);
 			},
 			output: {
 				globals,
