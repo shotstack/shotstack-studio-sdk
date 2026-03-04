@@ -7,11 +7,10 @@ import { RichTextToolbar } from "./rich-text-toolbar";
  * Toolbar for rich-caption clips. Extends RichTextToolbar to reuse shared
  * property controls (font, style, spacing, fill, shadow) while hiding
  * text-edit / animation / transition / effect controls and adding
- * caption-specific panels: Layout, Word Animation, and Active Word.
+ * caption-specific panels: Word Animation and Active Word.
  */
 export class RichCaptionToolbar extends RichTextToolbar {
 	// Caption popup panels
-	private layoutPopup: HTMLDivElement | null = null;
 	private wordAnimPopup: HTMLDivElement | null = null;
 	private activeWordPopup: HTMLDivElement | null = null;
 
@@ -63,7 +62,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 	override dispose(): void {
 		super.dispose();
-		this.layoutPopup = null;
 		this.wordAnimPopup = null;
 		this.activeWordPopup = null;
 		this.wordAnimSpeedSlider = null;
@@ -92,9 +90,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!action) return;
 
 		switch (action) {
-			case "caption-layout-toggle":
-				this.togglePopup(this.layoutPopup);
-				return;
 			case "caption-word-anim-toggle":
 				this.togglePopup(this.wordAnimPopup);
 				return;
@@ -109,7 +104,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [...super.getPopupList(), this.layoutPopup, this.wordAnimPopup, this.activeWordPopup];
+		return [...super.getPopupList(), this.wordAnimPopup, this.activeWordPopup];
 	}
 
 	protected override syncState(): void {
@@ -117,12 +112,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 		const asset = this.getCaptionAsset();
 		if (!asset) return;
-
-		// ─── Layout ────────────────────────────────────────
-		const maxLines = asset.maxLines ?? 2;
-		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-max-lines]").forEach(btn => {
-			this.setButtonActive(btn, btn.dataset["captionMaxLines"] === String(maxLines));
-		});
 
 		// ─── Word Animation ────────────────────────────────
 		const wordAnim = asset.wordAnimation;
@@ -134,6 +123,10 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		const speed = wordAnim?.speed ?? 1;
 		if (this.wordAnimSpeedSlider) this.wordAnimSpeedSlider.value = String(speed);
 		if (this.wordAnimSpeedValue) this.wordAnimSpeedValue.textContent = `${speed.toFixed(1)}x`;
+
+		// Hide speed when "none" (nothing to animate)
+		const speedSection = this.container?.querySelector("[data-caption-word-speed-section]") as HTMLElement | null;
+		if (speedSection) speedSection.style.display = animStyle === "none" ? "none" : "";
 
 		if (this.wordAnimDirectionSection) {
 			this.wordAnimDirectionSection.style.display = animStyle === "slide" ? "" : "none";
@@ -184,26 +177,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 		const fragment = document.createDocumentFragment();
 
-		// ── Layout Group ───────────────────────────────────
-		const layoutDropdown = document.createElement("div");
-		layoutDropdown.className = "ss-toolbar-dropdown";
-		layoutDropdown.innerHTML = `
-			<button data-action="caption-layout-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Caption layout">Layout</button>
-			<div data-caption-layout-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Max Lines</div>
-					<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="1">1</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="2">2</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="3">3</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="4">4</button>
-					</div>
-				</div>
-			</div>
-		`;
-		this.layoutPopup = layoutDropdown.querySelector("[data-caption-layout-popup]");
-		fragment.appendChild(layoutDropdown);
-
 		// ── Word Animation Group ───────────────────────────
 		const wordAnimDropdown = document.createElement("div");
 		wordAnimDropdown.className = "ss-toolbar-dropdown";
@@ -223,7 +196,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 						<button class="ss-animation-preset" data-caption-word-style="none">None</button>
 					</div>
 				</div>
-				<div class="ss-toolbar-popup-section">
+				<div class="ss-toolbar-popup-section" data-caption-word-speed-section>
 					<div class="ss-toolbar-popup-label">Speed</div>
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-caption-word-speed class="ss-toolbar-slider" min="0.5" max="2" step="0.1" value="1" />
@@ -315,22 +288,10 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 		this.container.appendChild(fragment);
 
-		this.wireLayoutControls(layoutDropdown);
 		this.wireWordAnimControls(wordAnimDropdown);
 		this.wireScaleControl();
 		this.wireActiveColorControls();
 		this.wireActiveStrokeControls();
-	}
-
-	// ─── Layout Wiring ─────────────────────────────────────────────────
-
-	private wireLayoutControls(root: HTMLElement): void {
-		root.querySelectorAll<HTMLButtonElement>("[data-caption-max-lines]").forEach(btn => {
-			btn.addEventListener("click", () => {
-				const lines = parseInt(btn.dataset["captionMaxLines"]!, 10);
-				if (lines) this.updateClipProperty({ maxLines: lines });
-			});
-		});
 	}
 
 	// ─── Word Animation Wiring ─────────────────────────────────────────
@@ -357,12 +318,12 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			if (this.wordAnimSpeedValue) this.wordAnimSpeedValue.textContent = `${value.toFixed(1)}x`;
 			this.liveCaptionUpdate(asset => ({
 				...asset,
-				wordAnimation: { ...(asset.wordAnimation ?? {}), speed: value }
+				wordAnimation: { style: "karaoke" as const, ...(asset.wordAnimation ?? {}), speed: value }
 			}));
 		});
 		this.wordAnimSpeedSlider?.addEventListener("change", () => {
 			this.commitCaptionDrag("caption-word-speed", a => {
-				const wa = { ...((a["wordAnimation"] as Record<string, unknown>) ?? {}) };
+				const wa: Record<string, unknown> = { style: "karaoke", ...((a["wordAnimation"] as Record<string, unknown>) ?? {}) };
 				wa["speed"] = this.currentWordAnimSpeed;
 				a["wordAnimation"] = wa; // eslint-disable-line no-param-reassign -- mutating structuredClone
 			});
@@ -374,7 +335,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				const direction = btn.dataset["captionWordDirection"];
 				if (!direction) return;
 				const asset = this.getCaptionAsset();
-				this.updateClipProperty({ wordAnimation: { ...(asset?.wordAnimation ?? {}), direction } });
+				this.updateClipProperty({ wordAnimation: { style: "slide" as const, ...(asset?.wordAnimation ?? {}), direction } });
 			});
 		});
 	}

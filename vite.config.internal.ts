@@ -8,7 +8,8 @@ const globals = {
 	howler: "Howler",
 	"opentype.js": "opentype",
 	"@ffmpeg/ffmpeg": "FFmpeg",
-	harfbuzzjs: "createHarfBuzz"
+	harfbuzzjs: "createHarfBuzz",
+	"@napi-rs/canvas": "Canvas"
 };
 const INTERNAL_TYPES_ENTRY_STUB = "export * from './internal'";
 

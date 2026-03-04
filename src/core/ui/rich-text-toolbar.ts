@@ -658,15 +658,16 @@ export class RichTextToolbar extends BaseToolbar {
 				// Construct final clip state with actual user-selected values
 				const finalClip = structuredClone(session.initialState);
 				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption")) {
-					// Border: Convert opacity from percentage (0-100) to decimal (0-1)
-					// Cast needed: rich-caption shares border/padding/shadow at runtime via $ref
 					const asset = finalClip.asset as Record<string, unknown>;
-					asset["border"] = {
-						width: finalState.border.width,
-						color: finalState.border.color,
-						opacity: finalState.border.opacity / 100,
-						radius: finalState.border.radius
-					};
+					// Border only applies to rich-text (not part of the rich-caption schema)
+					if (finalClip.asset.type === "rich-text") {
+						asset["border"] = {
+							width: finalState.border.width,
+							color: finalState.border.color,
+							opacity: finalState.border.opacity / 100,
+							radius: finalState.border.radius
+						};
+					}
 					asset["padding"] = finalState.padding;
 					asset["shadow"] = finalState.shadow.enabled
 						? {

@@ -74,7 +74,7 @@ export class RichCaptionPlayer extends Player {
 			if (richCaptionAsset.src) {
 				words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
 			} else {
-				words = (richCaptionAsset.words ?? []).map(w => ({
+				words = ((richCaptionAsset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map((w: WordTiming) => ({
 					text: w.text,
 					start: w.start,
 					end: w.end,
@@ -243,13 +243,11 @@ export class RichCaptionPlayer extends Player {
 	private async registerFonts(asset: RichCaptionAsset): Promise<void> {
 		if (!this.fontRegistry) return;
 
-		const family = asset.font?.family;
-		if (family) {
-			const assetWeight = asset.font?.weight ? parseInt(String(asset.font.weight), 10) || 400 : 400;
-			const resolved = this.resolveFontWithWeight(family, assetWeight);
-			if (resolved) {
-				await this.registerFontFromUrl(resolved.url, resolved.baseFontFamily, resolved.fontWeight);
-			}
+		const family = asset.font?.family ?? "Roboto";
+		const assetWeight = asset.font?.weight ? parseInt(String(asset.font.weight), 10) || 400 : 400;
+		const resolved = this.resolveFontWithWeight(family, assetWeight);
+		if (resolved) {
+			await this.registerFontFromUrl(resolved.url, resolved.baseFontFamily, resolved.fontWeight);
 		}
 
 		const customFonts = this.buildCustomFontsFromTimeline(asset);
@@ -399,14 +397,17 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number): CaptionLayoutConfig {
-		const { font, style } = asset;
+		const { font, style, align, padding: rawPadding } = asset;
+		const padding = typeof rawPadding === "number" ? rawPadding : (rawPadding?.left ?? 0);
 
 		return {
 			frameWidth,
 			frameHeight,
-			maxWidth: asset.maxWidth ?? 0.9,
-			maxLines: asset.maxLines ?? 2,
-			position: asset.position ?? "bottom",
+			availableWidth: frameWidth * 0.9,
+			maxLines: 2,
+			verticalAlign: align?.vertical ?? "bottom",
+			horizontalAlign: align?.horizontal ?? "center",
+			paddingLeft: padding,
 			fontSize: font?.size ?? 24,
 			fontFamily: font?.family ?? "Roboto",
 			fontWeight: String(font?.weight ?? "400"),
