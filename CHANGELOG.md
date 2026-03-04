@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-03-04
+
+### Added
+
+- Canvas panning with middle mouse button drag, including grab cursor feedback
+- Timeline resize handle for adjustable timeline height
+
+### Fixed
+
+- Set initial volume for audio and video players to avoid undefined default values
+- Resolve merge fields as strings for `text` and `src` keys
+
 ## [2.0.4] - 2026-03-04
 
 ### Added
