@@ -1,0 +1,28 @@
+/* Timeline resize divider */
+.ss-timeline-divider {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 6px;
+	cursor: ns-resize;
+	z-index: 10;
+	background: transparent;
+	transition: background-color 0.15s ease;
+}
+
+.ss-timeline-divider:hover,
+.ss-timeline-divider--active {
+	background-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Global overrides during resize drag */
+body.ss-resizing-timeline {
+	cursor: ns-resize !important;
+	user-select: none !important;
+	-webkit-user-select: none !important;
+}
+
+body.ss-resizing-timeline .ss-html-timeline * {
+	cursor: ns-resize !important;
+}
