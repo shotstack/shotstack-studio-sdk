@@ -315,6 +315,7 @@ export class Edit {
 			this.document = new EditDocument(cloned);
 			this.isBatchingEvents = true;
 			await this.applyGranularChanges(cloned, oldTracks, oldOutput);
+			this.updateTotalDuration();
 			this.isBatchingEvents = false;
 			this.emitEditChanged("loadEdit:granular");
 			return;
