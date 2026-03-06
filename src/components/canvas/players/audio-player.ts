@@ -103,8 +103,35 @@ export class AudioPlayer extends Player {
 	}
 
 	public override dispose(): void {
-		this.audioResource?.unload();
+		if (this.audioResource) {
+			this.audioResource.stop();
+			this.audioResource.unload();
+		}
 		this.audioResource = null;
+
+		super.dispose();
+	}
+
+	/** Reload the audio asset when asset.src changes (e.g., merge field update or loadEdit) */
+	public override async reloadAsset(): Promise<void> {
+		if (this.audioResource) {
+			this.audioResource.stop();
+			this.audioResource.unload();
+		}
+		this.audioResource = null;
+		this.isPlaying = false;
+		this.syncTimer = 0;
+
+		const audioAsset = this.clipConfiguration.asset as AudioAsset;
+		const loadOptions: pixi.UnresolvedAsset = { src: audioAsset.src, parser: AudioLoadParser.Name };
+		const audioResource = await this.edit.assetLoader.load<howler.Howl>(audioAsset.src, loadOptions);
+
+		if (!(audioResource instanceof howler.Howl)) {
+			throw new Error(`Invalid audio source '${audioAsset.src}'.`);
+		}
+
+		this.audioResource = audioResource;
+		this.audioResource.volume(this.getVolume());
 	}
 
 	public override reconfigureAfterRestore(): void {

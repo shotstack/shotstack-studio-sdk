@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2] - 2026-03-06
+
+### Fixed
+
+- Fix audio bleed when switching media sources via `loadEdit()` — AudioPlayer now properly reloads on source change
+- Fix audio/video player disposal to stop playback immediately and clean up PIXI containers
+
 ## [2.1.1] - 2026-03-05
 
 ### Fixed
