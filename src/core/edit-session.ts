@@ -302,6 +302,9 @@ export class Edit {
 		// Validate the incoming config before any mutations
 		EditSchema.parse(edit);
 
+		// Stop playback before mutating — prevents audio bleed from old players
+		this.pause();
+
 		if (this.tracks.length > 0 && !this.hasStructuralChanges(edit)) {
 			this.lastResolved = null;
 
@@ -1567,6 +1570,7 @@ export class Edit {
 		}
 
 		this.tracks = [];
+		this.playerByClipId.clear();
 		this.clipsToDispose.clear();
 		this.clipErrors.clear();
 		this.lumaContentRelations.clear();

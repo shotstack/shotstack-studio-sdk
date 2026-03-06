@@ -98,8 +98,11 @@ export class VideoPlayer extends Player {
 	}
 
 	public override dispose(): void {
-		super.dispose();
-		this.disposeVideo();
+		try {
+			super.dispose();
+		} finally {
+			this.disposeVideo();
+		}
 	}
 
 	public override getSize(): Size {
