@@ -1,15 +1,21 @@
-name: CI
+name: Release
 on:
-  pull_request:
+  push:
     branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  verify:
-    name: Lint, Typecheck, Test & Build
+  release:
+    name: Verify & Release
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
 
     env:
       HAS_EXTENDED_TESTS: ${{ secrets.EXTENDED_REGRESSION_SSH_KEY != '' }}
@@ -67,8 +73,8 @@ jobs:
         working-directory: shotstack-studio-extended-regression-suite
         run: npm test
 
-      - name: Dry run release
+      - name: Release
         working-directory: shotstack-studio-sdk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm exec semantic-release --dry-run
+        run: pnpm exec semantic-release
