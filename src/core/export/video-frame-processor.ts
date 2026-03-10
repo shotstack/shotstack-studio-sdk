@@ -23,7 +23,8 @@ export function isVideoPlayer(player: unknown): player is VideoPlayerExtended {
 	const hasVideoTexture = texture?.source?.resource instanceof HTMLVideoElement;
 
 	const isRichText = p.constructor?.name === "RichTextPlayer";
-	if (isRichText) return false;
+	const isRichCaption = p.constructor?.name === "RichCaptionPlayer";
+	if (isRichText || isRichCaption) return false;
 
 	return hasVideoConstructor || hasVideoTexture;
 }
@@ -41,6 +42,21 @@ export function isRichTextPlayer(player: unknown): player is RichTextPlayerExten
 	const asset = config?.["asset"] as Record<string, unknown> | undefined;
 	const hasRichTextAsset = asset?.["type"] === "rich-text";
 	return hasRichTextConstructor || hasRichTextAsset;
+}
+
+export interface RichCaptionPlayerExtended {
+	clipConfiguration?: { asset?: { type?: string } };
+	constructor?: { name?: string };
+}
+
+export function isRichCaptionPlayer(player: unknown): player is RichCaptionPlayerExtended {
+	if (!player || typeof player !== "object") return false;
+	const p = player as Record<string, unknown>;
+	const hasRichCaptionConstructor = p.constructor?.name === "RichCaptionPlayer";
+	const config = p["clipConfiguration"] as Record<string, unknown> | undefined;
+	const asset = config?.["asset"] as Record<string, unknown> | undefined;
+	const hasRichCaptionAsset = asset?.["type"] === "rich-caption";
+	return hasRichCaptionConstructor || hasRichCaptionAsset;
 }
 
 export class VideoFrameProcessor {

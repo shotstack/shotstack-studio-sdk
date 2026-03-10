@@ -46,7 +46,8 @@ export enum PlayerType {
 	Svg = "svg",
 	TextToImage = "text-to-image",
 	ImageToVideo = "image-to-video",
-	TextToSpeech = "text-to-speech"
+	TextToSpeech = "text-to-speech",
+	RichCaption = "rich-caption"
 }
 
 /**

@@ -5,7 +5,7 @@
 				"clips": [
 					{
 						"asset": {
-							"type": "caption",
+							"type": "rich-caption",
 							"src": "alias://VIDEO"
 						},
 						"start": 0,

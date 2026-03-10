@@ -11,7 +11,7 @@ import { BackgroundColorPicker } from "./background-color-picker";
 import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
-import { StylePanel } from "./composites/StylePanel";
+import { StylePanel, type StylePanelOptions } from "./composites/StylePanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { DragStateManager } from "./drag-state-manager";
 import { FontColorPicker } from "./font-color-picker";
@@ -68,7 +68,7 @@ export class RichTextToolbar extends BaseToolbar {
 	/**
 	 * Per-control drag state manager.
 	 */
-	private dragManager = new DragStateManager();
+	protected dragManager = new DragStateManager();
 
 	private lastSyncedClipId: string | null = null;
 
@@ -80,8 +80,8 @@ export class RichTextToolbar extends BaseToolbar {
 	private transitionPanel: TransitionPanel | null = null;
 	private effectPopup: HTMLDivElement | null = null;
 	private effectPanel: EffectPanel | null = null;
-	private stylePopup: HTMLDivElement | null = null;
-	private stylePanel: StylePanel | null = null;
+	protected stylePopup: HTMLDivElement | null = null;
+	protected stylePanel: StylePanel | null = null;
 
 	// Merge field label manager (bound to data-merge-path annotated labels)
 	private mergeFieldManager: MergeFieldLabelManager | null = null;
@@ -421,7 +421,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 				// Construct final clip state
 				const finalClip = structuredClone(session.initialState);
-				if (finalClip.asset && finalClip.asset.type === "rich-text" && finalClip.asset.style) {
+				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption") && finalClip.asset.style) {
 					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
 					finalClip.asset.style.lineHeight = finalState.lineHeight;
 				}
@@ -527,7 +527,7 @@ export class RichTextToolbar extends BaseToolbar {
 		// Mount StylePanel composite (consolidated fill/border/padding/shadow)
 		this.stylePopup = this.container.querySelector("[data-style-popup]");
 		if (this.stylePopup) {
-			this.stylePanel = new StylePanel();
+			this.stylePanel = this.createStylePanel();
 
 			// Phase 1: Capture initial state when drag starts
 			this.stylePanel.onDragStart(() => {
@@ -568,6 +568,27 @@ export class RichTextToolbar extends BaseToolbar {
 						opacity: border.opacity / 100,
 						radius: border.radius
 					});
+				}
+			});
+
+			this.stylePanel.onStrokeChange(stroke => {
+				const isDragging = this.stylePanel?.isDragging() ?? false;
+				const strokeValue = stroke.width > 0
+					? { width: stroke.width, color: stroke.color, opacity: stroke.opacity / 100 }
+					: undefined;
+
+				if (isDragging) {
+					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+					if (!clipId) return;
+
+					const asset = this.getCurrentAsset();
+					if (!asset) return;
+
+					const updatedAsset = { ...asset, stroke: strokeValue };
+					this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
+					this.edit.resolveClip(clipId);
+				} else {
+					this.updateClipProperty({ stroke: strokeValue });
 				}
 			});
 
@@ -636,22 +657,33 @@ export class RichTextToolbar extends BaseToolbar {
 
 				// Construct final clip state with actual user-selected values
 				const finalClip = structuredClone(session.initialState);
-				if (finalClip.asset && finalClip.asset.type === "rich-text") {
-					// Border: Convert opacity from percentage (0-100) to decimal (0-1)
-					finalClip.asset.border = {
-						width: finalState.border.width,
-						color: finalState.border.color,
-						opacity: finalState.border.opacity / 100,
-						radius: finalState.border.radius
-					};
-					finalClip.asset.padding = finalState.padding;
-					finalClip.asset.shadow = finalState.shadow.enabled
+				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption")) {
+					const asset = finalClip.asset as Record<string, unknown>;
+					// Border only applies to rich-text (not part of the rich-caption schema)
+					if (finalClip.asset.type === "rich-text") {
+						asset["border"] = {
+							width: finalState.border.width,
+							color: finalState.border.color,
+							opacity: finalState.border.opacity / 100,
+							radius: finalState.border.radius
+						};
+					}
+					asset["padding"] = finalState.padding;
+					asset["shadow"] = finalState.shadow.enabled
 						? {
 								offsetX: finalState.shadow.offsetX,
 								offsetY: finalState.shadow.offsetY,
 								blur: finalState.shadow.blur,
 								color: finalState.shadow.color,
 								opacity: finalState.shadow.opacity / 100
+							}
+						: undefined;
+					// Stroke: persist if width > 0
+					asset["stroke"] = finalState.stroke.width > 0
+						? {
+								width: finalState.stroke.width,
+								color: finalState.stroke.color,
+								opacity: finalState.stroke.opacity / 100
 							}
 						: undefined;
 					// Note: fill is handled by BackgroundColorPicker, not StylePanel
@@ -722,7 +754,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 					// Build final state
 					const finalClip = structuredClone(session.initialState);
-					if (finalClip.asset && finalClip.asset.type === "rich-text") {
+					if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption")) {
 						const enabled = this.backgroundColorPicker?.isEnabled() ?? false;
 						const color = this.backgroundColorPicker?.getColor() ?? "#FFFFFF";
 						const opacity = this.backgroundColorPicker?.getOpacity() ?? 1;
@@ -840,7 +872,7 @@ export class RichTextToolbar extends BaseToolbar {
 		"asset.style.lineHeight": "1.2"
 	};
 
-	private handleClick(e: MouseEvent): void {
+	protected handleClick(e: MouseEvent): void {
 		const target = e.target as HTMLElement;
 		const button = target.closest("button");
 		if (!button) return;
@@ -915,7 +947,15 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 	}
 
-	private getCurrentAsset(): RichTextAsset | null {
+	/**
+	 * Factory method for StylePanel instantiation.
+	 * Override in subclasses to pass custom options (e.g. hideTabs).
+	 */
+	protected createStylePanel(options: StylePanelOptions = {}): StylePanel {
+		return new StylePanel(options);
+	}
+
+	protected getCurrentAsset(): RichTextAsset | null {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clip) return null;
 		return clip.asset as RichTextAsset;
@@ -1349,7 +1389,7 @@ export class RichTextToolbar extends BaseToolbar {
 	 *
 	 * @returns Object with clipId and cloned initial state, or null if no clip selected
 	 */
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
+	protected captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
@@ -1590,7 +1630,7 @@ export class RichTextToolbar extends BaseToolbar {
 		});
 	}
 
-	private updateClipProperty(assetUpdates: Record<string, unknown>): void {
+	protected updateClipProperty(assetUpdates: Record<string, unknown>): void {
 		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
 		this.syncState();
@@ -1648,7 +1688,7 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		if (this.fontPreview) {
-			const fontFamily = asset.font?.family ?? "Roboto";
+			const fontFamily = asset.font?.family ?? "Open Sans";
 			this.fontPreview.textContent = this.getDisplayName(fontFamily);
 			this.fontPreview.style.fontFamily = `'${fontFamily}', sans-serif`;
 		}
@@ -1708,6 +1748,14 @@ export class RichTextToolbar extends BaseToolbar {
 				blur: shadow?.blur ?? 4,
 				color: shadow?.color ?? "#000000",
 				opacity: shadow ? Math.round((shadow.opacity ?? 1) * 100) : 50
+			});
+
+			// Stroke
+			const { stroke } = asset;
+			this.stylePanel.setStrokeState({
+				width: stroke?.width ?? 0,
+				color: stroke?.color ?? "#000000",
+				opacity: Math.round((stroke?.opacity ?? 1) * 100)
 			});
 
 			// Padding (handled below, needs special normalization)

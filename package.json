@@ -41,7 +41,7 @@
 	],
 	"license": "PolyForm Shield License 1.0.0",
 	"engines": {
-		"node": ">=22 <23"
+		"node": ">=20 <=24"
 	},
 	"repository": {
 		"type": "git",

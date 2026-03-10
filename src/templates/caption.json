@@ -5,7 +5,7 @@
 				"clips": [
 					{
 						"asset": {
-							"type": "caption",
+							"type": "rich-caption",
 							"src": "https://shotstack-assets.s3.amazonaws.com/captions/transcript.srt"
 						},
 						"start": 0,
