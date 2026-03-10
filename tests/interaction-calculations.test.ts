@@ -118,13 +118,13 @@ describe("formatDragTime", () => {
 
 describe("Track Y Position Calculations", () => {
 	describe("buildTrackYPositions", () => {
-		it("returns empty array for no tracks", () => {
-			expect(buildTrackYPositions([])).toEqual([]);
+		it("returns sentinel-only array for no tracks", () => {
+			expect(buildTrackYPositions([])).toEqual([0]);
 		});
 
 		it("calculates positions for image tracks (72px height)", () => {
 			const tracks: TrackState[] = [createMockTrack([createMockClip(0, 1)], "image"), createMockTrack([createMockClip(0, 1, "image", 1)], "image")];
-			expect(buildTrackYPositions(tracks)).toEqual([0, 72]);
+			expect(buildTrackYPositions(tracks)).toEqual([0, 72, 144]);
 		});
 
 		it("calculates positions for audio tracks (48px height)", () => {
@@ -132,7 +132,7 @@ describe("Track Y Position Calculations", () => {
 				createMockTrack([createMockClip(0, 1, "audio")], "audio"),
 				createMockTrack([createMockClip(0, 1, "audio", 1)], "audio")
 			];
-			expect(buildTrackYPositions(tracks)).toEqual([0, 48]);
+			expect(buildTrackYPositions(tracks)).toEqual([0, 48, 96]);
 		});
 
 		it("handles mixed track types", () => {
@@ -141,20 +141,25 @@ describe("Track Y Position Calculations", () => {
 				createMockTrack([createMockClip(0, 1, "audio", 1)], "audio") // 48px
 			];
 			const positions = buildTrackYPositions(tracks);
-			expect(positions).toEqual([0, 72]); // Second track starts at 72
+			expect(positions).toEqual([0, 72, 120]); // Sentinel at 72 + 48 = 120
 		});
 	});
 
 	describe("getTrackYPosition", () => {
 		it("returns correct position from cache", () => {
-			const cache = [0, 60, 120];
+			const cache = [0, 60, 120, 180]; // includes sentinel
 			expect(getTrackYPosition(0, cache)).toBe(0);
 			expect(getTrackYPosition(1, cache)).toBe(60);
 			expect(getTrackYPosition(2, cache)).toBe(120);
 		});
 
+		it("returns sentinel position for insert-after-last index", () => {
+			const cache = [0, 60, 120]; // 2 tracks + sentinel at 120
+			expect(getTrackYPosition(2, cache)).toBe(120);
+		});
+
 		it("returns 0 for out of bounds index", () => {
-			const cache = [0, 60];
+			const cache = [0, 60, 120]; // 2 tracks + sentinel
 			expect(getTrackYPosition(5, cache)).toBe(0);
 		});
 	});

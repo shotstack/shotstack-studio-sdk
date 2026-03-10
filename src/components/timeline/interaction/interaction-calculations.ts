@@ -93,6 +93,7 @@ export function buildTrackYPositions(tracks: readonly TrackState[]): number[] {
 		positions.push(y);
 		y += getTrackHeight(track.primaryAssetType);
 	}
+	positions.push(y); // sentinel: total height for "insert after last track"
 	return positions;
 }
 
