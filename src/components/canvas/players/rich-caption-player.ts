@@ -550,7 +550,8 @@ export class RichCaptionPlayer extends Player {
 			layoutConfig.measureTextWidth = canvasTextMeasurer;
 		}
 
-		const layoutId = ++this.pendingLayoutId;
+		this.pendingLayoutId += 1;
+		const layoutId = this.pendingLayoutId;
 		this.layoutEngine.layoutCaption(this.words, layoutConfig).then(layout => {
 			if (layoutId !== this.pendingLayoutId) return;
 			this.captionLayout = layout;
