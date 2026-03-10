@@ -7,6 +7,9 @@ dist-ssr
 .vite/
 .env
 
+# Test coverage
+coverage/
+
 # IDE
 .vscode
 .idea

@@ -31,5 +31,21 @@ export default {
 				tsconfig: "tsconfig.test.json"
 			}
 		]
+	},
+	collectCoverageFrom: [
+		"src/**/*.ts",
+		"!src/**/*.d.ts",
+		"!src/**/index.ts",
+		"!src/styles/**"
+	],
+	coverageDirectory: "coverage",
+	coverageReporters: ["text", "text-summary", "lcov"],
+	coverageThreshold: {
+		global: {
+			branches: 20,
+			functions: 25,
+			lines: 25,
+			statements: 25
+		}
 	}
 };

@@ -14,13 +14,20 @@ import { TrackListComponent } from "./components/track/track-list";
 import { InteractionController } from "./interaction/interaction-controller";
 import { MediaThumbnailRenderer } from "./media-thumbnail-renderer";
 import { ThumbnailGenerator } from "./thumbnail-generator";
+import { createTimelineResizeHandle, type TimelineResizeHandle } from "./timeline-resize-handle";
 import { TimelineStateManager } from "./timeline-state";
 
 const DEFAULT_SNAP_THRESHOLD = 10;
 
+export interface TimelineOptions {
+	/** Enable the drag-to-resize handle. Default: true */
+	resizable?: boolean;
+}
+
 export class Timeline {
 	public readonly element: HTMLElement;
 	private readonly container: HTMLElement;
+	private readonly options: Required<TimelineOptions>;
 	private readonly stateManager: TimelineStateManager;
 
 	// Custom renderers
@@ -39,6 +46,7 @@ export class Timeline {
 	private playheadGhost: HTMLElement | null = null;
 	private feedbackLayer: HTMLElement | null = null;
 	private interactionController: InteractionController | null = null;
+	private resizeHandle: TimelineResizeHandle | null = null;
 
 	// Hybrid render loop state
 	private animationFrameId: number | null = null;
@@ -60,11 +68,13 @@ export class Timeline {
 
 	constructor(
 		private readonly edit: Edit,
-		container: HTMLElement
+		container: HTMLElement,
+		options?: TimelineOptions
 	) {
 		this.element = document.createElement("div");
 		this.element.className = "ss-html-timeline";
 		this.container = container;
+		this.options = { resizable: true, ...options };
 
 		// Configure root element to fill container
 		this.element.style.width = "100%";
@@ -315,6 +325,18 @@ export class Timeline {
 		// Clear existing content
 		this.element.innerHTML = "";
 
+		// Build resize handle (drag divider at top of timeline)
+		if (this.options.resizable) {
+			this.resizeHandle = createTimelineResizeHandle({
+				container: this.container,
+				onResize: () => this.resize(),
+				onResizeEnd: (height) => {
+					this.edit.getInternalEvents().emit(EditEvent.TimelineResized, { height });
+				}
+			});
+			this.element.appendChild(this.resizeHandle.element);
+		}
+
 		const viewport = this.stateManager.getViewport();
 
 		// Build toolbar
@@ -432,6 +454,9 @@ export class Timeline {
 	}
 
 	private disposeComponents(): void {
+		this.resizeHandle?.destroy();
+		this.resizeHandle = null;
+
 		this.interactionController?.dispose();
 		this.interactionController = null;
 

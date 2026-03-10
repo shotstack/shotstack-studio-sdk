@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, Typecheck, Test & Build
+    runs-on: ubuntu-latest
+
+    env:
+      HAS_EXTENDED_TESTS: ${{ secrets.EXTENDED_REGRESSION_SSH_KEY != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: shotstack-studio-sdk
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: shotstack-studio-sdk
+        run: npm install
+
+      - name: Run public verification suite
+        working-directory: shotstack-studio-sdk
+        run: npm run verify:ci
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: shotstack-studio-sdk/coverage/
+          retention-days: 14
+
+      # ── Extended regression suite (skipped on forks) ─────────────
+      - name: "[Extended] Set up SSH for regression suite"
+        if: env.HAS_EXTENDED_TESTS == 'true'
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EXTENDED_REGRESSION_SSH_KEY }}
+
+      - name: "[Extended] Clone regression suite"
+        if: env.HAS_EXTENDED_TESTS == 'true'
+        run: git clone git@github.com:shotstack/shotstack-studio-extended-regression-suite.git
+
+      - name: "[Extended] Install test dependencies"
+        if: env.HAS_EXTENDED_TESTS == 'true'
+        working-directory: shotstack-studio-extended-regression-suite
+        run: npm install
+
+      - name: "[Extended] Run behavioural regression tests"
+        if: env.HAS_EXTENDED_TESTS == 'true'
+        working-directory: shotstack-studio-extended-regression-suite
+        run: npm test

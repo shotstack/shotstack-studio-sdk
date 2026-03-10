@@ -93,7 +93,10 @@ export const EditEvent = {
 	OutputDestinationsChanged: "output:destinationsChanged",
 
 	// Merge fields
-	MergeFieldChanged: "mergefield:changed"
+	MergeFieldChanged: "mergefield:changed",
+
+	// Timeline UI
+	TimelineResized: "timeline:resized"
 } as const;
 
 export type EditEventName = (typeof EditEvent)[keyof typeof EditEvent];
@@ -173,6 +176,9 @@ export type EditEventMap = {
 
 	// Merge fields
 	[EditEvent.MergeFieldChanged]: { fields: MergeField[] };
+
+	// Timeline UI
+	[EditEvent.TimelineResized]: { height: number };
 };
 
 // Internal event payloads - not part of public API

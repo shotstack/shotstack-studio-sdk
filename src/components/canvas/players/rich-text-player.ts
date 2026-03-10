@@ -418,6 +418,7 @@ export class RichTextPlayer extends Player {
 		}
 
 		this.contentContainer.addChild(fallbackText);
+		this.configureKeyframes();
 	}
 	private renderFrameSafe(timeSeconds: number): void {
 		if (this.isRendering) {

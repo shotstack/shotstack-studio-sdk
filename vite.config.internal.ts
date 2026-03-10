@@ -8,7 +8,8 @@ const globals = {
 	howler: "Howler",
 	"opentype.js": "opentype",
 	"@ffmpeg/ffmpeg": "FFmpeg",
-	harfbuzzjs: "createHarfBuzz"
+	harfbuzzjs: "createHarfBuzz",
+	"@napi-rs/canvas": "Canvas"
 };
 const INTERNAL_TYPES_ENTRY_STUB = "export * from './internal'";
 
@@ -74,7 +75,7 @@ export default defineConfig({
 			external: id => {
 				if (id === "pixi.js" || id.startsWith("pixi.js/")) return true;
 				if (id.startsWith("@napi-rs/")) return true;
-				return ["harfbuzzjs", "opentype.js", "howler"].includes(id);
+				return ["harfbuzzjs", "opentype.js", "howler", "canvas"].includes(id);
 			},
 			output: {
 				globals,

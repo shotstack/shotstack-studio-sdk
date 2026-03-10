@@ -61,7 +61,7 @@ export class VideoPlayer extends Player {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
 				this.activeSyncTimer = 0;
-				// playbackTime is already in seconds
+				this.texture.source.resource.volume = this.getVolume();
 				this.texture.source.resource.currentTime = playbackTime + trim;
 				this.texture.source.resource.play().catch(console.error);
 			}
@@ -98,8 +98,11 @@ export class VideoPlayer extends Player {
 	}
 
 	public override dispose(): void {
-		super.dispose();
-		this.disposeVideo();
+		try {
+			super.dispose();
+		} finally {
+			this.disposeVideo();
+		}
 	}
 
 	public override getSize(): Size {
@@ -126,6 +129,13 @@ export class VideoPlayer extends Player {
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
 		this.skipVideoUpdate = false;
+	}
+
+	public override reconfigureAfterRestore(): void {
+		super.reconfigureAfterRestore();
+
+		const videoAsset = this.clipConfiguration.asset as VideoAsset;
+		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
 	}
 
 	private async loadVideo(): Promise<void> {
@@ -168,6 +178,9 @@ export class VideoPlayer extends Player {
 
 		this.sprite = new pixi.Sprite(this.texture);
 		this.contentContainer.addChild(this.sprite);
+
+		// Set initial volume immediately so the element never sits at the browser default of 1.0
+		this.texture.source.resource.volume = this.getVolume();
 	}
 
 	private disposeVideo(): void {

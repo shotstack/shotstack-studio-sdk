@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2] - 2026-03-06
+
+### Fixed
+
+- Fix audio bleed when switching media sources via `loadEdit()` — AudioPlayer now properly reloads on source change
+- Fix audio/video player disposal to stop playback immediately and clean up PIXI containers
+
+## [2.1.1] - 2026-03-05
+
+### Fixed
+
+- Recalculate total timeline duration after granular `loadEdit()` updates so the toolbar displays the correct time
+
+## [2.1.0] - 2026-03-04
+
+### Added
+
+- Canvas panning with middle mouse button drag, including grab cursor feedback
+- Timeline resize handle for adjustable timeline height
+
+### Fixed
+
+- Set initial volume for audio and video players to avoid undefined default values
+- Resolve merge fields as strings for `text` and `src` keys
+
+## [2.0.4] - 2026-03-04
+
+### Added
+
+- Externalize `@napi-rs/canvas` in Vite/Rollup build configs to prevent bundling of native Node addons
+
+## [2.0.2] - 2026-03-04
+
+### Fixed
+
+- Prevent deletion of the last clip in a document.
+
+## [2.0.1] - 2026-02-24
+
+### Fixed
+
+- Fixed toolbar positioning when SDK is embedded in a page with surrounding content. Toolbars now use `position: absolute` within the canvas container instead of `position: fixed` relative to the viewport.
+
 ## [2.0.0] - 2026-02-17
 
 ### Added

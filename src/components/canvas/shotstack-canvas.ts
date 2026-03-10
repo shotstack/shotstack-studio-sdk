@@ -52,6 +52,10 @@ export class Canvas {
 	private maxZoom = 4;
 	private currentZoom = 1;
 
+	private isPanning = false;
+	private panStart = { x: 0, y: 0 };
+	private panStartPosition = { x: 0, y: 0 };
+
 	private onTickBound: (ticker: pixi.Ticker) => void;
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
 	private onWheelBound: (e: WheelEvent) => void;
@@ -65,7 +69,6 @@ export class Canvas {
 		this.onTickBound = this.onTick.bind(this);
 		this.onBackgroundClickBound = this.onBackgroundClick.bind(this);
 		this.onWheelBound = this.onWheel.bind(this);
-
 		edit.setCanvas(this);
 	}
 
@@ -135,6 +138,7 @@ export class Canvas {
 		this.setupTouchHandling(root);
 		this.zoomToFit();
 
+		root.style.position = "relative";
 		root.appendChild(this.application.canvas);
 
 		// Auto-mount UIController to canvas root (toolbars sit inside canvas)
@@ -145,6 +149,7 @@ export class Canvas {
 	private setupTouchHandling(root: HTMLDivElement): void {
 		this.canvasRoot = root;
 		root.addEventListener("wheel", this.onWheelBound, { passive: false, capture: true });
+		root.addEventListener("pointerdown", this.onPanPointerDown);
 	}
 
 	private onWheel(e: WheelEvent): void {
@@ -157,7 +162,9 @@ export class Canvas {
 		e.preventDefault();
 		e.stopPropagation();
 
-		if (e.ctrlKey && this.viewportContainer) {
+		if (!this.viewportContainer) return;
+
+		if (e.ctrlKey) {
 			const scaleFactor = Math.exp(-e.deltaY / 100);
 			const newZoom = this.currentZoom * scaleFactor;
 			const oldZoom = this.currentZoom;
@@ -180,10 +187,51 @@ export class Canvas {
 
 			this.viewportContainer.scale.x = this.currentZoom;
 			this.viewportContainer.scale.y = this.currentZoom;
-
-			this.syncContentTransforms();
+		} else if (e.shiftKey) {
+			this.viewportContainer.position.x -= e.deltaY || e.deltaX;
+		} else {
+			this.viewportContainer.position.y -= e.deltaY;
+			this.viewportContainer.position.x -= e.deltaX;
 		}
+
+		this.syncContentTransforms();
 	}
+
+	// ─── Panning ─────────────────────────────────────────────────────────────────
+
+	private onPanPointerDown = (e: PointerEvent): void => {
+		if (!this.viewportContainer || e.button !== 1) return;
+
+		e.preventDefault();
+		this.isPanning = true;
+		this.panStart.x = e.clientX;
+		this.panStart.y = e.clientY;
+		this.panStartPosition.x = this.viewportContainer.position.x;
+		this.panStartPosition.y = this.viewportContainer.position.y;
+
+		this.canvasRoot?.classList.add("ss-canvas-panning");
+		document.addEventListener("pointermove", this.onPanPointerMove);
+		document.addEventListener("pointerup", this.onPanPointerUp);
+	};
+
+	private onPanPointerMove = (e: PointerEvent): void => {
+		if (!this.isPanning || !this.viewportContainer) return;
+
+		this.viewportContainer.position.x = this.panStartPosition.x + (e.clientX - this.panStart.x);
+		this.viewportContainer.position.y = this.panStartPosition.y + (e.clientY - this.panStart.y);
+		this.syncContentTransforms();
+	};
+
+	private onPanPointerUp = (): void => {
+		if (!this.isPanning) return;
+
+		this.isPanning = false;
+		this.canvasRoot?.classList.remove("ss-canvas-panning");
+		document.removeEventListener("pointermove", this.onPanPointerMove);
+		document.removeEventListener("pointerup", this.onPanPointerUp);
+	};
+
+	// ─────────────────────────────────────────────────────────────────────────────
 
 	public centerEdit(): void {
 		if (!this.viewportContainer) {
@@ -546,6 +594,7 @@ export class Canvas {
 	}
 
 	private onBackgroundClick(event: pixi.FederatedPointerEvent): void {
+		if (this.isPanning) return;
 		if (event.target === this.background) {
 			this.edit.getInternalEvents().emit(InternalEvent.CanvasBackgroundClicked);
 		}
@@ -579,8 +628,11 @@ export class Canvas {
 		this.application.ticker.remove(this.onTickBound);
 		this.background?.off("pointerdown", this.onBackgroundClickBound);
 
-		// Remove wheel listener from canvas root
+		// Remove canvas root listeners
 		this.canvasRoot?.removeEventListener("wheel", this.onWheelBound, { capture: true });
+		this.canvasRoot?.removeEventListener("pointerdown", this.onPanPointerDown);
+		document.removeEventListener("pointermove", this.onPanPointerMove);
+		document.removeEventListener("pointerup", this.onPanPointerUp);
 		this.canvasRoot = null;
 
 		// Clean up alignment guides

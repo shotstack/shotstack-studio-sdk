@@ -1,5 +1,5 @@
 .ss-asset-toolbar {
-	position: fixed;
+	position: absolute;
 	/* left/top set by JS via setPosition() */
 	width: fit-content;
 	transform: translateY(-50%);
