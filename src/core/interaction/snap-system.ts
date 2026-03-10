@@ -249,41 +249,66 @@ export function snapToClips(position: Vector, clipSize: Size, otherClips: ClipBo
 
 /**
  * Combined snap function that checks both canvas and clips.
- * Clip snapping takes priority over canvas snapping when both are within threshold.
+ * Closest snap wins per axis. Canvas wins ties (centering is the most intentional action).
  * Pure function - no side effects.
  */
 export function snap(position: Vector, context: SnapContext): SnapResult {
 	const { clipSize, canvasSize, otherClips, config } = context;
 	const { threshold, snapToCanvas: doSnapToCanvas, snapToClips: doSnapToClips } = config;
 
-	let result: SnapResult = { position: { ...position }, guides: [] };
+	// Run both snap types on the original position so distances are comparable
+	const canvasResult = doSnapToCanvas
+		? snapToCanvas(position, clipSize, canvasSize, threshold)
+		: { position: { ...position }, guides: [] };
 
-	// First apply canvas snapping
-	if (doSnapToCanvas) {
-		result = snapToCanvas(result.position, clipSize, canvasSize, threshold);
+	const clipResult = (doSnapToClips && otherClips.length > 0)
+		? snapToClips(position, clipSize, otherClips, threshold)
+		: { position: { ...position }, guides: [] };
+
+	const result: SnapResult = { position: { ...position }, guides: [] };
+
+	// X axis: closest snap wins (canvas wins ties)
+	const hasCanvasX = canvasResult.guides.some(g => g.axis === "x");
+	const hasClipX = clipResult.guides.some(g => g.axis === "x");
+
+	if (hasCanvasX && hasClipX) {
+		const canvasDist = Math.abs(canvasResult.position.x - position.x);
+		const clipDist = Math.abs(clipResult.position.x - position.x);
+		if (clipDist < canvasDist) {
+			result.position.x = clipResult.position.x;
+			result.guides.push(...clipResult.guides.filter(g => g.axis === "x"));
+		} else {
+			result.position.x = canvasResult.position.x;
+			result.guides.push(...canvasResult.guides.filter(g => g.axis === "x"));
+		}
+	} else if (hasClipX) {
+		result.position.x = clipResult.position.x;
+		result.guides.push(...clipResult.guides.filter(g => g.axis === "x"));
+	} else if (hasCanvasX) {
+		result.position.x = canvasResult.position.x;
+		result.guides.push(...canvasResult.guides.filter(g => g.axis === "x"));
 	}
 
-	// Then apply clip snapping (takes priority - will override canvas snap if closer)
-	if (doSnapToClips && otherClips.length > 0) {
-		const clipResult = snapToClips(result.position, clipSize, otherClips, threshold);
+	// Y axis: closest snap wins (canvas wins ties)
+	const hasCanvasY = canvasResult.guides.some(g => g.axis === "y");
+	const hasClipY = clipResult.guides.some(g => g.axis === "y");
 
-		// Merge results - clip snaps take priority
-		const hasClipSnapX = clipResult.guides.some(g => g.axis === "x");
-		const hasClipSnapY = clipResult.guides.some(g => g.axis === "y");
-
-		if (hasClipSnapX) {
-			result.position.x = clipResult.position.x;
-			// Replace canvas X guide with clip X guide
-			result.guides = result.guides.filter(g => g.axis !== "x");
-		}
-		if (hasClipSnapY) {
+	if (hasCanvasY && hasClipY) {
+		const canvasDist = Math.abs(canvasResult.position.y - position.y);
+		const clipDist = Math.abs(clipResult.position.y - position.y);
+		if (clipDist < canvasDist) {
 			result.position.y = clipResult.position.y;
-			// Replace canvas Y guide with clip Y guide
-			result.guides = result.guides.filter(g => g.axis !== "y");
+			result.guides.push(...clipResult.guides.filter(g => g.axis === "y"));
+		} else {
+			result.position.y = canvasResult.position.y;
+			result.guides.push(...canvasResult.guides.filter(g => g.axis === "y"));
 		}
-
-		// Add clip guides
-		result.guides.push(...clipResult.guides);
+	} else if (hasClipY) {
+		result.position.y = clipResult.position.y;
+		result.guides.push(...clipResult.guides.filter(g => g.axis === "y"));
+	} else if (hasCanvasY) {
+		result.position.y = canvasResult.position.y;
+		result.guides.push(...canvasResult.guides.filter(g => g.axis === "y"));
 	}
 
 	return result;

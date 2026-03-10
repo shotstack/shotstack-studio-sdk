@@ -13,7 +13,7 @@ import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCu
 import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
-import type { Vector } from "@layouts/geometry";
+import type { Size, Vector } from "@layouts/geometry";
 import { absoluteToRelative } from "@layouts/position-builder";
 import type { ResolvedClip, SvgAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -500,9 +500,17 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			x: timelinePoint.x - this.dragOffset.x,
 			y: timelinePoint.y - this.dragOffset.y
 		};
-		const rawPosition: Vector = {
-			x: cursorPosition.x - pivot.x,
-			y: cursorPosition.y - pivot.y
+
+		// Compute visual (scaled) bounds for snap — accounts for container scale from fit mode
+		const dragScale = this.selectedPlayer.getContainer().scale;
+		const dragSize = this.selectedPlayer.getSize();
+		const visualPosition: Vector = {
+			x: cursorPosition.x - pivot.x * dragScale.x,
+			y: cursorPosition.y - pivot.y * dragScale.y
+		};
+		const visualSize: Size = {
+			width: dragSize.width * dragScale.x,
+			height: dragSize.height * dragScale.y
 		};
 
 		// Clear and recalculate snap guides
@@ -512,21 +520,39 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const otherClipBounds: ClipBounds[] = otherPlayers.map(other => {
 			const pos = other.getContainer().position;
 			const size = other.getSize();
-			return createClipBounds({ x: pos.x, y: pos.y }, size);
+			const otherPivot = other.getPivot();
+			const otherScale = other.getContainer().scale;
+			return createClipBounds(
+				{ x: pos.x - otherPivot.x * otherScale.x, y: pos.y - otherPivot.y * otherScale.y },
+				{ width: size.width * otherScale.x, height: size.height * otherScale.y }
+			);
 		});
 
-		const snapContext = createSnapContext(this.selectedPlayer.getSize(), this.edit.size, otherClipBounds);
-		const snapResult = snap(rawPosition, snapContext);
+		// Filter out clips where one fully contains the other
+		const draggedBounds = createClipBounds(visualPosition, visualSize);
+		const snapTargets = otherClipBounds.filter(other =>
+			!(other.left >= draggedBounds.left && other.right <= draggedBounds.right &&
+			  other.top >= draggedBounds.top && other.bottom <= draggedBounds.bottom) &&
+			!(draggedBounds.left >= other.left && draggedBounds.right <= other.right &&
+			  draggedBounds.top >= other.top && draggedBounds.bottom <= other.bottom)
+		);
+
+		const snapContext = createSnapContext(visualSize, this.edit.size, snapTargets);
+		const snapResult = snap(visualPosition, snapContext);
 
 		// Draw alignment guides
 		for (const guide of snapResult.guides) {
 			this.edit.showAlignmentGuide(guide.type, guide.axis, guide.position, guide.bounds);
 		}
 
-		// Calculate new offset position
+		// Convert snapped visual position back to logical space for offset calculation
+		const snappedLogicalPosition: Vector = {
+			x: snapResult.position.x + pivot.x * (dragScale.x - 1),
+			y: snapResult.position.y + pivot.y * (dragScale.y - 1)
+		};
 		const size = this.selectedPlayer.getSize();
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
-		const updatedRelative = absoluteToRelative(this.edit.size, size, position, snapResult.position);
+		const updatedRelative = absoluteToRelative(this.edit.size, size, position, snappedLogicalPosition);
 
 		// Store final state locally
 		this.finalDragState = {

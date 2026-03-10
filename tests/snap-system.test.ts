@@ -433,7 +433,7 @@ describe("SnapSystem", () => {
 			expect(result.position).toEqual({ x: 205, y: 100 });
 		});
 
-		it("clip snapping takes priority over canvas snapping when both match", () => {
+		it("canvas snapping wins over clip snapping when equidistant", () => {
 			// Position a clip right at the canvas center
 			const otherClip: ClipBounds = {
 				left: 935,
@@ -451,10 +451,29 @@ describe("SnapSystem", () => {
 
 			const result = snap(position, context);
 
-			// Should have clip guide, not canvas guide (clip takes priority)
+			// Canvas wins ties — centering is the most intentional action
+			const xGuide = result.guides.find(g => g.axis === "x");
+			expect(xGuide?.type).toBe("canvas");
+			expect(result.position.x).toBe(910); // Center aligned at 960
+		});
+
+		it("clip snapping wins when strictly closer than canvas snap", () => {
+			// Other clip's right edge at 900
+			const otherClip: ClipBounds = {
+				left: 800, right: 900, top: 400, bottom: 500,
+				centerX: 850, centerY: 450
+			};
+			const context = createSnapContext(clipSize, canvasSize, [otherClip], { threshold: 20 });
+			// My left edge at 903 → 3px from clip right (900),
+			// my center at 953 → 7px from canvas center (960)
+			const position = { x: 903, y: 500 };
+
+			const result = snap(position, context);
+
+			// Clip snap adjustment = 3, canvas snap adjustment = 7 → clip wins
+			expect(result.position.x).toBe(900);
 			const xGuide = result.guides.find(g => g.axis === "x");
 			expect(xGuide?.type).toBe("clip");
-			expect(result.position.x).toBe(910); // Center aligned at 960
 		});
 
 		it("uses canvas snap when clip snap is further away", () => {
