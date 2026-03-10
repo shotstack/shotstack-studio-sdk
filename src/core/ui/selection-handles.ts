@@ -14,7 +14,7 @@ import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotatio
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
 import type { Vector } from "@layouts/geometry";
-import { PositionBuilder } from "@layouts/position-builder";
+import { absoluteToRelative } from "@layouts/position-builder";
 import type { ResolvedClip, SvgAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
@@ -45,7 +45,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private handles: Map<CornerName, pixi.Graphics>;
 	private edgeHandles: Map<EdgeDirection, pixi.Graphics>;
 	private app: pixi.Application | null = null;
-	private positionBuilder: PositionBuilder;
 
 	// Dimension label shown during resize (lives in overlay parent, not rotated container)
 	private dimensionContainer: pixi.Container;
@@ -114,8 +113,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		});
 		this.dimensionContainer.addChild(this.dimensionBackground);
 		this.dimensionContainer.addChild(this.dimensionLabel);
-
-		this.positionBuilder = new PositionBuilder(edit.size);
 
 		// Bind event handlers
 		this.onClipSelectedBound = this.onClipSelected.bind(this);
@@ -529,7 +526,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		// Calculate new offset position
 		const size = this.selectedPlayer.getSize();
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
-		const updatedRelative = this.positionBuilder.absoluteToRelative(size, position, snapResult.position);
+		const updatedRelative = absoluteToRelative(this.edit.size, size, position, snapResult.position);
 
 		// Store final state locally
 		this.finalDragState = {
