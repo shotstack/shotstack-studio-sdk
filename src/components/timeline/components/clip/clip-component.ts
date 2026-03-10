@@ -45,12 +45,12 @@ export class ClipComponent {
 		this.element = document.createElement("div");
 		this.element.className = "ss-clip";
 		this.options = options;
-		this.buildElement(clip);
 		this.currentState = clip;
+		this.buildElement();
 		this.element.dataset["clipId"] = clip.id;
 	}
 
-	private buildElement(clip: ClipState): void {
+	private buildElement(): void {
 		// Content container
 		const content = document.createElement("div");
 		content.className = "ss-clip-content";
@@ -84,10 +84,10 @@ export class ClipComponent {
 		this.element.appendChild(rightHandle);
 
 		// Set up interaction handlers
-		this.setupInteraction(clip);
+		this.setupInteraction();
 	}
 
-	private setupInteraction(clip: ClipState): void {
+	private setupInteraction(): void {
 		this.element.addEventListener("pointerdown", e => {
 			// Check if clicking on resize handle
 			const target = e.target as HTMLElement;
@@ -96,9 +96,11 @@ export class ClipComponent {
 				return;
 			}
 
+			if (!this.currentState) return;
+
 			// Select clip
 			const addToSelection = e.shiftKey || e.ctrlKey || e.metaKey;
-			this.options.onSelect(clip.trackIndex, clip.clipIndex, addToSelection);
+			this.options.onSelect(this.currentState.trackIndex, this.currentState.clipIndex, addToSelection);
 		});
 	}
 
