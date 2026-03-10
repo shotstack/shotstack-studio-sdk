@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.3] - 2026-03-10
+
+### Fixed
+
+- Better, more intuitive snapping and guide lines.
+- Timeline clip selection
+
 ## [2.1.2] - 2026-03-06
 
 ### Fixed

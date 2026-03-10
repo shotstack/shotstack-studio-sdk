@@ -16,7 +16,7 @@ import {
 } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
-import { PositionBuilder } from "@layouts/position-builder";
+import { relativeToAbsolute, absoluteToRelative } from "@layouts/position-builder";
 import { type Clip, type ResolvedClip, type Keyframe } from "@schemas";
 import * as pixi from "pixi.js";
 
@@ -75,7 +75,6 @@ export abstract class Player extends Entity {
 
 	private resolvedTiming: ResolvedTiming;
 
-	private positionBuilder: PositionBuilder;
 	private offsetXKeyframeBuilder?: ComposedKeyframeBuilder;
 	private offsetYKeyframeBuilder?: ComposedKeyframeBuilder;
 	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
@@ -98,7 +97,6 @@ export abstract class Player extends Entity {
 		this.playerType = playerType;
 
 		this.clipConfiguration = clipConfiguration;
-		this.positionBuilder = new PositionBuilder(edit.size);
 
 		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
 
@@ -417,7 +415,7 @@ export abstract class Player extends Entity {
 			y: this.offsetYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0
 		};
 
-		return this.positionBuilder.relativeToAbsolute(this.getSize(), this.clipConfiguration.position ?? "center", offset);
+		return relativeToAbsolute(this.edit.size, this.getSize(), this.clipConfiguration.position ?? "center", offset);
 	}
 
 	public getPivot(): Vector {
@@ -435,7 +433,7 @@ export abstract class Player extends Entity {
 		const currentPos = this.getPosition();
 		const newAbsolutePos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
 
-		const relativePos = this.positionBuilder.absoluteToRelative(this.getSize(), this.clipConfiguration.position ?? "center", newAbsolutePos);
+		const relativePos = absoluteToRelative(this.edit.size, this.getSize(), this.clipConfiguration.position ?? "center", newAbsolutePos);
 
 		return { x: relativePos.x, y: relativePos.y };
 	}
