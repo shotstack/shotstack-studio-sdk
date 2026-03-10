@@ -47,20 +47,20 @@ describe("PositionBuilder", () => {
 			{ width: 800, height: 600 }
 		];
 
-		for (const anchor of anchors) {
-			for (const container of containers) {
-				it(`round-trips for anchor="${anchor}" at ${container.width}x${container.height}`, () => {
-					const entity = { width: 300, height: 150 };
-					const original = { x: 0.15, y: -0.25 };
+		const cases = anchors.flatMap(anchor =>
+			containers.map(container => ({ anchor, container }))
+		);
 
-					const absolute = relativeToAbsolute(container, entity, anchor, original);
-					const roundTripped = absoluteToRelative(container, entity, anchor, absolute);
+		it.each(cases)("round-trips for anchor=$anchor at $container.width×$container.height", ({ anchor, container }) => {
+			const entity = { width: 300, height: 150 };
+			const original = { x: 0.15, y: -0.25 };
 
-					expect(roundTripped.x).toBeCloseTo(original.x, 10);
-					expect(roundTripped.y).toBeCloseTo(original.y, 10);
-				});
-			}
-		}
+			const absolute = relativeToAbsolute(container, entity, anchor, original);
+			const roundTripped = absoluteToRelative(container, entity, anchor, absolute);
+
+			expect(roundTripped.x).toBeCloseTo(original.x, 10);
+			expect(roundTripped.y).toBeCloseTo(original.y, 10);
+		});
 	});
 
 	describe("different container sizes produce different positions", () => {
