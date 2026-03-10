@@ -56,14 +56,14 @@ describe("StylePanel", () => {
 	});
 
 	describe("tab switching", () => {
-		it("should render all 4 tabs: Fill, Border, Padding, Shadow", () => {
+		it("should render all 5 tabs: Fill, Border, Stroke, Padding, Shadow", () => {
 			panel.mount(container);
 
 			const tabs = container.querySelectorAll("[data-style-tab]");
-			expect(tabs.length).toBe(4);
+			expect(tabs.length).toBe(5);
 
 			const tabNames = Array.from(tabs).map(t => t.textContent?.trim());
-			expect(tabNames).toEqual(["Fill", "Border", "Padding", "Shadow"]);
+			expect(tabNames).toEqual(["Fill", "Border", "Stroke", "Padding", "Shadow"]);
 		});
 
 		it("should show Fill tab content by default", () => {
@@ -301,6 +301,67 @@ describe("StylePanel", () => {
 
 			// Blur should be 4, not 0
 			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ blur: 4 }));
+		});
+	});
+
+	describe("stroke controls", () => {
+		it("should render width, color, opacity controls", () => {
+			panel.mount(container);
+
+			expect(container.querySelector("[data-stroke-width-slider]")).not.toBeNull();
+			expect(container.querySelector("[data-stroke-color]")).not.toBeNull();
+			expect(container.querySelector("[data-stroke-opacity-slider]")).not.toBeNull();
+		});
+
+		it("should emit stroke change on width slider input", () => {
+			panel.mount(container);
+
+			const callback = jest.fn();
+			panel.onStrokeChange(callback);
+
+			const slider = container.querySelector("[data-stroke-width-slider]") as HTMLInputElement;
+			simulateInput(slider, 3);
+
+			expect(callback).toHaveBeenCalledWith(expect.objectContaining({ width: 3 }));
+		});
+
+		it("should sync state from setStrokeState()", () => {
+			panel.mount(container);
+
+			panel.setStrokeState({ width: 4, color: "#00ff00", opacity: 50 });
+
+			const widthSlider = container.querySelector("[data-stroke-width-slider]") as HTMLInputElement;
+			const colorInput = container.querySelector("[data-stroke-color]") as HTMLInputElement;
+			const opacitySlider = container.querySelector("[data-stroke-opacity-slider]") as HTMLInputElement;
+
+			expect(widthSlider?.value).toBe("4");
+			expect(colorInput?.value).toBe("#00ff00");
+			expect(opacitySlider?.value).toBe("50");
+		});
+	});
+
+	describe("hideTabs option", () => {
+		it("should hide border tab when hideTabs includes border", () => {
+			const hiddenPanel = new StylePanel({ hideTabs: ["border"] });
+			hiddenPanel.mount(container);
+
+			const borderTab = container.querySelector('[data-style-tab="border"]') as HTMLElement;
+			expect(borderTab?.style.display).toBe("none");
+
+			const borderContent = container.querySelector('[data-tab-content="border"]') as HTMLElement;
+			expect(borderContent?.style.display).toBe("none");
+
+			hiddenPanel.dispose();
+		});
+
+		it("should keep non-hidden tabs visible", () => {
+			const hiddenPanel = new StylePanel({ hideTabs: ["border"] });
+			hiddenPanel.mount(container);
+
+			const strokeTab = container.querySelector('[data-style-tab="stroke"]') as HTMLElement;
+			expect(strokeTab?.style.display).not.toBe("none");
+
+			hiddenPanel.dispose();
 		});
 	});
 

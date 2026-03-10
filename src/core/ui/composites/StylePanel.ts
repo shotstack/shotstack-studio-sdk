@@ -14,6 +14,11 @@ export interface StyleState {
 		opacity: number;
 		radius: number;
 	};
+	stroke: {
+		width: number;
+		color: string;
+		opacity: number;
+	};
 	padding: {
 		top: number;
 		right: number;
@@ -30,30 +35,34 @@ export interface StyleState {
 	};
 }
 
-type StyleTab = "fill" | "border" | "padding" | "shadow";
+export type StyleTab = "fill" | "border" | "stroke" | "padding" | "shadow";
+
+export interface StylePanelOptions {
+	hideTabs?: StyleTab[];
+}
 
 /**
- * A consolidated style panel with tabbed UI for Fill, Border, Padding, and Shadow.
+ * A consolidated style panel with tabbed UI for Fill, Border, Stroke, Padding, and Shadow.
  *
- * This composite replaces 4 separate toolbar buttons with a single "Style" dropdown
+ * This composite replaces separate toolbar buttons with a single "Style" dropdown
  * containing a tabbed panel. Follows video editor UX patterns for progressive disclosure.
  *
  * @example
  * ```typescript
- * const stylePanel = new StylePanel();
+ * const stylePanel = new StylePanel({ hideTabs: ["border"] });
  * stylePanel.onFillChange(state => this.applyFill(state));
- * stylePanel.onBorderChange(state => this.applyBorder(state));
- * stylePanel.onPaddingChange(state => this.applyPadding(state));
- * stylePanel.onShadowChange(state => this.applyShadow(state));
+ * stylePanel.onStrokeChange(state => this.applyStroke(state));
  * stylePanel.mount(popupContainer);
  * ```
  */
 export class StylePanel extends UIComponent<StyleState> {
 	private activeTab: StyleTab = "fill";
+	private hiddenTabs: Set<StyleTab>;
 
 	private state: StyleState = {
 		fill: { color: "#000000", opacity: 100 },
 		border: { width: 0, color: "#000000", opacity: 100, radius: 0 },
+		stroke: { width: 0, color: "#000000", opacity: 100 },
 		padding: { top: 0, right: 0, bottom: 0, left: 0 },
 		// blur is fixed at 4 - canvas only checks blur > 0, doesn't implement actual blur effect
 		shadow: { enabled: false, offsetX: 0, offsetY: 0, blur: 4, color: "#000000", opacity: 50 }
@@ -62,6 +71,7 @@ export class StylePanel extends UIComponent<StyleState> {
 	// Callbacks for each section
 	private fillChangeCallback: ((state: StyleState["fill"]) => void) | null = null;
 	private borderChangeCallback: ((state: StyleState["border"]) => void) | null = null;
+	private strokeChangeCallback: ((state: StyleState["stroke"]) => void) | null = null;
 	private paddingChangeCallback: ((state: StyleState["padding"]) => void) | null = null;
 	private shadowChangeCallback: ((state: StyleState["shadow"]) => void) | null = null;
 
@@ -85,6 +95,13 @@ export class StylePanel extends UIComponent<StyleState> {
 	private borderRadiusSlider: HTMLInputElement | null = null;
 	private borderRadiusValue: HTMLSpanElement | null = null;
 
+	// Stroke elements
+	private strokeWidthSlider: HTMLInputElement | null = null;
+	private strokeWidthValue: HTMLSpanElement | null = null;
+	private strokeColorInput: HTMLInputElement | null = null;
+	private strokeOpacitySlider: HTMLInputElement | null = null;
+	private strokeOpacityValue: HTMLSpanElement | null = null;
+
 	// Padding elements
 	private paddingTopSlider: HTMLInputElement | null = null;
 	private paddingTopValue: HTMLSpanElement | null = null;
@@ -107,20 +124,28 @@ export class StylePanel extends UIComponent<StyleState> {
 
 	// Two-phase pattern: Track if drag is active
 	private borderDragActive: boolean = false;
+	private strokeDragActive: boolean = false;
 	private paddingDragActive: boolean = false;
 	private shadowDragActive: boolean = false;
+
+	constructor(options: StylePanelOptions = {}) {
+		super();
+		this.hiddenTabs = new Set(options.hideTabs ?? []);
+	}
 
 	render(): string {
 		return `
 			<div class="ss-style-tabs">
 				<button class="ss-style-tab active" data-style-tab="fill">Fill</button>
 				<button class="ss-style-tab" data-style-tab="border">Border</button>
+				<button class="ss-style-tab" data-style-tab="stroke">Stroke</button>
 				<button class="ss-style-tab" data-style-tab="padding">Padding</button>
 				<button class="ss-style-tab" data-style-tab="shadow">Shadow</button>
 			</div>
 			<div class="ss-style-content">
 				${this.renderFillTab()}
 				${this.renderBorderTab()}
+				${this.renderStrokeTab()}
 				${this.renderPaddingTab()}
 				${this.renderShadowTab()}
 			</div>
@@ -160,6 +185,30 @@ export class StylePanel extends UIComponent<StyleState> {
 					<div class="ss-toolbar-popup-row">
 						<input type="range" data-border-radius-slider class="ss-toolbar-slider" min="0" max="100" step="1" value="0" />
 						<span data-border-radius-value class="ss-toolbar-popup-value">0</span>
+					</div>
+				</div>
+			</div>
+		`;
+	}
+
+	private renderStrokeTab(): string {
+		return `
+			<div class="ss-style-panel" data-tab-content="stroke" style="display: none;">
+				<div class="ss-toolbar-popup-section">
+					<div class="ss-toolbar-popup-label">Width</div>
+					<div class="ss-toolbar-popup-row">
+						<input type="range" data-stroke-width-slider class="ss-toolbar-slider" min="0" max="20" step="1" value="0" />
+						<span data-stroke-width-value class="ss-toolbar-popup-value">0</span>
+					</div>
+				</div>
+				<div class="ss-toolbar-popup-section">
+					<div class="ss-toolbar-popup-label">Color & Opacity</div>
+					<div class="ss-toolbar-popup-row">
+						<div class="ss-toolbar-color-wrap">
+							<input type="color" data-stroke-color class="ss-toolbar-color" value="#000000" />
+						</div>
+						<input type="range" data-stroke-opacity-slider class="ss-toolbar-slider" min="0" max="100" value="100" />
+						<span data-stroke-opacity-value class="ss-toolbar-popup-value">100</span>
 					</div>
 				</div>
 			</div>
@@ -255,6 +304,13 @@ export class StylePanel extends UIComponent<StyleState> {
 		this.borderRadiusSlider = this.container?.querySelector("[data-border-radius-slider]") ?? null;
 		this.borderRadiusValue = this.container?.querySelector("[data-border-radius-value]") ?? null;
 
+		// Stroke
+		this.strokeWidthSlider = this.container?.querySelector("[data-stroke-width-slider]") ?? null;
+		this.strokeWidthValue = this.container?.querySelector("[data-stroke-width-value]") ?? null;
+		this.strokeColorInput = this.container?.querySelector("[data-stroke-color]") ?? null;
+		this.strokeOpacitySlider = this.container?.querySelector("[data-stroke-opacity-slider]") ?? null;
+		this.strokeOpacityValue = this.container?.querySelector("[data-stroke-opacity-value]") ?? null;
+
 		// Padding
 		this.paddingTopSlider = this.container?.querySelector("[data-padding-top-slider]") ?? null;
 		this.paddingTopValue = this.container?.querySelector("[data-padding-top-value]") ?? null;
@@ -274,6 +330,9 @@ export class StylePanel extends UIComponent<StyleState> {
 		this.shadowColorInput = this.container?.querySelector("[data-shadow-color]") ?? null;
 		this.shadowOpacitySlider = this.container?.querySelector("[data-shadow-opacity]") ?? null;
 		this.shadowOpacityValue = this.container?.querySelector("[data-shadow-opacity-value]") ?? null;
+
+		// Apply hideTabs — remove tab buttons and panels for hidden tabs
+		this.applyHiddenTabs();
 	}
 
 	protected setupEvents(): void {
@@ -288,11 +347,43 @@ export class StylePanel extends UIComponent<StyleState> {
 		// Border events
 		this.setupBorderEvents();
 
+		// Stroke events
+		this.setupStrokeEvents();
+
 		// Padding events
 		this.setupPaddingEvents();
 
 		// Shadow events
 		this.setupShadowEvents();
+	}
+
+	// ─── Hidden Tabs ──────────────────────────────────────────────────────
+
+	private applyHiddenTabs(): void {
+		if (this.hiddenTabs.size === 0) return;
+
+		// Hide tab buttons
+		this.tabButtons?.forEach(btn => {
+			const tab = btn.dataset["styleTab"] as StyleTab;
+			if (this.hiddenTabs.has(tab)) {
+				btn.style.display = "none"; // eslint-disable-line no-param-reassign -- DOM manipulation
+			}
+		});
+
+		// Hide tab panels
+		this.tabPanels?.forEach(el => {
+			const tab = el.dataset["tabContent"] as StyleTab;
+			if (this.hiddenTabs.has(tab)) {
+				el.style.display = "none"; // eslint-disable-line no-param-reassign -- DOM manipulation
+			}
+		});
+
+		// If the active tab is hidden, switch to the first visible tab
+		if (this.hiddenTabs.has(this.activeTab)) {
+			const allTabs: StyleTab[] = ["fill", "border", "stroke", "padding", "shadow"];
+			const firstVisible = allTabs.find(t => !this.hiddenTabs.has(t));
+			if (firstVisible) this.switchTab(firstVisible);
+		}
 	}
 
 	// ─── Phase 2 Helper Methods ────────────────────────────────────
@@ -308,6 +399,18 @@ export class StylePanel extends UIComponent<StyleState> {
 		};
 		const el = valueMap[property];
 		if (el) el.textContent = String(this.state.border[property]);
+	}
+
+	/**
+	 * Update stroke value display for a specific property.
+	 */
+	private updateStrokeValueDisplay(property: "width" | "opacity"): void {
+		const valueMap = {
+			width: this.strokeWidthValue,
+			opacity: this.strokeOpacityValue
+		};
+		const el = valueMap[property];
+		if (el) el.textContent = String(this.state.stroke[property]);
 	}
 
 	/**
@@ -383,6 +486,59 @@ export class StylePanel extends UIComponent<StyleState> {
 		if (this.borderColorInput) this.events.on(this.borderColorInput, "change", onBorderDragEnd);
 		if (this.borderOpacitySlider) this.events.on(this.borderOpacitySlider, "change", onBorderDragEnd);
 		if (this.borderRadiusSlider) this.events.on(this.borderRadiusSlider, "change", onBorderDragEnd);
+	}
+
+	private setupStrokeEvents(): void {
+		// Phase 1: Mark drag active on pointerdown
+		const setupStrokePointerdown = (element: HTMLInputElement | null): void => {
+			if (element) {
+				this.events.on(element, "pointerdown", () => {
+					const wasInactive = !this.strokeDragActive;
+					this.strokeDragActive = true;
+					if (wasInactive) {
+						this.dragStartCallback?.();
+					}
+				});
+			}
+		};
+
+		setupStrokePointerdown(this.strokeWidthSlider);
+		setupStrokePointerdown(this.strokeColorInput);
+		setupStrokePointerdown(this.strokeOpacitySlider);
+
+		// Phase 2: Live update during drag
+		if (this.strokeWidthSlider) {
+			this.events.on(this.strokeWidthSlider, "input", () => {
+				this.state.stroke.width = parseInt(this.strokeWidthSlider!.value, 10);
+				this.updateStrokeValueDisplay("width");
+				this.emitStrokeChange();
+			});
+		}
+		if (this.strokeColorInput) {
+			this.events.on(this.strokeColorInput, "input", () => {
+				this.state.stroke.color = this.strokeColorInput!.value;
+				this.emitStrokeChange();
+			});
+		}
+		if (this.strokeOpacitySlider) {
+			this.events.on(this.strokeOpacitySlider, "input", () => {
+				this.state.stroke.opacity = parseInt(this.strokeOpacitySlider!.value, 10);
+				this.updateStrokeValueDisplay("opacity");
+				this.emitStrokeChange();
+			});
+		}
+
+		// Phase 3: Mark drag complete on release
+		const onStrokeDragEnd = (): void => {
+			if (this.strokeDragActive) {
+				this.strokeDragActive = false;
+				this.dragEndCallback?.();
+			}
+		};
+
+		if (this.strokeWidthSlider) this.events.on(this.strokeWidthSlider, "change", onStrokeDragEnd);
+		if (this.strokeColorInput) this.events.on(this.strokeColorInput, "change", onStrokeDragEnd);
+		if (this.strokeOpacitySlider) this.events.on(this.strokeOpacitySlider, "change", onStrokeDragEnd);
 	}
 
 	private setupPaddingEvents(): void {
@@ -534,8 +690,10 @@ export class StylePanel extends UIComponent<StyleState> {
 
 		// Show/hide tab panels
 		this.tabPanels?.forEach(el => {
-			const isActive = el.dataset["tabContent"] === tab;
-			el.style.display = isActive ? "block" : "none"; // eslint-disable-line no-param-reassign -- DOM manipulation
+			const panelTab = el.dataset["tabContent"] as StyleTab;
+			const isActive = panelTab === tab;
+			const isHidden = this.hiddenTabs.has(panelTab);
+			el.style.display = isActive && !isHidden ? "block" : "none"; // eslint-disable-line no-param-reassign -- DOM manipulation
 		});
 	}
 
@@ -547,6 +705,10 @@ export class StylePanel extends UIComponent<StyleState> {
 
 	onBorderChange(callback: (state: StyleState["border"]) => void): void {
 		this.borderChangeCallback = callback;
+	}
+
+	onStrokeChange(callback: (state: StyleState["stroke"]) => void): void {
+		this.strokeChangeCallback = callback;
 	}
 
 	onPaddingChange(callback: (state: StyleState["padding"]) => void): void {
@@ -573,6 +735,11 @@ export class StylePanel extends UIComponent<StyleState> {
 
 	private emitBorderChange(): void {
 		this.borderChangeCallback?.({ ...this.state.border });
+		this.emit(this.state);
+	}
+
+	private emitStrokeChange(): void {
+		this.strokeChangeCallback?.({ ...this.state.stroke });
 		this.emit(this.state);
 	}
 
@@ -611,6 +778,14 @@ export class StylePanel extends UIComponent<StyleState> {
 	}
 
 	/**
+	 * Set stroke state from clip data.
+	 */
+	setStrokeState(state: Partial<StyleState["stroke"]>): void {
+		this.state.stroke = { ...this.state.stroke, ...state };
+		this.updateStrokeUI();
+	}
+
+	/**
 	 * Set padding state from clip data.
 	 */
 	setPaddingState(state: Partial<StyleState["padding"]>): void {
@@ -633,6 +808,7 @@ export class StylePanel extends UIComponent<StyleState> {
 		return {
 			fill: { ...this.state.fill },
 			border: { ...this.state.border },
+			stroke: { ...this.state.stroke },
 			padding: { ...this.state.padding },
 			shadow: { ...this.state.shadow }
 		};
@@ -643,7 +819,7 @@ export class StylePanel extends UIComponent<StyleState> {
 	 * @internal Used by parent to determine if live updates should skip command creation.
 	 */
 	isDragging(): boolean {
-		return this.borderDragActive || this.paddingDragActive || this.shadowDragActive;
+		return this.borderDragActive || this.strokeDragActive || this.paddingDragActive || this.shadowDragActive;
 	}
 
 	// ─── UI Updates ───────────────────────────────────────────────────────────
@@ -656,6 +832,14 @@ export class StylePanel extends UIComponent<StyleState> {
 		this.updateBorderValueDisplay("width");
 		this.updateBorderValueDisplay("opacity");
 		this.updateBorderValueDisplay("radius");
+	}
+
+	private updateStrokeUI(): void {
+		if (this.strokeWidthSlider) this.strokeWidthSlider.value = String(this.state.stroke.width);
+		if (this.strokeColorInput) this.strokeColorInput.value = this.state.stroke.color;
+		if (this.strokeOpacitySlider) this.strokeOpacitySlider.value = String(this.state.stroke.opacity);
+		this.updateStrokeValueDisplay("width");
+		this.updateStrokeValueDisplay("opacity");
 	}
 
 	private updatePaddingUI(): void {
@@ -696,6 +880,7 @@ export class StylePanel extends UIComponent<StyleState> {
 	override dispose(): void {
 		// Clear drag state
 		this.borderDragActive = false;
+		this.strokeDragActive = false;
 		this.paddingDragActive = false;
 		this.shadowDragActive = false;
 		super.dispose();

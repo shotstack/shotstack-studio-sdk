@@ -1,7 +1,7 @@
 import { type Edit as EditSchema } from "@schemas";
 import { Timeline } from "@timeline/index";
 
-import template from "./templates/test.json";
+import template from "./templates/caption.json";
 
 import { Edit, Canvas, Controls, UIController } from "./index";
 

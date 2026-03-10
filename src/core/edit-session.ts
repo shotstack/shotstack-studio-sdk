@@ -1495,7 +1495,7 @@ export class Edit {
 		const usedFilenames = new Set<string>();
 		for (const clip of this.clips) {
 			const { asset } = clip.clipConfiguration;
-			if (asset && asset.type === "rich-text" && asset.font?.family) {
+			if (asset && (asset.type === "rich-text" || asset.type === "rich-caption") && asset.font?.family) {
 				usedFilenames.add(asset.font.family);
 			}
 		}

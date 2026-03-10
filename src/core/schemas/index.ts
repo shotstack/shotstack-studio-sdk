@@ -25,6 +25,7 @@ import {
 	shapeAssetSchema,
 	lumaAssetSchema,
 	svgAssetSchema,
+	richCaptionAssetSchema,
 	textToImageAssetSchema,
 	imageToVideoAssetSchema,
 	textToSpeechAssetSchema,
@@ -64,6 +65,7 @@ export type ShapeAsset = components["schemas"]["ShapeAsset"];
 export type LumaAsset = components["schemas"]["LumaAsset"];
 export type TitleAsset = components["schemas"]["TitleAsset"];
 export type SvgAsset = components["schemas"]["SvgAsset"];
+export type RichCaptionAsset = components["schemas"]["RichCaptionAsset"];
 export type TextToImageAsset = components["schemas"]["TextToImageAsset"];
 export type ImageToVideoAsset = components["schemas"]["ImageToVideoAsset"];
 export type TextToSpeechAsset = components["schemas"]["TextToSpeechAsset"];
@@ -155,6 +157,7 @@ export {
 	shapeAssetSchema as ShapeAssetSchema,
 	lumaAssetSchema as LumaAssetSchema,
 	svgAssetSchema as SvgAssetSchema,
+	richCaptionAssetSchema as RichCaptionAssetSchema,
 	textToImageAssetSchema as TextToImageAssetSchema,
 	imageToVideoAssetSchema as ImageToVideoAssetSchema,
 	textToSpeechAssetSchema as TextToSpeechAssetSchema,
