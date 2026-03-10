@@ -10,11 +10,11 @@ import {
 	detectEdgeZone
 } from "@core/interaction/clip-interaction";
 import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
-import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
+import { type ClipBounds, createClipBounds, createSnapContext, filterContainedClips, snap, snapRotation, visualToLogical } from "@core/interaction/snap-system";
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
-import type { Vector } from "@layouts/geometry";
-import { PositionBuilder } from "@layouts/position-builder";
+import type { Size, Vector } from "@layouts/geometry";
+import { absoluteToRelative } from "@layouts/position-builder";
 import type { ResolvedClip, SvgAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
@@ -45,7 +45,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private handles: Map<CornerName, pixi.Graphics>;
 	private edgeHandles: Map<EdgeDirection, pixi.Graphics>;
 	private app: pixi.Application | null = null;
-	private positionBuilder: PositionBuilder;
 
 	// Dimension label shown during resize (lives in overlay parent, not rotated container)
 	private dimensionContainer: pixi.Container;
@@ -55,8 +54,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	// Selection state
 	private selectedPlayer: Player | null = null;
 	private selectedClipId: string | null = null;
-	private selectedTrackIndex = -1;
-	private selectedClipIndex = -1;
 
 	// Interaction state
 	private isHovering = false;
@@ -71,7 +68,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private isRotating = false;
 	private rotationStart: number | null = null;
 	private initialRotation = 0;
-	private rotationCorner: CornerName | null = null;
 
 	private initialClipConfiguration: ResolvedClip | null = null;
 
@@ -114,8 +110,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		});
 		this.dimensionContainer.addChild(this.dimensionBackground);
 		this.dimensionContainer.addChild(this.dimensionLabel);
-
-		this.positionBuilder = new PositionBuilder(edit.size);
 
 		// Bind event handlers
 		this.onClipSelectedBound = this.onClipSelected.bind(this);
@@ -212,15 +206,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private onClipSelected({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
 		this.selectedPlayer = this.edit.getPlayerClip(trackIndex, clipIndex);
 		this.selectedClipId = this.selectedPlayer?.clipId ?? null;
-		this.selectedTrackIndex = trackIndex;
-		this.selectedClipIndex = clipIndex;
 	}
 
 	private onSelectionCleared(): void {
 		this.selectedPlayer = null;
 		this.selectedClipId = null;
-		this.selectedTrackIndex = -1;
-		this.selectedClipIndex = -1;
 		this.resetDragState();
 	}
 
@@ -503,9 +493,17 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			x: timelinePoint.x - this.dragOffset.x,
 			y: timelinePoint.y - this.dragOffset.y
 		};
-		const rawPosition: Vector = {
-			x: cursorPosition.x - pivot.x,
-			y: cursorPosition.y - pivot.y
+
+		// Compute visual (scaled) bounds for snap — accounts for container scale from fit mode
+		const dragScale = this.selectedPlayer.getContainer().scale;
+		const dragSize = this.selectedPlayer.getSize();
+		const visualPosition: Vector = {
+			x: cursorPosition.x - pivot.x * dragScale.x,
+			y: cursorPosition.y - pivot.y * dragScale.y
+		};
+		const visualSize: Size = {
+			width: dragSize.width * dragScale.x,
+			height: dragSize.height * dragScale.y
 		};
 
 		// Clear and recalculate snap guides
@@ -515,21 +513,31 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const otherClipBounds: ClipBounds[] = otherPlayers.map(other => {
 			const pos = other.getContainer().position;
 			const size = other.getSize();
-			return createClipBounds({ x: pos.x, y: pos.y }, size);
+			const otherPivot = other.getPivot();
+			const otherScale = other.getContainer().scale;
+			return createClipBounds(
+				{ x: pos.x - otherPivot.x * otherScale.x, y: pos.y - otherPivot.y * otherScale.y },
+				{ width: size.width * otherScale.x, height: size.height * otherScale.y }
+			);
 		});
 
-		const snapContext = createSnapContext(this.selectedPlayer.getSize(), this.edit.size, otherClipBounds);
-		const snapResult = snap(rawPosition, snapContext);
+		// Filter out clips where one fully contains the other
+		const draggedBounds = createClipBounds(visualPosition, visualSize);
+		const snapTargets = filterContainedClips(draggedBounds, otherClipBounds);
+
+		const snapContext = createSnapContext(visualSize, this.edit.size, snapTargets);
+		const snapResult = snap(visualPosition, snapContext);
 
 		// Draw alignment guides
 		for (const guide of snapResult.guides) {
 			this.edit.showAlignmentGuide(guide.type, guide.axis, guide.position, guide.bounds);
 		}
 
-		// Calculate new offset position
+		// Convert snapped visual position back to logical space for offset calculation
+		const snappedLogicalPosition = visualToLogical(snapResult.position, pivot, dragScale);
 		const size = this.selectedPlayer.getSize();
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
-		const updatedRelative = this.positionBuilder.absoluteToRelative(size, position, snapResult.position);
+		const updatedRelative = absoluteToRelative(this.edit.size, size, position, snappedLogicalPosition);
 
 		// Store final state locally
 		this.finalDragState = {
@@ -625,11 +633,10 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.showDimensionLabel(rounded.width, rounded.height);
 	}
 
-	private startRotation(event: pixi.FederatedPointerEvent, corner: CornerName): void {
+	private startRotation(event: pixi.FederatedPointerEvent, _corner: CornerName): void {
 		if (!this.selectedPlayer) return;
 
 		this.isRotating = true;
-		this.rotationCorner = corner;
 
 		const center = this.getContentCenter();
 		this.rotationStart = Math.atan2(event.globalY - center.y, event.globalX - center.x);
@@ -817,7 +824,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.originalDimensions = null;
 		this.isRotating = false;
 		this.rotationStart = null;
-		this.rotationCorner = null;
 		this.initialClipConfiguration = null;
 		this.hideDimensionLabel();
 	}
