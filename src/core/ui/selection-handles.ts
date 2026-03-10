@@ -54,8 +54,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	// Selection state
 	private selectedPlayer: Player | null = null;
 	private selectedClipId: string | null = null;
-	private selectedTrackIndex = -1;
-	private selectedClipIndex = -1;
 
 	// Interaction state
 	private isHovering = false;
@@ -70,7 +68,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private isRotating = false;
 	private rotationStart: number | null = null;
 	private initialRotation = 0;
-	private rotationCorner: CornerName | null = null;
 
 	private initialClipConfiguration: ResolvedClip | null = null;
 
@@ -209,15 +206,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	private onClipSelected({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
 		this.selectedPlayer = this.edit.getPlayerClip(trackIndex, clipIndex);
 		this.selectedClipId = this.selectedPlayer?.clipId ?? null;
-		this.selectedTrackIndex = trackIndex;
-		this.selectedClipIndex = clipIndex;
 	}
 
 	private onSelectionCleared(): void {
 		this.selectedPlayer = null;
 		this.selectedClipId = null;
-		this.selectedTrackIndex = -1;
-		this.selectedClipIndex = -1;
 		this.resetDragState();
 	}
 
@@ -640,11 +633,10 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.showDimensionLabel(rounded.width, rounded.height);
 	}
 
-	private startRotation(event: pixi.FederatedPointerEvent, corner: CornerName): void {
+	private startRotation(event: pixi.FederatedPointerEvent, _corner: CornerName): void {
 		if (!this.selectedPlayer) return;
 
 		this.isRotating = true;
-		this.rotationCorner = corner;
 
 		const center = this.getContentCenter();
 		this.rotationStart = Math.atan2(event.globalY - center.y, event.globalX - center.x);
@@ -832,7 +824,6 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.originalDimensions = null;
 		this.isRotating = false;
 		this.rotationStart = null;
-		this.rotationCorner = null;
 		this.initialClipConfiguration = null;
 		this.hideDimensionLabel();
 	}
