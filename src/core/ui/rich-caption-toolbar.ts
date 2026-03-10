@@ -13,7 +13,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	// Caption popup panels
 	private wordAnimPopup: HTMLDivElement | null = null;
 	private activeWordPopup: HTMLDivElement | null = null;
-	private layoutPopup: HTMLDivElement | null = null;
 
 	// Word Animation slider refs
 	private wordAnimSpeedSlider: HTMLInputElement | null = null;
@@ -41,7 +40,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private currentActiveScale = 1;
 
 	protected override createStylePanel(): StylePanel {
-		return new StylePanel({ hideTabs: ["border"] });
+		return new StylePanel({});
 	}
 
 	// ─── Lifecycle ─────────────────────────────────────────────────────
@@ -63,7 +62,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 	override dispose(): void {
 		super.dispose();
-		this.layoutPopup = null;
 		this.wordAnimPopup = null;
 		this.activeWordPopup = null;
 		this.wordAnimSpeedSlider = null;
@@ -92,9 +90,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!action) return;
 
 		switch (action) {
-			case "caption-layout-toggle":
-				this.togglePopup(this.layoutPopup);
-				return;
 			case "caption-word-anim-toggle":
 				this.togglePopup(this.wordAnimPopup);
 				return;
@@ -109,7 +104,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [...super.getPopupList(), this.layoutPopup, this.wordAnimPopup, this.activeWordPopup];
+		return [...super.getPopupList(), this.wordAnimPopup, this.activeWordPopup];
 	}
 
 	protected override syncState(): void {
@@ -117,12 +112,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 		const asset = this.getCaptionAsset();
 		if (!asset) return;
-
-		// ─── Max Lines ─────────────────────────────────────
-		const maxLines = asset.maxLines ?? 2;
-		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-max-lines]").forEach(btn => {
-			this.setButtonActive(btn, btn.dataset["captionMaxLines"] === String(maxLines));
-		});
 
 		// ─── Word Animation ────────────────────────────────
 		const wordAnim = asset.wordAnimation;
@@ -187,28 +176,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!this.container) return;
 
 		const fragment = document.createDocumentFragment();
-
-		// ── Layout Group ──────────────────────────────────
-		const layoutDropdown = document.createElement("div");
-		layoutDropdown.className = "ss-toolbar-dropdown";
-		layoutDropdown.innerHTML = `
-			<button data-action="caption-layout-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Caption layout">Layout</button>
-			<div data-caption-layout-popup class="ss-toolbar-popup">
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Max Lines</div>
-					<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="1">1</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="2">2</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="3">3</button>
-						<button class="ss-toolbar-anchor-btn" data-caption-max-lines="4">4</button>
-					</div>
-				</div>
-			</div>
-		`;
-		this.layoutPopup = layoutDropdown.querySelector("[data-caption-layout-popup]");
-		fragment.appendChild(layoutDropdown);
-
-		this.wireLayoutControls(layoutDropdown);
 
 		// ── Word Animation Group ───────────────────────────
 		const wordAnimDropdown = document.createElement("div");
@@ -325,17 +292,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.wireScaleControl();
 		this.wireActiveColorControls();
 		this.wireActiveStrokeControls();
-	}
-
-	// ─── Layout Wiring ────────────────────────────────────────────────
-
-	private wireLayoutControls(root: HTMLElement): void {
-		root.querySelectorAll<HTMLButtonElement>("[data-caption-max-lines]").forEach(btn => {
-			btn.addEventListener("click", () => {
-				const maxLines = parseInt(btn.dataset["captionMaxLines"] ?? "2", 10);
-				this.updateClipProperty({ maxLines });
-			});
-		});
 	}
 
 	// ─── Word Animation Wiring ─────────────────────────────────────────

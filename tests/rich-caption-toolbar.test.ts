@@ -129,7 +129,6 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 function createCaptionAsset(overrides: Record<string, unknown> = {}) {
 	return {
 		type: "rich-caption",
-		maxLines: 2,
 		wordAnimation: { style: "karaoke", speed: 1, direction: "up" },
 		active: {
 			font: { color: "#ffff00", opacity: 1 },
@@ -196,18 +195,6 @@ describe("RichCaptionToolbar", () => {
 		beforeEach(() => {
 			setupCaptionClip(mockEdit);
 			toolbar.mount(container);
-		});
-
-		it("should inject Layout dropdown with max-lines buttons", () => {
-			const btn = container.querySelector('[data-action="caption-layout-toggle"]');
-			expect(btn).not.toBeNull();
-			expect(btn?.textContent).toBe("Layout");
-
-			const maxLinesBtns = container.querySelectorAll("[data-caption-max-lines]");
-			expect(maxLinesBtns.length).toBe(4);
-
-			const values = Array.from(maxLinesBtns).map(b => (b as HTMLElement).dataset["captionMaxLines"]);
-			expect(values).toEqual(["1", "2", "3", "4"]);
 		});
 
 		it("should inject Words dropdown with animation style buttons", () => {
@@ -283,14 +270,6 @@ describe("RichCaptionToolbar", () => {
 			toolbar.mount(container);
 		});
 
-		it("should toggle Layout popup on click", () => {
-			const btn = container.querySelector('[data-action="caption-layout-toggle"]');
-			simulateClick(btn);
-
-			const popup = container.querySelector("[data-caption-layout-popup]");
-			expect(popup?.classList.contains("visible")).toBe(true);
-		});
-
 		it("should toggle Words popup on click", () => {
 			const btn = container.querySelector('[data-action="caption-word-anim-toggle"]');
 			simulateClick(btn);
@@ -306,34 +285,11 @@ describe("RichCaptionToolbar", () => {
 			const popup = container.querySelector("[data-active-word-popup]");
 			expect(popup?.classList.contains("visible")).toBe(true);
 		});
-
-		it("should close other popups when opening a new one", () => {
-			// Open Layout
-			simulateClick(container.querySelector('[data-action="caption-layout-toggle"]'));
-			expect(container.querySelector("[data-caption-layout-popup]")?.classList.contains("visible")).toBe(true);
-
-			// Open Words — Layout should close
-			simulateClick(container.querySelector('[data-action="caption-word-anim-toggle"]'));
-			expect(container.querySelector("[data-caption-layout-popup]")?.classList.contains("visible")).toBe(false);
-			expect(container.querySelector("[data-caption-word-anim-popup]")?.classList.contains("visible")).toBe(true);
-		});
 	});
 
 	// ── State Sync ─────────────────────────────────────────────────────
 
 	describe("syncState", () => {
-		it("should sync max-lines buttons from asset", () => {
-			setupCaptionClip(mockEdit, { maxLines: 3 });
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const activeBtn = container.querySelector('[data-caption-max-lines="3"]');
-			expect(activeBtn?.classList.contains("active")).toBe(true);
-
-			const inactiveBtn = container.querySelector('[data-caption-max-lines="2"]');
-			expect(inactiveBtn?.classList.contains("active")).toBe(false);
-		});
-
 		it("should sync word animation style buttons", () => {
 			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 } });
 			toolbar.mount(container);
@@ -437,19 +393,6 @@ describe("RichCaptionToolbar", () => {
 	// ── User Interactions ──────────────────────────────────────────────
 
 	describe("layout controls", () => {
-		it("should call updateClip when max-lines button is clicked", () => {
-			setupCaptionClip(mockEdit);
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const btn3 = container.querySelector('[data-caption-max-lines="3"]');
-			simulateClick(btn3);
-
-			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
-				expect.objectContaining({ asset: expect.objectContaining({ maxLines: 3 }) })
-			);
-		});
 	});
 
 	describe("word animation controls", () => {
@@ -579,13 +522,6 @@ describe("RichCaptionToolbar", () => {
 	// ── StylePanel Override ────────────────────────────────────────────
 
 	describe("createStylePanel override", () => {
-		it("should create a StylePanel with border tab hidden", () => {
-			setupCaptionClip(mockEdit);
-			toolbar.mount(container);
-
-			const borderTab = container.querySelector('[data-style-tab="border"]') as HTMLElement;
-			expect(borderTab?.style.display).toBe("none");
-		});
 
 		it("should keep stroke tab visible", () => {
 			setupCaptionClip(mockEdit);
