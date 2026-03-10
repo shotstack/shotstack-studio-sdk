@@ -21,7 +21,9 @@ import {
 	snap,
 	snapRotation,
 	createClipBounds,
-	createSnapContext
+	createSnapContext,
+	filterContainedClips,
+	visualToLogical
 } from "@core/interaction/snap-system";
 
 describe("SnapSystem", () => {
@@ -767,6 +769,212 @@ describe("SnapSystem", () => {
 
 			expect(result.position).toBeDefined();
 			expect(result.guides).toBeDefined();
+		});
+	});
+
+	// ─── Containment Filtering Tests ─────────────────────────────────────────
+
+	describe("filterContainedClips", () => {
+		it("filters out clips fully inside the dragged clip", () => {
+			const dragged: ClipBounds = { left: 0, right: 500, top: 0, bottom: 500, centerX: 250, centerY: 250 };
+			const inside: ClipBounds = { left: 100, right: 200, top: 100, bottom: 200, centerX: 150, centerY: 150 };
+
+			const result = filterContainedClips(dragged, [inside]);
+
+			expect(result).toHaveLength(0);
+		});
+
+		it("filters out clips that fully contain the dragged clip", () => {
+			const dragged: ClipBounds = { left: 100, right: 200, top: 100, bottom: 200, centerX: 150, centerY: 150 };
+			const container: ClipBounds = { left: 0, right: 500, top: 0, bottom: 500, centerX: 250, centerY: 250 };
+
+			const result = filterContainedClips(dragged, [container]);
+
+			expect(result).toHaveLength(0);
+		});
+
+		it("keeps partially overlapping clips", () => {
+			const dragged: ClipBounds = { left: 0, right: 200, top: 0, bottom: 200, centerX: 100, centerY: 100 };
+			const overlapping: ClipBounds = { left: 100, right: 300, top: 100, bottom: 300, centerX: 200, centerY: 200 };
+
+			const result = filterContainedClips(dragged, [overlapping]);
+
+			expect(result).toHaveLength(1);
+		});
+
+		it("keeps non-overlapping clips", () => {
+			const dragged: ClipBounds = { left: 0, right: 100, top: 0, bottom: 100, centerX: 50, centerY: 50 };
+			const separate: ClipBounds = { left: 500, right: 600, top: 500, bottom: 600, centerX: 550, centerY: 550 };
+
+			const result = filterContainedClips(dragged, [separate]);
+
+			expect(result).toHaveLength(1);
+		});
+
+		it("filters out clips with exact same bounds", () => {
+			const dragged: ClipBounds = { left: 100, right: 300, top: 100, bottom: 300, centerX: 200, centerY: 200 };
+			const same: ClipBounds = { left: 100, right: 300, top: 100, bottom: 300, centerX: 200, centerY: 200 };
+
+			const result = filterContainedClips(dragged, [same]);
+
+			expect(result).toHaveLength(0);
+		});
+
+		it("handles mixed containment across multiple clips", () => {
+			const dragged: ClipBounds = { left: 100, right: 400, top: 100, bottom: 400, centerX: 250, centerY: 250 };
+			const inside: ClipBounds = { left: 150, right: 200, top: 150, bottom: 200, centerX: 175, centerY: 175 };
+			const outside: ClipBounds = { left: 0, right: 1920, top: 0, bottom: 1080, centerX: 960, centerY: 540 };
+			const partial: ClipBounds = { left: 350, right: 500, top: 350, bottom: 500, centerX: 425, centerY: 425 };
+			const separate: ClipBounds = { left: 800, right: 900, top: 800, bottom: 900, centerX: 850, centerY: 850 };
+
+			const result = filterContainedClips(dragged, [inside, outside, partial, separate]);
+
+			// inside → filtered (dragged contains it)
+			// outside → filtered (it contains dragged)
+			// partial → kept (overlapping)
+			// separate → kept (non-overlapping)
+			expect(result).toHaveLength(2);
+			expect(result).toContain(partial);
+			expect(result).toContain(separate);
+		});
+
+		it("returns empty array when given empty clips", () => {
+			const dragged: ClipBounds = { left: 0, right: 100, top: 0, bottom: 100, centerX: 50, centerY: 50 };
+
+			const result = filterContainedClips(dragged, []);
+
+			expect(result).toHaveLength(0);
+		});
+
+		it("keeps edge-touching clips that are not contained", () => {
+			const dragged: ClipBounds = { left: 0, right: 100, top: 0, bottom: 100, centerX: 50, centerY: 50 };
+			// Shares right edge but extends beyond on Y
+			const edgeTouching: ClipBounds = { left: 100, right: 200, top: 50, bottom: 150, centerX: 150, centerY: 100 };
+
+			const result = filterContainedClips(dragged, [edgeTouching]);
+
+			expect(result).toHaveLength(1);
+		});
+	});
+
+	// ─── Coordinate Conversion Tests ─────────────────────────────────────────
+
+	describe("visualToLogical", () => {
+		it("returns identity when scale is 1", () => {
+			const visual = { x: 100, y: 200 };
+			const pivot = { x: 50, y: 50 };
+			const scale = { x: 1, y: 1 };
+
+			const result = visualToLogical(visual, pivot, scale);
+
+			expect(result).toEqual({ x: 100, y: 200 });
+		});
+
+		it("applies correct offset when scale is 0.5", () => {
+			const visual = { x: 100, y: 200 };
+			const pivot = { x: 50, y: 60 };
+			const scale = { x: 0.5, y: 0.5 };
+
+			const result = visualToLogical(visual, pivot, scale);
+
+			// x: 100 + 50 * (0.5 - 1) = 100 + 50 * -0.5 = 100 - 25 = 75
+			// y: 200 + 60 * (0.5 - 1) = 200 + 60 * -0.5 = 200 - 30 = 170
+			expect(result).toEqual({ x: 75, y: 170 });
+		});
+
+		it("handles non-uniform scale independently per axis", () => {
+			const visual = { x: 100, y: 200 };
+			const pivot = { x: 40, y: 60 };
+			const scale = { x: 2, y: 0.5 };
+
+			const result = visualToLogical(visual, pivot, scale);
+
+			// x: 100 + 40 * (2 - 1) = 100 + 40 = 140
+			// y: 200 + 60 * (0.5 - 1) = 200 - 30 = 170
+			expect(result).toEqual({ x: 140, y: 170 });
+		});
+
+		it("returns identity when pivot is at origin regardless of scale", () => {
+			const visual = { x: 100, y: 200 };
+			const pivot = { x: 0, y: 0 };
+			const scale = { x: 3, y: 0.1 };
+
+			const result = visualToLogical(visual, pivot, scale);
+
+			expect(result).toEqual({ x: 100, y: 200 });
+		});
+
+		it("round-trip: logicalToVisual then visualToLogical preserves position", () => {
+			const logical = { x: 300, y: 400 };
+			const pivot = { x: 80, y: 60 };
+			const scale = { x: 0.75, y: 1.5 };
+
+			// logicalToVisual: visual = logical - pivot * (scale - 1)
+			// (inverse of visualToLogical)
+			const visual = {
+				x: logical.x - pivot.x * (scale.x - 1),
+				y: logical.y - pivot.y * (scale.y - 1)
+			};
+
+			const result = visualToLogical(visual, pivot, scale);
+
+			expect(result.x).toBeCloseTo(logical.x, 10);
+			expect(result.y).toBeCloseTo(logical.y, 10);
+		});
+	});
+
+	// ─── Additional Snap Priority Edge Cases ─────────────────────────────────
+
+	describe("snap priority edge cases", () => {
+		const clipSize = { width: 100, height: 100 };
+		const canvasSize = { width: 1920, height: 1080 };
+
+		it("returns unchanged position and no guides when nothing is within threshold", () => {
+			const context = createSnapContext(clipSize, canvasSize, [], { threshold: 1 });
+			// Position far from any canvas edge or center
+			const position = { x: 500, y: 300 };
+
+			const result = snap(position, context);
+
+			expect(result.position).toEqual({ x: 500, y: 300 });
+			expect(result.guides).toHaveLength(0);
+		});
+
+		it("snaps only on one axis when only one axis is within threshold", () => {
+			const context = createSnapContext(clipSize, canvasSize, [], { threshold: 5 });
+			// X: left edge at 3 → 3px from canvas left (0), within threshold
+			// Y: top edge at 300 → far from any canvas snap point
+			const position = { x: 3, y: 300 };
+
+			const result = snap(position, context);
+
+			expect(result.position.x).toBe(0); // Snapped to canvas left
+			expect(result.position.y).toBe(300); // Unchanged
+			expect(result.guides).toHaveLength(1);
+			expect(result.guides[0].axis).toBe("x");
+		});
+
+		it("clip snap wins at sub-pixel distance closer than canvas", () => {
+			const otherClip: ClipBounds = {
+				left: 49.5, right: 149.5, top: 400, bottom: 500,
+				centerX: 99.5, centerY: 450
+			};
+			const context = createSnapContext(clipSize, canvasSize, [otherClip], { threshold: 5 });
+			// My left edge at 51 → 1.5px from clip right (49.5 — wait, need edge-to-edge)
+			// Actually: my left=52, clip right=149.5 → 97.5px, too far
+			// Let's use: my right edge (52+100=152) vs clip right (149.5) → 2.5px
+			// vs canvas: no canvas point near 152
+			// Better approach: my left edge near clip right edge
+			// my left = 148 → 1.5px from clip right (149.5)
+			// my center = 198 → far from canvas center (960)
+			const position = { x: 148, y: 300 };
+
+			const result = snap(position, context);
+
+			// left edge (148) → 1.5px from clip right edge (149.5) → clip wins
+			expect(result.position.x).toBeCloseTo(149.5, 5);
+			const xGuide = result.guides.find(g => g.axis === "x");
+			expect(xGuide?.type).toBe("clip");
 		});
 	});
 });

@@ -10,7 +10,7 @@ import {
 	detectEdgeZone
 } from "@core/interaction/clip-interaction";
 import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
-import { type ClipBounds, createClipBounds, createSnapContext, snap, snapRotation } from "@core/interaction/snap-system";
+import { type ClipBounds, createClipBounds, createSnapContext, filterContainedClips, snap, snapRotation, visualToLogical } from "@core/interaction/snap-system";
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
 import type { Size, Vector } from "@layouts/geometry";
@@ -530,12 +530,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		// Filter out clips where one fully contains the other
 		const draggedBounds = createClipBounds(visualPosition, visualSize);
-		const snapTargets = otherClipBounds.filter(other =>
-			!(other.left >= draggedBounds.left && other.right <= draggedBounds.right &&
-			  other.top >= draggedBounds.top && other.bottom <= draggedBounds.bottom) &&
-			!(draggedBounds.left >= other.left && draggedBounds.right <= other.right &&
-			  draggedBounds.top >= other.top && draggedBounds.bottom <= other.bottom)
-		);
+		const snapTargets = filterContainedClips(draggedBounds, otherClipBounds);
 
 		const snapContext = createSnapContext(visualSize, this.edit.size, snapTargets);
 		const snapResult = snap(visualPosition, snapContext);
@@ -546,10 +541,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		}
 
 		// Convert snapped visual position back to logical space for offset calculation
-		const snappedLogicalPosition: Vector = {
-			x: snapResult.position.x + pivot.x * (dragScale.x - 1),
-			y: snapResult.position.y + pivot.y * (dragScale.y - 1)
-		};
+		const snappedLogicalPosition = visualToLogical(snapResult.position, pivot, dragScale);
 		const size = this.selectedPlayer.getSize();
 		const position = this.selectedPlayer.clipConfiguration.position ?? "center";
 		const updatedRelative = absoluteToRelative(this.edit.size, size, position, snappedLogicalPosition);

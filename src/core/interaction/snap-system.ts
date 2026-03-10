@@ -348,6 +348,42 @@ export function snapRotation(
 	return { angle, snapped: false };
 }
 
+// ─── Containment Filtering ───────────────────────────────────────────────────
+
+/**
+ * Filter out clips where one fully contains the other (bidirectional).
+ * Clips that are fully inside the dragged clip, or that fully contain the
+ * dragged clip, are excluded from snap targets.
+ * Pure function - no side effects.
+ */
+export function filterContainedClips(draggedBounds: ClipBounds, otherClips: ClipBounds[]): ClipBounds[] {
+	return otherClips.filter(other =>
+		!(other.left >= draggedBounds.left && other.right <= draggedBounds.right &&
+		  other.top >= draggedBounds.top && other.bottom <= draggedBounds.bottom) &&
+		!(draggedBounds.left >= other.left && draggedBounds.right <= other.right &&
+		  draggedBounds.top >= other.top && draggedBounds.bottom <= other.bottom)
+	);
+}
+
+// ─── Coordinate Conversion ──────────────────────────────────────────────────
+
+/**
+ * Convert a visual-space position back to logical space.
+ * Accounts for pivot offset when container scale ≠ 1.
+ *
+ * Derivation: visual = logical - pivot * (scale - 1)
+ *           → logical = visual + pivot * (scale - 1)
+ *
+ * When scale = 1 this is a no-op (visual === logical).
+ * Pure function - no side effects.
+ */
+export function visualToLogical(visualPosition: Vector, pivot: Vector, scale: Vector): Vector {
+	return {
+		x: visualPosition.x + pivot.x * (scale.x - 1),
+		y: visualPosition.y + pivot.y * (scale.y - 1)
+	};
+}
+
 // ─── Utility Functions ───────────────────────────────────────────────────────
 
 /**
