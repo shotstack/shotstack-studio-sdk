@@ -26,34 +26,17 @@ jobs:
           fetch-depth: 0
           path: shotstack-studio-sdk
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('shotstack-studio-sdk/pnpm-lock.yaml') }}
-          restore-keys: pnpm-store-${{ runner.os }}-
-
       - name: Install dependencies
         working-directory: shotstack-studio-sdk
-        run: pnpm install --frozen-lockfile
+        run: npm install
 
       - name: Run verification suite
         working-directory: shotstack-studio-sdk
-        run: pnpm verify:ci
+        run: npm run verify:ci
 
       - name: Upload coverage report
         if: always()
@@ -87,4 +70,4 @@ jobs:
         working-directory: shotstack-studio-sdk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm exec semantic-release
+        run: npx semantic-release
