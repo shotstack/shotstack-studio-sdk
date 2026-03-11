@@ -6,28 +6,17 @@ import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME } from "./google-fonts";
 
 const FONT_CDN = "https://templates.shotstack.io/basic/asset/font";
 
-/** Font family name to file path mapping */
+/** Font family name to file path mapping (variable fonts where available, matching Edit API) */
 export const FONT_PATHS: Record<string, string> = {
 	Arapey: `${FONT_CDN}/arapey-regular.ttf`,
 	"Clear Sans": `${FONT_CDN}/clearsans-regular.ttf`,
 	"Clear Sans Bold": `${FONT_CDN}/clearsans-bold.ttf`,
 	"Didact Gothic": `${FONT_CDN}/didactgothic-regular.ttf`,
-	Montserrat: `${FONT_CDN}/montserrat-regular.ttf`,
-	"Montserrat Bold": `${FONT_CDN}/montserrat-bold.ttf`,
-	"Montserrat ExtraBold": `${FONT_CDN}/montserrat-extrabold.ttf`,
-	"Montserrat SemiBold": `${FONT_CDN}/montserrat-semibold.ttf`,
-	"Montserrat Light": `${FONT_CDN}/montserrat-light.ttf`,
-	"Montserrat Medium": `${FONT_CDN}/montserrat-medium.ttf`,
-	"Montserrat Black": `${FONT_CDN}/montserrat-black.ttf`,
+	Montserrat: `${FONT_CDN}/Montserrat.ttf`,
 	MovLette: `${FONT_CDN}/movlette.ttf`,
-	"Open Sans": `${FONT_CDN}/opensans-regular.ttf`,
-	"Open Sans Bold": `${FONT_CDN}/opensans-bold.ttf`,
-	"Open Sans ExtraBold": `${FONT_CDN}/opensans-extrabold.ttf`,
+	"Open Sans": `${FONT_CDN}/OpenSans.ttf`,
 	"Permanent Marker": `${FONT_CDN}/permanentmarker-regular.ttf`,
-	Roboto: `${FONT_CDN}/roboto-regular.ttf`,
-	"Roboto Bold": `${FONT_CDN}/roboto-bold.ttf`,
-	"Roboto Light": `${FONT_CDN}/roboto-light.ttf`,
-	"Roboto Medium": `${FONT_CDN}/roboto-medium.ttf`,
+	Roboto: `${FONT_CDN}/Roboto.ttf`,
 	"Sue Ellen Francisco": `${FONT_CDN}/sueellenfrancisco-regular.ttf`,
 	"Work Sans": `${FONT_CDN}/worksans.ttf`
 };
@@ -75,32 +64,45 @@ export function parseFontFamily(fontFamily: string): { baseFontFamily: string; f
 }
 
 /**
- * Resolve a font family name to its file path
+ * Resolve a font family name to its file path.
+ * Priority: Google filename hash → weight-specific built-in → exact match →
+ * base font (variable) → Google variable → Google by display name.
  */
-export function resolveFontPath(fontFamily: string): string | undefined {
+export function resolveFontPath(fontFamily: string, weight?: number): string | undefined {
 	// Try Google Fonts by filename hash (from FontPicker selection)
 	const googleFontByFilename = GOOGLE_FONTS_BY_FILENAME.get(fontFamily);
 	if (googleFontByFilename) {
 		return googleFontByFilename.url;
 	}
 
-	// Try built-in fonts by exact match (e.g., "Montserrat ExtraBold")
-	if (FONT_PATHS[fontFamily]) {
-		return FONT_PATHS[fontFamily];
-	}
-
-	// Try built-in fonts by alias or base name
+	// Parse family and resolve aliases once (shared by all resolution steps)
 	const { baseFontFamily } = parseFontFamily(fontFamily);
-	const resolvedName = FONT_ALIASES[baseFontFamily] ?? baseFontFamily;
-	if (FONT_PATHS[resolvedName]) {
-		return FONT_PATHS[resolvedName];
+	const resolved = FONT_ALIASES[baseFontFamily] ?? baseFontFamily;
+
+	// Try weight-specific built-in (e.g., "Clear Sans Bold" for weight 700)
+	if (weight !== undefined && weight !== 400) {
+		const modifier = Object.entries(WEIGHT_MODIFIERS).find(([, w]) => w === weight)?.[0];
+		if (modifier) {
+			const weightedName = `${resolved} ${modifier}`;
+			if (FONT_PATHS[weightedName]) return FONT_PATHS[weightedName];
+		}
 	}
 
-	// Fall back to Google Fonts by display name (for fonts not in built-in list)
-	const googleFontByName = GOOGLE_FONTS_BY_NAME.get(fontFamily);
-	if (googleFontByName) {
-		return googleFontByName.url;
+	// Try built-in fonts by exact input (e.g., "Clear Sans Bold" as literal key)
+	if (FONT_PATHS[fontFamily]) return FONT_PATHS[fontFamily];
+
+	// Try base font after alias resolution — covers variable fonts (Roboto, Montserrat, etc.)
+	if (FONT_PATHS[resolved]) return FONT_PATHS[resolved];
+
+	// Try Google Fonts — prefer variable when weight is specified
+	if (weight !== undefined) {
+		const googleFont = GOOGLE_FONTS_BY_NAME.get(resolved);
+		if (googleFont?.isVariable) return googleFont.url;
 	}
+
+	// Fall back to Google Fonts by display name
+	const googleFontByName = GOOGLE_FONTS_BY_NAME.get(fontFamily);
+	if (googleFontByName) return googleFontByName.url;
 
 	return undefined;
 }

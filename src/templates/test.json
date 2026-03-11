@@ -3,40 +3,247 @@
 		"background": "#FFFFFF",
 		"tracks": [
 			{
-				"clips": [
-					{
-						"asset": {
-							"type": "rich-text",
-							"text": "Hello World",
-							"font": {
-								"family": "source"
-							}
-						},
-						"start": 0,
-						"length": 5,
-						"width": 500,
-						"height": 300,
-						"offset": {
-							"x": 0,
-							"y": 0
-						}
-					}
-				]
-			}
-		],
-		"fonts": [
-			{
-				"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/010uzt2uca/zzz01kh5-3x11z-gyhmj-w7w59-3kb9ng/source.ttf"
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w100", "font": { "family": "Roboto", "weight": 100, "size": 22, "color": "#000088" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.44 }
+				}]
 			},
 			{
-				"src": "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/010uzt2uca/zzz01kh5-6kb4e-ft9gg-xgvsd-96qcr7/source.ttf"
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w200", "font": { "family": "Roboto", "weight": 200, "size": 22, "color": "#000088" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.37 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w300 (built-in Light)", "font": { "family": "Roboto", "weight": 300, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.30 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w400 (built-in Regular)", "font": { "family": "Roboto", "weight": 400, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.23 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w500 (built-in Medium)", "font": { "family": "Roboto", "weight": 500, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.16 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w600", "font": { "family": "Roboto", "weight": 600, "size": 22, "color": "#000088" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.09 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w700 (built-in Bold)", "font": { "family": "Roboto", "weight": 700, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": -0.02 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w800", "font": { "family": "Roboto", "weight": 800, "size": 22, "color": "#000088" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": 0.05 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w900 (#76 fix)", "font": { "family": "Roboto", "weight": 900, "size": 22, "color": "#000088" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": 0.12 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w0 (INVALID)", "font": { "family": "Roboto", "weight": 0, "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": 0.19 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w450 (INVALID)", "font": { "family": "Roboto", "weight": 450, "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": 0.26 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w1200 (INVALID)", "font": { "family": "Roboto", "weight": 1200, "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": 0.33 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w-100 (INVALID)", "font": { "family": "Roboto", "weight": -100, "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": -0.30, "y": 0.40 }
+				}]
+			},
+
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Montserrat w300 (built-in Light)", "font": { "family": "Montserrat", "weight": 300, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.44 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Montserrat w500 (built-in Medium)", "font": { "family": "Montserrat", "weight": 500, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.37 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Montserrat w600 (built-in SemiBold)", "font": { "family": "Montserrat", "weight": 600, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.30 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Montserrat w700 (built-in Bold)", "font": { "family": "Montserrat", "weight": 700, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.23 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Montserrat w800 (built-in ExtraBold)", "font": { "family": "Montserrat", "weight": 800, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.16 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Montserrat w900 (built-in Black)", "font": { "family": "Montserrat", "weight": 900, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.09 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Open Sans w700 (built-in Bold)", "font": { "family": "Open Sans", "weight": 700, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": -0.02 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Open Sans w800 (built-in ExtraBold)", "font": { "family": "Open Sans", "weight": 800, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": 0.05 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Open Sans w900", "font": { "family": "Open Sans", "weight": 900, "size": 22, "color": "#000088" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": 0.12 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Work Sans w400 (CDN variable)", "font": { "family": "Work Sans", "weight": 400, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": 0.19 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Work Sans w700 (CDN variable)", "font": { "family": "Work Sans", "weight": 700, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": 0.26 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Work Sans w900 (CDN variable)", "font": { "family": "Work Sans", "weight": 900, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": 0.33 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Clear Sans w700 (built-in Bold)", "font": { "family": "Clear Sans", "weight": 700, "size": 22, "color": "#000000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0, "y": 0.40 }
+				}]
+			},
+
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "\"Montserrat Bold\" no weight", "font": { "family": "Montserrat Bold", "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.44 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "\"Montserrat Bold\" + w300", "font": { "family": "Montserrat Bold", "weight": 300, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.37 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "\"Montserrat ExtraBold\" + w900", "font": { "family": "Montserrat ExtraBold", "weight": 900, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.30 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "\"OpenSans\" alias w700", "font": { "family": "OpenSans", "weight": 700, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.23 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "\"WorkSans\" alias w700", "font": { "family": "WorkSans", "weight": 700, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.16 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Arapey w700 (single file)", "font": { "family": "Arapey", "weight": 700, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.09 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Permanent Marker w700", "font": { "family": "Permanent Marker", "weight": 700, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": -0.02 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Didact Gothic w700", "font": { "family": "Didact Gothic", "weight": 700, "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": 0.05 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w\"bold\" (string)", "font": { "family": "Roboto", "weight": "bold", "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": 0.12 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w\"900\" (string num)", "font": { "family": "Roboto", "weight": "900", "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": 0.19 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "Roboto w1000 (INVALID)", "font": { "family": "Roboto", "weight": 1000, "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": 0.26 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "UnknownFont w400", "font": { "family": "UnknownFont", "weight": 400, "size": 22, "color": "#CC0000" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": 0.33 }
+				}]
+			},
+			{
+				"clips": [{
+					"asset": { "type": "rich-text", "text": "No weight property", "font": { "family": "Roboto", "size": 22, "color": "#006600" } },
+					"start": 0, "length": 5, "width": 540, "height": 60, "offset": { "x": 0.30, "y": 0.40 }
+				}]
 			}
 		]
 	},
 	"output": {
 		"size": {
-			"width": 1024,
-			"height": 576
+			"width": 1920,
+			"height": 1080
 		},
 		"format": "mp4",
 		"destinations": [

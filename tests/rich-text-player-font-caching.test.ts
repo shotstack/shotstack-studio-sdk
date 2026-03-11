@@ -5,7 +5,6 @@
 import type { Edit } from "@core/edit-session";
 import type { RichTextAsset, ResolvedClip } from "@schemas";
 
-let mockRegisterFontFromUrl: jest.Mock<Promise<void>, [string, { family: string; weight: string }]>;
 let mockRegisterFontFromFile: jest.Mock<Promise<void>, [string, { family: string; weight: string }]>;
 let mockValidate: jest.Mock<{ value: unknown }, [unknown]>;
 let mockCreateRenderer: jest.Mock<{ render: jest.Mock<Promise<void>, [unknown]> }, [HTMLCanvasElement]>;
@@ -132,14 +131,13 @@ jest.mock("@shotstack/shotstack-canvas", () => ({
 		mockCreateRenderer = jest.fn().mockReturnValue(renderer);
 		mockValidate = jest.fn().mockImplementation((asset: unknown) => ({ value: asset }));
 		mockRenderFrame = jest.fn().mockResolvedValue([]);
-		mockRegisterFontFromUrl = jest.fn().mockResolvedValue(undefined);
 		mockRegisterFontFromFile = jest.fn().mockResolvedValue(undefined);
 
 		return {
 			validate: mockValidate,
 			createRenderer: mockCreateRenderer,
 			renderFrame: mockRenderFrame,
-			registerFontFromUrl: mockRegisterFontFromUrl,
+			registerFontFromUrl: jest.fn().mockResolvedValue(undefined),
 			registerFontFromFile: mockRegisterFontFromFile,
 			destroy: jest.fn()
 		};
@@ -241,6 +239,7 @@ describe("RichTextPlayer font caching", () => {
 			}
 		});
 		(RichTextPlayer as unknown as { fontCapabilityCache: Map<string, Promise<boolean>> }).fontCapabilityCache.clear();
+		(RichTextPlayer as unknown as { fontBytesCache: Map<string, Promise<ArrayBuffer>> }).fontBytesCache.clear();
 	});
 
 	it("deduplicates registration across repeated reconfigure calls for the same font key", async () => {
@@ -250,19 +249,19 @@ describe("RichTextPlayer font caching", () => {
 		await reconfigure(player, asset);
 		await reconfigure(player, asset);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 	});
 
 	it("deduplicates in-flight concurrent reconfigure registration calls", async () => {
 		const { player, asset } = await createReadyPlayer();
 		const deferred = createDeferred<void>();
-		mockRegisterFontFromUrl.mockImplementationOnce(async () => deferred.promise);
+		mockRegisterFontFromFile.mockImplementationOnce(async () => deferred.promise);
 
 		const first = reconfigure(player, asset);
 		const second = reconfigure(player, asset);
 
 		await Promise.resolve();
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 
 		deferred.resolve(undefined);
 		await Promise.all([first, second]);
@@ -281,12 +280,12 @@ describe("RichTextPlayer font caching", () => {
 
 	it("caches failed registration results and does not retry on subsequent reconfigure", async () => {
 		const { player, asset } = await createReadyPlayer();
-		mockRegisterFontFromUrl.mockRejectedValueOnce(new Error("registration failed"));
+		mockRegisterFontFromFile.mockRejectedValueOnce(new Error("registration failed"));
 
 		await reconfigure(player, asset);
 		await reconfigure(player, asset);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 	});
 
 	it("caches failed capability checks and does not refetch on subsequent reconfigure", async () => {
@@ -311,8 +310,98 @@ describe("RichTextPlayer font caching", () => {
 		await reconfigure(player, regular);
 		await reconfigure(player, serif);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(2);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(2);
 		expect(mockFetch).toHaveBeenCalledTimes(2);
+	});
+
+	it("evicts failed font bytes from cache allowing retry on subsequent load", async () => {
+		const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+		const fontUrl = "https://cdn.test/fresh.ttf";
+		const edit = createMockEdit({ "Fresh Font|400": fontUrl });
+		const asset = {
+			type: "rich-text",
+			text: "Hello",
+			font: { family: "Fresh Font", weight: 400, size: 48, color: "#fff" }
+		} as unknown as RichTextAsset;
+
+		// Fail ALL fetches for the first player
+		mockFetch.mockRejectedValue(new Error("network error"));
+		const player1 = new RichTextPlayer(edit, createClip(asset));
+		await player1.load();
+
+		const failedFetchCount = mockFetch.mock.calls.length;
+
+		// Restore fetch to succeed and clear capability cache (also cached the failure)
+		mockFetch.mockResolvedValue({
+			ok: true,
+			status: 200,
+			arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(64))
+		});
+		(RichTextPlayer as unknown as { fontCapabilityCache: Map<string, Promise<boolean>> }).fontCapabilityCache.clear();
+
+		// Second player with same font — should retry fetch, not get cached rejection
+		const player2 = new RichTextPlayer(edit, createClip(asset));
+		await player2.load();
+
+		expect(mockFetch.mock.calls.length).toBeGreaterThan(failedFetchCount);
+		warnSpy.mockRestore();
+	});
+
+	it("resolves string weight 'bold' to numeric 700 for font registration", async () => {
+		const edit = createMockEdit({
+			"Source Sans|400": "https://cdn.test/source-regular.ttf",
+			"Source Sans|700": "https://cdn.test/source-bold.ttf"
+		});
+		const initialAsset = createAsset(400, "Source Sans");
+		const player = new RichTextPlayer(edit, createClip(initialAsset));
+		await player.load();
+
+		const boldAsset = {
+			type: "rich-text",
+			text: "Bold text",
+			font: { family: "Source Sans", weight: "bold", size: 48, color: "#ffffff" }
+		} as unknown as RichTextAsset;
+		await reconfigure(player, boldAsset);
+
+		const { calls } = mockRegisterFontFromFile.mock;
+		const boldCall = calls.find(([, desc]: [unknown, { weight: string }]) => desc.weight === "700");
+		expect(boldCall).toBeDefined();
+	});
+
+	it("resolves string weight '900' to numeric 900 for font registration", async () => {
+		const edit = createMockEdit({
+			"Source Sans|400": "https://cdn.test/source-regular.ttf",
+			"Source Sans|900": "https://cdn.test/source-black.ttf"
+		});
+		const initialAsset = createAsset(400, "Source Sans");
+		const player = new RichTextPlayer(edit, createClip(initialAsset));
+		await player.load();
+
+		const blackAsset = {
+			type: "rich-text",
+			text: "Black text",
+			font: { family: "Source Sans", weight: "900", size: 48, color: "#ffffff" }
+		} as unknown as RichTextAsset;
+		await reconfigure(player, blackAsset);
+
+		const { calls } = mockRegisterFontFromFile.mock;
+		const blackCall = calls.find(([, desc]: [unknown, { weight: string }]) => desc.weight === "900");
+		expect(blackCall).toBeDefined();
+	});
+
+	it("warns on unrecognized string weight and falls back to parsed weight", async () => {
+		const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+		const { player } = await createReadyPlayer();
+
+		const garbageAsset = {
+			type: "rich-text",
+			text: "Bad weight",
+			font: { family: "Source Sans", weight: "garbage", size: 48, color: "#ffffff" }
+		} as unknown as RichTextAsset;
+		await reconfigure(player, garbageAsset);
+
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized font weight "garbage"'));
+		warnSpy.mockRestore();
 	});
 
 	it("deduplicates registration and capability checks when URL query/hash changes for the same font", async () => {
@@ -328,7 +417,7 @@ describe("RichTextPlayer font caching", () => {
 		await reconfigure(player, asset);
 		await reconfigure(player, asset);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 	});
 });
