@@ -10,19 +10,19 @@ All notable changes to this project will be documented in this file.
 - Auto-set fit to `contain` for image/video clips on resize (#82)
 - Track insertion at last position using sentinel value (#80)
 
-## [2.2.2] - 2026-03-10
+## [2.2.2] - 2026-03-11
 
 ### Added
 
 - Updated CI/CD pipeline for automated semver releases (#78)
 
-## [2.2.1] - 2026-03-10
+## [2.2.1] - 2026-03-11
 
 ### Fixed
 
 - Rotation angles get normalized to schema bounds
 
-## [2.2.0] - 2026-03-10
+## [2.2.0] - 2026-03-11
 
 ### Added
 
