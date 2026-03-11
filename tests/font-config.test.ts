@@ -186,6 +186,34 @@ describe("resolveFontPath with weight", () => {
 	});
 });
 
+describe("resolveFontPath exact-match priority", () => {
+	it("exact key takes priority when weight-specific lookup fails", () => {
+		// "Clear Sans Bold" is an exact FONT_PATHS key. With weight=300,
+		// no "Clear Sans Light" entry exists, so exact match on input wins.
+		expect(resolveFontPath("Clear Sans Bold", 300))
+			.toBe("https://templates.shotstack.io/basic/asset/font/clearsans-bold.ttf");
+	});
+
+	it("weight-specific and exact match converge for matching weight", () => {
+		// weight=700 finds "Clear Sans Bold" via modifier AND "Clear Sans Bold" is an exact key
+		// Both paths arrive at the same result (weight-specific is checked first)
+		expect(resolveFontPath("Clear Sans Bold", 700))
+			.toBe("https://templates.shotstack.io/basic/asset/font/clearsans-bold.ttf");
+	});
+
+	it("preserves exact match on compound font names without weight", () => {
+		// "Clear Sans Bold" as a literal key, no weight provided
+		expect(resolveFontPath("Clear Sans Bold"))
+			.toBe("https://templates.shotstack.io/basic/asset/font/clearsans-bold.ttf");
+	});
+
+	it("variable font base entry wins over removed weight-specific entries", () => {
+		// "Montserrat Bold" no longer has its own entry — falls through to base "Montserrat"
+		expect(resolveFontPath("Montserrat Bold", 700))
+			.toBe("https://templates.shotstack.io/basic/asset/font/Montserrat.ttf");
+	});
+});
+
 describe("Font Resolution Regression Tests", () => {
 	describe("variable font support", () => {
 		/**
