@@ -9,7 +9,7 @@ import {
 	detectCornerZone,
 	detectEdgeZone
 } from "@core/interaction/clip-interaction";
-import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor } from "@core/interaction/selection-overlay";
+import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor, buildRotationCursor, calculateHitArea } from "@core/interaction/selection-overlay";
 import { type ClipBounds, createClipBounds, createSnapContext, filterContainedClips, snap, snapRotation, visualToLogical } from "@core/interaction/snap-system";
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
@@ -127,6 +127,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.app = app;
 
 		// Create outline
+		this.outline.eventMode = "static";
 		this.container.addChild(this.outline);
 
 		// Create corner handles
@@ -239,6 +240,10 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.outline.strokeStyle = { width: SELECTION_CONSTANTS.OUTLINE_WIDTH / uiScale, color };
 		this.outline.rect(0, 0, size.width, size.height);
 		this.outline.stroke();
+
+		// Expand hit area to cover rotation zones outside corners
+		const hitRect = calculateHitArea(size, uiScale);
+		this.outline.hitArea = new pixi.Rectangle(hitRect.x, hitRect.y, hitRect.width, hitRect.height);
 	}
 
 	private drawHandles(): void {
@@ -362,17 +367,18 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			}
 		}
 
-		// Check if inside player bounds for drag
-		if (localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height) {
-			// Check for edge resize first
+		// Check for edge resize (zone extends outside clip bounds)
+		if (this.selectedPlayer.supportsEdgeResize()) {
 			const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
 			const edge = detectEdgeZone(localPoint, size, hitZone);
-			if (edge && this.selectedPlayer.supportsEdgeResize()) {
+			if (edge) {
 				this.startEdgeResize(event, edge);
 				return;
 			}
+		}
 
-			// Start position drag
+		// Check if inside player bounds for drag
+		if (localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height) {
 			this.startDrag(event);
 		}
 	}
@@ -804,23 +810,30 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		const playerContainer = this.selectedPlayer.getContainer();
 		const localPoint = event.getLocalPosition(playerContainer);
 		const size = this.selectedPlayer.getSize();
+		const uiScale = this.getUIScale();
+		const rotation = this.selectedPlayer.getRotation() ?? 0;
 
 		this.isHovering = localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height;
 
-		// Update cursor for edge resize zones
+		// Priority order mirrors onPointerDown: rotation → edges → default
+		const rotationCorner = this.getRotationCorner(localPoint, size);
+		if (rotationCorner) {
+			const baseAngle = CURSOR_BASE_ANGLES[rotationCorner] ?? 0;
+			this.outline.cursor = buildRotationCursor(baseAngle + rotation);
+			return;
+		}
+
 		if (this.selectedPlayer.supportsEdgeResize()) {
-			const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / this.getUIScale();
+			const hitZone = SELECTION_CONSTANTS.EDGE_HIT_ZONE / uiScale;
 			const edge = detectEdgeZone(localPoint, size, hitZone);
 
 			if (edge) {
-				const rotation = this.selectedPlayer.getRotation() ?? 0;
 				const baseAngle = CURSOR_BASE_ANGLES[edge] ?? 0;
 				this.outline.cursor = buildResizeCursor(baseAngle + rotation);
 				return;
 			}
 		}
 
-		// Reset cursor when not over an edge
 		this.outline.cursor = this.isHovering ? "move" : "default";
 	}
 
