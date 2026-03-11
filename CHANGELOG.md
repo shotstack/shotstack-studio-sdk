@@ -1,3 +1,20 @@
+# [2.2.0](https://github.com/shotstack/shotstack-studio-sdk/compare/v2.1.5...v2.2.0) (2026-03-10)
+
+
+### Bug Fixes
+
+* fixed lint issuue ([937cbf0](https://github.com/shotstack/shotstack-studio-sdk/commit/937cbf0783cd41208636414131cc6d73ca797b0b))
+* strip src from the canvas payload when we've already fetched and parsed the words ([057a935](https://github.com/shotstack/shotstack-studio-sdk/commit/057a9357ad3d4e75fa95846a799f0d6de5c04eb9))
+
+
+### Features
+
+* add rich-caption toolbar with layout, word animation, and active word controls ([f7423b7](https://github.com/shotstack/shotstack-studio-sdk/commit/f7423b731b4325974a0a2d5d128451d625921113))
+* add RichCaptionPlayer with word-level caption animations and prevent @napi-rs/canvas from leaking into web bundle ([edb712e](https://github.com/shotstack/shotstack-studio-sdk/commit/edb712e30dadc9b4ca1fa781bf404b5d292ed06b))
+* add stroke styling support to StylePanel and captions ([f0070e4](https://github.com/shotstack/shotstack-studio-sdk/commit/f0070e48d24748c41beb7f9a21d5790982da76bc))
+* update dependencies and enhance rich caption functionality ([95ac5d7](https://github.com/shotstack/shotstack-studio-sdk/commit/95ac5d792f7634e9ef2f426eb3537e58ab3a9d52))
+* update rich caption player and toolbar with new font handling and configuration options ([b1349b1](https://github.com/shotstack/shotstack-studio-sdk/commit/b1349b19d1abc188172c6a5e9346137c879235b3))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
