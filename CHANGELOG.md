@@ -2,9 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.3] - 2026-03-11
+
+### Fixed
+
+- Default font weight resolution for variable fonts with named weight handling (#83)
+- Auto-set fit to `contain` for image/video clips on resize (#82)
+- Track insertion at last position using sentinel value (#80)
+
+## [2.2.2] - 2026-03-10
+
+### Added
+
+- Updated CI/CD pipeline for automated semver releases (#78)
+
 ## [2.2.1] - 2026-03-10
 
-## Fixed
+### Fixed
 
 - Rotation angles get normalized to schema bounds
 
