@@ -42,6 +42,7 @@ export class RichCaptionPlayer extends Player {
 	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
 	private lastRegisteredFontKey: string = "";
 	private pendingLayoutId: number = 0;
+	private resolvedPauseThreshold: number = 500;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		const { fit, ...configWithoutFit } = clipConfiguration;
@@ -63,7 +64,7 @@ export class RichCaptionPlayer extends Player {
 			let words: WordTiming[];
 			if (richCaptionAsset.src) {
 				words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
-				(richCaptionAsset as Record<string, unknown>)['pauseThreshold'] = 5;
+				this.resolvedPauseThreshold = 5;
 			} else {
 				words = ((richCaptionAsset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map((w: WordTiming) => ({
 					text: w.text,
@@ -396,7 +397,7 @@ export class RichCaptionPlayer extends Player {
 			style: asset.style,
 			wordAnimation: asset.wordAnimation,
 			align: asset.align,
-			pauseThreshold: (asset as Record<string, unknown>)['pauseThreshold'],
+			pauseThreshold: this.resolvedPauseThreshold,
 		};
 
 		for (const [key, value] of Object.entries(optionalFields)) {
@@ -431,7 +432,7 @@ export class RichCaptionPlayer extends Player {
 			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
 			lineHeight: style?.lineHeight ?? 1.2,
 			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
-			pauseThreshold: asset.pauseThreshold ?? 500
+			pauseThreshold: this.resolvedPauseThreshold
 		};
 	}
 

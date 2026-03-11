@@ -436,7 +436,8 @@ describe("RichCaptionPlayer", () => {
 			const player = new RichCaptionPlayer(edit, clip);
 			await player.load();
 
-			expect((clip.asset as Record<string, unknown>)['pauseThreshold']).toBe(5);
+			// @ts-expect-error accessing private property for test verification
+			expect(player.resolvedPauseThreshold).toBe(5);
 		});
 
 	});
