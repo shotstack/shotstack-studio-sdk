@@ -56,19 +56,20 @@ describe("Font Configuration", () => {
 
 	describe("built-in font resolution", () => {
 		it("resolves built-in fonts by exact name", () => {
-			expect(resolveFontPath("Montserrat")).toBe("https://templates.shotstack.io/basic/asset/font/montserrat-regular.ttf");
-			expect(resolveFontPath("Open Sans")).toBe("https://templates.shotstack.io/basic/asset/font/opensans-regular.ttf");
-			expect(resolveFontPath("Roboto")).toBe("https://templates.shotstack.io/basic/asset/font/roboto-regular.ttf");
+			expect(resolveFontPath("Montserrat")).toBe("https://templates.shotstack.io/basic/asset/font/Montserrat.ttf");
+			expect(resolveFontPath("Open Sans")).toBe("https://templates.shotstack.io/basic/asset/font/OpenSans.ttf");
+			expect(resolveFontPath("Roboto")).toBe("https://templates.shotstack.io/basic/asset/font/Roboto.ttf");
 		});
 
-		it("resolves built-in fonts with weight suffix", () => {
-			expect(resolveFontPath("Montserrat Bold")).toBe("https://templates.shotstack.io/basic/asset/font/montserrat-bold.ttf");
-			expect(resolveFontPath("Open Sans Bold")).toBe("https://templates.shotstack.io/basic/asset/font/opensans-bold.ttf");
+		it("resolves built-in fonts with weight suffix via base name fallback", () => {
+			// Weight-specific entries removed — "Montserrat Bold" parses to base "Montserrat" → variable font
+			expect(resolveFontPath("Montserrat Bold")).toBe("https://templates.shotstack.io/basic/asset/font/Montserrat.ttf");
+			expect(resolveFontPath("Open Sans Bold")).toBe("https://templates.shotstack.io/basic/asset/font/OpenSans.ttf");
 		});
 
 		it("resolves built-in fonts by alias", () => {
 			// CamelCase aliases should resolve to the canonical font
-			expect(resolveFontPath("OpenSans")).toBe("https://templates.shotstack.io/basic/asset/font/opensans-regular.ttf");
+			expect(resolveFontPath("OpenSans")).toBe("https://templates.shotstack.io/basic/asset/font/OpenSans.ttf");
 			expect(resolveFontPath("WorkSans")).toBe("https://templates.shotstack.io/basic/asset/font/worksans.ttf");
 		});
 	});
@@ -139,6 +140,49 @@ describe("Font Configuration", () => {
 			expect(getFontDisplayName("Work Sans")).toBe("Work Sans");
 			expect(getFontDisplayName("Roboto")).toBe("Roboto");
 		});
+	});
+});
+
+describe("resolveFontPath with weight", () => {
+	it("resolves variable font for weight 400", () => {
+		expect(resolveFontPath("Roboto", 400)).toBe("https://templates.shotstack.io/basic/asset/font/Roboto.ttf");
+	});
+
+	it("resolves variable font for all weights (no weight-specific files needed)", () => {
+		// Variable fonts handle all weights via wght axis — same URL for any weight
+		expect(resolveFontPath("Roboto", 700)).toBe("https://templates.shotstack.io/basic/asset/font/Roboto.ttf");
+		expect(resolveFontPath("Montserrat", 900)).toBe("https://templates.shotstack.io/basic/asset/font/Montserrat.ttf");
+		expect(resolveFontPath("Open Sans", 800)).toBe("https://templates.shotstack.io/basic/asset/font/OpenSans.ttf");
+	});
+
+	/**
+	 * REGRESSION TEST for issue #76: Roboto weight 900 must NOT resolve to
+	 * a static font that can't provide weight 900.
+	 * With variable fonts, the base font handles all weights via wght axis.
+	 */
+	it("resolves Roboto weight 900 to CDN variable font", () => {
+		const url = resolveFontPath("Roboto", 900);
+		expect(url).toBe("https://templates.shotstack.io/basic/asset/font/Roboto.ttf");
+	});
+
+	it("resolves alias-based family names with weight", () => {
+		expect(resolveFontPath("OpenSans", 700)).toBe("https://templates.shotstack.io/basic/asset/font/OpenSans.ttf");
+	});
+
+	it("falls back to weight-specific built-in for non-variable fonts", () => {
+		// Clear Sans is static (no variable version) — weight-specific entries still used
+		expect(resolveFontPath("Clear Sans", 700)).toBe("https://templates.shotstack.io/basic/asset/font/clearsans-bold.ttf");
+	});
+
+	it("resolves Google Fonts by filename hash even with non-default weight", () => {
+		// FontPicker selection (filename hash) should always resolve regardless of weight
+		const filenameHash = "QGYsz_wNahGAdqQ43RhPe6rol_lQ4A";
+		const url = resolveFontPath(filenameHash, 900);
+		expect(url).toContain("fonts.gstatic.com");
+	});
+
+	it("returns undefined for completely unknown fonts with weight", () => {
+		expect(resolveFontPath("NonExistentFont12345", 900)).toBeUndefined();
 	});
 });
 

@@ -5,7 +5,6 @@
 import type { Edit } from "@core/edit-session";
 import type { RichTextAsset, ResolvedClip } from "@schemas";
 
-let mockRegisterFontFromUrl: jest.Mock<Promise<void>, [string, { family: string; weight: string }]>;
 let mockRegisterFontFromFile: jest.Mock<Promise<void>, [string, { family: string; weight: string }]>;
 let mockValidate: jest.Mock<{ value: unknown }, [unknown]>;
 let mockCreateRenderer: jest.Mock<{ render: jest.Mock<Promise<void>, [unknown]> }, [HTMLCanvasElement]>;
@@ -132,14 +131,13 @@ jest.mock("@shotstack/shotstack-canvas", () => ({
 		mockCreateRenderer = jest.fn().mockReturnValue(renderer);
 		mockValidate = jest.fn().mockImplementation((asset: unknown) => ({ value: asset }));
 		mockRenderFrame = jest.fn().mockResolvedValue([]);
-		mockRegisterFontFromUrl = jest.fn().mockResolvedValue(undefined);
 		mockRegisterFontFromFile = jest.fn().mockResolvedValue(undefined);
 
 		return {
 			validate: mockValidate,
 			createRenderer: mockCreateRenderer,
 			renderFrame: mockRenderFrame,
-			registerFontFromUrl: mockRegisterFontFromUrl,
+			registerFontFromUrl: jest.fn().mockResolvedValue(undefined),
 			registerFontFromFile: mockRegisterFontFromFile,
 			destroy: jest.fn()
 		};
@@ -241,6 +239,7 @@ describe("RichTextPlayer font caching", () => {
 			}
 		});
 		(RichTextPlayer as unknown as { fontCapabilityCache: Map<string, Promise<boolean>> }).fontCapabilityCache.clear();
+		(RichTextPlayer as unknown as { fontBytesCache: Map<string, Promise<ArrayBuffer>> }).fontBytesCache.clear();
 	});
 
 	it("deduplicates registration across repeated reconfigure calls for the same font key", async () => {
@@ -250,19 +249,19 @@ describe("RichTextPlayer font caching", () => {
 		await reconfigure(player, asset);
 		await reconfigure(player, asset);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 	});
 
 	it("deduplicates in-flight concurrent reconfigure registration calls", async () => {
 		const { player, asset } = await createReadyPlayer();
 		const deferred = createDeferred<void>();
-		mockRegisterFontFromUrl.mockImplementationOnce(async () => deferred.promise);
+		mockRegisterFontFromFile.mockImplementationOnce(async () => deferred.promise);
 
 		const first = reconfigure(player, asset);
 		const second = reconfigure(player, asset);
 
 		await Promise.resolve();
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 
 		deferred.resolve(undefined);
 		await Promise.all([first, second]);
@@ -281,12 +280,12 @@ describe("RichTextPlayer font caching", () => {
 
 	it("caches failed registration results and does not retry on subsequent reconfigure", async () => {
 		const { player, asset } = await createReadyPlayer();
-		mockRegisterFontFromUrl.mockRejectedValueOnce(new Error("registration failed"));
+		mockRegisterFontFromFile.mockRejectedValueOnce(new Error("registration failed"));
 
 		await reconfigure(player, asset);
 		await reconfigure(player, asset);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 	});
 
 	it("caches failed capability checks and does not refetch on subsequent reconfigure", async () => {
@@ -311,7 +310,7 @@ describe("RichTextPlayer font caching", () => {
 		await reconfigure(player, regular);
 		await reconfigure(player, serif);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(2);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(2);
 		expect(mockFetch).toHaveBeenCalledTimes(2);
 	});
 
@@ -328,7 +327,7 @@ describe("RichTextPlayer font caching", () => {
 		await reconfigure(player, asset);
 		await reconfigure(player, asset);
 
-		expect(mockRegisterFontFromUrl).toHaveBeenCalledTimes(1);
+		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 	});
 });

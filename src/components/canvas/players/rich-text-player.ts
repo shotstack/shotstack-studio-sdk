@@ -16,7 +16,20 @@ type TextEngine = Awaited<ReturnType<typeof createTextEngine>>;
 
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
+	/** CSS font-weight string → numeric value. Extends WEIGHT_MODIFIERS (@core/fonts/font-config.ts) with CSS aliases. */
+	private static readonly NAMED_WEIGHTS: Record<string, number> = {
+		thin: 100, hairline: 100,
+		extralight: 200, ultralight: 200,
+		light: 300,
+		normal: 400, regular: 400,
+		medium: 500,
+		semibold: 600, demibold: 600,
+		bold: 700,
+		extrabold: 800, ultrabold: 800,
+		black: 900, heavy: 900,
+	};
 	private static readonly fontCapabilityCache = new Map<string, Promise<boolean>>();
+	private static readonly fontBytesCache = new Map<string, Promise<ArrayBuffer>>();
 	private textEngine: TextEngine | null = null;
 	private renderer: ReturnType<TextEngine["createRenderer"]> | null = null;
 	private canvas: HTMLCanvasElement | null = null;
@@ -36,6 +49,22 @@ export class RichTextPlayer extends Player {
 		return withoutHash.split("?", 1)[0];
 	}
 
+	private static fetchFontBytes(url: string): Promise<ArrayBuffer> {
+		const cacheKey = RichTextPlayer.getFontSourceCacheKey(url);
+		const cached = RichTextPlayer.fontBytesCache.get(cacheKey);
+		if (cached) return cached;
+
+		const fetchPromise = fetch(url).then(res => {
+			if (!res.ok) throw new Error(`Failed to fetch font: ${res.status}`);
+			return res.arrayBuffer();
+		}).catch(err => {
+			RichTextPlayer.fontBytesCache.delete(cacheKey);
+			throw err;
+		});
+		RichTextPlayer.fontBytesCache.set(cacheKey, fetchPromise);
+		return fetchPromise;
+	}
+
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		// Remove fit property for rich-text assets
 		// This aligns with @shotstack/schemas v1.5.6 which filters fit at track validation
@@ -45,13 +74,14 @@ export class RichTextPlayer extends Player {
 
 	private resolveFontWeight(richTextAsset: RichTextAsset, fallbackWeight: number): number {
 		const explicitWeight = richTextAsset.font?.weight;
+		if (typeof explicitWeight === "number") return explicitWeight;
 		if (typeof explicitWeight === "string") {
-			return parseInt(explicitWeight, 10) || fallbackWeight;
+			const named = RichTextPlayer.NAMED_WEIGHTS[explicitWeight.toLowerCase().trim()];
+			if (named !== undefined) return named;
+			const parsed = parseInt(explicitWeight, 10);
+			if (!Number.isNaN(parsed)) return parsed;
+			console.warn(`Unrecognized font weight "${explicitWeight}", defaulting to ${fallbackWeight}`);
 		}
-		if (typeof explicitWeight === "number") {
-			return explicitWeight;
-		}
-
 		return fallbackWeight;
 	}
 
@@ -108,7 +138,7 @@ export class RichTextPlayer extends Player {
 
 		// Determine the font family for the canvas payload:
 		// Use matched custom font name, or built-in font, or fall back to Roboto
-		const hasFontMatch = customFonts || (requestedFamily && resolveFontPath(requestedFamily));
+		const hasFontMatch = customFonts || (requestedFamily && resolveFontPath(requestedFamily, fontWeight));
 		const resolvedFamily = hasFontMatch ? baseFontFamily || requestedFamily : undefined;
 
 		return {
@@ -136,7 +166,8 @@ export class RichTextPlayer extends Player {
 			try {
 				const fontDesc = { family, weight: weight.toString() };
 				if (source.type === "url") {
-					await this.textEngine!.registerFontFromUrl(source.path, fontDesc);
+					const bytes = await RichTextPlayer.fetchFontBytes(source.path);
+					await this.textEngine!.registerFontFromFile(new Blob([bytes]), fontDesc);
 				} else {
 					await this.textEngine!.registerFontFromFile(source.path, fontDesc);
 				}
@@ -152,11 +183,7 @@ export class RichTextPlayer extends Player {
 	private createFontCapabilityCheckPromise(fontUrl: string): Promise<boolean> {
 		return (async (): Promise<boolean> => {
 			try {
-				const response = await fetch(fontUrl);
-				if (!response.ok) {
-					throw new Error(`Failed to fetch font: ${response.status}`);
-				}
-				const buffer = await response.arrayBuffer();
+				const buffer = await RichTextPlayer.fetchFontBytes(fontUrl);
 				const font = opentype.parse(buffer);
 
 				// Check for fvar table (variable font) with weight axis
@@ -193,14 +220,13 @@ export class RichTextPlayer extends Player {
 		return this.fontSupportsBold;
 	}
 
-	private resolveFont(family: string): { url: string; baseFontFamily: string; fontWeight: number } | null {
-		const { baseFontFamily, fontWeight } = parseFontFamily(family);
+	private resolveFont(family: string, weight: number): { url: string; baseFontFamily: string; fontWeight: number } | null {
+		const { baseFontFamily } = parseFontFamily(family);
 
 		// Check stored font metadata first (for template fonts with UUID-based URLs)
-		// Uses normalized base family + weight to match the correct font file
-		const metadataUrl = this.edit.getFontUrlByFamilyAndWeight(baseFontFamily, fontWeight);
+		const metadataUrl = this.edit.getFontUrlByFamilyAndWeight(baseFontFamily, weight);
 		if (metadataUrl) {
-			return { url: metadataUrl, baseFontFamily, fontWeight };
+			return { url: metadataUrl, baseFontFamily, fontWeight: weight };
 		}
 
 		// Check timeline fonts by filename matching (legacy fallback)
@@ -213,13 +239,13 @@ export class RichTextPlayer extends Player {
 		});
 
 		if (matchingFont) {
-			return { url: matchingFont.src, baseFontFamily, fontWeight };
+			return { url: matchingFont.src, baseFontFamily, fontWeight: weight };
 		}
 
-		// Fall back to built-in fonts from FONT_PATHS
-		const builtInPath = resolveFontPath(family);
-		if (builtInPath) {
-			return { url: builtInPath, baseFontFamily, fontWeight };
+		// Fall back to built-in/Google fonts — single function, single priority chain
+		const resolvedPath = resolveFontPath(family, weight);
+		if (resolvedPath) {
+			return { url: resolvedPath, baseFontFamily, fontWeight: weight };
 		}
 
 		return null;
@@ -261,10 +287,10 @@ export class RichTextPlayer extends Player {
 		const family = richTextAsset.font?.family;
 		if (!family) return null;
 
-		const resolved = this.resolveFont(family);
+		const fontWeight = this.resolveFontWeight(richTextAsset, parseFontFamily(family).fontWeight);
+		const resolved = this.resolveFont(family, fontWeight);
 		if (!resolved) return null;
 
-		const fontWeight = this.resolveFontWeight(richTextAsset, resolved.fontWeight);
 		await this.registerFont(resolved.baseFontFamily, fontWeight, { type: "url", path: resolved.url });
 		return resolved.url;
 	}
