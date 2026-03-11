@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.1] - 2026-03-10
+
+## Fixed
+
+- Rotation angles get normalized to schema bounds
+
+## [2.2.0] - 2026-03-10
+
+### Added
+
+- add rich-caption toolbar with layout, word animation, and active word controls
+
 ## [2.1.3] - 2026-03-10
 
 ### Fixed
