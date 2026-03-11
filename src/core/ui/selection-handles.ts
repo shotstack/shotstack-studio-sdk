@@ -652,6 +652,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		const rawRotation = this.initialRotation + deltaAngle;
 		const { angle: snappedRotation } = snapRotation(rawRotation);
+		const normalizedRotation = snappedRotation % 360;
 
 		// Get current transform to preserve other properties (scale, etc.)
 		const currentTransform = this.selectedPlayer.clipConfiguration.transform ?? {};
@@ -660,7 +661,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.finalDragState = {
 			transform: {
 				...currentTransform,
-				rotate: { angle: snappedRotation }
+				rotate: { angle: normalizedRotation }
 			}
 		};
 
@@ -668,7 +669,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.edit.updateClipInDocument(this.selectedClipId, {
 			transform: {
 				...currentTransform,
-				rotate: { angle: snappedRotation }
+				rotate: { angle: normalizedRotation }
 			}
 		});
 		this.edit.resolveClip(this.selectedClipId);

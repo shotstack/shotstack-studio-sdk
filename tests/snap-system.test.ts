@@ -653,6 +653,50 @@ describe("SnapSystem", () => {
 		});
 	});
 
+	// ─── Rotation Normalization (schema boundary) ───────────────────────────
+
+	describe("rotation normalization for document storage", () => {
+		it("normalizes multi-rotation snap result to within ±360", () => {
+			// snapRotation(723) returns 720, but schema requires [-360, 360]
+			const { angle } = snapRotation(723);
+			expect(angle).toBe(720);
+			expect(angle % 360).toBe(0);
+		});
+
+		it("normalizes large negative rotations", () => {
+			// snapRotation(-723) returns -720
+			const { angle } = snapRotation(-723);
+			expect(angle).toBe(-720);
+			expect(angle % 360).toBe(-0);
+		});
+
+		it("normalizes 4+ full rotations", () => {
+			const { angle } = snapRotation(1443);
+			expect(angle).toBe(1440);
+			expect(angle % 360).toBe(0);
+		});
+
+		it("preserves non-snapped values after normalization", () => {
+			// 380 doesn't snap (20° is not near any snap angle)
+			const { angle, snapped } = snapRotation(380);
+			expect(snapped).toBe(false);
+			expect(angle % 360).toBe(20);
+		});
+
+		it("normalizes 360 boundary snap to 0", () => {
+			// 358 snaps to 360, normalized to 0
+			const { angle } = snapRotation(358);
+			expect(angle).toBe(360);
+			expect(angle % 360).toBe(0);
+		});
+
+		it("keeps values already within range unchanged", () => {
+			const { angle } = snapRotation(92);
+			expect(angle).toBe(90);
+			expect(angle % 360).toBe(90);
+		});
+	});
+
 	// ─── Constants Tests ──────────────────────────────────────────────────────
 
 	describe("constants", () => {
