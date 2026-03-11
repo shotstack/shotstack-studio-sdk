@@ -452,6 +452,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 				}
 			}
 
+			// Auto-set fit to "contain" for image/video clips when resizing
+			if ((this.scaleDirection || this.edgeDragDirection) &&
+				(finalClip.asset?.type === "image" || finalClip.asset?.type === "video")) {
+				finalClip.fit = "contain";
+				this.edit.updateClipInDocument(this.selectedClipId, { fit: "contain" });
+				this.edit.resolveClip(this.selectedClipId);
+			}
+
 			// Commit with explicit final state (adds to history, doesn't execute)
 			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration, finalClip);
 
