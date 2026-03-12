@@ -395,6 +395,13 @@ export abstract class Player extends Entity {
 		return this.getSize();
 	}
 
+	protected getDisplaySize(): Size {
+		return {
+			width: this.clipConfiguration.width ?? this.edit.size.width,
+			height: this.clipConfiguration.height ?? this.edit.size.height
+		};
+	}
+
 	/** @internal */
 	public getContentContainer(): pixi.Container {
 		return this.contentContainer;

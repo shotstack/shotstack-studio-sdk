@@ -4,11 +4,13 @@ import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type VideoAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
+import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
 
 export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;
 	private sprite: pixi.Sprite | null;
+	private placeholder: pixi.Graphics | null;
 	private isPlaying: boolean;
 
 	private volumeKeyframeBuilder: KeyframeBuilder;
@@ -22,6 +24,7 @@ export class VideoPlayer extends Player {
 
 		this.texture = null;
 		this.sprite = null;
+		this.placeholder = null;
 		this.isPlaying = false;
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
@@ -34,7 +37,21 @@ export class VideoPlayer extends Player {
 
 	public override async load(): Promise<void> {
 		await super.load();
-		await this.loadVideo();
+		try {
+			await this.loadVideo();
+			this.configureKeyframes();
+		} catch (error) {
+			console.warn(`[VideoPlayer.load] FAILED clipId=${this.clipId}:`, error);
+			this.createFallbackGraphic();
+		}
+	}
+
+	private createFallbackGraphic(): void {
+		const { width, height } = this.getDisplaySize();
+		this.clearPlaceholder();
+
+		this.placeholder = createPlaceholderGraphic(width, height);
+		this.contentContainer.addChild(this.placeholder);
 		this.configureKeyframes();
 	}
 
@@ -98,11 +115,9 @@ export class VideoPlayer extends Player {
 	}
 
 	public override dispose(): void {
-		try {
-			super.dispose();
-		} finally {
-			this.disposeVideo();
-		}
+		this.disposeVideo();
+		this.clearPlaceholder();
+		super.dispose();
 	}
 
 	public override getSize(): Size {
@@ -113,7 +128,11 @@ export class VideoPlayer extends Player {
 			};
 		}
 
-		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
+		if (this.sprite) {
+			return { width: this.sprite.width, height: this.sprite.height };
+		}
+
+		return this.placeholder ? this.getDisplaySize() : { width: 0, height: 0 };
 	}
 
 	public override supportsEdgeResize(): boolean {
@@ -123,12 +142,20 @@ export class VideoPlayer extends Player {
 	/** Reload the video asset when asset.src changes (e.g., merge field update) */
 	public override async reloadAsset(): Promise<void> {
 		this.skipVideoUpdate = true;
-		this.disposeVideo();
-		await this.loadVideo();
 		this.isPlaying = false;
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
-		this.skipVideoUpdate = false;
+
+		try {
+			this.disposeVideo();
+			this.clearPlaceholder();
+			await this.loadVideo();
+		} catch (error) {
+			console.warn(`[VideoPlayer.reloadAsset] FAILED clipId=${this.clipId}:`, error);
+			this.createFallbackGraphic();
+		} finally {
+			this.skipVideoUpdate = false;
+		}
 	}
 
 	public override reconfigureAfterRestore(): void {
@@ -156,6 +183,8 @@ export class VideoPlayer extends Player {
 		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
 		}
+
+		this.clearPlaceholder();
 
 		// Fix alpha channel rendering for WebM VP9 videos (PixiJS 8 auto-detection is buggy)
 		texture.source.alphaMode = "no-premultiply-alpha";
@@ -200,6 +229,16 @@ export class VideoPlayer extends Player {
 			this.texture.destroy(true);
 			this.texture = null;
 		}
+	}
+
+	private clearPlaceholder(): void {
+		if (!this.placeholder) {
+			return;
+		}
+
+		this.contentContainer.removeChild(this.placeholder);
+		this.placeholder.destroy();
+		this.placeholder = null;
 	}
 
 	public getVolume(): number {

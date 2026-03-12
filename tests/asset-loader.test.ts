@@ -8,6 +8,7 @@
  */
 
 import { AssetLoader } from "@loaders/asset-loader";
+import * as pixi from "pixi.js";
 
 // Mock pixi.js VideoSource and Texture
 jest.mock("pixi.js", () => ({
@@ -28,6 +29,36 @@ jest.mock("pixi.js", () => ({
 }));
 
 describe("AssetLoader", () => {
+	const pixiMock = pixi as unknown as {
+		Assets: {
+			load: jest.Mock;
+			unload: jest.Mock;
+			cache: { has: jest.Mock };
+		};
+	};
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+		pixiMock.Assets.unload.mockResolvedValue(undefined);
+		pixiMock.Assets.cache.has.mockReturnValue(false);
+	});
+
+	describe("load", () => {
+		it.each([null, undefined])("treats %p Pixi results as failed and cleans up state", async resolvedAsset => {
+			const loader = new AssetLoader();
+			const url = "https://example.com/missing.png";
+			const loadOptions = { src: url };
+
+			pixiMock.Assets.load.mockResolvedValueOnce(resolvedAsset);
+
+			const result = await loader.load(url, loadOptions);
+
+			expect(result).toBeNull();
+			expect(loader.loadTracker.registry[url]).toEqual({ progress: 1, status: "failed" });
+			expect(pixiMock.Assets.unload).toHaveBeenCalledWith(url);
+		});
+	});
+
 	describe("loadVideoUnique", () => {
 		/**
 		 * Regression test for video playback glitch with overlapping clips.
