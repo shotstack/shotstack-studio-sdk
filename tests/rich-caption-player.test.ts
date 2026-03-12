@@ -134,12 +134,14 @@ jest.mock("@shotstack/shotstack-canvas", () => {
 			yPositions: [540, 540, 540],
 			widths: [120, 130, 100]
 		},
-		groups: [{
-			wordIndices: [0, 1, 2],
-			startTime: 0,
-			endTime: 1400,
-			lines: [{ wordIndices: [0, 1, 2], x: 100, y: 540, width: 400, height: 48 }]
-		}],
+		groups: [
+			{
+				wordIndices: [0, 1, 2],
+				startTime: 0,
+				endTime: 1400,
+				lines: [{ wordIndices: [0, 1, 2], x: 100, y: 540, width: 400, height: 48 }]
+			}
+		],
 		shapedWords: [
 			{ text: "Hello", width: 120, glyphs: [], isRTL: false },
 			{ text: "World", width: 130, glyphs: [], isRTL: false },
@@ -150,9 +152,9 @@ jest.mock("@shotstack/shotstack-canvas", () => {
 		{ wordIndex: 0, text: "Hello", x: 100, y: 540, width: 120, startTime: 0, endTime: 400, isRTL: false },
 		{ wordIndex: 1, text: "World", x: 300, y: 540, width: 130, startTime: 500, endTime: 900, isRTL: false }
 	]);
-	mockGetActiveWordAtTime = jest.fn().mockReturnValue(
-		{ wordIndex: 0, text: "Hello", x: 100, y: 540, width: 120, startTime: 0, endTime: 400, isRTL: false }
-	);
+	mockGetActiveWordAtTime = jest
+		.fn()
+		.mockReturnValue({ wordIndex: 0, text: "Hello", x: 100, y: 540, width: 120, startTime: 0, endTime: 400, isRTL: false });
 	mockGenerateRichCaptionFrame = jest.fn().mockReturnValue({
 		ops: [{ op: "DrawCaptionWord", text: "Hello" }],
 		visibleWordCount: 1,
@@ -289,7 +291,7 @@ describe("RichCaptionPlayer", () => {
 
 		it("falls back to placeholder on invalid asset", async () => {
 			const { RichCaptionAssetSchema } = jest.requireMock("@schemas") as {
-				RichCaptionAssetSchema: { safeParse: jest.Mock }
+				RichCaptionAssetSchema: { safeParse: jest.Mock };
 			};
 			RichCaptionAssetSchema.safeParse.mockReturnValueOnce({ success: false, error: new Error("invalid") });
 
@@ -368,10 +370,7 @@ describe("RichCaptionPlayer", () => {
 			await player.load();
 
 			expect(mockRegisterFromBytes).toHaveBeenCalledTimes(1);
-			expect(mockRegisterFromBytes).toHaveBeenCalledWith(
-				expect.any(ArrayBuffer),
-				expect.objectContaining({ family: "Roboto" })
-			);
+			expect(mockRegisterFromBytes).toHaveBeenCalledWith(expect.any(ArrayBuffer), expect.objectContaining({ family: "Roboto" }));
 		});
 
 		it("handles font registration failure gracefully", async () => {
@@ -439,10 +438,9 @@ describe("RichCaptionPlayer", () => {
 			// @ts-expect-error accessing private property for test verification
 			expect(player.resolvedPauseThreshold).toBe(5);
 		});
-
 	});
 
-		describe("Rendering", () => {
+	describe("Rendering", () => {
 		it("renders first frame during load", async () => {
 			const edit = createMockEdit();
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
@@ -534,7 +532,7 @@ describe("RichCaptionPlayer", () => {
 		});
 	});
 
-		describe("Lifecycle", () => {
+	describe("Lifecycle", () => {
 		it("releases FontRegistry reference on dispose", async () => {
 			const edit = createMockEdit();
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
@@ -664,7 +662,7 @@ describe("RichCaptionPlayer", () => {
 
 		it("handles canvas validation failure", async () => {
 			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
-				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
 			};
 			CanvasRichCaptionAssetSchema.safeParse.mockReturnValueOnce({
 				success: false,
@@ -742,7 +740,6 @@ describe("RichCaptionPlayer", () => {
 			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.4;
 			player.update(0.016, 0.4);
 
-			
 			expect(pixi.Texture.from.mock.calls.length).toBe(fromCallCount);
 		});
 
@@ -787,16 +784,76 @@ describe("RichCaptionPlayer", () => {
 			player.onDimensionsChanged();
 
 			// Wait for async layout
-			await new Promise(resolve => { setTimeout(resolve, 10); });
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			expect(mockLayoutCaption.mock.calls.length).toBe(layoutCallsBefore + 1);
+		});
+
+		it("fully rebuilds caption on dimensions changed", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
+			};
+
+			const edit = createMockEdit();
+			const clip = createClip(createAsset(), { width: 800, height: 200 });
+			const player = new RichCaptionPlayer(edit, clip);
+			await player.load();
+
+			// Change clip dimensions to simulate resize
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.width = 400;
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.height = 100;
+
+			CanvasRichCaptionAssetSchema.safeParse.mockClear();
+			mockLayoutCaption.mockClear();
+			mockCreateWebPainter.mockClear();
+
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+
+			// Wait for async rebuild
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
+
+			// Should have rebuilt validatedAsset with new dimensions
+			expect(CanvasRichCaptionAssetSchema.safeParse).toHaveBeenCalledTimes(1);
+			const payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			expect(payload.width).toBe(400);
+			expect(payload.height).toBe(100);
+
+			// Should have created a new canvas/painter and re-laid-out
+			expect(mockCreateWebPainter).toHaveBeenCalledTimes(1);
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
+		});
+
+		it("applyFixedDimensions is a no-op for caption player", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			const spriteBefore = player.sprite;
+
+			// @ts-expect-error accessing protected method
+			player.applyFixedDimensions();
+
+			// @ts-expect-error accessing private property
+			const spriteAfter = player.sprite;
+
+			// Sprite should remain untouched — no anchor/scale/position changes
+			expect(spriteAfter).toBe(spriteBefore);
+			if (spriteAfter) {
+				expect(spriteAfter.anchor.set).not.toHaveBeenCalled();
+			}
 		});
 	});
 
 	describe("Google Font Resolution", () => {
 		it("resolves Google Font hash via getFontDisplayName", async () => {
 			const { parseFontFamily: mockParseFontFamily } = jest.requireMock("@core/fonts/font-config") as {
-				parseFontFamily: jest.Mock
+				parseFontFamily: jest.Mock;
 			};
 
 			const asset = createAsset({
@@ -848,18 +905,14 @@ describe("RichCaptionPlayer", () => {
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
 			await player.load();
 
-			expect(MockFontFace).toHaveBeenCalledWith(
-				"Roboto",
-				expect.any(ArrayBuffer),
-				expect.objectContaining({ weight: "400" })
-			);
+			expect(MockFontFace).toHaveBeenCalledWith("Roboto", expect.any(ArrayBuffer), expect.objectContaining({ weight: "400" }));
 		});
 	});
 
 	describe("buildCanvasPayload Field Stripping", () => {
 		it("always includes font with resolved family even when asset.font is undefined", async () => {
 			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
-				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
 			};
 
 			const asset = createAsset({ font: undefined } as Partial<RichCaptionAsset>);
@@ -875,14 +928,14 @@ describe("RichCaptionPlayer", () => {
 
 		it("includes only allowlisted fields in canvas payload", async () => {
 			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
-				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
 			};
 
 			const asset = createAsset({
 				font: { family: "Roboto", size: 48, color: "#ffffff" },
 				stroke: { width: 2, color: "#000000" },
 				shadow: { offsetX: 2, offsetY: 2, blur: 4, color: "#000000" },
-				background: { color: "#333333" },
+				background: { color: "#333333" }
 			} as Partial<RichCaptionAsset>);
 
 			// Add non-allowlisted fields that should be stripped
@@ -909,7 +962,7 @@ describe("RichCaptionPlayer", () => {
 
 		it("excludes undefined optional fields from canvas payload", async () => {
 			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
-				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock }
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
 			};
 
 			const asset = createAsset();

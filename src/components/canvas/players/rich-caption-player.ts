@@ -549,7 +549,7 @@ export class RichCaptionPlayer extends Player {
 			this.sprite = null;
 		}
 		if (this.contentContainer.mask) {
-			const mask = this.contentContainer.mask;
+			const { mask } = this.contentContainer;
 			this.contentContainer.mask = null;
 			if (mask instanceof pixi.Graphics) {
 				mask.destroy();
