@@ -422,7 +422,7 @@ export class RichCaptionPlayer extends Player {
 			frameHeight,
 			availableWidth: frameWidth * 0.9,
 			maxLines: 2,
-			verticalAlign: align?.vertical ?? "bottom",
+			verticalAlign: align?.vertical ?? "middle",
 			horizontalAlign: align?.horizontal ?? "center",
 			paddingLeft: padding,
 			fontSize: font?.size ?? 24,
