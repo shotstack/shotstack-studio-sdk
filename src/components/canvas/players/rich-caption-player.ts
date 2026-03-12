@@ -382,7 +382,7 @@ export class RichCaptionPlayer extends Player {
 		const payload: Record<string, unknown> = {
 			type: asset.type,
 			words: words.map(w => ({ text: w.text, start: w.start, end: w.end, confidence: w.confidence })),
-			font: { family: resolvedFamily, ...asset.font },
+			font: { ...asset.font, family: resolvedFamily },
 			width,
 			height
 		};
@@ -418,15 +418,24 @@ export class RichCaptionPlayer extends Player {
 
 		let padLeft: number;
 		let padRight: number;
+		let padTop: number;
+		let padBottom: number;
 		if (typeof rawPadding === "number") {
 			padLeft = rawPadding;
 			padRight = rawPadding;
+			padTop = rawPadding;
+			padBottom = rawPadding;
 		} else if (rawPadding) {
-			padLeft = (rawPadding as { left?: number }).left ?? 0;
-			padRight = (rawPadding as { right?: number }).right ?? 0;
+			const p = rawPadding as { top?: number; right?: number; bottom?: number; left?: number };
+			padLeft = p.left ?? 0;
+			padRight = p.right ?? 0;
+			padTop = p.top ?? 0;
+			padBottom = p.bottom ?? 0;
 		} else {
 			padLeft = 0;
 			padRight = 0;
+			padTop = 0;
+			padBottom = 0;
 		}
 
 		const totalHorizontalPadding = padLeft + padRight;
@@ -434,20 +443,25 @@ export class RichCaptionPlayer extends Player {
 			? frameWidth - totalHorizontalPadding
 			: frameWidth * 0.9;
 
+		const fontSize = font?.size ?? 24;
+		const lineHeight = style?.lineHeight ?? 1.2;
+		const availableHeight = frameHeight - padTop - padBottom;
+		const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
+
 		return {
 			frameWidth,
 			frameHeight,
 			availableWidth,
-			maxLines: 2,
+			maxLines,
 			verticalAlign: align?.vertical ?? "middle",
 			horizontalAlign: align?.horizontal ?? "center",
 			paddingLeft: padLeft,
-			fontSize: font?.size ?? 24,
+			fontSize,
 			fontFamily: font?.family ?? "Roboto",
 			fontWeight: String(font?.weight ?? "400"),
 			letterSpacing: style?.letterSpacing ?? 0,
 			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
-			lineHeight: style?.lineHeight ?? 1.2,
+			lineHeight,
 			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
 			pauseThreshold: this.resolvedPauseThreshold
 		};
