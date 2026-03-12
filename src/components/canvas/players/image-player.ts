@@ -3,22 +3,38 @@ import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type ImageAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
+import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
 
 export class ImagePlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null;
 	private sprite: pixi.Sprite | null;
+	private placeholder: pixi.Graphics | null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Image);
 
 		this.texture = null;
 		this.sprite = null;
+		this.placeholder = null;
 	}
 
 	public override async load(): Promise<void> {
 		await super.load();
-		await this.loadTexture();
+		try {
+			await this.loadTexture();
+			this.configureKeyframes();
+		} catch {
+			this.createFallbackGraphic();
+		}
+	}
+
+	private createFallbackGraphic(): void {
+		const displaySize = this.getDisplaySize();
+		this.clearPlaceholder();
+
+		this.placeholder = createPlaceholderGraphic(displaySize.width, displaySize.height);
+		this.contentContainer.addChild(this.placeholder);
 		this.configureKeyframes();
 	}
 
@@ -27,8 +43,9 @@ export class ImagePlayer extends Player {
 	}
 
 	public override dispose(): void {
-		super.dispose();
 		this.disposeTexture();
+		this.clearPlaceholder();
+		super.dispose();
 	}
 
 	public override getSize(): Size {
@@ -39,17 +56,31 @@ export class ImagePlayer extends Player {
 			};
 		}
 
-		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
+		if (this.sprite) {
+			return { width: this.sprite.width, height: this.sprite.height };
+		}
+
+		return this.placeholder ? this.getDisplaySize() : { width: 0, height: 0 };
 	}
 
 	public override getContentSize(): Size {
-		return { width: this.sprite?.width ?? 0, height: this.sprite?.height ?? 0 };
+		if (this.sprite) {
+			return { width: this.sprite.width, height: this.sprite.height };
+		}
+
+		return this.placeholder ? this.getDisplaySize() : { width: 0, height: 0 };
 	}
 
 	/** Reload the image asset when asset.src changes (e.g., merge field update) */
 	public override async reloadAsset(): Promise<void> {
 		this.disposeTexture();
-		await this.loadTexture();
+		this.clearPlaceholder();
+
+		try {
+			await this.loadTexture();
+		} catch {
+			this.createFallbackGraphic();
+		}
 	}
 
 	private async loadTexture(): Promise<void> {
@@ -63,11 +94,12 @@ export class ImagePlayer extends Player {
 		if (!(texture?.source instanceof pixi.ImageSource)) {
 			if (texture) {
 				texture.destroy(true);
-				// Asset unloading handled by ref counting in edit-session.unloadClipAssets()
+				await this.edit.assetLoader.rejectAsset(corsUrl);
 			}
 			throw new Error(`Invalid image source '${src}'.`);
 		}
 
+		this.clearPlaceholder();
 		this.texture = this.createCroppedTexture(texture);
 		this.sprite = new pixi.Sprite(this.texture);
 		this.contentContainer.addChild(this.sprite);
@@ -86,6 +118,14 @@ export class ImagePlayer extends Player {
 		// DON'T destroy the texture - it's managed by Assets
 		// The unloadClipAssets() method handles proper cleanup via Assets.unload()
 		this.texture = null;
+	}
+
+	private clearPlaceholder(): void {
+		if (this.placeholder) {
+			this.contentContainer.removeChild(this.placeholder);
+			this.placeholder.destroy();
+			this.placeholder = null;
+		}
 	}
 
 	public override supportsEdgeResize(): boolean {

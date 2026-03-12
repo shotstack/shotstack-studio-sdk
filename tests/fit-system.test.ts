@@ -98,14 +98,21 @@ describe("FitSystem", () => {
 				const zeroWidth = { width: 0, height: 1080 };
 				const scale = calculateFitScale(zeroWidth, targetSize, "crop");
 
-				expect(scale).toBe(Infinity);
+				expect(scale).toBe(1);
 			});
 
 			it("handles zero content height gracefully", () => {
 				const zeroHeight = { width: 1920, height: 0 };
 				const scale = calculateFitScale(zeroHeight, targetSize, "crop");
 
-				expect(scale).toBe(Infinity);
+				expect(scale).toBe(1);
+			});
+
+			it("handles zero-size content gracefully", () => {
+				const zeroSize = { width: 0, height: 0 };
+				const scale = calculateFitScale(zeroSize, targetSize, "contain");
+
+				expect(scale).toBe(1);
 			});
 
 			it("defaults to crop when fit is undefined", () => {

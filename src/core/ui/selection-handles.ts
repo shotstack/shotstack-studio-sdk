@@ -768,7 +768,15 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	private getContentCenter(): Vector {
 		if (!this.selectedPlayer) return { x: 0, y: 0 };
-		const bounds = this.selectedPlayer.getContentContainer().getBounds();
+
+		const contentContainer = this.selectedPlayer.getContentContainer();
+
+		if (contentContainer.destroyed) {
+			const container = this.selectedPlayer.getContainer();
+			return { x: container.x, y: container.y };
+		}
+
+		const bounds = contentContainer.getBounds();
 		return {
 			x: bounds.x + bounds.width / 2,
 			y: bounds.y + bounds.height / 2
