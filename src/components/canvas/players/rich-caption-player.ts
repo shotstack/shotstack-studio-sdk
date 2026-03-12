@@ -384,7 +384,7 @@ export class RichCaptionPlayer extends Player {
 			words: words.map(w => ({ text: w.text, start: w.start, end: w.end, confidence: w.confidence })),
 			font: { family: resolvedFamily, ...asset.font },
 			width,
-			height,
+			height
 		};
 
 		const optionalFields: Record<string, unknown> = {
@@ -397,7 +397,7 @@ export class RichCaptionPlayer extends Player {
 			style: asset.style,
 			wordAnimation: asset.wordAnimation,
 			align: asset.align,
-			pauseThreshold: this.resolvedPauseThreshold,
+			pauseThreshold: this.resolvedPauseThreshold
 		};
 
 		for (const [key, value] of Object.entries(optionalFields)) {
@@ -407,7 +407,7 @@ export class RichCaptionPlayer extends Player {
 		}
 
 		if (customFonts.length > 0) {
-			payload['customFonts'] = customFonts;
+			payload["customFonts"] = customFonts;
 		}
 
 		return payload;
@@ -531,19 +531,55 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	protected override onDimensionsChanged(): void {
-		if (!this.layoutEngine || !this.validatedAsset || !this.canvas || !this.painter) return;
+		if (this.words.length === 0) return;
 
-		const { width, height } = this.getSize();
+		this.rebuildForCurrentSize();
+	}
 
-		this.canvas.width = width;
-		this.canvas.height = height;
+	private async rebuildForCurrentSize(): Promise<void> {
+		const currentTimeMs = this.getPlaybackTime() * 1000;
 
 		if (this.texture) {
 			this.texture.destroy();
 			this.texture = null;
 		}
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		if (this.contentContainer.mask) {
+			const mask = this.contentContainer.mask;
+			this.contentContainer.mask = null;
+			if (mask instanceof pixi.Graphics) {
+				mask.destroy();
+			}
+		}
+
+		this.captionLayout = null;
+		this.validatedAsset = null;
+		this.generatorConfig = null;
+		this.canvas = null;
+		this.painter = null;
+
+		const { width, height } = this.getSize();
+		const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+		const canvasPayload = this.buildCanvasPayload(asset, this.words);
+		const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
+		if (!canvasValidation.success) {
+			return;
+		}
+		this.validatedAsset = canvasValidation.data;
 
 		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+
+		this.canvas = document.createElement("canvas");
+		this.canvas.width = width;
+		this.canvas.height = height;
+		this.painter = createWebPainter(this.canvas);
+
+		if (!this.layoutEngine) return;
 
 		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
 		const canvasTextMeasurer = this.createCanvasTextMeasurer();
@@ -553,11 +589,14 @@ export class RichCaptionPlayer extends Player {
 
 		this.pendingLayoutId += 1;
 		const layoutId = this.pendingLayoutId;
-		this.layoutEngine.layoutCaption(this.words, layoutConfig).then(layout => {
-			if (layoutId !== this.pendingLayoutId) return;
-			this.captionLayout = layout;
-			this.renderFrameSync(this.getPlaybackTime() * 1000);
-		});
+
+		const layout = await this.layoutEngine.layoutCaption(this.words, layoutConfig);
+
+		if (layoutId !== this.pendingLayoutId) return;
+
+		this.captionLayout = layout;
+
+		this.renderFrameSync(currentTimeMs);
 	}
 
 	public override supportsEdgeResize(): boolean {

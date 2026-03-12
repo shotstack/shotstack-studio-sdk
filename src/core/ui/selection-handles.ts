@@ -79,6 +79,9 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		transform?: { rotate?: { angle: number } };
 	} | null = null;
 
+	private edgeResizeNotifyTimer: ReturnType<typeof setTimeout> | null = null;
+	private static readonly EDGE_RESIZE_NOTIFY_INTERVAL_MS = 100;
+
 	// Bound event handlers for cleanup
 	private onClipSelectedBound: (payload: { trackIndex: number; clipIndex: number }) => void;
 	private onSelectionClearedBound: () => void;
@@ -469,6 +472,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			// Commit with explicit final state (adds to history, doesn't execute)
 			this.edit.commitClipUpdate(this.selectedClipId, this.initialClipConfiguration, finalClip);
 
+			if (this.edgeResizeNotifyTimer) {
+				clearTimeout(this.edgeResizeNotifyTimer);
+				this.edgeResizeNotifyTimer = null;
+			}
+
 			// Notify player if dimensions changed (corner or edge resize)
 			if ((this.scaleDirection || this.edgeDragDirection) && this.selectedPlayer) {
 				this.selectedPlayer.notifyDimensionsChanged();
@@ -643,6 +651,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			offset: { x: result.offsetX, y: result.offsetY }
 		});
 		this.edit.resolveClip(this.selectedClipId);
+
+		if (this.selectedPlayer.supportsEdgeResize() && !this.edgeResizeNotifyTimer) {
+			this.edgeResizeNotifyTimer = setTimeout(() => {
+				this.edgeResizeNotifyTimer = null;
+				this.selectedPlayer?.notifyDimensionsChanged();
+			}, SelectionHandles.EDGE_RESIZE_NOTIFY_INTERVAL_MS);
+		}
 
 		this.showDimensionLabel(rounded.width, rounded.height);
 	}
