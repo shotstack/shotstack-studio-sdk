@@ -416,36 +416,24 @@ export class RichCaptionPlayer extends Player {
 	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number): CaptionLayoutConfig {
 		const { font, style, align, padding: rawPadding } = asset;
 
-		let padLeft: number;
-		let padRight: number;
-		let padTop: number;
-		let padBottom: number;
+		let padding: { top: number; right: number; bottom: number; left: number };
 		if (typeof rawPadding === "number") {
-			padLeft = rawPadding;
-			padRight = rawPadding;
-			padTop = rawPadding;
-			padBottom = rawPadding;
+			padding = { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding };
 		} else if (rawPadding) {
 			const p = rawPadding as { top?: number; right?: number; bottom?: number; left?: number };
-			padLeft = p.left ?? 0;
-			padRight = p.right ?? 0;
-			padTop = p.top ?? 0;
-			padBottom = p.bottom ?? 0;
+			padding = { top: p.top ?? 0, right: p.right ?? 0, bottom: p.bottom ?? 0, left: p.left ?? 0 };
 		} else {
-			padLeft = 0;
-			padRight = 0;
-			padTop = 0;
-			padBottom = 0;
+			padding = { top: 0, right: 0, bottom: 0, left: 0 };
 		}
 
-		const totalHorizontalPadding = padLeft + padRight;
+		const totalHorizontalPadding = padding.left + padding.right;
 		const availableWidth = totalHorizontalPadding > 0
 			? frameWidth - totalHorizontalPadding
 			: frameWidth * 0.9;
 
 		const fontSize = font?.size ?? 24;
 		const lineHeight = style?.lineHeight ?? 1.2;
-		const availableHeight = frameHeight - padTop - padBottom;
+		const availableHeight = frameHeight - padding.top - padding.bottom;
 		const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
 
 		return {
@@ -455,7 +443,7 @@ export class RichCaptionPlayer extends Player {
 			maxLines,
 			verticalAlign: align?.vertical ?? "middle",
 			horizontalAlign: align?.horizontal ?? "center",
-			paddingLeft: padLeft,
+			padding,
 			fontSize,
 			fontFamily: font?.family ?? "Roboto",
 			fontWeight: String(font?.weight ?? "400"),
