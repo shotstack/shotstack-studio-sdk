@@ -3,6 +3,7 @@
  */
 
 import type { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import type { RichCaptionAsset, ResolvedClip } from "@schemas";
 
 let mockRegisterFromBytes: jest.Mock;
@@ -1083,7 +1084,7 @@ describe("RichCaptionPlayer", () => {
 			const clipLength = 10; // 10 seconds
 			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
 			const edit = createMockEdit();
-			const player = new RichCaptionPlayer(edit, createClip(asset, { length: clipLength }));
+			const player = new RichCaptionPlayer(edit, createClip(asset, { length: sec(clipLength) }));
 			await player.load();
 
 			const payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
@@ -1113,7 +1114,7 @@ describe("RichCaptionPlayer", () => {
 
 			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
 			const edit = createMockEdit();
-			const clip = createClip(asset, { length: 3 }); // initial "end" resolved to 3s
+			const clip = createClip(asset, { length: sec(3) }); // initial "end" resolved to 3s
 			const player = new RichCaptionPlayer(edit, clip);
 			await player.load();
 
@@ -1123,7 +1124,7 @@ describe("RichCaptionPlayer", () => {
 			expect(initialWords[initialWords.length - 1].end).toBe(3000);
 
 			// Simulate resolveAllTiming updating the length after video probing
-			player.setResolvedTiming({ start: 0, length: 20 } as { start: number; length: number });
+			player.setResolvedTiming({ start: sec(0), length: sec(20) });
 			CanvasRichCaptionAssetSchema.safeParse.mockClear();
 
 			player.reconfigureAfterRestore();

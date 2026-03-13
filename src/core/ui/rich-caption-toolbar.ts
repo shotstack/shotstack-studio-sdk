@@ -1,6 +1,7 @@
-import type { RichCaptionAsset, ResolvedClip } from "@schemas";
+import type { RichCaptionAsset } from "@schemas";
 
 import { StylePanel } from "./composites/StylePanel";
+import { FontColorPicker } from "./font-color-picker";
 import { RichTextToolbar } from "./rich-text-toolbar";
 
 /**
@@ -14,33 +15,50 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private wordAnimPopup: HTMLDivElement | null = null;
 	private activeWordPopup: HTMLDivElement | null = null;
 
-	// Word Animation slider refs
-	private wordAnimSpeedSlider: HTMLInputElement | null = null;
-	private wordAnimSpeedValue: HTMLSpanElement | null = null;
+	// Word Animation refs
 	private wordAnimDirectionSection: HTMLDivElement | null = null;
 
-	// Active-mode scale control
-	private scaleSlider: HTMLInputElement | null = null;
-	private scaleValue: HTMLSpanElement | null = null;
-
-	// Active-word dedicated controls
+	// Active-word font controls
+	private activeColorToggle: HTMLInputElement | null = null;
 	private activeColorInput: HTMLInputElement | null = null;
 	private activeOpacitySlider: HTMLInputElement | null = null;
 	private activeOpacityValue: HTMLSpanElement | null = null;
+	private activeHighlightToggle: HTMLInputElement | null = null;
 	private activeHighlightInput: HTMLInputElement | null = null;
 
+	// Active-word stroke controls
+	private activeStrokeToggle: HTMLInputElement | null = null;
 	private activeStrokeWidthSlider: HTMLInputElement | null = null;
 	private activeStrokeWidthValue: HTMLSpanElement | null = null;
 	private activeStrokeColorInput: HTMLInputElement | null = null;
 	private activeStrokeOpacitySlider: HTMLInputElement | null = null;
 	private activeStrokeOpacityValue: HTMLSpanElement | null = null;
 
-	// Current slider values during drag (for final commit)
-	private currentWordAnimSpeed = 1;
-	private currentActiveScale = 1;
+	// Active-word shadow controls
+	private activeShadowToggle: HTMLInputElement | null = null;
+	private activeShadowOffsetXSlider: HTMLInputElement | null = null;
+	private activeShadowOffsetXValue: HTMLSpanElement | null = null;
+	private activeShadowOffsetYSlider: HTMLInputElement | null = null;
+	private activeShadowOffsetYValue: HTMLSpanElement | null = null;
+	private activeShadowColorInput: HTMLInputElement | null = null;
+	private activeShadowOpacitySlider: HTMLInputElement | null = null;
+	private activeShadowOpacityValue: HTMLSpanElement | null = null;
+
+	// Active-word text decoration buttons
+	private activeTextDecorationBtns: NodeListOf<HTMLButtonElement> | null = null;
+
+	// Active-word tab state
+	private activeWordTabs: NodeListOf<HTMLButtonElement> | null = null;
+	private activeWordPanels: NodeListOf<HTMLDivElement> | null = null;
+
+
 
 	protected override createStylePanel(): StylePanel {
 		return new StylePanel({});
+	}
+
+	protected override createFontColorPicker(): FontColorPicker {
+		return new FontColorPicker({ hideGradient: true });
 	}
 
 	// ─── Lifecycle ─────────────────────────────────────────────────────
@@ -64,20 +82,30 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		super.dispose();
 		this.wordAnimPopup = null;
 		this.activeWordPopup = null;
-		this.wordAnimSpeedSlider = null;
-		this.wordAnimSpeedValue = null;
 		this.wordAnimDirectionSection = null;
-		this.scaleSlider = null;
-		this.scaleValue = null;
+		this.activeColorToggle = null;
 		this.activeColorInput = null;
 		this.activeOpacitySlider = null;
 		this.activeOpacityValue = null;
+		this.activeHighlightToggle = null;
 		this.activeHighlightInput = null;
+		this.activeStrokeToggle = null;
 		this.activeStrokeWidthSlider = null;
 		this.activeStrokeWidthValue = null;
 		this.activeStrokeColorInput = null;
 		this.activeStrokeOpacitySlider = null;
 		this.activeStrokeOpacityValue = null;
+		this.activeShadowToggle = null;
+		this.activeShadowOffsetXSlider = null;
+		this.activeShadowOffsetXValue = null;
+		this.activeShadowOffsetYSlider = null;
+		this.activeShadowOffsetYValue = null;
+		this.activeShadowColorInput = null;
+		this.activeShadowOpacitySlider = null;
+		this.activeShadowOpacityValue = null;
+		this.activeTextDecorationBtns = null;
+		this.activeWordTabs = null;
+		this.activeWordPanels = null;
 	}
 
 	// ─── Overrides ─────────────────────────────────────────────────────
@@ -120,14 +148,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.setButtonActive(btn, btn.dataset["captionWordStyle"] === animStyle);
 		});
 
-		const speed = wordAnim?.speed ?? 1;
-		if (this.wordAnimSpeedSlider) this.wordAnimSpeedSlider.value = String(speed);
-		if (this.wordAnimSpeedValue) this.wordAnimSpeedValue.textContent = `${speed.toFixed(1)}x`;
-
-		// Hide speed when "none" (nothing to animate)
-		const speedSection = this.container?.querySelector("[data-caption-word-speed-section]") as HTMLElement | null;
-		if (speedSection) speedSection.style.display = animStyle === "none" ? "none" : "";
-
 		if (this.wordAnimDirectionSection) {
 			this.wordAnimDirectionSection.style.display = animStyle === "slide" ? "" : "none";
 		}
@@ -139,28 +159,87 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 		// ─── Active Word Controls ───────────────────────────
 		const activeData = asset.active;
+		const baseFont = asset.font;
+		const baseStroke = asset.stroke;
 
-		if (this.activeColorInput) this.activeColorInput.value = activeData?.font?.color ?? "#ffff00";
-		const opacity = Math.round((activeData?.font?.opacity ?? 1) * 100);
-		if (this.activeOpacitySlider) this.activeOpacitySlider.value = String(opacity);
+		// Text decoration
+		const textDecoration = (activeData?.font as Record<string, unknown> | undefined)?.["textDecoration"] as string | undefined;
+		this.activeTextDecorationBtns?.forEach(btn => {
+			this.setButtonActive(btn, btn.dataset["activeTextDecoration"] === (textDecoration ?? "none"));
+		});
+
+		// ─── Font tab ──────────────────────────────────────
+		const hasActiveColor = activeData?.font?.color !== undefined;
+		if (this.activeColorToggle) this.activeColorToggle.checked = hasActiveColor;
+		if (this.activeColorInput) {
+			this.activeColorInput.value = hasActiveColor ? (activeData!.font!.color ?? "#ffff00") : (baseFont?.color ?? "#ffffff");
+			this.activeColorInput.disabled = !hasActiveColor;
+			this.activeColorInput.style.opacity = hasActiveColor ? "1" : "0.3";
+		}
+		const opacity = Math.round((hasActiveColor ? (activeData?.font?.opacity ?? 1) : (baseFont?.opacity ?? 1)) * 100);
+		if (this.activeOpacitySlider) {
+			this.activeOpacitySlider.value = String(opacity);
+			this.activeOpacitySlider.disabled = !hasActiveColor;
+		}
 		if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${opacity}%`;
-		if (this.activeHighlightInput)
-			this.activeHighlightInput.value = ((activeData?.font as Record<string, unknown> | undefined)?.["background"] as string) ?? "#000000";
 
-		if (this.activeStrokeWidthSlider) this.activeStrokeWidthSlider.value = String(activeData?.stroke?.width ?? 0);
-		if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = String(activeData?.stroke?.width ?? 0);
-		if (this.activeStrokeColorInput) this.activeStrokeColorInput.value = activeData?.stroke?.color ?? "#000000";
-		const strokeOpacity = Math.round((activeData?.stroke?.opacity ?? 1) * 100);
-		if (this.activeStrokeOpacitySlider) this.activeStrokeOpacitySlider.value = String(strokeOpacity);
+		const activeBackground = (activeData?.font as Record<string, unknown> | undefined)?.["background"] as string | undefined;
+		const baseBackground = (baseFont as Record<string, unknown> | undefined)?.["background"] as string | undefined;
+		const hasActiveHighlight = activeBackground !== undefined;
+		if (this.activeHighlightToggle) this.activeHighlightToggle.checked = hasActiveHighlight;
+		if (this.activeHighlightInput) {
+			this.activeHighlightInput.value = hasActiveHighlight ? activeBackground : (baseBackground ?? "#000000");
+			this.activeHighlightInput.disabled = !hasActiveHighlight;
+			this.activeHighlightInput.style.opacity = hasActiveHighlight ? "1" : "0.3";
+		}
+
+		// ─── Stroke tab ────────────────────────────────────
+		const activeStroke = activeData?.stroke;
+		const hasActiveStroke = typeof activeStroke === "object";
+		if (this.activeStrokeToggle) this.activeStrokeToggle.checked = hasActiveStroke;
+		const strokeWidth = hasActiveStroke ? (activeStroke.width ?? 0) : (baseStroke?.width ?? 0);
+		if (this.activeStrokeWidthSlider) {
+			this.activeStrokeWidthSlider.value = String(strokeWidth);
+			this.activeStrokeWidthSlider.disabled = !hasActiveStroke;
+		}
+		if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = String(strokeWidth);
+		if (this.activeStrokeColorInput) {
+			this.activeStrokeColorInput.value = hasActiveStroke ? (activeStroke.color ?? "#000000") : (baseStroke?.color ?? "#000000");
+			this.activeStrokeColorInput.disabled = !hasActiveStroke;
+			this.activeStrokeColorInput.style.opacity = hasActiveStroke ? "1" : "0.3";
+		}
+		const strokeOpacity = Math.round((hasActiveStroke ? (activeStroke.opacity ?? 1) : (baseStroke?.opacity ?? 1)) * 100);
+		if (this.activeStrokeOpacitySlider) {
+			this.activeStrokeOpacitySlider.value = String(strokeOpacity);
+			this.activeStrokeOpacitySlider.disabled = !hasActiveStroke;
+		}
 		if (this.activeStrokeOpacityValue) this.activeStrokeOpacityValue.textContent = `${strokeOpacity}%`;
 
-		const scale = activeData?.scale ?? 1;
-		if (this.scaleSlider) this.scaleSlider.value = String(scale);
-		if (this.scaleValue) this.scaleValue.textContent = `${scale.toFixed(1)}x`;
-
-		// Show scale section only when word animation is "pop"
-		const scaleSection = this.container?.querySelector("[data-caption-scale-section]") as HTMLElement | null;
-		if (scaleSection) scaleSection.style.display = animStyle === "pop" ? "" : "none";
+		// ─── Shadow tab ────────────────────────────────────
+		const activeShadow = activeData?.shadow;
+		const hasShadow = typeof activeShadow === "object";
+		if (this.activeShadowToggle) this.activeShadowToggle.checked = hasShadow;
+		if (this.activeShadowOffsetXSlider) {
+			this.activeShadowOffsetXSlider.value = String(hasShadow ? (activeShadow.offsetX ?? 2) : 2);
+			this.activeShadowOffsetXSlider.disabled = !hasShadow;
+		}
+		if (this.activeShadowOffsetXValue) this.activeShadowOffsetXValue.textContent = String(hasShadow ? (activeShadow.offsetX ?? 2) : 2);
+		if (this.activeShadowOffsetYSlider) {
+			this.activeShadowOffsetYSlider.value = String(hasShadow ? (activeShadow.offsetY ?? 2) : 2);
+			this.activeShadowOffsetYSlider.disabled = !hasShadow;
+		}
+		if (this.activeShadowOffsetYValue) this.activeShadowOffsetYValue.textContent = String(hasShadow ? (activeShadow.offsetY ?? 2) : 2);
+		if (this.activeShadowColorInput) {
+			this.activeShadowColorInput.value = hasShadow ? (activeShadow.color ?? "#000000") : "#000000";
+			this.activeShadowColorInput.disabled = !hasShadow;
+			this.activeShadowColorInput.style.opacity = hasShadow ? "1" : "0.3";
+		}
+		const shadowOpacity = Math.round((hasShadow ? (activeShadow.opacity ?? 0.5) : 0.5) * 100);
+		if (this.activeShadowOpacitySlider) {
+			this.activeShadowOpacitySlider.value = String(shadowOpacity);
+			this.activeShadowOpacitySlider.disabled = !hasShadow;
+		}
+		if (this.activeShadowOpacityValue) this.activeShadowOpacityValue.textContent = `${shadowOpacity}%`;
 	}
 
 	// ─── Caption Asset Helper ──────────────────────────────────────────
@@ -196,13 +275,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 						<button class="ss-animation-preset" data-caption-word-style="none">None</button>
 					</div>
 				</div>
-				<div class="ss-toolbar-popup-section" data-caption-word-speed-section>
-					<div class="ss-toolbar-popup-label">Speed</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-caption-word-speed class="ss-toolbar-slider" min="0.5" max="2" step="0.1" value="1" />
-						<span data-caption-word-speed-value class="ss-toolbar-popup-value">1.0x</span>
-					</div>
-				</div>
 				<div class="ss-toolbar-popup-section" data-caption-word-direction-section style="display: none;">
 					<div class="ss-toolbar-popup-label">Direction</div>
 					<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
@@ -215,12 +287,10 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			</div>
 		`;
 		this.wordAnimPopup = wordAnimDropdown.querySelector("[data-caption-word-anim-popup]");
-		this.wordAnimSpeedSlider = wordAnimDropdown.querySelector("[data-caption-word-speed]");
-		this.wordAnimSpeedValue = wordAnimDropdown.querySelector("[data-caption-word-speed-value]");
 		this.wordAnimDirectionSection = wordAnimDropdown.querySelector("[data-caption-word-direction-section]");
 		fragment.appendChild(wordAnimDropdown);
 
-		// ── Active Word Dropdown ──────────────────────────
+		// ── Active Word Dropdown (Tabbed) ─────────────────
 		const activeWordDropdown = document.createElement("div");
 		activeWordDropdown.className = "ss-toolbar-dropdown";
 		activeWordDropdown.innerHTML = `
@@ -228,70 +298,156 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				class="ss-toolbar-btn ss-toolbar-btn--text-edit"
 				title="Active word style">Active Word</button>
 			<div data-active-word-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Color</div>
-					<input type="color" data-active-font-color value="#ffff00" class="ss-font-color-input" />
-				</div>
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Opacity</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-active-font-opacity class="ss-toolbar-slider" min="0" max="100" value="100" />
-						<span data-active-font-opacity-value class="ss-toolbar-popup-value">100%</span>
+				<div class="ss-toolbar-popup-header">Active Word</div>
+
+				<div class="ss-active-word-header">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Decoration</div>
+						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
+							<button class="ss-toolbar-anchor-btn" data-active-text-decoration="none">None</button>
+							<button class="ss-toolbar-anchor-btn" data-active-text-decoration="underline" style="text-decoration: underline;">U</button>
+							<button class="ss-toolbar-anchor-btn" data-active-text-decoration="line-through" style="text-decoration: line-through;">S</button>
+						</div>
 					</div>
 				</div>
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Highlight</div>
-					<input type="color" data-active-font-highlight value="#000000" class="ss-font-color-input" />
+
+				<div class="ss-style-tabs">
+					<button class="ss-style-tab active" data-active-word-tab="font">Font</button>
+					<button class="ss-style-tab" data-active-word-tab="stroke">Stroke</button>
+					<button class="ss-style-tab" data-active-word-tab="shadow">Shadow</button>
 				</div>
-				<div class="ss-toolbar-popup-divider"></div>
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Stroke Width</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-active-stroke-width class="ss-toolbar-slider" min="0" max="10" step="1" value="0" />
-						<span data-active-stroke-width-value class="ss-toolbar-popup-value">0</span>
+
+				<div data-active-word-panel="font" class="ss-style-panel">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Color</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="checkbox" data-active-color-toggle class="ss-toolbar-checkbox" />
+							<input type="color" data-active-font-color value="#ffff00" class="ss-font-color-input" disabled style="opacity: 0.3;" />
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Opacity</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-active-font-opacity class="ss-toolbar-slider" min="0" max="100" value="100" disabled />
+							<span data-active-font-opacity-value class="ss-toolbar-popup-value">100%</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Highlight</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="checkbox" data-active-highlight-toggle class="ss-toolbar-checkbox" />
+							<input type="color" data-active-font-highlight value="#000000" class="ss-font-color-input" disabled style="opacity: 0.3;" />
+						</div>
 					</div>
 				</div>
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Stroke Color</div>
-					<input type="color" data-active-stroke-color value="#000000" class="ss-font-color-input" />
-				</div>
-				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Stroke Opacity</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-active-stroke-opacity class="ss-toolbar-slider" min="0" max="100" value="100" />
-						<span data-active-stroke-opacity-value class="ss-toolbar-popup-value">100%</span>
+
+				<div data-active-word-panel="stroke" class="ss-style-panel" style="display: none;">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-row">
+							<input type="checkbox" data-active-stroke-toggle class="ss-toolbar-checkbox" />
+							<span class="ss-toolbar-popup-label" style="margin-bottom: 0;">Enable Stroke</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Width</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-active-stroke-width class="ss-toolbar-slider" min="0" max="10" step="1" value="0" disabled />
+							<span data-active-stroke-width-value class="ss-toolbar-popup-value">0</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Color</div>
+						<input type="color" data-active-stroke-color value="#000000" class="ss-font-color-input" disabled style="opacity: 0.3;" />
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Opacity</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-active-stroke-opacity class="ss-toolbar-slider" min="0" max="100" value="100" disabled />
+							<span data-active-stroke-opacity-value class="ss-toolbar-popup-value">100%</span>
+						</div>
 					</div>
 				</div>
-				<div data-caption-scale-section class="ss-toolbar-popup-section" style="display: none;">
-					<div class="ss-toolbar-popup-divider"></div>
-					<div class="ss-toolbar-popup-label">Scale</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-caption-active-scale class="ss-toolbar-slider" min="0.5" max="2" step="0.05" value="1" />
-						<span data-caption-active-scale-value class="ss-toolbar-popup-value">1.0x</span>
+
+				<div data-active-word-panel="shadow" class="ss-style-panel" style="display: none;">
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-row">
+							<input type="checkbox" data-active-shadow-toggle class="ss-toolbar-checkbox" />
+							<span class="ss-toolbar-popup-label" style="margin-bottom: 0;">Enable Shadow</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Offset X</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-active-shadow-offset-x class="ss-toolbar-slider" min="-10" max="10" step="1" value="2" disabled />
+							<span data-active-shadow-offset-x-value class="ss-toolbar-popup-value">2</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Offset Y</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-active-shadow-offset-y class="ss-toolbar-slider" min="-10" max="10" step="1" value="2" disabled />
+							<span data-active-shadow-offset-y-value class="ss-toolbar-popup-value">2</span>
+						</div>
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Color</div>
+						<input type="color" data-active-shadow-color value="#000000" class="ss-font-color-input" disabled style="opacity: 0.3;" />
+					</div>
+					<div class="ss-toolbar-popup-section">
+						<div class="ss-toolbar-popup-label">Opacity</div>
+						<div class="ss-toolbar-popup-row">
+							<input type="range" data-active-shadow-opacity class="ss-toolbar-slider" min="0" max="100" value="50" disabled />
+							<span data-active-shadow-opacity-value class="ss-toolbar-popup-value">50%</span>
+						</div>
 					</div>
 				</div>
 			</div>
 		`;
+
+		// Query Active Word popup elements
 		this.activeWordPopup = activeWordDropdown.querySelector("[data-active-word-popup]");
+		this.activeWordTabs = activeWordDropdown.querySelectorAll("[data-active-word-tab]");
+		this.activeWordPanels = activeWordDropdown.querySelectorAll("[data-active-word-panel]");
+
+		// Text decoration
+		this.activeTextDecorationBtns = activeWordDropdown.querySelectorAll("[data-active-text-decoration]");
+
+		// Font tab
+		this.activeColorToggle = activeWordDropdown.querySelector("[data-active-color-toggle]");
 		this.activeColorInput = activeWordDropdown.querySelector("[data-active-font-color]");
 		this.activeOpacitySlider = activeWordDropdown.querySelector("[data-active-font-opacity]");
 		this.activeOpacityValue = activeWordDropdown.querySelector("[data-active-font-opacity-value]");
+		this.activeHighlightToggle = activeWordDropdown.querySelector("[data-active-highlight-toggle]");
 		this.activeHighlightInput = activeWordDropdown.querySelector("[data-active-font-highlight]");
+
+		// Stroke tab
+		this.activeStrokeToggle = activeWordDropdown.querySelector("[data-active-stroke-toggle]");
 		this.activeStrokeWidthSlider = activeWordDropdown.querySelector("[data-active-stroke-width]");
 		this.activeStrokeWidthValue = activeWordDropdown.querySelector("[data-active-stroke-width-value]");
 		this.activeStrokeColorInput = activeWordDropdown.querySelector("[data-active-stroke-color]");
 		this.activeStrokeOpacitySlider = activeWordDropdown.querySelector("[data-active-stroke-opacity]");
 		this.activeStrokeOpacityValue = activeWordDropdown.querySelector("[data-active-stroke-opacity-value]");
-		this.scaleSlider = activeWordDropdown.querySelector("[data-caption-active-scale]");
-		this.scaleValue = activeWordDropdown.querySelector("[data-caption-active-scale-value]");
+
+		// Shadow tab
+		this.activeShadowToggle = activeWordDropdown.querySelector("[data-active-shadow-toggle]");
+		this.activeShadowOffsetXSlider = activeWordDropdown.querySelector("[data-active-shadow-offset-x]");
+		this.activeShadowOffsetXValue = activeWordDropdown.querySelector("[data-active-shadow-offset-x-value]");
+		this.activeShadowOffsetYSlider = activeWordDropdown.querySelector("[data-active-shadow-offset-y]");
+		this.activeShadowOffsetYValue = activeWordDropdown.querySelector("[data-active-shadow-offset-y-value]");
+		this.activeShadowColorInput = activeWordDropdown.querySelector("[data-active-shadow-color]");
+		this.activeShadowOpacitySlider = activeWordDropdown.querySelector("[data-active-shadow-opacity]");
+		this.activeShadowOpacityValue = activeWordDropdown.querySelector("[data-active-shadow-opacity-value]");
+
 		fragment.appendChild(activeWordDropdown);
 
 		this.container.appendChild(fragment);
 
 		this.wireWordAnimControls(wordAnimDropdown);
-		this.wireScaleControl();
+		this.wireActiveWordTabs();
+		this.wireActiveTextDecorationControls();
 		this.wireActiveColorControls();
 		this.wireActiveStrokeControls();
+		this.wireActiveShadowControls();
 	}
 
 	// ─── Word Animation Wiring ─────────────────────────────────────────
@@ -307,28 +463,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			});
 		});
 
-		// Speed slider (two-phase drag)
-		this.wordAnimSpeedSlider?.addEventListener("pointerdown", () => {
-			const state = this.captureClipState();
-			if (state) this.dragManager.start("caption-word-speed", state.clipId, state.initialState);
-		});
-		this.wordAnimSpeedSlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value);
-			this.currentWordAnimSpeed = value;
-			if (this.wordAnimSpeedValue) this.wordAnimSpeedValue.textContent = `${value.toFixed(1)}x`;
-			this.liveCaptionUpdate(asset => ({
-				...asset,
-				wordAnimation: { style: "karaoke" as const, ...(asset.wordAnimation ?? {}), speed: value }
-			}));
-		});
-		this.wordAnimSpeedSlider?.addEventListener("change", () => {
-			this.commitCaptionDrag("caption-word-speed", a => {
-				const wa: Record<string, unknown> = { style: "karaoke", ...((a["wordAnimation"] as Record<string, unknown>) ?? {}) };
-				wa["speed"] = this.currentWordAnimSpeed;
-				a["wordAnimation"] = wa; // eslint-disable-line no-param-reassign -- mutating structuredClone
-			});
-		});
-
 		// Direction buttons (discrete command)
 		root.querySelectorAll<HTMLButtonElement>("[data-caption-word-direction]").forEach(btn => {
 			btn.addEventListener("click", () => {
@@ -340,27 +474,38 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		});
 	}
 
-	// ─── Scale Wiring (active mode) ───────────────────────────────────
+	// ─── Active Word Tab Switching ───────────────────────────────────
 
-	private wireScaleControl(): void {
-		this.scaleSlider?.addEventListener("pointerdown", () => {
-			const state = this.captureClipState();
-			if (state) this.dragManager.start("caption-active-scale", state.clipId, state.initialState);
+	private wireActiveWordTabs(): void {
+		this.activeWordTabs?.forEach(tab => {
+			tab.addEventListener("click", () => {
+				const tabName = tab.dataset["activeWordTab"];
+				if (!tabName) return;
+
+				// Update tab active state
+				this.activeWordTabs?.forEach(t => t.classList.remove("active"));
+				tab.classList.add("active");
+
+				// Show/hide panels
+				this.activeWordPanels?.forEach(panel => {
+					panel.style.display = panel.dataset["activeWordPanel"] === tabName ? "" : "none";
+				});
+			});
 		});
-		this.scaleSlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value);
-			this.currentActiveScale = value;
-			if (this.scaleValue) this.scaleValue.textContent = `${value.toFixed(1)}x`;
-			this.liveCaptionUpdate(asset => ({
-				...asset,
-				active: { ...(asset.active ?? {}), scale: value }
-			}));
-		});
-		this.scaleSlider?.addEventListener("change", () => {
-			this.commitCaptionDrag("caption-active-scale", a => {
-				const active = { ...((a["active"] as Record<string, unknown>) ?? {}) };
-				active["scale"] = this.currentActiveScale;
-				a["active"] = active; // eslint-disable-line no-param-reassign -- mutating structuredClone
+	}
+
+	// ─── Text Decoration Wiring ──────────────────────────────────────
+
+	private wireActiveTextDecorationControls(): void {
+		this.activeTextDecorationBtns?.forEach(btn => {
+			btn.addEventListener("click", () => {
+				const decoration = btn.dataset["activeTextDecoration"];
+				if (!decoration) return;
+				const asset = this.getCaptionAsset();
+				const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+				const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+				currentFont["textDecoration"] = decoration === "none" ? undefined : decoration;
+				this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
 			});
 		});
 	}
@@ -368,82 +513,187 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	// ─── Active Color Wiring ──────────────────────────────────────────
 
 	private wireActiveColorControls(): void {
-		this.activeColorInput?.addEventListener("input", () => {
-			const color = this.activeColorInput!.value;
-			const asset = this.getCaptionAsset();
-			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
-			const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
-			currentFont["color"] = color;
-			this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+		// Color toggle — enable/disable color override
+		this.activeColorToggle?.addEventListener("change", () => {
+			const enabled = this.activeColorToggle!.checked;
+			if (this.activeColorInput) {
+				this.activeColorInput.disabled = !enabled;
+				this.activeColorInput.style.opacity = enabled ? "1" : "0.3";
+			}
+			if (this.activeOpacitySlider) this.activeOpacitySlider.disabled = !enabled;
+
+			if (enabled) {
+				this.writeActiveFont();
+			} else {
+				// Clear active font color/opacity (inherit from base)
+				const asset = this.getCaptionAsset();
+				const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+				const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+				delete currentFont["color"];
+				delete currentFont["opacity"];
+				const hasKeys = Object.values(currentFont).some(v => v !== undefined);
+				this.updateClipProperty({ active: { ...currentActive, font: hasKeys ? currentFont : undefined } });
+			}
 		});
+
+		this.activeColorInput?.addEventListener("input", () => this.writeActiveFont());
 
 		this.activeOpacitySlider?.addEventListener("input", () => {
-			const opacity = parseInt(this.activeOpacitySlider!.value, 10) / 100;
-			if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
-			const asset = this.getCaptionAsset();
-			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
-			const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
-			currentFont["opacity"] = opacity;
-			this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+			if (this.activeOpacityValue) this.activeOpacityValue.textContent = `${this.activeOpacitySlider!.value}%`;
+			this.writeActiveFont();
 		});
 
-		this.activeHighlightInput?.addEventListener("input", () => {
-			const background = this.activeHighlightInput!.value;
-			const asset = this.getCaptionAsset();
-			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
-			const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
-			currentFont["background"] = background;
-			this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+		// Highlight toggle
+		this.activeHighlightToggle?.addEventListener("change", () => {
+			const enabled = this.activeHighlightToggle!.checked;
+			if (this.activeHighlightInput) {
+				this.activeHighlightInput.disabled = !enabled;
+				this.activeHighlightInput.style.opacity = enabled ? "1" : "0.3";
+			}
+
+			if (enabled) {
+				this.writeActiveHighlight();
+			} else {
+				const asset = this.getCaptionAsset();
+				const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+				const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+				delete currentFont["background"];
+				const hasKeys = Object.values(currentFont).some(v => v !== undefined);
+				this.updateClipProperty({ active: { ...currentActive, font: hasKeys ? currentFont : undefined } });
+			}
 		});
+
+		this.activeHighlightInput?.addEventListener("input", () => this.writeActiveHighlight());
+	}
+
+	private writeActiveFont(): void {
+		const color = this.activeColorInput?.value ?? "#ffff00";
+		const opacity = parseInt(this.activeOpacitySlider?.value ?? "100", 10) / 100;
+		const asset = this.getCaptionAsset();
+		const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+		const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+		currentFont["color"] = color;
+		currentFont["opacity"] = opacity;
+		this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
+	}
+
+	private writeActiveHighlight(): void {
+		const background = this.activeHighlightInput?.value ?? "#000000";
+		const asset = this.getCaptionAsset();
+		const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+		const currentFont = { ...((currentActive["font"] ?? {}) as Record<string, unknown>) };
+		currentFont["background"] = background;
+		this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
 	}
 
 	// ─── Active Stroke Wiring ─────────────────────────────────────────
 
 	private wireActiveStrokeControls(): void {
-		const writeStroke = () => {
-			const width = parseInt(this.activeStrokeWidthSlider?.value ?? "0", 10);
-			const color = this.activeStrokeColorInput?.value ?? "#000000";
-			const opacity = parseInt(this.activeStrokeOpacitySlider?.value ?? "100", 10) / 100;
+		// Stroke toggle — enable/disable stroke override
+		this.activeStrokeToggle?.addEventListener("change", () => {
+			const enabled = this.activeStrokeToggle!.checked;
+			this.setStrokeControlsEnabled(enabled);
 
-			const asset = this.getCaptionAsset();
-			const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
-			const strokeValue = width > 0 ? { width, color, opacity } : undefined;
-			this.updateClipProperty({ active: { ...currentActive, stroke: strokeValue } });
-		};
+			if (enabled) {
+				this.writeActiveStroke();
+			} else {
+				const asset = this.getCaptionAsset();
+				const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+				this.updateClipProperty({ active: { ...currentActive, stroke: undefined } });
+			}
+		});
 
 		this.activeStrokeWidthSlider?.addEventListener("input", () => {
 			if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = this.activeStrokeWidthSlider!.value;
-			writeStroke();
+			this.writeActiveStroke();
 		});
 
-		this.activeStrokeColorInput?.addEventListener("input", writeStroke);
+		this.activeStrokeColorInput?.addEventListener("input", () => this.writeActiveStroke());
 
 		this.activeStrokeOpacitySlider?.addEventListener("input", () => {
 			if (this.activeStrokeOpacityValue) this.activeStrokeOpacityValue.textContent = `${this.activeStrokeOpacitySlider!.value}%`;
-			writeStroke();
+			this.writeActiveStroke();
 		});
 	}
 
-	// ─── Two-Phase Drag Helpers ────────────────────────────────────────
-
-	private liveCaptionUpdate(mutate: (asset: RichCaptionAsset) => Record<string, unknown>): void {
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clipId) return;
-		const asset = this.getCaptionAsset();
-		if (!asset) return;
-
-		this.edit.updateClipInDocument(clipId, { asset: mutate(asset) as ResolvedClip["asset"] });
-		this.edit.resolveClip(clipId);
-	}
-
-	private commitCaptionDrag(controlId: string, applyFinal: (asset: Record<string, unknown>) => void): void {
-		const session = this.dragManager.end(controlId);
-		if (!session) return;
-
-		const finalClip = structuredClone(session.initialState);
-		if (finalClip.asset) {
-			applyFinal(finalClip.asset as Record<string, unknown>);
+	private setStrokeControlsEnabled(enabled: boolean): void {
+		if (this.activeStrokeWidthSlider) this.activeStrokeWidthSlider.disabled = !enabled;
+		if (this.activeStrokeColorInput) {
+			this.activeStrokeColorInput.disabled = !enabled;
+			this.activeStrokeColorInput.style.opacity = enabled ? "1" : "0.3";
 		}
-		this.edit.commitClipUpdate(session.clipId, session.initialState, finalClip);
+		if (this.activeStrokeOpacitySlider) this.activeStrokeOpacitySlider.disabled = !enabled;
 	}
+
+	private writeActiveStroke(): void {
+		const width = parseInt(this.activeStrokeWidthSlider?.value ?? "0", 10);
+		const color = this.activeStrokeColorInput?.value ?? "#000000";
+		const opacity = parseInt(this.activeStrokeOpacitySlider?.value ?? "100", 10) / 100;
+
+		const asset = this.getCaptionAsset();
+		const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+		this.updateClipProperty({ active: { ...currentActive, stroke: { width, color, opacity } } });
+	}
+
+	// ─── Active Shadow Wiring ─────────────────────────────────────────
+
+	private wireActiveShadowControls(): void {
+		// Shadow toggle
+		this.activeShadowToggle?.addEventListener("change", () => {
+			const enabled = this.activeShadowToggle!.checked;
+			this.setShadowControlsEnabled(enabled);
+
+			if (enabled) {
+				this.writeActiveShadow();
+			} else {
+				const asset = this.getCaptionAsset();
+				const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+				this.updateClipProperty({ active: { ...currentActive, shadow: undefined } });
+			}
+		});
+
+		this.activeShadowOffsetXSlider?.addEventListener("input", () => {
+			if (this.activeShadowOffsetXValue) this.activeShadowOffsetXValue.textContent = this.activeShadowOffsetXSlider!.value;
+			this.writeActiveShadow();
+		});
+
+		this.activeShadowOffsetYSlider?.addEventListener("input", () => {
+			if (this.activeShadowOffsetYValue) this.activeShadowOffsetYValue.textContent = this.activeShadowOffsetYSlider!.value;
+			this.writeActiveShadow();
+		});
+
+		this.activeShadowColorInput?.addEventListener("input", () => this.writeActiveShadow());
+
+		this.activeShadowOpacitySlider?.addEventListener("input", () => {
+			if (this.activeShadowOpacityValue) this.activeShadowOpacityValue.textContent = `${this.activeShadowOpacitySlider!.value}%`;
+			this.writeActiveShadow();
+		});
+	}
+
+	private setShadowControlsEnabled(enabled: boolean): void {
+		if (this.activeShadowOffsetXSlider) this.activeShadowOffsetXSlider.disabled = !enabled;
+		if (this.activeShadowOffsetYSlider) this.activeShadowOffsetYSlider.disabled = !enabled;
+		if (this.activeShadowColorInput) {
+			this.activeShadowColorInput.disabled = !enabled;
+			this.activeShadowColorInput.style.opacity = enabled ? "1" : "0.3";
+		}
+		if (this.activeShadowOpacitySlider) this.activeShadowOpacitySlider.disabled = !enabled;
+	}
+
+	private writeActiveShadow(): void {
+		const offsetX = parseInt(this.activeShadowOffsetXSlider?.value ?? "2", 10);
+		const offsetY = parseInt(this.activeShadowOffsetYSlider?.value ?? "2", 10);
+		const color = this.activeShadowColorInput?.value ?? "#000000";
+		const opacity = parseInt(this.activeShadowOpacitySlider?.value ?? "50", 10) / 100;
+
+		const asset = this.getCaptionAsset();
+		const currentActive = (asset?.active ?? {}) as Record<string, unknown>;
+		this.updateClipProperty({
+			active: {
+				...currentActive,
+				shadow: { offsetX, offsetY, blur: 4, color, opacity }
+			}
+		});
+	}
+
 }

@@ -1132,6 +1132,12 @@
 }
 
 /* Disabled control state (when merge field is bound) */
+.ss-active-word-header {
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .ss-toolbar-popup-row--disabled {
 	opacity: 0.3;
 	pointer-events: none;

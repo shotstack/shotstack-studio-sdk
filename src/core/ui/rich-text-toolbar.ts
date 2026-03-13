@@ -353,7 +353,7 @@ export class RichTextToolbar extends BaseToolbar {
 		const fontColorPickerContainer = this.container.querySelector("[data-font-color-picker]");
 
 		if (fontColorPickerContainer) {
-			this.fontColorPicker = new FontColorPicker();
+			this.fontColorPicker = this.createFontColorPicker();
 			this.fontColorPicker.mount(fontColorPickerContainer as HTMLElement);
 			this.fontColorPicker.onChange(updates => {
 				this.updateFontColorProperty(updates);
@@ -955,6 +955,10 @@ export class RichTextToolbar extends BaseToolbar {
 		return new StylePanel(options);
 	}
 
+	protected createFontColorPicker(): FontColorPicker {
+		return new FontColorPicker();
+	}
+
 	protected getCurrentAsset(): RichTextAsset | null {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clip) return null;
@@ -1116,9 +1120,7 @@ export class RichTextToolbar extends BaseToolbar {
 					this.fontColorPicker.setColor(font?.color || "#000000", font?.opacity ?? 1);
 					// Check for SDK-extended background property (not in external schema)
 					const fontExt = font as typeof font & { background?: string };
-					if (fontExt?.background) {
-						this.fontColorPicker.setHighlight(fontExt.background);
-					}
+					this.fontColorPicker.setHighlight(fontExt?.background);
 				}
 			}
 		});
@@ -1599,8 +1601,8 @@ export class RichTextToolbar extends BaseToolbar {
 			fontUpdates["opacity"] = updates.opacity;
 		}
 
-		// Handle text highlight (font.background)
-		if (updates.background !== undefined) {
+		// Handle text highlight (font.background) — "background" in updates covers both set and unset (undefined)
+		if ("background" in updates) {
 			fontUpdates["background"] = updates.background;
 		}
 
