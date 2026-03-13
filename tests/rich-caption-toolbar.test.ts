@@ -129,7 +129,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 function createCaptionAsset(overrides: Record<string, unknown> = {}) {
 	return {
 		type: "rich-caption",
-		wordAnimation: { style: "karaoke", speed: 1, direction: "up" },
+		wordAnimation: { style: "karaoke", direction: "up" },
 		active: {
 			font: { color: "#ffff00", opacity: 1 },
 			stroke: { width: 2, color: "#000000", opacity: 1 },
@@ -212,14 +212,6 @@ describe("RichCaptionToolbar", () => {
 			expect(styles).toContain("none");
 		});
 
-		it("should inject Words dropdown with speed slider", () => {
-			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
-			expect(slider).not.toBeNull();
-			expect(slider?.type).toBe("range");
-			expect(slider?.min).toBe("0.5");
-			expect(slider?.max).toBe("2");
-		});
-
 		it("should inject Words dropdown with direction buttons", () => {
 			const directionBtns = container.querySelectorAll("[data-caption-word-direction]");
 			expect(directionBtns.length).toBe(4);
@@ -291,7 +283,7 @@ describe("RichCaptionToolbar", () => {
 
 	describe("syncState", () => {
 		it("should sync word animation style buttons", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -302,20 +294,8 @@ describe("RichCaptionToolbar", () => {
 			expect(karaokeBtn?.classList.contains("active")).toBe(false);
 		});
 
-		it("should sync word animation speed slider and display", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1.5 } });
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
-			expect(slider?.value).toBe("1.5");
-
-			const display = container.querySelector("[data-caption-word-speed-value]");
-			expect(display?.textContent).toBe("1.5x");
-		});
-
 		it("should show direction section only for 'slide' animation", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", speed: 1, direction: "left" } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", direction: "left" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -324,7 +304,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should hide direction section for non-slide animations", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -369,7 +349,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should show scale section when word animation is 'pop'", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 }, active: { scale: 1.5 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1.5 } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -381,7 +361,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should hide scale section when word animation is not 'pop'", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -415,7 +395,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should call updateClip when direction button is clicked", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", speed: 1, direction: "up" } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", direction: "up" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -432,17 +412,6 @@ describe("RichCaptionToolbar", () => {
 			);
 		});
 
-		it("should update speed display on slider input", () => {
-			setupCaptionClip(mockEdit);
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
-			simulateInput(slider, "1.5");
-
-			const display = container.querySelector("[data-caption-word-speed-value]");
-			expect(display?.textContent).toBe("1.5x");
-		});
 	});
 
 	describe("active word controls", () => {
@@ -507,7 +476,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should update scale display on slider input", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 }, active: { scale: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1 } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 

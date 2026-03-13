@@ -15,8 +15,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private activeWordPopup: HTMLDivElement | null = null;
 
 	// Word Animation slider refs
-	private wordAnimSpeedSlider: HTMLInputElement | null = null;
-	private wordAnimSpeedValue: HTMLSpanElement | null = null;
 	private wordAnimDirectionSection: HTMLDivElement | null = null;
 
 	// Active-mode scale control
@@ -36,7 +34,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private activeStrokeOpacityValue: HTMLSpanElement | null = null;
 
 	// Current slider values during drag (for final commit)
-	private currentWordAnimSpeed = 1;
 	private currentActiveScale = 1;
 
 	protected override createStylePanel(): StylePanel {
@@ -64,8 +61,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		super.dispose();
 		this.wordAnimPopup = null;
 		this.activeWordPopup = null;
-		this.wordAnimSpeedSlider = null;
-		this.wordAnimSpeedValue = null;
 		this.wordAnimDirectionSection = null;
 		this.scaleSlider = null;
 		this.scaleValue = null;
@@ -120,14 +115,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.setButtonActive(btn, btn.dataset["captionWordStyle"] === animStyle);
 		});
 
-		const speed = wordAnim?.speed ?? 1;
-		if (this.wordAnimSpeedSlider) this.wordAnimSpeedSlider.value = String(speed);
-		if (this.wordAnimSpeedValue) this.wordAnimSpeedValue.textContent = `${speed.toFixed(1)}x`;
-
-		// Hide speed when "none" (nothing to animate)
-		const speedSection = this.container?.querySelector("[data-caption-word-speed-section]") as HTMLElement | null;
-		if (speedSection) speedSection.style.display = animStyle === "none" ? "none" : "";
-
 		if (this.wordAnimDirectionSection) {
 			this.wordAnimDirectionSection.style.display = animStyle === "slide" ? "" : "none";
 		}
@@ -147,10 +134,12 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (this.activeHighlightInput)
 			this.activeHighlightInput.value = ((activeData?.font as Record<string, unknown> | undefined)?.["background"] as string) ?? "#000000";
 
-		if (this.activeStrokeWidthSlider) this.activeStrokeWidthSlider.value = String(activeData?.stroke?.width ?? 0);
-		if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = String(activeData?.stroke?.width ?? 0);
-		if (this.activeStrokeColorInput) this.activeStrokeColorInput.value = activeData?.stroke?.color ?? "#000000";
-		const strokeOpacity = Math.round((activeData?.stroke?.opacity ?? 1) * 100);
+		const activeStroke = activeData?.stroke;
+		const strokeObj = typeof activeStroke === "object" ? activeStroke : undefined;
+		if (this.activeStrokeWidthSlider) this.activeStrokeWidthSlider.value = String(strokeObj?.width ?? 0);
+		if (this.activeStrokeWidthValue) this.activeStrokeWidthValue.textContent = String(strokeObj?.width ?? 0);
+		if (this.activeStrokeColorInput) this.activeStrokeColorInput.value = strokeObj?.color ?? "#000000";
+		const strokeOpacity = Math.round((strokeObj?.opacity ?? 1) * 100);
 		if (this.activeStrokeOpacitySlider) this.activeStrokeOpacitySlider.value = String(strokeOpacity);
 		if (this.activeStrokeOpacityValue) this.activeStrokeOpacityValue.textContent = `${strokeOpacity}%`;
 
@@ -196,13 +185,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 						<button class="ss-animation-preset" data-caption-word-style="none">None</button>
 					</div>
 				</div>
-				<div class="ss-toolbar-popup-section" data-caption-word-speed-section>
-					<div class="ss-toolbar-popup-label">Speed</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-caption-word-speed class="ss-toolbar-slider" min="0.5" max="2" step="0.1" value="1" />
-						<span data-caption-word-speed-value class="ss-toolbar-popup-value">1.0x</span>
-					</div>
-				</div>
 				<div class="ss-toolbar-popup-section" data-caption-word-direction-section style="display: none;">
 					<div class="ss-toolbar-popup-label">Direction</div>
 					<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
@@ -215,8 +197,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			</div>
 		`;
 		this.wordAnimPopup = wordAnimDropdown.querySelector("[data-caption-word-anim-popup]");
-		this.wordAnimSpeedSlider = wordAnimDropdown.querySelector("[data-caption-word-speed]");
-		this.wordAnimSpeedValue = wordAnimDropdown.querySelector("[data-caption-word-speed-value]");
 		this.wordAnimDirectionSection = wordAnimDropdown.querySelector("[data-caption-word-direction-section]");
 		fragment.appendChild(wordAnimDropdown);
 
@@ -304,28 +284,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				if (!style) return;
 				const asset = this.getCaptionAsset();
 				this.updateClipProperty({ wordAnimation: { ...(asset?.wordAnimation ?? {}), style } });
-			});
-		});
-
-		// Speed slider (two-phase drag)
-		this.wordAnimSpeedSlider?.addEventListener("pointerdown", () => {
-			const state = this.captureClipState();
-			if (state) this.dragManager.start("caption-word-speed", state.clipId, state.initialState);
-		});
-		this.wordAnimSpeedSlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value);
-			this.currentWordAnimSpeed = value;
-			if (this.wordAnimSpeedValue) this.wordAnimSpeedValue.textContent = `${value.toFixed(1)}x`;
-			this.liveCaptionUpdate(asset => ({
-				...asset,
-				wordAnimation: { style: "karaoke" as const, ...(asset.wordAnimation ?? {}), speed: value }
-			}));
-		});
-		this.wordAnimSpeedSlider?.addEventListener("change", () => {
-			this.commitCaptionDrag("caption-word-speed", a => {
-				const wa: Record<string, unknown> = { style: "karaoke", ...((a["wordAnimation"] as Record<string, unknown>) ?? {}) };
-				wa["speed"] = this.currentWordAnimSpeed;
-				a["wordAnimation"] = wa; // eslint-disable-line no-param-reassign -- mutating structuredClone
 			});
 		});
 
