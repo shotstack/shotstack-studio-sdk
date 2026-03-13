@@ -126,6 +126,13 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	public override async reloadAsset(): Promise<void> {
+		const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+		// Bail out before destroying anything if src is still unresolved
+		if (!asset.src || isAliasReference(asset.src)) {
+			return;
+		}
+
 		this.loadComplete = false;
 
 		if (this.texture) { this.texture.destroy(); this.texture = null; }
@@ -135,12 +142,6 @@ export class RichCaptionPlayer extends Player {
 		this.generatorConfig = null;
 		this.canvas = null;
 		this.painter = null;
-
-		const asset = this.clipConfiguration.asset as RichCaptionAsset;
-
-		if (!asset.src || isAliasReference(asset.src)) {
-			return;
-		}
 
 		this.isPlaceholder = false;
 		this.needsResolution = false;

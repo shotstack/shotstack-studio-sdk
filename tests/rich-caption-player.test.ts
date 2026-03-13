@@ -1178,9 +1178,9 @@ describe("RichCaptionPlayer", () => {
 
 			await player.reloadAsset();
 
-			// Should not attempt to rebuild — stays as placeholder
+			// Should not attempt to rebuild — preserves existing placeholder state
 			// @ts-expect-error accessing private property
-			expect(player.loadComplete).toBe(false); // was reset, stays false since no rebuild
+			expect(player.loadComplete).toBe(true); // untouched — early return before destruction
 			expect(mockLayoutCaption).not.toHaveBeenCalled();
 		});
 
