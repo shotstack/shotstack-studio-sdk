@@ -104,6 +104,13 @@ export class VirtualFontList {
 			return matchesQuery && matchesCategory;
 		});
 
+		// Clear cached items — index→font mapping is now stale
+		for (const [, element] of this.items) {
+			this.fontLoader.unobserve(element);
+			element.remove();
+		}
+		this.items.clear();
+
 		// Reset scroll position when filter changes
 		this.viewport.scrollTop = 0;
 		this.scrollTop = 0;

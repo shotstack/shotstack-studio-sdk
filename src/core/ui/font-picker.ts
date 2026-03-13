@@ -241,9 +241,9 @@ export class FontPicker {
 		// Hide sections when searching
 		if (this.searchQuery) {
 			this.recentSection.style.display = "none";
-			this.customSection.style.display = "none";
 			(this.element.querySelector(".ss-font-picker-divider") as HTMLElement).style.display = "none";
-			this.customDivider.style.display = "none";
+			// Filter custom fonts by search query instead of hiding
+			this.updateCustomSection(this.searchQuery);
 		} else {
 			this.recentSection.style.display = "";
 			(this.element.querySelector(".ss-font-picker-divider") as HTMLElement).style.display = "";
@@ -378,9 +378,18 @@ export class FontPicker {
 	 * Update the custom fonts section.
 	 * Shows non-Google fonts from timeline.fonts.
 	 */
-	private updateCustomSection(): void {
+	private updateCustomSection(filterQuery?: string): void {
 		// Get custom fonts from timeline (non-Google, non-built-in)
-		const customFonts = this.timelineFonts.filter(font => isCustomFont(font.src));
+		let customFonts = this.timelineFonts.filter(font => isCustomFont(font.src));
+
+		// Filter by search query
+		if (filterQuery) {
+			const lowerQuery = filterQuery.toLowerCase().trim();
+			customFonts = customFonts.filter(font => {
+				const displayName = this.resolveCustomFontName(font.src);
+				return displayName.toLowerCase().includes(lowerQuery);
+			});
+		}
 
 		// Hide section if no custom fonts
 		if (customFonts.length === 0) {
