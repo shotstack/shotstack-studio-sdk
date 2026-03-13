@@ -1016,4 +1016,195 @@ describe("RichCaptionPlayer", () => {
 			expect(player.pendingLayoutId).toBe(initialLayoutId + 2);
 		});
 	});
+
+	describe("Alias Placeholder", () => {
+		it("detects alias reference and sets placeholder flags", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			expect(player.isPlaceholder).toBe(true);
+			expect(player.needsResolution).toBe(true);
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(true);
+		});
+
+		it("does NOT call fetch for alias:// URLs", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// fetch should only be called for font registration, not for the alias URL
+			const fetchCalls = mockFetch.mock.calls.map((c: unknown[]) => c[0]);
+			expect(fetchCalls).not.toContain("alias://VIDEO");
+		});
+
+		it("renders placeholder through full canvas pipeline", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
+			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(1);
+		});
+
+		it("placeholder respects caption styling", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
+			};
+
+			const asset = createAsset({
+				src: "alias://VIDEO",
+				words: undefined,
+				font: { family: "Inter", size: 36, color: "#ff0000" },
+				active: { color: "#00ff00" },
+				stroke: { width: 2, color: "#000000" }
+			} as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			const payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			expect(payload.font.family).toBe("Inter");
+			expect(payload.active).toBeDefined();
+			expect(payload.stroke).toBeDefined();
+			expect(payload.words).toHaveLength(5); // placeholder words
+		});
+
+		it("distributes placeholder words across the full clip length", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
+			};
+
+			const clipLength = 10; // 10 seconds
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset, { length: clipLength }));
+			await player.load();
+
+			const payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			const words = payload.words as Array<{ start: number; end: number }>;
+			expect(words[0].start).toBe(0);
+			expect(words[words.length - 1].end).toBe(clipLength * 1000); // spans full clip in ms
+		});
+
+		it("reconfigure works on placeholder state", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			mockLayoutCaption.mockClear();
+
+			// @ts-expect-error accessing private method
+			await player.reconfigure();
+
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
+		});
+
+		it("regenerates placeholder words when clip length changes (e.g. 'end' re-resolved)", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
+			};
+
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const clip = createClip(asset, { length: 3 }); // initial "end" resolved to 3s
+			const player = new RichCaptionPlayer(edit, clip);
+			await player.load();
+
+			// Verify initial placeholder spans 3s
+			let payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			const initialWords = payload.words as Array<{ end: number }>;
+			expect(initialWords[initialWords.length - 1].end).toBe(3000);
+
+			// Simulate resolveAllTiming updating the length after video probing
+			player.setResolvedTiming({ start: 0, length: 20 } as { start: number; length: number });
+			CanvasRichCaptionAssetSchema.safeParse.mockClear();
+
+			player.reconfigureAfterRestore();
+			await new Promise(resolve => { setTimeout(resolve, 10); });
+
+			// After reconfigure, placeholder should span the new 20s length
+			payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
+			const updatedWords = payload.words as Array<{ end: number }>;
+			expect(updatedWords[updatedWords.length - 1].end).toBe(20000);
+		});
+	});
+
+	describe("reloadAsset", () => {
+		it("transitions from placeholder to real subtitles when src changes", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const clip = createClip(asset);
+			const player = new RichCaptionPlayer(edit, clip);
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			expect(player.isPlaceholder).toBe(true);
+			expect(player.needsResolution).toBe(true);
+
+			// Simulate reconciler updating src to a real URL
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				...asset,
+				src: "https://cdn.test/real-captions.srt"
+			};
+
+			mockLayoutCaption.mockClear();
+			mockGenerateRichCaptionFrame.mockClear();
+
+			await player.reloadAsset();
+
+			// @ts-expect-error accessing private property
+			expect(player.isPlaceholder).toBe(false);
+			expect(player.needsResolution).toBe(false);
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(true);
+			expect(mockParseSubtitleToWords).toHaveBeenCalled();
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
+		});
+
+		it("stays in current state if src is still an alias", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			mockLayoutCaption.mockClear();
+
+			await player.reloadAsset();
+
+			// Should not attempt to rebuild — stays as placeholder
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(false); // was reset, stays false since no rebuild
+			expect(mockLayoutCaption).not.toHaveBeenCalled();
+		});
+
+		it("clears rendering state before reload", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// Verify rendering state exists
+			// @ts-expect-error accessing private property
+			expect(player.canvas).not.toBeNull();
+
+			// Simulate src change to real URL
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				...asset,
+				src: "https://cdn.test/captions.srt"
+			};
+
+			await player.reloadAsset();
+
+			// After reload, pipeline is rebuilt
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(true);
+		});
+	});
 });

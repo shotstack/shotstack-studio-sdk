@@ -2,6 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath, getFontDisplayName } from "@core/fonts/font-config";
 import { extractFontNames, isGoogleFontUrl } from "@core/fonts/font-utils";
+import { isAliasReference } from "@core/timing/types";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichCaptionAssetSchema, type RichCaptionAsset, type ResolvedClip } from "@schemas";
 import {
@@ -38,6 +39,7 @@ export class RichCaptionPlayer extends Player {
 
 	private words: WordTiming[] = [];
 	private loadComplete: boolean = false;
+	private isPlaceholder = false;
 
 	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
 	private lastRegisteredFontKey: string = "";
@@ -47,6 +49,17 @@ export class RichCaptionPlayer extends Player {
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		const { fit, ...configWithoutFit } = clipConfiguration;
 		super(edit, configWithoutFit, PlayerType.RichCaption);
+	}
+
+	private static createPlaceholderWords(clipLengthMs: number): WordTiming[] {
+		const words = ["Your", "captions", "will", "appear", "here"];
+		const wordDuration = clipLengthMs / words.length;
+		return words.map((text, i) => ({
+			text,
+			start: Math.round(i * wordDuration),
+			end: Math.round((i + 1) * wordDuration),
+			confidence: 1
+		}));
 	}
 
 	public override async load(): Promise<void> {
@@ -63,8 +76,14 @@ export class RichCaptionPlayer extends Player {
 
 			let words: WordTiming[];
 			if (richCaptionAsset.src) {
-				words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
-				this.resolvedPauseThreshold = 5;
+				if (isAliasReference(richCaptionAsset.src)) {
+					words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+					this.isPlaceholder = true;
+					this.needsResolution = true;
+				} else {
+					words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
+					this.resolvedPauseThreshold = 5;
+				}
 			} else {
 				words = ((richCaptionAsset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map((w: WordTiming) => ({
 					text: w.text,
@@ -87,42 +106,7 @@ export class RichCaptionPlayer extends Player {
 				console.warn(`RichCaptionPlayer: ${words.length} words exceeds soft limit of ${SOFT_WORD_LIMIT}. Performance may degrade.`);
 			}
 
-			const canvasPayload = this.buildCanvasPayload(richCaptionAsset, words);
-			const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
-			if (!canvasValidation.success) {
-				console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
-				this.createFallbackGraphic("Caption validation failed");
-				return;
-			}
-			this.validatedAsset = canvasValidation.data;
-			this.words = words;
-
-			this.fontRegistry = await FontRegistry.getSharedInstance();
-			await this.registerFonts(richCaptionAsset);
-			this.lastRegisteredFontKey = `${richCaptionAsset.font?.family ?? "Roboto"}|${richCaptionAsset.font?.weight ?? 400}`;
-
-			this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
-
-			const { width, height } = this.getSize();
-			const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
-
-			const canvasTextMeasurer = this.createCanvasTextMeasurer();
-			if (canvasTextMeasurer) {
-				layoutConfig.measureTextWidth = canvasTextMeasurer;
-			}
-
-			this.captionLayout = await this.layoutEngine.layoutCaption(words, layoutConfig);
-
-			this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
-
-			this.canvas = document.createElement("canvas");
-			this.canvas.width = width;
-			this.canvas.height = height;
-			this.painter = createWebPainter(this.canvas);
-
-			this.renderFrameSync(0);
-			this.configureKeyframes();
-			this.loadComplete = true;
+			await this.buildRenderPipeline(richCaptionAsset, words);
 		} catch (error) {
 			console.error("RichCaptionPlayer load failed:", error);
 			this.cleanupResources();
@@ -141,6 +125,37 @@ export class RichCaptionPlayer extends Player {
 		this.renderFrameSync(currentTimeMs);
 	}
 
+	public override async reloadAsset(): Promise<void> {
+		this.loadComplete = false;
+
+		if (this.texture) { this.texture.destroy(); this.texture = null; }
+		if (this.sprite) { this.sprite.destroy(); this.sprite = null; }
+		this.captionLayout = null;
+		this.validatedAsset = null;
+		this.generatorConfig = null;
+		this.canvas = null;
+		this.painter = null;
+
+		const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+		if (!asset.src || isAliasReference(asset.src)) {
+			return;
+		}
+
+		this.isPlaceholder = false;
+		this.needsResolution = false;
+
+		const words = await this.fetchAndParseSubtitle(asset.src);
+		this.resolvedPauseThreshold = 5;
+
+		if (words.length === 0) {
+			this.createFallbackGraphic("No caption words found");
+			return;
+		}
+
+		await this.buildRenderPipeline(asset, words);
+	}
+
 	public override reconfigureAfterRestore(): void {
 		super.reconfigureAfterRestore();
 		this.reconfigure();
@@ -153,6 +168,11 @@ export class RichCaptionPlayer extends Player {
 
 		try {
 			const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+			// Regenerate placeholder words when clip length changes (e.g. "end" re-resolved after video probed)
+			if (this.isPlaceholder) {
+				this.words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+			}
 
 			const fontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
 			if (fontKey !== this.lastRegisteredFontKey) {
@@ -182,6 +202,45 @@ export class RichCaptionPlayer extends Player {
 		} catch (error) {
 			console.error("RichCaptionPlayer reconfigure failed:", error);
 		}
+	}
+
+	private async buildRenderPipeline(asset: RichCaptionAsset, words: WordTiming[]): Promise<void> {
+		const canvasPayload = this.buildCanvasPayload(asset, words);
+		const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
+		if (!canvasValidation.success) {
+			console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
+			this.createFallbackGraphic("Caption validation failed");
+			return;
+		}
+		this.validatedAsset = canvasValidation.data;
+		this.words = words;
+
+		this.fontRegistry = await FontRegistry.getSharedInstance();
+		await this.registerFonts(asset);
+		this.lastRegisteredFontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
+
+		this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
+
+		const { width, height } = this.getSize();
+		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+
+		const canvasTextMeasurer = this.createCanvasTextMeasurer();
+		if (canvasTextMeasurer) {
+			layoutConfig.measureTextWidth = canvasTextMeasurer;
+		}
+
+		this.captionLayout = await this.layoutEngine.layoutCaption(words, layoutConfig);
+
+		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+
+		this.canvas = document.createElement("canvas");
+		this.canvas.width = width;
+		this.canvas.height = height;
+		this.painter = createWebPainter(this.canvas);
+
+		this.renderFrameSync(0);
+		this.configureKeyframes();
+		this.loadComplete = true;
 	}
 
 	private renderFrameSync(timeMs: number): void {

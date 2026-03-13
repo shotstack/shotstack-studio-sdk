@@ -70,6 +70,9 @@ export abstract class Player extends Entity {
 	 */
 	public clipId: string | null = null;
 
+	/** True when the player's asset needs external resolution (e.g. alias caption awaiting transcription). */
+	public needsResolution = false;
+
 	protected edit: Edit;
 	public clipConfiguration: ResolvedClip;
 
