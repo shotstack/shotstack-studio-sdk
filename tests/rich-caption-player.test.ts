@@ -1206,5 +1206,242 @@ describe("RichCaptionPlayer", () => {
 			// @ts-expect-error accessing private property
 			expect(player.loadComplete).toBe(true);
 		});
+		it("preserves canvas and sprite when src stays alias", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// @ts-expect-error accessing private property
+			expect(player.canvas).not.toBeNull();
+			// @ts-expect-error accessing private property
+			expect(player.sprite).not.toBeNull();
+
+			await player.reloadAsset();
+
+			// Early return should NOT destroy canvas/sprite
+			// @ts-expect-error accessing private property
+			expect(player.canvas).not.toBeNull();
+			// @ts-expect-error accessing private property
+			expect(player.sprite).not.toBeNull();
+		});
+
+		it("handles fetch failure during reload without unhandled rejection", async () => {
+			const errorSpy = jest.spyOn(console, "error").mockImplementation();
+
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// Transition src from alias to real URL
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				...asset,
+				src: "https://cdn.test/captions.srt"
+			};
+
+			// Make fetch reject during reload
+			mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+			// Should not throw an unhandled rejection
+			await expect(player.reloadAsset()).rejects.toThrow("Network error");
+
+			// loadComplete should stay false since pipeline was torn down before the fetch
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(false);
+			errorSpy.mockRestore();
+		});
+
+		it("creates fallback graphic when reload yields zero words", async () => {
+			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// Transition src to real URL
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				...asset,
+				src: "https://cdn.test/empty.srt"
+			};
+
+			// Return empty words from parser
+			mockParseSubtitleToWords.mockReturnValueOnce([]);
+
+			await player.reloadAsset();
+
+			// @ts-expect-error accessing private property
+			expect(player.loadComplete).toBe(false);
+			// Fallback text should have been added to contentContainer
+			const pixi = jest.requireMock("pixi.js") as { Text: jest.Mock };
+			expect(pixi.Text).toHaveBeenCalledWith("No caption words found", expect.anything());
+		});
+	});
+
+	describe("buildLayoutConfig padding branches", () => {
+		it("computes availableWidth from object padding {top, right, bottom, left}", async () => {
+			const asset = createAsset({
+				padding: { top: 25, right: 10, bottom: 15, left: 10 }
+			} as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset, { width: 1920, height: 1080 }));
+			await player.load();
+
+			const layoutConfig = mockLayoutCaption.mock.calls[0]?.[1];
+			expect(layoutConfig.availableWidth).toBe(1920 - 20); // left + right
+			expect(layoutConfig.padding).toEqual({ top: 25, right: 10, bottom: 15, left: 10 });
+		});
+
+		it("defaults to 90% width when padding is undefined", async () => {
+			const asset = createAsset({ padding: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset, { width: 1920, height: 1080 }));
+			await player.load();
+
+			const layoutConfig = mockLayoutCaption.mock.calls[0]?.[1];
+			expect(layoutConfig.availableWidth).toBe(1920 * 0.9);
+			expect(layoutConfig.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+		});
+
+		it("defaults missing sides to 0 in partial padding object", async () => {
+			const asset = createAsset({
+				padding: { left: 20 }
+			} as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset, { width: 1920, height: 1080 }));
+			await player.load();
+
+			const layoutConfig = mockLayoutCaption.mock.calls[0]?.[1];
+			// right defaults to 0, so availableWidth = 1920 - (20 + 0) = 1900
+			expect(layoutConfig.availableWidth).toBe(1920 - 20);
+			expect(layoutConfig.padding.left).toBe(20);
+			expect(layoutConfig.padding.right).toBe(0);
+			expect(layoutConfig.padding.top).toBe(0);
+			expect(layoutConfig.padding.bottom).toBe(0);
+		});
+
+		it("computes maxLines from available height minus vertical padding", async () => {
+			const asset = createAsset({
+				padding: { top: 100, right: 0, bottom: 100, left: 0 },
+				font: { family: "Roboto", size: 48, color: "#ffffff" }
+			} as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset, { width: 1920, height: 1080 }));
+			await player.load();
+
+			const layoutConfig = mockLayoutCaption.mock.calls[0]?.[1];
+			// availableHeight = 1080 - 100 - 100 = 880, fontSize = 48, lineHeight = 1.2
+			// maxLines = floor(880 / (48 * 1.2)) = floor(880 / 57.6) = 15, clamped to 10
+			expect(layoutConfig.maxLines).toBe(10);
+		});
+	});
+
+	describe("rebuildForCurrentSize edge cases", () => {
+		it("discards stale layout when dimensions change rapidly (pendingLayoutId race)", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			// Track layout calls and frame renders separately
+			mockLayoutCaption.mockClear();
+			mockGenerateRichCaptionFrame.mockClear();
+
+			// Make layoutCaption resolve asynchronously so we can race two calls
+			let resolveFirst!: (value: unknown) => void;
+			let resolveSecond!: (value: unknown) => void;
+			const firstLayout = new Promise(r => { resolveFirst = r; });
+			const secondLayout = new Promise(r => { resolveSecond = r; });
+
+			const layoutResult = {
+				store: {
+					length: 3,
+					words: ["Hello", "World", "Test"],
+					startTimes: [0, 500, 1000],
+					endTimes: [400, 900, 1400],
+					xPositions: [100, 300, 500],
+					yPositions: [540, 540, 540],
+					widths: [120, 130, 100]
+				},
+				groups: [{
+					wordIndices: [0, 1, 2],
+					startTime: 0,
+					endTime: 1400,
+					lines: [{ wordIndices: [0, 1, 2], x: 100, y: 540, width: 400, height: 48 }]
+				}],
+				shapedWords: [
+					{ text: "Hello", width: 120, glyphs: [], isRTL: false },
+					{ text: "World", width: 130, glyphs: [], isRTL: false },
+					{ text: "Test", width: 100, glyphs: [], isRTL: false }
+				]
+			};
+
+			mockLayoutCaption
+				.mockReturnValueOnce(firstLayout)
+				.mockReturnValueOnce(secondLayout);
+
+			// Trigger two rapid dimension changes without awaiting
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+
+			// Resolve the second (latest) first, then the first (stale)
+			resolveSecond(layoutResult);
+			await secondLayout;
+			resolveFirst(layoutResult);
+			await firstLayout;
+
+			// Allow microtasks to settle
+			await new Promise(resolve => { setTimeout(resolve, 10); });
+
+			// layoutCaption was called twice
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(2);
+			// But only the second layout should have rendered (first was discarded by stale-ID guard)
+			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(1);
+		});
+
+		it("handles canvas validation failure during resize without crash", async () => {
+			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
+				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
+			};
+
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			// Make canvas validation fail on next call (during resize)
+			CanvasRichCaptionAssetSchema.safeParse.mockReturnValueOnce({ success: false });
+
+			mockLayoutCaption.mockClear();
+
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+
+			await new Promise(resolve => { setTimeout(resolve, 10); });
+
+			// Layout should NOT be called since validation failed early
+			expect(mockLayoutCaption).not.toHaveBeenCalled();
+			// @ts-expect-error accessing private property
+			expect(player.captionLayout).toBeNull();
+		});
+
+		it("skips rebuild when words array is empty", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+
+			// Clear words to trigger early return in onDimensionsChanged
+			// @ts-expect-error accessing private property
+			player.words = [];
+
+			mockLayoutCaption.mockClear();
+
+			// @ts-expect-error accessing protected method
+			player.onDimensionsChanged();
+
+			await new Promise(resolve => { setTimeout(resolve, 10); });
+
+			// Should NOT call layoutCaption because of the early return guard
+			expect(mockLayoutCaption).not.toHaveBeenCalled();
+		});
 	});
 });
