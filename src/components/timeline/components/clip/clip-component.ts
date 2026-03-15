@@ -130,6 +130,7 @@ export class ClipComponent {
 		this.element.classList.toggle("selected", clip.visualState === "selected");
 		this.element.classList.toggle("dragging", clip.visualState === "dragging");
 		this.element.classList.toggle("resizing", clip.visualState === "resizing");
+		this.element.classList.toggle("focused", clip.isFocused);
 
 		// Update icon (using cached reference)
 		if (this.iconEl && this.iconEl.dataset["assetType"] !== assetType) {

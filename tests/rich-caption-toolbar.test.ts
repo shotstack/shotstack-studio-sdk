@@ -97,10 +97,15 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		})),
 		getDocument: jest.fn(() => ({
 			getFonts: jest.fn(() => []),
-			getClipBinding: jest.fn(() => null)
+			getClipBinding: jest.fn(() => null),
+			getTrackCount: jest.fn(() => 0),
+			getClipsInTrack: jest.fn(() => [])
 		})),
 		getFontMetadata: jest.fn(() => new Map()),
 		getMergeFieldForProperty: jest.fn(() => null),
+		selectClip: jest.fn(),
+		focusClip: jest.fn(),
+		blurClip: jest.fn(),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
@@ -448,6 +453,218 @@ describe("RichCaptionToolbar", () => {
 			);
 		});
 
+	});
+
+	// ── Source Popup ──────────────────────────────────────────────────
+
+	describe("source popup", () => {
+		it("should render Source button in caption toolbar", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			expect(btn).not.toBeNull();
+			expect(btn?.textContent?.trim()).toBe("Source");
+		});
+
+		it("should toggle Source popup on click", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const popup = container.querySelector("[data-caption-source-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should show empty state when no eligible clips exist", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 1),
+				getClipsInTrack: jest.fn(() => [{ asset: { type: "rich-caption" }, start: 0, length: 5 }])
+			} as never);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const emptyMsg = container.querySelector(".ss-source-empty");
+			expect(emptyMsg).not.toBeNull();
+			expect(emptyMsg?.textContent).toContain("No video, audio, or TTS clips found");
+		});
+
+		it("should list eligible clips in source popup", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const items = container.querySelectorAll(".ss-source-item");
+			// 1 video clip + 1 "None" option
+			expect(items.length).toBe(2);
+			expect(items[0].textContent).toContain("Video (Track 2)");
+		});
+
+		it("should update source label based on current src alias", () => {
+			setupCaptionClip(mockEdit, { src: "alias://my_source" });
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption", src: "alias://my_source" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10, alias: "my_source" }];
+					return [];
+				})
+			} as never);
+			mockEdit.getDocumentClip.mockImplementation((t: number) => {
+				if (t === 0) return { asset: { type: "rich-caption", src: "alias://my_source" }, start: 0, length: 5 };
+				if (t === 1) return { asset: { type: "video" }, start: 0, length: 10, alias: "my_source" };
+				return null;
+			});
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const label = container.querySelector("[data-source-label]");
+			expect(label?.textContent).toBe("Video (Track 2)");
+		});
+
+		it("should focus source clip on hover by calling focusClip", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			// Hover over the video source item
+			const items = container.querySelectorAll(".ss-source-item");
+			items[0].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+
+			expect(mockEdit.focusClip).toHaveBeenCalledWith(1, 0);
+		});
+
+		it("should blur focus on mouse leave without changing selection", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const items = container.querySelectorAll(".ss-source-item");
+			items[0].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+			mockEdit.selectClip.mockClear();
+
+			// Mouse leave — should blur focus, NOT call selectClip
+			items[0].dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+
+			expect(mockEdit.blurClip).toHaveBeenCalled();
+			expect(mockEdit.selectClip).not.toHaveBeenCalled();
+		});
+
+		it("should blur on mouseleave even without preceding mouseenter (idempotent)", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			// Directly trigger mouseleave without preceding mouseenter
+			const items = container.querySelectorAll(".ss-source-item");
+			items[0].dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+
+			// blurClip is idempotent — always called on mouseleave
+			expect(mockEdit.blurClip).toHaveBeenCalled();
+		});
+
+		it("should call updateClip with fallback URL when 'None' is clicked", () => {
+			setupCaptionClip(mockEdit, { src: "alias://my_source" });
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption", src: "alias://my_source" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10, alias: "my_source" }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			// Click the "None" option (last item)
+			const items = container.querySelectorAll(".ss-source-item");
+			const noneItem = items[items.length - 1];
+			simulateClick(noneItem);
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						src: "https://shotstack-assets.s3.amazonaws.com/captions/transcript.srt"
+					})
+				})
+			);
+		});
 	});
 
 	// ── StylePanel Override ────────────────────────────────────────────

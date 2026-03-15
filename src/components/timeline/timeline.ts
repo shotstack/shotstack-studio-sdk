@@ -1,6 +1,6 @@
 import { CreateTrackMoveAndDetachLumaCommand } from "@core/commands/create-track-move-and-detach-luma-command";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { computeAiAssetNumber, type ResolvedClipWithId } from "@core/shared/ai-asset-utils";
 import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
@@ -64,6 +64,7 @@ export class Timeline {
 	private readonly handleClipSelected: () => void;
 	private readonly handleClipLoadFailed: () => void;
 	private readonly handleClipUpdated: () => void;
+	private readonly handleClipFocusChanged: () => void;
 	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
 
 	constructor(
@@ -113,6 +114,7 @@ export class Timeline {
 		this.handleClipSelected = () => this.requestRender();
 		this.handleClipLoadFailed = () => this.requestRender();
 		this.handleClipUpdated = () => this.requestRender();
+		this.handleClipFocusChanged = () => this.requestRender();
 		this.handleRulerMouseMove = (e: MouseEvent) => {
 			if (!this.playheadGhost || !this.rulerTracksWrapper) return;
 			const rect = this.rulerTracksWrapper.getBoundingClientRect();
@@ -250,6 +252,11 @@ export class Timeline {
 
 		// Listen for clip load failures (to show error badge on timeline)
 		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
+
+		// Listen for focus changes (source popup hover-to-highlight)
+		const internal = this.edit.getInternalEvents();
+		internal.on(InternalEvent.ClipFocused, this.handleClipFocusChanged);
+		internal.on(InternalEvent.ClipBlurred, this.handleClipFocusChanged);
 	}
 
 	private removeEventListeners(): void {
@@ -264,6 +271,10 @@ export class Timeline {
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
 		this.edit.events.off(EditEvent.ClipUpdated, this.handleClipUpdated);
 		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
+
+		const internal = this.edit.getInternalEvents();
+		internal.off(InternalEvent.ClipFocused, this.handleClipFocusChanged);
+		internal.off(InternalEvent.ClipBlurred, this.handleClipFocusChanged);
 	}
 
 	/** Start continuous render loop (during playback or interaction) */

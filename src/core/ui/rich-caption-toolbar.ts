@@ -3,6 +3,7 @@ import type { RichCaptionAsset } from "@schemas";
 import { StylePanel } from "./composites/StylePanel";
 import { FontColorPicker } from "./font-color-picker";
 import { RichTextToolbar } from "./rich-text-toolbar";
+import { findEligibleSourceClips, findCurrentSource, ensureClipAlias, FALLBACK_SRT_URL } from "@core/shared/source-clip-finder";
 
 /**
  * Toolbar for rich-caption clips. Extends RichTextToolbar to reuse shared
@@ -14,6 +15,9 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	// Caption popup panels
 	private wordAnimPopup: HTMLDivElement | null = null;
 	private activeWordPopup: HTMLDivElement | null = null;
+	private sourcePopup: HTMLDivElement | null = null;
+	private sourceListContainer: HTMLDivElement | null = null;
+	private sourceLabel: HTMLSpanElement | null = null;
 
 	// Word Animation refs
 	private wordAnimDirectionSection: HTMLDivElement | null = null;
@@ -106,6 +110,9 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.activeTextDecorationBtns = null;
 		this.activeWordTabs = null;
 		this.activeWordPanels = null;
+		this.sourcePopup = null;
+		this.sourceListContainer = null;
+		this.sourceLabel = null;
 	}
 
 	// ─── Overrides ─────────────────────────────────────────────────────
@@ -118,6 +125,9 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!action) return;
 
 		switch (action) {
+			case "caption-source-toggle":
+				this.togglePopup(this.sourcePopup, () => this.populateSourceList());
+				return;
 			case "caption-word-anim-toggle":
 				this.togglePopup(this.wordAnimPopup);
 				return;
@@ -132,7 +142,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [...super.getPopupList(), this.wordAnimPopup, this.activeWordPopup];
+		return [...super.getPopupList(), this.wordAnimPopup, this.activeWordPopup, this.sourcePopup];
 	}
 
 	protected override syncState(): void {
@@ -240,6 +250,12 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.activeShadowOpacitySlider.disabled = !hasShadow;
 		}
 		if (this.activeShadowOpacityValue) this.activeShadowOpacityValue.textContent = `${shadowOpacity}%`;
+
+		// ─── Source label ──────────────────────────────────
+		if (this.sourceLabel) {
+			const currentSource = findCurrentSource(this.edit, this.selectedTrackIdx, this.selectedClipIdx);
+			this.sourceLabel.textContent = currentSource ? currentSource.displayLabel : "Source";
+		}
 	}
 
 	// ─── Caption Asset Helper ──────────────────────────────────────────
@@ -255,6 +271,25 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!this.container) return;
 
 		const fragment = document.createDocumentFragment();
+
+		// ── Source Dropdown ────────────────────────────────
+		const sourceDropdown = document.createElement("div");
+		sourceDropdown.className = "ss-toolbar-dropdown";
+		sourceDropdown.innerHTML = `
+			<button data-action="caption-source-toggle"
+				class="ss-toolbar-btn ss-toolbar-btn--text-edit"
+				title="Caption source">
+				<span data-source-label>Source</span>
+			</button>
+			<div data-caption-source-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+				<div class="ss-toolbar-popup-header">Caption Source</div>
+				<div data-source-list class="ss-source-list"></div>
+			</div>
+		`;
+		this.sourcePopup = sourceDropdown.querySelector("[data-caption-source-popup]");
+		this.sourceListContainer = sourceDropdown.querySelector("[data-source-list]");
+		this.sourceLabel = sourceDropdown.querySelector("[data-source-label]");
+		fragment.appendChild(sourceDropdown);
 
 		// ── Word Animation Group ───────────────────────────
 		const wordAnimDropdown = document.createElement("div");
@@ -448,6 +483,66 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.wireActiveColorControls();
 		this.wireActiveStrokeControls();
 		this.wireActiveShadowControls();
+	}
+
+	// ─── Source Popup ─────────────────────────────────────────────────
+
+	private populateSourceList(): void {
+		if (!this.sourceListContainer) return;
+
+		const eligible = findEligibleSourceClips(this.edit);
+		const current = findCurrentSource(this.edit, this.selectedTrackIdx, this.selectedClipIdx);
+
+		this.sourceListContainer.innerHTML = "";
+
+		if (eligible.length === 0) {
+			this.sourceListContainer.innerHTML = `<div class="ss-source-empty">No video, audio, or TTS clips found</div>`;
+			return;
+		}
+
+		for (const info of eligible) {
+			const isActive = current?.clipId === info.clipId;
+			const item = document.createElement("button");
+			item.className = `ss-source-item${isActive ? " active" : ""}`;
+			item.innerHTML = `<span>${info.displayLabel}</span><span class="ss-source-item-check"></span>`;
+			item.addEventListener("click", () => this.selectSource(info.trackIndex, info.clipIndex));
+			item.addEventListener("mouseenter", () => this.focusSourceClip(info.trackIndex, info.clipIndex));
+			item.addEventListener("mouseleave", () => this.blurSourceClip());
+			this.sourceListContainer.appendChild(item);
+		}
+
+		// Divider + None option
+		const divider = document.createElement("div");
+		divider.className = "ss-source-divider";
+		this.sourceListContainer.appendChild(divider);
+
+		const isNone = !current;
+		const noneItem = document.createElement("button");
+		noneItem.className = `ss-source-item${isNone ? " active" : ""}`;
+		noneItem.innerHTML = `<span>None (placeholder)</span><span class="ss-source-item-check"></span>`;
+		noneItem.addEventListener("click", () => this.clearSource());
+		this.sourceListContainer.appendChild(noneItem);
+	}
+
+	private async selectSource(trackIdx: number, clipIdx: number): Promise<void> {
+		this.blurSourceClip();
+		const alias = await ensureClipAlias(this.edit, trackIdx, clipIdx);
+		this.updateClipProperty({ src: `alias://${alias}` });
+		this.closeAllPopups();
+	}
+
+	private clearSource(): void {
+		this.blurSourceClip();
+		this.updateClipProperty({ src: FALLBACK_SRT_URL });
+		this.closeAllPopups();
+	}
+
+	private focusSourceClip(trackIdx: number, clipIdx: number): void {
+		this.edit.focusClip(trackIdx, clipIdx);
+	}
+
+	private blurSourceClip(): void {
+		this.edit.blurClip();
 	}
 
 	// ─── Word Animation Wiring ─────────────────────────────────────────
