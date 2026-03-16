@@ -111,7 +111,7 @@ describe("SpacingPanel", () => {
 		it("setState() syncs slider values and displays", () => {
 			const { panel, container } = mountPanel();
 
-			panel.setState(5, 2.0);
+			panel.setState(5, 0, 2.0);
 
 			expect(getLetterSpacingSlider(container)!.value).toBe("5");
 			expect(getLetterSpacingValue(container)!.textContent).toBe("5");
@@ -128,7 +128,7 @@ describe("SpacingPanel", () => {
 		it("setLineHeight() syncs only line height", () => {
 			const { panel, container } = mountPanel();
 
-			panel.setState(10, 1.2);
+			panel.setState(10, 0, 1.2);
 			panel.setLineHeight(1.8);
 
 			// Letter spacing unchanged

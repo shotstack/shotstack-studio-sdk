@@ -42,6 +42,7 @@ function createMockClip(start: number, length: number, assetType = "image", trac
 			asset: { type: assetType, src: "https://example.com/test.jpg" }
 		} as ResolvedClip,
 		visualState: "normal",
+		isFocused: false,
 		timingIntent: { start, length }
 	};
 }

@@ -60,9 +60,9 @@ export class RichCaptionPlayer extends Player {
 		const totalPhrases = Math.max(1, Math.ceil((clipLengthMs - spokenDurationMs) / phraseDurationMs) + 1);
 		const words: WordTiming[] = [];
 
-		for (let p = 0; p < totalPhrases; p++) {
+		for (let p = 0; p < totalPhrases; p += 1) {
 			const phraseStart = p * phraseDurationMs;
-			for (let w = 0; w < phrase.length; w++) {
+			for (let w = 0; w < phrase.length; w += 1) {
 				const start = phraseStart + w * msPerWord;
 				words.push({
 					text: phrase[w],
@@ -156,8 +156,14 @@ export class RichCaptionPlayer extends Player {
 
 		this.loadComplete = false;
 
-		if (this.texture) { this.texture.destroy(); this.texture = null; }
-		if (this.sprite) { this.sprite.destroy(); this.sprite = null; }
+		if (this.texture) {
+			this.texture.destroy();
+			this.texture = null;
+		}
+		if (this.sprite) {
+			this.sprite.destroy();
+			this.sprite = null;
+		}
 		this.captionLayout = null;
 		this.validatedAsset = null;
 		this.generatorConfig = null;
@@ -508,9 +514,7 @@ export class RichCaptionPlayer extends Player {
 		}
 
 		const totalHorizontalPadding = padding.left + padding.right;
-		const availableWidth = totalHorizontalPadding > 0
-			? frameWidth - totalHorizontalPadding
-			: frameWidth * 0.9;
+		const availableWidth = totalHorizontalPadding > 0 ? frameWidth - totalHorizontalPadding : frameWidth * 0.9;
 
 		const fontSize = font?.size ?? 24;
 		const lineHeight = style?.lineHeight ?? 1.2;

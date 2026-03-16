@@ -614,8 +614,8 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				tab.classList.add("active");
 
 				// Show/hide panels
-				this.activeWordPanels?.forEach(panel => {
-					panel.style.display = panel.dataset["activeWordPanel"] === tabName ? "" : "none";
+				this.activeWordPanels?.forEach(p => {
+					p.style.display = p.dataset["activeWordPanel"] === tabName ? "" : "none"; // eslint-disable-line no-param-reassign -- DOM manipulation
 				});
 			});
 		});

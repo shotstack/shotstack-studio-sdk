@@ -399,7 +399,7 @@ export class RichTextToolbar extends BaseToolbar {
 				const finalClip = structuredClone(session.initialState);
 				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption") && finalClip.asset.style) {
 					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
-					finalClip.asset.style.wordSpacing = finalState.wordSpacing;
+					(finalClip.asset.style as Record<string, unknown>)["wordSpacing"] = finalState.wordSpacing;
 					finalClip.asset.style.lineHeight = finalState.lineHeight;
 				}
 
