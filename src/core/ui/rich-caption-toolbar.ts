@@ -1,5 +1,6 @@
 import type { RichCaptionAsset } from "@schemas";
 
+import { SpacingPanel } from "./composites/SpacingPanel";
 import { StylePanel } from "./composites/StylePanel";
 import { FontColorPicker } from "./font-color-picker";
 import { RichTextToolbar } from "./rich-text-toolbar";
@@ -61,6 +62,10 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		return new StylePanel({});
 	}
 
+	protected override createSpacingPanel(): SpacingPanel {
+		return new SpacingPanel({ showWordSpacing: true });
+	}
+
 	protected override createFontColorPicker(): FontColorPicker {
 		return new FontColorPicker({ hideGradient: true });
 	}
@@ -72,7 +77,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!this.container) return;
 
 		// Hide rich-text controls irrelevant to captions
-		["text-edit-toggle", "animation-toggle", "transition-toggle", "effect-toggle", "align-cycle", "anchor-top", "anchor-middle", "anchor-bottom", "underline", "linethrough"].forEach(action => {
+		["text-edit-toggle", "animation-toggle", "transition-toggle", "effect-toggle"].forEach(action => {
 			const btn = this.container!.querySelector(`[data-action="${action}"]`) as HTMLElement | null;
 			if (!btn) return;
 			const dropdown = btn.closest(".ss-toolbar-dropdown") as HTMLElement | null;
@@ -289,16 +294,15 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.sourcePopup = sourceDropdown.querySelector("[data-caption-source-popup]");
 		this.sourceListContainer = sourceDropdown.querySelector("[data-source-list]");
 		this.sourceLabel = sourceDropdown.querySelector("[data-source-label]");
-		fragment.appendChild(sourceDropdown);
 
 		// ── Word Animation Group ───────────────────────────
 		const wordAnimDropdown = document.createElement("div");
 		wordAnimDropdown.className = "ss-toolbar-dropdown";
 		wordAnimDropdown.innerHTML = `
-			<button data-action="caption-word-anim-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Word animation">Words</button>
+			<button data-action="caption-word-anim-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Word animation">Animation</button>
 			<div data-caption-word-anim-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
+				<div class="ss-toolbar-popup-header">Style</div>
 				<div class="ss-toolbar-popup-section">
-					<div class="ss-toolbar-popup-label">Style</div>
 					<div class="ss-animation-presets">
 						<button class="ss-animation-preset" data-caption-word-style="karaoke">Karaoke</button>
 						<button class="ss-animation-preset" data-caption-word-style="highlight">Highlight</button>
@@ -474,6 +478,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.activeShadowOpacityValue = activeWordDropdown.querySelector("[data-active-shadow-opacity-value]");
 
 		fragment.appendChild(activeWordDropdown);
+		fragment.appendChild(sourceDropdown);
 
 		this.container.appendChild(fragment);
 

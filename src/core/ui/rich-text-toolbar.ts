@@ -34,10 +34,8 @@ export class RichTextToolbar extends BaseToolbar {
 	private weightPreview: HTMLSpanElement | null = null;
 	private spacingPopup: HTMLDivElement | null = null;
 	private spacingPanel: SpacingPanel | null = null;
-	private anchorTopBtn: HTMLButtonElement | null = null;
-	private anchorMiddleBtn: HTMLButtonElement | null = null;
-	private anchorBottomBtn: HTMLButtonElement | null = null;
 	private alignIcon: SVGElement | null = null;
+	private verticalAlignIcon: SVGElement | null = null;
 	private transformBtn: HTMLButtonElement | null = null;
 	private underlineBtn: HTMLButtonElement | null = null;
 	private linethroughBtn: HTMLButtonElement | null = null;
@@ -194,32 +192,7 @@ export class RichTextToolbar extends BaseToolbar {
 				</button>
 				<div data-spacing-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
 					<div data-spacing-panel-container class="ss-toolbar-popup-section"></div>
-					<div class="ss-toolbar-popup-divider"></div>
-					<div class="ss-toolbar-popup-section">
-						<div class="ss-toolbar-popup-label">Anchor text box</div>
-						<div class="ss-toolbar-popup-row ss-toolbar-popup-row--buttons">
-							<button data-action="anchor-top" class="ss-toolbar-anchor-btn" title="Top">
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<line x1="12" y1="5" x2="12" y2="19"/>
-									<polyline points="5 12 12 5 19 12"/>
-								</svg>
-							</button>
-							<button data-action="anchor-middle" class="ss-toolbar-anchor-btn" title="Middle">
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<line x1="12" y1="5" x2="12" y2="19"/>
-									<polyline points="5 9 12 5 19 9"/>
-									<polyline points="5 15 12 19 19 15"/>
-								</svg>
-							</button>
-							<button data-action="anchor-bottom" class="ss-toolbar-anchor-btn" title="Bottom">
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<line x1="12" y1="5" x2="12" y2="19"/>
-									<polyline points="5 12 12 19 19 12"/>
-								</svg>
-							</button>
-						</div>
 					</div>
-				</div>
 			</div>
 
 			<div class="ss-toolbar-divider"></div>
@@ -228,6 +201,11 @@ export class RichTextToolbar extends BaseToolbar {
 			<button data-action="align-cycle" class="ss-toolbar-btn" title="Text alignment">
 				<svg data-align-icon width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 					<path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/>
+				</svg>
+			</button>
+			<button data-action="vertical-align-cycle" class="ss-toolbar-btn" title="Vertical alignment">
+				<svg data-vertical-align-icon width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M3 7h18v2H3V7zm3 4h12v2H6v-2zm-3 4h18v2H3v-2z"/>
 				</svg>
 			</button>
 			<button data-action="transform" class="ss-toolbar-btn ss-toolbar-btn--text" title="Text transform">Aa</button>
@@ -310,6 +288,7 @@ export class RichTextToolbar extends BaseToolbar {
 		this.fontPopup = this.container.querySelector("[data-font-popup]");
 		this.fontPreview = this.container.querySelector("[data-font-preview]");
 		this.alignIcon = this.container.querySelector("[data-align-icon]");
+		this.verticalAlignIcon = this.container.querySelector("[data-vertical-align-icon]");
 		this.transformBtn = this.container.querySelector("[data-action='transform']");
 		this.underlineBtn = this.container.querySelector("[data-action='underline']");
 		this.linethroughBtn = this.container.querySelector("[data-action='linethrough']");
@@ -361,14 +340,10 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		this.spacingPopup = this.container.querySelector("[data-spacing-popup]");
-		this.anchorTopBtn = this.container.querySelector("[data-action='anchor-top']");
-		this.anchorMiddleBtn = this.container.querySelector("[data-action='anchor-middle']");
-		this.anchorBottomBtn = this.container.querySelector("[data-action='anchor-bottom']");
-
 		// Mount SpacingPanel composite (letter spacing + line height)
 		const spacingContainer = this.container.querySelector("[data-spacing-panel-container]") as HTMLElement | null;
 		if (spacingContainer) {
-			this.spacingPanel = new SpacingPanel();
+			this.spacingPanel = this.createSpacingPanel();
 
 			// Phase 1: Capture initial state when drag starts
 			this.spacingPanel.onDragStart(() => {
@@ -395,6 +370,7 @@ export class RichTextToolbar extends BaseToolbar {
 						style: {
 							...(asset.style || {}),
 							letterSpacing: state.letterSpacing,
+							wordSpacing: state.wordSpacing,
 							lineHeight: state.lineHeight
 						}
 					};
@@ -403,7 +379,7 @@ export class RichTextToolbar extends BaseToolbar {
 				} else {
 					// Discrete update (creates command)
 					this.updateClipProperty({
-						style: { letterSpacing: state.letterSpacing, lineHeight: state.lineHeight }
+						style: { letterSpacing: state.letterSpacing, wordSpacing: state.wordSpacing, lineHeight: state.lineHeight }
 					});
 				}
 			});
@@ -423,6 +399,7 @@ export class RichTextToolbar extends BaseToolbar {
 				const finalClip = structuredClone(session.initialState);
 				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption") && finalClip.asset.style) {
 					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
+					finalClip.asset.style.wordSpacing = finalState.wordSpacing;
 					finalClip.asset.style.lineHeight = finalState.lineHeight;
 				}
 
@@ -908,17 +885,11 @@ export class RichTextToolbar extends BaseToolbar {
 			case "font-color-toggle":
 				this.toggleFontColorPopup();
 				break;
-			case "anchor-top":
-				this.updateVerticalAlign("top");
-				break;
-			case "anchor-middle":
-				this.updateVerticalAlign("middle");
-				break;
-			case "anchor-bottom":
-				this.updateVerticalAlign("bottom");
-				break;
 			case "align-cycle":
 				this.cycleAlignment(asset);
+				break;
+			case "vertical-align-cycle":
+				this.cycleVerticalAlignment(asset);
 				break;
 			case "transform":
 				this.cycleTransform(asset);
@@ -953,6 +924,10 @@ export class RichTextToolbar extends BaseToolbar {
 	 */
 	protected createStylePanel(options: StylePanelOptions = {}): StylePanel {
 		return new StylePanel(options);
+	}
+
+	protected createSpacingPanel(): SpacingPanel {
+		return new SpacingPanel();
 	}
 
 	protected createFontColorPicker(): FontColorPicker {
@@ -1413,10 +1388,6 @@ export class RichTextToolbar extends BaseToolbar {
 		this.closeAllPopups();
 	}
 
-	private updateVerticalAlign(align: "top" | "middle" | "bottom"): void {
-		this.updateClipProperty({ align: { vertical: align } });
-	}
-
 	private cycleAlignment(asset: RichTextAsset): void {
 		const current = asset.align?.horizontal ?? "center";
 		const cycle: Array<"left" | "center" | "right"> = ["left", "center", "right"];
@@ -1438,6 +1409,29 @@ export class RichTextToolbar extends BaseToolbar {
 			right: "M3 5h18v2H3V5zm6 4h12v2H9V9zm-6 4h18v2H3v-2zm6 4h12v2H9v-2z"
 		};
 		const path = this.alignIcon.querySelector("path");
+		if (path) {
+			path.setAttribute("d", paths[align]);
+		}
+	}
+
+	private cycleVerticalAlignment(asset: RichTextAsset): void {
+		const current = asset.align?.vertical ?? "middle";
+		const cycle: Array<"top" | "middle" | "bottom"> = ["top", "middle", "bottom"];
+		const currentIdx = cycle.indexOf(current as "top" | "middle" | "bottom");
+		const nextIdx = (currentIdx + 1) % cycle.length;
+		const next = cycle[nextIdx];
+		this.updateClipProperty({ align: { vertical: next } });
+		this.updateVerticalAlignIcon(next);
+	}
+
+	private updateVerticalAlignIcon(align: "top" | "middle" | "bottom"): void {
+		if (!this.verticalAlignIcon) return;
+		const paths: Record<string, string> = {
+			top: "M3 3h18v2H3V3zm3 4h12v2H6V7zm-3 4h18v2H3v-2z",
+			middle: "M3 7h18v2H3V7zm3 4h12v2H6v-2zm-3 4h18v2H3v-2z",
+			bottom: "M3 11h18v2H3v-2zm3 4h12v2H6v-2zm-3 4h18v2H3v-2z"
+		};
+		const path = this.verticalAlignIcon.querySelector("path");
 		if (path) {
 			path.setAttribute("d", paths[align]);
 		}
@@ -1701,15 +1695,13 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 
 		// Sync spacing panel
-		this.spacingPanel?.setState(asset.style?.letterSpacing ?? 0, asset.style?.lineHeight ?? 1.2);
-
-		const verticalAlign = asset.align?.vertical ?? "middle";
-		this.setButtonActive(this.anchorTopBtn, verticalAlign === "top");
-		this.setButtonActive(this.anchorMiddleBtn, verticalAlign === "middle");
-		this.setButtonActive(this.anchorBottomBtn, verticalAlign === "bottom");
+		this.spacingPanel?.setState(asset.style?.letterSpacing ?? 0, asset.style?.wordSpacing ?? 0, asset.style?.lineHeight ?? 1.2);
 
 		const align = asset.align?.horizontal ?? "center";
 		this.updateAlignIcon(align as "left" | "center" | "right");
+
+		const vAlign = asset.align?.vertical ?? "middle";
+		this.updateVerticalAlignIcon(vAlign as "top" | "middle" | "bottom");
 
 		const transform = asset.style?.textTransform ?? "none";
 		if (this.transformBtn) {
@@ -1853,10 +1845,8 @@ export class RichTextToolbar extends BaseToolbar {
 		this.stylePopup = null;
 		this.stylePanel?.dispose();
 		this.stylePanel = null;
-		this.anchorTopBtn = null;
-		this.anchorMiddleBtn = null;
-		this.anchorBottomBtn = null;
 		this.alignIcon = null;
+		this.verticalAlignIcon = null;
 		this.transformBtn = null;
 		this.underlineBtn = null;
 		this.linethroughBtn = null;

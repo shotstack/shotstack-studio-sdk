@@ -201,10 +201,10 @@ describe("RichCaptionToolbar", () => {
 			toolbar.mount(container);
 		});
 
-		it("should inject Words dropdown with animation style buttons", () => {
+		it("should inject Animation dropdown with animation style buttons", () => {
 			const btn = container.querySelector('[data-action="caption-word-anim-toggle"]');
 			expect(btn).not.toBeNull();
-			expect(btn?.textContent).toBe("Words");
+			expect(btn?.textContent).toBe("Animation");
 
 			const styleButtons = container.querySelectorAll("[data-caption-word-style]");
 			expect(styleButtons.length).toBe(8);
