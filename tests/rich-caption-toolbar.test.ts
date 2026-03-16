@@ -346,6 +346,26 @@ describe("RichCaptionToolbar", () => {
 			expect(opacitySlider?.value).toBe("75");
 		});
 
+		it("should show scale section when word animation is 'pop'", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1.5 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
+			expect(scaleSection?.style.display).toBe("");
+
+			const scaleSlider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
+			expect(scaleSlider?.value).toBe("1.5");
+		});
+
+		it("should hide scale section when word animation is not 'pop'", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
+			expect(scaleSection?.style.display).toBe("none");
+		});
 	});
 
 	// ── User Interactions ──────────────────────────────────────────────
@@ -453,6 +473,23 @@ describe("RichCaptionToolbar", () => {
 			);
 		});
 
+		it("should call updateClip when scale slider changes", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1 } });
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const slider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
+			simulateInput(slider, "1.5");
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						active: expect.objectContaining({ scale: 1.5 })
+					})
+				})
+			);
+		});
 	});
 
 	// ── Source Popup ──────────────────────────────────────────────────

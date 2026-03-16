@@ -529,7 +529,6 @@ export class RichCaptionPlayer extends Player {
 			fontFamily: font?.family ?? "Roboto",
 			fontWeight: String(font?.weight ?? "400"),
 			letterSpacing: style?.letterSpacing ?? 0,
-			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
 			lineHeight,
 			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
 			pauseThreshold: this.resolvedPauseThreshold
