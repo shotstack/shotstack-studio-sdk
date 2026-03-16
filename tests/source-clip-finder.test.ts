@@ -212,6 +212,16 @@ describe("findCurrentSource", () => {
 		const result = findCurrentSource(edit as never, 0, 0);
 		expect(result).toBeNull();
 	});
+
+	it("returns null early for empty alias (unlinked alias://)", () => {
+		const edit = createMockEdit([
+			[makeClip("rich-caption", { asset: { type: "rich-caption", src: "alias://" } })],
+			[makeClip("video", { alias: "" })],
+		]);
+
+		const result = findCurrentSource(edit as never, 0, 0);
+		expect(result).toBeNull();
+	});
 });
 
 describe("generateAlias", () => {

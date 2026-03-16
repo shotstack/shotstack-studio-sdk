@@ -63,7 +63,7 @@ export type AliasReference = `alias://${string}`;
 
 /** Check if a value is an alias reference. Pattern shared with captions/alias-resolver.ts. */
 export function isAliasReference(value: unknown): value is AliasReference {
-	return typeof value === "string" && /^alias:\/\/[a-zA-Z0-9_-]+$/.test(value);
+	return typeof value === "string" && /^alias:\/\/[a-zA-Z0-9_-]*$/.test(value);
 }
 
 /** Extract alias name from reference. */

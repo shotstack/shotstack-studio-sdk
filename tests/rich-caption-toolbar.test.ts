@@ -640,7 +640,7 @@ describe("RichCaptionToolbar", () => {
 			expect(mockEdit.blurClip).toHaveBeenCalled();
 		});
 
-		it("should call updateClip with fallback URL when 'None' is clicked", () => {
+		it("should call updateClip with unlinked source when 'None' is clicked", () => {
 			setupCaptionClip(mockEdit, { src: "alias://my_source" });
 			mockEdit.getDocument.mockReturnValue({
 				getFonts: jest.fn(() => []),
@@ -669,7 +669,7 @@ describe("RichCaptionToolbar", () => {
 				0, 0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
-						src: "https://shotstack-assets.s3.amazonaws.com/captions/transcript.srt"
+						src: "alias://"
 					})
 				})
 			);

@@ -1,7 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import { isAliasReference, parseAliasName } from "@core/timing/types";
 
-export const FALLBACK_SRT_URL = "https://shotstack-assets.s3.amazonaws.com/captions/transcript.srt";
+export const UNLINKED_SOURCE = "alias://";
 
 export interface SourceClipInfo {
 	trackIndex: number;
@@ -132,6 +132,7 @@ export function findCurrentSource(edit: Edit, captionTrackIdx: number, captionCl
 	if (!src || !isAliasReference(src)) return null;
 
 	const aliasName = parseAliasName(src);
+	if (!aliasName) return null;
 	const eligible = findEligibleSourceClips(edit);
 	return eligible.find(info => info.currentAlias === aliasName) ?? null;
 }

@@ -1,4 +1,4 @@
-import { findEligibleSourceClips, findCurrentSource, ensureClipAlias, FALLBACK_SRT_URL } from "@core/shared/source-clip-finder";
+import { findEligibleSourceClips, findCurrentSource, ensureClipAlias, UNLINKED_SOURCE } from "@core/shared/source-clip-finder";
 import type { RichCaptionAsset } from "@schemas";
 
 import { SpacingPanel } from "./composites/SpacingPanel";
@@ -539,7 +539,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 
 	private clearSource(): void {
 		this.blurSourceClip();
-		this.updateClipProperty({ src: FALLBACK_SRT_URL });
+		this.updateClipProperty({ src: UNLINKED_SOURCE });
 		this.closeAllPopups();
 	}
 

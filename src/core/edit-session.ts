@@ -27,7 +27,7 @@ import { SelectionManager } from "@core/selection-manager";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
 import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec, isAliasReference } from "@core/timing/types";
-import { findEligibleSourceClips, ensureClipAlias, FALLBACK_SRT_URL } from "@core/shared/source-clip-finder";
+import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
 import { TimingManager } from "@core/timing-manager";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -802,8 +802,6 @@ export class Edit {
 				const target = eligible[0];
 				const alias = await ensureClipAlias(this, target.trackIndex, target.clipIndex);
 				await this.updateClip(trackIdx, c, { asset: { src: `alias://${alias}` } } as Record<string, unknown>);
-			} else {
-				await this.updateClip(trackIdx, c, { asset: { src: FALLBACK_SRT_URL } } as Record<string, unknown>);
 			}
 		}
 	}

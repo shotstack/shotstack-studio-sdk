@@ -52,14 +52,28 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	private static createPlaceholderWords(clipLengthMs: number): WordTiming[] {
-		const words = ["Your", "captions", "will", "appear", "here"];
-		const wordDuration = clipLengthMs / words.length;
-		return words.map((text, i) => ({
-			text,
-			start: Math.round(i * wordDuration),
-			end: Math.round((i + 1) * wordDuration),
-			confidence: 1
-		}));
+		const phrase = ["Your", "captions", "will", "appear", "here"];
+		const msPerWord = 400;
+		const phraseGapMs = 600;
+		const phraseDurationMs = phrase.length * msPerWord + phraseGapMs;
+		const spokenDurationMs = phrase.length * msPerWord;
+		const totalPhrases = Math.max(1, Math.ceil((clipLengthMs - spokenDurationMs) / phraseDurationMs) + 1);
+		const words: WordTiming[] = [];
+
+		for (let p = 0; p < totalPhrases; p++) {
+			const phraseStart = p * phraseDurationMs;
+			for (let w = 0; w < phrase.length; w++) {
+				const start = phraseStart + w * msPerWord;
+				words.push({
+					text: phrase[w],
+					start: Math.round(start),
+					end: Math.round(start + msPerWord),
+					confidence: 1
+				});
+			}
+		}
+
+		return words;
 	}
 
 	public override async load(): Promise<void> {
@@ -128,8 +142,15 @@ export class RichCaptionPlayer extends Player {
 	public override async reloadAsset(): Promise<void> {
 		const asset = this.clipConfiguration.asset as RichCaptionAsset;
 
-		// Bail out before destroying anything if src is still unresolved
+		// When src is an alias reference, reset to placeholder if previously resolved
 		if (!asset.src || isAliasReference(asset.src)) {
+			if (this.loadComplete && !this.isPlaceholder) {
+				this.resolvedPauseThreshold = 500;
+				this.words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+				this.isPlaceholder = true;
+				this.needsResolution = true;
+				await this.reconfigure();
+			}
 			return;
 		}
 

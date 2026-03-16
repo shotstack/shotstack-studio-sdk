@@ -1073,10 +1073,10 @@ describe("RichCaptionPlayer", () => {
 			expect(payload.font.family).toBe("Inter");
 			expect(payload.active).toBeDefined();
 			expect(payload.stroke).toBeDefined();
-			expect(payload.words).toHaveLength(5); // placeholder words
+			expect(payload.words.length).toBeGreaterThanOrEqual(5); // placeholder words at natural pace
 		});
 
-		it("distributes placeholder words across the full clip length", async () => {
+		it("distributes placeholder words to cover the full clip length", async () => {
 			const { CanvasRichCaptionAssetSchema } = jest.requireMock("@shotstack/shotstack-canvas") as {
 				CanvasRichCaptionAssetSchema: { safeParse: jest.Mock };
 			};
@@ -1090,7 +1090,7 @@ describe("RichCaptionPlayer", () => {
 			const payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
 			const words = payload.words as Array<{ start: number; end: number }>;
 			expect(words[0].start).toBe(0);
-			expect(words[words.length - 1].end).toBe(clipLength * 1000); // spans full clip in ms
+			expect(words[words.length - 1].end).toBeGreaterThanOrEqual(clipLength * 1000);
 		});
 
 		it("reconfigure works on placeholder state", async () => {
@@ -1121,7 +1121,8 @@ describe("RichCaptionPlayer", () => {
 			// Verify initial placeholder spans 3s
 			let payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
 			const initialWords = payload.words as Array<{ end: number }>;
-			expect(initialWords[initialWords.length - 1].end).toBe(3000);
+			expect(initialWords[initialWords.length - 1].end).toBeGreaterThanOrEqual(3000);
+			const initialCount = initialWords.length;
 
 			// Simulate resolveAllTiming updating the length after video probing
 			player.setResolvedTiming({ start: sec(0), length: sec(20) });
@@ -1133,7 +1134,8 @@ describe("RichCaptionPlayer", () => {
 			// After reconfigure, placeholder should span the new 20s length
 			payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
 			const updatedWords = payload.words as Array<{ end: number }>;
-			expect(updatedWords[updatedWords.length - 1].end).toBe(20000);
+			expect(updatedWords[updatedWords.length - 1].end).toBeGreaterThanOrEqual(20000);
+			expect(updatedWords.length).toBeGreaterThan(initialCount);
 		});
 	});
 
@@ -1183,6 +1185,29 @@ describe("RichCaptionPlayer", () => {
 			// @ts-expect-error accessing private property
 			expect(player.loadComplete).toBe(true); // untouched — early return before destruction
 			expect(mockLayoutCaption).not.toHaveBeenCalled();
+		});
+
+		it("resets resolvedPauseThreshold to 500 when transitioning back to placeholder", async () => {
+			const asset = createAsset({ src: "https://cdn.test/captions.srt", words: undefined } as Partial<RichCaptionAsset>);
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(asset));
+			await player.load();
+
+			// After loading real subtitles, pauseThreshold is 5
+			// @ts-expect-error accessing private property
+			expect(player.resolvedPauseThreshold).toBe(5);
+
+			// Transition src to alias (unlinked)
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				...asset,
+				src: "alias://VIDEO"
+			};
+
+			await player.reloadAsset();
+
+			// Should reset to default 500 for placeholder mode
+			// @ts-expect-error accessing private property
+			expect(player.resolvedPauseThreshold).toBe(500);
 		});
 
 		it("clears rendering state before reload", async () => {
