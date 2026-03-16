@@ -283,6 +283,13 @@
 		0 0 0 3px color-mix(in srgb, var(--clip-border, #3b82f6) 25%, transparent);
 }
 
+.ss-clip.focused {
+	outline: 2px solid rgba(255, 171, 0, 0.8);
+	outline-offset: 1px;
+	box-shadow: 0 0 8px 3px rgba(255, 171, 0, 0.5);
+	z-index: 1;
+}
+
 .ss-clip.dragging {
 	opacity: 0.6;
 	cursor: grabbing;

@@ -5,6 +5,7 @@ import { UIComponent } from "../primitives/UIComponent";
  */
 export interface SpacingState {
 	letterSpacing: number;
+	wordSpacing: number;
 	lineHeight: number;
 }
 
@@ -18,6 +19,12 @@ export interface SpacingPanelConfig {
 	letterSpacingMin?: number;
 	/** Max value for letter spacing (default: 100) */
 	letterSpacingMax?: number;
+	/** Whether to show word spacing control (default: true) */
+	showWordSpacing?: boolean;
+	/** Min value for word spacing (default: 0) */
+	wordSpacingMin?: number;
+	/** Max value for word spacing (default: 100) */
+	wordSpacingMax?: number;
 	/** Min value for line height slider (default: 5, represents 0.5) */
 	lineHeightMin?: number;
 	/** Max value for line height slider (default: 30, represents 3.0) */
@@ -46,12 +53,15 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 
 	private state: SpacingState = {
 		letterSpacing: 0,
+		wordSpacing: 0,
 		lineHeight: 1.2
 	};
 
 	// DOM references
 	private letterSpacingSlider: HTMLInputElement | null = null;
 	private letterSpacingValue: HTMLSpanElement | null = null;
+	private wordSpacingSlider: HTMLInputElement | null = null;
+	private wordSpacingValue: HTMLSpanElement | null = null;
 	private lineHeightSlider: HTMLInputElement | null = null;
 	private lineHeightValue: HTMLSpanElement | null = null;
 
@@ -68,13 +78,16 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 			showLetterSpacing: panelConfig.showLetterSpacing ?? true,
 			letterSpacingMin: panelConfig.letterSpacingMin ?? -50,
 			letterSpacingMax: panelConfig.letterSpacingMax ?? 100,
+			showWordSpacing: panelConfig.showWordSpacing ?? false,
+			wordSpacingMin: panelConfig.wordSpacingMin ?? 0,
+			wordSpacingMax: panelConfig.wordSpacingMax ?? 100,
 			lineHeightMin: panelConfig.lineHeightMin ?? 5,
 			lineHeightMax: panelConfig.lineHeightMax ?? 30
 		};
 	}
 
 	render(): string {
-		const { showLetterSpacing, letterSpacingMin, letterSpacingMax, lineHeightMin, lineHeightMax } = this.panelConfig;
+		const { showLetterSpacing, letterSpacingMin, letterSpacingMax, showWordSpacing, wordSpacingMin, wordSpacingMax, lineHeightMin, lineHeightMax } = this.panelConfig;
 
 		const letterSpacingHtml = showLetterSpacing
 			? `
@@ -87,8 +100,20 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 		`
 			: "";
 
+		const wordSpacingHtml = showWordSpacing
+			? `
+			<div class="ss-toolbar-popup-label" data-merge-path="asset.style.wordSpacing" data-merge-prefix="TEXT_WORD_SPACING">Word spacing</div>
+			<div class="ss-toolbar-popup-row">
+				<input type="range" class="ss-toolbar-slider" data-word-spacing-slider
+					min="${wordSpacingMin}" max="${wordSpacingMax}" value="0" />
+				<span class="ss-toolbar-popup-value" data-word-spacing-value>0</span>
+			</div>
+		`
+			: "";
+
 		return `
 			${letterSpacingHtml}
+			${wordSpacingHtml}
 			<div class="ss-toolbar-popup-label" data-merge-path="asset.style.lineHeight" data-merge-prefix="TEXT_LINE_HEIGHT">Line spacing</div>
 			<div class="ss-toolbar-popup-row">
 				<input type="range" class="ss-toolbar-slider" data-line-height-slider
@@ -101,6 +126,8 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 	protected bindElements(): void {
 		this.letterSpacingSlider = this.container?.querySelector("[data-letter-spacing-slider]") ?? null;
 		this.letterSpacingValue = this.container?.querySelector("[data-letter-spacing-value]") ?? null;
+		this.wordSpacingSlider = this.container?.querySelector("[data-word-spacing-slider]") ?? null;
+		this.wordSpacingValue = this.container?.querySelector("[data-word-spacing-value]") ?? null;
 		this.lineHeightSlider = this.container?.querySelector("[data-line-height-slider]") ?? null;
 		this.lineHeightValue = this.container?.querySelector("[data-line-height-value]") ?? null;
 	}
@@ -120,6 +147,7 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 		};
 
 		setupPointerdown(this.letterSpacingSlider);
+		setupPointerdown(this.wordSpacingSlider);
 		setupPointerdown(this.lineHeightSlider);
 
 		// Phase 2: Live update during drag
@@ -128,6 +156,15 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 				const value = parseInt(this.letterSpacingSlider!.value, 10);
 				this.state.letterSpacing = value;
 				this.updateLetterSpacingDisplay();
+				this.emit(this.state);
+			});
+		}
+
+		if (this.wordSpacingSlider) {
+			this.events.on(this.wordSpacingSlider, "input", () => {
+				const value = parseInt(this.wordSpacingSlider!.value, 10);
+				this.state.wordSpacing = value;
+				this.updateWordSpacingDisplay();
 				this.emit(this.state);
 			});
 		}
@@ -151,14 +188,16 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 		};
 
 		if (this.letterSpacingSlider) this.events.on(this.letterSpacingSlider, "change", onDragEnd);
+		if (this.wordSpacingSlider) this.events.on(this.wordSpacingSlider, "change", onDragEnd);
 		if (this.lineHeightSlider) this.events.on(this.lineHeightSlider, "change", onDragEnd);
 	}
 
 	/**
 	 * Set spacing values from clip data.
 	 */
-	setState(letterSpacing: number, lineHeight: number): void {
+	setState(letterSpacing: number, wordSpacing: number, lineHeight: number): void {
 		this.state.letterSpacing = letterSpacing;
+		this.state.wordSpacing = wordSpacing;
 		this.state.lineHeight = lineHeight;
 		this.updateUI();
 	}
@@ -207,10 +246,14 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 
 	private updateUI(): void {
 		this.updateLetterSpacingDisplay();
+		this.updateWordSpacingDisplay();
 		this.updateLineHeightDisplay();
 
 		if (this.letterSpacingSlider) {
 			this.letterSpacingSlider.value = String(this.state.letterSpacing);
+		}
+		if (this.wordSpacingSlider) {
+			this.wordSpacingSlider.value = String(this.state.wordSpacing);
 		}
 		if (this.lineHeightSlider) {
 			this.lineHeightSlider.value = String(Math.round(this.state.lineHeight * 10));
@@ -220,6 +263,12 @@ export class SpacingPanel extends UIComponent<SpacingState> {
 	private updateLetterSpacingDisplay(): void {
 		if (this.letterSpacingValue) {
 			this.letterSpacingValue.textContent = String(this.state.letterSpacing);
+		}
+	}
+
+	private updateWordSpacingDisplay(): void {
+		if (this.wordSpacingValue) {
+			this.wordSpacingValue.textContent = String(this.state.wordSpacing);
 		}
 	}
 

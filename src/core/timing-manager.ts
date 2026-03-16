@@ -65,6 +65,10 @@ export class TimingManager {
 					}
 
 					player.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
+
+					// Sync resolved edit cache so timeline UI sees actual timing
+					resolvedClip.start = resolvedStart;
+					resolvedClip.length = resolvedLength;
 				}
 			}
 		}
@@ -78,10 +82,20 @@ export class TimingManager {
 		const endLengthClips = this.getEndLengthClips();
 		for (const clip of endLengthClips) {
 			const currentTiming = clip.getResolvedTiming();
+			const endLength = resolveEndLength(currentTiming.start, timelineEnd);
 			clip.setResolvedTiming({
 				start: currentTiming.start,
-				length: resolveEndLength(currentTiming.start, timelineEnd)
+				length: endLength
 			});
+
+			// Sync resolved edit cache for "end" clips
+			const trackIdx = clip.layer - 1;
+			const clipIdx = tracks[trackIdx]?.indexOf(clip) ?? -1;
+			const endResolvedClip = resolved.timeline.tracks[trackIdx]?.clips[clipIdx];
+			if (endResolvedClip) {
+				endResolvedClip.start = currentTiming.start;
+				endResolvedClip.length = endLength;
+			}
 		}
 
 		// Reconfigure "end" clips to rebuild keyframes

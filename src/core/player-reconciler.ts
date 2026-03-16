@@ -212,6 +212,16 @@ export class PlayerReconciler {
 						clipId
 					});
 				}
+
+				// Emit ClipUnresolved for players that need external resolution (e.g. alias captions)
+				if (player.needsResolution) {
+					this.edit.getInternalEvents().emit(EditEvent.ClipUnresolved, {
+						trackIndex,
+						clipIndex,
+						assetType,
+						clipId
+					});
+				}
 			})
 			.catch(error => {
 				const errorMessage = error instanceof Error ? error.message : String(error);

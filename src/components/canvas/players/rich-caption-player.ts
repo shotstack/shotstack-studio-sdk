@@ -2,6 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath, getFontDisplayName } from "@core/fonts/font-config";
 import { extractFontNames, isGoogleFontUrl } from "@core/fonts/font-utils";
+import { isAliasReference } from "@core/timing/types";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichCaptionAssetSchema, type RichCaptionAsset, type ResolvedClip } from "@schemas";
 import {
@@ -38,14 +39,41 @@ export class RichCaptionPlayer extends Player {
 
 	private words: WordTiming[] = [];
 	private loadComplete: boolean = false;
+	private isPlaceholder = false;
 
 	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
 	private lastRegisteredFontKey: string = "";
 	private pendingLayoutId: number = 0;
+	private resolvedPauseThreshold: number = 500;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		const { fit, ...configWithoutFit } = clipConfiguration;
 		super(edit, configWithoutFit, PlayerType.RichCaption);
+	}
+
+	private static createPlaceholderWords(clipLengthMs: number): WordTiming[] {
+		const phrase = ["Your", "captions", "will", "appear", "here"];
+		const msPerWord = 400;
+		const phraseGapMs = 600;
+		const phraseDurationMs = phrase.length * msPerWord + phraseGapMs;
+		const spokenDurationMs = phrase.length * msPerWord;
+		const totalPhrases = Math.max(1, Math.ceil((clipLengthMs - spokenDurationMs) / phraseDurationMs) + 1);
+		const words: WordTiming[] = [];
+
+		for (let p = 0; p < totalPhrases; p += 1) {
+			const phraseStart = p * phraseDurationMs;
+			for (let w = 0; w < phrase.length; w += 1) {
+				const start = phraseStart + w * msPerWord;
+				words.push({
+					text: phrase[w],
+					start: Math.round(start),
+					end: Math.round(start + msPerWord),
+					confidence: 1
+				});
+			}
+		}
+
+		return words;
 	}
 
 	public override async load(): Promise<void> {
@@ -62,8 +90,14 @@ export class RichCaptionPlayer extends Player {
 
 			let words: WordTiming[];
 			if (richCaptionAsset.src) {
-				words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
-				(richCaptionAsset as Record<string, unknown>)['pauseThreshold'] = 5;
+				if (isAliasReference(richCaptionAsset.src)) {
+					words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+					this.isPlaceholder = true;
+					this.needsResolution = true;
+				} else {
+					words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
+					this.resolvedPauseThreshold = 5;
+				}
 			} else {
 				words = ((richCaptionAsset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map((w: WordTiming) => ({
 					text: w.text,
@@ -86,42 +120,7 @@ export class RichCaptionPlayer extends Player {
 				console.warn(`RichCaptionPlayer: ${words.length} words exceeds soft limit of ${SOFT_WORD_LIMIT}. Performance may degrade.`);
 			}
 
-			const canvasPayload = this.buildCanvasPayload(richCaptionAsset, words);
-			const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
-			if (!canvasValidation.success) {
-				console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
-				this.createFallbackGraphic("Caption validation failed");
-				return;
-			}
-			this.validatedAsset = canvasValidation.data;
-			this.words = words;
-
-			this.fontRegistry = await FontRegistry.getSharedInstance();
-			await this.registerFonts(richCaptionAsset);
-			this.lastRegisteredFontKey = `${richCaptionAsset.font?.family ?? "Roboto"}|${richCaptionAsset.font?.weight ?? 400}`;
-
-			this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
-
-			const { width, height } = this.getSize();
-			const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
-
-			const canvasTextMeasurer = this.createCanvasTextMeasurer();
-			if (canvasTextMeasurer) {
-				layoutConfig.measureTextWidth = canvasTextMeasurer;
-			}
-
-			this.captionLayout = await this.layoutEngine.layoutCaption(words, layoutConfig);
-
-			this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
-
-			this.canvas = document.createElement("canvas");
-			this.canvas.width = width;
-			this.canvas.height = height;
-			this.painter = createWebPainter(this.canvas);
-
-			this.renderFrameSync(0);
-			this.configureKeyframes();
-			this.loadComplete = true;
+			await this.buildRenderPipeline(richCaptionAsset, words);
 		} catch (error) {
 			console.error("RichCaptionPlayer load failed:", error);
 			this.cleanupResources();
@@ -140,6 +139,51 @@ export class RichCaptionPlayer extends Player {
 		this.renderFrameSync(currentTimeMs);
 	}
 
+	public override async reloadAsset(): Promise<void> {
+		const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+		// When src is an alias reference, reset to placeholder if previously resolved
+		if (!asset.src || isAliasReference(asset.src)) {
+			if (this.loadComplete && !this.isPlaceholder) {
+				this.resolvedPauseThreshold = 500;
+				this.words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+				this.isPlaceholder = true;
+				this.needsResolution = true;
+				await this.reconfigure();
+			}
+			return;
+		}
+
+		this.loadComplete = false;
+
+		if (this.texture) {
+			this.texture.destroy();
+			this.texture = null;
+		}
+		if (this.sprite) {
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		this.captionLayout = null;
+		this.validatedAsset = null;
+		this.generatorConfig = null;
+		this.canvas = null;
+		this.painter = null;
+
+		this.isPlaceholder = false;
+		this.needsResolution = false;
+
+		const words = await this.fetchAndParseSubtitle(asset.src);
+		this.resolvedPauseThreshold = 5;
+
+		if (words.length === 0) {
+			this.createFallbackGraphic("No caption words found");
+			return;
+		}
+
+		await this.buildRenderPipeline(asset, words);
+	}
+
 	public override reconfigureAfterRestore(): void {
 		super.reconfigureAfterRestore();
 		this.reconfigure();
@@ -152,6 +196,11 @@ export class RichCaptionPlayer extends Player {
 
 		try {
 			const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+			// Regenerate placeholder words when clip length changes (e.g. "end" re-resolved after video probed)
+			if (this.isPlaceholder) {
+				this.words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+			}
 
 			const fontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
 			if (fontKey !== this.lastRegisteredFontKey) {
@@ -181,6 +230,45 @@ export class RichCaptionPlayer extends Player {
 		} catch (error) {
 			console.error("RichCaptionPlayer reconfigure failed:", error);
 		}
+	}
+
+	private async buildRenderPipeline(asset: RichCaptionAsset, words: WordTiming[]): Promise<void> {
+		const canvasPayload = this.buildCanvasPayload(asset, words);
+		const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
+		if (!canvasValidation.success) {
+			console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
+			this.createFallbackGraphic("Caption validation failed");
+			return;
+		}
+		this.validatedAsset = canvasValidation.data;
+		this.words = words;
+
+		this.fontRegistry = await FontRegistry.getSharedInstance();
+		await this.registerFonts(asset);
+		this.lastRegisteredFontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
+
+		this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
+
+		const { width, height } = this.getSize();
+		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+
+		const canvasTextMeasurer = this.createCanvasTextMeasurer();
+		if (canvasTextMeasurer) {
+			layoutConfig.measureTextWidth = canvasTextMeasurer;
+		}
+
+		this.captionLayout = await this.layoutEngine.layoutCaption(words, layoutConfig);
+
+		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+
+		this.canvas = document.createElement("canvas");
+		this.canvas.width = width;
+		this.canvas.height = height;
+		this.painter = createWebPainter(this.canvas);
+
+		this.renderFrameSync(0);
+		this.configureKeyframes();
+		this.loadComplete = true;
 	}
 
 	private renderFrameSync(timeMs: number): void {
@@ -381,9 +469,9 @@ export class RichCaptionPlayer extends Player {
 		const payload: Record<string, unknown> = {
 			type: asset.type,
 			words: words.map(w => ({ text: w.text, start: w.start, end: w.end, confidence: w.confidence })),
-			font: { family: resolvedFamily, ...asset.font },
+			font: { ...asset.font, family: resolvedFamily },
 			width,
-			height,
+			height
 		};
 
 		const optionalFields: Record<string, unknown> = {
@@ -396,7 +484,7 @@ export class RichCaptionPlayer extends Player {
 			style: asset.style,
 			wordAnimation: asset.wordAnimation,
 			align: asset.align,
-			pauseThreshold: (asset as Record<string, unknown>)['pauseThreshold'],
+			pauseThreshold: this.resolvedPauseThreshold
 		};
 
 		for (const [key, value] of Object.entries(optionalFields)) {
@@ -406,7 +494,7 @@ export class RichCaptionPlayer extends Player {
 		}
 
 		if (customFonts.length > 0) {
-			payload['customFonts'] = customFonts;
+			payload["customFonts"] = customFonts;
 		}
 
 		return payload;
@@ -414,24 +502,40 @@ export class RichCaptionPlayer extends Player {
 
 	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number): CaptionLayoutConfig {
 		const { font, style, align, padding: rawPadding } = asset;
-		const padding = typeof rawPadding === "number" ? rawPadding : (rawPadding?.left ?? 0);
+
+		let padding: { top: number; right: number; bottom: number; left: number };
+		if (typeof rawPadding === "number") {
+			padding = { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding };
+		} else if (rawPadding) {
+			const p = rawPadding as { top?: number; right?: number; bottom?: number; left?: number };
+			padding = { top: p.top ?? 0, right: p.right ?? 0, bottom: p.bottom ?? 0, left: p.left ?? 0 };
+		} else {
+			padding = { top: 0, right: 0, bottom: 0, left: 0 };
+		}
+
+		const totalHorizontalPadding = padding.left + padding.right;
+		const availableWidth = totalHorizontalPadding > 0 ? frameWidth - totalHorizontalPadding : frameWidth * 0.9;
+
+		const fontSize = font?.size ?? 24;
+		const lineHeight = style?.lineHeight ?? 1.2;
+		const availableHeight = frameHeight - padding.top - padding.bottom;
+		const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
 
 		return {
 			frameWidth,
 			frameHeight,
-			availableWidth: frameWidth * 0.9,
-			maxLines: 2,
-			verticalAlign: align?.vertical ?? "bottom",
+			availableWidth,
+			maxLines,
+			verticalAlign: align?.vertical ?? "middle",
 			horizontalAlign: align?.horizontal ?? "center",
-			paddingLeft: padding,
-			fontSize: font?.size ?? 24,
+			padding,
+			fontSize,
 			fontFamily: font?.family ?? "Roboto",
 			fontWeight: String(font?.weight ?? "400"),
 			letterSpacing: style?.letterSpacing ?? 0,
-			wordSpacing: typeof style?.wordSpacing === "number" ? style.wordSpacing : 0,
-			lineHeight: style?.lineHeight ?? 1.2,
+			lineHeight,
 			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
-			pauseThreshold: asset.pauseThreshold ?? 500
+			pauseThreshold: this.resolvedPauseThreshold
 		};
 	}
 
@@ -530,19 +634,55 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	protected override onDimensionsChanged(): void {
-		if (!this.layoutEngine || !this.validatedAsset || !this.canvas || !this.painter) return;
+		if (this.words.length === 0) return;
 
-		const { width, height } = this.getSize();
+		this.rebuildForCurrentSize();
+	}
 
-		this.canvas.width = width;
-		this.canvas.height = height;
+	private async rebuildForCurrentSize(): Promise<void> {
+		const currentTimeMs = this.getPlaybackTime() * 1000;
 
 		if (this.texture) {
 			this.texture.destroy();
 			this.texture = null;
 		}
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		if (this.contentContainer.mask) {
+			const { mask } = this.contentContainer;
+			this.contentContainer.mask = null;
+			if (mask instanceof pixi.Graphics) {
+				mask.destroy();
+			}
+		}
+
+		this.captionLayout = null;
+		this.validatedAsset = null;
+		this.generatorConfig = null;
+		this.canvas = null;
+		this.painter = null;
+
+		const { width, height } = this.getSize();
+		const asset = this.clipConfiguration.asset as RichCaptionAsset;
+
+		const canvasPayload = this.buildCanvasPayload(asset, this.words);
+		const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
+		if (!canvasValidation.success) {
+			return;
+		}
+		this.validatedAsset = canvasValidation.data;
 
 		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+
+		this.canvas = document.createElement("canvas");
+		this.canvas.width = width;
+		this.canvas.height = height;
+		this.painter = createWebPainter(this.canvas);
+
+		if (!this.layoutEngine) return;
 
 		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
 		const canvasTextMeasurer = this.createCanvasTextMeasurer();
@@ -552,11 +692,14 @@ export class RichCaptionPlayer extends Player {
 
 		this.pendingLayoutId += 1;
 		const layoutId = this.pendingLayoutId;
-		this.layoutEngine.layoutCaption(this.words, layoutConfig).then(layout => {
-			if (layoutId !== this.pendingLayoutId) return;
-			this.captionLayout = layout;
-			this.renderFrameSync(this.getPlaybackTime() * 1000);
-		});
+
+		const layout = await this.layoutEngine.layoutCaption(this.words, layoutConfig);
+
+		if (layoutId !== this.pendingLayoutId) return;
+
+		this.captionLayout = layout;
+
+		this.renderFrameSync(currentTimeMs);
 	}
 
 	public override supportsEdgeResize(): boolean {

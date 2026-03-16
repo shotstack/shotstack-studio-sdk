@@ -24,6 +24,7 @@ import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
 import { SelectionManager } from "@core/selection-manager";
+import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
 import { deepMerge, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
 import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec, isAliasReference } from "@core/timing/types";
@@ -780,6 +781,28 @@ export class Edit {
 
 		for (const clip of track.clips) {
 			await this.addClip(trackIdx, clip);
+		}
+
+		// Auto-link caption clips with unresolved alias sources
+		await this.autoLinkCaptionSources(trackIdx, track.clips);
+	}
+
+	/**
+	 * Auto-link rich-caption clips to the first eligible source clip.
+	 * If an alias reference in the caption's src can't be resolved, link it automatically.
+	 */
+	private async autoLinkCaptionSources(trackIdx: number, clips: Clip[]): Promise<void> {
+		for (let c = 0; c < clips.length; c += 1) {
+			const clip = clips[c];
+			const asset = clip.asset as { type?: string; src?: string };
+			if (asset.type === "rich-caption" && isAliasReference(asset.src)) {
+				const eligible = findEligibleSourceClips(this);
+				if (eligible.length > 0) {
+					const target = eligible[0];
+					const alias = await ensureClipAlias(this, target.trackIndex, target.clipIndex);
+					await this.updateClip(trackIdx, c, { asset: { src: `alias://${alias}` } } as Record<string, unknown>);
+				}
+			}
 		}
 	}
 
@@ -1674,6 +1697,16 @@ export class Edit {
 	/** @internal */
 	public selectClip(trackIndex: number, clipIndex: number): void {
 		this.selectionManager.selectClip(trackIndex, clipIndex);
+	}
+
+	/** @internal – Visual focus without selection change or public event. */
+	public focusClip(trackIndex: number, clipIndex: number): void {
+		this.internalEvents.emit(InternalEvent.ClipFocused, { trackIndex, clipIndex });
+	}
+
+	/** @internal – Clear visual focus. */
+	public blurClip(): void {
+		this.internalEvents.emit(InternalEvent.ClipBlurred);
 	}
 
 	/** @internal */

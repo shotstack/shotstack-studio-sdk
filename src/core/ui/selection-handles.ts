@@ -1,6 +1,6 @@
 import type { Player } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import {
 	calculateCornerScale,
 	calculateEdgeResize,
@@ -39,6 +39,10 @@ const DIMENSION_PADDING_X = 6;
 const DIMENSION_PADDING_Y = 3;
 const DIMENSION_GAP = 8; // px below the clip outline
 
+// Focus glow style — matches timeline .ss-clip.focused orange
+const FOCUS_COLOR = 0xffab00;
+const FOCUS_OUTLINE_WIDTH = 2;
+
 export class SelectionHandles implements CanvasOverlayRegistration {
 	private container: pixi.Container;
 	private outline: pixi.Graphics;
@@ -54,6 +58,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	// Selection state
 	private selectedPlayer: Player | null = null;
 	private selectedClipId: string | null = null;
+
+	// Focus glow state (visual-only, no interaction)
+	private focusedPlayer: Player | null = null;
+	private focusContainer: pixi.Container;
+	private focusOutline: pixi.Graphics;
 
 	// Interaction state
 	private isHovering = false;
@@ -82,6 +91,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	// Bound event handlers for cleanup
 	private onClipSelectedBound: (payload: { trackIndex: number; clipIndex: number }) => void;
 	private onSelectionClearedBound: () => void;
+	private onClipFocusedBound: (payload: { trackIndex: number; clipIndex: number }) => void;
+	private onClipBlurredBound: () => void;
 	private onPointerDownBound: (event: pixi.FederatedPointerEvent) => void;
 	private onPointerMoveBound: (event: pixi.FederatedPointerEvent) => void;
 	private onPointerUpBound: () => void;
@@ -94,6 +105,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.outline = new pixi.Graphics();
 		this.handles = new Map();
 		this.edgeHandles = new Map();
+
+		// Focus glow container (below selection, no interaction)
+		this.focusContainer = new pixi.Container();
+		this.focusContainer.zIndex = 17;
+		this.focusContainer.visible = false;
+		this.focusOutline = new pixi.Graphics();
+		this.focusContainer.addChild(this.focusOutline);
 
 		// Dimension label (axis-aligned, not rotated with the clip)
 		this.dimensionContainer = new pixi.Container();
@@ -114,6 +132,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		// Bind event handlers
 		this.onClipSelectedBound = this.onClipSelected.bind(this);
 		this.onSelectionClearedBound = this.onSelectionCleared.bind(this);
+		this.onClipFocusedBound = this.onClipFocused.bind(this);
+		this.onClipBlurredBound = this.onClipBlurred.bind(this);
 		this.onPointerDownBound = this.onPointerDown.bind(this);
 		this.onPointerMoveBound = this.onPointerMove.bind(this);
 		this.onPointerUpBound = this.onPointerUp.bind(this);
@@ -121,6 +141,11 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		// Listen to selection events
 		this.edit.events.on(EditEvent.ClipSelected, this.onClipSelectedBound);
 		this.edit.events.on(EditEvent.SelectionCleared, this.onSelectionClearedBound);
+
+		// Listen to focus events (internal)
+		const internal = this.edit.getInternalEvents();
+		internal.on(InternalEvent.ClipFocused, this.onClipFocusedBound);
+		internal.on(InternalEvent.ClipBlurred, this.onClipBlurredBound);
 	}
 
 	mount(parent: pixi.Container, app: pixi.Application): void {
@@ -150,6 +175,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			this.container.addChild(handle);
 		}
 
+		parent.addChild(this.focusContainer);
 		parent.addChild(this.container);
 		parent.addChild(this.dimensionContainer);
 
@@ -165,6 +191,9 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		if (this.selectedPlayer) {
 			this.syncToPlayer();
 		}
+		if (this.focusedPlayer) {
+			this.syncFocusToPlayer();
+		}
 	}
 
 	draw(): void {
@@ -176,11 +205,17 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.container.visible = true;
 		this.drawOutline();
 		this.drawHandles();
+
+		this.drawFocusGlow();
 	}
 
 	dispose(): void {
 		this.edit.events.off(EditEvent.ClipSelected, this.onClipSelectedBound);
 		this.edit.events.off(EditEvent.SelectionCleared, this.onSelectionClearedBound);
+
+		const internal = this.edit.getInternalEvents();
+		internal.off(InternalEvent.ClipFocused, this.onClipFocusedBound);
+		internal.off(InternalEvent.ClipBlurred, this.onClipBlurredBound);
 
 		if (this.app) {
 			this.app.stage.off("pointerdown", this.onPointerDownBound);
@@ -197,6 +232,8 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			handle.destroy();
 		}
 		this.container.destroy();
+		this.focusOutline.destroy();
+		this.focusContainer.destroy();
 		this.dimensionLabel.destroy();
 		this.dimensionBackground.destroy();
 		this.dimensionContainer.destroy();
@@ -213,6 +250,46 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 		this.selectedPlayer = null;
 		this.selectedClipId = null;
 		this.resetDragState();
+	}
+
+	// ─── Focus Event Handlers ───────────────────────────────────────────────────
+
+	private onClipFocused({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void {
+		this.focusedPlayer = this.edit.getPlayerClip(trackIndex, clipIndex);
+	}
+
+	private onClipBlurred(): void {
+		this.focusedPlayer = null;
+		this.focusContainer.visible = false;
+	}
+
+	// ─── Focus Glow Rendering ───────────────────────────────────────────────────
+
+	private syncFocusToPlayer(): void {
+		if (!this.focusedPlayer) return;
+		const playerContainer = this.focusedPlayer.getContainer();
+		this.focusContainer.position.copyFrom(playerContainer.position);
+		this.focusContainer.scale.copyFrom(playerContainer.scale);
+		this.focusContainer.rotation = playerContainer.rotation;
+		this.focusContainer.pivot.copyFrom(playerContainer.pivot);
+	}
+
+	private drawFocusGlow(): void {
+		if (!this.focusedPlayer || !this.focusedPlayer.isActive() || this.edit.isInExportMode()) {
+			this.focusContainer.visible = false;
+			return;
+		}
+
+		this.focusContainer.visible = true;
+		const size = this.focusedPlayer.getSize();
+		const playerScale = this.focusedPlayer.getScale();
+		const canvasZoom = this.edit.getCanvasZoom();
+		const uiScale = playerScale * canvasZoom;
+
+		this.focusOutline.clear();
+		this.focusOutline.strokeStyle = { width: (FOCUS_OUTLINE_WIDTH * 2) / uiScale, color: FOCUS_COLOR, alpha: 0.45 };
+		this.focusOutline.rect(0, 0, size.width, size.height);
+		this.focusOutline.stroke();
 	}
 
 	// ─── Rendering ───────────────────────────────────────────────────────────────

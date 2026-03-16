@@ -124,7 +124,11 @@ export const InternalEvent = {
 	PlayerLoaded: "player:loaded",
 	TrackContainerRemoved: "track:containerRemoved",
 	ViewportSizeChanged: "viewport:sizeChanged",
-	ViewportNeedsZoomToFit: "viewport:needsZoomToFit"
+	ViewportNeedsZoomToFit: "viewport:needsZoomToFit",
+
+	// Focus (visual highlight without selection change)
+	ClipFocused: "clip:focused",
+	ClipBlurred: "clip:blurred"
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -209,4 +213,8 @@ export type InternalEventMap = {
 		backgroundColor: string;
 	};
 	[InternalEvent.ViewportNeedsZoomToFit]: void;
+
+	// Focus
+	[InternalEvent.ClipFocused]: { trackIndex: number; clipIndex: number };
+	[InternalEvent.ClipBlurred]: void;
 };

@@ -1132,6 +1132,12 @@
 }
 
 /* Disabled control state (when merge field is bound) */
+.ss-active-word-header {
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .ss-toolbar-popup-row--disabled {
 	opacity: 0.3;
 	pointer-events: none;
@@ -1148,4 +1154,69 @@
 input.ss-toolbar-popup-value:disabled {
 	opacity: 0.3;
 	pointer-events: none;
+}
+
+/* ─── Source Button Dot ─── */
+.ss-source-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.25);
+	flex-shrink: 0;
+	transition: background 0.15s ease;
+}
+.ss-source-dot.linked {
+	background: #4ecdc4;
+}
+
+/* ─── Source Popup ─── */
+.ss-source-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.ss-source-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 6px;
+	color: rgba(255, 255, 255, 0.7);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	font-size: 13px;
+	font-weight: 500;
+	text-align: left;
+}
+.ss-source-item:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(255, 255, 255, 0.15);
+	color: rgba(255, 255, 255, 0.9);
+}
+.ss-source-item.active {
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(255, 255, 255, 0.25);
+	color: #fff;
+}
+.ss-source-item-check {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+.ss-source-item.active .ss-source-item-check {
+	background: #fff;
+}
+.ss-source-divider {
+	height: 1px;
+	background: rgba(255, 255, 255, 0.08);
+	margin: 4px 0;
+}
+.ss-source-empty {
+	padding: 12px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.4);
+	font-size: 12px;
 }

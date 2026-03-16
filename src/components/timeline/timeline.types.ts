@@ -16,6 +16,8 @@ export interface ClipState {
 	config: ResolvedClip;
 	/** Visual state */
 	visualState: ClipVisualState;
+	/** Whether this clip has visual focus (e.g. hover-to-highlight from source popup) */
+	isFocused: boolean;
 	/** Original timing intent before resolution */
 	timingIntent: {
 		start: "auto" | number;

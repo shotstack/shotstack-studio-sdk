@@ -12,6 +12,8 @@ export class TimelineStateManager {
 	/** Track luma visibility by clip ID for stability across reconciliation */
 	private lumaEditingVisibleByClipId = new Set<string>();
 	private cachedTracks: TrackState[] | null = null;
+	private focusedTrackIndex = -1;
+	private focusedClipIndex = -1;
 
 	constructor(
 		private readonly edit: Edit,
@@ -35,10 +37,26 @@ export class TimelineStateManager {
 		// Selection changes are UI state (not document mutations)
 		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.on(EditEvent.SelectionCleared, this.invalidateCache);
+
+		// Focus changes (visual highlight from source popup hover)
+		this.edit.getInternalEvents().on(InternalEvent.ClipFocused, this.onClipFocused);
+		this.edit.getInternalEvents().on(InternalEvent.ClipBlurred, this.onClipBlurred);
 	}
 
 	private invalidateCache = (): void => {
 		this.cachedTracks = null;
+	};
+
+	private onClipFocused = ({ trackIndex, clipIndex }: { trackIndex: number; clipIndex: number }): void => {
+		this.focusedTrackIndex = trackIndex;
+		this.focusedClipIndex = clipIndex;
+		this.invalidateCache();
+	};
+
+	private onClipBlurred = (): void => {
+		this.focusedTrackIndex = -1;
+		this.focusedClipIndex = -1;
+		this.invalidateCache();
 	};
 
 	// ========== Derived from Edit (memoized) ==========
@@ -219,6 +237,8 @@ export class TimelineStateManager {
 		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
+		this.edit.getInternalEvents().off(InternalEvent.ClipFocused, this.onClipFocused);
+		this.edit.getInternalEvents().off(InternalEvent.ClipBlurred, this.onClipBlurred);
 
 		// Clear state
 		this.cachedTracks = null;
@@ -241,6 +261,7 @@ export class TimelineStateManager {
 
 		const isSelected = this.edit.isClipSelected(trackIndex, clipIndex);
 		const visualState = this.getComputedVisualState(trackIndex, clipIndex, isSelected);
+		const isFocused = trackIndex === this.focusedTrackIndex && clipIndex === this.focusedClipIndex;
 
 		return {
 			id: clip.id,
@@ -248,6 +269,7 @@ export class TimelineStateManager {
 			clipIndex,
 			config: clip,
 			visualState,
+			isFocused,
 			timingIntent: {
 				start: unresolvedClip?.start === "auto" ? "auto" : clip.start,
 				length: unresolvedClip?.length === "auto" || unresolvedClip?.length === "end" ? unresolvedClip.length : clip.length

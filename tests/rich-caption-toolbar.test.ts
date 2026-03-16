@@ -84,10 +84,10 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		getInternalEvents: jest.fn(() => events),
 		getPlayerClip: jest.fn(() => null),
 		getClip: jest.fn(() => null),
-		getClipId: jest.fn(() => "mock-clip-id"),
+		getClipId: jest.fn<string, [number, number]>().mockReturnValue("mock-clip-id"),
 		getResolvedClip: jest.fn(() => null),
 		getResolvedClipById: jest.fn(() => null),
-		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+		getDocumentClip: jest.fn<Record<string, unknown> | null, [number, number?]>().mockReturnValue({ start: 0, length: 1 }),
 		getCurrentTime: jest.fn(() => 0),
 		getEdit: jest.fn(() => ({
 			timeline: {
@@ -97,10 +97,15 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		})),
 		getDocument: jest.fn(() => ({
 			getFonts: jest.fn(() => []),
-			getClipBinding: jest.fn(() => null)
+			getClipBinding: jest.fn(() => null),
+			getTrackCount: jest.fn(() => 0),
+			getClipsInTrack: jest.fn(() => [])
 		})),
 		getFontMetadata: jest.fn(() => new Map()),
 		getMergeFieldForProperty: jest.fn(() => null),
+		selectClip: jest.fn(),
+		focusClip: jest.fn(),
+		blurClip: jest.fn(),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
@@ -129,11 +134,10 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 function createCaptionAsset(overrides: Record<string, unknown> = {}) {
 	return {
 		type: "rich-caption",
-		wordAnimation: { style: "karaoke", speed: 1, direction: "up" },
+		wordAnimation: { style: "karaoke", direction: "up" },
 		active: {
 			font: { color: "#ffff00", opacity: 1 },
-			stroke: { width: 2, color: "#000000", opacity: 1 },
-			scale: 1
+			stroke: { width: 2, color: "#000000", opacity: 1 }
 		},
 		font: { family: "Open Sans", size: 48, color: "#ffffff", weight: 400 },
 		...overrides
@@ -197,10 +201,10 @@ describe("RichCaptionToolbar", () => {
 			toolbar.mount(container);
 		});
 
-		it("should inject Words dropdown with animation style buttons", () => {
+		it("should inject Animation dropdown with animation style buttons", () => {
 			const btn = container.querySelector('[data-action="caption-word-anim-toggle"]');
 			expect(btn).not.toBeNull();
-			expect(btn?.textContent).toBe("Words");
+			expect(btn?.textContent).toBe("Animation");
 
 			const styleButtons = container.querySelectorAll("[data-caption-word-style]");
 			expect(styleButtons.length).toBe(8);
@@ -210,14 +214,6 @@ describe("RichCaptionToolbar", () => {
 			expect(styles).toContain("pop");
 			expect(styles).toContain("typewriter");
 			expect(styles).toContain("none");
-		});
-
-		it("should inject Words dropdown with speed slider", () => {
-			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
-			expect(slider).not.toBeNull();
-			expect(slider?.type).toBe("range");
-			expect(slider?.min).toBe("0.5");
-			expect(slider?.max).toBe("2");
 		});
 
 		it("should inject Words dropdown with direction buttons", () => {
@@ -242,12 +238,6 @@ describe("RichCaptionToolbar", () => {
 			expect(container.querySelector("[data-active-stroke-width]")).not.toBeNull();
 			expect(container.querySelector("[data-active-stroke-color]")).not.toBeNull();
 			expect(container.querySelector("[data-active-stroke-opacity]")).not.toBeNull();
-		});
-
-		it("should inject Active Word dropdown with scale section (initially hidden)", () => {
-			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
-			expect(scaleSection).not.toBeNull();
-			expect(scaleSection?.style.display).toBe("none");
 		});
 
 		it("should hide irrelevant rich-text controls", () => {
@@ -291,7 +281,7 @@ describe("RichCaptionToolbar", () => {
 
 	describe("syncState", () => {
 		it("should sync word animation style buttons", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -302,20 +292,8 @@ describe("RichCaptionToolbar", () => {
 			expect(karaokeBtn?.classList.contains("active")).toBe(false);
 		});
 
-		it("should sync word animation speed slider and display", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1.5 } });
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
-			expect(slider?.value).toBe("1.5");
-
-			const display = container.querySelector("[data-caption-word-speed-value]");
-			expect(display?.textContent).toBe("1.5x");
-		});
-
 		it("should show direction section only for 'slide' animation", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", speed: 1, direction: "left" } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", direction: "left" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -324,7 +302,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should hide direction section for non-slide animations", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -369,7 +347,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should show scale section when word animation is 'pop'", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 }, active: { scale: 1.5 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1.5 } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -381,7 +359,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should hide scale section when word animation is not 'pop'", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke", speed: 1 } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -415,7 +393,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should call updateClip when direction button is clicked", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", speed: 1, direction: "up" } });
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", direction: "up" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -432,17 +410,6 @@ describe("RichCaptionToolbar", () => {
 			);
 		});
 
-		it("should update speed display on slider input", () => {
-			setupCaptionClip(mockEdit);
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const slider = container.querySelector("[data-caption-word-speed]") as HTMLInputElement;
-			simulateInput(slider, "1.5");
-
-			const display = container.querySelector("[data-caption-word-speed-value]");
-			expect(display?.textContent).toBe("1.5x");
-		});
 	});
 
 	describe("active word controls", () => {
@@ -506,16 +473,243 @@ describe("RichCaptionToolbar", () => {
 			);
 		});
 
-		it("should update scale display on slider input", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop", speed: 1 }, active: { scale: 1 } });
+		it("should call updateClip when scale slider changes", () => {
+			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1 } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
 			const slider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
 			simulateInput(slider, "1.5");
 
-			const display = container.querySelector("[data-caption-active-scale-value]");
-			expect(display?.textContent).toBe("1.5x");
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						active: expect.objectContaining({ scale: 1.5 })
+					})
+				})
+			);
+		});
+	});
+
+	// ── Source Popup ──────────────────────────────────────────────────
+
+	describe("source popup", () => {
+		it("should render Source button in caption toolbar", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			expect(btn).not.toBeNull();
+			expect(btn?.textContent?.trim()).toBe("Source");
+		});
+
+		it("should toggle Source popup on click", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const popup = container.querySelector("[data-caption-source-popup]");
+			expect(popup?.classList.contains("visible")).toBe(true);
+		});
+
+		it("should show empty state when no eligible clips exist", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 1),
+				getClipsInTrack: jest.fn(() => [{ asset: { type: "rich-caption" }, start: 0, length: 5 }])
+			} as never);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const emptyMsg = container.querySelector(".ss-source-empty");
+			expect(emptyMsg).not.toBeNull();
+			expect(emptyMsg?.textContent).toContain("No video, audio, or TTS clips found");
+		});
+
+		it("should list eligible clips in source popup", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const items = container.querySelectorAll(".ss-source-item");
+			// 1 video clip + 1 "None" option
+			expect(items.length).toBe(2);
+			expect(items[0].textContent).toContain("Video · Track 2 · Clip 1");
+		});
+
+		it("should show linked indicator when caption has source alias", () => {
+			setupCaptionClip(mockEdit, { src: "alias://my_source" });
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption", src: "alias://my_source" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10, alias: "my_source" }];
+					return [];
+				})
+			} as never);
+			mockEdit.getDocumentClip.mockImplementation((t: number) => {
+				if (t === 0) return { asset: { type: "rich-caption", src: "alias://my_source" }, start: 0, length: 5 };
+				if (t === 1) return { asset: { type: "video" }, start: 0, length: 10, alias: "my_source" };
+				return null;
+			});
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const dot = container.querySelector("[data-source-dot]");
+			expect(dot?.classList.contains("linked")).toBe(true);
+		});
+
+		it("should not show linked indicator when caption has no source", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const dot = container.querySelector("[data-source-dot]");
+			expect(dot?.classList.contains("linked")).toBe(false);
+		});
+
+		it("should focus source clip on hover by calling focusClip", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			// Hover over the video source item
+			const items = container.querySelectorAll(".ss-source-item");
+			items[0].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+
+			expect(mockEdit.focusClip).toHaveBeenCalledWith(1, 0);
+		});
+
+		it("should blur focus on mouse leave without changing selection", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			const items = container.querySelectorAll(".ss-source-item");
+			items[0].dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+			mockEdit.selectClip.mockClear();
+
+			// Mouse leave — should blur focus, NOT call selectClip
+			items[0].dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+
+			expect(mockEdit.blurClip).toHaveBeenCalled();
+			expect(mockEdit.selectClip).not.toHaveBeenCalled();
+		});
+
+		it("should blur on mouseleave even without preceding mouseenter (idempotent)", () => {
+			setupCaptionClip(mockEdit);
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10 }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			// Directly trigger mouseleave without preceding mouseenter
+			const items = container.querySelectorAll(".ss-source-item");
+			items[0].dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+
+			// blurClip is idempotent — always called on mouseleave
+			expect(mockEdit.blurClip).toHaveBeenCalled();
+		});
+
+		it("should call updateClip with unlinked source when 'None' is clicked", () => {
+			setupCaptionClip(mockEdit, { src: "alias://my_source" });
+			mockEdit.getDocument.mockReturnValue({
+				getFonts: jest.fn(() => []),
+				getClipBinding: jest.fn(() => null),
+				getTrackCount: jest.fn(() => 2),
+				getClipsInTrack: jest.fn((t: number) => {
+					if (t === 0) return [{ asset: { type: "rich-caption", src: "alias://my_source" }, start: 0, length: 5 }];
+					if (t === 1) return [{ asset: { type: "video" }, start: 0, length: 10, alias: "my_source" }];
+					return [];
+				})
+			} as never);
+			mockEdit.getClipId.mockImplementation((t: number, c: number) => `clip-${t}-${c}`);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			// Open popup
+			const btn = container.querySelector('[data-action="caption-source-toggle"]');
+			simulateClick(btn);
+
+			// Click the "None" option (last item)
+			const items = container.querySelectorAll(".ss-source-item");
+			const noneItem = items[items.length - 1];
+			simulateClick(noneItem);
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0, 0,
+				expect.objectContaining({
+					asset: expect.objectContaining({
+						src: "alias://"
+					})
+				})
+			);
 		});
 	});
 

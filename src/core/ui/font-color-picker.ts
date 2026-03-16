@@ -314,12 +314,17 @@ type ColorMode = "color" | "gradient";
 type FontColorChangeCallback = (updates: {
 	color?: string;
 	opacity?: number;
-	background?: string;
+	background?: string | undefined;
 	gradient?: { type: "linear" | "radial"; angle: number; stops: Array<{ offset: number; color: string }> };
 }) => void;
 
+export interface FontColorPickerOptions {
+	hideGradient?: boolean;
+}
+
 export class FontColorPicker {
 	private container: HTMLDivElement | null = null;
+	private hideGradient: boolean;
 
 	// Tab buttons
 	private colorTab: HTMLButtonElement | null = null;
@@ -336,6 +341,7 @@ export class FontColorPicker {
 
 	// Highlight elements (in color tab)
 	private highlightColorInput: HTMLInputElement | null = null;
+	private highlightToggle: HTMLInputElement | null = null;
 
 	private onColorChange: FontColorChangeCallback | null = null;
 
@@ -360,6 +366,19 @@ export class FontColorPicker {
 		this.highlightThrottle.call();
 	};
 
+	private handleHighlightToggle = (): void => {
+		const enabled = this.highlightToggle?.checked ?? false;
+		if (this.highlightColorInput) {
+			this.highlightColorInput.disabled = !enabled;
+			this.highlightColorInput.style.opacity = enabled ? "1" : "0.3";
+		}
+		if (enabled) {
+			this.highlightThrottle.call();
+		} else if (this.onColorChange) {
+			this.onColorChange({ background: undefined });
+		}
+	};
+
 	// Flush throttle on slider release (change event) to ensure final value is applied
 	private handleColorOpacityChange = (): void => {
 		this.colorThrottle.flush();
@@ -369,7 +388,8 @@ export class FontColorPicker {
 		this.setMode(mode);
 	};
 
-	constructor() {
+	constructor(options?: FontColorPickerOptions) {
+		this.hideGradient = options?.hideGradient ?? false;
 		injectShotstackStyles();
 	}
 
@@ -377,11 +397,21 @@ export class FontColorPicker {
 		this.container = document.createElement("div");
 		this.container.className = "ss-font-color-picker";
 
-		this.container.innerHTML = `
-			<div class="ss-font-color-tabs">
+		const tabsHTML = this.hideGradient
+			? ""
+			: `<div class="ss-font-color-tabs">
 				<button class="ss-font-color-tab active" data-tab="color">Color</button>
 				<button class="ss-font-color-tab" data-tab="gradient">Gradient</button>
-			</div>
+			</div>`;
+
+		const gradientHTML = this.hideGradient
+			? ""
+			: `<div class="ss-font-color-tab-content" data-content="gradient">
+				${this.buildGradientHTML()}
+			</div>`;
+
+		this.container.innerHTML = `
+			${tabsHTML}
 
 			<div class="ss-font-color-tab-content active" data-content="color">
 				<div class="ss-font-color-section">
@@ -397,13 +427,14 @@ export class FontColorPicker {
 				</div>
 				<div class="ss-font-color-section">
 					<div class="ss-font-color-label" data-merge-path="asset.font.background" data-merge-prefix="TEXT_HIGHLIGHT">Highlight</div>
-					<input type="color" class="ss-font-color-input" data-highlight-color value="#FFFF00" />
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<input type="checkbox" data-highlight-toggle class="ss-toolbar-checkbox" checked />
+						<input type="color" class="ss-font-color-input" data-highlight-color value="#FFFF00" />
+					</div>
 				</div>
 			</div>
 
-			<div class="ss-font-color-tab-content" data-content="gradient">
-				${this.buildGradientHTML()}
-			</div>
+			${gradientHTML}
 		`;
 
 		parent.appendChild(this.container);
@@ -423,6 +454,7 @@ export class FontColorPicker {
 
 		// Query highlight elements
 		this.highlightColorInput = this.container.querySelector("[data-highlight-color]");
+		this.highlightToggle = this.container.querySelector("[data-highlight-toggle]");
 
 		// Setup event listeners using arrow function handlers for proper cleanup
 		this.colorTab?.addEventListener("click", () => this.handleTabClick("color"));
@@ -435,16 +467,19 @@ export class FontColorPicker {
 		this.colorOpacitySlider?.addEventListener("input", this.handleColorOpacityInput);
 		this.colorOpacitySlider?.addEventListener("change", this.handleColorOpacityChange);
 
-		// Highlight color: throttle on input
+		// Highlight toggle + color: throttle on input
+		this.highlightToggle?.addEventListener("change", this.handleHighlightToggle);
 		this.highlightColorInput?.addEventListener("input", this.handleHighlightInputChange);
 
 		// Setup gradient swatch click handlers
-		this.container.querySelectorAll("[data-cat]").forEach(btn => {
-			btn.addEventListener("click", e => {
-				const el = e.currentTarget as HTMLButtonElement;
-				this.handleGradientClick(parseInt(el.dataset["cat"] || "0", 10), parseInt(el.dataset["idx"] || "0", 10));
+		if (!this.hideGradient) {
+			this.container.querySelectorAll("[data-cat]").forEach(btn => {
+				btn.addEventListener("click", e => {
+					const el = e.currentTarget as HTMLButtonElement;
+					this.handleGradientClick(parseInt(el.dataset["cat"] || "0", 10), parseInt(el.dataset["idx"] || "0", 10));
+				});
 			});
-		});
+		}
 	}
 
 	private emitColorChange(): void {
@@ -516,9 +551,15 @@ export class FontColorPicker {
 		}
 	}
 
-	setHighlight(color: string): void {
+	setHighlight(color: string | undefined): void {
+		const hasHighlight = color !== undefined;
+		if (this.highlightToggle) {
+			this.highlightToggle.checked = hasHighlight;
+		}
 		if (this.highlightColorInput) {
-			this.highlightColorInput.value = color.toUpperCase();
+			this.highlightColorInput.value = (color ?? "#FFFF00").toUpperCase();
+			this.highlightColorInput.disabled = !hasHighlight;
+			this.highlightColorInput.style.opacity = hasHighlight ? "1" : "0.3";
 		}
 	}
 
@@ -535,6 +576,7 @@ export class FontColorPicker {
 		this.colorInput?.removeEventListener("input", this.handleColorInputChange);
 		this.colorOpacitySlider?.removeEventListener("input", this.handleColorOpacityInput);
 		this.colorOpacitySlider?.removeEventListener("change", this.handleColorOpacityChange);
+		this.highlightToggle?.removeEventListener("change", this.handleHighlightToggle);
 		this.highlightColorInput?.removeEventListener("input", this.handleHighlightInputChange);
 
 		this.container?.remove();
@@ -547,6 +589,7 @@ export class FontColorPicker {
 		this.colorOpacitySlider = null;
 		this.colorOpacityValue = null;
 		this.highlightColorInput = null;
+		this.highlightToggle = null;
 		this.onColorChange = null;
 	}
 }
