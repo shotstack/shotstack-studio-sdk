@@ -84,6 +84,8 @@ export class ImageToVideoPlayer extends Player {
 	}
 
 	public override getSize(): Size {
+		const displaySize = this.getDisplaySize();
+
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			return {
 				width: this.clipConfiguration.width,
@@ -92,8 +94,8 @@ export class ImageToVideoPlayer extends Player {
 		}
 
 		return {
-			width: this.sprite?.width || this.edit.size.width,
-			height: this.sprite?.height || this.edit.size.height
+			width: this.sprite?.width || displaySize.width,
+			height: this.sprite?.height || displaySize.height
 		};
 	}
 
@@ -114,13 +116,6 @@ export class ImageToVideoPlayer extends Player {
 		super.dispose();
 	}
 
-	private getDisplaySize(): Size {
-		return {
-			width: this.clipConfiguration.width ?? this.edit.size.width,
-			height: this.clipConfiguration.height ?? this.edit.size.height
-		};
-	}
-
 	private async loadTexture(): Promise<void> {
 		const asset = this.clipConfiguration.asset as ImageToVideoAsset;
 		const { src } = asset;
@@ -132,6 +127,7 @@ export class ImageToVideoPlayer extends Player {
 		if (!(texture?.source instanceof pixi.ImageSource)) {
 			if (texture) {
 				texture.destroy(true);
+				await this.edit.assetLoader.rejectAsset(corsUrl);
 			}
 			throw new Error(`Invalid image source '${src}'.`);
 		}

@@ -42,6 +42,16 @@ export class AssetLoader {
 		pixi.Assets.setPreferences({ crossOrigin: "anonymous" });
 	}
 
+	/**
+	 * Release an asset that was loaded successfully but rejected by the caller
+	 * (e.g. returned a non-image texture). Decrements the ref count and removes
+	 * the stale entry from the PixiJS Assets cache to prevent GL corruption.
+	 */
+	public async rejectAsset(identifier: string): Promise<void> {
+		console.warn(`[AssetLoader.rejectAsset] Rejected invalid asset "${identifier}".`);
+		await this.cleanupFailedLoad(identifier);
+	}
+
 	public async load<TResolvedAsset>(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<TResolvedAsset | null> {
 		this.updateAssetLoadMetadata(identifier, "pending", 0);
 		this.incrementRef(identifier);
@@ -49,20 +59,25 @@ export class AssetLoader {
 		try {
 			const useSafari = await this.shouldUseSafariVideoLoader(loadOptions);
 
-			if (useSafari) {
-				return await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions);
-			}
+			const resolvedAsset = useSafari
+				? await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions)
+				: await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
+					this.updateAssetLoadMetadata(identifier, "loading", progress);
+				});
 
-			const resolvedAsset = await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
-				this.updateAssetLoadMetadata(identifier, "loading", progress);
-			});
+			if (resolvedAsset == null) {
+				console.warn(`[AssetLoader.load] Empty asset returned for "${identifier}"`);
+				this.updateAssetLoadMetadata(identifier, "failed", 1);
+				await this.cleanupFailedLoad(identifier);
+				return null;
+			}
 
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return resolvedAsset;
 		} catch (error) {
-			console.warn(`[AssetLoader] Failed to load asset "${identifier}":`, error);
+			console.warn(`[AssetLoader.load] Failed to load "${identifier}":`, error);
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
-			this.decrementRef(identifier);
+			await this.cleanupFailedLoad(identifier);
 			return null;
 		}
 	}
@@ -128,6 +143,15 @@ export class AssetLoader {
 
 		const totalProgress = identifiers.reduce((acc, identifier) => acc + this.loadTracker.registry[identifier].progress, 0);
 		return totalProgress / identifiers.length;
+	}
+
+	private async cleanupFailedLoad(identifier: string): Promise<void> {
+		this.decrementRef(identifier);
+		try {
+			await pixi.Assets.unload(identifier);
+		} catch {
+			// Ignore unload errors for already-failed assets
+		}
 	}
 
 	private extractUrl(opts: pixi.UnresolvedAsset): string | undefined {

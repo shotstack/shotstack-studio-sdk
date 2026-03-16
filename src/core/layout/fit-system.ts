@@ -42,6 +42,10 @@ export interface SpriteTransform {
  * - none: No scaling (returns 1)
  */
 export function calculateFitScale(contentSize: Size, targetSize: Size, fit: FitMode): number {
+	if (contentSize.width === 0 || contentSize.height === 0) {
+		return 1;
+	}
+
 	const ratioX = targetSize.width / contentSize.width;
 	const ratioY = targetSize.height / contentSize.height;
 
