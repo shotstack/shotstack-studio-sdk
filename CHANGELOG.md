@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.1] - 2026-03-16
+
+### Fixed
+
+- Fallback placeholder graphics for failed image, video, and luma loads (#87)
+- Caption toolbar padding, alignment, and stroke type handling (#86)
+- Word spacing control and font search in caption toolbar (#86)
+- Caption source linking with intelligent clip matching (#86)
+- Active word styling panel with shadow and focus controls (#86)
+
+## [2.4.0] - 2026-03-11
+
+### Added
+
+- Rotation cursor near selection corners, follows clip angle (#85)
+- Larger hit areas on selection handles and edges (#85)
+
+## [2.3.0] - 2026-03-11
+
+### Added
+
+- CI/CD concurrency control for sequential releases (#84)
+
 ## [2.2.3] - 2026-03-11
 
 ### Fixed
