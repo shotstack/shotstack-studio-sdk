@@ -84,10 +84,10 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		getInternalEvents: jest.fn(() => events),
 		getPlayerClip: jest.fn(() => null),
 		getClip: jest.fn(() => null),
-		getClipId: jest.fn(() => "mock-clip-id"),
+		getClipId: jest.fn<string, [number, number]>().mockReturnValue("mock-clip-id"),
 		getResolvedClip: jest.fn(() => null),
 		getResolvedClipById: jest.fn(() => null),
-		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
+		getDocumentClip: jest.fn<Record<string, unknown> | null, [number, number?]>().mockReturnValue({ start: 0, length: 1 }),
 		getCurrentTime: jest.fn(() => 0),
 		getEdit: jest.fn(() => ({
 			timeline: {
@@ -517,10 +517,10 @@ describe("RichCaptionToolbar", () => {
 			const items = container.querySelectorAll(".ss-source-item");
 			// 1 video clip + 1 "None" option
 			expect(items.length).toBe(2);
-			expect(items[0].textContent).toContain("Video (Track 2)");
+			expect(items[0].textContent).toContain("Video · Track 2 · Clip 1");
 		});
 
-		it("should update source label based on current src alias", () => {
+		it("should show linked indicator when caption has source alias", () => {
 			setupCaptionClip(mockEdit, { src: "alias://my_source" });
 			mockEdit.getDocument.mockReturnValue({
 				getFonts: jest.fn(() => []),
@@ -541,8 +541,17 @@ describe("RichCaptionToolbar", () => {
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
-			const label = container.querySelector("[data-source-label]");
-			expect(label?.textContent).toBe("Video (Track 2)");
+			const dot = container.querySelector("[data-source-dot]");
+			expect(dot?.classList.contains("linked")).toBe(true);
+		});
+
+		it("should not show linked indicator when caption has no source", () => {
+			setupCaptionClip(mockEdit);
+			toolbar.mount(container);
+			toolbar.show(0, 0);
+
+			const dot = container.querySelector("[data-source-dot]");
+			expect(dot?.classList.contains("linked")).toBe(false);
 		});
 
 		it("should focus source clip on hover by calling focusClip", () => {

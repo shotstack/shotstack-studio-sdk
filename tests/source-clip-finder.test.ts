@@ -9,12 +9,12 @@ function makeClip(type: string, overrides: Record<string, unknown> = {}) {
 function createMockEdit(tracks: Array<Array<Record<string, unknown>>>) {
 	const clipIds: Record<string, string> = {};
 	let counter = 0;
-	for (let t = 0; t < tracks.length; t++) {
-		for (let c = 0; c < tracks[t].length; c++) {
-			counter++;
+	tracks.forEach((track, t) => {
+		track.forEach((_, c) => {
+			counter += 1;
 			clipIds[`${t}-${c}`] = `clip-${String(counter).padStart(8, "0")}`;
-		}
-	}
+		});
+	});
 
 	return {
 		getDocument: () => ({
@@ -85,16 +85,89 @@ describe("findEligibleSourceClips", () => {
 
 	it("generates correct display labels", () => {
 		const edit = createMockEdit([
-			[makeClip("video")],
-			[makeClip("audio")],
-			[makeClip("text-to-speech")],
+			[makeClip("video", { asset: { type: "video", src: "https://cdn.example.com/uploads/my-video.mp4" } })],
+			[makeClip("audio", { asset: { type: "audio", src: "https://cdn.example.com/music/background.mp3" } })],
+			[makeClip("text-to-speech", { asset: { type: "text-to-speech", text: "Hello, welcome to the show", voice: "Rachel" } })],
 		]);
 
 		const result = findEligibleSourceClips(edit as never);
 		const labels = result.map(r => r.displayLabel);
-		expect(labels).toContain("Video (Track 1)");
-		expect(labels).toContain("Audio (Track 2)");
-		expect(labels).toContain("TTS (Track 3)");
+		expect(labels).toContain("my-video · Video · Track 1 · Clip 1");
+		expect(labels).toContain("background · Audio · Track 2 · Clip 1");
+		expect(labels).toContain('"Hello, welcome to the sho..." (Rachel) · Track 3 · Clip 1');
+	});
+
+	it("extracts filename from src URL for video clips", () => {
+		const edit = createMockEdit([
+			[makeClip("video", { asset: { type: "video", src: "https://cdn.example.com/uploads/my-video.mp4" } })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("my-video · Video · Track 1 · Clip 1");
+	});
+
+	it("generates TTS label with text preview and voice", () => {
+		const edit = createMockEdit([
+			[makeClip("text-to-speech", { asset: { type: "text-to-speech", text: "Hello, welcome to our channel", voice: "Rachel" } })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe('"Hello, welcome to our cha..." (Rachel) · Track 1 · Clip 1');
+	});
+
+	it("uses user-set alias as primary label when present", () => {
+		const edit = createMockEdit([
+			[makeClip("video", { alias: "main_interview", asset: { type: "video", src: "https://cdn.example.com/video.mp4" } })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("main_interview · Video · Track 1 · Clip 1");
+	});
+
+	it("falls back to type and track when no src is available", () => {
+		const edit = createMockEdit([
+			[makeClip("video")],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("Video · Track 1 · Clip 1");
+	});
+
+	it("decodes URL-encoded filenames", () => {
+		const edit = createMockEdit([
+			[makeClip("video", { asset: { type: "video", src: "https://cdn.example.com/uploads/my%20wedding%20video.mp4" } })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("my wedding video · Video · Track 1 · Clip 1");
+	});
+
+	it("extracts merge field name from src", () => {
+		const edit = createMockEdit([
+			[makeClip("video", { asset: { type: "video", src: "{{ VIDEO_URL }}" } })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("VIDEO_URL · Video · Track 1 · Clip 1");
+	});
+
+	it("skips auto-generated alias and falls back to filename", () => {
+		const edit = createMockEdit([
+			[makeClip("video", { alias: "source_196fb550", asset: { type: "video", src: "https://cdn.example.com/ceremony-intro.mp4" } })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("ceremony-intro · Video · Track 1 · Clip 1");
+		expect(result[0].currentAlias).toBe("source_196fb550");
+	});
+
+	it("skips auto-generated alias and falls back to type when no src", () => {
+		const edit = createMockEdit([
+			[makeClip("video", { alias: "source_abcd1234" })],
+		]);
+
+		const result = findEligibleSourceClips(edit as never);
+		expect(result[0].displayLabel).toBe("Video · Track 1 · Clip 1");
 	});
 });
 
@@ -149,14 +222,20 @@ describe("generateAlias", () => {
 
 	it("conforms to alias pattern ^[A-Za-z0-9_-]+$", () => {
 		const ids = ["clip-abc12345", "abcdefghijklmnop", "a1b2c3d4e5f6g7h8"];
-		for (const id of ids) {
+		ids.forEach(id => {
 			const alias = generateAlias(id);
 			expect(alias).toMatch(/^[A-Za-z0-9_-]+$/);
-		}
+		});
 	});
 
 	it("uses last 8 characters of clip ID", () => {
 		const alias = generateAlias("very-long-clip-id-ABCD1234");
 		expect(alias).toBe("source_ABCD1234");
+	});
+
+	it("output matches auto-alias detection pattern", () => {
+		const alias = generateAlias("clip-00000001");
+		// If this fails, AUTO_ALIAS_PATTERN is out of sync with generateAlias
+		expect(alias).toMatch(/^source_[\da-f]{8}$/i);
 	});
 });

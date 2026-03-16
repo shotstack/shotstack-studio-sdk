@@ -1156,6 +1156,19 @@ input.ss-toolbar-popup-value:disabled {
 	pointer-events: none;
 }
 
+/* ─── Source Button Dot ─── */
+.ss-source-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.25);
+	flex-shrink: 0;
+	transition: background 0.15s ease;
+}
+.ss-source-dot.linked {
+	background: #4ecdc4;
+}
+
 /* ─── Source Popup ─── */
 .ss-source-list {
 	display: flex;

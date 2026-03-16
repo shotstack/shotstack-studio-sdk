@@ -1,10 +1,10 @@
+import { findEligibleSourceClips, findCurrentSource, ensureClipAlias, FALLBACK_SRT_URL } from "@core/shared/source-clip-finder";
 import type { RichCaptionAsset } from "@schemas";
 
 import { SpacingPanel } from "./composites/SpacingPanel";
 import { StylePanel } from "./composites/StylePanel";
 import { FontColorPicker } from "./font-color-picker";
 import { RichTextToolbar } from "./rich-text-toolbar";
-import { findEligibleSourceClips, findCurrentSource, ensureClipAlias, FALLBACK_SRT_URL } from "@core/shared/source-clip-finder";
 
 /**
  * Toolbar for rich-caption clips. Extends RichTextToolbar to reuse shared
@@ -18,7 +18,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private activeWordPopup: HTMLDivElement | null = null;
 	private sourcePopup: HTMLDivElement | null = null;
 	private sourceListContainer: HTMLDivElement | null = null;
-	private sourceLabel: HTMLSpanElement | null = null;
+	private sourceDot: HTMLSpanElement | null = null;
 
 	// Word Animation refs
 	private wordAnimDirectionSection: HTMLDivElement | null = null;
@@ -117,7 +117,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.activeWordPanels = null;
 		this.sourcePopup = null;
 		this.sourceListContainer = null;
-		this.sourceLabel = null;
+		this.sourceDot = null;
 	}
 
 	// ─── Overrides ─────────────────────────────────────────────────────
@@ -256,10 +256,10 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		}
 		if (this.activeShadowOpacityValue) this.activeShadowOpacityValue.textContent = `${shadowOpacity}%`;
 
-		// ─── Source label ──────────────────────────────────
-		if (this.sourceLabel) {
+		// ─── Source linked indicator ──────────────────────
+		if (this.sourceDot) {
 			const currentSource = findCurrentSource(this.edit, this.selectedTrackIdx, this.selectedClipIdx);
-			this.sourceLabel.textContent = currentSource ? currentSource.displayLabel : "Source";
+			this.sourceDot.classList.toggle("linked", !!currentSource);
 		}
 	}
 
@@ -284,7 +284,8 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			<button data-action="caption-source-toggle"
 				class="ss-toolbar-btn ss-toolbar-btn--text-edit"
 				title="Caption source">
-				<span data-source-label>Source</span>
+				<span data-source-dot class="ss-source-dot"></span>
+				Source
 			</button>
 			<div data-caption-source-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
 				<div class="ss-toolbar-popup-header">Caption Source</div>
@@ -293,7 +294,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		`;
 		this.sourcePopup = sourceDropdown.querySelector("[data-caption-source-popup]");
 		this.sourceListContainer = sourceDropdown.querySelector("[data-source-list]");
-		this.sourceLabel = sourceDropdown.querySelector("[data-source-label]");
+		this.sourceDot = sourceDropdown.querySelector("[data-source-dot]");
 
 		// ── Word Animation Group ───────────────────────────
 		const wordAnimDropdown = document.createElement("div");
