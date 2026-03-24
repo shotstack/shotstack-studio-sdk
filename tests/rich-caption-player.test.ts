@@ -190,6 +190,43 @@ jest.mock("@shotstack/shotstack-canvas", () => {
 		}),
 		createWebPainter: (...args: unknown[]) => mockCreateWebPainter(...args),
 		parseSubtitleToWords: (...args: unknown[]) => mockParseSubtitleToWords(...args),
+	buildCaptionLayoutConfig: (asset: Record<string, unknown>, frameWidth: number, frameHeight: number) => {
+		const rawPadding = asset['padding'] as number | { top?: number; right?: number; bottom?: number; left?: number } | undefined;
+		let padding: { top: number; right: number; bottom: number; left: number };
+		if (typeof rawPadding === "number") {
+			padding = { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding };
+		} else if (rawPadding) {
+			padding = { top: rawPadding.top ?? 0, right: rawPadding.right ?? 0, bottom: rawPadding.bottom ?? 0, left: rawPadding.left ?? 0 };
+		} else {
+			padding = { top: 0, right: 0, bottom: 0, left: 0 };
+		}
+		const font = asset['font'] as { size?: number; family?: string; weight?: number | string } | undefined;
+		const style = asset['style'] as { letterSpacing?: number; lineHeight?: number; textTransform?: string } | undefined;
+		const align = asset['align'] as { vertical?: string; horizontal?: string } | undefined;
+		const fontSize = font?.size ?? 24;
+		const lineHeight = style?.lineHeight ?? 1.2;
+		const availableWidth = frameWidth - padding.left - padding.right;
+		const availableHeight = frameHeight - padding.top - padding.bottom;
+		const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
+		const vertical = align?.vertical;
+		const horizontal = align?.horizontal;
+		return {
+			frameWidth,
+			frameHeight,
+			availableWidth,
+			maxLines,
+			verticalAlign: (() => { if (vertical === "top") return "top"; if (vertical === "middle") return "middle"; return "bottom"; })(),
+			horizontalAlign: (() => { if (horizontal === "left") return "left"; if (horizontal === "right") return "right"; return "center"; })(),
+			padding,
+			fontSize,
+			fontFamily: font?.family ?? "Roboto",
+			fontWeight: String(font?.weight ?? "400"),
+			letterSpacing: style?.letterSpacing ?? 0,
+			lineHeight,
+			textTransform: style?.textTransform ?? "none",
+			pauseThreshold: (asset['pauseThreshold'] as number) ?? 500,
+		};
+	},
 		CanvasRichCaptionAssetSchema: {
 			safeParse: jest.fn().mockImplementation((asset: unknown) => ({
 				success: true,
@@ -1324,7 +1361,7 @@ describe("RichCaptionPlayer", () => {
 			await player.load();
 
 			const layoutConfig = mockLayoutCaption.mock.calls[0]?.[1];
-			expect(layoutConfig.availableWidth).toBe(1920 * 0.9);
+			expect(layoutConfig.availableWidth).toBe(1920);
 			expect(layoutConfig.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
 		});
 

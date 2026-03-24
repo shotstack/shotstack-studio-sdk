@@ -513,7 +513,7 @@ export class RichCaptionPlayer extends Player {
 			if (!ctx) return undefined;
 
 			if (letterSpacing) {
-				(ctx as Record<string, unknown>)["letterSpacing"] = `${letterSpacing}px`;
+				(ctx as unknown as Record<string, unknown>)["letterSpacing"] = `${letterSpacing}px`;
 			}
 
 			return (text: string, font: string): number => {
