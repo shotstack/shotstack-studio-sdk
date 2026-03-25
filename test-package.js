@@ -305,13 +305,6 @@ const checkUmdGlobalMappings = () => {
 		const fullPath = resolve(__dirname, bundlePath);
 		const fd = readFileSync(fullPath, "utf-8").slice(0, 2048);
 
-		const requirePattern = /require\("([^"]+)"\)/g;
-		const requiredModules = [];
-		let match;
-		while ((match = requirePattern.exec(fd)) !== null) {
-			requiredModules.push(match[1]);
-		}
-
 		const iifeMatch = fd.match(/\((\w+)=typeof globalThis[^)]+,(\w+)\(([^)]+)\)\)/);
 		if (!iifeMatch) {
 			errors.push(`${bundlePath}: Could not parse IIFE global branch from UMD wrapper.`);
