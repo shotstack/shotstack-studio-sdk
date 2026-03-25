@@ -217,7 +217,7 @@ export class RichCaptionPlayer extends Player {
 			this.validatedAsset = canvasValidation.data;
 
 			const { width, height } = this.getSize();
-			const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+			const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
 			const letterSpacing = this.validatedAsset?.style?.letterSpacing;
 			const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
 			if (canvasTextMeasurer) {
@@ -251,7 +251,7 @@ export class RichCaptionPlayer extends Player {
 		this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
 
 		const { width, height } = this.getSize();
-		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
 
 		const letterSpacing = this.validatedAsset?.style?.letterSpacing;
 		const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
@@ -502,10 +502,6 @@ export class RichCaptionPlayer extends Player {
 		return payload;
 	}
 
-	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number) {
-		return buildCaptionLayoutConfig(asset, frameWidth, frameHeight);
-	}
-
 	private createCanvasTextMeasurer(letterSpacing?: number): ((text: string, font: string) => number) | undefined {
 		try {
 			const measureCanvas = document.createElement("canvas");
@@ -655,7 +651,7 @@ export class RichCaptionPlayer extends Player {
 
 		if (!this.layoutEngine) return;
 
-		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
 		const letterSpacing = this.validatedAsset?.style?.letterSpacing;
 		const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
 		if (canvasTextMeasurer) {
