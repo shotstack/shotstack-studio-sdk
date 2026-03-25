@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -133,6 +133,13 @@ const CONTRACT = {
 		{ className: "UIController", tokens: ["registerButton(config: ToolbarButtonConfig): this;"] },
 		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }
 	],
+	bundleSizeLimits: {
+		"dist/shotstack-studio.umd.js": 3 * 1024 * 1024,
+		"dist/shotstack-studio.es.js": 4 * 1024 * 1024,
+		"dist/internal.umd.js": 2.5 * 1024 * 1024,
+		"dist/internal.es.js": 3 * 1024 * 1024
+	},
+	umdBundles: ["dist/shotstack-studio.umd.js", "dist/internal.umd.js"]
 };
 
 const BROWSER_GLOBALS = ["self", "window", "document", "navigator", "HTMLCanvasElement"];
@@ -291,6 +298,69 @@ const checkPackageExports = () => {
 	printResult("package.json exports contract", true);
 };
 
+const checkUmdGlobalMappings = () => {
+	const errors = [];
+
+	for (const bundlePath of CONTRACT.umdBundles) {
+		const fullPath = resolve(__dirname, bundlePath);
+		const fd = readFileSync(fullPath, "utf-8").slice(0, 2048);
+
+		const iifeMatch = fd.match(/\((\w+)=typeof globalThis[^)]+,(\w+)\(([^)]+)\)\)/);
+		if (!iifeMatch) {
+			errors.push(`${bundlePath}: Could not parse IIFE global branch from UMD wrapper.`);
+			continue;
+		}
+
+		const iifeArgs = iifeMatch[3];
+
+		const iifeArgCount = iifeArgs.split(",").length;
+
+		const factoryMatch = fd.match(/\}\)\([^,]+,function\(([^)]*)\)/);
+		if (!factoryMatch) {
+			errors.push(`${bundlePath}: Could not parse factory function signature.`);
+			continue;
+		}
+		const factoryParamCount = factoryMatch[1].split(",").length;
+
+		if (iifeArgCount !== factoryParamCount) {
+			errors.push(
+				`${bundlePath}: IIFE branch passes ${iifeArgCount} args but factory expects ${factoryParamCount} params. ` +
+					`Mismatch means some dependencies will be undefined at runtime. ` +
+					`Check that every non-side-effect external has a global mapping in vite.shared.ts.`
+			);
+		}
+	}
+
+	if (errors.length > 0) {
+		failWithDetails("UMD global mappings", errors);
+	}
+	printResult("UMD global mappings", true);
+};
+
+const checkBundleSizes = () => {
+	const errors = [];
+	const details = [];
+
+	for (const [file, maxBytes] of Object.entries(CONTRACT.bundleSizeLimits)) {
+		const fullPath = resolve(__dirname, file);
+		if (!existsSync(fullPath)) continue;
+
+		const actualBytes = statSync(fullPath).size;
+		const actualMB = (actualBytes / (1024 * 1024)).toFixed(2);
+		const maxMB = (maxBytes / (1024 * 1024)).toFixed(1);
+		details.push(`${file}: ${actualMB} MB (limit: ${maxMB} MB)`);
+
+		if (actualBytes > maxBytes) {
+			errors.push(`${file} is ${actualMB} MB, exceeds limit of ${maxMB} MB`);
+		}
+	}
+
+	if (errors.length > 0) {
+		failWithDetails("Bundle size thresholds", errors);
+	}
+	printResult("Bundle size thresholds", true, details);
+};
+
 const runRuntimeExportSmokeTest = async (name, modulePath, expectedExports) => {
 	try {
 		const module = await import(modulePath);
@@ -327,6 +397,8 @@ checkDeclarationSurface();
 checkInternalDeclarationSurface();
 checkNoChunkArtifactsOrImports();
 checkPackageExports();
+checkUmdGlobalMappings();
+checkBundleSizes();
 await runRuntimeExportSmokeTest("Runtime export smoke test", "./dist/shotstack-studio.es.js", CONTRACT.runtimeExports);
 await runRuntimeExportSmokeTest("Internal runtime export smoke test", "./dist/internal.es.js", CONTRACT.internalRuntimeExports);
 
