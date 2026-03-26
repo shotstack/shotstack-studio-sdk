@@ -162,8 +162,8 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!asset) return;
 
 		// ─── Word Animation ────────────────────────────────
-		const wordAnim = asset.wordAnimation;
-		const animStyle = wordAnim?.style ?? "karaoke";
+		const anim = asset.animation;
+		const animStyle = anim?.style ?? "karaoke";
 		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-word-style]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["captionWordStyle"] === animStyle);
 		});
@@ -172,7 +172,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.wordAnimDirectionSection.style.display = animStyle === "slide" ? "" : "none";
 		}
 
-		const direction = wordAnim?.direction ?? "up";
+		const direction = anim?.direction ?? "up";
 		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-word-direction]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["captionWordDirection"] === direction);
 		});
@@ -586,7 +586,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				const style = btn.dataset["captionWordStyle"];
 				if (!style) return;
 				const asset = this.getCaptionAsset();
-				this.updateClipProperty({ wordAnimation: { ...(asset?.wordAnimation ?? {}), style } });
+				this.updateClipProperty({ animation: { ...(asset?.animation ?? {}), style } });
 			});
 		});
 
@@ -596,7 +596,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				const direction = btn.dataset["captionWordDirection"];
 				if (!direction) return;
 				const asset = this.getCaptionAsset();
-				this.updateClipProperty({ wordAnimation: { style: "slide" as const, ...(asset?.wordAnimation ?? {}), direction } });
+				this.updateClipProperty({ animation: { style: "slide" as const, ...(asset?.animation ?? {}), direction } });
 			});
 		});
 	}

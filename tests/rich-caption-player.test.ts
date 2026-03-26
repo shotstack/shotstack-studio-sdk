@@ -483,7 +483,7 @@ describe("RichCaptionPlayer", () => {
 
 		it("renders karaoke animation on every update", async () => {
 			const asset = createAsset({
-				wordAnimation: { style: "karaoke", speed: 1, direction: "up" }
+				animation: { style: "karaoke", speed: 1, direction: "up" }
 			} as Partial<RichCaptionAsset>);
 			const edit = createMockEdit();
 			const player = new RichCaptionPlayer(edit, createClip(asset));

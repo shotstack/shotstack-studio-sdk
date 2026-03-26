@@ -482,7 +482,7 @@ export class RichCaptionPlayer extends Player {
 			border: asset.border,
 			padding: asset.padding,
 			style: asset.style,
-			wordAnimation: asset.wordAnimation,
+			animation: asset.animation,
 			align: asset.align,
 			pauseThreshold: this.resolvedPauseThreshold
 		};
