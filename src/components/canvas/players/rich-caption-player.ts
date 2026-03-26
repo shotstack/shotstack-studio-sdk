@@ -11,11 +11,11 @@ import {
 	generateRichCaptionFrame,
 	createDefaultGeneratorConfig,
 	createWebPainter,
+	buildCaptionLayoutConfig,
 	parseSubtitleToWords,
 	CanvasRichCaptionAssetSchema,
 	type CanvasRichCaptionAsset,
 	type CaptionLayout,
-	type CaptionLayoutConfig,
 	type RichCaptionGeneratorConfig,
 	type WordTiming
 } from "@shotstack/shotstack-canvas";
@@ -217,8 +217,9 @@ export class RichCaptionPlayer extends Player {
 			this.validatedAsset = canvasValidation.data;
 
 			const { width, height } = this.getSize();
-			const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
-			const canvasTextMeasurer = this.createCanvasTextMeasurer();
+			const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
+			const letterSpacing = this.validatedAsset?.style?.letterSpacing;
+			const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
 			if (canvasTextMeasurer) {
 				layoutConfig.measureTextWidth = canvasTextMeasurer;
 			}
@@ -250,9 +251,10 @@ export class RichCaptionPlayer extends Player {
 		this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
 
 		const { width, height } = this.getSize();
-		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
+		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
 
-		const canvasTextMeasurer = this.createCanvasTextMeasurer();
+		const letterSpacing = this.validatedAsset?.style?.letterSpacing;
+		const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
 		if (canvasTextMeasurer) {
 			layoutConfig.measureTextWidth = canvasTextMeasurer;
 		}
@@ -500,50 +502,15 @@ export class RichCaptionPlayer extends Player {
 		return payload;
 	}
 
-	private buildLayoutConfig(asset: CanvasRichCaptionAsset, frameWidth: number, frameHeight: number): CaptionLayoutConfig {
-		const { font, style, align, padding: rawPadding } = asset;
-
-		let padding: { top: number; right: number; bottom: number; left: number };
-		if (typeof rawPadding === "number") {
-			padding = { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding };
-		} else if (rawPadding) {
-			const p = rawPadding as { top?: number; right?: number; bottom?: number; left?: number };
-			padding = { top: p.top ?? 0, right: p.right ?? 0, bottom: p.bottom ?? 0, left: p.left ?? 0 };
-		} else {
-			padding = { top: 0, right: 0, bottom: 0, left: 0 };
-		}
-
-		const totalHorizontalPadding = padding.left + padding.right;
-		const availableWidth = totalHorizontalPadding > 0 ? frameWidth - totalHorizontalPadding : frameWidth * 0.9;
-
-		const fontSize = font?.size ?? 24;
-		const lineHeight = style?.lineHeight ?? 1.2;
-		const availableHeight = frameHeight - padding.top - padding.bottom;
-		const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
-
-		return {
-			frameWidth,
-			frameHeight,
-			availableWidth,
-			maxLines,
-			verticalAlign: align?.vertical ?? "middle",
-			horizontalAlign: align?.horizontal ?? "center",
-			padding,
-			fontSize,
-			fontFamily: font?.family ?? "Roboto",
-			fontWeight: String(font?.weight ?? "400"),
-			letterSpacing: style?.letterSpacing ?? 0,
-			lineHeight,
-			textTransform: (style?.textTransform as CaptionLayoutConfig["textTransform"]) ?? "none",
-			pauseThreshold: this.resolvedPauseThreshold
-		};
-	}
-
-	private createCanvasTextMeasurer(): ((text: string, font: string) => number) | undefined {
+	private createCanvasTextMeasurer(letterSpacing?: number): ((text: string, font: string) => number) | undefined {
 		try {
 			const measureCanvas = document.createElement("canvas");
 			const ctx = measureCanvas.getContext("2d");
 			if (!ctx) return undefined;
+
+			if (letterSpacing) {
+				(ctx as unknown as Record<string, unknown>)["letterSpacing"] = `${letterSpacing}px`;
+			}
 
 			return (text: string, font: string): number => {
 				ctx.font = font;
@@ -684,8 +651,9 @@ export class RichCaptionPlayer extends Player {
 
 		if (!this.layoutEngine) return;
 
-		const layoutConfig = this.buildLayoutConfig(this.validatedAsset, width, height);
-		const canvasTextMeasurer = this.createCanvasTextMeasurer();
+		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
+		const letterSpacing = this.validatedAsset?.style?.letterSpacing;
+		const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
 		if (canvasTextMeasurer) {
 			layoutConfig.measureTextWidth = canvasTextMeasurer;
 		}
