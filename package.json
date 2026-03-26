@@ -97,7 +97,7 @@
 	},
 	"dependencies": {
 		"@shotstack/schemas": "1.9.5",
-		"@shotstack/shotstack-canvas": "2.1.14",
+		"@shotstack/shotstack-canvas": "2.1.15",
 		"howler": "^2.2.4",
 		"mediabunny": "^1.11.2",
 		"opentype.js": "^1.3.4",
