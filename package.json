@@ -48,6 +48,7 @@
 		"url": "https://github.com/shotstack/shotstack-studio-sdk"
 	},
 	"scripts": {
+		"prepare": "husky",
 		"dev": "vite",
 		"dev:shotstack": "vite --open /shotstack.html",
 		"start": "npm run build && vite preview",
@@ -86,8 +87,10 @@
 		"eslint-config-airbnb-typescript": "^18.0.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-import": "^2.31.0",
+		"husky": "^9.1.7",
 		"jest": "^30.2.0",
 		"jest-environment-jsdom": "^30.2.0",
+		"lint-staged": "^16.4.0",
 		"prettier": "^3.6.2",
 		"semantic-release": "^25.0.3",
 		"ts-jest": "^29.4.5",
@@ -96,7 +99,7 @@
 		"vite-plugin-dts": "^4.5.4"
 	},
 	"dependencies": {
-		"@shotstack/schemas": "1.9.3",
+		"@shotstack/schemas": "1.9.10",
 		"@shotstack/shotstack-canvas": "^2.1.12",
 		"howler": "^2.2.4",
 		"mediabunny": "^1.11.2",
@@ -104,6 +107,12 @@
 		"pixi-filters": "^6.0.5",
 		"pixi.js": "^8.15.0",
 		"zod": "^4.0.0"
+	},
+	"lint-staged": {
+		"*.{ts,tsx}": [
+			"eslint --fix",
+			"prettier --write"
+		]
 	},
 	"publishConfig": {
 		"access": "public",
