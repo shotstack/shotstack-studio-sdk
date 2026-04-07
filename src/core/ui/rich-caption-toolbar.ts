@@ -56,11 +56,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	private activeWordTabs: NodeListOf<HTMLButtonElement> | null = null;
 	private activeWordPanels: NodeListOf<HTMLDivElement> | null = null;
 
-	// Active-mode scale control
-	private scaleSlider: HTMLInputElement | null = null;
-	private scaleValue: HTMLSpanElement | null = null;
-	private currentActiveScale = 1;
-
 	protected override createStylePanel(): StylePanel {
 		return new StylePanel({});
 	}
@@ -118,8 +113,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.activeTextDecorationBtns = null;
 		this.activeWordTabs = null;
 		this.activeWordPanels = null;
-		this.scaleSlider = null;
-		this.scaleValue = null;
 		this.sourcePopup = null;
 		this.sourceListContainer = null;
 		this.sourceDot = null;
@@ -162,7 +155,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		if (!asset) return;
 
 		// ─── Word Animation ────────────────────────────────
-		const wordAnim = asset.wordAnimation;
+		const wordAnim = asset.animation;
 		const animStyle = wordAnim?.style ?? "karaoke";
 		this.container?.querySelectorAll<HTMLButtonElement>("[data-caption-word-style]").forEach(btn => {
 			this.setButtonActive(btn, btn.dataset["captionWordStyle"] === animStyle);
@@ -260,14 +253,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			this.activeShadowOpacitySlider.disabled = !hasShadow;
 		}
 		if (this.activeShadowOpacityValue) this.activeShadowOpacityValue.textContent = `${shadowOpacity}%`;
-
-		// ─── Scale ─────────────────────────────────────────
-		const scale = activeData?.scale ?? 1;
-		if (this.scaleSlider) this.scaleSlider.value = String(scale);
-		if (this.scaleValue) this.scaleValue.textContent = `${scale.toFixed(1)}x`;
-
-		const scaleSection = this.container?.querySelector("[data-caption-scale-section]") as HTMLElement | null;
-		if (scaleSection) scaleSection.style.display = animStyle === "pop" ? "" : "none";
 
 		// ─── Source linked indicator ──────────────────────
 		if (this.sourceDot) {
@@ -454,14 +439,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 						</div>
 					</div>
 				</div>
-				<div data-caption-scale-section class="ss-toolbar-popup-section" style="display: none;">
-					<div class="ss-toolbar-popup-divider"></div>
-					<div class="ss-toolbar-popup-label">Scale</div>
-					<div class="ss-toolbar-popup-row">
-						<input type="range" data-caption-active-scale class="ss-toolbar-slider" min="0.5" max="2" step="0.05" value="1" />
-						<span data-caption-active-scale-value class="ss-toolbar-popup-value">1.0x</span>
-					</div>
-				</div>
 			</div>
 		`;
 
@@ -499,10 +476,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.activeShadowOpacitySlider = activeWordDropdown.querySelector("[data-active-shadow-opacity]");
 		this.activeShadowOpacityValue = activeWordDropdown.querySelector("[data-active-shadow-opacity-value]");
 
-		// Scale
-		this.scaleSlider = activeWordDropdown.querySelector("[data-caption-active-scale]");
-		this.scaleValue = activeWordDropdown.querySelector("[data-caption-active-scale-value]");
-
 		fragment.appendChild(activeWordDropdown);
 		fragment.appendChild(sourceDropdown);
 
@@ -511,7 +484,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		this.wireWordAnimControls(wordAnimDropdown);
 		this.wireActiveWordTabs();
 		this.wireActiveTextDecorationControls();
-		this.wireScaleControl();
 		this.wireActiveColorControls();
 		this.wireActiveStrokeControls();
 		this.wireActiveShadowControls();
@@ -586,7 +558,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				const style = btn.dataset["captionWordStyle"];
 				if (!style) return;
 				const asset = this.getCaptionAsset();
-				this.updateClipProperty({ wordAnimation: { ...(asset?.wordAnimation ?? {}), style } });
+				this.updateClipProperty({ animation: { ...(asset?.animation ?? {}), style } });
 			});
 		});
 
@@ -596,7 +568,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				const direction = btn.dataset["captionWordDirection"];
 				if (!direction) return;
 				const asset = this.getCaptionAsset();
-				this.updateClipProperty({ wordAnimation: { style: "slide" as const, ...(asset?.wordAnimation ?? {}), direction } });
+				this.updateClipProperty({ animation: { style: "slide" as const, ...(asset?.animation ?? {}), direction } });
 			});
 		});
 	}
@@ -634,18 +606,6 @@ export class RichCaptionToolbar extends RichTextToolbar {
 				currentFont["textDecoration"] = decoration === "none" ? undefined : decoration;
 				this.updateClipProperty({ active: { ...currentActive, font: currentFont } });
 			});
-		});
-	}
-
-	// ─── Scale Wiring (active mode) ───────────────────────────────────
-
-	private wireScaleControl(): void {
-		this.scaleSlider?.addEventListener("input", e => {
-			const value = parseFloat((e.target as HTMLInputElement).value);
-			this.currentActiveScale = value;
-			if (this.scaleValue) this.scaleValue.textContent = `${value.toFixed(1)}x`;
-			const asset = this.getCaptionAsset();
-			this.updateClipProperty({ active: { ...(asset?.active ?? {}), scale: value } });
 		});
 	}
 

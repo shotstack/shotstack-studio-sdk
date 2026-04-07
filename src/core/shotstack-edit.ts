@@ -63,8 +63,7 @@ function convertEmptyTextClipToSvg(clip: Clip): Clip {
 		...clip,
 		asset: {
 			type: "svg",
-			src: svgMarkup,
-			opacity: 1
+			src: svgMarkup
 		}
 	};
 

@@ -134,7 +134,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 function createCaptionAsset(overrides: Record<string, unknown> = {}) {
 	return {
 		type: "rich-caption",
-		wordAnimation: { style: "karaoke", direction: "up" },
+		animation: { style: "karaoke", direction: "up" },
 		active: {
 			font: { color: "#ffff00", opacity: 1 },
 			stroke: { width: 2, color: "#000000", opacity: 1 }
@@ -281,7 +281,7 @@ describe("RichCaptionToolbar", () => {
 
 	describe("syncState", () => {
 		it("should sync word animation style buttons", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" } });
+			setupCaptionClip(mockEdit, { animation: { style: "pop" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -293,7 +293,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should show direction section only for 'slide' animation", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", direction: "left" } });
+			setupCaptionClip(mockEdit, { animation: { style: "slide", direction: "left" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -302,7 +302,7 @@ describe("RichCaptionToolbar", () => {
 		});
 
 		it("should hide direction section for non-slide animations", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
+			setupCaptionClip(mockEdit, { animation: { style: "karaoke" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -346,26 +346,6 @@ describe("RichCaptionToolbar", () => {
 			expect(opacitySlider?.value).toBe("75");
 		});
 
-		it("should show scale section when word animation is 'pop'", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1.5 } });
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
-			expect(scaleSection?.style.display).toBe("");
-
-			const scaleSlider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
-			expect(scaleSlider?.value).toBe("1.5");
-		});
-
-		it("should hide scale section when word animation is not 'pop'", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "karaoke" } });
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const scaleSection = container.querySelector("[data-caption-scale-section]") as HTMLElement;
-			expect(scaleSection?.style.display).toBe("none");
-		});
 	});
 
 	// ── User Interactions ──────────────────────────────────────────────
@@ -386,14 +366,14 @@ describe("RichCaptionToolbar", () => {
 				0, 0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
-						wordAnimation: expect.objectContaining({ style: "pop" })
+						animation: expect.objectContaining({ style: "pop" })
 					})
 				})
 			);
 		});
 
 		it("should call updateClip when direction button is clicked", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "slide", direction: "up" } });
+			setupCaptionClip(mockEdit, { animation: { style: "slide", direction: "up" } });
 			toolbar.mount(container);
 			toolbar.show(0, 0);
 
@@ -404,7 +384,7 @@ describe("RichCaptionToolbar", () => {
 				0, 0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
-						wordAnimation: expect.objectContaining({ direction: "left" })
+						animation: expect.objectContaining({ direction: "left" })
 					})
 				})
 			);
@@ -473,23 +453,6 @@ describe("RichCaptionToolbar", () => {
 			);
 		});
 
-		it("should call updateClip when scale slider changes", () => {
-			setupCaptionClip(mockEdit, { wordAnimation: { style: "pop" }, active: { scale: 1 } });
-			toolbar.mount(container);
-			toolbar.show(0, 0);
-
-			const slider = container.querySelector("[data-caption-active-scale]") as HTMLInputElement;
-			simulateInput(slider, "1.5");
-
-			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
-				expect.objectContaining({
-					asset: expect.objectContaining({
-						active: expect.objectContaining({ scale: 1.5 })
-					})
-				})
-			);
-		});
 	});
 
 	// ── Source Popup ──────────────────────────────────────────────────
