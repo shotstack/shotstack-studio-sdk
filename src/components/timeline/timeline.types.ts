@@ -82,6 +82,9 @@ export interface InteractionQuery {
 /** Default timeline settings */
 export const DEFAULT_PIXELS_PER_SECOND = 50;
 
+/** Horizontal padding (px) at the start and end of the timeline content area */
+export const TIMELINE_PADDING = 16;
+
 /** Track heights by asset type */
 export const TRACK_HEIGHTS: Record<string, number> = {
 	video: 72,

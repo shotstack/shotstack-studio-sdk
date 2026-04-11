@@ -149,6 +149,8 @@
 .ss-ruler-content {
 	position: relative;
 	height: 100%;
+	margin-left: var(--ss-timeline-padding);
+	margin-right: var(--ss-timeline-padding);
 }
 
 .ss-ruler-marker {
@@ -193,6 +195,8 @@
 .ss-tracks-content {
 	position: relative;
 	min-height: 100%;
+	margin-left: var(--ss-timeline-padding);
+	margin-right: var(--ss-timeline-padding);
 }
 
 /* Track - height set dynamically via inline style */

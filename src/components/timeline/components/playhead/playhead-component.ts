@@ -1,5 +1,7 @@
 import { type Seconds, sec } from "@core/timing/types";
 
+import { timeToViewX, viewXToTime } from "../../interaction/interaction-calculations";
+
 export interface PlayheadOptions {
 	onSeek: (time: Seconds) => void;
 	getScrollX?: () => number;
@@ -55,7 +57,7 @@ export class PlayheadComponent {
 			// Get current scroll from callback or stored value
 			const scrollX = this.options.getScrollX?.() ?? this.currentScrollX;
 			const x = e.clientX - this.containerRect.left + scrollX;
-			const time = sec(Math.max(0, x / this.pixelsPerSecond));
+			const time = viewXToTime(x, this.pixelsPerSecond);
 
 			// Update position immediately for smooth feedback
 			this.setPosition(time);
@@ -82,7 +84,7 @@ export class PlayheadComponent {
 		if (!this.needsUpdate) return;
 		this.needsUpdate = false;
 
-		const x = this.currentTime * this.pixelsPerSecond;
+		const x = timeToViewX(this.currentTime, this.pixelsPerSecond);
 
 		this.element.style.setProperty("--playhead-time", String(this.currentTime));
 		this.element.style.left = `${x}px`;

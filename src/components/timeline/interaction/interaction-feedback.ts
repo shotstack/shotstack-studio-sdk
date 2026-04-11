@@ -1,9 +1,9 @@
-import type { Seconds } from "@core/timing/types";
+import { type Seconds, sec } from "@core/timing/types";
 
 import type { ClipState } from "../timeline.types";
 import { getTrackHeight } from "../timeline.types";
 
-import { formatDragTime, secondsToPixels } from "./interaction-calculations";
+import { formatDragTime, secondsToPixels, timeToViewX } from "./interaction-calculations";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ export function getOrCreateElement(container: HTMLElement, existing: HTMLElement
 
 export function showSnapLine(elements: FeedbackElements, time: Seconds, config: FeedbackConfig): HTMLElement {
 	const snapLine = getOrCreateElement(elements.container, elements.snapLine, "ss-snap-line");
-	const x = secondsToPixels(time, config.pixelsPerSecond) - config.scrollLeft;
+	const x = timeToViewX(time, config.pixelsPerSecond) - config.scrollLeft;
 	snapLine.style.left = `${x}px`;
 	snapLine.style.display = "block";
 	return snapLine;
@@ -111,7 +111,7 @@ export function showLumaConnectionLine(
 	pixelsPerSecond: number
 ): HTMLElement {
 	const line = getOrCreateElement(elements.container, elements.lumaConnectionLine, "ss-luma-connection-line");
-	const clipX = secondsToPixels(targetClip.config.start, pixelsPerSecond);
+	const clipX = timeToViewX(sec(targetClip.config.start), pixelsPerSecond);
 	line.style.left = `${clipX}px`;
 	line.style.top = `${trackYPosition + tracksOffset}px`;
 	line.style.height = `${trackHeight}px`;

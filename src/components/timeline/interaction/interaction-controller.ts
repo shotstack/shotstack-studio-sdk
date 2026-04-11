@@ -25,7 +25,9 @@ import {
 	findNearestSnapPoint,
 	getDragTargetAtY,
 	getTrackYPosition,
-	resolveClipCollision
+	resolveClipCollision,
+	timeToViewX,
+	viewXToTime
 } from "./interaction-calculations";
 import {
 	type FeedbackConfig,
@@ -275,7 +277,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 		// Position ghost at current clip position initially
 		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
-		ghost.style.left = `${clip.config.start * pps}px`;
+		ghost.style.left = `${timeToViewX(sec(clip.config.start), pps)}px`;
 		ghost.style.top = `${this.getTrackYPositionCached(clipRef.trackIndex) + 4 + tracksOffset}px`;
 
 		this.buildSnapPointsForClip(clipRef);
@@ -297,7 +299,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const mouseX = e.clientX - rect.left + scrollX;
 		const mouseY = e.clientY - rect.top + this.tracksContainer.scrollTop;
 		const clipX = mouseX - state.dragOffsetX;
-		let clipTime: Seconds = sec(Math.max(0, clipX / pps));
+		let clipTime: Seconds = viewXToTime(clipX, pps);
 
 		// 4. Determine drag target and apply snapping
 		const dragTarget = this.getDragTargetAtYPosition(mouseY);
@@ -418,14 +420,14 @@ export class InteractionController implements TimelineInteractionRegistration {
 			const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex) + 4;
 			const targetHeight = getTrackHeight(targetTrack.primaryAssetType) - 8;
 
-			ghost.style.left = `${clipTime * feedbackConfig.pixelsPerSecond}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
+			ghost.style.left = `${timeToViewX(clipTime, feedbackConfig.pixelsPerSecond)}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
 			ghost.style.top = `${targetTrackY + feedbackConfig.tracksOffset}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
 			ghost.style.height = `${targetHeight}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
 
 			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(
 				this.feedbackElements,
 				clipTime,
-				clipTime * feedbackConfig.pixelsPerSecond,
+				timeToViewX(clipTime, feedbackConfig.pixelsPerSecond),
 				targetTrackY + feedbackConfig.tracksOffset
 			);
 			hideDropZone(this.feedbackElements.dropZone);
@@ -446,7 +448,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const feedbackConfig = { pixelsPerSecond: pps, scrollLeft: scrollX, tracksOffset };
 
 		const x = e.clientX - rect.left + scrollX;
-		let time: Seconds = sec(Math.max(0, x / pps));
+		let time: Seconds = viewXToTime(x, pps);
 
 		// Apply snapping
 		const snappedTime = this.applySnap(time);
@@ -702,7 +704,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 
 		const x = e.clientX - rect.left + scrollX;
-		let time: Seconds = sec(Math.max(0, x / pps));
+		let time: Seconds = viewXToTime(x, pps);
 
 		// Apply snapping
 		const snappedTime = this.applySnap(time);

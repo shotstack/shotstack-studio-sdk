@@ -1,5 +1,7 @@
 import { type Seconds, sec } from "@core/timing/types";
 
+import { viewXToTime } from "../../interaction/interaction-calculations";
+
 interface RulerOptions {
 	onSeek?: (time: Seconds) => void;
 	onWheel?: (e: WheelEvent) => void;
@@ -41,9 +43,9 @@ export class RulerComponent {
 
 		const rect = this.element.getBoundingClientRect();
 		const x = e.clientX - rect.left + this.scrollX;
-		const time = Math.max(0, x / this.currentPixelsPerSecond);
+		const time = viewXToTime(x, this.currentPixelsPerSecond);
 
-		this.options.onSeek(sec(time));
+		this.options.onSeek(time);
 	}
 
 	private buildElement(): HTMLElement {

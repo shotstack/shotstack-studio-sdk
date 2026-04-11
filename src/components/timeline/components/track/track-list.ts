@@ -1,5 +1,5 @@
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
-import { getTrackHeight } from "../../timeline.types";
+import { TIMELINE_PADDING, getTrackHeight } from "../../timeline.types";
 
 import { TrackComponent } from "./track-component";
 
@@ -151,7 +151,7 @@ export class TrackListComponent {
 		}
 
 		const scrollX = this.element.scrollLeft;
-		const relativeX = x + scrollX;
+		const relativeX = x + scrollX - TIMELINE_PADDING;
 
 		return this.trackComponents[trackIndex].getClipAtPosition(relativeX, pixelsPerSecond);
 	}
