@@ -1,7 +1,7 @@
 import { type Seconds, sec } from "@core/timing/types";
 
 import type { ClipState, TrackState } from "../timeline.types";
-import { TIMELINE_PADDING, getTrackHeight } from "../timeline.types";
+import { TIMELINE_PADDING } from "../timeline.types";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -96,12 +96,13 @@ export function formatDragTime(seconds: Seconds): string {
 
 // ─── Track Y Position Calculations ─────────────────────────────────────────
 
-export function buildTrackYPositions(tracks: readonly TrackState[]): number[] {
+export function buildTrackYPositions(tracks: readonly TrackState[], heights: number[]): number[] {
+	const count = Math.min(tracks.length, heights.length);
 	const positions: number[] = [];
 	let y = 0;
-	for (const track of tracks) {
+	for (let i = 0; i < count; i += 1) {
 		positions.push(y);
-		y += getTrackHeight(track.primaryAssetType);
+		y += heights[i];
 	}
 	positions.push(y); // sentinel: total height for "insert after last track"
 	return positions;
@@ -115,15 +116,16 @@ export function getTrackYPosition(trackIndex: number, trackYPositions: readonly 
 
 const INSERT_ZONE_SIZE = 12; // pixels at track edges for insert detection
 
-export function getDragTargetAtY(y: number, tracks: readonly TrackState[]): DragTarget {
+export function getDragTargetAtY(y: number, tracks: readonly TrackState[], heights: number[]): DragTarget {
 	// Top edge - insert above first track
 	if (y < INSERT_ZONE_SIZE / 2) {
 		return { type: "insert", insertionIndex: 0 };
 	}
 
+	const count = Math.min(tracks.length, heights.length);
 	let currentY = 0;
-	for (let i = 0; i < tracks.length; i += 1) {
-		const height = getTrackHeight(tracks[i].primaryAssetType);
+	for (let i = 0; i < count; i += 1) {
+		const height = heights[i];
 
 		// Top edge insert zone (between this track and previous)
 		if (i > 0 && y >= currentY - INSERT_ZONE_SIZE / 2 && y < currentY + INSERT_ZONE_SIZE / 2) {

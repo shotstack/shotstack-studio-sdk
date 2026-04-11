@@ -1,5 +1,5 @@
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
-import { getTrackHeight } from "../../timeline.types";
+import { MAX_TRACK_HEIGHT, MIN_TRACK_HEIGHT, getTrackHeight } from "../../timeline.types";
 import { ClipComponent } from "../clip/clip-component";
 
 export interface TrackComponentOptions {
@@ -20,6 +20,8 @@ export interface TrackComponentOptions {
 	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Pre-computed AI asset numbers (map of clip ID to number) */
 	aiAssetNumbers: Map<string, number>;
+	/** Callback when a track's height changes via resize (no args — parent re-reads heights) */
+	onHeightChange?: () => void;
 }
 
 /** Renders a single track with its clips */
@@ -27,12 +29,18 @@ export class TrackComponent {
 	public readonly element: HTMLElement;
 	private readonly clipComponents = new Map<string, ClipComponent>();
 	private readonly options: TrackComponentOptions;
+	private readonly resizeHandle: HTMLElement;
 	private trackIndex: number;
 
 	// Current state for draw
 	private currentTrack: TrackState | null = null;
 	private currentPixelsPerSecond = 50;
+	private currentHeight = 0;
 	private needsUpdate = true;
+
+	// Per-track resize state (component-local)
+	private customHeight: number | null = null;
+	private isResizing = false;
 
 	constructor(trackIndex: number, options: TrackComponentOptions) {
 		this.element = document.createElement("div");
@@ -40,6 +48,72 @@ export class TrackComponent {
 		this.trackIndex = trackIndex;
 		this.options = options;
 		this.element.dataset["trackIndex"] = String(trackIndex);
+
+		this.resizeHandle = document.createElement("div");
+		this.resizeHandle.className = "ss-track-resize-handle";
+		this.element.appendChild(this.resizeHandle);
+		this.setupResizeDrag();
+	}
+
+	private setupResizeDrag(): void {
+		let startY = 0;
+		let startHeight = 0;
+
+		const onPointerDown = (e: PointerEvent): void => {
+			if (e.button !== 0) return;
+			e.preventDefault();
+			e.stopPropagation(); // Prevent InteractionController from clearing clip selection
+
+			startY = e.clientY;
+			startHeight = this.element.offsetHeight;
+			this.isResizing = true;
+
+			this.element.classList.add("ss-track--resizing");
+			this.resizeHandle.setPointerCapture(e.pointerId);
+		};
+
+		const onPointerMove = (e: PointerEvent): void => {
+			if (!this.isResizing) return;
+
+			const delta = e.clientY - startY;
+			const newHeight = Math.max(MIN_TRACK_HEIGHT, Math.min(MAX_TRACK_HEIGHT, startHeight + delta));
+
+			this.customHeight = newHeight;
+			this.currentHeight = newHeight;
+			this.element.style.height = `${newHeight}px`;
+			this.options.onHeightChange?.();
+		};
+
+		const onPointerUp = (e: PointerEvent): void => {
+			if (!this.isResizing) return;
+
+			this.isResizing = false;
+			this.element.classList.remove("ss-track--resizing");
+			this.resizeHandle.releasePointerCapture(e.pointerId);
+			this.options.onHeightChange?.();
+		};
+
+		const onDblClick = (e: MouseEvent): void => {
+			e.preventDefault();
+			e.stopPropagation();
+
+			this.customHeight = null;
+			const height = getTrackHeight(this.currentTrack?.primaryAssetType ?? "default");
+			this.currentHeight = height;
+			this.element.style.height = `${height}px`;
+			this.options.onHeightChange?.();
+		};
+
+		this.resizeHandle.addEventListener("pointerdown", onPointerDown);
+		this.resizeHandle.addEventListener("pointermove", onPointerMove);
+		this.resizeHandle.addEventListener("pointerup", onPointerUp);
+		this.resizeHandle.addEventListener("pointercancel", onPointerUp);
+		this.resizeHandle.addEventListener("dblclick", onDblClick);
+	}
+
+	/** Get the effective height (custom override or default for asset type) */
+	public getEffectiveHeight(): number {
+		return this.customHeight ?? getTrackHeight(this.currentTrack?.primaryAssetType ?? "default");
 	}
 
 	public draw(): void {
@@ -148,16 +222,30 @@ export class TrackComponent {
 			return; // Nothing changed, skip update
 		}
 
-		// Only update height if asset type changed (not every frame)
 		const prevAssetType = this.currentTrack?.primaryAssetType;
+
+		// Reset custom height when component is reassigned to a different track (pool reuse)
+		if (track.index !== this.currentTrack?.index) {
+			this.customHeight = null;
+		}
 
 		this.currentTrack = track;
 		this.currentPixelsPerSecond = pixelsPerSecond;
 
-		// Set height only when asset type changes
+		// Skip height update during resize (prevents render loop fighting drag),
+		// unless the asset type genuinely changed
+		if (!this.isResizing || track.primaryAssetType !== prevAssetType) {
+			if (this.isResizing && track.primaryAssetType !== prevAssetType) {
+				this.customHeight = null;
+			}
+			const height = this.customHeight ?? getTrackHeight(track.primaryAssetType);
+			if (height !== this.currentHeight) {
+				this.element.style.height = `${height}px`;
+				this.currentHeight = height;
+			}
+		}
+
 		if (track.primaryAssetType !== prevAssetType) {
-			const height = getTrackHeight(track.primaryAssetType);
-			this.element.style.height = `${height}px`;
 			this.element.dataset["assetType"] = track.primaryAssetType;
 		}
 
