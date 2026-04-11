@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] - 2026-04-11
+
+### Added
+
+- Per-track drag-to-resize with component-local height state (#101)
+
+## [2.5.0] - 2026-04-11
+
+### Added
+
+- Horizontal padding at the start and end of the timeline for visual clearance from UI boundaries (#100)
+
+## [2.4.5] - 2026-04-07
+
+### Fixed
+
+- Upgrade `@shotstack/schemas` to 1.9.10
+
+## [2.4.4] - 2026-03-26
+
+### Fixed
+
+- Font variation settings applied correctly for bold weight (#92)
+
+## [2.4.3] - 2026-03-26
+
+### Fixed
+
+- IIFE build crash resolved
+
+## [2.4.2] - 2026-03-16
+
+### Added
+
+- Husky pre-commit hooks and updated AOS tooling (#97)
+
 ## [2.4.1] - 2026-03-16
 
 ### Fixed
