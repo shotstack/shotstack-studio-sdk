@@ -1,7 +1,7 @@
 import { type Seconds, sec } from "@core/timing/types";
 
 import type { ClipState, TrackState } from "../timeline.types";
-import { getTrackHeight } from "../timeline.types";
+import { TIMELINE_PADDING, getTrackHeight } from "../timeline.types";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -73,6 +73,16 @@ export function pixelsToSeconds(px: number, pixelsPerSecond: number): Seconds {
 }
 export function secondsToPixels(seconds: Seconds, pixelsPerSecond: number): number {
 	return seconds * pixelsPerSecond;
+}
+
+/** Convert a time value to a visual x-position (includes timeline padding offset) */
+export function timeToViewX(seconds: Seconds, pixelsPerSecond: number): number {
+	return seconds * pixelsPerSecond + TIMELINE_PADDING;
+}
+
+/** Convert a visual x-position back to a time value (removes timeline padding offset) */
+export function viewXToTime(viewX: number, pixelsPerSecond: number): Seconds {
+	return sec(Math.max(0, (viewX - TIMELINE_PADDING) / pixelsPerSecond));
 }
 
 // ─── Time Formatting ───────────────────────────────────────────────────────

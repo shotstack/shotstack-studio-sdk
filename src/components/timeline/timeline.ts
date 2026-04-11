@@ -5,7 +5,7 @@ import { computeAiAssetNumber, type ResolvedClipWithId } from "@core/shared/ai-a
 import { inferAssetTypeFromUrl } from "@core/shared/asset-utils";
 import { type Seconds, sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
-import { DEFAULT_PIXELS_PER_SECOND, type ClipRenderer, type ClipInfo } from "@timeline/timeline.types";
+import { DEFAULT_PIXELS_PER_SECOND, TIMELINE_PADDING, type ClipRenderer, type ClipInfo } from "@timeline/timeline.types";
 
 import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
@@ -130,6 +130,9 @@ export class Timeline {
 
 		// Inject styles
 		injectShotstackStyles();
+
+		// Set timeline padding CSS variable from single source of truth
+		this.element.style.setProperty("--ss-timeline-padding", `${TIMELINE_PADDING}px`);
 
 		// Mount to container first so we can measure
 		this.container.appendChild(this.element);
@@ -341,7 +344,7 @@ export class Timeline {
 			this.resizeHandle = createTimelineResizeHandle({
 				container: this.container,
 				onResize: () => this.resize(),
-				onResizeEnd: (height) => {
+				onResizeEnd: height => {
 					this.edit.getInternalEvents().emit(EditEvent.TimelineResized, { height });
 				}
 			});
