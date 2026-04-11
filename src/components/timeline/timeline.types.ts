@@ -100,6 +100,10 @@ export const TRACK_HEIGHTS: Record<string, number> = {
 	default: 48
 };
 
+/** Track height constraints for per-track resize */
+export const MIN_TRACK_HEIGHT = 20;
+export const MAX_TRACK_HEIGHT = 200;
+
 /** Get track height for an asset type */
 export function getTrackHeight(assetType: string): number {
 	return TRACK_HEIGHTS[assetType] ?? TRACK_HEIGHTS["default"];

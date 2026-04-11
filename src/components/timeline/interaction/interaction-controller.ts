@@ -10,6 +10,7 @@ import { type Seconds, sec } from "@core/timing/types";
 import type { ClipState } from "@timeline/timeline.types";
 import { getTrackHeight } from "@timeline/timeline.types";
 
+import type { TrackListComponent } from "../components/track/track-list";
 import { TimelineStateManager } from "../timeline-state";
 
 import {
@@ -103,8 +104,6 @@ export class InteractionController implements TimelineInteractionRegistration {
 	// DOM feedback elements (stateless management)
 	private feedbackElements: FeedbackElements;
 
-	private trackYCache: number[] | null = null;
-
 	// Bound handlers for cleanup
 	private readonly handlePointerDown: (e: PointerEvent) => void;
 	private readonly handlePointerMove: (e: PointerEvent) => void;
@@ -113,6 +112,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 	constructor(
 		private readonly edit: Edit,
 		private readonly stateManager: TimelineStateManager,
+		private readonly trackList: TrackListComponent,
 		private readonly tracksContainer: HTMLElement,
 		feedbackLayer: HTMLElement,
 		config?: Partial<TimelineInteractionConfig>
@@ -187,8 +187,6 @@ export class InteractionController implements TimelineInteractionRegistration {
 		) as HTMLElement | null;
 		if (!clipElement) return;
 
-		this.trackYCache = null;
-
 		this.state = createResizingState(clipRef, clipElement, edge, clip.config.start, clip.config.length);
 
 		this.buildSnapPointsForClip(clipRef);
@@ -222,8 +220,6 @@ export class InteractionController implements TimelineInteractionRegistration {
 	}
 
 	private transitionToDragging(e: PointerEvent, state: PendingState): void {
-		this.trackYCache = null;
-
 		const { clipRef } = state;
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) {
@@ -269,8 +265,8 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const pps = this.stateManager.getViewport().pixelsPerSecond;
 		const track = this.stateManager.getTracks()[clipRef.trackIndex];
 		const clipAssetType = clip.config.asset?.type || "unknown";
-		const trackAssetType = track?.primaryAssetType ?? clipAssetType;
-		const ghost = createDragGhost(clip.config.length, clipAssetType, trackAssetType, pps);
+		const sourceTrackHeight = this.getHeights()[clipRef.trackIndex] ?? getTrackHeight(track?.primaryAssetType ?? clipAssetType);
+		const ghost = createDragGhost(clip.config.length, clipAssetType, sourceTrackHeight, pps);
 		this.feedbackElements.container.appendChild(ghost);
 
 		this.state = createDraggingState(state, clipElement, ghost, dragOffsetX, dragOffsetY, originalStyles, clip.config.length, e.altKey);
@@ -278,7 +274,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		// Position ghost at current clip position initially
 		const tracksOffset = getTracksOffsetInFeedbackLayer(this.feedbackElements.container, this.tracksContainer);
 		ghost.style.left = `${timeToViewX(sec(clip.config.start), pps)}px`;
-		ghost.style.top = `${this.getTrackYPositionCached(clipRef.trackIndex) + 4 + tracksOffset}px`;
+		ghost.style.top = `${this.getTrackYPosition(clipRef.trackIndex) + 4 + tracksOffset}px`;
 
 		this.buildSnapPointsForClip(clipRef);
 	}
@@ -386,8 +382,9 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const targetTrack = tracks[state.dragTarget.trackIndex];
 		if (!targetTrack) return sec(targetClip.config.start);
 
-		const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex);
-		const targetTrackHeight = getTrackHeight(targetTrack.primaryAssetType);
+		const targetTrackY = this.getTrackYPosition(state.dragTarget.trackIndex);
+		const heights = this.getHeights();
+		const targetTrackHeight = heights[state.dragTarget.trackIndex] ?? getTrackHeight(targetTrack.primaryAssetType);
 
 		const lumaResult = updateLumaTargetHighlight(
 			this.tracksContainer,
@@ -417,8 +414,9 @@ export class InteractionController implements TimelineInteractionRegistration {
 			const targetTrack = tracks[state.dragTarget.trackIndex];
 			if (!targetTrack) return;
 
-			const targetTrackY = this.getTrackYPositionCached(state.dragTarget.trackIndex) + 4;
-			const targetHeight = getTrackHeight(targetTrack.primaryAssetType) - 8;
+			const targetTrackY = this.getTrackYPosition(state.dragTarget.trackIndex) + 4;
+			const ghostHeights = this.getHeights();
+			const targetHeight = (ghostHeights[state.dragTarget.trackIndex] ?? getTrackHeight(targetTrack.primaryAssetType)) - 8;
 
 			ghost.style.left = `${timeToViewX(clipTime, feedbackConfig.pixelsPerSecond)}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
 			ghost.style.top = `${targetTrackY + feedbackConfig.tracksOffset}px`; // eslint-disable-line no-param-reassign -- DOM manipulation
@@ -433,7 +431,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 			hideDropZone(this.feedbackElements.dropZone);
 		} else {
 			ghost.style.display = "none"; // eslint-disable-line no-param-reassign -- DOM manipulation
-			const dropZoneY = this.getTrackYPositionCached(state.dragTarget.insertionIndex);
+			const dropZoneY = this.getTrackYPosition(state.dragTarget.insertionIndex);
 			this.feedbackElements.dropZone = showDropZone(this.feedbackElements, dropZoneY, feedbackConfig.tracksOffset);
 		}
 	}
@@ -831,23 +829,21 @@ export class InteractionController implements TimelineInteractionRegistration {
 		});
 	}
 
+	/** Get effective track heights from components (pull-based, always current) */
+	private getHeights(): number[] {
+		return this.trackList.getEffectiveHeights();
+	}
+
 	/** Get drag target at Y position (delegates to pure function) */
 	private getDragTargetAtYPosition(y: number): DragTarget {
 		const tracks = this.stateManager.getTracks();
-		return getDragTargetAtY(y, tracks);
+		return getDragTargetAtY(y, tracks, this.getHeights());
 	}
 
-	private ensureTrackYCache(): number[] {
-		if (!this.trackYCache) {
-			const tracks = this.stateManager.getTracks();
-			this.trackYCache = buildTrackYPositions(tracks);
-		}
-		return this.trackYCache;
-	}
-
-	private getTrackYPositionCached(trackIndex: number): number {
-		const cache = this.ensureTrackYCache();
-		return getTrackYPosition(trackIndex, cache);
+	private getTrackYPosition(trackIndex: number): number {
+		const tracks = this.stateManager.getTracks();
+		const positions = buildTrackYPositions(tracks, this.getHeights());
+		return getTrackYPosition(trackIndex, positions);
 	}
 
 	// ========== Visual State Queries ==========

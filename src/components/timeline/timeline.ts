@@ -419,7 +419,8 @@ export class Timeline {
 			isLumaVisibleForEditing: (contentTrackIndex, contentClipIndex) =>
 				this.stateManager.isLumaVisibleForEditing(contentTrackIndex, contentClipIndex),
 			findContentForLuma: (lumaTrack, lumaClip) => this.stateManager.findContentForLuma(lumaTrack, lumaClip),
-			aiAssetNumbers: this.computeAiAssetNumbers()
+			aiAssetNumbers: this.computeAiAssetNumbers(),
+			onHeightChange: () => this.requestRender()
 		});
 
 		// Set up scroll sync (also sync playhead)
@@ -455,7 +456,7 @@ export class Timeline {
 		this.rulerTracksWrapper.appendChild(this.feedbackLayer);
 
 		// Initialize interaction controller
-		this.interactionController = new InteractionController(this.edit, this.stateManager, this.trackList.element, this.feedbackLayer, {
+		this.interactionController = new InteractionController(this.edit, this.stateManager, this.trackList, this.trackList.element, this.feedbackLayer, {
 			snapThreshold: DEFAULT_SNAP_THRESHOLD,
 			onRequestRender: () => this.requestRender()
 		});

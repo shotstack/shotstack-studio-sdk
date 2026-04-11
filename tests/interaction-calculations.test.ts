@@ -28,6 +28,12 @@ import {
 	determineDropAction
 } from "../src/components/timeline/interaction/interaction-calculations";
 import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
+import { getTrackHeight } from "../src/components/timeline/timeline.types";
+
+/** Helper to convert tracks to their default heights array (for use in tests) */
+function heightsOf(tracks: readonly TrackState[]): number[] {
+	return tracks.map(t => getTrackHeight(t.primaryAssetType));
+}
 
 // ─── Test Fixtures ─────────────────────────────────────────────────────────
 
@@ -120,12 +126,12 @@ describe("formatDragTime", () => {
 describe("Track Y Position Calculations", () => {
 	describe("buildTrackYPositions", () => {
 		it("returns sentinel-only array for no tracks", () => {
-			expect(buildTrackYPositions([])).toEqual([0]);
+			expect(buildTrackYPositions([], [])).toEqual([0]);
 		});
 
 		it("calculates positions for image tracks (72px height)", () => {
 			const tracks: TrackState[] = [createMockTrack([createMockClip(0, 1)], "image"), createMockTrack([createMockClip(0, 1, "image", 1)], "image")];
-			expect(buildTrackYPositions(tracks)).toEqual([0, 72, 144]);
+			expect(buildTrackYPositions(tracks, heightsOf(tracks))).toEqual([0, 72, 144]);
 		});
 
 		it("calculates positions for audio tracks (48px height)", () => {
@@ -133,7 +139,7 @@ describe("Track Y Position Calculations", () => {
 				createMockTrack([createMockClip(0, 1, "audio")], "audio"),
 				createMockTrack([createMockClip(0, 1, "audio", 1)], "audio")
 			];
-			expect(buildTrackYPositions(tracks)).toEqual([0, 48, 96]);
+			expect(buildTrackYPositions(tracks, heightsOf(tracks))).toEqual([0, 48, 96]);
 		});
 
 		it("handles mixed track types", () => {
@@ -141,7 +147,7 @@ describe("Track Y Position Calculations", () => {
 				createMockTrack([createMockClip(0, 1)], "image"), // 72px
 				createMockTrack([createMockClip(0, 1, "audio", 1)], "audio") // 48px
 			];
-			const positions = buildTrackYPositions(tracks);
+			const positions = buildTrackYPositions(tracks, heightsOf(tracks));
 			expect(positions).toEqual([0, 72, 120]); // Sentinel at 72 + 48 = 120
 		});
 	});
@@ -174,29 +180,30 @@ describe("getDragTargetAtY", () => {
 		createMockTrack([createMockClip(0, 1)], "image"), // 0-72
 		createMockTrack([createMockClip(0, 1, "image", 1)], "image") // 72-144
 	];
+	const heights = heightsOf(tracks);
 
 	it("returns insert at 0 for top edge", () => {
-		const result = getDragTargetAtY(3, tracks);
+		const result = getDragTargetAtY(3, tracks, heights);
 		expect(result).toEqual({ type: "insert", insertionIndex: 0 });
 	});
 
 	it("returns track 0 for middle of first track", () => {
-		const result = getDragTargetAtY(36, tracks);
+		const result = getDragTargetAtY(36, tracks, heights);
 		expect(result).toEqual({ type: "track", trackIndex: 0 });
 	});
 
 	it("returns insert between tracks at boundary", () => {
-		const result = getDragTargetAtY(72, tracks);
+		const result = getDragTargetAtY(72, tracks, heights);
 		expect(result).toEqual({ type: "insert", insertionIndex: 1 });
 	});
 
 	it("returns track 1 for middle of second track", () => {
-		const result = getDragTargetAtY(108, tracks);
+		const result = getDragTargetAtY(108, tracks, heights);
 		expect(result).toEqual({ type: "track", trackIndex: 1 });
 	});
 
 	it("returns insert after last track at bottom", () => {
-		const result = getDragTargetAtY(150, tracks);
+		const result = getDragTargetAtY(150, tracks, heights);
 		expect(result).toEqual({ type: "insert", insertionIndex: 2 });
 	});
 });

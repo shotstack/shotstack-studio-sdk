@@ -203,8 +203,27 @@
 .ss-track {
 	position: relative;
 	border-bottom: 1px solid #f3f4f6;
-	transition: background 0.15s ease;
+	transition: background 0.15s ease, height 0.2s ease;
 	background: #ffffff;
+}
+
+.ss-track.ss-track--resizing {
+	transition: none;
+}
+
+.ss-track-resize-handle {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 6px;
+	cursor: ns-resize;
+	z-index: 2;
+}
+
+.ss-track-resize-handle:hover,
+.ss-track-resize-handle:active {
+	background: rgba(59, 130, 246, 0.4);
 }
 
 /* Track backgrounds by asset type - subtle tints on white */

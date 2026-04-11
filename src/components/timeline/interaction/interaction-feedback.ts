@@ -1,7 +1,6 @@
 import { type Seconds, sec } from "@core/timing/types";
 
 import type { ClipState } from "../timeline.types";
-import { getTrackHeight } from "../timeline.types";
 
 import { formatDragTime, secondsToPixels, timeToViewX } from "./interaction-calculations";
 
@@ -189,13 +188,12 @@ export function clearLumaFeedback(elements: FeedbackElements, draggingClipElemen
 
 // ─── Ghost Creation ────────────────────────────────────────────────────────
 
-export function createDragGhost(clipLength: Seconds, clipAssetType: string, trackAssetType: string, pixelsPerSecond: number): HTMLElement {
+export function createDragGhost(clipLength: Seconds, clipAssetType: string, trackHeight: number, pixelsPerSecond: number): HTMLElement {
 	const ghost = document.createElement("div");
 	ghost.className = "ss-drag-ghost ss-clip";
 	ghost.dataset["assetType"] = clipAssetType;
 
 	const width = secondsToPixels(clipLength, pixelsPerSecond);
-	const trackHeight = getTrackHeight(trackAssetType);
 
 	ghost.style.width = `${width}px`;
 	ghost.style.height = `${trackHeight - 8}px`;

@@ -1,5 +1,5 @@
 import type { TrackState, ClipState, ClipRenderer } from "../../timeline.types";
-import { TIMELINE_PADDING, getTrackHeight } from "../../timeline.types";
+import { TIMELINE_PADDING } from "../../timeline.types";
 
 import { TrackComponent } from "./track-component";
 
@@ -21,6 +21,8 @@ export interface TrackListOptions {
 	findContentForLuma?: (lumaTrack: number, lumaClip: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Pre-computed AI asset numbers (map of clip ID to number) */
 	aiAssetNumbers: Map<string, number>;
+	/** Callback when any track's height changes via resize */
+	onHeightChange?: () => void;
 }
 
 /** Container for all track components with virtualization support */
@@ -86,7 +88,8 @@ export class TrackListComponent {
 				onMaskClick: this.options.onMaskClick,
 				isLumaVisibleForEditing: this.options.isLumaVisibleForEditing,
 				findContentForLuma: this.options.findContentForLuma,
-				aiAssetNumbers: this.options.aiAssetNumbers
+				aiAssetNumbers: this.options.aiAssetNumbers,
+				onHeightChange: this.options.onHeightChange
 			});
 			this.trackComponents.push(trackComponent);
 			this.contentElement.appendChild(trackComponent.element);
@@ -124,6 +127,16 @@ export class TrackListComponent {
 		this.needsUpdate = true;
 	}
 
+	/** Get effective heights for all active tracks (component-local custom heights resolved) */
+	public getEffectiveHeights(): number[] {
+		const count = this.currentTracks.length;
+		const heights: number[] = [];
+		for (let i = 0; i < count; i += 1) {
+			heights.push(this.trackComponents[i].getEffectiveHeight());
+		}
+		return heights;
+	}
+
 	public getTrackComponent(trackIndex: number): TrackComponent | undefined {
 		return this.trackComponents[trackIndex];
 	}
@@ -136,8 +149,7 @@ export class TrackListComponent {
 		let currentY = 0;
 		let trackIndex = -1;
 		for (let i = 0; i < this.trackComponents.length; i += 1) {
-			const track = this.trackComponents[i].getCurrentTrack();
-			const height = getTrackHeight(track?.primaryAssetType ?? "default");
+			const height = this.trackComponents[i].getEffectiveHeight();
 
 			if (relativeY >= currentY && relativeY < currentY + height) {
 				trackIndex = i;
@@ -163,8 +175,7 @@ export class TrackListComponent {
 
 		let currentY = 0;
 		for (let i = 0; i < this.trackComponents.length; i += 1) {
-			const track = this.trackComponents[i].getCurrentTrack();
-			const height = getTrackHeight(track?.primaryAssetType ?? "default");
+			const height = this.trackComponents[i].getEffectiveHeight();
 
 			if (relativeY >= currentY && relativeY < currentY + height) {
 				return i;
@@ -178,8 +189,7 @@ export class TrackListComponent {
 	public getTrackYPosition(trackIndex: number): number {
 		let y = 0;
 		for (let i = 0; i < trackIndex && i < this.trackComponents.length; i += 1) {
-			const track = this.trackComponents[i].getCurrentTrack();
-			y += getTrackHeight(track?.primaryAssetType ?? "default");
+			y += this.trackComponents[i].getEffectiveHeight();
 		}
 		return y;
 	}
