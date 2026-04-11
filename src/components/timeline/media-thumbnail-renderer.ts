@@ -194,15 +194,15 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		});
 	}
 
-	private applyThumbnail(el: HTMLElement, url: string, thumbnailWidth: number): void {
+	private applyThumbnail(el: HTMLElement, url: string, _thumbnailWidth: number): void {
 		el.classList.add("ss-clip--thumbnails");
 		this.setLoadingState(el, false);
 
-		// Single thumbnail with CSS repeat-x tiles across clip width
+		// Thumbnail tiles across clip width, scaled to fill clip height.
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
 		el.style.backgroundImage = `url("${url}")`;
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
-		el.style.backgroundSize = `${thumbnailWidth}px 100%`;
+		el.style.backgroundSize = "auto 100%";
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
 		el.style.backgroundRepeat = "repeat-x";
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM styling
