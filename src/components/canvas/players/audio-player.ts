@@ -167,7 +167,7 @@ export class AudioPlayer extends Player {
 			return volume ?? 1;
 		}
 
-		const clipLength = this.getLength() / 1000;
+		const clipLength = this.getLength();
 		const fade = Math.min(2, clipLength / 2);
 
 		if (effect === "fadeIn") {
