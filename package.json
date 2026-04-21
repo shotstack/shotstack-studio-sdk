@@ -99,7 +99,7 @@
 		"vite-plugin-dts": "^4.5.4"
 	},
 	"dependencies": {
-		"@shotstack/schemas": "1.9.10",
+		"@shotstack/schemas": "1.10.9",
 		"@shotstack/shotstack-canvas": "^2.1.12",
 		"howler": "^2.2.4",
 		"mediabunny": "^1.11.2",
