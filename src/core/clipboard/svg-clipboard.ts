@@ -1,37 +1,32 @@
 /**
- * Read SVG markup from the system clipboard, sanitise it, and parse intrinsic size.
+ * SVG clipboard helpers
  */
 
 const LOG_PREFIX = "[shotstack-studio:svg-clipboard]";
 
 const SVG_MIME = "image/svg+xml";
-const SVG_HEAD = /^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!DOCTYPE[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>]/i;
+const SVG_HEAD = /^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!DOCTYPE[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s/>]/i;
 
-export async function readSvgFromClipboard(): Promise<string | null> {
-	if (typeof navigator === "undefined" || !navigator.clipboard) return null;
+export function looksLikeSvg(text: string): boolean {
+	return SVG_HEAD.test(text);
+}
 
-	if (typeof navigator.clipboard.read === "function") {
-		try {
-			const items = await navigator.clipboard.read();
-			for (const item of items) {
-				if (item.types.includes(SVG_MIME)) {
-					const blob = await item.getType(SVG_MIME);
-					const text = await blob.text();
-					if (SVG_HEAD.test(text)) return text;
-				}
-			}
-		} catch (error) {
-			console.warn(`${LOG_PREFIX} clipboard.read() failed, falling back to readText`, error);
-		}
+export async function readSvgFromClipboardItems(): Promise<string | null> {
+	if (typeof navigator === "undefined" || !navigator.clipboard || typeof navigator.clipboard.read !== "function") {
+		return null;
 	}
 
-	if (typeof navigator.clipboard.readText === "function") {
-		try {
-			const text = await navigator.clipboard.readText();
-			if (SVG_HEAD.test(text)) return text;
-		} catch (err) {
-			console.warn(`${LOG_PREFIX} clipboard.readText() failed`, err);
+	try {
+		const items = await navigator.clipboard.read();
+		for (const item of items) {
+			if (item.types.includes(SVG_MIME)) {
+				const blob = await item.getType(SVG_MIME);
+				const text = await blob.text();
+				if (looksLikeSvg(text)) return text;
+			}
 		}
+	} catch (err) {
+		console.warn(`${LOG_PREFIX} clipboard.read() failed`, err);
 	}
 
 	return null;

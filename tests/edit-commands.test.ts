@@ -1321,12 +1321,10 @@ describe("AttachLumaCommand", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CreateTrackAndAddClipCommand
-// Atomic compound command: creates a new track and adds a clip to it.
-// Used by paste flows when the preferred track would overlap.
+// AddTrackCommand with clips payload (atomic track + clips creation)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("CreateTrackAndAddClipCommand", () => {
+describe("AddTrackCommand with clips payload", () => {
 	let edit: Edit;
 	let mockCanvas: ReturnType<typeof createMockCanvas>;
 
@@ -1360,25 +1358,24 @@ describe("CreateTrackAndAddClipCommand", () => {
 		jest.clearAllMocks();
 	});
 
-	it("creates a new track at the insertion index and adds the clip to it", async () => {
-		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+	it("creates a new track at the insertion index with all its clips in one atomic command", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as Parameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 
 		const tracks = edit.getTracks();
 		expect(tracks.length).toBe(trackCountBefore + 1);
-		// New top track holds exactly the added clip; the original track is now at index 1.
 		expect(tracks[0].length).toBe(1);
 	});
 
-	it("undoes both operations atomically (one undo step removes the track and the clip)", async () => {
-		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+	it("a single undo step removes the entire new track and its clips", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const trackCountBefore = edit.getTracks().length;
 		const originalClipCount = edit.getTracks()[0].length;
 
-		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as Parameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 
 		await edit.undo();
@@ -1388,11 +1385,32 @@ describe("CreateTrackAndAddClipCommand", () => {
 		expect(tracks[0].length).toBe(originalClipCount);
 	});
 
-	it("redoes both operations atomically (re-execute after undo)", async () => {
-		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+	it("a single undo step removes a multi-clip new track atomically", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		const multiClipTrack = {
+			clips: [
+				{ start: 0, length: 3, fit: "contain", asset: { type: "image", src: "https://example.com/a.jpg" } },
+				{ start: 3, length: 2, fit: "contain", asset: { type: "image", src: "https://example.com/b.jpg" } },
+				{ start: 5, length: 4, fit: "contain", asset: { type: "image", src: "https://example.com/c.jpg" } }
+			]
+		};
+		const command = new AddTrackCommand(0, multiClipTrack as unknown as Parameters<typeof AddTrackCommand>[1]);
+		await edit.executeEditCommand(command);
+		expect(edit.getTracks()[0].length).toBe(3);
+
+		await edit.undo();
+
+		// The whole track plus all 3 clips gone in one undo step — no stranded empty track.
+		expect(edit.getTracks().length).toBe(trackCountBefore);
+	});
+
+	it("redo restores the track and all its clips atomically", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as Parameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 		await edit.undo();
 		await edit.redo();
@@ -1402,26 +1420,134 @@ describe("CreateTrackAndAddClipCommand", () => {
 		expect(tracks[0].length).toBe(1);
 	});
 
-	it("rolls back the new track if the clip add fails (no stranded empty track)", async () => {
-		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+	it("creates an empty track when no payload is provided (legacy behaviour preserved)", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		// Build a clip whose AddClipCommand.execute will throw — invalid asset.type
-		// will make the schema parser fail, but for the rollback test we patch
-		// the inner addClipCommand to throw deterministically.
-		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
-		const failingAddClip = (command as unknown as { addClipCommand: { execute: () => never } }).addClipCommand;
-		const originalExecute = failingAddClip.execute.bind(failingAddClip);
-		failingAddClip.execute = (() => {
-			throw new Error("simulated AddClipCommand failure");
-		}) as never;
+		await edit.executeEditCommand(new AddTrackCommand(0));
 
-		await expect(edit.executeEditCommand(command)).rejects.toThrow("simulated AddClipCommand failure");
+		expect(edit.getTracks().length).toBe(trackCountBefore + 1);
+		// New top track is empty.
+		expect(edit.getTracks()[0].length).toBe(0);
+	});
 
-		// The new track must NOT have been left behind.
+	it("does NOT mutate the caller's input track or its clips", async () => {
+		const { AddTrackCommand } = await import("@core/commands/add-track-command");
+
+		const inputClip = { ...newClip };
+		const inputTrack = { clips: [inputClip] };
+
+		await edit.executeEditCommand(new AddTrackCommand(0, inputTrack as unknown as Parameters<typeof AddTrackCommand>[1]));
+
+		// The caller's clip object must be untouched — no `id` field added on it.
+		expect((inputClip as { id?: string }).id).toBeUndefined();
+		// The caller's track.clips array must contain the same reference.
+		expect(inputTrack.clips[0]).toBe(inputClip);
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AddTracksCommand (atomic multi-track compound)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("AddTracksCommand", () => {
+	let edit: Edit;
+	let mockCanvas: ReturnType<typeof createMockCanvas>;
+
+	const trackA = {
+		clips: [{ start: 0, length: 5, fit: "cover" as const, asset: { type: "image" as const, src: "https://example.com/a.jpg" } }]
+	};
+	const trackB = {
+		clips: [{ start: 0, length: 3, fit: "cover" as const, asset: { type: "image" as const, src: "https://example.com/b.jpg" } }]
+	};
+
+	beforeEach(async () => {
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+
+		mockCanvas = createMockCanvas();
+		edit.setCanvas(mockCanvas as unknown as Parameters<typeof edit.setCanvas>[0]);
+
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("inserts every track in source order", async () => {
+		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as Parameters<typeof AddTracksCommand>[1]));
+
+		const tracks = edit.getTracks();
+		expect(tracks.length).toBe(trackCountBefore + 2);
+		// Source order preserved: trackA at 0, trackB at 1.
+		expect((tracks[0][0].clipConfiguration.asset as { src?: string }).src).toBe("https://example.com/a.jpg");
+		expect((tracks[1][0].clipConfiguration.asset as { src?: string }).src).toBe("https://example.com/b.jpg");
+	});
+
+	it("a single undo step removes EVERY inserted track atomically", async () => {
+		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		expect(edit.getTracks().length).toBe(trackCountBefore + 2);
+
+		// One undo — all pasted tracks gone.
+		await edit.undo();
+
 		expect(edit.getTracks().length).toBe(trackCountBefore);
+	});
 
-		// Restore in case afterEach triggers it again
-		failingAddClip.execute = originalExecute as never;
+	it("redo restores all inserted tracks atomically", async () => {
+		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		await edit.undo();
+		await edit.redo();
+
+		expect(edit.getTracks().length).toBe(trackCountBefore + 2);
+	});
+
+	it("handles a single-track input (length 1) as one atomic insertion", async () => {
+		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		expect(edit.getTracks().length).toBe(trackCountBefore + 1);
+
+		await edit.undo();
+		expect(edit.getTracks().length).toBe(trackCountBefore);
+	});
+
+	it("preserves multi-clip tracks atomically (one undo removes track + all its clips)", async () => {
+		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		const multiClipTrack = {
+			clips: [
+				{ start: 0, length: 2, fit: "cover" as const, asset: { type: "image" as const, src: "https://example.com/c1.jpg" } },
+				{ start: 2, length: 2, fit: "cover" as const, asset: { type: "image" as const, src: "https://example.com/c2.jpg" } },
+				{ start: 4, length: 2, fit: "cover" as const, asset: { type: "image" as const, src: "https://example.com/c3.jpg" } }
+			]
+		};
+
+		await edit.executeEditCommand(new AddTracksCommand(0, [multiClipTrack] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		expect(edit.getTracks()[0].length).toBe(3);
+
+		await edit.undo();
+		expect(edit.getTracks().length).toBe(trackCountBefore);
 	});
 });

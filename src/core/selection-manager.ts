@@ -4,9 +4,11 @@
  */
 
 import type { Player } from "@canvas/players/player";
+import { clipToJsonString } from "@core/clipboard/clip-json";
 import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
+import { writeSystemClipboardText } from "@core/clipboard/system-clipboard";
 import { EditEvent } from "@core/events/edit-events";
-import type { ResolvedClip } from "@core/schemas";
+import type { ResolvedClip, Clip } from "@core/schemas";
 import { stripInternalProperties } from "@core/shared/clip-utils";
 import type { Seconds } from "@core/timing/types";
 
@@ -126,17 +128,18 @@ export class SelectionManager {
 	// ─── Clipboard ────────────────────────────────────────────────────────────
 
 	/**
-	 * Copy a clip to the internal clipboard.
+	 * Copy a clip to the clipboard.
 	 */
 	copyClip(trackIdx: number, clipIdx: number): void {
 		const clip = this.edit.getResolvedClip(trackIdx, clipIdx);
-		if (clip) {
-			this.copiedClip = {
-				trackIndex: trackIdx,
-				clipConfiguration: structuredClone(clip)
-			};
-			this.edit.getInternalEvents().emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
-		}
+		if (!clip) return;
+
+		this.copiedClip = {
+			trackIndex: trackIdx,
+			clipConfiguration: structuredClone(clip)
+		};
+		this.edit.getInternalEvents().emit(EditEvent.ClipCopied, { trackIndex: trackIdx, clipIndex: clipIdx });
+		writeSystemClipboardText(clipToJsonString(clip as unknown as Clip)).catch(() => undefined);
 	}
 
 	/**

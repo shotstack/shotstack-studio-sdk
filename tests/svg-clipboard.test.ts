@@ -2,9 +2,9 @@
  * @jest-environment jsdom
  */
 
-import { parseSvgIntrinsicSize, readSvgFromClipboard, sanitiseSvg } from "@core/clipboard/svg-clipboard";
+import { parseSvgIntrinsicSize, readSvgFromClipboardItems, looksLikeSvg, sanitiseSvg } from "@core/clipboard/svg-clipboard";
 
-describe("readSvgFromClipboard", () => {
+describe("readSvgFromClipboardItems", () => {
 	const originalClipboard = navigator.clipboard;
 
 	afterEach(() => {
@@ -21,9 +21,9 @@ describe("readSvgFromClipboard", () => {
 		});
 	}
 
-	it("returns null when clipboard API is unavailable", async () => {
+	it("returns null when clipboard.read API is unavailable", async () => {
 		setClipboard(undefined as unknown as Clipboard);
-		expect(await readSvgFromClipboard()).toBeNull();
+		expect(await readSvgFromClipboardItems()).toBeNull();
 	});
 
 	it("returns SVG markup from an svg+xml ClipboardItem", async () => {
@@ -35,75 +35,66 @@ describe("readSvgFromClipboard", () => {
 					types: ["image/svg+xml"],
 					getType: jest.fn().mockResolvedValue(blob)
 				}
-			]),
-			readText: jest.fn().mockResolvedValue("")
+			])
 		} as unknown as Clipboard);
 
-		expect(await readSvgFromClipboard()).toBe(svg);
+		expect(await readSvgFromClipboardItems()).toBe(svg);
 	});
 
-	it("falls back to readText when no svg+xml MIME present", async () => {
-		const svg = '<svg viewBox="0 0 1 1"><rect/></svg>';
+	it("returns null when no svg+xml MIME item is present", async () => {
 		setClipboard({
-			read: jest.fn().mockResolvedValue([{ types: ["text/plain"], getType: jest.fn() }]),
-			readText: jest.fn().mockResolvedValue(svg)
+			read: jest.fn().mockResolvedValue([{ types: ["text/plain"], getType: jest.fn() }])
 		} as unknown as Clipboard);
 
-		expect(await readSvgFromClipboard()).toBe(svg);
+		expect(await readSvgFromClipboardItems()).toBeNull();
 	});
 
-	it("returns null when clipboard text is not SVG", async () => {
+	it("returns null when MIME blob doesn't actually contain valid SVG markup", async () => {
+		const blob = { text: jest.fn().mockResolvedValue("garbage") };
 		setClipboard({
-			read: jest.fn().mockRejectedValue(new Error("denied")),
-			readText: jest.fn().mockResolvedValue("hello world")
+			read: jest.fn().mockResolvedValue([{ types: ["image/svg+xml"], getType: jest.fn().mockResolvedValue(blob) }])
 		} as unknown as Clipboard);
 
-		expect(await readSvgFromClipboard()).toBeNull();
+		expect(await readSvgFromClipboardItems()).toBeNull();
 	});
 
-	it("accepts SVG markup with an XML declaration prefix", async () => {
-		const svg = '<?xml version="1.0"?><svg viewBox="0 0 10 10"><rect/></svg>';
-		setClipboard({
-			read: jest.fn().mockRejectedValue(new Error("denied")),
-			readText: jest.fn().mockResolvedValue(svg)
-		} as unknown as Clipboard);
-
-		expect(await readSvgFromClipboard()).toBe(svg);
-	});
-
-	it("accepts SVG markup with a DOCTYPE prefix", async () => {
-		const svg =
-			'<?xml version="1.0"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg viewBox="0 0 10 10"><rect/></svg>';
-		setClipboard({
-			read: jest.fn().mockRejectedValue(new Error("denied")),
-			readText: jest.fn().mockResolvedValue(svg)
-		} as unknown as Clipboard);
-
-		expect(await readSvgFromClipboard()).toBe(svg);
-	});
-
-	it("logs a warning when clipboard.read() throws", async () => {
-		const svg = '<svg viewBox="0 0 1 1"/>';
+	it("logs a warning and returns null when clipboard.read() throws", async () => {
 		const warnSpy = jest.spyOn(console, "warn").mockImplementation();
 		setClipboard({
-			read: jest.fn().mockRejectedValue(new DOMException("denied", "NotAllowedError")),
-			readText: jest.fn().mockResolvedValue(svg)
+			read: jest.fn().mockRejectedValue(new DOMException("denied", "NotAllowedError"))
 		} as unknown as Clipboard);
 
-		await readSvgFromClipboard();
-
+		expect(await readSvgFromClipboardItems()).toBeNull();
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("clipboard.read()"), expect.any(Error));
 		warnSpy.mockRestore();
 	});
+});
 
-	it("survives read() permission denial and uses readText path", async () => {
-		const svg = '<svg viewBox="0 0 1 1"/>';
-		setClipboard({
-			read: jest.fn().mockRejectedValue(new DOMException("denied", "NotAllowedError")),
-			readText: jest.fn().mockResolvedValue(svg)
-		} as unknown as Clipboard);
+describe("looksLikeSvg", () => {
+	it("matches a plain <svg> element", () => {
+		expect(looksLikeSvg('<svg viewBox="0 0 1 1"><rect/></svg>')).toBe(true);
+	});
 
-		expect(await readSvgFromClipboard()).toBe(svg);
+	it("matches SVG markup with an XML declaration prefix", () => {
+		expect(looksLikeSvg('<?xml version="1.0"?><svg viewBox="0 0 10 10"><rect/></svg>')).toBe(true);
+	});
+
+	it("matches SVG markup with a DOCTYPE prefix", () => {
+		const svg =
+			'<?xml version="1.0"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg viewBox="0 0 10 10"><rect/></svg>';
+		expect(looksLikeSvg(svg)).toBe(true);
+	});
+
+	it("matches SVG markup with leading whitespace and comments", () => {
+		expect(looksLikeSvg("  <!-- a comment --> <svg/>")).toBe(true);
+	});
+
+	it("does not match arbitrary text", () => {
+		expect(looksLikeSvg("hello world")).toBe(false);
+	});
+
+	it("does not match JSON", () => {
+		expect(looksLikeSvg('{"asset":{"type":"image"}}')).toBe(false);
 	});
 });
 

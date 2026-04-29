@@ -1,24 +1,39 @@
 /**
  * Controls Paste-Dispatch Tests
  *
- * Verifies the Ctrl/Cmd+V branching logic in Controls.handlePaste:
- *   - SVG present in clipboard → edit.addSvgClip(svg)
- *   - No SVG → edit.pasteClip()
- *   - Clipboard read failure → falls back to edit.pasteClip()
- *   - Concurrency gate: rapid paste invocations don't stack
+ * Verifies the Ctrl/Cmd+V priority ladder in Controls.dispatchPaste:
+ *   1. SVG MIME blob → addSvgClip
+ *   2. Clip JSON in OS text → addClipFromJson
+ *   3. SVG markup in OS text → addSvgClip
+ *   4. Internal copiedClip fallback → pasteClip
  */
 
 import { Controls } from "@core/inputs/controls";
 import type { Edit } from "@core/edit-session";
 
-// Mock the clipboard module so each test controls what readSvgFromClipboard returns
-// without needing the system clipboard or DOMParser.
 jest.mock("@core/clipboard/svg-clipboard", () => ({
-	readSvgFromClipboard: jest.fn()
+	readSvgFromClipboardItems: jest.fn(),
+	looksLikeSvg: jest.fn((text: string) => /^\s*<svg/i.test(text))
+}));
+
+jest.mock("@core/clipboard/system-clipboard", () => ({
+	readSystemClipboardText: jest.fn()
+}));
+
+jest.mock("@core/clipboard/clip-json", () => ({
+	tryParseClipJson: jest.fn(),
+	tryParseTracksJson: jest.fn()
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
-const { readSvgFromClipboard: mockReadSvg } = require("@core/clipboard/svg-clipboard") as { readSvgFromClipboard: jest.Mock };
+const { readSvgFromClipboardItems: mockReadMime } = require("@core/clipboard/svg-clipboard") as { readSvgFromClipboardItems: jest.Mock };
+// eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
+const { readSystemClipboardText: mockReadText } = require("@core/clipboard/system-clipboard") as { readSystemClipboardText: jest.Mock };
+// eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
+const { tryParseClipJson: mockParseClipJson, tryParseTracksJson: mockParseTracksJson } = require("@core/clipboard/clip-json") as {
+	tryParseClipJson: jest.Mock;
+	tryParseTracksJson: jest.Mock;
+};
 
 interface ControlsInternals {
 	dispatchPaste(): Promise<void>;
@@ -26,32 +41,106 @@ interface ControlsInternals {
 	pendingPaste: Promise<void> | null;
 }
 
-function createMockEdit(): Edit & { addSvgClip: jest.Mock; pasteClip: jest.Mock } {
+function createMockEdit(): Edit & {
+	addSvgClip: jest.Mock;
+	addClipFromJson: jest.Mock;
+	addTracksFromJson: jest.Mock;
+	pasteClip: jest.Mock;
+	playbackTime: number;
+} {
 	return {
+		playbackTime: 0,
 		addSvgClip: jest.fn().mockResolvedValue(undefined),
+		addClipFromJson: jest.fn().mockResolvedValue(undefined),
+		addTracksFromJson: jest.fn().mockResolvedValue(undefined),
 		pasteClip: jest.fn().mockResolvedValue(undefined)
-	} as unknown as Edit & { addSvgClip: jest.Mock; pasteClip: jest.Mock };
+	} as unknown as Edit & {
+		addSvgClip: jest.Mock;
+		addClipFromJson: jest.Mock;
+		addTracksFromJson: jest.Mock;
+		pasteClip: jest.Mock;
+		playbackTime: number;
+	};
 }
 
 beforeEach(() => {
-	mockReadSvg.mockReset();
+	mockReadMime.mockReset();
+	mockReadText.mockReset();
+	mockParseClipJson.mockReset();
+	mockParseTracksJson.mockReset();
 });
 
-describe("Controls.dispatchPaste — branch selection", () => {
-	it("calls edit.addSvgClip when the clipboard contains SVG markup", async () => {
-		const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
-		mockReadSvg.mockResolvedValueOnce(svg);
+describe("dispatchPaste — priority ladder", () => {
+	it("addSvgClip wins when an svg+xml MIME blob is in the clipboard", async () => {
+		const svg = '<svg xmlns="http://www.w3.org/2000/svg"/>';
+		mockReadMime.mockResolvedValueOnce(svg);
 		const edit = createMockEdit();
 		const controls = new Controls(edit) as unknown as ControlsInternals;
 
 		await controls.dispatchPaste();
 
 		expect(edit.addSvgClip).toHaveBeenCalledWith(svg);
+		expect(mockReadText).not.toHaveBeenCalled();
+		expect(edit.addClipFromJson).not.toHaveBeenCalled();
 		expect(edit.pasteClip).not.toHaveBeenCalled();
 	});
 
-	it("falls back to edit.pasteClip when the clipboard has no SVG", async () => {
-		mockReadSvg.mockResolvedValueOnce(null);
+	it("addClipFromJson wins when text is parseable clip JSON (and no MIME SVG)", async () => {
+		const clipObj = { asset: { type: "image", src: "x" }, start: 0, length: 5 };
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce(JSON.stringify(clipObj));
+		mockParseClipJson.mockReturnValueOnce(clipObj);
+		const edit = createMockEdit();
+		edit.playbackTime = 7;
+		const controls = new Controls(edit) as unknown as ControlsInternals;
+
+		await controls.dispatchPaste();
+
+		expect(edit.addClipFromJson).toHaveBeenCalledWith(clipObj, { start: 7 });
+		expect(edit.addSvgClip).not.toHaveBeenCalled();
+		expect(edit.pasteClip).not.toHaveBeenCalled();
+	});
+
+	it("addTracksFromJson wins when text is parseable tracks JSON (and not clip-shaped)", async () => {
+		const tracksObj = [{ clips: [{ asset: { type: "image", src: "x" }, start: 0, length: 5 }] }];
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce(JSON.stringify(tracksObj));
+		mockParseClipJson.mockReturnValueOnce(null);
+		mockParseTracksJson.mockReturnValueOnce(tracksObj);
+		const edit = createMockEdit();
+		edit.playbackTime = 12;
+		const controls = new Controls(edit) as unknown as ControlsInternals;
+
+		await controls.dispatchPaste();
+
+		expect(edit.addTracksFromJson).toHaveBeenCalledWith(tracksObj, { start: 12 });
+		expect(edit.addClipFromJson).not.toHaveBeenCalled();
+		expect(edit.addSvgClip).not.toHaveBeenCalled();
+		expect(edit.pasteClip).not.toHaveBeenCalled();
+	});
+
+	it("addSvgClip with raw text wins when text is SVG and not parseable as clip or tracks JSON", async () => {
+		const svg = "<svg></svg>";
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce(svg);
+		mockParseClipJson.mockReturnValueOnce(null);
+		mockParseTracksJson.mockReturnValueOnce(null);
+		const edit = createMockEdit();
+		const controls = new Controls(edit) as unknown as ControlsInternals;
+
+		await controls.dispatchPaste();
+
+		expect(edit.addSvgClip).toHaveBeenCalledWith(svg);
+		expect(edit.addClipFromJson).not.toHaveBeenCalled();
+		expect(edit.addTracksFromJson).not.toHaveBeenCalled();
+		expect(edit.pasteClip).not.toHaveBeenCalled();
+	});
+
+	it("falls back to pasteClip when text is neither JSON-parseable nor SVG", async () => {
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce("hello world");
+		mockParseClipJson.mockReturnValueOnce(null);
+		mockParseTracksJson.mockReturnValueOnce(null);
 		const edit = createMockEdit();
 		const controls = new Controls(edit) as unknown as ControlsInternals;
 
@@ -59,79 +148,93 @@ describe("Controls.dispatchPaste — branch selection", () => {
 
 		expect(edit.pasteClip).toHaveBeenCalledTimes(1);
 		expect(edit.addSvgClip).not.toHaveBeenCalled();
+		expect(edit.addClipFromJson).not.toHaveBeenCalled();
+		expect(edit.addTracksFromJson).not.toHaveBeenCalled();
 	});
 
-	it("falls back to edit.pasteClip when the clipboard read throws", async () => {
-		mockReadSvg.mockRejectedValueOnce(new Error("clipboard denied"));
+	it("does NOT fall back to pasteClip when addTracksFromJson throws — failure is logged only", async () => {
+		const tracksObj = [{ clips: [{ asset: { type: "image", src: "x" }, start: 0, length: 5 }] }];
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce("[]");
+		mockParseClipJson.mockReturnValueOnce(null);
+		mockParseTracksJson.mockReturnValueOnce(tracksObj);
 		const edit = createMockEdit();
+		edit.addTracksFromJson.mockRejectedValueOnce(new Error("schema validation failed"));
 		const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
 		const controls = new Controls(edit) as unknown as ControlsInternals;
 
 		await controls.dispatchPaste();
 
-		expect(edit.pasteClip).toHaveBeenCalledTimes(1);
-		expect(edit.addSvgClip).not.toHaveBeenCalled();
-		expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("clipboard read failed"), expect.any(Error));
+		expect(edit.pasteClip).not.toHaveBeenCalled();
+		expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("tracks JSON paste failed"), expect.any(Error));
 		consoleSpy.mockRestore();
 	});
 
-	it("does NOT fall back to pasteClip when addSvgClip throws — the failure is logged only", async () => {
-		const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
-		mockReadSvg.mockResolvedValueOnce(svg);
+	it("falls back to pasteClip when there is no OS clipboard content at all", async () => {
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce(null);
 		const edit = createMockEdit();
-		edit.addSvgClip.mockRejectedValueOnce(new Error("schema validation failed"));
+		const controls = new Controls(edit) as unknown as ControlsInternals;
+
+		await controls.dispatchPaste();
+
+		expect(edit.pasteClip).toHaveBeenCalledTimes(1);
+	});
+
+	it("does NOT fall back to pasteClip when addClipFromJson throws — failure is logged only", async () => {
+		const clipObj = { asset: { type: "image", src: "x" }, start: 0, length: 5 };
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce("{}");
+		mockParseClipJson.mockReturnValueOnce(clipObj);
+		const edit = createMockEdit();
+		edit.addClipFromJson.mockRejectedValueOnce(new Error("schema validation failed"));
 		const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
 		const controls = new Controls(edit) as unknown as ControlsInternals;
 
 		await controls.dispatchPaste();
 
-		// pasteClip must not fire — that would silently paste content the user
-		// didn't ask for (a stale internal-clipboard clip from earlier).
 		expect(edit.pasteClip).not.toHaveBeenCalled();
-		expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("SVG paste failed"), expect.any(Error));
+		expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("clip JSON paste failed"), expect.any(Error));
 		consoleSpy.mockRestore();
 	});
 });
 
-describe("Controls.handlePaste — concurrency gate", () => {
-	it("ignores additional paste invocations while one is in flight", async () => {
-		// Build a controlled promise so the first paste stays pending until we resolve it.
-		let resolveFirst: ((value: string | null) => void) | undefined;
-		mockReadSvg.mockImplementationOnce(
+describe("handlePaste — concurrency gate", () => {
+	it("ignores additional invocations while a paste is in flight", async () => {
+		let resolveFirst: (() => void) | undefined;
+		mockReadMime.mockImplementationOnce(
 			() =>
-				new Promise<string | null>(resolve => {
-					resolveFirst = resolve;
+				new Promise<null>(resolve => {
+					resolveFirst = () => resolve(null);
 				})
 		);
 
 		const edit = createMockEdit();
 		const controls = new Controls(edit) as unknown as ControlsInternals;
 
-		// Three rapid invocations — only the first should start a real read.
 		controls.handlePaste();
 		controls.handlePaste();
 		controls.handlePaste();
 
-		expect(mockReadSvg).toHaveBeenCalledTimes(1);
+		expect(mockReadMime).toHaveBeenCalledTimes(1);
 
-		// Resolve the in-flight paste so the gate clears.
-		resolveFirst?.(null);
+		resolveFirst?.();
 		await controls.pendingPaste;
 
-		// After the gate clears, a new invocation can run.
-		mockReadSvg.mockResolvedValueOnce(null);
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce(null);
 		controls.handlePaste();
-		expect(mockReadSvg).toHaveBeenCalledTimes(2);
+		expect(mockReadMime).toHaveBeenCalledTimes(2);
 	});
 
-	it("clears the pendingPaste field after the dispatch resolves", async () => {
-		mockReadSvg.mockResolvedValueOnce(null);
+	it("clears pendingPaste after the dispatch resolves", async () => {
+		mockReadMime.mockResolvedValueOnce(null);
+		mockReadText.mockResolvedValueOnce(null);
 		const edit = createMockEdit();
 		const controls = new Controls(edit) as unknown as ControlsInternals;
 
 		controls.handlePaste();
 		expect(controls.pendingPaste).not.toBeNull();
-
 		await controls.pendingPaste;
 		expect(controls.pendingPaste).toBeNull();
 	});

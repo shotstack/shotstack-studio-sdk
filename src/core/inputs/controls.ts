@@ -1,6 +1,8 @@
-import { readSvgFromClipboard } from "@core/clipboard/svg-clipboard";
+import { tryParseClipJson, tryParseTracksJson } from "@core/clipboard/clip-json";
+import { readSvgFromClipboardItems, looksLikeSvg } from "@core/clipboard/svg-clipboard";
+import { readSystemClipboardText } from "@core/clipboard/system-clipboard";
 import { Edit } from "@core/edit-session";
-import { sec } from "@core/timing/types";
+import { sec, type Seconds } from "@core/timing/types";
 
 export class Controls {
 	private edit: Edit;
@@ -195,21 +197,46 @@ export class Controls {
 		});
 	}
 
+	/** Resolve Ctrl/Cmd+V across all paste sources. */
 	private async dispatchPaste(): Promise<void> {
-		let svg: string | null = null;
-		try {
-			svg = await readSvgFromClipboard();
-		} catch (err) {
-			console.warn("[shotstack-studio:controls] clipboard read failed, using internal clipboard", err);
-			this.edit.pasteClip();
+		const svgFromMime = await readSvgFromClipboardItems();
+		if (svgFromMime) {
+			await this.tryAddSvgClip(svgFromMime);
 			return;
 		}
 
-		if (!svg) {
-			this.edit.pasteClip();
-			return;
+		const text = await readSystemClipboardText();
+		if (text) {
+			const clip = tryParseClipJson(text);
+			if (clip) {
+				try {
+					await this.edit.addClipFromJson(clip, { start: this.edit.playbackTime as Seconds });
+				} catch (err) {
+					console.warn("[shotstack-studio:controls] clip JSON paste failed", err);
+				}
+				return;
+			}
+
+			const tracks = tryParseTracksJson(text);
+			if (tracks) {
+				try {
+					await this.edit.addTracksFromJson(tracks, { start: this.edit.playbackTime as Seconds });
+				} catch (err) {
+					console.warn("[shotstack-studio:controls] tracks JSON paste failed", err);
+				}
+				return;
+			}
+
+			if (looksLikeSvg(text)) {
+				await this.tryAddSvgClip(text);
+				return;
+			}
 		}
 
+		this.edit.pasteClip();
+	}
+
+	private async tryAddSvgClip(svg: string): Promise<void> {
 		try {
 			await this.edit.addSvgClip(svg);
 		} catch (err) {

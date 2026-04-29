@@ -1,6 +1,6 @@
-import { CreateTrackAndAddClipCommand } from "@core/commands/create-track-and-add-clip-command";
+import { AddTrackCommand } from "@core/commands/add-track-command";
 import type { Edit } from "@core/edit-session";
-import { ClipSchema, type Clip, type ResolvedClip } from "@schemas";
+import { ClipSchema, type Clip, type Track } from "@schemas";
 import { resolvePastePlacement } from "@timeline/interaction/interaction-calculations";
 
 /**
@@ -23,7 +23,7 @@ export async function insertClipWithOverlapPolicy(edit: Edit, preferredTrackIdx:
 
 	if (action.type === "insert-track") {
 		ClipSchema.parse(clip);
-		await edit.executeEditCommand(new CreateTrackAndAddClipCommand(action.insertionIndex, clip as unknown as ResolvedClip));
+		await edit.executeEditCommand(new AddTrackCommand(action.insertionIndex, { clips: [clip] } as Track));
 		return;
 	}
 
