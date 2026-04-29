@@ -1319,3 +1319,109 @@ describe("AttachLumaCommand", () => {
 		}
 	});
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CreateTrackAndAddClipCommand
+// Atomic compound command: creates a new track and adds a clip to it.
+// Used by paste flows when the preferred track would overlap.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("CreateTrackAndAddClipCommand", () => {
+	let edit: Edit;
+	let mockCanvas: ReturnType<typeof createMockCanvas>;
+
+	const newClip = {
+		start: 0,
+		length: 3,
+		fit: "contain" as const,
+		asset: { type: "image" as const, src: "https://example.com/new.jpg" }
+	};
+
+	beforeEach(async () => {
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ start: 0, length: 5, fit: "cover", asset: { type: "image", src: "https://example.com/image.jpg" } }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+
+		mockCanvas = createMockCanvas();
+		edit.setCanvas(mockCanvas as unknown as Parameters<typeof edit.setCanvas>[0]);
+
+		await edit.load();
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("creates a new track at the insertion index and adds the clip to it", async () => {
+		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		await edit.executeEditCommand(command);
+
+		const tracks = edit.getTracks();
+		expect(tracks.length).toBe(trackCountBefore + 1);
+		// New top track holds exactly the added clip; the original track is now at index 1.
+		expect(tracks[0].length).toBe(1);
+	});
+
+	it("undoes both operations atomically (one undo step removes the track and the clip)", async () => {
+		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+		const trackCountBefore = edit.getTracks().length;
+		const originalClipCount = edit.getTracks()[0].length;
+
+		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		await edit.executeEditCommand(command);
+
+		await edit.undo();
+
+		const tracks = edit.getTracks();
+		expect(tracks.length).toBe(trackCountBefore);
+		expect(tracks[0].length).toBe(originalClipCount);
+	});
+
+	it("redoes both operations atomically (re-execute after undo)", async () => {
+		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		await edit.executeEditCommand(command);
+		await edit.undo();
+		await edit.redo();
+
+		const tracks = edit.getTracks();
+		expect(tracks.length).toBe(trackCountBefore + 1);
+		expect(tracks[0].length).toBe(1);
+	});
+
+	it("rolls back the new track if the clip add fails (no stranded empty track)", async () => {
+		const { CreateTrackAndAddClipCommand } = await import("@core/commands/create-track-and-add-clip-command");
+		const trackCountBefore = edit.getTracks().length;
+
+		// Build a clip whose AddClipCommand.execute will throw — invalid asset.type
+		// will make the schema parser fail, but for the rollback test we patch
+		// the inner addClipCommand to throw deterministically.
+		const command = new CreateTrackAndAddClipCommand(0, newClip as unknown as Parameters<typeof CreateTrackAndAddClipCommand>[1]);
+		const failingAddClip = (command as unknown as { addClipCommand: { execute: () => never } }).addClipCommand;
+		const originalExecute = failingAddClip.execute.bind(failingAddClip);
+		failingAddClip.execute = (() => {
+			throw new Error("simulated AddClipCommand failure");
+		}) as never;
+
+		await expect(edit.executeEditCommand(command)).rejects.toThrow("simulated AddClipCommand failure");
+
+		// The new track must NOT have been left behind.
+		expect(edit.getTracks().length).toBe(trackCountBefore);
+
+		// Restore in case afterEach triggers it again
+		failingAddClip.execute = originalExecute as never;
+	});
+});

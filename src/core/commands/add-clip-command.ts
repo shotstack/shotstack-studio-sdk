@@ -77,6 +77,12 @@ export class AddClipCommand implements EditCommand {
 			this.convertedReferences = convertAliasReferencesToValues(document, context.getEditState(), clipAlias, skipIndices);
 		}
 
+		const selectedClip = context.getSelectedClip();
+		if (selectedClip && selectedClip.clipId === this.addedClipId) {
+			context.setSelectedClip(null);
+			context.emitEvent(EditEvent.SelectionCleared);
+		}
+
 		// Document mutation only - reconciler disposes the Player
 		context.documentRemoveClip(this.trackIdx, clipIndex);
 

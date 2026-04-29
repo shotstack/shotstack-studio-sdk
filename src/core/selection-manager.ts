@@ -4,6 +4,7 @@
  */
 
 import type { Player } from "@canvas/players/player";
+import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@core/schemas";
 import { stripInternalProperties } from "@core/shared/clip-utils";
@@ -141,17 +142,15 @@ export class SelectionManager {
 	/**
 	 * Paste the copied clip at the current playhead position.
 	 */
-	pasteClip(): void {
-		if (!this.copiedClip) return;
+	pasteClip(): Promise<void> {
+		if (!this.copiedClip) return Promise.resolve();
 
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
 		pastedClip.start = this.edit.playbackTime as Seconds;
 
-		// Remove ID so document generates a new one (otherwise reconciler
-		// would see duplicate IDs and update instead of create)
 		delete (pastedClip as { id?: string }).id;
 
-		this.edit.addClip(this.copiedClip.trackIndex, pastedClip);
+		return insertClipWithOverlapPolicy(this.edit, this.copiedClip.trackIndex, pastedClip);
 	}
 
 	/**

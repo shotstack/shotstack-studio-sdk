@@ -2,6 +2,8 @@ import { type Player, PlayerType } from "@canvas/players/player";
 import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
 // TODO: Consolidate commands - many have overlapping concerns and could be unified
+import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
+import { parseSvgIntrinsicSize, sanitiseSvg } from "@core/clipboard/svg-clipboard";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
@@ -540,6 +542,23 @@ export class Edit {
 		// Cast to ResolvedClip - the Player and timing resolver handle "auto"/"end" at runtime
 		const command = new AddClipCommand(trackIdx, clip as unknown as ResolvedClip);
 		return this.executeCommand(command);
+	}
+
+	public addSvgClip(svgMarkup: string, opts: { trackIndex?: number; start?: Seconds; length?: Seconds } = {}): Promise<void> {
+		const sanitised = sanitiseSvg(svgMarkup);
+		const { width, height } = parseSvgIntrinsicSize(sanitised);
+		const preferredTrackIdx = opts.trackIndex ?? this.selectionManager.getSelectedClipInfo()?.trackIndex ?? 0;
+
+		const clip: Clip = {
+			asset: { type: "svg", src: sanitised },
+			start: opts.start ?? (this.playbackTime as Seconds),
+			length: opts.length ?? sec(5),
+			fit: "contain",
+			...(width !== undefined ? { width } : {}),
+			...(height !== undefined ? { height } : {})
+		};
+
+		return insertClipWithOverlapPolicy(this, preferredTrackIdx, clip);
 	}
 
 	public getClip(trackIdx: number, clipIdx: number): Clip | null {
@@ -1736,8 +1755,8 @@ export class Edit {
 	 * Paste the copied clip at the current playhead position.
 	 * @internal
 	 */
-	public pasteClip(): void {
-		this.selectionManager.pasteClip();
+	public pasteClip(): Promise<void> {
+		return this.selectionManager.pasteClip();
 	}
 
 	/**

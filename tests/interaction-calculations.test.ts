@@ -25,7 +25,8 @@ import {
 	distance,
 	exceedsDragThreshold,
 	determineDragBehavior,
-	determineDropAction
+	determineDropAction,
+	resolvePastePlacement
 } from "../src/components/timeline/interaction/interaction-calculations";
 import type { ClipState, TrackState } from "../src/components/timeline/timeline.types";
 import { getTrackHeight } from "../src/components/timeline/timeline.types";
@@ -919,5 +920,80 @@ describe("determineDropAction", () => {
 			});
 			expect(result).toEqual({ type: "no-change" });
 		});
+	});
+});
+
+describe("resolvePastePlacement", () => {
+	it("places on the preferred track when there is no overlap", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 1,
+			preferredTrackClips: [{ start: 0, length: 5 }],
+			desiredStart: 6,
+			desiredLength: 3
+		});
+		expect(result).toEqual({ type: "place", trackIndex: 1 });
+	});
+
+	it("inserts a new top track when paste would overlap", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 1,
+			preferredTrackClips: [{ start: 0, length: 10 }],
+			desiredStart: 5,
+			desiredLength: 3
+		});
+		expect(result).toEqual({ type: "insert-track", insertionIndex: 0 });
+	});
+
+	it("places when the preferred track is empty", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 0,
+			preferredTrackClips: [],
+			desiredStart: 0,
+			desiredLength: 5
+		});
+		expect(result).toEqual({ type: "place", trackIndex: 0 });
+	});
+
+	it("places when the preferred track does not exist (undefined clips)", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 5,
+			preferredTrackClips: undefined,
+			desiredStart: 0,
+			desiredLength: 5
+		});
+		expect(result).toEqual({ type: "place", trackIndex: 5 });
+	});
+
+	it("treats touching boundaries as non-overlapping", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 0,
+			preferredTrackClips: [{ start: 0, length: 5 }],
+			desiredStart: 5,
+			desiredLength: 3
+		});
+		expect(result).toEqual({ type: "place", trackIndex: 0 });
+	});
+
+	it("detects overlap when desired range starts before and ends inside an existing clip", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 0,
+			preferredTrackClips: [{ start: 5, length: 5 }],
+			desiredStart: 3,
+			desiredLength: 4
+		});
+		expect(result).toEqual({ type: "insert-track", insertionIndex: 0 });
+	});
+
+	it("detects overlap with any clip on the track", () => {
+		const result = resolvePastePlacement({
+			preferredTrackIndex: 0,
+			preferredTrackClips: [
+				{ start: 0, length: 2 },
+				{ start: 10, length: 5 }
+			],
+			desiredStart: 12,
+			desiredLength: 1
+		});
+		expect(result).toEqual({ type: "insert-track", insertionIndex: 0 });
 	});
 });

@@ -210,6 +210,20 @@ export function findNearestSnapPoint(input: ApplySnapInput): Seconds | null {
 
 // ─── Collision Detection ───────────────────────────────────────────────────
 
+/**
+ * Calculate the overlap duration between two time ranges.
+ * @param start1 Start time of first range
+ * @param end1 End time of first range
+ * @param start2 Start time of second range
+ * @param end2 End time of second range
+ * @returns The duration of overlap, or 0 if no overlap
+ */
+export function calculateOverlap(start1: number, end1: number, start2: number, end2: number): number {
+	const overlapStart = Math.max(start1, start2);
+	const overlapEnd = Math.min(end1, end2);
+	return Math.max(0, overlapEnd - overlapStart);
+}
+
 export function getTrackClipsExcluding(track: TrackState, excludeClip: ClipRef): ClipState[] {
 	return track.clips
 		.filter(c => !(c.trackIndex === excludeClip.trackIndex && c.clipIndex === excludeClip.clipIndex))
@@ -228,7 +242,7 @@ export function findOverlappingClip(
 		const clipStart = clip.config.start;
 		const clipEnd = clipStart + clip.config.length;
 
-		if (desiredStart < clipEnd && desiredEnd > clipStart) {
+		if (calculateOverlap(desiredStart, desiredEnd, clipStart, clipEnd) > 0) {
 			return { clip, index: i };
 		}
 	}
@@ -420,18 +434,43 @@ export function determineDropAction(input: DetermineDropActionInput): DropAction
 	return determineNormalMove(startTime, newTime, originalTrack, dragTarget.trackIndex, pushOffset);
 }
 
-// ─── Utility Functions ─────────────────────────────────────────────────────
+// ─── Paste Placement ─────────────────────────────────────────────────────
+
+/** Minimal time-range shape — accepts anything with start/length numbers. */
+export interface ClipTimeRange {
+	readonly start: number;
+	readonly length: number;
+}
+
+export type PasteAction =
+	| { readonly type: "place"; readonly trackIndex: number }
+	| { readonly type: "insert-track"; readonly insertionIndex: number };
+
+export interface ResolvePastePlacementInput {
+	readonly preferredTrackIndex: number;
+	readonly preferredTrackClips: readonly ClipTimeRange[] | undefined;
+	readonly desiredStart: number;
+	readonly desiredLength: number;
+}
 
 /**
- * Calculate the overlap duration between two time ranges.
- * @param start1 Start time of first range
- * @param end1 End time of first range
- * @param start2 Start time of second range
- * @param end2 End time of second range
- * @returns The duration of overlap, or 0 if no overlap
+ * Decide where a pasted clip should land.
+ *
+ * Policy: if the preferred track has any clip overlapping the desired time
+ * range, return an `insert-track` action targeting the top of the timeline
+ * (index 0). Otherwise place on the preferred track.
+ *
+ * Pure function — performs no mutations. The caller dispatches commands
+ * based on the returned action, mirroring the `determineDropAction` pattern.
  */
-export function calculateOverlap(start1: number, end1: number, start2: number, end2: number): number {
-	const overlapStart = Math.max(start1, start2);
-	const overlapEnd = Math.min(end1, end2);
-	return Math.max(0, overlapEnd - overlapStart);
+export function resolvePastePlacement(input: ResolvePastePlacementInput): PasteAction {
+	const { preferredTrackIndex, preferredTrackClips, desiredStart, desiredLength } = input;
+
+	if (preferredTrackClips && preferredTrackClips.length > 0) {
+		const desiredEnd = desiredStart + desiredLength;
+		const overlaps = preferredTrackClips.some(c => calculateOverlap(desiredStart, desiredEnd, c.start, c.start + c.length) > 0);
+		if (overlaps) return { type: "insert-track", insertionIndex: 0 };
+	}
+
+	return { type: "place", trackIndex: preferredTrackIndex };
 }

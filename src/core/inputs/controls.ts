@@ -1,3 +1,4 @@
+import { readSvgFromClipboard } from "@core/clipboard/svg-clipboard";
 import { Edit } from "@core/edit-session";
 import { sec } from "@core/timing/types";
 
@@ -6,6 +7,7 @@ export class Controls {
 	private seekDistance: number = 0.05; // 50ms in seconds
 	private seekDistanceLarge: number = 0.5; // 500ms in seconds
 	private frameTime: number = 1 / 60; // ~16.67ms in seconds
+	private pendingPaste: Promise<void> | null = null;
 
 	constructor(edit: Edit) {
 		this.edit = edit;
@@ -176,7 +178,7 @@ export class Controls {
 			case "KeyV": {
 				if (event.metaKey || event.ctrlKey) {
 					event.preventDefault();
-					this.edit.pasteClip();
+					this.handlePaste();
 				}
 				break;
 			}
@@ -185,6 +187,35 @@ export class Controls {
 			}
 		}
 	};
+
+	private handlePaste(): void {
+		if (this.pendingPaste) return;
+		this.pendingPaste = this.dispatchPaste().finally(() => {
+			this.pendingPaste = null;
+		});
+	}
+
+	private async dispatchPaste(): Promise<void> {
+		let svg: string | null = null;
+		try {
+			svg = await readSvgFromClipboard();
+		} catch (err) {
+			console.warn("[shotstack-studio:controls] clipboard read failed, using internal clipboard", err);
+			this.edit.pasteClip();
+			return;
+		}
+
+		if (!svg) {
+			this.edit.pasteClip();
+			return;
+		}
+
+		try {
+			await this.edit.addSvgClip(svg);
+		} catch (err) {
+			console.warn("[shotstack-studio:controls] SVG paste failed", err);
+		}
+	}
 
 	private handleKeyUp = (event: KeyboardEvent): void => {
 		if (this.shouldIgnoreKeyboardEvent(event)) {
