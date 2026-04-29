@@ -1362,7 +1362,7 @@ describe("AddTrackCommand with clips payload", () => {
 		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as Parameters<typeof AddTrackCommand>[1]);
+		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as ConstructorParameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 
 		const tracks = edit.getTracks();
@@ -1375,7 +1375,7 @@ describe("AddTrackCommand with clips payload", () => {
 		const trackCountBefore = edit.getTracks().length;
 		const originalClipCount = edit.getTracks()[0].length;
 
-		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as Parameters<typeof AddTrackCommand>[1]);
+		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as ConstructorParameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 
 		await edit.undo();
@@ -1396,7 +1396,7 @@ describe("AddTrackCommand with clips payload", () => {
 				{ start: 5, length: 4, fit: "contain", asset: { type: "image", src: "https://example.com/c.jpg" } }
 			]
 		};
-		const command = new AddTrackCommand(0, multiClipTrack as unknown as Parameters<typeof AddTrackCommand>[1]);
+		const command = new AddTrackCommand(0, multiClipTrack as unknown as ConstructorParameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 		expect(edit.getTracks()[0].length).toBe(3);
 
@@ -1410,7 +1410,7 @@ describe("AddTrackCommand with clips payload", () => {
 		const { AddTrackCommand } = await import("@core/commands/add-track-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as Parameters<typeof AddTrackCommand>[1]);
+		const command = new AddTrackCommand(0, { clips: [newClip] } as unknown as ConstructorParameters<typeof AddTrackCommand>[1]);
 		await edit.executeEditCommand(command);
 		await edit.undo();
 		await edit.redo();
@@ -1437,7 +1437,7 @@ describe("AddTrackCommand with clips payload", () => {
 		const inputClip = { ...newClip };
 		const inputTrack = { clips: [inputClip] };
 
-		await edit.executeEditCommand(new AddTrackCommand(0, inputTrack as unknown as Parameters<typeof AddTrackCommand>[1]));
+		await edit.executeEditCommand(new AddTrackCommand(0, inputTrack as unknown as ConstructorParameters<typeof AddTrackCommand>[1]));
 
 		// The caller's clip object must be untouched — no `id` field added on it.
 		expect((inputClip as { id?: string }).id).toBeUndefined();
@@ -1488,7 +1488,7 @@ describe("AddTracksCommand", () => {
 		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as ConstructorParameters<typeof AddTracksCommand>[1]));
 
 		const tracks = edit.getTracks();
 		expect(tracks.length).toBe(trackCountBefore + 2);
@@ -1501,7 +1501,7 @@ describe("AddTracksCommand", () => {
 		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as ConstructorParameters<typeof AddTracksCommand>[1]));
 		expect(edit.getTracks().length).toBe(trackCountBefore + 2);
 
 		// One undo — all pasted tracks gone.
@@ -1514,7 +1514,7 @@ describe("AddTracksCommand", () => {
 		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA, trackB] as unknown as ConstructorParameters<typeof AddTracksCommand>[1]));
 		await edit.undo();
 		await edit.redo();
 
@@ -1525,7 +1525,7 @@ describe("AddTracksCommand", () => {
 		const { AddTracksCommand } = await import("@core/commands/add-tracks-command");
 		const trackCountBefore = edit.getTracks().length;
 
-		await edit.executeEditCommand(new AddTracksCommand(0, [trackA] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		await edit.executeEditCommand(new AddTracksCommand(0, [trackA] as unknown as ConstructorParameters<typeof AddTracksCommand>[1]));
 		expect(edit.getTracks().length).toBe(trackCountBefore + 1);
 
 		await edit.undo();
@@ -1544,7 +1544,7 @@ describe("AddTracksCommand", () => {
 			]
 		};
 
-		await edit.executeEditCommand(new AddTracksCommand(0, [multiClipTrack] as unknown as Parameters<typeof AddTracksCommand>[1]));
+		await edit.executeEditCommand(new AddTracksCommand(0, [multiClipTrack] as unknown as ConstructorParameters<typeof AddTracksCommand>[1]));
 		expect(edit.getTracks()[0].length).toBe(3);
 
 		await edit.undo();
