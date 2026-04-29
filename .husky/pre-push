@@ -1,1 +1,1 @@
-npx tsc --noEmit && npx jest --bail
+npm run typecheck && npx jest --bail

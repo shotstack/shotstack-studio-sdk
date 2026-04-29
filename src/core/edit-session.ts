@@ -2,8 +2,12 @@ import { type Player, PlayerType } from "@canvas/players/player";
 import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
 // TODO: Consolidate commands - many have overlapping concerns and could be unified
+import { tryParseClipJson, tryParseTracksJson } from "@core/clipboard/clip-json";
+import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
+import { parseSvgIntrinsicSize, sanitiseSvg } from "@core/clipboard/svg-clipboard";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
+import { AddTracksCommand } from "@core/commands/add-tracks-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { SetOutputAspectRatioCommand } from "@core/commands/set-output-aspect-ratio-command";
@@ -542,6 +546,89 @@ export class Edit {
 		return this.executeCommand(command);
 	}
 
+	public addSvgClip(svgMarkup: string, opts: { trackIndex?: number; start?: Seconds; length?: Seconds } = {}): Promise<void> {
+		const sanitised = sanitiseSvg(svgMarkup);
+		const { width, height } = parseSvgIntrinsicSize(sanitised);
+		const preferredTrackIdx = opts.trackIndex ?? this.selectionManager.getSelectedClipInfo()?.trackIndex ?? 0;
+
+		const clip: Clip = {
+			asset: { type: "svg", src: sanitised },
+			start: opts.start ?? (this.playbackTime as Seconds),
+			length: opts.length ?? sec(5),
+			fit: "contain",
+			...(width !== undefined ? { width } : {}),
+			...(height !== undefined ? { height } : {})
+		};
+
+		return insertClipWithOverlapPolicy(this, preferredTrackIdx, clip);
+	}
+
+	/** Add a clip to the timeline from a Clip object or JSON string. */
+	public addClipFromJson(clipOrJson: Clip | string, opts: { trackIndex?: number; start?: Seconds; length?: Seconds } = {}): Promise<void> {
+		const parsed = typeof clipOrJson === "string" ? tryParseClipJson(clipOrJson) : (structuredClone(clipOrJson) as Clip);
+		if (!parsed) {
+			return Promise.reject(new Error("addClipFromJson: invalid clip JSON or schema validation failed"));
+		}
+
+		delete (parsed as { id?: string }).id;
+
+		const asset = parsed.asset as { type?: string; src?: string } | undefined;
+		if (asset?.type === "svg" && typeof asset.src === "string") {
+			asset.src = sanitiseSvg(asset.src);
+		}
+
+		if (opts.start !== undefined) parsed.start = opts.start;
+		if (opts.length !== undefined) parsed.length = opts.length;
+
+		const preferredTrackIdx = opts.trackIndex ?? this.selectionManager.getSelectedClipInfo()?.trackIndex ?? 0;
+		return insertClipWithOverlapPolicy(this, preferredTrackIdx, parsed);
+	}
+
+	/** Paste one or more Track JSONs onto the timeline as new top tracks. */
+	public async addTracksFromJson(tracksOrJson: Track[] | Track | string, opts: { start?: Seconds } = {}): Promise<void> {
+		let tracks: Track[];
+		if (typeof tracksOrJson === "string") {
+			const parsed = tryParseTracksJson(tracksOrJson);
+			if (!parsed) throw new Error("addTracksFromJson: invalid tracks JSON or schema validation failed");
+			tracks = parsed;
+		} else if (Array.isArray(tracksOrJson)) {
+			tracks = tracksOrJson;
+		} else {
+			tracks = [tracksOrJson];
+		}
+
+		if (tracks.length === 0) throw new Error("addTracksFromJson: no tracks to paste");
+
+		let minStart = Infinity;
+		for (const track of tracks) {
+			for (const clip of track.clips) {
+				const s = typeof clip.start === "number" ? clip.start : 0;
+				if (s < minStart) minStart = s;
+			}
+		}
+		if (!Number.isFinite(minStart)) minStart = 0;
+
+		const anchor = (opts.start ?? this.playbackTime) as number;
+		const offset = anchor - minStart;
+
+		const prepared: Track[] = tracks.map(track => ({
+			...track,
+			clips: track.clips.map(clip => {
+				const cloned = structuredClone(clip) as Clip;
+				delete (cloned as { id?: string }).id;
+				const asset = cloned.asset as { type?: string; src?: string } | undefined;
+				if (asset?.type === "svg" && typeof asset.src === "string") {
+					asset.src = sanitiseSvg(asset.src);
+				}
+				const original = typeof cloned.start === "number" ? cloned.start : 0;
+				cloned.start = (original + offset) as Seconds;
+				return cloned;
+			})
+		}));
+
+		await this.executeCommand(new AddTracksCommand(0, prepared));
+	}
+
 	public getClip(trackIdx: number, clipIdx: number): Clip | null {
 		// Return from Player array for position-based ordering (matches Player behavior)
 		// Cast to Clip since clipConfiguration is ResolvedClip internally but compatible at runtime
@@ -776,12 +863,8 @@ export class Edit {
 	public async addTrack(trackIdx: number, track: Track): Promise<void> {
 		TrackSchema.parse(track);
 
-		const command = new AddTrackCommand(trackIdx);
-		await this.executeCommand(command);
-
-		for (const clip of track.clips) {
-			await this.addClip(trackIdx, clip);
-		}
+		// Single atomic command — track + all its clips in one undo step.
+		await this.executeCommand(new AddTrackCommand(trackIdx, track));
 
 		// Auto-link caption clips with unresolved alias sources
 		await this.autoLinkCaptionSources(trackIdx, track.clips);
@@ -1736,8 +1819,8 @@ export class Edit {
 	 * Paste the copied clip at the current playhead position.
 	 * @internal
 	 */
-	public pasteClip(): void {
-		this.selectionManager.pasteClip();
+	public pasteClip(): Promise<void> {
+		return this.selectionManager.pasteClip();
 	}
 
 	/**
