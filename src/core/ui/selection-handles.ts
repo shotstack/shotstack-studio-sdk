@@ -9,8 +9,23 @@ import {
 	detectCornerZone,
 	detectEdgeZone
 } from "@core/interaction/clip-interaction";
-import { SELECTION_CONSTANTS, CURSOR_BASE_ANGLES, type CornerName, buildResizeCursor, buildRotationCursor, calculateHitArea } from "@core/interaction/selection-overlay";
-import { type ClipBounds, createClipBounds, createSnapContext, filterContainedClips, snap, snapRotation, visualToLogical } from "@core/interaction/snap-system";
+import {
+	SELECTION_CONSTANTS,
+	CURSOR_BASE_ANGLES,
+	type CornerName,
+	buildResizeCursor,
+	buildRotationCursor,
+	calculateHitArea
+} from "@core/interaction/selection-overlay";
+import {
+	type ClipBounds,
+	createClipBounds,
+	createSnapContext,
+	filterContainedClips,
+	snap,
+	snapRotation,
+	visualToLogical
+} from "@core/interaction/snap-system";
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
 import type { Size, Vector } from "@layouts/geometry";
@@ -456,7 +471,13 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 		// Check if inside player bounds for drag
 		if (localPoint.x >= 0 && localPoint.x <= size.width && localPoint.y >= 0 && localPoint.y <= size.height) {
+			this.edit.getInternalEvents().emit(InternalEvent.CanvasClipClicked, { player: this.selectedPlayer });
 			this.startDrag(event);
+			return;
+		}
+
+		if (event.target === this.outline || event.target === this.app?.stage) {
+			this.edit.getInternalEvents().emit(InternalEvent.CanvasBackgroundClicked);
 		}
 	}
 
@@ -536,8 +557,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 			}
 
 			// Auto-set fit to "contain" for image/video clips when resizing
-			if ((this.scaleDirection || this.edgeDragDirection) &&
-				(finalClip.asset?.type === "image" || finalClip.asset?.type === "video")) {
+			if ((this.scaleDirection || this.edgeDragDirection) && (finalClip.asset?.type === "image" || finalClip.asset?.type === "video")) {
 				finalClip.fit = "contain";
 				this.edit.updateClipInDocument(this.selectedClipId, { fit: "contain" });
 				this.edit.resolveClip(this.selectedClipId);

@@ -43,8 +43,7 @@ export const TOOLBAR_ICONS = {
 	chevron: `<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
 	transition: `<path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/>`,
 	effect: `<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>`,
-	trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>`,
-	textCursor: `<path d="M12 4v16"/><path d="M8 4h8"/><path d="M8 20h8"/>`
+	trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>`
 };
 
 /**
@@ -256,9 +255,11 @@ export abstract class BaseToolbar {
 	 */
 	protected setupOutsideClickHandler(): void {
 		this.clickOutsideHandler = (e: MouseEvent) => {
-			if (!this.container?.contains(e.target as Node)) {
-				this.closeAllPopups();
-			}
+			const target = e.target as HTMLElement | null;
+			if (!target) return;
+			if (this.container?.contains(target)) return;
+			if (target.tagName === "CANVAS") return;
+			this.closeAllPopups();
 		};
 		document.addEventListener("click", this.clickOutsideHandler);
 	}

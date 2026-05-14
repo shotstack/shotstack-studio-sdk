@@ -87,6 +87,12 @@ jest.mock("pixi.js", () => {
 			parent: null,
 			destroy: jest.fn()
 		})),
+		Text: jest.fn().mockImplementation(() => ({
+			text: "",
+			position: { set: jest.fn() },
+			destroy: jest.fn()
+		})),
+		Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
 		Texture: { from: jest.fn() },
 		Assets: { load: jest.fn(), unload: jest.fn(), cache: { has: jest.fn().mockReturnValue(false) } },
 		ColorMatrixFilter: jest.fn(() => ({ negative: jest.fn() })),
@@ -1549,5 +1555,225 @@ describe("AddTracksCommand", () => {
 
 		await edit.undo();
 		expect(edit.getTracks().length).toBe(trackCountBefore);
+	});
+});
+
+/**
+ * Canvas double-click intent detection.
+ *
+ * Rules under test (see Edit.setupIntentListeners):
+ *  - First click on an unselected clip selects it; does not start the dblclick timer.
+ *  - Two clicks on an already-selected clip within DoubleClickThresholdMs emit CanvasClipDoubleClicked.
+ *  - Two clicks on an already-selected clip outside the threshold do not.
+ *  - Clicking the background between clicks clears the timer.
+ */
+describe("Edit canvas dblclick intent", () => {
+	let edit: Edit;
+	let events: EventEmitter;
+	let nowSpy: jest.SpyInstance;
+
+	beforeEach(async () => {
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "image", src: "https://example.com/a.jpg" }, start: 0, length: 1 },
+							{ asset: { type: "image", src: "https://example.com/b.jpg" }, start: 1, length: 1 }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		events = edit.getInternalEvents();
+		nowSpy = jest.spyOn(performance, "now");
+	});
+
+	afterEach(() => {
+		nowSpy.mockRestore();
+		edit.dispose();
+	});
+
+	it("does not emit dblclick when first selecting a clip", () => {
+		const playerA = edit.getPlayerClip(0, 0);
+		if (!playerA) throw new Error("playerA missing");
+
+		const dblclickFired = jest.fn();
+		events.on(InternalEvent.CanvasClipDoubleClicked, dblclickFired);
+
+		nowSpy.mockReturnValue(1000);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA });
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA });
+
+		expect(dblclickFired).not.toHaveBeenCalled();
+	});
+
+	it("emits dblclick on two clicks of an already-selected clip within threshold", () => {
+		const playerA = edit.getPlayerClip(0, 0);
+		if (!playerA) throw new Error("playerA missing");
+
+		const dblclickFired = jest.fn();
+		events.on(InternalEvent.CanvasClipDoubleClicked, dblclickFired);
+
+		// Initial selection — does not start the timer.
+		nowSpy.mockReturnValue(1000);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA });
+
+		// First click after selection — starts the timer.
+		nowSpy.mockReturnValue(1100);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA });
+
+		// Second click within 500ms — dblclick.
+		nowSpy.mockReturnValue(1400);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA });
+
+		expect(dblclickFired).toHaveBeenCalledTimes(1);
+		expect(dblclickFired).toHaveBeenCalledWith({ player: playerA });
+	});
+
+	it("does not emit dblclick when the two clicks straddle the threshold", () => {
+		const playerA = edit.getPlayerClip(0, 0);
+		if (!playerA) throw new Error("playerA missing");
+
+		const dblclickFired = jest.fn();
+		events.on(InternalEvent.CanvasClipDoubleClicked, dblclickFired);
+
+		nowSpy.mockReturnValue(1000);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // selects
+		nowSpy.mockReturnValue(1100);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // arms timer
+		nowSpy.mockReturnValue(1700);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // 600ms later — too slow
+
+		expect(dblclickFired).not.toHaveBeenCalled();
+	});
+
+	it("does not emit dblclick when selection switches between clicks", () => {
+		const playerA = edit.getPlayerClip(0, 0);
+		const playerB = edit.getPlayerClip(0, 1);
+		if (!playerA || !playerB) throw new Error("players missing");
+
+		const dblclickFired = jest.fn();
+		events.on(InternalEvent.CanvasClipDoubleClicked, dblclickFired);
+
+		nowSpy.mockReturnValue(1000);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // selects A
+		nowSpy.mockReturnValue(1100);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // arms timer on A
+		nowSpy.mockReturnValue(1150);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerB }); // selects B — clears timer
+		nowSpy.mockReturnValue(1200);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerB }); // arms timer on B (first after select)
+
+		expect(dblclickFired).not.toHaveBeenCalled();
+	});
+
+	it("clears the dblclick timer when the background is clicked", () => {
+		const playerA = edit.getPlayerClip(0, 0);
+		if (!playerA) throw new Error("playerA missing");
+
+		const dblclickFired = jest.fn();
+		events.on(InternalEvent.CanvasClipDoubleClicked, dblclickFired);
+
+		nowSpy.mockReturnValue(1000);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // selects
+		nowSpy.mockReturnValue(1100);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // arms
+		events.emit(InternalEvent.CanvasBackgroundClicked); // clears selection AND timer
+		nowSpy.mockReturnValue(1150);
+		events.emit(InternalEvent.CanvasClipClicked, { player: playerA }); // first click on (now unselected) — selects, no dblclick
+
+		expect(dblclickFired).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * SelectionHandles fall-through dismiss.
+ *
+ * The selection outline has an expanded hitArea (rotation-zone margin) that absorbs
+ * clicks the user perceives as "outside the clip". Pixi may also route the click
+ * straight to the stage if no descendant catches it. In both cases, the user means
+ * "dismiss" — SelectionHandles forwards an InternalEvent.CanvasBackgroundClicked
+ * so the existing clear-selection cascade runs.
+ */
+describe("SelectionHandles fall-through dismiss", () => {
+	// Import lazily so the pixi.js mock is in effect before SelectionHandles' module load.
+	// eslint-disable-next-line @typescript-eslint/no-require-imports -- jest pixi mock setup
+	const { SelectionHandles } = require("@core/ui/selection-handles") as typeof import("@core/ui/selection-handles");
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	const { Pointer } = require("@inputs/pointer") as typeof import("@inputs/pointer");
+
+	let edit: Edit;
+	let handles: InstanceType<typeof SelectionHandles>;
+	let outline: object;
+	let fakeStage: object;
+	let unrelatedContainer: object;
+	let emitSpy: jest.SpyInstance;
+
+	beforeEach(async () => {
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ asset: { type: "image", src: "https://example.com/a.jpg" }, start: 0, length: 1, width: 100, height: 100 }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+
+		const player = edit.getPlayerClip(0, 0);
+		if (!player) throw new Error("player missing");
+
+		handles = new SelectionHandles(edit);
+		// Reach into private fields for surgical testing; the public API requires a full
+		// Pixi Application mount which is overkill for verifying one branch of onPointerDown.
+		const handlesAny = handles as unknown as { outline: object; app: { stage: object }; selectedPlayer: typeof player };
+		outline = handlesAny.outline;
+		fakeStage = { __label: "stage" };
+		handlesAny.app = { stage: fakeStage };
+		handlesAny.selectedPlayer = player;
+		unrelatedContainer = { __label: "unrelated" };
+
+		emitSpy = jest.spyOn(edit.getInternalEvents(), "emit");
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	function fireFallThroughClick(target: object): void {
+		const event = {
+			button: Pointer.ButtonLeftClick,
+			target,
+			globalX: -1000,
+			globalY: -1000,
+			getLocalPosition: () => ({ x: -1000, y: -1000 })
+		};
+		// onPointerDown is private; invoke via bracket access for the test.
+		(handles as unknown as { onPointerDown: (e: unknown) => void }).onPointerDown(event);
+	}
+
+	function backgroundEmits(): unknown[] {
+		return emitSpy.mock.calls.filter(call => call[0] === InternalEvent.CanvasBackgroundClicked);
+	}
+
+	it("emits CanvasBackgroundClicked when the outline absorbs a click outside any gesture zone", () => {
+		fireFallThroughClick(outline);
+		expect(backgroundEmits()).toHaveLength(1);
+	});
+
+	it("emits CanvasBackgroundClicked when the click target is the stage (no descendant caught it)", () => {
+		fireFallThroughClick(fakeStage);
+		expect(backgroundEmits()).toHaveLength(1);
+	});
+
+	it("does not emit dismiss when the target is an unrelated container", () => {
+		fireFallThroughClick(unrelatedContainer);
+		expect(backgroundEmits()).toHaveLength(0);
 	});
 });

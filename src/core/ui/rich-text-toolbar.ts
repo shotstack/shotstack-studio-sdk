@@ -8,7 +8,7 @@ import { injectShotstackStyles } from "@styles/inject";
 import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
 
 import { BackgroundColorPicker } from "./background-color-picker";
-import { BaseToolbar, FONT_SIZES, TOOLBAR_ICONS } from "./base-toolbar";
+import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
 import { StylePanel, type StylePanelOptions } from "./composites/StylePanel";
@@ -127,24 +127,6 @@ export class RichTextToolbar extends BaseToolbar {
 			</div>
 			<div class="ss-toolbar-mode-divider"></div>
 
-			<div class="ss-toolbar-dropdown">
-				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						${TOOLBAR_ICONS.textCursor}
-					</svg>
-					<span>Edit text</span>
-				</button>
-				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
-					<div class="ss-toolbar-popup-header">Edit Text</div>
-					<div class="ss-toolbar-text-area-wrapper">
-						<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
-						<div class="ss-autocomplete-popup" data-autocomplete-popup>
-							<div class="ss-autocomplete-items" data-autocomplete-items></div>
-						</div>
-					</div>
-				</div>
-			</div>
-
 			<div class="ss-toolbar-group ss-toolbar-group--bordered">
 				<button data-action="size-down" class="ss-toolbar-btn" title="Decrease font size">
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -199,6 +181,23 @@ export class RichTextToolbar extends BaseToolbar {
 				<div data-spacing-popup class="ss-toolbar-popup ss-toolbar-popup--wide">
 					<div data-spacing-panel-container class="ss-toolbar-popup-section"></div>
 					</div>
+			</div>
+
+			<div class="ss-toolbar-divider"></div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit ss-toolbar-btn--primary" title="Edit text">
+					<span>Edit text</span>
+				</button>
+				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
+					<div class="ss-toolbar-popup-header">Edit Text</div>
+					<div class="ss-toolbar-text-area-wrapper">
+						<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
+						<div class="ss-autocomplete-popup" data-autocomplete-popup>
+							<div class="ss-autocomplete-items" data-autocomplete-items></div>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<div class="ss-toolbar-divider"></div>
@@ -835,12 +834,10 @@ export class RichTextToolbar extends BaseToolbar {
 
 		// Double-clicking the canvas text opens the edit popup for the current
 		// selection — same path as the "Edit text" toolbar button.
-		this.unsubCanvasDoubleClick = this.edit.getInternalEvents().on(InternalEvent.CanvasClipDoubleClicked, ({ player }) => {
+		this.unsubCanvasDoubleClick = this.edit.getInternalEvents().on(InternalEvent.CanvasClipDoubleClicked, () => {
 			if (this.selectedTrackIdx < 0 || this.selectedClipIdx < 0) return;
-			const selectedClipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-			if (selectedClipId && player.clipId === selectedClipId) {
-				this.openTextEditPopup();
-			}
+			if (!this.container || !this.container.classList.contains("visible")) return;
+			this.openTextEditPopup();
 		});
 	}
 
@@ -1133,13 +1130,12 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	/** Open the edit-text popup and focus its textarea. Idempotent if already open. */
-	public openTextEditPopup(): void {
+	private openTextEditPopup(): void {
 		if (!this.isPopupOpen(this.textEditPopup)) {
 			this.toggleTextEditPopup();
-		} else {
-			this.textEditArea?.focus();
-			this.textEditArea?.select();
 		}
+		this.textEditArea?.focus();
+		this.textEditArea?.select();
 	}
 
 	private debouncedApplyTextEdit(): void {
