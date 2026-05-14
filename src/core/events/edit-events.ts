@@ -109,6 +109,7 @@ export type EditEventName = (typeof EditEvent)[keyof typeof EditEvent];
 export const InternalEvent = {
 	// Canvas → Edit communication
 	CanvasClipClicked: "canvas:clipClicked",
+	CanvasClipDoubleClicked: "canvas:clipDoubleClicked",
 	CanvasBackgroundClicked: "canvas:backgroundClicked",
 
 	// Font capability detection
@@ -189,6 +190,7 @@ export type EditEventMap = {
 export type InternalEventMap = {
 	// Canvas interaction
 	[InternalEvent.CanvasClipClicked]: { player: Player };
+	[InternalEvent.CanvasClipDoubleClicked]: { player: Player };
 	[InternalEvent.CanvasBackgroundClicked]: void;
 
 	// Font

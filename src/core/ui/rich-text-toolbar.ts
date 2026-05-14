@@ -8,7 +8,7 @@ import { injectShotstackStyles } from "@styles/inject";
 import { GOOGLE_FONTS_BY_FILENAME } from "../fonts/google-fonts";
 
 import { BackgroundColorPicker } from "./background-color-picker";
-import { BaseToolbar, FONT_SIZES } from "./base-toolbar";
+import { BaseToolbar, FONT_SIZES, TOOLBAR_ICONS } from "./base-toolbar";
 import { EffectPanel } from "./composites/EffectPanel";
 import { SpacingPanel } from "./composites/SpacingPanel";
 import { StylePanel, type StylePanelOptions } from "./composites/StylePanel";
@@ -42,6 +42,7 @@ export class RichTextToolbar extends BaseToolbar {
 	private textEditPopup: HTMLDivElement | null = null;
 	private textEditArea: HTMLTextAreaElement | null = null;
 	private textEditDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private unsubCanvasDoubleClick: (() => void) | null = null;
 
 	// Autocomplete for merge field variables
 	private autocompletePopup: HTMLDivElement | null = null;
@@ -127,7 +128,12 @@ export class RichTextToolbar extends BaseToolbar {
 			<div class="ss-toolbar-mode-divider"></div>
 
 			<div class="ss-toolbar-dropdown">
-				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">Text</button>
+				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						${TOOLBAR_ICONS.textCursor}
+					</svg>
+					<span>Edit text</span>
+				</button>
 				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
 					<div class="ss-toolbar-popup-header">Edit Text</div>
 					<div class="ss-toolbar-text-area-wrapper">
@@ -826,6 +832,16 @@ export class RichTextToolbar extends BaseToolbar {
 				this.mergeFieldManager.sync();
 			}
 		});
+
+		// Double-clicking the canvas text opens the edit popup for the current
+		// selection — same path as the "Edit text" toolbar button.
+		this.unsubCanvasDoubleClick = this.edit.getInternalEvents().on(InternalEvent.CanvasClipDoubleClicked, ({ player }) => {
+			if (this.selectedTrackIdx < 0 || this.selectedClipIdx < 0) return;
+			const selectedClipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+			if (selectedClipId && player.clipId === selectedClipId) {
+				this.openTextEditPopup();
+			}
+		});
 	}
 
 	// ─── Merge Field Label Defaults ────────────────────────────────────────
@@ -1114,6 +1130,16 @@ export class RichTextToolbar extends BaseToolbar {
 				this.textEditArea.focus();
 			}
 		});
+	}
+
+	/** Open the edit-text popup and focus its textarea. Idempotent if already open. */
+	public openTextEditPopup(): void {
+		if (!this.isPopupOpen(this.textEditPopup)) {
+			this.toggleTextEditPopup();
+		} else {
+			this.textEditArea?.focus();
+			this.textEditArea?.select();
+		}
 	}
 
 	private debouncedApplyTextEdit(): void {
@@ -1820,6 +1846,8 @@ export class RichTextToolbar extends BaseToolbar {
 		this.unsubFontCapabilities = null;
 		this.unsubMergeFieldChanged?.();
 		this.unsubMergeFieldChanged = null;
+		this.unsubCanvasDoubleClick?.();
+		this.unsubCanvasDoubleClick = null;
 		if (this.boundHandleClick) {
 			this.container?.removeEventListener("click", this.boundHandleClick);
 			this.boundHandleClick = null;

@@ -1,3 +1,4 @@
+import { InternalEvent } from "@core/events/edit-events";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { TextAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
@@ -13,6 +14,7 @@ export class TextToolbar extends BaseToolbar {
 	private textEditPopup: HTMLDivElement | null = null;
 	private textEditArea: HTMLTextAreaElement | null = null;
 	private textEditDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private unsubCanvasDoubleClick: (() => void) | null = null;
 
 	// Font size
 	private sizeInput: HTMLInputElement | null = null;
@@ -105,9 +107,9 @@ export class TextToolbar extends BaseToolbar {
 			<div class="ss-toolbar-dropdown">
 				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						${TOOLBAR_ICONS.edit}
+						${TOOLBAR_ICONS.textCursor}
 					</svg>
-					<span>Text</span>
+					<span>Edit text</span>
 				</button>
 				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
 					<div class="ss-toolbar-popup-header">Edit Text</div>
@@ -340,6 +342,15 @@ export class TextToolbar extends BaseToolbar {
 		this.effectPopup = this.container.querySelector("[data-effect-popup]");
 	}
 
+	/** Open the edit-text popup and focus its textarea. Idempotent if already open. */
+	public openTextEditPopup(): void {
+		if (!this.isPopupOpen(this.textEditPopup)) {
+			this.togglePopup(this.textEditPopup);
+		}
+		this.textEditArea?.focus();
+		this.textEditArea?.select();
+	}
+
 	private setupEventListeners(): void {
 		this.boundHandleClick = this.handleClick.bind(this);
 		this.container?.addEventListener("click", this.boundHandleClick);
@@ -377,6 +388,17 @@ export class TextToolbar extends BaseToolbar {
 			this.handleStrokeChange();
 		});
 		this.strokeColorInput?.addEventListener("input", () => this.handleStrokeChange());
+
+		// Double-clicking the text on the canvas opens the edit popup — same
+		// path as clicking the toolbar's "Edit text" button. Guarded against
+		// firing for clips other than the currently-selected one.
+		this.unsubCanvasDoubleClick = this.edit.getInternalEvents().on(InternalEvent.CanvasClipDoubleClicked, ({ player }) => {
+			if (this.selectedTrackIdx < 0 || this.selectedClipIdx < 0) return;
+			const selectedClipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+			if (selectedClipId && player.clipId === selectedClipId) {
+				this.openTextEditPopup();
+			}
+		});
 
 		// Mount composite panels
 		this.mountCompositePanels();
@@ -766,6 +788,9 @@ export class TextToolbar extends BaseToolbar {
 		if (this.textEditDebounceTimer) {
 			clearTimeout(this.textEditDebounceTimer);
 		}
+
+		this.unsubCanvasDoubleClick?.();
+		this.unsubCanvasDoubleClick = null;
 
 		// Dispose composite panels (auto-cleans events via EventManager)
 		this.spacingPanel?.dispose();

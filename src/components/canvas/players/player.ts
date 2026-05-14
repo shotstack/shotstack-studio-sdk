@@ -59,6 +59,7 @@ export enum PlayerType {
  */
 export abstract class Player extends Entity {
 	private static readonly DiscardedFrameCount = 0;
+	private static readonly DoubleClickThresholdMs = 350;
 
 	public layer: number;
 	public shouldDispose: boolean;
@@ -492,8 +493,13 @@ export abstract class Player extends Entity {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
 
+	/** Timestamp of last single-click on this player, used for double-click detection. */
+	private lastClickAt = 0;
+
 	/**
 	 * Handle pointer down - emit click event for selection handling.
+	 * Two clicks within DoubleClickThresholdMs on the same player also emit
+	 * CanvasClipDoubleClicked so text-clip editing can be triggered from the canvas.
 	 * All drag/resize/rotate interaction is handled by SelectionHandles.
 	 */
 	private onPointerDown(event: pixi.FederatedPointerEvent): void {
@@ -502,6 +508,14 @@ export abstract class Player extends Entity {
 		}
 
 		this.edit.getInternalEvents().emit(InternalEvent.CanvasClipClicked, { player: this });
+
+		const now = performance.now();
+		if (now - this.lastClickAt <= Player.DoubleClickThresholdMs) {
+			this.edit.getInternalEvents().emit(InternalEvent.CanvasClipDoubleClicked, { player: this });
+			this.lastClickAt = 0;
+		} else {
+			this.lastClickAt = now;
+		}
 	}
 
 	private clipHasKeyframes(): boolean {
