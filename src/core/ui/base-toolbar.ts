@@ -1,9 +1,12 @@
 import type { Edit } from "@core/edit-session";
+import { EditEvent } from "@core/events/edit-events";
 
 import { makeToolbarDraggable, type ToolbarDragHandle } from "./toolbar-drag";
 
 /** Default top offset for CSS-centered top toolbars */
 const DEFAULT_TOP_OFFSET = "12px";
+
+export const DELETE_DISABLED_REASON = "Can't delete the only clip on the timeline";
 
 /** Preset font sizes used by text toolbars */
 export const FONT_SIZES = [6, 8, 10, 12, 14, 16, 18, 21, 24, 28, 32, 36, 42, 48, 56, 64, 72, 96, 128];
@@ -39,7 +42,8 @@ export const TOOLBAR_ICONS = {
 	edit: `<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>`,
 	chevron: `<path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
 	transition: `<path d="M12 3v18"/><path d="M5 12H2l3-3 3 3H5"/><path d="M19 12h3l-3 3-3-3h3"/>`,
-	effect: `<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>`
+	effect: `<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>`,
+	trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>`
 };
 
 /**
@@ -53,9 +57,76 @@ export abstract class BaseToolbar {
 	protected selectedClipIdx = -1;
 	protected clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
 	protected dragResult: ToolbarDragHandle | null = null;
+	private deleteBtn: HTMLButtonElement | null = null;
+	private clipCountListener: (() => void) | null = null;
 
 	constructor(edit: Edit) {
 		this.edit = edit;
+	}
+
+	/**
+	 * Append a trash button to the right end of the toolbar.
+	 */
+	protected appendDeleteButton(): void {
+		if (!this.container) return;
+		this.buildDeleteButton();
+		this.ensureClipCountSubscription();
+		this.refreshDeleteState();
+	}
+
+	private buildDeleteButton(): void {
+		if (!this.container) return;
+
+		this.container.querySelector(".ss-toolbar-delete-wrap")?.remove();
+
+		const wrapper = document.createElement("div");
+		wrapper.className = "ss-toolbar-delete-wrap";
+
+		const divider = document.createElement("div");
+		divider.className = "ss-toolbar-delete-divider";
+
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "ss-toolbar-delete-btn";
+		btn.dataset["action"] = "delete-clip";
+		btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TOOLBAR_ICONS.trash}</svg>`;
+
+		btn.addEventListener("click", e => {
+			e.stopPropagation();
+			if (this.selectedTrackIdx < 0 || this.selectedClipIdx < 0) return;
+			if (!this.edit.canDeleteClip(this.selectedTrackIdx, this.selectedClipIdx)) return;
+			this.edit.deleteClip(this.selectedTrackIdx, this.selectedClipIdx).catch(err => {
+				console.warn("[shotstack-studio:base-toolbar] deleteClip failed", err);
+			});
+		});
+
+		wrapper.appendChild(divider);
+		wrapper.appendChild(btn);
+		this.deleteBtn = btn;
+		this.container.appendChild(wrapper);
+	}
+
+	/**
+	 * Subscribe to clip-inventory events exactly once per toolbar instance.
+	 */
+	private ensureClipCountSubscription(): void {
+		if (this.clipCountListener) return;
+		this.clipCountListener = () => this.refreshDeleteState();
+		this.edit.events.on(EditEvent.ClipAdded, this.clipCountListener);
+		this.edit.events.on(EditEvent.ClipDeleted, this.clipCountListener);
+		this.edit.events.on(EditEvent.ClipRestored, this.clipCountListener);
+	}
+
+	/**
+	 * Sync the trash button's disabled state with whether the selected clip is
+	 * actually deletable.
+	 */
+	protected refreshDeleteState(): void {
+		if (!this.deleteBtn) return;
+		const hasSelection = this.selectedTrackIdx >= 0 && this.selectedClipIdx >= 0;
+		const deletable = hasSelection && this.edit.canDeleteClip(this.selectedTrackIdx, this.selectedClipIdx);
+		this.deleteBtn.disabled = !deletable;
+		this.deleteBtn.title = deletable ? "Delete (Del)" : DELETE_DISABLED_REASON;
 	}
 
 	/**
@@ -97,6 +168,7 @@ export abstract class BaseToolbar {
 		this.selectedTrackIdx = trackIndex;
 		this.selectedClipIdx = clipIndex;
 		this.syncState();
+		this.refreshDeleteState();
 		if (this.container) {
 			this.container.classList.add("visible");
 			this.container.style.display = ""; // Clear inline style, let CSS control
@@ -128,6 +200,14 @@ export abstract class BaseToolbar {
 			document.removeEventListener("click", this.clickOutsideHandler);
 			this.clickOutsideHandler = null;
 		}
+
+		if (this.clipCountListener) {
+			this.edit.events.off(EditEvent.ClipAdded, this.clipCountListener);
+			this.edit.events.off(EditEvent.ClipDeleted, this.clipCountListener);
+			this.edit.events.off(EditEvent.ClipRestored, this.clipCountListener);
+			this.clipCountListener = null;
+		}
+		this.deleteBtn = null;
 
 		this.container?.remove();
 		this.container = null;

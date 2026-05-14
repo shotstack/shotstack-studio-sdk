@@ -7,6 +7,7 @@ import { type Seconds, sec } from "@core/timing/types";
 import { injectShotstackStyles } from "@styles/inject";
 import { DEFAULT_PIXELS_PER_SECOND, TIMELINE_PADDING, type ClipRenderer, type ClipInfo } from "@timeline/timeline.types";
 
+import { ClipContextMenu } from "./components/clip/clip-context-menu";
 import { PlayheadComponent } from "./components/playhead/playhead-component";
 import { RulerComponent } from "./components/ruler/ruler-component";
 import { ToolbarComponent } from "./components/toolbar/toolbar-component";
@@ -46,6 +47,7 @@ export class Timeline {
 	private playheadGhost: HTMLElement | null = null;
 	private feedbackLayer: HTMLElement | null = null;
 	private interactionController: InteractionController | null = null;
+	private clipContextMenu: ClipContextMenu | null = null;
 	private resizeHandle: TimelineResizeHandle | null = null;
 
 	// Hybrid render loop state
@@ -420,7 +422,10 @@ export class Timeline {
 				this.stateManager.isLumaVisibleForEditing(contentTrackIndex, contentClipIndex),
 			findContentForLuma: (lumaTrack, lumaClip) => this.stateManager.findContentForLuma(lumaTrack, lumaClip),
 			aiAssetNumbers: this.computeAiAssetNumbers(),
-			onHeightChange: () => this.requestRender()
+			onHeightChange: () => this.requestRender(),
+			onMenuClick: (trackIndex, clipIndex, anchorX, anchorY) => {
+				this.clipContextMenu?.showAt(anchorX, anchorY, trackIndex, clipIndex);
+			}
 		});
 
 		// Set up scroll sync (also sync playhead)
@@ -462,6 +467,9 @@ export class Timeline {
 		});
 		this.interactionController.mount();
 
+		this.clipContextMenu = new ClipContextMenu(this.edit, this.trackList.element);
+		this.clipContextMenu.mount();
+
 		this.stateManager.setInteractionQuery({
 			isDragging: (t, c) => this.interactionController?.isDragging(t, c) ?? false,
 			isResizing: (t, c) => this.interactionController?.isResizing(t, c) ?? false
@@ -474,6 +482,9 @@ export class Timeline {
 
 		this.interactionController?.dispose();
 		this.interactionController = null;
+
+		this.clipContextMenu?.dispose();
+		this.clipContextMenu = null;
 
 		this.toolbar?.dispose();
 		this.toolbar = null;

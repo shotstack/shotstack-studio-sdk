@@ -332,6 +332,9 @@ describe("SvgPlayer", () => {
 	});
 
 	describe("WASM Initialization", () => {
+		// Canvas 2.7.2+ handles the wasm fetch internally. The SDK only invokes
+		// initResvg() and lets canvas resolve the bytes (CDN by default; consumers
+		// can override via wasmBaseURL or wasmBinary).
 		it("initializes resvg WASM on first load", async () => {
 			const mockEdit = createMockEdit();
 			const clipConfig = createSvgClipConfig();
@@ -339,7 +342,6 @@ describe("SvgPlayer", () => {
 
 			await player.load();
 
-			expect(mockFetch).toHaveBeenCalledWith("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm");
 			expect(mockInitResvg).toHaveBeenCalled();
 		});
 
@@ -353,7 +355,6 @@ describe("SvgPlayer", () => {
 			await player2.load();
 
 			// Should only initialize once
-			expect(mockFetch).toHaveBeenCalledTimes(1);
 			expect(mockInitResvg).toHaveBeenCalledTimes(1);
 		});
 
@@ -368,7 +369,6 @@ describe("SvgPlayer", () => {
 			await Promise.all([player1.load(), player2.load(), player3.load()]);
 
 			// Should only initialize once despite concurrent requests
-			expect(mockFetch).toHaveBeenCalledTimes(1);
 			expect(mockInitResvg).toHaveBeenCalledTimes(1);
 		});
 	});
@@ -466,8 +466,10 @@ describe("SvgPlayer", () => {
 			consoleSpy.mockRestore();
 		});
 
-		it("creates fallback graphic when WASM fetch fails", async () => {
-			mockFetch.mockRejectedValueOnce(new Error("Network error"));
+		it("creates fallback graphic when WASM init fails", async () => {
+			// Canvas's initResvg handles the fetch internally; we simulate a
+			// failure by making the SDK-side initResvg call reject.
+			mockInitResvg.mockRejectedValueOnce(new Error("Network error"));
 
 			const mockEdit = createMockEdit();
 			const clipConfig = createSvgClipConfig();

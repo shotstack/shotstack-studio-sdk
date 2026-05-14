@@ -550,9 +550,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 			this.stylePanel.onStrokeChange(stroke => {
 				const isDragging = this.stylePanel?.isDragging() ?? false;
-				const strokeValue = stroke.width > 0
-					? { width: stroke.width, color: stroke.color, opacity: stroke.opacity / 100 }
-					: undefined;
+				const strokeValue = stroke.width > 0 ? { width: stroke.width, color: stroke.color, opacity: stroke.opacity / 100 } : undefined;
 
 				if (isDragging) {
 					const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
@@ -656,13 +654,14 @@ export class RichTextToolbar extends BaseToolbar {
 							}
 						: undefined;
 					// Stroke: persist if width > 0
-					asset["stroke"] = finalState.stroke.width > 0
-						? {
-								width: finalState.stroke.width,
-								color: finalState.stroke.color,
-								opacity: finalState.stroke.opacity / 100
-							}
-						: undefined;
+					asset["stroke"] =
+						finalState.stroke.width > 0
+							? {
+									width: finalState.stroke.width,
+									color: finalState.stroke.color,
+									opacity: finalState.stroke.opacity / 100
+								}
+							: undefined;
 					// Note: fill is handled by BackgroundColorPicker, not StylePanel
 				}
 
@@ -808,6 +807,7 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.setupOutsideClickHandler();
 		this.enableDrag();
+		this.appendDeleteButton();
 
 		// eslint-disable-next-line no-param-reassign -- Intentional DOM parent styling
 		parent.style.position = "relative";

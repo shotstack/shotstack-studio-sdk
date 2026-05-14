@@ -60,6 +60,9 @@ function createMockEditSession() {
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
 		commitClipUpdate: jest.fn(),
+		deleteClip: jest.fn(),
+		canDeleteClip: jest.fn(() => true),
+		events: { on: jest.fn(), off: jest.fn() },
 		size: { width: 1920, height: 1080 }
 	};
 }
@@ -97,6 +100,9 @@ function createMergeFieldMockEditSession() {
 			updateClipInDocument: jest.fn(),
 			resolveClip: jest.fn(),
 			commitClipUpdate: jest.fn(),
+			deleteClip: jest.fn(),
+			canDeleteClip: jest.fn(() => true),
+			events: { on: jest.fn(), off: jest.fn() },
 			getInternalEvents: jest.fn(() => internalEvents),
 			getMergeFieldForProperty: jest.fn((): string | null => null),
 			removeMergeField: jest.fn().mockResolvedValue(undefined),

@@ -825,6 +825,14 @@ export class Edit {
 		return clip.asset;
 	}
 
+	/**
+	 * Whether the clip at `(trackIdx, clipIdx)` can be deleted.
+	 */
+	public canDeleteClip(trackIdx: number, clipIdx: number): boolean {
+		if (this.document.getClipCount() <= 1) return false;
+		return this.document.getClip(trackIdx, clipIdx) !== null;
+	}
+
 	public async deleteClip(trackIdx: number, clipIdx: number): Promise<void> {
 		const track = this.tracks[trackIdx];
 		if (!track) return;

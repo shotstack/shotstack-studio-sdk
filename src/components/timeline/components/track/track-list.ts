@@ -15,6 +15,8 @@ export interface TrackListOptions {
 	findAttachedLuma?: (trackIndex: number, clipIndex: number) => { trackIndex: number; clipIndex: number } | null;
 	/** Callback when mask badge is clicked on a content clip */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
+	/** Callback when the inline ellipsis trigger on a clip is clicked */
+	onMenuClick?: (trackIndex: number, clipIndex: number, anchorX: number, anchorY: number) => void;
 	/** Check if attached luma is currently visible for editing */
 	isLumaVisibleForEditing?: (contentTrackIndex: number, contentClipIndex: number) => boolean;
 	/** Find the content clip that a luma is attached to via timing match */
@@ -86,6 +88,7 @@ export class TrackListComponent {
 				hasAttachedLuma: this.options.hasAttachedLuma,
 				findAttachedLuma: this.options.findAttachedLuma,
 				onMaskClick: this.options.onMaskClick,
+				onMenuClick: this.options.onMenuClick,
 				isLumaVisibleForEditing: this.options.isLumaVisibleForEditing,
 				findContentForLuma: this.options.findContentForLuma,
 				aiAssetNumbers: this.options.aiAssetNumbers,

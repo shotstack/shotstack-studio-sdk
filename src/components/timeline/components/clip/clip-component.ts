@@ -21,6 +21,8 @@ export interface ClipComponentOptions {
 	attachedLuma?: LumaRef;
 	/** Callback when mask badge is clicked - passes the CONTENT clip indices */
 	onMaskClick?: (contentTrackIndex: number, contentClipIndex: number) => void;
+	/** Callback when the inline ellipsis trigger is clicked. Passes anchor coords for menu positioning. */
+	onMenuClick?: (trackIndex: number, clipIndex: number, anchorX: number, anchorY: number) => void;
 	/** Pre-computed AI asset numbers (map of clip ID to number) */
 	aiAssetNumbers: Map<string, number>;
 }
@@ -83,8 +85,35 @@ export class ClipComponent {
 		rightHandle.className = "ss-clip-resize-handle right";
 		this.element.appendChild(rightHandle);
 
+		// Inline ellipsis menu trigger
+		this.buildMenuTrigger();
+
 		// Set up interaction handlers
 		this.setupInteraction();
+	}
+
+	private buildMenuTrigger(): void {
+		const { onMenuClick } = this.options;
+		if (!onMenuClick) return;
+
+		const trigger = document.createElement("button");
+		trigger.type = "button";
+		trigger.className = "ss-clip-menu-trigger";
+		trigger.setAttribute("aria-label", "Clip menu");
+		trigger.innerHTML = `<svg viewBox="0 0 16 4" fill="currentColor" aria-hidden="true"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>`;
+
+		trigger.addEventListener("pointerdown", e => {
+			// Stop the clip's pointerdown from running drag/select logic
+			e.stopPropagation();
+		});
+		trigger.addEventListener("click", e => {
+			e.stopPropagation();
+			if (!this.currentState) return;
+			const rect = trigger.getBoundingClientRect();
+			onMenuClick(this.currentState.trackIndex, this.currentState.clipIndex, rect.left, rect.bottom);
+		});
+
+		this.element.appendChild(trigger);
 	}
 
 	private setupInteraction(): void {

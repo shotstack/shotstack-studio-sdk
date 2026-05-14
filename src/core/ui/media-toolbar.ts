@@ -374,11 +374,13 @@ export class MediaToolbar extends BaseToolbar {
 		this.setupEventListeners();
 		this.setupOutsideClickHandler();
 		this.enableDrag();
+		this.appendDeleteButton();
 	}
 
 	/**
 	 * Mount composite UI components into their placeholder elements.
 	 */
+
 	private mountCompositeComponents(): void {
 		// Mount opacity slider (two-phase: live preview during drag, single undo on release)
 		const opacityMount = this.container?.querySelector("[data-opacity-slider-mount]");

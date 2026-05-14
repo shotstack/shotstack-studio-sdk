@@ -242,6 +242,8 @@ describe("ClipToolbar merge field integration", () => {
 			getDocumentClip: jest.fn(() => ({ start: 0, length: 5 })),
 			getResolvedClipById: jest.fn(() => ({ start: 0, length: 5 })),
 			updateClipTiming: jest.fn(),
+			deleteClip: jest.fn(),
+			canDeleteClip: jest.fn(() => true),
 			getMergeFieldForProperty: mockGetMergeFieldForProperty,
 			mergeFields: {
 				getAll: jest.fn(() => []),

@@ -203,7 +203,9 @@
 .ss-track {
 	position: relative;
 	border-bottom: 1px solid #f3f4f6;
-	transition: background 0.15s ease, height 0.2s ease;
+	transition:
+		background 0.15s ease,
+		height 0.2s ease;
 	background: #ffffff;
 }
 
@@ -550,6 +552,75 @@
 
 .ss-clip.selected .ss-clip-resize-handle:hover {
 	background: rgba(0, 0, 0, 0.12);
+}
+
+/*
+ * Inline menu trigger
+ */
+.ss-clip-menu-trigger {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	background: rgba(0, 0, 0, 0.06);
+	border: none;
+	border-radius: 3px;
+	color: var(--clip-fg, #333);
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity 0.1s ease,
+		background 0.1s ease;
+	z-index: 3;
+}
+
+.ss-clip-menu-trigger svg {
+	width: 12px;
+	height: 3px;
+	display: block;
+}
+
+.ss-clip:hover .ss-clip-menu-trigger ~ .ss-clip-badge,
+.ss-clip.selected .ss-clip-menu-trigger ~ .ss-clip-badge,
+.ss-clip:hover .ss-clip-badge,
+.ss-clip.selected .ss-clip-badge {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Trigger replaces the timing badge slot on hover/select */
+.ss-clip:hover .ss-clip-menu-trigger,
+.ss-clip.selected .ss-clip-menu-trigger {
+	opacity: 1;
+}
+
+.ss-clip-menu-trigger:hover {
+	background: rgba(0, 0, 0, 0.15);
+}
+
+/* Thumbnail clips: invert overlay so the dots read against dark thumbnails */
+.ss-clip.ss-clip--thumbnails .ss-clip-menu-trigger {
+	background: rgba(0, 0, 0, 0.4);
+	color: rgba(255, 255, 255, 0.95);
+}
+
+.ss-clip.ss-clip--thumbnails .ss-clip-menu-trigger:hover {
+	background: rgba(0, 0, 0, 0.6);
+}
+
+/* Narrow clips: hide so the trigger never overlaps timing badge or label */
+.ss-clip {
+	container-type: inline-size;
+}
+@container (max-width: 90px) {
+	.ss-clip-menu-trigger {
+		display: none;
+	}
 }
 
 /* Playhead */

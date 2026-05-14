@@ -83,6 +83,7 @@ export class RichCaptionToolbar extends RichTextToolbar {
 		});
 
 		this.injectCaptionControls();
+		this.appendDeleteButton();
 	}
 
 	override dispose(): void {
@@ -794,5 +795,4 @@ export class RichCaptionToolbar extends RichTextToolbar {
 			}
 		});
 	}
-
 }

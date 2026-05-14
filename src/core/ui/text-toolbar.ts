@@ -277,6 +277,7 @@ export class TextToolbar extends BaseToolbar {
 		this.buildSizePopup();
 		this.setupEventListeners();
 		this.enableDrag();
+		this.appendDeleteButton();
 	}
 
 	private bindElements(): void {

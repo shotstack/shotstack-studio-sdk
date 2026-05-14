@@ -7,8 +7,6 @@ import * as pixi from "pixi.js";
 
 import { createPlaceholderGraphic } from "./placeholder-graphic";
 
-const RESVG_WASM_URL = "https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
-
 export class SvgPlayer extends Player {
 	private static resvgInitialized: boolean = false;
 	private static resvgInitPromise: Promise<void> | null = null;
@@ -33,9 +31,7 @@ export class SvgPlayer extends Player {
 		}
 
 		SvgPlayer.resvgInitPromise = (async () => {
-			const response = await fetch(RESVG_WASM_URL);
-			const wasmBytes = await response.arrayBuffer();
-			await initResvg(wasmBytes);
+			await initResvg();
 			SvgPlayer.resvgInitialized = true;
 		})();
 

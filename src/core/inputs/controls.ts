@@ -163,7 +163,9 @@ export class Controls {
 				const selected = this.edit.getSelectedClipInfo();
 				if (selected) {
 					event.preventDefault();
-					this.edit.deleteClip(selected.trackIndex, selected.clipIndex);
+					this.edit.deleteClip(selected.trackIndex, selected.clipIndex).catch(err => {
+						console.warn("[shotstack-studio:controls] deleteClip failed", err);
+					});
 				}
 				break;
 			}
