@@ -244,6 +244,7 @@ export class TextToImageToolbar extends BaseToolbar {
 		this.setupEventListeners();
 		this.setupOutsideClickHandler();
 		this.enableDrag();
+		this.appendDeleteButton();
 	}
 
 	private mountCompositeComponents(): void {

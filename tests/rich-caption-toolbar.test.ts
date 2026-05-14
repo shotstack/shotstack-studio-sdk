@@ -110,6 +110,8 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
 		commitClipUpdate: jest.fn(),
+		deleteClip: jest.fn(),
+		canDeleteClip: jest.fn(() => true),
 		getToolbarButtons: jest.fn(() => []),
 		getSelectedClipInfo: jest.fn(() => null),
 		mergeFields: {
@@ -345,13 +347,11 @@ describe("RichCaptionToolbar", () => {
 			const opacitySlider = container.querySelector("[data-active-stroke-opacity]") as HTMLInputElement;
 			expect(opacitySlider?.value).toBe("75");
 		});
-
 	});
 
 	// ── User Interactions ──────────────────────────────────────────────
 
-	describe("layout controls", () => {
-	});
+	describe("layout controls", () => {});
 
 	describe("word animation controls", () => {
 		it("should call updateClip when animation style button is clicked", () => {
@@ -363,7 +363,8 @@ describe("RichCaptionToolbar", () => {
 			simulateClick(popBtn);
 
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
+				0,
+				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
 						animation: expect.objectContaining({ style: "pop" })
@@ -381,7 +382,8 @@ describe("RichCaptionToolbar", () => {
 			simulateClick(leftBtn);
 
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
+				0,
+				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
 						animation: expect.objectContaining({ direction: "left" })
@@ -389,7 +391,6 @@ describe("RichCaptionToolbar", () => {
 				})
 			);
 		});
-
 	});
 
 	describe("active word controls", () => {
@@ -402,7 +403,8 @@ describe("RichCaptionToolbar", () => {
 			simulateInput(input, "#00ff00");
 
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
+				0,
+				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
 						active: expect.objectContaining({
@@ -422,7 +424,8 @@ describe("RichCaptionToolbar", () => {
 			simulateInput(slider, "75");
 
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
+				0,
+				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
 						active: expect.objectContaining({
@@ -442,7 +445,8 @@ describe("RichCaptionToolbar", () => {
 			simulateInput(slider, "5");
 
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
+				0,
+				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
 						active: expect.objectContaining({
@@ -452,7 +456,6 @@ describe("RichCaptionToolbar", () => {
 				})
 			);
 		});
-
 	});
 
 	// ── Source Popup ──────────────────────────────────────────────────
@@ -666,7 +669,8 @@ describe("RichCaptionToolbar", () => {
 			simulateClick(noneItem);
 
 			expect(mockEdit.updateClip).toHaveBeenCalledWith(
-				0, 0,
+				0,
+				0,
 				expect.objectContaining({
 					asset: expect.objectContaining({
 						src: "alias://"
@@ -679,7 +683,6 @@ describe("RichCaptionToolbar", () => {
 	// ── StylePanel Override ────────────────────────────────────────────
 
 	describe("createStylePanel override", () => {
-
 		it("should keep stroke tab visible", () => {
 			setupCaptionClip(mockEdit);
 			toolbar.mount(container);
@@ -699,7 +702,9 @@ describe("RichCaptionToolbar", () => {
 
 			// After dispose, mounting a new container should work without errors
 			const newContainer = createTestContainer();
-			const { RichCaptionToolbar } = jest.requireActual("../src/core/ui/rich-caption-toolbar") as typeof import("../src/core/ui/rich-caption-toolbar");
+			const { RichCaptionToolbar } = jest.requireActual(
+				"../src/core/ui/rich-caption-toolbar"
+			) as typeof import("../src/core/ui/rich-caption-toolbar");
 			const newToolbar = new RichCaptionToolbar(mockEdit as never);
 			expect(() => newToolbar.mount(newContainer)).not.toThrow();
 			newToolbar.dispose();

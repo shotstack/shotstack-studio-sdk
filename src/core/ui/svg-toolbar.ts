@@ -157,6 +157,7 @@ export class SvgToolbar extends BaseToolbar {
 
 		this.setupOutsideClickHandler();
 		this.enableDrag();
+		this.appendDeleteButton();
 	}
 
 	// ─── SVG Asset Control Setup ──────────────────────────────────────────────────

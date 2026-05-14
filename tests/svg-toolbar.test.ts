@@ -45,7 +45,10 @@ function createMockEditSession() {
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
-		commitClipUpdate: jest.fn()
+		commitClipUpdate: jest.fn(),
+		deleteClip: jest.fn(),
+		canDeleteClip: jest.fn(() => true),
+		events: { on: jest.fn(), off: jest.fn() }
 	};
 }
 

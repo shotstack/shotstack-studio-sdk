@@ -89,6 +89,9 @@ function createCrossBundleEdit() {
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
 		commitClipUpdate: jest.fn(),
+		deleteClip: jest.fn(),
+		canDeleteClip: jest.fn(() => true),
+		events: { on: jest.fn(), off: jest.fn() },
 		getInternalEvents: jest.fn(() => internalEvents),
 		getMergeFieldForProperty: jest.fn(() => null),
 		isValueCompatibleWithClipProperty: jest.fn(() => true),
@@ -120,6 +123,9 @@ function createPlainEdit() {
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
 		commitClipUpdate: jest.fn(),
+		deleteClip: jest.fn(),
+		canDeleteClip: jest.fn(() => true),
+		events: { on: jest.fn(), off: jest.fn() },
 		getInternalEvents: jest.fn(() => internalEvents),
 		size: { width: 1920, height: 1080 }
 	};

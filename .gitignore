@@ -27,6 +27,7 @@ coverage/
 .taskmaster/
 .claude/
 .cursor/
+.interface-design/
 
 # Internal Shotstack files
 shotstack.html
