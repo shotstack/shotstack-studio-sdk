@@ -464,6 +464,23 @@
 	white-space: nowrap;
 }
 
+.ss-toolbar-btn.ss-toolbar-btn--primary {
+	padding: 0 16px;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: rgba(255, 255, 255, 0.95);
+	background: rgba(255, 255, 255, 0.08);
+}
+.ss-toolbar-btn.ss-toolbar-btn--primary:hover {
+	background: rgba(255, 255, 255, 0.16);
+	color: #fff;
+}
+.ss-toolbar-btn.ss-toolbar-btn--primary.active {
+	background: rgba(255, 255, 255, 0.22);
+	color: #fff;
+}
+
 .ss-toolbar-popup--text-edit {
 	min-width: 280px;
 	padding: 14px 16px;

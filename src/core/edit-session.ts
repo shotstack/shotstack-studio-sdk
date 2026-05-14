@@ -2236,15 +2236,34 @@ export class Edit {
 		return bestMatch;
 	}
 
+	private lastClipClick: { player: Player; at: number } | null = null;
+	private static readonly DoubleClickThresholdMs = 500;
+
 	// ─── Intent Listeners ────────────────────────────────────────────────────────
 
 	private setupIntentListeners(): void {
 		this.internalEvents.on(InternalEvent.CanvasClipClicked, data => {
-			this.selectPlayer(data.player);
+			const wasSelected = this.getSelectedClipInfo()?.player === data.player;
+
+			if (!wasSelected) {
+				this.selectPlayer(data.player);
+				this.lastClipClick = null;
+				return;
+			}
+
+			const now = performance.now();
+			const within = this.lastClipClick && now - this.lastClipClick.at <= Edit.DoubleClickThresholdMs;
+			if (this.lastClipClick?.player === data.player && within) {
+				this.internalEvents.emit(InternalEvent.CanvasClipDoubleClicked, { player: data.player });
+				this.lastClipClick = null;
+			} else {
+				this.lastClipClick = { player: data.player, at: now };
+			}
 		});
 
 		this.internalEvents.on(InternalEvent.CanvasBackgroundClicked, () => {
 			this.clearSelection();
+			this.lastClipClick = null;
 		});
 	}
 

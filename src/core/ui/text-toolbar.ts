@@ -104,21 +104,6 @@ export class TextToolbar extends BaseToolbar {
 			</div>
 			<div class="ss-toolbar-mode-divider"></div>
 
-			<div class="ss-toolbar-dropdown">
-				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit" title="Edit text">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						${TOOLBAR_ICONS.textCursor}
-					</svg>
-					<span>Edit text</span>
-				</button>
-				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
-					<div class="ss-toolbar-popup-header">Edit Text</div>
-					<div class="ss-toolbar-text-area-wrapper">
-						<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
-					</div>
-				</div>
-			</div>
-
 			<div class="ss-toolbar-group ss-toolbar-group--bordered">
 				<button data-action="size-down" class="ss-toolbar-btn" title="Decrease font size">
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -189,6 +174,20 @@ export class TextToolbar extends BaseToolbar {
 								</svg>
 							</button>
 						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="ss-toolbar-divider"></div>
+
+			<div class="ss-toolbar-dropdown">
+				<button data-action="text-edit-toggle" class="ss-toolbar-btn ss-toolbar-btn--text-edit ss-toolbar-btn--primary" title="Edit text">
+					<span>Edit text</span>
+				</button>
+				<div data-text-edit-popup class="ss-toolbar-popup ss-toolbar-popup--text-edit">
+					<div class="ss-toolbar-popup-header">Edit Text</div>
+					<div class="ss-toolbar-text-area-wrapper">
+						<textarea data-text-edit-area class="ss-toolbar-text-area" rows="4" placeholder="Enter text..."></textarea>
 					</div>
 				</div>
 			</div>
@@ -343,7 +342,7 @@ export class TextToolbar extends BaseToolbar {
 	}
 
 	/** Open the edit-text popup and focus its textarea. Idempotent if already open. */
-	public openTextEditPopup(): void {
+	private openTextEditPopup(): void {
 		if (!this.isPopupOpen(this.textEditPopup)) {
 			this.togglePopup(this.textEditPopup);
 		}
@@ -390,14 +389,13 @@ export class TextToolbar extends BaseToolbar {
 		this.strokeColorInput?.addEventListener("input", () => this.handleStrokeChange());
 
 		// Double-clicking the text on the canvas opens the edit popup — same
-		// path as clicking the toolbar's "Edit text" button. Guarded against
-		// firing for clips other than the currently-selected one.
-		this.unsubCanvasDoubleClick = this.edit.getInternalEvents().on(InternalEvent.CanvasClipDoubleClicked, ({ player }) => {
+		// path as clicking the toolbar's "Edit text" button. The Edit layer only
+		// emits CanvasClipDoubleClicked for the *current* selection, so the
+		// toolbar just needs to be visible (i.e. it has an active selection).
+		this.unsubCanvasDoubleClick = this.edit.getInternalEvents().on(InternalEvent.CanvasClipDoubleClicked, () => {
 			if (this.selectedTrackIdx < 0 || this.selectedClipIdx < 0) return;
-			const selectedClipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-			if (selectedClipId && player.clipId === selectedClipId) {
-				this.openTextEditPopup();
-			}
+			if (!this.container || !this.container.classList.contains("visible")) return;
+			this.openTextEditPopup();
 		});
 
 		// Mount composite panels
