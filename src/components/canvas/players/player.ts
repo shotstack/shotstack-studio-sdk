@@ -41,6 +41,7 @@ export enum PlayerType {
 	RichText = "rich-text",
 	Luma = "luma",
 	Html = "html",
+	Html5 = "html5",
 	Shape = "shape",
 	Caption = "caption",
 	Svg = "svg",

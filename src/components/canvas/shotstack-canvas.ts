@@ -308,6 +308,14 @@ export class Canvas {
 	}
 
 	/**
+	 * The user supplied Studio root element.
+	 * @internal
+	 */
+	public getRootElement(): HTMLDivElement | null {
+		return this.canvasRoot;
+	}
+
+	/**
 	 * Sync overlay container and toolbar positions after content transforms change.
 	 * Single point of update for all position-dependent UI elements.
 	 */
