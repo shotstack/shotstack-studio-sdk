@@ -4,6 +4,7 @@ import type { ResolvedClip } from "@schemas";
 import { AudioPlayer } from "./audio-player";
 import { CaptionPlayer } from "./caption-player";
 import { HtmlPlayer } from "./html-player";
+import { Html5Player } from "./html5-player";
 import { ImagePlayer } from "./image-player";
 import { ImageToVideoPlayer } from "./image-to-video-player";
 import { LumaPlayer } from "./luma-player";
@@ -35,6 +36,8 @@ export class PlayerFactory {
 				return new ShapePlayer(edit, clipConfiguration);
 			case "html":
 				return new HtmlPlayer(edit, clipConfiguration);
+			case "html5":
+				return new Html5Player(edit, clipConfiguration);
 			case "image":
 				return new ImagePlayer(edit, clipConfiguration);
 			case "video":

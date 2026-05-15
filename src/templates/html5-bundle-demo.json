@@ -1,0 +1,67 @@
+{
+	"timeline": {
+		"background": "#000000",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "html5",
+							"html": "<div class=\"stage\"><div class=\"bg\"></div><h1 id=\"title\">Project Milestones</h1><div class=\"subtitle\" id=\"subtitle\">Q3 2026 \u00b7 5 of 5 on track</div><div class=\"track\"><div class=\"line\"><div class=\"line-fill\" id=\"line-fill\"></div></div><div class=\"node\" data-label=\"Kickoff\" data-date=\"Jul 8\"></div><div class=\"node\" data-label=\"Design lock\" data-date=\"Aug 4\"></div><div class=\"node\" data-label=\"Beta\" data-date=\"Aug 22\"></div><div class=\"node\" data-label=\"GA\" data-date=\"Sep 12\"></div><div class=\"node\" data-label=\"Retro\" data-date=\"Sep 26\"></div></div></div>",
+							"css": "html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;font-family:system-ui,sans-serif;color:#e2e8f0;background:#000}.stage{position:relative;width:1920px;height:1080px}.bg{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 30%,#0b1530 0%,#06091c 60%,#03020b 100%)}#title{position:absolute;top:140px;left:0;right:0;text-align:center;margin:0;font-size:80px;font-weight:800;letter-spacing:-2px;color:#fff;opacity:0;transform:translateY(20px)}.subtitle{position:absolute;top:240px;left:0;right:0;text-align:center;font-size:26px;color:#94a3b8;opacity:0}.track{position:absolute;top:540px;left:160px;right:160px;height:200px;display:flex;justify-content:space-between;align-items:center}.line{position:absolute;left:60px;right:60px;top:50%;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);transform:translateY(-50%);overflow:hidden}.line-fill{height:100%;width:0%;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);border-radius:3px;box-shadow:0 0 20px rgba(167,139,250,0.6)}.node{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.1);font-size:36px;font-weight:800;color:#cbd5e1;opacity:0;transform:scale(0.6);z-index:1;transition:none}.node::before{content:attr(data-label);position:absolute;bottom:-44px;left:50%;transform:translateX(-50%);font-size:22px;font-weight:700;color:#cbd5e1;white-space:nowrap}.node::after{content:attr(data-date);position:absolute;top:-44px;left:50%;transform:translateX(-50%);font-size:18px;color:#94a3b8;white-space:nowrap;font-variant-numeric:tabular-nums}.node.lit{background:rgba(34,211,238,0.18);border-color:#22d3ee;color:#fff;box-shadow:0 0 32px rgba(34,211,238,0.55)}",
+							"js": "const nodes=document.querySelectorAll('.node');nodes.forEach((n,i)=>n.textContent=String(i+1));const tl=gsap.timeline({paused:true});tl.to('#title',{opacity:1,y:0,duration:0.7,ease:'power3.out'},0.1).to('#subtitle',{opacity:1,duration:0.5,ease:'power2.out'},0.5).to('.node',{opacity:1,scale:1,duration:0.5,ease:'back.out(1.6)',stagger:0.18},1.0).to('#line-fill',{width:'100%',duration:2.5,ease:'power2.inOut'},1.2);nodes.forEach((n,i)=>{tl.to(n,{onStart:()=>n.classList.add('lit'),duration:0.4,ease:'power2.out'},1.4+i*0.4)});"
+						},
+						"start": 0,
+						"length": 6,
+						"width": 1920,
+						"height": 1080
+					},
+					{
+						"asset": {
+							"type": "html5",
+							"html": "<div class=\"stage\"><div class=\"bg\"></div><h1 id=\"title\">Sessions by Country</h1><div class=\"subtitle\" id=\"subtitle\">Last 30 days \u00b7 top 8 markets</div><svg id=\"chart\" width=\"1600\" height=\"640\" viewBox=\"0 0 1600 640\"><defs><linearGradient id=\"barGrad\" x1=\"0\" x2=\"0\" y1=\"0\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#22d3ee\"/><stop offset=\"100%\" stop-color=\"#0891b2\"/></linearGradient></defs></svg></div>",
+							"css": "html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;font-family:system-ui,sans-serif;color:#e2e8f0;background:#000}.stage{position:relative;width:1920px;height:1080px}.bg{position:absolute;inset:0;background:radial-gradient(ellipse at 20% 0%,#0f172a 0%,#080614 60%,#03020b 100%)}#title{position:absolute;top:80px;left:160px;margin:0;font-size:64px;font-weight:800;letter-spacing:-2px;color:#fff;opacity:0;transform:translateX(-20px)}.subtitle{position:absolute;top:170px;left:160px;font-size:24px;color:#94a3b8;opacity:0}#chart{position:absolute;top:280px;left:160px;width:1600px;height:640px;opacity:0}.bar{fill:url(#barGrad);filter:drop-shadow(0 4px 14px rgba(34,211,238,0.3))}.bar-label{font-size:22px;font-weight:700;fill:#fff;font-variant-numeric:tabular-nums}.bar-name{font-size:18px;font-weight:500;fill:#94a3b8;letter-spacing:1px;text-transform:uppercase}.axis-line{stroke:rgba(255,255,255,0.08);stroke-width:1}",
+							"js": "const data=[{c:'US',v:48230},{c:'IN',v:32140},{c:'GB',v:21670},{c:'DE',v:18450},{c:'BR',v:15890},{c:'JP',v:14210},{c:'AU',v:11630},{c:'CA',v:9870}];const W=1600,H=640,M={t:20,r:120,b:60,l:120};const iw=W-M.l-M.r,ih=H-M.t-M.b;const svg=d3.select('#chart');const x=d3.scaleBand().domain(data.map(d=>d.c)).range([0,iw]).padding(0.28);const y=d3.scaleLinear().domain([0,d3.max(data,d=>d.v)*1.05]).range([ih,0]);const g=svg.append('g').attr('transform','translate('+M.l+','+M.t+')');g.append('line').attr('class','axis-line').attr('x1',0).attr('x2',iw).attr('y1',ih).attr('y2',ih);const bars=g.selectAll('rect.bar').data(data).enter().append('rect').attr('class','bar').attr('x',d=>x(d.c)).attr('y',ih).attr('width',x.bandwidth()).attr('height',0).attr('rx',8);const labels=g.selectAll('text.bar-label').data(data).enter().append('text').attr('class','bar-label').attr('x',d=>x(d.c)+x.bandwidth()/2).attr('y',ih).attr('text-anchor','middle').text(d=>d.v.toLocaleString()).style('opacity',0);const names=g.selectAll('text.bar-name').data(data).enter().append('text').attr('class','bar-name').attr('x',d=>x(d.c)+x.bandwidth()/2).attr('y',ih+34).attr('text-anchor','middle').text(d=>d.c).style('opacity',0);const tl=gsap.timeline({paused:true});tl.to('#title',{opacity:1,x:0,duration:0.7,ease:'power3.out'},0.1).to('#subtitle',{opacity:1,duration:0.5,ease:'power2.out'},0.5).to('#chart',{opacity:1,duration:0.4,ease:'power2.out'},0.7);bars.each(function(d,i){const targetH=ih-y(d.v);tl.to(this,{attr:{y:y(d.v),height:targetH},duration:0.7,ease:'power2.out'},1.0+i*0.08)});labels.each(function(d,i){tl.to(this,{attr:{y:y(d.v)-14},style:'opacity:1',duration:0.4,ease:'power2.out'},1.4+i*0.08)});names.each(function(d,i){tl.to(this,{style:'opacity:1',duration:0.3},1.5+i*0.08)});"
+						},
+						"start": 6,
+						"length": 6,
+						"width": 1920,
+						"height": 1080
+					},
+					{
+						"asset": {
+							"type": "html5",
+							"html": "<div class=\"stage\"><div class=\"bg\"></div><h1 id=\"title\">Anime.js Showcase</h1><div class=\"subtitle\" id=\"subtitle\">staggered grid \u00b7 path morph \u00b7 color cycle</div><div class=\"grid\" id=\"grid\"></div><svg id=\"morph\" width=\"320\" height=\"320\" viewBox=\"0 0 320 320\"><path id=\"shape\" d=\"M160,40 L280,160 L160,280 L40,160 Z\" fill=\"#22d3ee\"/></svg></div>",
+							"css": "html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;font-family:system-ui,sans-serif;color:#e2e8f0;background:#000}.stage{position:relative;width:1920px;height:1080px}.bg{position:absolute;inset:0;background:radial-gradient(ellipse at 60% 100%,#1a0f2e 0%,#0c0820 50%,#03020b 100%)}#title{position:absolute;top:96px;left:0;right:0;text-align:center;margin:0;font-size:72px;font-weight:800;letter-spacing:-2px;color:#fff;opacity:0}.subtitle{position:absolute;top:200px;left:0;right:0;text-align:center;font-size:24px;color:#94a3b8;opacity:0;letter-spacing:1px}.grid{position:absolute;top:320px;left:520px;display:grid;grid-template-columns:repeat(10,80px);grid-gap:12px}.cell{width:80px;height:80px;border-radius:14px;background:#22d3ee;opacity:0;box-shadow:0 0 24px rgba(34,211,238,0.4)}#morph{position:absolute;top:360px;left:160px;filter:drop-shadow(0 0 24px rgba(244,114,182,0.5))}",
+							"js": "const grid=document.getElementById('grid');for(let i=0;i<100;i++){const c=document.createElement('div');c.className='cell';c.dataset.i=i;grid.appendChild(c)}const cells=document.querySelectorAll('.cell');const titleAnim=anime({targets:'#title',opacity:[0,1],translateY:[20,0],duration:700,easing:'easeOutCubic',autoplay:false});const subAnim=anime({targets:'#subtitle',opacity:[0,1],delay:500,duration:500,easing:'easeOutQuad',autoplay:false});const gridAnim=anime({targets:cells,opacity:[0,1],scale:[0.4,1],delay:anime.stagger(20,{grid:[10,10],from:'center'}),duration:600,easing:'easeOutBack',autoplay:false});const colorAnim=anime({targets:cells,backgroundColor:['#22d3ee','#a78bfa','#f472b6','#fbbf24','#22d3ee'],delay:anime.stagger(20,{grid:[10,10],from:'center'}),duration:2400,easing:'easeInOutSine',autoplay:false});const morphAnim=anime({targets:'#shape',d:[{value:'M160,40 L280,160 L160,280 L40,160 Z'},{value:'M160,20 L300,140 L240,300 L80,300 L20,140 Z'},{value:'M40,40 L280,40 L280,280 L40,280 Z'},{value:'M160,40 C280,40 280,280 160,280 C40,280 40,40 160,40 Z'}],fill:['#22d3ee','#a78bfa','#f472b6','#fbbf24'],duration:3500,easing:'easeInOutQuad',autoplay:false});const all=[titleAnim,subAnim,gridAnim,colorAnim,morphAnim];"
+						},
+						"start": 12,
+						"length": 6,
+						"width": 1920,
+						"height": 1080
+					},
+					{
+						"asset": {
+							"type": "html5",
+							"html": "<div class=\"stage\"><div class=\"bg\"></div><h1 id=\"title\">Lottie SVG Renderer</h1><div class=\"subtitle\" id=\"subtitle\">Bodymovin JSON \u00b7 seekable \u00b7 alpha-clean</div><div class=\"lottie-shell\" id=\"shell\"><div id=\"lottie-anim\"></div></div><div class=\"caption\" id=\"caption\">Rotation + scale + colour, driven by lottie-web seek</div></div>",
+							"css": "html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;font-family:system-ui,sans-serif;color:#e2e8f0;background:#000}.stage{position:relative;width:1920px;height:1080px}.bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#102a3a 0%,#0a1622 50%,#03070d 100%)}#title{position:absolute;top:120px;left:0;right:0;text-align:center;margin:0;font-size:72px;font-weight:800;letter-spacing:-2px;color:#fff;opacity:0}.subtitle{position:absolute;top:228px;left:0;right:0;text-align:center;font-size:24px;color:#94a3b8;opacity:0;letter-spacing:1px}.lottie-shell{position:absolute;top:340px;left:50%;transform:translateX(-50%);width:480px;height:480px;border-radius:32px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);box-shadow:0 30px 80px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.06);opacity:0}#lottie-anim{width:100%;height:100%}.caption{position:absolute;top:870px;left:0;right:0;text-align:center;font-size:22px;color:#94a3b8;opacity:0}",
+							"js": "const lottieJson={\"v\":\"5.7.0\",\"fr\":60,\"ip\":0,\"op\":360,\"w\":480,\"h\":480,\"nm\":\"demo\",\"ddd\":0,\"assets\":[],\"layers\":[{\"ddd\":0,\"ind\":1,\"ty\":4,\"nm\":\"poly\",\"sr\":1,\"ks\":{\"o\":{\"a\":0,\"k\":100},\"r\":{\"a\":1,\"k\":[{\"i\":{\"x\":[0.5],\"y\":[1]},\"o\":{\"x\":[0.5],\"y\":[0]},\"t\":0,\"s\":[0]},{\"t\":360,\"s\":[720]}]},\"p\":{\"a\":0,\"k\":[240,240,0]},\"a\":{\"a\":0,\"k\":[0,0,0]},\"s\":{\"a\":1,\"k\":[{\"i\":{\"x\":[0.42,0.42,0.42],\"y\":[1,1,1]},\"o\":{\"x\":[0.58,0.58,0.58],\"y\":[0,0,0]},\"t\":0,\"s\":[40,40,100]},{\"t\":120,\"s\":[200,200,100]},{\"t\":240,\"s\":[140,140,100]},{\"t\":360,\"s\":[200,200,100]}]}},\"ao\":0,\"shapes\":[{\"ty\":\"gr\",\"it\":[{\"ty\":\"sr\",\"sy\":1,\"d\":1,\"pt\":{\"a\":0,\"k\":6},\"p\":{\"a\":0,\"k\":[0,0]},\"r\":{\"a\":1,\"k\":[{\"t\":0,\"s\":[0]},{\"t\":360,\"s\":[180]}]},\"ir\":{\"a\":0,\"k\":50},\"is\":{\"a\":0,\"k\":0},\"or\":{\"a\":0,\"k\":120},\"os\":{\"a\":0,\"k\":0}},{\"ty\":\"fl\",\"c\":{\"a\":1,\"k\":[{\"t\":0,\"s\":[0.13,0.83,0.93,1]},{\"t\":120,\"s\":[0.66,0.55,0.98,1]},{\"t\":240,\"s\":[0.96,0.45,0.71,1]},{\"t\":360,\"s\":[0.13,0.83,0.93,1]}]},\"o\":{\"a\":0,\"k\":100}},{\"ty\":\"tr\",\"p\":{\"a\":0,\"k\":[0,0]},\"a\":{\"a\":0,\"k\":[0,0]},\"s\":{\"a\":0,\"k\":[100,100]},\"r\":{\"a\":0,\"k\":0},\"o\":{\"a\":0,\"k\":100},\"sk\":{\"a\":0,\"k\":0},\"sa\":{\"a\":0,\"k\":0}}]}],\"ip\":0,\"op\":360,\"st\":0,\"bm\":0}]};const anim=lottie.loadAnimation({container:document.getElementById('lottie-anim'),renderer:'svg',loop:false,autoplay:false,animationData:lottieJson});const tl=gsap.timeline({paused:true});tl.to('#title',{opacity:1,duration:0.6,ease:'power2.out'},0.2).to('#subtitle',{opacity:1,duration:0.5,ease:'power2.out'},0.55).to('#shell',{opacity:1,duration:0.5,ease:'power2.out'},0.7).to('#caption',{opacity:1,duration:0.4,ease:'power2.out'},1.2);window.__shotstackSeek=function(ms){anim.goToAndStop(Math.max(0,ms-700),false)};"
+						},
+						"start": 18,
+						"length": 7,
+						"width": 1920,
+						"height": 1080
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"size": {
+			"width": 1920,
+			"height": 1080
+		},
+		"fps": 30
+	}
+}
