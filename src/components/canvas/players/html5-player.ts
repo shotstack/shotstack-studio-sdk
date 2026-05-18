@@ -3,7 +3,13 @@ import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
-import { Html5AssetSchema, composeHtml5IframeSrcdoc, type Html5Asset } from "@shotstack/shotstack-canvas";
+import {
+	Html5AssetSchema,
+	composeHtml5IframeSrcdoc,
+	computeHtml5FrameCount,
+	detectHtml5DurationWithRetry,
+	type Html5Asset
+} from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
 import { computeHtml5CacheKey, html5CacheGet, html5CachePut } from "./html5-cache";
@@ -152,15 +158,14 @@ export class Html5Player extends Player {
 	}
 
 	/**
-	 * Returns the animation duration in seconds, or null when the harness
-	 * doesn't expose __shotstackDetectDurationMs.
+	 * Returns the harness-reported duration in ms, or null if unavailable.
 	 */
-	private detectAnimationDuration(): number | null {
+	private probeDurationMs(): number | null {
 		const detect = this.harnessWindow?.[DETECT_KEY];
 		if (typeof detect !== "function") return null;
 		try {
 			const ms = detect();
-			if (typeof ms === "number" && Number.isFinite(ms) && ms > 0) return ms / 1000;
+			if (typeof ms === "number" && Number.isFinite(ms) && ms > 0) return ms;
 		} catch (err) {
 			console.warn("[Html5Player] __shotstackDetectDurationMs threw:", err);
 		}
@@ -214,6 +219,7 @@ export class Html5Player extends Player {
 			}
 			await this.mountIframe(validation.data);
 			this.configureKeyframes();
+			this.prewarmCapture();
 		} catch (error) {
 			console.error("Failed to render html5 asset:", error instanceof Error ? `${error.message}\n${error.stack}` : error);
 			this.createFallbackGraphic();
@@ -327,12 +333,17 @@ export class Html5Player extends Player {
 		await yieldFrame();
 		if (stale()) return null;
 
-		const detectedSeconds = this.detectAnimationDuration();
-		const clipLengthSeconds = this.getLength();
-		const hasJs = !!this.asset.js?.trim();
-		const isStatic = detectedSeconds === null && !hasJs;
+		const detectedDurationMs = await detectHtml5DurationWithRetry(() => this.probeDurationMs(), stale);
+		if (stale()) return null;
+
+		const { frameCount } = computeHtml5FrameCount({
+			detectedDurationMs,
+			clipLengthSeconds: this.getLength(),
+			jsContent: this.asset.js,
+			cssContent: this.asset.css,
+			fps: this.captureFps
+		});
 		const fps = this.captureFps;
-		const frameCount = isStatic ? 1 : Math.max(1, Math.ceil(Math.min(detectedSeconds ?? clipLengthSeconds, clipLengthSeconds) * fps));
 		const W = this.renderedWidth;
 		const H = this.renderedHeight;
 		this.captureFramesTotal = frameCount;
@@ -379,12 +390,13 @@ export class Html5Player extends Player {
 		const styles = Array.from(doc.querySelectorAll("style"))
 			.map(el => `<style>${el.textContent ?? ""}</style>`)
 			.join("");
+		const animationOverride = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
 		const bodyClone = doc.body.cloneNode(true) as HTMLElement;
 		bodyClone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
 		const existingStyle = bodyClone.getAttribute("style") ?? "";
 		bodyClone.setAttribute("style", `width:${width}px;height:${height}px;margin:0;overflow:hidden;${existingStyle}`);
 		const bodyXml = new XMLSerializer().serializeToString(bodyClone);
-		return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="${width}" height="${height}">${styles}${bodyXml}</foreignObject></svg>`;
+		return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="${width}" height="${height}">${styles}${animationOverride}${bodyXml}</foreignObject></svg>`;
 	}
 
 	private async getDecodedFrame(idx: number): Promise<pixi.Texture | null> {
@@ -439,11 +451,11 @@ export class Html5Player extends Player {
 		this.iframe.srcdoc = composeHtml5IframeSrcdoc(this.asset);
 		try {
 			await waitForIframeLoad(this.iframe, undefined, true);
+			this.prewarmCapture();
 		} catch (err) {
 			console.warn("[Html5Player] reload iframe load failed:", err);
 			this.emitCaptureFailed(err, "static-placeholder");
 		}
-		// Stay in stale mode (iframe live) until the user plays again.
 	}
 
 	private disposeCapturedFrames(): void {
@@ -480,10 +492,35 @@ export class Html5Player extends Player {
 		}
 	}
 
+	/**
+	 * Run capture in the background without changing UI mode.
+	 */
+	private prewarmCapture(): void {
+		if (this.disposed || !this.iframe) return;
+		if (this.capturedFrames || this.captureInFlight) return;
+		this.captureFrames().catch(err => {
+			console.warn("[Html5Player] prewarm capture failed:", err);
+		});
+	}
+
 	private triggerCaptureIfNeeded(): void {
 		if (this.hasTriggeredCapture) return;
 		if (!this.iframe || !this.edit.isPlaying) return;
 		if (this.mode !== "editing" && this.mode !== "stale") return;
+
+		if (this.capturedFrames && this.capturedHash === this.contentHash) {
+			const hashAtTrigger = this.contentHash;
+			this.hasTriggeredCapture = true;
+			this.transitionToPlayback()
+				.catch(err => {
+					console.warn("[Html5Player] transitionToPlayback failed:", err);
+					this.transitionToEditing();
+				})
+				.finally(() => {
+					if (this.contentHash !== hashAtTrigger) this.hasTriggeredCapture = false;
+				});
+			return;
+		}
 
 		this.hasTriggeredCapture = true;
 		this.transitionToCapturing();

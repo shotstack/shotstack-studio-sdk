@@ -616,10 +616,14 @@ export class EditDocument {
 	/**
 	 * Export the document as raw Edit JSON (preserves "auto", "end", merge fields, aliases)
 	 */
-	toJSON(): Edit {
+	/**
+	 * Serialise the document to plain Edit JSON.
+	 */
+	toJSON(options?: { includeIds?: boolean }): Edit {
 		const result = structuredClone(this.data);
+		const includeIds = options?.includeIds ?? false;
 
-		// Restore placeholders from document bindings before stripping IDs
+		// Restore placeholders from document bindings before optionally stripping IDs
 		for (const track of result.timeline.tracks) {
 			for (const clip of track.clips) {
 				const clipId = (clip as InternalClip).id;
@@ -631,8 +635,10 @@ export class EditDocument {
 						}
 					}
 				}
-				// Strip internal ID (not part of Shotstack API)
-				delete (clip as InternalClip).id;
+				if (!includeIds) {
+					// Strip internal ID — render API ignores it; default keeps payloads clean.
+					delete (clip as InternalClip).id;
+				}
 			}
 		}
 

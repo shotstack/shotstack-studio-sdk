@@ -316,6 +316,25 @@ export class Canvas {
 	}
 
 	/**
+	 * Capture the current canvas content as a base64-encoded data URL.
+	 */
+	public async captureFrame(
+		options: {
+			format?: "png" | "jpeg" | "webp";
+			quality?: number;
+		} = {}
+	): Promise<string> {
+		this.application.renderer.render(this.application.stage);
+		const requested = options.format ?? "png";
+		const pixiFormat: "png" | "jpg" | "webp" = requested === "jpeg" ? "jpg" : requested;
+		return this.application.renderer.extract.base64({
+			target: this.application.stage,
+			format: pixiFormat,
+			quality: options.quality ?? 0.85
+		});
+	}
+
+	/**
 	 * Sync overlay container and toolbar positions after content transforms change.
 	 * Single point of update for all position-dependent UI elements.
 	 */

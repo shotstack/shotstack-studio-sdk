@@ -10,6 +10,7 @@ import { AddTrackCommand } from "@core/commands/add-track-command";
 import { AddTracksCommand } from "@core/commands/add-tracks-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
+import { MoveClipCommand } from "@core/commands/move-clip-command";
 import { SetOutputAspectRatioCommand } from "@core/commands/set-output-aspect-ratio-command";
 import { SetOutputDestinationsCommand } from "@core/commands/set-output-destinations-command";
 import { SetOutputFormatCommand } from "@core/commands/set-output-format-command";
@@ -381,11 +382,79 @@ export class Edit {
 		player.layer = this.tracks.length + 1;
 		await this.addPlayer(this.tracks.length, player);
 	}
-	public getEdit(): EditConfig {
-		const doc = this.document.toJSON();
+	/**
+	 * Serialise the current edit to plain JSON.
+	 */
+	public getEdit(options?: { includeIds?: boolean }): EditConfig {
+		const doc = this.document.toJSON(options);
 		const mergeFields = this.mergeFieldService.toSerializedArray();
 		if (mergeFields.length > 0) doc.merge = mergeFields;
 		return doc;
+	}
+
+	// ─── ID-Based Clip Mutations (public passthroughs) ─────────────────────────
+
+	/**
+	 * Look up a clip by its stable ID.
+	 * @returns The clip or null if no clip with that ID exists.
+	 */
+	public getClipById(clipId: string): Clip | null {
+		return this.document.getClipById(clipId)?.clip ?? null;
+	}
+
+	/**
+	 * Look up the (trackIndex, clipIndex) position of a clip by its stable ID.
+	 */
+	public getClipPositionById(clipId: string): { trackIndex: number; clipIndex: number } | null {
+		const found = this.document.getClipById(clipId);
+		if (!found) return null;
+		return { trackIndex: found.trackIndex, clipIndex: found.clipIndex };
+	}
+
+	/**
+	 * Patch fields on a clip identified by stable ID.
+	 */
+	public updateClipById(clipId: string, updates: Partial<Clip>): Promise<void> {
+		const found = this.document.getClipById(clipId);
+		if (!found) {
+			console.warn(`updateClipById: no clip with id ${clipId}`);
+			return Promise.resolve();
+		}
+		return this.updateClip(found.trackIndex, found.clipIndex, updates);
+	}
+
+	/**
+	 * Remove a clip identified by stable ID.
+	 */
+	public deleteClipById(clipId: string): Promise<void> {
+		const found = this.document.getClipById(clipId);
+		if (!found) {
+			console.warn(`deleteClipById: no clip with id ${clipId}`);
+			return Promise.resolve();
+		}
+		return this.deleteClip(found.trackIndex, found.clipIndex);
+	}
+
+	/**
+	 * Move a clip identified by stable ID to a different track and/or start time.
+	 */
+	public moveClipById(clipId: string, toTrackIndex: number, newStart?: Seconds): Promise<void> {
+		const found = this.document.getClipById(clipId);
+		if (!found) {
+			console.warn(`moveClipById: no clip with id ${clipId}`);
+			return Promise.resolve();
+		}
+		const currentStart = found.clip.start;
+		const start = newStart ?? (typeof currentStart === "number" ? (currentStart as Seconds) : null);
+		if (start === null) {
+			return Promise.reject(
+				new Error(
+					`moveClipById: clip ${clipId} has a smart-clip start ("${currentStart}"). Pass newStart explicitly or resolve start to a number first.`
+				)
+			);
+		}
+		const command = new MoveClipCommand(found.trackIndex, found.clipIndex, toTrackIndex, start);
+		return Promise.resolve(this.executeCommand(command));
 	}
 
 	/**
@@ -1986,6 +2055,51 @@ export class Edit {
 	public setOutputAspectRatio(aspectRatio: string): Promise<void> {
 		const command = new SetOutputAspectRatioCommand(aspectRatio);
 		return this.executeCommand(command);
+	}
+
+	/**
+	 * Capture the current canvas as a base64 data URL.
+	 */
+	public async captureFrame(
+		options: {
+			time?: number;
+			format?: "png" | "jpeg" | "webp";
+			quality?: number;
+		} = {}
+	): Promise<string> {
+		if (!this.canvas) {
+			throw new Error("captureFrame: no Canvas is attached — Edit must be mounted to a viewport.");
+		}
+		if (options.time !== undefined) {
+			this.seek(options.time);
+			// One rAF lets players + reconciler reflect the new playhead time.
+			await new Promise<void>(resolve => {
+				requestAnimationFrame(() => resolve());
+			});
+		}
+		return this.canvas.captureFrame({ format: options.format, quality: options.quality });
+	}
+
+	/**
+	 * Atomically apply multiple output settings.
+	 */
+	public async setOutput(options: {
+		size?: { width: number; height: number };
+		resolution?: string;
+		format?: string;
+		fps?: number;
+		aspectRatio?: string;
+	}): Promise<void> {
+		if (options.size && options.resolution !== undefined) {
+			throw new Error(
+				"setOutput: `size` and `resolution` are mutually exclusive — pick one. Use `size` for custom dimensions or `resolution` for a preset (preview, mobile, sd, hd, 1080, 4k)."
+			);
+		}
+		if (options.size) await this.setOutputSize(options.size.width, options.size.height);
+		if (options.resolution !== undefined) await this.setOutputResolution(options.resolution);
+		if (options.format !== undefined) await this.setOutputFormat(options.format);
+		if (options.fps !== undefined) await this.setOutputFps(options.fps);
+		if (options.aspectRatio !== undefined) await this.setOutputAspectRatio(options.aspectRatio);
 	}
 
 	public getOutputAspectRatio(): string | undefined {
