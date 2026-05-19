@@ -332,18 +332,25 @@ export class PlayerReconciler {
 	}
 
 	/**
-	 * Update player's asset and trigger reload if src changed.
+	 * Update player's asset and trigger reload if the asset content changed.
 	 */
 	private updateAsset(player: Player, newAsset: unknown): void {
-		const oldSrc = (player.clipConfiguration.asset as { src?: string })?.src;
-		const newSrc = (newAsset as { src?: string })?.src;
+		const oldAsset = player.clipConfiguration.asset;
+		const assetType = (newAsset as { type?: string })?.type;
 
-		// Update the asset
 		// eslint-disable-next-line no-param-reassign -- Intentional player state update
 		player.clipConfiguration.asset = newAsset as ResolvedClip["asset"];
 
-		// If src changed, trigger async reload
-		if (oldSrc !== newSrc && player.reloadAsset) {
+		let needsReload: boolean;
+		if (assetType === "html5") {
+			needsReload = JSON.stringify(oldAsset) !== JSON.stringify(newAsset);
+		} else {
+			const oldSrc = (oldAsset as { src?: string })?.src;
+			const newSrc = (newAsset as { src?: string })?.src;
+			needsReload = oldSrc !== newSrc;
+		}
+
+		if (needsReload && player.reloadAsset) {
 			player
 				.reloadAsset()
 				.then(() => {
