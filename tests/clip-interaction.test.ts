@@ -24,8 +24,9 @@ describe("ClipInteractionSystem", () => {
 			expect(INTERACTION_CONSTANTS.MIN_DIMENSION).toBe(50);
 		});
 
-		it("has correct maximum dimension", () => {
-			expect(INTERACTION_CONSTANTS.MAX_DIMENSION).toBe(3840);
+		it("has correct maximum dimensions", () => {
+			expect(INTERACTION_CONSTANTS.MAX_WIDTH).toBe(3840);
+			expect(INTERACTION_CONSTANTS.MAX_HEIGHT).toBe(2160);
 		});
 	});
 
@@ -425,7 +426,7 @@ describe("ClipInteractionSystem", () => {
 		it("clamps width above maximum", () => {
 			const result = clampDimensions(5000, 100);
 
-			expect(result.width).toBe(INTERACTION_CONSTANTS.MAX_DIMENSION);
+			expect(result.width).toBe(INTERACTION_CONSTANTS.MAX_WIDTH);
 			expect(result.height).toBe(100);
 		});
 
@@ -433,7 +434,7 @@ describe("ClipInteractionSystem", () => {
 			const result = clampDimensions(100, 5000);
 
 			expect(result.width).toBe(100);
-			expect(result.height).toBe(INTERACTION_CONSTANTS.MAX_DIMENSION);
+			expect(result.height).toBe(INTERACTION_CONSTANTS.MAX_HEIGHT);
 		});
 
 		it("preserves valid dimensions", () => {
@@ -447,7 +448,7 @@ describe("ClipInteractionSystem", () => {
 			const result = clampDimensions(30, 5000);
 
 			expect(result.width).toBe(INTERACTION_CONSTANTS.MIN_DIMENSION);
-			expect(result.height).toBe(INTERACTION_CONSTANTS.MAX_DIMENSION);
+			expect(result.height).toBe(INTERACTION_CONSTANTS.MAX_HEIGHT);
 		});
 
 		it("handles boundary values", () => {
@@ -455,9 +456,9 @@ describe("ClipInteractionSystem", () => {
 			expect(minResult.width).toBe(50);
 			expect(minResult.height).toBe(50);
 
-			const maxResult = clampDimensions(3840, 3840);
+			const maxResult = clampDimensions(3840, 2160);
 			expect(maxResult.width).toBe(3840);
-			expect(maxResult.height).toBe(3840);
+			expect(maxResult.height).toBe(2160);
 		});
 	});
 

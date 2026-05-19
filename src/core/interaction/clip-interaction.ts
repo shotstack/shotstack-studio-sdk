@@ -15,8 +15,10 @@ import type { Size, Vector } from "@layouts/geometry";
 export const INTERACTION_CONSTANTS = {
 	/** Minimum clip dimension in pixels */
 	MIN_DIMENSION: 50,
-	/** Maximum clip dimension in pixels */
-	MAX_DIMENSION: 3840
+	/** Maximum clip width in pixels */
+	MAX_WIDTH: 3840,
+	/** Maximum clip height in pixels */
+	MAX_HEIGHT: 2160
 } as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -222,8 +224,8 @@ export function calculateEdgeResize(direction: EdgeDirection, delta: Vector, ori
  */
 export function clampDimensions(width: number, height: number): { width: number; height: number } {
 	return {
-		width: Math.max(INTERACTION_CONSTANTS.MIN_DIMENSION, Math.min(width, INTERACTION_CONSTANTS.MAX_DIMENSION)),
-		height: Math.max(INTERACTION_CONSTANTS.MIN_DIMENSION, Math.min(height, INTERACTION_CONSTANTS.MAX_DIMENSION))
+		width: Math.max(INTERACTION_CONSTANTS.MIN_DIMENSION, Math.min(width, INTERACTION_CONSTANTS.MAX_WIDTH)),
+		height: Math.max(INTERACTION_CONSTANTS.MIN_DIMENSION, Math.min(height, INTERACTION_CONSTANTS.MAX_HEIGHT))
 	};
 }
 
