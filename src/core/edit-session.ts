@@ -955,8 +955,10 @@ export class Edit {
 	 */
 	public async addFont(src: string): Promise<void> {
 		await this.preflightAssetUrls([src]);
-		this.document.addFont(src);
-		this.emitEditChanged("addFont");
+		await this.commandQueue.enqueue(() => {
+			this.document.addFont(src);
+			this.emitEditChanged("addFont");
+		});
 	}
 
 	/**
@@ -964,8 +966,10 @@ export class Edit {
 	 */
 	public async setFonts(fonts: Array<{ src: string }>): Promise<void> {
 		await this.preflightAssetUrls(fonts.map(f => f.src));
-		this.document.setFonts(fonts);
-		this.emitEditChanged("setFonts");
+		await this.commandQueue.enqueue(() => {
+			this.document.setFonts(fonts);
+			this.emitEditChanged("setFonts");
+		});
 	}
 
 	/**
