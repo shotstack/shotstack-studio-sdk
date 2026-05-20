@@ -59,6 +59,7 @@ import type { EditCommand, CommandContext, CommandResult } from "./commands/type
 import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
+import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-validation";
 
 /** Internal type for clips with hydrated IDs during edit updates */
 type ClipWithId = Clip & { id?: string };
@@ -608,8 +609,9 @@ export class Edit {
 		return updated !== false;
 	}
 
-	public addClip(trackIdx: number, clip: Clip): void | Promise<void> {
+	public async addClip(trackIdx: number, clip: Clip): Promise<void> {
 		ClipSchema.parse(clip);
+		await this.preflightAssetUrls(extractClipUrls(clip));
 		// Cast to ResolvedClip - the Player and timing resolver handle "auto"/"end" at runtime
 		const command = new AddClipCommand(trackIdx, clip as unknown as ResolvedClip);
 		return this.executeCommand(command);
@@ -939,12 +941,31 @@ export class Edit {
 
 	public async addTrack(trackIdx: number, track: Track): Promise<void> {
 		TrackSchema.parse(track);
+		await this.preflightAssetUrls(extractTrackUrls(track));
 
 		// Single atomic command — track + all its clips in one undo step.
 		await this.executeCommand(new AddTrackCommand(trackIdx, track));
 
 		// Auto-link caption clips with unresolved alias sources
 		await this.autoLinkCaptionSources(trackIdx, track.clips);
+	}
+
+	/**
+	 * Add a font to the timeline.
+	 */
+	public async addFont(src: string): Promise<void> {
+		await this.preflightAssetUrls([src]);
+		this.document.addFont(src);
+		this.emitEditChanged("addFont");
+	}
+
+	/**
+	 * Replace timeline fonts wholesale.
+	 */
+	public async setFonts(fonts: Array<{ src: string }>): Promise<void> {
+		await this.preflightAssetUrls(fonts.map(f => f.src));
+		this.document.setFonts(fonts);
+		this.emitEditChanged("setFonts");
 	}
 
 	/**
@@ -1155,6 +1176,29 @@ export class Edit {
 	/** @internal */
 	public executeEditCommand(command: EditCommand): void | Promise<void> {
 		return this.executeCommand(command);
+	}
+
+	/**
+	 * HEAD-check every external http(s) URL in a payload
+	 */
+	private async preflightAssetUrls(urls: string[]): Promise<void> {
+		if (typeof document === "undefined" || urls.length === 0) return;
+
+		const results = await Promise.all(
+			urls.map(async url => {
+				try {
+					const resp = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(4_000), redirect: "follow" });
+					return { url, status: resp.status };
+				} catch {
+					return { url, status: 0 };
+				}
+			})
+		);
+		for (const { url, status } of results) {
+			if (status >= 400 && status < 500) {
+				throw new InvalidAssetUrlError(url, status, `HTTP ${status}`);
+			}
+		}
 	}
 
 	/** @internal */

@@ -11,3 +11,6 @@ export { ShotstackEdit } from "@core/shotstack-edit";
 
 // Re-export MergeField types for ShotstackEdit users
 export type { MergeField, MergeFieldService } from "@core/merge";
+
+// URL preflight
+export { InvalidAssetUrlError } from "@core/url-validation";
