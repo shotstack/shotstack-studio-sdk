@@ -100,6 +100,7 @@ export class Html5Player extends Player {
 	private capturedHash: string | null = null;
 	private lastFrameIdx: number = -1;
 	private playbackSprite: pixi.Sprite | null = null;
+	private staticSprite: pixi.Sprite | null = null;
 	private hasTriggeredCapture: boolean = false;
 	private loadingGraphic: pixi.Container | null = null;
 	private loadingSetProgress: ((fraction: number) => void) | null = null;
@@ -439,6 +440,44 @@ export class Html5Player extends Player {
 		}
 	}
 
+	/**
+	 * Project the current playhead's frame into the Pixi scene for an off-playback capture.
+	 * @internal
+	 */
+	public override async prepareStaticRender(): Promise<void> {
+		try {
+			if (this.disposed || !this.iframe) return;
+			const frames = await this.captureFrames();
+			if (this.disposed || !frames || frames.length === 0) return;
+			const idx = Math.min(Math.max(0, Math.floor(this.getPlaybackTime() * this.captureFps)), frames.length - 1);
+			const texture = await this.getDecodedFrame(idx);
+			if (this.disposed || !texture) return;
+			if (this.playbackSprite) {
+				this.playbackSprite.texture = texture;
+				return;
+			}
+			if (this.staticSprite) {
+				this.staticSprite.texture = texture;
+			} else {
+				this.staticSprite = new pixi.Sprite(texture);
+				this.contentContainer.addChild(this.staticSprite);
+				if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
+			}
+		} catch (err) {
+			// A capture failure must leave only this clip blank in the snapshot — never break the whole capture.
+			console.warn("[Html5Player] prepareStaticRender failed:", err);
+		}
+	}
+
+	/** @internal */
+	public override endStaticRender(): void {
+		if (!this.staticSprite) return;
+		this.contentContainer.removeChild(this.staticSprite);
+		// Texture is owned by the decoded-frame cache — destroy the sprite but not the texture.
+		this.staticSprite.destroy();
+		this.staticSprite = null;
+	}
+
 	public override async reloadAsset(): Promise<void> {
 		if (!this.iframe) return;
 		const newHash = await this.hashAsset();
@@ -638,6 +677,8 @@ export class Html5Player extends Player {
 		this.iframe = null;
 		this.playbackSprite?.destroy();
 		this.playbackSprite = null;
+		this.staticSprite?.destroy();
+		this.staticSprite = null;
 		this.removeLoadingGraphic();
 		this.disposeCapturedFrames();
 	}

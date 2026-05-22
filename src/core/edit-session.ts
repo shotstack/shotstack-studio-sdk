@@ -2125,7 +2125,19 @@ export class Edit {
 				requestAnimationFrame(() => resolve());
 			});
 		}
-		return this.canvas.captureFrame({ format: options.format, quality: options.quality });
+		// Project html5 frames into the scene.
+		const activePlayers: Player[] = [];
+		for (const track of this.tracks) {
+			for (const player of track) {
+				if (player.isActive()) activePlayers.push(player);
+			}
+		}
+		try {
+			await Promise.all(activePlayers.map(player => player.prepareStaticRender()));
+			return await this.canvas.captureFrame({ format: options.format, quality: options.quality });
+		} finally {
+			for (const player of activePlayers) player.endStaticRender();
+		}
 	}
 
 	/**
