@@ -398,6 +398,92 @@ describe("EditDocument", () => {
 		});
 	});
 
+	// ─── Defensive Copy / Input Ownership Tests ───────────────────────────────
+	//
+	// EditDocument must never retain or mutate a caller-provided object. Host apps
+	// (React/Redux/Immer) deep-freeze their state by default, so storing or mutating an
+	// ingested object in place throws ("Cannot add/delete property … object is not extensible").
+	// Each test below fails against the pre-fix code and guards that specific regression.
+
+	describe("defensive copy (input ownership)", () => {
+		// Recursively freeze, mimicking Immer's auto-freeze.
+		function deepFreeze<T>(value: T): T {
+			if (value && typeof value === "object") {
+				Object.values(value as Record<string, unknown>).forEach(v => deepFreeze(v));
+				Object.freeze(value);
+			}
+			return value;
+		}
+
+		it("addClip does not throw when handed a frozen clip", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			const frozen = deepFreeze(createImageClip("https://example.com/frozen.jpg", 0, 1));
+
+			expect(() => doc.addClip(0, frozen)).not.toThrow();
+			expect(doc.getClipCountInTrack(0)).toBe(2);
+		});
+
+		it("addClip does not write the hydrated id onto the caller's clip", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			const input = createImageClip("https://example.com/x.jpg", 0, 1);
+
+			doc.addClip(0, input);
+
+			expect((input as { id?: string }).id).toBeUndefined();
+		});
+
+		it("addClip stores a copy — later mutation of the caller's object does not leak in", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			const input = createImageClip("https://example.com/x.jpg", 0, 1);
+
+			const added = doc.addClip(0, input);
+			expect(added).not.toBe(input); // returns the owned copy, not the caller's reference
+
+			input.start = 999;
+			expect(doc.getClip(0, 1)?.start).toBe(0);
+		});
+
+		it("addTrack stores a copy — a clip in a frozen track stays mutable in the document", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			const frozenTrack = deepFreeze({ clips: [createImageClip("https://example.com/f.jpg", 0, 1)] });
+
+			doc.addTrack(0, frozenTrack);
+
+			// If the frozen clip were stored by reference, updating it would throw.
+			expect(() => doc.updateClip(0, 0, { start: 5 })).not.toThrow();
+			expect(doc.getClip(0, 0)?.start).toBe(5);
+		});
+
+		it("updateClip does not alias the caller's nested objects", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const updates = deepFreeze({ offset: { x: 0.1, y: 0.2 } }) as Partial<Clip>;
+
+			expect(() => doc.updateClip(0, 0, updates)).not.toThrow();
+			expect(doc.getClip(0, 0)?.offset).not.toBe(updates.offset); // copied, not shared
+		});
+
+		it("replaceClipProperties does not throw when the existing clip is frozen", () => {
+			const doc = new EditDocument(createEditWithTracks());
+			const track = doc.getTrack(0);
+			if (track) deepFreeze(track.clips[0]);
+
+			expect(() =>
+				doc.replaceClipProperties(0, 0, { start: 1, length: 2, asset: { type: "image", src: "https://example.com/r.jpg" } })
+			).not.toThrow();
+			expect(doc.getClip(0, 0)?.start).toBe(1);
+		});
+
+		it("setFonts stores a copy — adding a font after setting a frozen list does not throw", () => {
+			const doc = new EditDocument(createMinimalEdit());
+			const frozen = deepFreeze([{ src: "https://example.com/a.ttf" }]);
+
+			doc.setFonts(frozen);
+
+			expect(() => doc.addFont("https://example.com/b.ttf")).not.toThrow();
+			expect(doc.getFonts()).toHaveLength(2);
+		});
+	});
+
 	// ─── Clip Mutation Tests ──────────────────────────────────────────────────
 
 	describe("clip mutations", () => {

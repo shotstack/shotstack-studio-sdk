@@ -1,0 +1,26 @@
+{
+  "timeline": {
+    "background": "#0a0a0f",
+    "tracks": [
+      {
+        "clips": [
+          {
+            "asset": {
+              "type": "rich-text",
+              "text": "5 Life Hacks 🔥 Follow 💪",
+              "font": { "family": "Work Sans", "size": 60, "weight": 700, "color": "#ffffff", "opacity": 1 },
+              "align": { "horizontal": "center", "vertical": "middle" },
+              "animation": { "preset": "fadeIn", "duration": 0.6, "style": "word", "direction": "up" }
+            },
+            "start": 0,
+            "length": 5,
+            "width": 560,
+            "height": 600,
+            "position": "center"
+          }
+        ]
+      }
+    ]
+  },
+  "output": { "size": { "width": 608, "height": 1080 }, "format": "mp4" }
+}

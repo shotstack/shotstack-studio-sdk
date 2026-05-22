@@ -28,6 +28,15 @@ export interface ClipLookupResult {
 	clipIndex: number;
 }
 
+// ─── Defensive copy ─────────────────────────────────────────────────────────────
+
+/**
+ * Copy a caller-provided value before the document stores or mutates it.
+ */
+function ingest<T>(value: T): T {
+	return structuredClone(value);
+}
+
 // ─── EditDocument Class ───────────────────────────────────────────────────────
 
 export class EditDocument {
@@ -39,7 +48,7 @@ export class EditDocument {
 	private clipBindings: Map<string, Map<string, MergeFieldBinding>> = new Map();
 
 	constructor(edit: Edit) {
-		this.data = structuredClone(edit);
+		this.data = ingest(edit);
 		this.hydrateIds();
 	}
 
@@ -168,7 +177,7 @@ export class EditDocument {
 	updateClipById(clipId: string, updates: Partial<Clip>): void {
 		const found = this.getClipById(clipId);
 		if (found) {
-			Object.assign(found.clip, updates);
+			Object.assign(found.clip, ingest(updates));
 		}
 	}
 
@@ -257,7 +266,7 @@ export class EditDocument {
 	 * @returns The added track
 	 */
 	addTrack(index: number, track?: Track): Track {
-		const newTrack: Track = track ?? { clips: [] };
+		const newTrack: Track = track ? ingest(track) : { clips: [] };
 		this.data.timeline.tracks.splice(index, 0, newTrack);
 		return newTrack;
 	}
@@ -290,15 +299,14 @@ export class EditDocument {
 			throw new Error(`Track ${trackIndex} does not exist`);
 		}
 
-		// Hydrate with stable ID if not present
-		const internalClip = clip as InternalClip;
-		if (!internalClip.id) {
-			internalClip.id = crypto.randomUUID();
+		const owned = ingest(clip) as InternalClip;
+		if (!owned.id) {
+			owned.id = crypto.randomUUID();
 		}
 
 		const insertIndex = clipIndex ?? track.clips.length;
-		track.clips.splice(insertIndex, 0, clip);
-		return clip;
+		track.clips.splice(insertIndex, 0, owned);
+		return owned;
 	}
 
 	/**
@@ -322,35 +330,25 @@ export class EditDocument {
 		if (!clip) {
 			throw new Error(`Clip at track ${trackIndex}, index ${clipIndex} does not exist`);
 		}
-		Object.assign(clip, updates);
+		Object.assign(clip, ingest(updates));
 	}
 
 	/**
 	 * Replace all properties on a clip while preserving its internal ID.
-	 * Unlike updateClip (which merges via Object.assign), this deletes properties
-	 * that exist on the current clip but not in the new state — ensuring undo
-	 * correctly removes properties that were added during a drag.
 	 */
 	replaceClipProperties(trackIndex: number, clipIndex: number, newProperties: Partial<Clip>): void {
-		const clip = this.getClip(trackIndex, clipIndex) as (Clip & { id?: string }) | null;
-		if (!clip) {
+		const track = this.data.timeline.tracks[trackIndex];
+		const existing = track?.clips[clipIndex] as (Clip & { id?: string }) | undefined;
+		if (!track || !existing) {
 			throw new Error(`Clip at track ${trackIndex}, index ${clipIndex} does not exist`);
 		}
 
-		const { id } = clip;
-
-		// Delete all own properties, then assign new ones
-		for (const key of Object.keys(clip)) {
-			if (key !== "id") {
-				delete (clip as Record<string, unknown>)[key];
-			}
-		}
-		Object.assign(clip, newProperties);
-
-		// Restore internal ID (in case newProperties contained id or didn't)
+		const { id } = existing;
+		const next = ingest(newProperties) as Clip & { id?: string };
 		if (id) {
-			clip.id = id;
+			next.id = id;
 		}
+		track.clips[clipIndex] = next;
 	}
 
 	/**
@@ -362,7 +360,7 @@ export class EditDocument {
 			return null;
 		}
 		const oldClip = track.clips[clipIndex];
-		track.clips[clipIndex] = newClip;
+		track.clips[clipIndex] = ingest(newClip);
 		return oldClip;
 	}
 
@@ -389,7 +387,7 @@ export class EditDocument {
 
 		// Apply updates (e.g., new start time)
 		if (updates) {
-			Object.assign(clip, updates);
+			Object.assign(clip, ingest(updates));
 		}
 
 		// Find insertion point based on start time
@@ -423,7 +421,7 @@ export class EditDocument {
 	 * Set soundtrack
 	 */
 	setSoundtrack(soundtrack: Soundtrack | undefined): void {
-		this.data.timeline.soundtrack = soundtrack;
+		this.data.timeline.soundtrack = soundtrack ? ingest(soundtrack) : undefined;
 	}
 
 	// ─── Font Mutations ──────────────────────────────────────────────────────
@@ -460,7 +458,7 @@ export class EditDocument {
 	 * Set all timeline fonts (replaces existing)
 	 */
 	setFonts(fonts: Array<{ src: string }>): void {
-		this.data.timeline.fonts = fonts;
+		this.data.timeline.fonts = ingest(fonts);
 	}
 
 	// ─── Output Mutations ─────────────────────────────────────────────────────
@@ -527,7 +525,7 @@ export class EditDocument {
 	 * Set merge field definitions
 	 */
 	setMergeFields(mergeFields: Edit["merge"]): void {
-		this.data.merge = mergeFields;
+		this.data.merge = ingest(mergeFields);
 	}
 
 	// ─── Clip Binding Management ─────────────────────────────────────────────

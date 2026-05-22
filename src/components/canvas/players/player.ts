@@ -489,6 +489,19 @@ export abstract class Player extends Entity {
 		return this.edit.playbackTime >= this.getStart() && this.edit.playbackTime < this.getEnd();
 	}
 
+	/**
+	 * Project this player's current frame into the Pixi scene for a one-off static capture.
+	 * @internal
+	 */
+	public async prepareStaticRender(): Promise<void> {
+		// Default: content is already a Pixi-scene projection — nothing to do.
+	}
+
+	/** @internal Undo any transient scene mutation made by prepareStaticRender(). Default: no-op. */
+	public endStaticRender(): void {
+		// Default: no-op.
+	}
+
 	public shouldDiscardFrame(): boolean {
 		return this.getPlaybackTime() < Player.DiscardedFrameCount;
 	}
