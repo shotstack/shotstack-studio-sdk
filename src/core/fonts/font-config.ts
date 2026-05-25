@@ -114,6 +114,10 @@ export function isGoogleFont(fontFamily: string): boolean {
 	return GOOGLE_FONTS_BY_FILENAME.has(fontFamily) || GOOGLE_FONTS_BY_NAME.has(fontFamily);
 }
 
+export function resolveGoogleFontUrl(fontFamily: string): string | undefined {
+	return (GOOGLE_FONTS_BY_FILENAME.get(fontFamily) ?? GOOGLE_FONTS_BY_NAME.get(fontFamily))?.url;
+}
+
 /**
  * Get the display name for a font (resolves Google Font filename hashes to readable names)
  */
