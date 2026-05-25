@@ -25,6 +25,7 @@ type HarnessWindow = Window & {
 };
 const SEEK_KEY = "__shotstackSeek" as const;
 const DETECT_KEY = "__shotstackDetectDurationMs" as const;
+const CAPTURE_CONCURRENCY = 4;
 
 function yieldFrame(): Promise<void> {
 	return new Promise<void>(resolve => {
@@ -56,7 +57,7 @@ function waitForIframeLoad(iframe: HTMLIFrameElement, timeoutMs: number = IFRAME
 	});
 }
 
-async function foreignObjectSvgToPng(svg: string, width: number, height: number): Promise<Uint8Array> {
+async function foreignObjectSvgToWebp(svg: string, width: number, height: number): Promise<Uint8Array> {
 	const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 	const img = new Image();
 	img.src = url;
@@ -68,7 +69,7 @@ async function foreignObjectSvgToPng(svg: string, width: number, height: number)
 	if (!ctx) throw new Error("2D context unavailable for foreignObject rasterise");
 	ctx.drawImage(img, 0, 0, width, height);
 	const blob = await new Promise<Blob | null>(resolve => {
-		canvas.toBlob(resolve, "image/png");
+		canvas.toBlob(resolve, "image/webp", 0.85);
 	});
 	if (!blob) throw new Error(`canvas.toBlob returned null — taint? (svg bytes=${svg.length})`);
 	return new Uint8Array(await blob.arrayBuffer());
@@ -220,7 +221,7 @@ export class Html5Player extends Player {
 			}
 			await this.mountIframe(validation.data);
 			this.configureKeyframes();
-			this.prewarmCapture();
+			this.beginCapture();
 		} catch (error) {
 			console.error("Failed to render html5 asset:", error instanceof Error ? `${error.message}\n${error.stack}` : error);
 			this.createFallbackGraphic();
@@ -292,8 +293,12 @@ export class Html5Player extends Player {
 	// ─── capture pipeline ──────────────────────────────────────────────────────
 
 	private async captureFrames(): Promise<Blob[] | null> {
-		if (this.capturedFrames) return this.capturedFrames;
-		if (this.captureInFlight) return this.captureInFlight;
+		if (this.capturedFrames && this.capturedHash === this.contentHash) {
+			return this.capturedFrames;
+		}
+		if (this.captureInFlight) {
+			return this.captureInFlight;
+		}
 		const previous = Html5Player.captureChain;
 		this.captureInFlight = previous
 			.then(() => {
@@ -350,24 +355,23 @@ export class Html5Player extends Player {
 		this.captureFramesTotal = frameCount;
 		this.captureFramesDone = 0;
 
-		const rasterisePromises: Promise<Uint8Array>[] = [];
-		const onFrameDone = (png: Uint8Array): Uint8Array => {
-			this.captureFramesDone += 1;
-			return png;
-		};
-
-		for (let i = 0; i < frameCount; i += 1) {
+		const blobs: Blob[] = [];
+		for (let i = 0; i < frameCount; i += CAPTURE_CONCURRENCY) {
 			await yieldFrame();
 			if (stale()) return null;
-			this.seekHarness(i / fps);
-			forceLayout(this.iframe.contentDocument.body);
-			const svg = this.captureIframeAsForeignObjectSvg(W, H);
-			rasterisePromises.push(foreignObjectSvgToPng(svg, W, H).then(onFrameDone));
+			const batch: Promise<Uint8Array>[] = [];
+			for (let j = i; j < Math.min(i + CAPTURE_CONCURRENCY, frameCount); j += 1) {
+				this.seekHarness(j / fps);
+				forceLayout(this.iframe.contentDocument.body);
+				batch.push(foreignObjectSvgToWebp(this.captureIframeAsForeignObjectSvg(W, H), W, H));
+			}
+			const frames = await Promise.all(batch);
+			if (stale()) return null;
+			for (const frame of frames) {
+				this.captureFramesDone += 1;
+				blobs.push(new Blob([frame as BlobPart], { type: "image/webp" }));
+			}
 		}
-
-		const pngs = await Promise.all(rasterisePromises);
-		if (stale()) return null;
-		const blobs: Blob[] = pngs.map(png => new Blob([png as BlobPart], { type: "image/png" }));
 
 		this.capturedFrames = blobs;
 		this.capturedHash = cacheKey;
@@ -484,13 +488,14 @@ export class Html5Player extends Player {
 		if (newHash === this.contentHash) return;
 		this.contentHash = newHash;
 		this.transitionToStale();
+		this.disposeCapturedFrames();
 		this.captureInFlight = null;
 		this.hasTriggeredCapture = false;
 		this.seekErrorReported = false;
 		this.iframe.srcdoc = composeHtml5IframeSrcdoc(this.asset);
 		try {
 			await waitForIframeLoad(this.iframe, undefined, true);
-			this.prewarmCapture();
+			this.beginCapture();
 		} catch (err) {
 			console.warn("[Html5Player] reload iframe load failed:", err);
 			this.emitCaptureFailed(err, "static-placeholder");
@@ -531,52 +536,45 @@ export class Html5Player extends Player {
 		}
 	}
 
-	/**
-	 * Run capture in the background without changing UI mode.
-	 */
-	private prewarmCapture(): void {
+	private beginCapture(): void {
 		if (this.disposed || !this.iframe) return;
-		if (this.capturedFrames || this.captureInFlight) return;
-		this.captureFrames().catch(err => {
-			console.warn("[Html5Player] prewarm capture failed:", err);
-		});
+		if (this.mode === "capturing" || this.mode === "playback") return;
+		if (this.captureInFlight) return;
+
+		if (this.capturedFrames && this.capturedHash === this.contentHash) {
+			this.transitionToPlayback().catch(err => {
+				console.warn("[Html5Player] transitionToPlayback failed:", err);
+				this.transitionToEditing();
+			});
+			return;
+		}
+
+		this.transitionToCapturing();
+		const hashAtStart = this.contentHash;
+		this.captureFrames()
+			.then(async frames => {
+				if (this.disposed) return;
+				const fresh = !!frames && frames.length > 0 && this.capturedHash === hashAtStart && this.contentHash === hashAtStart;
+				if (!fresh) {
+					// Stale/empty result — fall back to the live iframe instead of stranding the loader.
+					if (this.mode === "capturing") this.transitionToEditing();
+					return;
+				}
+				await this.transitionToPlayback();
+			})
+			.catch(err => {
+				console.warn("[Html5Player] capture failed:", err);
+				this.emitCaptureFailed(err, "live-iframe");
+				if (this.mode === "capturing") this.transitionToEditing();
+			});
 	}
 
 	private triggerCaptureIfNeeded(): void {
 		if (this.hasTriggeredCapture) return;
 		if (!this.iframe || !this.edit.isPlaying) return;
 		if (this.mode !== "editing" && this.mode !== "stale") return;
-
-		if (this.capturedFrames && this.capturedHash === this.contentHash) {
-			const hashAtTrigger = this.contentHash;
-			this.hasTriggeredCapture = true;
-			this.transitionToPlayback()
-				.catch(err => {
-					console.warn("[Html5Player] transitionToPlayback failed:", err);
-					this.transitionToEditing();
-				})
-				.finally(() => {
-					if (this.contentHash !== hashAtTrigger) this.hasTriggeredCapture = false;
-				});
-			return;
-		}
-
 		this.hasTriggeredCapture = true;
-		this.transitionToCapturing();
-		const hashAtTrigger = this.contentHash;
-
-		this.captureFrames()
-			.then(async frames => {
-				if (!frames || frames.length === 0) return;
-				if (this.capturedHash !== hashAtTrigger || this.contentHash !== hashAtTrigger) return;
-				if (this.disposed) return;
-				await this.transitionToPlayback();
-			})
-			.catch(err => {
-				console.warn("[Html5Player] capture failed:", err);
-				this.emitCaptureFailed(err, "live-iframe");
-				this.transitionToEditing();
-			});
+		this.beginCapture();
 	}
 
 	private mountLoadingGraphic(): void {
