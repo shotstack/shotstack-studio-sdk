@@ -3,13 +3,7 @@ import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
-import {
-	Html5AssetSchema,
-	composeHtml5IframeSrcdoc,
-	computeHtml5FrameCount,
-	detectHtml5DurationWithRetry,
-	type Html5Asset
-} from "@shotstack/shotstack-canvas";
+import { Html5AssetSchema, composeHtml5IframeSrcdoc, computeHtml5FrameCount, type Html5Asset } from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
 import { computeHtml5CacheKey, html5CacheGet, html5CachePut } from "./html5-cache";
@@ -21,10 +15,8 @@ const DECODED_FRAME_LIMIT = 30;
 
 type HarnessWindow = Window & {
 	["__shotstackSeek"]?: (ms: number) => void;
-	["__shotstackDetectDurationMs"]?: () => number;
 };
 const SEEK_KEY = "__shotstackSeek" as const;
-const DETECT_KEY = "__shotstackDetectDurationMs" as const;
 const CAPTURE_CONCURRENCY = 4;
 
 function yieldFrame(): Promise<void> {
@@ -157,21 +149,6 @@ export class Html5Player extends Player {
 				console.warn("[Html5Player] __shotstackSeek threw (further errors suppressed):", err);
 			}
 		}
-	}
-
-	/**
-	 * Returns the harness-reported duration in ms, or null if unavailable.
-	 */
-	private probeDurationMs(): number | null {
-		const detect = this.harnessWindow?.[DETECT_KEY];
-		if (typeof detect !== "function") return null;
-		try {
-			const ms = detect();
-			if (typeof ms === "number" && Number.isFinite(ms) && ms > 0) return ms;
-		} catch (err) {
-			console.warn("[Html5Player] __shotstackDetectDurationMs threw:", err);
-		}
-		return null;
 	}
 
 	private emitCaptureFailed(error: unknown, fallback: string): void {
@@ -339,11 +316,7 @@ export class Html5Player extends Player {
 		await yieldFrame();
 		if (stale()) return null;
 
-		const detectedDurationMs = await detectHtml5DurationWithRetry(() => this.probeDurationMs(), stale);
-		if (stale()) return null;
-
 		const { frameCount } = computeHtml5FrameCount({
-			detectedDurationMs,
 			clipLengthSeconds: this.getLength(),
 			jsContent: this.asset.js,
 			cssContent: this.asset.css,
