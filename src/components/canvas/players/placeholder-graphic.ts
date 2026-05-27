@@ -22,40 +22,38 @@ export function createPlaceholderGraphic(width: number, height: number): pixi.Gr
 export function createCaptureLoadingGraphic(width: number, height: number): { container: pixi.Container; setProgress: (fraction: number) => void } {
 	const container = new pixi.Container();
 
-	// Background
-	const bg = new pixi.Graphics();
-	bg.fillStyle = { color: "#0f172a", alpha: 0.92 };
-	bg.rect(0, 0, width, height);
-	bg.fill();
-	container.addChild(bg);
+	const sideMargin = Math.max(12, Math.round(width * 0.06));
+	const barWidth = width - sideMargin * 2;
+	const barHeight = Math.max(4, Math.round(height / 220));
+	const radius = barHeight / 2;
+	const barX = sideMargin;
+	const barY = height - Math.max(18, Math.round(height / 36)) - barHeight;
 
-	// Border
-	const border = new pixi.Graphics();
-	border.strokeStyle = { color: "#334155", width: 2 };
-	border.rect(1, 1, width - 2, height - 2);
-	border.stroke();
-	container.addChild(border);
-
-	const labelStyle = new pixi.TextStyle({
-		fontFamily: "system-ui, sans-serif",
-		fontSize: Math.min(48, Math.max(18, height / 16)),
-		fill: 0xe2e8f0,
-		fontWeight: "600"
+	const fontSize = Math.min(30, Math.max(13, Math.round(height / 42)));
+	const label = new pixi.Text({
+		text: "Loading clip…",
+		style: new pixi.TextStyle({ fontFamily: "system-ui, sans-serif", fontSize, fill: 0xe2e8f0, fontWeight: "600" })
 	});
-	const label = new pixi.Text({ text: "Loading clip...", style: labelStyle });
-	label.anchor.set(0.5, 0.5);
-	label.x = width / 2;
-	label.y = height / 2 - 10;
+
+	// Small rounded backing behind the label so it stays legible over any clip content.
+	const padX = Math.round(fontSize * 0.6);
+	const padY = Math.round(fontSize * 0.3);
+	const labelW = label.width + padX * 2;
+	const labelH = label.height + padY * 2;
+	const labelY = barY - labelH - Math.round(barHeight * 2) - 4;
+	const labelBg = new pixi.Graphics();
+	labelBg.fillStyle = { color: "#0f172a", alpha: 0.7 };
+	labelBg.roundRect(barX, labelY, labelW, labelH, Math.round(labelH / 2));
+	labelBg.fill();
+	container.addChild(labelBg);
+	label.x = barX + padX;
+	label.y = labelY + padY;
 	container.addChild(label);
 
-	// Progress bar
-	const trackWidth = Math.min(360, width * 0.5);
-	const trackHeight = 6;
-	const trackX = (width - trackWidth) / 2;
-	const trackY = height / 2 + 60;
+	// Progress track, pinned to the bottom edge.
 	const track = new pixi.Graphics();
-	track.fillStyle = { color: "#1e293b", alpha: 1 };
-	track.rect(trackX, trackY, trackWidth, trackHeight);
+	track.fillStyle = { color: "#0f172a", alpha: 0.6 };
+	track.roundRect(barX, barY, barWidth, barHeight, radius);
 	track.fill();
 	container.addChild(track);
 
@@ -64,8 +62,9 @@ export function createCaptureLoadingGraphic(width: number, height: number): { co
 	const setProgress = (fraction: number) => {
 		const f = Math.max(0, Math.min(1, fraction));
 		fill.clear();
+		if (f <= 0) return;
 		fill.fillStyle = { color: "#34d399", alpha: 1 };
-		fill.rect(trackX, trackY, trackWidth * f, trackHeight);
+		fill.roundRect(barX, barY, Math.max(barHeight, barWidth * f), barHeight, radius);
 		fill.fill();
 	};
 	setProgress(0);

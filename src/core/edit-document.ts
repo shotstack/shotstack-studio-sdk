@@ -10,6 +10,7 @@
 
 import type { Size } from "@layouts/geometry";
 
+import { resolveGoogleFontUrl } from "./fonts/font-config";
 import type { Clip, Track, Edit, Soundtrack } from "./schemas";
 import { setNestedValue } from "./shared/utils";
 
@@ -621,6 +622,9 @@ export class EditDocument {
 		const result = structuredClone(this.data);
 		const includeIds = options?.includeIds ?? false;
 
+		const fonts = result.timeline.fonts ?? [];
+		const registeredSrcs = new Set(fonts.map(f => f.src));
+
 		// Restore placeholders from document bindings before optionally stripping IDs
 		for (const track of result.timeline.tracks) {
 			for (const clip of track.clips) {
@@ -637,7 +641,18 @@ export class EditDocument {
 					// Strip internal ID — render API ignores it; default keeps payloads clean.
 					delete (clip as InternalClip).id;
 				}
+
+				const family = (clip.asset as { font?: { family?: string } } | undefined)?.font?.family;
+				const fontSrc = family ? resolveGoogleFontUrl(family) : undefined;
+				if (fontSrc && !registeredSrcs.has(fontSrc)) {
+					fonts.push({ src: fontSrc });
+					registeredSrcs.add(fontSrc);
+				}
 			}
+		}
+
+		if (fonts.length > 0) {
+			result.timeline.fonts = fonts;
 		}
 
 		if (result.merge?.length === 0) {
