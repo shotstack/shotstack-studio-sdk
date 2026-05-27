@@ -31,7 +31,7 @@ export function createCaptureLoadingGraphic(width: number, height: number): { co
 
 	const fontSize = Math.min(30, Math.max(13, Math.round(height / 42)));
 	const label = new pixi.Text({
-		text: "Loading video…",
+		text: "Loading clip…",
 		style: new pixi.TextStyle({ fontFamily: "system-ui, sans-serif", fontSize, fill: 0xe2e8f0, fontWeight: "600" })
 	});
 
