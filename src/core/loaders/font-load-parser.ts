@@ -6,6 +6,23 @@ type Woff2Decompressor = {
 	onRuntimeInitialized: (value: unknown) => void;
 };
 
+/**
+ * opentype.js 1.3.5 splits the naming table by platform (`names.windows.fontFamily`,
+ * `names.macintosh.fontFamily`); the flat `names.fontFamily` its types describe isn't
+ * always present, so a Windows-only font would otherwise crash the parse.
+ */
+export function readFamilyName(font: opentype.Font): string {
+	// Cast past @types/opentype.js, which only knows the flat shape.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const names = font.names as any;
+	const family = names.fontFamily ?? names.windows?.fontFamily ?? names.macintosh?.fontFamily ?? {};
+	const familyName = family.en ?? family[Object.keys(family)[0]];
+	if (!familyName) {
+		throw new Error(`Font has no readable family name; name tables present: ${Object.keys(names).join(", ") || "none"}`);
+	}
+	return familyName;
+}
+
 export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 	public static readonly Name = "FontLoadParser";
 
@@ -39,7 +56,7 @@ export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 
 		if (extension !== "woff2") {
 			const font = opentype.parse(new Uint8Array(buffer).buffer);
-			const familyName = font.names.fontFamily["en"] || font.names.fontFamily[Object.keys(font.names.fontFamily)[0]];
+			const familyName = readFamilyName(font);
 
 			const fontFace = new FontFace(familyName, `url(${url})`);
 			await fontFace.load();
@@ -56,7 +73,7 @@ export class FontLoadParser implements pixi.LoaderParser<FontFace | null> {
 		const decompressed = this.woff2Decompressor.decompress(buffer);
 
 		const font = opentype.parse(new Uint8Array(decompressed).buffer);
-		const familyName = font.names.fontFamily["en"] || font.names.fontFamily[Object.keys(font.names.fontFamily)[0]];
+		const familyName = readFamilyName(font);
 
 		const blob = new Blob([decompressed], { type: "font/ttf" });
 		const blobUrl = URL.createObjectURL(blob);
