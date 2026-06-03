@@ -2,11 +2,13 @@
  * Shared font configuration for text and rich-text players
  */
 
+import { parseFontFamily as parseCanvasFontFamily } from "@shotstack/shotstack-canvas";
+
 import { GOOGLE_FONTS_BY_FILENAME, GOOGLE_FONTS_BY_NAME } from "./google-fonts";
 
 const FONT_CDN = "https://templates.shotstack.io/basic/asset/font";
 
-/** Font family name to file path mapping (variable fonts where available, matching Edit API) */
+/** Font family name to its CDN file path (variable fonts where available). */
 export const FONT_PATHS: Record<string, string> = {
 	Arapey: `${FONT_CDN}/arapey-regular.ttf`,
 	"Clear Sans": `${FONT_CDN}/clearsans-regular.ttf`,
@@ -31,7 +33,7 @@ export const FONT_ALIASES: Record<string, string> = {
 	WorkSans: "Work Sans"
 };
 
-/** Weight modifier suffixes mapped to CSS font-weight values */
+/** Font weight modifier names mapped to their CSS numeric weight (e.g. "ExtraBold" → 800). */
 export const WEIGHT_MODIFIERS: Record<string, number> = {
 	Thin: 100,
 	ExtraLight: 200,
@@ -45,22 +47,13 @@ export const WEIGHT_MODIFIERS: Record<string, number> = {
 };
 
 /**
- * Parse a font family name to extract base family and weight
- * e.g., "Montserrat ExtraBold" → { baseFontFamily: "Montserrat", fontWeight: 800 }
- * Case-insensitive matching for weight modifiers (handles "Extrabold", "ExtraBold", etc.)
+ * Parse a font family name into its base family and CSS weight.
+ * e.g. "Montserrat ExtraBold" → { baseFontFamily: "Montserrat", fontWeight: 800 }.
+ * Surrounding whitespace is trimmed, so "Montserrat ExtraBold " parses to the same result.
  */
 export function parseFontFamily(fontFamily: string): { baseFontFamily: string; fontWeight: number } {
-	const lowerFamily = fontFamily.toLowerCase();
-	for (const [modifier, weight] of Object.entries(WEIGHT_MODIFIERS)) {
-		const lowerModifier = ` ${modifier.toLowerCase()}`;
-		if (lowerFamily.endsWith(lowerModifier)) {
-			return {
-				baseFontFamily: fontFamily.slice(0, -modifier.length - 1),
-				fontWeight: weight
-			};
-		}
-	}
-	return { baseFontFamily: fontFamily, fontWeight: 400 };
+	const { family, weight } = parseCanvasFontFamily(fontFamily);
+	return { baseFontFamily: family, fontWeight: Number(weight) };
 }
 
 /**
