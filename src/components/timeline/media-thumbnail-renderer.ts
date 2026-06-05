@@ -126,6 +126,13 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(clipKey, state);
 
+		if (!asset.src) {
+			state.loading = false;
+			state.failed = true;
+			this.onRendered();
+			return;
+		}
+
 		try {
 			const result = await this.generator.generateThumbnail(asset.src, asset.trim ?? 0);
 
@@ -154,6 +161,13 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	private async generateAndApplyImage(element: HTMLElement, asset: ImageAsset, clipKey: string): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(clipKey, state);
+
+		if (!asset.src) {
+			state.loading = false;
+			state.failed = true;
+			this.onRendered();
+			return;
+		}
 
 		try {
 			const result = await this.loadImageThumbnail(asset.src);

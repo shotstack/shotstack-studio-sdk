@@ -30,6 +30,7 @@ export class AudioPlayer extends Player {
 		const audioClipConfiguration = this.clipConfiguration.asset as AudioAsset;
 
 		const identifier = audioClipConfiguration.src;
+		if (!identifier) return;
 		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(identifier, loadOptions);
 
@@ -123,8 +124,10 @@ export class AudioPlayer extends Player {
 		this.syncTimer = 0;
 
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
-		const loadOptions: pixi.UnresolvedAsset = { src: audioAsset.src, parser: AudioLoadParser.Name };
-		const audioResource = await this.edit.assetLoader.load<howler.Howl>(audioAsset.src, loadOptions);
+		const { src } = audioAsset;
+		if (!src) return;
+		const loadOptions: pixi.UnresolvedAsset = { src, parser: AudioLoadParser.Name };
+		const audioResource = await this.edit.assetLoader.load<howler.Howl>(src, loadOptions);
 
 		if (!(audioResource instanceof howler.Howl)) {
 			throw new Error(`Invalid audio source '${audioAsset.src}'.`);
