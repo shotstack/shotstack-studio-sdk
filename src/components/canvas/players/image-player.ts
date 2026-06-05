@@ -86,6 +86,7 @@ export class ImagePlayer extends Player {
 	private async loadTexture(): Promise<void> {
 		const imageAsset = this.clipConfiguration.asset as ImageAsset;
 		const { src } = imageAsset;
+		if (!src) return;
 
 		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
 		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
