@@ -2,13 +2,13 @@ import { Canvas } from "@canvas/shotstack-canvas";
 import { ExportCommand } from "@core/commands/export-command";
 import { Edit } from "@core/edit-session";
 import { sec } from "@core/timing/types";
-import { Output, Mp4OutputFormat, BufferTarget, CanvasSource } from "mediabunny";
+import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource } from "mediabunny";
 import * as pixi from "pixi.js";
 
 import { AudioProcessor } from "./audio-processor";
 import { ExportProgressUI } from "./export-progress-ui";
 import { ExportError, BrowserCompatibilityError } from "./export-utils";
-import { VideoFrameProcessor, type VideoPlayerExtended } from "./video-frame-processor";
+import { VideoFrameProcessor } from "./video-frame-processor";
 
 interface ExportConfig {
 	fps: number;
@@ -74,14 +74,19 @@ export class ExportCoordinator {
 			const videoSource = new CanvasSource(canvas, { codec: "avc", bitrate: 5_000_000 });
 			output.addVideoTrack(videoSource);
 
-			this.progressUI.update(15, 100, "Audio...");
-			const audioSource = await this.audioProcessor.setupAudioTracks(this.exportCommand.getTracks(), output);
+			this.progressUI.update(15, 100, "Mixing audio...");
+			const mixedAudio = await this.audioProcessor.renderMix(this.exportCommand.getTracks(), this.edit.totalDuration);
+			let audioSource: AudioBufferSource | null = null;
+			if (mixedAudio) {
+				audioSource = new AudioBufferSource({ codec: "aac", bitrate: 192_000 });
+				output.addAudioTrack(audioSource);
+			}
 
 			await output.start();
 
-			if (audioSource) {
+			if (audioSource && mixedAudio) {
 				this.progressUI.update(20, 100, "Encoding audio...");
-				await this.audioProcessor.processAudioSamples(audioSource);
+				await audioSource.add(mixedAudio);
 			}
 
 			this.progressUI.update(25, 100, "Exporting...");
@@ -199,39 +204,12 @@ export class ExportCoordinator {
 	private restoreEditState(state: EditState): void {
 		const c = this.edit.getViewportContainer();
 		this.edit.setExportMode(false);
-
-		for (const clip of this.exportCommand.getClips()) {
-			if (this.isVideoPlayer(clip)) {
-				const videoClip = clip as VideoPlayerExtended;
-				videoClip.skipVideoUpdate = false;
-				if (videoClip.originalVideoElement && videoClip.texture) {
-					const texture = pixi.Texture.from(videoClip.originalVideoElement);
-					videoClip.texture = texture;
-					if (videoClip.sprite) videoClip.sprite.texture = texture;
-					delete videoClip.originalVideoElement;
-					delete videoClip.originalTextureSource;
-					delete videoClip.lastReplacedTimestamp;
-				} else if (videoClip.originalTextureSource && videoClip.texture) {
-					(videoClip.texture as { source: unknown }).source = videoClip.originalTextureSource;
-					delete videoClip.originalTextureSource;
-					delete videoClip.lastReplacedTimestamp;
-				}
-			}
-		}
+		this.videoProcessor.restore();
 
 		Object.assign(c.position, state.pos);
 		Object.assign(c.scale, state.scale);
 		c.visible = state.visible;
 		this.edit.seek(sec(state.time));
 		if (state.wasPlaying) this.edit.play();
-	}
-
-	private isVideoPlayer(clip: unknown): clip is VideoPlayerExtended {
-		if (!clip || typeof clip !== "object") return false;
-		const c = clip as Record<string, unknown>;
-		const hasVideoConstructor = c.constructor?.name === "VideoPlayer";
-		const texture = c["texture"] as { source?: { resource?: unknown } } | undefined;
-		const hasVideoTexture = texture?.source?.resource instanceof HTMLVideoElement;
-		return hasVideoConstructor || hasVideoTexture;
 	}
 }

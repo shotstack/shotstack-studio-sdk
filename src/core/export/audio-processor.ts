@@ -1,98 +1,114 @@
-import { AudioPlayer } from "@canvas/players/audio-player";
-import { PlayerType } from "@canvas/players/player";
-import type { AudioAsset } from "@schemas";
-import { Output, AudioSampleSource, AudioSample } from "mediabunny";
+import { PlayerType, type Player } from "@canvas/players/player";
 
+import { buildVolumeAutomation, type VolumeTween } from "./export-timing";
+
+const OUTPUT_SAMPLE_RATE = 48_000;
+const OUTPUT_CHANNELS = 2;
+
+// Player types whose `src` is (or, for text-to-speech, becomes) an audio-bearing file.
+const AUDIO_BEARING = new Set<string>([PlayerType.Audio, PlayerType.Video, PlayerType.TextToSpeech]);
+
+interface AudioBearingClip {
+	src: string;
+	start: number;
+	length: number;
+	trim: number;
+	volume: number | VolumeTween[] | undefined;
+	effect: string | undefined;
+}
+
+/**
+ * Mixes every audio-bearing clip into one export track
+ */
 export class AudioProcessor {
-	private audioTracks: { data: ArrayBuffer; start: number; duration: number; volume: number }[] = [];
+	/** Decode and mix all audio-bearing clips into one buffer; null when there is no audio. */
+	async renderMix(tracks: ReadonlyArray<ReadonlyArray<Player>>, totalDuration: number): Promise<AudioBuffer | null> {
+		const clips = this.collectClips(tracks);
+		if (!clips.length || totalDuration <= 0) return null;
 
-	async setupAudioTracks(tracks: ReadonlyArray<ReadonlyArray<unknown>>, output: Output): Promise<AudioSampleSource | null> {
-		const audioPlayers = this.findAudioPlayers(tracks);
-		if (!audioPlayers.length) return null;
+		const frames = Math.max(1, Math.ceil(totalDuration * OUTPUT_SAMPLE_RATE));
+		const ctx = new OfflineAudioContext(OUTPUT_CHANNELS, frames, OUTPUT_SAMPLE_RATE);
+		const decodeCache = new Map<string, AudioBuffer | null>();
+		let scheduled = 0;
 
-		this.audioTracks = [];
-		for (const player of audioPlayers) {
-			const track = await this.processAudioTrack(player);
-			if (track) this.audioTracks.push(track);
-		}
+		for (const clip of clips) {
+			const buffer = await this.decode(clip.src, ctx, decodeCache);
+			if (buffer) {
+				const source = ctx.createBufferSource();
+				source.buffer = buffer;
 
-		if (!this.audioTracks.length) return null;
+				const gain = ctx.createGain();
+				this.applyVolume(gain.gain, clip);
+				source.connect(gain).connect(ctx.destination);
 
-		const audioSource = new AudioSampleSource({ codec: "aac", bitrate: 128000 });
-		output.addAudioTrack(audioSource);
-		return audioSource;
-	}
-
-	async processAudioSamples(audioSource: AudioSampleSource): Promise<void> {
-		if (!this.audioTracks?.length) return;
-
-		const audioContext = new AudioContext();
-		for (const track of this.audioTracks) {
-			const audioBuffer = await audioContext.decodeAudioData(track.data.slice(0));
-			const { numberOfChannels, sampleRate, length: frameCount } = audioBuffer;
-			const framesToUse = Math.min(frameCount, Math.floor((sampleRate * track.duration) / 1000));
-			const interleavedData = new Float32Array(framesToUse * numberOfChannels);
-
-			for (let ch = 0; ch < numberOfChannels; ch += 1) {
-				const channelData = audioBuffer.getChannelData(ch);
-				for (let i = 0; i < framesToUse; i += 1) {
-					interleavedData[i * numberOfChannels + ch] = channelData[i] * track.volume;
+				try {
+					// when = timeline start, offset = trim into the source, duration = clip length
+					source.start(Math.max(0, clip.start), Math.max(0, clip.trim), Math.max(0, clip.length));
+					scheduled += 1;
+				} catch (error) {
+					// e.g. trim past the source end — contribute nothing rather than fail the export.
+					console.warn("Export: skipped an audio clip that could not be scheduled:", error);
 				}
 			}
-
-			await audioSource.add(
-				new AudioSample({
-					data: interleavedData,
-					format: "f32",
-					numberOfChannels,
-					sampleRate,
-					timestamp: track.start / 1000
-				})
-			);
 		}
-		this.audioTracks = [];
+
+		if (!scheduled) return null;
+		return ctx.startRendering();
 	}
 
-	private findAudioPlayers(tracks: ReadonlyArray<ReadonlyArray<unknown>>): AudioPlayer[] {
-		const players: AudioPlayer[] = [];
+	private applyVolume(param: AudioParam, clip: AudioBearingClip): void {
+		const points = buildVolumeAutomation(clip.volume, clip.effect, clip.length);
+		const base = Math.max(0, clip.start);
+		param.setValueAtTime(points[0].value, base + points[0].time);
+		for (let i = 1; i < points.length; i += 1) {
+			param.linearRampToValueAtTime(points[i].value, base + points[i].time);
+		}
+	}
 
+	private async decode(src: string, ctx: BaseAudioContext, cache: Map<string, AudioBuffer | null>): Promise<AudioBuffer | null> {
+		if (cache.has(src)) return cache.get(src) ?? null;
+
+		let result: AudioBuffer | null = null;
+		try {
+			const response = await fetch(src);
+			// decodeAudioData reads the audio track of audio and video containers; throws if none.
+			if (response.ok) result = await ctx.decodeAudioData(await response.arrayBuffer());
+		} catch (error) {
+			console.warn("Export: no decodable audio for", src, error);
+		}
+		cache.set(src, result);
+		return result;
+	}
+
+	private collectClips(tracks: ReadonlyArray<ReadonlyArray<Player>>): AudioBearingClip[] {
+		const clips: AudioBearingClip[] = [];
+		const seen = new Set<Player>();
 		for (const track of tracks) {
 			for (const clip of track) {
-				if (this.isAudioPlayer(clip) && !players.includes(clip)) {
-					players.push(clip);
+				const resolved = seen.has(clip) ? null : this.asAudioClip(clip);
+				if (resolved) {
+					seen.add(clip);
+					clips.push(resolved);
 				}
 			}
 		}
-
-		return players;
+		return clips;
 	}
 
-	private async processAudioTrack(player: AudioPlayer) {
-		try {
-			const asset = player.clipConfiguration?.asset as AudioAsset;
-			if (!asset?.src) return null;
+	private asAudioClip(clip: Player): AudioBearingClip | null {
+		if (!AUDIO_BEARING.has(clip.playerType)) return null;
+		const asset = clip.clipConfiguration?.asset as
+			| { src?: unknown; trim?: number; volume?: unknown; volumeEffect?: string; effect?: string }
+			| undefined;
+		if (typeof asset?.src !== "string" || !asset.src) return null;
 
-			const response = await fetch(asset.src);
-			if (!response.ok) return null;
-
-			return {
-				data: await response.arrayBuffer(),
-				start: player.getStart(),
-				duration: player.getLength(),
-				volume: player.getVolume()
-			};
-		} catch (error) {
-			console.warn("Failed to process audio track:", error);
-			return null;
-		}
-	}
-
-	private isAudioPlayer(clip: unknown): clip is AudioPlayer {
-		if (!clip || typeof clip !== "object") return false;
-		const c = clip as { playerType?: string };
-		if (c.playerType === PlayerType.Audio) return true;
-		// Fallback for cases where playerType might not exist
-		const config = (clip as { clipConfiguration?: { asset?: { type?: string } } }).clipConfiguration;
-		return config?.asset?.type === "audio";
+		return {
+			src: asset.src,
+			start: clip.getStart(),
+			length: clip.getLength(),
+			trim: asset.trim ?? 0,
+			volume: asset.volume as number | VolumeTween[] | undefined,
+			effect: asset.volumeEffect ?? asset.effect
+		};
 	}
 }
