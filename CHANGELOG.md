@@ -2,6 +2,127 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.11.4] - 2026-06-05
+
+### Fixed
+
+- Rebuilt client-side video export on WebCodecs, fixing broken output (#122)
+  - Video clips are decoded frame-accurately via WebCodecs, fixing frozen first frames, stutter, and timing drift. Source codecs the browser cannot play in a `<video>` element now decode and export correctly
+  - The full timeline audio is mixed down into the export. Audio embedded in video and luma clips is now included (previously only standalone audio clips were encoded), overlapping clips are mixed rather than truncated, gaps render as silence, and per-clip volume — scalar, keyframed automation, and `fadeIn`/`fadeOut`/`fadeInFadeOut` — plus `trim` offsets are applied
+
+## [2.11.3] - 2026-06-03
+
+### Changed
+
+- Font family name parsing now delegates to the shared `@shotstack/shotstack-canvas` parser (upgraded to ^2.9.0), so a family name is interpreted the same way everywhere it is used
+
+### Fixed
+
+- A `font.family` value with leading or trailing whitespace — common from CMS fields and merge-field variables — now resolves to the declared font instead of falling back to a default (#120)
+
+## [2.11.2] - 2026-06-02
+
+### Fixed
+
+- Custom font family names are read correctly from fonts whose OpenType `name` table splits metadata across separate platform records, preventing a font from registering — and rendering — under the wrong family (#118)
+
+## [2.11.1] - 2026-05-27
+
+### Fixed
+
+- Catalogued Google Fonts referenced by a clip are auto-registered during export, so text renders with the intended font even when that font was not explicitly preloaded
+- HTML5 clip frames are now captured as WebP for faster, higher-quality capture (#116)
+
+## [2.11.0] - 2026-05-22
+
+### Added
+
+- **Asset URL preflight validation** — `addClip`, `addTrack`, `addFont`, and `setFonts` now check referenced `http(s)` asset and font URLs before applying the change, rejecting unreachable resources by throwing a typed `InvalidAssetUrlError` (carrying `url`, `status`, and `reason`) (#115)
+
+### Changed
+
+- Upgraded `@shotstack/shotstack-canvas` to ^2.8.0
+
+### Fixed
+
+- Font operations are serialised through the command queue, preventing race conditions when fonts are added while other edits are in flight
+- HTML5 clips now render in screenshots and thumbnails
+- `loadEdit()` no longer mutates the edit object passed in by the caller — inputs are defensively copied
+
+## [2.10.2] - 2026-05-19
+
+### Fixed
+
+- HTML5 playback, asset handling, and edit-document serialisation hardening (#112)
+- Upgraded `@shotstack/shotstack-canvas` to ^2.7.3
+
+## [2.10.1] - 2026-05-19
+
+### Fixed
+
+- Resizing a clip taller than 2160px no longer throws — the resize handle stops at the schema maximum (3840px wide × 2160px tall) instead of producing an out-of-bounds height (#113)
+
+## [2.10.0] - 2026-05-15
+
+### Added
+
+- **HTML5 asset support** — new `html5` asset type renders an HTML/CSS/JS bundle as a clip on the canvas and timeline (#111)
+  - JavaScript-driven animations are captured frame-by-frame, so they appear in both preview playback and export
+  - Popular animation libraries (GSAP, anime.js, and D3) are available as globals inside the sandbox
+  - Loading graphics are shown while a clip's frames are captured
+
+### Changed
+
+- Upgraded `@shotstack/schemas` to 1.11.0 (adds the `html5` asset type)
+
+## [2.9.1] - 2026-05-14
+
+### Fixed
+
+- Moved canvas double-click detection to the Edit layer for more reliable text-edit activation (#110)
+
+## [2.9.0] - 2026-05-14
+
+### Added
+
+- Double-click a text clip on the canvas to open its edit popup
+- Renamed the text toolbar button to "Edit text" with a caret icon to improve discoverability
+
+## [2.8.0] - 2026-05-14
+
+### Added
+
+- Delete clips via a right-click context menu or a toolbar button (#109)
+
+### Changed
+
+- Upgraded `@shotstack/shotstack-canvas` to ^2.7.2
+
+## [2.7.1] - 2026-04-29
+
+### Added
+
+- Optional `wrap` field on `rich-text` and `rich-caption` assets and on text background configuration, with matching text-wrap rendering (#106)
+
+### Changed
+
+- Upgraded `@shotstack/schemas` to 1.10.9 and `@shotstack/shotstack-canvas` to ^2.4.3 (#106)
+
+## [2.7.0] - 2026-04-29
+
+### Added
+
+- **Paste SVG and JSON directly** — Ctrl/Cmd+V pastes whatever was most recently copied: SVG markup from design tools such as Figma or Illustrator, clip and track JSON from Shotstack templates or docs, or internal copies from the timeline (#105)
+  - Multi-track and multi-clip pastes undo in a single step
+  - Internal copies are mirrored to the system clipboard, enabling paste across browser tabs
+  - Pasted clips use overlap-aware placement, offsetting rather than landing exactly on top of existing content
+
+## [2.6.1] - 2026-04-12
+
+### Fixed
+
+- Corrected audio fade-out timing by removing an incorrect division in the audio player's clip-length calculation (#102)
+
 ## [2.6.0] - 2026-04-11
 
 ### Added
