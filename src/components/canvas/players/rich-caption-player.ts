@@ -12,6 +12,7 @@ import {
 	createDefaultGeneratorConfig,
 	createWebPainter,
 	buildCaptionLayoutConfig,
+	resolveCaptionFonts,
 	parseSubtitleToWords,
 	CanvasRichCaptionAssetSchema,
 	type CanvasRichCaptionAsset,
@@ -218,11 +219,6 @@ export class RichCaptionPlayer extends Player {
 
 			const { width, height } = this.getSize();
 			const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
-			const letterSpacing = this.validatedAsset?.style?.letterSpacing;
-			const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
-			if (canvasTextMeasurer) {
-				layoutConfig.measureTextWidth = canvasTextMeasurer;
-			}
 			this.captionLayout = await this.layoutEngine.layoutCaption(this.words, layoutConfig);
 
 			this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
@@ -252,12 +248,6 @@ export class RichCaptionPlayer extends Player {
 
 		const { width, height } = this.getSize();
 		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
-
-		const letterSpacing = this.validatedAsset?.style?.letterSpacing;
-		const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
-		if (canvasTextMeasurer) {
-			layoutConfig.measureTextWidth = canvasTextMeasurer;
-		}
 
 		this.captionLayout = await this.layoutEngine.layoutCaption(words, layoutConfig);
 
@@ -323,19 +313,45 @@ export class RichCaptionPlayer extends Player {
 		}
 	}
 
+	// Shared font resolution used by both registration and the render payload, so the registered
+	// face and the rendered family are always the same. Delegates to the canvas resolver.
+	private resolveFontsForAsset(asset: RichCaptionAsset) {
+		const family = asset.font?.family ?? "Roboto";
+		const weight = asset.font?.weight ? parseInt(String(asset.font.weight), 10) || 400 : 400;
+		const fontNameMap = new Map<string, string>();
+		for (const [src, meta] of this.edit.getFontMetadata()) fontNameMap.set(src, meta.baseFamilyName);
+		const activeFamily = asset.active?.font?.family;
+		const activeWeight = asset.active?.font?.weight;
+		return resolveCaptionFonts({
+			family,
+			weight,
+			timelineFonts: this.edit.getTimelineFonts(),
+			fontNameMap,
+			...(activeFamily ? { activeFamily } : {}),
+			...(activeWeight != null ? { activeWeight: activeWeight as string | number } : {})
+		});
+	}
+
 	private async registerFonts(asset: RichCaptionAsset): Promise<void> {
 		if (!this.fontRegistry) return;
 
 		const family = asset.font?.family ?? "Roboto";
 		const assetWeight = asset.font?.weight ? parseInt(String(asset.font.weight), 10) || 400 : 400;
+
+		// Registration and the render payload (buildCanvasPayload) share this one resolution, so the
+		// render looks up exactly the face that was registered.
+		const resolution = this.resolveFontsForAsset(asset);
+
+		if (resolution.matched) {
+			for (const font of resolution.fonts) {
+				if (font.src) await this.registerFontFromUrl(font.src, font.family, parseInt(font.weight, 10) || 400);
+			}
+			return;
+		}
+
 		const resolved = this.resolveFontWithWeight(family, assetWeight);
 		if (resolved) {
 			await this.registerFontFromUrl(resolved.url, resolved.baseFontFamily, resolved.fontWeight);
-		}
-
-		const customFonts = this.buildCustomFontsFromTimeline(asset);
-		for (const customFont of customFonts) {
-			await this.registerFontFromUrl(customFont.src, customFont.family, parseInt(customFont.weight, 10) || 400);
 		}
 	}
 
@@ -465,8 +481,12 @@ export class RichCaptionPlayer extends Player {
 
 	private buildCanvasPayload(asset: RichCaptionAsset, words: WordTiming[]): Record<string, unknown> {
 		const { width, height } = this.getSize();
-		const customFonts = this.buildCustomFontsFromTimeline(asset);
-		const resolvedFamily = getFontDisplayName(asset.font?.family ?? "Roboto");
+		// Use the same resolution as registration, so the rendered family matches the registered face.
+		const resolution = this.resolveFontsForAsset(asset);
+		const resolvedFamily = resolution.matched ? resolution.resolvedFamily : getFontDisplayName(asset.font?.family ?? "Roboto");
+		const customFonts = resolution.matched
+			? resolution.fonts.filter(f => f.src).map(f => ({ src: f.src as string, family: f.family, weight: f.weight }))
+			: this.buildCustomFontsFromTimeline(asset);
 
 		const payload: Record<string, unknown> = {
 			type: asset.type,
@@ -500,25 +520,6 @@ export class RichCaptionPlayer extends Player {
 		}
 
 		return payload;
-	}
-
-	private createCanvasTextMeasurer(letterSpacing?: number): ((text: string, font: string) => number) | undefined {
-		try {
-			const measureCanvas = document.createElement("canvas");
-			const ctx = measureCanvas.getContext("2d");
-			if (!ctx) return undefined;
-
-			if (letterSpacing) {
-				(ctx as unknown as Record<string, unknown>)["letterSpacing"] = `${letterSpacing}px`;
-			}
-
-			return (text: string, font: string): number => {
-				ctx.font = font;
-				return ctx.measureText(text).width;
-			};
-		} catch {
-			return undefined;
-		}
 	}
 
 	private createFallbackGraphic(message: string): void {
@@ -652,11 +653,6 @@ export class RichCaptionPlayer extends Player {
 		if (!this.layoutEngine) return;
 
 		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
-		const letterSpacing = this.validatedAsset?.style?.letterSpacing;
-		const canvasTextMeasurer = this.createCanvasTextMeasurer(letterSpacing);
-		if (canvasTextMeasurer) {
-			layoutConfig.measureTextWidth = canvasTextMeasurer;
-		}
 
 		this.pendingLayoutId += 1;
 		const layoutId = this.pendingLayoutId;

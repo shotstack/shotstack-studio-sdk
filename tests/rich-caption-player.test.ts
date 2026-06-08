@@ -157,7 +157,7 @@ jest.mock("@shotstack/shotstack-canvas", () => {
 		.fn()
 		.mockReturnValue({ wordIndex: 0, text: "Hello", x: 100, y: 540, width: 120, startTime: 0, endTime: 400, isRTL: false });
 	mockGenerateRichCaptionFrame = jest.fn().mockReturnValue({
-		ops: [{ op: "DrawCaptionWord", text: "Hello" }],
+		ops: [{ op: "FillPath", path: "M 0 0 L 1 0 L 1 1 Z", x: 100, y: 540, scale: 1, fill: { kind: "solid", color: "#ffffff", opacity: 1 } }],
 		visibleWordCount: 1,
 		activeWordIndex: 0
 	});
@@ -190,43 +190,52 @@ jest.mock("@shotstack/shotstack-canvas", () => {
 		}),
 		createWebPainter: (...args: unknown[]) => mockCreateWebPainter(...args),
 		parseSubtitleToWords: (...args: unknown[]) => mockParseSubtitleToWords(...args),
-	buildCaptionLayoutConfig: (asset: Record<string, unknown>, frameWidth: number, frameHeight: number) => {
-		const rawPadding = asset['padding'] as number | { top?: number; right?: number; bottom?: number; left?: number } | undefined;
-		let padding: { top: number; right: number; bottom: number; left: number };
-		if (typeof rawPadding === "number") {
-			padding = { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding };
-		} else if (rawPadding) {
-			padding = { top: rawPadding.top ?? 0, right: rawPadding.right ?? 0, bottom: rawPadding.bottom ?? 0, left: rawPadding.left ?? 0 };
-		} else {
-			padding = { top: 0, right: 0, bottom: 0, left: 0 };
-		}
-		const font = asset['font'] as { size?: number; family?: string; weight?: number | string } | undefined;
-		const style = asset['style'] as { letterSpacing?: number; lineHeight?: number; textTransform?: string } | undefined;
-		const align = asset['align'] as { vertical?: string; horizontal?: string } | undefined;
-		const fontSize = font?.size ?? 24;
-		const lineHeight = style?.lineHeight ?? 1.2;
-		const availableWidth = frameWidth - padding.left - padding.right;
-		const availableHeight = frameHeight - padding.top - padding.bottom;
-		const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
-		const vertical = align?.vertical;
-		const horizontal = align?.horizontal;
-		return {
-			frameWidth,
-			frameHeight,
-			availableWidth,
-			maxLines,
-			verticalAlign: (() => { if (vertical === "top") return "top"; if (vertical === "middle") return "middle"; return "bottom"; })(),
-			horizontalAlign: (() => { if (horizontal === "left") return "left"; if (horizontal === "right") return "right"; return "center"; })(),
-			padding,
-			fontSize,
-			fontFamily: font?.family ?? "Roboto",
-			fontWeight: String(font?.weight ?? "400"),
-			letterSpacing: style?.letterSpacing ?? 0,
-			lineHeight,
-			textTransform: style?.textTransform ?? "none",
-			pauseThreshold: (asset['pauseThreshold'] as number) ?? 500,
-		};
-	},
+		resolveCaptionFonts: jest.fn(() => ({ fonts: [], resolvedFamily: "Roboto", matched: false })),
+		buildCaptionLayoutConfig: (asset: Record<string, unknown>, frameWidth: number, frameHeight: number) => {
+			const rawPadding = asset["padding"] as number | { top?: number; right?: number; bottom?: number; left?: number } | undefined;
+			let padding: { top: number; right: number; bottom: number; left: number };
+			if (typeof rawPadding === "number") {
+				padding = { top: rawPadding, right: rawPadding, bottom: rawPadding, left: rawPadding };
+			} else if (rawPadding) {
+				padding = { top: rawPadding.top ?? 0, right: rawPadding.right ?? 0, bottom: rawPadding.bottom ?? 0, left: rawPadding.left ?? 0 };
+			} else {
+				padding = { top: 0, right: 0, bottom: 0, left: 0 };
+			}
+			const font = asset["font"] as { size?: number; family?: string; weight?: number | string } | undefined;
+			const style = asset["style"] as { letterSpacing?: number; lineHeight?: number; textTransform?: string } | undefined;
+			const align = asset["align"] as { vertical?: string; horizontal?: string } | undefined;
+			const fontSize = font?.size ?? 24;
+			const lineHeight = style?.lineHeight ?? 1.2;
+			const availableWidth = frameWidth - padding.left - padding.right;
+			const availableHeight = frameHeight - padding.top - padding.bottom;
+			const maxLines = Math.max(1, Math.min(10, Math.floor(availableHeight / (fontSize * lineHeight))));
+			const vertical = align?.vertical;
+			const horizontal = align?.horizontal;
+			return {
+				frameWidth,
+				frameHeight,
+				availableWidth,
+				maxLines,
+				verticalAlign: (() => {
+					if (vertical === "top") return "top";
+					if (vertical === "middle") return "middle";
+					return "bottom";
+				})(),
+				horizontalAlign: (() => {
+					if (horizontal === "left") return "left";
+					if (horizontal === "right") return "right";
+					return "center";
+				})(),
+				padding,
+				fontSize,
+				fontFamily: font?.family ?? "Roboto",
+				fontWeight: String(font?.weight ?? "400"),
+				letterSpacing: style?.letterSpacing ?? 0,
+				lineHeight,
+				textTransform: style?.textTransform ?? "none",
+				pauseThreshold: (asset["pauseThreshold"] as number) ?? 500
+			};
+		},
 		CanvasRichCaptionAssetSchema: {
 			safeParse: jest.fn().mockImplementation((asset: unknown) => ({
 				success: true,
@@ -305,6 +314,32 @@ describe("RichCaptionPlayer", () => {
 		(document as unknown as Record<string, unknown>)["fonts"] = {
 			add: jest.fn()
 		};
+	});
+
+	describe("Shared canvas resolver wiring", () => {
+		it("registers the resolver's fonts under the resolved family + weight when a timeline font matches", async () => {
+			const canvas = jest.requireMock("@shotstack/shotstack-canvas") as { resolveCaptionFonts: jest.Mock };
+			canvas.resolveCaptionFonts.mockReturnValue({
+				matched: true,
+				resolvedFamily: "Montserrat",
+				fonts: [{ src: "https://cdn.test/Montserrat.ttf", family: "Montserrat", weight: "700" }]
+			});
+			try {
+				const edit = createMockEdit();
+				const player = new RichCaptionPlayer(
+					edit,
+					createClip(createAsset({ font: { family: "JTUSjIg1_hash", weight: 700 } } as Partial<RichCaptionAsset>))
+				);
+				await player.load();
+
+				// The declared file is fetched and registered under the resolver's family + weight —
+				// not via the built-in fallback (which would never hit this URL).
+				expect(mockFetch).toHaveBeenCalledWith("https://cdn.test/Montserrat.ttf");
+				expect(mockRegisterFromBytes).toHaveBeenCalledWith(expect.any(ArrayBuffer), { family: "Montserrat", weight: "700" });
+			} finally {
+				canvas.resolveCaptionFonts.mockReturnValue({ fonts: [], resolvedFamily: "Roboto", matched: false });
+			}
+		});
 	});
 
 	describe("Construction & Validation", () => {
@@ -1166,7 +1201,9 @@ describe("RichCaptionPlayer", () => {
 			CanvasRichCaptionAssetSchema.safeParse.mockClear();
 
 			player.reconfigureAfterRestore();
-			await new Promise(resolve => { setTimeout(resolve, 10); });
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			// After reconfigure, placeholder should span the new 20s length
 			payload = CanvasRichCaptionAssetSchema.safeParse.mock.calls[0]?.[0];
@@ -1411,8 +1448,12 @@ describe("RichCaptionPlayer", () => {
 			// Make layoutCaption resolve asynchronously so we can race two calls
 			let resolveFirst!: (value: unknown) => void;
 			let resolveSecond!: (value: unknown) => void;
-			const firstLayout = new Promise(r => { resolveFirst = r; });
-			const secondLayout = new Promise(r => { resolveSecond = r; });
+			const firstLayout = new Promise(r => {
+				resolveFirst = r;
+			});
+			const secondLayout = new Promise(r => {
+				resolveSecond = r;
+			});
 
 			const layoutResult = {
 				store: {
@@ -1424,12 +1465,14 @@ describe("RichCaptionPlayer", () => {
 					yPositions: [540, 540, 540],
 					widths: [120, 130, 100]
 				},
-				groups: [{
-					wordIndices: [0, 1, 2],
-					startTime: 0,
-					endTime: 1400,
-					lines: [{ wordIndices: [0, 1, 2], x: 100, y: 540, width: 400, height: 48 }]
-				}],
+				groups: [
+					{
+						wordIndices: [0, 1, 2],
+						startTime: 0,
+						endTime: 1400,
+						lines: [{ wordIndices: [0, 1, 2], x: 100, y: 540, width: 400, height: 48 }]
+					}
+				],
 				shapedWords: [
 					{ text: "Hello", width: 120, glyphs: [], isRTL: false },
 					{ text: "World", width: 130, glyphs: [], isRTL: false },
@@ -1437,9 +1480,7 @@ describe("RichCaptionPlayer", () => {
 				]
 			};
 
-			mockLayoutCaption
-				.mockReturnValueOnce(firstLayout)
-				.mockReturnValueOnce(secondLayout);
+			mockLayoutCaption.mockReturnValueOnce(firstLayout).mockReturnValueOnce(secondLayout);
 
 			// Trigger two rapid dimension changes without awaiting
 			// @ts-expect-error accessing protected method
@@ -1454,7 +1495,9 @@ describe("RichCaptionPlayer", () => {
 			await firstLayout;
 
 			// Allow microtasks to settle
-			await new Promise(resolve => { setTimeout(resolve, 10); });
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			// layoutCaption was called twice
 			expect(mockLayoutCaption).toHaveBeenCalledTimes(2);
@@ -1479,7 +1522,9 @@ describe("RichCaptionPlayer", () => {
 			// @ts-expect-error accessing protected method
 			player.onDimensionsChanged();
 
-			await new Promise(resolve => { setTimeout(resolve, 10); });
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			// Layout should NOT be called since validation failed early
 			expect(mockLayoutCaption).not.toHaveBeenCalled();
@@ -1501,7 +1546,9 @@ describe("RichCaptionPlayer", () => {
 			// @ts-expect-error accessing protected method
 			player.onDimensionsChanged();
 
-			await new Promise(resolve => { setTimeout(resolve, 10); });
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			// Should NOT call layoutCaption because of the early return guard
 			expect(mockLayoutCaption).not.toHaveBeenCalled();
