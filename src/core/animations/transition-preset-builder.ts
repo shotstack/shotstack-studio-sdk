@@ -78,7 +78,11 @@ export class TransitionPresetBuilder {
 				const [scaleFrom, scaleTo] = isIn ? [10, 1] : [1, 10];
 				const [opacityFrom, opacityTo] = isIn ? [0, 1] : [1, 0];
 				const easing = isIn ? "easeIn" : "easeOut";
-				keyframes.scaleKeyframes.push({ from: scaleFrom, to: scaleTo, start, length, interpolation: "bezier", easing });
+				if (isIn) {
+					keyframes.scaleKeyframes.push({ from: scaleFrom, to: scaleTo, start, length, interpolation: "linear" });
+				} else {
+					keyframes.scaleKeyframes.push({ from: scaleFrom, to: scaleTo, start, length, interpolation: "bezier", easing });
+				}
 				keyframes.opacityKeyframes.push({ from: opacityFrom, to: opacityTo, start, length, interpolation: "bezier", easing });
 				break;
 			}
