@@ -316,7 +316,12 @@ export class Canvas {
 	}
 
 	/**
-	 * Capture the current canvas content as a base64-encoded data URL.
+	 * Capture the rendered output frame as a base64-encoded data URL.
+	 *
+	 * Renders the composition full-bleed at the edit's output resolution, independent of the
+	 * editor's current zoom and pan — the rendered frame only, without the surrounding canvas
+	 * margin, selection handles, or alignment guides. Use {@link captureViewport} to capture
+	 * the on-screen editor view instead.
 	 */
 	public async captureFrame(
 		options: {
@@ -324,11 +329,50 @@ export class Canvas {
 			quality?: number;
 		} = {}
 	): Promise<string> {
+		const container = this.getViewportContainer();
+		// Neutralise the editor's zoom/pan so the extract is a 1:1 output-resolution frame. The
+		// ticker is paused around the swap so the on-screen view never renders in this transient
+		// state; position and scale (and the ticker) are restored in `finally`.
+		const { x: posX, y: posY } = container.position;
+		const { x: scaleX, y: scaleY } = container.scale;
+		this.pauseTicker();
+		container.position.set(0, 0);
+		container.scale.set(1, 1);
+		try {
+			return await this.extractBase64(container, new pixi.Rectangle(0, 0, this.edit.size.width, this.edit.size.height), options);
+		} finally {
+			container.position.set(posX, posY);
+			container.scale.set(scaleX, scaleY);
+			this.resumeTicker();
+		}
+	}
+
+	/**
+	 * Capture the on-screen editor viewport as a base64-encoded data URL.
+	 *
+	 * Reflects the editor's current zoom, pan, and surrounding canvas — what the user sees.
+	 * Use {@link captureFrame} for the full-bleed rendered output frame.
+	 */
+	public async captureViewport(
+		options: {
+			format?: "png" | "jpeg" | "webp";
+			quality?: number;
+		} = {}
+	): Promise<string> {
 		this.application.renderer.render(this.application.stage);
+		return this.extractBase64(this.application.stage, undefined, options);
+	}
+
+	private extractBase64(
+		target: pixi.Container,
+		frame: pixi.Rectangle | undefined,
+		options: { format?: "png" | "jpeg" | "webp"; quality?: number }
+	): Promise<string> {
 		const requested = options.format ?? "png";
 		const pixiFormat: "png" | "jpg" | "webp" = requested === "jpeg" ? "jpg" : requested;
 		return this.application.renderer.extract.base64({
-			target: this.application.stage,
+			target,
+			...(frame ? { frame } : {}),
 			format: pixiFormat,
 			quality: options.quality ?? 0.85
 		});

@@ -234,6 +234,14 @@ export abstract class Player extends Entity {
 	}
 
 	public override update(_: number, __: number): void {
+		this.applyPlayheadState();
+	}
+
+	/**
+	 * Apply all playhead-time-dependent container state (visibility, transform, opacity, wipe mask)
+	 * for the current playback time. Called by the per-frame tick and directly by static capture.
+	 */
+	public applyPlayheadState(): void {
 		this.getContainer().visible = this.isActive();
 		this.getContainer().zIndex = 100000 - this.layer * 100;
 		if (!this.isActive()) {

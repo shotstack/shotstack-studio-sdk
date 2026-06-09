@@ -3,6 +3,7 @@ import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
+import { nextFrame } from "@shared/utils";
 import { Html5AssetSchema, composeHtml5IframeSrcdoc, computeHtml5FrameCount, type Html5Asset } from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
@@ -18,13 +19,6 @@ type HarnessWindow = Window & {
 };
 const SEEK_KEY = "__shotstackSeek" as const;
 const CAPTURE_CONCURRENCY = 4;
-
-function yieldFrame(): Promise<void> {
-	return new Promise<void>(resolve => {
-		if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => resolve());
-		else setTimeout(() => resolve(), 0);
-	});
-}
 
 function forceLayout(el: HTMLElement): void {
 	el.getBoundingClientRect();
@@ -313,7 +307,7 @@ export class Html5Player extends Player {
 		} catch {
 			/* older browsers — proceed */
 		}
-		await yieldFrame();
+		await nextFrame();
 		if (stale()) return null;
 
 		const { frameCount } = computeHtml5FrameCount({
@@ -330,7 +324,7 @@ export class Html5Player extends Player {
 
 		const blobs: Blob[] = [];
 		for (let i = 0; i < frameCount; i += CAPTURE_CONCURRENCY) {
-			await yieldFrame();
+			await nextFrame();
 			if (stale()) return null;
 			const batch: Promise<Uint8Array>[] = [];
 			for (let j = i; j < Math.min(i + CAPTURE_CONCURRENCY, frameCount); j += 1) {

@@ -35,6 +35,7 @@ export class RichCaptionPlayer extends Player {
 
 	private canvas: HTMLCanvasElement | null = null;
 	private painter: ReturnType<typeof createWebPainter> | null = null;
+	private currentRender: Promise<void> | null = null; // serialises the async paint so captures await a finished frame
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
 
@@ -138,6 +139,16 @@ export class RichCaptionPlayer extends Player {
 
 		const currentTimeMs = this.getPlaybackTime() * 1000;
 		this.renderFrameSync(currentTimeMs);
+	}
+
+	/**
+	 * Render the exact playhead frame to completion for an off-playback capture. The web painter is
+	 * async, so this awaits {@link renderFrame} (which awaits the paint) before captureFrame extracts —
+	 * otherwise the snapshot is a half-drawn caption. Asset loading is awaited by the caller.
+	 * @internal
+	 */
+	public override async prepareStaticRender(): Promise<void> {
+		if (this.loadComplete) await this.renderFrame(this.getPlaybackTime() * 1000);
 	}
 
 	public override async reloadAsset(): Promise<void> {
@@ -263,7 +274,31 @@ export class RichCaptionPlayer extends Player {
 		this.loadComplete = true;
 	}
 
+	/**
+	 * Render the caption at `timeMs`, serialised so the shared canvas isn't cleared mid-paint.
+	 * Awaited by {@link prepareStaticRender} for off-playback captures.
+	 */
+	private async renderFrame(timeMs: number): Promise<void> {
+		while (this.currentRender) {
+			await this.currentRender;
+		}
+		this.currentRender = this.paintFrame(timeMs).finally(() => {
+			this.currentRender = null;
+		});
+		await this.currentRender;
+	}
+
+	/** Fire-and-forget render for the live tick and lifecycle hooks; the texture updates when the paint settles. */
 	private renderFrameSync(timeMs: number): void {
+		this.renderFrame(timeMs).catch(() => {});
+	}
+
+	/**
+	 * Paint the caption frame to completion. The web painter is async (glyph fills resolve
+	 * asynchronously), so the Pixi texture is only updated once the paint has finished — otherwise a
+	 * snapshot captures a half-drawn canvas (a single glyph).
+	 */
+	private async paintFrame(timeMs: number): Promise<void> {
 		if (!this.layoutEngine || !this.captionLayout || !this.canvas || !this.painter || !this.validatedAsset || !this.generatorConfig) {
 			return;
 		}
@@ -279,7 +314,7 @@ export class RichCaptionPlayer extends Player {
 			const ctx = this.canvas.getContext("2d");
 			if (ctx) ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-			this.painter.render(ops);
+			await this.painter.render(ops);
 
 			if (!this.texture) {
 				this.texture = pixi.Texture.from(this.canvas);
@@ -504,7 +539,7 @@ export class RichCaptionPlayer extends Player {
 			border: asset.border,
 			padding: asset.padding,
 			style: asset.style,
-			wordAnimation: asset.animation,
+			animation: asset.animation,
 			align: asset.align,
 			pauseThreshold: this.resolvedPauseThreshold
 		};
