@@ -96,7 +96,12 @@ jest.mock("pixi.js", () => {
 		public height: number;
 		public destroyed = false;
 
-		constructor({ source, frame, width = 0, height = 0 }: { source?: { width?: number; height?: number }; frame?: { width?: number; height?: number }; width?: number; height?: number } = {}) {
+		constructor({
+			source,
+			frame,
+			width = 0,
+			height = 0
+		}: { source?: { width?: number; height?: number }; frame?: { width?: number; height?: number }; width?: number; height?: number } = {}) {
 			this.source = source;
 			this.width = width || frame?.width || source?.width || 0;
 			this.height = height || frame?.height || source?.height || 0;
@@ -128,6 +133,8 @@ jest.mock("pixi.js", () => {
 	}
 
 	return {
+		// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+		...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 		Container: MockContainer,
 		Graphics: MockGraphics,
 		Sprite: MockSprite,
@@ -233,9 +240,7 @@ describe("media player fallbacks", () => {
 
 	it("replaces a failed video placeholder after a successful reload", async () => {
 		const edit = createEdit();
-		edit.assetLoader.loadVideoUnique
-			.mockResolvedValueOnce(null)
-			.mockResolvedValueOnce(createVideoTexture(1280, 720));
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(createVideoTexture(1280, 720));
 
 		const player = new VideoPlayer(edit as never, createVideoClip());
 

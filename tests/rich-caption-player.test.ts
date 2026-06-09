@@ -53,6 +53,8 @@ jest.mock("pixi.js", () => {
 	};
 
 	return {
+		// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+		...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 		Container: jest.fn().mockImplementation(createMockContainer),
 		Texture: {
 			from: jest.fn().mockImplementation(() => ({
@@ -550,6 +552,10 @@ describe("RichCaptionPlayer", () => {
 			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.6;
 			player.update(0.016, 0.6);
 
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
+
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(2);
 		});
 
@@ -566,6 +572,10 @@ describe("RichCaptionPlayer", () => {
 			(edit as unknown as Record<string, unknown>)["playbackTime"] = 0.1;
 			player.update(0.016, 0.1);
 			player.update(0.016, 0.116);
+
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(2);
 		});
@@ -586,6 +596,10 @@ describe("RichCaptionPlayer", () => {
 
 			(edit as unknown as Record<string, unknown>)["playbackTime"] = 1.5;
 			player.update(0.016, 1.5);
+
+			await new Promise(resolve => {
+				setTimeout(resolve, 10);
+			});
 
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(3);
 			expect(mockPainterRender).toHaveBeenCalledTimes(3);

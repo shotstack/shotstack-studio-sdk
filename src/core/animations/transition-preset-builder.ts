@@ -7,6 +7,10 @@ export type TransitionKeyframeSet = {
 	scaleKeyframes: Keyframe[];
 	rotationKeyframes: Keyframe[];
 	maskXKeyframes: Keyframe[];
+	/** Wipe brightness sweep (+1 hidden → −1 revealed), applied through WipeFilter. */
+	brightnessKeyframes: Keyframe[];
+	/** Wipe reveal direction for this phase: true = from the right edge inward, false = from the left. */
+	wipeFromRight: boolean;
 };
 
 export type RelativeTransitionKeyframeSet = {
@@ -47,7 +51,9 @@ export class TransitionPresetBuilder {
 			opacityKeyframes: [],
 			scaleKeyframes: [],
 			rotationKeyframes: [],
-			maskXKeyframes: []
+			maskXKeyframes: [],
+			brightnessKeyframes: [],
+			wipeFromRight: false
 		};
 	}
 
@@ -116,15 +122,18 @@ export class TransitionPresetBuilder {
 				);
 				break;
 			}
-			case "reveal":
-			case "wipeRight": {
+			case "reveal": {
 				const [from, to] = isIn ? [0, 1] : [1, 0];
 				keyframes.maskXKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "ease" });
 				break;
 			}
-			case "wipeLeft": {
-				const [from, to] = isIn ? [1, 0] : [0, 1];
-				keyframes.maskXKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "ease" });
+			case "wipeLeft":
+			case "wipeRight": {
+				// Brightness sweeps +1 (hidden) → −1 (revealed) in, and back out, applied via WipeFilter.
+				// wipeLeft reveals from the right edge inward; wipeRight from the left.
+				const [from, to] = isIn ? [1, -1] : [-1, 1];
+				keyframes.brightnessKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "easeInOut" });
+				keyframes.wipeFromRight = transitionName === "wipeLeft" ? isIn : !isIn;
 				break;
 			}
 			default:
