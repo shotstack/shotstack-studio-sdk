@@ -65,7 +65,7 @@ export class TransitionPresetBuilder {
 		switch (transitionName) {
 			case "fade": {
 				const [from, to] = isIn ? [0, 1] : [1, 0];
-				keyframes.opacityKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "ease" });
+				keyframes.opacityKeyframes.push({ from, to, start, length, interpolation: "bezier", easing: "easeInOut" });
 				break;
 			}
 			case "zoom": {

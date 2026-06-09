@@ -1,3 +1,9 @@
+/** One axis of a cubic bezier with implicit endpoints 0 and 1: B(t) = 3(1−t)²t·a + 3(1−t)t²·b + t³. */
+function cubicBezierAxis(t: number, a: number, b: number): number {
+	const mt = 1 - t;
+	return 3 * mt * mt * t * a + 3 * mt * t * t * b + t * t * t;
+}
+
 export class CurveInterpolator {
 	private curves: Record<string, number[][]> = {};
 
@@ -127,19 +133,32 @@ export class CurveInterpolator {
 	}
 
 	public getValue(from: number, to: number, progress: number, easing?: string): number {
+		if (progress <= 0) return from;
+		if (progress >= 1) return to;
+
 		const handles = this.curves[easing ?? ""] ?? this.curves["ease"];
 		const [[controlPoint1X, controlPoint1Y], [controlPoint2X, controlPoint2Y]] = handles;
 
-		const adjustedProgress = progress + (3 * controlPoint1X - 3 * controlPoint2X + 1) * progress * (1 - progress);
+		// Standard cubic-bezier timing function: solve the X-axis bezier for t at this progress,
+		// then read the Y-axis bezier. Control points are CSS cubic-bezier handles.
+		const t = this.solveForT(progress, controlPoint1X, controlPoint2X);
+		const eased = cubicBezierAxis(t, controlPoint1Y, controlPoint2Y);
 
-		const startValue = from;
-		const controlValue1 = from + (to - from) * controlPoint1Y;
-		const controlValue2 = from + (to - from) * controlPoint2Y;
-		const endValue = to;
+		return from + (to - from) * eased;
+	}
 
-		const t = adjustedProgress;
-		const oneMinusT = 1 - t;
-
-		return oneMinusT ** 3 * startValue + 3 * oneMinusT ** 2 * t * controlValue1 + 3 * oneMinusT * t ** 2 * controlValue2 + t ** 3 * endValue;
+	/** Bisect the X-axis cubic bezier for the parameter `t` where x(t) = `x` (x1, x2 ∈ [0,1] keep x(t) monotonic). */
+	private solveForT(x: number, x1: number, x2: number): number {
+		let low = 0;
+		let high = 1;
+		let t = x;
+		for (let i = 0; i < 24; i += 1) {
+			const error = cubicBezierAxis(t, x1, x2) - x;
+			if (Math.abs(error) < 1e-5) break;
+			if (error < 0) low = t;
+			else high = t;
+			t = (low + high) / 2;
+		}
+		return t;
 	}
 }
