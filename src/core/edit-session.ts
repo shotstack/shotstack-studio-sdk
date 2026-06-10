@@ -30,7 +30,7 @@ import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
 import { SelectionManager } from "@core/selection-manager";
 import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
-import { deepMerge, setNestedValue } from "@core/shared/utils";
+import { deepMerge, nextFrame, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
 import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec, isAliasReference } from "@core/timing/types";
 import { TimingManager } from "@core/timing-manager";
@@ -2106,7 +2106,11 @@ export class Edit {
 	}
 
 	/**
-	 * Capture the current canvas as a base64 data URL.
+	 * Capture the rendered output frame as a base64 data URL.
+	 *
+	 * Full-bleed at the edit's output resolution, independent of the editor's zoom and pan. Pass
+	 * `time` to capture a specific playhead position. Use {@link captureViewport} for the
+	 * on-screen editor view.
 	 */
 	public async captureFrame(
 		options: {
@@ -2115,17 +2119,46 @@ export class Edit {
 			quality?: number;
 		} = {}
 	): Promise<string> {
+		return this.captureStatic(options, opts => this.canvas!.captureFrame(opts));
+	}
+
+	/**
+	 * Capture the on-screen editor viewport as a base64 data URL.
+	 *
+	 * Reflects the editor's current zoom, pan, and surrounding canvas. Pass `time` to capture a
+	 * specific playhead position. Use {@link captureFrame} for the full-bleed output frame.
+	 */
+	public async captureViewport(
+		options: {
+			time?: number;
+			format?: "png" | "jpeg" | "webp";
+			quality?: number;
+		} = {}
+	): Promise<string> {
+		return this.captureStatic(options, opts => this.canvas!.captureViewport(opts));
+	}
+
+	/**
+	 * Seek (when `time` is given), project html5 video frames into the scene, run `capture`, then
+	 * release the static-render state. Shared by {@link captureFrame} and {@link captureViewport}.
+	 */
+	private async captureStatic(
+		options: { time?: number; format?: "png" | "jpeg" | "webp"; quality?: number },
+		capture: (opts: { format?: "png" | "jpeg" | "webp"; quality?: number }) => Promise<string>
+	): Promise<string> {
 		if (!this.canvas) {
 			throw new Error("captureFrame: no Canvas is attached — Edit must be mounted to a viewport.");
 		}
 		if (options.time !== undefined) {
 			this.seek(options.time);
-			// One rAF lets players + reconciler reflect the new playhead time.
-			await new Promise<void>(resolve => {
-				requestAnimationFrame(() => resolve());
-			});
+			// Yield a frame so players reflect the new playhead before capture reads it.
+			await nextFrame();
 		}
-		// Project html5 frames into the scene.
+		// Asset loads (rich-text/caption text engines, etc.) are started fire-and-forget by the
+		// reconciler, so wait for them before capturing — otherwise a snapshot taken right after
+		// loadEdit() can read an unloaded or stale frame.
+		await this.playerReconciler.whenSettled();
+		// Project html5 frames + drive text/caption renders into the scene for the off-playback capture.
 		const activePlayers: Player[] = [];
 		for (const track of this.tracks) {
 			for (const player of track) {
@@ -2134,7 +2167,10 @@ export class Edit {
 		}
 		try {
 			await Promise.all(activePlayers.map(player => player.prepareStaticRender()));
-			return await this.canvas.captureFrame({ format: options.format, quality: options.quality });
+			// Apply playhead-driven transforms + wipe mask explicitly: the per-frame tick may not run
+			// during a static capture (e.g. a hidden document), which would leave them stale.
+			for (const player of activePlayers) player.applyPlayheadState();
+			return await capture({ format: options.format, quality: options.quality });
 		} finally {
 			for (const player of activePlayers) player.endStaticRender();
 		}

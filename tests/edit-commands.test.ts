@@ -78,6 +78,7 @@ jest.mock("pixi.js", () => {
 	});
 
 	return {
+		...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 		Container: jest.fn().mockImplementation(createMockContainer),
 		Graphics: jest.fn().mockImplementation(createMockGraphics),
 		Sprite: jest.fn().mockImplementation(() => ({

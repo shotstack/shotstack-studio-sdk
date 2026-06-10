@@ -146,6 +146,20 @@ export function createThrottle<TArgs extends unknown[]>(
 	return { call, flush, cancel };
 }
 
+/** Resolve on the next animation frame, or a timer when rAF is paused (hidden document). @internal */
+export function nextFrame(): Promise<void> {
+	return new Promise<void>(resolve => {
+		let settled = false;
+		const finish = (): void => {
+			if (settled) return;
+			settled = true;
+			resolve();
+		};
+		setTimeout(finish, 32);
+		if (typeof requestAnimationFrame === "function") requestAnimationFrame(finish);
+	});
+}
+
 export interface UrlValidationResult {
 	valid: boolean;
 	error?: string;

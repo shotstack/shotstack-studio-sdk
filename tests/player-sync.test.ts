@@ -53,6 +53,8 @@ jest.mock("pixi.js", () => {
 	};
 
 	return {
+		// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+		...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 		Container: jest.fn().mockImplementation(createMockContainer),
 		Graphics: jest.fn().mockImplementation(() => ({
 			rect: jest.fn().mockReturnThis(),

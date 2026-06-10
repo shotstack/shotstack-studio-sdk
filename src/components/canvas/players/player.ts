@@ -2,6 +2,7 @@ import { ComposedKeyframeBuilder } from "@animations/composed-keyframe-builder";
 import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
+import { WipeFilter } from "@animations/wipe-filter";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
@@ -87,6 +88,11 @@ export abstract class Player extends Entity {
 	private skewXKeyframeBuilder?: ComposedKeyframeBuilder;
 	private skewYKeyframeBuilder?: ComposedKeyframeBuilder;
 	private maskXKeyframeBuilder?: KeyframeBuilder;
+	private wipeBrightnessBuilder?: KeyframeBuilder;
+	private wipeInFromRight: boolean = false;
+	private wipeOutFromRight: boolean = false;
+	private wipeOutStart: number = Number.POSITIVE_INFINITY;
+	private wipeFilter: WipeFilter | null = null;
 
 	private wipeMask: pixi.Graphics | null;
 	protected lumaWrapper: pixi.Container;
@@ -208,10 +214,19 @@ export abstract class Player extends Entity {
 		this.opacityKeyframeBuilder.addLayer(transitionSet.out.opacityKeyframes);
 		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
-		// Mask keyframes (wipe/reveal effects)
+		// Mask keyframes (reveal effect)
 		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
 			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
+		}
+
+		// Wipe brightness sweep (wipeLeft/wipeRight) — driven through WipeFilter, not a mask.
+		const brightnessKeyframes: Keyframe[] = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
+		if (brightnessKeyframes.length) {
+			this.wipeBrightnessBuilder = new KeyframeBuilder(brightnessKeyframes, length);
+			this.wipeInFromRight = transitionSet.in.wipeFromRight;
+			this.wipeOutFromRight = transitionSet.out.wipeFromRight;
+			this.wipeOutStart = transitionSet.out.brightnessKeyframes[0]?.start ?? Number.POSITIVE_INFINITY;
 		}
 	}
 
@@ -234,6 +249,14 @@ export abstract class Player extends Entity {
 	}
 
 	public override update(_: number, __: number): void {
+		this.applyPlayheadState();
+	}
+
+	/**
+	 * Apply all playhead-time-dependent container state (visibility, transform, opacity, wipe mask)
+	 * for the current playback time. Called by the per-frame tick and directly by static capture.
+	 */
+	public applyPlayheadState(): void {
 		this.getContainer().visible = this.isActive();
 		this.getContainer().zIndex = 100000 - this.layer * 100;
 		if (!this.isActive()) {
@@ -262,6 +285,7 @@ export abstract class Player extends Entity {
 
 		// Update wipe/reveal mask animation
 		this.updateWipeMask();
+		this.updateWipeFilter();
 
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
@@ -294,9 +318,32 @@ export abstract class Player extends Entity {
 		this.wipeMask.fill(0xffffff);
 	}
 
+	private updateWipeFilter(): void {
+		if (!this.wipeBrightnessBuilder) {
+			this.removeWipeFilter();
+			return;
+		}
+		if (!this.wipeFilter) {
+			this.wipeFilter = new WipeFilter();
+			this.contentContainer.filters = [this.wipeFilter];
+		}
+		const time = this.getPlaybackTime();
+		this.wipeFilter.brightness = this.wipeBrightnessBuilder.getValue(time);
+		this.wipeFilter.revealFromRight = time >= this.wipeOutStart ? this.wipeOutFromRight : this.wipeInFromRight;
+	}
+
+	private removeWipeFilter(): void {
+		if (!this.wipeFilter) return;
+		this.contentContainer.filters = [];
+		this.wipeFilter.destroy();
+		this.wipeFilter = null;
+	}
+
 	public override dispose(): void {
 		this.wipeMask?.destroy();
 		this.wipeMask = null;
+		this.wipeFilter?.destroy();
+		this.wipeFilter = null;
 
 		this.contentContainer?.destroy();
 		this.lumaWrapper?.destroy();

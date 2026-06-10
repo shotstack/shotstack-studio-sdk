@@ -38,6 +38,9 @@ export class PlayerReconciler {
 	 */
 	private enableCreation = true;
 
+	/** In-flight player load promises, so off-playback captures (captureFrame) can await asset readiness. */
+	private readonly inFlightLoads = new Set<Promise<void>>();
+
 	constructor(private readonly edit: Edit) {
 		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.onResolved);
 	}
@@ -60,6 +63,18 @@ export class PlayerReconciler {
 		const result = this.reconcile(resolved);
 		await Promise.all(result.pendingLoads);
 		return result;
+	}
+
+	/**
+	 * Resolve once all in-flight player loads have settled. Player loads are asynchronous and, for
+	 * newly created players, started fire-and-forget by reconcile()/the Resolved handler — so an
+	 * off-playback capture taken right after loadEdit() can race them. captureFrame awaits this so it
+	 * renders a loaded asset deterministically. Loops because a load can enqueue follow-up work.
+	 */
+	public async whenSettled(): Promise<void> {
+		while (this.inFlightLoads.size > 0) {
+			await Promise.allSettled([...this.inFlightLoads]);
+		}
 	}
 
 	/**
@@ -232,7 +247,10 @@ export class PlayerReconciler {
 					assetType
 				});
 			});
-		return loadPromise;
+
+		// Track the load so off-playback captures can await asset readiness (see whenSettled()).
+		this.inFlightLoads.add(loadPromise);
+		return loadPromise.finally(() => this.inFlightLoads.delete(loadPromise));
 	}
 
 	/**

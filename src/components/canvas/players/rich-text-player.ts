@@ -12,21 +12,25 @@ import * as pixi from "pixi.js";
 // Derive TextEngine type from createTextEngine return type
 type TextEngine = Awaited<ReturnType<typeof createTextEngine>>;
 
-
-
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
 	/** CSS font-weight string → numeric value. Extends WEIGHT_MODIFIERS (@core/fonts/font-config.ts) with CSS aliases. */
 	private static readonly NAMED_WEIGHTS: Record<string, number> = {
-		thin: 100, hairline: 100,
-		extralight: 200, ultralight: 200,
+		thin: 100,
+		hairline: 100,
+		extralight: 200,
+		ultralight: 200,
 		light: 300,
-		normal: 400, regular: 400,
+		normal: 400,
+		regular: 400,
 		medium: 500,
-		semibold: 600, demibold: 600,
+		semibold: 600,
+		demibold: 600,
 		bold: 700,
-		extrabold: 800, ultrabold: 800,
-		black: 900, heavy: 900,
+		extrabold: 800,
+		ultrabold: 800,
+		black: 900,
+		heavy: 900
 	};
 	private static readonly fontCapabilityCache = new Map<string, Promise<boolean>>();
 	private static readonly fontBytesCache = new Map<string, Promise<ArrayBuffer>>();
@@ -39,6 +43,7 @@ export class RichTextPlayer extends Player {
 	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
 	private pendingRenderTime: number | null = null; // Stores time requested while rendering (race condition fix)
+	private currentRender: Promise<void> | null = null; // In-flight render promise, so an off-playback capture can await it
 	private validatedAsset: CanvasRichTextAsset | null = null;
 	private fontSupportsBold: boolean = false;
 	private loadComplete: boolean = false;
@@ -54,13 +59,15 @@ export class RichTextPlayer extends Player {
 		const cached = RichTextPlayer.fontBytesCache.get(cacheKey);
 		if (cached) return cached;
 
-		const fetchPromise = fetch(url).then(res => {
-			if (!res.ok) throw new Error(`Failed to fetch font: ${res.status}`);
-			return res.arrayBuffer();
-		}).catch(err => {
-			RichTextPlayer.fontBytesCache.delete(cacheKey);
-			throw err;
-		});
+		const fetchPromise = fetch(url)
+			.then(res => {
+				if (!res.ok) throw new Error(`Failed to fetch font: ${res.status}`);
+				return res.arrayBuffer();
+			})
+			.catch(err => {
+				RichTextPlayer.fontBytesCache.delete(cacheKey);
+				throw err;
+			});
 		RichTextPlayer.fontBytesCache.set(cacheKey, fetchPromise);
 		return fetchPromise;
 	}
@@ -463,10 +470,11 @@ export class RichTextPlayer extends Player {
 		this.isRendering = true;
 		this.pendingRenderTime = null;
 
-		this.renderFrame(timeSeconds)
+		this.currentRender = this.renderFrame(timeSeconds)
 			.catch(err => console.error("Failed to render rich text frame:", err))
 			.finally(() => {
 				this.isRendering = false;
+				this.currentRender = null;
 
 				// Check if a render was requested while we were busy
 				if (this.pendingRenderTime !== null && this.pendingRenderTime !== timeSeconds) {
@@ -504,6 +512,29 @@ export class RichTextPlayer extends Player {
 				this.renderFrameSafe(currentTimeSeconds);
 			}
 		}
+	}
+
+	/**
+	 * Render the exact playhead frame to completion for an off-playback capture. The live render is
+	 * async and fire-and-forget (see {@link renderFrameSafe}), so a snapshot taken right after a seek
+	 * can read a stale or empty texture. This drives the render deterministically via
+	 * {@link renderAtTime}. Asset loading is awaited by the caller (the reconciler's pending loads)
+	 * before this runs, so the text engine is ready here.
+	 * @internal
+	 */
+	public override async prepareStaticRender(): Promise<void> {
+		if (!this.textEngine || !this.renderer || !this.loadComplete) return;
+		await this.renderAtTime(this.getPlaybackTime());
+	}
+
+	/** Await a completed render of `timeSeconds`, draining any in-flight tick render first. */
+	private async renderAtTime(timeSeconds: number): Promise<void> {
+		while (this.currentRender) {
+			await this.currentRender;
+		}
+		// isRendering is false after the drain, so renderFrameSafe proceeds and stores currentRender.
+		this.renderFrameSafe(timeSeconds);
+		if (this.currentRender) await this.currentRender;
 	}
 
 	public override dispose(): void {
