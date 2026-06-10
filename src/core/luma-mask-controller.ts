@@ -116,8 +116,9 @@ export class LumaMaskController {
 	private onPlayerLoaded(payload: { player: Player; trackIndex: number; clipIndex: number }): void {
 		const { player, trackIndex } = payload;
 
-		// Only handle luma players
+		// Content clip loaded — set up any luma mask deferred while its size was unknown
 		if (player.playerType !== PlayerType.Luma) {
+			this.rebuildLumaMasksIfNeeded();
 			return;
 		}
 
@@ -162,6 +163,11 @@ export class LumaMaskController {
 
 		const { renderer } = canvas.application;
 		const { width, height } = contentClip.getSize();
+
+		// Defer until the content clip has loaded — a mask baked at size 0 blacks out the clip
+		if (width <= 0 || height <= 0) {
+			return;
+		}
 
 		const tempContainer = new pixi.Container();
 		const tempSprite = new pixi.Sprite(lumaTexture);
