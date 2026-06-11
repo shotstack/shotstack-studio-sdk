@@ -13,6 +13,7 @@ import type { ResolvedClip, ResolvedEdit } from "@schemas";
 
 import type { Edit } from "./edit-session";
 import { EditEvent, InternalEvent } from "./events/edit-events";
+import { isPendingAiAsset } from "./shared/ai-asset-utils";
 import type { Seconds } from "./timing/types";
 
 export interface ReconcileResult {
@@ -24,8 +25,6 @@ export interface ReconcileResult {
 
 /** Properties handled by dedicated checks in updatePlayer — skip in generic diff/patch */
 const HANDLED_PROPS = new Set(["asset", "start", "length", "id"]);
-
-const AI_ASSET_TYPES = new Set(["text-to-image", "image-to-video", "text-to-speech"]);
 
 export class PlayerReconciler {
 	private isReconciling = false;
@@ -218,8 +217,8 @@ export class PlayerReconciler {
 					clipIndex
 				});
 
-				// Also emit ClipUnresolved for AI assets
-				if (AI_ASSET_TYPES.has(assetType)) {
+				// Also emit ClipUnresolved for AI assets awaiting generation
+				if (isPendingAiAsset(clip.asset)) {
 					this.edit.getInternalEvents().emit(EditEvent.ClipUnresolved, {
 						trackIndex,
 						clipIndex,
@@ -264,6 +263,10 @@ export class PlayerReconciler {
 		const newAssetType = (clip.asset as { type?: string })?.type;
 
 		if (currentAssetType !== newAssetType) return "recreate";
+
+		// A pending-generation flip (prompt-only asset realised with src, or src
+		// cleared back to prompt-only) changes the player class - recreate
+		if (isPendingAiAsset(player.clipConfiguration.asset) !== isPendingAiAsset(clip.asset)) return "recreate";
 
 		let changed = false;
 		const currentTrackIndex = player.layer - 1;

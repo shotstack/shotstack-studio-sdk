@@ -1,7 +1,7 @@
-import { getAiAssetTypeLabel, isAiAsset, type ResolvedClipWithId } from "@core/shared/ai-asset-utils";
+import { aiAssetKind, getAiAssetTypeLabel, isAiAsset, type ResolvedClipWithId } from "@core/shared/ai-asset-utils";
 import type { ResolvedClip } from "@schemas";
 
-import { AI_ICON_LINE_PATHS, AI_ASSET_ICON_MAP } from "../../../canvas/players/ai-icons";
+import { AI_ICON_LINE_PATHS } from "../../../canvas/players/ai-icons";
 import { formatClipErrorMessage } from "../../error-messages";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
 
@@ -161,14 +161,18 @@ export class ClipComponent {
 		this.element.classList.toggle("resizing", clip.visualState === "resizing");
 		this.element.classList.toggle("focused", clip.isFocused);
 
-		// Update icon (using cached reference)
-		if (this.iconEl && this.iconEl.dataset["assetType"] !== assetType) {
-			this.iconEl.dataset["assetType"] = assetType;
-			const aiIconType = AI_ASSET_ICON_MAP[assetType];
-			if (aiIconType) {
-				this.iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${AI_ICON_LINE_PATHS[aiIconType]}"/></svg>`;
-			} else {
-				this.iconEl.textContent = this.getAssetIcon(assetType);
+		// Update icon (using cached reference); AI styling is per-asset, not
+		// per-type — a prompt-bearing image is AI, a plain image is not
+		if (this.iconEl) {
+			const aiIconType = aiAssetKind(config.asset);
+			const iconKey = aiIconType ? `${assetType}:ai` : assetType;
+			if (this.iconEl.dataset["assetType"] !== iconKey) {
+				this.iconEl.dataset["assetType"] = iconKey;
+				if (aiIconType) {
+					this.iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${AI_ICON_LINE_PATHS[aiIconType]}"/></svg>`;
+				} else {
+					this.iconEl.textContent = this.getAssetIcon(assetType);
+				}
 			}
 		}
 

@@ -117,8 +117,13 @@ export class ImageToVideoPlayer extends Player {
 	}
 
 	private async loadTexture(): Promise<void> {
-		const asset = this.clipConfiguration.asset as ImageToVideoAsset;
-		const { src } = asset;
+		const asset = this.clipConfiguration.asset as ImageToVideoAsset & { seed?: string };
+		// Legacy image-to-video carries its input image in src; the unified
+		// video asset carries it in seed (src holds the generated output)
+		const src = asset.seed ?? asset.src;
+		if (!src) {
+			throw new Error("No input image to preview for pending video generation.");
+		}
 
 		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
 		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
