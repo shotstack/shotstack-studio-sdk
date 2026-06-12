@@ -1,7 +1,7 @@
 import type { Edit } from "@core/edit-session";
 import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
-import { type ResolvedClip, type ImageToVideoAsset } from "@schemas";
+import { type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { AiPendingOverlay } from "./ai-pending-overlay";
@@ -32,30 +32,26 @@ export class ImageToVideoPlayer extends Player {
 		const prompt = isAiAsset(asset) ? asset.prompt || "" : "";
 		const assetType = isAiAsset(asset) ? asset.type : "image-to-video";
 
-		try {
-			await this.loadTexture();
-			this.aiOverlay = new AiPendingOverlay({
-				mode: "badge",
-				icon: "video",
-				width: displaySize.width,
-				height: displaySize.height,
-				assetNumber: assetNumber ?? undefined,
-				prompt,
-				assetType
-			});
-		} catch {
+		// Legacy image-to-video carries its input image in src; the unified
+		// video asset carries it in seed (src holds the generated output)
+		const { src, seed } = asset as { src?: string; seed?: string };
+		const inputImage = seed ?? src;
+		const loaded = inputImage ? await this.tryLoadTexture(inputImage) : false;
+
+		if (!loaded) {
 			this.placeholder = createPlaceholderGraphic(displaySize.width, displaySize.height);
 			this.contentContainer.addChild(this.placeholder);
-			this.aiOverlay = new AiPendingOverlay({
-				mode: "panel",
-				icon: "video",
-				width: displaySize.width,
-				height: displaySize.height,
-				assetNumber: assetNumber ?? undefined,
-				prompt,
-				assetType
-			});
 		}
+
+		this.aiOverlay = new AiPendingOverlay({
+			mode: loaded ? "badge" : "panel",
+			icon: "video",
+			width: displaySize.width,
+			height: displaySize.height,
+			assetNumber: assetNumber ?? undefined,
+			prompt,
+			assetType
+		});
 
 		this.contentContainer.addChild(this.aiOverlay.getContainer());
 		this.configureKeyframes();
@@ -116,33 +112,30 @@ export class ImageToVideoPlayer extends Player {
 		super.dispose();
 	}
 
-	private async loadTexture(): Promise<void> {
-		const asset = this.clipConfiguration.asset as ImageToVideoAsset & { seed?: string };
-		// Legacy image-to-video carries its input image in src; the unified
-		// video asset carries it in seed (src holds the generated output)
-		const src = asset.seed ?? asset.src;
-		if (!src) {
-			throw new Error("No input image to preview for pending video generation.");
-		}
+	private async tryLoadTexture(src: string): Promise<boolean> {
+		try {
+			const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
+			const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
+			const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
 
-		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
-		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
-
-		if (!(texture?.source instanceof pixi.ImageSource)) {
-			if (texture) {
-				texture.destroy(true);
-				await this.edit.assetLoader.rejectAsset(corsUrl);
+			if (!(texture?.source instanceof pixi.ImageSource)) {
+				if (texture) {
+					texture.destroy(true);
+					await this.edit.assetLoader.rejectAsset(corsUrl);
+				}
+				return false;
 			}
-			throw new Error(`Invalid image source '${src}'.`);
-		}
 
-		this.texture = texture;
-		this.sprite = new pixi.Sprite(this.texture);
-		this.contentContainer.addChild(this.sprite);
+			this.texture = texture;
+			this.sprite = new pixi.Sprite(this.texture);
+			this.contentContainer.addChild(this.sprite);
 
-		if (this.clipConfiguration.width && this.clipConfiguration.height) {
-			this.applyFixedDimensions();
+			if (this.clipConfiguration.width && this.clipConfiguration.height) {
+				this.applyFixedDimensions();
+			}
+			return true;
+		} catch {
+			return false;
 		}
 	}
 }

@@ -11,7 +11,6 @@ export interface AiAsset {
 	type: string;
 	prompt?: string;
 	src?: string;
-	seed?: string;
 }
 
 /** Visual kind of an AI asset; doubles as the overlay/timeline icon key. */
