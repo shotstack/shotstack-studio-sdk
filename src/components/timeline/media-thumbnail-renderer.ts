@@ -127,7 +127,11 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		this.clipStates.set(clipKey, state);
 
 		try {
-			const result = await this.generator.generateThumbnail(asset.src, asset.trim ?? 0);
+			const { src } = asset;
+			if (!src) {
+				throw new Error("Video asset is missing a 'src'.");
+			}
+			const result = await this.generator.generateThumbnail(src, asset.trim ?? 0);
 
 			// Check if element is still in DOM (might have been disposed)
 			if (!element.isConnected) return;
@@ -156,7 +160,11 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		this.clipStates.set(clipKey, state);
 
 		try {
-			const result = await this.loadImageThumbnail(asset.src);
+			const { src } = asset;
+			if (!src) {
+				throw new Error("Image asset is missing a 'src'.");
+			}
+			const result = await this.loadImageThumbnail(src);
 
 			// Check if element is still in DOM (might have been disposed)
 			if (!element.isConnected) return;

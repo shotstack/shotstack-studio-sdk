@@ -168,6 +168,9 @@ export class VideoPlayer extends Player {
 	private async loadVideo(): Promise<void> {
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 		const { src } = videoAsset;
+		if (!src) {
+			throw new Error("Video asset is missing a 'src'.");
+		}
 
 		if (src.endsWith(".mov")) {
 			throw new Error(`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`);
