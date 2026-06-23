@@ -41,6 +41,9 @@ jest.mock("pixi.js", () => {
 			destroy: jest.fn()
 		})),
 		Texture: jest.fn(),
+		RenderTexture: {
+			create: jest.fn(() => ({ destroy: jest.fn() }))
+		},
 		ColorMatrixFilter: jest.fn(() => ({
 			negative: jest.fn()
 		}))
@@ -179,7 +182,8 @@ function createMockCanvas() {
 	return {
 		application: {
 			renderer: {
-				generateTexture: jest.fn(() => createMockTexture())
+				generateTexture: jest.fn(() => createMockTexture()),
+				render: jest.fn()
 			}
 		}
 	};
@@ -249,7 +253,7 @@ describe("LumaMaskController", () => {
 			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
 
 			expect(controller.getActiveMaskCount()).toBe(1);
-			expect(canvas.application.renderer.generateTexture).toHaveBeenCalled();
+			expect(canvas.application.renderer.render).toHaveBeenCalled();
 		});
 
 		it("does NOT create mask when track has only luma player", () => {
@@ -579,13 +583,13 @@ describe("LumaMaskController", () => {
 			controller.initialize();
 			// Emit PlayerLoaded event to trigger mask creation
 			events.emit("player:loaded", { player: lumaPlayer, trackIndex: 0, clipIndex: 0 });
-			const initialCalls = (canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length;
+			const initialCalls = (canvas.application.renderer.render as jest.Mock).mock.calls.length;
 
 			// Advance video time by more than 1/30 second
 			videoTime = 0.05;
 			controller.update();
 
-			expect((canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
+			expect((canvas.application.renderer.render as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
 		});
 
 		it("does NOT update when frame has not changed enough", () => {
@@ -608,13 +612,13 @@ describe("LumaMaskController", () => {
 			// First update to set lastVideoTime
 			videoTime = 0.05;
 			controller.update();
-			const callsAfterFirstUpdate = (canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length;
+			const callsAfterFirstUpdate = (canvas.application.renderer.render as jest.Mock).mock.calls.length;
 
 			// Small time change (less than 1/30 second)
 			videoTime = 0.06;
 			controller.update();
 
-			expect((canvas.application.renderer.generateTexture as jest.Mock).mock.calls.length).toBe(callsAfterFirstUpdate);
+			expect((canvas.application.renderer.render as jest.Mock).mock.calls.length).toBe(callsAfterFirstUpdate);
 		});
 	});
 
