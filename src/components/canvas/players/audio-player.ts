@@ -30,6 +30,9 @@ export class AudioPlayer extends Player {
 		const audioClipConfiguration = this.clipConfiguration.asset as AudioAsset;
 
 		const identifier = audioClipConfiguration.src;
+		if (!identifier) {
+			throw new Error("Audio asset is missing a 'src'.");
+		}
 		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(identifier, loadOptions);
 
@@ -123,6 +126,9 @@ export class AudioPlayer extends Player {
 		this.syncTimer = 0;
 
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
+		if (!audioAsset.src) {
+			throw new Error("Audio asset is missing a 'src'.");
+		}
 		const loadOptions: pixi.UnresolvedAsset = { src: audioAsset.src, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(audioAsset.src, loadOptions);
 
