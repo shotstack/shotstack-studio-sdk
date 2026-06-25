@@ -1,0 +1,101 @@
+{
+	"timeline": {
+		"background": "#111111",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"prompt": "A golden sunset over a calm ocean with silhouetted palm trees"
+						},
+						"start": 0,
+						"length": 5,
+						"width": 720,
+						"height": 405
+					},
+					{
+						"asset": {
+							"type": "video",
+							"prompt": "Slowly zoom out and orbit left around the trees",
+							"seed": "https://shotstack-assets.s3.amazonaws.com/images/woods1.jpg"
+						},
+						"start": 5,
+						"length": 5,
+						"fit": "crop"
+					},
+					{
+						"asset": {
+							"type": "video",
+							"prompt": "Aerial drone shot flying over a misty mountain range at dawn"
+						},
+						"start": 10,
+						"length": 4
+					},
+					{
+						"asset": {
+							"type": "image",
+							"prompt": "A romantic holiday scene, already generated",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/04c8d948-dd60-493f-b02b-f928f0c14590/source.png"
+						},
+						"start": 14,
+						"length": 4
+					},
+					{
+						"asset": {
+							"type": "text-to-image",
+							"prompt": "Legacy text-to-image asset sharing the Image numbering sequence"
+						},
+						"start": 18,
+						"length": 4,
+						"width": 512,
+						"height": 512
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/0901b167-9a7e-4031-a423-1f4fbb11ec2c/source.png"
+						},
+						"start": 0,
+						"length": 22,
+						"fit": "cover",
+						"opacity": 0.35
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "audio",
+							"prompt": "Calm ambient piano with soft ocean waves"
+						},
+						"start": 0,
+						"length": 10
+					},
+					{
+						"asset": {
+							"type": "audio",
+							"prompt": "Welcome to the unified prompt asset demo.",
+							"voice": "Matthew"
+						},
+						"start": 10,
+						"length": 10
+					}
+				]
+			}
+		]
+	},
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": {
+			"width": 1280,
+			"height": 720
+		}
+	}
+}

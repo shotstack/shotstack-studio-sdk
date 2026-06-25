@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { isPendingAiAsset } from "@core/shared/ai-asset-utils";
 import type { ResolvedClip } from "@schemas";
 
 import { AudioPlayer } from "./audio-player";
@@ -27,6 +28,11 @@ export class PlayerFactory {
 			throw new Error("Invalid clip configuration: missing asset type");
 		}
 
+		// Prompt-bearing media assets awaiting generation (no src yet) render as
+		// pending placeholders; once realisation fills src the reconciler
+		// recreates them as regular media players.
+		const pending = isPendingAiAsset(clipConfiguration.asset);
+
 		switch (clipConfiguration.asset.type) {
 			case "text":
 				return new TextPlayer(edit, clipConfiguration);
@@ -39,11 +45,11 @@ export class PlayerFactory {
 			case "html5":
 				return new Html5Player(edit, clipConfiguration);
 			case "image":
-				return new ImagePlayer(edit, clipConfiguration);
+				return pending ? new TextToImagePlayer(edit, clipConfiguration) : new ImagePlayer(edit, clipConfiguration);
 			case "video":
-				return new VideoPlayer(edit, clipConfiguration);
+				return pending ? new ImageToVideoPlayer(edit, clipConfiguration) : new VideoPlayer(edit, clipConfiguration);
 			case "audio":
-				return new AudioPlayer(edit, clipConfiguration);
+				return pending ? new TextToSpeechPlayer(edit, clipConfiguration) : new AudioPlayer(edit, clipConfiguration);
 			case "luma":
 				return new LumaPlayer(edit, clipConfiguration);
 			case "caption":
