@@ -631,7 +631,6 @@ export class Canvas {
 		await this.application.init(options);
 		this.application.ticker.add(this.onTickBound);
 
-		this.application.ticker.minFPS = 60;
 		this.application.ticker.maxFPS = 60;
 	}
 
