@@ -32,7 +32,7 @@ import { SelectionManager } from "@core/selection-manager";
 import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
 import { deepMerge, nextFrame, setNestedValue } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
-import { type Milliseconds, type ResolutionContext, type Seconds, sec, toSec, isAliasReference } from "@core/timing/types";
+import { type Milliseconds, type ResolutionContext, type Seconds, sec, isAliasReference } from "@core/timing/types";
 import { TimingManager } from "@core/timing-manager";
 import type { Size } from "@layouts/geometry";
 import { AssetLoader } from "@loaders/asset-loader";
@@ -83,6 +83,8 @@ export class Edit {
 	public playbackTime: number;
 	public totalDuration: number;
 	public isPlaying: boolean;
+	private playWallAnchorMs = 0;
+	private playTimeAnchorSeconds = 0;
 
 	// ─── Derived State ────────────────────────────────────────────────────────
 	private get clips(): Player[] {
@@ -252,7 +254,8 @@ export class Edit {
 		this.lumaMaskController.update();
 
 		if (this.isPlaying) {
-			this.playbackTime = sec(Math.max(0, Math.min(this.playbackTime + toSec(elapsed), this.totalDuration)));
+			const wallElapsedSeconds = (performance.now() - this.playWallAnchorMs) / 1000;
+			this.playbackTime = sec(Math.max(0, Math.min(this.playTimeAnchorSeconds + wallElapsedSeconds, this.totalDuration)));
 			if (this.playbackTime === this.totalDuration) this.pause();
 		}
 	}
@@ -284,6 +287,8 @@ export class Edit {
 
 	public play(): void {
 		this.isPlaying = true;
+		this.playWallAnchorMs = performance.now();
+		this.playTimeAnchorSeconds = this.playbackTime;
 		this.internalEvents.emit(EditEvent.PlaybackPlay);
 	}
 
