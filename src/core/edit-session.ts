@@ -1045,6 +1045,16 @@ export class Edit {
 			}
 		});
 	}
+	/** True when there is a command to undo (the history pointer is not before the first command). */
+	public get canUndo(): boolean {
+		return this.commandIndex >= 0;
+	}
+
+	/** True when there is a command ahead to redo (the history pointer is not at the latest command). */
+	public get canRedo(): boolean {
+		return this.commandIndex < this.commandHistory.length - 1;
+	}
+
 	/** @internal */
 	public setUpdatedClip(clip: Player, initialClipConfig: ResolvedClip | null = null, finalClipConfig: ResolvedClip | null = null): void {
 		// Find track and clip indices
