@@ -748,6 +748,31 @@ describe("Edit loadEdit()", () => {
 			const player = edit.getPlayerClip(0, 0);
 			expect(player?.clipConfiguration.asset).toHaveProperty("src", "https://example.com/img.jpg");
 		});
+
+		it("refreshMergeFields resolves placeholders registered after load", async () => {
+			const shotstackEdit = new ShotstackEdit({
+				timeline: {
+					tracks: [{ clips: [{ asset: { type: "image", src: "{{ MEDIA_URL }}" }, start: 0, length: 3, fit: "crop" }] }]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await shotstackEdit.load();
+
+			// No merge array at load → the placeholder stays literal in the resolved edit.
+			const before = shotstackEdit.getEdit({ includeIds: true });
+			const clipId = (before.timeline?.tracks?.[0]?.clips?.[0] as { id?: string })?.id as string;
+			expect(shotstackEdit.getResolvedClipById(clipId)?.asset).toHaveProperty("src", "{{ MEDIA_URL }}");
+
+			shotstackEdit.mergeFields.register({ name: "MEDIA_URL", defaultValue: "https://resolved.example.com/img.jpg" });
+			shotstackEdit.refreshMergeFields();
+
+			// Resolved side picks up the default; the document keeps the placeholder and the field.
+			expect(shotstackEdit.getResolvedClipById(clipId)?.asset).toHaveProperty("src", "https://resolved.example.com/img.jpg");
+			const after = shotstackEdit.getEdit();
+			const documentAsset = after.timeline?.tracks?.[0]?.clips?.[0]?.asset as { src?: string } | undefined;
+			expect(documentAsset?.src).toBe("{{ MEDIA_URL }}");
+			expect(after.merge).toEqual([{ find: "MEDIA_URL", replace: "https://resolved.example.com/img.jpg" }]);
+		});
 	});
 
 	describe("fonts", () => {

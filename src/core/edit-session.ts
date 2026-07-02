@@ -2297,6 +2297,24 @@ export class Edit {
 		return this.mergeFieldService.resolve(input);
 	}
 
+	/**
+	 * Re-detect merge field placeholders across the document and re-resolve the canvas.
+	 * Use after registering or updating fields directly on the merge field service (rather
+	 * than through a clip-level command): clips that already contain `{{ FIELD }}`
+	 * placeholders pick up their resolved values immediately, without a reload.
+	 */
+	public refreshMergeFields(): void {
+		const bindingsPerClip = this.detectMergeFieldBindings(this.mergeFieldService.toSerializedArray());
+		for (const [clipId, bindings] of bindingsPerClip) {
+			if (bindings.size > 0) {
+				this.document.setClipBindingsForClip(clipId, bindings);
+			}
+		}
+		// resolve() recomputes the resolved edit and emits Resolved — the player
+		// reconciler and timeline react to that event and repaint with the new values.
+		this.resolve();
+	}
+
 	// ─── Template Edit Access (via document bindings) ──────────────────────────
 
 	/* @internal Get the exportable clip (with merge field placeholders restored) */
