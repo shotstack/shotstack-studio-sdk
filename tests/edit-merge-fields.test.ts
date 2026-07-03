@@ -338,6 +338,21 @@ describe("Edit Merge Fields", () => {
 	});
 
 	describe("applyMergeField()", () => {
+		it("resolves a command outcome, and removeMergeField resolves noop when no field exists", async () => {
+			const clip = createImageClip(0, 3);
+			await edit.addClip(0, clip);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+
+			// No merge field on the property yet — removal reports it did nothing
+			expect(await edit.removeMergeField(clipId, "asset.src", "restore")).toEqual({
+				status: "noop",
+				message: "No merge field on this property"
+			});
+
+			const applied = await edit.applyMergeField(clipId, "asset.src", "MEDIA_URL", "https://cdn.example.com/new.jpg");
+			expect(applied.status).toBe("success");
+		});
+
 		it("stores {{ FIELD }} template in document bindings", async () => {
 			// Add a clip first
 			const clip = createImageClip(0, 3);

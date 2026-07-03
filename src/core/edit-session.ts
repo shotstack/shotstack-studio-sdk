@@ -55,7 +55,7 @@ import { calculateOverlap } from "@timeline/interaction/interaction-calculations
 import * as pixi from "pixi.js";
 
 import { CommandQueue } from "./commands/command-queue";
-import type { EditCommand, CommandContext, CommandResult } from "./commands/types";
+import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
@@ -419,36 +419,46 @@ export class Edit {
 
 	/**
 	 * Patch fields on a clip identified by stable ID.
+	 *
+	 * Resolves with the command outcome: `success` when the clip was updated, or `noop`
+	 * (with a `message`) when no clip matches `clipId`.
 	 */
-	public updateClipById(clipId: string, updates: Partial<Clip>): Promise<void> {
+	public updateClipById(clipId: string, updates: Partial<Clip>): Promise<CommandResult> {
 		const found = this.document.getClipById(clipId);
 		if (!found) {
 			console.warn(`updateClipById: no clip with id ${clipId}`);
-			return Promise.resolve();
+			return Promise.resolve(CommandNoop(`No clip with id ${clipId}`));
 		}
 		return this.updateClip(found.trackIndex, found.clipIndex, updates);
 	}
 
 	/**
 	 * Remove a clip identified by stable ID.
+	 *
+	 * Resolves with the command outcome: `success` when the clip was removed, or `noop`
+	 * (with a `message`) when no clip matches `clipId` or the deletion was refused —
+	 * the timeline always keeps at least one clip.
 	 */
-	public deleteClipById(clipId: string): Promise<void> {
+	public deleteClipById(clipId: string): Promise<CommandResult> {
 		const found = this.document.getClipById(clipId);
 		if (!found) {
 			console.warn(`deleteClipById: no clip with id ${clipId}`);
-			return Promise.resolve();
+			return Promise.resolve(CommandNoop(`No clip with id ${clipId}`));
 		}
 		return this.deleteClip(found.trackIndex, found.clipIndex);
 	}
 
 	/**
 	 * Move a clip identified by stable ID to a different track and/or start time.
+	 *
+	 * Resolves with the command outcome: `success` when the clip was moved, or `noop`
+	 * (with a `message`) when no clip matches `clipId`.
 	 */
-	public moveClipById(clipId: string, toTrackIndex: number, newStart?: Seconds): Promise<void> {
+	public moveClipById(clipId: string, toTrackIndex: number, newStart?: Seconds): Promise<CommandResult> {
 		const found = this.document.getClipById(clipId);
 		if (!found) {
 			console.warn(`moveClipById: no clip with id ${clipId}`);
-			return Promise.resolve();
+			return Promise.resolve(CommandNoop(`No clip with id ${clipId}`));
 		}
 		const currentStart = found.clip.start;
 		const start = newStart ?? (typeof currentStart === "number" ? (currentStart as Seconds) : null);
@@ -460,7 +470,7 @@ export class Edit {
 			);
 		}
 		const command = new MoveClipCommand(found.trackIndex, found.clipIndex, toTrackIndex, start);
-		return Promise.resolve(this.executeCommand(command));
+		return this.executeCommand(command);
 	}
 
 	/**
@@ -614,7 +624,7 @@ export class Edit {
 		return updated !== false;
 	}
 
-	public async addClip(trackIdx: number, clip: Clip): Promise<void> {
+	public async addClip(trackIdx: number, clip: Clip): Promise<CommandResult> {
 		ClipSchema.parse(clip);
 		await this.preflightAssetUrls(extractClipUrls(clip));
 		// Cast to ResolvedClip - the Player and timing resolver handle "auto"/"end" at runtime
@@ -909,13 +919,20 @@ export class Edit {
 		return this.document.getClip(trackIdx, clipIdx) !== null;
 	}
 
-	public async deleteClip(trackIdx: number, clipIdx: number): Promise<void> {
+	/**
+	 * Delete the clip at `(trackIdx, clipIdx)`, along with any luma matte attached to it.
+	 *
+	 * Resolves with the command outcome for the requested clip: `success` when it was
+	 * removed, or `noop` (with a `message`) when there is no clip at that position or the
+	 * deletion was refused — the timeline always keeps at least one clip.
+	 */
+	public async deleteClip(trackIdx: number, clipIdx: number): Promise<CommandResult> {
 		const track = this.tracks[trackIdx];
-		if (!track) return;
+		if (!track) return CommandNoop(`No track at index ${trackIdx}`);
 
 		// Get the clip being deleted
 		const clipToDelete = track[clipIdx];
-		if (!clipToDelete) return;
+		if (!clipToDelete) return CommandNoop(`No clip at track ${trackIdx}, index ${clipIdx}`);
 
 		// Check if this is a content clip (not a luma)
 		const isContentClip = clipToDelete.playerType !== PlayerType.Luma;
@@ -925,6 +942,12 @@ export class Edit {
 			const lumaIndex = track.findIndex(clip => clip.playerType === PlayerType.Luma);
 
 			if (lumaIndex !== -1) {
+				// Refuse atomically up front: once the luma is gone the content deletion below
+				// would hit the last-clip rule, and a refusal must not half-apply by deleting the luma
+				if (this.document.getClipCount() <= 2) {
+					return CommandNoop("Cannot delete the last clip");
+				}
+
 				// Delete luma first (handles index shifting correctly)
 				// If luma comes before content clip, content clip index shifts after luma deletion
 				const adjustedContentIdx = lumaIndex < clipIdx ? clipIdx - 1 : clipIdx;
@@ -932,27 +955,29 @@ export class Edit {
 				const lumaCommand = new DeleteClipCommand(trackIdx, lumaIndex);
 				await this.executeCommand(lumaCommand);
 
-				// Now delete content clip with adjusted index
+				// Now delete content clip with adjusted index — this outcome is the one the
+				// caller asked about, so it is the one returned
 				const contentCommand = new DeleteClipCommand(trackIdx, adjustedContentIdx);
-				await this.executeCommand(contentCommand);
-				return;
+				return this.executeCommand(contentCommand);
 			}
 		}
 
 		// No luma attachment or deleting a luma directly - just delete the clip
 		const command = new DeleteClipCommand(trackIdx, clipIdx);
-		await this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
-	public async addTrack(trackIdx: number, track: Track): Promise<void> {
+	public async addTrack(trackIdx: number, track: Track): Promise<CommandResult> {
 		TrackSchema.parse(track);
 		await this.preflightAssetUrls(extractTrackUrls(track));
 
 		// Single atomic command — track + all its clips in one undo step.
-		await this.executeCommand(new AddTrackCommand(trackIdx, track));
+		const result = await this.executeCommand(new AddTrackCommand(trackIdx, track));
 
 		// Auto-link caption clips with unresolved alias sources
 		await this.autoLinkCaptionSources(trackIdx, track.clips);
+
+		return result;
 	}
 
 	/**
@@ -1006,43 +1031,62 @@ export class Edit {
 		};
 	}
 
-	public deleteTrack(trackIdx: number): void {
+	/**
+	 * Delete the track at `trackIdx` and all of its clips.
+	 *
+	 * Resolves with the command outcome: `success` when the track was removed, or `noop`
+	 * (with a `message`) when the deletion was refused — the timeline always keeps at
+	 * least one track.
+	 */
+	public deleteTrack(trackIdx: number): Promise<CommandResult> {
 		const command = new DeleteTrackCommand(trackIdx);
-		this.executeCommand(command);
+		return this.executeCommand(command);
 	}
 
-	public undo(): Promise<void> {
+	/**
+	 * Undo the most recent command.
+	 *
+	 * Resolves with the outcome: `success` when a command was undone, or `noop` (with a
+	 * `message`) when the history is empty or the command cannot be undone.
+	 */
+	public undo(): Promise<CommandResult> {
 		return this.commandQueue.enqueue(async () => {
-			if (this.commandIndex >= 0) {
-				const command = this.commandHistory[this.commandIndex];
-				if (command.undo) {
-					const context = this.createCommandContext();
-					// Always await - harmless on sync results, works across realms
-					await Promise.resolve(command.undo(context));
-					// Only decrement after successful completion
-					this.commandIndex -= 1;
+			if (this.commandIndex < 0) return CommandNoop("Nothing to undo");
+			const command = this.commandHistory[this.commandIndex];
+			if (!command.undo) return CommandNoop("Command cannot be undone");
 
-					this.internalEvents.emit(EditEvent.EditUndo, { command: command.name });
-					this.emitEditChanged(`undo:${command.name}`);
-				}
-			}
+			const context = this.createCommandContext();
+			// Always await - harmless on sync results, works across realms
+			const result = await Promise.resolve(command.undo(context));
+			// Only decrement after successful completion
+			this.commandIndex -= 1;
+
+			this.internalEvents.emit(EditEvent.EditUndo, { command: command.name });
+			this.emitEditChanged(`undo:${command.name}`);
+			return result;
 		});
 	}
 
-	public redo(): Promise<void> {
+	/**
+	 * Re-apply the most recently undone command.
+	 *
+	 * Resolves with the outcome: `success` when a command was re-applied, or `noop` (with
+	 * a `message`) when there is nothing to redo.
+	 */
+	public redo(): Promise<CommandResult> {
 		return this.commandQueue.enqueue(async () => {
-			if (this.commandIndex < this.commandHistory.length - 1) {
-				const nextIndex = this.commandIndex + 1;
-				const command = this.commandHistory[nextIndex];
-				const context = this.createCommandContext();
-				// Always await - harmless on sync results, works across realms
-				await Promise.resolve(command.execute(context));
-				// Only increment after successful completion
-				this.commandIndex = nextIndex;
+			if (this.commandIndex >= this.commandHistory.length - 1) return CommandNoop("Nothing to redo");
+			const nextIndex = this.commandIndex + 1;
+			const command = this.commandHistory[nextIndex];
+			const context = this.createCommandContext();
+			// Always await - harmless on sync results, works across realms
+			const result = await Promise.resolve(command.execute(context));
+			// Only increment after successful completion
+			this.commandIndex = nextIndex;
 
-				this.internalEvents.emit(EditEvent.EditRedo, { command: command.name });
-				this.emitEditChanged(`redo:${command.name}`);
-			}
+			this.internalEvents.emit(EditEvent.EditRedo, { command: command.name });
+			this.emitEditChanged(`redo:${command.name}`);
+			return result;
 		});
 	}
 	/** True when there is a command to undo (the history pointer is not before the first command). */
@@ -1142,11 +1186,17 @@ export class Edit {
 		this.emitEditChanged(`commit:${command.name}`);
 	}
 
-	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<Clip>): Promise<void> {
+	/**
+	 * Merge `updates` into the clip at `(trackIdx, clipIdx)`.
+	 *
+	 * Resolves with the command outcome: `success` when the clip was updated, or `noop`
+	 * (with a `message`) when there is no clip at that position.
+	 */
+	public updateClip(trackIdx: number, clipIdx: number, updates: Partial<Clip>): Promise<CommandResult> {
 		const clip = this.getPlayerClip(trackIdx, clipIdx);
 		if (!clip) {
 			console.warn(`Clip not found at track ${trackIdx}, index ${clipIdx}`);
-			return Promise.resolve();
+			return Promise.resolve(CommandNoop(`No clip at track ${trackIdx}, index ${clipIdx}`));
 		}
 
 		const documentClip = this.document?.getClip(trackIdx, clipIdx);
@@ -1193,7 +1243,7 @@ export class Edit {
 	}
 
 	/** @internal */
-	public executeEditCommand(command: EditCommand): void | Promise<void> {
+	public executeEditCommand(command: EditCommand): Promise<CommandResult> {
 		return this.executeCommand(command);
 	}
 
@@ -1221,12 +1271,13 @@ export class Edit {
 	}
 
 	/** @internal */
-	protected executeCommand(command: EditCommand): Promise<void> {
+	protected executeCommand(command: EditCommand): Promise<CommandResult> {
 		return this.commandQueue.enqueue(async () => {
 			const context = this.createCommandContext();
 			// Always await - harmless on sync results, works across realms
 			const result = await Promise.resolve(command.execute(context));
 			this.handleCommandResult(command, result);
+			return result;
 		});
 	}
 
@@ -2074,12 +2125,12 @@ export class Edit {
 
 	// ─── Output Settings (delegated to OutputSettingsManager) ────────────────────
 
-	public setOutputSize(width: number, height: number): Promise<void> {
+	public setOutputSize(width: number, height: number): Promise<CommandResult> {
 		const command = new SetOutputSizeCommand(width, height);
 		return this.executeCommand(command);
 	}
 
-	public setOutputFps(fps: number): Promise<void> {
+	public setOutputFps(fps: number): Promise<CommandResult> {
 		const command = new SetOutputFpsCommand(fps);
 		return this.executeCommand(command);
 	}
@@ -2088,7 +2139,7 @@ export class Edit {
 		return this.outputSettings.getFps();
 	}
 
-	public setOutputFormat(format: string): Promise<void> {
+	public setOutputFormat(format: string): Promise<CommandResult> {
 		const command = new SetOutputFormatCommand(format);
 		return this.executeCommand(command);
 	}
@@ -2097,7 +2148,7 @@ export class Edit {
 		return this.outputSettings.getFormat();
 	}
 
-	public setOutputDestinations(destinations: Destination[]): Promise<void> {
+	public setOutputDestinations(destinations: Destination[]): Promise<CommandResult> {
 		const command = new SetOutputDestinationsCommand(destinations);
 		return this.executeCommand(command);
 	}
@@ -2106,7 +2157,7 @@ export class Edit {
 		return this.outputSettings.getDestinations();
 	}
 
-	public setOutputResolution(resolution: string): Promise<void> {
+	public setOutputResolution(resolution: string): Promise<CommandResult> {
 		const command = new SetOutputResolutionCommand(resolution);
 		return this.executeCommand(command);
 	}
@@ -2115,7 +2166,7 @@ export class Edit {
 		return this.outputSettings.getResolution();
 	}
 
-	public setOutputAspectRatio(aspectRatio: string): Promise<void> {
+	public setOutputAspectRatio(aspectRatio: string): Promise<CommandResult> {
 		const command = new SetOutputAspectRatioCommand(aspectRatio);
 		return this.executeCommand(command);
 	}
@@ -2262,7 +2313,7 @@ export class Edit {
 		this.cleanupUnusedFonts();
 	}
 
-	public setTimelineBackground(color: string): Promise<void> {
+	public setTimelineBackground(color: string): Promise<CommandResult> {
 		const command = new SetTimelineBackgroundCommand(color);
 		return this.executeCommand(command);
 	}
