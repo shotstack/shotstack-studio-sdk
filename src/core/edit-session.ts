@@ -942,6 +942,12 @@ export class Edit {
 			const lumaIndex = track.findIndex(clip => clip.playerType === PlayerType.Luma);
 
 			if (lumaIndex !== -1) {
+				// Refuse atomically up front: once the luma is gone the content deletion below
+				// would hit the last-clip rule, and a refusal must not half-apply by deleting the luma
+				if (this.document.getClipCount() <= 2) {
+					return CommandNoop("Cannot delete the last clip");
+				}
+
 				// Delete luma first (handles index shifting correctly)
 				// If luma comes before content clip, content clip index shifts after luma deletion
 				const adjustedContentIdx = lumaIndex < clipIdx ? clipIdx - 1 : clipIdx;
