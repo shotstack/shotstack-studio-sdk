@@ -547,6 +547,71 @@ describe("Edit Clip Operations", () => {
 
 			expect(result).toEqual({ status: "noop", message: "Nothing to redo" });
 		});
+
+		it("redo resolves the re-applied command's outcome", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+			await edit.undo();
+
+			expect((await edit.redo()).status).toBe("success");
+			expect(await edit.redo()).toEqual({ status: "noop", message: "Nothing to redo" });
+		});
+
+		it("moveClipById resolves noop for an unknown id", async () => {
+			const result = await edit.moveClipById("not-a-real-clip-id", 0);
+
+			expect(result).toEqual({ status: "noop", message: "No clip with id not-a-real-clip-id" });
+		});
+
+		it("deleteClipById resolves success for a real clip", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+			const doc = (edit as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
+			const id = doc.getClipId(0, 1);
+			expect(id).toBeTruthy();
+
+			expect((await edit.deleteClipById(id as string)).status).toBe("success");
+		});
+
+		it("updateClip resolves success and noop by position", async () => {
+			expect((await edit.updateClip(0, 0, { fit: "contain" })).status).toBe("success");
+			expect(await edit.updateClip(0, 99, {})).toMatchObject({ status: "noop" });
+		});
+
+		it("deleteTrack resolves success when another track remains", async () => {
+			await edit.addTrack(1, { clips: [createVideoClip(0, 5)] });
+
+			expect((await edit.deleteTrack(1)).status).toBe("success");
+		});
+
+		it("setOutputSize resolves a command outcome", async () => {
+			expect((await edit.setOutputSize(1280, 720)).status).toBe("success");
+		});
+
+		it("deleteClip returns the requested clip's outcome when a luma matte shares the track", async () => {
+			// Track 0: [image (initial), luma, video]
+			await edit.addClip(0, { asset: { type: "luma", src: "https://example.com/matte.mp4" }, start: 0, length: 5 });
+			await edit.addClip(0, createVideoClip(0, 5));
+
+			// Deleting the video (a content clip) removes the track's luma first, then the video —
+			// the resolved outcome is the video's
+			const result = await edit.deleteClip(0, 2);
+
+			expect(result.status).toBe("success");
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(1);
+		});
+
+		it("deleteClip refuses atomically when the content clip with a luma is the last one", async () => {
+			// Track 0: [image (initial), luma] — the image is the last content clip
+			await edit.addClip(0, { asset: { type: "luma", src: "https://example.com/matte.mp4" }, start: 0, length: 5 });
+
+			// The deletion is refused up front: the luma must NOT be deleted as a side
+			// effect of a refused operation
+			const result = await edit.deleteClip(0, 0);
+
+			expect(result).toEqual({ status: "noop", message: "Cannot delete the last clip" });
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(2);
+		});
 	});
 
 	describe("updateClip()", () => {
