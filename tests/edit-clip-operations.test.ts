@@ -483,6 +483,72 @@ describe("Edit Clip Operations", () => {
 		});
 	});
 
+	describe("command results", () => {
+		it("deleteClip resolves noop when deleting the only clip", async () => {
+			// Only the initial image clip exists at this point
+			const result = await edit.deleteClip(0, 0);
+
+			expect(result).toEqual({ status: "noop", message: "Cannot delete the last clip" });
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(1);
+		});
+
+		it("deleteClip resolves success when another clip remains", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+
+			const result = await edit.deleteClip(0, 0);
+
+			expect(result.status).toBe("success");
+		});
+
+		it("deleteClip resolves noop for a missing position", async () => {
+			expect(await edit.deleteClip(99, 0)).toMatchObject({ status: "noop" });
+			expect(await edit.deleteClip(0, 99)).toMatchObject({ status: "noop" });
+		});
+
+		it("deleteClipById resolves noop for an unknown id", async () => {
+			const result = await edit.deleteClipById("not-a-real-clip-id");
+
+			expect(result).toEqual({ status: "noop", message: "No clip with id not-a-real-clip-id" });
+		});
+
+		it("updateClipById resolves noop for an unknown id", async () => {
+			const result = await edit.updateClipById("not-a-real-clip-id", {});
+
+			expect(result).toMatchObject({ status: "noop" });
+		});
+
+		it("addClip resolves success", async () => {
+			const result = await edit.addClip(0, createVideoClip(0, 5));
+
+			expect(result.status).toBe("success");
+		});
+
+		it("deleteTrack resolves noop when deleting the last track", async () => {
+			const result = await edit.deleteTrack(0);
+
+			expect(result).toEqual({ status: "noop", message: "Cannot delete the last track" });
+		});
+
+		it("undo resolves noop when the history is empty", async () => {
+			// load() builds the initial timeline without going through the command queue
+			expect(await edit.undo()).toEqual({ status: "noop", message: "Nothing to undo" });
+		});
+
+		it("undo resolves the undone command's outcome", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+
+			expect((await edit.undo()).status).toBe("success");
+			expect(await edit.undo()).toEqual({ status: "noop", message: "Nothing to undo" });
+		});
+
+		it("redo resolves noop when there is nothing to redo", async () => {
+			const result = await edit.redo();
+
+			expect(result).toEqual({ status: "noop", message: "Nothing to redo" });
+		});
+	});
+
 	describe("updateClip()", () => {
 		beforeEach(async () => {
 			await edit.addClip(0, createTextClip(0, 5, "Original"));

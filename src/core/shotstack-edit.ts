@@ -1,4 +1,5 @@
 import { SetMergeFieldCommand } from "./commands/set-merge-field-command";
+import { CommandNoop, type CommandResult } from "./commands/types";
 import { Edit } from "./edit-session";
 import { EditEvent } from "./events/edit-events";
 import { parseFontFamily } from "./fonts/font-config";
@@ -101,7 +102,7 @@ export class ShotstackEdit extends Edit {
 	/**
 	 * Apply a merge field to a clip property.
 	 */
-	public applyMergeField(clipId: string, propertyPath: string, fieldName: string, value: string, originalValue?: string): Promise<void> {
+	public applyMergeField(clipId: string, propertyPath: string, fieldName: string, value: string, originalValue?: string): Promise<CommandResult> {
 		const resolvedClip = this.getResolvedClipById(clipId);
 		const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
 		const previousValue = originalValue ?? (currentValue != null ? String(currentValue) : "");
@@ -118,9 +119,9 @@ export class ShotstackEdit extends Edit {
 	/**
 	 * Remove a merge field from a clip property, restoring the original value.
 	 */
-	public removeMergeField(clipId: string, propertyPath: string, restoreValue: string): Promise<void> {
+	public removeMergeField(clipId: string, propertyPath: string, restoreValue: string): Promise<CommandResult> {
 		const currentFieldName = this.getMergeFieldForProperty(clipId, propertyPath);
-		if (!currentFieldName) return Promise.resolve();
+		if (!currentFieldName) return Promise.resolve(CommandNoop("No merge field on this property"));
 
 		const command = new SetMergeFieldCommand(clipId, propertyPath, null, currentFieldName, restoreValue, restoreValue);
 		return this.executeCommand(command);
