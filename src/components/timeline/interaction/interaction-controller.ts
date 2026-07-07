@@ -98,6 +98,7 @@ export interface TimelineInteractionRegistration {
 /** Controller for timeline interactions (drag, resize, selection) */
 export class InteractionController implements TimelineInteractionRegistration {
 	private state: InteractionState = IDLE_STATE;
+	private activePointerId = -1;
 	private readonly config: ResolvedConfig;
 	private snapPoints: SnapPoint[] = [];
 
@@ -108,6 +109,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 	private readonly handlePointerDown: (e: PointerEvent) => void;
 	private readonly handlePointerMove: (e: PointerEvent) => void;
 	private readonly handlePointerUp: (e: PointerEvent) => void;
+	private readonly handlePointerCancel: (e: PointerEvent) => void;
 
 	constructor(
 		private readonly edit: Edit,
@@ -124,6 +126,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		this.handlePointerDown = this.onPointerDown.bind(this);
 		this.handlePointerMove = this.onPointerMove.bind(this);
 		this.handlePointerUp = this.onPointerUp.bind(this);
+		this.handlePointerCancel = this.onPointerCancel.bind(this);
 	}
 
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -134,6 +137,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		this.tracksContainer.addEventListener("pointerdown", this.handlePointerDown);
 		document.addEventListener("pointermove", this.handlePointerMove);
 		document.addEventListener("pointerup", this.handlePointerUp);
+		document.addEventListener("pointercancel", this.handlePointerCancel);
 	}
 
 	public update(_deltaTime: number): void {
@@ -146,6 +150,9 @@ export class InteractionController implements TimelineInteractionRegistration {
 	}
 
 	private onPointerDown(e: PointerEvent): void {
+		if (e.button !== 0) return;
+		if (this.state.type !== "idle") this.cancelInteraction();
+
 		const target = e.target as HTMLElement;
 
 		// Find clip element
@@ -174,6 +181,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) return;
 
+		this.beginPointerInteraction(e);
 		this.state = createPendingState({ x: e.clientX, y: e.clientY }, clipRef, clip.config.start);
 	}
 
@@ -187,6 +195,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		) as HTMLElement | null;
 		if (!clipElement) return;
 
+		this.beginPointerInteraction(e);
 		this.state = createResizingState(clipRef, clipElement, edge, clip.config.start, clip.config.length);
 
 		this.buildSnapPointsForClip(clipRef);
@@ -194,7 +203,26 @@ export class InteractionController implements TimelineInteractionRegistration {
 		e.preventDefault();
 	}
 
+	/** Track the pointer driving this interaction and capture it so its pointerup cannot be lost */
+	private beginPointerInteraction(e: PointerEvent): void {
+		this.activePointerId = e.pointerId;
+		try {
+			this.tracksContainer.setPointerCapture(e.pointerId);
+		} catch {
+			// pointer already released
+		}
+	}
+
 	private onPointerMove(e: PointerEvent): void {
+		if (this.state.type === "idle" || e.pointerId !== this.activePointerId) return;
+
+		// Primary button no longer held: the pointerup was lost (native menu, app switch) - cancel
+		if ((e.buttons & 1) === 0) {
+			// eslint-disable-line no-bitwise -- PointerEvent.buttons is a bitmask
+			this.cancelInteraction();
+			return;
+		}
+
 		switch (this.state.type) {
 			case "pending":
 				this.handlePendingMove(e, this.state);
@@ -223,7 +251,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const { clipRef } = state;
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) {
-			this.state = IDLE_STATE;
+			this.setIdle();
 			return;
 		}
 
@@ -232,7 +260,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 			`[data-track-index="${clipRef.trackIndex}"][data-clip-index="${clipRef.clipIndex}"]`
 		) as HTMLElement | null;
 		if (!clipElement) {
-			this.state = IDLE_STATE;
+			this.setIdle();
 			return;
 		}
 
@@ -484,10 +512,12 @@ export class InteractionController implements TimelineInteractionRegistration {
 	}
 
 	private onPointerUp(e: PointerEvent): void {
+		if (this.state.type === "idle" || e.pointerId !== this.activePointerId || e.button !== 0) return;
+
 		switch (this.state.type) {
 			case "pending":
 				// Was just a click, selection already handled
-				this.state = IDLE_STATE;
+				this.setIdle();
 				break;
 			case "dragging":
 				this.completeDrag(e, this.state);
@@ -498,6 +528,37 @@ export class InteractionController implements TimelineInteractionRegistration {
 			default:
 				break;
 		}
+	}
+
+	private onPointerCancel(e: PointerEvent): void {
+		if (this.state.type === "idle" || e.pointerId !== this.activePointerId) return;
+		this.cancelInteraction();
+	}
+
+	/** Abandon the current interaction without executing any command */
+	private cancelInteraction(): void {
+		if (this.state.type === "dragging") this.cancelDrag(this.state);
+		else if (this.state.type === "resizing") this.cancelResize(this.state);
+		this.setIdle();
+	}
+
+	private cancelDrag(state: DraggingState): void {
+		restoreClipElementStyles(state.clipElement, state.originalStyles);
+		state.ghost.remove();
+		this.feedbackElements = clearAllFeedback(this.feedbackElements, state.clipElement);
+	}
+
+	private cancelResize(state: ResizingState): void {
+		const { clipElement, originalStart, originalLength } = state;
+		clipElement.style.setProperty("--clip-start", String(originalStart));
+		clipElement.style.setProperty("--clip-length", String(originalLength));
+		hideSnapLine(this.feedbackElements.snapLine);
+		hideDragTimeTooltip(this.feedbackElements.dragTimeTooltip);
+	}
+
+	private setIdle(): void {
+		this.state = IDLE_STATE;
+		this.activePointerId = -1;
 	}
 
 	private completeDrag(_e: PointerEvent, state: DraggingState): void {
@@ -532,7 +593,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		// 4. Cleanup
 		ghost.remove();
 		this.feedbackElements = clearAllFeedback(this.feedbackElements, clipElement);
-		this.state = IDLE_STATE;
+		this.setIdle();
 	}
 
 	private executeDropAction(state: DraggingState, action: DropAction, targetClip: ClipState | null, existingLumaRef: ClipRef | null): void {
@@ -769,7 +830,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		// Cleanup
 		hideSnapLine(this.feedbackElements.snapLine);
 		hideDragTimeTooltip(this.feedbackElements.dragTimeTooltip);
-		this.state = IDLE_STATE;
+		this.setIdle();
 	}
 
 	private moveLumaWithContent(lumaPlayer: ReturnType<TimelineStateManager["getAttachedLumaPlayer"]>, targetTrack: number, newTime: number): void {
@@ -859,9 +920,12 @@ export class InteractionController implements TimelineInteractionRegistration {
 	}
 
 	public dispose(): void {
+		this.cancelInteraction();
+
 		this.tracksContainer.removeEventListener("pointerdown", this.handlePointerDown);
 		document.removeEventListener("pointermove", this.handlePointerMove);
 		document.removeEventListener("pointerup", this.handlePointerUp);
+		document.removeEventListener("pointercancel", this.handlePointerCancel);
 
 		// Dispose all feedback elements (stateless, idempotent)
 		disposeFeedbackElements(this.feedbackElements);

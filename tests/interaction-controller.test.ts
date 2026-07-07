@@ -221,6 +221,9 @@ function createPointerEvent(
 		shiftKey?: boolean;
 		ctrlKey?: boolean;
 		metaKey?: boolean;
+		button?: number;
+		buttons?: number;
+		pointerId?: number;
 	} = {}
 ): Event {
 	// Create a custom event with pointer event properties
@@ -230,14 +233,18 @@ function createPointerEvent(
 		cancelable: true
 	});
 
-	// Add pointer/mouse event properties
+	// Add pointer/mouse event properties (primary button held by default, released on pointerup/cancel)
+	const defaultButtons = type === "pointerup" || type === "pointercancel" ? 0 : 1;
 	Object.defineProperties(event, {
 		clientX: { value: options.clientX ?? 0, writable: false },
 		clientY: { value: options.clientY ?? 0, writable: false },
 		altKey: { value: options.altKey ?? false, writable: false },
 		shiftKey: { value: options.shiftKey ?? false, writable: false },
 		ctrlKey: { value: options.ctrlKey ?? false, writable: false },
-		metaKey: { value: options.metaKey ?? false, writable: false }
+		metaKey: { value: options.metaKey ?? false, writable: false },
+		button: { value: options.button ?? 0, writable: false },
+		buttons: { value: options.buttons ?? defaultButtons, writable: false },
+		pointerId: { value: options.pointerId ?? 1, writable: false }
 	});
 
 	// Override target if provided
@@ -781,6 +788,7 @@ describe("InteractionController", () => {
 			expect(tracksRemoveSpy).toHaveBeenCalledWith("pointerdown", expect.any(Function));
 			expect(docRemoveSpy).toHaveBeenCalledWith("pointermove", expect.any(Function));
 			expect(docRemoveSpy).toHaveBeenCalledWith("pointerup", expect.any(Function));
+			expect(docRemoveSpy).toHaveBeenCalledWith("pointercancel", expect.any(Function));
 		});
 
 		it("removes feedback elements on dispose", () => {
@@ -1049,6 +1057,141 @@ describe("InteractionController", () => {
 
 			// Should be dragging with default threshold
 			expect(controller.isDragging(0, 0)).toBe(true);
+		});
+	});
+
+	// ─── Interrupted Interaction Tests ───────────────────────────────────────
+
+	describe("interrupted interactions", () => {
+		const createController = () => {
+			controller = new InteractionController(
+				mockEdit as never,
+				mockStateManager as never,
+				mockTrackList as never,
+				mockDOM.tracksContainer,
+				mockDOM.feedbackLayer
+			);
+			controller.mount();
+		};
+
+		const startDrag = (clipElement: HTMLElement) => {
+			clipElement.dispatchEvent(createPointerEvent("pointerdown", { clientX: 50, clientY: 20 }));
+			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 100, clientY: 20 }));
+		};
+
+		it("cancels drag on pointercancel, restoring the clip without executing commands", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+
+			startDrag(clipElement);
+			expect(controller.isDragging(0, 0)).toBe(true);
+			expect(clipElement.style.position).toBe("fixed");
+
+			document.dispatchEvent(createPointerEvent("pointercancel", { clientX: 100, clientY: 20 }));
+
+			expect(controller.isDragging(0, 0)).toBe(false);
+			expect(clipElement.style.position).toBe("");
+			expect(mockDOM.feedbackLayer.querySelector(".ss-drag-ghost")).toBeNull();
+			expect(mockEdit.executeEditCommand).not.toHaveBeenCalled();
+		});
+
+		it("cancels drag when a move arrives with no button held (lost pointerup)", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+
+			startDrag(clipElement);
+			expect(controller.isDragging(0, 0)).toBe(true);
+
+			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 300, clientY: 20, buttons: 0 }));
+
+			expect(controller.isDragging(0, 0)).toBe(false);
+			expect(clipElement.style.position).toBe("");
+			expect(mockEdit.executeEditCommand).not.toHaveBeenCalled();
+		});
+
+		it("ignores non-primary-button pointerdown", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+
+			clipElement.dispatchEvent(createPointerEvent("pointerdown", { clientX: 50, clientY: 20, button: 2, buttons: 2 }));
+			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 100, clientY: 20, buttons: 2 }));
+
+			expect(controller.isDragging(0, 0)).toBe(false);
+			expect(clipElement.style.position).toBe("");
+		});
+
+		it("keeps dragging when a non-primary button is released mid-drag", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+
+			startDrag(clipElement);
+			document.dispatchEvent(createPointerEvent("pointerup", { clientX: 100, clientY: 20, button: 2, buttons: 1 }));
+			expect(controller.isDragging(0, 0)).toBe(true);
+
+			document.dispatchEvent(createPointerEvent("pointerup", { clientX: 100, clientY: 20 }));
+			expect(controller.isDragging(0, 0)).toBe(false);
+		});
+
+		it("ignores moves and ups from other pointers during a drag", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+
+			startDrag(clipElement);
+			const leftBefore = clipElement.style.left;
+
+			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 500, clientY: 20, pointerId: 7 }));
+			expect(clipElement.style.left).toBe(leftBefore);
+
+			document.dispatchEvent(createPointerEvent("pointerup", { clientX: 500, clientY: 20, pointerId: 7 }));
+			expect(controller.isDragging(0, 0)).toBe(true);
+		});
+
+		it("cancels a stale drag cleanly when a new pointerdown arrives", () => {
+			createController();
+			const clips = mockDOM.tracksContainer.querySelectorAll(".ss-clip");
+			const firstClip = clips[0] as HTMLElement;
+			const secondClip = clips[1] as HTMLElement;
+
+			startDrag(firstClip);
+			expect(firstClip.style.position).toBe("fixed");
+
+			// Pointerup was lost; user presses again on another clip
+			secondClip.dispatchEvent(createPointerEvent("pointerdown", { clientX: 250, clientY: 20 }));
+
+			expect(firstClip.style.position).toBe("");
+			expect(mockDOM.feedbackLayer.querySelector(".ss-drag-ghost")).toBeNull();
+			expect(controller.isDragging(0, 0)).toBe(false);
+			expect(mockEdit.executeEditCommand).not.toHaveBeenCalled();
+		});
+
+		it("cancels resize on pointercancel, restoring clip timing vars", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+			const handle = clipElement.querySelector(".ss-clip-resize-handle.right") as HTMLElement;
+
+			handle.dispatchEvent(createPointerEvent("pointerdown", { clientX: 195, clientY: 20 }));
+			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 300, clientY: 20 }));
+			expect(controller.isResizing(0, 0)).toBe(true);
+			expect(clipElement.style.getPropertyValue("--clip-length")).not.toBe("2");
+
+			document.dispatchEvent(createPointerEvent("pointercancel", {}));
+
+			expect(controller.isResizing(0, 0)).toBe(false);
+			expect(clipElement.style.getPropertyValue("--clip-length")).toBe("2");
+			expect(mockEdit.executeEditCommand).not.toHaveBeenCalled();
+		});
+
+		it("restores an in-flight drag when disposed mid-drag", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+
+			startDrag(clipElement);
+			expect(clipElement.style.position).toBe("fixed");
+
+			controller.dispose();
+
+			expect(clipElement.style.position).toBe("");
+			expect(mockDOM.feedbackLayer.querySelector(".ss-drag-ghost")).toBeNull();
 		});
 	});
 });
