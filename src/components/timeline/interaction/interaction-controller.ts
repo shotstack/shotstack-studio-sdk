@@ -217,8 +217,8 @@ export class InteractionController implements TimelineInteractionRegistration {
 		if (this.state.type === "idle" || e.pointerId !== this.activePointerId) return;
 
 		// Primary button no longer held: the pointerup was lost (native menu, app switch) - cancel
+		// eslint-disable-next-line no-bitwise -- PointerEvent.buttons is a bitmask
 		if ((e.buttons & 1) === 0) {
-			// eslint-disable-line no-bitwise -- PointerEvent.buttons is a bitmask
 			this.cancelInteraction();
 			return;
 		}
