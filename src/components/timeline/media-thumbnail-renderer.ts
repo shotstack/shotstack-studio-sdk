@@ -127,6 +127,9 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		this.clipStates.set(clipKey, state);
 
 		try {
+			if (!asset.src) {
+				throw new Error("Video asset has no src for thumbnail generation.");
+			}
 			const result = await this.generator.generateThumbnail(asset.src, asset.trim ?? 0);
 
 			// Check if element is still in DOM (might have been disposed)
@@ -156,6 +159,9 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		this.clipStates.set(clipKey, state);
 
 		try {
+			if (!asset.src) {
+				throw new Error("Image asset has no src for thumbnail generation.");
+			}
 			const result = await this.loadImageThumbnail(asset.src);
 
 			// Check if element is still in DOM (might have been disposed)
