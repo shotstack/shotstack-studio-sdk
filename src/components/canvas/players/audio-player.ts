@@ -31,7 +31,7 @@ export class AudioPlayer extends Player {
 
 		const identifier = audioClipConfiguration.src;
 		if (!identifier) {
-			// Prompt-driven audio has no src until it's generated — fail this clip's load, not the edit
+			// Prompt-bearing assets route to pending placeholder players — reaching here without a src is invalid data
 			throw new Error("Audio asset has no src to load.");
 		}
 		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
@@ -127,11 +127,12 @@ export class AudioPlayer extends Player {
 		this.syncTimer = 0;
 
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
-		if (!audioAsset.src) {
+		const { src } = audioAsset;
+		if (!src) {
 			throw new Error("Audio asset has no src to load.");
 		}
-		const loadOptions: pixi.UnresolvedAsset = { src: audioAsset.src, parser: AudioLoadParser.Name };
-		const audioResource = await this.edit.assetLoader.load<howler.Howl>(audioAsset.src, loadOptions);
+		const loadOptions: pixi.UnresolvedAsset = { src, parser: AudioLoadParser.Name };
+		const audioResource = await this.edit.assetLoader.load<howler.Howl>(src, loadOptions);
 
 		if (!(audioResource instanceof howler.Howl)) {
 			throw new Error(`Invalid audio source '${audioAsset.src}'.`);

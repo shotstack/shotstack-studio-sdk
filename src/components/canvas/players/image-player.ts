@@ -87,7 +87,7 @@ export class ImagePlayer extends Player {
 		const imageAsset = this.clipConfiguration.asset as ImageAsset;
 		const { src } = imageAsset;
 		if (!src) {
-			// Prompt-driven images have no src until they're generated — fail this clip's load, not the edit
+			// Prompt-bearing assets route to pending placeholder players — reaching here without a src is invalid data
 			throw new Error("Image asset has no src to load.");
 		}
 

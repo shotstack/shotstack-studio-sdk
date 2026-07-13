@@ -169,7 +169,7 @@ export class VideoPlayer extends Player {
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 		const { src } = videoAsset;
 		if (!src) {
-			// Generated video assets have no src until they're rendered — fail this clip's load, not the edit
+			// Prompt-bearing assets route to pending placeholder players — reaching here without a src is invalid data
 			throw new Error("Video asset has no src to load.");
 		}
 
