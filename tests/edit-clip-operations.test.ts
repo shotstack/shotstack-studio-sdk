@@ -732,6 +732,37 @@ describe("Edit Clip Operations", () => {
 		});
 	});
 
+	describe("defensive copies from public getters", () => {
+		it("getClipById returns a copy — freezing it does not break in-place document updates", () => {
+			const clipId = edit.getClipId(0, 0);
+			expect(clipId).not.toBeNull();
+
+			// Hosts may store returned clips in state that deep-freezes (e.g. immer autoFreeze).
+			// updateClipInDocument mutates the stored clip in place (the canvas resize/drag path),
+			// so a leaked live reference would make this throw "object is not extensible".
+			Object.freeze(edit.getClipById(clipId!));
+
+			expect(() => edit.updateClipInDocument(clipId!, { width: 100, height: 100 })).not.toThrow();
+			expect(edit.getClipById(clipId!)?.width).toBe(100);
+		});
+
+		it("getClip returns a copy detached from live player state", () => {
+			const copy = edit.getClip(0, 0);
+			expect(copy).not.toBeNull();
+			(copy as { start?: number }).start = 999;
+
+			expect(edit.getClip(0, 0)?.start).not.toBe(999);
+		});
+
+		it("getTrack returns copies of clip configurations", () => {
+			const track = edit.getTrack(0);
+			expect(track).not.toBeNull();
+			(track!.clips[0] as { start?: number }).start = 999;
+
+			expect(edit.getTrack(0)?.clips[0]?.start).not.toBe(999);
+		});
+	});
+
 	describe("clip operations undo integration", () => {
 		it("addClip undo removes the added clip", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));

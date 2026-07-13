@@ -402,10 +402,12 @@ export class Edit {
 
 	/**
 	 * Look up a clip by its stable ID.
-	 * @returns The clip or null if no clip with that ID exists.
+	 * @returns A copy of the clip, or null if no clip with that ID exists. Mutating the
+	 * returned object has no effect on the edit — use `updateClipById` to make changes.
 	 */
 	public getClipById(clipId: string): Clip | null {
-		return this.document.getClipById(clipId)?.clip ?? null;
+		const clip = this.document.getClipById(clipId)?.clip;
+		return clip ? structuredClone(clip) : null;
 	}
 
 	/**
@@ -720,7 +722,8 @@ export class Edit {
 		// Cast to Clip since clipConfiguration is ResolvedClip internally but compatible at runtime
 		const track = this.tracks[trackIdx];
 		if (!track || clipIdx < 0 || clipIdx >= track.length) return null;
-		return track[clipIdx].clipConfiguration as unknown as Clip;
+		// Copy so callers can't mutate (or freeze) live player state through the return value
+		return structuredClone(track[clipIdx].clipConfiguration) as unknown as Clip;
 	}
 
 	/**
@@ -1027,7 +1030,8 @@ export class Edit {
 		if (trackClips.length === 0) return null;
 
 		return {
-			clips: trackClips.map((clip: Player) => clip.clipConfiguration as unknown as Clip)
+			// Copy so callers can't mutate (or freeze) live player state through the return value
+			clips: trackClips.map((clip: Player) => structuredClone(clip.clipConfiguration) as unknown as Clip)
 		};
 	}
 
