@@ -86,6 +86,10 @@ export class ImagePlayer extends Player {
 	private async loadTexture(): Promise<void> {
 		const imageAsset = this.clipConfiguration.asset as ImageAsset;
 		const { src } = imageAsset;
+		if (!src) {
+			// Prompt-driven images have no src until they're generated — fail this clip's load, not the edit
+			throw new Error("Image asset has no src to load.");
+		}
 
 		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
 		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
