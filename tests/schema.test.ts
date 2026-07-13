@@ -387,3 +387,39 @@ describe("Real-world Use Cases", () => {
 		expect(result.success).toBe(true);
 	});
 });
+
+describe("API-accepted templates parse at load", () => {
+	// Templates created via the render API (e.g. by the MCP server) must open in the
+	// editor. These shapes were rejected by the previously pinned schemas version.
+	it("accepts text-to-speech assets with the newscaster option", () => {
+		const result = ClipSchema.safeParse({
+			asset: { type: "text-to-speech", text: "Tonight's headlines", voice: "Matthew", newscaster: true },
+			start: 0,
+			length: 5
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("accepts prompt-driven audio assets with voice and newscaster", () => {
+		const result = ClipSchema.safeParse({
+			asset: { type: "audio", prompt: "Read the news intro", voice: "Joanna", newscaster: true },
+			start: 0,
+			length: 5
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("accepts a destination without an options object", () => {
+		const result = EditSchema.safeParse({
+			timeline: {
+				tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/a.jpg" }, start: 0, length: 3 }] }]
+			},
+			output: {
+				size: { width: 1280, height: 720 },
+				format: "mp4",
+				destinations: [{ provider: "shotstack" }]
+			}
+		});
+		expect(result.success).toBe(true);
+	});
+});

@@ -30,7 +30,10 @@ export class AudioPlayer extends Player {
 		const audioClipConfiguration = this.clipConfiguration.asset as AudioAsset;
 
 		const identifier = audioClipConfiguration.src;
-		if (!identifier) return;
+		if (!identifier) {
+			// Prompt-bearing assets route to pending placeholder players — reaching here without a src is invalid data
+			throw new Error("Audio asset has no src to load.");
+		}
 		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(identifier, loadOptions);
 
@@ -125,7 +128,9 @@ export class AudioPlayer extends Player {
 
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
 		const { src } = audioAsset;
-		if (!src) return;
+		if (!src) {
+			throw new Error("Audio asset has no src to load.");
+		}
 		const loadOptions: pixi.UnresolvedAsset = { src, parser: AudioLoadParser.Name };
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(src, loadOptions);
 
