@@ -65,7 +65,7 @@ export function assertTimingConsistency(intent: TimingIntent, actual: ResolvedTi
 		throw new Error(
 			`INVARIANT VIOLATION: Length mismatch\n` +
 				`  Intent: ${formatTimingValue(intent.length)}\n` +
-				`  Context: timelineEnd=${context.timelineEnd}, intrinsicDuration=${context.intrinsicDuration}\n` +
+				`  Context: timelineEnd=${context.timelineEnd}, autoLength=${context.autoLength}\n` +
 				`  Expected: ${expected.length}\n` +
 				`  Actual: ${actual.length}\n` +
 				`  Diff: ${lengthDiff}`

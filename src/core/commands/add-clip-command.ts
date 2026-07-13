@@ -19,7 +19,7 @@ export class AddClipCommand implements EditCommand {
 		private clip: ClipType
 	) {}
 
-	execute(context?: CommandContext): CommandResult {
+	async execute(context?: CommandContext): Promise<CommandResult> {
 		if (!context) throw new Error("AddClipCommand.execute: context is required");
 
 		const document = context.getDocument();
@@ -38,6 +38,10 @@ export class AddClipCommand implements EditCommand {
 
 		// Resolve triggers reconciler → creates Player (must happen before duration calc)
 		context.resolve();
+		if (addedClip.length === "auto" && this.addedClipId) {
+			const player = context.getPlayerByClipId(this.addedClipId);
+			if (player) await context.resolveClipAutoLength(player);
+		}
 
 		context.updateDuration();
 

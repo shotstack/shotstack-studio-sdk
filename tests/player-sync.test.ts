@@ -58,10 +58,23 @@ jest.mock("pixi.js", () => {
 		Container: jest.fn().mockImplementation(createMockContainer),
 		Graphics: jest.fn().mockImplementation(() => ({
 			rect: jest.fn().mockReturnThis(),
+			roundRect: jest.fn().mockReturnThis(),
 			fill: jest.fn().mockReturnThis(),
 			clear: jest.fn().mockReturnThis(),
 			destroy: jest.fn()
 		})),
+		Text: jest.fn().mockImplementation(() => ({
+			visible: false,
+			filters: [],
+			text: "",
+			x: 0,
+			y: 0,
+			width: 100,
+			height: 30,
+			position: { set: jest.fn() },
+			destroy: jest.fn()
+		})),
+		TextStyle: jest.fn().mockImplementation(() => ({})),
 		Sprite: jest.fn().mockImplementation(() => ({
 			texture: {},
 			width: 1920,
@@ -156,7 +169,7 @@ jest.mock("@loaders/subtitle-load-parser", () => ({
 
 // Mock font config
 jest.mock("@core/fonts/font-config", () => ({
-	parseFontFamily: jest.fn().mockReturnValue("Arial"),
+	parseFontFamily: jest.fn().mockReturnValue({ baseFontFamily: "Arial", fontWeight: 400 }),
 	resolveFontPath: jest.fn().mockReturnValue(null)
 }));
 
@@ -188,8 +201,10 @@ function createMockEdit(playbackTimeSec: number): Edit {
 			load: jest.fn(),
 			loadVideoUnique: jest.fn(),
 			incrementRef: jest.fn(),
-			decrementRef: jest.fn()
+			decrementRef: jest.fn(),
+			release: jest.fn()
 		},
+		size: { width: 1920, height: 1080 },
 		events: { emit: jest.fn(), on: jest.fn(), off: jest.fn() },
 		output: { size: { width: 1920, height: 1080 } }
 	} as unknown as Edit;
@@ -381,6 +396,101 @@ describe("CaptionPlayer", () => {
 			const player = new CaptionPlayer(mockEdit, createCaptionClipConfig(0));
 
 			expect(player.getPlaybackTime()).toBe(7.5);
+		});
+	});
+
+	describe("intrinsic media timing", () => {
+		it("does not resume loading into disposed containers", async () => {
+			const edit = createMockEdit(0);
+			const player = new CaptionPlayer(edit, createCaptionClipConfig(0));
+			const graphics = pixi.Graphics as unknown as jest.Mock;
+			graphics.mockClear();
+
+			const loading = player.load();
+			expect(player.getMediaTimingState()).toMatchObject({ status: "pending" });
+			player.dispose();
+			await loading;
+
+			expect(graphics).not.toHaveBeenCalled();
+			expect(edit.assetLoader.load).not.toHaveBeenCalled();
+		});
+
+		it("publishes the final parsed cue end in seconds", async () => {
+			const edit = createMockEdit(0);
+			const load = edit.assetLoader.load as jest.Mock;
+			load.mockResolvedValue({
+				cues: [
+					{ start: 0, end: 1.2, text: "First" },
+					{ start: 1.5, end: 4.25, text: "Last" }
+				]
+			});
+			const player = new CaptionPlayer(edit, createCaptionClipConfig(0));
+
+			await player.load();
+
+			expect(player.getMediaTimingState()).toEqual({
+				status: "ready",
+				asset: { type: "caption", src: "captions.srt" },
+				duration: 4.25
+			});
+		});
+
+		it("publishes ready without a duration when subtitle loading fails", async () => {
+			const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+			const edit = createMockEdit(0);
+			const load = edit.assetLoader.load as jest.Mock;
+			load.mockRejectedValue(new Error("network error"));
+			const player = new CaptionPlayer(edit, createCaptionClipConfig(0));
+
+			await player.load();
+
+			expect(player.getMediaTimingState()).toEqual({
+				status: "ready",
+				asset: { type: "caption", src: "captions.srt" },
+				duration: null
+			});
+			warnSpy.mockRestore();
+		});
+
+		it("does not let a stale reload replace newer cue timing or state", async () => {
+			const edit = createMockEdit(0);
+			const load = edit.assetLoader.load as jest.Mock;
+			load.mockResolvedValueOnce({ cues: [{ start: 0, end: 1, text: "Initial" }] });
+			const player = new CaptionPlayer(edit, createCaptionClipConfig(0));
+			await player.load();
+
+			let resolveFirst!: (value: unknown) => void;
+			let resolveSecond!: (value: unknown) => void;
+			load.mockImplementation(
+				(src: string) =>
+					new Promise(resolve => {
+						if (src === "first.srt") resolveFirst = resolve;
+						if (src === "second.srt") resolveSecond = resolve;
+					})
+			);
+
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				type: "caption",
+				src: "first.srt"
+			} as CaptionAsset;
+			const firstReload = player.reloadAsset();
+			(player as unknown as { clipConfiguration: ResolvedClip }).clipConfiguration.asset = {
+				type: "caption",
+				src: "second.srt"
+			} as CaptionAsset;
+			const secondReload = player.reloadAsset();
+
+			resolveSecond({ cues: [{ start: 0, end: 6, text: "Second" }] });
+			await secondReload;
+			resolveFirst({ cues: [{ start: 0, end: 9, text: "First" }] });
+			await firstReload;
+
+			expect(player.getMediaTimingState()).toEqual({
+				status: "ready",
+				asset: { type: "caption", src: "second.srt" },
+				duration: 6
+			});
+			expect((player as unknown as { state: { cues: Array<{ text: string }> } }).state.cues[0]?.text).toBe("Second");
 		});
 	});
 });

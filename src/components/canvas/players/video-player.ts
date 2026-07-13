@@ -1,5 +1,6 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type VideoAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -18,6 +19,7 @@ export class VideoPlayer extends Player {
 	private syncTimer: number;
 	private activeSyncTimer: number;
 	private skipVideoUpdate: boolean;
+	private cancelVideoReadyWait: (() => void) | null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Video);
@@ -33,14 +35,21 @@ export class VideoPlayer extends Player {
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
 		this.skipVideoUpdate = false;
+		this.cancelVideoReadyWait = null;
 	}
 
 	public override async load(): Promise<void> {
+		const mediaTimingRevision = this.beginMediaTimingLoad();
+		this.cancelPendingVideoReadyWait();
 		await super.load();
+		if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
 		try {
-			await this.loadVideo();
+			if (!(await this.loadVideo(mediaTimingRevision))) return;
+			this.completeMediaTimingLoad(mediaTimingRevision, this.getLoadedDuration());
 			this.configureKeyframes();
 		} catch (error) {
+			if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
+			this.completeMediaTimingLoad(mediaTimingRevision, null);
 			console.warn(`[VideoPlayer.load] FAILED clipId=${this.clipId}:`, error);
 			this.createFallbackGraphic();
 		}
@@ -115,6 +124,7 @@ export class VideoPlayer extends Player {
 	}
 
 	public override dispose(): void {
+		this.cancelPendingVideoReadyWait();
 		this.disposeVideo();
 		this.clearPlaceholder();
 		super.dispose();
@@ -141,6 +151,8 @@ export class VideoPlayer extends Player {
 
 	/** Reload the video asset when asset.src changes (e.g., merge field update) */
 	public override async reloadAsset(): Promise<void> {
+		const mediaTimingRevision = this.beginMediaTimingLoad();
+		this.cancelPendingVideoReadyWait();
 		this.skipVideoUpdate = true;
 		this.isPlaying = false;
 		this.syncTimer = 0;
@@ -149,12 +161,15 @@ export class VideoPlayer extends Player {
 		try {
 			this.disposeVideo();
 			this.clearPlaceholder();
-			await this.loadVideo();
+			if (!(await this.loadVideo(mediaTimingRevision))) return;
+			this.completeMediaTimingLoad(mediaTimingRevision, this.getLoadedDuration());
 		} catch (error) {
+			if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
+			this.completeMediaTimingLoad(mediaTimingRevision, null);
 			console.warn(`[VideoPlayer.reloadAsset] FAILED clipId=${this.clipId}:`, error);
 			this.createFallbackGraphic();
 		} finally {
-			this.skipVideoUpdate = false;
+			if (this.isMediaTimingLoadCurrent(mediaTimingRevision)) this.skipVideoUpdate = false;
 		}
 	}
 
@@ -165,7 +180,7 @@ export class VideoPlayer extends Player {
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
 	}
 
-	private async loadVideo(): Promise<void> {
+	private async loadVideo(mediaTimingRevision: number): Promise<boolean> {
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 		const { src } = videoAsset;
 		if (!src) {
@@ -187,42 +202,92 @@ export class VideoPlayer extends Player {
 		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
 		}
-
-		this.clearPlaceholder();
+		if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) {
+			this.destroyVideoTexture(texture);
+			return false;
+		}
 
 		// Fix alpha channel rendering for WebM VP9 videos (PixiJS 8 auto-detection is buggy)
 		texture.source.alphaMode = "no-premultiply-alpha";
 
-		this.texture = this.createCroppedTexture(texture);
+		const loadedTexture = this.createCroppedTexture(texture);
 
 		// Ensure the video has at least one decoded frame before adding to render tree
 		// This prevents WebGL errors when GPU tries to upload uninitialized texture data
-		const video = (this.texture.source as pixi.VideoSource).resource;
-		if (video instanceof HTMLVideoElement && video.readyState < 2) {
-			await new Promise<void>(resolve => {
-				const onReady = () => {
-					video.removeEventListener("loadeddata", onReady);
-					resolve();
-				};
-				video.addEventListener("loadeddata", onReady);
-				if (video.readyState >= 2) resolve();
-			});
+		const video = loadedTexture.source.resource;
+		try {
+			if (!(await this.waitForVideoReady(video, mediaTimingRevision)) || !this.isMediaTimingLoadCurrent(mediaTimingRevision)) {
+				this.destroyVideoTexture(loadedTexture);
+				return false;
+			}
+		} catch (error) {
+			this.destroyVideoTexture(loadedTexture);
+			throw error;
 		}
 
-		this.sprite = new pixi.Sprite(this.texture);
+		this.clearPlaceholder();
+		this.texture = loadedTexture;
+		this.sprite = new pixi.Sprite(loadedTexture);
 		this.contentContainer.addChild(this.sprite);
 
 		// Set initial volume immediately so the element never sits at the browser default of 1.0
 		this.texture.source.resource.volume = this.getVolume();
+		return true;
+	}
+
+	private waitForVideoReady(video: HTMLVideoElement, mediaTimingRevision: number): Promise<boolean> {
+		if (!(video instanceof HTMLVideoElement) || video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+			return Promise.resolve(this.isMediaTimingLoadCurrent(mediaTimingRevision));
+		}
+
+		return new Promise<boolean>((resolve, reject) => {
+			let settled = false;
+			let onLoadedData: () => void;
+			let onError: () => void;
+			let onAbort: () => void;
+			let cancel: () => void;
+
+			const cleanup = () => {
+				video.removeEventListener("loadeddata", onLoadedData);
+				video.removeEventListener("error", onError);
+				video.removeEventListener("abort", onAbort);
+				if (this.cancelVideoReadyWait === cancel) this.cancelVideoReadyWait = null;
+			};
+			const settle = (ready: boolean, error?: Error) => {
+				if (settled) return;
+				settled = true;
+				cleanup();
+				if (error) reject(error);
+				else resolve(ready);
+			};
+			onLoadedData = () => {
+				settle(this.isMediaTimingLoadCurrent(mediaTimingRevision));
+			};
+			onError = () => {
+				settle(false, new Error("Video failed while waiting for its first decoded frame."));
+			};
+			onAbort = () => {
+				settle(false, new Error("Video loading was aborted before its first decoded frame."));
+			};
+			cancel = () => {
+				settle(false);
+			};
+
+			this.cancelVideoReadyWait = cancel;
+			video.addEventListener("loadeddata", onLoadedData);
+			video.addEventListener("error", onError);
+			video.addEventListener("abort", onAbort);
+
+			if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) cancel();
+			else if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) onLoadedData();
+		});
+	}
+
+	private cancelPendingVideoReadyWait(): void {
+		this.cancelVideoReadyWait?.();
 	}
 
 	private disposeVideo(): void {
-		if (this.texture?.source?.resource) {
-			this.texture.source.resource.pause();
-			// Release video resource - each player owns its own video element
-			this.texture.source.resource.src = "";
-			this.texture.source.resource.load();
-		}
 		if (this.sprite) {
 			this.contentContainer.removeChild(this.sprite);
 			this.sprite.destroy();
@@ -230,9 +295,22 @@ export class VideoPlayer extends Player {
 		}
 		// Destroy the texture since we own it (created via loadVideoUnique)
 		if (this.texture) {
-			this.texture.destroy(true);
+			this.destroyVideoTexture(this.texture);
 			this.texture = null;
 		}
+	}
+
+	private destroyVideoTexture(texture: pixi.Texture<pixi.VideoSource>): void {
+		const { resource } = texture.source;
+		resource.pause();
+		resource.src = "";
+		resource.load();
+		texture.destroy(true);
+	}
+
+	private getLoadedDuration(): ReturnType<typeof sec> | null {
+		const duration = this.texture?.source.resource.duration;
+		return duration !== undefined && Number.isFinite(duration) ? sec(duration) : null;
 	}
 
 	private clearPlaceholder(): void {

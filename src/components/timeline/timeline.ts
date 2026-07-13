@@ -92,15 +92,19 @@ export class Timeline {
 
 		// Initialize media thumbnail generation (video and image)
 		this.thumbnailGenerator = new ThumbnailGenerator();
-		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(this.thumbnailGenerator, () => {
-			if (!this.thumbnailRenderPending) {
-				this.thumbnailRenderPending = true;
-				requestAnimationFrame(() => {
-					this.thumbnailRenderPending = false;
-					this.requestRender();
-				});
-			}
-		});
+		this.mediaThumbnailRenderer = new MediaThumbnailRenderer(
+			this.thumbnailGenerator,
+			() => {
+				if (!this.thumbnailRenderPending) {
+					this.thumbnailRenderPending = true;
+					requestAnimationFrame(() => {
+						this.thumbnailRenderPending = false;
+						this.requestRender();
+					});
+				}
+			},
+			src => this.edit.assetLoader.getGifThumbnail(src)
+		);
 		this.clipRenderers.set("video", this.mediaThumbnailRenderer);
 		this.clipRenderers.set("image", this.mediaThumbnailRenderer);
 

@@ -9,6 +9,7 @@ import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { Clip, ResolvedClip } from "@schemas";
+import { getAssetTimingIdentity } from "@core/timing/resolver";
 import { ms, sec } from "@core/timing/types";
 
 // Stub the DOM-dependent svg-clipboard helpers — sanitisation is unit-tested
@@ -203,6 +204,8 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 			};
 		},
 		getResolvedTiming: () => ({ ...resolvedTiming }),
+		getMediaTimingState: () => ({ status: "ready", asset: getAssetTimingIdentity(config.asset), duration: null }),
+		getLoadedResourceIdentifier: () => ("src" in config.asset ? config.asset.src : null),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
 		}),

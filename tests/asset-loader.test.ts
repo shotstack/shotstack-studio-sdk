@@ -59,6 +59,18 @@ describe("AssetLoader", () => {
 		});
 	});
 
+	it("does not release an asset after its final reference was already removed", () => {
+		const loader = new AssetLoader();
+		const url = "https://example.com/shared.png";
+		pixiMock.Assets.cache.has.mockReturnValue(true);
+		loader.incrementRef(url);
+
+		loader.release(url);
+		loader.release(url);
+
+		expect(pixiMock.Assets.unload).toHaveBeenCalledTimes(1);
+	});
+
 	describe("loadVideoUnique", () => {
 		/**
 		 * Regression test for video playback glitch with overlapping clips.

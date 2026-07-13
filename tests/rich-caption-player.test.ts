@@ -59,7 +59,7 @@ jest.mock("pixi.js", () => {
 		Texture: {
 			from: jest.fn().mockImplementation(() => ({
 				destroy: jest.fn(),
-				update: jest.fn()
+				source: { update: jest.fn() }
 			})),
 			WHITE: {}
 		},
@@ -353,15 +353,26 @@ describe("RichCaptionPlayer", () => {
 			expect((player as unknown as { clipConfiguration: Record<string, unknown> }).clipConfiguration["fit"]).toBeUndefined();
 		});
 
-		it("loads successfully with valid inline words", async () => {
+		it("loads inline words and publishes their greatest end plus caption tail", async () => {
 			const edit = createMockEdit();
-			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			const player = new RichCaptionPlayer(
+				edit,
+				createClip(
+					createAsset({
+						words: [
+							{ text: "Last in time", start: 1000, end: 1400 },
+							{ text: "Last in array", start: 500, end: 900 }
+						]
+					} as Partial<RichCaptionAsset>)
+				)
+			);
 			await player.load();
 
 			// @ts-expect-error accessing private property
 			expect(player.loadComplete).toBe(true);
 			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(1);
+			expect(player.getMediaTimingState()).toMatchObject({ status: "ready", duration: 1.9 });
 		});
 
 		it("falls back to placeholder on invalid asset", async () => {
@@ -620,6 +631,19 @@ describe("RichCaptionPlayer", () => {
 	});
 
 	describe("Lifecycle", () => {
+		it("does not resume loading after same-turn disposal", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+
+			const loading = player.load();
+			expect(player.getMediaTimingState()).toMatchObject({ status: "pending" });
+			player.dispose();
+			await loading;
+
+			expect(mockGetSharedInstance).not.toHaveBeenCalled();
+			expect(mockLayoutCaption).not.toHaveBeenCalled();
+		});
+
 		it("releases FontRegistry reference on dispose", async () => {
 			const edit = createMockEdit();
 			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
@@ -1104,6 +1128,18 @@ describe("RichCaptionPlayer", () => {
 		});
 	});
 
+	it("does not rebuild a loaded caption pipeline for a numeric timing-only change", async () => {
+		const edit = createMockEdit();
+		const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+		await player.load();
+		mockLayoutCaption.mockClear();
+
+		player.setResolvedTiming({ start: sec(1), length: sec(6) });
+		player.reconfigureAfterRestore();
+
+		expect(mockLayoutCaption).not.toHaveBeenCalled();
+	});
+
 	describe("Alias Placeholder", () => {
 		it("detects alias reference and sets placeholder flags", async () => {
 			const asset = createAsset({ src: "alias://VIDEO", words: undefined } as Partial<RichCaptionAsset>);
@@ -1513,9 +1549,8 @@ describe("RichCaptionPlayer", () => {
 				setTimeout(resolve, 10);
 			});
 
-			// layoutCaption was called twice
-			expect(mockLayoutCaption).toHaveBeenCalledTimes(2);
-			// But only the second layout should have rendered (first was discarded by stale-ID guard)
+			// The first build becomes stale before expensive layout starts; only the latest renders.
+			expect(mockLayoutCaption).toHaveBeenCalledTimes(1);
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(1);
 		});
 

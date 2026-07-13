@@ -2,7 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath, getFontDisplayName } from "@core/fonts/font-config";
 import { extractFontNames, isGoogleFontUrl } from "@core/fonts/font-utils";
-import { isAliasReference } from "@core/timing/types";
+import { isAliasReference, sec, type Seconds } from "@core/timing/types";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichCaptionAssetSchema, type RichCaptionAsset, type ResolvedClip } from "@schemas";
 import {
@@ -38,15 +38,17 @@ export class RichCaptionPlayer extends Player {
 	private currentRender: Promise<void> | null = null; // serialises the async paint so captures await a finished frame
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
+	private fallbackText: pixi.Text | null = null;
 
 	private words: WordTiming[] = [];
 	private loadComplete: boolean = false;
 	private isPlaceholder = false;
 
 	private readonly fontRegistrationCache = new Map<string, Promise<boolean>>();
-	private lastRegisteredFontKey: string = "";
 	private pendingLayoutId: number = 0;
 	private resolvedPauseThreshold: number = 500;
+	private assetLoadInProgress = false;
+	private renderConfigurationKey: string | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		const { fit, ...configWithoutFit } = clipConfiguration;
@@ -78,56 +80,20 @@ export class RichCaptionPlayer extends Player {
 		return words;
 	}
 
-	public override async load(): Promise<void> {
-		await super.load();
-
-		const richCaptionAsset = this.clipConfiguration.asset as RichCaptionAsset;
-
-		try {
-			const validationResult = RichCaptionAssetSchema.safeParse(richCaptionAsset);
-			if (!validationResult.success) {
-				this.createFallbackGraphic("Invalid caption asset");
-				return;
-			}
-
-			let words: WordTiming[];
-			if (richCaptionAsset.src) {
-				if (isAliasReference(richCaptionAsset.src)) {
-					words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
-					this.isPlaceholder = true;
-					this.needsResolution = true;
-				} else {
-					words = await this.fetchAndParseSubtitle(richCaptionAsset.src);
-					this.resolvedPauseThreshold = 5;
-				}
-			} else {
-				words = ((richCaptionAsset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map((w: WordTiming) => ({
-					text: w.text,
-					start: w.start,
-					end: w.end,
-					confidence: w.confidence
-				}));
-			}
-
-			if (words.length === 0) {
-				this.createFallbackGraphic("No caption words found");
-				return;
-			}
-
-			if (words.length > HARD_WORD_LIMIT) {
-				this.createFallbackGraphic(`Word count (${words.length}) exceeds limit of ${HARD_WORD_LIMIT}`);
-				return;
-			}
-			if (words.length > SOFT_WORD_LIMIT) {
-				console.warn(`RichCaptionPlayer: ${words.length} words exceeds soft limit of ${SOFT_WORD_LIMIT}. Performance may degrade.`);
-			}
-
-			await this.buildRenderPipeline(richCaptionAsset, words);
-		} catch (error) {
-			console.error("RichCaptionPlayer load failed:", error);
-			this.cleanupResources();
-			this.createFallbackGraphic("Failed to load caption");
+	private static getWordsDuration(words: WordTiming[]): Seconds | null {
+		let maxEnd = Number.NEGATIVE_INFINITY;
+		for (const word of words) {
+			const end = Number(word.end);
+			if (Number.isFinite(end)) maxEnd = Math.max(maxEnd, end);
 		}
+		return Number.isFinite(maxEnd) ? sec((maxEnd + 500) / 1000) : null;
+	}
+
+	public override async load(): Promise<void> {
+		const mediaTimingRevision = this.beginMediaTimingLoad();
+		await super.load();
+		if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
+		await this.loadCurrentAsset(false, mediaTimingRevision);
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -152,126 +118,190 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	public override async reloadAsset(): Promise<void> {
+		await this.loadCurrentAsset(true);
+	}
+
+	private async loadCurrentAsset(propagateError: boolean, mediaTimingRevision = this.beginMediaTimingLoad()): Promise<void> {
+		if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
+		const pipelineRevision = this.beginPipelineBuild();
 		const asset = this.clipConfiguration.asset as RichCaptionAsset;
 
-		// When src is an alias reference, reset to placeholder if previously resolved
-		if (!asset.src || isAliasReference(asset.src)) {
-			if (this.loadComplete && !this.isPlaceholder) {
-				this.resolvedPauseThreshold = 500;
-				this.words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
-				this.isPlaceholder = true;
-				this.needsResolution = true;
-				await this.reconfigure();
+		// Re-loading the same unresolved alias only needs to publish its new base identity.
+		// Styling and length changes use reconfigure(), which preserves the placeholder pipeline.
+		if (asset.src && isAliasReference(asset.src) && this.loadComplete && this.isPlaceholder) {
+			this.assetLoadInProgress = false;
+			this.completeMediaTimingLoad(mediaTimingRevision, null);
+			return;
+		}
+
+		this.assetLoadInProgress = true;
+		let timingPublished = false;
+
+		try {
+			const validationResult = RichCaptionAssetSchema.safeParse(asset);
+			if (!validationResult.success) {
+				this.completeMediaTimingLoad(mediaTimingRevision, null);
+				this.replacePipelineWithFallback("Invalid caption asset");
+				return;
 			}
-			return;
+
+			const isPlaceholder = Boolean(asset.src && isAliasReference(asset.src));
+			const pauseThreshold = asset.src && !isPlaceholder ? 5 : 500;
+			let words: WordTiming[];
+			if (isPlaceholder) {
+				words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
+			} else if (asset.src) {
+				words = await this.fetchAndParseSubtitle(asset.src);
+			} else {
+				words = ((asset as RichCaptionAsset & { words?: WordTiming[] }).words ?? []).map(word => ({ ...word }));
+			}
+
+			if (!this.isPipelineBuildCurrent(pipelineRevision, mediaTimingRevision)) return;
+
+			if (words.length === 0) {
+				this.completeMediaTimingLoad(mediaTimingRevision, null);
+				this.replacePipelineWithFallback("No caption words found");
+				return;
+			}
+			if (words.length > HARD_WORD_LIMIT) {
+				this.completeMediaTimingLoad(mediaTimingRevision, null);
+				this.replacePipelineWithFallback(`Word count (${words.length}) exceeds limit of ${HARD_WORD_LIMIT}`);
+				return;
+			}
+			if (words.length > SOFT_WORD_LIMIT) {
+				console.warn(`RichCaptionPlayer: ${words.length} words exceeds soft limit of ${SOFT_WORD_LIMIT}. Performance may degrade.`);
+			}
+
+			this.completeMediaTimingLoad(mediaTimingRevision, isPlaceholder ? null : RichCaptionPlayer.getWordsDuration(words));
+			timingPublished = true;
+			await this.buildRenderPipeline(asset, words, {
+				pipelineRevision,
+				mediaTimingRevision,
+				isPlaceholder,
+				needsResolution: isPlaceholder,
+				pauseThreshold,
+				renderTimeMs: 0
+			});
+		} catch (error) {
+			if (!this.isPipelineBuildCurrent(pipelineRevision, mediaTimingRevision)) return;
+			if (!timingPublished) this.completeMediaTimingLoad(mediaTimingRevision, null);
+			this.replacePipelineWithFallback("Failed to load caption");
+			if (propagateError) throw error;
+			console.error("RichCaptionPlayer load failed:", error);
+		} finally {
+			if (this.isMediaTimingLoadCurrent(mediaTimingRevision)) this.assetLoadInProgress = false;
 		}
+	}
 
-		this.loadComplete = false;
+	private beginPipelineBuild(): number {
+		this.pendingLayoutId += 1;
+		return this.pendingLayoutId;
+	}
 
-		if (this.texture) {
-			this.texture.destroy();
-			this.texture = null;
-		}
-		if (this.sprite) {
-			this.sprite.destroy();
-			this.sprite = null;
-		}
-		this.captionLayout = null;
-		this.validatedAsset = null;
-		this.generatorConfig = null;
-		this.canvas = null;
-		this.painter = null;
-
-		this.isPlaceholder = false;
-		this.needsResolution = false;
-
-		const words = await this.fetchAndParseSubtitle(asset.src);
-		this.resolvedPauseThreshold = 5;
-
-		if (words.length === 0) {
-			this.createFallbackGraphic("No caption words found");
-			return;
-		}
-
-		await this.buildRenderPipeline(asset, words);
+	private isPipelineBuildCurrent(pipelineRevision: number, mediaTimingRevision?: number): boolean {
+		return pipelineRevision === this.pendingLayoutId && (mediaTimingRevision === undefined || this.isMediaTimingLoadCurrent(mediaTimingRevision));
 	}
 
 	public override reconfigureAfterRestore(): void {
 		super.reconfigureAfterRestore();
+		if (this.loadComplete && this.renderConfigurationKey === this.getRenderConfigurationKey()) return;
 		this.reconfigure();
 	}
 
+	private getRenderConfigurationKey(): string {
+		const { width, height } = this.getSize();
+		return JSON.stringify([this.clipConfiguration.asset, width, height, this.isPlaceholder ? this.getLength() : null]);
+	}
+
 	private async reconfigure(): Promise<void> {
-		if (!this.loadComplete || !this.layoutEngine || !this.canvas || !this.painter) {
+		if (this.assetLoadInProgress || !this.loadComplete || !this.layoutEngine || !this.canvas || !this.painter) {
 			return;
 		}
 
+		const pipelineRevision = this.beginPipelineBuild();
 		try {
 			const asset = this.clipConfiguration.asset as RichCaptionAsset;
-
-			// Regenerate placeholder words when clip length changes (e.g. "end" re-resolved after video probed)
-			if (this.isPlaceholder) {
-				this.words = RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000);
-			}
-
-			const fontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
-			if (fontKey !== this.lastRegisteredFontKey) {
-				await this.registerFonts(asset);
-				this.lastRegisteredFontKey = fontKey;
-			}
-
-			const canvasPayload = this.buildCanvasPayload(asset, this.words);
-			const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
-			if (!canvasValidation.success) {
-				console.error("Caption reconfigure validation failed:", canvasValidation.error?.issues);
-				return;
-			}
-			this.validatedAsset = canvasValidation.data;
-
-			const { width, height } = this.getSize();
-			const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
-			this.captionLayout = await this.layoutEngine.layoutCaption(this.words, layoutConfig);
-
-			this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
-
-			this.renderFrameSync(this.getPlaybackTime() * 1000);
+			const words = this.isPlaceholder ? RichCaptionPlayer.createPlaceholderWords(this.getLength() * 1000) : this.words.map(word => ({ ...word }));
+			await this.buildRenderPipeline(asset, words, {
+				pipelineRevision,
+				isPlaceholder: this.isPlaceholder,
+				needsResolution: this.needsResolution,
+				pauseThreshold: this.resolvedPauseThreshold,
+				renderTimeMs: this.getPlaybackTime() * 1000
+			});
 		} catch (error) {
-			console.error("RichCaptionPlayer reconfigure failed:", error);
+			if (this.isPipelineBuildCurrent(pipelineRevision)) {
+				console.error("RichCaptionPlayer reconfigure failed:", error);
+			}
 		}
 	}
 
-	private async buildRenderPipeline(asset: RichCaptionAsset, words: WordTiming[]): Promise<void> {
-		const canvasPayload = this.buildCanvasPayload(asset, words);
+	private async buildRenderPipeline(
+		asset: RichCaptionAsset,
+		words: WordTiming[],
+		options: {
+			pipelineRevision: number;
+			mediaTimingRevision?: number;
+			isPlaceholder: boolean;
+			needsResolution: boolean;
+			pauseThreshold: number;
+			renderTimeMs: number;
+		}
+	): Promise<void> {
+		if (!this.isPipelineBuildCurrent(options.pipelineRevision, options.mediaTimingRevision)) return;
+		const { width, height } = this.getSize();
+		const canvasPayload = this.buildCanvasPayload(asset, words, options.pauseThreshold, { width, height });
 		const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
 		if (!canvasValidation.success) {
-			console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
-			this.createFallbackGraphic("Caption validation failed");
+			if (this.isPipelineBuildCurrent(options.pipelineRevision, options.mediaTimingRevision)) {
+				console.error("Canvas caption validation failed:", canvasValidation.error?.issues ?? canvasValidation.error);
+				this.replacePipelineWithFallback("Caption validation failed");
+			}
 			return;
 		}
-		this.validatedAsset = canvasValidation.data;
-		this.words = words;
 
-		this.fontRegistry = await FontRegistry.getSharedInstance();
-		await this.registerFonts(asset);
-		this.lastRegisteredFontKey = `${asset.font?.family ?? "Roboto"}|${asset.font?.weight ?? 400}`;
+		let fontRegistry: FontRegistry | null = null;
+		let committed = false;
+		try {
+			fontRegistry = await FontRegistry.getSharedInstance();
+			if (!this.isPipelineBuildCurrent(options.pipelineRevision, options.mediaTimingRevision)) return;
 
-		this.layoutEngine = new CaptionLayoutEngine(this.fontRegistry);
+			await this.registerFonts(asset, fontRegistry);
+			if (!this.isPipelineBuildCurrent(options.pipelineRevision, options.mediaTimingRevision)) return;
 
-		const { width, height } = this.getSize();
-		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
+			const layoutEngine = new CaptionLayoutEngine(fontRegistry);
+			const layoutConfig = buildCaptionLayoutConfig(canvasValidation.data, width, height);
+			const captionLayout = await layoutEngine.layoutCaption(words, layoutConfig);
+			if (!this.isPipelineBuildCurrent(options.pipelineRevision, options.mediaTimingRevision)) return;
 
-		this.captionLayout = await this.layoutEngine.layoutCaption(words, layoutConfig);
+			const canvas = document.createElement("canvas");
+			canvas.width = width;
+			canvas.height = height;
+			const painter = createWebPainter(canvas);
 
-		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+			this.destroyRenderedOutput();
+			const previousRegistry = this.fontRegistry;
+			this.fontRegistry = fontRegistry;
+			this.layoutEngine = layoutEngine;
+			this.captionLayout = captionLayout;
+			this.validatedAsset = canvasValidation.data;
+			this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
+			this.canvas = canvas;
+			this.painter = painter;
+			this.words = words;
+			this.isPlaceholder = options.isPlaceholder;
+			this.needsResolution = options.needsResolution;
+			this.resolvedPauseThreshold = options.pauseThreshold;
+			this.loadComplete = true;
+			this.renderConfigurationKey = this.getRenderConfigurationKey();
+			committed = true;
+			this.releaseFontRegistry(previousRegistry);
 
-		this.canvas = document.createElement("canvas");
-		this.canvas.width = width;
-		this.canvas.height = height;
-		this.painter = createWebPainter(this.canvas);
-
-		this.renderFrameSync(0);
-		this.configureKeyframes();
-		this.loadComplete = true;
+			this.renderFrameSync(options.renderTimeMs);
+			this.configureKeyframes();
+		} finally {
+			if (fontRegistry && !committed) this.releaseFontRegistry(fontRegistry);
+		}
 	}
 
 	/**
@@ -282,10 +312,12 @@ export class RichCaptionPlayer extends Player {
 		while (this.currentRender) {
 			await this.currentRender;
 		}
-		this.currentRender = this.paintFrame(timeMs).finally(() => {
-			this.currentRender = null;
+		const pipelineRevision = this.pendingLayoutId;
+		const render = this.paintFrame(timeMs, pipelineRevision).finally(() => {
+			if (this.currentRender === render) this.currentRender = null;
 		});
-		await this.currentRender;
+		this.currentRender = render;
+		await render;
 	}
 
 	/** Fire-and-forget render for the live tick and lifecycle hooks; the texture updates when the paint settles. */
@@ -298,26 +330,29 @@ export class RichCaptionPlayer extends Player {
 	 * asynchronously), so the Pixi texture is only updated once the paint has finished — otherwise a
 	 * snapshot captures a half-drawn canvas (a single glyph).
 	 */
-	private async paintFrame(timeMs: number): Promise<void> {
+	private async paintFrame(timeMs: number, pipelineRevision: number): Promise<void> {
+		if (!this.isPipelineBuildCurrent(pipelineRevision)) return;
 		if (!this.layoutEngine || !this.captionLayout || !this.canvas || !this.painter || !this.validatedAsset || !this.generatorConfig) {
 			return;
 		}
+		const { layoutEngine, captionLayout, canvas, painter, validatedAsset, generatorConfig } = this;
 
 		try {
-			const { ops } = generateRichCaptionFrame(this.validatedAsset, this.captionLayout, timeMs, this.layoutEngine, this.generatorConfig);
+			const { ops } = generateRichCaptionFrame(validatedAsset, captionLayout, timeMs, layoutEngine, generatorConfig);
 
 			if (ops.length === 0 && this.sprite) {
-				this.sprite.visible = false;
+				if (this.isPipelineBuildCurrent(pipelineRevision)) this.sprite.visible = false;
 				return;
 			}
 
-			const ctx = this.canvas.getContext("2d");
-			if (ctx) ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+			const ctx = canvas.getContext("2d");
+			if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			await this.painter.render(ops);
+			await painter.render(ops);
+			if (!this.isPipelineBuildCurrent(pipelineRevision)) return;
 
 			if (!this.texture) {
-				this.texture = pixi.Texture.from(this.canvas);
+				this.texture = pixi.Texture.from(canvas);
 			} else {
 				this.texture.source.update();
 			}
@@ -367,9 +402,7 @@ export class RichCaptionPlayer extends Player {
 		});
 	}
 
-	private async registerFonts(asset: RichCaptionAsset): Promise<void> {
-		if (!this.fontRegistry) return;
-
+	private async registerFonts(asset: RichCaptionAsset, fontRegistry: FontRegistry): Promise<void> {
 		const family = asset.font?.family ?? "Roboto";
 		const assetWeight = asset.font?.weight ? parseInt(String(asset.font.weight), 10) || 400 : 400;
 
@@ -379,19 +412,18 @@ export class RichCaptionPlayer extends Player {
 
 		if (resolution.matched) {
 			for (const font of resolution.fonts) {
-				if (font.src) await this.registerFontFromUrl(font.src, font.family, parseInt(font.weight, 10) || 400);
+				if (font.src) await this.registerFontFromUrl(fontRegistry, font.src, font.family, parseInt(font.weight, 10) || 400);
 			}
 			return;
 		}
 
 		const resolved = this.resolveFontWithWeight(family, assetWeight);
 		if (resolved) {
-			await this.registerFontFromUrl(resolved.url, resolved.baseFontFamily, resolved.fontWeight);
+			await this.registerFontFromUrl(fontRegistry, resolved.url, resolved.baseFontFamily, resolved.fontWeight);
 		}
 	}
 
-	private async registerFontFromUrl(url: string, family: string, weight: number): Promise<boolean> {
-		if (!this.fontRegistry) return false;
+	private async registerFontFromUrl(fontRegistry: FontRegistry, url: string, family: string, weight: number): Promise<boolean> {
 		const cacheKey = `${url}|${family}|${weight}`;
 		const cached = this.fontRegistrationCache.get(cacheKey);
 		if (cached) return cached;
@@ -401,7 +433,7 @@ export class RichCaptionPlayer extends Player {
 				const response = await fetch(url);
 				if (!response.ok) return false;
 				const bytes = await response.arrayBuffer();
-				await this.fontRegistry!.registerFromBytes(bytes, { family, weight: weight.toString() });
+				await fontRegistry.registerFromBytes(bytes, { family, weight: weight.toString() });
 
 				try {
 					const fontFace = new FontFace(family, bytes, {
@@ -514,8 +546,13 @@ export class RichCaptionPlayer extends Player {
 		return [];
 	}
 
-	private buildCanvasPayload(asset: RichCaptionAsset, words: WordTiming[]): Record<string, unknown> {
-		const { width, height } = this.getSize();
+	private buildCanvasPayload(
+		asset: RichCaptionAsset,
+		words: WordTiming[],
+		pauseThreshold: number,
+		size: { width: number; height: number }
+	): Record<string, unknown> {
+		const { width, height } = size;
 		// Use the same resolution as registration, so the rendered family matches the registered face.
 		const resolution = this.resolveFontsForAsset(asset);
 		const resolvedFamily = resolution.matched ? resolution.resolvedFamily : getFontDisplayName(asset.font?.family ?? "Roboto");
@@ -541,7 +578,7 @@ export class RichCaptionPlayer extends Player {
 			style: asset.style,
 			animation: asset.animation,
 			align: asset.align,
-			pauseThreshold: this.resolvedPauseThreshold
+			pauseThreshold
 		};
 
 		for (const [key, value] of Object.entries(optionalFields)) {
@@ -569,23 +606,54 @@ export class RichCaptionPlayer extends Player {
 			wordWrapWidth: width
 		});
 
-		const fallbackText = new pixi.Text(message, style);
-		fallbackText.anchor.set(0.5, 0.5);
-		fallbackText.x = width / 2;
-		fallbackText.y = height / 2;
+		this.fallbackText = new pixi.Text(message, style);
+		this.fallbackText.anchor.set(0.5, 0.5);
+		this.fallbackText.x = width / 2;
+		this.fallbackText.y = height / 2;
 
-		this.contentContainer.addChild(fallbackText);
+		this.contentContainer.addChild(this.fallbackText);
+	}
+
+	private destroyRenderedOutput(): void {
+		if (this.sprite) {
+			this.contentContainer.removeChild(this.sprite);
+			this.sprite.destroy();
+			this.sprite = null;
+		}
+		this.texture?.destroy();
+		this.texture = null;
+
+		if (this.fallbackText) {
+			this.contentContainer.removeChild(this.fallbackText);
+			this.fallbackText.destroy();
+			this.fallbackText = null;
+		}
+	}
+
+	private replacePipelineWithFallback(message: string): void {
+		this.beginPipelineBuild();
+		this.loadComplete = false;
+		this.destroyRenderedOutput();
+		this.cleanupResources();
+		this.words = [];
+		this.isPlaceholder = false;
+		this.needsResolution = false;
+		this.createFallbackGraphic(message);
+	}
+
+	private releaseFontRegistry(fontRegistry: FontRegistry | null): void {
+		if (!fontRegistry) return;
+		try {
+			fontRegistry.release();
+		} catch (error) {
+			console.warn("Error releasing font registry:", error);
+		}
 	}
 
 	private cleanupResources(): void {
-		if (this.fontRegistry) {
-			try {
-				this.fontRegistry.release();
-			} catch (e) {
-				console.warn("Error releasing font registry:", e);
-			}
-			this.fontRegistry = null;
-		}
+		this.releaseFontRegistry(this.fontRegistry);
+		this.fontRegistry = null;
+		this.fontRegistrationCache.clear();
 
 		this.layoutEngine = null;
 		this.captionLayout = null;
@@ -593,23 +661,16 @@ export class RichCaptionPlayer extends Player {
 		this.generatorConfig = null;
 		this.canvas = null;
 		this.painter = null;
+		this.renderConfigurationKey = null;
 	}
 
 	public override dispose(): void {
-		super.dispose();
+		this.beginPipelineBuild();
 		this.loadComplete = false;
-
-		if (this.texture) {
-			this.texture.destroy();
-		}
-		this.texture = null;
-
-		if (this.sprite) {
-			this.sprite.destroy();
-			this.sprite = null;
-		}
-
+		this.assetLoadInProgress = false;
+		this.destroyRenderedOutput();
 		this.cleanupResources();
+		super.dispose();
 	}
 
 	public override getSize(): Size {
@@ -639,66 +700,7 @@ export class RichCaptionPlayer extends Player {
 	protected override onDimensionsChanged(): void {
 		if (this.words.length === 0) return;
 
-		this.rebuildForCurrentSize();
-	}
-
-	private async rebuildForCurrentSize(): Promise<void> {
-		const currentTimeMs = this.getPlaybackTime() * 1000;
-
-		if (this.texture) {
-			this.texture.destroy();
-			this.texture = null;
-		}
-		if (this.sprite) {
-			this.contentContainer.removeChild(this.sprite);
-			this.sprite.destroy();
-			this.sprite = null;
-		}
-		if (this.contentContainer.mask) {
-			const { mask } = this.contentContainer;
-			this.contentContainer.mask = null;
-			if (mask instanceof pixi.Graphics) {
-				mask.destroy();
-			}
-		}
-
-		this.captionLayout = null;
-		this.validatedAsset = null;
-		this.generatorConfig = null;
-		this.canvas = null;
-		this.painter = null;
-
-		const { width, height } = this.getSize();
-		const asset = this.clipConfiguration.asset as RichCaptionAsset;
-
-		const canvasPayload = this.buildCanvasPayload(asset, this.words);
-		const canvasValidation = CanvasRichCaptionAssetSchema.safeParse(canvasPayload);
-		if (!canvasValidation.success) {
-			return;
-		}
-		this.validatedAsset = canvasValidation.data;
-
-		this.generatorConfig = createDefaultGeneratorConfig(width, height, 1);
-
-		this.canvas = document.createElement("canvas");
-		this.canvas.width = width;
-		this.canvas.height = height;
-		this.painter = createWebPainter(this.canvas);
-
-		if (!this.layoutEngine) return;
-
-		const layoutConfig = buildCaptionLayoutConfig(this.validatedAsset, width, height);
-
-		this.pendingLayoutId += 1;
-		const layoutId = this.pendingLayoutId;
-
-		const layout = await this.layoutEngine.layoutCaption(this.words, layoutConfig);
-
-		if (layoutId !== this.pendingLayoutId) return;
-
-		this.captionLayout = layout;
-
-		this.renderFrameSync(currentTimeMs);
+		this.reconfigure();
 	}
 
 	public override supportsEdgeResize(): boolean {

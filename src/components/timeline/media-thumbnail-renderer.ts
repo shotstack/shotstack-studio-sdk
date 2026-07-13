@@ -8,6 +8,7 @@
  * - Image: Loads image directly and uses original URL
  */
 
+import type { GifThumbnail } from "@loaders/asset-loader";
 import type { ResolvedClip, ImageAsset, VideoAsset } from "@schemas";
 
 import type { ThumbnailGenerator } from "./thumbnail-generator";
@@ -26,6 +27,7 @@ const THUMBNAIL_HEIGHT = 72;
 export class MediaThumbnailRenderer implements ClipRenderer {
 	private readonly generator: ThumbnailGenerator;
 	private readonly onRendered: () => void;
+	private readonly getGifThumbnail?: (src: string) => Promise<GifThumbnail>;
 
 	// Track state per clip identity (src|trim|start) - NOT by element reference
 	// This prevents state aliasing when elements are recycled or clips move
@@ -33,9 +35,10 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 
 	private appliedToElement = new WeakMap<HTMLElement, string>();
 
-	constructor(generator: ThumbnailGenerator, onRendered: () => void = () => {}) {
+	constructor(generator: ThumbnailGenerator, onRendered: () => void = () => {}, getGifThumbnail?: (src: string) => Promise<GifThumbnail>) {
 		this.generator = generator;
 		this.onRendered = onRendered;
+		this.getGifThumbnail = getGifThumbnail;
 	}
 
 	/**
@@ -125,7 +128,6 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	private async generateAndApplyVideo(element: HTMLElement, asset: VideoAsset, clipKey: string): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(clipKey, state);
-
 		if (!asset.src) {
 			state.loading = false;
 			state.failed = true;
@@ -161,7 +163,6 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 	private async generateAndApplyImage(element: HTMLElement, asset: ImageAsset, clipKey: string): Promise<void> {
 		const state: ThumbnailState = { loading: true, thumbnails: [], thumbnailWidth: 0, failed: false };
 		this.clipStates.set(clipKey, state);
-
 		if (!asset.src) {
 			state.loading = false;
 			state.failed = true;
@@ -170,7 +171,19 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 		}
 
 		try {
-			const result = await this.loadImageThumbnail(asset.src);
+			const gifThumbnail = await this.getGifThumbnail?.(asset.src);
+			let result: { url: string; thumbnailWidth: number } | null;
+			if (gifThumbnail?.isGif) {
+				result =
+					gifThumbnail.dataUrl && gifThumbnail.height > 0
+						? {
+								url: gifThumbnail.dataUrl,
+								thumbnailWidth: Math.round(THUMBNAIL_HEIGHT * (gifThumbnail.width / gifThumbnail.height))
+							}
+						: null;
+			} else {
+				result = await this.loadImageThumbnail(asset.src);
+			}
 
 			// Check if element is still in DOM (might have been disposed)
 			if (!element.isConnected) return;

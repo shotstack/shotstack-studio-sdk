@@ -31,7 +31,7 @@ import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-set
 import { SelectionManager } from "@core/selection-manager";
 import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
 import { deepMerge, nextFrame, setNestedValue } from "@core/shared/utils";
-import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
+import { calculateTimelineEnd, mediaTimingMatchesAsset, resolveAutoLength } from "@core/timing/resolver";
 import { type Milliseconds, type ResolutionContext, type Seconds, sec, isAliasReference } from "@core/timing/types";
 import { TimingManager } from "@core/timing-manager";
 import type { Size } from "@layouts/geometry";
@@ -58,7 +58,7 @@ import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
 import { PlayerReconciler } from "./player-reconciler";
-import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
+import { resolve as resolveDocument, resolveClip as resolveClipById, type ResolveContext, type SingleClipContext } from "./resolver";
 import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-validation";
 
 /** Internal type for clips with hydrated IDs during edit updates */
@@ -121,6 +121,8 @@ export class Edit {
 	private isBatchingEvents: boolean = false;
 	private isExporting: boolean = false;
 	private lastResolved: ResolvedEdit | null = null;
+	private pendingAutoLengthPlayers = new Set<Player>();
+	private autoLengthResolutionPromise: Promise<void> | null = null;
 
 	/**
 	 * Create an Edit instance from a template configuration.
@@ -222,13 +224,17 @@ export class Edit {
 			}
 		}
 
-		// 9. Resolve async timing (auto-length for videos, etc.)
+		// 9. Re-resolve with intrinsic metadata learned while Players loaded. This
+		// keeps aliases, auto starts, end lengths, and the resolved cache aligned.
+		this.resolve();
+
+		// 10. Resolve remaining async timing (auto-length for videos, etc.)
 		await this.timingManager.resolveAllTiming();
 
-		// 10. Update total duration
+		// 11. Update total duration
 		this.updateTotalDuration();
 
-		// 11. Load soundtrack if present
+		// 12. Load soundtrack if present
 		if (parsedEdit.timeline.soundtrack) {
 			await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
 		}
@@ -496,11 +502,23 @@ export class Edit {
 	 */
 	public getResolvedEdit(): ResolvedEdit {
 		if (!this.lastResolved) {
-			this.lastResolved = resolveDocument(this.document, {
-				mergeFields: this.mergeFieldService
-			});
+			this.lastResolved = resolveDocument(this.document, this.getResolverContext());
 		}
 		return this.lastResolved;
+	}
+
+	private getResolverContext(): ResolveContext {
+		const mediaTiming = new Map<string, ReturnType<Player["getMediaTimingState"]>>();
+		for (const [clipId, player] of this.playerByClipId) {
+			if (player.getTimingIntent().length === "auto") {
+				mediaTiming.set(clipId, player.getMediaTimingState());
+			}
+		}
+
+		return {
+			mergeFields: this.mergeFieldService,
+			mediaTimingByClipId: mediaTiming
+		};
 	}
 
 	/**
@@ -553,9 +571,7 @@ export class Edit {
 	/** @internal Resolve the document to a ResolvedEdit and emit the Resolved event.
 	 */
 	public resolve(): ResolvedEdit {
-		this.lastResolved = resolveDocument(this.document, {
-			mergeFields: this.mergeFieldService
-		});
+		this.lastResolved = resolveDocument(this.document, this.getResolverContext());
 
 		// Emit event for components to react
 		this.internalEvents.emit(InternalEvent.Resolved, { edit: this.lastResolved });
@@ -603,7 +619,8 @@ export class Edit {
 		const context: SingleClipContext = {
 			mergeFields: this.mergeFieldService,
 			previousClipEnd,
-			cachedTimelineEnd: this.timingManager.getTimelineEnd()
+			cachedTimelineEnd: this.timingManager.getTimelineEnd(),
+			mediaTiming: player.getMediaTimingState()
 		};
 
 		// Resolve just this one clip
@@ -1691,23 +1708,23 @@ export class Edit {
 				// 2. Timeline end excluding "end" clips (for length: "end")
 				const timelineEnd = calculateTimelineEnd(this.tracks);
 
-				// 3. Intrinsic duration if available (for length: "auto")
-				// Note: This may be null if asset metadata hasn't loaded yet
-				let intrinsicDuration: Seconds | null = null;
+				// 3. Final asset-aware length if loaded metadata is available.
+				let autoLength: Seconds | null = null;
 				const player = this.getClipAt(trackIdx, clipIdx);
 				if (player) {
 					const intent = player.getTimingIntent();
-					// Only lookup intrinsic duration if the clip uses "auto" length
 					if (intent.length === "auto") {
-						// The player's resolved length IS the intrinsic duration after async load
-						intrinsicDuration = player.getLength();
+						const state = player.getMediaTimingState();
+						if (state.status === "ready" && mediaTimingMatchesAsset(state, player.clipConfiguration.asset)) {
+							autoLength = resolveAutoLength(player.clipConfiguration.asset, state.duration);
+						}
 					}
 				}
 
 				return {
 					previousClipEnd,
 					timelineEnd,
-					intrinsicDuration
+					autoLength
 				};
 			},
 			resolve: () => this.resolve(),
@@ -1855,12 +1872,12 @@ export class Edit {
 	}
 
 	private unloadClipAssets(clip: Player): void {
-		const { asset } = clip.clipConfiguration;
-		if (asset && "src" in asset && typeof asset.src === "string") {
-			const safeToUnload = this.assetLoader.decrementRef(asset.src);
-			if (safeToUnload && pixi.Assets.cache.has(asset.src)) {
-				pixi.Assets.unload(asset.src);
-			}
+		const identifier = clip.getLoadedResourceIdentifier();
+		if (!identifier) return;
+		if (typeof this.assetLoader.release === "function") {
+			this.assetLoader.release(identifier);
+		} else if (this.assetLoader.decrementRef(identifier) && pixi.Assets.cache.has(identifier)) {
+			pixi.Assets.unload(identifier);
 		}
 	}
 
@@ -1906,28 +1923,39 @@ export class Edit {
 	}
 
 	/** @internal */
-	public async resolveClipAutoLength(clip: Player): Promise<void> {
-		const intent = clip.getTimingIntent();
-		if (intent.length !== "auto") return;
+	public resolveClipAutoLength(clip: Player): Promise<void> {
+		if (clip.getTimingIntent().length !== "auto") return Promise.resolve();
+		this.pendingAutoLengthPlayers.add(clip);
 
-		// Find clip indices first (needed if start is also auto)
-		const indices = this.findClipIndices(clip);
-
-		// Resolve auto start if needed, otherwise use current start
-		let resolvedStart = clip.getStart();
-		if (intent.start === "auto" && indices) {
-			resolvedStart = resolveAutoStart(indices.trackIndex, indices.clipIndex, this.tracks);
+		if (!this.autoLengthResolutionPromise) {
+			this.autoLengthResolutionPromise = Promise.resolve()
+				.then(() => this.flushAutoLengthResolutions())
+				.finally(() => {
+					this.autoLengthResolutionPromise = null;
+				});
 		}
 
-		const newLength = await resolveAutoLength(clip.clipConfiguration.asset);
-		clip.setResolvedTiming({
-			start: resolvedStart,
-			length: newLength
-		});
-		clip.reconfigureAfterRestore();
+		return this.autoLengthResolutionPromise;
+	}
 
-		if (indices) {
-			this.propagateTimingChanges(indices.trackIndex, indices.clipIndex);
+	private async flushAutoLengthResolutions(): Promise<void> {
+		while (this.pendingAutoLengthPlayers.size > 0) {
+			const batch = [...this.pendingAutoLengthPlayers];
+			const pendingPlayers = batch.filter(player => player.getMediaTimingState().status === "pending");
+			await Promise.all(pendingPlayers.map(player => this.playerReconciler.whenPlayerSettled(player)));
+			for (const player of batch) this.pendingAutoLengthPlayers.delete(player);
+
+			const currentPlayers = batch.filter(
+				player =>
+					player.getTimingIntent().length === "auto" &&
+					(!player.clipId || this.playerByClipId.get(player.clipId) === player) &&
+					this.findClipIndices(player) !== null
+			);
+			if (currentPlayers.length > 0) {
+				const indices = this.findClipIndices(currentPlayers[0]);
+				this.resolve();
+				if (indices) this.propagateTimingChanges(indices.trackIndex, indices.clipIndex);
+			}
 		}
 	}
 

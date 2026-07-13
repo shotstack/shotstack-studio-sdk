@@ -14,6 +14,7 @@ import type { ResolvedClip, ResolvedEdit } from "@schemas";
 import type { Edit } from "./edit-session";
 import { EditEvent, InternalEvent } from "./events/edit-events";
 import { isPendingAiAsset } from "./shared/ai-asset-utils";
+import { assetTimingIdentitiesEqual, getAssetTimingIdentity } from "./timing/resolver";
 import type { Seconds } from "./timing/types";
 
 export interface ReconcileResult {
@@ -39,6 +40,8 @@ export class PlayerReconciler {
 
 	/** In-flight player load promises, so off-playback captures (captureFrame) can await asset readiness. */
 	private readonly inFlightLoads = new Set<Promise<void>>();
+	private readonly playerLoads = new WeakMap<Player, Set<Promise<void>>>();
+	private isInitialReconcile = false;
 
 	constructor(private readonly edit: Edit) {
 		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.onResolved);
@@ -59,9 +62,14 @@ export class PlayerReconciler {
 	 * @returns Promise that resolves when all players are loaded
 	 */
 	public async reconcileInitial(resolved: ResolvedEdit): Promise<ReconcileResult> {
-		const result = this.reconcile(resolved);
-		await Promise.all(result.pendingLoads);
-		return result;
+		this.isInitialReconcile = true;
+		try {
+			const result = this.reconcile(resolved);
+			await Promise.all(result.pendingLoads);
+			return result;
+		} finally {
+			this.isInitialReconcile = false;
+		}
 	}
 
 	/**
@@ -73,6 +81,13 @@ export class PlayerReconciler {
 	public async whenSettled(): Promise<void> {
 		while (this.inFlightLoads.size > 0) {
 			await Promise.allSettled([...this.inFlightLoads]);
+		}
+	}
+
+	/** Wait for the current initial load or asset reload for one Player. */
+	public async whenPlayerSettled(player: Player): Promise<void> {
+		while (this.playerLoads.has(player)) {
+			await Promise.allSettled([...(this.playerLoads.get(player) ?? [])]);
 		}
 	}
 
@@ -130,7 +145,7 @@ export class PlayerReconciler {
 							}
 						} else if (this.enableCreation) {
 							// Create new Player
-							this.createPlayer(clip, clipId, trackIndex, clipIndex);
+							pendingLoads.push(this.createPlayer(clip, clipId, trackIndex, clipIndex));
 							result.created.push(clipId);
 						}
 					}
@@ -247,9 +262,7 @@ export class PlayerReconciler {
 				});
 			});
 
-		// Track the load so off-playback captures can await asset readiness (see whenSettled()).
-		this.inFlightLoads.add(loadPromise);
-		return loadPromise.finally(() => this.inFlightLoads.delete(loadPromise));
+		return this.trackPlayerLoad(player, loadPromise);
 	}
 
 	/**
@@ -358,6 +371,10 @@ export class PlayerReconciler {
 	private updateAsset(player: Player, newAsset: unknown): void {
 		const oldAsset = player.clipConfiguration.asset;
 		const assetType = (newAsset as { type?: string })?.type;
+		const intrinsicContentChanged = !assetTimingIdentitiesEqual(
+			getAssetTimingIdentity(oldAsset),
+			getAssetTimingIdentity(newAsset as ResolvedClip["asset"])
+		);
 
 		// eslint-disable-next-line no-param-reassign -- Intentional player state update
 		player.clipConfiguration.asset = newAsset as ResolvedClip["asset"];
@@ -366,13 +383,11 @@ export class PlayerReconciler {
 		if (assetType === "html5") {
 			needsReload = JSON.stringify(oldAsset) !== JSON.stringify(newAsset);
 		} else {
-			const oldSrc = (oldAsset as { src?: string })?.src;
-			const newSrc = (newAsset as { src?: string })?.src;
-			needsReload = oldSrc !== newSrc;
+			needsReload = intrinsicContentChanged;
 		}
 
 		if (needsReload && player.reloadAsset) {
-			player
+			const reloadPromise = player
 				.reloadAsset()
 				.then(() => {
 					player.reconfigureAfterRestore();
@@ -380,9 +395,41 @@ export class PlayerReconciler {
 				.catch(error => {
 					console.error("Failed to reload asset:", error);
 				});
+			this.trackPlayerLoad(player, reloadPromise);
 		} else {
 			player.reconfigureAfterRestore();
 		}
+	}
+
+	private trackPlayerLoad(player: Player, loadPromise: Promise<void>): Promise<void> {
+		this.inFlightLoads.add(loadPromise);
+		let loads = this.playerLoads.get(player);
+		if (!loads) {
+			loads = new Set();
+			this.playerLoads.set(player, loads);
+		}
+		loads.add(loadPromise);
+
+		const cleanup = (): void => {
+			this.inFlightLoads.delete(loadPromise);
+			const currentLoads = this.playerLoads.get(player);
+			currentLoads?.delete(loadPromise);
+			if (currentLoads?.size === 0) {
+				this.playerLoads.delete(player);
+				const currentPlayer = player.clipId ? this.edit.getPlayerMap().get(player.clipId) : null;
+				if (!this.isInitialReconcile && currentPlayer === player && player.getTimingIntent().length === "auto") {
+					queueMicrotask(() => {
+						if (player.clipId && this.edit.getPlayerMap().get(player.clipId) === player) {
+							this.edit.resolveClipAutoLength(player).catch(error => {
+								console.error("Failed to resolve auto clip timing:", error);
+							});
+						}
+					});
+				}
+			}
+		};
+		loadPromise.then(cleanup, cleanup);
+		return loadPromise;
 	}
 
 	/**

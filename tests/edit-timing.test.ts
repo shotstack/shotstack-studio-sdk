@@ -9,14 +9,8 @@ import { Edit } from "@core/edit-session";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { ResolvedClip } from "@schemas";
-import { resolveAutoStart, resolveAutoLength, resolveEndLength, calculateTimelineEnd } from "@core/timing/resolver";
+import { calculateTimelineEnd, getAssetTimingIdentity, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { sec } from "@core/timing/types";
-
-// Mock probeMediaDuration since document.createElement doesn't work in Node
-jest.mock("@core/timing/resolver", () => ({
-	...jest.requireActual("@core/timing/resolver"),
-	probeMediaDuration: jest.fn().mockResolvedValue(5.0) // 5 seconds
-}));
 
 // Mock pixi-filters (must be before pixi.js since it extends pixi classes)
 jest.mock("pixi-filters", () => ({
@@ -189,6 +183,8 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 			};
 		},
 		getResolvedTiming: () => ({ ...resolvedTiming }),
+		getMediaTimingState: () => ({ status: "ready", asset: getAssetTimingIdentity(config.asset), duration: null }),
+		getLoadedResourceIdentifier: () => ("src" in config.asset ? config.asset.src : null),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
 			// Sync clipConfiguration to match real Player behavior (Option B)
@@ -380,25 +376,25 @@ describe("Timing Resolver Functions", () => {
 
 	describe("resolveEndLength()", () => {
 		it("returns timeline end minus clip start", () => {
-			const result = resolveEndLength(sec(2), sec(10));
+			const result = resolveEndLength(sec(10), sec(2));
 
 			expect(result).toBe(8);
 		});
 
-		it("never returns negative value", () => {
-			const result = resolveEndLength(sec(15), sec(10));
+		it("never returns a negative duration", () => {
+			const result = resolveEndLength(sec(10), sec(15));
 
 			expect(result).toBe(0);
 		});
 
-		it("returns 0 when clip starts at timeline end", () => {
+		it("returns zero when clip starts at timeline end", () => {
 			const result = resolveEndLength(sec(10), sec(10));
 
 			expect(result).toBe(0);
 		});
 
 		it("handles clip starting at 0", () => {
-			const result = resolveEndLength(sec(0), sec(5));
+			const result = resolveEndLength(sec(5), sec(0));
 
 			expect(result).toBe(5);
 		});

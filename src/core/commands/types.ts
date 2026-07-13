@@ -108,7 +108,7 @@ export type CommandContext = {
 	 *
 	 * @param trackIdx - Track index
 	 * @param clipIdx - Clip index on that track
-	 * @returns Context with previousClipEnd, timelineEnd, intrinsicDuration
+	 * @returns Context with previousClipEnd, timelineEnd, and canonical auto length
 	 */
 	buildResolutionContext(trackIdx: number, clipIdx: number): ResolutionContext;
 

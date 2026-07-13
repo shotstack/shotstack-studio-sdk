@@ -291,6 +291,9 @@ const checkPackageExports = () => {
 			}
 		}
 	}
+	if (!packageJson.files?.includes("THIRD_PARTY_NOTICES")) {
+		errors.push("THIRD_PARTY_NOTICES is not included in the published package.");
+	}
 
 	if (errors.length > 0) {
 		failWithDetails("package.json exports contract", errors);
@@ -335,6 +338,23 @@ const checkUmdGlobalMappings = () => {
 		failWithDetails("UMD global mappings", errors);
 	}
 	printResult("UMD global mappings", true);
+};
+
+const checkGifRuntimePackaging = () => {
+	const errors = [];
+
+	for (const bundlePath of CONTRACT.umdBundles) {
+		const content = readFileSync(resolve(__dirname, bundlePath), "utf-8");
+		const wrapper = content.slice(0, 2048);
+		if (wrapper.includes('"pixi.js/gif"')) {
+			errors.push(`${bundlePath}: pixi.js/gif is external, but the PIXI browser global does not export GifSource.`);
+		}
+	}
+
+	if (errors.length > 0) {
+		failWithDetails("GIF runtime packaging", errors);
+	}
+	printResult("GIF runtime packaging", true);
 };
 
 const checkBundleSizes = () => {
@@ -398,6 +418,7 @@ checkInternalDeclarationSurface();
 checkNoChunkArtifactsOrImports();
 checkPackageExports();
 checkUmdGlobalMappings();
+checkGifRuntimePackaging();
 checkBundleSizes();
 await runRuntimeExportSmokeTest("Runtime export smoke test", "./dist/shotstack-studio.es.js", CONTRACT.runtimeExports);
 await runRuntimeExportSmokeTest("Internal runtime export smoke test", "./dist/internal.es.js", CONTRACT.internalRuntimeExports);

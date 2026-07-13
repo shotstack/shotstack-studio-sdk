@@ -12,6 +12,7 @@ import { ShotstackEdit } from "@core/shotstack-edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { Clip, ResolvedClip } from "@schemas";
+import { getAssetTimingIdentity } from "@core/timing/resolver";
 
 // Mock pixi-filters
 jest.mock("pixi-filters", () => ({
@@ -182,6 +183,8 @@ const createMockPlayer = (edit: ShotstackEdit, config: ResolvedClip, type: Playe
 			};
 		},
 		getResolvedTiming: () => ({ ...resolvedTiming }),
+		getMediaTimingState: () => ({ status: "ready", asset: getAssetTimingIdentity(config.asset), duration: null }),
+		getLoadedResourceIdentifier: () => ("src" in config.asset ? config.asset.src : null),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
 		}),

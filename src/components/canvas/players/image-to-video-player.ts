@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { appendCorsQuery } from "@core/loaders/gif-url";
 import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas";
@@ -13,6 +14,7 @@ export class ImageToVideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null = null;
 	private placeholder: pixi.Graphics | null = null;
 	private aiOverlay: AiPendingOverlay | null = null;
+	private loadedResourceIdentifier: string | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.ImageToVideo);
@@ -102,6 +104,7 @@ export class ImageToVideoPlayer extends Player {
 			this.sprite = null;
 		}
 		this.texture = null;
+		this.loadedResourceIdentifier = null;
 
 		this.placeholder?.destroy();
 		this.placeholder = null;
@@ -112,9 +115,13 @@ export class ImageToVideoPlayer extends Player {
 		super.dispose();
 	}
 
+	public override getLoadedResourceIdentifier(): string | null {
+		return this.loadedResourceIdentifier;
+	}
+
 	private async tryLoadTexture(src: string): Promise<boolean> {
 		try {
-			const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
+			const corsUrl = appendCorsQuery(src);
 			const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
 			const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
 
@@ -125,8 +132,13 @@ export class ImageToVideoPlayer extends Player {
 				}
 				return false;
 			}
+			if (this.contentContainer.destroyed) {
+				this.edit.assetLoader.release(corsUrl);
+				return false;
+			}
 
 			this.texture = texture;
+			this.loadedResourceIdentifier = corsUrl;
 			this.sprite = new pixi.Sprite(this.texture);
 			this.contentContainer.addChild(this.sprite);
 

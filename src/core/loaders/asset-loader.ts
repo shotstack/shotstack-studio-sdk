@@ -2,7 +2,18 @@ import * as pixi from "pixi.js";
 
 import { AssetLoadTracker, type AssetLoadInfoStatus } from "../events/asset-load-tracker";
 
+import { GifImageSource } from "./gif-image-source";
+import { appendCorsQuery, isGifUrl } from "./gif-url";
+
+export interface GifThumbnail {
+	readonly isGif: boolean;
+	readonly dataUrl: string | null;
+	readonly width: number;
+	readonly height: number;
+}
+
 export class AssetLoader {
+	private static readonly GIF_DETECTION_TIMEOUT_MS = 5_000;
 	private static readonly VIDEO_EXTENSIONS = [".mp4", ".m4v", ".webm", ".ogg", ".ogv"];
 	private static readonly VIDEO_MIME: Record<string, string> = {
 		".mp4": "video/mp4",
@@ -15,6 +26,8 @@ export class AssetLoader {
 
 	/** Reference counts for loaded assets - prevents premature unloading during transforms */
 	private refCounts = new Map<string, number>();
+	private gifDetections = new Map<string, Promise<boolean>>();
+	private gifSources = new Map<string, Promise<GifImageSource>>();
 
 	/**
 	 * Increment reference count for an asset.
@@ -29,13 +42,30 @@ export class AssetLoader {
 	 * @returns true if asset can be safely unloaded (count reached zero)
 	 */
 	public decrementRef(src: string): boolean {
-		const count = this.refCounts.get(src) ?? 0;
-		if (count <= 1) {
+		const count = this.refCounts.get(src);
+		if (!count) return false;
+		if (count === 1) {
 			this.refCounts.delete(src);
 			return true; // Safe to unload
 		}
 		this.refCounts.set(src, count - 1);
 		return false; // Still in use
+	}
+
+	/** Release a cached asset once its final Player reference is disposed. */
+	public release(identifier: string): void {
+		if (!this.decrementRef(identifier)) return;
+
+		const gifSource = this.gifSources.get(identifier);
+		if (gifSource) {
+			this.gifSources.delete(identifier);
+			gifSource.then(source => source.destroy()).catch(() => undefined);
+		}
+		this.gifDetections.delete(identifier);
+
+		if (pixi.Assets.cache.has(identifier)) {
+			pixi.Assets.unload(identifier);
+		}
 	}
 
 	constructor() {
@@ -62,8 +92,8 @@ export class AssetLoader {
 			const resolvedAsset = useSafari
 				? await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions)
 				: await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
-					this.updateAssetLoadMetadata(identifier, "loading", progress);
-				});
+						this.updateAssetLoadMetadata(identifier, "loading", progress);
+					});
 
 			if (resolvedAsset == null) {
 				console.warn(`[AssetLoader.load] Empty asset returned for "${identifier}"`);
@@ -79,6 +109,98 @@ export class AssetLoader {
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			await this.cleanupFailedLoad(identifier);
 			return null;
+		}
+	}
+
+	/** Detect GIFs without relying on Pixi's suffix-only parser selection. */
+	public isGif(identifier: string, requestUrl: string = appendCorsQuery(identifier)): Promise<boolean> {
+		const cached = this.gifDetections.get(identifier);
+		if (cached) return cached;
+
+		const detection = isGifUrl(identifier) ? Promise.resolve(true) : this.hasGifMagic(requestUrl);
+
+		this.gifDetections.set(identifier, detection);
+		detection.catch(() => {
+			if (this.gifDetections.get(identifier) === detection) this.gifDetections.delete(identifier);
+		});
+		return detection;
+	}
+
+	private async hasGifMagic(requestUrl: string): Promise<boolean> {
+		let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+		try {
+			const response = await fetch(requestUrl, {
+				headers: { Range: "bytes=0-5" },
+				signal: AbortSignal.timeout(AssetLoader.GIF_DETECTION_TIMEOUT_MS)
+			});
+			if (!response.ok) {
+				await response.body?.cancel().catch(() => undefined);
+				throw new Error(`Unable to inspect image source (${response.status}).`);
+			}
+			if (!response.body) throw new Error("Image response body is not available as a readable stream.");
+			reader = response.body.getReader();
+			const signature = new Uint8Array(6);
+			let offset = 0;
+			while (offset < signature.length) {
+				const { done, value } = await reader.read();
+				if (done || !value) break;
+				const length = Math.min(value.byteLength, signature.length - offset);
+				signature.set(value.subarray(0, length), offset);
+				offset += length;
+			}
+
+			if (offset !== signature.length) throw new Error("Image response ended before its signature could be inspected.");
+			const value = String.fromCharCode(...signature);
+			return value === "GIF87a" || value === "GIF89a";
+		} finally {
+			if (reader) {
+				await reader.cancel().catch(() => undefined);
+				reader.releaseLock();
+			}
+		}
+	}
+
+	/** Load and share an eagerly decoded GIF source across clips using the same URL. */
+	public async loadGif(identifier: string, requestUrl: string = appendCorsQuery(identifier)): Promise<GifImageSource | null> {
+		this.updateAssetLoadMetadata(identifier, "pending", 0);
+		this.incrementRef(identifier);
+
+		let sourcePromise = this.gifSources.get(identifier);
+		if (!sourcePromise) {
+			sourcePromise = GifImageSource.fetch(requestUrl);
+			this.gifSources.set(identifier, sourcePromise);
+		}
+
+		try {
+			this.updateAssetLoadMetadata(identifier, "loading", 0.5);
+			const source = await sourcePromise;
+			this.updateAssetLoadMetadata(identifier, "success", 1);
+			return source;
+		} catch (error) {
+			console.warn(`[AssetLoader.loadGif] Failed to load "${identifier}":`, error);
+			this.updateAssetLoadMetadata(identifier, "failed", 1);
+			this.release(identifier);
+			return null;
+		}
+	}
+
+	/** Return the decoded first GIF frame for a non-animating timeline thumbnail. */
+	public async getGifThumbnail(identifier: string): Promise<GifThumbnail> {
+		const isGif = await this.isGif(identifier);
+		if (!isGif) return { isGif: false, dataUrl: null, width: 0, height: 0 };
+
+		const source = await this.loadGif(identifier);
+		if (!source) return { isGif: true, dataUrl: null, width: 0, height: 0 };
+		try {
+			return {
+				isGif: true,
+				dataUrl: source.getFirstFrameDataUrl(),
+				width: source.width,
+				height: source.height
+			};
+		} finally {
+			// The timeline only retains the generated PNG; the Player owns the decoded source.
+			this.release(identifier);
 		}
 	}
 
@@ -146,11 +268,14 @@ export class AssetLoader {
 	}
 
 	private async cleanupFailedLoad(identifier: string): Promise<void> {
-		this.decrementRef(identifier);
-		try {
-			await pixi.Assets.unload(identifier);
-		} catch {
-			// Ignore unload errors for already-failed assets
+		const cached = pixi.Assets.cache.has(identifier);
+		this.release(identifier);
+		if (!cached) {
+			try {
+				await pixi.Assets.unload(identifier);
+			} catch {
+				// Ignore unload errors for assets that never reached the cache.
+			}
 		}
 	}
 

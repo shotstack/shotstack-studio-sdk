@@ -101,6 +101,29 @@ export interface ResolvedTiming {
 }
 
 /**
+ * Duration metadata published by every Player using the same lifecycle contract.
+ * A ready `null` duration means the asset has no intrinsic timeline duration and
+ * the resolver must apply the canonical auto-length fallback.
+ */
+export interface AssetTimingIdentity {
+	readonly type: string;
+	readonly src: string | null;
+	/** Exact inline content revision when intrinsic timing is not backed by a URL. */
+	readonly revision?: string;
+}
+
+export type MediaTimingState =
+	| {
+			readonly status: "pending";
+			readonly asset: AssetTimingIdentity;
+		  }
+	| {
+			readonly status: "ready";
+			readonly asset: AssetTimingIdentity;
+			readonly duration: Seconds | null;
+		  };
+
+/**
  * Context required to resolve timing intent to concrete values.
  *
  * @see resolveTimingIntent - the pure function that uses this context
@@ -110,6 +133,6 @@ export interface ResolutionContext {
 	readonly previousClipEnd: Seconds;
 	/** Total duration of timeline excluding "end" clips (for length: "end") */
 	readonly timelineEnd: Seconds;
-	/** Intrinsic duration from asset metadata, null if not yet loaded (for length: "auto") */
-	readonly intrinsicDuration: Seconds | null;
+	/** Final asset-aware auto length, null when the canonical fallback applies. */
+	readonly autoLength: Seconds | null;
 }

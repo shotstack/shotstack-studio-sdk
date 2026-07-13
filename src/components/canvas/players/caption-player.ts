@@ -2,7 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { type Cue, findActiveCue } from "@core/captions";
 import type { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
-import { isAliasReference } from "@core/timing/types";
+import { isAliasReference, sec, type Seconds } from "@core/timing/types";
 import { type Size, type Vector } from "@layouts/geometry";
 import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
 import { type ExtendedCaptionAsset, type ResolvedClip } from "@schemas";
@@ -12,6 +12,7 @@ import * as pixi from "pixi.js";
 const PLACEHOLDER_TEXT = "Captions will appear here";
 
 type CaptionState = { readonly kind: "loaded"; readonly cues: Cue[] } | { readonly kind: "placeholder" };
+type CaptionLoadResult = { readonly state: CaptionState; readonly retainedIdentifier: string | null };
 
 /**
  * CaptionPlayer renders timed subtitle cues from SRT/VTT files.
@@ -24,21 +25,18 @@ export class CaptionPlayer extends Player {
 	private currentCue: Cue | null = null;
 	private background: pixi.Graphics | null = null;
 	private text: pixi.Text | null = null;
+	private loadedSubtitleIdentifier: string | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Caption);
 	}
 
 	public override async load(): Promise<void> {
+		const mediaTimingRevision = this.beginMediaTimingLoad();
 		await super.load();
+		if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
 
 		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
-
-		const fontFamily = captionAsset.font?.family ?? "Open Sans";
-		await this.loadFont(fontFamily);
-
-		this.state = isAliasReference(captionAsset.src) ? { kind: "placeholder" } : await this.loadSubtitles(captionAsset.src);
-
 		this.background = new pixi.Graphics();
 		this.contentContainer.addChild(this.background);
 
@@ -54,12 +52,56 @@ export class CaptionPlayer extends Player {
 		}
 
 		this.contentContainer.addChild(this.text);
-
-		if (this.state.kind === "placeholder") {
-			this.showPlaceholder(captionAsset);
-		}
-
 		this.configureKeyframes();
+
+		try {
+			const fontFamily = captionAsset.font?.family ?? "Open Sans";
+			await this.loadFont(fontFamily);
+
+			const result = isAliasReference(captionAsset.src)
+				? { state: { kind: "placeholder" as const }, retainedIdentifier: null }
+				: await this.loadSubtitles(captionAsset.src);
+			if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) {
+				this.releaseSubtitle(result.retainedIdentifier);
+				return;
+			}
+			this.replaceLoadedSubtitle(result.retainedIdentifier);
+			this.state = result.state;
+			this.completeMediaTimingLoad(mediaTimingRevision, this.getCaptionDuration(result.state));
+
+			if (this.state.kind === "placeholder") {
+				this.showPlaceholder(captionAsset);
+			} else {
+				this.updateDisplay(null, captionAsset);
+			}
+		} catch (error) {
+			if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) return;
+			this.completeMediaTimingLoad(mediaTimingRevision, null);
+			throw error;
+		}
+	}
+
+	public override async reloadAsset(): Promise<void> {
+		const mediaTimingRevision = this.beginMediaTimingLoad();
+		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
+		const result = isAliasReference(captionAsset.src)
+			? { state: { kind: "placeholder" as const }, retainedIdentifier: null }
+			: await this.loadSubtitles(captionAsset.src);
+
+		if (!this.isMediaTimingLoadCurrent(mediaTimingRevision)) {
+			this.releaseSubtitle(result.retainedIdentifier);
+			return;
+		}
+		this.replaceLoadedSubtitle(result.retainedIdentifier);
+		this.state = result.state;
+		this.currentCue = null;
+		this.completeMediaTimingLoad(mediaTimingRevision, this.getCaptionDuration(result.state));
+
+		if (result.state.kind === "placeholder") {
+			this.showPlaceholder(captionAsset);
+		} else {
+			this.updateDisplay(null, captionAsset);
+		}
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -94,6 +136,10 @@ export class CaptionPlayer extends Player {
 		this.currentCue = null;
 	}
 
+	public override getLoadedResourceIdentifier(): string | null {
+		return this.loadedSubtitleIdentifier;
+	}
+
 	public override getSize(): Size {
 		const captionAsset = this.clipConfiguration.asset as ExtendedCaptionAsset;
 
@@ -112,7 +158,7 @@ export class CaptionPlayer extends Player {
 		return { x: scale, y: scale };
 	}
 
-	private async loadSubtitles(src: string): Promise<CaptionState> {
+	private async loadSubtitles(src: string): Promise<CaptionLoadResult> {
 		try {
 			const loadOptions: pixi.UnresolvedAsset = {
 				src,
@@ -121,15 +167,34 @@ export class CaptionPlayer extends Player {
 			const subtitle = await this.edit.assetLoader.load<SubtitleAsset>(src, loadOptions);
 
 			if (subtitle) {
-				return { kind: "loaded", cues: subtitle.cues };
+				return { state: { kind: "loaded", cues: subtitle.cues }, retainedIdentifier: src };
 			}
 
 			console.warn("Failed to load subtitles");
-			return { kind: "placeholder" };
+			return { state: { kind: "placeholder" }, retainedIdentifier: null };
 		} catch (error) {
 			console.warn("Failed to load subtitles:", error);
-			return { kind: "placeholder" };
+			return { state: { kind: "placeholder" }, retainedIdentifier: null };
 		}
+	}
+
+	private getCaptionDuration(state: CaptionState): Seconds | null {
+		if (state.kind !== "loaded" || state.cues.length === 0) return null;
+		let maxEnd = Number.NEGATIVE_INFINITY;
+		for (const cue of state.cues) {
+			if (Number.isFinite(cue.end)) maxEnd = Math.max(maxEnd, cue.end);
+		}
+		return Number.isFinite(maxEnd) ? sec(maxEnd) : null;
+	}
+
+	private replaceLoadedSubtitle(identifier: string | null): void {
+		const previousIdentifier = this.loadedSubtitleIdentifier;
+		this.loadedSubtitleIdentifier = identifier;
+		this.releaseSubtitle(previousIdentifier);
+	}
+
+	private releaseSubtitle(identifier: string | null): void {
+		if (identifier) this.edit.assetLoader.release(identifier);
 	}
 
 	private showPlaceholder(captionAsset: ExtendedCaptionAsset): void {

@@ -67,6 +67,7 @@ export class SvgPlayer extends Player {
 	}
 
 	public override async reloadAsset(): Promise<void> {
+		await super.reloadAsset();
 		await this.rerenderAtCurrentDimensions();
 	}
 

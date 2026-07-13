@@ -215,6 +215,29 @@ describe("MediaThumbnailRenderer", () => {
 			// the code path doesn't throw and handles the type correctly
 		});
 
+		it("uses a frozen first frame for GIF thumbnails", async () => {
+			const generator = createMockGenerator();
+			const firstFrame = "data:image/png;base64,first-frame";
+			const getGifThumbnail = jest.fn().mockResolvedValue({
+				isGif: true,
+				dataUrl: firstFrame,
+				width: 320,
+				height: 180
+			});
+			const renderer = new MediaThumbnailRenderer(generator, () => {}, getGifThumbnail);
+			const element = createMockElement();
+			const clip = createMockClip({
+				asset: { type: "image", src: "https://example.com/animated.gif" } as never
+			});
+
+			renderer.render(clip, element);
+			await delay(10);
+
+			expect(getGifThumbnail).toHaveBeenCalledWith("https://example.com/animated.gif");
+			expect(element.style.backgroundImage).toBe(`url("${firstFrame}")`);
+			expect(element.style.backgroundImage).not.toContain("animated.gif");
+		});
+
 		it("applies thumbnail for video type", async () => {
 			const generator = createMockGenerator({ dataUrl: "data:image/png;base64,thumb", thumbnailWidth: 120 });
 			const onRendered = jest.fn();

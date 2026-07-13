@@ -2,6 +2,7 @@ import { EditDocument } from "@core/edit-document";
 import { EventEmitter } from "@core/events/event-emitter";
 import { MergeFieldService } from "@core/merge/merge-field-service";
 import { resolve } from "@core/resolver";
+import { sec } from "@core/timing/types";
 import type { Edit } from "@schemas";
 
 function createMergeFieldService(): MergeFieldService {
@@ -77,6 +78,48 @@ describe("Resolver", () => {
 			expect(clips[0].start).toBe(0);
 			expect(clips[1].start).toBe(2); // After first clip (0 + 2)
 			expect(clips[2].start).toBe(5); // After second clip (2 + 3)
+		});
+
+		it("uses source-matched intrinsic GIF timing for dependants", () => {
+			const src = "https://example.com/animation.gif";
+			const doc = new EditDocument({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{ alias: "animation", asset: { type: "image", src }, start: 0, length: "auto" },
+								{ asset: { type: "image", src: "https://example.com/next.jpg" }, start: "auto", length: 1 }
+							]
+						},
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/dependent.jpg" }, start: 0, length: "alias://animation" }]
+						},
+						{
+							clips: [{ asset: { type: "image", src: "https://example.com/background.jpg" }, start: 0, length: "end" }]
+						}
+					]
+				},
+				output: { format: "mp4", size: { width: 1920, height: 1080 } }
+			});
+			const clipId = doc.getClipId(0, 0)!;
+			const mergeFields = createMergeFieldService();
+			const resolved = resolve(doc, {
+				mergeFields,
+				mediaTimingByClipId: new Map([[clipId, { status: "ready", asset: { type: "image", src }, duration: sec(2.4) }]])
+			});
+
+			expect(resolved.timeline.tracks[0].clips[0].length).toBe(2.4);
+			expect(resolved.timeline.tracks[0].clips[1].start).toBe(2.4);
+			expect(resolved.timeline.tracks[1].clips[0].length).toBe(2.4);
+			expect(resolved.timeline.tracks[2].clips[0].length).toBe(3.4);
+
+			const stale = resolve(doc, {
+				mergeFields,
+				mediaTimingByClipId: new Map([
+					[clipId, { status: "ready", asset: { type: "image", src: "https://example.com/old.gif" }, duration: sec(9) }]
+				])
+			});
+			expect(stale.timeline.tracks[0].clips[0].length).toBe(3);
 		});
 
 		it("resolves 'end' length to extend to timeline end", () => {
@@ -192,8 +235,7 @@ describe("Resolver", () => {
 			expect(resolved.timeline.tracks[0].clips).toEqual([]);
 		});
 
-		it("handles 'end' length with minimum duration", () => {
-			// When timeline end equals clip start, ensure minimum length
+		it("handles an end-only timeline without inventing duration", () => {
 			const edit: Edit = {
 				timeline: {
 					tracks: [
@@ -210,8 +252,7 @@ describe("Resolver", () => {
 
 			const resolved = resolve(doc, { mergeFields });
 
-			// Should have minimum length of 0.1
-			expect(resolved.timeline.tracks[0].clips[0].length).toBeGreaterThanOrEqual(0.1);
+			expect(resolved.timeline.tracks[0].clips[0].length).toBe(0);
 		});
 
 		describe("alias validation", () => {

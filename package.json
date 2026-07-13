@@ -31,7 +31,8 @@
 		"dist/shotstack-studio.es.js",
 		"dist/internal.umd.js",
 		"dist/internal.es.js",
-		"dist/**/*.d.ts"
+		"dist/**/*.d.ts",
+		"THIRD_PARTY_NOTICES"
 	],
 	"keywords": [
 		"shotstack",

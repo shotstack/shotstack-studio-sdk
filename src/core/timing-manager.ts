@@ -4,7 +4,7 @@
 
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
+import { calculateTimelineEnd, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type Seconds, isAliasReference, sec } from "@core/timing/types";
 
 import type { Edit } from "./edit-session";
@@ -53,22 +53,15 @@ export class TimingManager {
 				const resolvedClip = resolvedTrack?.clips[clipIdx];
 
 				if (resolvedClip) {
-					const intent = player.getTimingIntent();
-
-					// Use resolved values from the resolver
+					const previousStart = player.getStart();
+					const previousLength = player.getLength();
 					const resolvedStart = resolvedClip.start;
-					let resolvedLength = resolvedClip.length;
-
-					// Special handling for "auto" length - requires async asset loading
-					if (intent.length === "auto") {
-						resolvedLength = await resolveAutoLength(player.clipConfiguration.asset);
-					}
+					const resolvedLength = resolvedClip.length;
 
 					player.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
-
-					// Sync resolved edit cache so timeline UI sees actual timing
-					resolvedClip.start = resolvedStart;
-					resolvedClip.length = resolvedLength;
+					if (resolvedStart !== previousStart || resolvedLength !== previousLength) {
+						player.reconfigureAfterRestore();
+					}
 				}
 			}
 		}
@@ -76,32 +69,6 @@ export class TimingManager {
 		// Calculate timeline end and cache it
 		const timelineEnd = calculateTimelineEnd(tracks);
 		this.cachedTimelineEnd = timelineEnd;
-
-		// Resolve "end" clips now that we have the final timeline end
-		// (accounts for any "auto" length changes from async resolution above)
-		const endLengthClips = this.getEndLengthClips();
-		for (const clip of endLengthClips) {
-			const currentTiming = clip.getResolvedTiming();
-			const endLength = resolveEndLength(currentTiming.start, timelineEnd);
-			clip.setResolvedTiming({
-				start: currentTiming.start,
-				length: endLength
-			});
-
-			// Sync resolved edit cache for "end" clips
-			const trackIdx = clip.layer - 1;
-			const clipIdx = tracks[trackIdx]?.indexOf(clip) ?? -1;
-			const endResolvedClip = resolved.timeline.tracks[trackIdx]?.clips[clipIdx];
-			if (endResolvedClip) {
-				endResolvedClip.start = currentTiming.start;
-				endResolvedClip.length = endLength;
-			}
-		}
-
-		// Reconfigure "end" clips to rebuild keyframes
-		for (const clip of endLengthClips) {
-			clip.reconfigureAfterRestore();
-		}
 	}
 
 	// ─── Propagation ─────────────────────────────────────────────────────────
@@ -137,7 +104,7 @@ export class TimingManager {
 
 			const endLengthClips = this.getEndLengthClips();
 			for (const clip of endLengthClips) {
-				const newLength = resolveEndLength(clip.getStart(), newTimelineEnd);
+				const newLength = resolveEndLength(newTimelineEnd, clip.getStart());
 				const currentLength = clip.getLength();
 
 				if (Math.abs(newLength - currentLength) > 0.001) {

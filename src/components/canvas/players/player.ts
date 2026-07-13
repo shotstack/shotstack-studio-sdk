@@ -6,8 +6,10 @@ import { WipeFilter } from "@animations/wipe-filter";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
+import { getAssetTimingIdentity, mediaTimingMatchesAsset } from "@core/timing/resolver";
 import {
 	type AliasReference,
+	type MediaTimingState,
 	type ResolvedTiming,
 	type Seconds,
 	type TimingIntent,
@@ -79,6 +81,8 @@ export abstract class Player extends Entity {
 	public clipConfiguration: ResolvedClip;
 
 	private resolvedTiming: ResolvedTiming;
+	private mediaTimingState: MediaTimingState;
+	private mediaTimingRevision = 0;
 
 	private offsetXKeyframeBuilder?: ComposedKeyframeBuilder;
 	private offsetYKeyframeBuilder?: ComposedKeyframeBuilder;
@@ -109,6 +113,11 @@ export abstract class Player extends Entity {
 		this.clipConfiguration = clipConfiguration;
 
 		this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
+		this.mediaTimingState = {
+			status: "ready",
+			asset: getAssetTimingIdentity(clipConfiguration.asset),
+			duration: null
+		};
 
 		this.wipeMask = null;
 
@@ -125,11 +134,11 @@ export abstract class Player extends Entity {
 
 	/**
 	 * Reload the asset for this player (e.g., when asset.src changes).
-	 * Override in subclasses that have loadable assets (image, video).
-	 * Default implementation is a no-op.
+	 * Non-temporal players publish the new asset identity immediately.
 	 */
 	public async reloadAsset(): Promise<void> {
-		// Default: no-op. Override in ImagePlayer, VideoPlayer, etc.
+		const revision = this.beginMediaTimingLoad();
+		this.completeMediaTimingLoad(revision, null);
 	}
 
 	protected configureKeyframes() {
@@ -340,6 +349,9 @@ export abstract class Player extends Entity {
 	}
 
 	public override dispose(): void {
+		// Any asset work completing after disposal is stale, regardless of whether the
+		// source identity happens to be unchanged (for example an A -> B -> A race).
+		this.mediaTimingRevision += 1;
 		this.wipeMask?.destroy();
 		this.wipeMask = null;
 		this.wipeFilter?.destroy();
@@ -399,6 +411,44 @@ export abstract class Player extends Entity {
 
 	public getResolvedTiming(): ResolvedTiming {
 		return { ...this.resolvedTiming };
+	}
+
+	/**
+	 * Publish loaded media facts through one contract for every asset type.
+	 * Non-temporal assets are immediately ready without an intrinsic duration.
+	 */
+	public getMediaTimingState(): MediaTimingState {
+		return mediaTimingMatchesAsset(this.mediaTimingState, this.clipConfiguration.asset)
+			? this.mediaTimingState
+			: { status: "pending", asset: getAssetTimingIdentity(this.clipConfiguration.asset) };
+	}
+
+	/** Mark the current asset revision as loading and return its race-safe revision. */
+	protected beginMediaTimingLoad(): number {
+		this.mediaTimingRevision += 1;
+		this.mediaTimingState = { status: "pending", asset: getAssetTimingIdentity(this.clipConfiguration.asset) };
+		return this.mediaTimingRevision;
+	}
+
+	/** Whether an asynchronous asset load still represents the Player's current asset revision. */
+	protected isMediaTimingLoadCurrent(revision: number): boolean {
+		return revision === this.mediaTimingRevision;
+	}
+
+	/** Publish metadata only if the Player still represents the asset revision that loaded it. */
+	protected completeMediaTimingLoad(revision: number, duration: Seconds | null): void {
+		if (!this.isMediaTimingLoadCurrent(revision)) return;
+		const validDuration = duration !== null && Number.isFinite(duration) && duration > 0 ? duration : null;
+		this.mediaTimingState = {
+			status: "ready",
+			asset: getAssetTimingIdentity(this.clipConfiguration.asset),
+			duration: validDuration
+		};
+	}
+
+	/** Asset cache identifier held by this Player, used for reference-counted cleanup. */
+	public getLoadedResourceIdentifier(): string | null {
+		return null;
 	}
 
 	public setResolvedTiming(timing: ResolvedTiming): void {
