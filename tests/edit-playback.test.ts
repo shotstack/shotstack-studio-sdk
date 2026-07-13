@@ -125,8 +125,14 @@ describe("Edit Playback", () => {
 	let edit: Edit;
 	let events: EventEmitter;
 	let emitSpy: jest.SpyInstance;
+	let mockNowMs: number;
+	let nowSpy: jest.SpyInstance;
 
 	beforeEach(async () => {
+		// Playback advances by real wall-clock time, so drive a controllable clock.
+		mockNowMs = 0;
+		nowSpy = jest.spyOn(performance, "now").mockImplementation(() => mockNowMs);
+
 		// Create Edit instance from template
 		edit = new Edit({
 			timeline: {
@@ -150,6 +156,7 @@ describe("Edit Playback", () => {
 
 	afterEach(() => {
 		edit.dispose();
+		nowSpy.mockRestore();
 		jest.clearAllMocks();
 	});
 
@@ -265,68 +272,71 @@ describe("Edit Playback", () => {
 	});
 
 	describe("update() playback advancement", () => {
-		it("advances playbackTime by elapsed when playing", () => {
-			edit.isPlaying = true;
+		it("advances playbackTime by real elapsed time when playing", () => {
 			edit.playbackTime = sec(0);
+			edit.play(); // anchors the wall clock at now = 0
 
-			edit.update(0.016, ms(100)); // 100ms elapsed = 0.1s
+			mockNowMs = 100; // 100ms of real time passes
+			edit.update(0.016, ms(5)); // the elapsed arg no longer drives the playhead
 
-			expect(edit.playbackTime).toBe(0.1);
+			expect(edit.playbackTime).toBeCloseTo(0.1, 5);
+		});
+
+		it("tracks real time even when frame deltas under-report (half-speed regression)", () => {
+			// A slow machine renders below target, so the ticker delta is clamped to a tiny value.
+			// Playback must still follow wall-clock time, not the delta.
+			edit.playbackTime = sec(0);
+			edit.play();
+
+			mockNowMs = 1000; // a full real second elapsed
+			edit.update(0.016, ms(16.67)); // ...but the frame delta claims only ~16.67ms
+
+			expect(edit.playbackTime).toBeCloseTo(1.0, 2);
 		});
 
 		it("does not advance playbackTime when paused", () => {
 			edit.isPlaying = false;
 			edit.playbackTime = sec(1);
 
+			mockNowMs = 100; // clock moves, but playback is paused
 			edit.update(0.016, ms(100));
 
 			expect(edit.playbackTime).toBe(1);
 		});
 
 		it("clamps playbackTime to totalDuration", () => {
-			edit.isPlaying = true;
 			edit.playbackTime = sec(9.95);
+			edit.play();
 
-			edit.update(0.016, ms(100)); // Would advance to 10.05, but should clamp to 10
+			mockNowMs = 100; // would advance to 10.05, but should clamp to 10
+			edit.update(0.016, ms(100));
 
 			expect(edit.playbackTime).toBe(10);
 		});
 
 		it("auto-pauses when reaching end of timeline", () => {
-			edit.isPlaying = true;
 			edit.playbackTime = sec(9.95);
+			edit.play();
 
-			edit.update(0.016, ms(100)); // Reaches end
+			mockNowMs = 100; // reaches end
+			edit.update(0.016, ms(100));
 
 			expect(edit.isPlaying).toBe(false);
 			expect(emitSpy).toHaveBeenCalledWith("playback:pause");
 		});
 
-		it("clamps negative elapsed values to 0", () => {
-			edit.isPlaying = true;
-			edit.playbackTime = sec(5);
-
-			edit.update(0.016, ms(-100)); // Negative elapsed (-100ms = -0.1s)
-
-			// playbackTime + (-0.1) = 4.9, clamped to max(0, min(4.9, 10)) = 4.9
-			expect(edit.playbackTime).toBe(4.9);
-		});
-
-		it("correctly converts milliseconds to seconds for playback time (regression: #play-immediately-pauses)", () => {
-			// This test prevents regression of a bug where milliseconds were added directly
-			// to playbackTime (in seconds), causing playback to jump to end immediately.
-			// At 60fps, ticker passes ~16.67ms. If added as seconds, playback would advance
-			// 16.67 "seconds" per frame instead of 0.01667 seconds.
-			edit.isPlaying = true;
+		it("converts wall-clock milliseconds to seconds (regression: #play-immediately-pauses)", () => {
+			// Guards against advancing the playhead in milliseconds instead of seconds.
+			// At 60fps ~16.67ms passes per frame; the playhead must move 0.01667s, not 16.67s.
 			edit.playbackTime = sec(0);
 			edit.totalDuration = sec(10);
+			edit.play();
 
-			// Simulate 60fps frame (~16.67ms)
+			mockNowMs = 16.67; // one 60fps frame of real time
 			edit.update(0.016, ms(16.67));
 
-			// Should advance by ~0.01667 seconds, NOT 16.67 seconds
 			expect(edit.playbackTime).toBeCloseTo(0.01667, 3);
-			expect(edit.isPlaying).toBe(true); // Should still be playing, not auto-paused
+			expect(edit.isPlaying).toBe(true); // still playing, not auto-paused
 		});
 	});
 
@@ -355,8 +365,9 @@ describe("Edit Playback", () => {
 
 		it("play at end of timeline (no advancement)", () => {
 			edit.playbackTime = sec(10);
-			edit.isPlaying = true;
+			edit.play();
 
+			mockNowMs = 100;
 			edit.update(0.016, ms(100));
 
 			// Already at end, should pause immediately

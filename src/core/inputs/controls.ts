@@ -171,9 +171,13 @@ export class Controls {
 			}
 			case "KeyC": {
 				if (event.metaKey || event.ctrlKey) {
-					event.preventDefault();
+					// Clip copy must not swallow the page's default copy: defer to the browser when the
+					// user has text selected anywhere in the document, or when no clip is targeted.
+					const selection = window.getSelection();
+					if (selection && !selection.isCollapsed) break;
 					const selected = this.edit.getSelectedClipInfo();
 					if (selected) {
+						event.preventDefault();
 						this.edit.copyClip(selected.trackIndex, selected.clipIndex);
 					}
 				}

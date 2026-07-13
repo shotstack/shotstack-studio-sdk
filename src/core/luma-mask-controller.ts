@@ -14,6 +14,7 @@ const LUMA_VIDEO_UPDATE_INTERVAL = 1 / 30;
 interface ActiveLumaMask {
 	lumaPlayer: LumaPlayer;
 	maskSprite: pixi.Sprite;
+	maskTexture: pixi.RenderTexture;
 	tempContainer: pixi.Container;
 	contentClip: Player;
 	lastVideoTime: number;
@@ -72,6 +73,10 @@ export class LumaMaskController {
 		this.removeEventListeners();
 
 		for (const mask of this.activeLumaMasks) {
+			const wrapper = mask.contentClip.getLumaWrapper();
+			if (wrapper && !wrapper.destroyed) {
+				wrapper.mask = null;
+			}
 			mask.tempContainer.destroy({ children: true });
 			mask.maskSprite.destroy({ texture: true });
 		}
@@ -179,10 +184,8 @@ export class LumaMaskController {
 		tempSprite.filters = [invertFilter];
 		tempContainer.addChild(tempSprite);
 
-		const maskTexture = renderer.generateTexture({
-			target: tempContainer,
-			resolution: LUMA_MASK_RESOLUTION
-		});
+		const maskTexture = pixi.RenderTexture.create({ width, height, resolution: LUMA_MASK_RESOLUTION });
+		renderer.render({ container: tempContainer, target: maskTexture, clear: true });
 
 		const maskSprite = new pixi.Sprite(maskTexture);
 
@@ -191,7 +194,7 @@ export class LumaMaskController {
 		const lumaWrapper = contentClip.getLumaWrapper();
 		lumaWrapper.mask = maskSprite;
 
-		this.activeLumaMasks.push({ lumaPlayer, maskSprite, tempContainer, contentClip, lastVideoTime: -1 });
+		this.activeLumaMasks.push({ lumaPlayer, maskSprite, maskTexture, tempContainer, contentClip, lastVideoTime: -1 });
 	}
 
 	private updateLumaMasks(): void {
@@ -208,13 +211,8 @@ export class LumaMaskController {
 				if (frameChanged) {
 					mask.lastVideoTime = videoTime;
 
-					const oldTexture = mask.maskSprite.texture;
-					mask.maskSprite.texture = renderer.generateTexture({
-						target: mask.tempContainer,
-						resolution: LUMA_MASK_RESOLUTION
-					});
-
-					oldTexture.destroy(true);
+					// Re-render in place: replacing/destroying this texture each frame nulls the mask filter's cached GPU bind group mid-render.
+					renderer.render({ container: mask.tempContainer, target: mask.maskTexture, clear: true });
 				}
 			}
 		}

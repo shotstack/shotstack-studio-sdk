@@ -654,6 +654,61 @@ describe("Edit Command History", () => {
 		});
 	});
 
+	describe("canUndo / canRedo getters", () => {
+		it("are both false on a freshly loaded edit (load is not a command)", () => {
+			expect(getCommandState(edit).index).toBe(-1);
+			expect(edit.canUndo).toBe(false);
+			expect(edit.canRedo).toBe(false);
+		});
+
+		it("canUndo turns true after a command; canRedo stays false", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			expect(edit.canUndo).toBe(true);
+			expect(edit.canRedo).toBe(false);
+		});
+
+		it("undo turns canRedo on and, back at the start, canUndo off", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			expect(edit.canUndo).toBe(false);
+			expect(edit.canRedo).toBe(true);
+		});
+
+		it("redo turns canUndo back on and, at the end, canRedo off", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			await edit.redo();
+			expect(edit.canUndo).toBe(true);
+			expect(edit.canRedo).toBe(false);
+		});
+
+		it("both are true mid-stack", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			expect(edit.canUndo).toBe(true);
+			expect(edit.canRedo).toBe(true);
+		});
+
+		it("a new command after undo truncates redo (canRedo false)", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			await edit.executeEditCommand(new TestCommand());
+			expect(edit.canUndo).toBe(true);
+			expect(edit.canRedo).toBe(false);
+		});
+
+		it("track the underlying commandIndex bounds", async () => {
+			await edit.executeEditCommand(new TestCommand());
+			await edit.executeEditCommand(new TestCommand());
+			await edit.undo();
+			const { history, index } = getCommandState(edit);
+			expect(edit.canUndo).toBe(index >= 0);
+			expect(edit.canRedo).toBe(index < history.length - 1);
+		});
+	});
+
 	describe("state restoration", () => {
 		it("undo restores previous state via command.undo()", async () => {
 			// Use a command that tracks state changes

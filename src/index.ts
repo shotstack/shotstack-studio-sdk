@@ -9,5 +9,6 @@ export { UIController } from "@core/ui/ui-controller";
 
 export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-controller";
 export type { EditConfig } from "@core/schemas";
+export type { CommandResult } from "@core/commands/types";
 
 export const VERSION = pkg.version;

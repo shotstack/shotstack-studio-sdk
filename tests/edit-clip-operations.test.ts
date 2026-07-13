@@ -483,6 +483,137 @@ describe("Edit Clip Operations", () => {
 		});
 	});
 
+	describe("command results", () => {
+		it("deleteClip resolves noop when deleting the only clip", async () => {
+			// Only the initial image clip exists at this point
+			const result = await edit.deleteClip(0, 0);
+
+			expect(result).toEqual({ status: "noop", message: "Cannot delete the last clip" });
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(1);
+		});
+
+		it("deleteClip resolves success when another clip remains", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+
+			const result = await edit.deleteClip(0, 0);
+
+			expect(result.status).toBe("success");
+		});
+
+		it("deleteClip resolves noop for a missing position", async () => {
+			expect(await edit.deleteClip(99, 0)).toMatchObject({ status: "noop" });
+			expect(await edit.deleteClip(0, 99)).toMatchObject({ status: "noop" });
+		});
+
+		it("deleteClipById resolves noop for an unknown id", async () => {
+			const result = await edit.deleteClipById("not-a-real-clip-id");
+
+			expect(result).toEqual({ status: "noop", message: "No clip with id not-a-real-clip-id" });
+		});
+
+		it("updateClipById resolves noop for an unknown id", async () => {
+			const result = await edit.updateClipById("not-a-real-clip-id", {});
+
+			expect(result).toMatchObject({ status: "noop" });
+		});
+
+		it("addClip resolves success", async () => {
+			const result = await edit.addClip(0, createVideoClip(0, 5));
+
+			expect(result.status).toBe("success");
+		});
+
+		it("deleteTrack resolves noop when deleting the last track", async () => {
+			const result = await edit.deleteTrack(0);
+
+			expect(result).toEqual({ status: "noop", message: "Cannot delete the last track" });
+		});
+
+		it("undo resolves noop when the history is empty", async () => {
+			// load() builds the initial timeline without going through the command queue
+			expect(await edit.undo()).toEqual({ status: "noop", message: "Nothing to undo" });
+		});
+
+		it("undo resolves the undone command's outcome", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+
+			expect((await edit.undo()).status).toBe("success");
+			expect(await edit.undo()).toEqual({ status: "noop", message: "Nothing to undo" });
+		});
+
+		it("redo resolves noop when there is nothing to redo", async () => {
+			const result = await edit.redo();
+
+			expect(result).toEqual({ status: "noop", message: "Nothing to redo" });
+		});
+
+		it("redo resolves the re-applied command's outcome", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+			await edit.undo();
+
+			expect((await edit.redo()).status).toBe("success");
+			expect(await edit.redo()).toEqual({ status: "noop", message: "Nothing to redo" });
+		});
+
+		it("moveClipById resolves noop for an unknown id", async () => {
+			const result = await edit.moveClipById("not-a-real-clip-id", 0);
+
+			expect(result).toEqual({ status: "noop", message: "No clip with id not-a-real-clip-id" });
+		});
+
+		it("deleteClipById resolves success for a real clip", async () => {
+			await edit.addClip(0, createVideoClip(0, 5));
+			const doc = (edit as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
+			const id = doc.getClipId(0, 1);
+			expect(id).toBeTruthy();
+
+			expect((await edit.deleteClipById(id as string)).status).toBe("success");
+		});
+
+		it("updateClip resolves success and noop by position", async () => {
+			expect((await edit.updateClip(0, 0, { fit: "contain" })).status).toBe("success");
+			expect(await edit.updateClip(0, 99, {})).toMatchObject({ status: "noop" });
+		});
+
+		it("deleteTrack resolves success when another track remains", async () => {
+			await edit.addTrack(1, { clips: [createVideoClip(0, 5)] });
+
+			expect((await edit.deleteTrack(1)).status).toBe("success");
+		});
+
+		it("setOutputSize resolves a command outcome", async () => {
+			expect((await edit.setOutputSize(1280, 720)).status).toBe("success");
+		});
+
+		it("deleteClip returns the requested clip's outcome when a luma matte shares the track", async () => {
+			// Track 0: [image (initial), luma, video]
+			await edit.addClip(0, { asset: { type: "luma", src: "https://example.com/matte.mp4" }, start: 0, length: 5 });
+			await edit.addClip(0, createVideoClip(0, 5));
+
+			// Deleting the video (a content clip) removes the track's luma first, then the video —
+			// the resolved outcome is the video's
+			const result = await edit.deleteClip(0, 2);
+
+			expect(result.status).toBe("success");
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(1);
+		});
+
+		it("deleteClip refuses atomically when the content clip with a luma is the last one", async () => {
+			// Track 0: [image (initial), luma] — the image is the last content clip
+			await edit.addClip(0, { asset: { type: "luma", src: "https://example.com/matte.mp4" }, start: 0, length: 5 });
+
+			// The deletion is refused up front: the luma must NOT be deleted as a side
+			// effect of a refused operation
+			const result = await edit.deleteClip(0, 0);
+
+			expect(result).toEqual({ status: "noop", message: "Cannot delete the last clip" });
+			const { tracks } = getEditState(edit);
+			expect(tracks[0].length).toBe(2);
+		});
+	});
+
 	describe("updateClip()", () => {
 		beforeEach(async () => {
 			await edit.addClip(0, createTextClip(0, 5, "Original"));
@@ -598,6 +729,37 @@ describe("Edit Clip Operations", () => {
 
 		it("getTrack returns null for invalid index", async () => {
 			expect(edit.getTrack(99)).toBeNull();
+		});
+	});
+
+	describe("defensive copies from public getters", () => {
+		it("getClipById returns a copy — freezing it does not break in-place document updates", () => {
+			const clipId = edit.getClipId(0, 0);
+			expect(clipId).not.toBeNull();
+
+			// Hosts may store returned clips in state that deep-freezes (e.g. immer autoFreeze).
+			// updateClipInDocument mutates the stored clip in place (the canvas resize/drag path),
+			// so a leaked live reference would make this throw "object is not extensible".
+			Object.freeze(edit.getClipById(clipId!));
+
+			expect(() => edit.updateClipInDocument(clipId!, { width: 100, height: 100 })).not.toThrow();
+			expect(edit.getClipById(clipId!)?.width).toBe(100);
+		});
+
+		it("getClip returns a copy detached from live player state", () => {
+			const copy = edit.getClip(0, 0);
+			expect(copy).not.toBeNull();
+			(copy as { start?: number }).start = 999;
+
+			expect(edit.getClip(0, 0)?.start).not.toBe(999);
+		});
+
+		it("getTrack returns copies of clip configurations", () => {
+			const track = edit.getTrack(0);
+			expect(track).not.toBeNull();
+			(track!.clips[0] as { start?: number }).start = 999;
+
+			expect(edit.getTrack(0)?.clips[0]?.start).not.toBe(999);
 		});
 	});
 
