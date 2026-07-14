@@ -61,7 +61,12 @@ export class RichCaptionToolbar extends RichTextToolbar {
 	}
 
 	protected override createSpacingPanel(): SpacingPanel {
-		return new SpacingPanel({ showWordSpacing: true });
+		// No word-spacing control: RichCaptionStyle deliberately excludes wordSpacing
+		return new SpacingPanel();
+	}
+
+	protected override supportsWordSpacing(): boolean {
+		return false;
 	}
 
 	protected override createFontColorPicker(): FontColorPicker {

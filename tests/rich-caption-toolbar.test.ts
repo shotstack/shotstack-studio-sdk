@@ -712,3 +712,71 @@ describe("RichCaptionToolbar", () => {
 		});
 	});
 });
+
+// ============================================================================
+// Word spacing exclusion (RichCaptionStyle rejects the key — never render or write it)
+// ============================================================================
+
+describe("RichCaptionToolbar spacing controls", () => {
+	let toolbar: InstanceType<typeof import("../src/core/ui/rich-caption-toolbar").RichCaptionToolbar>;
+	let mockEdit: ReturnType<typeof createMockEdit>;
+	let container: HTMLDivElement;
+
+	beforeEach(async () => {
+		mockEdit = createMockEdit();
+		const { RichCaptionToolbar } = await import("../src/core/ui/rich-caption-toolbar");
+		toolbar = new RichCaptionToolbar(mockEdit as never);
+		container = createTestContainer();
+		setupCaptionClip(mockEdit);
+		toolbar.mount(container);
+	});
+
+	afterEach(() => {
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+
+	it("does not render a word-spacing slider", () => {
+		expect(container.querySelector("[data-word-spacing-slider]")).toBeNull();
+		expect(container.querySelector("[data-letter-spacing-slider]")).not.toBeNull();
+	});
+
+	it("omits wordSpacing from spacing updates", () => {
+		const slider = container.querySelector("[data-letter-spacing-slider]") as HTMLInputElement;
+		expect(slider).not.toBeNull();
+		simulateInput(slider, 5);
+
+		expect(mockEdit.updateClip).toHaveBeenCalled();
+		const lastCall = mockEdit.updateClip.mock.calls.at(-1) as unknown[];
+		const updates = lastCall[2] as { asset: { style: Record<string, unknown> } };
+		expect(updates.asset.style["letterSpacing"]).toBe(5);
+		expect(updates.asset.style).not.toHaveProperty("wordSpacing");
+	});
+});
+
+describe("RichTextToolbar spacing controls (contrast)", () => {
+	it("includes wordSpacing in spacing updates for rich-text", async () => {
+		const mockEdit = createMockEdit();
+		const { RichTextToolbar } = await import("../src/core/ui/rich-text-toolbar");
+		const toolbar = new RichTextToolbar(mockEdit as never);
+		const container = createTestContainer();
+
+		const asset = { type: "rich-text", text: "Hello", font: { family: "Open Sans", size: 48 } };
+		const clip = { asset, start: 0, length: 5 };
+		mockEdit.getPlayerClip.mockReturnValue({ clipConfiguration: clip, getMergeFieldBinding: jest.fn(() => null) } as never);
+		mockEdit.getResolvedClip.mockReturnValue(clip as never);
+		toolbar.mount(container);
+
+		const slider = container.querySelector("[data-letter-spacing-slider]") as HTMLInputElement;
+		expect(slider).not.toBeNull();
+		simulateInput(slider, 5);
+
+		expect(mockEdit.updateClip).toHaveBeenCalled();
+		const lastCall = mockEdit.updateClip.mock.calls.at(-1) as unknown[];
+		const updates = lastCall[2] as { asset: { style: Record<string, unknown> } };
+		expect(updates.asset.style).toHaveProperty("wordSpacing");
+
+		toolbar.dispose();
+		cleanupTestContainer(container);
+	});
+});

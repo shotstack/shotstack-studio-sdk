@@ -375,7 +375,7 @@ export class RichTextToolbar extends BaseToolbar {
 						style: {
 							...(asset.style || {}),
 							letterSpacing: state.letterSpacing,
-							wordSpacing: state.wordSpacing,
+							...(this.supportsWordSpacing() ? { wordSpacing: state.wordSpacing } : {}),
 							lineHeight: state.lineHeight
 						}
 					};
@@ -384,7 +384,11 @@ export class RichTextToolbar extends BaseToolbar {
 				} else {
 					// Discrete update (creates command)
 					this.updateClipProperty({
-						style: { letterSpacing: state.letterSpacing, wordSpacing: state.wordSpacing, lineHeight: state.lineHeight }
+						style: {
+							letterSpacing: state.letterSpacing,
+							...(this.supportsWordSpacing() ? { wordSpacing: state.wordSpacing } : {}),
+							lineHeight: state.lineHeight
+						}
 					});
 				}
 			});
@@ -404,7 +408,9 @@ export class RichTextToolbar extends BaseToolbar {
 				const finalClip = structuredClone(session.initialState);
 				if (finalClip.asset && (finalClip.asset.type === "rich-text" || finalClip.asset.type === "rich-caption") && finalClip.asset.style) {
 					finalClip.asset.style.letterSpacing = finalState.letterSpacing;
-					(finalClip.asset.style as Record<string, unknown>)["wordSpacing"] = finalState.wordSpacing;
+					if (this.supportsWordSpacing()) {
+						(finalClip.asset.style as Record<string, unknown>)["wordSpacing"] = finalState.wordSpacing;
+					}
 					finalClip.asset.style.lineHeight = finalState.lineHeight;
 				}
 
@@ -941,6 +947,14 @@ export class RichTextToolbar extends BaseToolbar {
 
 	protected createSpacingPanel(): SpacingPanel {
 		return new SpacingPanel();
+	}
+
+	/**
+	 * Whether this toolbar's asset type accepts `style.wordSpacing`. Rich-caption
+	 * does not — its schema rejects the key, so it must never be written.
+	 */
+	protected supportsWordSpacing(): boolean {
+		return true;
 	}
 
 	protected createFontColorPicker(): FontColorPicker {
