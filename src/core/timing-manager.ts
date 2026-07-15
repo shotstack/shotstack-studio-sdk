@@ -4,7 +4,7 @@
 
 import type { Player } from "@canvas/players/player";
 import { EditEvent } from "@core/events/edit-events";
-import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
+import { calculateTimelineEnd, resolveAutoStart, resolveEndLength } from "@core/timing/resolver";
 import { type Seconds, isAliasReference, sec } from "@core/timing/types";
 
 import type { Edit } from "./edit-session";
@@ -53,18 +53,13 @@ export class TimingManager {
 				const resolvedClip = resolvedTrack?.clips[clipIdx];
 
 				if (resolvedClip) {
-					const intent = player.getTimingIntent();
-
 					// Use resolved values from the resolver
 					const resolvedStart = resolvedClip.start;
-					let resolvedLength = resolvedClip.length;
-
-					// Special handling for "auto" length - requires async asset loading
-					if (intent.length === "auto") {
-						resolvedLength = await resolveAutoLength(player.clipConfiguration.asset);
-					}
+					const resolvedLength = resolvedClip.length;
+					const changed = player.getStart() !== resolvedStart || player.getLength() !== resolvedLength;
 
 					player.setResolvedTiming({ start: resolvedStart, length: resolvedLength });
+					if (changed) player.reconfigureAfterRestore();
 
 					// Sync resolved edit cache so timeline UI sees actual timing
 					resolvedClip.start = resolvedStart;

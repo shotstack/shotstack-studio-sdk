@@ -79,6 +79,8 @@ export abstract class Player extends Entity {
 	public clipConfiguration: ResolvedClip;
 
 	private resolvedTiming: ResolvedTiming;
+	private mediaDuration: Seconds | null = null;
+	private mediaTimingRevision = 0;
 
 	private offsetXKeyframeBuilder?: ComposedKeyframeBuilder;
 	private offsetYKeyframeBuilder?: ComposedKeyframeBuilder;
@@ -340,6 +342,7 @@ export abstract class Player extends Entity {
 	}
 
 	public override dispose(): void {
+		this.mediaTimingRevision += 1;
 		this.wipeMask?.destroy();
 		this.wipeMask = null;
 		this.wipeFilter?.destroy();
@@ -399,6 +402,25 @@ export abstract class Player extends Entity {
 
 	public getResolvedTiming(): ResolvedTiming {
 		return { ...this.resolvedTiming };
+	}
+
+	public getMediaDuration(): Seconds | null {
+		return this.mediaDuration;
+	}
+
+	protected beginMediaTimingLoad(): number {
+		this.mediaTimingRevision += 1;
+		this.mediaDuration = null;
+		return this.mediaTimingRevision;
+	}
+
+	protected isMediaTimingLoadCurrent(revision: number): boolean {
+		return revision === this.mediaTimingRevision;
+	}
+
+	protected completeMediaTimingLoad(revision: number, duration: Seconds | null): void {
+		if (!this.isMediaTimingLoadCurrent(revision)) return;
+		this.mediaDuration = duration !== null && Number.isFinite(duration) && duration > 0 ? duration : null;
 	}
 
 	public setResolvedTiming(timing: ResolvedTiming): void {

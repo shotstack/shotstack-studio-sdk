@@ -1,5 +1,6 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { type AudioAsset, type ResolvedClip, type Keyframe } from "@schemas";
@@ -11,6 +12,7 @@ import { Player, PlayerType } from "./player";
 export class AudioPlayer extends Player {
 	private audioResource: howler.Howl | null;
 	private isPlaying: boolean;
+	private assetAcquisitions = new Map<number, string>();
 
 	private volumeKeyframeBuilder!: KeyframeBuilder;
 
@@ -25,24 +27,37 @@ export class AudioPlayer extends Player {
 	}
 
 	public override async load(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
 		await super.load();
+		if (!this.isMediaTimingLoadCurrent(revision)) return;
 
 		const audioClipConfiguration = this.clipConfiguration.asset as AudioAsset;
 
 		const identifier = audioClipConfiguration.src;
 		if (!identifier) {
+			this.completeMediaTimingLoad(revision, null);
 			// Prompt-bearing assets route to pending placeholder players — reaching here without a src is invalid data
 			throw new Error("Audio asset has no src to load.");
 		}
 		const loadOptions: pixi.UnresolvedAsset = { src: identifier, parser: AudioLoadParser.Name };
+		this.assetAcquisitions.set(revision, identifier);
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(identifier, loadOptions);
+		if (!this.isMediaTimingLoadCurrent(revision)) {
+			if (audioResource) this.releaseAssetAcquisition(revision);
+			else this.assetAcquisitions.delete(revision);
+			return;
+		}
 
 		const isValidAudioSource = audioResource instanceof howler.Howl;
 		if (!isValidAudioSource) {
+			if (audioResource) this.releaseAssetAcquisition(revision);
+			else this.assetAcquisitions.delete(revision);
+			this.completeMediaTimingLoad(revision, null);
 			throw new Error(`Invalid audio source '${audioClipConfiguration.src}'.`);
 		}
 
 		this.audioResource = audioResource;
+		this.completeMediaTimingLoad(revision, sec(audioResource.duration()));
 
 		// Create volume keyframes after timing is resolved (not in constructor)
 		const baseVolume = typeof audioClipConfiguration.volume === "number" ? audioClipConfiguration.volume : 1;
@@ -107,6 +122,8 @@ export class AudioPlayer extends Player {
 	}
 
 	public override dispose(): void {
+		const { src } = this.clipConfiguration.asset as AudioAsset;
+		this.releaseAssetAcquisitions(src);
 		if (this.audioResource) {
 			this.audioResource.stop();
 			this.audioResource.unload();
@@ -118,6 +135,8 @@ export class AudioPlayer extends Player {
 
 	/** Reload the audio asset when asset.src changes (e.g., merge field update or loadEdit) */
 	public override async reloadAsset(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
+		this.releaseAssetAcquisitions();
 		if (this.audioResource) {
 			this.audioResource.stop();
 			this.audioResource.unload();
@@ -129,17 +148,47 @@ export class AudioPlayer extends Player {
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
 		const { src } = audioAsset;
 		if (!src) {
+			this.completeMediaTimingLoad(revision, null);
 			throw new Error("Audio asset has no src to load.");
 		}
 		const loadOptions: pixi.UnresolvedAsset = { src, parser: AudioLoadParser.Name };
+		this.assetAcquisitions.set(revision, src);
 		const audioResource = await this.edit.assetLoader.load<howler.Howl>(src, loadOptions);
+		if (!this.isMediaTimingLoadCurrent(revision)) {
+			if (audioResource) this.releaseAssetAcquisition(revision);
+			else this.assetAcquisitions.delete(revision);
+			return;
+		}
 
 		if (!(audioResource instanceof howler.Howl)) {
+			if (audioResource) this.releaseAssetAcquisition(revision);
+			else this.assetAcquisitions.delete(revision);
+			this.completeMediaTimingLoad(revision, null);
 			throw new Error(`Invalid audio source '${audioAsset.src}'.`);
 		}
 
 		this.audioResource = audioResource;
+		this.completeMediaTimingLoad(revision, sec(audioResource.duration()));
 		this.audioResource.volume(this.getVolume());
+	}
+
+	private releaseAssetAcquisition(revision: number): void {
+		const identifier = this.assetAcquisitions.get(revision);
+		if (!identifier) return;
+		this.assetAcquisitions.delete(revision);
+		this.edit.assetLoader.release(identifier);
+	}
+
+	private releaseAssetAcquisitions(alreadyReleasedIdentifier?: string): void {
+		let skipIdentifier = alreadyReleasedIdentifier;
+		for (const [revision, identifier] of this.assetAcquisitions) {
+			this.assetAcquisitions.delete(revision);
+			if (identifier === skipIdentifier) {
+				skipIdentifier = undefined;
+			} else {
+				this.edit.assetLoader.release(identifier);
+			}
+		}
 	}
 
 	public override reconfigureAfterRestore(): void {

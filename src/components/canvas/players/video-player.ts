@@ -1,5 +1,6 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type VideoAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -36,11 +37,16 @@ export class VideoPlayer extends Player {
 	}
 
 	public override async load(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
 		await super.load();
+		if (!this.isMediaTimingLoadCurrent(revision)) return;
 		try {
-			await this.loadVideo();
+			if (!(await this.loadVideo(revision))) return;
+			this.completeMediaTimingLoad(revision, sec(this.texture?.source.resource.duration ?? 0));
 			this.configureKeyframes();
 		} catch (error) {
+			if (!this.isMediaTimingLoadCurrent(revision)) return;
+			this.completeMediaTimingLoad(revision, null);
 			console.warn(`[VideoPlayer.load] FAILED clipId=${this.clipId}:`, error);
 			this.createFallbackGraphic();
 		}
@@ -141,6 +147,7 @@ export class VideoPlayer extends Player {
 
 	/** Reload the video asset when asset.src changes (e.g., merge field update) */
 	public override async reloadAsset(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
 		this.skipVideoUpdate = true;
 		this.isPlaying = false;
 		this.syncTimer = 0;
@@ -149,12 +156,15 @@ export class VideoPlayer extends Player {
 		try {
 			this.disposeVideo();
 			this.clearPlaceholder();
-			await this.loadVideo();
+			if (!(await this.loadVideo(revision))) return;
+			this.completeMediaTimingLoad(revision, sec(this.texture?.source.resource.duration ?? 0));
 		} catch (error) {
+			if (!this.isMediaTimingLoadCurrent(revision)) return;
+			this.completeMediaTimingLoad(revision, null);
 			console.warn(`[VideoPlayer.reloadAsset] FAILED clipId=${this.clipId}:`, error);
 			this.createFallbackGraphic();
 		} finally {
-			this.skipVideoUpdate = false;
+			if (this.isMediaTimingLoadCurrent(revision)) this.skipVideoUpdate = false;
 		}
 	}
 
@@ -165,7 +175,7 @@ export class VideoPlayer extends Player {
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
 	}
 
-	private async loadVideo(): Promise<void> {
+	private async loadVideo(revision: number): Promise<boolean> {
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 		const { src } = videoAsset;
 		if (!src) {
@@ -187,17 +197,17 @@ export class VideoPlayer extends Player {
 		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
 		}
-
-		this.clearPlaceholder();
+		if (!this.isMediaTimingLoadCurrent(revision)) {
+			this.destroyVideoTexture(texture);
+			return false;
+		}
 
 		// Fix alpha channel rendering for WebM VP9 videos (PixiJS 8 auto-detection is buggy)
 		texture.source.alphaMode = "no-premultiply-alpha";
 
-		this.texture = this.createCroppedTexture(texture);
-
 		// Ensure the video has at least one decoded frame before adding to render tree
 		// This prevents WebGL errors when GPU tries to upload uninitialized texture data
-		const video = (this.texture.source as pixi.VideoSource).resource;
+		const video = texture.source.resource;
 		if (video instanceof HTMLVideoElement && video.readyState < 2) {
 			await new Promise<void>(resolve => {
 				const onReady = () => {
@@ -208,21 +218,22 @@ export class VideoPlayer extends Player {
 				if (video.readyState >= 2) resolve();
 			});
 		}
+		if (!this.isMediaTimingLoadCurrent(revision)) {
+			this.destroyVideoTexture(texture);
+			return false;
+		}
 
+		this.clearPlaceholder();
+		this.texture = this.createCroppedTexture(texture);
 		this.sprite = new pixi.Sprite(this.texture);
 		this.contentContainer.addChild(this.sprite);
 
 		// Set initial volume immediately so the element never sits at the browser default of 1.0
 		this.texture.source.resource.volume = this.getVolume();
+		return true;
 	}
 
 	private disposeVideo(): void {
-		if (this.texture?.source?.resource) {
-			this.texture.source.resource.pause();
-			// Release video resource - each player owns its own video element
-			this.texture.source.resource.src = "";
-			this.texture.source.resource.load();
-		}
 		if (this.sprite) {
 			this.contentContainer.removeChild(this.sprite);
 			this.sprite.destroy();
@@ -230,9 +241,17 @@ export class VideoPlayer extends Player {
 		}
 		// Destroy the texture since we own it (created via loadVideoUnique)
 		if (this.texture) {
-			this.texture.destroy(true);
+			this.destroyVideoTexture(this.texture);
 			this.texture = null;
 		}
+	}
+
+	private destroyVideoTexture(texture: pixi.Texture<pixi.VideoSource>): void {
+		const { resource } = texture.source;
+		resource.pause();
+		resource.src = "";
+		resource.load();
+		texture.destroy(true);
 	}
 
 	private clearPlaceholder(): void {

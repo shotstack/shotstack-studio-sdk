@@ -2,6 +2,7 @@ import { EditDocument } from "@core/edit-document";
 import { EventEmitter } from "@core/events/event-emitter";
 import { MergeFieldService } from "@core/merge/merge-field-service";
 import { resolve } from "@core/resolver";
+import { sec } from "@core/timing/types";
 import type { Edit } from "@schemas";
 
 function createMergeFieldService(): MergeFieldService {
@@ -77,6 +78,32 @@ describe("Resolver", () => {
 			expect(clips[0].start).toBe(0);
 			expect(clips[1].start).toBe(2); // After first clip (0 + 2)
 			expect(clips[2].start).toBe(5); // After second clip (2 + 3)
+		});
+
+		it("propagates a loaded GIF cycle through auto and alias timing", () => {
+			const doc = new EditDocument({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{ alias: "gif", asset: { type: "image", src: "https://example.com/a.gif" }, start: 0, length: "auto" },
+								{ asset: { type: "image", src: "https://example.com/b.jpg" }, start: "auto", length: 1 }
+							]
+						},
+						{ clips: [{ asset: { type: "image", src: "https://example.com/c.jpg" }, start: 0, length: "alias://gif" }] }
+					]
+				},
+				output: { format: "mp4", size: { width: 1920, height: 1080 } }
+			});
+			const gifId = doc.getClipId(0, 0)!;
+
+			const resolved = resolve(doc, {
+				mergeFields: createMergeFieldService(),
+				mediaDurationByClipId: new Map([[gifId, sec(2.4)]])
+			});
+			expect(resolved.timeline.tracks[0].clips[0].length).toBe(2.4);
+			expect(resolved.timeline.tracks[0].clips[1].start).toBe(2.4);
+			expect(resolved.timeline.tracks[1].clips[0].length).toBe(2.4);
 		});
 
 		it("resolves 'end' length to extend to timeline end", () => {

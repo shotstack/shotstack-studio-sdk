@@ -8,7 +8,14 @@
  */
 
 import { AssetLoader } from "@loaders/asset-loader";
+import { GifImageSource } from "@loaders/gif-image-source";
 import * as pixi from "pixi.js";
+
+jest.mock("@loaders/gif-image-source", () => ({
+	GifImageSource: { fetch: jest.fn() }
+}));
+
+const mockGifFetch = GifImageSource.fetch as jest.Mock;
 
 // Mock pixi.js VideoSource and Texture
 jest.mock("pixi.js", () => ({
@@ -56,6 +63,46 @@ describe("AssetLoader", () => {
 			expect(result).toBeNull();
 			expect(loader.loadTracker.registry[url]).toEqual({ progress: 1, status: "failed" });
 			expect(pixiMock.Assets.unload).toHaveBeenCalledWith(url);
+		});
+
+		it("unloads an unreferenced asset after its pending load settles", async () => {
+			const loader = new AssetLoader();
+			const url = "https://example.com/pending.png";
+			let resolveAsset!: (asset: object) => void;
+			pixiMock.Assets.load.mockReturnValueOnce(
+				new Promise(resolve => {
+					resolveAsset = resolve;
+				})
+			);
+
+			const load = loader.load(url, { src: url });
+			loader.release(url);
+			pixiMock.Assets.cache.has.mockReturnValue(true);
+			resolveAsset({});
+			await load;
+			await Promise.resolve();
+
+			expect(pixiMock.Assets.unload).toHaveBeenCalledWith(url);
+		});
+	});
+
+	describe("loadGif", () => {
+		it("shares one decoded source until the final clip releases it", async () => {
+			const source = { destroy: jest.fn() };
+			mockGifFetch.mockResolvedValue(source);
+			const loader = new AssetLoader();
+			const src = "https://example.com/animation.gif";
+
+			const [first, second] = await Promise.all([loader.loadGif(src, `${src}?x-cors=1`), loader.loadGif(src, `${src}?x-cors=1`)]);
+
+			expect(first).toBe(source);
+			expect(second).toBe(source);
+			expect(mockGifFetch).toHaveBeenCalledTimes(1);
+			loader.release(src);
+			expect(source.destroy).not.toHaveBeenCalled();
+			loader.release(src);
+			await Promise.resolve();
+			expect(source.destroy).toHaveBeenCalledTimes(1);
 		});
 	});
 

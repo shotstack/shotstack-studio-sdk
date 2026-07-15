@@ -20,6 +20,7 @@ export const globals: Record<string, string> = {
 };
 
 export function external(id: string): boolean {
+	if (id === "pixi.js/gif") return false;
 	if (id === "pixi.js" || id.startsWith("pixi.js/")) return true;
 	if (id === "pixi-filters" || id.startsWith("pixi-filters/")) return true;
 	if (id.startsWith("@napi-rs/")) return true;

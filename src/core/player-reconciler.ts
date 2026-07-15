@@ -39,6 +39,8 @@ export class PlayerReconciler {
 
 	/** In-flight player load promises, so off-playback captures (captureFrame) can await asset readiness. */
 	private readonly inFlightLoads = new Set<Promise<void>>();
+	private readonly playerLoads = new WeakMap<Player, Promise<void>>();
+	private isInitialReconcile = false;
 
 	constructor(private readonly edit: Edit) {
 		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.onResolved);
@@ -59,9 +61,14 @@ export class PlayerReconciler {
 	 * @returns Promise that resolves when all players are loaded
 	 */
 	public async reconcileInitial(resolved: ResolvedEdit): Promise<ReconcileResult> {
-		const result = this.reconcile(resolved);
-		await Promise.all(result.pendingLoads);
-		return result;
+		this.isInitialReconcile = true;
+		try {
+			const result = this.reconcile(resolved);
+			await Promise.all(result.pendingLoads);
+			return result;
+		} finally {
+			this.isInitialReconcile = false;
+		}
 	}
 
 	/**
@@ -73,6 +80,14 @@ export class PlayerReconciler {
 	public async whenSettled(): Promise<void> {
 		while (this.inFlightLoads.size > 0) {
 			await Promise.allSettled([...this.inFlightLoads]);
+		}
+	}
+
+	public async whenPlayerSettled(player: Player): Promise<void> {
+		for (;;) {
+			const pending = this.playerLoads.get(player);
+			if (!pending) return;
+			await Promise.allSettled([pending]);
 		}
 	}
 
@@ -130,7 +145,7 @@ export class PlayerReconciler {
 							}
 						} else if (this.enableCreation) {
 							// Create new Player
-							this.createPlayer(clip, clipId, trackIndex, clipIndex);
+							pendingLoads.push(this.createPlayer(clip, clipId, trackIndex, clipIndex));
 							result.created.push(clipId);
 						}
 					}
@@ -247,9 +262,7 @@ export class PlayerReconciler {
 				});
 			});
 
-		// Track the load so off-playback captures can await asset readiness (see whenSettled()).
-		this.inFlightLoads.add(loadPromise);
-		return loadPromise.finally(() => this.inFlightLoads.delete(loadPromise));
+		return this.trackPlayerLoad(player, loadPromise);
 	}
 
 	/**
@@ -372,7 +385,7 @@ export class PlayerReconciler {
 		}
 
 		if (needsReload && player.reloadAsset) {
-			player
+			const loadPromise = player
 				.reloadAsset()
 				.then(() => {
 					player.reconfigureAfterRestore();
@@ -380,9 +393,29 @@ export class PlayerReconciler {
 				.catch(error => {
 					console.error("Failed to reload asset:", error);
 				});
+			this.trackPlayerLoad(player, loadPromise);
 		} else {
 			player.reconfigureAfterRestore();
 		}
+	}
+
+	private trackPlayerLoad(player: Player, loadPromise: Promise<void>): Promise<void> {
+		this.inFlightLoads.add(loadPromise);
+		this.playerLoads.set(player, loadPromise);
+
+		const cleanup = (): void => {
+			if (this.playerLoads.get(player) !== loadPromise) return;
+			this.playerLoads.delete(player);
+			if (this.isInitialReconcile || player.getTimingIntent().length !== "auto") return;
+
+			queueMicrotask(() => {
+				const currentPlayer = player.clipId ? this.edit.getPlayerByClipId(player.clipId) : null;
+				if (currentPlayer !== player) return;
+				this.edit.resolveClipAutoLength(player).catch(error => console.error("Failed to resolve auto clip timing:", error));
+			});
+		};
+		loadPromise.then(cleanup, cleanup);
+		return loadPromise.finally(() => this.inFlightLoads.delete(loadPromise));
 	}
 
 	/**

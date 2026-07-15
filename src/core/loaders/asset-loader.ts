@@ -2,6 +2,8 @@ import * as pixi from "pixi.js";
 
 import { AssetLoadTracker, type AssetLoadInfoStatus } from "../events/asset-load-tracker";
 
+import { GifImageSource } from "./gif-image-source";
+
 export class AssetLoader {
 	private static readonly VIDEO_EXTENSIONS = [".mp4", ".m4v", ".webm", ".ogg", ".ogv"];
 	private static readonly VIDEO_MIME: Record<string, string> = {
@@ -15,6 +17,8 @@ export class AssetLoader {
 
 	/** Reference counts for loaded assets - prevents premature unloading during transforms */
 	private refCounts = new Map<string, number>();
+	private assetLoads = new Map<string, Promise<unknown>>();
+	private gifSources = new Map<string, Promise<GifImageSource>>();
 
 	/**
 	 * Increment reference count for an asset.
@@ -29,13 +33,32 @@ export class AssetLoader {
 	 * @returns true if asset can be safely unloaded (count reached zero)
 	 */
 	public decrementRef(src: string): boolean {
-		const count = this.refCounts.get(src) ?? 0;
-		if (count <= 1) {
+		const count = this.refCounts.get(src);
+		if (!count) return false;
+		if (count === 1) {
 			this.refCounts.delete(src);
 			return true; // Safe to unload
 		}
 		this.refCounts.set(src, count - 1);
 		return false; // Still in use
+	}
+
+	public release(identifier: string): void {
+		if (!this.decrementRef(identifier)) return;
+
+		const gifSource = this.gifSources.get(identifier);
+		if (gifSource) {
+			this.gifSources.delete(identifier);
+			gifSource.then(source => source.destroy()).catch(() => undefined);
+		}
+
+		const unload = (): void => {
+			if (this.refCounts.has(identifier) || !pixi.Assets.cache.has(identifier)) return;
+			Promise.resolve(pixi.Assets.unload(identifier)).catch(() => undefined);
+		};
+		const assetLoad = this.assetLoads.get(identifier);
+		if (assetLoad) assetLoad.then(unload, unload);
+		else unload();
 	}
 
 	constructor() {
@@ -55,15 +78,17 @@ export class AssetLoader {
 	public async load<TResolvedAsset>(identifier: string, loadOptions: pixi.UnresolvedAsset): Promise<TResolvedAsset | null> {
 		this.updateAssetLoadMetadata(identifier, "pending", 0);
 		this.incrementRef(identifier);
+		const loadPromise = this.shouldUseSafariVideoLoader(loadOptions).then(useSafari =>
+			useSafari
+				? this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions)
+				: pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
+						this.updateAssetLoadMetadata(identifier, "loading", progress);
+					})
+		);
+		this.assetLoads.set(identifier, loadPromise);
 
 		try {
-			const useSafari = await this.shouldUseSafariVideoLoader(loadOptions);
-
-			const resolvedAsset = useSafari
-				? await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions)
-				: await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
-					this.updateAssetLoadMetadata(identifier, "loading", progress);
-				});
+			const resolvedAsset = await loadPromise;
 
 			if (resolvedAsset == null) {
 				console.warn(`[AssetLoader.load] Empty asset returned for "${identifier}"`);
@@ -78,6 +103,32 @@ export class AssetLoader {
 			console.warn(`[AssetLoader.load] Failed to load "${identifier}":`, error);
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			await this.cleanupFailedLoad(identifier);
+			return null;
+		} finally {
+			if (this.assetLoads.get(identifier) === loadPromise) this.assetLoads.delete(identifier);
+		}
+	}
+
+	public async loadGif(identifier: string, requestUrl: string): Promise<GifImageSource | null> {
+		this.updateAssetLoadMetadata(identifier, "pending", 0);
+		this.incrementRef(identifier);
+
+		let sourcePromise = this.gifSources.get(identifier);
+		if (!sourcePromise) {
+			sourcePromise = GifImageSource.fetch(requestUrl);
+			this.gifSources.set(identifier, sourcePromise);
+		}
+
+		try {
+			this.updateAssetLoadMetadata(identifier, "loading", 0.5);
+			const source = await sourcePromise;
+			this.updateAssetLoadMetadata(identifier, "success", 1);
+			return source;
+		} catch (error) {
+			console.warn(`[AssetLoader.loadGif] Failed to load "${identifier}":`, error);
+			this.updateAssetLoadMetadata(identifier, "failed", 1);
+			if (this.gifSources.get(identifier) === sourcePromise) this.gifSources.delete(identifier);
+			this.decrementRef(identifier);
 			return null;
 		}
 	}

@@ -18,12 +18,14 @@
 import type { EditDocument } from "./edit-document";
 import type { MergeFieldService } from "./merge/merge-field-service";
 import type { Clip, ResolvedClip, ResolvedEdit, ResolvedTrack } from "./schemas";
+import { resolveAutoLength } from "./timing/resolver";
 import { type Seconds, sec, isAliasReference, parseAliasName } from "./timing/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface ResolveContext {
 	mergeFields: MergeFieldService;
+	mediaDurationByClipId?: ReadonlyMap<string, Seconds | null>;
 }
 
 /**
@@ -81,7 +83,7 @@ function resolveMergeFieldsInClip(clip: InternalClip, mergeFields: MergeFieldSer
 			return num !== null ? num : mergeFields.resolve(value);
 		}
 		if (Array.isArray(value)) {
-			return value.map((item) => processValue(item, key));
+			return value.map(item => processValue(item, key));
 		}
 		if (value !== null && typeof value === "object") {
 			const result: Record<string, unknown> = {};
@@ -246,7 +248,12 @@ function topologicalSort(dependencies: Map<string, Set<string>>, allClipIds: str
  * This is called after topological sorting ensures dependencies are resolved first.
  * Note: Merge fields should be resolved via resolveMergeFieldsInClip() BEFORE calling this.
  */
-function resolveClipWithAliases(clip: InternalClip, previousClipEnd: Seconds, resolvedAliases: Map<string, AliasValue>): PartialResolvedClip {
+function resolveClipWithAliases(
+	clip: InternalClip,
+	previousClipEnd: Seconds,
+	resolvedAliases: Map<string, AliasValue>,
+	intrinsicDuration: Seconds | null = null
+): PartialResolvedClip {
 	// Resolve start
 	let start: Seconds;
 	if (clip.start === "auto") {
@@ -269,9 +276,7 @@ function resolveClipWithAliases(clip: InternalClip, previousClipEnd: Seconds, re
 		length = sec(1); // Temporary placeholder
 		pendingEndLength = true;
 	} else if (clip.length === "auto") {
-		// Use intrinsic duration if available, else fallback
-		// Note: For now use fallback; intrinsic duration will be provided by Players
-		length = sec(3);
+		length = resolveAutoLength(clip.asset, intrinsicDuration);
 	} else if (isAliasReference(clip.length)) {
 		const aliasName = parseAliasName(clip.length);
 		const aliasValue = resolvedAliases.get(aliasName);
@@ -341,6 +346,9 @@ export interface SingleClipContext extends ResolveContext {
 	 * Resolved alias values for alias reference resolution.
 	 */
 	resolvedAliases?: Map<string, AliasValue>;
+
+	/** Intrinsic media duration in seconds, or null when unavailable. */
+	intrinsicDuration?: Seconds | null;
 }
 
 /**
@@ -379,7 +387,7 @@ export function resolveClip(document: EditDocument, clipId: string, context: Sin
 
 	// 3. Resolve the single clip using alias-aware logic
 	const resolvedAliases = context.resolvedAliases ?? new Map();
-	const resolvedClip = resolveClipWithAliases(processedClip, context.previousClipEnd, resolvedAliases);
+	const resolvedClip = resolveClipWithAliases(processedClip, context.previousClipEnd, resolvedAliases, context.intrinsicDuration);
 
 	// 4. Handle "end" length (second pass for this single clip)
 	if (resolvedClip.pendingEndLength && context.cachedTimelineEnd !== undefined) {
@@ -453,7 +461,8 @@ export function resolve(document: EditDocument, context: ResolveContext): Resolv
 			const previousClipEnd = previousClipEndByTrack.get(trackIndex) ?? sec(0);
 
 			// Resolve the clip with alias support
-			const resolvedClip = resolveClipWithAliases(processedClip, previousClipEnd, resolvedAliases);
+			const intrinsicDuration = processedClip.id ? (context.mediaDurationByClipId?.get(processedClip.id) ?? null) : null;
+			const resolvedClip = resolveClipWithAliases(processedClip, previousClipEnd, resolvedAliases, intrinsicDuration);
 
 			// Store in map by position key
 			resolvedClipsByPosition.set(`${trackIndex}-${clipIndex}`, resolvedClip);
