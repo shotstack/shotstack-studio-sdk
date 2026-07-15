@@ -5,7 +5,7 @@ import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { ms } from "@core/timing/types";
 import type { UIController } from "@core/ui/ui-controller";
-import { checkWebGLSupport } from "@core/webgl-support";
+import { checkWebGLSupport, WebGLUnsupportedError } from "@core/webgl-support";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { FontLoadParser } from "@loaders/font-load-parser";
@@ -90,7 +90,7 @@ export class Canvas {
 		const webglSupport = checkWebGLSupport();
 		if (!webglSupport.supported) {
 			createWebGLErrorOverlay(root);
-			return;
+			throw new WebGLUnsupportedError(webglSupport.reason);
 		}
 
 		const rect = root.getBoundingClientRect();
@@ -268,6 +268,9 @@ export class Canvas {
 	}
 
 	public resize(): void {
+		// Renderer is undefined until load() initialises it and null after dispose().
+		if (!this.application.renderer) return;
+
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);
 		if (!root) return;
 

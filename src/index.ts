@@ -6,6 +6,7 @@ export { Controls } from "@core/inputs/controls";
 export { VideoExporter } from "@core/export";
 export { Timeline } from "@timeline/index";
 export { UIController } from "@core/ui/ui-controller";
+export { WebGLUnsupportedError } from "@core/webgl-support";
 
 export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-controller";
 export type { EditConfig } from "@core/schemas";
