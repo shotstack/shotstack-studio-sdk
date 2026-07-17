@@ -2208,12 +2208,10 @@ export class Edit {
 	}
 
 	/**
-	 * Resolve once every in-flight asset load has settled.
-	 *
-	 * `load()` awaits the assets present at reconciliation, but players created afterwards (and
-	 * follow-up work a load enqueues) load in the background. Await this before driving playback
-	 * or reading a frame programmatically so the canvas shows loaded content rather than a
-	 * partially-loaded first frame. Loops until no further loads are outstanding.
+	 * Resolve once all in-flight asset loads have finished, including any that
+	 * begin after the initial `load()`. Await before driving playback or
+	 * capturing a frame so the canvas shows fully-loaded content rather than a
+	 * partially-loaded first frame.
 	 * @internal
 	 */
 	public whenSettled(): Promise<void> {

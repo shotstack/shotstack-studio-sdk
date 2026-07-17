@@ -264,6 +264,7 @@ export class ShotstackEdit extends Edit {
 	 * Track/clip index of the first clip bound to the given merge field, or
 	 * null if none. Pairs with `getClipViewportRect` so an overlay can anchor
 	 * UI to the clip a variable drives (e.g. a coach-mark on `{{ADDRESS}}`).
+	 * @internal
 	 */
 	public getMergeFieldClipLocation(fieldName: string): { trackIndex: number; clipIndex: number } | null {
 		const document = this.getDocument();
