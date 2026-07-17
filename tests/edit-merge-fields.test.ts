@@ -2140,4 +2140,19 @@ describe("Edit Merge Fields", () => {
 			expect(edit.mergeFields.get("SHADOW_X")).toBeUndefined();
 		});
 	});
+
+	describe("getMergeFieldClipLocation()", () => {
+		it("returns the track/clip index of the clip bound to a field", async () => {
+			const clip = createTextClip(0, 3);
+			await edit.addClip(1, clip);
+			const clipId = getClipIdOrFail(edit, 1, 0);
+			await edit.applyMergeField(clipId, "asset.text", "HEADLINE", "New headline");
+
+			expect(edit.getMergeFieldClipLocation("HEADLINE")).toEqual({ trackIndex: 1, clipIndex: 0 });
+		});
+
+		it("returns null for a field no clip references", () => {
+			expect(edit.getMergeFieldClipLocation("NONEXISTENT")).toBeNull();
+		});
+	});
 });

@@ -261,6 +261,23 @@ export class ShotstackEdit extends Edit {
 	}
 
 	/**
+	 * Track/clip index of the first clip bound to the given merge field, or
+	 * null if none. Pairs with `getClipViewportRect` so an overlay can anchor
+	 * UI to the clip a variable drives (e.g. a coach-mark on `{{ADDRESS}}`).
+	 */
+	public getMergeFieldClipLocation(fieldName: string): { trackIndex: number; clipIndex: number } | null {
+		const document = this.getDocument();
+		if (!document) return null;
+		for (const clipId of document.getClipIdsWithBindings()) {
+			const bindings = document.getClipBindings(clipId);
+			if (bindings && this.clipUsesField(bindings, fieldName)) {
+				return this.getClipPositionById(clipId);
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Remove a merge field globally from all clips and the registry.
 	 */
 	public async deleteMergeFieldGlobally(fieldName: string): Promise<void> {
