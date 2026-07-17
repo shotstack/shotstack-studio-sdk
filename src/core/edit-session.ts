@@ -2117,6 +2117,38 @@ export class Edit {
 	}
 
 	/**
+	 * The clip's on-screen rectangle in CSS pixels, relative to the top-left
+	 * of the canvas element. Returns null when the clip is not visible at the
+	 * current playhead (its container isn't drawn then) — seek to the clip's
+	 * start first. Lets an external overlay anchor UI (e.g. a coach-mark) to a
+	 * clip; the caller adds `getCanvasElement().getBoundingClientRect()` to
+	 * convert to viewport coordinates. Clips animate and move with zoom, so
+	 * recompute per animation frame.
+	 * @internal
+	 */
+	public getClipViewportRect(trackIndex: number, clipIndex: number): { left: number; top: number; width: number; height: number } | null {
+		const player = this.getPlayerClip(trackIndex, clipIndex);
+		if (!player || !player.isActive() || !this.canvas) return null;
+		const bounds = player.getContainer().getBounds();
+		const resolution = this.canvas.application.renderer?.resolution ?? 1;
+		return {
+			left: bounds.x / resolution,
+			top: bounds.y / resolution,
+			width: bounds.width / resolution,
+			height: bounds.height / resolution
+		};
+	}
+
+	/**
+	 * The backing `<canvas>` DOM element, or null before the canvas is
+	 * attached. Pairs with {@link getClipViewportRect} to place an overlay.
+	 * @internal
+	 */
+	public getCanvasElement(): HTMLCanvasElement | null {
+		return this.canvas?.application.canvas ?? null;
+	}
+
+	/**
 	 * Get the viewport container for coordinate transforms.
 	 * @internal
 	 */
@@ -2173,6 +2205,17 @@ export class Edit {
 	public setOutputAspectRatio(aspectRatio: string): Promise<CommandResult> {
 		const command = new SetOutputAspectRatioCommand(aspectRatio);
 		return this.executeCommand(command);
+	}
+
+	/**
+	 * Resolve once all in-flight asset loads have finished, including any that
+	 * begin after the initial `load()`. Await before driving playback or
+	 * capturing a frame so the canvas shows fully-loaded content rather than a
+	 * partially-loaded first frame.
+	 * @internal
+	 */
+	public whenSettled(): Promise<void> {
+		return this.playerReconciler.whenSettled();
 	}
 
 	/**

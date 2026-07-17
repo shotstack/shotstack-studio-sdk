@@ -54,7 +54,8 @@ jest.mock("pixi.js", () => {
 		Container: jest.fn().mockImplementation(createMockContainer),
 		Texture: {
 			from: jest.fn().mockImplementation(() => ({
-				destroy: jest.fn()
+				destroy: jest.fn(),
+				source: { update: jest.fn() }
 			})),
 			WHITE: {}
 		},
@@ -421,5 +422,22 @@ describe("RichTextPlayer font caching", () => {
 
 		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(1);
 		expect(mockFetch).toHaveBeenCalledTimes(1);
+	});
+
+	it("re-uploads the texture source on every repaint so seek/playback shows the current frame", async () => {
+		const { player } = await createReadyPlayer();
+		const renderFrame = (player as unknown as { renderFrame: (t: number) => Promise<void> }).renderFrame.bind(player);
+		const { texture } = player as unknown as { texture: { source: { update: jest.Mock } } };
+
+		// load() created the texture on its frame-0 render; repaints must flag its source dirty.
+		// pixi.Texture.from(canvas) is source-cached, so without this the GPU keeps the first
+		// frame (blank fade-in start for animated text) forever — the actual bug being guarded.
+		expect(texture.source.update).toHaveBeenCalledTimes(0);
+
+		await renderFrame(2.3);
+		await renderFrame(4.0);
+
+		expect(texture.source.update).toHaveBeenCalledTimes(2);
+		expect((player as unknown as { texture: unknown }).texture).toBe(texture);
 	});
 });

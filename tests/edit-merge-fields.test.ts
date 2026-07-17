@@ -405,6 +405,19 @@ describe("Edit Merge Fields", () => {
 			expect(edit.getMergeFieldForProperty(clipId, "asset.text")).toBe("HEADLINE");
 		});
 
+		it("keeps a numeric text value a string on live update (does not coerce to number)", async () => {
+			const clip = createTextClip(0, 3, "4");
+			await edit.addClip(0, clip);
+			const clipId = getClipIdOrFail(edit, 0, 0);
+			edit.applyMergeField(clipId, "asset.text", "BEDROOMS", "4");
+
+			edit.updateMergeFieldValueLive("BEDROOMS", "3");
+
+			const { text } = edit.getPlayerClip(0, 0)?.clipConfiguration.asset as { text: unknown };
+			expect(text).toBe("3");
+			expect(typeof text).toBe("string"); // not the number 3 — rich-text can't render a non-string
+		});
+
 		it("is undoable - restores previous value", async () => {
 			const originalSrc = "https://example.com/original.jpg";
 			const clip = createImageClip(0, 3, originalSrc);
@@ -1864,10 +1877,11 @@ describe("Edit Merge Fields", () => {
 			expect(typeof (player?.clipConfiguration.asset as { text: string }).text).toBe("string");
 		});
 
-		it("coerces negative number string to number", async () => {
-			// Use asset.text to test coercion behavior since numeric clip properties
-			// have schema constraints (e.g., start >= 0). The coercion logic itself
-			// doesn't depend on the property — it applies to all merge field values.
+		it("does NOT coerce a numeric string on a text property (stays string)", async () => {
+			// Text/html content must stay a string even when it looks numeric — a
+			// rich-text asset can't render a number, so coercing "-5" to -5 silently
+			// blanks the clip. Numeric coercion for real numeric properties is covered
+			// by the opacity test below.
 			const clip = createTextClip(0, 3, "Placeholder");
 			await edit.addClip(0, clip);
 
@@ -1877,10 +1891,8 @@ describe("Edit Merge Fields", () => {
 			edit.updateMergeFieldValueLive("VAL", "-5");
 
 			const player = edit.getPlayerClip(0, 0);
-			// The coercion converts "-5" to -5 (number) since Number("-5") is finite.
-			// On a text property this means the value is stored as -5 (number), not "-5" (string).
-			expect((player?.clipConfiguration.asset as { text: number | string }).text).toBe(-5);
-			expect(typeof (player?.clipConfiguration.asset as { text: number | string }).text).toBe("number");
+			expect((player?.clipConfiguration.asset as { text: string }).text).toBe("-5");
+			expect(typeof (player?.clipConfiguration.asset as { text: string }).text).toBe("string");
 		});
 
 		it("coerces float string to number", async () => {
@@ -2138,6 +2150,21 @@ describe("Edit Merge Fields", () => {
 
 			// Field should be removed from registry
 			expect(edit.mergeFields.get("SHADOW_X")).toBeUndefined();
+		});
+	});
+
+	describe("getMergeFieldClipLocation()", () => {
+		it("returns the track/clip index of the clip bound to a field", async () => {
+			const clip = createTextClip(0, 3);
+			await edit.addClip(1, clip);
+			const clipId = getClipIdOrFail(edit, 1, 0);
+			await edit.applyMergeField(clipId, "asset.text", "HEADLINE", "New headline");
+
+			expect(edit.getMergeFieldClipLocation("HEADLINE")).toEqual({ trackIndex: 1, clipIndex: 0 });
+		});
+
+		it("returns null for a field no clip references", () => {
+			expect(edit.getMergeFieldClipLocation("NONEXISTENT")).toBeNull();
 		});
 	});
 });

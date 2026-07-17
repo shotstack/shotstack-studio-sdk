@@ -40,7 +40,6 @@ export class RichTextPlayer extends Player {
 	private texture: pixi.Texture | null = null;
 	private sprite: pixi.Sprite | null = null;
 	private lastRenderedTime: number = -1;
-	private cachedFrames = new Map<number, pixi.Texture>();
 	private isRendering: boolean = false;
 	private pendingRenderTime: number | null = null; // Stores time requested while rendering (race condition fix)
 	private currentRender: Promise<void> | null = null; // In-flight render promise, so an off-playback capture can await it
@@ -267,10 +266,8 @@ export class RichTextPlayer extends Player {
 		try {
 			await this.prepareFontForAsset(richTextAsset, true);
 
-			for (const texture of this.cachedFrames.values()) {
-				texture.destroy();
-			}
-			this.cachedFrames.clear();
+			this.texture?.destroy();
+			this.texture = null;
 			this.lastRenderedTime = -1;
 
 			if (this.textEngine) {
@@ -362,17 +359,6 @@ export class RichTextPlayer extends Player {
 	private async renderFrame(timeSeconds: number): Promise<void> {
 		if (!this.textEngine || !this.renderer || !this.canvas || !this.validatedAsset) return;
 
-		const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
-
-		if (this.cachedFrames.has(cacheKey)) {
-			const cachedTexture = this.cachedFrames.get(cacheKey)!;
-			if (this.sprite && this.sprite.texture !== cachedTexture) {
-				this.sprite.texture = cachedTexture;
-			}
-			this.lastRenderedTime = timeSeconds;
-			return;
-		}
-
 		try {
 			// Pass clip duration so animations can cap their length appropriately
 			const clipDuration = this.getLength();
@@ -383,21 +369,17 @@ export class RichTextPlayer extends Player {
 
 			await this.renderer.render(ops);
 
-			const tex = pixi.Texture.from(this.canvas);
-
-			if (!this.sprite) {
-				this.sprite = new pixi.Sprite(tex);
-				this.contentContainer.addChild(this.sprite);
+			if (!this.texture) {
+				this.texture = pixi.Texture.from(this.canvas);
 			} else {
-				if (this.texture && !this.cachedFrames.has(cacheKey)) {
-					this.texture.destroy();
-				}
-				this.sprite.texture = tex;
+				this.texture.source.update();
 			}
 
-			this.texture = tex;
-			if (this.cachedFrames.size < 150) {
-				this.cachedFrames.set(cacheKey, tex);
+			if (!this.sprite) {
+				this.sprite = new pixi.Sprite(this.texture);
+				this.contentContainer.addChild(this.sprite);
+			} else if (this.sprite.texture !== this.texture) {
+				this.sprite.texture = this.texture;
 			}
 
 			this.lastRenderedTime = timeSeconds;
@@ -457,13 +439,6 @@ export class RichTextPlayer extends Player {
 		if (this.isRendering) {
 			// Store pending time to render after current render completes (race condition fix)
 			this.pendingRenderTime = timeSeconds;
-
-			// Show nearest cached frame instead of skipping entirely
-			const cacheKey = Math.floor(timeSeconds * RichTextPlayer.PREVIEW_FPS);
-			const cachedTexture = this.cachedFrames.get(cacheKey);
-			if (cachedTexture && this.sprite && this.sprite.texture !== cachedTexture) {
-				this.sprite.texture = cachedTexture;
-			}
 			return;
 		}
 
@@ -541,14 +516,7 @@ export class RichTextPlayer extends Player {
 		super.dispose();
 		this.loadComplete = false;
 
-		for (const texture of this.cachedFrames.values()) {
-			texture.destroy();
-		}
-		this.cachedFrames.clear();
-
-		if (this.texture && !this.cachedFrames.has(Math.floor(this.lastRenderedTime * RichTextPlayer.PREVIEW_FPS))) {
-			this.texture.destroy();
-		}
+		this.texture?.destroy();
 		this.texture = null;
 
 		if (this.sprite) {
@@ -607,10 +575,8 @@ export class RichTextPlayer extends Player {
 		this.canvas.width = width;
 		this.canvas.height = height;
 
-		for (const texture of this.cachedFrames.values()) {
-			texture.destroy();
-		}
-		this.cachedFrames.clear();
+		this.texture?.destroy();
+		this.texture = null;
 		this.lastRenderedTime = -1;
 
 		const canvasPayload = this.buildCanvasPayload(richTextAsset);
@@ -630,18 +596,12 @@ export class RichTextPlayer extends Player {
 			this.validatedAsset = validated;
 		}
 
-		for (const texture of this.cachedFrames.values()) {
-			texture.destroy();
-		}
-		this.cachedFrames.clear();
+		this.texture?.destroy();
+		this.texture = null;
 
 		this.lastRenderedTime = -1;
 		if (this.textEngine && this.renderer) {
 			this.renderFrameSafe(this.getPlaybackTime());
 		}
-	}
-
-	public getCacheSize(): number {
-		return this.cachedFrames.size;
 	}
 }
