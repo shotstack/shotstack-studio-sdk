@@ -499,10 +499,16 @@ export class ShotstackEdit extends Edit {
 				// Also update document clip data (resolver reads clip data, not bindings).
 				// Use numeric-first coercion (matching the resolver strategy) because the
 				// document clip may still hold a string placeholder like "{{ OPACITY }}".
+				// EXCEPT for text/html content, which must stay a string — a numeric
+				// value like "3" bedrooms would otherwise become the number 3 and a
+				// rich-text/text/html asset can't render a non-string, so the clip
+				// silently stops updating.
 				if (clipLookup) {
+					const leaf = path.split(".").pop() ?? "";
+					const isTextContent = leaf === "text" || leaf === "html";
 					const trimmed = typeof newResolvedValue === "string" ? newResolvedValue.trim() : "";
 					const num = trimmed.length > 0 ? Number(newResolvedValue) : NaN;
-					const typedValue = Number.isFinite(num) ? num : newResolvedValue;
+					const typedValue = !isTextContent && Number.isFinite(num) ? num : newResolvedValue;
 					setNestedValue(clipLookup.clip as Record<string, unknown>, path, typedValue);
 				}
 			}
