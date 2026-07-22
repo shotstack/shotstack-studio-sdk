@@ -62,29 +62,31 @@ export class VideoPlayer extends Player {
 			return;
 		}
 
-		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
-
 		this.syncTimer += elapsed;
 
 		if (!this.texture) {
 			return;
 		}
 
-		// getPlaybackTime() returns seconds
-		const playbackTime = this.getPlaybackTime();
-		const shouldClipPlay = this.edit.isPlaying && this.isActive();
+		const speed = this.getAssetSpeed();
+		const sourceTime = this.getSourceTime();
+		const shouldClipPlay = this.edit.isPlaying && this.isActive() && speed > 0;
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
 				this.activeSyncTimer = 0;
 				this.texture.source.resource.volume = this.getVolume();
-				this.texture.source.resource.currentTime = playbackTime + trim;
+				this.texture.source.resource.currentTime = sourceTime;
 				this.texture.source.resource.play().catch(console.error);
 			}
 
 			if (this.texture.source.resource.volume !== this.getVolume()) {
 				this.texture.source.resource.volume = this.getVolume();
+			}
+
+			if (this.texture.source.resource.playbackRate !== speed) {
+				this.texture.source.resource.playbackRate = speed;
 			}
 
 			// Rate-limit sync checks to once per second to prevent audio stuttering
@@ -93,10 +95,9 @@ export class VideoPlayer extends Player {
 				this.activeSyncTimer = 0;
 				// Desync threshold: 0.3 seconds (300ms)
 				const desyncThreshold = 0.3;
-				// Both currentTime and playbackTime are in seconds
-				const drift = Math.abs(this.texture.source.resource.currentTime - trim - playbackTime);
+				const drift = Math.abs(this.texture.source.resource.currentTime - sourceTime);
 				if (drift > desyncThreshold) {
-					this.texture.source.resource.currentTime = playbackTime + trim;
+					this.texture.source.resource.currentTime = sourceTime;
 				}
 			}
 		}
@@ -106,11 +107,11 @@ export class VideoPlayer extends Player {
 			this.texture.source.resource.pause();
 		}
 
-		// When paused, sync every 100ms for scrubbing
+		// When paused (or frozen at speed 0), sync every 100ms for scrubbing
 		const shouldSync = this.syncTimer > 100;
-		if (!this.edit.isPlaying && this.isActive() && shouldSync) {
+		if ((!this.edit.isPlaying || speed === 0) && this.isActive() && shouldSync) {
 			this.syncTimer = 0;
-			this.texture.source.resource.currentTime = playbackTime + trim;
+			this.texture.source.resource.currentTime = sourceTime;
 		}
 	}
 
@@ -214,6 +215,8 @@ export class VideoPlayer extends Player {
 
 		// Set initial volume immediately so the element never sits at the browser default of 1.0
 		this.texture.source.resource.volume = this.getVolume();
+
+		this.texture.source.resource.preservesPitch = false;
 	}
 
 	private disposeVideo(): void {
@@ -249,13 +252,15 @@ export class VideoPlayer extends Player {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
 	}
 
+	public override getSourceDuration(): number | null {
+		const duration = this.texture?.source?.resource?.duration;
+		return typeof duration === "number" && Number.isFinite(duration) && duration > 0 ? duration : null;
+	}
+
 	public getCurrentDrift(): number {
 		if (!this.texture?.source?.resource) return 0;
-		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
-		const videoTime = this.texture.source.resource.currentTime;
-		// getPlaybackTime() returns seconds, videoTime is also seconds
-		const playbackTime = this.getPlaybackTime();
-		return Math.abs(videoTime - trim - playbackTime);
+		// Both currentTime and getSourceTime() are in source-media seconds
+		return Math.abs(this.texture.source.resource.currentTime - this.getSourceTime());
 	}
 
 	private createCroppedTexture(texture: pixi.Texture<pixi.VideoSource>): pixi.Texture<pixi.VideoSource> {

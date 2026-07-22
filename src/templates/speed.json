@@ -1,0 +1,98 @@
+{
+	"timeline": {
+		"background": "#000000",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "text",
+							"text": "0x (freeze)",
+							"font": { "color": "#ffffff", "family": "Montserrat SemiBold", "size": "40" },
+							"width": 300,
+							"height": 60
+						},
+						"start": 0,
+						"length": 4,
+						"position": "top"
+					},
+					{
+						"asset": {
+							"type": "text",
+							"text": "2x",
+							"font": { "color": "#ffffff", "family": "Montserrat SemiBold", "size": "40" },
+							"width": 300,
+							"height": 60
+						},
+						"start": 4,
+						"length": 4,
+						"position": "top"
+					},
+					{
+						"asset": {
+							"type": "text",
+							"text": "0.5x",
+							"font": { "color": "#ffffff", "family": "Montserrat SemiBold", "size": "40" },
+							"width": 300,
+							"height": 60
+						},
+						"start": 8,
+						"length": 4,
+						"position": "top"
+					},
+					{
+						"asset": {
+							"type": "text",
+							"text": "2x + trim 2",
+							"font": { "color": "#ffffff", "family": "Montserrat SemiBold", "size": "40" },
+							"width": 300,
+							"height": 60
+						},
+						"start": 12,
+						"length": 3,
+						"position": "top"
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 1 },
+						"start": 0,
+						"length": 4
+					},
+					{
+						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 2 },
+						"start": 4,
+						"length": 4
+					},
+					{
+						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 0.5 },
+						"start": 8,
+						"length": 4
+					},
+					{
+						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 2, "trim": 2 },
+						"start": 12,
+						"length": 3
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "audio",
+							"src": "https://templates.shotstack.io/holiday-love-story-template-romantic-memories-video/5f6210e5-73f0-4bcc-b8e4-292a94585f55/source.mp3",
+							"volume": 0.2,
+							"speed": 1.5
+						},
+						"start": 0,
+						"length": 10
+					}
+				]
+			}
+		]
+	},
+	"output": { "format": "mp4", "size": { "width": 1280, "height": 720 } }
+}

@@ -487,11 +487,13 @@ export class InteractionController implements TimelineInteractionRegistration {
 
 		// Calculate new dimensions based on edge
 		const { edge, originalStart, originalLength, clipElement } = state;
+		const maxLength = this.getResizeMaxLength(state.clipRef, originalLength);
 
 		if (edge === "left") {
 			// Resize from left edge (keep end fixed, change start and length)
 			const originalEnd = originalStart + originalLength;
-			const newStart = sec(Math.max(0, Math.min(time, originalEnd - 0.1)));
+			const minStart = maxLength !== null ? Math.max(0, originalEnd - maxLength) : 0;
+			const newStart = sec(Math.max(minStart, Math.min(time, originalEnd - 0.1)));
 			const newLength = sec(originalEnd - newStart);
 
 			clipElement.style.setProperty("--clip-start", String(newStart));
@@ -499,7 +501,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(this.feedbackElements, newStart, e.clientX - rect.left, e.clientY - rect.top);
 		} else {
 			// Resize from right edge
-			const newLength = sec(Math.max(0.1, time - originalStart));
+			const newLength = sec(Math.max(0.1, Math.min(time - originalStart, maxLength ?? Infinity)));
 
 			clipElement.style.setProperty("--clip-length", String(newLength));
 			this.feedbackElements.dragTimeTooltip = showDragTimeTooltip(
@@ -774,10 +776,13 @@ export class InteractionController implements TimelineInteractionRegistration {
 		// Get attached luma Player reference BEFORE changes (stable across index changes)
 		const lumaPlayer = this.stateManager.getAttachedLumaPlayer(clipRef.trackIndex, clipRef.clipIndex);
 
+		const maxLength = this.getResizeMaxLength(clipRef, originalLength);
+
 		if (edge === "left") {
 			// Resize from left edge (keep end fixed, change start and length)
 			const originalEnd = originalStart + originalLength;
-			const newStart = Math.max(0, Math.min(time, originalEnd - 0.1));
+			const minStart = maxLength !== null ? Math.max(0, originalEnd - maxLength) : 0;
+			const newStart = Math.max(minStart, Math.min(time, originalEnd - 0.1));
 			const newLength = originalEnd - newStart;
 
 			if (newStart !== originalStart || newLength !== originalLength) {
@@ -810,7 +815,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 			}
 		} else {
 			// Resize from right edge (keep start fixed, change length)
-			const newLength = Math.max(0.1, time - originalStart);
+			const newLength = Math.max(0.1, Math.min(time - originalStart, maxLength ?? Infinity));
 
 			if (newLength !== originalLength) {
 				const command = new ResizeClipCommand(clipRef.trackIndex, clipRef.clipIndex, sec(newLength));
@@ -839,6 +844,14 @@ export class InteractionController implements TimelineInteractionRegistration {
 		if (!lumaIndices) return;
 		const cmd = new MoveClipCommand(lumaIndices.trackIndex, lumaIndices.clipIndex, targetTrack, sec(newTime));
 		this.edit.executeEditCommand(cmd);
+	}
+
+	/**
+	 * Longest length a resize may grow the clip to, or null when unbounded.
+	 */
+	private getResizeMaxLength(clipRef: ClipRef, originalLength: number): number | null {
+		const maxLength = this.edit.getPlayerClip(clipRef.trackIndex, clipRef.clipIndex)?.getMaxLength() ?? null;
+		return maxLength === null ? null : Math.max(maxLength, originalLength);
 	}
 
 	/** Resolve clip collision based on clip boundaries (delegates to pure function) */

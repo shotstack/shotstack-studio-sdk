@@ -324,6 +324,21 @@
 	color: #fff;
 }
 
+/* Speed section (video and audio assets) */
+.ss-media-toolbar-speed {
+	display: flex;
+	align-items: center;
+}
+
+.ss-media-toolbar-speed.hidden {
+	display: none;
+}
+
+/* Speed popup needs width for six preset chips */
+.ss-media-toolbar-popup--speed {
+	min-width: 260px;
+}
+
 /* Volume icon wrapper - needs display for SVG visibility */
 [data-volume-icon] {
 	display: flex;

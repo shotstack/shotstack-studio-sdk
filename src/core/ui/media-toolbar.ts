@@ -37,6 +37,7 @@ const ICONS = {
 	chevron: `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
 	check: `<svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
 	moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+	speed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4 5 13 12 4 19 4 5"/><polygon points="13 5 22 12 13 19 13 5"/></svg>`,
 	effect: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M1 12h4M19 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`,
 	fadeIn: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L14 4 L30 4"/></svg>`,
 	fadeOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L18 4 L30 14"/></svg>`,
@@ -54,6 +55,16 @@ const VOLUME_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["video", "audio
 
 /** Asset types that have audio fade controls (audio-only types) */
 const AUDIO_FADE_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["audio", "text-to-speech"]);
+
+/** Asset types that support playback speed (previewed live and honoured by renders) */
+const SPEED_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["video", "audio"]);
+
+const SPEED_PRESETS = [0.25, 0.5, 1, 1.5, 2, 4];
+
+const SPEED_MIN = 0.1;
+const SPEED_MAX = 10;
+/** Slider midpoint: log-scaled so 1× sits centred and 0.5–2× gets half the travel */
+const SPEED_SLIDER_HALF = 300;
 
 export interface MediaToolbarOptions {
 	mergeFields?: boolean;
@@ -104,6 +115,7 @@ export class MediaToolbar extends BaseToolbar {
 	private effectBtn: HTMLButtonElement | null = null;
 	private advancedBtn: HTMLButtonElement | null = null;
 	private audioFadeBtn: HTMLButtonElement | null = null;
+	private speedBtn: HTMLButtonElement | null = null;
 
 	// ─── Popup Elements ──────────────────────────────────────────────────────────
 	private fitPopup: HTMLDivElement | null = null;
@@ -114,6 +126,7 @@ export class MediaToolbar extends BaseToolbar {
 	private effectPopup: HTMLDivElement | null = null;
 	private advancedPopup: HTMLDivElement | null = null;
 	private audioFadePopup: HTMLDivElement | null = null;
+	private speedPopup: HTMLDivElement | null = null;
 
 	// ─── Other Elements ──────────────────────────────────────────────────────────
 	private fitLabel: HTMLSpanElement | null = null;
@@ -123,6 +136,11 @@ export class MediaToolbar extends BaseToolbar {
 	private volumeSection: HTMLDivElement | null = null;
 	private visualSection: HTMLDivElement | null = null;
 	private audioSection: HTMLDivElement | null = null;
+	private speedSection: HTMLDivElement | null = null;
+	private speedSlider: HTMLInputElement | null = null;
+	private speedValue: HTMLSpanElement | null = null;
+	private speedDisplayInput: HTMLInputElement | null = null;
+	private currentSpeed: number = 1;
 
 	// ─── Advanced Menu ───────────────────────────────────────────────────────────
 	private dynamicToggle: HTMLInputElement | null = null;
@@ -259,6 +277,27 @@ export class MediaToolbar extends BaseToolbar {
 				</div>
 			</div>
 
+			<!-- Speed (video and audio only) -->
+			<div class="ss-media-toolbar-speed" data-speed-section>
+				<div class="ss-media-toolbar-divider"></div>
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn" data-action="speed">
+						${ICONS.speed}
+						<span data-speed-value>1×</span>
+					</button>
+					<div class="ss-media-toolbar-popup ss-media-toolbar-popup--slider ss-media-toolbar-popup--speed" data-popup="speed">
+						<div class="ss-media-toolbar-popup-header">Speed</div>
+						<div class="ss-media-toolbar-slider-row">
+							<input type="range" class="ss-media-toolbar-slider" data-speed-slider min="0" max="${SPEED_SLIDER_HALF * 2}" value="${SPEED_SLIDER_HALF}" />
+							<input type="text" class="ss-media-toolbar-slider-value" data-speed-display value="1×" />
+						</div>
+						<div class="ss-media-toolbar-presets">
+							${SPEED_PRESETS.map(p => `<button class="ss-media-toolbar-preset" data-speed-preset="${p}">${p}×</button>`).join("")}
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<!-- Audio Section - only visible for audio assets -->
 			<div class="ss-media-toolbar-audio" data-audio-section>
 				<div class="ss-media-toolbar-divider"></div>
@@ -333,6 +372,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectBtn = this.container.querySelector('[data-action="effect"]');
 		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
 		this.audioFadeBtn = this.container.querySelector('[data-action="audio-fade"]');
+		this.speedBtn = this.container.querySelector('[data-action="speed"]');
 
 		this.fitPopup = this.container.querySelector('[data-popup="fit"]');
 		this.opacityPopup = this.container.querySelector('[data-popup="opacity"]');
@@ -342,6 +382,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectPopup = this.container.querySelector('[data-popup="effect"]');
 		this.advancedPopup = this.container.querySelector('[data-popup="advanced"]');
 		this.audioFadePopup = this.container.querySelector('[data-popup="audio-fade"]');
+		this.speedPopup = this.container.querySelector('[data-popup="speed"]');
 
 		this.fitLabel = this.container.querySelector("[data-fit-label]");
 		this.volumeValue = this.container.querySelector("[data-volume-value]");
@@ -350,6 +391,10 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeSection = this.container.querySelector("[data-volume-section]");
 		this.visualSection = this.container.querySelector("[data-visual-section]");
 		this.audioSection = this.container.querySelector("[data-audio-section]");
+		this.speedSection = this.container.querySelector("[data-speed-section]");
+		this.speedSlider = this.container.querySelector("[data-speed-slider]");
+		this.speedValue = this.container.querySelector("[data-speed-value]");
+		this.speedDisplayInput = this.container.querySelector("[data-speed-display]");
 
 		this.dynamicToggle = this.container.querySelector("[data-dynamic-toggle]");
 		this.dynamicPanel = this.container.querySelector("[data-dynamic-panel]");
@@ -503,6 +548,64 @@ export class MediaToolbar extends BaseToolbar {
 			},
 			{ signal }
 		);
+		this.speedBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopupByName("speed");
+			},
+			{ signal }
+		);
+
+		// Speed slider: readout-only during drag, single commit on release.
+		this.speedSlider?.addEventListener(
+			"input",
+			() => {
+				this.currentSpeed = MediaToolbar.sliderToSpeed(parseInt(this.speedSlider!.value, 10));
+				this.updateSpeedDisplay();
+			},
+			{ signal }
+		);
+		this.speedSlider?.addEventListener("change", () => this.handleSpeedChange(MediaToolbar.sliderToSpeed(parseInt(this.speedSlider!.value, 10))), {
+			signal
+		});
+
+		// Speed display input: commit on blur or Enter, revert on Escape
+		this.speedDisplayInput?.addEventListener("blur", () => this.commitSpeedInputValue(), { signal });
+		this.speedDisplayInput?.addEventListener(
+			"keydown",
+			(e: KeyboardEvent) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					this.commitSpeedInputValue();
+					this.speedDisplayInput?.blur();
+				} else if (e.key === "Escape") {
+					e.preventDefault();
+					this.updateSpeedDisplay();
+					this.speedDisplayInput?.blur();
+				}
+			},
+			{ signal }
+		);
+		this.speedDisplayInput?.addEventListener(
+			"focus",
+			() => {
+				this.speedDisplayInput?.select();
+			},
+			{ signal }
+		);
+
+		// Speed presets
+		this.speedPopup?.querySelectorAll("[data-speed-preset]").forEach(btn => {
+			btn.addEventListener(
+				"click",
+				e => {
+					const el = e.currentTarget as HTMLElement;
+					this.handleSpeedChange(parseFloat(el.dataset["speedPreset"] || "1"));
+				},
+				{ signal }
+			);
+		});
 
 		// Dynamic source handlers
 		this.setupDynamicSourceHandlers(signal);
@@ -571,7 +674,7 @@ export class MediaToolbar extends BaseToolbar {
 		});
 	}
 
-	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade"): void {
+	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade" | "speed"): void {
 		const popupMap = {
 			fit: { popup: this.fitPopup, btn: this.fitBtn },
 			opacity: { popup: this.opacityPopup, btn: this.opacityBtn },
@@ -580,7 +683,8 @@ export class MediaToolbar extends BaseToolbar {
 			transition: { popup: this.transitionPopup, btn: this.transitionBtn },
 			effect: { popup: this.effectPopup, btn: this.effectBtn },
 			advanced: { popup: this.advancedPopup, btn: this.advancedBtn },
-			"audio-fade": { popup: this.audioFadePopup, btn: this.audioFadeBtn }
+			"audio-fade": { popup: this.audioFadePopup, btn: this.audioFadeBtn },
+			speed: { popup: this.speedPopup, btn: this.speedBtn }
 		};
 
 		const isCurrentlyOpen = popupMap[popup].popup?.classList.contains("visible");
@@ -604,6 +708,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectBtn?.classList.remove("active");
 		this.advancedBtn?.classList.remove("active");
 		this.audioFadeBtn?.classList.remove("active");
+		this.speedBtn?.classList.remove("active");
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
@@ -615,7 +720,8 @@ export class MediaToolbar extends BaseToolbar {
 			this.transitionPopup,
 			this.effectPopup,
 			this.advancedPopup,
-			this.audioFadePopup
+			this.audioFadePopup,
+			this.speedPopup
 		];
 	}
 
@@ -651,6 +757,12 @@ export class MediaToolbar extends BaseToolbar {
 				const asset = clip.asset as { effect?: string };
 				this.audioFadeEffect = (asset.effect as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut") || "";
 			}
+
+			// Playback speed
+			if (SPEED_ASSET_TYPES.has(this.assetType)) {
+				const asset = clip.asset as { speed?: number };
+				this.currentSpeed = typeof asset.speed === "number" ? asset.speed : 1;
+			}
 		}
 
 		// Update displays
@@ -658,6 +770,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.updateOpacityDisplay();
 		this.updateScaleDisplay();
 		this.updateVolumeDisplay();
+		this.updateSpeedDisplay();
 
 		// Update active states
 		this.updateFitActiveState();
@@ -677,6 +790,11 @@ export class MediaToolbar extends BaseToolbar {
 		// Show/hide audio fade section (only for audio-only types)
 		if (this.audioSection) {
 			this.audioSection.classList.toggle("hidden", !AUDIO_FADE_ASSET_TYPES.has(this.assetType));
+		}
+
+		// Show/hide speed section (only for types whose preview honours speed)
+		if (this.speedSection) {
+			this.speedSection.classList.toggle("hidden", !SPEED_ASSET_TYPES.has(this.assetType));
 		}
 
 		// Hide the advanced/dynamic source divider and button for AI types
@@ -801,6 +919,79 @@ export class MediaToolbar extends BaseToolbar {
 		} else {
 			this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
 		}
+	}
+
+	// ─── Speed Handlers ──────────────────────────────────────────────────────────
+
+	/** Map slider position (0 to 2×half) to speed via log scale: half-way = 1× */
+	private static sliderToSpeed(t: number): number {
+		const speed = 10 ** ((t - SPEED_SLIDER_HALF) / SPEED_SLIDER_HALF);
+		return Math.round(speed * 100) / 100;
+	}
+
+	private static speedToSlider(speed: number): number {
+		const clamped = Math.max(SPEED_MIN, Math.min(SPEED_MAX, speed));
+		return Math.round(Math.log10(clamped) * SPEED_SLIDER_HALF + SPEED_SLIDER_HALF);
+	}
+
+	/** Format for display: trims trailing zeros, e.g. 1×, 0.5×, 1.25× */
+	private static formatSpeed(speed: number): string {
+		return `${parseFloat(speed.toFixed(2))}×`;
+	}
+
+	private handleSpeedChange(value: number): void {
+		this.currentSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, value));
+		this.updateSpeedDisplay();
+
+		if (!SPEED_ASSET_TYPES.has(this.assetType)) return;
+
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || !clipId) return;
+
+		const asset = clip.asset as Record<string, unknown>;
+		const newAsset: Record<string, unknown> = { ...asset, speed: this.currentSpeed === 1 ? undefined : this.currentSpeed };
+		const updates: Record<string, unknown> = { asset: newAsset };
+
+		// Rescale length and trim by oldSpeed/newSpeed so the clip keeps playing the same
+		// source window at the new pace (trim is speed-scaled at render time, so it moves too)
+		const oldSpeed = typeof asset["speed"] === "number" ? (asset["speed"] as number) : 1;
+		if (oldSpeed > 0 && oldSpeed !== this.currentSpeed) {
+			const ratio = oldSpeed / this.currentSpeed;
+			const docClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
+			if (typeof docClip?.length === "number") {
+				updates["length"] = Math.max(0.1, docClip.length * ratio);
+			}
+			if (typeof asset["trim"] === "number" && asset["trim"] > 0) {
+				newAsset["trim"] = asset["trim"] * ratio;
+			}
+		}
+
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
+	}
+
+	private commitSpeedInputValue(): void {
+		if (!this.speedDisplayInput) return;
+
+		const stripped = this.speedDisplayInput.value.replace(/[^0-9.]/g, "");
+		const num = parseFloat(stripped);
+		if (Number.isNaN(num)) {
+			this.updateSpeedDisplay();
+			return;
+		}
+		this.handleSpeedChange(num);
+	}
+
+	private updateSpeedDisplay(): void {
+		const text = MediaToolbar.formatSpeed(this.currentSpeed);
+		if (this.speedValue) this.speedValue.textContent = text;
+		if (this.speedSlider) this.speedSlider.value = String(MediaToolbar.speedToSlider(this.currentSpeed));
+		if (this.speedDisplayInput) this.speedDisplayInput.value = text;
+
+		this.speedPopup?.querySelectorAll("[data-speed-preset]").forEach(btn => {
+			const el = btn as HTMLElement;
+			el.classList.toggle("active", parseFloat(el.dataset["speedPreset"] || "1") === this.currentSpeed);
+		});
 	}
 
 	/**
@@ -1117,6 +1308,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectBtn = null;
 		this.advancedBtn = null;
 		this.audioFadeBtn = null;
+		this.speedBtn = null;
 
 		this.fitPopup = null;
 		this.opacityPopup = null;
@@ -1126,6 +1318,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.effectPopup = null;
 		this.advancedPopup = null;
 		this.audioFadePopup = null;
+		this.speedPopup = null;
 
 		this.fitLabel = null;
 		this.volumeSlider = null;
@@ -1134,6 +1327,10 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeSection = null;
 		this.visualSection = null;
 		this.audioSection = null;
+		this.speedSection = null;
+		this.speedSlider = null;
+		this.speedValue = null;
+		this.speedDisplayInput = null;
 
 		this.dynamicToggle = null;
 		this.dynamicPanel = null;
