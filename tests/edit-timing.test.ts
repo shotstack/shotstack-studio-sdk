@@ -103,6 +103,7 @@ jest.mock("@loaders/asset-loader", () => ({
 		getProgress: jest.fn().mockReturnValue(100),
 		incrementRef: jest.fn(),
 		decrementRef: jest.fn().mockReturnValue(true),
+		release: jest.fn(),
 		loadTracker: { on: jest.fn(), off: jest.fn() }
 	}))
 }));
@@ -188,6 +189,7 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 				length: config.length
 			};
 		},
+		getMediaDuration: () => null,
 		getResolvedTiming: () => ({ ...resolvedTiming }),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };

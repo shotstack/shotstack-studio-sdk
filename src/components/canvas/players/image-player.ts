@@ -1,4 +1,6 @@
 import type { Edit } from "@core/edit-session";
+import { appendCorsQuery, type GifImageSource, isGifUrl } from "@core/loaders/gif-image-source";
+import { sec } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type ImageAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -7,9 +9,14 @@ import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
 
 export class ImagePlayer extends Player {
-	private texture: pixi.Texture<pixi.ImageSource> | null;
+	private texture: pixi.Texture | null;
 	private sprite: pixi.Sprite | null;
 	private placeholder: pixi.Graphics | null;
+	private gifSource: GifImageSource | null = null;
+	private gifFrameTextures: pixi.Texture[] = [];
+	private ownedTextureWrappers: pixi.Texture[] = [];
+	private currentGifFrame = -1;
+	private assetAcquisitions = new Map<number, string>();
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Image);
@@ -20,11 +27,17 @@ export class ImagePlayer extends Player {
 	}
 
 	public override async load(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
 		await super.load();
+		if (!this.isMediaTimingLoadCurrent(revision)) return;
+
 		try {
-			await this.loadTexture();
+			if (!(await this.loadTexture(revision))) return;
+			this.completeMediaTimingLoad(revision, this.gifSource && this.gifSource.frames.length > 1 ? sec(this.gifSource.duration / 1000) : null);
 			this.configureKeyframes();
 		} catch {
+			if (!this.isMediaTimingLoadCurrent(revision)) return;
+			this.completeMediaTimingLoad(revision, null);
 			this.createFallbackGraphic();
 		}
 	}
@@ -40,9 +53,12 @@ export class ImagePlayer extends Player {
 
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
+		this.updateGifFrame();
 	}
 
 	public override dispose(): void {
+		const { src } = this.clipConfiguration.asset as ImageAsset;
+		this.releaseAssetAcquisitions(src);
 		this.disposeTexture();
 		this.clearPlaceholder();
 		super.dispose();
@@ -71,19 +87,28 @@ export class ImagePlayer extends Player {
 		return this.placeholder ? this.getDisplaySize() : { width: 0, height: 0 };
 	}
 
+	public override async prepareStaticRender(): Promise<void> {
+		this.updateGifFrame();
+	}
+
 	/** Reload the image asset when asset.src changes (e.g., merge field update) */
 	public override async reloadAsset(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
 		this.disposeTexture();
 		this.clearPlaceholder();
+		this.releaseAssetAcquisitions();
 
 		try {
-			await this.loadTexture();
+			if (!(await this.loadTexture(revision))) return;
+			this.completeMediaTimingLoad(revision, this.gifSource && this.gifSource.frames.length > 1 ? sec(this.gifSource.duration / 1000) : null);
 		} catch {
+			if (!this.isMediaTimingLoadCurrent(revision)) return;
+			this.completeMediaTimingLoad(revision, null);
 			this.createFallbackGraphic();
 		}
 	}
 
-	private async loadTexture(): Promise<void> {
+	private async loadTexture(revision: number): Promise<boolean> {
 		const imageAsset = this.clipConfiguration.asset as ImageAsset;
 		const { src } = imageAsset;
 		if (!src) {
@@ -91,15 +116,39 @@ export class ImagePlayer extends Player {
 			throw new Error("Image asset has no src to load.");
 		}
 
-		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
-		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
-
-		if (!(texture?.source instanceof pixi.ImageSource)) {
-			if (texture) {
-				texture.destroy(true);
-				await this.edit.assetLoader.rejectAsset(corsUrl);
+		const requestUrl = appendCorsQuery(src);
+		this.assetAcquisitions.set(revision, src);
+		if (isGifUrl(src)) {
+			const source = await this.edit.assetLoader.loadGif(src, requestUrl);
+			if (!this.isMediaTimingLoadCurrent(revision)) {
+				if (source) this.releaseAssetAcquisition(revision);
+				else this.assetAcquisitions.delete(revision);
+				return false;
 			}
+			if (!source) {
+				this.assetAcquisitions.delete(revision);
+				throw new Error(`Unable to decode GIF image source '${src}'.`);
+			}
+			try {
+				this.configureGif(source);
+				return true;
+			} catch (error) {
+				this.disposeTexture();
+				this.releaseAssetAcquisition(revision);
+				throw error;
+			}
+		}
+
+		const loadOptions: pixi.UnresolvedAsset = { alias: src, src: requestUrl, crossorigin: "anonymous", data: {} };
+		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(src, loadOptions);
+		if (!this.isMediaTimingLoadCurrent(revision)) {
+			if (texture) this.releaseAssetAcquisition(revision);
+			else this.assetAcquisitions.delete(revision);
+			return false;
+		}
+		if (!(texture?.source instanceof pixi.ImageSource)) {
+			this.assetAcquisitions.delete(revision);
+			if (texture) await this.edit.assetLoader.rejectAsset(src);
 			throw new Error(`Invalid image source '${src}'.`);
 		}
 
@@ -111,6 +160,32 @@ export class ImagePlayer extends Player {
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			this.applyFixedDimensions();
 		}
+		return true;
+	}
+
+	private configureGif(source: GifImageSource): void {
+		this.clearPlaceholder();
+		this.gifSource = source;
+		this.gifFrameTextures = source.frames.map(frame => this.createCroppedTexture(frame.texture));
+		this.texture = this.gifFrameTextures[0] ?? null;
+		if (!this.texture) throw new Error("GIF contains no renderable frames.");
+
+		this.sprite = new pixi.Sprite(this.texture);
+		this.contentContainer.addChild(this.sprite);
+		this.currentGifFrame = 0;
+		if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
+		this.updateGifFrame();
+	}
+
+	private updateGifFrame(): void {
+		if (!this.gifSource || !this.sprite || !this.isActive()) return;
+		const frameIndex = this.gifSource.frameIndexAt(this.getPlaybackTime() * 1000);
+		if (frameIndex === this.currentGifFrame) return;
+		const texture = this.gifFrameTextures[frameIndex];
+		if (!texture) return;
+		this.sprite.texture = texture;
+		this.texture = texture;
+		this.currentGifFrame = frameIndex;
 	}
 
 	private disposeTexture(): void {
@@ -119,9 +194,31 @@ export class ImagePlayer extends Player {
 			this.sprite.destroy();
 			this.sprite = null;
 		}
-		// DON'T destroy the texture - it's managed by Assets
-		// The unloadClipAssets() method handles proper cleanup via Assets.unload()
+		for (const texture of this.ownedTextureWrappers) texture.destroy(false);
+		this.ownedTextureWrappers = [];
 		this.texture = null;
+		this.gifFrameTextures = [];
+		this.gifSource = null;
+		this.currentGifFrame = -1;
+	}
+
+	private releaseAssetAcquisition(revision: number): void {
+		const identifier = this.assetAcquisitions.get(revision);
+		if (!identifier) return;
+		this.assetAcquisitions.delete(revision);
+		this.edit.assetLoader.release(identifier);
+	}
+
+	private releaseAssetAcquisitions(alreadyReleasedIdentifier?: string): void {
+		let skipIdentifier = alreadyReleasedIdentifier;
+		for (const [revision, identifier] of this.assetAcquisitions) {
+			this.assetAcquisitions.delete(revision);
+			if (identifier === skipIdentifier) {
+				skipIdentifier = undefined;
+			} else {
+				this.edit.assetLoader.release(identifier);
+			}
+		}
 	}
 
 	private clearPlaceholder(): void {
@@ -136,7 +233,7 @@ export class ImagePlayer extends Player {
 		return true;
 	}
 
-	private createCroppedTexture(texture: pixi.Texture<pixi.ImageSource>): pixi.Texture<pixi.ImageSource> {
+	private createCroppedTexture<TSource extends pixi.TextureSource>(texture: pixi.Texture<TSource>): pixi.Texture<TSource> {
 		const imageAsset = this.clipConfiguration.asset as ImageAsset;
 
 		if (!imageAsset.crop) {
@@ -157,6 +254,8 @@ export class ImagePlayer extends Player {
 		const height = originalHeight - top - bottom;
 
 		const crop = new pixi.Rectangle(x, y, width, height);
-		return new pixi.Texture({ source: texture.source, frame: crop });
+		const croppedTexture = new pixi.Texture({ source: texture.source, frame: crop });
+		this.ownedTextureWrappers.push(croppedTexture);
+		return croppedTexture;
 	}
 }

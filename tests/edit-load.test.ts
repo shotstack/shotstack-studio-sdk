@@ -115,6 +115,7 @@ const mockAssetLoader = {
 	getProgress: jest.fn().mockReturnValue(100),
 	incrementRef: jest.fn(),
 	decrementRef: jest.fn().mockReturnValue(true),
+	release: jest.fn(),
 	loadTracker: { on: jest.fn(), off: jest.fn() }
 };
 
@@ -164,6 +165,7 @@ const createMockPlayerContainer = () => {
 
 // Track player instances by type for assertions
 const createdPlayers: Map<PlayerType, number> = new Map();
+let mockMediaDuration: number | null = null;
 
 // Mock player factory - create functional mock players
 const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) => {
@@ -209,6 +211,7 @@ const createMockPlayer = (edit: Edit, config: ResolvedClip, type: PlayerType) =>
 				length: config.length
 			};
 		},
+		getMediaDuration: () => mockMediaDuration,
 		getResolvedTiming: () => ({ ...resolvedTiming }),
 		setResolvedTiming: jest.fn((timing: { start: number; length: number }) => {
 			resolvedTiming = { ...timing };
@@ -361,6 +364,7 @@ describe("Edit loadEdit()", () => {
 	beforeEach(async () => {
 		// Reset player creation tracking
 		createdPlayers.clear();
+		mockMediaDuration = null;
 
 		// Reset all mocks
 		jest.clearAllMocks();
@@ -624,6 +628,36 @@ describe("Edit loadEdit()", () => {
 			const player = edit.getPlayerClip(0, 0);
 			// Default auto length for non-media assets is 3s
 			expect(player?.getLength()).toBe(3);
+		});
+
+		it("re-resolves loaded media duration through auto starts and aliases", async () => {
+			mockMediaDuration = 2.4;
+			const mediaEdit = new Edit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{ alias: "media", asset: { type: "image", src: "https://example.com/animation.gif" }, start: 0, length: "auto" },
+								{ asset: { type: "luma", src: "https://example.com/matte.mp4" }, start: 0, length: 3 },
+								{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: "auto", length: 1 }
+							]
+						},
+						{ clips: [{ asset: { type: "image", src: "https://example.com/alias.jpg" }, start: 0, length: "alias://media" }] }
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+
+			await mediaEdit.load();
+			expect(mediaEdit.getPlayerClip(0, 0)?.getLength()).toBe(2.4);
+			expect(mediaEdit.getPlayerClip(0, 1)?.getLength()).toBe(2.4);
+			expect(mediaEdit.getPlayerClip(0, 2)?.getStart()).toBe(2.4);
+			expect(mediaEdit.getPlayerClip(1, 0)?.getLength()).toBe(2.4);
+
+			mockMediaDuration = 1.2;
+			await mediaEdit.resolveClipAutoLength(mediaEdit.getPlayerClip(0, 0)!);
+			expect(mediaEdit.getResolvedEdit().timeline.tracks[1].clips[0].length).toBe(1.2);
+			mediaEdit.dispose();
 		});
 
 		it("sets totalDuration to max clip end time", async () => {

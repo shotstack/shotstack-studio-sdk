@@ -110,6 +110,7 @@ jest.mock("@loaders/asset-loader", () => ({
 		getProgress: jest.fn().mockReturnValue(100),
 		incrementRef: jest.fn(),
 		decrementRef: jest.fn().mockReturnValue(true),
+		release: jest.fn(),
 		loadTracker: {
 			on: jest.fn(),
 			off: jest.fn()

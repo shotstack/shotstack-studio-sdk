@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { sec } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type LumaAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -21,6 +22,7 @@ export class LumaPlayer extends Player {
 	}
 
 	public override async load(): Promise<void> {
+		const revision = this.beginMediaTimingLoad();
 		await super.load();
 
 		const lumaAsset = this.clipConfiguration.asset as LumaAsset;
@@ -31,6 +33,7 @@ export class LumaPlayer extends Player {
 
 		const isValidLumaSource = texture?.source instanceof pixi.ImageSource || texture?.source instanceof pixi.VideoSource;
 		if (!isValidLumaSource) {
+			this.completeMediaTimingLoad(revision, null);
 			if (texture) {
 				texture.destroy(true);
 				await this.edit.assetLoader.rejectAsset(identifier);
@@ -45,6 +48,7 @@ export class LumaPlayer extends Player {
 		}
 
 		this.texture = texture;
+		this.completeMediaTimingLoad(revision, texture.source instanceof pixi.VideoSource ? sec(texture.source.resource.duration) : null);
 		this.sprite = new pixi.Sprite(this.texture);
 
 		this.contentContainer.addChild(this.sprite);
