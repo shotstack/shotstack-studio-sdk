@@ -437,6 +437,43 @@ export abstract class Player extends Entity {
 		return clipTime;
 	}
 
+	/**
+	 * Playback speed of the asset (1 = normal). Matches `asset.speed` used by renders.
+	 */
+	public getAssetSpeed(): number {
+		const { speed = 1 } = this.clipConfiguration.asset as { speed?: number };
+		return speed;
+	}
+
+	/**
+	 * Map clip playback time to source media time. Matches render output:
+	 * sourceTime = speed × (trim + playbackTime), i.e. trim is also scaled by speed.
+	 */
+	public getSourceTime(): number {
+		const { trim = 0 } = this.clipConfiguration.asset as { trim?: number };
+		return this.getAssetSpeed() * (trim + this.getPlaybackTime());
+	}
+
+	/** Duration of the source media in seconds, or null when unknown or not applicable. */
+	public getSourceDuration(): number | null {
+		return null;
+	}
+
+	/**
+	 * Longest clip length the source media can fill at the current trim and speed
+	 * (duration / speed − trim), or null when unbounded or the media isn't loaded yet.
+	 */
+	public getMaxLength(): number | null {
+		const duration = this.getSourceDuration();
+		if (duration === null) return null;
+
+		const speed = this.getAssetSpeed();
+		if (speed <= 0) return null;
+
+		const { trim = 0 } = this.clipConfiguration.asset as { trim?: number };
+		return Math.max(0.1, duration / speed - trim);
+	}
+
 	public abstract getSize(): Size;
 
 	/**

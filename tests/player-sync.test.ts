@@ -100,6 +100,7 @@ jest.mock("howler", () => ({
 		stop: jest.fn(),
 		seek: jest.fn().mockReturnValue(0),
 		volume: jest.fn().mockReturnValue(1),
+		rate: jest.fn().mockReturnValue(1),
 		duration: jest.fn().mockReturnValue(10),
 		unload: jest.fn()
 	}))
@@ -195,17 +196,17 @@ function createMockEdit(playbackTimeSec: number): Edit {
 	} as unknown as Edit;
 }
 
-function createVideoClipConfig(trim = 0, start = 0): ResolvedClip {
+function createVideoClipConfig(trim = 0, start = 0, speed?: number): ResolvedClip {
 	return {
-		asset: { type: "video", src: "test.mp4", trim } as VideoAsset,
+		asset: { type: "video", src: "test.mp4", trim, speed } as VideoAsset,
 		start,
 		length: 10
 	} as ResolvedClip;
 }
 
-function createAudioClipConfig(trim = 0, start = 0): ResolvedClip {
+function createAudioClipConfig(trim = 0, start = 0, speed?: number): ResolvedClip {
 	return {
-		asset: { type: "audio", src: "test.mp3", trim } as AudioAsset,
+		asset: { type: "audio", src: "test.mp3", trim, speed } as AudioAsset,
 		start,
 		length: 10
 	} as ResolvedClip;
@@ -305,6 +306,28 @@ describe("VideoPlayer", () => {
 			expect(drift).toBeLessThan(10);
 		});
 
+		it("accounts for speed when computing drift", () => {
+			const mockEdit = createMockEdit(3); // 3 seconds
+			const mockVideoElement = createMockVideoElement();
+
+			// speed 2, trim 0.5: expected source time = 2 × (0.5 + 3) = 7.0
+			const player = new VideoPlayer(mockEdit, createVideoClipConfig(0.5, 0, 2));
+
+			const mockTexture = {
+				source: new pixi.VideoSource({ resource: mockVideoElement }),
+				width: 1920,
+				height: 1080
+			};
+			// @ts-expect-error - accessing private property for testing
+			player.texture = mockTexture;
+
+			mockVideoElement.currentTime = 7.0;
+			expect(player.getCurrentDrift()).toBe(0);
+
+			mockVideoElement.currentTime = 7.4;
+			expect(player.getCurrentDrift()).toBeCloseTo(0.4, 5);
+		});
+
 		it("handles zero drift correctly", () => {
 			const mockEdit = createMockEdit(2); // 2 seconds
 			const mockVideoElement = createMockVideoElement();
@@ -325,6 +348,69 @@ describe("VideoPlayer", () => {
 
 			expect(player.getCurrentDrift()).toBe(0);
 		});
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Speed Mapping Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("getSourceTime", () => {
+	it("defaults to trim + playbackTime at speed 1", () => {
+		const player = new VideoPlayer(createMockEdit(3), createVideoClipConfig(0.5, 0));
+		expect(player.getSourceTime()).toBe(3.5);
+	});
+
+	it("maps sourceTime = speed × (trim + playbackTime), matching render output", () => {
+		// playbackTime 4, trim 1, speed 0.5 → source time 0.5 × (1 + 4) = 2.5
+		const slow = new VideoPlayer(createMockEdit(4), createVideoClipConfig(1, 0, 0.5));
+		expect(slow.getSourceTime()).toBe(2.5);
+
+		// playbackTime 2, trim 1, speed 2 → source time 2 × (1 + 2) = 6
+		const fast = new AudioPlayer(createMockEdit(2), createAudioClipConfig(1, 0, 2));
+		expect(fast.getSourceTime()).toBe(6);
+	});
+
+	it("freezes at source time 0 when speed is 0", () => {
+		const player = new VideoPlayer(createMockEdit(5), createVideoClipConfig(2, 0, 0));
+		expect(player.getSourceTime()).toBe(0);
+	});
+
+	it("exposes asset speed with default 1", () => {
+		expect(new VideoPlayer(createMockEdit(0), createVideoClipConfig()).getAssetSpeed()).toBe(1);
+		expect(new AudioPlayer(createMockEdit(0), createAudioClipConfig(0, 0, 1.5)).getAssetSpeed()).toBe(1.5);
+	});
+});
+
+describe("getMaxLength", () => {
+	function createVideoPlayerWithDuration(trim: number, speed?: number): VideoPlayer {
+		const player = new VideoPlayer(createMockEdit(0), createVideoClipConfig(trim, 0, speed));
+		const mockTexture = {
+			source: new pixi.VideoSource({ resource: createMockVideoElement() }),
+			width: 1920,
+			height: 1080
+		};
+		// @ts-expect-error - accessing private property for testing
+		player.texture = mockTexture;
+		return player;
+	}
+
+	it("returns source duration minus trim at speed 1", () => {
+		// mock video duration is 10s
+		expect(createVideoPlayerWithDuration(0).getMaxLength()).toBe(10);
+		expect(createVideoPlayerWithDuration(2).getMaxLength()).toBe(8);
+	});
+
+	it("scales max length by speed: duration/speed − trim", () => {
+		expect(createVideoPlayerWithDuration(0, 2).getMaxLength()).toBe(5);
+		expect(createVideoPlayerWithDuration(0, 0.5).getMaxLength()).toBe(20);
+		expect(createVideoPlayerWithDuration(1, 2).getMaxLength()).toBe(4);
+	});
+
+	it("returns null when unbounded: media not loaded or speed 0", () => {
+		const noMedia = new VideoPlayer(createMockEdit(0), createVideoClipConfig());
+		expect(noMedia.getMaxLength()).toBeNull();
+		expect(createVideoPlayerWithDuration(0, 0).getMaxLength()).toBeNull();
 	});
 });
 

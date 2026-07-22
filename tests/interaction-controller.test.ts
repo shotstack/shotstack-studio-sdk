@@ -140,7 +140,7 @@ function createMockEdit() {
 		executeEditCommand: jest.fn((cmd: unknown) => {
 			executedCommands.push(cmd);
 		}),
-		getPlayerClip: jest.fn(() => ({ id: "player-1" })),
+		getPlayerClip: jest.fn(() => ({ id: "player-1", getMaxLength: () => null })),
 		findClipIndices: jest.fn((player: unknown) => {
 			if (!player) return null;
 			return { trackIndex: 0, clipIndex: 0 };

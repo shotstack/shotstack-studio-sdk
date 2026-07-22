@@ -56,6 +56,7 @@ function createMockEditSession() {
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-1"),
 		getResolvedClip: jest.fn(),
+		getDocumentClip: jest.fn(),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
@@ -363,6 +364,118 @@ describe("MediaToolbar", () => {
 			expect(mockEdit.updateClip).toHaveBeenCalled();
 			expect(mockEdit.commitClipUpdate).not.toHaveBeenCalled();
 
+			toolbar.dispose();
+		});
+	});
+
+	describe("speed control", () => {
+		function mountWithVideoClip(assetOverrides: Record<string, unknown> = {}, docLength: number | string = 10) {
+			const mockEdit = createMockEditSession();
+			const clip = createVideoClip();
+			Object.assign(clip.asset, assetOverrides);
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+			mockEdit.getDocumentClip.mockReturnValue({ ...clip, length: docLength });
+
+			const mounted = mountToolbar(mockEdit);
+			mounted.toolbar.show(0, 0);
+			return { mockEdit, ...mounted };
+		}
+
+		it("rescales length by oldSpeed/newSpeed when a preset is clicked", () => {
+			const { mockEdit, toolbar, parent } = mountWithVideoClip();
+
+			(parent.querySelector('[data-speed-preset="2"]') as HTMLButtonElement).click();
+
+			// 10s at 1× → 5s at 2×, same source window
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					length: 5,
+					asset: expect.objectContaining({ speed: 2 })
+				})
+			);
+			toolbar.dispose();
+		});
+
+		it("rescales trim with length so the source start frame is unchanged", () => {
+			const { mockEdit, toolbar, parent } = mountWithVideoClip({ trim: 2 });
+
+			(parent.querySelector('[data-speed-preset="2"]') as HTMLButtonElement).click();
+
+			// Renders scale trim by speed: trim 2 at 1× and trim 1 at 2× both start at source 2s
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					length: 5,
+					asset: expect.objectContaining({ speed: 2, trim: 1 })
+				})
+			);
+			toolbar.dispose();
+		});
+
+		it("preserves auto/end length intent strings (no numeric rewrite)", () => {
+			const { mockEdit, toolbar, parent } = mountWithVideoClip({}, "auto");
+
+			(parent.querySelector('[data-speed-preset="2"]') as HTMLButtonElement).click();
+
+			const updates = mockEdit.updateClip.mock.calls[0][2];
+			expect(updates).not.toHaveProperty("length");
+			toolbar.dispose();
+		});
+
+		it("strips speed from the asset when set back to exactly 1×", () => {
+			const { mockEdit, toolbar, parent } = mountWithVideoClip({ speed: 2 }, 5);
+
+			(parent.querySelector('[data-speed-preset="1"]') as HTMLButtonElement).click();
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					length: 10,
+					asset: expect.objectContaining({ speed: undefined })
+				})
+			);
+			toolbar.dispose();
+		});
+
+		it("slider drag updates the readout only, committing once on release", () => {
+			const { mockEdit, toolbar } = mountWithVideoClip();
+
+			const { speedSlider } = toolbar as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+			expect(speedSlider).toBeTruthy();
+
+			// Slide to the max position (10×) - no document writes while dragging
+			speedSlider.value = "600";
+			speedSlider.dispatchEvent(new Event("input", { bubbles: true }));
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+
+			// Release commits a single update through the command path (emits ClipUpdated)
+			speedSlider.dispatchEvent(new Event("change", { bubbles: true }));
+			expect(mockEdit.updateClip).toHaveBeenCalledTimes(1);
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(
+				0,
+				0,
+				expect.objectContaining({
+					length: 1,
+					asset: expect.objectContaining({ speed: 10 })
+				})
+			);
+			toolbar.dispose();
+		});
+
+		it("hides the speed section for image assets", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip());
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+
+			const speedSection = parent.querySelector("[data-speed-section]") as HTMLElement;
+			expect(speedSection.classList.contains("hidden")).toBe(true);
 			toolbar.dispose();
 		});
 	});

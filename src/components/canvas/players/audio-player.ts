@@ -57,8 +57,6 @@ export class AudioPlayer extends Player {
 	public override update(deltaTime: number, elapsed: number): void {
 		super.update(deltaTime, elapsed);
 
-		const { trim = 0 } = this.clipConfiguration.asset as AudioAsset;
-
 		this.syncTimer += elapsed;
 
 		this.getContainer().alpha = 0;
@@ -67,15 +65,16 @@ export class AudioPlayer extends Player {
 			return;
 		}
 
-		const shouldClipPlay = this.edit.isPlaying && this.isActive();
-		// getPlaybackTime() returns seconds
-		const playbackTime = this.getPlaybackTime();
+		const speed = this.getAssetSpeed();
+		const sourceTime = this.getSourceTime();
+		const shouldClipPlay = this.edit.isPlaying && this.isActive() && speed > 0;
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
 				this.audioResource.volume(this.getVolume());
-				this.audioResource.seek(playbackTime + trim);
+				this.audioResource.rate(speed);
+				this.audioResource.seek(sourceTime);
 				this.audioResource.play();
 			}
 
@@ -83,13 +82,17 @@ export class AudioPlayer extends Player {
 				this.audioResource.volume(this.getVolume());
 			}
 
+			if (this.audioResource.rate() !== speed) {
+				this.audioResource.rate(speed);
+			}
+
 			// Desync threshold: 0.1 seconds (100ms)
 			const desyncThreshold = 0.1;
-			// Both audioResource.seek() and playbackTime are in seconds
-			const shouldSync = Math.abs(this.audioResource.seek() - trim - playbackTime) > desyncThreshold;
+			// Both audioResource.seek() and sourceTime are in source-media seconds
+			const shouldSync = Math.abs((this.audioResource.seek() as number) - sourceTime) > desyncThreshold;
 
 			if (shouldSync) {
-				this.audioResource.seek(playbackTime + trim);
+				this.audioResource.seek(sourceTime);
 			}
 		}
 
@@ -102,7 +105,7 @@ export class AudioPlayer extends Player {
 		const shouldSync = this.syncTimer > 100;
 		if (!this.edit.isPlaying && this.isActive() && shouldSync) {
 			this.syncTimer = 0;
-			this.audioResource.seek(playbackTime + trim);
+			this.audioResource.seek(sourceTime);
 		}
 	}
 
@@ -159,13 +162,15 @@ export class AudioPlayer extends Player {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
 	}
 
+	public override getSourceDuration(): number | null {
+		const duration = this.audioResource?.duration();
+		return typeof duration === "number" && duration > 0 ? duration : null;
+	}
+
 	public getCurrentDrift(): number {
 		if (!this.audioResource) return 0;
-		const { trim = 0 } = this.clipConfiguration.asset as AudioAsset;
-		const audioTime = this.audioResource.seek() as number;
-		// getPlaybackTime() returns seconds, audioTime is also seconds
-		const playbackTime = this.getPlaybackTime();
-		return Math.abs(audioTime - trim - playbackTime);
+		// Both seek() and getSourceTime() are in source-media seconds
+		return Math.abs((this.audioResource.seek() as number) - this.getSourceTime());
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {
