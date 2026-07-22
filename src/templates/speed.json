@@ -13,6 +13,18 @@
 							"height": 60
 						},
 						"start": 0,
+						"length": 3,
+						"position": "top"
+					},
+					{
+						"asset": {
+							"type": "text",
+							"text": "1x",
+							"font": { "color": "#ffffff", "family": "Montserrat SemiBold", "size": "40" },
+							"width": 300,
+							"height": 60
+						},
+						"start": 3,
 						"length": 4,
 						"position": "top"
 					},
@@ -24,7 +36,7 @@
 							"width": 300,
 							"height": 60
 						},
-						"start": 4,
+						"start": 7,
 						"length": 4,
 						"position": "top"
 					},
@@ -36,7 +48,7 @@
 							"width": 300,
 							"height": 60
 						},
-						"start": 8,
+						"start": 11,
 						"length": 4,
 						"position": "top"
 					},
@@ -48,7 +60,7 @@
 							"width": 300,
 							"height": 60
 						},
-						"start": 12,
+						"start": 15,
 						"length": 3,
 						"position": "top"
 					}
@@ -57,23 +69,28 @@
 			{
 				"clips": [
 					{
-						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 1 },
+						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 0 },
 						"start": 0,
+						"length": 3
+					},
+					{
+						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 1 },
+						"start": 3,
 						"length": 4
 					},
 					{
 						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 2 },
-						"start": 4,
+						"start": 7,
 						"length": 4
 					},
 					{
 						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 0.5 },
-						"start": 8,
+						"start": 11,
 						"length": 4
 					},
 					{
 						"asset": { "type": "video", "src": "https://shotstack-assets.s3.amazonaws.com/footage/scott-ko.mp4", "volume": 1, "speed": 2, "trim": 2 },
-						"start": 12,
+						"start": 15,
 						"length": 3
 					}
 				]
