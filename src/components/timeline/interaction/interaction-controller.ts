@@ -181,7 +181,10 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const clip = this.stateManager.getClipAt(clipRef.trackIndex, clipRef.clipIndex);
 		if (!clip) return;
 
-		this.beginPointerInteraction(e);
+		// No pointer capture yet: capturing retargets the eventual click event to
+		// the tracks container, which would break click handlers on clip children
+		// (e.g. the mask badge). Capture happens if this becomes a real drag.
+		this.activePointerId = e.pointerId;
 		this.state = createPendingState({ x: e.clientX, y: e.clientY }, clipRef, clip.config.start);
 	}
 
@@ -297,6 +300,7 @@ export class InteractionController implements TimelineInteractionRegistration {
 		const ghost = createDragGhost(clip.config.length, clipAssetType, sourceTrackHeight, pps);
 		this.feedbackElements.container.appendChild(ghost);
 
+		this.beginPointerInteraction(e);
 		this.state = createDraggingState(state, clipElement, ghost, dragOffsetX, dragOffsetY, originalStyles, clip.config.length, e.altKey);
 
 		// Position ghost at current clip position initially

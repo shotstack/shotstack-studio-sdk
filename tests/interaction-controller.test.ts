@@ -1079,6 +1079,22 @@ describe("InteractionController", () => {
 			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 100, clientY: 20 }));
 		};
 
+		it("captures the pointer only when a drag starts, not on plain pointerdown", () => {
+			createController();
+			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
+			const setPointerCapture = jest.fn();
+			mockDOM.tracksContainer.setPointerCapture = setPointerCapture;
+
+			// Plain pointerdown (a click on the clip or a child like the mask badge)
+			// must not capture, or the resulting click event retargets away from the child
+			clipElement.dispatchEvent(createPointerEvent("pointerdown", { clientX: 50, clientY: 20 }));
+			expect(setPointerCapture).not.toHaveBeenCalled();
+
+			document.dispatchEvent(createPointerEvent("pointermove", { clientX: 100, clientY: 20 }));
+			expect(controller.isDragging(0, 0)).toBe(true);
+			expect(setPointerCapture).toHaveBeenCalled();
+		});
+
 		it("cancels drag on pointercancel, restoring the clip without executing commands", () => {
 			createController();
 			const clipElement = mockDOM.tracksContainer.querySelector(".ss-clip") as HTMLElement;
