@@ -12,8 +12,16 @@ export function stripInternalProperties(clip: Clip): Clip {
 }
 
 /**
- * True when any visual property holds something other than a plain number —
- * keyframes, or a merge field placeholder that never resolved.
+ * True when a numeric clip property holds something else — keyframes, or a merge
+ * field placeholder that never resolved. Writing a scalar over either destroys it,
+ * so every control that writes scalars must agree on this test.
+ */
+export function isKeyframedValue(value: unknown): boolean {
+	return Boolean(value) && typeof value !== "number";
+}
+
+/**
+ * True when any visual property is keyframed or bound.
  *
  * Studio previews such clips without effect and transition layers, so the player
  * and the toolbars must agree on the property list; keep this the only copy.
@@ -28,5 +36,5 @@ export function hasKeyframedVisualProperty(clip: Clip): boolean {
 		clip.transform?.rotate?.angle,
 		clip.transform?.skew?.x,
 		clip.transform?.skew?.y
-	].some(property => property && typeof property !== "number");
+	].some(isKeyframedValue);
 }

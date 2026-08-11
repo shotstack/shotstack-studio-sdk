@@ -26,6 +26,7 @@ import {
 	snapRotation,
 	visualToLogical
 } from "@core/interaction/snap-system";
+import { isKeyframedValue } from "@core/shared/clip-utils";
 import { updateSvgViewBox, isSimpleRectSvg } from "@core/shared/svg-utils";
 import { Pointer } from "@inputs/pointer";
 import type { Size, Vector } from "@layouts/geometry";
@@ -832,13 +833,14 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────────
 
+	/** Canvas gestures write absolute scalars, which would overwrite an animated or bound value. */
 	private hasKeyframedOffset(): boolean {
 		const offset = this.selectedPlayer?.clipConfiguration.offset;
-		return Array.isArray(offset?.x) || Array.isArray(offset?.y);
+		return isKeyframedValue(offset?.x) || isKeyframedValue(offset?.y);
 	}
 
 	private hasKeyframedRotation(): boolean {
-		return Array.isArray(this.selectedPlayer?.clipConfiguration.transform?.rotate?.angle);
+		return isKeyframedValue(this.selectedPlayer?.clipConfiguration.transform?.rotate?.angle);
 	}
 
 	private captureOriginalDimensions(): void {
