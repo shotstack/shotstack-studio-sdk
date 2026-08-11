@@ -2,6 +2,14 @@ import { type Keyframe, type NumericKeyframe } from "@schemas";
 
 import { CurveInterpolator } from "./curve-interpolator";
 
+/**
+ * Tolerance for comparing frame-derived times, which are stored as seconds and so
+ * are not exactly representable (least of all at 23.976 / 29.97 / 59.94). Far above
+ * real accumulated drift (~1e-13) and far below one frame at the highest supported
+ * rate (~1.7e-2 at 60fps).
+ */
+export const TIME_EPSILON = 1e-6;
+
 export class KeyframeBuilder {
 	private readonly property: NumericKeyframe[];
 	private readonly length: number;
@@ -113,6 +121,7 @@ export class KeyframeBuilder {
 
 		const normalizedKeyframes = this.createNormalizedKeyframes(value);
 
+		this.normaliseAdjacentBoundaries(normalizedKeyframes);
 		this.validateKeyframes(normalizedKeyframes);
 
 		return this.insertFillerKeyframes(normalizedKeyframes, length, initialValue);
@@ -132,18 +141,25 @@ export class KeyframeBuilder {
 			}));
 	}
 
+	private normaliseAdjacentBoundaries(keyframes: NumericKeyframe[]): void {
+		for (let i = 0; i < keyframes.length - 1; i += 1) {
+			const current = keyframes[i];
+			const next = keyframes[i + 1];
+			const boundaryDelta = current.start + current.length - next.start;
+			const canonicalLength = next.start - current.start;
+
+			if (Math.abs(boundaryDelta) <= TIME_EPSILON && canonicalLength > 0) {
+				current.length = canonicalLength;
+			}
+		}
+	}
+
 	private validateKeyframes(keyframes: NumericKeyframe[]): void {
 		for (let i = 0; i < keyframes.length; i += 1) {
 			const current = keyframes[i];
 			const next = keyframes[i + 1];
 
-			if (!next) {
-				if (current.start + current.length > this.length) {
-					throw new Error("Last keyframe exceeds the maximum duration.");
-				}
-
-				break;
-			}
+			if (!next) break;
 
 			if (current.start + current.length > next.start) {
 				throw new Error("Overlapping keyframes detected.");
@@ -158,7 +174,7 @@ export class KeyframeBuilder {
 			const current = keyframes[i];
 			const next = keyframes[i + 1];
 
-			const shouldFillStart = i === 0 && current.start !== 0;
+			const shouldFillStart = i === 0 && current.start > 0;
 			if (shouldFillStart) {
 				const fillerKeyframe: NumericKeyframe = { start: 0, length: current.start, from: initialValue, to: current.from };
 				updatedKeyframes.push(fillerKeyframe);
@@ -167,7 +183,7 @@ export class KeyframeBuilder {
 			updatedKeyframes.push(current);
 
 			if (!next) {
-				const shouldFillEnd = current.start + current.length < length;
+				const shouldFillEnd = length - (current.start + current.length) > 0;
 				if (shouldFillEnd) {
 					const currentStart = current.start + current.length;
 					const fillerKeyframe: NumericKeyframe = { start: currentStart, length: length - currentStart, from: current.to, to: current.to };
@@ -178,7 +194,7 @@ export class KeyframeBuilder {
 				break;
 			}
 
-			const shouldFillMiddle = current.start + current.length !== next.start;
+			const shouldFillMiddle = next.start - (current.start + current.length) > 0;
 			if (shouldFillMiddle) {
 				const fillerStart = current.start + current.length;
 				const fillerLength = next.start - fillerStart;

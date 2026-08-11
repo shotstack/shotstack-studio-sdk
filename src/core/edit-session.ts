@@ -2081,6 +2081,7 @@ export class Edit {
 
 		const resolvedClip = this.getResolvedClip(trackIndex, clipIndex);
 		if (!resolvedClip) return;
+		if (Array.isArray(resolvedClip.offset?.x) || Array.isArray(resolvedClip.offset?.y)) return;
 
 		const initialConfig = structuredClone(resolvedClip);
 

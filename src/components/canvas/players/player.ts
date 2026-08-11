@@ -6,6 +6,7 @@ import { WipeFilter } from "@animations/wipe-filter";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
+import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import {
 	type AliasReference,
 	type ResolvedTiming,
@@ -155,7 +156,7 @@ export abstract class Player extends Entity {
 		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, length, "additive");
 
 		// If user has custom keyframes, add them and skip effect/transition layers
-		if (this.clipHasKeyframes()) {
+		if (hasKeyframedVisualProperty(this.clipConfiguration)) {
 			if (Array.isArray(config.scale)) {
 				this.scaleKeyframeBuilder.addLayer(config.scale);
 			}
@@ -600,18 +601,6 @@ export abstract class Player extends Entity {
 		}
 
 		this.edit.getInternalEvents().emit(InternalEvent.CanvasClipClicked, { player: this });
-	}
-
-	private clipHasKeyframes(): boolean {
-		return [
-			this.clipConfiguration.scale,
-			this.clipConfiguration.opacity,
-			this.clipConfiguration.offset?.x,
-			this.clipConfiguration.offset?.y,
-			this.clipConfiguration.transform?.rotate?.angle,
-			this.clipConfiguration.transform?.skew?.x,
-			this.clipConfiguration.transform?.skew?.y
-		].some(property => property && typeof property !== "number");
 	}
 
 	protected applyFixedDimensions(): void {

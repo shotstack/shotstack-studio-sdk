@@ -1,6 +1,6 @@
 import { truncatePrompt } from "@core/shared/ai-asset-utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
-import type { ResolvedClip, TextToImageAsset } from "@schemas";
+import type { TextToImageAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -39,6 +39,7 @@ const ICONS = {
 };
 
 const PROMPT_DEBOUNCE_MS = 150;
+const KEYFRAMED_VALUE_DISABLED_REASON = "Keyframed values cannot be edited with this control";
 
 export class TextToImageToolbar extends BaseToolbar {
 	// ─── Current Values ──────────────────────────────────────────────────────────
@@ -398,13 +399,17 @@ export class TextToImageToolbar extends BaseToolbar {
 		this.updateFitActiveState();
 
 		// Opacity
-		const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-		this.opacitySlider?.setValue(Math.round(opacity * 100));
+		const opacityKeyframed = Array.isArray(clip.opacity);
+		this.opacitySlider?.setEnabled(!opacityKeyframed);
+		this.setNumericControlEnabled("opacity", !opacityKeyframed);
+		this.opacitySlider?.setValue(Math.round((typeof clip.opacity === "number" ? clip.opacity : 1) * 100));
 		this.updateOpacityDisplay();
 
 		// Scale
-		const scale = typeof clip.scale === "number" ? clip.scale : 1;
-		this.scaleSlider?.setValue(Math.round(scale * 100));
+		const scaleKeyframed = Array.isArray(clip.scale);
+		this.scaleSlider?.setEnabled(!scaleKeyframed);
+		this.setNumericControlEnabled("scale", !scaleKeyframed);
+		this.scaleSlider?.setValue(Math.round((typeof clip.scale === "number" ? clip.scale : 1) * 100));
 		this.updateScaleDisplay();
 
 		// Transition
@@ -517,20 +522,15 @@ export class TextToImageToolbar extends BaseToolbar {
 	/**
 	 * Capture and deep-clone the current clip state for drag rollback.
 	 */
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
-	}
-
 	/**
 	 * Start a drag session for a slider control.
 	 */
 	private startSliderDrag(controlId: string): void {
 		const state = this.captureClipState();
-		if (state) {
-			this.dragManager.start(controlId, state.clipId, state.initialState);
+		if (!state || (controlId === "opacity" && Array.isArray(state.clip.opacity)) || (controlId === "scale" && Array.isArray(state.clip.scale))) {
+			return;
 		}
+		this.dragManager.start(controlId, state.clipId, state.clip);
 	}
 
 	/**
@@ -540,9 +540,9 @@ export class TextToImageToolbar extends BaseToolbar {
 		const session = this.dragManager.end(controlId);
 		if (!session) return;
 
-		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (finalClip) {
-			this.edit.commitClipUpdate(session.clipId, session.initialState, structuredClone(finalClip));
+		const final = this.captureClipState();
+		if (final) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
 		}
 	}
 
@@ -557,6 +557,11 @@ export class TextToImageToolbar extends BaseToolbar {
 	}
 
 	private handleOpacityChange(value: number): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || Array.isArray(clip.opacity)) {
+			if (clip) this.syncState();
+			return;
+		}
 		this.updateOpacityDisplay();
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
@@ -573,6 +578,11 @@ export class TextToImageToolbar extends BaseToolbar {
 	}
 
 	private handleScaleChange(value: number): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || Array.isArray(clip.scale)) {
+			if (clip) this.syncState();
+			return;
+		}
 		this.updateScaleDisplay();
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
@@ -628,6 +638,13 @@ export class TextToImageToolbar extends BaseToolbar {
 		const text = `${Math.round(value)}%`;
 		const scaleValue = this.container?.querySelector("[data-scale-value]");
 		if (scaleValue) scaleValue.textContent = text;
+	}
+
+	private setNumericControlEnabled(name: "opacity" | "scale", enabled: boolean): void {
+		const button = this.btn(name);
+		if (!button) return;
+		button.disabled = !enabled;
+		button.title = enabled ? "" : KEYFRAMED_VALUE_DISABLED_REASON;
 	}
 
 	// ─── Update Helpers ───────────────────────────────────────────────────────────

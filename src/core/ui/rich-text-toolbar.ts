@@ -354,7 +354,7 @@ export class RichTextToolbar extends BaseToolbar {
 			this.spacingPanel.onDragStart(() => {
 				const state = this.captureClipState();
 				if (state) {
-					this.dragManager.start("spacing-panel", state.clipId, state.initialState);
+					this.dragManager.start("spacing-panel", state.clipId, state.clip);
 				}
 			});
 
@@ -464,7 +464,7 @@ export class RichTextToolbar extends BaseToolbar {
 		this.animationDurationSlider?.addEventListener("pointerdown", () => {
 			const state = this.captureClipState();
 			if (state) {
-				this.dragManager.start("animation-duration", state.clipId, state.initialState);
+				this.dragManager.start("animation-duration", state.clipId, state.clip);
 			}
 		});
 
@@ -521,7 +521,7 @@ export class RichTextToolbar extends BaseToolbar {
 			this.stylePanel.onDragStart(() => {
 				const state = this.captureClipState();
 				if (state) {
-					this.dragManager.start("style-panel", state.clipId, state.initialState);
+					this.dragManager.start("style-panel", state.clipId, state.clip);
 				}
 			});
 
@@ -692,7 +692,7 @@ export class RichTextToolbar extends BaseToolbar {
 				this.backgroundColorPicker.onDragStart(controlId => {
 					const state = this.captureClipState();
 					if (state) {
-						this.dragManager.start(controlId, state.clipId, state.initialState);
+						this.dragManager.start(controlId, state.clipId, state.clip);
 					}
 				});
 
@@ -1394,18 +1394,6 @@ export class RichTextToolbar extends BaseToolbar {
 
 		this.edit.updateClipInDocument(clipId, { asset: updatedAsset as ResolvedClip["asset"] });
 		this.edit.resolveClip(clipId);
-	}
-
-	/**
-	 * Capture current clip state for two-phase drag pattern (Phase 1).
-	 * Creates a deep clone of the clip's current state to enable command rollback on drag end.
-	 *
-	 * @returns Object with clipId and cloned initial state, or null if no clip selected
-	 */
-	protected captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
 	}
 
 	private selectFont(font: FontInfo): void {

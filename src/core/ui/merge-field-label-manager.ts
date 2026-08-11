@@ -5,6 +5,8 @@ import { ShotstackEdit } from "@core/shotstack-edit";
 
 import { MergeFieldLabel } from "./primitives";
 
+const ARRAY_VALUE_DISABLED_REASON = "Remove keyframes before using a merge field";
+
 /**
  * Interface that any toolbar must satisfy to host merge field labels.
  * All properties are available on BaseToolbar (protected/public).
@@ -84,9 +86,12 @@ export class MergeFieldLabelManager {
 
 		const clipId = this.getSelectedClipId();
 		if (!clipId) return;
+		const resolvedClip = this.host.edit.getResolvedClipById(clipId);
 
 		for (const label of this.labels) {
 			const propertyPath = label.getPropertyPath();
+			const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
+			label.setEnabled(!Array.isArray(currentValue), ARRAY_VALUE_DISABLED_REASON);
 
 			// Compute which fields are type-compatible with this property
 			const compatibleNames = this.getCompatibleFieldNames(allFields, propertyPath, clipId);
@@ -133,6 +138,9 @@ export class MergeFieldLabelManager {
 
 			const clipId = this.getSelectedClipId();
 			if (!clipId) return;
+			const resolvedClip = this.host.edit.getResolvedClipById(clipId);
+			const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
+			if (Array.isArray(currentValue)) return;
 
 			const existingField = shotstackEdit.mergeFields.get(nameOrPrefix);
 
@@ -149,9 +157,6 @@ export class MergeFieldLabelManager {
 				value = existingField.defaultValue;
 			} else {
 				fieldName = shotstackEdit.mergeFields.generateUniqueName(nameOrPrefix);
-
-				const resolvedClip = this.host.edit.getResolvedClipById(clipId);
-				const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
 				value = currentValue != null ? String(currentValue) : (this.propertyDefaults[propertyPath] ?? "0");
 			}
 

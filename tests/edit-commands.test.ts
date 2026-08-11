@@ -1832,4 +1832,64 @@ describe("SelectionHandles fall-through dismiss", () => {
 		fireFallThroughClick(unrelatedContainer);
 		expect(backgroundEmits()).toHaveLength(0);
 	});
+
+	it("does not start move or resize gestures that would flatten keyframed offsets", () => {
+		const player = edit.getPlayerClip(0, 0)!;
+		player.clipConfiguration.offset = {
+			x: [{ from: 0, to: 1, start: 0, length: 1, interpolation: "linear" }],
+			y: 0
+		};
+		const event = { getLocalPosition: jest.fn() };
+		const guardedHandles = handles as unknown as {
+			startDrag: (value: unknown) => void;
+			startCornerResize: (value: unknown, corner: "topLeft") => void;
+			startEdgeResize: (value: unknown, edge: "left") => void;
+			isDragging: boolean;
+			scaleDirection: string | null;
+			edgeDragDirection: string | null;
+		};
+
+		guardedHandles.startDrag(event);
+		guardedHandles.startCornerResize(event, "topLeft");
+		guardedHandles.startEdgeResize(event, "left");
+
+		expect(event.getLocalPosition).not.toHaveBeenCalled();
+		expect(guardedHandles.isDragging).toBe(false);
+		expect(guardedHandles.scaleDirection).toBeNull();
+		expect(guardedHandles.edgeDragDirection).toBeNull();
+	});
+
+	it("does not start rotation when its angle is keyframed", () => {
+		const player = edit.getPlayerClip(0, 0)!;
+		player.clipConfiguration.transform = {
+			rotate: { angle: [{ from: 0, to: 90, start: 0, length: 1, interpolation: "linear" }] }
+		};
+		const guardedHandles = handles as unknown as {
+			startRotation: (event: unknown, corner: "topLeft") => void;
+			isRotating: boolean;
+		};
+
+		guardedHandles.startRotation({ globalX: 0, globalY: 0 }, "topLeft");
+
+		expect(guardedHandles.isRotating).toBe(false);
+	});
+});
+
+describe("Keyboard movement keyframe safety", () => {
+	it("does not replace keyframed offsets with a scalar nudge", () => {
+		const calculateMoveOffset = jest.fn();
+		const setUpdatedClip = jest.fn();
+		const fakeEdit = {
+			getSelectedClipInfo: () => ({ player: { calculateMoveOffset }, trackIndex: 0, clipIndex: 0 }),
+			getResolvedClip: () => ({
+				offset: { x: [{ from: 0, to: 1, start: 0, length: 1, interpolation: "linear" }], y: 0 }
+			}),
+			setUpdatedClip
+		} as unknown as Edit;
+
+		Edit.prototype.moveSelectedClip.call(fakeEdit, 1, 0);
+
+		expect(calculateMoveOffset).not.toHaveBeenCalled();
+		expect(setUpdatedClip).not.toHaveBeenCalled();
+	});
 });

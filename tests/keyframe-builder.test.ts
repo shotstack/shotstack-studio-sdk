@@ -135,4 +135,71 @@ describe("KeyframeBuilder", () => {
 			expect(builder.getValue(3)).toBeCloseTo(0.3);
 		});
 	});
+
+	describe("timeline boundary safety", () => {
+		it("preserves and evaluates a keyframe that extends beyond a shortened clip", () => {
+			const builder = new KeyframeBuilder([{ start: 0, length: 10, from: 0, to: 1, interpolation: "linear" }], 5);
+
+			expect(builder.getValue(5)).toBe(0.5);
+		});
+
+		it("tolerates floating-point noise between adjacent frame-derived segments", () => {
+			const boundary = 2 / 29.97;
+			const builder = new KeyframeBuilder(
+				[
+					{ start: 0, length: boundary + 1e-10, from: 0, to: 0.5, interpolation: "linear" },
+					{ start: boundary, length: 1, from: 0.5, to: 1, interpolation: "linear" }
+				],
+				2
+			);
+
+			expect(builder.getValue(boundary)).toBeCloseTo(0.5);
+		});
+
+		it("normalises tolerated overlaps so seek order cannot change the value", () => {
+			const overlap = 5e-7;
+			const overlapTime = 1 + overlap / 2;
+			const builder = new KeyframeBuilder(
+				[
+					{ start: 0, length: 1 + overlap, from: 0, to: 0, interpolation: "linear" },
+					{ start: 1, length: 1, from: 1, to: 1, interpolation: "linear" }
+				],
+				2
+			);
+
+			builder.getValue(0.5);
+			const valueAfterEarlierSeek = builder.getValue(overlapTime);
+			builder.getValue(1.5);
+			const valueAfterLaterSeek = builder.getValue(overlapTime);
+
+			expect(valueAfterEarlierSeek).toBe(1);
+			expect(valueAfterLaterSeek).toBe(valueAfterEarlierSeek);
+		});
+
+		it("fills a tiny positive gap instead of falling back to the initial value", () => {
+			const builder = new KeyframeBuilder(
+				[
+					{ start: 0, length: 1, from: 0, to: 0.2, interpolation: "linear" },
+					{ start: 1 + 1e-10, length: 1, from: 0.4, to: 0.6, interpolation: "linear" }
+				],
+				3,
+				1
+			);
+
+			expect(builder.getValue(1 + 5e-11)).toBeLessThan(0.5);
+		});
+
+		it("still rejects material overlaps", () => {
+			expect(
+				() =>
+					new KeyframeBuilder(
+						[
+							{ start: 0, length: 1.01, from: 0, to: 0.5, interpolation: "linear" },
+							{ start: 1, length: 1, from: 0.5, to: 1, interpolation: "linear" }
+						],
+						2
+					)
+			).toThrow("Overlapping keyframes detected.");
+		});
+	});
 });

@@ -61,6 +61,7 @@ function createMockEditSession() {
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-tti-1"),
 		getResolvedClip: jest.fn(),
+		getDocumentClip: jest.fn(),
 		getDocument: jest.fn().mockReturnValue(mockDocument),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
@@ -396,6 +397,33 @@ describe("TextToImageToolbar", () => {
 	});
 
 	describe("two-phase opacity slider drag", () => {
+		it("keeps keyframed opacity and scale read-only", () => {
+			const mockEdit = createMockEditSession();
+			const tweens = [{ from: 0, to: 1, start: 0, length: 1, interpolation: "linear" as const }];
+			const clip = createTtiClip({ opacity: structuredClone(tweens), scale: structuredClone(tweens) });
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+
+			(["opacity", "scale"] as const).forEach(property => {
+				const button = parent.querySelector<HTMLButtonElement>(`[data-action="${property}"]`)!;
+				const range = parent.querySelector<HTMLInputElement>(`[data-popup="${property}"] input[type="range"]`)!;
+				const value = parent.querySelector<HTMLInputElement>(`[data-popup="${property}"] input[type="text"]`)!;
+				expect(button.disabled).toBe(true);
+				expect(button.title).toBe("Keyframed values cannot be edited with this control");
+				expect(range.disabled).toBe(true);
+				expect(value.disabled).toBe(true);
+
+				range.value = "50";
+				range.dispatchEvent(new Event("input", { bubbles: true }));
+			});
+
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+			toolbar.dispose();
+		});
+
 		it("uses live preview during opacity drag", () => {
 			const mockEdit = createMockEditSession();
 			const clip = createTtiClip();

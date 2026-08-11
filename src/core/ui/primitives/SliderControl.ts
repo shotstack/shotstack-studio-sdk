@@ -14,6 +14,8 @@ export class SliderControl extends UIComponent<number> {
 	private formatValue: (value: number) => string;
 	private dragStartCallbacks: ChangeCallback<void>[] = [];
 	private dragEndCallbacks: ChangeCallback<number>[] = [];
+	private inputValueOnFocus: string | null = null;
+	private skipNextBlurCommit = false;
 
 	constructor(private sliderConfig: SliderConfig) {
 		super({ className: sliderConfig.className ?? "ss-toolbar-popup-section" });
@@ -63,14 +65,22 @@ export class SliderControl extends UIComponent<number> {
 		});
 
 		// Value input: commit on blur or Enter, revert on Escape
-		this.events.on(this.valueInput, "blur", () => this.commitInputValue());
+		this.events.on(this.valueInput, "blur", () => {
+			const changed = this.inputValueOnFocus === null || this.valueInput?.value !== this.inputValueOnFocus;
+			this.inputValueOnFocus = null;
+			if (this.skipNextBlurCommit) {
+				this.skipNextBlurCommit = false;
+				return;
+			}
+			if (changed) this.commitInputValue();
+		});
 		this.events.on(this.valueInput, "keydown", (e: KeyboardEvent) => {
 			if (e.key === "Enter") {
 				e.preventDefault();
-				this.commitInputValue();
 				this.valueInput?.blur();
 			} else if (e.key === "Escape") {
 				e.preventDefault();
+				this.skipNextBlurCommit = true;
 				this.revertInputValue();
 				this.valueInput?.blur();
 			}
@@ -78,6 +88,8 @@ export class SliderControl extends UIComponent<number> {
 
 		// Select all text on focus for easy replacement
 		this.events.on(this.valueInput, "focus", () => {
+			this.inputValueOnFocus = this.valueInput?.value ?? null;
+			this.skipNextBlurCommit = false;
 			this.valueInput?.select();
 		});
 	}
@@ -176,5 +188,7 @@ export class SliderControl extends UIComponent<number> {
 		super.dispose();
 		this.dragStartCallbacks = [];
 		this.dragEndCallbacks = [];
+		this.inputValueOnFocus = null;
+		this.skipNextBlurCommit = false;
 	}
 }

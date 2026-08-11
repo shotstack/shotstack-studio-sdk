@@ -1,5 +1,6 @@
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import type { ResolvedClip } from "@schemas";
 
 import { makeToolbarDraggable, type ToolbarDragHandle } from "./toolbar-drag";
 
@@ -287,6 +288,20 @@ export abstract class BaseToolbar {
 	 */
 	protected setButtonActive(btn: HTMLElement | null, active: boolean): void {
 		btn?.classList.toggle("active", active);
+	}
+
+	/**
+	 * Snapshot the selected clip for a history entry.
+	 * Undo replays the snapshot into the document, so it holds document values —
+	 * resolved ones would overwrite "auto"/"end" timing and merge field placeholders.
+	 */
+	protected captureClipState(): { clipId: string; clip: ResolvedClip } | null {
+		const resolved = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!resolved || !clipId) return null;
+		const documentClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clip = documentClip ? ({ ...structuredClone(documentClip), id: resolved.id } as ResolvedClip) : structuredClone(resolved);
+		return { clipId, clip };
 	}
 
 	/**

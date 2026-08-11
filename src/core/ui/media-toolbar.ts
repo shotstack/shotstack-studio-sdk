@@ -1,5 +1,17 @@
+import { TIME_EPSILON } from "@core/animations/keyframe-builder";
+import {
+	decodeOpacityPoints,
+	encodeOpacityPoints,
+	evaluateOpacity,
+	findOpacityPoint,
+	removeOpacityPoint,
+	snapOpacityTime,
+	type OpacityPoint,
+	upsertOpacityPoint
+} from "@core/animations/opacity-keyframes";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip } from "@schemas";
@@ -42,7 +54,10 @@ const ICONS = {
 	fadeIn: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L14 4 L30 4"/></svg>`,
 	fadeOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4 L18 4 L30 14"/></svg>`,
 	fadeInOut: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 L10 4 L22 4 L30 14"/></svg>`,
-	fadeNone: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 10 L30 10"/></svg>`
+	fadeNone: `<svg viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 10 L30 10"/></svg>`,
+	keyframePrevious: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m10 4-4 4 4 4"/></svg>`,
+	keyframe: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="m8 2.5 5.5 5.5L8 13.5 2.5 8 8 2.5Z"/></svg>`,
+	keyframeNext: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 4 4 4-4 4"/></svg>`
 };
 
 type MediaAssetType = "video" | "image" | "audio" | "text-to-image" | "image-to-video" | "text-to-speech";
@@ -63,6 +78,11 @@ const SPEED_PRESETS = [0.25, 0.5, 1, 1.5, 2, 4];
 
 const SPEED_MIN = 0.1;
 const SPEED_MAX = 10;
+const KEYFRAME_BUTTON_STATES = {
+	static: { pressed: "false", label: "Add opacity keyframe" },
+	animated: { pressed: "mixed", label: "Add opacity keyframe at playhead; opacity is animated" },
+	keyframe: { pressed: "true", label: "Remove opacity keyframe" }
+} as const;
 /** Slider midpoint: log-scaled so 1× sits centred and 0.5–2× gets half the travel */
 const SPEED_SLIDER_HALF = 300;
 
@@ -109,6 +129,9 @@ export class MediaToolbar extends BaseToolbar {
 	// ─── Button Elements ─────────────────────────────────────────────────────────
 	private fitBtn: HTMLButtonElement | null = null;
 	private opacityBtn: HTMLButtonElement | null = null;
+	private opacityPreviousKeyframeBtn: HTMLButtonElement | null = null;
+	private opacityKeyframeBtn: HTMLButtonElement | null = null;
+	private opacityNextKeyframeBtn: HTMLButtonElement | null = null;
 	private scaleBtn: HTMLButtonElement | null = null;
 	private volumeBtn: HTMLButtonElement | null = null;
 	private transitionBtn: HTMLButtonElement | null = null;
@@ -149,6 +172,10 @@ export class MediaToolbar extends BaseToolbar {
 
 	// ─── State ───────────────────────────────────────────────────────────────────
 	private dragManager = new DragStateManager();
+	private pendingOpacityTimes = new Map<string, number>();
+	private opacityDragTime: number | null = null;
+	private playbackPauseListener: (() => void) | null = null;
+	private editChangedListener: ((event: { source: string }) => void) | null = null;
 	private audioFadeEffect: "" | "fadeIn" | "fadeOut" | "fadeInFadeOut" = "";
 	private isDynamicSource: boolean = false;
 	private dynamicFieldName: string = "";
@@ -411,7 +438,7 @@ export class MediaToolbar extends BaseToolbar {
 			// Re-sync merge field labels when fields are added/removed globally
 			this.unsubMergeFieldChanged = this.edit.getInternalEvents().on(EditEvent.MergeFieldChanged, () => {
 				if (this.container?.style.display !== "none" && this.mergeFieldManager?.hasLabels) {
-					this.mergeFieldManager.sync();
+					this.syncState();
 				}
 			});
 		}
@@ -442,6 +469,29 @@ export class MediaToolbar extends BaseToolbar {
 			this.opacitySlider.onChange(value => this.handleOpacityChange(value));
 			this.opacitySlider.onDragEnd(() => this.endSliderDrag("opacity"));
 			this.opacitySlider.mount(opacityMount as HTMLElement);
+
+			const section = opacityMount.querySelector(".ss-toolbar-popup-section");
+			const label = section?.querySelector(".ss-toolbar-popup-label");
+			if (section && label) {
+				const header = document.createElement("div");
+				header.className = "ss-media-toolbar-keyframe-header";
+				label.before(header);
+				header.appendChild(label);
+				header.insertAdjacentHTML(
+					"beforeend",
+					`<div class="ss-media-toolbar-keyframe-controls">
+						<button type="button" class="ss-media-toolbar-keyframe-btn" data-opacity-keyframe-previous aria-label="Previous opacity keyframe" title="Previous opacity keyframe">${ICONS.keyframePrevious}</button>
+						<button type="button" class="ss-media-toolbar-keyframe-btn" data-opacity-keyframe data-state="static" aria-label="Add opacity keyframe" aria-pressed="false" title="Add opacity keyframe">${ICONS.keyframe}</button>
+						<button type="button" class="ss-media-toolbar-keyframe-btn" data-opacity-keyframe-next aria-label="Next opacity keyframe" title="Next opacity keyframe">${ICONS.keyframeNext}</button>
+					</div>`
+				);
+				this.opacityPreviousKeyframeBtn = header.querySelector("[data-opacity-keyframe-previous]");
+				this.opacityKeyframeBtn = header.querySelector("[data-opacity-keyframe]");
+				this.opacityNextKeyframeBtn = header.querySelector("[data-opacity-keyframe-next]");
+			}
+
+			opacityMount.querySelector<HTMLInputElement>('input[type="range"]')?.setAttribute("aria-label", "Opacity");
+			opacityMount.querySelector<HTMLInputElement>('input[type="text"]')?.setAttribute("aria-label", "Opacity percentage");
 		}
 
 		// Mount scale slider (two-phase: live preview during drag, single undo on release)
@@ -556,6 +606,10 @@ export class MediaToolbar extends BaseToolbar {
 			},
 			{ signal }
 		);
+
+		this.opacityPreviousKeyframeBtn?.addEventListener("click", () => this.navigateOpacityKeyframe(-1), { signal });
+		this.opacityKeyframeBtn?.addEventListener("click", () => this.toggleOpacityKeyframe(), { signal });
+		this.opacityNextKeyframeBtn?.addEventListener("click", () => this.navigateOpacityKeyframe(1), { signal });
 
 		// Speed slider: readout-only during drag, single commit on release.
 		this.speedSlider?.addEventListener(
@@ -672,6 +726,26 @@ export class MediaToolbar extends BaseToolbar {
 				{ signal }
 			);
 		});
+
+		// Edit.seek() pauses, so this also covers playhead scrubbing — keep the visibility
+		// check so a hidden toolbar does not resync on every pointermove.
+		if (!this.playbackPauseListener) {
+			this.playbackPauseListener = () => this.syncIfVisible();
+			this.edit.events.on(EditEvent.PlaybackPause, this.playbackPauseListener);
+		}
+		if (!this.editChangedListener) {
+			this.editChangedListener = event => {
+				if (event.source.startsWith("load")) this.pendingOpacityTimes.clear();
+				this.syncIfVisible();
+			};
+			this.edit.events.on(EditEvent.EditChanged, this.editChangedListener);
+		}
+	}
+
+	private syncIfVisible(): void {
+		if (this.container?.style.display === "none") return;
+		if (this.selectedTrackIdx < 0 || this.dragManager.isDragging("opacity")) return;
+		this.syncState();
 	}
 
 	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade" | "speed"): void {
@@ -731,10 +805,6 @@ export class MediaToolbar extends BaseToolbar {
 			// Fit
 			this.currentFit = (clip.fit as FitValue) || "crop";
 
-			// Opacity (convert from 0-1 to 0-100)
-			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-			this.opacitySlider?.setValue(Math.round(opacity * 100));
-
 			// Scale (convert from 0-1 to percentage)
 			const scale = typeof clip.scale === "number" ? clip.scale : 1;
 			this.scaleSlider?.setValue(Math.round(scale * 100));
@@ -767,7 +837,6 @@ export class MediaToolbar extends BaseToolbar {
 
 		// Update displays
 		this.updateFitDisplay();
-		this.updateOpacityDisplay();
 		this.updateScaleDisplay();
 		this.updateVolumeDisplay();
 		this.updateSpeedDisplay();
@@ -810,6 +879,116 @@ export class MediaToolbar extends BaseToolbar {
 		if (this.showMergeFields && this.mergeFieldManager?.hasLabels) {
 			this.mergeFieldManager.sync();
 		}
+
+		if (clip) {
+			const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+			const shotstackEdit = this.getShotstackEdit();
+			const scaleKeyframed = Array.isArray(clip.scale);
+			this.scaleSlider?.setEnabled(!scaleKeyframed && !shotstackEdit?.getMergeFieldForProperty(clipId ?? "", "scale"));
+			if (this.scaleBtn) {
+				this.scaleBtn.disabled = scaleKeyframed;
+				this.scaleBtn.title = scaleKeyframed ? "Keyframed scale cannot be edited with this control" : "";
+			}
+			const { volume } = clip.asset as { volume?: unknown };
+			const volumeKeyframed = Array.isArray(volume);
+			const volumeEnabled = !volumeKeyframed && !shotstackEdit?.getMergeFieldForProperty(clipId ?? "", "asset.volume");
+			if (this.volumeSlider) this.volumeSlider.disabled = !volumeEnabled;
+			if (this.volumeDisplayInput) this.volumeDisplayInput.disabled = !volumeEnabled;
+			if (this.volumeBtn) {
+				this.volumeBtn.disabled = volumeKeyframed;
+				this.volumeBtn.title = volumeKeyframed ? "Keyframed volume cannot be edited with this control" : "";
+			}
+			this.syncOpacityState(clip);
+		}
+	}
+
+	private getOpacityTime(clip: ResolvedClip): number | null {
+		const localTime = this.edit.playbackTime - clip.start;
+		if (localTime < -TIME_EPSILON || localTime > clip.length + TIME_EPSILON) return null;
+		return snapOpacityTime(Math.max(0, Math.min(localTime, clip.length)), clip.length, this.edit.getOutputFps());
+	}
+
+	private getOpacityPoints(clip: ResolvedClip, clipId: string): OpacityPoint[] | null {
+		const documentOpacity = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx)?.opacity;
+		const opacity = Array.isArray(documentOpacity) ? documentOpacity : clip.opacity;
+		if (Array.isArray(opacity)) return decodeOpacityPoints(opacity, clip.length);
+		const pendingTime = this.pendingOpacityTimes.get(clipId);
+		if (pendingTime === undefined) return [];
+		return [{ time: pendingTime, value: typeof clip.opacity === "number" ? clip.opacity : 1 }];
+	}
+
+	/** Keys past a trimmed clip end stay in the document but are not addressable from the toolbar. */
+	private visibleOpacityPoints(points: readonly OpacityPoint[], clip: ResolvedClip): OpacityPoint[] {
+		return points.filter(point => point.time <= clip.length + TIME_EPSILON);
+	}
+
+	private syncOpacityState(clip: ResolvedClip): void {
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		const localTime = this.getOpacityTime(clip);
+
+		// Read back at the same frame-snapped time keys are written to, so the
+		// value the user just set is the value redisplayed.
+		const evaluatedTime = localTime ?? Math.max(0, Math.min(this.edit.playbackTime - clip.start, clip.length));
+		this.opacitySlider?.setValue((evaluateOpacity(clip.opacity, evaluatedTime, clip.length) ?? 1) * 100);
+		this.updateOpacityDisplay();
+		if (!clipId) return;
+
+		const shotstackEdit = this.getShotstackEdit();
+		const isBound = Boolean(shotstackEdit?.getMergeFieldForProperty(clipId, "opacity"));
+		if (Array.isArray(clip.opacity) || isBound) this.pendingOpacityTimes.delete(clipId);
+		const points = this.getOpacityPoints(clip, clipId);
+		const editable = points !== null;
+		const visiblePoints = this.visibleOpacityPoints(points ?? [], clip);
+		const fps = this.edit.getOutputFps();
+		const currentPoint = localTime === null ? undefined : findOpacityPoint(visiblePoints, localTime, fps);
+
+		const hasEffect = Boolean(clip.effect);
+		const hasTransition = Boolean(clip.transition?.in || clip.transition?.out);
+		const hasPreset = hasEffect || hasTransition;
+		const animated = Array.isArray(clip.opacity) || (points?.length ?? 0) > 0;
+		let disabledReason = "";
+		if (!editable) disabledReason = "This opacity animation can be previewed but not edited";
+		else if (isBound) disabledReason = "Remove the merge field before keyframing opacity";
+		else if (hasPreset) disabledReason = "Remove the clip effect or transition before keyframing opacity";
+		else if (localTime === null) disabledReason = "Move the playhead over the clip to edit opacity keyframes";
+		else if (currentPoint && points?.length === 2 && points.some(point => point !== currentPoint && point.time > clip.length + TIME_EPSILON)) {
+			disabledReason = "Extend the clip before removing this keyframe";
+		}
+
+		this.opacitySlider?.setEnabled(!isBound && editable && (!animated || (!hasPreset && localTime !== null)));
+
+		if (this.opacityKeyframeBtn) {
+			let state: keyof typeof KEYFRAME_BUTTON_STATES = "static";
+			if (animated) state = "animated";
+			if (currentPoint) state = "keyframe";
+			const { pressed, label } = KEYFRAME_BUTTON_STATES[state];
+			this.opacityKeyframeBtn.dataset["state"] = state;
+			this.opacityKeyframeBtn.disabled = Boolean(disabledReason);
+			this.opacityKeyframeBtn.setAttribute("aria-pressed", pressed);
+			this.opacityKeyframeBtn.setAttribute("aria-label", disabledReason || label);
+			this.opacityKeyframeBtn.title = disabledReason || label;
+		}
+
+		const navigationTime = this.edit.playbackTime - clip.start;
+		if (this.opacityPreviousKeyframeBtn) this.opacityPreviousKeyframeBtn.disabled = !findOpacityPoint(visiblePoints, navigationTime, fps, -1);
+		if (this.opacityNextKeyframeBtn) this.opacityNextKeyframeBtn.disabled = !findOpacityPoint(visiblePoints, navigationTime, fps, 1);
+
+		// Only committed keyframes gate presets. An armed-but-unwritten point has no
+		// document presence, so gating on it would disable controls with nothing to undo.
+		const hasVisualKeyframes = hasKeyframedVisualProperty(clip);
+		this.setPresetButtonEnabled(this.effectBtn, !(hasVisualKeyframes && !hasEffect), "Effects can't be combined with keyframes in the editor");
+		this.setPresetButtonEnabled(
+			this.transitionBtn,
+			!(hasVisualKeyframes && !hasTransition),
+			"Transitions can't be combined with keyframes in the editor"
+		);
+	}
+
+	private setPresetButtonEnabled(button: HTMLButtonElement | null, enabled: boolean, disabledReason: string): void {
+		if (!button) return;
+		Object.assign(button, { disabled: !enabled, title: enabled ? "" : disabledReason });
+		if (enabled) button.removeAttribute("aria-label");
+		else button.setAttribute("aria-label", disabledReason);
 	}
 
 	// ─── Two-Phase Drag Helpers ──────────────────────────────────────────────────
@@ -827,19 +1006,20 @@ export class MediaToolbar extends BaseToolbar {
 	/**
 	 * Capture and deep-clone the current clip state for drag rollback.
 	 */
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
-	}
-
 	/**
 	 * Start a drag session for a slider control.
 	 */
 	private startSliderDrag(controlId: string): void {
 		const state = this.captureClipState();
 		if (state) {
-			this.dragManager.start(controlId, state.clipId, state.initialState);
+			this.dragManager.start(controlId, state.clipId, state.clip);
+		}
+		// Pause after the session opens: pause() emits PlaybackPause synchronously,
+		// and its listener must see the drag in progress to leave the slider alone.
+		if (controlId === "opacity") {
+			if (this.edit.isPlaying) this.edit.pause();
+			const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+			this.opacityDragTime = clip ? this.getOpacityTime(clip) : null;
 		}
 	}
 
@@ -848,12 +1028,16 @@ export class MediaToolbar extends BaseToolbar {
 	 */
 	private endSliderDrag(controlId: string): void {
 		const session = this.dragManager.end(controlId);
-		if (!session) return;
-
-		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (finalClip) {
-			this.edit.commitClipUpdate(session.clipId, session.initialState, structuredClone(finalClip));
+		if (!session) {
+			if (controlId === "opacity") this.opacityDragTime = null;
+			return;
 		}
+
+		const final = this.captureClipState();
+		if (final) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
+		}
+		if (controlId === "opacity") this.opacityDragTime = null;
 	}
 
 	// ─── Value Change Handlers ───────────────────────────────────────────────────
@@ -868,11 +1052,37 @@ export class MediaToolbar extends BaseToolbar {
 
 	private handleOpacityChange(value: number): void {
 		this.updateOpacityDisplay();
+		if (this.edit.isPlaying) this.edit.pause();
 
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clipId) return;
+		if (!clip || !clipId) return;
 
-		const updates = { opacity: value / 100 };
+		const points = this.getOpacityPoints(clip, clipId);
+		const isBound = Boolean(this.getShotstackEdit()?.getMergeFieldForProperty(clipId, "opacity"));
+		if (points === null || isBound) {
+			this.syncOpacityState(clip);
+			return;
+		}
+
+		const nextValue = value / 100;
+		let opacity: ResolvedClip["opacity"] = nextValue;
+		if (points.length > 0) {
+			const localTime = this.opacityDragTime ?? this.getOpacityTime(clip);
+			if (localTime === null || clip.effect || clip.transition?.in || clip.transition?.out) {
+				this.syncOpacityState(clip);
+				return;
+			}
+
+			const updatedPoints = upsertOpacityPoint(points, localTime, nextValue, clip.length, this.edit.getOutputFps());
+			const encoded = encodeOpacityPoints(updatedPoints, clip.length);
+			if (encoded) {
+				opacity = encoded;
+				this.pendingOpacityTimes.delete(clipId);
+			}
+		}
+
+		const updates = { opacity };
 
 		if (this.dragManager.isDragging("opacity")) {
 			this.edit.updateClipInDocument(clipId, updates);
@@ -882,11 +1092,90 @@ export class MediaToolbar extends BaseToolbar {
 		}
 	}
 
+	private toggleOpacityKeyframe(): void {
+		if (this.edit.isPlaying) this.edit.pause();
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || !clipId) return;
+
+		const points = this.getOpacityPoints(clip, clipId);
+		const localTime = this.getOpacityTime(clip);
+		if (
+			points === null ||
+			localTime === null ||
+			this.getShotstackEdit()?.getMergeFieldForProperty(clipId, "opacity") ||
+			clip.effect ||
+			clip.transition?.in ||
+			clip.transition?.out
+		) {
+			this.syncOpacityState(clip);
+			return;
+		}
+
+		const fps = this.edit.getOutputFps();
+		const currentPoint = findOpacityPoint(points, localTime, fps);
+		if (currentPoint) {
+			const remaining = removeOpacityPoint(points, localTime, fps);
+			if (remaining.length === 0) {
+				this.pendingOpacityTimes.delete(clipId);
+				this.syncOpacityState(clip);
+				return;
+			}
+			if (remaining.length === 1) {
+				if (remaining[0].time > clip.length + TIME_EPSILON) {
+					this.syncOpacityState(clip);
+					return;
+				}
+				this.pendingOpacityTimes.delete(clipId);
+				this.applyClipUpdate({ opacity: remaining[0].value });
+				return;
+			}
+
+			const encoded = encodeOpacityPoints(remaining, clip.length);
+			if (encoded) this.applyClipUpdate({ opacity: encoded });
+			return;
+		}
+
+		const value = evaluateOpacity(clip.opacity, localTime, clip.length);
+		if (value === null) return;
+		if (points.length === 0) {
+			this.pendingOpacityTimes.set(clipId, localTime);
+			this.syncOpacityState(clip);
+			return;
+		}
+
+		const encoded = encodeOpacityPoints(upsertOpacityPoint(points, localTime, value, clip.length, fps), clip.length);
+		if (encoded) {
+			this.pendingOpacityTimes.delete(clipId);
+			this.applyClipUpdate({ opacity: encoded });
+		}
+	}
+
+	private navigateOpacityKeyframe(direction: -1 | 1): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || !clipId) return;
+		const points = this.getOpacityPoints(clip, clipId);
+		if (!points) return;
+		const visiblePoints = this.visibleOpacityPoints(points, clip);
+		const point = findOpacityPoint(visiblePoints, this.edit.playbackTime - clip.start, this.edit.getOutputFps(), direction);
+		if (point) this.edit.seek(clip.start + point.time);
+	}
+
 	private handleScaleChange(value: number): void {
 		this.updateScaleDisplay();
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (Array.isArray(clip?.scale)) {
+			this.syncState();
+			return;
+		}
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clipId) return;
+		if (this.getShotstackEdit()?.getMergeFieldForProperty(clipId, "scale")) {
+			this.syncState();
+			return;
+		}
 
 		const updates = { scale: value / 100 };
 
@@ -909,8 +1198,16 @@ export class MediaToolbar extends BaseToolbar {
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clipId) return;
+		if (this.getShotstackEdit()?.getMergeFieldForProperty(clipId, "asset.volume")) {
+			this.syncState();
+			return;
+		}
 
 		const asset = clip.asset as Record<string, unknown>;
+		if (Array.isArray(asset["volume"])) {
+			this.syncState();
+			return;
+		}
 		const updates = { asset: { ...asset, volume: value / 100 } as typeof clip.asset };
 
 		if (this.dragManager.isDragging("volume")) {
@@ -1025,6 +1322,15 @@ export class MediaToolbar extends BaseToolbar {
 
 	private applyTransitionUpdate(): void {
 		const transition = this.transitionPanel?.getClipValue();
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (clip && hasKeyframedVisualProperty(clip)) {
+			const changesIn = Boolean(transition?.in && transition.in !== clip.transition?.in);
+			const changesOut = Boolean(transition?.out && transition.out !== clip.transition?.out);
+			if (changesIn || changesOut) {
+				this.transitionPanel?.setFromClip(clip.transition);
+				return;
+			}
+		}
 		this.applyClipUpdate({ transition });
 	}
 
@@ -1032,6 +1338,11 @@ export class MediaToolbar extends BaseToolbar {
 
 	private applyEffect(): void {
 		const effectValue = this.effectPanel?.getClipValue();
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (effectValue && clip && hasKeyframedVisualProperty(clip)) {
+			this.effectPanel?.setFromClip(clip.effect);
+			return;
+		}
 		this.applyClipUpdate({ effect: effectValue });
 	}
 
@@ -1270,6 +1581,8 @@ export class MediaToolbar extends BaseToolbar {
 	override show(trackIndex: number, clipIndex: number): void {
 		const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
 		this.assetType = (clip?.asset?.type ?? "image") as MediaAssetType;
+		// An armed keyframe is scoped to the current selection; it never reaches the document.
+		this.pendingOpacityTimes.clear();
 		super.show(trackIndex, clipIndex);
 	}
 
@@ -1280,6 +1593,16 @@ export class MediaToolbar extends BaseToolbar {
 
 		// Clear any in-progress drag sessions
 		this.dragManager.clear();
+		if (this.playbackPauseListener) {
+			this.edit.events.off(EditEvent.PlaybackPause, this.playbackPauseListener);
+			this.playbackPauseListener = null;
+		}
+		if (this.editChangedListener) {
+			this.edit.events.off(EditEvent.EditChanged, this.editChangedListener);
+			this.editChangedListener = null;
+		}
+		this.pendingOpacityTimes.clear();
+		this.opacityDragTime = null;
 
 		// Dispose composite components
 		this.transitionPanel?.dispose();
@@ -1302,6 +1625,9 @@ export class MediaToolbar extends BaseToolbar {
 
 		this.fitBtn = null;
 		this.opacityBtn = null;
+		this.opacityPreviousKeyframeBtn = null;
+		this.opacityKeyframeBtn = null;
+		this.opacityNextKeyframeBtn = null;
 		this.scaleBtn = null;
 		this.volumeBtn = null;
 		this.transitionBtn = null;

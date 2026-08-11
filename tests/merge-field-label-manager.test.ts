@@ -247,6 +247,26 @@ describe("MergeFieldLabelManager", () => {
 		expect(container.querySelector(".ss-merge-label--bound")).toBeNull();
 	});
 
+	it("disables merge-field binding for array-valued properties", () => {
+		const container = buildContainer({ path: "opacity", prefix: "OPACITY", text: "Opacity" });
+		document.body.appendChild(container);
+
+		const host = createMockHost(container);
+		const edit = getEdit(host);
+		edit.getResolvedClipById.mockReturnValue({
+			opacity: [{ from: 0, to: 1, start: 0, length: 1 }],
+			asset: { type: "image", src: "test.jpg" }
+		});
+
+		const manager = new MergeFieldLabelManager(host);
+		manager.init();
+		manager.sync();
+
+		const iconBtn = container.querySelector(".ss-merge-label__icon") as HTMLButtonElement;
+		expect(iconBtn.disabled).toBe(true);
+		expect(iconBtn.title).toBe("Remove keyframes before using a merge field");
+	});
+
 	// ─── wireBindCallback ─────────────────────────────────────────────────
 
 	it("bind callback creates new field via applyMergeField", async () => {
@@ -343,6 +363,31 @@ describe("MergeFieldLabelManager", () => {
 		await Promise.resolve();
 
 		// applyMergeField should NOT have been called because the field is incompatible
+		expect(edit.applyMergeField).not.toHaveBeenCalled();
+	});
+
+	it("bind callback rejects an array-valued property if the UI state is stale", async () => {
+		const container = buildContainer({ path: "opacity", prefix: "OPACITY", text: "Opacity" });
+		document.body.appendChild(container);
+
+		const host = createMockHost(container);
+		const edit = getEdit(host);
+		edit.getResolvedClipById.mockReturnValue({
+			opacity: [{ from: 0, to: 1, start: 0, length: 1 }],
+			asset: { type: "image", src: "test.jpg" }
+		});
+
+		const manager = new MergeFieldLabelManager(host);
+		manager.init();
+
+		const iconBtn = container.querySelector(".ss-merge-label__icon") as HTMLButtonElement;
+		iconBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+		const createBtn = container.querySelector(".ss-merge-label__create") as HTMLButtonElement;
+		createBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+		await Promise.resolve();
+
 		expect(edit.applyMergeField).not.toHaveBeenCalled();
 	});
 

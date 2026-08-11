@@ -63,6 +63,11 @@ function createMockEditSession() {
 		commitClipUpdate: jest.fn(),
 		deleteClip: jest.fn(),
 		canDeleteClip: jest.fn(() => true),
+		playbackTime: 0,
+		isPlaying: false,
+		pause: jest.fn(),
+		getOutputFps: jest.fn(() => 30),
+		seek: jest.fn(),
 		events: { on: jest.fn(), off: jest.fn() },
 		size: { width: 1920, height: 1080 }
 	};
@@ -97,12 +102,18 @@ function createMergeFieldMockEditSession() {
 			getClipId: jest.fn().mockReturnValue("clip-1"),
 			getResolvedClip: jest.fn(),
 			getResolvedClipById: jest.fn(),
+			getDocumentClip: jest.fn(),
 			updateClip: jest.fn(),
 			updateClipInDocument: jest.fn(),
 			resolveClip: jest.fn(),
 			commitClipUpdate: jest.fn(),
 			deleteClip: jest.fn(),
 			canDeleteClip: jest.fn(() => true),
+			playbackTime: 0,
+			isPlaying: false,
+			pause: jest.fn(),
+			getOutputFps: jest.fn(() => 30),
+			seek: jest.fn(),
 			events: { on: jest.fn(), off: jest.fn() },
 			getInternalEvents: jest.fn(() => internalEvents),
 			getMergeFieldForProperty: jest.fn((): string | null => null),
@@ -210,6 +221,358 @@ describe("MediaToolbar", () => {
 		});
 	});
 
+	describe("opacity keyframes", () => {
+		const opacityTweens = [
+			{ from: 0.2, to: 0.2, start: 0, length: 1, interpolation: "constant" as const },
+			{ from: 0.2, to: 0.8, start: 1, length: 2, interpolation: "linear" as const },
+			{ from: 0.8, to: 0.8, start: 3, length: 2, interpolation: "constant" as const }
+		];
+
+		it("exposes accessible three-state controls and keeps the first key session-only", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip());
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			expect(keyframe.dataset["state"]).toBe("static");
+			expect(keyframe.getAttribute("aria-label")).toBe("Add opacity keyframe");
+			keyframe.click();
+
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+			expect(keyframe.getAttribute("aria-pressed")).toBe("true");
+			toolbar.dispose();
+		});
+
+		it("serialises the existing Tween array shape when a second key is added", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip());
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			keyframe.click();
+			mockEdit.playbackTime = 3;
+			keyframe.click();
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, {
+				opacity: [
+					{ from: 1, to: 1, start: 0, length: 1, interpolation: "constant" },
+					{ from: 1, to: 1, start: 1, length: 2, interpolation: "linear" },
+					{ from: 1, to: 1, start: 3, length: 2, interpolation: "constant" }
+				]
+			});
+			toolbar.dispose();
+		});
+
+		it("clears a pending first key when the edit is reloaded", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip());
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			keyframe.click();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+
+			const editChangedListener = mockEdit.events.on.mock.calls.find(([event]) => event === "edit:changed")?.[1];
+			editChangedListener?.({ source: "loadEdit:granular", timestamp: Date.now() });
+
+			expect(keyframe.dataset["state"]).toBe("static");
+			toolbar.dispose();
+		});
+
+		it("auto-keys an animated slider drag and commits one undo entry", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const range = parent.querySelector("[data-opacity-slider-mount] input[type='range']") as HTMLInputElement;
+			expect(range.value).toBe("50");
+
+			range.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			range.value = "40";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+			range.dispatchEvent(new Event("change", { bubbles: true }));
+
+			const update = mockEdit.updateClipInDocument.mock.calls[0][1];
+			expect(update.opacity).toEqual(expect.arrayContaining([{ from: 0.2, to: 0.4, start: 1, length: 1, interpolation: "linear" }]));
+			expect(mockEdit.commitClipUpdate).toHaveBeenCalledTimes(1);
+			toolbar.dispose();
+		});
+
+		it("keeps document timing intent in opacity drag history", () => {
+			const mockEdit = createMockEditSession();
+			const clip = createImageClip({ start: sec(2), length: sec(5) });
+			const documentClip = { ...clip, start: "auto", length: "end" };
+			mockEdit.playbackTime = 3;
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+			mockEdit.getDocumentClip.mockImplementation(() => documentClip);
+			mockEdit.updateClipInDocument.mockImplementation((_clipId, updates) => Object.assign(documentClip, updates));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const range = parent.querySelector("[data-opacity-slider-mount] input[type='range']") as HTMLInputElement;
+			range.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			range.value = "50";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+			range.dispatchEvent(new Event("change", { bubbles: true }));
+
+			const [, initialState, finalState] = mockEdit.commitClipUpdate.mock.calls[0];
+			expect(initialState).toEqual(expect.objectContaining({ start: "auto", length: "end", opacity: 1 }));
+			expect(finalState).toEqual(expect.objectContaining({ start: "auto", length: "end", opacity: 0.5 }));
+			toolbar.dispose();
+		});
+
+		it("keeps unsupported Tween arrays read-only while showing their evaluated value", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2.5;
+			const opacity = [{ from: 0, to: 1, start: 0, length: 5, interpolation: "bezier" as const, easing: "ease" as const }];
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const range = parent.querySelector("[data-opacity-slider-mount] input[type='range']") as HTMLInputElement;
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			expect(range.disabled).toBe(true);
+			expect(keyframe.disabled).toBe(true);
+			expect(Number(range.value)).toBeGreaterThan(50);
+
+			range.value = "25";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+			expect(opacity).toEqual([{ from: 0, to: 1, start: 0, length: 5, interpolation: "bezier", easing: "ease" }]);
+			toolbar.dispose();
+		});
+
+		it("keeps Tween arrays with nested merge values read-only", () => {
+			const mockEdit = createMockEditSession();
+			const opacity = [{ from: 0.2, to: 0.8, start: 0, length: 5, interpolation: "linear" as const }];
+			const clip = createImageClip({ opacity });
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+			mockEdit.getDocumentClip.mockReturnValue({
+				...clip,
+				opacity: [{ from: "{{ ALPHA }}", to: 0.8, start: 0, length: 5, interpolation: "linear" }]
+			});
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+
+			expect((parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement).disabled).toBe(true);
+			expect((parent.querySelector("[data-opacity-slider-mount] input[type='range']") as HTMLInputElement).disabled).toBe(true);
+			toolbar.dispose();
+		});
+
+		it("does not write when the opacity input is blurred unchanged or cancelled", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const input = parent.querySelector("[data-opacity-slider-mount] input[type='text']") as HTMLInputElement;
+			input.focus();
+			input.blur();
+			input.focus();
+			input.value = "25%";
+			input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+			toolbar.dispose();
+		});
+
+		it("pauses playback before editing an opacity animation", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2;
+			mockEdit.isPlaying = true;
+			mockEdit.pause.mockImplementation(() => {
+				mockEdit.isPlaying = false;
+			});
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			(parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement).click();
+
+			expect(mockEdit.pause).toHaveBeenCalledTimes(1);
+			toolbar.dispose();
+		});
+
+		it("preserves a trimmed-out key when removing its only visible partner", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			const opacity = [
+				{ from: 0.25, to: 0.25, start: 0, length: 1, interpolation: "constant" as const },
+				{ from: 0.25, to: 0.75, start: 1, length: 7, interpolation: "linear" as const }
+			];
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			expect(keyframe.disabled).toBe(true);
+			expect(keyframe.title).toContain("Extend the clip");
+			keyframe.click();
+
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(opacity).toHaveLength(2);
+			toolbar.dispose();
+		});
+
+		it("collapses a two-key animation to a static value", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			(parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement).click();
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, { opacity: 0.8 });
+			toolbar.dispose();
+		});
+
+		it("navigates to adjacent opacity keys", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			(parent.querySelector("[data-opacity-keyframe-previous]") as HTMLButtonElement).click();
+			(parent.querySelector("[data-opacity-keyframe-next]") as HTMLButtonElement).click();
+
+			expect(mockEdit.seek).toHaveBeenNthCalledWith(1, 1);
+			expect(mockEdit.seek).toHaveBeenNthCalledWith(2, 3);
+			toolbar.dispose();
+		});
+
+		it("announces the animated-between-keys state", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			expect(keyframe.getAttribute("aria-pressed")).toBe("mixed");
+			expect(keyframe.getAttribute("aria-label")).toContain("opacity is animated");
+			toolbar.dispose();
+		});
+
+		it("leaves effects and transitions available after arming the first key", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: 0.5 }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			(parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement).click();
+
+			// Arming writes nothing to the document, so there is nothing to undo and
+			// nothing that should gate the preset controls.
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect((parent.querySelector('[data-action="effect"]') as HTMLButtonElement).disabled).toBe(false);
+			expect((parent.querySelector('[data-action="transition"]') as HTMLButtonElement).disabled).toBe(false);
+			toolbar.dispose();
+		});
+
+		it("discards an armed key when the selection or the edit changes", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: 0.5 }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			keyframe.click();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+
+			toolbar.show(0, 0);
+			expect(keyframe.dataset["state"]).toBe("static");
+
+			keyframe.click();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+			const editChanged = mockEdit.events.on.mock.calls.find(([name]) => name === "edit:changed")?.[1];
+			editChanged({ source: "loadEdit" });
+			expect(keyframe.dataset["state"]).toBe("static");
+			toolbar.dispose();
+		});
+
+		it("blocks effects and transitions while opacity is animated", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+
+			expect((parent.querySelector('[data-action="effect"]') as HTMLButtonElement).disabled).toBe(true);
+			expect((parent.querySelector('[data-action="transition"]') as HTMLButtonElement).disabled).toBe(true);
+			toolbar.dispose();
+		});
+
+		it("blocks keyframe activation while a preset is present", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ effect: "zoomIn" }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			expect(keyframe.disabled).toBe(true);
+			expect(keyframe.title).toContain("effect or transition");
+			toolbar.dispose();
+		});
+
+		it("blocks keyframe activation while opacity is merge-field bound", () => {
+			const { mockEdit } = createMergeFieldMockEditSession();
+			const clip = createImageClip();
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+			mockEdit.getResolvedClipById.mockReturnValue(clip);
+			mockEdit.getMergeFieldForProperty.mockReturnValue("OPACITY");
+
+			const toolbar = new MediaToolbar(mockEdit as unknown as Edit, { mergeFields: true });
+			const parent = document.createElement("div");
+			document.body.appendChild(parent);
+			toolbar.mount(parent);
+			toolbar.show(0, 0);
+
+			expect((parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement).disabled).toBe(true);
+			toolbar.dispose();
+		});
+
+		it("cancels a pending first key when opacity becomes merge-field bound", () => {
+			const { mockEdit, internalEvents } = createMergeFieldMockEditSession();
+			const clip = createImageClip();
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+			mockEdit.getResolvedClipById.mockReturnValue(clip);
+
+			const toolbar = new MediaToolbar(mockEdit as unknown as Edit, { mergeFields: true });
+			const parent = document.createElement("div");
+			document.body.appendChild(parent);
+			toolbar.mount(parent);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			keyframe.click();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+
+			mockEdit.getMergeFieldForProperty.mockReturnValue("OPACITY");
+			internalEvents.emit("mergefield:changed");
+
+			expect(keyframe.dataset["state"]).toBe("static");
+			expect(keyframe.disabled).toBe(true);
+			toolbar.dispose();
+		});
+	});
+
 	describe("two-phase opacity slider drag", () => {
 		it("uses live preview (updateClipInDocument) during opacity drag", () => {
 			const mockEdit = createMockEditSession();
@@ -277,6 +640,24 @@ describe("MediaToolbar", () => {
 	});
 
 	describe("two-phase scale slider drag", () => {
+		it("keeps imported scale Tween arrays read-only", () => {
+			const mockEdit = createMockEditSession();
+			const scale = [{ from: 1, to: 2, start: 0, length: 5, interpolation: "linear" as const }];
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ scale }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const range = parent.querySelector("[data-scale-slider-mount] input[type='range']") as HTMLInputElement;
+			expect(range.disabled).toBe(true);
+			range.value = "150";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+			expect(scale).toHaveLength(1);
+			toolbar.dispose();
+		});
+
 		it("uses live preview during scale drag", () => {
 			const mockEdit = createMockEditSession();
 			const clip = createImageClip();
@@ -308,6 +689,26 @@ describe("MediaToolbar", () => {
 	});
 
 	describe("two-phase volume slider drag", () => {
+		it("keeps imported volume Tween arrays read-only", () => {
+			const mockEdit = createMockEditSession();
+			const clip = createVideoClip();
+			const volume = [{ from: 0, to: 1, start: 0, length: 10, interpolation: "linear" as const }];
+			(clip.asset as unknown as { volume: typeof volume }).volume = volume;
+			mockEdit.getResolvedClip.mockReturnValue(clip);
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const range = parent.querySelector("[data-volume-slider]") as HTMLInputElement;
+			expect(range.disabled).toBe(true);
+			range.value = "50";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+			expect(volume).toHaveLength(1);
+			toolbar.dispose();
+		});
+
 		it("uses live preview during volume drag", () => {
 			const mockEdit = createMockEditSession();
 			const clip = createVideoClip();
