@@ -469,6 +469,45 @@ describe("MediaToolbar", () => {
 			toolbar.dispose();
 		});
 
+		it("leaves effects and transitions available after arming the first key", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: 0.5 }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			(parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement).click();
+
+			// Arming writes nothing to the document, so there is nothing to undo and
+			// nothing that should gate the preset controls.
+			expect(mockEdit.updateClip).not.toHaveBeenCalled();
+			expect((parent.querySelector('[data-action="effect"]') as HTMLButtonElement).disabled).toBe(false);
+			expect((parent.querySelector('[data-action="transition"]') as HTMLButtonElement).disabled).toBe(false);
+			toolbar.dispose();
+		});
+
+		it("discards an armed key when the selection or the edit changes", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: 0.5 }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
+			keyframe.click();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+
+			toolbar.show(0, 0);
+			expect(keyframe.dataset["state"]).toBe("static");
+
+			keyframe.click();
+			expect(keyframe.dataset["state"]).toBe("keyframe");
+			const editChanged = mockEdit.events.on.mock.calls.find(([name]) => name === "edit:changed")?.[1];
+			editChanged({ source: "loadEdit" });
+			expect(keyframe.dataset["state"]).toBe("static");
+			toolbar.dispose();
+		});
+
 		it("blocks effects and transitions while opacity is animated", () => {
 			const mockEdit = createMockEditSession();
 			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));

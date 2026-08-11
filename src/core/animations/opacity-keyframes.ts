@@ -1,8 +1,6 @@
 import type { Clip, Tween } from "@schemas";
 
-import { KeyframeBuilder } from "./keyframe-builder";
-
-const TIME_EPSILON = 1e-6;
+import { KeyframeBuilder, TIME_EPSILON } from "./keyframe-builder";
 
 export type OpacityPoint = {
 	time: number;
@@ -51,18 +49,15 @@ export function decodeOpacityPoints(value: Tween[], clipLength: number): Opacity
 	if (firstLinear === -1) return null;
 	const lastLinear = value.findLastIndex(tween => (tween.interpolation ?? "linear") === "linear");
 
+	// Constant segments only pad the head and tail, so everything between the first
+	// and last linear segment is linear and the slice below needs no further checks.
 	for (let index = 0; index < value.length; index += 1) {
 		const tween = value[index];
-		const interpolation = tween.interpolation ?? "linear";
-		if (interpolation === "constant") {
-			if ((index !== 0 && index !== value.length - 1) || tween.from !== tween.to) return null;
-		} else if (index < firstLinear || index > lastLinear) {
-			return null;
-		}
+		const isPad = index === 0 || index === value.length - 1;
+		if ((tween.interpolation ?? "linear") === "constant" && (!isPad || tween.from !== tween.to)) return null;
 	}
 
 	const linearTweens = value.slice(firstLinear, lastLinear + 1);
-	if (linearTweens.some(tween => (tween.interpolation ?? "linear") !== "linear")) return null;
 	const first = linearTweens[0];
 	const points: OpacityPoint[] = [{ time: first.start as number, value: first.from as number }];
 	for (const tween of linearTweens) {

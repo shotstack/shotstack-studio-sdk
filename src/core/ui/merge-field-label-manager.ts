@@ -86,10 +86,10 @@ export class MergeFieldLabelManager {
 
 		const clipId = this.getSelectedClipId();
 		if (!clipId) return;
+		const resolvedClip = this.host.edit.getResolvedClipById(clipId);
 
 		for (const label of this.labels) {
 			const propertyPath = label.getPropertyPath();
-			const resolvedClip = this.host.edit.getResolvedClipById(clipId);
 			const currentValue = resolvedClip ? getNestedValue(resolvedClip, propertyPath) : null;
 			label.setEnabled(!Array.isArray(currentValue), ARRAY_VALUE_DISABLED_REASON);
 

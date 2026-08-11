@@ -1,3 +1,4 @@
+import { TIME_EPSILON } from "@core/animations/keyframe-builder";
 import {
 	decodeOpacityPoints,
 	encodeOpacityPoints,
@@ -10,6 +11,7 @@ import {
 } from "@core/animations/opacity-keyframes";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip } from "@schemas";
@@ -76,7 +78,11 @@ const SPEED_PRESETS = [0.25, 0.5, 1, 1.5, 2, 4];
 
 const SPEED_MIN = 0.1;
 const SPEED_MAX = 10;
-const KEYFRAME_TIME_EPSILON = 1e-6;
+const KEYFRAME_BUTTON_STATES = {
+	static: { pressed: "false", label: "Add opacity keyframe" },
+	animated: { pressed: "mixed", label: "Add opacity keyframe at playhead; opacity is animated" },
+	keyframe: { pressed: "true", label: "Remove opacity keyframe" }
+} as const;
 /** Slider midpoint: log-scaled so 1× sits centred and 0.5–2× gets half the travel */
 const SPEED_SLIDER_HALF = 300;
 
@@ -721,19 +727,25 @@ export class MediaToolbar extends BaseToolbar {
 			);
 		});
 
+		// Edit.seek() pauses, so this also covers playhead scrubbing — keep the visibility
+		// check so a hidden toolbar does not resync on every pointermove.
 		if (!this.playbackPauseListener) {
-			this.playbackPauseListener = () => {
-				if (this.selectedTrackIdx >= 0 && !this.dragManager.isDragging("opacity")) this.syncState();
-			};
+			this.playbackPauseListener = () => this.syncIfVisible();
 			this.edit.events.on(EditEvent.PlaybackPause, this.playbackPauseListener);
 		}
 		if (!this.editChangedListener) {
 			this.editChangedListener = event => {
-				if (event.source.startsWith("loadEdit:")) this.pendingOpacityTimes.clear();
-				if (this.selectedTrackIdx >= 0 && !this.dragManager.isDragging("opacity")) this.syncState();
+				if (event.source.startsWith("load")) this.pendingOpacityTimes.clear();
+				this.syncIfVisible();
 			};
 			this.edit.events.on(EditEvent.EditChanged, this.editChangedListener);
 		}
+	}
+
+	private syncIfVisible(): void {
+		if (this.container?.style.display === "none") return;
+		if (this.selectedTrackIdx < 0 || this.dragManager.isDragging("opacity")) return;
+		this.syncState();
 	}
 
 	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade" | "speed"): void {
@@ -892,7 +904,7 @@ export class MediaToolbar extends BaseToolbar {
 
 	private getOpacityTime(clip: ResolvedClip): number | null {
 		const localTime = this.edit.playbackTime - clip.start;
-		if (localTime < -KEYFRAME_TIME_EPSILON || localTime > clip.length + KEYFRAME_TIME_EPSILON) return null;
+		if (localTime < -TIME_EPSILON || localTime > clip.length + TIME_EPSILON) return null;
 		return snapOpacityTime(Math.max(0, Math.min(localTime, clip.length)), clip.length, this.edit.getOutputFps());
 	}
 
@@ -905,20 +917,20 @@ export class MediaToolbar extends BaseToolbar {
 		return [{ time: pendingTime, value: typeof clip.opacity === "number" ? clip.opacity : 1 }];
 	}
 
-	private clipHasVisualKeyframes(clip: ResolvedClip): boolean {
-		return [
-			clip.opacity,
-			clip.scale,
-			clip.offset?.x,
-			clip.offset?.y,
-			clip.transform?.rotate?.angle,
-			clip.transform?.skew?.x,
-			clip.transform?.skew?.y
-		].some(Array.isArray);
+	/** Keys past a trimmed clip end stay in the document but are not addressable from the toolbar. */
+	private visibleOpacityPoints(points: readonly OpacityPoint[], clip: ResolvedClip): OpacityPoint[] {
+		return points.filter(point => point.time <= clip.length + TIME_EPSILON);
 	}
 
 	private syncOpacityState(clip: ResolvedClip): void {
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
+		const localTime = this.getOpacityTime(clip);
+
+		// Read back at the same frame-snapped time keys are written to, so the
+		// value the user just set is the value redisplayed.
+		const evaluatedTime = localTime ?? Math.max(0, Math.min(this.edit.playbackTime - clip.start, clip.length));
+		this.opacitySlider?.setValue((evaluateOpacity(clip.opacity, evaluatedTime, clip.length) ?? 1) * 100);
+		this.updateOpacityDisplay();
 		if (!clipId) return;
 
 		const shotstackEdit = this.getShotstackEdit();
@@ -926,14 +938,9 @@ export class MediaToolbar extends BaseToolbar {
 		if (Array.isArray(clip.opacity) || isBound) this.pendingOpacityTimes.delete(clipId);
 		const points = this.getOpacityPoints(clip, clipId);
 		const editable = points !== null;
-		const visiblePoints = (points ?? []).filter(point => point.time <= clip.length + KEYFRAME_TIME_EPSILON);
-		const localTime = this.getOpacityTime(clip);
+		const visiblePoints = this.visibleOpacityPoints(points ?? [], clip);
 		const fps = this.edit.getOutputFps();
 		const currentPoint = localTime === null ? undefined : findOpacityPoint(visiblePoints, localTime, fps);
-		const evaluatedTime = Math.max(0, Math.min(this.edit.playbackTime - clip.start, clip.length));
-		const opacity = evaluateOpacity(clip.opacity, evaluatedTime, clip.length) ?? 1;
-		this.opacitySlider?.setValue(opacity * 100);
-		this.updateOpacityDisplay();
 
 		const hasEffect = Boolean(clip.effect);
 		const hasTransition = Boolean(clip.transition?.in || clip.transition?.out);
@@ -944,53 +951,44 @@ export class MediaToolbar extends BaseToolbar {
 		else if (isBound) disabledReason = "Remove the merge field before keyframing opacity";
 		else if (hasPreset) disabledReason = "Remove the clip effect or transition before keyframing opacity";
 		else if (localTime === null) disabledReason = "Move the playhead over the clip to edit opacity keyframes";
-		else if (
-			currentPoint &&
-			points?.length === 2 &&
-			points.some(point => point !== currentPoint && point.time > clip.length + KEYFRAME_TIME_EPSILON)
-		) {
+		else if (currentPoint && points?.length === 2 && points.some(point => point !== currentPoint && point.time > clip.length + TIME_EPSILON)) {
 			disabledReason = "Extend the clip before removing this keyframe";
 		}
 
 		this.opacitySlider?.setEnabled(!isBound && editable && (!animated || (!hasPreset && localTime !== null)));
 
 		if (this.opacityKeyframeBtn) {
-			let state = "static";
+			let state: keyof typeof KEYFRAME_BUTTON_STATES = "static";
 			if (animated) state = "animated";
 			if (currentPoint) state = "keyframe";
+			const { pressed, label } = KEYFRAME_BUTTON_STATES[state];
 			this.opacityKeyframeBtn.dataset["state"] = state;
 			this.opacityKeyframeBtn.disabled = Boolean(disabledReason);
-			let ariaPressed = "false";
-			if (animated) ariaPressed = "mixed";
-			if (currentPoint) ariaPressed = "true";
-			this.opacityKeyframeBtn.setAttribute("aria-pressed", ariaPressed);
-			let ariaLabel = "Add opacity keyframe";
-			if (animated) ariaLabel = "Add opacity keyframe at playhead; opacity is animated";
-			if (currentPoint) ariaLabel = "Remove opacity keyframe";
-			this.opacityKeyframeBtn.ariaLabel = ariaLabel;
-			if (disabledReason) this.opacityKeyframeBtn.ariaLabel = disabledReason;
-			this.opacityKeyframeBtn.title = disabledReason || this.opacityKeyframeBtn.ariaLabel;
+			this.opacityKeyframeBtn.setAttribute("aria-pressed", pressed);
+			this.opacityKeyframeBtn.setAttribute("aria-label", disabledReason || label);
+			this.opacityKeyframeBtn.title = disabledReason || label;
 		}
 
 		const navigationTime = this.edit.playbackTime - clip.start;
-		const previous = findOpacityPoint(visiblePoints, navigationTime, fps, -1);
-		const next = findOpacityPoint(visiblePoints, navigationTime, fps, 1);
-		if (this.opacityPreviousKeyframeBtn) this.opacityPreviousKeyframeBtn.disabled = !previous;
-		if (this.opacityNextKeyframeBtn) this.opacityNextKeyframeBtn.disabled = !next;
+		if (this.opacityPreviousKeyframeBtn) this.opacityPreviousKeyframeBtn.disabled = !findOpacityPoint(visiblePoints, navigationTime, fps, -1);
+		if (this.opacityNextKeyframeBtn) this.opacityNextKeyframeBtn.disabled = !findOpacityPoint(visiblePoints, navigationTime, fps, 1);
 
-		const hasVisualKeyframes = this.clipHasVisualKeyframes(clip) || this.pendingOpacityTimes.has(clipId);
-		if (this.effectBtn) {
-			this.effectBtn.disabled = hasVisualKeyframes && !hasEffect;
-			this.effectBtn.title = this.effectBtn.disabled ? "Effects are unavailable for clips with keyframed visual properties" : "";
-			if (this.effectBtn.disabled) this.effectBtn.ariaLabel = this.effectBtn.title;
-			else this.effectBtn.removeAttribute("aria-label");
-		}
-		if (this.transitionBtn) {
-			this.transitionBtn.disabled = hasVisualKeyframes && !hasTransition;
-			this.transitionBtn.title = this.transitionBtn.disabled ? "Transitions are unavailable for clips with keyframed visual properties" : "";
-			if (this.transitionBtn.disabled) this.transitionBtn.ariaLabel = this.transitionBtn.title;
-			else this.transitionBtn.removeAttribute("aria-label");
-		}
+		// Only committed keyframes gate presets. An armed-but-unwritten point has no
+		// document presence, so gating on it would disable controls with nothing to undo.
+		const hasVisualKeyframes = hasKeyframedVisualProperty(clip);
+		this.setPresetButtonEnabled(this.effectBtn, !(hasVisualKeyframes && !hasEffect), "Effects can't be combined with keyframes in the editor");
+		this.setPresetButtonEnabled(
+			this.transitionBtn,
+			!(hasVisualKeyframes && !hasTransition),
+			"Transitions can't be combined with keyframes in the editor"
+		);
+	}
+
+	private setPresetButtonEnabled(button: HTMLButtonElement | null, enabled: boolean, disabledReason: string): void {
+		if (!button) return;
+		Object.assign(button, { disabled: !enabled, title: enabled ? "" : disabledReason });
+		if (enabled) button.removeAttribute("aria-label");
+		else button.setAttribute("aria-label", disabledReason);
 	}
 
 	// ─── Two-Phase Drag Helpers ──────────────────────────────────────────────────
@@ -1008,27 +1006,20 @@ export class MediaToolbar extends BaseToolbar {
 	/**
 	 * Capture and deep-clone the current clip state for drag rollback.
 	 */
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clip || !clipId) return null;
-		const documentClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const initialState = documentClip ? ({ ...structuredClone(documentClip), id: clip.id } as ResolvedClip) : structuredClone(clip);
-		return { clipId, initialState };
-	}
-
 	/**
 	 * Start a drag session for a slider control.
 	 */
 	private startSliderDrag(controlId: string): void {
+		const state = this.captureClipState();
+		if (state) {
+			this.dragManager.start(controlId, state.clipId, state.clip);
+		}
+		// Pause after the session opens: pause() emits PlaybackPause synchronously,
+		// and its listener must see the drag in progress to leave the slider alone.
 		if (controlId === "opacity") {
 			if (this.edit.isPlaying) this.edit.pause();
 			const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 			this.opacityDragTime = clip ? this.getOpacityTime(clip) : null;
-		}
-		const state = this.captureClipState();
-		if (state) {
-			this.dragManager.start(controlId, state.clipId, state.initialState);
 		}
 	}
 
@@ -1042,11 +1033,9 @@ export class MediaToolbar extends BaseToolbar {
 			return;
 		}
 
-		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (finalClip) {
-			const documentClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
-			const finalState = documentClip ? ({ ...structuredClone(documentClip), id: finalClip.id } as ResolvedClip) : structuredClone(finalClip);
-			this.edit.commitClipUpdate(session.clipId, session.initialState, finalState);
+		const final = this.captureClipState();
+		if (final) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
 		}
 		if (controlId === "opacity") this.opacityDragTime = null;
 	}
@@ -1133,7 +1122,7 @@ export class MediaToolbar extends BaseToolbar {
 				return;
 			}
 			if (remaining.length === 1) {
-				if (remaining[0].time > clip.length + KEYFRAME_TIME_EPSILON) {
+				if (remaining[0].time > clip.length + TIME_EPSILON) {
 					this.syncOpacityState(clip);
 					return;
 				}
@@ -1168,7 +1157,7 @@ export class MediaToolbar extends BaseToolbar {
 		if (!clip || !clipId) return;
 		const points = this.getOpacityPoints(clip, clipId);
 		if (!points) return;
-		const visiblePoints = points.filter(point => point.time <= clip.length + KEYFRAME_TIME_EPSILON);
+		const visiblePoints = this.visibleOpacityPoints(points, clip);
 		const point = findOpacityPoint(visiblePoints, this.edit.playbackTime - clip.start, this.edit.getOutputFps(), direction);
 		if (point) this.edit.seek(clip.start + point.time);
 	}
@@ -1334,8 +1323,7 @@ export class MediaToolbar extends BaseToolbar {
 	private applyTransitionUpdate(): void {
 		const transition = this.transitionPanel?.getClipValue();
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (clip && clipId && (this.clipHasVisualKeyframes(clip) || this.pendingOpacityTimes.has(clipId))) {
+		if (clip && hasKeyframedVisualProperty(clip)) {
 			const changesIn = Boolean(transition?.in && transition.in !== clip.transition?.in);
 			const changesOut = Boolean(transition?.out && transition.out !== clip.transition?.out);
 			if (changesIn || changesOut) {
@@ -1351,8 +1339,7 @@ export class MediaToolbar extends BaseToolbar {
 	private applyEffect(): void {
 		const effectValue = this.effectPanel?.getClipValue();
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		if (effectValue && clip && clipId && (this.clipHasVisualKeyframes(clip) || this.pendingOpacityTimes.has(clipId))) {
+		if (effectValue && clip && hasKeyframedVisualProperty(clip)) {
 			this.effectPanel?.setFromClip(clip.effect);
 			return;
 		}
@@ -1594,6 +1581,8 @@ export class MediaToolbar extends BaseToolbar {
 	override show(trackIndex: number, clipIndex: number): void {
 		const clip = this.edit.getResolvedClip(trackIndex, clipIndex);
 		this.assetType = (clip?.asset?.type ?? "image") as MediaAssetType;
+		// An armed keyframe is scoped to the current selection; it never reaches the document.
+		this.pendingOpacityTimes.clear();
 		super.show(trackIndex, clipIndex);
 	}
 

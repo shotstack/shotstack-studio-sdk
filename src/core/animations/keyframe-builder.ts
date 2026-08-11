@@ -2,7 +2,13 @@ import { type Keyframe, type NumericKeyframe } from "@schemas";
 
 import { CurveInterpolator } from "./curve-interpolator";
 
-const TIME_EPSILON = 1e-6;
+/**
+ * Tolerance for comparing frame-derived times, which are stored as seconds and so
+ * are not exactly representable (least of all at 23.976 / 29.97 / 59.94). Far above
+ * real accumulated drift (~1e-13) and far below one frame at the highest supported
+ * rate (~1.7e-2 at 60fps).
+ */
+export const TIME_EPSILON = 1e-6;
 
 export class KeyframeBuilder {
 	private readonly property: NumericKeyframe[];

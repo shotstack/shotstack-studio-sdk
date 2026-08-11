@@ -1,4 +1,4 @@
-import type { ResolvedClip, TextToSpeechAsset } from "@schemas";
+import type { TextToSpeechAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -432,13 +432,9 @@ export class TextToSpeechToolbar extends BaseToolbar {
 		this.updateTextPreview(asset.text ?? "");
 
 		// Volume
-		const volumeKeyframed = Array.isArray(asset.volume);
-		this.setVolumeEnabled(!volumeKeyframed);
-		if (!volumeKeyframed) {
-			const volume = typeof asset.volume === "number" ? asset.volume : 1;
-			this.currentVolume = Math.round(volume * 100);
-			this.updateVolumeDisplay();
-		}
+		this.setVolumeEnabled(!Array.isArray(asset.volume));
+		this.currentVolume = Math.round((typeof asset.volume === "number" ? asset.volume : 1) * 100);
+		this.updateVolumeDisplay();
 
 		// Audio fade
 		this.audioFadeEffect = (asset.effect as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut") || "";
@@ -569,26 +565,20 @@ export class TextToSpeechToolbar extends BaseToolbar {
 
 	// ─── Two-Phase Drag ──────────────────────────────────────────────────────────
 
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
-	}
-
 	private startSliderDrag(controlId: string): void {
 		const state = this.captureClipState();
 		if (!state) return;
-		if (controlId === "volume" && state.initialState.asset.type === "text-to-speech" && Array.isArray(state.initialState.asset.volume)) return;
-		this.dragManager.start(controlId, state.clipId, state.initialState);
+		if (controlId === "volume" && state.clip.asset.type === "text-to-speech" && Array.isArray(state.clip.asset.volume)) return;
+		this.dragManager.start(controlId, state.clipId, state.clip);
 	}
 
 	private endSliderDrag(controlId: string): void {
 		const session = this.dragManager.end(controlId);
 		if (!session) return;
 
-		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (finalClip) {
-			this.edit.commitClipUpdate(session.clipId, session.initialState, structuredClone(finalClip));
+		const final = this.captureClipState();
+		if (final) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
 		}
 	}
 

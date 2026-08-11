@@ -42,6 +42,7 @@ function createMockEditSession() {
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-123"),
 		getResolvedClip: jest.fn(),
+		getDocumentClip: jest.fn(),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
@@ -501,6 +502,49 @@ describe("SvgToolbar - Data Flow Integrity", () => {
 
 		expect(mockEdit.updateClip).not.toHaveBeenCalled();
 		expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+	});
+
+	it("shows the selected clip's own value when opacity is keyframed", () => {
+		const mockEdit = createMockEditSession();
+		const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect width="50" height="50"/></svg>');
+		svgClip.opacity = 0.2;
+		mockEdit.getResolvedClip.mockReturnValue(svgClip);
+
+		const { toolbar, parent } = createToolbar(mockEdit);
+		// @ts-expect-error - accessing protected method for testing
+		toolbar.syncState();
+		const value = parent.querySelector<HTMLInputElement>(`[data-popup="opacity"] input[type="text"]`)!;
+		expect(value.value).toBe("20%");
+
+		const keyframed = createSvgClip('<svg viewBox="0 0 100 100"><rect width="50" height="50"/></svg>');
+		keyframed.opacity = [{ from: 0.8, to: 0.1, start: 0, length: 1, interpolation: "linear" as const }];
+		mockEdit.getResolvedClip.mockReturnValue(keyframed);
+		// @ts-expect-error - accessing protected method for testing
+		toolbar.syncState();
+
+		// Must not still read 20% — that described the clip that is no longer selected.
+		expect(value.value).toBe("100%");
+	});
+
+	it("keeps document timing intent in slider undo history", () => {
+		const mockEdit = createMockEditSession();
+		const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect width="50" height="50"/></svg>');
+		mockEdit.getResolvedClip.mockReturnValue(svgClip);
+		mockEdit.getDocumentClip.mockReturnValue({ ...svgClip, start: "auto", length: "end" });
+
+		const { toolbar, parent } = createToolbar(mockEdit);
+		// @ts-expect-error - accessing protected method for testing
+		toolbar.syncState();
+
+		const range = parent.querySelector<HTMLInputElement>(`[data-popup="opacity"] input[type="range"]`)!;
+		range.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+		range.value = "50";
+		range.dispatchEvent(new Event("input", { bubbles: true }));
+		range.dispatchEvent(new Event("change", { bubbles: true }));
+
+		const [, initialState, finalState] = mockEdit.commitClipUpdate.mock.calls[0];
+		expect(initialState).toEqual(expect.objectContaining({ id: "clip-123", start: "auto", length: "end" }));
+		expect(finalState).toEqual(expect.objectContaining({ id: "clip-123", start: "auto", length: "end" }));
 	});
 
 	it("reads from edit session as single source of truth", () => {

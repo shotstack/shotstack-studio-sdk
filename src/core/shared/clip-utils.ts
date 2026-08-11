@@ -10,3 +10,21 @@ export function stripInternalProperties(clip: Clip): Clip {
 	const { id, ...publicClip } = clip as Clip & { id?: string };
 	return publicClip;
 }
+
+/**
+ * True when any visual property holds something other than a plain number —
+ * keyframes, or a merge field placeholder that never resolved.
+ * Such clips render without effect and transition layers, so the renderer and
+ * the toolbars must agree on the property list; keep this the only copy.
+ */
+export function hasKeyframedVisualProperty(clip: Clip): boolean {
+	return [
+		clip.opacity,
+		clip.scale,
+		clip.offset?.x,
+		clip.offset?.y,
+		clip.transform?.rotate?.angle,
+		clip.transform?.skew?.x,
+		clip.transform?.skew?.y
+	].some(property => property && typeof property !== "number");
+}

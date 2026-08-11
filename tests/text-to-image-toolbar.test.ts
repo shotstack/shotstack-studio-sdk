@@ -61,6 +61,7 @@ function createMockEditSession() {
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-tti-1"),
 		getResolvedClip: jest.fn(),
+		getDocumentClip: jest.fn(),
 		getDocument: jest.fn().mockReturnValue(mockDocument),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),

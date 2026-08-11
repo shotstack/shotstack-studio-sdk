@@ -380,20 +380,14 @@ export class SvgToolbar extends BaseToolbar {
 		const opacityKeyframed = Array.isArray(clip.opacity);
 		this.opacitySlider?.setEnabled(!opacityKeyframed);
 		this.setNumericControlEnabled("opacity", !opacityKeyframed);
-		if (!opacityKeyframed) {
-			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-			this.opacitySlider?.setValue(Math.round(opacity * 100));
-			this.updateOpacityDisplay();
-		}
+		this.opacitySlider?.setValue(Math.round((typeof clip.opacity === "number" ? clip.opacity : 1) * 100));
+		this.updateOpacityDisplay();
 
 		const scaleKeyframed = Array.isArray(clip.scale);
 		this.scaleSlider?.setEnabled(!scaleKeyframed);
 		this.setNumericControlEnabled("scale", !scaleKeyframed);
-		if (!scaleKeyframed) {
-			const scale = typeof clip.scale === "number" ? clip.scale : 1;
-			this.scaleSlider?.setValue(Math.round(scale * 100));
-			this.updateScaleDisplay();
-		}
+		this.scaleSlider?.setValue(Math.round((typeof clip.scale === "number" ? clip.scale : 1) * 100));
+		this.updateScaleDisplay();
 
 		this.transitionPanel?.setFromClip(clip.transition);
 		this.effectPanel?.setFromClip(clip.effect);
@@ -411,23 +405,13 @@ export class SvgToolbar extends BaseToolbar {
 	// Text-input commits (blur / Enter) skip the drag path and go straight
 	// through applyClipUpdate().
 
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
-	}
-
 	/** Start a drag session for any control (asset or clip-level). */
 	private startAssetDrag(controlId: string): void {
 		const state = this.captureClipState();
-		if (
-			!state ||
-			(controlId === "opacity" && Array.isArray(state.initialState.opacity)) ||
-			(controlId === "scale" && Array.isArray(state.initialState.scale))
-		) {
+		if (!state || (controlId === "opacity" && Array.isArray(state.clip.opacity)) || (controlId === "scale" && Array.isArray(state.clip.scale))) {
 			return;
 		}
-		this.dragManager.start(controlId, state.clipId, state.initialState);
+		this.dragManager.start(controlId, state.clipId, state.clip);
 	}
 
 	/** End a drag session and commit a single undo entry. */
@@ -435,9 +419,9 @@ export class SvgToolbar extends BaseToolbar {
 		const session = this.dragManager.end(controlId);
 		if (!session) return;
 
-		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (finalClip) {
-			this.edit.commitClipUpdate(session.clipId, session.initialState, structuredClone(finalClip));
+		const final = this.captureClipState();
+		if (final) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
 		}
 	}
 

@@ -1,6 +1,6 @@
 import { truncatePrompt } from "@core/shared/ai-asset-utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
-import type { ResolvedClip, TextToImageAsset } from "@schemas";
+import type { TextToImageAsset } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -402,21 +402,15 @@ export class TextToImageToolbar extends BaseToolbar {
 		const opacityKeyframed = Array.isArray(clip.opacity);
 		this.opacitySlider?.setEnabled(!opacityKeyframed);
 		this.setNumericControlEnabled("opacity", !opacityKeyframed);
-		if (!opacityKeyframed) {
-			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-			this.opacitySlider?.setValue(Math.round(opacity * 100));
-			this.updateOpacityDisplay();
-		}
+		this.opacitySlider?.setValue(Math.round((typeof clip.opacity === "number" ? clip.opacity : 1) * 100));
+		this.updateOpacityDisplay();
 
 		// Scale
 		const scaleKeyframed = Array.isArray(clip.scale);
 		this.scaleSlider?.setEnabled(!scaleKeyframed);
 		this.setNumericControlEnabled("scale", !scaleKeyframed);
-		if (!scaleKeyframed) {
-			const scale = typeof clip.scale === "number" ? clip.scale : 1;
-			this.scaleSlider?.setValue(Math.round(scale * 100));
-			this.updateScaleDisplay();
-		}
+		this.scaleSlider?.setValue(Math.round((typeof clip.scale === "number" ? clip.scale : 1) * 100));
+		this.updateScaleDisplay();
 
 		// Transition
 		this.transitionPanel?.setFromClip(clip.transition);
@@ -528,25 +522,15 @@ export class TextToImageToolbar extends BaseToolbar {
 	/**
 	 * Capture and deep-clone the current clip state for drag rollback.
 	 */
-	private captureClipState(): { clipId: string; initialState: ResolvedClip } | null {
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
-		return clip && clipId ? { clipId, initialState: structuredClone(clip) } : null;
-	}
-
 	/**
 	 * Start a drag session for a slider control.
 	 */
 	private startSliderDrag(controlId: string): void {
 		const state = this.captureClipState();
-		if (
-			!state ||
-			(controlId === "opacity" && Array.isArray(state.initialState.opacity)) ||
-			(controlId === "scale" && Array.isArray(state.initialState.scale))
-		) {
+		if (!state || (controlId === "opacity" && Array.isArray(state.clip.opacity)) || (controlId === "scale" && Array.isArray(state.clip.scale))) {
 			return;
 		}
-		this.dragManager.start(controlId, state.clipId, state.initialState);
+		this.dragManager.start(controlId, state.clipId, state.clip);
 	}
 
 	/**
@@ -556,9 +540,9 @@ export class TextToImageToolbar extends BaseToolbar {
 		const session = this.dragManager.end(controlId);
 		if (!session) return;
 
-		const finalClip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (finalClip) {
-			this.edit.commitClipUpdate(session.clipId, session.initialState, structuredClone(finalClip));
+		const final = this.captureClipState();
+		if (final) {
+			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
 		}
 	}
 
