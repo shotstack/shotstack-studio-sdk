@@ -14,8 +14,10 @@ export function stripInternalProperties(clip: Clip): Clip {
 /**
  * True when any visual property holds something other than a plain number —
  * keyframes, or a merge field placeholder that never resolved.
- * Such clips render without effect and transition layers, so the renderer and
- * the toolbars must agree on the property list; keep this the only copy.
+ *
+ * Studio previews such clips without effect and transition layers, so the player
+ * and the toolbars must agree on the property list; keep this the only copy.
+ * Preview-only: rendered output composes presets over keyframes instead.
  */
 export function hasKeyframedVisualProperty(clip: Clip): boolean {
 	return [

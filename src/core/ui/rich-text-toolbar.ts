@@ -1396,12 +1396,6 @@ export class RichTextToolbar extends BaseToolbar {
 		this.edit.resolveClip(clipId);
 	}
 
-	/**
-	 * Capture current clip state for two-phase drag pattern (Phase 1).
-	 * Creates a deep clone of the clip's current state to enable command rollback on drag end.
-	 *
-	 * @returns Object with clipId and cloned initial state, or null if no clip selected
-	 */
 	private selectFont(font: FontInfo): void {
 		// Add font URL to timeline.fonts via document layer (persists properly)
 		const document = this.edit.getDocument();
