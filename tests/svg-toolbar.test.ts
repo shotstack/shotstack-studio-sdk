@@ -529,8 +529,10 @@ describe("SvgToolbar - Data Flow Integrity", () => {
 	it("keeps document timing intent in slider undo history", () => {
 		const mockEdit = createMockEditSession();
 		const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect width="50" height="50"/></svg>');
+		const documentClip = { ...svgClip, start: "auto", length: "end" };
 		mockEdit.getResolvedClip.mockReturnValue(svgClip);
-		mockEdit.getDocumentClip.mockReturnValue({ ...svgClip, start: "auto", length: "end" });
+		mockEdit.getDocumentClip.mockReturnValue(documentClip);
+		mockEdit.updateClipInDocument.mockImplementation((_clipId: string, updates: object) => Object.assign(documentClip, updates));
 
 		const { toolbar, parent } = createToolbar(mockEdit);
 		// @ts-expect-error - accessing protected method for testing
@@ -544,7 +546,9 @@ describe("SvgToolbar - Data Flow Integrity", () => {
 
 		const [, initialState, finalState] = mockEdit.commitClipUpdate.mock.calls[0];
 		expect(initialState).toEqual(expect.objectContaining({ id: "clip-123", start: "auto", length: "end" }));
-		expect(finalState).toEqual(expect.objectContaining({ id: "clip-123", start: "auto", length: "end" }));
+		expect(initialState).not.toHaveProperty("opacity");
+		// Final state must carry the edit AND still be document form, not resolved.
+		expect(finalState).toEqual(expect.objectContaining({ id: "clip-123", start: "auto", length: "end", opacity: 0.5 }));
 	});
 
 	it("reads from edit session as single source of truth", () => {
