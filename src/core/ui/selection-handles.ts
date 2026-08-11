@@ -580,7 +580,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	// ─── Drag Operations ─────────────────────────────────────────────────────────
 
 	private startDrag(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || this.hasKeyframedOffset()) return;
 
 		this.isDragging = true;
 		const viewportContainer = this.edit.getViewportContainer();
@@ -594,7 +594,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleDrag(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.selectedClipId) return;
+		if (!this.selectedPlayer || !this.selectedClipId || this.hasKeyframedOffset()) return;
 
 		const viewportContainer = this.edit.getViewportContainer();
 		const timelinePoint = event.getLocalPosition(viewportContainer);
@@ -663,7 +663,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private startCornerResize(event: pixi.FederatedPointerEvent, corner: ScaleDirection): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || this.hasKeyframedOffset()) return;
 
 		this.scaleDirection = corner;
 		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
@@ -673,7 +673,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleCornerResize(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.selectedClipId || !this.scaleDirection || !this.originalDimensions) return;
+		if (!this.selectedPlayer || !this.selectedClipId || !this.scaleDirection || !this.originalDimensions || this.hasKeyframedOffset()) return;
 
 		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		const delta = {
@@ -704,7 +704,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private startEdgeResize(event: pixi.FederatedPointerEvent, edge: EdgeDirection): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || this.hasKeyframedOffset()) return;
 
 		this.edgeDragDirection = edge;
 		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
@@ -714,7 +714,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleEdgeResize(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.selectedClipId || !this.edgeDragDirection || !this.originalDimensions) return;
+		if (!this.selectedPlayer || !this.selectedClipId || !this.edgeDragDirection || !this.originalDimensions || this.hasKeyframedOffset()) return;
 
 		const timelinePoint = event.getLocalPosition(this.edit.getViewportContainer());
 		const delta = {
@@ -745,7 +745,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private startRotation(event: pixi.FederatedPointerEvent, _corner: CornerName): void {
-		if (!this.selectedPlayer) return;
+		if (!this.selectedPlayer || this.hasKeyframedRotation()) return;
 
 		this.isRotating = true;
 
@@ -755,7 +755,7 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	private handleRotation(event: pixi.FederatedPointerEvent): void {
-		if (!this.selectedPlayer || !this.selectedClipId || this.rotationStart === null) return;
+		if (!this.selectedPlayer || !this.selectedClipId || this.rotationStart === null || this.hasKeyframedRotation()) return;
 
 		const center = this.getContentCenter();
 		const currentAngle = Math.atan2(event.globalY - center.y, event.globalX - center.x);
@@ -831,6 +831,15 @@ export class SelectionHandles implements CanvasOverlayRegistration {
 	}
 
 	// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+	private hasKeyframedOffset(): boolean {
+		const offset = this.selectedPlayer?.clipConfiguration.offset;
+		return Array.isArray(offset?.x) || Array.isArray(offset?.y);
+	}
+
+	private hasKeyframedRotation(): boolean {
+		return Array.isArray(this.selectedPlayer?.clipConfiguration.transform?.rotate?.angle);
+	}
 
 	private captureOriginalDimensions(): void {
 		if (!this.selectedPlayer || !this.selectedClipId) return;

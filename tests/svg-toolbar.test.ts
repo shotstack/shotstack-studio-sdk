@@ -474,6 +474,35 @@ describe("SvgToolbar - Critical Bug Fixes", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("SvgToolbar - Data Flow Integrity", () => {
+	it("keeps keyframed opacity and scale read-only", () => {
+		const mockEdit = createMockEditSession();
+		const svgClip = createSvgClip('<svg viewBox="0 0 100 100"><rect width="50" height="50"/></svg>');
+		const tweens = [{ from: 0, to: 1, start: 0, length: 1, interpolation: "linear" as const }];
+		svgClip.opacity = structuredClone(tweens);
+		svgClip.scale = structuredClone(tweens);
+		mockEdit.getResolvedClip.mockReturnValue(svgClip);
+
+		const { toolbar, parent } = createToolbar(mockEdit);
+		// @ts-expect-error - accessing protected method for testing
+		toolbar.syncState();
+
+		(["opacity", "scale"] as const).forEach(property => {
+			const button = parent.querySelector<HTMLButtonElement>(`[data-action="${property}"]`)!;
+			const range = parent.querySelector<HTMLInputElement>(`[data-popup="${property}"] input[type="range"]`)!;
+			const value = parent.querySelector<HTMLInputElement>(`[data-popup="${property}"] input[type="text"]`)!;
+			expect(button.disabled).toBe(true);
+			expect(button.title).toBe("Keyframed values cannot be edited with this control");
+			expect(range.disabled).toBe(true);
+			expect(value.disabled).toBe(true);
+
+			range.value = "50";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+		});
+
+		expect(mockEdit.updateClip).not.toHaveBeenCalled();
+		expect(mockEdit.updateClipInDocument).not.toHaveBeenCalled();
+	});
+
 	it("reads from edit session as single source of truth", () => {
 		const mockEdit = createMockEditSession();
 		const svgClip = createSvgClip('<svg><rect fill="red" width="50" height="50"/></svg>');

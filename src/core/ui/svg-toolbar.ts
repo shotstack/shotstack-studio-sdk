@@ -17,6 +17,8 @@ const ICONS = {
 
 type PopupName = "opacity" | "scale" | "transition" | "effect";
 
+const KEYFRAMED_VALUE_DISABLED_REASON = "Keyframed values cannot be edited with this control";
+
 /**
  * Toolbar for editing SVG clip properties.
  *
@@ -375,13 +377,23 @@ export class SvgToolbar extends BaseToolbar {
 		}
 
 		// Clip-level controls
-		const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
-		this.opacitySlider?.setValue(Math.round(opacity * 100));
-		this.updateOpacityDisplay();
+		const opacityKeyframed = Array.isArray(clip.opacity);
+		this.opacitySlider?.setEnabled(!opacityKeyframed);
+		this.setNumericControlEnabled("opacity", !opacityKeyframed);
+		if (!opacityKeyframed) {
+			const opacity = typeof clip.opacity === "number" ? clip.opacity : 1;
+			this.opacitySlider?.setValue(Math.round(opacity * 100));
+			this.updateOpacityDisplay();
+		}
 
-		const scale = typeof clip.scale === "number" ? clip.scale : 1;
-		this.scaleSlider?.setValue(Math.round(scale * 100));
-		this.updateScaleDisplay();
+		const scaleKeyframed = Array.isArray(clip.scale);
+		this.scaleSlider?.setEnabled(!scaleKeyframed);
+		this.setNumericControlEnabled("scale", !scaleKeyframed);
+		if (!scaleKeyframed) {
+			const scale = typeof clip.scale === "number" ? clip.scale : 1;
+			this.scaleSlider?.setValue(Math.round(scale * 100));
+			this.updateScaleDisplay();
+		}
 
 		this.transitionPanel?.setFromClip(clip.transition);
 		this.effectPanel?.setFromClip(clip.effect);
@@ -408,9 +420,14 @@ export class SvgToolbar extends BaseToolbar {
 	/** Start a drag session for any control (asset or clip-level). */
 	private startAssetDrag(controlId: string): void {
 		const state = this.captureClipState();
-		if (state) {
-			this.dragManager.start(controlId, state.clipId, state.initialState);
+		if (
+			!state ||
+			(controlId === "opacity" && Array.isArray(state.initialState.opacity)) ||
+			(controlId === "scale" && Array.isArray(state.initialState.scale))
+		) {
+			return;
 		}
+		this.dragManager.start(controlId, state.clipId, state.initialState);
 	}
 
 	/** End a drag session and commit a single undo entry. */
@@ -427,6 +444,11 @@ export class SvgToolbar extends BaseToolbar {
 	// ─── Value Change Handlers ───────────────────────────────────────────────────
 
 	private handleOpacityChange(value: number): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || Array.isArray(clip.opacity)) {
+			if (clip) this.syncState();
+			return;
+		}
 		this.updateOpacityDisplay();
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
@@ -443,6 +465,11 @@ export class SvgToolbar extends BaseToolbar {
 	}
 
 	private handleScaleChange(value: number): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || Array.isArray(clip.scale)) {
+			if (clip) this.syncState();
+			return;
+		}
 		this.updateScaleDisplay();
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
@@ -480,6 +507,13 @@ export class SvgToolbar extends BaseToolbar {
 		const value = this.scaleSlider?.getValue() ?? 100;
 		const el = this.container?.querySelector("[data-scale-value]");
 		if (el) el.textContent = `${Math.round(value)}%`;
+	}
+
+	private setNumericControlEnabled(name: "opacity" | "scale", enabled: boolean): void {
+		const button = this.buttons.get(name);
+		if (!button) return;
+		button.disabled = !enabled;
+		button.title = enabled ? "" : KEYFRAMED_VALUE_DISABLED_REASON;
 	}
 
 	// ─── Update Helpers ───────────────────────────────────────────────────────────

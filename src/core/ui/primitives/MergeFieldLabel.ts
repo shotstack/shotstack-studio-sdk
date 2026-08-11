@@ -149,10 +149,19 @@ export class MergeFieldLabel extends UIComponent<void> {
 		return this.bound;
 	}
 
+	/** Enable or disable merge-field binding for this property. */
+	setEnabled(enabled: boolean, disabledReason = "Merge field unavailable"): void {
+		if (!this.iconBtn) return;
+
+		this.iconBtn.disabled = !enabled;
+		this.iconBtn.title = enabled ? "Merge field" : disabledReason;
+		if (!enabled) this.hideDropdown();
+	}
+
 	// ─── Private ───────────────────────────────────────────────────────────
 
 	private toggleDropdown(): void {
-		if (!this.dropdown) return;
+		if (!this.dropdown || this.iconBtn?.disabled) return;
 		const isHidden = this.dropdown.style.display === "none";
 		if (isHidden) {
 			this.showDropdown();

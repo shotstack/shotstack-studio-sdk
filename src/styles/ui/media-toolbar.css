@@ -72,7 +72,7 @@
 	white-space: nowrap;
 }
 
-.ss-media-toolbar-btn:hover {
+.ss-media-toolbar-btn:hover:not(:disabled) {
 	background: rgba(255, 255, 255, 0.1);
 	color: rgba(255, 255, 255, 0.95);
 }
@@ -80,6 +80,12 @@
 .ss-media-toolbar-btn.active {
 	background: rgba(255, 255, 255, 0.15);
 	color: #fff;
+}
+
+.ss-media-toolbar-btn:disabled {
+	background: rgba(255, 255, 255, 0.03);
+	color: rgba(255, 255, 255, 0.3);
+	cursor: not-allowed;
 }
 
 .ss-media-toolbar-btn svg {
@@ -204,6 +210,77 @@
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	margin-bottom: 12px;
+}
+
+.ss-media-toolbar-keyframe-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.ss-media-toolbar-keyframe-header .ss-toolbar-popup-label {
+	margin-bottom: 0;
+}
+
+.ss-media-toolbar-keyframe-controls {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.ss-media-toolbar-keyframe-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	flex: 0 0 24px;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	color: rgba(255, 255, 255, 0.55);
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease,
+		color 0.15s ease;
+}
+
+.ss-media-toolbar-keyframe-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.ss-media-toolbar-keyframe-btn:hover:not(:disabled) {
+	background: rgba(255, 255, 255, 0.1);
+	color: rgba(255, 255, 255, 0.95);
+}
+
+.ss-media-toolbar-keyframe-btn:focus-visible {
+	outline: 2px solid #3b82f6;
+	outline-offset: 1px;
+}
+
+.ss-media-toolbar-keyframe-btn:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
+.ss-media-toolbar-keyframe-btn[data-state="static"] {
+	color: rgba(255, 255, 255, 0.55);
+}
+
+.ss-media-toolbar-keyframe-btn[data-state="animated"],
+.ss-media-toolbar-keyframe-btn[data-state="keyframe"] {
+	color: #3b82f6;
+}
+
+.ss-media-toolbar-keyframe-btn[data-state="keyframe"] svg path {
+	fill: currentColor;
 }
 
 .ss-media-toolbar-slider-row {

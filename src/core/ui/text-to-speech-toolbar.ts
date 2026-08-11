@@ -121,6 +121,7 @@ const ICONS = {
 };
 
 const TEXT_DEBOUNCE_MS = 300;
+const KEYFRAMED_VALUE_DISABLED_REASON = "Keyframed values cannot be edited with this control";
 
 // ─── Toolbar ────────────────────────────────────────────────────────────────
 
@@ -431,9 +432,13 @@ export class TextToSpeechToolbar extends BaseToolbar {
 		this.updateTextPreview(asset.text ?? "");
 
 		// Volume
-		const volume = typeof asset.volume === "number" ? asset.volume : 1;
-		this.currentVolume = Math.round(volume * 100);
-		this.updateVolumeDisplay();
+		const volumeKeyframed = Array.isArray(asset.volume);
+		this.setVolumeEnabled(!volumeKeyframed);
+		if (!volumeKeyframed) {
+			const volume = typeof asset.volume === "number" ? asset.volume : 1;
+			this.currentVolume = Math.round(volume * 100);
+			this.updateVolumeDisplay();
+		}
 
 		// Audio fade
 		this.audioFadeEffect = (asset.effect as "" | "fadeIn" | "fadeOut" | "fadeInFadeOut") || "";
@@ -479,11 +484,14 @@ export class TextToSpeechToolbar extends BaseToolbar {
 	// ─── Volume Handlers ─────────────────────────────────────────────────────────
 
 	private handleVolumeChange(value: number): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if (!clip || clip.asset.type !== "text-to-speech" || Array.isArray(clip.asset.volume)) {
+			if (clip?.asset.type === "text-to-speech") this.syncState();
+			return;
+		}
+
 		this.currentVolume = value;
 		this.updateVolumeDisplay();
-
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (!clip) return;
 
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clipId) return;
@@ -518,6 +526,15 @@ export class TextToSpeechToolbar extends BaseToolbar {
 		if (iconContainer) {
 			iconContainer.innerHTML = this.currentVolume === 0 ? ICONS.volumeMute : ICONS.volume;
 		}
+	}
+
+	private setVolumeEnabled(enabled: boolean): void {
+		if (this.volumeBtn) {
+			this.volumeBtn.disabled = !enabled;
+			this.volumeBtn.title = enabled ? "" : KEYFRAMED_VALUE_DISABLED_REASON;
+		}
+		if (this.volumeSlider) this.volumeSlider.disabled = !enabled;
+		if (this.volumeDisplayInput) this.volumeDisplayInput.disabled = !enabled;
 	}
 
 	// ─── Audio Fade ──────────────────────────────────────────────────────────────
@@ -560,9 +577,9 @@ export class TextToSpeechToolbar extends BaseToolbar {
 
 	private startSliderDrag(controlId: string): void {
 		const state = this.captureClipState();
-		if (state) {
-			this.dragManager.start(controlId, state.clipId, state.initialState);
-		}
+		if (!state) return;
+		if (controlId === "volume" && state.initialState.asset.type === "text-to-speech" && Array.isArray(state.initialState.asset.volume)) return;
+		this.dragManager.start(controlId, state.clipId, state.initialState);
 	}
 
 	private endSliderDrag(controlId: string): void {

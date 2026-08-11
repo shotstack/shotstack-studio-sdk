@@ -1,14 +1,11 @@
 import { type Edit as EditSchema } from "@schemas";
 import { Timeline } from "@timeline/index";
 
-import template from "./templates/prompt-assets.json";
+import template from "./templates/opacity-keyframes.json";
 
 import { Edit, Canvas, Controls, UIController } from "./index";
 
-/**
- * Simple example implementing the README quick start guide.
- * Run with `npm run dev` to see it in action.
- */
+/** Opacity keyframe development demo. Run with `npm run dev`. */
 async function main() {
 	try {
 		// 1. Create core components

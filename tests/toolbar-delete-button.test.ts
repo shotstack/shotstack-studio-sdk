@@ -194,9 +194,9 @@ describe("Toolbar delete button", () => {
 			// Simulating a re-mount path: call mount() again on the same toolbar.
 			toolbar.mount(document.body);
 
-			// We expect exactly 3 subscriptions across the lifetime — one per event.
-			const totalCalls = mockEdit.events.on.mock.calls.length;
-			expect(totalCalls).toBe(3);
+			[EditEvent.ClipAdded, EditEvent.ClipDeleted, EditEvent.ClipRestored].forEach(event => {
+				expect(mockEdit.events.on.mock.calls.filter(([name]) => name === event)).toHaveLength(1);
+			});
 		});
 	});
 
