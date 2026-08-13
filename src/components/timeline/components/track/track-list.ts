@@ -9,6 +9,8 @@ export interface TrackListOptions {
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
+	/** Get generation state for a clip (while an AI asset is being generated) */
+	getClipGenerationState?: (clipId: string) => { status: "generating" | "failed"; error?: string } | undefined;
 	/** Check if content clip has an attached luma */
 	hasAttachedLuma?: (trackIndex: number, clipIndex: number) => boolean;
 	/** Find attached luma for a content clip via timing match */
@@ -85,6 +87,7 @@ export class TrackListComponent {
 				onClipSelect: this.options.onClipSelect,
 				getClipRenderer: this.options.getClipRenderer,
 				getClipError: this.options.getClipError,
+				getClipGenerationState: this.options.getClipGenerationState,
 				hasAttachedLuma: this.options.hasAttachedLuma,
 				findAttachedLuma: this.options.findAttachedLuma,
 				onMaskClick: this.options.onMaskClick,

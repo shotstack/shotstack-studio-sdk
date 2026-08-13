@@ -11,6 +11,7 @@ import {
 } from "@core/animations/opacity-keyframes";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { isAiAsset, isPendingAiAsset } from "@core/shared/ai-asset-utils";
 import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
@@ -66,6 +67,7 @@ type MediaAssetType = "video" | "image" | "audio" | "text-to-image" | "image-to-
 const VISUAL_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["video", "image", "text-to-image", "image-to-video"]);
 
 /** Asset types that have volume controls */
+const PROMPT_DEBOUNCE_MS = 300;
 const VOLUME_ASSET_TYPES: ReadonlySet<MediaAssetType> = new Set(["video", "audio", "text-to-speech"]);
 
 /** Asset types that have audio fade controls (audio-only types) */
@@ -158,6 +160,14 @@ export class MediaToolbar extends BaseToolbar {
 	private volumeDisplayInput: HTMLInputElement | null = null;
 	private volumeSection: HTMLDivElement | null = null;
 	private visualSection: HTMLDivElement | null = null;
+	private aiSection: HTMLDivElement | null = null;
+	private aiDivider: HTMLDivElement | null = null;
+	private promptTextarea: HTMLTextAreaElement | null = null;
+	private promptPopup: HTMLDivElement | null = null;
+	private generateBtn: HTMLButtonElement | null = null;
+	private generateError: HTMLElement | null = null;
+	private promptDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private generationUnsubscribers: (() => void)[] = [];
 	private audioSection: HTMLDivElement | null = null;
 	private speedSection: HTMLDivElement | null = null;
 	private speedSlider: HTMLInputElement | null = null;
@@ -208,6 +218,27 @@ export class MediaToolbar extends BaseToolbar {
 				<span class="ss-toolbar-mode-indicator"></span>
 			</div>
 			<div class="ss-toolbar-mode-divider"></div>
+
+			<!-- Generation controls (only for prompt-bearing assets) -->
+			<div class="ss-media-toolbar-ai hidden" data-ai-section>
+				<div class="ss-media-toolbar-dropdown">
+					<button class="ss-media-toolbar-btn ss-ai-prompt-btn" data-action="prompt" title="Prompt">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4L12 3z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9L18 15z"/></svg>
+						<span class="ss-ai-prompt-text" data-prompt-text>Prompt</span>
+					</button>
+					<div class="ss-media-toolbar-popup ss-ai-prompt-popup" data-popup="prompt">
+						<div class="ss-media-toolbar-popup-header">Prompt</div>
+						<textarea class="ss-ai-prompt-textarea" data-prompt-textarea
+							placeholder="Describe what to generate..." rows="4"></textarea>
+						<div class="ss-ai-prompt-hint">Use {{ FIELD_NAME }} for merge fields</div>
+					</div>
+				</div>
+				<button class="ss-media-toolbar-btn ss-ai-generate-btn" data-action="generate">
+					<span data-generate-label>Generate</span>
+				</button>
+				<span class="ss-ai-error" data-generate-error hidden></span>
+			</div>
+			<div class="ss-media-toolbar-divider hidden" data-ai-divider></div>
 
 			<!-- Visual controls (hidden for audio) -->
 			<div class="ss-media-toolbar-visual" data-visual-section>
@@ -417,6 +448,12 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeDisplayInput = this.container.querySelector("[data-volume-display]");
 		this.volumeSection = this.container.querySelector("[data-volume-section]");
 		this.visualSection = this.container.querySelector("[data-visual-section]");
+		this.aiSection = this.container.querySelector("[data-ai-section]");
+		this.aiDivider = this.container.querySelector("[data-ai-divider]");
+		this.promptTextarea = this.container.querySelector("[data-prompt-textarea]");
+		this.promptPopup = this.container.querySelector("[data-popup='prompt']");
+		this.generateBtn = this.container.querySelector("[data-action='generate']");
+		this.generateError = this.container.querySelector("[data-generate-error]");
 		this.audioSection = this.container.querySelector("[data-audio-section]");
 		this.speedSection = this.container.querySelector("[data-speed-section]");
 		this.speedSlider = this.container.querySelector("[data-speed-slider]");
@@ -532,6 +569,31 @@ export class MediaToolbar extends BaseToolbar {
 		// Create AbortController for cleanup
 		this.abortController = new AbortController();
 		const { signal } = this.abortController;
+
+		// Generation controls
+		this.container?.querySelector("[data-action='prompt']")?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.togglePopup(this.promptPopup);
+			},
+			{ signal }
+		);
+		this.promptTextarea?.addEventListener("input", () => this.handlePromptInput(), { signal });
+		this.generateBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				const clipId = this.getSelectedClipId();
+				if (clipId) {
+					this.edit.generateClipAsset(clipId).catch(() => {
+						// Failures surface as clip state.
+					});
+				}
+			},
+			{ signal }
+		);
+		this.subscribeToGeneration();
 
 		// Toggle popups
 		this.fitBtn?.addEventListener(
@@ -785,6 +847,101 @@ export class MediaToolbar extends BaseToolbar {
 		this.speedBtn?.classList.remove("active");
 	}
 
+	private subscribeToGeneration(): void {
+		// mount() can run more than once on an instance; never stack listeners.
+		if (this.generationUnsubscribers.length > 0) return;
+
+		const names = [EditEvent.ClipGenerationStarted, EditEvent.ClipGenerationCompleted, EditEvent.ClipGenerationFailed] as const;
+
+		for (const name of names) {
+			const handler = (payload: { clipId: string }): void => {
+				if (payload.clipId === this.getSelectedClipId()) this.updateGenerationUI();
+			};
+			this.edit.events.on(name, handler);
+			this.generationUnsubscribers.push(() => this.edit.events.off(name, handler));
+		}
+	}
+
+	private handlePromptInput(): void {
+		if (this.promptDebounceTimer) clearTimeout(this.promptDebounceTimer);
+
+		this.promptDebounceTimer = setTimeout(() => {
+			const rawText = this.promptTextarea?.value ?? "";
+			const shotstackEdit = this.getShotstackEdit();
+			const resolvedText = shotstackEdit?.mergeFields.resolve(rawText) ?? rawText;
+
+			const document = this.edit.getDocument();
+			const clipId = this.getSelectedClipId();
+
+			if (clipId && document) {
+				if (shotstackEdit?.mergeFields.isMergeFieldTemplate(rawText)) {
+					document.setClipBinding(clipId, "asset.prompt", { placeholder: rawText, resolvedValue: resolvedText });
+				} else {
+					document.removeClipBinding(clipId, "asset.prompt");
+				}
+			}
+
+			const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+			if (clip) {
+				this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
+					asset: { ...clip.asset, prompt: resolvedText }
+				} as never);
+			}
+			this.updatePromptButtonText(rawText);
+		}, PROMPT_DEBOUNCE_MS);
+	}
+
+	private updatePromptButtonText(text: string): void {
+		const label = this.container?.querySelector("[data-prompt-text]");
+		if (label) label.textContent = text.trim() ? text.trim().slice(0, 20) : "Prompt";
+	}
+
+	/** Prompt controls appear only for prompt-bearing assets; the action only with a generator. */
+	private updateGenerationUI(): void {
+		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const asset = clip?.asset;
+		const isGenerative = isAiAsset(asset);
+
+		this.aiSection?.classList.toggle("hidden", !isGenerative);
+		this.aiDivider?.classList.toggle("hidden", !isGenerative);
+		if (!isGenerative || !this.generateBtn) return;
+
+		if (this.promptTextarea) {
+			const document = this.edit.getDocument();
+			const clipId = this.getSelectedClipId();
+			const binding = clipId ? document?.getClipBinding(clipId, "asset.prompt") : undefined;
+			const text = binding?.placeholder ?? asset.prompt ?? "";
+			this.promptTextarea.value = text;
+			this.updatePromptButtonText(text);
+		}
+
+		if (!this.edit.hasAssetGenerator()) {
+			this.generateBtn.hidden = true;
+			return;
+		}
+		this.generateBtn.hidden = false;
+
+		const clipId = this.getSelectedClipId();
+		const state = clipId ? this.edit.getClipGenerationState(clipId) : undefined;
+		const generating = state?.status === "generating";
+		const label = this.generateBtn.querySelector("[data-generate-label]");
+
+		this.generateBtn.disabled = generating;
+		this.generateBtn.classList.toggle("is-generating", generating);
+
+		if (label) {
+			if (generating) label.textContent = "Generating…";
+			else if (state?.status === "failed") label.textContent = "Retry";
+			else label.textContent = isPendingAiAsset(asset) ? "Generate" : "Regenerate";
+		}
+
+		if (this.generateError) {
+			const message = state?.status === "failed" ? (state.error ?? "Generation failed") : "";
+			this.generateError.textContent = message;
+			this.generateError.hidden = message === "";
+		}
+	}
+
 	protected override getPopupList(): (HTMLElement | null)[] {
 		return [
 			this.fitPopup,
@@ -795,7 +952,8 @@ export class MediaToolbar extends BaseToolbar {
 			this.effectPopup,
 			this.advancedPopup,
 			this.audioFadePopup,
-			this.speedPopup
+			this.speedPopup,
+			this.promptPopup
 		];
 	}
 
@@ -874,6 +1032,8 @@ export class MediaToolbar extends BaseToolbar {
 		if (this.advancedBtn?.parentElement) {
 			this.advancedBtn.parentElement.classList.toggle("hidden", !VISUAL_ASSET_TYPES.has(this.assetType) || !this.showMergeFields);
 		}
+
+		this.updateGenerationUI();
 
 		// Sync merge field label bound states
 		if (this.showMergeFields && this.mergeFieldManager?.hasLabels) {
@@ -1590,6 +1750,11 @@ export class MediaToolbar extends BaseToolbar {
 		// Abort all event listeners
 		this.abortController?.abort();
 		this.abortController = null;
+
+		if (this.promptDebounceTimer) clearTimeout(this.promptDebounceTimer);
+		this.promptDebounceTimer = null;
+		for (const off of this.generationUnsubscribers) off();
+		this.generationUnsubscribers = [];
 
 		// Clear any in-progress drag sessions
 		this.dragManager.clear();

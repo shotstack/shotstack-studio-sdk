@@ -3,11 +3,14 @@ import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 
+import { aiGenerateHandler, bindGenerationState, createGenerateActionSync } from "./ai-generation-binding";
 import { AiPendingOverlay } from "./ai-pending-overlay";
 import { Player, PlayerType } from "./player";
 
 export class TextToImagePlayer extends Player {
 	private aiOverlay: AiPendingOverlay | null = null;
+	private unbindGeneration: (() => void) | null = null;
+	private syncGenerateAction: (() => void) | null = null;
 	private lastPrompt = "";
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
@@ -35,8 +38,11 @@ export class TextToImagePlayer extends Player {
 			height,
 			assetNumber: assetNumber ?? undefined,
 			prompt,
-			assetType
+			assetType,
+			onGenerate: aiGenerateHandler(this.edit, this.clipId ?? null)
 		});
+		this.syncGenerateAction = createGenerateActionSync(this.edit, this.aiOverlay, this.clipId ?? null);
+		this.unbindGeneration = bindGenerationState(this.edit, this.clipId ?? null, this.aiOverlay);
 		this.contentContainer.addChild(this.aiOverlay.getContainer());
 
 		this.configureKeyframes();
@@ -46,6 +52,7 @@ export class TextToImagePlayer extends Player {
 		super.update(deltaTime, elapsed);
 		const { width, height } = this.getSize();
 		this.aiOverlay?.resize(width, height);
+		this.syncGenerateAction?.();
 
 		// Sync prompt text only when it actually changes (e.g. via toolbar editing)
 		const { asset } = this.clipConfiguration;
@@ -65,6 +72,9 @@ export class TextToImagePlayer extends Player {
 	}
 
 	public override dispose(): void {
+		this.unbindGeneration?.();
+		this.unbindGeneration = null;
+		this.syncGenerateAction = null;
 		this.aiOverlay?.dispose();
 		this.aiOverlay = null;
 		super.dispose();

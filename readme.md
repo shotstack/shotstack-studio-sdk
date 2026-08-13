@@ -183,12 +183,40 @@ Available event names:
 | Playback | `playback:play`, `playback:pause` |
 | Timeline | `timeline:updated`, `timeline:backgroundChanged`, `timeline:resized` |
 | Clip lifecycle | `clip:added`, `clip:selected`, `clip:updated`, `clip:deleted`, `clip:restored`, `clip:copied`, `clip:loadFailed`, `clip:unresolved` |
+| Asset generation | `clip:generationStarted`, `clip:generationCompleted`, `clip:generationFailed` |
 | Selection | `selection:cleared` |
 | Edit state | `edit:changed`, `edit:undo`, `edit:redo` |
 | Track | `track:added`, `track:removed` |
 | Duration | `duration:changed` |
 | Output | `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged` |
 | Merge fields | `mergefield:changed` |
+
+### Generating assets from prompts
+
+An image, video or audio asset can carry a `prompt` instead of a `src`. Those clips
+render as a placeholder until something fills the `src` in. Register a generator and
+the editor offers a generate action on the placeholder and in the toolbar:
+
+```typescript
+edit.registerAssetGenerator(async ({ clipId, asset, signal }) => {
+	const url = await myBackend.generate(asset, { signal });
+	return { url };
+});
+```
+
+The SDK writes the returned URL to the clip, so the change is undoable and autosaves
+like any other edit. It tracks whether a clip is generating or has failed, and renders
+those states; a rejection's message is shown as-is next to a retry action. Everything
+else — which models exist, what they cost, what an error means — stays with the host.
+
+```typescript
+edit.hasAssetGenerator(); // false until a handler is registered
+edit.generateClipAsset(clipId); // what the generate action calls
+edit.getClipGenerationState(clipId); // { status: "generating" | "failed", error? }
+```
+
+Generation state is transient: it is never saved to the edit, never part of undo, and
+gone on reload. Deleting a clip mid-generation aborts its request via the `signal`.
 
 ### Canvas
 

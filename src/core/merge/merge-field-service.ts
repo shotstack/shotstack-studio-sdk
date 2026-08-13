@@ -91,8 +91,11 @@ export class MergeFieldService {
 	resolveToNumber(input: string): number | null {
 		if (!this.isMergeFieldTemplate(input)) return null;
 
-		const resolved = this.resolve(input);
-		const num = parseFloat(resolved);
+		// Whole-string match only: parseFloat takes a numeric prefix, so a
+		// resolved "03 image of a cat" would collapse to the number 3.
+		const resolved = this.resolve(input).trim();
+		if (resolved === "") return null;
+		const num = Number(resolved);
 		return Number.isFinite(num) ? num : null;
 	}
 

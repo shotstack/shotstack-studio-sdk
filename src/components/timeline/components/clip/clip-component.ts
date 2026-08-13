@@ -17,6 +17,8 @@ export interface ClipComponentOptions {
 	getRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
+	/** Get generation state for a clip (while an AI asset is being generated) */
+	getClipGenerationState?: (clipId: string) => { status: "generating" | "failed"; error?: string } | undefined;
 	/** Reference to attached luma (if this clip has a mask) */
 	attachedLuma?: LumaRef;
 	/** Callback when mask badge is clicked - passes the CONTENT clip indices */
@@ -192,6 +194,9 @@ export class ClipComponent {
 		// Update error state (show if asset failed to load)
 		this.updateErrorState();
 
+		// Update generation state (show while an AI asset is generating)
+		this.updateGenerationState();
+
 		// Apply custom renderer if available
 		const renderer = this.options.getRenderer(assetType);
 		if (renderer) {
@@ -221,6 +226,21 @@ export class ClipComponent {
 		} else if (this.maskBadge) {
 			// Hide badge if no luma attached
 			this.maskBadge.style.display = "none";
+		}
+	}
+
+	/** Generation is transient: a failure shows the same treatment as a load error. */
+	private updateGenerationState(): void {
+		const { clipId } = this.element.dataset;
+		const state = clipId ? this.options.getClipGenerationState?.(clipId) : undefined;
+
+		this.element.classList.toggle("ss-clip--generating", state?.status === "generating");
+
+		if (state?.status === "failed") {
+			this.element.classList.add("ss-clip--error");
+			this.element.title = state.error ?? "Generation failed";
+		} else if (this.element.title && !this.currentError) {
+			this.element.title = "";
 		}
 	}
 

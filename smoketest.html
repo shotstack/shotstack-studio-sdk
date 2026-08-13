@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/svg+xml" href="/assets/images/typescript.svg" />
+		<link rel="stylesheet" href="/src/styles/main.css" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Shotstack Studio — generation smoketest</title>
+		<style>
+			.smoketest-panel {
+				position: fixed;
+				top: 12px;
+				right: 12px;
+				z-index: 9999;
+				display: flex;
+				flex-direction: column;
+				gap: 6px;
+				padding: 12px 14px;
+				border-radius: 10px;
+				background: rgba(24, 24, 27, 0.95);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				color: #fafafa;
+				font: 12px/1.5 system-ui, sans-serif;
+			}
+			.smoketest-panel label {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+			}
+			.smoketest-panel button {
+				margin-top: 4px;
+				padding: 5px 8px;
+				border-radius: 6px;
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				background: transparent;
+				color: inherit;
+				cursor: pointer;
+			}
+			#smoketest-log {
+				margin-top: 6px;
+				padding-top: 6px;
+				border-top: 1px solid rgba(255, 255, 255, 0.1);
+				white-space: pre;
+				font-family: ui-monospace, monospace;
+				font-size: 11px;
+				color: rgba(255, 255, 255, 0.65);
+				min-height: 40px;
+			}
+		</style>
+	</head>
+	<body>
+		<div data-shotstack-studio class="c-shotstack-studio"></div>
+		<div data-shotstack-timeline class="c-shotstack-timeline"></div>
+
+		<script type="module" src="/src/smoketest.ts"></script>
+	</body>
+</html>
