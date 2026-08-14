@@ -1092,3 +1092,78 @@
 .ss-audio-fade-btn.active .ss-audio-fade-label {
 	color: rgba(255, 255, 255, 0.9);
 }
+
+/* Generation controls — only rendered for prompt-bearing assets */
+.ss-media-toolbar-ai {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.ss-media-toolbar-ai.hidden {
+	display: none;
+}
+
+.ss-ai-prompt-btn {
+	max-width: 170px;
+}
+
+.ss-ai-prompt-btn .ss-ai-prompt-text {
+	max-width: 110px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ss-ai-prompt-popup {
+	width: 320px;
+	padding: 10px;
+}
+
+.ss-ai-prompt-textarea {
+	width: 100%;
+	box-sizing: border-box;
+	resize: vertical;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	color: #fafafa;
+	font-family: inherit;
+	font-size: 12px;
+	line-height: 1.5;
+	padding: 8px;
+}
+
+.ss-ai-prompt-textarea:focus {
+	outline: none;
+	border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ss-ai-prompt-hint {
+	margin-top: 6px;
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.45);
+}
+
+.ss-ai-generate-btn[hidden] {
+	display: none;
+}
+
+.ss-ai-generate-btn.is-generating {
+	opacity: 0.65;
+	cursor: default;
+}
+
+.ss-ai-error {
+	max-width: 180px;
+	padding: 0 6px;
+	font-size: 11px;
+	color: #fca5a5;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ss-ai-error[hidden] {
+	display: none;
+}

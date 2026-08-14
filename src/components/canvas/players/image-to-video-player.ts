@@ -4,6 +4,7 @@ import { type Size } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
+import { aiGenerateHandler, bindGenerationState, createGenerateActionSync } from "./ai-generation-binding";
 import { AiPendingOverlay } from "./ai-pending-overlay";
 import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
@@ -13,6 +14,8 @@ export class ImageToVideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null = null;
 	private placeholder: pixi.Graphics | null = null;
 	private aiOverlay: AiPendingOverlay | null = null;
+	private unbindGeneration: (() => void) | null = null;
+	private syncGenerateAction: (() => void) | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.ImageToVideo);
@@ -32,10 +35,10 @@ export class ImageToVideoPlayer extends Player {
 		const prompt = isAiAsset(asset) ? asset.prompt || "" : "";
 		const assetType = isAiAsset(asset) ? asset.type : "image-to-video";
 
-		// Legacy image-to-video carries its input image in src; the unified
-		// video asset carries it in seed (src holds the generated output)
-		const { src, seed } = asset as { src?: string; seed?: string };
-		const inputImage = seed ?? src;
+		// Legacy image-to-video carries its input image in src; the unified video
+		// asset carries it in options.inputSrc (src holds the generated output).
+		const { type, src, options } = asset as { type?: string; src?: string; options?: { inputSrc?: string } };
+		const inputImage = type === "image-to-video" ? src : options?.inputSrc;
 		const loaded = inputImage ? await this.tryLoadTexture(inputImage) : false;
 
 		if (!loaded) {
@@ -50,8 +53,11 @@ export class ImageToVideoPlayer extends Player {
 			height: displaySize.height,
 			assetNumber: assetNumber ?? undefined,
 			prompt,
-			assetType
+			assetType,
+			onGenerate: aiGenerateHandler(this.edit, this.clipId ?? null)
 		});
+		this.syncGenerateAction = createGenerateActionSync(this.edit, this.aiOverlay, this.clipId ?? null);
+		this.unbindGeneration = bindGenerationState(this.edit, this.clipId ?? null, this.aiOverlay);
 
 		this.contentContainer.addChild(this.aiOverlay.getContainer());
 		this.configureKeyframes();
@@ -62,6 +68,7 @@ export class ImageToVideoPlayer extends Player {
 
 		const displaySize = this.getDisplaySize();
 		this.aiOverlay?.resize(displaySize.width, displaySize.height);
+		this.syncGenerateAction?.();
 
 		const overlayContainer = this.aiOverlay?.getContainer();
 		if (overlayContainer) {
@@ -106,6 +113,9 @@ export class ImageToVideoPlayer extends Player {
 		this.placeholder?.destroy();
 		this.placeholder = null;
 
+		this.unbindGeneration?.();
+		this.unbindGeneration = null;
+		this.syncGenerateAction = null;
 		this.aiOverlay?.dispose();
 		this.aiOverlay = null;
 

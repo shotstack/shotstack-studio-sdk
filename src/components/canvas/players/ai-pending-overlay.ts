@@ -13,6 +13,8 @@ export interface AiPendingOverlayOptions {
 	assetNumber?: number;
 	prompt?: string;
 	assetType?: string;
+	/** Supplied only when the host can generate; omitting it hides the action. */
+	onGenerate?: () => void;
 }
 
 /**
@@ -197,6 +199,8 @@ export class AiPendingOverlay {
 	private time = 0;
 	private rafId: number | null = null;
 	private lastTime: number | null = null;
+	private generating = false;
+	private failure: string | null = null;
 
 	constructor(private options: AiPendingOverlayOptions) {
 		this.container = new pixi.Container();
@@ -218,6 +222,26 @@ export class AiPendingOverlay {
 	updatePrompt(prompt: string): void {
 		if (prompt === this.options.prompt) return;
 		this.options.prompt = prompt;
+		this.rebuild();
+	}
+
+	setGenerating(generating: boolean): void {
+		if (generating === this.generating) return;
+		this.generating = generating;
+		if (generating) this.failure = null;
+		this.rebuild();
+	}
+
+	setOnGenerate(onGenerate: (() => void) | undefined): void {
+		if (Boolean(onGenerate) === Boolean(this.options.onGenerate)) return;
+		this.options.onGenerate = onGenerate;
+		this.rebuild();
+	}
+
+	setFailed(message: string | null): void {
+		if (message === this.failure) return;
+		this.failure = message;
+		if (message !== null) this.generating = false;
 		this.rebuild();
 	}
 
@@ -375,7 +399,7 @@ export class AiPendingOverlay {
 
 		// Prompt text (if provided)
 		if (prompt) {
-			const truncated = truncatePrompt(prompt, 60);
+			const truncated = this.failure ?? truncatePrompt(prompt, 60);
 			const promptText = new pixi.Text({
 				text: truncated,
 				style: {
@@ -394,6 +418,38 @@ export class AiPendingOverlay {
 			badge.addChild(promptText);
 		}
 
+		if (this.options.onGenerate && this.options.mode === "panel") {
+			badge.addChild(this.buildGenerateButton(prompt ? BADGE_SIZE + 90 : BADGE_SIZE + 45));
+		}
+
 		this.container.addChild(badge);
+	}
+
+	private buildGenerateButton(y: number): pixi.Container {
+		const label = this.generating ? "Generating…" : (this.failure && "Retry") || "Generate";
+		const button = new pixi.Container();
+		button.position.set(BADGE_SIZE / 2, y);
+
+		const text = new pixi.Text({
+			text: label,
+			style: { fontFamily: "Arial", fontSize: 15, fontWeight: "bold", fill: "#ffffff" }
+		});
+		text.anchor.set(0.5, 0.5);
+
+		const paddingX = 18;
+		const paddingY = 9;
+		const bg = new pixi.Graphics();
+		bg.roundRect(-text.width / 2 - paddingX, -text.height / 2 - paddingY, text.width + paddingX * 2, text.height + paddingY * 2, 999);
+		bg.fill({ color: this.generating ? "#3f3f46" : "#7C3AED", alpha: this.generating ? 0.7 : 0.95 });
+
+		button.addChild(bg, text);
+
+		if (!this.generating) {
+			button.eventMode = "static";
+			button.cursor = "pointer";
+			button.on("pointertap", () => this.options.onGenerate?.());
+		}
+
+		return button;
 	}
 }

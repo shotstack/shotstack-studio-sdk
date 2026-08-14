@@ -194,12 +194,21 @@ describe("Toolbar delete button", () => {
 			// Simulating a re-mount path: call mount() again on the same toolbar.
 			toolbar.mount(document.body);
 
-			[EditEvent.ClipAdded, EditEvent.ClipDeleted, EditEvent.ClipRestored, EditEvent.PlaybackPause, EditEvent.EditChanged].forEach(event => {
+			[
+				EditEvent.ClipAdded,
+				EditEvent.ClipDeleted,
+				EditEvent.ClipRestored,
+				EditEvent.PlaybackPause,
+				EditEvent.EditChanged,
+				EditEvent.ClipGenerationStarted,
+				EditEvent.ClipGenerationCompleted,
+				EditEvent.ClipGenerationFailed
+			].forEach(event => {
 				expect(mockEdit.events.on.mock.calls.filter(([name]) => name === event)).toHaveLength(1);
 			});
 
-			// Any listener beyond those five would survive a re-mount unremoved.
-			expect(mockEdit.events.on.mock.calls).toHaveLength(5);
+			// Any listener beyond those eight would survive a re-mount unremoved.
+			expect(mockEdit.events.on.mock.calls).toHaveLength(8);
 		});
 	});
 

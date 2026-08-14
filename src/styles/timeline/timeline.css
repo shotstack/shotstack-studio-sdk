@@ -1156,3 +1156,22 @@
 		transform: translateX(2px);
 	}
 }
+
+/* Generating state — a quiet pulse while an AI asset is being produced */
+.ss-clip.ss-clip--generating {
+	animation: ss-clip-generating-pulse 1.6s ease-in-out infinite;
+}
+
+.ss-clip.ss-clip--generating .ss-clip-icon {
+	opacity: 0.9;
+}
+
+@keyframes ss-clip-generating-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.62;
+	}
+}

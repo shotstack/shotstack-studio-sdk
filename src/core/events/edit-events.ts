@@ -71,6 +71,9 @@ export const EditEvent = {
 	ClipCaptureCompleted: "clip:captureCompleted",
 	ClipCaptureFailed: "clip:captureFailed",
 	ClipUnresolved: "clip:unresolved",
+	ClipGenerationStarted: "clip:generationStarted",
+	ClipGenerationCompleted: "clip:generationCompleted",
+	ClipGenerationFailed: "clip:generationFailed",
 
 	// Selection
 	SelectionCleared: "selection:cleared",
@@ -161,6 +164,9 @@ export type EditEventMap = {
 	[EditEvent.ClipCaptureCompleted]: { clipId: string | null; assetType: string; frameCount: number };
 	[EditEvent.ClipCaptureFailed]: { clipId: string | null; assetType: string; error: string; fallback: string };
 	[EditEvent.ClipUnresolved]: ClipLocation & { assetType: string; clipId: string };
+	[EditEvent.ClipGenerationStarted]: { clipId: string };
+	[EditEvent.ClipGenerationCompleted]: { clipId: string };
+	[EditEvent.ClipGenerationFailed]: { clipId: string; error: string };
 
 	// Selection
 	[EditEvent.SelectionCleared]: void;

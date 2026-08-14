@@ -65,6 +65,7 @@ export class Timeline {
 	private readonly handlePlaybackPause: () => void;
 	private readonly handleClipSelected: () => void;
 	private readonly handleClipLoadFailed: () => void;
+	private readonly handleClipGeneration: () => void;
 	private readonly handleClipUpdated: () => void;
 	private readonly handleClipFocusChanged: () => void;
 	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
@@ -115,6 +116,7 @@ export class Timeline {
 		};
 		this.handleClipSelected = () => this.requestRender();
 		this.handleClipLoadFailed = () => this.requestRender();
+		this.handleClipGeneration = () => this.requestRender();
 		this.handleClipUpdated = () => this.requestRender();
 		this.handleClipFocusChanged = () => this.requestRender();
 		this.handleRulerMouseMove = (e: MouseEvent) => {
@@ -257,6 +259,9 @@ export class Timeline {
 
 		// Listen for clip load failures (to show error badge on timeline)
 		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
+		this.edit.events.on(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
+		this.edit.events.on(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
+		this.edit.events.on(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
 
 		// Listen for focus changes (source popup hover-to-highlight)
 		const internal = this.edit.getInternalEvents();
@@ -276,6 +281,9 @@ export class Timeline {
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
 		this.edit.events.off(EditEvent.ClipUpdated, this.handleClipUpdated);
 		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
+		this.edit.events.off(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
+		this.edit.events.off(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
+		this.edit.events.off(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
 
 		const internal = this.edit.getInternalEvents();
 		internal.off(InternalEvent.ClipFocused, this.handleClipFocusChanged);
@@ -394,6 +402,7 @@ export class Timeline {
 			},
 			getClipRenderer: type => this.clipRenderers.get(type),
 			getClipError: (trackIndex, clipIndex) => this.edit.getClipError(trackIndex, clipIndex),
+			getClipGenerationState: clipId => this.edit.getClipGenerationState(clipId),
 			hasAttachedLuma: (trackIndex, clipIndex) => this.stateManager.hasAttachedLuma(trackIndex, clipIndex),
 			findAttachedLuma: (trackIndex, clipIndex) => this.stateManager.findAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {
