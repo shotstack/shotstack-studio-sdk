@@ -81,7 +81,7 @@ function resolveMergeFieldsInClip(clip: InternalClip, mergeFields: MergeFieldSer
 			return num !== null ? num : mergeFields.resolve(value);
 		}
 		if (Array.isArray(value)) {
-			return value.map((item) => processValue(item, key));
+			return value.map(item => processValue(item, key));
 		}
 		if (value !== null && typeof value === "object") {
 			const result: Record<string, unknown> = {};
