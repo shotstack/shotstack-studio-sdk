@@ -14,6 +14,13 @@ jest.mock("@canvas/players/placeholder-graphic", () => ({
 	createPlaceholderGraphic: mockCreatePlaceholderGraphic
 }));
 
+jest.mock("@canvas/players/ai-pending-overlay", () => ({
+	AiPendingOverlay: jest.fn().mockImplementation(() => ({
+		getContainer: jest.fn(() => ({ destroy: jest.fn() })),
+		dispose: jest.fn()
+	}))
+}));
+
 jest.mock("pixi.js", () => {
 	class MockPoint {
 		public x: number;
@@ -149,6 +156,8 @@ jest.mock("pixi.js", () => {
 // eslint-disable-next-line import/first
 import { ImagePlayer } from "@canvas/players/image-player";
 // eslint-disable-next-line import/first
+import { ImageToVideoPlayer } from "@canvas/players/image-to-video-player";
+// eslint-disable-next-line import/first
 import { VideoPlayer } from "@canvas/players/video-player";
 // eslint-disable-next-line import/first
 import type { ResolvedClip } from "@schemas";
@@ -160,6 +169,7 @@ function createEdit() {
 		size: { width: 1080, height: 1920 },
 		playbackTime: 0,
 		isPlaying: false,
+		getResolvedEdit: jest.fn(),
 		assetLoader: {
 			load: jest.fn(),
 			loadVideoUnique: jest.fn(),
@@ -257,5 +267,51 @@ describe("media player fallbacks", () => {
 		expect((player.getContentContainer().children[0] as { __placeholder?: boolean }).__placeholder).not.toBe(true);
 		expect(player.getSize()).toEqual({ width: 1280, height: 720 });
 		expect(Number.isFinite(player.getScale())).toBe(true);
+	});
+});
+
+describe("media player source URLs", () => {
+	// Presigned S3-style URL: any appended query parameter invalidates the signature
+	const signedSrc = "https://bucket.s3.amazonaws.com/media.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc123";
+
+	let warnSpy: jest.SpyInstance;
+
+	beforeEach(() => {
+		warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		warnSpy.mockRestore();
+	});
+
+	function createClip(type: string): ResolvedClip {
+		return { asset: { type, src: signedSrc }, start: 0, length: 5 } as ResolvedClip;
+	}
+
+	it("passes the image src to the loader unchanged", async () => {
+		const edit = createEdit();
+		edit.assetLoader.load.mockResolvedValueOnce(null);
+
+		await new ImagePlayer(edit as never, createClip("image")).load();
+
+		expect(edit.assetLoader.load).toHaveBeenCalledWith(signedSrc, { src: signedSrc, crossorigin: "anonymous", data: {} });
+	});
+
+	it("passes the video src to the loader unchanged", async () => {
+		const edit = createEdit();
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(null);
+
+		await new VideoPlayer(edit as never, createClip("video")).load();
+
+		expect(edit.assetLoader.loadVideoUnique).toHaveBeenCalledWith(signedSrc, { src: signedSrc, data: { autoPlay: false, muted: false } });
+	});
+
+	it("passes the image-to-video src to the loader unchanged", async () => {
+		const edit = createEdit();
+		edit.assetLoader.load.mockResolvedValueOnce(null);
+
+		await new ImageToVideoPlayer(edit as never, createClip("image-to-video")).load();
+
+		expect(edit.assetLoader.load).toHaveBeenCalledWith(signedSrc, { src: signedSrc, crossorigin: "anonymous", data: {} });
 	});
 });
