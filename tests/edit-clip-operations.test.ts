@@ -571,6 +571,31 @@ describe("Edit Clip Operations", () => {
 			expect((await edit.deleteClipById(id as string)).status).toBe("success");
 		});
 
+		it("aborts in-flight generation when the clip is deleted by position", async () => {
+			await edit.addClip(0, { asset: { type: "image", prompt: "a red apple" }, start: 0, length: 5 } as never);
+			let aborted = false;
+			edit.registerAssetGenerator(
+				({ signal }) =>
+					new Promise((_resolve, reject) => {
+						signal.addEventListener("abort", () => {
+							aborted = true;
+							reject(new Error("aborted"));
+						});
+					})
+			);
+			const doc = (edit as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
+			const id = doc.getClipId(0, 1) as string;
+
+			const pending = edit.generateClipAsset(id);
+			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
+
+			await edit.deleteClip(0, 1);
+			await pending;
+
+			expect(aborted).toBe(true);
+			expect(edit.getClipGenerationState(id)).toBeUndefined();
+		});
+
 		it("updateClip resolves success and noop by position", async () => {
 			expect((await edit.updateClip(0, 0, { fit: "contain" })).status).toBe("success");
 			expect(await edit.updateClip(0, 99, {})).toMatchObject({ status: "noop" });

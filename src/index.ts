@@ -9,6 +9,7 @@ export { UIController } from "@core/ui/ui-controller";
 export { WebGLUnsupportedError } from "@core/webgl-support";
 
 export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-controller";
+export type { AssetGenerationRequest, AssetGeneratorHandler } from "@core/generation/asset-generator";
 export type { EditConfig } from "@core/schemas";
 export type { CommandResult } from "@core/commands/types";
 

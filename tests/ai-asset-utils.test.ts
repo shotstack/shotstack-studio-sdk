@@ -11,7 +11,7 @@ describe("ai-asset-utils", () => {
 
 		it("accepts prompt-bearing media assets", () => {
 			expect(isAiAsset({ type: "image", prompt: "a cat" })).toBe(true);
-			expect(isAiAsset({ type: "video", prompt: "waves", seed: "https://cdn/seed.png" })).toBe(true);
+			expect(isAiAsset({ type: "video", prompt: "waves", options: { inputSrc: "https://cdn/start.png" } })).toBe(true);
 			expect(isAiAsset({ type: "audio", prompt: "calm piano" })).toBe(true);
 		});
 
@@ -34,7 +34,7 @@ describe("ai-asset-utils", () => {
 	describe("isPendingAiAsset", () => {
 		it("is pending while a prompt-bearing media asset has no src", () => {
 			expect(isPendingAiAsset({ type: "image", prompt: "a cat" })).toBe(true);
-			expect(isPendingAiAsset({ type: "video", prompt: "waves", seed: "https://cdn/seed.png" })).toBe(true);
+			expect(isPendingAiAsset({ type: "video", prompt: "waves", options: { inputSrc: "https://cdn/start.png" } })).toBe(true);
 			expect(isPendingAiAsset({ type: "audio", prompt: "calm piano" })).toBe(true);
 		});
 
