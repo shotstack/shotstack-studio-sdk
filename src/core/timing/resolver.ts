@@ -4,6 +4,7 @@
  */
 
 import type { Player } from "@canvas/players/player";
+import { toLoadUrl } from "@core/shared/utils";
 import type { Asset } from "@schemas";
 
 import { type ResolutionContext, type ResolvedTiming, type Seconds, type TimingIntent, isAliasReference, sec } from "./types";
@@ -50,7 +51,7 @@ export function probeMediaDuration(src: string): Promise<number | null> {
 		video.crossOrigin = "anonymous";
 		video.onloadedmetadata = (): void => resolve(video.duration);
 		video.onerror = (): void => resolve(null);
-		video.src = src;
+		video.src = toLoadUrl(src);
 	});
 }
 

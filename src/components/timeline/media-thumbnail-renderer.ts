@@ -8,6 +8,7 @@
  * - Image: Loads image directly and uses original URL
  */
 
+import { toLoadUrl } from "@core/shared/utils";
 import type { ResolvedClip, ImageAsset, VideoAsset } from "@schemas";
 
 import type { ThumbnailGenerator } from "./thumbnail-generator";
@@ -196,15 +197,16 @@ export class MediaThumbnailRenderer implements ClipRenderer {
 
 	private loadImageThumbnail(src: string): Promise<{ url: string; thumbnailWidth: number } | null> {
 		return new Promise(resolve => {
+			const loadUrl = toLoadUrl(src);
 			const img = new Image();
 			img.crossOrigin = "anonymous";
 			img.onload = () => {
 				const aspectRatio = img.naturalWidth / img.naturalHeight;
 				const thumbnailWidth = Math.round(THUMBNAIL_HEIGHT * aspectRatio);
-				resolve({ url: src, thumbnailWidth });
+				resolve({ url: loadUrl, thumbnailWidth });
 			};
 			img.onerror = () => resolve(null);
-			img.src = src;
+			img.src = loadUrl;
 		});
 	}
 

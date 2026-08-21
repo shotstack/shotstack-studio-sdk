@@ -5,6 +5,8 @@
  * Designed for timeline UI, not export quality - uses smaller dimensions for performance.
  */
 
+import { toLoadUrl } from "@core/shared/utils";
+
 interface CachedThumbnail {
 	dataUrl: string;
 	thumbnailWidth: number;
@@ -181,7 +183,7 @@ export class ThumbnailGenerator {
 
 			video.addEventListener("loadeddata", onLoaded);
 			video.addEventListener("error", onError);
-			video.src = src;
+			video.src = toLoadUrl(src);
 			video.load();
 		});
 	}

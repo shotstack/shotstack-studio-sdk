@@ -314,4 +314,27 @@ describe("media player source URLs", () => {
 
 		expect(edit.assetLoader.load).toHaveBeenCalledWith(signedSrc, { src: signedSrc, crossorigin: "anonymous", data: {} });
 	});
+
+	// Query-less URLs get a cache-busting parameter so a response cached
+	// without CORS headers (plain <img> on the host page) is never reused
+	const plainSrc = "https://bucket.s3.amazonaws.com/media.mp4";
+	const bustedSrc = `${plainSrc}?x-cors=1`;
+
+	it("cache-busts a query-less image src", async () => {
+		const edit = createEdit();
+		edit.assetLoader.load.mockResolvedValueOnce(null);
+
+		await new ImagePlayer(edit as never, { asset: { type: "image", src: plainSrc }, start: 0, length: 5 } as ResolvedClip).load();
+
+		expect(edit.assetLoader.load).toHaveBeenCalledWith(bustedSrc, { src: bustedSrc, crossorigin: "anonymous", data: {} });
+	});
+
+	it("cache-busts a query-less video src", async () => {
+		const edit = createEdit();
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(null);
+
+		await new VideoPlayer(edit as never, { asset: { type: "video", src: plainSrc }, start: 0, length: 5 } as ResolvedClip).load();
+
+		expect(edit.assetLoader.loadVideoUnique).toHaveBeenCalledWith(bustedSrc, { src: bustedSrc, data: { autoPlay: false, muted: false } });
+	});
 });

@@ -1,5 +1,6 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
+import { toLoadUrl } from "@core/shared/utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type VideoAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -178,11 +179,12 @@ export class VideoPlayer extends Player {
 			throw new Error(`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`);
 		}
 
-		const loadOptions: pixi.UnresolvedAsset = { src, data: { autoPlay: false, muted: false } };
+		const loadUrl = toLoadUrl(src);
+		const loadOptions: pixi.UnresolvedAsset = { src: loadUrl, data: { autoPlay: false, muted: false } };
 
 		// Use unique loader to create independent video element per player
 		// This prevents conflicts when multiple clips use the same video source
-		const texture = await this.edit.assetLoader.loadVideoUnique(src, loadOptions);
+		const texture = await this.edit.assetLoader.loadVideoUnique(loadUrl, loadOptions);
 
 		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
