@@ -178,12 +178,11 @@ export class VideoPlayer extends Player {
 			throw new Error(`Video source '${src}' is not supported. .mov files cannot be played in the browser. Please convert to .webm or .mp4 first.`);
 		}
 
-		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
-		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, data: { autoPlay: false, muted: false } };
+		const loadOptions: pixi.UnresolvedAsset = { src, data: { autoPlay: false, muted: false } };
 
 		// Use unique loader to create independent video element per player
 		// This prevents conflicts when multiple clips use the same video source
-		const texture = await this.edit.assetLoader.loadVideoUnique(corsUrl, loadOptions);
+		const texture = await this.edit.assetLoader.loadVideoUnique(src, loadOptions);
 
 		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
