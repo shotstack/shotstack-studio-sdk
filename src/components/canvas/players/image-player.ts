@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { toLoadUrl } from "@core/shared/utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type ImageAsset } from "@schemas";
 import * as pixi from "pixi.js";
@@ -91,13 +92,14 @@ export class ImagePlayer extends Player {
 			throw new Error("Image asset has no src to load.");
 		}
 
-		const loadOptions: pixi.UnresolvedAsset = { src, crossorigin: "anonymous", data: {} };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(src, loadOptions);
+		const loadUrl = toLoadUrl(src);
+		const loadOptions: pixi.UnresolvedAsset = { src: loadUrl, crossorigin: "anonymous", data: {} };
+		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(loadUrl, loadOptions);
 
 		if (!(texture?.source instanceof pixi.ImageSource)) {
 			if (texture) {
 				texture.destroy(true);
-				await this.edit.assetLoader.rejectAsset(src);
+				await this.edit.assetLoader.rejectAsset(loadUrl);
 			}
 			throw new Error(`Invalid image source '${src}'.`);
 		}

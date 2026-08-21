@@ -191,3 +191,39 @@ export async function validateAssetUrl(url: string): Promise<UrlValidationResult
 		return { valid: false, error: message };
 	}
 }
+
+/**
+ * Cache-busting URL for loading media cross-origin. A response cached from a
+ * non-CORS fetch (e.g. the same URL in a plain <img> on the host page) is
+ * served without CORS headers and fails crossorigin loads; a query parameter
+ * forces a fresh fetch. URLs that already carry a query string pass through
+ * untouched — signed URLs break if any parameter is added.
+ * @internal
+ */
+export function toLoadUrl(src: string): string {
+	if (!src.startsWith("http") || src.includes("?")) return src;
+	return `${src}?x-cors=1`;
+}
+
+/**
+ * After a media load failure, detect whether the URL is reachable but blocked
+ * by missing CORS headers, and warn with the fix. Distinguishes a CORS
+ * misconfiguration (fixable on the asset host) from a dead URL.
+ * @internal
+ */
+export async function warnIfCorsBlocked(url: string): Promise<void> {
+	if (!url.startsWith("http")) return;
+	try {
+		await fetch(url, { method: "HEAD", mode: "cors" });
+	} catch {
+		try {
+			await fetch(url, { method: "HEAD", mode: "no-cors" });
+			console.warn(
+				`[AssetLoader] "${url}" is reachable but its server does not send CORS headers, so the browser blocks it. ` +
+					`Add a CORS rule to the bucket/CDN allowing this origin, or ingest the file with the Shotstack Ingest API.`
+			);
+		} catch {
+			// Unreachable (network/DNS) — the load failure itself is the whole story
+		}
+	}
+}

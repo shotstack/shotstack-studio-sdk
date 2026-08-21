@@ -1,3 +1,4 @@
+import { warnIfCorsBlocked } from "@core/shared/utils";
 import * as pixi from "pixi.js";
 
 import { AssetLoadTracker, type AssetLoadInfoStatus } from "../events/asset-load-tracker";
@@ -62,8 +63,8 @@ export class AssetLoader {
 			const resolvedAsset = useSafari
 				? await this.loadVideoForSafari<TResolvedAsset>(identifier, loadOptions)
 				: await pixi.Assets.load<TResolvedAsset>(loadOptions, progress => {
-					this.updateAssetLoadMetadata(identifier, "loading", progress);
-				});
+						this.updateAssetLoadMetadata(identifier, "loading", progress);
+					});
 
 			if (resolvedAsset == null) {
 				console.warn(`[AssetLoader.load] Empty asset returned for "${identifier}"`);
@@ -76,6 +77,7 @@ export class AssetLoader {
 			return resolvedAsset;
 		} catch (error) {
 			console.warn(`[AssetLoader.load] Failed to load "${identifier}":`, error);
+			warnIfCorsBlocked(identifier).catch(() => {});
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			await this.cleanupFailedLoad(identifier);
 			return null;
@@ -132,6 +134,7 @@ export class AssetLoader {
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return texture;
 		} catch (_error) {
+			warnIfCorsBlocked(identifier).catch(() => {});
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			return null;
 		}

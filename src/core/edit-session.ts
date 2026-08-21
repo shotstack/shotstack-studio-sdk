@@ -30,7 +30,7 @@ import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
 import { SelectionManager } from "@core/selection-manager";
 import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
-import { deepMerge, nextFrame, setNestedValue } from "@core/shared/utils";
+import { deepMerge, nextFrame, setNestedValue, toLoadUrl } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
 import { type Milliseconds, type ResolutionContext, type Seconds, sec, isAliasReference } from "@core/timing/types";
 import { TimingManager } from "@core/timing-manager";
@@ -1857,9 +1857,11 @@ export class Edit {
 	private unloadClipAssets(clip: Player): void {
 		const { asset } = clip.clipConfiguration;
 		if (asset && "src" in asset && typeof asset.src === "string") {
-			const safeToUnload = this.assetLoader.decrementRef(asset.src);
-			if (safeToUnload && pixi.Assets.cache.has(asset.src)) {
-				pixi.Assets.unload(asset.src);
+			// Visual players load under the cache-busted URL; other assets under the raw src
+			const key = ["image", "video", "image-to-video"].includes(asset.type) ? toLoadUrl(asset.src) : asset.src;
+			const safeToUnload = this.assetLoader.decrementRef(key);
+			if (safeToUnload && pixi.Assets.cache.has(key)) {
+				pixi.Assets.unload(key);
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 import type { Edit } from "@core/edit-session";
 import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
+import { toLoadUrl } from "@core/shared/utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
@@ -114,13 +115,14 @@ export class ImageToVideoPlayer extends Player {
 
 	private async tryLoadTexture(src: string): Promise<boolean> {
 		try {
-			const loadOptions: pixi.UnresolvedAsset = { src, crossorigin: "anonymous", data: {} };
-			const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(src, loadOptions);
+			const loadUrl = toLoadUrl(src);
+			const loadOptions: pixi.UnresolvedAsset = { src: loadUrl, crossorigin: "anonymous", data: {} };
+			const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(loadUrl, loadOptions);
 
 			if (!(texture?.source instanceof pixi.ImageSource)) {
 				if (texture) {
 					texture.destroy(true);
-					await this.edit.assetLoader.rejectAsset(src);
+					await this.edit.assetLoader.rejectAsset(loadUrl);
 				}
 				return false;
 			}
