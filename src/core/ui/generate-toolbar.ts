@@ -1,6 +1,6 @@
-import { InternalEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { MERGE_FIELD_TEST_PATTERN } from "@core/merge/merge-field-service";
-import { isAiAsset } from "@core/shared/ai-asset-utils";
+import { canCarryPrompt } from "@core/shared/ai-asset-utils";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -67,7 +67,7 @@ export class GenerateToolbar extends BaseToolbar {
 		this.generateNote = this.container.querySelector("[data-generate-note]");
 
 		this.setupEventListeners();
-		this.subscribeToGeneration();
+		this.subscribeToEditState();
 		this.enableDrag();
 		this.appendDeleteButton();
 	}
@@ -77,7 +77,14 @@ export class GenerateToolbar extends BaseToolbar {
 		this.abortController = new AbortController();
 		const { signal } = this.abortController;
 
-		this.promptInput?.addEventListener("input", () => this.schedulePromptCommit(), { signal });
+		this.promptInput?.addEventListener(
+			"input",
+			() => {
+				this.schedulePromptCommit();
+				this.syncState();
+			},
+			{ signal }
+		);
 
 		// Enter is the only way to generate without leaving the keyboard, so the pending
 		// prompt has to land on the clip first or the run would use the previous value.
@@ -105,13 +112,15 @@ export class GenerateToolbar extends BaseToolbar {
 
 	private requestGeneration(): void {
 		const clipId = this.getSelectedClipId();
-		if (!clipId || this.generateBtn?.disabled) return;
+		if (!clipId) return;
+		if ((this.promptInput?.value ?? "").trim() === "") return;
+		if (this.edit.getClipGenerationState(clipId)?.status === "generating") return;
 		this.edit.generateClipAsset(clipId).catch(() => {
 			// Failures surface as clip state.
 		});
 	}
 
-	private subscribeToGeneration(): void {
+	private subscribeToEditState(): void {
 		// mount() can run more than once on an instance; never stack listeners.
 		if (this.generationUnsubscribers.length > 0) return;
 		const events = this.edit.getInternalEvents();
@@ -123,6 +132,10 @@ export class GenerateToolbar extends BaseToolbar {
 			events.on(name, handler);
 			this.generationUnsubscribers.push(() => events.off(name, handler));
 		}
+
+		const onEditChanged = (): void => this.syncState();
+		this.edit.events.on(EditEvent.EditChanged, onEditChanged);
+		this.generationUnsubscribers.push(() => this.edit.events.off(EditEvent.EditChanged, onEditChanged));
 	}
 
 	private schedulePromptCommit(): void {
@@ -139,28 +152,29 @@ export class GenerateToolbar extends BaseToolbar {
 		const property = promptProperty(clip.asset);
 		const path = `asset.${property}`;
 		const rawText = this.promptInput?.value ?? "";
+		const cleared = rawText.trim() === "";
 		const resolvedText = this.edit.resolveMergeFields(rawText);
 		const document = this.edit.getDocument();
 		const clipId = this.getSelectedClipId();
 		if (clipId && document) {
-			if (MERGE_FIELD_TEST_PATTERN.test(rawText)) {
+			if (!cleared && MERGE_FIELD_TEST_PATTERN.test(rawText)) {
 				document.setClipBinding(clipId, path, { placeholder: rawText, resolvedValue: resolvedText });
 			} else {
 				document.removeClipBinding(clipId, path);
 			}
 		}
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
-			asset: { ...clip.asset, [property]: resolvedText }
+			asset: { ...clip.asset, [property]: cleared ? undefined : resolvedText }
 		} as never);
 	}
 
 	protected override syncState(): void {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const asset = clip?.asset;
-		if (!isAiAsset(asset) || !this.generateBtn) return;
-
-		// Never overwrite what is being typed; the debounce has not committed it yet.
-		if (this.promptInput && this.promptInput !== window.document.activeElement) {
+		if (!canCarryPrompt(asset) || !this.generateBtn) return;
+		// While a commit is pending the field holds newer text than the asset, so the field
+		// wins. The enabled state below reads the field, so it must not be overwritten here.
+		if (this.promptInput && this.promptDebounceTimer === null) {
 			const property = promptProperty(asset);
 			const document = this.edit.getDocument();
 			const clipId = this.getSelectedClipId();
@@ -180,8 +194,9 @@ export class GenerateToolbar extends BaseToolbar {
 		const clipId = this.getSelectedClipId();
 		const state = clipId ? this.edit.getClipGenerationState(clipId) : undefined;
 		const generating = state?.status === "generating";
+		const hasPrompt = (this.promptInput?.value ?? "").trim() !== "";
 		const label = this.generateBtn.querySelector("[data-generate-label]");
-		this.generateBtn.disabled = generating;
+		this.generateBtn.disabled = generating || !hasPrompt;
 		this.generateBtn.classList.toggle("is-generating", generating);
 		if (label) {
 			if (generating) label.textContent = "Generating…";

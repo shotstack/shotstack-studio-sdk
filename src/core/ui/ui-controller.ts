@@ -2,7 +2,7 @@ import { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
-import { isAiAsset, isPendingAiAsset } from "@core/shared/ai-asset-utils";
+import { canCarryPrompt, isAiAsset, isPendingAiAsset } from "@core/shared/ai-asset-utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type * as pixi from "pixi.js";
 
@@ -694,10 +694,9 @@ export class UIController {
 		}
 	}
 
-	/** Whether the current selection can be generated from a prompt. */
-	private isGenerativeSelection(): boolean {
+	private isGenerateModeAvailable(): boolean {
 		const clip = this.edit.getResolvedClip(this.currentTrackIndex, this.currentClipIndex);
-		return isAiAsset(clip?.asset);
+		return isAiAsset(clip?.asset) || (this.edit.hasAssetGenerator() && canCarryPrompt(clip?.asset));
 	}
 
 	/**
@@ -706,12 +705,12 @@ export class UIController {
 	 * returning to a generative clip lands back on generate.
 	 */
 	private effectiveMode(): ToolbarMode {
-		return this.toolbarMode === "generate" && !this.isGenerativeSelection() ? "asset" : this.toolbarMode;
+		return this.toolbarMode === "generate" && !this.isGenerateModeAvailable() ? "asset" : this.toolbarMode;
 	}
 
 	/** Queries the document because toolbar mode toggles mount outside this.container. */
 	private syncGenerateSegments(): void {
-		const generative = this.isGenerativeSelection();
+		const generative = this.isGenerateModeAvailable();
 		const clipId = this.edit.getClipId(this.currentTrackIndex, this.currentClipIndex);
 		const generating = clipId ? this.edit.getClipGenerationState(clipId)?.status === "generating" : false;
 		document.querySelectorAll(".ss-toolbar-mode-toggle").forEach(toggle => toggle.toggleAttribute("data-generative", generative));
@@ -741,7 +740,7 @@ export class UIController {
 		const isBacktick = e.key === "`" || e.code === "Backquote";
 		if (isBacktick && this.hasVisibleToolbar() && !this.isInputFocused()) {
 			e.preventDefault();
-			const modes: ToolbarMode[] = this.isGenerativeSelection() ? ["asset", "clip", "generate"] : ["asset", "clip"];
+			const modes: ToolbarMode[] = this.isGenerateModeAvailable() ? ["asset", "clip", "generate"] : ["asset", "clip"];
 			const next = modes[(modes.indexOf(this.effectiveMode()) + 1) % modes.length];
 			this.setToolbarMode(next ?? "asset");
 		}
