@@ -190,6 +190,35 @@ Available event names:
 | Output | `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged` |
 | Merge fields | `mergefield:changed` |
 
+### Generating assets from prompts
+
+An image, video or audio asset can carry a `prompt`. Rendering generates from the prompt;
+`src`, when present, is the editor preview. Register a generator and the editor offers a
+generate action in the toolbar's generate pane:
+
+```typescript
+edit.registerAssetGenerator(async ({ clipId, asset, signal }) => {
+	const url = await myBackend.generate(asset, { signal });
+	return { url };
+});
+```
+
+The SDK writes the returned URL to the clip, so the change is undoable and autosaves
+like any other edit. It tracks whether a clip is generating or has failed, and renders
+those states; a rejection's message is shown as-is next to a retry action. Everything
+else — which models exist, what they cost, what an error means — stays with the host.
+
+Generation state is transient: it is never saved to the edit, never part of undo, and
+gone on reload. Deleting a clip mid-generation aborts its request via the `signal`.
+
+A prompt is the only thing that makes a clip generate. Add one to a plain `image`, `video`
+or `audio` asset to make it generative; clear it and the clip keeps its current `src` and
+stops generating, which is how you hold on to a result you want.
+
+Generation is content-addressed, so the same prompt, model and options resolve to the same
+asset on every render. A generator that does not go through Shotstack's own generation
+hands back a preview that the render replaces.
+
 ### Canvas
 
 `Canvas` renders the current edit.

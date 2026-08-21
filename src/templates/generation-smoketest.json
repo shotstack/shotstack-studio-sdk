@@ -1,0 +1,158 @@
+{
+	"timeline": {
+		"background": "#111111",
+		"tracks": [
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "image",
+							"prompt": "A lone lighthouse on jagged coastal cliffs at dusk, stormy waves crashing, dramatic oil painting style"
+						},
+						"start": 0,
+						"length": 3
+					},
+					{
+						"asset": {
+							"type": "image",
+							"prompt": "A cinematic product photograph of a red apple on polished black stone, soft studio lighting",
+							"model": "nano-banana-2",
+							"options": { "resolution": "2K", "aspectRatio": "16:9" }
+						},
+						"start": 3,
+						"length": 3
+					},
+					{
+						"asset": {
+							"type": "image",
+							"prompt": "A minimalist editorial illustration of {{ SUBJECT }} on a warm cream background"
+						},
+						"start": 6,
+						"length": 3
+					},
+					{
+						"asset": {
+							"type": "image",
+							"prompt": "A turquoise ocean wave breaking inside a glass sphere on a dark studio background",
+							"src": "https://shotstack-assets.s3.amazonaws.com/images/wave-barrel.jpg"
+						},
+						"start": 9,
+						"length": 3,
+						"fit": "crop"
+					},
+					{
+						"asset": {
+							"type": "image",
+							"src": "https://shotstack-assets.s3.amazonaws.com/images/earth.jpg"
+						},
+						"start": 12,
+						"length": 3,
+						"fit": "crop"
+					},
+					{
+						"asset": {
+							"type": "video",
+							"prompt": "A slow aerial push over a misty pine forest at sunrise, cinematic natural light"
+						},
+						"start": 15,
+						"length": 3
+					},
+					{
+						"asset": {
+							"type": "video",
+							"prompt": "The dog turns towards the camera as its fur moves gently in the breeze",
+							"model": "seedance-2.0",
+							"options": { "inputSrc": "https://shotstack-assets.s3.amazonaws.com/images/dog1.jpg" }
+						},
+						"start": 18,
+						"length": 3
+					},
+					{
+						"asset": {
+							"type": "video",
+							"prompt": "A skateboarder lands a kickflip in slow motion during golden hour",
+							"src": "https://shotstack-assets.s3.amazonaws.com/footage/skateboarder.mp4"
+						},
+						"start": 21,
+						"length": 3,
+						"fit": "crop"
+					},
+					{
+						"asset": {
+							"type": "video",
+							"src": "https://shotstack-assets.s3.amazonaws.com/footage/beach.mp4"
+						},
+						"start": 24,
+						"length": 3,
+						"fit": "crop"
+					},
+					{
+						"asset": {
+							"type": "text-to-image",
+							"prompt": "An astronaut tending colourful flowers inside a lunar greenhouse"
+						},
+						"start": 27,
+						"length": 3,
+						"width": 512,
+						"height": 512
+					},
+					{
+						"asset": {
+							"type": "image-to-video",
+							"src": "https://shotstack-assets.s3.amazonaws.com/images/waterfall.jpeg",
+							"prompt": "The waterfall surges as mist drifts slowly through the forest"
+						},
+						"start": 30,
+						"length": 3
+					}
+				]
+			},
+			{
+				"clips": [
+					{
+						"asset": {
+							"type": "audio",
+							"prompt": "Welcome to Shotstack. Create videos with code, data, and a little imagination."
+						},
+						"start": 0,
+						"length": 6
+					},
+					{
+						"asset": {
+							"type": "audio",
+							"prompt": "Every story begins with a single frame, then motion brings it to life.",
+							"model": "polly-neural",
+							"options": { "voice": "Matthew" }
+						},
+						"start": 6,
+						"length": 6
+					},
+					{
+						"asset": {
+							"type": "audio",
+							"prompt": "The ocean is calm tonight, with soft waves rolling beneath the moonlight.",
+							"src": "https://shotstack-assets.s3.amazonaws.com/music/unminus/lit.mp3"
+						},
+						"start": 12,
+						"length": 6
+					},
+					{
+						"asset": {
+							"type": "text-to-speech",
+							"text": "This legacy text-to-speech clip is ready for its next chapter.",
+							"voice": "Matthew"
+						},
+						"start": 18,
+						"length": 6
+					}
+				]
+			}
+		]
+	},
+	"merge": [{ "find": "SUBJECT", "replace": "a red apple" }],
+	"output": {
+		"format": "mp4",
+		"fps": 25,
+		"size": { "width": 1280, "height": 720 }
+	}
+}
