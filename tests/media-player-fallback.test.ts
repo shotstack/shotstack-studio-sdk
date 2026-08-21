@@ -270,6 +270,52 @@ describe("media player fallbacks", () => {
 	});
 });
 
+describe("player disposal during load", () => {
+	let warnSpy: jest.SpyInstance;
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+		warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		warnSpy.mockRestore();
+	});
+
+	it("does not subscribe to generation events when disposed mid-load", async () => {
+		const on = jest.fn();
+		const edit = Object.assign(createEdit(), {
+			getInternalEvents: () => ({ on, off: jest.fn() }),
+			getClipGenerationState: jest.fn(() => undefined)
+		});
+
+		let releaseTexture: (() => void) | undefined;
+		edit.assetLoader.load.mockImplementation(
+			() =>
+				new Promise(resolve => {
+					releaseTexture = () => resolve(null);
+				})
+		);
+
+		const clip = { asset: { type: "image-to-video", src: "https://example.com/in.jpg" }, start: 0, length: 5 } as ResolvedClip;
+		const player = new ImageToVideoPlayer(edit as never, clip);
+		player.clipId = "clip-1";
+
+		const loading = player.load();
+		// load() awaits super.load() before it reaches the texture fetch
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 0);
+		});
+		expect(releaseTexture).toBeDefined();
+
+		player.dispose();
+		releaseTexture?.();
+		await loading;
+
+		expect(on).not.toHaveBeenCalled();
+	});
+});
+
 describe("media player source URLs", () => {
 	// Presigned S3-style URL: any appended query parameter invalidates the signature
 	const signedSrc = "https://bucket.s3.amazonaws.com/media.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc123";

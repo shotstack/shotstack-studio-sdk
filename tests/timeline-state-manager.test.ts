@@ -161,6 +161,19 @@ describe("TimelineStateManager", () => {
 			expect(tracks2).not.toBe(tracks1);
 		});
 
+		it.each([InternalEvent.ClipGenerationStarted, InternalEvent.ClipGenerationCompleted, InternalEvent.ClipGenerationFailed])(
+			"invalidates cache when %s fires",
+			event => {
+				const edit = createMockEdit([[{ asset: { type: "image", prompt: "a lighthouse" }, start: 0, length: 5 }]]);
+				const stateManager = new TimelineStateManager(edit as never);
+				const tracks1 = stateManager.getTracks();
+
+				edit.getInternalEvents().emit(event);
+
+				expect(stateManager.getTracks()).not.toBe(tracks1);
+			}
+		);
+
 		it("unsubscribes from events on dispose", () => {
 			const edit = createMockEdit();
 			const stateManager = new TimelineStateManager(edit as never);
@@ -170,6 +183,9 @@ describe("TimelineStateManager", () => {
 			expect(edit.events.off).toHaveBeenCalledWith(InternalEvent.Resolved, expect.any(Function));
 			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipUpdated, expect.any(Function));
 			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.TimelineUpdated, expect.any(Function));
+			expect(edit.getInternalEvents().off).toHaveBeenCalledWith(InternalEvent.ClipGenerationStarted, expect.any(Function));
+			expect(edit.getInternalEvents().off).toHaveBeenCalledWith(InternalEvent.ClipGenerationCompleted, expect.any(Function));
+			expect(edit.getInternalEvents().off).toHaveBeenCalledWith(InternalEvent.ClipGenerationFailed, expect.any(Function));
 			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.ClipSelected, expect.any(Function));
 			expect(edit.events.off).toHaveBeenCalledWith(EditEvent.SelectionCleared, expect.any(Function));
 		});
