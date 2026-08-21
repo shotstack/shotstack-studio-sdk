@@ -571,6 +571,31 @@ describe("Edit Clip Operations", () => {
 			expect((await edit.deleteClipById(id as string)).status).toBe("success");
 		});
 
+		it("aborts in-flight generation when the clip is deleted by position", async () => {
+			await edit.addClip(0, { asset: { type: "image", prompt: "a red apple" }, start: 0, length: 5 } as never);
+			let aborted = false;
+			edit.registerAssetGenerator(
+				({ signal }) =>
+					new Promise((_resolve, reject) => {
+						signal.addEventListener("abort", () => {
+							aborted = true;
+							reject(new Error("aborted"));
+						});
+					})
+			);
+			const doc = (edit as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
+			const id = doc.getClipId(0, 1) as string;
+
+			const pending = edit.generateClipAsset(id);
+			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
+
+			await edit.deleteClip(0, 1);
+			await pending;
+
+			expect(aborted).toBe(true);
+			expect(edit.getClipGenerationState(id)).toBeUndefined();
+		});
+
 		it("updateClip resolves success and noop by position", async () => {
 			expect((await edit.updateClip(0, 0, { fit: "contain" })).status).toBe("success");
 			expect(await edit.updateClip(0, 99, {})).toMatchObject({ status: "noop" });
@@ -611,6 +636,123 @@ describe("Edit Clip Operations", () => {
 			expect(result).toEqual({ status: "noop", message: "Cannot delete the last clip" });
 			const { tracks } = getEditState(edit);
 			expect(tracks[0].length).toBe(2);
+		});
+	});
+
+	describe("asset generation", () => {
+		type DocLookup = { document: { getClipId(t: number, c: number): string | null } };
+		const clipIdAt = (target: Edit, t: number, c: number) =>
+			((target as unknown as DocLookup).document.getClipId(t, c) as string);
+
+		const PROMPT_CLIP = { asset: { type: "image", prompt: "a red apple" }, start: 0, length: 5 };
+
+		/** Registers a handler that only ever settles by being aborted. */
+		function blockingGenerator(target: Edit) {
+			const seen = { aborted: false };
+			target.registerAssetGenerator(
+				({ signal }) =>
+					new Promise((_resolve, reject) => {
+						signal.addEventListener("abort", () => {
+							seen.aborted = true;
+							reject(new Error("aborted"));
+						});
+					})
+			);
+			return seen;
+		}
+
+		it("drops generation when the whole track is deleted", async () => {
+			await edit.addClip(1, PROMPT_CLIP as never);
+			const seen = blockingGenerator(edit);
+			const id = clipIdAt(edit, 1, 0);
+
+			const pending = edit.generateClipAsset(id);
+			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
+
+			await edit.deleteTrack(1);
+			await pending;
+
+			expect(seen.aborted).toBe(true);
+			expect(edit.getClipGenerationState(id)).toBeUndefined();
+		});
+
+		it("drops generation when the clip's addition is undone", async () => {
+			await edit.addClip(0, PROMPT_CLIP as never);
+			const seen = blockingGenerator(edit);
+			const id = clipIdAt(edit, 0, 1);
+
+			const pending = edit.generateClipAsset(id);
+			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
+
+			await edit.undo();
+			await pending;
+
+			expect(seen.aborted).toBe(true);
+			expect(edit.getClipGenerationState(id)).toBeUndefined();
+		});
+
+		it("drops generation when the edit is reloaded", async () => {
+			await edit.addClip(0, PROMPT_CLIP as never);
+			const seen = blockingGenerator(edit);
+			const id = clipIdAt(edit, 0, 1);
+
+			const pending = edit.generateClipAsset(id);
+			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
+
+			await edit.loadEdit({
+				timeline: {
+					tracks: [{ clips: [{ asset: { type: "image", src: "https://example.com/other.jpg" }, start: 0, length: 2 }] }]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			} as never);
+			await pending;
+
+			expect(seen.aborted).toBe(true);
+			expect(edit.getClipGenerationState(id)).toBeUndefined();
+		});
+
+		it("keeps generation running when the deletion is refused", async () => {
+			const solo = new Edit({
+				timeline: { tracks: [{ clips: [PROMPT_CLIP] }] },
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			} as never);
+			await solo.load();
+			const seen = blockingGenerator(solo);
+			const id = clipIdAt(solo, 0, 0);
+
+			const pending = solo.generateClipAsset(id);
+			expect((await solo.deleteClip(0, 0)).status).toBe("noop");
+
+			expect(seen.aborted).toBe(false);
+			expect(solo.getClipGenerationState(id)?.status).toBe("generating");
+
+			solo.dispose();
+			await pending;
+		});
+
+		it("hands the generator a prompt with merge fields resolved", async () => {
+			const templated = new Edit({
+				timeline: {
+					tracks: [
+						{ clips: [{ asset: { type: "image", prompt: "an illustration of {{ SUBJECT }}" }, start: 0, length: 1 }] }
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
+				merge: [{ find: "SUBJECT", replace: "a red apple" }]
+			} as never);
+			await templated.load();
+
+			let received: string | undefined;
+			templated.registerAssetGenerator(async ({ asset }) => {
+				received = (asset as { prompt?: string }).prompt;
+				return { url: "https://cdn/out.png" };
+			});
+
+			const doc = (templated as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
+			await templated.generateClipAsset(doc.getClipId(0, 0) as string);
+
+			expect(received).toBe("an illustration of a red apple");
+			templated.dispose();
 		});
 	});
 

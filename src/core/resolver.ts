@@ -69,7 +69,7 @@ interface ClipLocation {
  * - Tries numeric conversion first (for timing, scale, offset, etc.)
  * - Falls back to string resolution (for text content)
  */
-const STRING_ONLY_KEYS = new Set(["text", "src"]);
+const STRING_ONLY_KEYS = new Set(["text", "src", "prompt"]);
 
 function resolveMergeFieldsInClip(clip: InternalClip, mergeFields: MergeFieldService): InternalClip {
 	function processValue(value: unknown, key?: string): unknown {

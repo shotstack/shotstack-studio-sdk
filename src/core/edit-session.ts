@@ -57,6 +57,7 @@ import * as pixi from "pixi.js";
 import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
+import { AssetGenerator, type AssetGeneratorHandler, type ClipGenerationState } from "./generation/asset-generator";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
 import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-validation";
@@ -102,6 +103,7 @@ export class Edit {
 	private timingManager!: TimingManager;
 	private lumaMaskController: LumaMaskController;
 	private playerReconciler: PlayerReconciler;
+	private assetGenerator: AssetGenerator;
 	private outputSettings!: OutputSettingsManager;
 	private selectionManager!: SelectionManager;
 	/** @internal */
@@ -121,6 +123,16 @@ export class Edit {
 	private isBatchingEvents: boolean = false;
 	private isExporting: boolean = false;
 	private lastResolved: ResolvedEdit | null = null;
+
+	/**
+	 * Clip removal reaches the generator the way it reaches the reconciler: from resolved state,
+	 * once the mutation is committed. Bookkeeping only — emitting from here re-enters the command queue.
+	 */
+	private readonly onResolvedForGeneration = ({ edit }: { edit: ResolvedEdit }): void => {
+		const live = new Set<string>();
+		for (const track of edit.timeline.tracks) for (const clip of track.clips) live.add(clip.id);
+		this.assetGenerator.abortMissing(live);
+	};
 
 	/**
 	 * Create an Edit instance from a template configuration.
@@ -151,12 +163,24 @@ export class Edit {
 			this.internalEvents
 		);
 		this.playerReconciler = new PlayerReconciler(this);
+		this.assetGenerator = new AssetGenerator({
+			getClipAsset: clipId => this.getResolvedClipById(clipId)?.asset as Record<string, unknown> | undefined,
+			applyGeneratedSrc: async (clipId, url) => {
+				const asset = this.getClipById(clipId)?.asset;
+				if (!asset) return;
+				await this.updateClipById(clipId, { asset: { ...asset, src: url } } as Partial<Clip>);
+			},
+			emitStarted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationStarted, { clipId }),
+			emitCompleted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationCompleted, { clipId }),
+			emitFailed: (clipId, error) => this.internalEvents.emit(InternalEvent.ClipGenerationFailed, { clipId, error })
+		});
 		this.mergeFieldService = new MergeFieldService(this.internalEvents);
 		this.outputSettings = new OutputSettingsManager(this);
 		this.selectionManager = new SelectionManager(this);
 		this.timingManager = new TimingManager(this);
 
 		this.setupIntentListeners();
+		this.setupGenerationListeners();
 	}
 
 	/**
@@ -263,6 +287,8 @@ export class Edit {
 	/** @internal */
 	public dispose(): void {
 		this.clearClips();
+		this.internalEvents.off(InternalEvent.Resolved, this.onResolvedForGeneration);
+		this.assetGenerator.abortAll();
 		this.lumaMaskController.dispose();
 		this.playerReconciler.dispose();
 
@@ -359,6 +385,7 @@ export class Edit {
 			});
 			this.internalEvents.emit(InternalEvent.ViewportNeedsZoomToFit);
 			this.clearClips();
+			this.assetGenerator.abortAll();
 
 			await this.initializeFromDocument("loadEdit");
 		} catch (error) {
@@ -408,6 +435,44 @@ export class Edit {
 	public getClipById(clipId: string): Clip | null {
 		const clip = this.document.getClipById(clipId)?.clip;
 		return clip ? structuredClone(clip) : null;
+	}
+
+	/**
+	 * Register the handler that turns a prompt-bearing clip into a generated asset.
+	 *
+	 * The SDK owns the pending, generating and failed states and writes the returned
+	 * URL back to the clip; the host owns how generation happens and what a failure
+	 * message says. Without a handler, no generate affordance is shown.
+	 */
+	public registerAssetGenerator(handler: AssetGeneratorHandler): void {
+		this.assetGenerator.register(handler);
+	}
+
+	/** @internal */
+	public hasAssetGenerator(): boolean {
+		return this.assetGenerator.hasHandler();
+	}
+
+	/**
+	 * Generate the asset for a prompt-bearing clip and write the result to it.
+	 *
+	 * Rejects only when no generator is registered or the clip has nothing to generate from.
+	 * A generation failure resolves and surfaces as `failed` clip state plus a
+	 * `ClipGenerationFailed` event. A clip removed mid-flight resolves writing nothing, silently.
+	 * A second call while one is in flight for the same clip is ignored.
+	 * @internal
+	 */
+	public generateClipAsset(clipId: string): Promise<void> {
+		return this.assetGenerator.generate(clipId);
+	}
+
+	/**
+	 * Transient generation state for a clip, or undefined when idle. Not part of the
+	 * edit: never saved, never undone, cleared on reload.
+	 * @internal
+	 */
+	public getClipGenerationState(clipId: string): ClipGenerationState | undefined {
+		return this.assetGenerator.getState(clipId);
 	}
 
 	/**
@@ -2583,7 +2648,11 @@ export class Edit {
 	private lastClipClick: { player: Player; at: number } | null = null;
 	private static readonly DoubleClickThresholdMs = 500;
 
-	// ─── Intent Listeners ────────────────────────────────────────────────────────
+	// ─── Event Listeners ─────────────────────────────────────────────────────────
+
+	private setupGenerationListeners(): void {
+		this.internalEvents.on(InternalEvent.Resolved, this.onResolvedForGeneration);
+	}
 
 	private setupIntentListeners(): void {
 		this.internalEvents.on(InternalEvent.CanvasClipClicked, data => {

@@ -132,7 +132,12 @@ export const InternalEvent = {
 
 	// Focus (visual highlight without selection change)
 	ClipFocused: "clip:focused",
-	ClipBlurred: "clip:blurred"
+	ClipBlurred: "clip:blurred",
+
+	// Asset generation UI
+	ClipGenerationStarted: "clip:generationStarted",
+	ClipGenerationCompleted: "clip:generationCompleted",
+	ClipGenerationFailed: "clip:generationFailed"
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -225,4 +230,9 @@ export type InternalEventMap = {
 	// Focus
 	[InternalEvent.ClipFocused]: { trackIndex: number; clipIndex: number };
 	[InternalEvent.ClipBlurred]: void;
+
+	// Asset generation UI
+	[InternalEvent.ClipGenerationStarted]: { clipId: string };
+	[InternalEvent.ClipGenerationCompleted]: { clipId: string };
+	[InternalEvent.ClipGenerationFailed]: { clipId: string; error: string };
 };
