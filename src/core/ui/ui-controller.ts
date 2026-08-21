@@ -1,13 +1,15 @@
 import { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
+import { isAiAsset, isPendingAiAsset } from "@core/shared/ai-asset-utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type * as pixi from "pixi.js";
 
 import { AssetToolbar } from "./asset-toolbar";
 import { CanvasToolbar } from "./canvas-toolbar";
 import { ClipToolbar } from "./clip-toolbar";
+import { GenerateToolbar } from "./generate-toolbar";
 import { MediaToolbar } from "./media-toolbar";
 import { RichCaptionToolbar } from "./rich-caption-toolbar";
 import { RichTextToolbar } from "./rich-text-toolbar";
@@ -22,6 +24,9 @@ import type { ToolbarDragState } from "./toolbar-drag";
 const TOOLBAR_WIDTH = 48;
 const TOOLBAR_PADDING = 12;
 const TOOLBAR_MIN_Y = 80; // Minimum Y to avoid overlapping with top navigation
+
+/** Which pane the top toolbar shows. */
+type ToolbarMode = "asset" | "clip" | "generate";
 
 /**
  * Configuration for a toolbar button.
@@ -127,7 +132,9 @@ export class UIController {
 
 	// Toolbar mode switching
 	private clipToolbar: ClipToolbar | null = null;
-	private toolbarMode: "asset" | "clip" = "asset";
+	private generateToolbar: GenerateToolbar | null = null;
+	private toolbarMode: ToolbarMode = "asset";
+	private generationListeners: Array<() => void> = [];
 	private currentAssetType: string | null = null;
 	private currentTrackIndex = -1;
 	private currentClipIndex = -1;
@@ -265,8 +272,8 @@ export class UIController {
 		this.assetToolbar = new AssetToolbar(this);
 		this.registerUtility(this.assetToolbar);
 
-		// ClipToolbar - managed separately for mode toggle
 		this.clipToolbar = new ClipToolbar(this.edit);
+		this.generateToolbar = new GenerateToolbar(this.edit);
 	}
 
 	// ─── Public API ─────────────────────────────────────────────────────────────
@@ -337,6 +344,7 @@ export class UIController {
 
 		// Mount ClipToolbar to canvas container (managed separately for mode toggle)
 		this.clipToolbar?.mount(canvasContainer);
+		this.generateToolbar?.mount(canvasContainer);
 
 		// Mount utilities, passing drag reset to sidebar toolbars
 		const resetPositions = () => this.updateToolbarPositions();
@@ -362,7 +370,7 @@ export class UIController {
 		requestAnimationFrame(() => {
 			document.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
 				const handler = (): void => {
-					const mode = (btn as HTMLElement).dataset["mode"] as "asset" | "clip";
+					const mode = (btn as HTMLElement).dataset["mode"] as ToolbarMode;
 					if (mode) {
 						this.setToolbarMode(mode);
 					}
@@ -374,6 +382,14 @@ export class UIController {
 
 		// Backtick key shortcut for mode toggle
 		document.addEventListener("keydown", this.onKeyDownBound);
+
+		// Keep the generate segment's in-flight marker current.
+		const internalEvents = this.edit.getInternalEvents();
+		for (const name of [InternalEvent.ClipGenerationStarted, InternalEvent.ClipGenerationCompleted, InternalEvent.ClipGenerationFailed] as const) {
+			const handler = (): void => this.syncGenerateSegments();
+			internalEvents.on(name, handler);
+			this.generationListeners.push(() => internalEvents.off(name, handler));
+		}
 
 		// Position toolbars after DOM is ready
 		// Using nested rAF to ensure layout is complete before measuring
@@ -479,8 +495,11 @@ export class UIController {
 			}
 		}
 
-		// Dispose ClipToolbar (managed separately)
 		this.clipToolbar?.dispose();
+		this.generateToolbar?.dispose();
+
+		for (const off of this.generationListeners) off();
+		this.generationListeners = [];
 
 		// Dispose utilities
 		for (const utility of this.utilities) {
@@ -625,7 +644,7 @@ export class UIController {
 	 * Set the toolbar mode and update visibility accordingly.
 	 * @param mode - "asset" shows asset-specific toolbar, "clip" shows ClipToolbar
 	 */
-	private setToolbarMode(mode: "asset" | "clip"): void {
+	private setToolbarMode(mode: ToolbarMode): void {
 		this.toolbarMode = mode;
 
 		// Update all toggle UIs
@@ -636,6 +655,7 @@ export class UIController {
 			});
 		});
 
+		this.syncGenerateSegments();
 		this.updateToolbarVisibility();
 	}
 
@@ -651,6 +671,7 @@ export class UIController {
 			}
 		}
 		this.clipToolbar?.hide?.();
+		this.generateToolbar?.hide?.();
 	}
 
 	/**
@@ -662,12 +683,39 @@ export class UIController {
 		// No selection = nothing to show
 		if (this.currentTrackIndex < 0 || this.currentClipIndex < 0) return;
 
-		if (this.toolbarMode === "clip") {
+		const mode = this.effectiveMode();
+		if (mode === "generate") {
+			this.generateToolbar?.show?.(this.currentTrackIndex, this.currentClipIndex);
+		} else if (mode === "clip") {
 			this.clipToolbar?.show?.(this.currentTrackIndex, this.currentClipIndex);
 		} else if (this.currentAssetType) {
 			const toolbar = this.toolbars.get(this.currentAssetType);
 			toolbar?.show?.(this.currentTrackIndex, this.currentClipIndex);
 		}
+	}
+
+	/** Whether the current selection can be generated from a prompt. */
+	private isGenerativeSelection(): boolean {
+		const clip = this.edit.getResolvedClip(this.currentTrackIndex, this.currentClipIndex);
+		return isAiAsset(clip?.asset);
+	}
+
+	/**
+	 * The mode actually shown. `generate` is intent rather than state: selecting a clip
+	 * that cannot be generated falls back to `asset` without discarding the choice, so
+	 * returning to a generative clip lands back on generate.
+	 */
+	private effectiveMode(): ToolbarMode {
+		return this.toolbarMode === "generate" && !this.isGenerativeSelection() ? "asset" : this.toolbarMode;
+	}
+
+	/** Queries the document because toolbar mode toggles mount outside this.container. */
+	private syncGenerateSegments(): void {
+		const generative = this.isGenerativeSelection();
+		const clipId = this.edit.getClipId(this.currentTrackIndex, this.currentClipIndex);
+		const generating = clipId ? this.edit.getClipGenerationState(clipId)?.status === "generating" : false;
+		document.querySelectorAll(".ss-toolbar-mode-toggle").forEach(toggle => toggle.toggleAttribute("data-generative", generative));
+		document.querySelectorAll('.ss-toolbar-mode-btn[data-mode="generate"]').forEach(btn => btn.classList.toggle("is-generating", generating));
 	}
 
 	/**
@@ -693,7 +741,9 @@ export class UIController {
 		const isBacktick = e.key === "`" || e.code === "Backquote";
 		if (isBacktick && this.hasVisibleToolbar() && !this.isInputFocused()) {
 			e.preventDefault();
-			this.setToolbarMode(this.toolbarMode === "asset" ? "clip" : "asset");
+			const modes: ToolbarMode[] = this.isGenerativeSelection() ? ["asset", "clip", "generate"] : ["asset", "clip"];
+			const next = modes[(modes.indexOf(this.effectiveMode()) + 1) % modes.length];
+			this.setToolbarMode(next ?? "asset");
 		}
 	}
 
@@ -708,7 +758,12 @@ export class UIController {
 		this.currentTrackIndex = trackIndex;
 		this.currentClipIndex = clipIndex;
 
+		// A prompt-bearing clip with no output yet opens on generate: until it has been
+		// generated there is nothing for the other modes to act on.
+		if (isPendingAiAsset(clip?.asset)) this.toolbarMode = "generate";
+
 		// Update visibility based on mode
+		this.syncGenerateSegments();
 		this.updateToolbarVisibility();
 	};
 

@@ -348,6 +348,29 @@
 	transform: translateX(calc(100% + 2px));
 }
 
+.ss-toolbar-mode-toggle[data-mode="generate"] .ss-toolbar-mode-indicator {
+	transform: translateX(calc(200% + 4px));
+}
+
+.ss-toolbar-mode-toggle:not([data-generative]) .ss-toolbar-mode-btn[data-mode="generate"] {
+	display: none;
+}
+
+/* Progress stays legible from the other modes, so switching is never required to see it. */
+@keyframes ss-generate-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.45;
+	}
+}
+
+.ss-toolbar-mode-btn[data-mode="generate"].is-generating {
+	animation: ss-generate-pulse 1.4s ease-in-out infinite;
+}
+
 /* Divider between toggle and content */
 .ss-toolbar-mode-divider {
 	width: 1px;
@@ -361,4 +384,3 @@
 .ss-toolbar-mode-container {
 	display: none !important;
 }
-

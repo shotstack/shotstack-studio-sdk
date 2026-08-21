@@ -1,0 +1,103 @@
+.ss-generate-toolbar {
+	display: none;
+	position: absolute;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: fit-content;
+	background: rgba(24, 24, 27, 0.95);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	padding: 6px 8px;
+	gap: 6px;
+	z-index: 10;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	align-items: center;
+	box-shadow:
+		0 4px 24px rgba(0, 0, 0, 0.4),
+		0 0 0 1px rgba(0, 0, 0, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ss-generate-toolbar.visible {
+	display: flex;
+}
+
+/* The field receives content, so it sits inset — darker than the surface around it. */
+.ss-ai-prompt-input {
+	width: 280px;
+	height: 28px;
+	box-sizing: border-box;
+	padding: 0 10px;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	color: #fafafa;
+	font-family: inherit;
+	font-size: 12px;
+}
+
+.ss-ai-prompt-input::placeholder {
+	color: rgba(255, 255, 255, 0.45);
+}
+
+.ss-ai-prompt-input:hover {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ss-ai-prompt-input:focus {
+	outline: none;
+	border-color: rgba(255, 255, 255, 0.28);
+	background: rgba(0, 0, 0, 0.45);
+}
+
+/* The only action on this surface, so it carries the weight the toolbar reserves for one. */
+.ss-ai-generate-btn {
+	padding: 0 16px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	color: rgba(255, 255, 255, 0.95);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.ss-ai-generate-btn:hover:not(:disabled) {
+	background: rgba(255, 255, 255, 0.16);
+	color: #fff;
+}
+
+.ss-ai-generate-btn[hidden] {
+	display: none;
+}
+
+.ss-ai-generate-btn.is-generating {
+	opacity: 0.65;
+	cursor: default;
+}
+
+/* Not an error: the prompt is functional, it simply has no local preview. */
+.ss-ai-note {
+	padding: 0 6px;
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.45);
+	white-space: nowrap;
+}
+
+.ss-ai-note[hidden] {
+	display: none;
+}
+
+.ss-ai-error {
+	max-width: 180px;
+	padding: 0 2px;
+	font-size: 11px;
+	color: #fca5a5;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ss-ai-error[hidden] {
+	display: none;
+}

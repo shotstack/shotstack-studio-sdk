@@ -1936,6 +1936,22 @@ describe("Mode Toggle (Regression)", () => {
 			cleanupTestContainer(container);
 		});
 
+		it("carries a generate segment, hidden until the controller marks the clip generative", async () => {
+			const mockEdit = createMockEdit();
+			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+			const toolbar = new MediaToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			const toggle = container.querySelector(".ss-toolbar-mode-toggle");
+			expect(toggle?.querySelector('.ss-toolbar-mode-btn[data-mode="generate"]')).not.toBeNull();
+			expect(toggle?.hasAttribute("data-generative")).toBe(false);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
 		it("mode toggle buttons have data-mode attribute for click handling", async () => {
 			const mockEdit = createMockEdit();
 			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
@@ -1947,7 +1963,7 @@ describe("Mode Toggle (Regression)", () => {
 			const buttons = container.querySelectorAll(".ss-toolbar-mode-btn");
 			buttons.forEach(btn => {
 				const { mode } = (btn as HTMLElement).dataset;
-				expect(mode === "asset" || mode === "clip").toBe(true);
+				expect(mode === "asset" || mode === "clip" || mode === "generate").toBe(true);
 			});
 
 			toolbar.dispose();
