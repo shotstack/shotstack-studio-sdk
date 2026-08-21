@@ -91,14 +91,13 @@ export class ImagePlayer extends Player {
 			throw new Error("Image asset has no src to load.");
 		}
 
-		const corsUrl = `${src}${src.includes("?") ? "&" : "?"}x-cors=1`;
-		const loadOptions: pixi.UnresolvedAsset = { src: corsUrl, crossorigin: "anonymous", data: {} };
-		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(corsUrl, loadOptions);
+		const loadOptions: pixi.UnresolvedAsset = { src, crossorigin: "anonymous", data: {} };
+		const texture = await this.edit.assetLoader.load<pixi.Texture<pixi.ImageSource>>(src, loadOptions);
 
 		if (!(texture?.source instanceof pixi.ImageSource)) {
 			if (texture) {
 				texture.destroy(true);
-				await this.edit.assetLoader.rejectAsset(corsUrl);
+				await this.edit.assetLoader.rejectAsset(src);
 			}
 			throw new Error(`Invalid image source '${src}'.`);
 		}
