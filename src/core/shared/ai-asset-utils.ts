@@ -51,6 +51,18 @@ export function isAiAsset(asset: unknown): asset is AiAsset {
 }
 
 /**
+ * Whether an asset can carry a prompt, whether or not it does yet. A prompt is the only
+ * thing that makes a clip generate, so this is equally the set of clips a prompt can be
+ * added to or removed from: adding one turns a plain asset generative, clearing it turns
+ * a generated asset back into a fixed `src`.
+ */
+export function canCarryPrompt(asset: unknown): asset is AiAsset {
+	if (typeof asset !== "object" || asset === null || !("type" in asset)) return false;
+	const { type } = asset as { type: unknown };
+	return typeof type === "string" && (AI_ASSET_TYPES.has(type) || PROMPTABLE_MEDIA_TYPES.has(type));
+}
+
+/**
  * Whether an AI asset is still awaiting generation. Legacy generative types
  * are always pending (realisation replaces them with a media type); a
  * prompt-bearing media asset is pending until generation fills `src`.

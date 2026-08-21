@@ -1,4 +1,4 @@
-import { isAiAsset, isPendingAiAsset, aiAssetKind, computeAiAssetNumber, getAiAssetTypeLabel } from "@core/shared/ai-asset-utils";
+import { canCarryPrompt, isAiAsset, isPendingAiAsset, aiAssetKind, computeAiAssetNumber, getAiAssetTypeLabel } from "@core/shared/ai-asset-utils";
 import type { ResolvedClip } from "@schemas";
 
 describe("ai-asset-utils", () => {
@@ -28,6 +28,26 @@ describe("ai-asset-utils", () => {
 
 		it("treats a whitespace-only prompt as absent", () => {
 			expect(isAiAsset({ type: "image", prompt: "   " })).toBe(false);
+		});
+	});
+
+	describe("canCarryPrompt", () => {
+		it("accepts media types that have no prompt yet, so one can be added", () => {
+			expect(canCarryPrompt({ type: "image", src: "https://cdn/uploaded.png" })).toBe(true);
+			expect(canCarryPrompt({ type: "video" })).toBe(true);
+			expect(canCarryPrompt({ type: "audio" })).toBe(true);
+		});
+
+		it("accepts legacy generative types", () => {
+			expect(canCarryPrompt({ type: "text-to-image" })).toBe(true);
+			expect(canCarryPrompt({ type: "text-to-speech" })).toBe(true);
+		});
+
+		it("rejects types a prompt means nothing for", () => {
+			expect(canCarryPrompt({ type: "rich-text", text: "Title" })).toBe(false);
+			expect(canCarryPrompt({ type: "luma" })).toBe(false);
+			expect(canCarryPrompt(null)).toBe(false);
+			expect(canCarryPrompt({})).toBe(false);
 		});
 	});
 

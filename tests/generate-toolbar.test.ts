@@ -248,6 +248,70 @@ describe("GenerateToolbar", () => {
 		toolbar.dispose();
 	});
 
+	it("offers the pane on a plain asset, with nothing to run yet", () => {
+		const { toolbar, container } = mountToolbar(createMockEdit({ type: "image", src: "https://cdn/uploaded.png" }));
+
+		const btn = container.querySelector<HTMLButtonElement>("[data-action='generate']");
+		expect(btn?.hidden).toBe(false);
+		expect(btn?.disabled).toBe(true);
+		expect(container.querySelector<HTMLInputElement>("[data-prompt-input]")?.value).toBe("");
+
+		toolbar.dispose();
+	});
+
+	it("enables the action as soon as a prompt is typed, and disables it again when cleared", () => {
+		const edit = createMockEdit({ type: "image", src: "https://cdn/uploaded.png" });
+		const { toolbar, container } = mountToolbar(edit);
+
+		const btn = container.querySelector<HTMLButtonElement>("[data-action='generate']");
+		const input = container.querySelector<HTMLInputElement>("[data-prompt-input]");
+		expect(btn?.disabled).toBe(true);
+
+		input!.value = "a golden sunset";
+		input?.dispatchEvent(new Event("input", { bubbles: true }));
+		expect(btn?.disabled).toBe(false);
+
+		btn?.click();
+		expect(edit.generateClipAsset).toHaveBeenCalledWith("clip-1");
+
+		input!.value = "";
+		input?.dispatchEvent(new Event("input", { bubbles: true }));
+		expect(btn?.disabled).toBe(true);
+
+		toolbar.dispose();
+	});
+
+	it("turns a plain asset generative when a prompt is typed", () => {
+		const edit = createMockEdit({ type: "image", src: "https://cdn/uploaded.png" });
+		const { toolbar, container } = mountToolbar(edit);
+
+		const input = container.querySelector<HTMLInputElement>("[data-prompt-input]");
+		input!.value = "a golden sunset";
+		input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ asset: expect.objectContaining({ prompt: "a golden sunset" }) }));
+		expect(edit.generateClipAsset).toHaveBeenCalledWith("clip-1");
+
+		toolbar.dispose();
+	});
+
+	it("removes the prompt when the field is cleared, so the asset stops regenerating", () => {
+		const edit = createMockEdit({ type: "image", prompt: "a cat", src: "https://cdn/out.png" });
+		const document = { setClipBinding: jest.fn(), removeClipBinding: jest.fn(), getClipBinding: jest.fn() };
+		edit.getDocument.mockReturnValue(document);
+		const { toolbar, container } = mountToolbar(edit);
+
+		const input = container.querySelector<HTMLInputElement>("[data-prompt-input]");
+		input!.value = "   ";
+		input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: expect.objectContaining({ prompt: undefined }) });
+		expect(document.removeClipBinding).toHaveBeenCalledWith("clip-1", "asset.prompt");
+		expect(edit.generateClipAsset).not.toHaveBeenCalled();
+
+		toolbar.dispose();
+	});
+
 	it("does not stack generation listeners when mounted twice", () => {
 		const edit = createMockEdit();
 		const { toolbar, container } = mountToolbar(edit);
