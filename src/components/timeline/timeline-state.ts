@@ -33,6 +33,9 @@ export class TimelineStateManager {
 		// Listen on clip/timeline events
 		this.edit.events.on(EditEvent.ClipUpdated, this.invalidateCache);
 		this.edit.events.on(EditEvent.TimelineUpdated, this.invalidateCache);
+		this.edit.getInternalEvents().on(InternalEvent.ClipGenerationStarted, this.invalidateCache);
+		this.edit.getInternalEvents().on(InternalEvent.ClipGenerationCompleted, this.invalidateCache);
+		this.edit.getInternalEvents().on(InternalEvent.ClipGenerationFailed, this.invalidateCache);
 
 		// Selection changes are UI state (not document mutations)
 		this.edit.events.on(EditEvent.ClipSelected, this.invalidateCache);
@@ -235,6 +238,9 @@ export class TimelineStateManager {
 		this.edit.getInternalEvents().off(InternalEvent.Resolved, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipUpdated, this.invalidateCache);
 		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
+		this.edit.getInternalEvents().off(InternalEvent.ClipGenerationStarted, this.invalidateCache);
+		this.edit.getInternalEvents().off(InternalEvent.ClipGenerationCompleted, this.invalidateCache);
+		this.edit.getInternalEvents().off(InternalEvent.ClipGenerationFailed, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipSelected, this.invalidateCache);
 		this.edit.events.off(EditEvent.SelectionCleared, this.invalidateCache);
 		this.edit.getInternalEvents().off(InternalEvent.ClipFocused, this.onClipFocused);

@@ -186,6 +186,10 @@ const COLUMN_COUNT = 64;
 
 const BADGE_SIZE = 72;
 const BADGE_ICON_SIZE = 42;
+const PROGRESS_CYCLE_SECONDS = 1.4;
+const PROGRESS_MIN_SWEEP = Math.PI / 8;
+const PROGRESS_MAX_SWEEP = Math.PI * 1.5;
+const STILL_GENERATING_SECONDS = 10;
 
 /**
  * Visual overlay indicating an AI asset is awaiting generation.
@@ -197,6 +201,12 @@ export class AiPendingOverlay {
 	private time = 0;
 	private rafId: number | null = null;
 	private lastTime: number | null = null;
+	private progressRing: pixi.Graphics | null = null;
+	private generationStatusText: pixi.Text | null = null;
+	private generationElapsed = 0;
+	private stillGenerating = false;
+	private generating = false;
+	private failure: string | null = null;
 
 	constructor(private options: AiPendingOverlayOptions) {
 		this.container = new pixi.Container();
@@ -221,6 +231,26 @@ export class AiPendingOverlay {
 		this.rebuild();
 	}
 
+	setGenerating(generating: boolean): void {
+		if (generating === this.generating) return;
+		this.generating = generating;
+		this.generationElapsed = 0;
+		this.stillGenerating = false;
+		if (generating) this.failure = null;
+		this.rebuild();
+	}
+
+	setFailed(message: string | null): void {
+		if (message === this.failure) return;
+		this.failure = message;
+		if (message !== null) {
+			this.generating = false;
+			this.generationElapsed = 0;
+			this.stillGenerating = false;
+		}
+		this.rebuild();
+	}
+
 	dispose(): void {
 		this.stopAnimation();
 		this.container.destroy({ children: true });
@@ -231,6 +261,8 @@ export class AiPendingOverlay {
 	private rebuild(): void {
 		this.container.removeChildren();
 		this.layers = [];
+		this.progressRing = null;
+		this.generationStatusText = null;
 		this.build();
 	}
 
@@ -239,7 +271,15 @@ export class AiPendingOverlay {
 			if (this.lastTime !== null) {
 				const deltaSec = (now - this.lastTime) / 1000;
 				this.time += deltaSec;
+				if (this.generating) {
+					this.generationElapsed += deltaSec;
+					if (!this.stillGenerating && this.generationElapsed >= STILL_GENERATING_SECONDS) {
+						this.stillGenerating = true;
+						if (this.generationStatusText) this.generationStatusText.text = "Still generating…";
+					}
+				}
 				this.drawAurora();
+				this.drawProgressRing();
 			}
 			this.lastTime = now;
 			this.rafId = requestAnimationFrame(tick);
@@ -334,6 +374,26 @@ export class AiPendingOverlay {
 		}
 	}
 
+	private drawProgressRing(): void {
+		if (!this.progressRing) return;
+
+		const cycle = this.time / PROGRESS_CYCLE_SECONDS;
+		const phase = cycle % 1;
+		const halfPhase = phase < 0.5 ? phase * 2 : (phase - 0.5) * 2;
+		const eased = (1 - Math.cos(halfPhase * Math.PI)) / 2;
+		const sweep =
+			phase < 0.5
+				? PROGRESS_MIN_SWEEP + (PROGRESS_MAX_SWEEP - PROGRESS_MIN_SWEEP) * eased
+				: PROGRESS_MAX_SWEEP - (PROGRESS_MAX_SWEEP - PROGRESS_MIN_SWEEP) * eased;
+		const cycleOffset = Math.floor(cycle) * (PROGRESS_MAX_SWEEP - PROGRESS_MIN_SWEEP);
+		const tailOffset = phase < 0.5 ? 0 : PROGRESS_MAX_SWEEP - sweep;
+		const start = this.time * 0.6 + cycleOffset + tailOffset;
+
+		this.progressRing.clear();
+		this.progressRing.arc(0, 0, BADGE_SIZE / 2 + 6, start, start + sweep);
+		this.progressRing.stroke({ color: "#C084FC", width: 4, cap: "round" });
+	}
+
 	private buildBadge(): void {
 		const { width, height, icon, assetNumber, prompt, assetType } = this.options;
 
@@ -344,6 +404,20 @@ export class AiPendingOverlay {
 		bg.circle(BADGE_SIZE / 2, BADGE_SIZE / 2, BADGE_SIZE / 2);
 		bg.fill({ color: "#000000", alpha: 0.5 });
 		badge.addChild(bg);
+
+		if (this.generating) {
+			const track = new pixi.Graphics();
+			track.circle(0, 0, BADGE_SIZE / 2 + 6);
+			track.stroke({ color: "#C084FC", alpha: 0.2, width: 4 });
+			track.position.set(BADGE_SIZE / 2, BADGE_SIZE / 2);
+			badge.addChild(track);
+
+			const ring = new pixi.Graphics();
+			ring.position.set(BADGE_SIZE / 2, BADGE_SIZE / 2);
+			badge.addChild(ring);
+			this.progressRing = ring;
+			this.drawProgressRing();
+		}
 
 		const iconGraphics = new pixi.Graphics();
 		iconGraphics.svg(`<svg viewBox="0 0 24 24"><path d="${AI_ICON_FILL_PATHS[icon]}" fill="#C084FC" /></svg>`);
@@ -369,13 +443,14 @@ export class AiPendingOverlay {
 				}
 			});
 			numberText.anchor.set(0.5, 0.5);
-			numberText.position.set(BADGE_SIZE / 2, BADGE_SIZE + 15);
+			numberText.position.set(BADGE_SIZE / 2, BADGE_SIZE + 24);
 			badge.addChild(numberText);
 		}
 
 		// Prompt text (if provided)
 		if (prompt) {
-			const truncated = truncatePrompt(prompt, 60);
+			const generationStatus = this.stillGenerating ? "Still generating…" : "Generating…";
+			const truncated = this.failure ?? (this.generating ? generationStatus : truncatePrompt(prompt, 60));
 			const promptText = new pixi.Text({
 				text: truncated,
 				style: {
@@ -392,6 +467,7 @@ export class AiPendingOverlay {
 			promptText.anchor.set(0.5, 0);
 			promptText.position.set(BADGE_SIZE / 2, BADGE_SIZE + 40);
 			badge.addChild(promptText);
+			if (this.generating) this.generationStatusText = promptText;
 		}
 
 		this.container.addChild(badge);

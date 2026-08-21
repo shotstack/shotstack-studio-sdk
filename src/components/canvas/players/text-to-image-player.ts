@@ -3,11 +3,13 @@ import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 
+import { bindGenerationState } from "./ai-generation-binding";
 import { AiPendingOverlay } from "./ai-pending-overlay";
 import { Player, PlayerType } from "./player";
 
 export class TextToImagePlayer extends Player {
 	private aiOverlay: AiPendingOverlay | null = null;
+	private unbindGeneration: (() => void) | null = null;
 	private lastPrompt = "";
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
@@ -37,6 +39,7 @@ export class TextToImagePlayer extends Player {
 			prompt,
 			assetType
 		});
+		this.unbindGeneration = bindGenerationState(this.edit, this.clipId ?? null, this.aiOverlay);
 		this.contentContainer.addChild(this.aiOverlay.getContainer());
 
 		this.configureKeyframes();
@@ -65,6 +68,8 @@ export class TextToImagePlayer extends Player {
 	}
 
 	public override dispose(): void {
+		this.unbindGeneration?.();
+		this.unbindGeneration = null;
 		this.aiOverlay?.dispose();
 		this.aiOverlay = null;
 		super.dispose();
