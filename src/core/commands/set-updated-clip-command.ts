@@ -11,6 +11,8 @@ type ClipType = ResolvedClip;
 export interface SetUpdatedClipOptions {
 	trackIndex?: number;
 	clipIndex?: number;
+	/** Keep exported placeholders and live resolution attached across property renames. */
+	bindingPathMoves?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -26,6 +28,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 	private previousDocClip: Clip | null = null;
 	private trackIndex: number;
 	private clipIndex: number;
+	private bindingPathMoves: Readonly<Record<string, string>>;
 
 	constructor(
 		private initialClipConfig: ClipType | null,
@@ -34,6 +37,7 @@ export class SetUpdatedClipCommand implements EditCommand {
 	) {
 		this.trackIndex = options?.trackIndex ?? -1;
 		this.clipIndex = options?.clipIndex ?? -1;
+		this.bindingPathMoves = options?.bindingPathMoves ?? {};
 	}
 
 	async execute(context?: CommandContext): Promise<CommandResult> {
@@ -67,6 +71,11 @@ export class SetUpdatedClipCommand implements EditCommand {
 		// Save bindings before modification (for undo) - read from document (source of truth)
 		const docBindings = this.clipId ? context.getClipBindings(this.clipId) : undefined;
 		this.storedInitialBindings = docBindings ? new Map(docBindings) : new Map();
+		const movedBindings = new Map<string, MergeFieldBinding>();
+		for (const [from, to] of Object.entries(this.bindingPathMoves)) {
+			const binding = docBindings?.get(from);
+			if (binding) movedBindings.set(to, binding);
+		}
 
 		// Use provided indices or calculate from player
 		const trackIndex = this.trackIndex >= 0 ? this.trackIndex : player.layer - 1;
@@ -88,6 +97,10 @@ export class SetUpdatedClipCommand implements EditCommand {
 			if (currentValue !== resolvedValue && this.clipId) {
 				context.removeClipBinding(this.clipId, path);
 			}
+		}
+		if (this.clipId) {
+			for (const from of Object.keys(this.bindingPathMoves)) context.removeClipBinding(this.clipId, from);
+			for (const [to, binding] of movedBindings) context.setClipBinding(this.clipId, to, binding);
 		}
 
 		// Check if asset src changed (fallback to constructor params for redo case)
