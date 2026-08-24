@@ -400,9 +400,14 @@ describe("API-accepted templates parse at load", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("accepts prompt-driven audio assets with voice and newscaster", () => {
+	it("accepts prompt-driven audio assets with model-scoped options", () => {
 		const result = ClipSchema.safeParse({
-			asset: { type: "audio", prompt: "Read the news intro", voice: "Joanna", newscaster: true },
+			asset: {
+				type: "audio",
+				prompt: "Read the news intro",
+				model: "polly-neural",
+				options: { voice: "Joanna", newscaster: true }
+			},
 			start: 0,
 			length: 5
 		});
