@@ -58,6 +58,7 @@ import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
 import { AssetGenerator, type AssetGeneratorHandler, type ClipGenerationState } from "./generation/asset-generator";
+import { migrateLegacyGeneratedAsset } from "./generation/legacy-asset-migration";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
 import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-validation";
@@ -155,11 +156,7 @@ export class Edit {
 		this.playerReconciler = new PlayerReconciler(this);
 		this.assetGenerator = new AssetGenerator({
 			getClipAsset: clipId => this.getClipById(clipId)?.asset as Record<string, unknown> | undefined,
-			applyGeneratedSrc: async (clipId, url) => {
-				const asset = this.getClipById(clipId)?.asset;
-				if (!asset) return;
-				await this.updateClipById(clipId, { asset: { ...asset, src: url } } as Partial<Clip>);
-			},
+			applyGeneratedSrc: (clipId, url) => this.applyGeneratedSrc(clipId, url),
 			emitStarted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationStarted, { clipId }),
 			emitCompleted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationCompleted, { clipId }),
 			emitFailed: (clipId, error) => this.internalEvents.emit(InternalEvent.ClipGenerationFailed, { clipId, error })
@@ -449,6 +446,24 @@ export class Edit {
 	 */
 	public generateClipAsset(clipId: string): Promise<void> {
 		return this.assetGenerator.generate(clipId);
+	}
+
+	private async applyGeneratedSrc(clipId: string, url: string): Promise<void> {
+		const found = this.document.getClipById(clipId);
+		if (!found) return;
+		const initialConfig = structuredClone(found.clip) as ResolvedClip;
+		const migration = migrateLegacyGeneratedAsset(initialConfig.asset, url);
+		const finalConfig = {
+			...initialConfig,
+			asset: migration?.asset ?? { ...initialConfig.asset, src: url }
+		} as ResolvedClip;
+		ResolvedClipSchema.parse(finalConfig);
+		const command = new SetUpdatedClipCommand(initialConfig, finalConfig, {
+			trackIndex: found.trackIndex,
+			clipIndex: found.clipIndex,
+			bindingPathMoves: migration?.bindingPathMoves
+		});
+		await this.executeCommand(command);
 	}
 
 	/**

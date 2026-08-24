@@ -571,6 +571,49 @@ describe("Edit Clip Operations", () => {
 			expect((await edit.deleteClipById(id as string)).status).toBe("success");
 		});
 
+		it("moves a legacy text-to-speech merge binding through generation, undo and redo", async () => {
+			const mergedEdit = new Edit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "text-to-speech", text: "Hello {{ NAME }}", voice: "Matthew" },
+									start: 0,
+									length: 1
+								}
+							]
+						}
+					]
+				},
+				merge: [{ find: "NAME", replace: "Derk" }],
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await mergedEdit.load();
+			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
+			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/speech.mp3" }));
+
+			await mergedEdit.generateClipAsset(clip.id);
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "audio",
+				prompt: "Hello {{ NAME }}"
+			});
+			expect(mergedEdit.getResolvedClip(0, 0)?.asset).toMatchObject({ prompt: "Hello Derk" });
+
+			await mergedEdit.undo();
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "text-to-speech",
+				text: "Hello {{ NAME }}"
+			});
+
+			await mergedEdit.redo();
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "audio",
+				prompt: "Hello {{ NAME }}"
+			});
+			mergedEdit.dispose();
+		});
+
 		it("aborts in-flight generation when the clip is deleted by position", async () => {
 			await edit.addClip(0, { asset: { type: "image", prompt: "a red apple" }, start: 0, length: 5 } as never);
 			let aborted = false;
