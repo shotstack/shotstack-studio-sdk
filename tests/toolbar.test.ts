@@ -69,7 +69,8 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 import { AssetToolbar } from "../src/core/ui/asset-toolbar";
 import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
 import { BUILT_IN_FONTS, FONT_SIZES } from "../src/core/ui/base-toolbar";
-import type { ToolbarButtonConfig } from "../src/core/ui/ui-controller";
+import { EditEvent } from "../src/core/events/edit-events";
+import { UIController, type ToolbarButtonConfig } from "../src/core/ui/ui-controller";
 
 type MockPlayer = {
 	clipConfiguration: Record<string, unknown>;
@@ -168,6 +169,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		canDeleteClip: jest.fn(() => true),
 		getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
 		getSelectedClipInfo: jest.fn((): { trackIndex: number; clipIndex: number } | null => null),
+		hasAssetGenerator: jest.fn(() => false),
 		mergeFields: {
 			getAll: jest.fn(() => []),
 			register: jest.fn(),
@@ -1925,6 +1927,27 @@ describe("Mode Toggle (Regression)", () => {
 	 * Fix: Changed query to use document.querySelectorAll instead of this.container
 	 */
 	describe("button discoverability for click handling", () => {
+		it.each([
+			["plain media without a generator", { type: "image", src: "https://example.com/image.jpg" }, false, false],
+			["configured AI media without a generator", { type: "image", prompt: "a cat" }, false, true],
+			["plain media with a generator", { type: "image", src: "https://example.com/image.jpg" }, true, true]
+		])("marks %s as generative only when AI is available", (_name, asset, hasGenerator, expected) => {
+			const mockEdit = createMockEdit({
+				getResolvedClip: jest.fn(() => ({ asset })),
+				hasAssetGenerator: jest.fn(() => hasGenerator)
+			});
+			const ui = UIController.minimal(mockEdit as never);
+			const container = createTestContainer();
+			container.innerHTML = '<div class="ss-toolbar-mode-toggle"><button class="ss-toolbar-mode-btn" data-mode="generate"></button></div>';
+
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 0 });
+
+			expect(container.querySelector(".ss-toolbar-mode-toggle")?.hasAttribute("data-generative")).toBe(expected);
+
+			ui.dispose();
+			cleanupTestContainer(container);
+		});
+
 		it("mode toggle buttons are discoverable via document.querySelectorAll after mount", async () => {
 			const mockEdit = createMockEdit();
 			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
@@ -1957,9 +1980,7 @@ describe("Mode Toggle (Regression)", () => {
 			cleanupTestContainer(container);
 		});
 
-		it("activates the generate segment when a pending AI clip is selected", async () => {
-			const { EditEvent } = await import("../src/core/events/edit-events");
-			const { UIController } = await import("../src/core/ui/ui-controller");
+		it("activates the generate segment when a pending AI clip is selected", () => {
 			const mockEdit = createMockEdit({
 				getResolvedClip: jest.fn(() => ({ asset: { type: "image", prompt: "a cat" } }))
 			});
@@ -1979,6 +2000,33 @@ describe("Mode Toggle (Regression)", () => {
 			expect(toggle?.getAttribute("data-mode")).toBe("generate");
 			expect(toggle?.querySelector('[data-mode="clip"]')?.classList.contains("active")).toBe(false);
 			expect(toggle?.querySelector('[data-mode="generate"]')?.classList.contains("active")).toBe(true);
+
+			ui.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("shows asset mode when generate mode is unavailable for the selected clip", () => {
+			const getResolvedClip = jest.fn(() => ({ asset: { type: "image", prompt: "a cat" } }));
+			const mockEdit = createMockEdit({ getResolvedClip });
+			const ui = UIController.minimal(mockEdit as never);
+			const container = createTestContainer();
+			container.innerHTML = `
+				<div class="ss-toolbar-mode-toggle" data-mode="asset">
+					<button class="ss-toolbar-mode-btn active" data-mode="asset"></button>
+					<button class="ss-toolbar-mode-btn" data-mode="clip"></button>
+					<button class="ss-toolbar-mode-btn" data-mode="generate"></button>
+				</div>
+			`;
+			ui.mount(container);
+
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 0 });
+			getResolvedClip.mockReturnValue({ asset: { type: "image", src: "https://example.com/image.jpg" } } as never);
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 1 });
+
+			const toggle = container.querySelector(".ss-toolbar-mode-toggle");
+			expect(toggle?.getAttribute("data-mode")).toBe("asset");
+			expect(toggle?.querySelector('[data-mode="asset"]')?.classList.contains("active")).toBe(true);
+			expect(toggle?.querySelector('[data-mode="generate"]')?.classList.contains("active")).toBe(false);
 
 			ui.dispose();
 			cleanupTestContainer(container);
