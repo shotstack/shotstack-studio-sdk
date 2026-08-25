@@ -6,6 +6,7 @@
  */
 
 import { Edit } from "@core/edit-session";
+import { InternalEvent } from "@core/events/edit-events";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { Clip, ResolvedClip } from "@schemas";
@@ -569,6 +570,129 @@ describe("Edit Clip Operations", () => {
 			expect(id).toBeTruthy();
 
 			expect((await edit.deleteClipById(id as string)).status).toBe("success");
+		});
+
+		it("moves a legacy text-to-speech merge binding through generation, undo and redo", async () => {
+			const mergedEdit = new Edit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "text-to-speech", text: "Hello {{ NAME }}", voice: "Matthew" },
+									start: 0,
+									length: 1
+								}
+							]
+						}
+					]
+				},
+				merge: [{ find: "NAME", replace: "Derk" }],
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await mergedEdit.load();
+			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
+			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/speech.mp3" }));
+
+			await mergedEdit.generateClipAsset(clip.id);
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "audio",
+				prompt: "Hello {{ NAME }}"
+			});
+			expect(mergedEdit.getResolvedClip(0, 0)?.asset).toMatchObject({ prompt: "Hello Derk" });
+
+			await mergedEdit.undo();
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "text-to-speech",
+				text: "Hello {{ NAME }}"
+			});
+
+			await mergedEdit.redo();
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "audio",
+				prompt: "Hello {{ NAME }}"
+			});
+			mergedEdit.dispose();
+		});
+
+		it("moves a legacy text-to-speech voice binding into options", async () => {
+			const mergedEdit = new Edit({
+				timeline: {
+					tracks: [
+						{ clips: [{ asset: { type: "text-to-speech", text: "Hello", voice: "{{ VOICE }}" }, start: 0, length: 1 }] }
+					]
+				},
+				merge: [{ find: "VOICE", replace: "Joanna" }],
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await mergedEdit.load();
+			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
+			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/speech.mp3" }));
+
+			await mergedEdit.generateClipAsset(clip.id);
+
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "audio",
+				options: { voice: "{{ VOICE }}" }
+			});
+			expect(mergedEdit.getResolvedClip(0, 0)?.asset).toMatchObject({ options: { voice: "Joanna" } });
+			// The exportable asset rebuilds from the resolved clip, so it needs the binding at its new path.
+			expect(mergedEdit.getOriginalAsset(0, 0)).toMatchObject({ options: { voice: "{{ VOICE }}" } });
+			mergedEdit.dispose();
+		});
+
+		it("moves a legacy image-to-video src binding into options.inputSrc", async () => {
+			const mergedEdit = new Edit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{ asset: { type: "image-to-video", src: "{{ IMAGE }}", prompt: "orbit left" }, start: 0, length: 1 }
+							]
+						}
+					]
+				},
+				merge: [{ find: "IMAGE", replace: "https://cdn.example.com/in.jpg" }],
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await mergedEdit.load();
+			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
+			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/out.mp4" }));
+
+			await mergedEdit.generateClipAsset(clip.id);
+
+			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				type: "video",
+				src: "https://cdn.example.com/out.mp4",
+				options: { inputSrc: "{{ IMAGE }}" }
+			});
+			expect(mergedEdit.getResolvedClip(0, 0)?.asset).toMatchObject({
+				options: { inputSrc: "https://cdn.example.com/in.jpg" }
+			});
+			expect(mergedEdit.getOriginalAsset(0, 0)).toMatchObject({ options: { inputSrc: "{{ IMAGE }}" } });
+			mergedEdit.dispose();
+		});
+
+		it("reports a refused write as a failed generation", async () => {
+			const refusedEdit = new Edit({
+				timeline: { tracks: [{ clips: [{ asset: { type: "image", prompt: "a red apple" }, start: 0, length: 1 }] }] },
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			} as never);
+			await refusedEdit.load();
+			const clip = refusedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
+			refusedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/out.png" }));
+
+			const completed: string[] = [];
+			refusedEdit.getInternalEvents().on(InternalEvent.ClipGenerationCompleted, ({ clipId }) => completed.push(clipId));
+			jest
+				.spyOn(refusedEdit as unknown as { executeCommand: () => Promise<unknown> }, "executeCommand")
+				.mockResolvedValue({ status: "noop", message: "Invalid clip at 0/0" });
+
+			await refusedEdit.generateClipAsset(clip.id);
+
+			expect(refusedEdit.getClipGenerationState(clip.id)).toEqual({ status: "failed", error: "Invalid clip at 0/0" });
+			expect(completed).toEqual([]);
+			refusedEdit.dispose();
 		});
 
 		it("aborts in-flight generation when the clip is deleted by position", async () => {
