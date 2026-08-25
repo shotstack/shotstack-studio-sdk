@@ -5,7 +5,7 @@ import { type Size } from "@layouts/geometry";
 import { type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
-import { AiPendingOverlay } from "./ai-pending-overlay";
+import { AiPendingOverlay } from "./generation/pending-overlay";
 import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
 

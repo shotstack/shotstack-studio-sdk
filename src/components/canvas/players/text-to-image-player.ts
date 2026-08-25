@@ -3,7 +3,7 @@ import { computeAiAssetNumber, isAiAsset } from "@core/shared/ai-asset-utils";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 
-import { AiPendingOverlay } from "./ai-pending-overlay";
+import { AiPendingOverlay } from "./generation/pending-overlay";
 import { Player, PlayerType } from "./player";
 
 export class TextToImagePlayer extends Player {
