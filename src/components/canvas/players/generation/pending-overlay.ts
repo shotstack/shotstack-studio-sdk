@@ -1,7 +1,7 @@
 import { getAuroraHues, hslToHex, truncatePrompt, getAiAssetTypeLabel } from "@core/shared/ai-asset-utils";
 import * as pixi from "pixi.js";
 
-import { type AiIconType, AI_ICON_FILL_PATHS } from "./ai-icons";
+import { type AiIconType, AI_ICON_FILL_PATHS } from "./icons";
 
 export type { AiIconType };
 

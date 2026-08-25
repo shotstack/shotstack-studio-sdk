@@ -14,7 +14,7 @@ jest.mock("@canvas/players/placeholder-graphic", () => ({
 	createPlaceholderGraphic: mockCreatePlaceholderGraphic
 }));
 
-jest.mock("@canvas/players/ai-pending-overlay", () => ({
+jest.mock("@canvas/players/generation/pending-overlay", () => ({
 	AiPendingOverlay: jest.fn().mockImplementation(() => ({
 		getContainer: jest.fn(() => ({ destroy: jest.fn() })),
 		dispose: jest.fn()

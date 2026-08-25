@@ -1,7 +1,7 @@
 import { aiAssetKind, getAiAssetTypeLabel, isAiAsset, type ResolvedClipWithId } from "@core/shared/ai-asset-utils";
 import type { ResolvedClip } from "@schemas";
 
-import { AI_ICON_LINE_PATHS } from "../../../canvas/players/ai-icons";
+import { AI_ICON_LINE_PATHS } from "../../../canvas/players/generation/icons";
 import { formatClipErrorMessage } from "../../error-messages";
 import type { ClipState, ClipRenderer } from "../../timeline.types";
 
