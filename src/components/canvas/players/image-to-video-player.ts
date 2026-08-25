@@ -6,6 +6,7 @@ import { type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { AiPendingOverlay } from "./generation/pending-overlay";
+import { bindGenerationState } from "./generation/state-binding";
 import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
 
@@ -14,6 +15,7 @@ export class ImageToVideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.ImageSource> | null = null;
 	private placeholder: pixi.Graphics | null = null;
 	private aiOverlay: AiPendingOverlay | null = null;
+	private unbindGeneration: (() => void) | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.ImageToVideo);
@@ -33,11 +35,14 @@ export class ImageToVideoPlayer extends Player {
 		const prompt = isAiAsset(asset) ? asset.prompt || "" : "";
 		const assetType = isAiAsset(asset) ? asset.type : "image-to-video";
 
-		// Legacy image-to-video carries its input image in src; the unified
-		// video asset carries it in seed (src holds the generated output)
-		const { src, seed } = asset as { src?: string; seed?: string };
-		const inputImage = seed ?? src;
+		// Legacy image-to-video carries its input image in src; the unified video
+		// asset carries it in options.inputSrc (src holds the generated output).
+		const { type, src, options } = asset as { type?: string; src?: string; options?: { inputSrc?: string } };
+		const inputImage = type === "image-to-video" ? src : options?.inputSrc;
 		const loaded = inputImage ? await this.tryLoadTexture(inputImage) : false;
+		// Disposal during the texture fetch leaves nothing to attach to: an overlay built now
+		// would keep its own animation loop and event subscriptions alive for the session.
+		if (this.contentContainer.destroyed) return;
 
 		if (!loaded) {
 			this.placeholder = createPlaceholderGraphic(displaySize.width, displaySize.height);
@@ -53,6 +58,7 @@ export class ImageToVideoPlayer extends Player {
 			prompt,
 			assetType
 		});
+		this.unbindGeneration = bindGenerationState(this.edit, this.clipId ?? null, this.aiOverlay);
 
 		this.contentContainer.addChild(this.aiOverlay.getContainer());
 		this.configureKeyframes();
@@ -107,6 +113,8 @@ export class ImageToVideoPlayer extends Player {
 		this.placeholder?.destroy();
 		this.placeholder = null;
 
+		this.unbindGeneration?.();
+		this.unbindGeneration = null;
 		this.aiOverlay?.dispose();
 		this.aiOverlay = null;
 

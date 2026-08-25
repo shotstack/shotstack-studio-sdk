@@ -8,6 +8,8 @@ export interface TrackComponentOptions {
 	getClipRenderer: (type: string) => ClipRenderer | undefined;
 	/** Get error state for a clip (if asset failed to load) */
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
+	/** Get generation state for a clip (while an AI asset is being generated) */
+	getClipGenerationState?: (clipId: string) => { status: "generating" | "failed"; error?: string } | undefined;
 	/** Check if content clip has an attached luma (pure function) */
 	hasAttachedLuma?: (trackIndex: number, clipIndex: number) => boolean;
 	/** Find attached luma for a content clip via timing match (pure function) */
@@ -152,6 +154,7 @@ export class TrackComponent {
 							onSelect: this.options.onClipSelect,
 							getRenderer: this.options.getClipRenderer,
 							getClipError: this.options.getClipError,
+							getClipGenerationState: this.options.getClipGenerationState,
 							aiAssetNumbers: this.options.aiAssetNumbers
 						});
 						this.clipComponents.set(clipState.id, clipComponent);
@@ -180,6 +183,7 @@ export class TrackComponent {
 						onSelect: this.options.onClipSelect,
 						getRenderer: this.options.getClipRenderer,
 						getClipError: this.options.getClipError,
+						getClipGenerationState: this.options.getClipGenerationState,
 						attachedLuma: attachedLuma ?? undefined,
 						onMaskClick: this.options.onMaskClick,
 						onMenuClick: this.options.onMenuClick,
