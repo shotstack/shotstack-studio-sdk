@@ -205,6 +205,11 @@ export class MediaToolbar extends BaseToolbar {
 						<path d="M8 5v3l2 2"/>
 					</svg>
 				</button>
+				<button class="ss-toolbar-mode-btn" data-mode="generate" title="Generate (\`)">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M8 2.5l1.3 3.2 3.2 1.3-3.2 1.3L8 11.5 6.7 8.3 3.5 7l3.2-1.3z"/>
+					</svg>
+				</button>
 				<span class="ss-toolbar-mode-indicator"></span>
 			</div>
 			<div class="ss-toolbar-mode-divider"></div>

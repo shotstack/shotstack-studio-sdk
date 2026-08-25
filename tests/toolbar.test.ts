@@ -40,6 +40,10 @@ jest.mock("../src/components/canvas/players/player", () => {
 	};
 });
 
+jest.mock("../src/components/canvas/shotstack-canvas", () => ({
+	Canvas: class MockCanvas {}
+}));
+
 // Mock ShotstackEdit to prevent circular dependency issues
 jest.mock("../src/core/shotstack-edit", () => ({
 	ShotstackEdit: class MockShotstackEdit {}
@@ -142,6 +146,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		getPlayerClip: jest.fn((): MockPlayer | null => null),
 		getClip: jest.fn(() => null),
 		getClipId: jest.fn(() => "mock-clip-id"),
+		getClipGenerationState: jest.fn(() => undefined),
 		getResolvedClip: jest.fn(() => null),
 		getResolvedClipById: jest.fn(() => null),
 		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
@@ -1936,6 +1941,49 @@ describe("Mode Toggle (Regression)", () => {
 			cleanupTestContainer(container);
 		});
 
+		it("carries a generate segment, hidden until the controller marks the clip generative", async () => {
+			const mockEdit = createMockEdit();
+			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
+			const toolbar = new MediaToolbar(mockEdit as never);
+			const container = createTestContainer();
+
+			toolbar.mount(container);
+
+			const toggle = container.querySelector(".ss-toolbar-mode-toggle");
+			expect(toggle?.querySelector('.ss-toolbar-mode-btn[data-mode="generate"]')).not.toBeNull();
+			expect(toggle?.hasAttribute("data-generative")).toBe(false);
+
+			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("activates the generate segment when a pending AI clip is selected", async () => {
+			const { EditEvent } = await import("../src/core/events/edit-events");
+			const { UIController } = await import("../src/core/ui/ui-controller");
+			const mockEdit = createMockEdit({
+				getResolvedClip: jest.fn(() => ({ asset: { type: "image", prompt: "a cat" } }))
+			});
+			const ui = UIController.minimal(mockEdit as never);
+			const container = createTestContainer();
+			container.innerHTML = `
+				<div class="ss-toolbar-mode-toggle" data-mode="clip">
+					<button class="ss-toolbar-mode-btn active" data-mode="clip"></button>
+					<button class="ss-toolbar-mode-btn" data-mode="generate"></button>
+				</div>
+			`;
+			ui.mount(container);
+
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 0 });
+
+			const toggle = container.querySelector(".ss-toolbar-mode-toggle");
+			expect(toggle?.getAttribute("data-mode")).toBe("generate");
+			expect(toggle?.querySelector('[data-mode="clip"]')?.classList.contains("active")).toBe(false);
+			expect(toggle?.querySelector('[data-mode="generate"]')?.classList.contains("active")).toBe(true);
+
+			ui.dispose();
+			cleanupTestContainer(container);
+		});
+
 		it("mode toggle buttons have data-mode attribute for click handling", async () => {
 			const mockEdit = createMockEdit();
 			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
@@ -1947,7 +1995,7 @@ describe("Mode Toggle (Regression)", () => {
 			const buttons = container.querySelectorAll(".ss-toolbar-mode-btn");
 			buttons.forEach(btn => {
 				const { mode } = (btn as HTMLElement).dataset;
-				expect(mode === "asset" || mode === "clip").toBe(true);
+				expect(mode === "asset" || mode === "clip" || mode === "generate").toBe(true);
 			});
 
 			toolbar.dispose();
