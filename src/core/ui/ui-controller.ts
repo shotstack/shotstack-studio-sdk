@@ -646,15 +646,6 @@ export class UIController {
 	 */
 	private setToolbarMode(mode: ToolbarMode): void {
 		this.toolbarMode = mode;
-
-		// Update all toggle UIs
-		this.container?.querySelectorAll(".ss-toolbar-mode-toggle").forEach(toggle => {
-			toggle.setAttribute("data-mode", mode);
-			toggle.querySelectorAll(".ss-toolbar-mode-btn").forEach(btn => {
-				btn.classList.toggle("active", (btn as HTMLElement).dataset["mode"] === mode);
-			});
-		});
-
 		this.syncGenerateSegments();
 		this.updateToolbarVisibility();
 	}
@@ -711,10 +702,17 @@ export class UIController {
 	/** Queries the document because toolbar mode toggles mount outside this.container. */
 	private syncGenerateSegments(): void {
 		const generative = this.isGenerateModeAvailable();
+		const mode = this.effectiveMode();
 		const clipId = this.edit.getClipId(this.currentTrackIndex, this.currentClipIndex);
 		const generating = clipId ? this.edit.getClipGenerationState(clipId)?.status === "generating" : false;
-		document.querySelectorAll(".ss-toolbar-mode-toggle").forEach(toggle => toggle.toggleAttribute("data-generative", generative));
-		document.querySelectorAll('.ss-toolbar-mode-btn[data-mode="generate"]').forEach(btn => btn.classList.toggle("is-generating", generating));
+		document.querySelectorAll(".ss-toolbar-mode-toggle").forEach(toggle => {
+			toggle.setAttribute("data-mode", mode);
+			toggle.toggleAttribute("data-generative", generative);
+			toggle.querySelectorAll<HTMLElement>(".ss-toolbar-mode-btn").forEach(btn => {
+				btn.classList.toggle("active", btn.dataset["mode"] === mode);
+				if (btn.dataset["mode"] === "generate") btn.classList.toggle("is-generating", generating);
+			});
+		});
 	}
 
 	/**

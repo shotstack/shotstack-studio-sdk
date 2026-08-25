@@ -2005,6 +2005,33 @@ describe("Mode Toggle (Regression)", () => {
 			cleanupTestContainer(container);
 		});
 
+		it("shows asset mode when generate mode is unavailable for the selected clip", () => {
+			const getResolvedClip = jest.fn(() => ({ asset: { type: "image", prompt: "a cat" } }));
+			const mockEdit = createMockEdit({ getResolvedClip });
+			const ui = UIController.minimal(mockEdit as never);
+			const container = createTestContainer();
+			container.innerHTML = `
+				<div class="ss-toolbar-mode-toggle" data-mode="asset">
+					<button class="ss-toolbar-mode-btn active" data-mode="asset"></button>
+					<button class="ss-toolbar-mode-btn" data-mode="clip"></button>
+					<button class="ss-toolbar-mode-btn" data-mode="generate"></button>
+				</div>
+			`;
+			ui.mount(container);
+
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 0 });
+			getResolvedClip.mockReturnValue({ asset: { type: "image", src: "https://example.com/image.jpg" } } as never);
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 1 });
+
+			const toggle = container.querySelector(".ss-toolbar-mode-toggle");
+			expect(toggle?.getAttribute("data-mode")).toBe("asset");
+			expect(toggle?.querySelector('[data-mode="asset"]')?.classList.contains("active")).toBe(true);
+			expect(toggle?.querySelector('[data-mode="generate"]')?.classList.contains("active")).toBe(false);
+
+			ui.dispose();
+			cleanupTestContainer(container);
+		});
+
 		it("mode toggle buttons have data-mode attribute for click handling", async () => {
 			const mockEdit = createMockEdit();
 			const { MediaToolbar } = await import("../src/core/ui/media-toolbar");
