@@ -18,7 +18,10 @@
 						"asset": {
 							"type": "video",
 							"prompt": "Slowly zoom out and orbit left around the trees",
-							"seed": "https://shotstack-assets.s3.amazonaws.com/images/woods1.jpg"
+							"model": "seedance-2.0",
+							"options": {
+								"inputSrc": "https://shotstack-assets.s3.amazonaws.com/images/woods1.jpg"
+							}
 						},
 						"start": 5,
 						"length": 5,
@@ -81,7 +84,9 @@
 						"asset": {
 							"type": "audio",
 							"prompt": "Welcome to the unified prompt asset demo.",
-							"voice": "Matthew"
+							"options": {
+								"voice": "Matthew"
+							}
 						},
 						"start": 10,
 						"length": 10
