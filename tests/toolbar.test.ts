@@ -69,7 +69,7 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
 import { AssetToolbar } from "../src/core/ui/asset-toolbar";
 import { CanvasToolbar } from "../src/core/ui/canvas-toolbar";
 import { BUILT_IN_FONTS, FONT_SIZES } from "../src/core/ui/base-toolbar";
-import { EditEvent } from "../src/core/events/edit-events";
+import { EditEvent, InternalEvent } from "../src/core/events/edit-events";
 import { UIController, type ToolbarButtonConfig } from "../src/core/ui/ui-controller";
 
 type MockPlayer = {
@@ -1977,6 +1977,27 @@ describe("Mode Toggle (Regression)", () => {
 			expect(toggle?.hasAttribute("data-generative")).toBe(false);
 
 			toolbar.dispose();
+			cleanupTestContainer(container);
+		});
+
+		it("refreshes the generate segment when a generator is registered after mount", () => {
+			const hasAssetGenerator = jest.fn(() => false);
+			const mockEdit = createMockEdit({
+				hasAssetGenerator,
+				getResolvedClip: jest.fn(() => ({ asset: { type: "image", src: "https://cdn/image.png" } }))
+			});
+			const ui = UIController.minimal(mockEdit as never);
+			const container = createTestContainer();
+			container.innerHTML = '<div class="ss-toolbar-mode-toggle"><button data-mode="generate"></button></div>';
+			ui.mount(container);
+			mockEdit.events.trigger(EditEvent.ClipSelected, { trackIndex: 0, clipIndex: 0 });
+			expect(container.querySelector(".ss-toolbar-mode-toggle")?.hasAttribute("data-generative")).toBe(false);
+
+			hasAssetGenerator.mockReturnValue(true);
+			mockEdit.events.trigger(InternalEvent.AssetGeneratorChanged);
+			expect(container.querySelector(".ss-toolbar-mode-toggle")?.hasAttribute("data-generative")).toBe(true);
+
+			ui.dispose();
 			cleanupTestContainer(container);
 		});
 

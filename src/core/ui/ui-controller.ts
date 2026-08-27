@@ -391,6 +391,14 @@ export class UIController {
 			this.generationListeners.push(() => internalEvents.off(name, handler));
 		}
 
+		// Registering a generator after mount can make the generate segment newly available.
+		const onGeneratorChanged = (): void => {
+			this.syncGenerateSegments();
+			this.updateToolbarVisibility();
+		};
+		internalEvents.on(InternalEvent.AssetGeneratorChanged, onGeneratorChanged);
+		this.generationListeners.push(() => internalEvents.off(InternalEvent.AssetGeneratorChanged, onGeneratorChanged));
+
 		// Position toolbars after DOM is ready
 		// Using nested rAF to ensure layout is complete before measuring
 		requestAnimationFrame(() => {
