@@ -203,6 +203,12 @@ edit.registerAssetGenerator(async ({ clipId, asset, signal }) => {
 });
 ```
 
+Pass a model catalogue as the registration's `catalogue` option to show model and option
+controls. Entries must include their option schema; those without one are ignored. The
+[Edit API](https://shotstack.io/docs/api/#shotstack-edit) returns this shape from
+`GET /models?expand=options`. The SDK stores a snapshot; fetching and refreshing it remain
+the host's responsibility.
+
 The SDK writes the returned URL to the clip, so the change is undoable and autosaves
 like any other edit. It tracks whether a clip is generating or has failed, and renders
 those states; a rejection's message is shown as-is next to a retry action. Everything

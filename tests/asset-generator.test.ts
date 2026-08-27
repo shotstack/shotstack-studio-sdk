@@ -1,6 +1,11 @@
 import { AssetGenerator, type AssetGeneratorDeps } from "@core/generation/asset-generator";
+import type { GenerationModelCatalogueResponse } from "@core/generation/model-catalogue";
 
 const PROMPT_ASSET = { type: "image", prompt: "a red apple" };
+
+const imageCatalogue = (model: string): GenerationModelCatalogueResponse => ({
+	models: [{ model, type: "image", options: { type: "object", properties: {}, additionalProperties: false } }]
+});
 
 function makeDeps(overrides: Partial<AssetGeneratorDeps> = {}) {
 	const started: string[] = [];
@@ -23,6 +28,34 @@ function makeDeps(overrides: Partial<AssetGeneratorDeps> = {}) {
 }
 
 describe("AssetGenerator", () => {
+	it("stores a catalogue snapshot and replaces it on re-registration", () => {
+		const generator = new AssetGenerator(makeDeps().deps);
+		const source = imageCatalogue("first");
+		generator.register(async () => ({ url: "https://cdn/out.png" }), { catalogue: source });
+		(source.models[0] as { model: string }).model = "mutated";
+
+		expect(generator.getModels("image")?.map(({ model }) => model)).toEqual(["first"]);
+
+		generator.register(async () => ({ url: "https://cdn/out.png" }), { catalogue: imageCatalogue("second") });
+		expect(generator.getModels("image")?.map(({ model }) => model)).toEqual(["second"]);
+
+		generator.register(async () => ({ url: "https://cdn/out.png" }));
+		expect(generator.getModels("image")).toBeUndefined();
+	});
+
+	it("returns only models for the requested asset type", () => {
+		const generator = new AssetGenerator(makeDeps().deps);
+		const mixed = {
+			models: [
+				...imageCatalogue("image-model").models,
+				{ model: "audio-model", type: "audio", options: { type: "object", properties: {}, additionalProperties: false } }
+			]
+		} as GenerationModelCatalogueResponse;
+		generator.register(async () => ({ url: "https://cdn/out.png" }), { catalogue: mixed });
+
+		expect(generator.getModels("audio")?.map(({ model }) => model)).toEqual(["audio-model"]);
+	});
+
 	it("writes the generated src back and reports completion", async () => {
 		const { deps, started, completed, applied } = makeDeps();
 		const generator = new AssetGenerator(deps);

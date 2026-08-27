@@ -764,6 +764,25 @@ describe("Edit Clip Operations", () => {
 	});
 
 	describe("asset generation", () => {
+		it("notifies internal UI when generator configuration changes", () => {
+			const changed = jest.fn();
+			edit.getInternalEvents().on(InternalEvent.AssetGeneratorChanged, changed);
+
+			edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/out.png" }), {
+				catalogue: {
+					models: [
+						{
+							model: "flux-schnell",
+							type: "image",
+							options: { type: "object", properties: {}, additionalProperties: false }
+						}
+					]
+				}
+			});
+
+			expect(changed).toHaveBeenCalledTimes(1);
+		});
+
 		type DocLookup = { document: { getClipId(t: number, c: number): string | null } };
 		const clipIdAt = (target: Edit, t: number, c: number) =>
 			((target as unknown as DocLookup).document.getClipId(t, c) as string);
