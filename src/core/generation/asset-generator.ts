@@ -1,5 +1,12 @@
 import { isAiAsset } from "@core/shared/ai-asset-utils";
 
+import {
+	type GenerationAssetType,
+	type GenerationModelCatalogueResponse,
+	type GenerationModelDefinition,
+	readGenerationModels
+} from "./model-catalogue";
+
 /** Passed to the host handler for one generation. */
 export interface AssetGenerationRequest {
 	clipId: string;
@@ -15,6 +22,11 @@ export interface AssetGenerationRequest {
 
 /** Resolves with the URL of the generated asset. */
 export type AssetGeneratorHandler = (request: AssetGenerationRequest) => Promise<{ url: string }>;
+
+export interface AssetGeneratorOptions {
+	/** Model catalogue with each entry's option schema included. Entries without one are ignored. */
+	catalogue?: GenerationModelCatalogueResponse;
+}
 
 export interface ClipGenerationState {
 	status: "generating" | "failed";
@@ -37,13 +49,19 @@ export interface AssetGeneratorDeps {
  */
 export class AssetGenerator {
 	private handler?: AssetGeneratorHandler;
+	private models?: readonly GenerationModelDefinition[];
 	private readonly states = new Map<string, ClipGenerationState>();
 	private readonly controllers = new Map<string, AbortController>();
 
 	constructor(private readonly deps: AssetGeneratorDeps) {}
 
-	public register(handler: AssetGeneratorHandler): void {
+	public register(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void {
 		this.handler = handler;
+		this.models = options?.catalogue === undefined ? undefined : readGenerationModels(options.catalogue);
+	}
+
+	public getModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
+		return this.models?.filter(model => model.type === type);
 	}
 
 	public hasHandler(): boolean {

@@ -135,6 +135,7 @@ export const InternalEvent = {
 	ClipBlurred: "clip:blurred",
 
 	// Asset generation UI
+	AssetGeneratorChanged: "assetGenerator:changed",
 	ClipGenerationStarted: "clip:generationStarted",
 	ClipGenerationCompleted: "clip:generationCompleted",
 	ClipGenerationFailed: "clip:generationFailed"
@@ -232,6 +233,7 @@ export type InternalEventMap = {
 	[InternalEvent.ClipBlurred]: void;
 
 	// Asset generation UI
+	[InternalEvent.AssetGeneratorChanged]: void;
 	[InternalEvent.ClipGenerationStarted]: { clipId: string };
 	[InternalEvent.ClipGenerationCompleted]: { clipId: string };
 	[InternalEvent.ClipGenerationFailed]: { clipId: string; error: string };

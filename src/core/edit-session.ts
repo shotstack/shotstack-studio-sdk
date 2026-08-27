@@ -57,8 +57,14 @@ import * as pixi from "pixi.js";
 import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
-import { AssetGenerator, type AssetGeneratorHandler, type ClipGenerationState } from "./generation/asset-generator";
+import {
+	AssetGenerator,
+	type AssetGeneratorHandler,
+	type AssetGeneratorOptions,
+	type ClipGenerationState
+} from "./generation/asset-generator";
 import { migrateLegacyGeneratedAsset } from "./generation/legacy-asset-migration";
+import type { GenerationAssetType, GenerationModelDefinition } from "./generation/model-catalogue";
 import { PlayerReconciler } from "./player-reconciler";
 import { resolve as resolveDocument, resolveClip as resolveClipById, type SingleClipContext } from "./resolver";
 import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-validation";
@@ -441,13 +447,19 @@ export class Edit {
 	 * URL back to the clip; the host owns how generation happens and what a failure
 	 * message says. Without a handler, no generate affordance is shown.
 	 */
-	public registerAssetGenerator(handler: AssetGeneratorHandler): void {
-		this.assetGenerator.register(handler);
+	public registerAssetGenerator(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void {
+		this.assetGenerator.register(handler, options);
+		this.internalEvents.emit(InternalEvent.AssetGeneratorChanged);
 	}
 
 	/** @internal */
 	public hasAssetGenerator(): boolean {
 		return this.assetGenerator.hasHandler();
+	}
+
+	/** @internal */
+	public getGenerationModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
+		return this.assetGenerator.getModels(type);
 	}
 
 	/**
