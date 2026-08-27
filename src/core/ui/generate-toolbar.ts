@@ -1,19 +1,60 @@
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
+import {
+	isGenerationOptionValueValid,
+	missingGenerationOptions,
+	reconcileGenerationOptions,
+	type GenerationAssetType,
+	type GenerationModelDefinition,
+	type GenerationOptionDefinition
+} from "@core/generation/model-catalogue";
 import { MERGE_FIELD_TEST_PATTERN } from "@core/merge/merge-field-service";
 import { canCarryPrompt } from "@core/shared/ai-asset-utils";
 import { injectShotstackStyles } from "@styles/inject";
 
-import { BaseToolbar } from "./base-toolbar";
+import { BaseToolbar, TOOLBAR_ICONS } from "./base-toolbar";
 
 const PROMPT_DEBOUNCE_MS = 300;
+const GENERATION_TYPE: Readonly<Record<string, GenerationAssetType>> = {
+	image: "image",
+	video: "video",
+	audio: "audio",
+	"text-to-image": "image",
+	"image-to-video": "video",
+	"text-to-speech": "audio"
+};
+
+const OPTION_INPUT_TYPE: Readonly<Record<GenerationOptionDefinition["type"], string>> = {
+	boolean: "checkbox",
+	integer: "number",
+	string: "text"
+};
 
 const promptProperty = (asset: { type: string }): "prompt" | "text" => (asset.type === "text-to-speech" ? "text" : "prompt");
+const record = (value: unknown): Record<string, unknown> =>
+	typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
+const modelLabelText = (
+	models: readonly GenerationModelDefinition[] | undefined,
+	selected: string | undefined,
+	selectedModel: GenerationModelDefinition | undefined
+): string => {
+	if (models === undefined) return "";
+	if (selectedModel) return selectedModel.model;
+	if (selected) return `${selected} (Unavailable)`;
+	return models.length === 0 ? "No models available" : "Select model";
+};
 
 export class GenerateToolbar extends BaseToolbar {
 	private promptInput: HTMLInputElement | null = null;
 	private generateBtn: HTMLButtonElement | null = null;
 	private generateError: HTMLElement | null = null;
 	private generateNote: HTMLElement | null = null;
+	private modelBtn: HTMLButtonElement | null = null;
+	private modelLabel: HTMLElement | null = null;
+	private modelPopup: HTMLElement | null = null;
+	private optionsBtn: HTMLButtonElement | null = null;
+	private optionsPopup: HTMLElement | null = null;
+	private optionRows = new Map<string, HTMLElement>();
 	private promptDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private generationUnsubscribers: (() => void)[] = [];
 	private abortController: AbortController | null = null;
@@ -50,6 +91,17 @@ export class GenerateToolbar extends BaseToolbar {
 			<input class="ss-ai-prompt-input" data-prompt-input type="text" spellcheck="false"
 				placeholder="Describe what to generate…"
 				title="Describe what to generate. Use {{ FIELD_NAME }} for merge fields." />
+			<div class="ss-ai-picker-wrap">
+				<button class="ss-media-toolbar-btn ss-ai-picker" data-model-picker type="button" aria-haspopup="menu">
+					<span data-model-label>Select model</span>
+					<svg class="chevron" viewBox="0 0 12 12">${TOOLBAR_ICONS.chevron}</svg>
+				</button>
+				<div class="ss-media-toolbar-popup ss-ai-model-popup" data-model-popup role="menu"></div>
+			</div>
+			<div class="ss-ai-picker-wrap">
+				<button class="ss-media-toolbar-btn ss-ai-picker" data-options-picker type="button" aria-haspopup="dialog">Options</button>
+				<div class="ss-media-toolbar-popup ss-ai-options-popup" data-options-popup></div>
+			</div>
 			<button class="ss-media-toolbar-btn ss-ai-generate-btn" data-action="generate">
 				<span data-generate-label>Generate</span>
 			</button>
@@ -65,9 +117,15 @@ export class GenerateToolbar extends BaseToolbar {
 		this.generateBtn = this.container.querySelector("[data-action='generate']");
 		this.generateError = this.container.querySelector("[data-generate-error]");
 		this.generateNote = this.container.querySelector("[data-generate-note]");
+		this.modelBtn = this.container.querySelector("[data-model-picker]");
+		this.modelLabel = this.container.querySelector("[data-model-label]");
+		this.modelPopup = this.container.querySelector("[data-model-popup]");
+		this.optionsBtn = this.container.querySelector("[data-options-picker]");
+		this.optionsPopup = this.container.querySelector("[data-options-popup]");
 
 		this.setupEventListeners();
 		this.subscribeToEditState();
+		this.setupOutsideClickHandler();
 		this.enableDrag();
 		this.appendDeleteButton();
 	}
@@ -108,6 +166,15 @@ export class GenerateToolbar extends BaseToolbar {
 			},
 			{ signal }
 		);
+
+		this.modelBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopup(this.modelPopup);
+		}, { signal });
+		this.optionsBtn?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.togglePopup(this.optionsPopup);
+		}, { signal });
 	}
 
 	private requestGeneration(): void {
@@ -134,6 +201,9 @@ export class GenerateToolbar extends BaseToolbar {
 			events.on(name, handler);
 			this.generationUnsubscribers.push(() => events.off(name, handler));
 		}
+		const onGeneratorChanged = (): void => this.syncState();
+		events.on(InternalEvent.AssetGeneratorChanged, onGeneratorChanged);
+		this.generationUnsubscribers.push(() => events.off(InternalEvent.AssetGeneratorChanged, onGeneratorChanged));
 
 		const onEditChanged = (): void => this.syncState();
 		this.edit.events.on(EditEvent.EditChanged, onEditChanged);
@@ -170,6 +240,144 @@ export class GenerateToolbar extends BaseToolbar {
 		} as never);
 	}
 
+	private selectModel(model: GenerationModelDefinition): void {
+		const rawAsset = record(this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx)?.asset);
+		const resolvedAsset = record(this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx)?.asset);
+		const options = reconcileGenerationOptions(model, record(rawAsset["options"]), record(resolvedAsset["options"]));
+		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, { asset: { model: model.model, options } } as never);
+		this.closeAllPopups();
+	}
+
+	private renderModelPopup(models: readonly GenerationModelDefinition[], selected: string | undefined): void {
+		if (!this.modelPopup) return;
+		this.modelPopup.replaceChildren();
+		for (const model of models) {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "ss-media-toolbar-popup-item";
+			button.dataset["modelValue"] = model.model;
+			button.textContent = model.model;
+			button.classList.toggle("active", model.model === selected);
+			button.addEventListener("click", () => this.selectModel(model));
+			this.modelPopup.appendChild(button);
+		}
+	}
+
+	private createOptionControl(option: GenerationOptionDefinition, value: unknown): HTMLInputElement | HTMLSelectElement {
+		if (option.values) {
+			const select = document.createElement("select");
+			const empty = document.createElement("option");
+			empty.value = "";
+			empty.textContent = "Select…";
+			select.appendChild(empty);
+			for (const candidate of option.values) {
+				const item = document.createElement("option");
+				item.value = candidate;
+				item.textContent = candidate;
+				select.appendChild(item);
+			}
+			select.value = typeof value === "string" ? value : "";
+			return select;
+		}
+
+		const input = document.createElement("input");
+		input.type = option.format === "uri" ? "url" : OPTION_INPUT_TYPE[option.type];
+		if (input.type === "checkbox") input.checked = value === true;
+		else input.value = value === undefined ? "" : String(value);
+		if (option.minimum !== undefined) input.min = String(option.minimum);
+		if (option.maximum !== undefined) input.max = String(option.maximum);
+		return input;
+	}
+
+	private readOptionControl(control: HTMLInputElement | HTMLSelectElement, option: GenerationOptionDefinition): unknown {
+		if (control instanceof HTMLInputElement && control.type === "checkbox") return control.checked;
+		if (control.value === "") return undefined;
+		return option.type === "integer" ? Number(control.value) : control.value;
+	}
+
+	private renderOptions(model: GenerationModelDefinition, values: Record<string, unknown>): void {
+		if (!this.optionsPopup) return;
+		this.optionsPopup.replaceChildren();
+		this.optionRows.clear();
+		for (const option of model.options) {
+			const row = document.createElement("label");
+			row.className = "ss-ai-option-row";
+			row.dataset["optionRow"] = option.name;
+			const title = document.createElement("span");
+			title.textContent = option.title;
+			const value = values[option.name] ?? (option.hasDefault ? option.defaultValue : undefined);
+			const control = this.createOptionControl(option, value);
+			control.dataset["option"] = option.name;
+			// A required boolean is satisfied by false, which an unchecked required checkbox reports as invalid.
+			control.required = option.required && option.type !== "boolean";
+			control.addEventListener("change", () => {
+				// An empty required field is the missing-option state and must commit; malformed input must not.
+				if (!control.validity.valid && !control.validity.valueMissing) return;
+				const next = this.readOptionControl(control, option);
+				this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, { asset: { options: { [option.name]: next } } } as never);
+				this.syncMissingOptions(model, { ...values, [option.name]: next });
+			});
+			row.append(title, control);
+			this.optionRows.set(option.name, row);
+			this.optionsPopup.appendChild(row);
+		}
+
+		for (const option of model.unsupported) {
+			const row = document.createElement("div");
+			row.className = "ss-ai-option-row is-unsupported";
+			row.title = "This option can only be set outside the editor.";
+			const title = document.createElement("span");
+			title.textContent = option.title;
+			const state = document.createElement("span");
+			state.className = "ss-ai-option-state";
+			state.textContent = values[option.name] === undefined ? "Not set" : "Configured";
+			row.append(title, state);
+			this.optionsPopup.appendChild(row);
+		}
+	}
+
+	private syncMissingOptions(model: GenerationModelDefinition | undefined, values: Record<string, unknown>): readonly string[] {
+		const missing = model ? missingGenerationOptions(model, values) : [];
+		this.optionsBtn?.classList.toggle("has-error", missing.length > 0);
+		if (this.optionsBtn) this.optionsBtn.title = missing.length > 0 ? `Missing: ${missing.join(", ")}` : "Generation options";
+		if (model) {
+			for (const option of model.options) {
+				const row = this.optionRows.get(option.name);
+				row?.toggleAttribute("data-missing", option.required && !isGenerationOptionValueValid(option, values[option.name]));
+			}
+		}
+		return missing;
+	}
+
+	private syncCatalogueControls(asset: Record<string, unknown>): readonly string[] {
+		const type = typeof asset["type"] === "string" ? GENERATION_TYPE[asset["type"]] : undefined;
+		const models = type ? this.edit.getGenerationModels(type) : undefined;
+		const selected = typeof asset["model"] === "string" ? asset["model"] : undefined;
+		const selectedModel = models?.find(model => model.model === selected);
+
+		if (this.modelBtn) {
+			this.modelBtn.hidden = models === undefined;
+			this.modelBtn.disabled = models?.length === 0;
+			this.modelBtn.classList.toggle("is-unavailable", selected !== undefined && selectedModel === undefined);
+		}
+		if (this.modelLabel) this.modelLabel.textContent = modelLabelText(models, selected, selectedModel);
+		this.renderModelPopup(models ?? [], selected);
+
+		if (this.optionsBtn) {
+			const empty = selectedModel !== undefined && selectedModel.options.length === 0 && selectedModel.unsupported.length === 0;
+			this.optionsBtn.hidden = models === undefined || models.length === 0 || empty;
+			this.optionsBtn.disabled = selectedModel === undefined;
+		}
+		const values = record(asset["options"]);
+		if (selectedModel) {
+			this.renderOptions(selectedModel, values);
+		} else {
+			this.optionsPopup?.replaceChildren();
+			this.optionRows.clear();
+		}
+		return this.syncMissingOptions(selectedModel, values);
+	}
+
 	protected override syncState(): void {
 		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
 		const asset = clip?.asset;
@@ -185,6 +393,7 @@ export class GenerateToolbar extends BaseToolbar {
 			this.promptInput.value = binding?.placeholder ?? (typeof value === "string" ? value : "");
 		}
 
+		const missing = this.syncCatalogueControls(record(asset));
 		const hasGenerator = this.edit.hasAssetGenerator();
 		this.generateBtn.hidden = !hasGenerator;
 		if (this.generateNote) this.generateNote.hidden = hasGenerator;
@@ -198,7 +407,7 @@ export class GenerateToolbar extends BaseToolbar {
 		const generating = state?.status === "generating";
 		const hasPrompt = (this.promptInput?.value ?? "").trim() !== "";
 		const label = this.generateBtn.querySelector("[data-generate-label]");
-		this.generateBtn.disabled = generating || !hasPrompt;
+		this.generateBtn.disabled = generating || !hasPrompt || missing.length > 0;
 		this.generateBtn.classList.toggle("is-generating", generating);
 		if (label) {
 			if (generating) label.textContent = "Generating…";
@@ -213,7 +422,7 @@ export class GenerateToolbar extends BaseToolbar {
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [];
+		return [this.modelPopup, this.optionsPopup];
 	}
 
 	override dispose(): void {
@@ -232,5 +441,11 @@ export class GenerateToolbar extends BaseToolbar {
 		this.generateBtn = null;
 		this.generateError = null;
 		this.generateNote = null;
+		this.modelBtn = null;
+		this.modelLabel = null;
+		this.modelPopup = null;
+		this.optionsBtn = null;
+		this.optionsPopup = null;
+		this.optionRows.clear();
 	}
 }

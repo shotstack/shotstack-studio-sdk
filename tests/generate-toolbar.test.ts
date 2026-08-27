@@ -21,6 +21,7 @@ jest.mock("@styles/inject", () => ({
 }));
 
 import { InternalEvent } from "@core/events/edit-events";
+import type { GenerationAssetType, GenerationModelDefinition, GenerationOptionDefinition } from "@core/generation/model-catalogue";
 import { GenerateToolbar } from "@core/ui/generate-toolbar";
 
 type MockEdit = ReturnType<typeof createMockEdit>;
@@ -30,6 +31,8 @@ function createMockEdit(asset: Record<string, unknown> = { type: "image", prompt
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-1"),
 		getResolvedClip: jest.fn().mockReturnValue({ asset }),
+		getDocumentClip: jest.fn().mockReturnValue({ asset }),
+		getGenerationModels: jest.fn(),
 		getDocument: jest.fn(),
 		hasAssetGenerator: jest.fn().mockReturnValue(true),
 		getClipGenerationState: jest.fn(),
@@ -42,6 +45,25 @@ function createMockEdit(asset: Record<string, unknown> = { type: "image", prompt
 		events: { on: jest.fn(), off: jest.fn() }
 	};
 }
+
+const model = (
+	name: string,
+	type: GenerationAssetType = "image",
+	options: readonly GenerationOptionDefinition[] = [],
+	unsupported: readonly { name: string; title: string }[] = []
+): GenerationModelDefinition => ({
+	model: name,
+	type,
+	optionNames: [...options.map(option => option.name), ...unsupported.map(entry => entry.name)],
+	options,
+	unsupported
+});
+
+const option = (
+	name: string,
+	type: GenerationOptionDefinition["type"],
+	overrides: Partial<GenerationOptionDefinition> = {}
+): GenerationOptionDefinition => ({ name, title: name, type, required: false, hasDefault: false, ...overrides });
 
 function mountToolbar(edit: MockEdit): { toolbar: GenerateToolbar; container: HTMLDivElement } {
 	const container = document.createElement("div");
@@ -134,6 +156,158 @@ describe("GenerateToolbar", () => {
 		expect(container.querySelector<HTMLElement>("[data-generate-note]")?.hidden).toBe(true);
 		expect(container.querySelector<HTMLButtonElement>("[data-action='generate']")?.hidden).toBe(false);
 
+		toolbar.dispose();
+	});
+
+	it.each([
+		[undefined, true, ""],
+		[[], false, "No models available"]
+	])("distinguishes an absent catalogue from an empty one", (models, hidden, label) => {
+		const edit = createMockEdit();
+		edit.getGenerationModels.mockReturnValue(models);
+		const { toolbar, container } = mountToolbar(edit);
+		const picker = container.querySelector<HTMLButtonElement>("[data-model-picker]");
+		expect(picker?.hidden).toBe(hidden);
+		expect(container.querySelector("[data-model-label]")?.textContent).toBe(label);
+		if (models) expect(picker?.disabled).toBe(true);
+		toolbar.dispose();
+	});
+
+	it("shows available models without inventing an automatic entry", () => {
+		const edit = createMockEdit();
+		edit.getGenerationModels.mockReturnValue([model("flux-schnell"), model("nano-banana-2")]);
+		const { toolbar, container } = mountToolbar(edit);
+
+		expect(container.querySelector("[data-model-label]")?.textContent).toBe("Select model");
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.disabled).toBe(true);
+		container.querySelector<HTMLButtonElement>("[data-model-picker]")?.click();
+		expect([...container.querySelectorAll("[data-model-value]")].map(node => node.textContent)).toEqual([
+			"flux-schnell",
+			"nano-banana-2"
+		]);
+		expect(container.textContent).not.toContain("Automatic");
+		toolbar.dispose();
+	});
+
+	it("hides Options for a selected model with no controls", () => {
+		const edit = createMockEdit({ type: "image", prompt: "a cat", model: "flux-schnell" });
+		edit.getGenerationModels.mockReturnValue([model("flux-schnell")]);
+		const { toolbar, container } = mountToolbar(edit);
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(true);
+		toolbar.dispose();
+	});
+
+	it("preserves an unavailable model until an available model is selected", () => {
+		const asset = { type: "image", prompt: "a cat", model: "host-model", options: { seed: 7 } };
+		const edit = createMockEdit(asset);
+		edit.getGenerationModels.mockReturnValue([model("nano-banana-2")]);
+		const { toolbar, container } = mountToolbar(edit);
+
+		expect(container.querySelector("[data-model-label]")?.textContent).toBe("host-model (Unavailable)");
+		expect(edit.updateClip).not.toHaveBeenCalled();
+		container.querySelector<HTMLButtonElement>('[data-model-value="nano-banana-2"]')?.click();
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { model: "nano-banana-2", options: { seed: undefined } } });
+		toolbar.dispose();
+	});
+
+	it("reconciles defaults and raw merge fields in one model update", () => {
+		const resolution = option("resolution", "string", { values: ["1K", "2K"], hasDefault: true, defaultValue: "1K" });
+		const seed = option("seed", "integer");
+		const edit = createMockEdit({ type: "image", prompt: "a cat", options: { seed: 7 } });
+		edit.getDocumentClip.mockReturnValue({ asset: { type: "image", options: { resolution: "{{ SIZE }}", seed: 7 } } });
+		edit.getResolvedClip.mockReturnValue({ asset: { type: "image", prompt: "a cat", options: { resolution: "2K", seed: 7 } } });
+		edit.getGenerationModels.mockReturnValue([model("nano-banana-2", "image", [resolution, seed])]);
+		const { toolbar, container } = mountToolbar(edit);
+
+		container.querySelector<HTMLButtonElement>('[data-model-value="nano-banana-2"]')?.click();
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, {
+			asset: { model: "nano-banana-2", options: { resolution: "{{ SIZE }}", seed: 7 } }
+		});
+		toolbar.dispose();
+	});
+
+	it("renders each supported schema shape as a native control", () => {
+		const options = [
+			option("resolution", "string", { values: ["720p", "1080p"] }),
+			option("generateAudio", "boolean"),
+			option("musicLengthMs", "integer", { minimum: 1000, maximum: 60000 }),
+			option("compositionPlan", "string"),
+			option("inputSrc", "string", { format: "uri" })
+		];
+		const edit = createMockEdit({ type: "video", prompt: "a cat", model: "video-model", options: {} });
+		edit.getGenerationModels.mockReturnValue([model("video-model", "video", options)]);
+		const { toolbar, container } = mountToolbar(edit);
+
+		expect(container.querySelector('[data-option="resolution"]')?.tagName).toBe("SELECT");
+		expect(container.querySelector<HTMLInputElement>('[data-option="generateAudio"]')?.type).toBe("checkbox");
+		const number = container.querySelector<HTMLInputElement>('[data-option="musicLengthMs"]');
+		expect([number?.type, number?.min, number?.max]).toEqual(["number", "1000", "60000"]);
+		expect(container.querySelector<HTMLInputElement>('[data-option="compositionPlan"]')?.type).toBe("text");
+		expect(container.querySelector<HTMLInputElement>('[data-option="inputSrc"]')?.type).toBe("url");
+
+		number!.value = "5000";
+		number?.dispatchEvent(new Event("change", { bubbles: true }));
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { options: { musicLengthMs: 5000 } } });
+		toolbar.dispose();
+	});
+
+	it("requires configured model options but permits the backend default model", () => {
+		const voice = option("voice", "string", { title: "Voice", required: true });
+		const asset = { type: "audio", prompt: "hello", model: "speech", options: {} };
+		const edit = createMockEdit(asset);
+		edit.getGenerationModels.mockReturnValue([model("speech", "audio", [voice])]);
+		const { toolbar, container } = mountToolbar(edit);
+		const generate = container.querySelector<HTMLButtonElement>("[data-action='generate']");
+		const optionsButton = container.querySelector<HTMLButtonElement>("[data-options-picker]");
+
+		expect(generate?.disabled).toBe(true);
+		expect(optionsButton?.classList.contains("has-error")).toBe(true);
+		expect(optionsButton?.title).toContain("Voice");
+		expect(container.querySelector('[data-option-row="voice"]')?.hasAttribute("data-missing")).toBe(true);
+
+		asset.model = undefined as never;
+		toolbar.show(0, 0);
+		expect(generate?.disabled).toBe(false);
+		toolbar.dispose();
+	});
+
+	it("commits a cleared required option and marks it missing", () => {
+		const voice = option("voice", "string", { title: "Voice", required: true });
+		const edit = createMockEdit({ type: "audio", prompt: "hello", model: "speech", options: { voice: "Matthew" } });
+		edit.getGenerationModels.mockReturnValue([model("speech", "audio", [voice])]);
+		const { toolbar, container } = mountToolbar(edit);
+		const control = container.querySelector<HTMLInputElement>('[data-option="voice"]');
+
+		control!.value = "";
+		control?.dispatchEvent(new Event("change", { bubbles: true }));
+
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { options: { voice: undefined } } });
+		expect(container.querySelector('[data-option-row="voice"]')?.hasAttribute("data-missing")).toBe(true);
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.classList.contains("has-error")).toBe(true);
+		toolbar.dispose();
+	});
+
+	it("shows a published option it cannot render instead of dropping it", () => {
+		const plan = { name: "compositionPlan", title: "Composition plan" };
+		const edit = createMockEdit({ type: "audio", prompt: "a score", model: "music", options: { compositionPlan: { sections: [] } } });
+		edit.getGenerationModels.mockReturnValue([model("music", "audio", [option("forceInstrumental", "boolean", { title: "Instrumental only" })], [plan])]);
+		const { toolbar, container } = mountToolbar(edit);
+
+		const row = container.querySelector<HTMLElement>(".ss-ai-option-row.is-unsupported");
+		expect(row?.textContent).toContain("Composition plan");
+		expect(row?.textContent).toContain("Configured");
+		expect(row?.querySelector("input, select")).toBeNull();
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(false);
+		toolbar.dispose();
+	});
+
+	it("keeps Options reachable when every published option is unrenderable", () => {
+		const edit = createMockEdit({ type: "audio", prompt: "a score", model: "music", options: {} });
+		edit.getGenerationModels.mockReturnValue([model("music", "audio", [], [{ name: "compositionPlan", title: "Composition plan" }])]);
+		const { toolbar, container } = mountToolbar(edit);
+
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(false);
+		expect(container.querySelector(".ss-ai-option-row.is-unsupported")?.textContent).toContain("Not set");
 		toolbar.dispose();
 	});
 
