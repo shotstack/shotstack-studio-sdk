@@ -3,33 +3,22 @@ import {
 	isGenerationOptionValueValid,
 	missingGenerationOptions,
 	reconcileGenerationOptions,
-	type GenerationAssetType,
 	type GenerationModelDefinition,
 	type GenerationOptionDefinition
 } from "@core/generation/model-catalogue";
 import { MERGE_FIELD_TEST_PATTERN } from "@core/merge/merge-field-service";
-import { canCarryPrompt } from "@core/shared/ai-asset-utils";
+import { canCarryPrompt, GENERATION_TYPE, promptProperty } from "@core/shared/ai-asset-utils";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar, TOOLBAR_ICONS } from "./base-toolbar";
 
 const PROMPT_DEBOUNCE_MS = 300;
-const GENERATION_TYPE: Readonly<Record<string, GenerationAssetType>> = {
-	image: "image",
-	video: "video",
-	audio: "audio",
-	"text-to-image": "image",
-	"image-to-video": "video",
-	"text-to-speech": "audio"
-};
-
 const OPTION_INPUT_TYPE: Readonly<Record<GenerationOptionDefinition["type"], string>> = {
 	boolean: "checkbox",
 	integer: "number",
 	string: "text"
 };
 
-const promptProperty = (asset: { type: string }): "prompt" | "text" => (asset.type === "text-to-speech" ? "text" : "prompt");
 const record = (value: unknown): Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
