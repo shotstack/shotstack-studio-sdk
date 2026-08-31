@@ -88,6 +88,14 @@
 	display: none;
 }
 
+.ss-ai-note[data-tone="warning"] {
+	color: #fcd34d;
+}
+
+.ss-ai-note[data-tone="error"] {
+	color: #fca5a5;
+}
+
 .ss-ai-error {
 	max-width: 180px;
 	padding: 0 2px;

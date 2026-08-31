@@ -13,6 +13,7 @@ import { injectShotstackStyles } from "@styles/inject";
 import { BaseToolbar, TOOLBAR_ICONS } from "./base-toolbar";
 
 const PROMPT_DEBOUNCE_MS = 300;
+
 const OPTION_INPUT_TYPE: Readonly<Record<GenerationOptionDefinition["type"], string>> = {
 	boolean: "checkbox",
 	integer: "number",
@@ -94,9 +95,7 @@ export class GenerateToolbar extends BaseToolbar {
 			<button class="ss-media-toolbar-btn ss-ai-generate-btn" data-action="generate">
 				<span data-generate-label>Generate</span>
 			</button>
-			<span class="ss-ai-note" data-generate-note hidden
-				title="Rendering generates this from the prompt. Register an asset generator to preview it here."
-				>Generates on render</span>
+			<span class="ss-ai-note" data-generate-note hidden>Generates on render</span>
 			<span class="ss-ai-error" data-generate-error hidden></span>
 		`;
 
@@ -182,7 +181,12 @@ export class GenerateToolbar extends BaseToolbar {
 		// mount() can run more than once on an instance; never stack listeners.
 		if (this.generationUnsubscribers.length > 0) return;
 		const events = this.edit.getInternalEvents();
-		const names = [InternalEvent.ClipGenerationStarted, InternalEvent.ClipGenerationCompleted, InternalEvent.ClipGenerationFailed] as const;
+		const names = [
+			InternalEvent.ClipGenerationStarted,
+			InternalEvent.ClipGenerationCompleted,
+			InternalEvent.ClipGenerationFailed,
+			InternalEvent.GenerationStatusChanged
+		] as const;
 		for (const name of names) {
 			const handler = (payload: { clipId: string }): void => {
 				if (payload.clipId === this.getSelectedClipId()) this.syncState();
@@ -385,7 +389,25 @@ export class GenerateToolbar extends BaseToolbar {
 		const missing = this.syncCatalogueControls(record(asset));
 		const hasGenerator = this.edit.hasAssetGenerator();
 		this.generateBtn.hidden = !hasGenerator;
-		if (this.generateNote) this.generateNote.hidden = hasGenerator;
+		const status = hasGenerator ? this.edit.getGenerationStatus(this.getSelectedClipId() ?? "") : undefined;
+		if (this.generateNote) {
+			if (!hasGenerator) {
+				this.generateNote.textContent = "Generates on render";
+				this.generateNote.title = "Rendering generates this from the prompt. Register an asset generator to preview it here.";
+				delete this.generateNote.dataset["tone"];
+				this.generateNote.hidden = false;
+			} else if (status) {
+				this.generateNote.textContent = status.text;
+				this.generateNote.dataset["tone"] = status.tone ?? "neutral";
+				this.generateNote.removeAttribute("title");
+				this.generateNote.hidden = false;
+			} else {
+				this.generateNote.textContent = "";
+				delete this.generateNote.dataset["tone"];
+				this.generateNote.removeAttribute("title");
+				this.generateNote.hidden = true;
+			}
+		}
 		if (!hasGenerator) {
 			if (this.generateError) this.generateError.hidden = true;
 			return;
@@ -396,7 +418,8 @@ export class GenerateToolbar extends BaseToolbar {
 		const generating = state?.status === "generating";
 		const hasPrompt = (this.promptInput?.value ?? "").trim() !== "";
 		const label = this.generateBtn.querySelector("[data-generate-label]");
-		this.generateBtn.disabled = generating || !hasPrompt || missing.length > 0;
+		const blocked = status?.tone === "error";
+		this.generateBtn.disabled = generating || !hasPrompt || missing.length > 0 || blocked;
 		this.generateBtn.classList.toggle("is-generating", generating);
 		if (label) {
 			if (generating) label.textContent = "Generating…";
