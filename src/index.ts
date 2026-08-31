@@ -12,5 +12,6 @@ export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-contr
 export type { AssetGenerationRequest, AssetGeneratorHandler, AssetGeneratorOptions } from "@core/generation/asset-generator";
 export type { EditConfig } from "@core/schemas";
 export type { CommandResult } from "@core/commands/types";
+export type { GenerationConfig, GenerationStatus } from "@core/events/edit-events";
 
 export const VERSION = pkg.version;

@@ -101,6 +101,9 @@ export const EditEvent = {
 	// Merge fields
 	MergeFieldChanged: "mergefield:changed",
 
+	// Generation
+	GenerationConfigChanged: "generation:configChanged",
+
 	// Timeline UI
 	TimelineResized: "timeline:resized"
 } as const;
@@ -138,8 +141,23 @@ export const InternalEvent = {
 	ClipBlurred: "clip:blurred",
 
 	// Asset generation UI
-	AssetGeneratorChanged: "assetGenerator:changed"
+	AssetGeneratorChanged: "assetGenerator:changed",
+	GenerationStatusChanged: "generation:statusChanged"
 } as const;
+
+export type GenerationConfig = {
+	clipId: string;
+	type: "image" | "video" | "audio";
+	model?: string;
+	options: Record<string, unknown>;
+	length: number | undefined;
+	prompt: string;
+};
+
+export type GenerationStatus = {
+	text: string;
+	tone?: "neutral" | "warning" | "error";
+};
 
 // ─────────────────────────────────────────────────────────────
 // Event Payload Maps
@@ -197,6 +215,9 @@ export type EditEventMap = {
 	// Merge fields
 	[EditEvent.MergeFieldChanged]: { fields: MergeField[] };
 
+	// Generation
+	[EditEvent.GenerationConfigChanged]: GenerationConfig;
+
 	// Timeline UI
 	[EditEvent.TimelineResized]: { height: number };
 };
@@ -237,4 +258,5 @@ export type InternalEventMap = {
 
 	// Asset generation UI
 	[InternalEvent.AssetGeneratorChanged]: void;
+	[InternalEvent.GenerationStatusChanged]: { clipId: string };
 };

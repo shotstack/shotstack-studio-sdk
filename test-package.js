@@ -67,7 +67,8 @@ const CONTRACT = {
 			"getInternalEvents(",
 			"getGenerationModels(",
 			"pruneUnusedFonts(",
-			"getClipGenerationState("
+			"getClipGenerationState(",
+			"getGenerationStatus("
 		]
 	},
 	dtsForbiddenTokens: [
@@ -146,7 +147,8 @@ const CONTRACT = {
 			tokens: [
 				"load(): Promise<void>;",
 				"registerAssetGenerator(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void;",
-				"generateClip(clipId: string): Promise<void>;"
+				"generateClip(clipId: string): Promise<void>;",
+				"setGenerationStatus(clipId: string, status: GenerationStatus | undefined): void;"
 			]
 		},
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },
