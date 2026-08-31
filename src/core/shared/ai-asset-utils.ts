@@ -212,3 +212,16 @@ export function truncatePrompt(prompt: string, maxLength = 60): string {
 	}
 	return `${prompt.substring(0, maxLength - 3)}...`;
 }
+
+/** Asset type → the media kind a generator produces. Folds the legacy aliases onto the unified types. */
+export const GENERATION_TYPE: Readonly<Record<string, "image" | "video" | "audio">> = {
+	image: "image",
+	video: "video",
+	audio: "audio",
+	"text-to-image": "image",
+	"image-to-video": "video",
+	"text-to-speech": "audio"
+};
+
+/** The legacy speech asset keeps its prompt under `text`. */
+export const promptProperty = (asset: { type: string }): "prompt" | "text" => (asset.type === "text-to-speech" ? "text" : "prompt");
