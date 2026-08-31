@@ -189,6 +189,7 @@ Available event names:
 | Duration | `duration:changed` |
 | Output | `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged` |
 | Merge fields | `mergefield:changed` |
+| Generation | `generation:configChanged` |
 
 ### Generating assets from prompts
 
@@ -208,6 +209,13 @@ controls. Entries must include their option schema; those without one are ignore
 [Edit API](https://shotstack.io/docs/api/#shotstack-edit) returns this shape from
 `GET /models?expand=options`. The SDK stores a snapshot; fetching and refreshing it remain
 the host's responsibility.
+
+Whenever the selected clip's model, options, length or prompt changes, the editor emits
+`generation:configChanged` with what it knows: `clipId`, `type`, `model`, `options`, the
+resolved `length` in seconds (`undefined` for `auto`), and the resolved `prompt`. Reply with
+`edit.setGenerationStatus(clipId, { text, tone })` to show a line beside Generate; a `tone`
+of `error` also disables it. Pass `undefined` to clear. Clearing the prompt or deleting the
+clip emits nothing, so also clear any held state on `clip:selected` or `edit:changed`.
 
 The SDK writes the returned URL to the clip, so the change is undoable and autosaves
 like any other edit. It tracks whether a clip is generating or has failed, and renders

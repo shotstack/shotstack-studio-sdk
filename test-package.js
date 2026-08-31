@@ -60,7 +60,7 @@ const CONTRACT = {
 			"clearSelection(",
 			"registerClipRenderer("
 		],
-		Edit: ["validateEdit(", "getTimelineFonts(", "getContentClipIdForLuma(", "getInternalEvents(", "getGenerationModels(", "pruneUnusedFonts("]
+		Edit: ["validateEdit(", "getTimelineFonts(", "getContentClipIdForLuma(", "getInternalEvents(", "getGenerationModels(", "pruneUnusedFonts(", "getGenerationStatus("]
 	},
 	dtsForbiddenTokens: [
 		"export declare class SelectionHandles",
@@ -128,7 +128,14 @@ const CONTRACT = {
 		"export declare type Seconds ="
 	],
 	dtsPublicAnchors: [
-		{ className: "Edit", tokens: ["load(): Promise<void>;", "registerAssetGenerator(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void;"] },
+		{
+			className: "Edit",
+			tokens: [
+				"load(): Promise<void>;",
+				"registerAssetGenerator(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void;",
+				"setGenerationStatus(clipId: string, status: GenerationStatus | undefined): void;"
+			]
+		},
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },
 		{ className: "UIController", tokens: ["registerButton(config: ToolbarButtonConfig): this;"] },
 		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }

@@ -22,13 +22,21 @@ import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands/update-clip-timing-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import type { MergeFieldBinding } from "@core/edit-document";
-import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
+import {
+	EditEvent,
+	InternalEvent,
+	type EditEventMap,
+	type InternalEventMap,
+	type GenerationConfig,
+	type GenerationStatus
+} from "@core/events/edit-events";
 import { EventEmitter, type ReadonlyEventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
 import { SelectionManager } from "@core/selection-manager";
+import { GENERATION_TYPE, isAiAsset, promptProperty } from "@core/shared/ai-asset-utils";
 import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
 import { deepMerge, nextFrame, setNestedValue, toLoadUrl } from "@core/shared/utils";
 import { calculateTimelineEnd, resolveAutoLength, resolveAutoStart } from "@core/timing/resolver";
@@ -124,6 +132,8 @@ export class Edit {
 	// ─── Internal Bookkeeping ─────────────────────────────────────────────────
 	private clipsToDispose = new Set<Player>();
 	private clipErrors = new Map<string, { error: string; assetType: string }>();
+	private generationStatuses = new Map<string, GenerationStatus>();
+	private lastGenerationConfigKey: string | null = null;
 	private playerByClipId = new Map<string, Player>();
 	private lumaContentRelations = new Map<string, string>();
 	private fontMetadata = new Map<string, { baseFamilyName: string; weight: number }>();
@@ -139,6 +149,36 @@ export class Edit {
 		const live = new Set<string>();
 		for (const track of edit.timeline.tracks) for (const clip of track.clips) live.add(clip.id);
 		this.assetGenerator.abortMissing(live);
+	};
+
+	// Clearing the key on deselection lets a re-selected clip announce itself again.
+	private emitGenerationConfig = (): void => {
+		const clipId = this.getSelectedClipInfo()?.player.clipId ?? null;
+		const resolved = clipId ? this.getResolvedClipById(clipId) : null;
+		const raw = clipId ? this.getDocumentClipById(clipId) : null;
+		if (!clipId || !resolved || !raw || !isAiAsset(resolved.asset)) {
+			this.lastGenerationConfigKey = null;
+			return;
+		}
+
+		const asset = resolved.asset as unknown as Record<string, unknown>;
+		const type = GENERATION_TYPE[String(asset["type"])];
+		const promptValue = asset[promptProperty(resolved.asset)];
+		const { options } = asset;
+		const config: GenerationConfig = {
+			clipId,
+			type,
+			...(typeof asset["model"] === "string" ? { model: asset["model"] } : {}),
+			options: typeof options === "object" && options !== null && !Array.isArray(options) ? (options as Record<string, unknown>) : {},
+			// The resolver fabricates a placeholder for "auto", so only the raw clip can say the length is unknown.
+			length: raw.length === "auto" ? undefined : resolved.length,
+			prompt: typeof promptValue === "string" ? promptValue : ""
+		};
+
+		const key = JSON.stringify(config);
+		if (key === this.lastGenerationConfigKey) return;
+		this.lastGenerationConfigKey = key;
+		this.internalEvents.emit(EditEvent.GenerationConfigChanged, config);
 	};
 
 	/**
@@ -291,7 +331,9 @@ export class Edit {
 	public dispose(): void {
 		this.clearClips();
 		this.internalEvents.off(InternalEvent.Resolved, this.onResolvedForGeneration);
+		for (const name of Edit.GenerationConfigTriggers) this.internalEvents.off(name, this.emitGenerationConfig);
 		this.assetGenerator.abortAll();
+		this.generationStatuses.clear();
 		this.lumaMaskController.dispose();
 		this.playerReconciler.dispose();
 
@@ -450,6 +492,17 @@ export class Edit {
 	public registerAssetGenerator(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void {
 		this.assetGenerator.register(handler, options);
 		this.internalEvents.emit(InternalEvent.AssetGeneratorChanged);
+	}
+
+	public setGenerationStatus(clipId: string, status: GenerationStatus | undefined): void {
+		if (status === undefined) this.generationStatuses.delete(clipId);
+		else this.generationStatuses.set(clipId, status);
+		this.internalEvents.emit(InternalEvent.GenerationStatusChanged, { clipId });
+	}
+
+	/** @internal */
+	public getGenerationStatus(clipId: string): GenerationStatus | undefined {
+		return this.generationStatuses.get(clipId);
 	}
 
 	/** @internal */
@@ -2678,8 +2731,17 @@ export class Edit {
 
 	// ─── Event Listeners ─────────────────────────────────────────────────────────
 
+	private static readonly GenerationConfigTriggers = [
+		EditEvent.ClipSelected,
+		EditEvent.SelectionCleared,
+		EditEvent.EditChanged,
+		EditEvent.MergeFieldChanged,
+		EditEvent.TimelineUpdated
+	] as const;
+
 	private setupGenerationListeners(): void {
 		this.internalEvents.on(InternalEvent.Resolved, this.onResolvedForGeneration);
+		for (const name of Edit.GenerationConfigTriggers) this.internalEvents.on(name, this.emitGenerationConfig);
 	}
 
 	private setupIntentListeners(): void {
