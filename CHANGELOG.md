@@ -2,6 +2,191 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.0] - 2026-09-02
+
+### Added
+
+- `edit.generateClip(clipId)` starts generation for a prompt-bearing clip without the toolbar (#173)
+- Public `clip:generationStarted`, `clip:generationCompleted` and `clip:generationFailed` events on `edit.events` (#173)
+
+## [2.18.0] - 2026-08-27
+
+### Added
+
+- Optional model catalogue on `registerAssetGenerator`, with model and option controls in the generate pane (#168, #169)
+
+## [2.17.0] - 2026-08-25
+
+### Added
+
+- **Prompt-driven asset generation** — a host registers a generator; the editor can then generate image, video and audio clips from a prompt (#158)
+  - A Generate toolbar pane behind a third mode segment (#161)
+  - Add or remove a clip's prompt to turn generation on and off (#162)
+  - Generation progress on pending clips in the canvas and timeline (#160)
+
+### Changed
+
+- Upgraded `@shotstack/schemas` to 1.18.0 (#157)
+
+### Fixed
+
+- Legacy generated asset types migrate to image, video or audio on load (#159)
+- Toolbar mode for non-generative clips matches the clip's actual asset (#162)
+
+## [2.16.3] - 2026-08-21
+
+### Fixed
+
+- A merge field whose resolved text starts with a digit stays text instead of collapsing to a number (#152)
+
+## [2.16.2] - 2026-08-21
+
+### Fixed
+
+- Unsigned media URLs are cache-busted so a non-CORS cached response cannot poison the editor load; a warning is logged when CORS blocks an asset (#156)
+
+## [2.16.1] - 2026-08-21
+
+### Fixed
+
+- Signed media URLs are passed to the loader unchanged, so a cache-busting query parameter cannot invalidate the signature (#154)
+
+## [2.16.0] - 2026-08-11
+
+### Added
+
+- Opacity keyframe editing in the media toolbar (#149)
+
+### Fixed
+
+- Toolbar undo state and keyframed control behaviour (#149)
+- Unresolved merge fields are not editable via canvas gestures (#149)
+
+## [2.15.1] - 2026-07-22
+
+### Fixed
+
+- Timeline pointer capture waits until a drag starts, so clicks on clip children (such as the mask badge) register (#148)
+
+## [2.15.0] - 2026-07-22
+
+### Added
+
+- Preview playback honours `asset.speed`, with a toolbar speed control and speed-aware clip resizing (#147)
+
+## [2.14.4] - 2026-07-17
+
+### Fixed
+
+- Google Drive destinations without `options` are accepted (`@shotstack/schemas` 1.14.1) (#144)
+
+## [2.14.3] - 2026-07-17
+
+### Fixed
+
+- Rich-text clips repaint each frame, so animated text updates on seek and during playback (#142)
+- Numeric-looking merge values on text and HTML assets stay strings, so values such as `"3"` still render (#142)
+
+## [2.14.2] - 2026-07-15
+
+### Fixed
+
+- `Canvas.load()` throws a typed `WebGLUnsupportedError` when WebGL is unavailable; `resize()` is a no-op until a renderer exists (#141)
+
+## [2.14.1] - 2026-07-14
+
+### Fixed
+
+- Rich-caption clips no longer write `wordSpacing`, which the schema rejects (#139)
+
+## [2.14.0] - 2026-07-13
+
+### Added
+
+- Pending placeholders for prompt-only image, video and audio assets until generation fills `src` (#126)
+
+### Fixed
+
+- Assets with neither `src` nor a prompt error instead of rendering as empty (#126)
+
+## [2.13.3] - 2026-07-13
+
+### Changed
+
+- Upgraded `@shotstack/schemas` to 1.14.0 (#138)
+
+### Fixed
+
+- Generated assets without a `src` yet are handled instead of failing validation (#138)
+
+## [2.13.2] - 2026-07-13
+
+### Fixed
+
+- `getClip`, `getClipById` and `getTrack` return copies, so mutating or freezing the result cannot corrupt the running edit (#137)
+
+## [2.13.1] - 2026-07-07
+
+### Fixed
+
+- Timeline clip interactions cancel when the pointer stream is interrupted, so a clip cannot stick to the cursor (#135)
+
+## [2.13.0] - 2026-07-03
+
+### Added
+
+- Edit mutators resolve with a `CommandResult` (`success` or `noop`) so callers can tell a refused command from one that applied (#134)
+
+### Fixed
+
+- Deleting a luma-attached clip at the last-clip boundary is refused atomically, so the luma cannot be left behind (#134)
+
+## [2.12.2] - 2026-07-02
+
+### Fixed
+
+- Placeholders already in the edit resolve when merge fields are registered after load (#133)
+
+## [2.12.1] - 2026-07-02
+
+### Fixed
+
+- Copy is left to the browser when text is selected or no clip is targeted, so ordinary text copy still works (#132)
+
+## [2.12.0] - 2026-06-27
+
+### Added
+
+- `canUndo` and `canRedo` getters on `Edit` (#131)
+
+## [2.11.7] - 2026-06-26
+
+### Fixed
+
+- Preview no longer plays at half speed with an audio echo on slower machines (#130)
+
+## [2.11.6] - 2026-06-24
+
+### Fixed
+
+- Video-backed luma masks no longer crash the renderer during playback (#128)
+
+## [2.11.5] - 2026-06-10
+
+### Changed
+
+- Upgraded `@shotstack/shotstack-canvas` to ^2.10.0 (#124)
+
+### Fixed
+
+- Preview and export render-parity (#124)
+  - Rich-caption font resolution delegates to shotstack-canvas
+  - `captureFrame` snapshots the rendered output at a requested time
+  - Eased keyframes evaluate with a cubic-bezier timing function
+  - `wipeLeft` / `wipeRight` transitions render with a gradient-sweep filter
+  - Zoom-in transition no longer over-accelerates near the end
+  - Luma masks build after the masked clip loads, preventing a black clip
+
 ## [2.11.4] - 2026-06-05
 
 ### Fixed
