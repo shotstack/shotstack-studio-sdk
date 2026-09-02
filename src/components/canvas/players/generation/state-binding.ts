@@ -1,5 +1,5 @@
 import type { Edit } from "@core/edit-session";
-import { InternalEvent } from "@core/events/edit-events";
+import { EditEvent } from "@core/events/edit-events";
 
 import type { AiPendingOverlay } from "./pending-overlay";
 
@@ -20,13 +20,13 @@ export function bindGenerationState(edit: Edit, clipId: string | null, overlay: 
 	};
 
 	const events = edit.getInternalEvents();
-	events.on(InternalEvent.ClipGenerationStarted, onStarted);
-	events.on(InternalEvent.ClipGenerationCompleted, onCompleted);
-	events.on(InternalEvent.ClipGenerationFailed, onFailed);
+	events.on(EditEvent.ClipGenerationStarted, onStarted);
+	events.on(EditEvent.ClipGenerationCompleted, onCompleted);
+	events.on(EditEvent.ClipGenerationFailed, onFailed);
 
 	return () => {
-		events.off(InternalEvent.ClipGenerationStarted, onStarted);
-		events.off(InternalEvent.ClipGenerationCompleted, onCompleted);
-		events.off(InternalEvent.ClipGenerationFailed, onFailed);
+		events.off(EditEvent.ClipGenerationStarted, onStarted);
+		events.off(EditEvent.ClipGenerationCompleted, onCompleted);
+		events.off(EditEvent.ClipGenerationFailed, onFailed);
 	};
 }

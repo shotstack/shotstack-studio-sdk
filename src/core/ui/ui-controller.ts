@@ -385,7 +385,7 @@ export class UIController {
 
 		// Keep the generate segment's in-flight marker current.
 		const internalEvents = this.edit.getInternalEvents();
-		for (const name of [InternalEvent.ClipGenerationStarted, InternalEvent.ClipGenerationCompleted, InternalEvent.ClipGenerationFailed] as const) {
+		for (const name of [EditEvent.ClipGenerationStarted, EditEvent.ClipGenerationCompleted, EditEvent.ClipGenerationFailed] as const) {
 			const handler = (): void => this.syncGenerateSegments();
 			internalEvents.on(name, handler);
 			this.generationListeners.push(() => internalEvents.off(name, handler));

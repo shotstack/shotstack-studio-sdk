@@ -259,9 +259,9 @@ export class Timeline {
 
 		// Listen for clip load failures (to show error badge on timeline)
 		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
-		this.edit.getInternalEvents().on(InternalEvent.ClipGenerationStarted, this.handleClipGeneration);
-		this.edit.getInternalEvents().on(InternalEvent.ClipGenerationCompleted, this.handleClipGeneration);
-		this.edit.getInternalEvents().on(InternalEvent.ClipGenerationFailed, this.handleClipGeneration);
+		this.edit.events.on(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
+		this.edit.events.on(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
+		this.edit.events.on(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
 
 		// Listen for focus changes (source popup hover-to-highlight)
 		const internal = this.edit.getInternalEvents();
@@ -281,9 +281,9 @@ export class Timeline {
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
 		this.edit.events.off(EditEvent.ClipUpdated, this.handleClipUpdated);
 		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
-		this.edit.getInternalEvents().off(InternalEvent.ClipGenerationStarted, this.handleClipGeneration);
-		this.edit.getInternalEvents().off(InternalEvent.ClipGenerationCompleted, this.handleClipGeneration);
-		this.edit.getInternalEvents().off(InternalEvent.ClipGenerationFailed, this.handleClipGeneration);
+		this.edit.events.off(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
+		this.edit.events.off(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
+		this.edit.events.off(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
 
 		const internal = this.edit.getInternalEvents();
 		internal.off(InternalEvent.ClipFocused, this.handleClipFocusChanged);

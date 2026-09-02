@@ -173,9 +173,9 @@ export class Edit {
 		this.assetGenerator = new AssetGenerator({
 			getClipAsset: clipId => this.getResolvedClipById(clipId)?.asset as Record<string, unknown> | undefined,
 			applyGeneratedSrc: (clipId, url) => this.applyGeneratedSrc(clipId, url),
-			emitStarted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationStarted, { clipId }),
-			emitCompleted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationCompleted, { clipId }),
-			emitFailed: (clipId, error) => this.internalEvents.emit(InternalEvent.ClipGenerationFailed, { clipId, error })
+			emitStarted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationStarted, { clipId }),
+			emitCompleted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationCompleted, { clipId }),
+			emitFailed: (clipId, error) => this.internalEvents.emit(EditEvent.ClipGenerationFailed, { clipId, error })
 		});
 		this.mergeFieldService = new MergeFieldService(this.internalEvents);
 		this.outputSettings = new OutputSettingsManager(this);
@@ -466,12 +466,12 @@ export class Edit {
 	 * Generate the asset for a prompt-bearing clip and write the result to it.
 	 *
 	 * Rejects only when no generator is registered or the clip has nothing to generate from.
-	 * A generation failure resolves and surfaces as `failed` clip state plus a
-	 * `ClipGenerationFailed` event. A clip removed mid-flight resolves writing nothing, silently.
-	 * A second call while one is in flight for the same clip is ignored.
-	 * @internal
+	 * A generation failure resolves and surfaces as a `clip:generationFailed` event. Removing
+	 * the clip, reloading the edit or disposing it resolves writing nothing, and no completed
+	 * or failed event follows the `clip:generationStarted` already emitted. A second call while
+	 * one is in flight for the same clip is ignored.
 	 */
-	public generateClipAsset(clipId: string): Promise<void> {
+	public generateClip(clipId: string): Promise<void> {
 		return this.assetGenerator.generate(clipId);
 	}
 

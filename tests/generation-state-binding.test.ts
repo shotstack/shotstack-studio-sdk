@@ -2,10 +2,10 @@ import type { AiPendingOverlay } from "@canvas/players/generation/pending-overla
 import { bindGenerationState } from "@canvas/players/generation/state-binding";
 import type { Edit } from "@core/edit-session";
 import { EventEmitter } from "@core/events/event-emitter";
-import { InternalEvent, type InternalEventMap } from "@core/events/edit-events";
+import { EditEvent, type EditEventMap } from "@core/events/edit-events";
 
 function setup(state: { status: "generating" | "failed"; error?: string }) {
-	const events = new EventEmitter<InternalEventMap>();
+	const events = new EventEmitter<EditEventMap>();
 	const edit = {
 		getClipGenerationState: jest.fn(() => state),
 		getInternalEvents: jest.fn(() => events)
@@ -23,11 +23,11 @@ describe("generation state binding", () => {
 		const unbind = bindGenerationState(edit, "clip-1", overlay);
 
 		expect(overlay.setGenerating).toHaveBeenCalledWith(true);
-		events.emit(InternalEvent.ClipGenerationFailed, { clipId: "clip-1", error: "model unavailable" });
+		events.emit(EditEvent.ClipGenerationFailed, { clipId: "clip-1", error: "model unavailable" });
 		expect(overlay.setFailed).toHaveBeenCalledWith("model unavailable");
 
 		unbind();
-		events.emit(InternalEvent.ClipGenerationStarted, { clipId: "clip-1" });
+		events.emit(EditEvent.ClipGenerationStarted, { clipId: "clip-1" });
 		expect(overlay.setGenerating).toHaveBeenCalledTimes(1);
 	});
 

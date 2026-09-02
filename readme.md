@@ -203,6 +203,10 @@ edit.registerAssetGenerator(async ({ clipId, asset, signal }) => {
 });
 ```
 
+A host can trigger the same generation directly, without the toolbar: `await
+edit.generateClip(clipId)` runs it for a prompt-bearing clip. Track progress with the events
+`"clip:generationStarted"`, `"clip:generationCompleted"` and `"clip:generationFailed"`.
+
 Pass a model catalogue as the registration's `catalogue` option to show model and option
 controls. Entries must include their option schema; those without one are ignored. The
 [Edit API](https://shotstack.io/docs/api/#shotstack-edit) returns this shape from
