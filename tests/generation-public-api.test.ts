@@ -131,6 +131,7 @@ describe("generation through the public API", () => {
 		await edit.generateClip(clipIdOf(edit));
 
 		expect(seen).toEqual(["started", "completed"]);
+		edit.dispose();
 	});
 
 	it("reports the handler's message on failure, and resolves rather than rejecting", async () => {
@@ -146,10 +147,12 @@ describe("generation through the public API", () => {
 		expect(failures).toHaveLength(1);
 		expect(failures[0]?.error).toBe("provider refused the prompt");
 		expect(failures[0]?.clipId).toBe(clipIdOf(edit));
+		edit.dispose();
 	});
 
 	it("rejects when no handler is registered", async () => {
 		const edit = await editWithPromptClip();
 		await expect(edit.generateClip(clipIdOf(edit))).rejects.toThrow(/No asset generator registered/);
+		edit.dispose();
 	});
 });
