@@ -6,7 +6,7 @@
  */
 
 import { Edit } from "@core/edit-session";
-import { InternalEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
 import type { Clip, ResolvedClip } from "@schemas";
@@ -683,7 +683,7 @@ describe("Edit Clip Operations", () => {
 			refusedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/out.png" }));
 
 			const completed: string[] = [];
-			refusedEdit.getInternalEvents().on(InternalEvent.ClipGenerationCompleted, ({ clipId }) => completed.push(clipId));
+			refusedEdit.getInternalEvents().on(EditEvent.ClipGenerationCompleted, ({ clipId }) => completed.push(clipId));
 			jest
 				.spyOn(refusedEdit as unknown as { executeCommand: () => Promise<unknown> }, "executeCommand")
 				.mockResolvedValue({ status: "noop", message: "Invalid clip at 0/0" });

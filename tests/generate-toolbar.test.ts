@@ -20,7 +20,7 @@ jest.mock("@styles/inject", () => ({
 	injectShotstackStyles: jest.fn()
 }));
 
-import { InternalEvent } from "@core/events/edit-events";
+import { EditEvent } from "@core/events/edit-events";
 import type { GenerationAssetType, GenerationModelDefinition, GenerationOptionDefinition } from "@core/generation/model-catalogue";
 import { GenerateToolbar } from "@core/ui/generate-toolbar";
 
@@ -492,7 +492,7 @@ describe("GenerateToolbar", () => {
 
 		toolbar.mount(container);
 
-		[InternalEvent.ClipGenerationStarted, InternalEvent.ClipGenerationCompleted, InternalEvent.ClipGenerationFailed].forEach(event => {
+		[EditEvent.ClipGenerationStarted, EditEvent.ClipGenerationCompleted, EditEvent.ClipGenerationFailed].forEach(event => {
 			expect(edit.getInternalEvents().on.mock.calls.filter(([name]) => name === event)).toHaveLength(1);
 		});
 

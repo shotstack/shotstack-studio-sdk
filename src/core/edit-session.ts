@@ -173,9 +173,9 @@ export class Edit {
 		this.assetGenerator = new AssetGenerator({
 			getClipAsset: clipId => this.getResolvedClipById(clipId)?.asset as Record<string, unknown> | undefined,
 			applyGeneratedSrc: (clipId, url) => this.applyGeneratedSrc(clipId, url),
-			emitStarted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationStarted, { clipId }),
-			emitCompleted: clipId => this.internalEvents.emit(InternalEvent.ClipGenerationCompleted, { clipId }),
-			emitFailed: (clipId, error) => this.internalEvents.emit(InternalEvent.ClipGenerationFailed, { clipId, error })
+			emitStarted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationStarted, { clipId }),
+			emitCompleted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationCompleted, { clipId }),
+			emitFailed: (clipId, error) => this.internalEvents.emit(EditEvent.ClipGenerationFailed, { clipId, error })
 		});
 		this.mergeFieldService = new MergeFieldService(this.internalEvents);
 		this.outputSettings = new OutputSettingsManager(this);

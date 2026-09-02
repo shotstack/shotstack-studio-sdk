@@ -70,6 +70,9 @@ export const EditEvent = {
 	ClipCaptureStarted: "clip:captureStarted",
 	ClipCaptureCompleted: "clip:captureCompleted",
 	ClipCaptureFailed: "clip:captureFailed",
+	ClipGenerationStarted: "clip:generationStarted",
+	ClipGenerationCompleted: "clip:generationCompleted",
+	ClipGenerationFailed: "clip:generationFailed",
 	ClipUnresolved: "clip:unresolved",
 
 	// Selection
@@ -135,10 +138,7 @@ export const InternalEvent = {
 	ClipBlurred: "clip:blurred",
 
 	// Asset generation UI
-	AssetGeneratorChanged: "assetGenerator:changed",
-	ClipGenerationStarted: "clip:generationStarted",
-	ClipGenerationCompleted: "clip:generationCompleted",
-	ClipGenerationFailed: "clip:generationFailed"
+	AssetGeneratorChanged: "assetGenerator:changed"
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -166,6 +166,9 @@ export type EditEventMap = {
 	[EditEvent.ClipCaptureStarted]: { clipId: string | null; assetType: string };
 	[EditEvent.ClipCaptureCompleted]: { clipId: string | null; assetType: string; frameCount: number };
 	[EditEvent.ClipCaptureFailed]: { clipId: string | null; assetType: string; error: string; fallback: string };
+	[EditEvent.ClipGenerationStarted]: { clipId: string };
+	[EditEvent.ClipGenerationCompleted]: { clipId: string };
+	[EditEvent.ClipGenerationFailed]: { clipId: string; error: string };
 	[EditEvent.ClipUnresolved]: ClipLocation & { assetType: string; clipId: string };
 
 	// Selection
@@ -234,7 +237,4 @@ export type InternalEventMap = {
 
 	// Asset generation UI
 	[InternalEvent.AssetGeneratorChanged]: void;
-	[InternalEvent.ClipGenerationStarted]: { clipId: string };
-	[InternalEvent.ClipGenerationCompleted]: { clipId: string };
-	[InternalEvent.ClipGenerationFailed]: { clipId: string; error: string };
 };

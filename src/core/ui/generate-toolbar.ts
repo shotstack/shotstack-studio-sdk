@@ -182,7 +182,7 @@ export class GenerateToolbar extends BaseToolbar {
 		// mount() can run more than once on an instance; never stack listeners.
 		if (this.generationUnsubscribers.length > 0) return;
 		const events = this.edit.getInternalEvents();
-		const names = [InternalEvent.ClipGenerationStarted, InternalEvent.ClipGenerationCompleted, InternalEvent.ClipGenerationFailed] as const;
+		const names = [EditEvent.ClipGenerationStarted, EditEvent.ClipGenerationCompleted, EditEvent.ClipGenerationFailed] as const;
 		for (const name of names) {
 			const handler = (payload: { clipId: string }): void => {
 				if (payload.clipId === this.getSelectedClipId()) this.syncState();
