@@ -594,7 +594,7 @@ describe("Edit Clip Operations", () => {
 			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
 			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/speech.mp3" }));
 
-			await mergedEdit.generateClipAsset(clip.id);
+			await mergedEdit.generateClip(clip.id);
 			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
 				type: "audio",
 				prompt: "Hello {{ NAME }}"
@@ -629,7 +629,7 @@ describe("Edit Clip Operations", () => {
 			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
 			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/speech.mp3" }));
 
-			await mergedEdit.generateClipAsset(clip.id);
+			await mergedEdit.generateClip(clip.id);
 
 			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
 				type: "audio",
@@ -659,7 +659,7 @@ describe("Edit Clip Operations", () => {
 			const clip = mergedEdit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string };
 			mergedEdit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/out.mp4" }));
 
-			await mergedEdit.generateClipAsset(clip.id);
+			await mergedEdit.generateClip(clip.id);
 
 			expect(mergedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
 				type: "video",
@@ -688,7 +688,7 @@ describe("Edit Clip Operations", () => {
 				.spyOn(refusedEdit as unknown as { executeCommand: () => Promise<unknown> }, "executeCommand")
 				.mockResolvedValue({ status: "noop", message: "Invalid clip at 0/0" });
 
-			await refusedEdit.generateClipAsset(clip.id);
+			await refusedEdit.generateClip(clip.id);
 
 			expect(refusedEdit.getClipGenerationState(clip.id)).toEqual({ status: "failed", error: "Invalid clip at 0/0" });
 			expect(completed).toEqual([]);
@@ -710,7 +710,7 @@ describe("Edit Clip Operations", () => {
 			const doc = (edit as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
 			const id = doc.getClipId(0, 1) as string;
 
-			const pending = edit.generateClipAsset(id);
+			const pending = edit.generateClip(id);
 			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
 
 			await edit.deleteClip(0, 1);
@@ -809,7 +809,7 @@ describe("Edit Clip Operations", () => {
 			const seen = blockingGenerator(edit);
 			const id = clipIdAt(edit, 1, 0);
 
-			const pending = edit.generateClipAsset(id);
+			const pending = edit.generateClip(id);
 			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
 
 			await edit.deleteTrack(1);
@@ -824,7 +824,7 @@ describe("Edit Clip Operations", () => {
 			const seen = blockingGenerator(edit);
 			const id = clipIdAt(edit, 0, 1);
 
-			const pending = edit.generateClipAsset(id);
+			const pending = edit.generateClip(id);
 			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
 
 			await edit.undo();
@@ -839,7 +839,7 @@ describe("Edit Clip Operations", () => {
 			const seen = blockingGenerator(edit);
 			const id = clipIdAt(edit, 0, 1);
 
-			const pending = edit.generateClipAsset(id);
+			const pending = edit.generateClip(id);
 			expect(edit.getClipGenerationState(id)?.status).toBe("generating");
 
 			await edit.loadEdit({
@@ -863,7 +863,7 @@ describe("Edit Clip Operations", () => {
 			const seen = blockingGenerator(solo);
 			const id = clipIdAt(solo, 0, 0);
 
-			const pending = solo.generateClipAsset(id);
+			const pending = solo.generateClip(id);
 			expect((await solo.deleteClip(0, 0)).status).toBe("noop");
 
 			expect(seen.aborted).toBe(false);
@@ -892,7 +892,7 @@ describe("Edit Clip Operations", () => {
 			});
 
 			const doc = (templated as unknown as { document: { getClipId(t: number, c: number): string | null } }).document;
-			await templated.generateClipAsset(doc.getClipId(0, 0) as string);
+			await templated.generateClip(doc.getClipId(0, 0) as string);
 
 			expect(received).toBe("an illustration of a red apple");
 			templated.dispose();

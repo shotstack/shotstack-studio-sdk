@@ -466,12 +466,11 @@ export class Edit {
 	 * Generate the asset for a prompt-bearing clip and write the result to it.
 	 *
 	 * Rejects only when no generator is registered or the clip has nothing to generate from.
-	 * A generation failure resolves and surfaces as `failed` clip state plus a
-	 * `ClipGenerationFailed` event. A clip removed mid-flight resolves writing nothing, silently.
-	 * A second call while one is in flight for the same clip is ignored.
-	 * @internal
+	 * A generation failure resolves and surfaces as a `ClipGenerationFailed` event. A clip
+	 * removed mid-flight resolves writing nothing, silently. A second call while one is in
+	 * flight for the same clip is ignored.
 	 */
-	public generateClipAsset(clipId: string): Promise<void> {
+	public generateClip(clipId: string): Promise<void> {
 		return this.assetGenerator.generate(clipId);
 	}
 

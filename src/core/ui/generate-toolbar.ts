@@ -173,7 +173,7 @@ export class GenerateToolbar extends BaseToolbar {
 		if (this.edit.getClipGenerationState(clipId)?.status === "generating") return;
 		// A generation failure surfaces as clip state; a rejection means the clip could not be
 		// generated at all — no handler registered, or nothing on the asset to generate from.
-		this.edit.generateClipAsset(clipId).catch((error: unknown) => {
+		this.edit.generateClip(clipId).catch((error: unknown) => {
 			console.warn(`Generate: ${error instanceof Error ? error.message : String(error)}`);
 		});
 	}

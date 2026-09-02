@@ -36,7 +36,7 @@ function createMockEdit(asset: Record<string, unknown> = { type: "image", prompt
 		getDocument: jest.fn(),
 		hasAssetGenerator: jest.fn().mockReturnValue(true),
 		getClipGenerationState: jest.fn(),
-		generateClipAsset: jest.fn().mockResolvedValue(undefined),
+		generateClip: jest.fn().mockResolvedValue(undefined),
 		resolveMergeFields: jest.fn((value: string) => value),
 		updateClip: jest.fn(),
 		deleteClip: jest.fn(),
@@ -317,7 +317,7 @@ describe("GenerateToolbar", () => {
 
 		container.querySelector<HTMLButtonElement>("[data-action='generate']")?.click();
 
-		expect(edit.generateClipAsset).toHaveBeenCalledWith("clip-1");
+		expect(edit.generateClip).toHaveBeenCalledWith("clip-1");
 
 		toolbar.dispose();
 	});
@@ -351,7 +351,7 @@ describe("GenerateToolbar", () => {
 		input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
 		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ asset: expect.objectContaining({ prompt: "a dog instead" }) }));
-		expect(edit.generateClipAsset).toHaveBeenCalledWith("clip-1");
+		expect(edit.generateClip).toHaveBeenCalledWith("clip-1");
 
 		toolbar.dispose();
 	});
@@ -417,7 +417,7 @@ describe("GenerateToolbar", () => {
 
 		container.querySelector<HTMLButtonElement>("[data-action='generate']")?.click();
 
-		expect(edit.generateClipAsset).not.toHaveBeenCalled();
+		expect(edit.generateClip).not.toHaveBeenCalled();
 
 		toolbar.dispose();
 	});
@@ -446,7 +446,7 @@ describe("GenerateToolbar", () => {
 		expect(btn?.disabled).toBe(false);
 
 		btn?.click();
-		expect(edit.generateClipAsset).toHaveBeenCalledWith("clip-1");
+		expect(edit.generateClip).toHaveBeenCalledWith("clip-1");
 
 		input!.value = "";
 		input?.dispatchEvent(new Event("input", { bubbles: true }));
@@ -464,7 +464,7 @@ describe("GenerateToolbar", () => {
 		input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
 		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, expect.objectContaining({ asset: expect.objectContaining({ prompt: "a golden sunset" }) }));
-		expect(edit.generateClipAsset).toHaveBeenCalledWith("clip-1");
+		expect(edit.generateClip).toHaveBeenCalledWith("clip-1");
 
 		toolbar.dispose();
 	});
@@ -481,7 +481,7 @@ describe("GenerateToolbar", () => {
 
 		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: expect.objectContaining({ prompt: undefined }) });
 		expect(document.removeClipBinding).toHaveBeenCalledWith("clip-1", "asset.prompt");
-		expect(edit.generateClipAsset).not.toHaveBeenCalled();
+		expect(edit.generateClip).not.toHaveBeenCalled();
 
 		toolbar.dispose();
 	});
