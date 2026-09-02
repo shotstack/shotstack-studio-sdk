@@ -16,6 +16,28 @@ Try Shotstack Studio in your preferred framework:
 [![Angular](https://img.shields.io/badge/Angular-StackBlitz-blue?style=for-the-badge&logo=angular)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/angular)
 [![Next.js](https://img.shields.io/badge/Next.js-StackBlitz-blue?style=for-the-badge&logo=next.js)](https://stackblitz.com/fork/github/shotstack/shotstack-studio-sdk-demos/tree/master/nextjs)
 
+## Create a new project
+
+The fastest way to get started is to scaffold a project. This creates a small app with the Studio SDK already set up, including the canvas, timeline, and controls.
+
+```bash
+npm create video-editor@latest
+# or
+npx create-video-editor
+```
+
+You'll be asked for a project name and a framework. The CLI then scaffolds the app, installs dependencies, starts the dev server, and opens a live editor in your browser.
+
+```bash
+npx create-video-editor my-video-editor
+```
+
+To skip the prompts, pass the project directory and framework directly:
+
+```bash
+npx create-video-editor my-editor --template react --yes
+```
+
 ## Features
 
 - Template-driven editing with undo/redo command model
@@ -25,6 +47,8 @@ Try Shotstack Studio in your preferred framework:
 - Browser export pipeline via `VideoExporter`
 
 ## Installation
+
+To add the SDK to an existing app, install it directly:
 
 ```bash
 npm install @shotstack/shotstack-studio
