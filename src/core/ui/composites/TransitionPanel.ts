@@ -198,6 +198,11 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 	}
 
 	private stepSpeed(direction: number): void {
+		const effect = this.state.tab === "in" ? this.state.inEffect : this.state.outEffect;
+		if (!this.supportsSpeedVariants(effect)) {
+			return;
+		}
+
 		const speeds = TransitionPanel.SPEEDS;
 		const currentSpeed = this.state.tab === "in" ? this.state.inSpeed : this.state.outSpeed;
 
@@ -222,6 +227,14 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 
 	private needsDirection(effect: string): boolean {
 		return ["slide", "wipe", "carousel"].includes(effect);
+	}
+
+	/**
+	 * Whether the Shotstack transition API exposes Slow/Fast variants for this effect.
+	 * `zoom` is fixed-speed (only `zoom` is valid — not `zoomSlow`/`zoomFast`).
+	 */
+	private supportsSpeedVariants(effect: string): boolean {
+		return Boolean(effect) && effect !== "zoom";
 	}
 
 	private updateUI(): void {
@@ -257,10 +270,11 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 			this.speedLabel.textContent = `${speed.toFixed(2)}s`;
 		}
 
-		// Update stepper states
+		// Update stepper states — disable when the effect has no Slow/Fast API variants
+		const canAdjustSpeed = this.supportsSpeedVariants(effect);
 		const speedIdx = TransitionPanel.SPEEDS.indexOf(speed);
-		if (this.speedDecreaseBtn) this.speedDecreaseBtn.disabled = speedIdx <= 0;
-		if (this.speedIncreaseBtn) this.speedIncreaseBtn.disabled = speedIdx >= TransitionPanel.SPEEDS.length - 1;
+		if (this.speedDecreaseBtn) this.speedDecreaseBtn.disabled = !canAdjustSpeed || speedIdx <= 0;
+		if (this.speedIncreaseBtn) this.speedIncreaseBtn.disabled = !canAdjustSpeed || speedIdx >= TransitionPanel.SPEEDS.length - 1;
 	}
 
 	// ─── Transition Value Parsing/Building ───────────────────────────────────
@@ -304,6 +318,10 @@ export class TransitionPanel extends UIComponent<TransitionState> {
 	}
 
 	private speedToSuffix(speed: number, effect: string): string {
+		if (!this.supportsSpeedVariants(effect)) {
+			return "";
+		}
+
 		const isSlideOrCarousel = effect === "slide" || effect === "carousel";
 
 		if (isSlideOrCarousel) {
