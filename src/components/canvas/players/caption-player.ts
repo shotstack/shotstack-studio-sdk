@@ -2,6 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { type Cue, findActiveCue } from "@core/captions";
 import type { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { sanitizeColor } from "@core/shared/color-utils";
 import { isAliasReference } from "@core/timing/types";
 import { type Size, type Vector } from "@layouts/geometry";
 import { SubtitleLoadParser, type SubtitleAsset } from "@loaders/subtitle-load-parser";
@@ -48,7 +49,7 @@ export class CaptionPlayer extends Player {
 		if (captionAsset.stroke?.width && captionAsset.stroke.width > 0 && captionAsset.stroke.color) {
 			const strokeFilter = new pixiFilters.OutlineFilter({
 				thickness: captionAsset.stroke.width,
-				color: captionAsset.stroke.color
+				color: sanitizeColor(captionAsset.stroke.color)
 			});
 			this.text.filters = [strokeFilter];
 		}
@@ -146,7 +147,7 @@ export class CaptionPlayer extends Player {
 		return new pixi.TextStyle({
 			fontFamily: baseFontFamily,
 			fontSize,
-			fill: captionAsset.font?.color ?? "#ffffff",
+			fill: sanitizeColor(captionAsset.font?.color),
 			fontWeight: fontWeight.toString() as pixi.TextStyleFontWeight,
 			wordWrap: true,
 			wordWrapWidth: width * 0.9,
@@ -219,7 +220,7 @@ export class CaptionPlayer extends Player {
 
 		this.background.clear();
 		this.background.fillStyle = {
-			color: bgConfig.color,
+			color: sanitizeColor(bgConfig.color),
 			alpha: bgConfig.opacity ?? 0.8
 		};
 
