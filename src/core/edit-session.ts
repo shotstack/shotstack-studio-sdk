@@ -1240,7 +1240,13 @@ export class Edit {
 		// Validate the final state before committing to history.
 		// Live updates (updateClipInDocument) skip validation for performance,
 		// so this is the gate that catches corrupt data from drag/slider interactions.
-		ResolvedClipSchema.parse(finalConfig);
+		// Skip invalid commits (e.g. media asset with empty src) instead of throwing —
+		// resize/fit gestures must not surface unhandled ZodErrors to the host app.
+		const parsed = ResolvedClipSchema.safeParse(finalConfig);
+		if (!parsed.success) {
+			console.warn(`commitClipUpdate: skipping invalid clip ${clipId}`, parsed.error);
+			return;
+		}
 
 		const command = new SetUpdatedClipCommand(initialConfig, structuredClone(finalConfig), {
 			trackIndex: location.trackIndex,
