@@ -2,6 +2,7 @@ import { Player, PlayerType } from "@canvas/players/player";
 import { TextEditor } from "@canvas/text/text-editor";
 import type { Edit } from "@core/edit-session";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
+import { sanitizeColor } from "@core/shared/color-utils";
 import { type Size, type Vector } from "@layouts/geometry";
 import { type ResolvedClip, type TextAsset } from "@schemas";
 import * as pixiFilters from "pixi-filters";
@@ -43,7 +44,7 @@ export class TextPlayer extends Player {
 		if (textAsset.stroke?.width && textAsset.stroke.width > 0 && textAsset.stroke.color) {
 			const textStrokeFilter = new pixiFilters.OutlineFilter({
 				thickness: textAsset.stroke.width,
-				color: textAsset.stroke.color
+				color: sanitizeColor(textAsset.stroke.color)
 			});
 			this.text.filters = [textStrokeFilter];
 		}
@@ -85,7 +86,7 @@ export class TextPlayer extends Player {
 			if (textAsset.stroke?.width && textAsset.stroke.width > 0 && textAsset.stroke.color) {
 				const textStrokeFilter = new pixiFilters.OutlineFilter({
 					thickness: textAsset.stroke.width,
-					color: textAsset.stroke.color
+					color: sanitizeColor(textAsset.stroke.color)
 				});
 				this.text.filters = [textStrokeFilter];
 			} else {
@@ -157,7 +158,7 @@ export class TextPlayer extends Player {
 		return new pixi.TextStyle({
 			fontFamily: baseFontFamily,
 			fontSize: textAsset.font?.size ?? 32,
-			fill: textAsset.font?.color ?? "#ffffff",
+			fill: sanitizeColor(textAsset.font?.color),
 			fontWeight: fontWeight.toString() as pixi.TextStyleFontWeight,
 			wordWrap: true,
 			wordWrapWidth: width,
@@ -198,7 +199,7 @@ export class TextPlayer extends Player {
 		const { width, height } = this.getSize();
 		this.background.clear();
 		this.background.fillStyle = {
-			color: textAsset.background.color,
+			color: sanitizeColor(textAsset.background.color),
 			alpha: textAsset.background.opacity ?? 1
 		};
 		this.background.rect(0, 0, width, height);
