@@ -469,7 +469,7 @@ describe("GenerateToolbar", () => {
 		toolbar.dispose();
 	});
 
-	it("removes the prompt when the field is cleared, so the asset stops regenerating", () => {
+	it("skips clip update when the prompt is cleared, so Zod never sees undefined prompt", () => {
 		const edit = createMockEdit({ type: "image", prompt: "a cat", src: "https://cdn/out.png" });
 		const document = { setClipBinding: jest.fn(), removeClipBinding: jest.fn(), getClipBinding: jest.fn() };
 		edit.getDocument.mockReturnValue(document);
@@ -479,11 +479,27 @@ describe("GenerateToolbar", () => {
 		input!.value = "   ";
 		input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
-		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: expect.objectContaining({ prompt: undefined }) });
+		expect(edit.updateClip).not.toHaveBeenCalled();
 		expect(document.removeClipBinding).toHaveBeenCalledWith("clip-1", "asset.prompt");
 		expect(edit.generateClip).not.toHaveBeenCalled();
 
 		toolbar.dispose();
+	});
+
+	it("skips debounced prompt commit when the input is empty", () => {
+		jest.useFakeTimers();
+		const edit = createMockEdit({ type: "image", prompt: "a cat" });
+		const { toolbar, container } = mountToolbar(edit);
+
+		const input = container.querySelector<HTMLInputElement>("[data-prompt-input]");
+		input!.value = "";
+		input?.dispatchEvent(new Event("input", { bubbles: true }));
+		jest.advanceTimersByTime(300);
+
+		expect(edit.updateClip).not.toHaveBeenCalled();
+
+		toolbar.dispose();
+		jest.useRealTimers();
 	});
 
 	it("does not stack generation listeners when mounted twice", () => {
