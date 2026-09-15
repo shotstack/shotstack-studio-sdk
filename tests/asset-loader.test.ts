@@ -154,3 +154,29 @@ describe("AssetLoader", () => {
 		});
 	});
 });
+
+describe("preview failure diagnosis", () => {
+	const originalFetch = global.fetch;
+	beforeEach(() => {
+		jest.restoreAllMocks();
+	});
+	afterEach(() => {
+		jest.restoreAllMocks();
+		global.fetch = originalFetch;
+	});
+
+	it("exposes suspected CORS without holding up a failed load", async () => {
+		const loader = new AssetLoader();
+		const url = "https://example.com/blocked.mp4";
+		const video = document.createElement("video");
+		jest.spyOn(document, "createElement").mockReturnValue(video);
+		global.fetch = jest.fn().mockRejectedValueOnce(new TypeError("Failed to fetch")).mockResolvedValueOnce({ type: "opaque" });
+		const loading = loader.loadVideoUnique(url, { src: url });
+		video.dispatchEvent(new Event("error"));
+		expect(await loading).toBeNull();
+		await new Promise(resolve => {
+			setTimeout(resolve, 0);
+		});
+		expect(loader.loadTracker.registry[url]).toEqual({ status: "failed", progress: 1, error: expect.stringContaining("CORS") });
+	});
+});

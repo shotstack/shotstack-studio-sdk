@@ -211,13 +211,14 @@ export function toLoadUrl(src: string): string {
  * misconfiguration (fixable on the asset host) from a dead URL.
  * @internal
  */
-export async function warnIfCorsBlocked(url: string): Promise<void> {
+export async function warnIfCorsBlocked(url: string, onBlocked?: () => void): Promise<void> {
 	if (!url.startsWith("http")) return;
 	try {
 		await fetch(url, { method: "HEAD", mode: "cors" });
 	} catch {
 		try {
 			await fetch(url, { method: "HEAD", mode: "no-cors" });
+			onBlocked?.();
 			console.warn(
 				`[AssetLoader] "${url}" is reachable but its server does not send CORS headers, so the browser blocks it. ` +
 					`Add a CORS rule to the bucket/CDN allowing this origin, or ingest the file with the Shotstack Ingest API.`

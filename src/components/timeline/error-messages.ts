@@ -26,6 +26,9 @@ export function extractFilenameFromError(error: string): string | null {
 export function formatClipErrorMessage(error: string, assetType: string): string {
 	const filename = extractFilenameFromError(error);
 	const fileExt = filename?.split(".").pop()?.toLowerCase();
+	if (error.startsWith("CORS may be blocking")) {
+		return `${assetType === "video" ? "Video" : "Media"} preview unavailable\n\n${filename || "Source file"}\n\nThe file’s host may not allow this editor to access it (CORS).`;
+	}
 
 	// Detect wrong file type scenarios
 	if (error.toLowerCase().includes("invalid") && error.toLowerCase().includes("source")) {

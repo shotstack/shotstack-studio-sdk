@@ -77,7 +77,6 @@ export class AssetLoader {
 			return resolvedAsset;
 		} catch (error) {
 			console.warn(`[AssetLoader.load] Failed to load "${identifier}":`, error);
-			warnIfCorsBlocked(identifier).catch(() => {});
 			this.updateAssetLoadMetadata(identifier, "failed", 1);
 			await this.cleanupFailedLoad(identifier);
 			return null;
@@ -93,8 +92,8 @@ export class AssetLoader {
 		this.updateAssetLoadMetadata(identifier, "pending", 0);
 		// Note: Don't increment ref count - each unique video manages its own lifecycle
 
+		const url = this.extractUrl(loadOptions);
 		try {
-			const url = this.extractUrl(loadOptions);
 			if (!url) {
 				throw new Error("No URL provided for video loading");
 			}
@@ -134,8 +133,7 @@ export class AssetLoader {
 			this.updateAssetLoadMetadata(identifier, "success", 1);
 			return texture;
 		} catch (_error) {
-			warnIfCorsBlocked(identifier).catch(() => {});
-			this.updateAssetLoadMetadata(identifier, "failed", 1);
+			this.updateAssetLoadMetadata(identifier, "failed", 1, url);
 			return null;
 		}
 	}
@@ -237,15 +235,17 @@ export class AssetLoader {
 		return texture as TResolvedAsset;
 	}
 
-	private updateAssetLoadMetadata(identifier: string, status: AssetLoadInfoStatus, progress: number): void {
-		if (!this.loadTracker.registry[identifier]) {
-			this.loadTracker.registry[identifier] = { progress, status };
-		} else {
-			this.loadTracker.registry[identifier].progress = progress;
-			this.loadTracker.registry[identifier].status = status;
-		}
+	private updateAssetLoadMetadata(identifier: string, status: AssetLoadInfoStatus, progress: number, url = identifier): void {
+		const info = { progress, status };
+		this.loadTracker.registry[identifier] = info;
+		this.loadTracker.emit("onAssetLoadInfoUpdated", { registry: { ...this.loadTracker.registry } });
+		if (status !== "failed") return;
 
-		const assetLoadStatusRegistry = { ...this.loadTracker.registry };
-		this.loadTracker.emit("onAssetLoadInfoUpdated", { registry: assetLoadStatusRegistry });
+		warnIfCorsBlocked(url, () => {
+			// A retry may have replaced this failure while the diagnostic request was in flight.
+			if (this.loadTracker.registry[identifier] !== info) return;
+			this.loadTracker.registry[identifier] = { ...info, error: `CORS may be blocking '${url}'.` };
+			this.loadTracker.emit("onAssetLoadInfoUpdated", { registry: { ...this.loadTracker.registry } });
+		}).catch(() => {});
 	}
 }

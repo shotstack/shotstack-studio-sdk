@@ -46,7 +46,8 @@ export class TimelineStateManager {
 		this.edit.getInternalEvents().on(InternalEvent.ClipBlurred, this.onClipBlurred);
 	}
 
-	private invalidateCache = (): void => {
+	/** @internal */
+	public invalidateCache = (): void => {
 		this.cachedTracks = null;
 	};
 

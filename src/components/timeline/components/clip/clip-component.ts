@@ -260,7 +260,16 @@ export class ClipComponent {
 
 			// Create error badge if needed
 			if (!this.errorBadge) {
-				this.errorBadge = document.createElement("div");
+				const badge = document.createElement("a");
+				badge.href = "https://t.shotstack.io/cors";
+				badge.target = "_blank";
+				badge.rel = "noopener noreferrer";
+				badge.setAttribute("aria-label", "Fix this clip’s preview (opens in a new tab)");
+				badge.addEventListener("pointerdown", e => e.stopPropagation());
+				badge.addEventListener("keydown", e => e.stopPropagation());
+				badge.addEventListener("click", e => e.stopPropagation());
+				badge.addEventListener("contextmenu", e => e.stopPropagation());
+				this.errorBadge = badge;
 				this.errorBadge.className = "ss-clip-error-badge";
 				this.errorBadge.textContent = "⚠";
 				this.element.appendChild(this.errorBadge);

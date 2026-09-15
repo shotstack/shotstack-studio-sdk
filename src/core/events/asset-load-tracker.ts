@@ -5,6 +5,7 @@ export type AssetLoadInfoStatus = "pending" | "loading" | "success" | "failed";
 export type AssetLoadInfo = {
 	progress: number;
 	status: AssetLoadInfoStatus;
+	error?: string;
 };
 
 export type AssetLoadInfoUpdatedPayload = {
