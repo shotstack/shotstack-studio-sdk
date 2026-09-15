@@ -224,8 +224,11 @@ export class GenerateToolbar extends BaseToolbar {
 				document.removeClipBinding(clipId, path);
 			}
 		}
+		// Empty/undefined prompt fails Zod (required string, or src-or-prompt refine). Skip
+		// the clip update rather than writing invalid asset state.
+		if (cleared) return;
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, {
-			asset: { ...clip.asset, [property]: cleared ? undefined : resolvedText }
+			asset: { ...clip.asset, [property]: resolvedText }
 		} as never);
 	}
 
