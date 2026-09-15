@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 /* eslint-disable import/first */
+/* eslint-disable max-classes-per-file -- the two stub classes are jest.mock factories, not real types */
 
 jest.mock("pixi.js", () => ({}));
 jest.mock("../src/components/canvas/players/player", () => ({
