@@ -1461,12 +1461,24 @@ export class RichTextToolbar extends BaseToolbar {
 		}
 	}
 
+	private assetSupportsStyle(asset: { type?: string } | null | undefined): boolean {
+		return asset?.type === "rich-text" || asset?.type === "rich-caption";
+	}
+
 	private cycleTransform(asset: RichTextAsset): void {
+		// TextAsset (and other non-rich types) reject `style` under Zod strict().
+		// textTransform lives on asset.style for rich-text / rich-caption only.
+		if (!this.assetSupportsStyle(asset)) return;
 		const current = asset.style?.textTransform ?? "none";
 		const cycle: Array<"none" | "uppercase" | "lowercase"> = ["none", "uppercase", "lowercase"];
 		const currentIdx = cycle.indexOf(current as "none" | "uppercase" | "lowercase");
 		const nextIdx = (currentIdx + 1) % cycle.length;
-		this.updateClipProperty({ style: { textTransform: cycle[nextIdx] } });
+		this.updateClipProperty({
+			style: {
+				...(asset.style ?? {}),
+				textTransform: cycle[nextIdx]
+			}
+		});
 	}
 
 	private toggleUnderline(asset: RichTextAsset): void {
@@ -1651,6 +1663,10 @@ export class RichTextToolbar extends BaseToolbar {
 	}
 
 	protected updateClipProperty(assetUpdates: Record<string, unknown>): void {
+		// Do not write schema-invalid `style` onto text (or other) assets.
+		if ("style" in assetUpdates && !this.assetSupportsStyle(this.getCurrentAsset())) {
+			return;
+		}
 		const updates: Partial<ResolvedClip> = { asset: assetUpdates as ResolvedClip["asset"] };
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, updates);
 		this.syncState();
