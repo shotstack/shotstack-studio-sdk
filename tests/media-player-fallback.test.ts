@@ -291,6 +291,46 @@ describe("media player fallbacks", () => {
 		warnSpy.mockRestore();
 	});
 
+	it.each(["dispose", "abort", "emptied", "error"])("settles an initial video seek on %s", async outcome => {
+		const edit = createEdit();
+		const video = document.createElement("video");
+		Object.defineProperties(video, {
+			readyState: { value: 4 },
+			seeking: { value: true },
+			pause: { value: jest.fn() },
+			load: { value: () => video.dispatchEvent(new Event("emptied")) }
+		});
+		const texture = new pixi.Texture({ source: new pixi.VideoSource({ resource: video }), width: 1280, height: 720 } as ConstructorParameters<
+			typeof pixi.Texture
+		>[0]);
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(texture);
+		const player = new VideoPlayer(
+			edit as never,
+			{
+				...createVideoClip(),
+				asset: { type: "video", src: "https://example.com/video.mp4", trim: 1 }
+			} as ResolvedClip
+		);
+		const loading = player.load();
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 0);
+		});
+		expect(video.currentTime).toBe(1);
+		if (outcome === "dispose") player.dispose();
+		else video.dispatchEvent(new Event(outcome));
+		const settled = await Promise.race([
+			loading.then(() => true),
+			new Promise<boolean>(resolve => {
+				setTimeout(() => resolve(false), 20);
+			})
+		]);
+		expect(settled).toBe(true);
+		expect(player.getContentContainer().children).toHaveLength(outcome === "error" ? 1 : 0);
+		expect(mockCreatePlaceholderGraphic).toHaveBeenCalledTimes(outcome === "error" ? 1 : 0);
+		video.dispatchEvent(new Event("seeked"));
+		expect(player.getContentContainer().children).toHaveLength(outcome === "error" ? 1 : 0);
+	});
+
 	it("uses display dimensions for a failed image placeholder", async () => {
 		const edit = createEdit();
 		edit.assetLoader.load.mockResolvedValueOnce(null);

@@ -223,15 +223,19 @@ export class VideoPlayer extends Player {
 		if (video instanceof HTMLVideoElement) {
 			const sourceTime = this.getSourceTime();
 			if (Math.abs(video.currentTime - sourceTime) > 0.01) {
-				await new Promise<void>(resolve => {
-					const onSeeked = () => {
-						video.removeEventListener("seeked", onSeeked);
-						resolve();
+				const outcome = await new Promise<string | undefined>(resolve => {
+					const events = ["seeked", "abort", "emptied", "error"];
+					const onSettled = (event?: Event) => {
+						for (const type of events) video.removeEventListener(type, onSettled);
+						resolve(event?.type);
 					};
-					video.addEventListener("seeked", onSeeked);
+					for (const type of events) video.addEventListener(type, onSettled);
 					video.currentTime = sourceTime;
-					if (!video.seeking) onSeeked();
+					if (!video.seeking) onSettled();
 				});
+				// Disposal and source replacement cancel the seek without producing a frame.
+				if (this.texture?.source.resource !== video || outcome === "abort" || outcome === "emptied") return;
+				if (outcome === "error") throw new Error("Video seeking failed.");
 			}
 		}
 
