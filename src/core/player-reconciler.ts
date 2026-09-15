@@ -130,7 +130,7 @@ export class PlayerReconciler {
 							}
 						} else if (this.enableCreation) {
 							// Create new Player
-							this.createPlayer(clip, clipId, trackIndex, clipIndex);
+							pendingLoads.push(this.createPlayer(clip, clipId, trackIndex, clipIndex));
 							result.created.push(clipId);
 						}
 					}

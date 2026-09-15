@@ -381,6 +381,30 @@ describe("Edit loadEdit()", () => {
 	});
 
 	describe("player creation", () => {
+		it("waits for newly created players before loadEdit resolves", async () => {
+			let finishLoad!: () => void;
+			const pendingLoad = new Promise<void>(resolve => {
+				finishLoad = resolve;
+			});
+			jest.mocked(VideoPlayer).mockImplementationOnce((session, config) => {
+				const player = createMockPlayer(session, config, PlayerType.Video);
+				player["load"] = jest.fn(() => pendingLoad);
+				return player as unknown as VideoPlayer;
+			});
+			const config = createMinimalEdit([{ clips: [{ asset: { type: "video", src: "https://example.com/video.mp4" }, start: 0, length: 5 }] }]);
+			let finished = false;
+			const loading = edit.loadEdit(config).then(() => {
+				finished = true;
+			});
+			await new Promise<void>(resolve => {
+				setTimeout(resolve, 0);
+			});
+			expect(finished).toBe(false);
+			finishLoad();
+			await loading;
+			expect(finished).toBe(true);
+		});
+
 		it("creates VideoPlayer for video assets", async () => {
 			const editConfig = createMinimalEdit([
 				{

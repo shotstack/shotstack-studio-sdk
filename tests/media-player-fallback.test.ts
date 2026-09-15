@@ -220,6 +220,66 @@ function createVideoTexture(width: number, height: number) {
 }
 
 describe("media player fallbacks", () => {
+	it.each([1, 1.5])("prepares trimmed frames before display and after rewind at speed %s", async speed => {
+		const edit = createEdit();
+		edit.playbackTime = 12.47;
+		const video = document.createElement("video");
+		let currentTime = 0;
+		let seeking = false;
+		const seek = jest.fn((value: number) => {
+			currentTime = value;
+			seeking = true;
+		});
+		const play = jest.fn().mockResolvedValue(undefined);
+		Object.defineProperties(video, {
+			currentTime: { get: () => currentTime, set: seek },
+			seeking: { get: () => seeking },
+			readyState: { value: 4 },
+			play: { value: play },
+			pause: { value: jest.fn() }
+		});
+		const texture = new pixi.Texture({ source: new pixi.VideoSource({ resource: video }), width: 1280, height: 720 } as ConstructorParameters<
+			typeof pixi.Texture
+		>[0]);
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(texture);
+		const clip = {
+			...createVideoClip(),
+			start: 4.65,
+			asset: { type: "video", src: "https://example.com/video.mp4", trim: 0.75, speed }
+		} as ResolvedClip;
+		const player = new VideoPlayer(edit as never, clip);
+		const loading = player.load();
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 0);
+		});
+		expect(currentTime).toBe(5.75 * speed);
+		expect(player.getContentContainer().children).toHaveLength(0);
+		edit.playbackTime = 5;
+		edit.isPlaying = true;
+		player.update(0, 16);
+		expect(play).not.toHaveBeenCalled();
+		seeking = false;
+		video.dispatchEvent(new Event("seeked"));
+		await loading;
+		expect(player.getContentContainer().children).toHaveLength(1);
+
+		edit.playbackTime = 0.63;
+		player.update(0, 16);
+		expect(currentTime).toBe(0.75 * speed);
+		seeking = false;
+		video.dispatchEvent(new Event("seeked"));
+		seek.mockClear();
+		player.update(0, 16);
+		edit.playbackTime = 4.6658;
+		player.update(0, 16);
+		expect(play).toHaveBeenCalledTimes(1);
+		expect(seek).not.toHaveBeenCalled();
+		edit.isPlaying = false;
+		currentTime = player.getSourceTime();
+		player.update(0, 101);
+		expect(seek).not.toHaveBeenCalled();
+	});
+
 	let warnSpy: jest.SpyInstance;
 
 	beforeEach(() => {

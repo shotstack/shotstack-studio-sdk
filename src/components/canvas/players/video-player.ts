@@ -37,6 +37,7 @@ export class VideoPlayer extends Player {
 	}
 
 	public override async load(): Promise<void> {
+		this.skipVideoUpdate = true;
 		await super.load();
 		try {
 			await this.loadVideo();
@@ -44,6 +45,8 @@ export class VideoPlayer extends Player {
 		} catch (error) {
 			console.warn(`[VideoPlayer.load] FAILED clipId=${this.clipId}:`, error);
 			this.createFallbackGraphic();
+		} finally {
+			this.skipVideoUpdate = false;
 		}
 	}
 
@@ -72,13 +75,17 @@ export class VideoPlayer extends Player {
 		const speed = this.getAssetSpeed();
 		const sourceTime = this.getSourceTime();
 		const shouldClipPlay = this.edit.isPlaying && this.isActive() && speed > 0;
+		const desyncThreshold = 0.3;
 
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
 				this.activeSyncTimer = 0;
 				this.texture.source.resource.volume = this.getVolume();
-				this.texture.source.resource.currentTime = sourceTime;
+				// Preserve the prepared frame unless playback has moved substantially.
+				if (Math.abs(this.texture.source.resource.currentTime - sourceTime) > desyncThreshold) {
+					this.texture.source.resource.currentTime = sourceTime;
+				}
 				this.texture.source.resource.play().catch(console.error);
 			}
 
@@ -95,7 +102,6 @@ export class VideoPlayer extends Player {
 			if (this.activeSyncTimer > 1000) {
 				this.activeSyncTimer = 0;
 				// Desync threshold: 0.3 seconds (300ms)
-				const desyncThreshold = 0.3;
 				const drift = Math.abs(this.texture.source.resource.currentTime - sourceTime);
 				if (drift > desyncThreshold) {
 					this.texture.source.resource.currentTime = sourceTime;
@@ -108,11 +114,14 @@ export class VideoPlayer extends Player {
 			this.texture.source.resource.pause();
 		}
 
-		// When paused (or frozen at speed 0), sync every 100ms for scrubbing
+		// Prepare future clips after a backward seek, before they become visible.
+		// Active paused/frozen clips still sync every 100ms for scrubbing.
 		const shouldSync = this.syncTimer > 100;
-		if ((!this.edit.isPlaying || speed === 0) && this.isActive() && shouldSync) {
+		if (this.edit.playbackTime < this.getStart() || ((!this.edit.isPlaying || speed === 0) && this.isActive() && shouldSync)) {
 			this.syncTimer = 0;
-			this.texture.source.resource.currentTime = sourceTime;
+			if (Math.abs(this.texture.source.resource.currentTime - sourceTime) > 0.01) {
+				this.texture.source.resource.currentTime = sourceTime;
+			}
 		}
 	}
 
@@ -209,6 +218,21 @@ export class VideoPlayer extends Player {
 				video.addEventListener("loadeddata", onReady);
 				if (video.readyState >= 2) resolve();
 			});
+		}
+
+		if (video instanceof HTMLVideoElement) {
+			const sourceTime = this.getSourceTime();
+			if (Math.abs(video.currentTime - sourceTime) > 0.01) {
+				await new Promise<void>(resolve => {
+					const onSeeked = () => {
+						video.removeEventListener("seeked", onSeeked);
+						resolve();
+					};
+					video.addEventListener("seeked", onSeeked);
+					video.currentTime = sourceTime;
+					if (!video.seeking) onSeeked();
+				});
+			}
 		}
 
 		this.sprite = new pixi.Sprite(this.texture);
