@@ -1893,3 +1893,69 @@ describe("Keyboard movement keyframe safety", () => {
 		expect(setUpdatedClip).not.toHaveBeenCalled();
 	});
 });
+
+
+describe("commitClipUpdate validation", () => {
+	let edit: Edit;
+	let warnSpy: jest.SpyInstance;
+
+	beforeEach(async () => {
+		edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [{ asset: { type: "image", src: "https://example.com/image.jpg" }, start: 0, length: 1 }]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		warnSpy = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		warnSpy.mockRestore();
+		edit.dispose();
+		jest.clearAllMocks();
+	});
+
+	it("skips history commit when media asset src is empty (no ZodError)", () => {
+		const resolved = edit.getResolvedClip(0, 0);
+		expect(resolved).toBeTruthy();
+		const clipId = resolved!.id;
+		const initial = structuredClone(resolved!) as typeof resolved & { id: string };
+		const finalConfig = structuredClone(resolved!) as typeof resolved & {
+			id: string;
+			fit?: string;
+			asset: { type: string; src: string };
+		};
+		finalConfig.asset.src = "";
+		finalConfig.fit = "contain";
+
+		expect(() => edit.commitClipUpdate(clipId, initial!, finalConfig!)).not.toThrow();
+
+		const { history, index } = getCommandState(edit);
+		expect(history).toHaveLength(0);
+		expect(index).toBe(-1);
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("skipping invalid clip"),
+			expect.anything()
+		);
+	});
+
+	it("commits valid fit updates to history", () => {
+		const resolved = edit.getResolvedClip(0, 0);
+		expect(resolved).toBeTruthy();
+		const clipId = resolved!.id;
+		const initial = structuredClone(resolved!);
+		const finalConfig = structuredClone(resolved!) as typeof resolved & { fit?: string };
+		finalConfig!.fit = "contain";
+
+		expect(() => edit.commitClipUpdate(clipId, initial!, finalConfig!)).not.toThrow();
+
+		const { history, index } = getCommandState(edit);
+		expect(history).toHaveLength(1);
+		expect(index).toBe(0);
+	});
+});
