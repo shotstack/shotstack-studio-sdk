@@ -403,8 +403,8 @@ export class Canvas {
 	public getContentBounds(): { left: number; right: number; top: number; bottom: number } {
 		const scaledWidth = this.edit.size.width * this.currentZoom;
 		const scaledHeight = this.edit.size.height * this.currentZoom;
-		const posX = this.viewportContainer?.position.x ?? 0;
-		const posY = this.viewportContainer?.position.y ?? 0;
+		const posX = this.viewportContainer?.position?.x ?? 0;
+		const posY = this.viewportContainer?.position?.y ?? 0;
 
 		return {
 			left: posX,
