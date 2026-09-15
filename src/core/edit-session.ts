@@ -824,7 +824,15 @@ export class Edit {
 	 * @internal
 	 */
 	public getClipError(trackIdx: number, clipIdx: number): { error: string; assetType: string } | null {
-		return this.clipErrors.get(`${trackIdx}-${clipIdx}`) ?? null;
+		const recorded = this.clipErrors.get(`${trackIdx}-${clipIdx}`);
+		if (recorded) return recorded;
+		const asset = this.getResolvedClip(trackIdx, clipIdx)?.asset;
+		if (!asset || !("src" in asset) || typeof asset.src !== "string") return null;
+		const url = toLoadUrl(asset.src);
+		const clipId = this.getClipId(trackIdx, clipIdx);
+		const key = asset.type === "video" && clipId ? `${clipId}:${url}` : url;
+		const info = this.assetLoader.loadTracker.registry[key];
+		return info?.status === "failed" ? { error: info.error ?? `Invalid source '${asset.src}'.`, assetType: asset.type } : null;
 	}
 
 	/**

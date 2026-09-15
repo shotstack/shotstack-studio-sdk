@@ -1249,3 +1249,28 @@ describe("Edit loadEdit()", () => {
 		});
 	});
 });
+
+describe("timeline preview errors", () => {
+	it("reports loader failures for the resolved source and clears them after recovery", () => {
+		const edit = new Edit(createMinimalEdit([{ clips: [{ asset: { type: "video", src: "https://example.com/video.mp4" }, start: 0, length: 5 }] }]));
+		const url = `${edit.getClipId(0, 0)}:https://example.com/video.mp4?x-cors=1`;
+		edit.assetLoader.loadTracker.registry = {};
+		edit.assetLoader.loadTracker.registry[url] = { status: "failed", progress: 1 };
+		expect(edit.getClipError(0, 0)).toEqual({ error: expect.stringContaining("https://example.com/video.mp4"), assetType: "video" });
+		edit.assetLoader.loadTracker.registry[url] = { status: "success", progress: 1 };
+		expect(edit.getClipError(0, 0)).toBeNull();
+		expect(edit.getClipError(0, 1)).toBeNull();
+	});
+});
+
+it("keeps same-source video failures separate for each clip", () => {
+	const clip = { asset: { type: "video", src: "https://example.com/shared.mp4" }, start: 0, length: 5 };
+	const edit = new Edit(createMinimalEdit([{ clips: [clip, { ...clip, start: 5 }] }]));
+	const url = "https://example.com/shared.mp4?x-cors=1";
+	edit.assetLoader.loadTracker.registry = {
+		[`${edit.getClipId(0, 0)}:${url}`]: { status: "success", progress: 1 },
+		[`${edit.getClipId(0, 1)}:${url}`]: { status: "failed", progress: 1 }
+	};
+	expect(edit.getClipError(0, 0)).toBeNull();
+	expect(edit.getClipError(0, 1)).not.toBeNull();
+});

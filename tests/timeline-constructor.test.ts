@@ -12,6 +12,7 @@ function createMockEdit() {
 	};
 	return {
 		events,
+		assetLoader: { loadTracker: events },
 		getInternalEvents: jest.fn(() => events),
 		playbackTime: sec(0),
 		isPlaying: false,

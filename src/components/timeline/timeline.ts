@@ -115,7 +115,10 @@ export class Timeline {
 			this.requestRender(); // Final render to update UI with paused state
 		};
 		this.handleClipSelected = () => this.requestRender();
-		this.handleClipLoadFailed = () => this.requestRender();
+		this.handleClipLoadFailed = () => {
+			this.stateManager.invalidateCache();
+			this.requestRender();
+		};
 		this.handleClipGeneration = () => this.requestRender();
 		this.handleClipUpdated = () => this.requestRender();
 		this.handleClipFocusChanged = () => this.requestRender();
@@ -259,6 +262,7 @@ export class Timeline {
 
 		// Listen for clip load failures (to show error badge on timeline)
 		this.edit.events.on(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
+		this.edit.assetLoader.loadTracker.on("onAssetLoadInfoUpdated", this.handleClipLoadFailed);
 		this.edit.events.on(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
 		this.edit.events.on(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
 		this.edit.events.on(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
@@ -281,6 +285,7 @@ export class Timeline {
 		this.edit.events.off(EditEvent.ClipSelected, this.handleClipSelected);
 		this.edit.events.off(EditEvent.ClipUpdated, this.handleClipUpdated);
 		this.edit.events.off(EditEvent.ClipLoadFailed, this.handleClipLoadFailed);
+		this.edit.assetLoader.loadTracker.off("onAssetLoadInfoUpdated", this.handleClipLoadFailed);
 		this.edit.events.off(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
 		this.edit.events.off(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
 		this.edit.events.off(EditEvent.ClipGenerationFailed, this.handleClipGeneration);

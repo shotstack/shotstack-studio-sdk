@@ -784,8 +784,8 @@
 	top: 50%;
 	left: 6px;
 	transform: translateY(-50%);
-	width: 20px;
-	height: 20px;
+	width: 24px;
+	height: 24px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -794,8 +794,14 @@
 	font-size: 12px;
 	color: #fff;
 	z-index: 10;
-	cursor: help;
+	cursor: pointer;
+	text-decoration: none;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.ss-clip-error-badge:focus-visible {
+	outline: 2px solid #374151;
+	outline-offset: 3px;
 }
 
 /* Error state base */

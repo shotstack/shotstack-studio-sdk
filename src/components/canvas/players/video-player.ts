@@ -184,7 +184,7 @@ export class VideoPlayer extends Player {
 
 		// Use unique loader to create independent video element per player
 		// This prevents conflicts when multiple clips use the same video source
-		const texture = await this.edit.assetLoader.loadVideoUnique(loadUrl, loadOptions);
+		const texture = await this.edit.assetLoader.loadVideoUnique(this.clipId ? `${this.clipId}:${loadUrl}` : loadUrl, loadOptions);
 
 		if (!texture || !(texture.source instanceof pixi.VideoSource)) {
 			throw new Error(`Invalid video source '${src}'.`);
