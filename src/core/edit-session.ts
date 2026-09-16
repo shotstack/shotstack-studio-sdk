@@ -4,6 +4,7 @@ import type { Canvas } from "@canvas/shotstack-canvas";
 // TODO: Consolidate commands - many have overlapping concerns and could be unified
 import { tryParseClipJson, tryParseTracksJson } from "@core/clipboard/clip-json";
 import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
+import { remintPastedClipIdentity } from "@core/clipboard/remint-pasted-alias";
 import { parseSvgIntrinsicSize, sanitiseSvg } from "@core/clipboard/svg-clipboard";
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
@@ -57,12 +58,7 @@ import * as pixi from "pixi.js";
 import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
-import {
-	AssetGenerator,
-	type AssetGeneratorHandler,
-	type AssetGeneratorOptions,
-	type ClipGenerationState
-} from "./generation/asset-generator";
+import { AssetGenerator, type AssetGeneratorHandler, type AssetGeneratorOptions, type ClipGenerationState } from "./generation/asset-generator";
 import { migrateLegacyGeneratedAsset } from "./generation/legacy-asset-migration";
 import type { GenerationAssetType, GenerationModelDefinition } from "./generation/model-catalogue";
 import { PlayerReconciler } from "./player-reconciler";
@@ -751,7 +747,7 @@ export class Edit {
 			return Promise.reject(new Error("addClipFromJson: invalid clip JSON or schema validation failed"));
 		}
 
-		delete (parsed as { id?: string }).id;
+		remintPastedClipIdentity(parsed as { id?: string; alias?: string });
 
 		const asset = parsed.asset as { type?: string; src?: string } | undefined;
 		if (asset?.type === "svg" && typeof asset.src === "string") {
@@ -796,7 +792,7 @@ export class Edit {
 			...track,
 			clips: track.clips.map(clip => {
 				const cloned = structuredClone(clip) as Clip;
-				delete (cloned as { id?: string }).id;
+				remintPastedClipIdentity(cloned as { id?: string; alias?: string });
 				const asset = cloned.asset as { type?: string; src?: string } | undefined;
 				if (asset?.type === "svg" && typeof asset.src === "string") {
 					asset.src = sanitiseSvg(asset.src);

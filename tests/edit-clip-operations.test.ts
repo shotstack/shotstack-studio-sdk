@@ -618,9 +618,7 @@ describe("Edit Clip Operations", () => {
 		it("moves a legacy text-to-speech voice binding into options", async () => {
 			const mergedEdit = new Edit({
 				timeline: {
-					tracks: [
-						{ clips: [{ asset: { type: "text-to-speech", text: "Hello", voice: "{{ VOICE }}" }, start: 0, length: 1 }] }
-					]
+					tracks: [{ clips: [{ asset: { type: "text-to-speech", text: "Hello", voice: "{{ VOICE }}" }, start: 0, length: 1 }] }]
 				},
 				merge: [{ find: "VOICE", replace: "Joanna" }],
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
@@ -646,9 +644,7 @@ describe("Edit Clip Operations", () => {
 				timeline: {
 					tracks: [
 						{
-							clips: [
-								{ asset: { type: "image-to-video", src: "{{ IMAGE }}", prompt: "orbit left" }, start: 0, length: 1 }
-							]
+							clips: [{ asset: { type: "image-to-video", src: "{{ IMAGE }}", prompt: "orbit left" }, start: 0, length: 1 }]
 						}
 					]
 				},
@@ -784,8 +780,7 @@ describe("Edit Clip Operations", () => {
 		});
 
 		type DocLookup = { document: { getClipId(t: number, c: number): string | null } };
-		const clipIdAt = (target: Edit, t: number, c: number) =>
-			((target as unknown as DocLookup).document.getClipId(t, c) as string);
+		const clipIdAt = (target: Edit, t: number, c: number) => (target as unknown as DocLookup).document.getClipId(t, c) as string;
 
 		const PROMPT_CLIP = { asset: { type: "image", prompt: "a red apple" }, start: 0, length: 5 };
 
@@ -876,9 +871,7 @@ describe("Edit Clip Operations", () => {
 		it("hands the generator a prompt with merge fields resolved", async () => {
 			const templated = new Edit({
 				timeline: {
-					tracks: [
-						{ clips: [{ asset: { type: "image", prompt: "an illustration of {{ SUBJECT }}" }, start: 0, length: 1 }] }
-					]
+					tracks: [{ clips: [{ asset: { type: "image", prompt: "an illustration of {{ SUBJECT }}" }, start: 0, length: 1 }] }]
 				},
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" },
 				merge: [{ find: "SUBJECT", replace: "a red apple" }]
@@ -1250,6 +1243,42 @@ describe("Edit Clip Operations", () => {
 			const { tracks: after } = getEditState(edit);
 			expect(after.length).toBe(trackCountBefore);
 			expect(after[0].length).toBe(sourceCountBefore + 1);
+		});
+
+		it("pasteClip remints alias so resolve does not throw Duplicate alias", async () => {
+			// Index 1 = video from inner beforeEach
+			await edit.updateClip(0, 1, { alias: "VOICEOVER" } as Partial<Clip>);
+			edit.copyClip(0, 1);
+			edit.playbackTime = sec(5);
+
+			await expect(edit.pasteClip()).resolves.toBeUndefined();
+
+			const original = edit.getDocumentClip(0, 1) as { alias?: string } | null;
+			expect(original?.alias).toBe("VOICEOVER");
+
+			const pasted = edit.getDocumentClip(0, 2) as { alias?: string; id?: string } | null;
+			expect(pasted).not.toBeNull();
+			expect(pasted?.alias).toBeDefined();
+			expect(pasted?.alias).not.toBe("VOICEOVER");
+			expect(pasted?.alias).toMatch(/^source_[\da-f]{8}$/i);
+		});
+
+		it("addClipFromJson remints alias that would collide with an existing clip", async () => {
+			await edit.updateClip(0, 1, { alias: "VOICEOVER" } as Partial<Clip>);
+			const source = edit.getDocumentClip(0, 1) as Clip;
+			const payload = structuredClone(source) as Clip & { id?: string; alias?: string };
+			payload.alias = "VOICEOVER";
+			payload.id = "should-be-stripped";
+			payload.start = 5;
+
+			await expect(edit.addClipFromJson(payload)).resolves.toBeUndefined();
+
+			const original = edit.getDocumentClip(0, 1) as { alias?: string } | null;
+			expect(original?.alias).toBe("VOICEOVER");
+
+			const pasted = edit.getDocumentClip(0, 2) as { alias?: string } | null;
+			expect(pasted?.alias).toBeDefined();
+			expect(pasted?.alias).not.toBe("VOICEOVER");
 		});
 	});
 

@@ -6,6 +6,7 @@
 import type { Player } from "@canvas/players/player";
 import { clipToJsonString } from "@core/clipboard/clip-json";
 import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
+import { remintPastedClipIdentity } from "@core/clipboard/remint-pasted-alias";
 import { writeSystemClipboardText } from "@core/clipboard/system-clipboard";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, Clip } from "@core/schemas";
@@ -151,7 +152,7 @@ export class SelectionManager {
 		const pastedClip = structuredClone(this.copiedClip.clipConfiguration);
 		pastedClip.start = this.edit.playbackTime as Seconds;
 
-		delete (pastedClip as { id?: string }).id;
+		remintPastedClipIdentity(pastedClip as { id?: string; alias?: string });
 
 		return insertClipWithOverlapPolicy(this.edit, this.copiedClip.trackIndex, pastedClip);
 	}
