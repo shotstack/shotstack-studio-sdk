@@ -65,6 +65,12 @@ export class AudioPlayer extends Player {
 			return;
 		}
 
+		// Howler rate() crashes when _sounds is empty (e.g. after unload); skip until ready again.
+		if (!this.isHowlControllable()) {
+			this.isPlaying = false;
+			return;
+		}
+
 		const speed = this.getAssetSpeed();
 		const sourceTime = this.getSourceTime();
 		const shouldClipPlay = this.edit.isPlaying && this.isActive() && speed > 0;
@@ -72,18 +78,20 @@ export class AudioPlayer extends Player {
 		if (shouldClipPlay) {
 			if (!this.isPlaying) {
 				this.isPlaying = true;
-				this.audioResource.volume(this.getVolume());
-				this.audioResource.rate(speed);
+				this.setHowlVolume(this.getVolume());
+				this.setHowlRate(speed);
 				this.audioResource.seek(sourceTime);
 				this.audioResource.play();
 			}
 
-			if (this.audioResource.volume() !== this.getVolume()) {
-				this.audioResource.volume(this.getVolume());
+			const currentVolume = this.getHowlVolume();
+			if (currentVolume !== this.getVolume()) {
+				this.setHowlVolume(this.getVolume());
 			}
 
-			if (this.audioResource.rate() !== speed) {
-				this.audioResource.rate(speed);
+			const currentRate = this.getHowlRate();
+			if (currentRate !== speed) {
+				this.setHowlRate(speed);
 			}
 
 			// Desync threshold: 0.1 seconds (100ms)
@@ -171,6 +179,52 @@ export class AudioPlayer extends Player {
 		if (!this.audioResource) return 0;
 		// Both seek() and getSourceTime() are in source-media seconds
 		return Math.abs((this.audioResource.seek() as number) - this.getSourceTime());
+	}
+
+	/**
+	 * Howler's rate() getter does `self._sounds[0]._id` with no empty-pool check.
+	 * After unload (or if the sound pool was cleared while we still hold a reference),
+	 * that throws TypeError during the Pixi ticker. Guard before calling rate/volume/play.
+	 */
+	private isHowlControllable(): boolean {
+		const howl = this.audioResource;
+		if (!howl) {
+			return false;
+		}
+		if (howl.state() !== "loaded") {
+			return false;
+		}
+		// eslint-disable-next-line no-underscore-dangle -- Howler private sound pool; public rate() crashes when empty
+		const sounds = (howl as howler.Howl & { _sounds?: unknown[] })._sounds;
+		return Array.isArray(sounds) && sounds.length > 0;
+	}
+
+	private getHowlRate(): number {
+		if (!this.audioResource || !this.isHowlControllable()) {
+			return 1;
+		}
+		return this.audioResource.rate() as number;
+	}
+
+	private setHowlRate(speed: number): void {
+		if (!this.audioResource || !this.isHowlControllable()) {
+			return;
+		}
+		this.audioResource.rate(speed);
+	}
+
+	private getHowlVolume(): number {
+		if (!this.audioResource || !this.isHowlControllable()) {
+			return 0;
+		}
+		return this.audioResource.volume() as number;
+	}
+
+	private setHowlVolume(volume: number): void {
+		if (!this.audioResource || !this.isHowlControllable()) {
+			return;
+		}
+		this.audioResource.volume(volume);
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {
