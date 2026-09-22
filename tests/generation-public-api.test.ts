@@ -150,6 +150,26 @@ describe("generation through the public API", () => {
 		edit.dispose();
 	});
 
+	it("passes complex options saved by a host panel to the generator", async () => {
+		const edit = await editWithPromptClip();
+		const clipId = clipIdOf(edit);
+		const { asset: originalAsset } = edit.getClipById(clipId)!;
+		const options = { compositionPlan: { sections: [{ name: "Introduction", durationMs: 5000 }] } };
+		await edit.updateClipById(clipId, { asset: { ...originalAsset, model: "music", options } } as Partial<Clip>);
+		let requested: Record<string, unknown> | undefined;
+		edit.registerAssetGenerator(async ({ asset }) => {
+			requested = asset;
+			throw new Error("Recorded without generating");
+		});
+		await edit.generateClip(clipId);
+		expect(requested).toMatchObject({ model: "music", options });
+		expect(edit.getClipById(clipId)?.asset).toMatchObject({ model: "music", options });
+		await edit.updateClipById(clipId, { asset: { ...originalAsset, options: { compositionPlan: undefined } } } as Partial<Clip>);
+		const cleared = edit.getClipById(clipId)?.asset as { options?: Record<string, unknown> };
+		expect(cleared.options?.["compositionPlan"]).toBeUndefined();
+		edit.dispose();
+	});
+
 	it("rejects when no handler is registered", async () => {
 		const edit = await editWithPromptClip();
 		await expect(edit.generateClip(clipIdOf(edit))).rejects.toThrow(/No asset generator registered/);

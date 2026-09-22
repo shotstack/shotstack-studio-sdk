@@ -27,7 +27,7 @@ import { GenerateToolbar } from "@core/ui/generate-toolbar";
 type MockEdit = ReturnType<typeof createMockEdit>;
 
 function createMockEdit(asset: Record<string, unknown> = { type: "image", prompt: "a cat" }) {
-	const internalEvents = { on: jest.fn(), off: jest.fn() };
+	const internalEvents = { on: jest.fn(), off: jest.fn(), emit: jest.fn() };
 	return {
 		getClipId: jest.fn().mockReturnValue("clip-1"),
 		getResolvedClip: jest.fn().mockReturnValue({ asset }),
@@ -307,8 +307,39 @@ describe("GenerateToolbar", () => {
 		const row = container.querySelector<HTMLElement>(".ss-ai-option-row.is-unsupported");
 		expect(row?.textContent).toContain("Composition plan");
 		expect(row?.textContent).toContain("Configured");
+		expect(container.querySelector('[data-action="generation-options"]')).toBeNull();
 		expect(row?.querySelector("input, select")).toBeNull();
 		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(false);
+		toolbar.dispose();
+	});
+
+	it("hands unsupported options to the host and guards keyboard generation until configured", () => {
+		const asset: Record<string, unknown> = { type: "image", prompt: "a cat", model: "nano-banana-2-edit", options: {} };
+		const edit = createMockEdit(asset);
+		const advancedModel = {
+			...model("nano-banana-2-edit", "image", [], [{ name: "imageUrls", title: "Reference images" }]),
+			advancedOptions: true,
+			unsupported: [{ name: "imageUrls", title: "Reference images", required: true }]
+		};
+		edit.getGenerationModels.mockReturnValue([advancedModel]);
+		const { toolbar, container } = mountToolbar(edit);
+		const button = container.querySelector<HTMLButtonElement>('[data-action="generation-options"]');
+		expect(button?.textContent).toBe("More options");
+		button?.click();
+		expect(edit.getInternalEvents().emit).toHaveBeenCalledWith("clip:generationOptionsRequested", { clipId: "clip-1", model: "nano-banana-2-edit" });
+		expect(edit.updateClip).not.toHaveBeenCalled();
+		const prompt = container.querySelector<HTMLInputElement>("[data-prompt-input]")!;
+		prompt.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+		expect(edit.generateClip).not.toHaveBeenCalled();
+		asset["options"] = { imageUrls: ["https://cdn/reference.png"] };
+		toolbar.show(0, 0);
+		expect(container.querySelector<HTMLButtonElement>('[data-action="generate"]')?.disabled).toBe(false);
+		container.querySelector<HTMLButtonElement>('[data-action="generate"]')?.click();
+		expect(edit.generateClip).toHaveBeenCalledWith("clip-1");
+		edit.getGenerationModels.mockReturnValue([model("flux-schnell")]);
+		asset["model"] = "flux-schnell";
+		toolbar.show(0, 0);
+		expect(container.querySelector('[data-action="generation-options"]')).toBeNull();
 		toolbar.dispose();
 	});
 

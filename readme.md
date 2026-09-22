@@ -237,6 +237,22 @@ controls. Entries must include their option schema; those without one are ignore
 `GET /models?expand=options`. The SDK stores a snapshot; fetching and refreshing it remain
 the host's responsibility.
 
+To configure options the toolbar cannot display, opt in to a host-owned panel:
+
+```typescript
+edit.events.on("clip:generationOptionsRequested", ({ clipId, model }) => {
+	openGenerationOptionsPanel({ clipId, model, clip: edit.getClipById(clipId) });
+});
+edit.registerAssetGenerator(generateAsset, { catalogue, advancedOptions: true });
+```
+
+This shows **More options** in the options menu and includes models with required complex
+options. Save panel changes with `edit.updateClipById(clipId, { asset: updatedAsset })`.
+Set an option to `undefined` to clear it; omitted properties keep their existing values.
+The toolbar checks required options are present; the host must validate complex values
+against the catalogue schema before generation. Without this opt-in, required unsupported
+options keep their models out of the picker.
+
 The SDK writes the returned URL to the clip, so the change is undoable and autosaves
 like any other edit. It tracks whether a clip is generating or has failed, and renders
 those states; a rejection's message is shown as-is next to a retry action. Everything

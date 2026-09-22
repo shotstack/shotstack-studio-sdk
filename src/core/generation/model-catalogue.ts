@@ -16,10 +16,11 @@ export type GenerationOptionDefinition = {
 	defaultValue?: unknown;
 };
 
-/** A published option the editor has no control for; shown read-only so its value is never a surprise. */
+/** A published option whose control and validation belong to the host. */
 export type GenerationUnsupportedOption = {
 	name: string;
 	title: string;
+	required?: boolean;
 };
 
 export type GenerationModelDefinition = {
@@ -29,6 +30,7 @@ export type GenerationModelDefinition = {
 	optionNames: readonly string[];
 	options: readonly GenerationOptionDefinition[];
 	unsupported: readonly GenerationUnsupportedOption[];
+	advancedOptions?: boolean;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -80,7 +82,7 @@ const readOption = (name: string, value: unknown, required: boolean): Generation
 	return option;
 };
 
-export const readGenerationModels = (catalogue: unknown): readonly GenerationModelDefinition[] => {
+export const readGenerationModels = (catalogue: unknown, advancedOptions = false): readonly GenerationModelDefinition[] => {
 	if (!isRecord(catalogue) || !Array.isArray(catalogue["models"])) return [];
 
 	return catalogue["models"].flatMap(entry => {
@@ -93,6 +95,7 @@ export const readGenerationModels = (catalogue: unknown): readonly GenerationMod
 		if (!isRecord(properties)) return [];
 		const required = schema["required"] === undefined ? [] : schema["required"];
 		if (!Array.isArray(required) || !required.every(name => typeof name === "string")) return [];
+		if (required.some(name => !hasOwn(properties, name))) return [];
 		if (required.includes("inputSrc")) return [];
 
 		const options: GenerationOptionDefinition[] = [];
@@ -100,9 +103,13 @@ export const readGenerationModels = (catalogue: unknown): readonly GenerationMod
 		for (const [name, value] of Object.entries(properties)) {
 			const option = readOption(name, value, required.includes(name));
 			if (option) options.push(option);
-			else unsupported.push({ name, title: isRecord(value) && typeof value["title"] === "string" ? value["title"] : name });
+			else unsupported.push({
+				name,
+				title: isRecord(value) && typeof value["title"] === "string" ? value["title"] : name,
+				...(required.includes(name) ? { required: true } : {})
+			});
 		}
-		if (required.some(name => !options.some(option => option.name === name))) return [];
+		if (!advancedOptions && required.some(name => !options.some(option => option.name === name))) return [];
 
 		return [
 			{
@@ -111,7 +118,8 @@ export const readGenerationModels = (catalogue: unknown): readonly GenerationMod
 				type: entry["type"] as GenerationAssetType,
 				optionNames: Object.keys(properties),
 				options,
-				unsupported
+				unsupported,
+				...(advancedOptions && unsupported.length > 0 ? { advancedOptions: true } : {})
 			}
 		];
 	});
@@ -150,4 +158,7 @@ export const missingGenerationOptions = (
 	model: GenerationModelDefinition,
 	values: Record<string, unknown>
 ): readonly string[] =>
-	model.options.filter(option => option.required && !isGenerationOptionValueValid(option, values[option.name])).map(option => option.title);
+	[
+		...model.options.filter(option => option.required && !isGenerationOptionValueValid(option, values[option.name])),
+		...model.unsupported.filter(option => option.required && values[option.name] === undefined)
+	].map(option => option.title);

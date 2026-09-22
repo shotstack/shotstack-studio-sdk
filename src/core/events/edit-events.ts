@@ -71,6 +71,7 @@ export const EditEvent = {
 	ClipCaptureCompleted: "clip:captureCompleted",
 	ClipCaptureFailed: "clip:captureFailed",
 	ClipGenerationStarted: "clip:generationStarted",
+	ClipGenerationOptionsRequested: "clip:generationOptionsRequested",
 	ClipGenerationCompleted: "clip:generationCompleted",
 	ClipGenerationFailed: "clip:generationFailed",
 	ClipUnresolved: "clip:unresolved",
@@ -167,6 +168,7 @@ export type EditEventMap = {
 	[EditEvent.ClipCaptureCompleted]: { clipId: string | null; assetType: string; frameCount: number };
 	[EditEvent.ClipCaptureFailed]: { clipId: string | null; assetType: string; error: string; fallback: string };
 	[EditEvent.ClipGenerationStarted]: { clipId: string };
+	[EditEvent.ClipGenerationOptionsRequested]: { clipId: string; model: string };
 	[EditEvent.ClipGenerationCompleted]: { clipId: string };
 	[EditEvent.ClipGenerationFailed]: { clipId: string; error: string };
 	[EditEvent.ClipUnresolved]: ClipLocation & { assetType: string; clipId: string };

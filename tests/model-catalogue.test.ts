@@ -102,6 +102,17 @@ describe("generation model catalogue", () => {
 		expect(readGenerationModels({ models: [required] })).toHaveLength(0);
 	});
 
+	it("offers the host action for optional complex options only when enabled", () => {
+		const advancedCatalogue = { models: [modelWithOptions({ plan: { type: "object", title: "Plan" } })] };
+		expect(readGenerationModels(advancedCatalogue)[0]?.advancedOptions).toBeUndefined();
+		expect(readGenerationModels(advancedCatalogue, true)[0]?.advancedOptions).toBe(true);
+		expect(readGenerationModels({ models: [modelWithOptions({})] }, true)[0]?.advancedOptions).toBeUndefined();
+	});
+
+	it("rejects a required name with no schema even when advanced options are enabled", () => {
+		expect(readGenerationModels({ models: [modelWithOptions({}, ["missing"])] }, true)).toEqual([]);
+	});
+
 	it.each([
 		[{ type: "boolean", name: "enabled", title: "Enabled", required: true, hasDefault: false }, false, true],
 		[{ type: "integer", name: "length", title: "Length", required: true, minimum: 1, hasDefault: false }, 0, false],
