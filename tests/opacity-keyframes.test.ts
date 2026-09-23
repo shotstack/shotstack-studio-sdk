@@ -108,26 +108,13 @@ describe("opacity keyframe editing", () => {
 		expect(evaluateOpacity([{ from: 0, to: 1, start: 0, length: 2, interpolation: "bezier", easing: "ease" }], 1, 2)).toBeCloseTo(0.8024);
 	});
 
-	it("upserts and sorts points without Array.prototype.toSorted", () => {
-		const original = Array.prototype.toSorted;
-		// @ts-expect-error — intentionally removing a newer Array method
-		delete Array.prototype.toSorted;
+	it("upserts and sorts points via slice().sort (no Array.prototype.toSorted)", () => {
+		// Insert out of order so the production upsert path must sort with
+		// slice().sort — compatible with Chrome < 110 / Safari < 16.
+		const first = upsertOpacityPoint([], 2, 0.75, 5, 30);
+		const second = upsertOpacityPoint(first, 1, 0.25, 5, 30);
 
-		try {
-			const first = upsertOpacityPoint([], 2, 0.75, 5, 30);
-			const second = upsertOpacityPoint(first, 1, 0.25, 5, 30);
-
-			expect(second.map(point => point.time)).toEqual([1, 2]);
-			expect(second.map(point => point.value)).toEqual([0.25, 0.75]);
-		} finally {
-			if (original) {
-				Object.defineProperty(Array.prototype, "toSorted", {
-					configurable: true,
-					writable: true,
-					value: original
-				});
-			}
-		}
+		expect(second.map(point => point.time)).toEqual([1, 2]);
+		expect(second.map(point => point.value)).toEqual([0.25, 0.75]);
 	});
-
 });
