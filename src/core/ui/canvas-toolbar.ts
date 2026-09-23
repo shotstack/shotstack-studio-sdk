@@ -80,6 +80,8 @@ export class CanvasToolbar {
 	// Variables elements
 	private variablesList: HTMLDivElement | null = null;
 	private variablesEmpty: HTMLDivElement | null = null;
+	private variablesAddForm: HTMLDivElement | null = null;
+	private variablesAddInput: HTMLInputElement | null = null;
 
 	// Label elements
 	private resolutionLabel: HTMLSpanElement | null = null;
@@ -234,7 +236,21 @@ export class CanvasToolbar {
 				<div class="ss-canvas-toolbar-popup ss-canvas-toolbar-popup--variables" data-popup="variables">
 					<div class="ss-canvas-toolbar-popup-header ss-variables-header">
 						<span>Merge Fields</span>
-						<button class="ss-variables-add-btn" data-action="add-variable">+</button>
+						<button class="ss-variables-add-btn" data-action="add-variable" type="button" aria-label="Add merge field">+</button>
+					</div>
+					<div class="ss-variables-add-form" data-variables-add-form hidden>
+						<input
+							class="ss-variable-value ss-variables-add-input"
+							type="text"
+							data-variables-add-input
+							placeholder="Variable name"
+							autocomplete="off"
+							spellcheck="false"
+						/>
+						<div class="ss-variables-add-actions">
+							<button type="button" class="ss-variables-add-confirm" data-action="confirm-add-variable">Add</button>
+							<button type="button" class="ss-variables-add-cancel" data-action="cancel-add-variable">Cancel</button>
+						</div>
 					</div>
 					<div class="ss-variables-list" data-variables-list></div>
 					<div class="ss-variables-empty" data-variables-empty>No merge fields defined</div>
@@ -260,6 +276,8 @@ export class CanvasToolbar {
 
 		this.variablesList = this.container.querySelector("[data-variables-list]");
 		this.variablesEmpty = this.container.querySelector("[data-variables-empty]");
+		this.variablesAddForm = this.container.querySelector("[data-variables-add-form]");
+		this.variablesAddInput = this.container.querySelector("[data-variables-add-input]");
 
 		this.resolutionLabel = this.container.querySelector("[data-resolution-label]");
 		this.fpsLabel = this.container.querySelector("[data-fps-label]");
@@ -309,8 +327,28 @@ export class CanvasToolbar {
 		// Variables - Add button
 		this.variablesPopup?.querySelector('[data-action="add-variable"]')?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.addVariable();
+			this.showAddVariableForm();
 		});
+		this.variablesPopup?.querySelector('[data-action="confirm-add-variable"]')?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.commitAddVariable();
+		});
+		this.variablesPopup?.querySelector('[data-action="cancel-add-variable"]')?.addEventListener("click", e => {
+			e.stopPropagation();
+			this.cancelAddVariable();
+		});
+		this.variablesAddInput?.addEventListener("keydown", e => {
+			e.stopPropagation();
+			if (e.isComposing) return;
+			if (e.key === "Enter") {
+				e.preventDefault();
+				this.commitAddVariable();
+			} else if (e.key === "Escape") {
+				e.preventDefault();
+				this.cancelAddVariable();
+			}
+		});
+		this.variablesAddInput?.addEventListener("click", e => e.stopPropagation());
 
 		// Resolution preset clicks
 		this.resolutionPopup?.querySelectorAll("[data-width]").forEach(item => {
@@ -590,17 +628,48 @@ export class CanvasToolbar {
 		});
 	}
 
-	private addVariable(): void {
-		const ssEdit = this.getShotstackEdit();
-		if (!ssEdit) return;
+	private showAddVariableForm(): void {
+		if (!this.variablesAddForm || !this.variablesAddInput) return;
 
-		// eslint-disable-next-line no-alert -- Intentional use of prompt for quick variable name input
-		const name = prompt("Variable name:");
-		if (!name || !name.trim()) return;
+		this.variablesAddForm.hidden = false;
+		if (this.variablesEmpty) {
+			this.variablesEmpty.style.display = "none";
+		}
+		this.variablesAddInput.value = "";
+		this.variablesAddInput.focus();
+		this.variablesAddInput.select();
+	}
+
+	/** Dismiss the add-variable form without registering a field. */
+	private cancelAddVariable(): void {
+		if (!this.variablesAddForm || !this.variablesAddInput) return;
+
+		this.variablesAddInput.value = "";
+		this.variablesAddForm.hidden = true;
+		// Restore empty-state visibility from current field list
+		this.renderVariablesList();
+		this.variablesPopup?.querySelector<HTMLButtonElement>('[data-action="add-variable"]')?.focus();
+	}
+
+	/** Register a new merge field from the in-app form; empty/whitespace is a no-op. */
+	private commitAddVariable(): void {
+		const ssEdit = this.getShotstackEdit();
+		if (!ssEdit || !this.variablesAddInput) return;
+
+		const name = this.variablesAddInput.value;
+		if (!name || !name.trim()) {
+			this.cancelAddVariable();
+			return;
+		}
 
 		const sanitizedName = name.trim().toUpperCase().replace(/\s+/g, "_");
 		ssEdit.mergeFields.register({ name: sanitizedName, defaultValue: "" });
+		this.variablesAddInput.value = "";
+		if (this.variablesAddForm) {
+			this.variablesAddForm.hidden = true;
+		}
 		this.renderVariablesList();
+		this.variablesPopup?.querySelector<HTMLButtonElement>('[data-action="add-variable"]')?.focus();
 	}
 
 	setResolution(width: number, height: number): void {
