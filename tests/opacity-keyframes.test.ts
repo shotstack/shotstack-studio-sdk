@@ -107,4 +107,27 @@ describe("opacity keyframe editing", () => {
 		expect(evaluateOpacity([{ from: 0, to: 1, start: 0, length: 2, interpolation: "linear" }], 1, 2)).toBe(0.5);
 		expect(evaluateOpacity([{ from: 0, to: 1, start: 0, length: 2, interpolation: "bezier", easing: "ease" }], 1, 2)).toBeCloseTo(0.8024);
 	});
+
+	it("upserts and sorts points without Array.prototype.toSorted", () => {
+		const original = Array.prototype.toSorted;
+		// @ts-expect-error — intentionally removing a newer Array method
+		delete Array.prototype.toSorted;
+
+		try {
+			const first = upsertOpacityPoint([], 2, 0.75, 5, 30);
+			const second = upsertOpacityPoint(first, 1, 0.25, 5, 30);
+
+			expect(second.map(point => point.time)).toEqual([1, 2]);
+			expect(second.map(point => point.value)).toEqual([0.25, 0.75]);
+		} finally {
+			if (original) {
+				Object.defineProperty(Array.prototype, "toSorted", {
+					configurable: true,
+					writable: true,
+					value: original
+				});
+			}
+		}
+	});
+
 });

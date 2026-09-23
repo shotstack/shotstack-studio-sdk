@@ -202,4 +202,37 @@ describe("KeyframeBuilder", () => {
 			).toThrow("Overlapping keyframes detected.");
 		});
 	});
+
+	describe("toSorted-compat (older Chromium)", () => {
+		it("sorts unsorted keyframes by start without Array.prototype.toSorted", () => {
+			const original = Array.prototype.toSorted;
+			// Simulate Chrome < 110 / Safari < 16 where toSorted is missing.
+			// @ts-expect-error — intentionally removing a newer Array method
+			delete Array.prototype.toSorted;
+
+			try {
+				const builder = new KeyframeBuilder(
+					[
+						{ start: 5, length: 5, from: 0.5, to: 1, interpolation: "linear" },
+						{ start: 0, length: 5, from: 0, to: 0.5, interpolation: "linear" }
+					],
+					10
+				);
+
+				expect(builder.getValue(0)).toBe(0);
+				expect(builder.getValue(2.5)).toBeCloseTo(0.25);
+				expect(builder.getValue(5)).toBe(0.5);
+				expect(builder.getValue(7.5)).toBeCloseTo(0.75);
+			} finally {
+				if (original) {
+					Object.defineProperty(Array.prototype, "toSorted", {
+						configurable: true,
+						writable: true,
+						value: original
+					});
+				}
+			}
+		});
+	});
+
 });
