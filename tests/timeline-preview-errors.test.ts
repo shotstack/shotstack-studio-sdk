@@ -51,3 +51,64 @@ it("updates a paused timeline on asset failure and recovery, with accessible hel
 	timeline.dispose();
 	container.remove();
 });
+
+it.each([false, true])("clears generation failure styling on retry and success (media error: %s)", async mediaError => {
+	const tracker = new AssetLoadTracker();
+	const events = new EventEmitter();
+	let generation: { status: "generating" | "failed"; error?: string } | undefined;
+	let loadError: { error: string; assetType: string } | null = null;
+	const config = {
+		timeline: { tracks: [{ clips: [{ id: "clip-1", asset: { type: "image", prompt: "A forest", src: "" }, start: 0, length: 5 }] }] }
+	};
+	const edit = {
+		events,
+		assetLoader: { loadTracker: tracker },
+		getInternalEvents: () => events,
+		getResolvedEdit: () => config,
+		getEdit: () => config,
+		isClipSelected: () => false,
+		getClipGenerationState: () => generation,
+		getClipError: () => loadError,
+		playbackTime: sec(0),
+		totalDuration: sec(5),
+		isPlaying: false
+	};
+	const container = document.createElement("div");
+	document.body.appendChild(container);
+	const timeline = new Timeline(edit as never, container);
+	timeline.registerClipRenderer("image", {
+		render: (clip, element) => {
+			if ("src" in clip.asset && clip.asset.src) {
+				element.classList.add("ss-clip--thumbnails");
+				element.style.setProperty("background-image", `url("${clip.asset.src}")`);
+			}
+		}
+	});
+	try {
+		await timeline.load();
+		const element = container.querySelector<HTMLElement>(".ss-clip")!;
+		generation = { status: "failed", error: "Generation failed." };
+		events.emit("clip:generationFailed", { clipId: "clip-1", error: generation.error });
+		expect(element.classList.contains("ss-clip--error")).toBe(true);
+		expect(element.title).toBe("Generation failed.");
+
+		loadError = mediaError ? { error: "Image failed to load.", assetType: "image" } : null;
+		generation = { status: "generating" };
+		events.emit("clip:generationStarted", { clipId: "clip-1" });
+		expect(element.classList.contains("ss-clip--error")).toBe(mediaError);
+		expect(element.getAttribute("aria-busy")).toBe("true");
+
+		config.timeline.tracks[0].clips[0].asset.src = "https://example.com/generated.png";
+		generation = undefined;
+		events.emit("clip:generationCompleted", { clipId: "clip-1" });
+		expect(element.classList.contains("ss-clip--error")).toBe(mediaError);
+		expect(element.hasAttribute("aria-busy")).toBe(false);
+		expect(element.classList.contains("ss-clip--thumbnails")).toBe(true);
+		expect(element.style.backgroundImage).toContain("generated.png");
+		expect(element.title).toBe("");
+		if (mediaError) expect(element.querySelector(".ss-clip-error-badge")).not.toBeNull();
+	} finally {
+		timeline.dispose();
+		container.remove();
+	}
+});
