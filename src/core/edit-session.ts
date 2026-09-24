@@ -59,6 +59,7 @@ import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
 import { EditDocument } from "./edit-document";
 import { AssetGenerator, type AssetGeneratorHandler, type AssetGeneratorOptions, type ClipGenerationState } from "./generation/asset-generator";
+import type { GenerationSettingsHandler } from "./generation/generation-settings";
 import { migrateLegacyGeneratedAsset } from "./generation/legacy-asset-migration";
 import type { GenerationAssetType, GenerationModelDefinition } from "./generation/model-catalogue";
 import { PlayerReconciler } from "./player-reconciler";
@@ -107,6 +108,8 @@ export class Edit {
 	private lumaMaskController: LumaMaskController;
 	private playerReconciler: PlayerReconciler;
 	private assetGenerator: AssetGenerator;
+	/** @internal */
+	public generationSettings?: GenerationSettingsHandler;
 	private outputSettings!: OutputSettingsManager;
 	private selectionManager!: SelectionManager;
 	/** @internal */
@@ -285,6 +288,7 @@ export class Edit {
 
 	/** @internal */
 	public dispose(): void {
+		this.generationSettings = undefined;
 		this.clearClips();
 		this.internalEvents.off(InternalEvent.Resolved, this.onResolvedForGeneration);
 		this.assetGenerator.abortAll();
@@ -449,13 +453,25 @@ export class Edit {
 	}
 
 	/** @internal */
+	public registerGenerationSettings(handler: GenerationSettingsHandler): () => void {
+		const callback: GenerationSettingsHandler = request => handler(request);
+		this.generationSettings = callback;
+		this.internalEvents.emit(InternalEvent.AssetGeneratorChanged);
+		return () => {
+			if (this.generationSettings !== callback) return;
+			this.generationSettings = undefined;
+			this.internalEvents.emit(InternalEvent.AssetGeneratorChanged);
+		};
+	}
+
+	/** @internal */
 	public hasAssetGenerator(): boolean {
 		return this.assetGenerator.hasHandler();
 	}
 
 	/** @internal */
 	public getGenerationModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
-		return this.assetGenerator.getModels(type);
+		return this.assetGenerator.getModels(type, this.generationSettings !== undefined);
 	}
 
 	/**

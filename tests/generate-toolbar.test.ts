@@ -313,20 +313,41 @@ describe("GenerateToolbar", () => {
 		toolbar.dispose();
 	});
 
+	it("shows settings for every model only while a host hook is installed", () => {
+		const edit = createMockEdit({ type: "image", prompt: "a cat", model: "simple" });
+		edit.getGenerationModels.mockReturnValue([model("simple")]);
+		const { toolbar, container } = mountToolbar(edit);
+		const openSettings = jest.fn();
+		Object.assign(edit, { generationSettings: openSettings });
+		const changed = edit.getInternalEvents().on.mock.calls.find(([name]) => name === "assetGenerator:changed")?.[1];
+		changed?.();
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(false);
+		const button = container.querySelector<HTMLButtonElement>('[data-action="generation-options"]');
+		expect(button?.textContent).toBe("Generation settings");
+		button?.click();
+		expect(openSettings).toHaveBeenCalledWith({ clipId: "clip-1", model: "simple" });
+		Object.assign(edit, { generationSettings: undefined });
+		changed?.();
+		expect(container.querySelector('[data-action="generation-options"]')).toBeNull();
+		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(true);
+		toolbar.dispose();
+	});
+
 	it("hands unsupported options to the host and guards keyboard generation until configured", () => {
 		const asset: Record<string, unknown> = { type: "image", prompt: "a cat", model: "nano-banana-2-edit", options: {} };
 		const edit = createMockEdit(asset);
 		const advancedModel = {
 			...model("nano-banana-2-edit", "image", [], [{ name: "imageUrls", title: "Reference images" }]),
-			advancedOptions: true,
 			unsupported: [{ name: "imageUrls", title: "Reference images", required: true }]
 		};
+		const openSettings = jest.fn();
+		Object.assign(edit, { generationSettings: openSettings });
 		edit.getGenerationModels.mockReturnValue([advancedModel]);
 		const { toolbar, container } = mountToolbar(edit);
 		const button = container.querySelector<HTMLButtonElement>('[data-action="generation-options"]');
-		expect(button?.textContent).toBe("More options");
+		expect(button?.textContent).toBe("Generation settings");
 		button?.click();
-		expect(edit.getInternalEvents().emit).toHaveBeenCalledWith("clip:generationOptionsRequested", { clipId: "clip-1", model: "nano-banana-2-edit" });
+		expect(openSettings).toHaveBeenCalledWith({ clipId: "clip-1", model: "nano-banana-2-edit" });
 		expect(edit.updateClip).not.toHaveBeenCalled();
 		const prompt = container.querySelector<HTMLInputElement>("[data-prompt-input]")!;
 		prompt.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
@@ -339,7 +360,8 @@ describe("GenerateToolbar", () => {
 		edit.getGenerationModels.mockReturnValue([model("flux-schnell")]);
 		asset["model"] = "flux-schnell";
 		toolbar.show(0, 0);
-		expect(container.querySelector('[data-action="generation-options"]')).toBeNull();
+		container.querySelector<HTMLButtonElement>('[data-action="generation-options"]')?.click();
+		expect(openSettings).toHaveBeenLastCalledWith({ clipId: "clip-1", model: "flux-schnell" });
 		toolbar.dispose();
 	});
 

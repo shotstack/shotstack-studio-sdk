@@ -43,7 +43,7 @@ describe("AssetGenerator", () => {
 		expect(generator.getModels("image")).toBeUndefined();
 	});
 
-	it("exposes required advanced options only when the host opts in", () => {
+	it("filters required complex options at lookup without losing the catalogue snapshot", () => {
 		const generator = new AssetGenerator(makeDeps().deps);
 		const catalogue: GenerationModelCatalogueResponse = {
 			models: [{ model: "nano-banana-2-edit", type: "image", options: {
@@ -54,9 +54,7 @@ describe("AssetGenerator", () => {
 		const handler = async () => ({ url: "https://cdn/out.png" });
 		generator.register(handler, { catalogue });
 		expect(generator.getModels("image")).toEqual([]);
-		const options = { catalogue, advancedOptions: true };
-		generator.register(handler, options);
-		const [model] = generator.getModels("image")!;
+		const [model] = generator.getModels("image", true)!;
 		expect(model?.model).toBe("nano-banana-2-edit");
 		if (!model) return;
 		expect(missingGenerationOptions(model, {})).toEqual(["Reference images"]);

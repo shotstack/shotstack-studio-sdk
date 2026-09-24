@@ -2,6 +2,7 @@ import { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 
 import type { Clip } from "@schemas";
+import { registerGenerationSettings } from "../src/internal";
 
 // A prompt-bearing clip has no src, so PlayerFactory routes it to a pending
 // placeholder player. Constructing one for real still needs pixi.js mocked —
@@ -121,6 +122,35 @@ const clipIdOf = (edit: Edit): string =>
 	(edit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string }).id;
 
 describe("generation through the public API", () => {
+	it.each([true, false])("scopes the internal settings hook to its registration (before catalogue: %s)", async beforeCatalogue => {
+		const edit = await editWithPromptClip();
+		const open = jest.fn();
+		let cleanup: (() => void) | undefined;
+		if (beforeCatalogue) cleanup = registerGenerationSettings(edit, open);
+		edit.registerAssetGenerator(async () => ({ url: "unused" }), { catalogue: {
+			models: [{ model: "complex", type: "audio", options: {
+				type: "object", additionalProperties: false, required: ["plan"],
+				properties: { plan: { type: "object" } }
+			} }]
+		} });
+		if (!beforeCatalogue) {
+			expect(edit.getGenerationModels("audio")).toEqual([]);
+			cleanup = registerGenerationSettings(edit, open);
+		}
+		expect(edit.getGenerationModels("audio")?.map(model => model.model)).toEqual(["complex"]);
+		const removeReplacement = registerGenerationSettings(edit, open);
+		cleanup?.();
+		edit.generationSettings?.({ clipId: "clip-1", model: "complex" });
+		expect(open).toHaveBeenCalledWith({ clipId: "clip-1", model: "complex" });
+		removeReplacement();
+		expect(edit.generationSettings).toBeUndefined();
+		expect(edit.getGenerationModels("audio")).toEqual([]);
+		const cleanupDisposed = registerGenerationSettings(edit, open);
+		edit.dispose();
+		expect(edit.generationSettings).toBeUndefined();
+		cleanupDisposed();
+	});
+
 	it("reports started then completed when the host handler resolves", async () => {
 		const edit = await editWithPromptClip();
 		const seen: string[] = [];

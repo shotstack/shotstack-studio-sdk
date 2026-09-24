@@ -322,7 +322,7 @@ export class GenerateToolbar extends BaseToolbar {
 			const row = document.createElement("div");
 			row.className = "ss-ai-option-row is-unsupported";
 			this.optionRows.set(option.name, row);
-			row.title = model.advancedOptions ? "Use More options to configure this option." : "This option can only be set outside the editor.";
+			row.title = this.edit.generationSettings ? "Use Generation settings to configure this option." : "This option can only be set outside the editor.";
 			const title = document.createElement("span");
 			title.textContent = option.title;
 			const state = document.createElement("span");
@@ -332,17 +332,17 @@ export class GenerateToolbar extends BaseToolbar {
 			this.optionsPopup.appendChild(row);
 		}
 
-		if (model.advancedOptions) {
+		if (this.edit.generationSettings) {
 			const button = document.createElement("button");
 			button.type = "button";
 			button.className = "ss-media-toolbar-btn";
 			button.dataset["action"] = "generation-options";
-			button.textContent = "More options";
+			button.textContent = "Generation settings";
 			button.addEventListener("click", () => {
 				const clipId = this.getSelectedClipId();
 				if (!clipId) return;
 				this.closeAllPopups();
-				this.edit.getInternalEvents().emit(EditEvent.ClipGenerationOptionsRequested, { clipId, model: model.model });
+				this.edit.generationSettings?.({ clipId, model: model.model });
 			});
 			this.optionsPopup.appendChild(button);
 		}
@@ -380,7 +380,7 @@ export class GenerateToolbar extends BaseToolbar {
 
 		if (this.optionsBtn) {
 			const empty = selectedModel !== undefined && selectedModel.options.length === 0 && selectedModel.unsupported.length === 0;
-			this.optionsBtn.hidden = models === undefined || models.length === 0 || empty;
+			this.optionsBtn.hidden = models === undefined || models.length === 0 || (empty && !this.edit.generationSettings);
 			this.optionsBtn.disabled = selectedModel === undefined;
 		}
 		const values = record(asset["options"]);

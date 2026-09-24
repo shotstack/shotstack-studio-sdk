@@ -27,7 +27,7 @@ const CONTRACT = {
 		}
 	},
 	runtimeExports: ["Edit", "Canvas", "Controls", "Timeline", "UIController", "VideoExporter", "VERSION"],
-	internalRuntimeExports: ["Edit", "ShotstackEdit"],
+	internalRuntimeExports: ["Edit", "ShotstackEdit", "registerGenerationSettings"],
 	dtsHiddenMembersByClass: {
 		UIController: [
 			"updateOverlays(",
@@ -71,6 +71,11 @@ const CONTRACT = {
 		]
 	},
 	dtsForbiddenTokens: [
+		"registerGenerationSettings",
+		"generationSettings",
+		"GenerationSettingsHandler",
+		"advancedOptions",
+		"clip:generationOptionsRequested",
 		"export declare class SelectionHandles",
 		"export declare class TextToolbar",
 		"export declare class RichTextToolbar",
@@ -247,7 +252,7 @@ const checkInternalDeclarationSurface = () => {
 	const dtsPath = resolve(__dirname, "dist/internal.d.ts");
 	const dtsContent = readFileSync(dtsPath, "utf-8");
 	const errors = [];
-	const requiredTokens = ["export declare class Edit", "export declare class ShotstackEdit extends Edit", "export declare class MergeFieldService"];
+	const requiredTokens = ["export declare class Edit", "export declare class ShotstackEdit extends Edit", "export declare class MergeFieldService", "export declare function registerGenerationSettings"];
 	const isEntryStubOnly = /^\s*export\s+\*\s+from\s+['"]\.\/internal['"]\s*;\s*export\s*\{\s*\}\s*;?\s*$/.test(dtsContent);
 
 	for (const token of requiredTokens) {
@@ -379,6 +384,9 @@ const checkBundleSizes = () => {
 const runRuntimeExportSmokeTest = async (name, modulePath, expectedExports) => {
 	try {
 		const module = await import(modulePath);
+		if (modulePath === "./dist/shotstack-studio.es.js" && "registerGenerationSettings" in module) {
+			failWithDetails(name, ["Internal settings hook leaked into public exports"]);
+		}
 		const missing = expectedExports.filter(symbol => !module[symbol]);
 
 		if (missing.length > 0) {

@@ -26,7 +26,6 @@ export type AssetGeneratorHandler = (request: AssetGenerationRequest) => Promise
 export interface AssetGeneratorOptions {
 	/** Model catalogue with each entry's option schema included. Entries without one are ignored. */
 	catalogue?: GenerationModelCatalogueResponse;
-	advancedOptions?: boolean;
 }
 
 export interface ClipGenerationState {
@@ -58,11 +57,11 @@ export class AssetGenerator {
 
 	public register(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void {
 		this.handler = handler;
-		this.models = options?.catalogue === undefined ? undefined : readGenerationModels(options.catalogue, options.advancedOptions);
+		this.models = options?.catalogue === undefined ? undefined : readGenerationModels(options.catalogue, true);
 	}
 
-	public getModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
-		return this.models?.filter(model => model.type === type);
+	public getModels(type: GenerationAssetType, includeUnsupported = false): readonly GenerationModelDefinition[] | undefined {
+		return this.models?.filter(model => model.type === type && (includeUnsupported || !model.unsupported.some(option => option.required)));
 	}
 
 	public hasHandler(): boolean {

@@ -30,7 +30,6 @@ export type GenerationModelDefinition = {
 	optionNames: readonly string[];
 	options: readonly GenerationOptionDefinition[];
 	unsupported: readonly GenerationUnsupportedOption[];
-	advancedOptions?: boolean;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -82,7 +81,7 @@ const readOption = (name: string, value: unknown, required: boolean): Generation
 	return option;
 };
 
-export const readGenerationModels = (catalogue: unknown, advancedOptions = false): readonly GenerationModelDefinition[] => {
+export const readGenerationModels = (catalogue: unknown, includeUnsupported = false): readonly GenerationModelDefinition[] => {
 	if (!isRecord(catalogue) || !Array.isArray(catalogue["models"])) return [];
 
 	return catalogue["models"].flatMap(entry => {
@@ -109,7 +108,7 @@ export const readGenerationModels = (catalogue: unknown, advancedOptions = false
 				...(required.includes(name) ? { required: true } : {})
 			});
 		}
-		if (!advancedOptions && required.some(name => !options.some(option => option.name === name))) return [];
+		if (!includeUnsupported && required.some(name => !options.some(option => option.name === name))) return [];
 
 		return [
 			{
@@ -118,8 +117,7 @@ export const readGenerationModels = (catalogue: unknown, advancedOptions = false
 				type: entry["type"] as GenerationAssetType,
 				optionNames: Object.keys(properties),
 				options,
-				unsupported,
-				...(advancedOptions && unsupported.length > 0 ? { advancedOptions: true } : {})
+				unsupported
 			}
 		];
 	});
