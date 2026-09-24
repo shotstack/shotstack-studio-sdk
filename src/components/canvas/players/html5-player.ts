@@ -65,11 +65,12 @@ async function foreignObjectSvgToWebp(svg: string, width: number, height: number
  * Drives whether the live iframe or the captured frame[] is the visible source.
  *
  *   editing   — iframe live, no sprite. Default for new content.
- *   capturing — iframe parked, loading placeholder shown. Triggered by first Play.
+ *   capturing — iframe parked, loading placeholder shown.
  *   playback  — captured sprite mounted, iframe parked. Pixi-side filters apply.
  *   stale     — captured frame[] invalidated by content change; iframe re-shown.
+ *   failed    — iframe parked, placeholder stays in the clip's canvas layer.
  */
-type Html5Mode = "editing" | "capturing" | "playback" | "stale";
+type Html5Mode = "editing" | "capturing" | "playback" | "stale" | "failed";
 
 export class Html5Player extends Player {
 	private static captureChain: Promise<unknown> = Promise.resolve();
@@ -90,6 +91,7 @@ export class Html5Player extends Player {
 	private staticSprite: pixi.Sprite | null = null;
 	private hasTriggeredCapture: boolean = false;
 	private loadingGraphic: pixi.Container | null = null;
+	private fallbackGraphic: pixi.Graphics | null = null;
 	private loadingSetProgress: ((fraction: number) => void) | null = null;
 	private captureFramesDone: number = 0;
 	private captureFramesTotal: number = 0;
@@ -250,6 +252,7 @@ export class Html5Player extends Player {
 			this.playbackSprite = null;
 		}
 		this.removeLoadingGraphic();
+		this.removeFallbackGraphic();
 		this.disposeCapturedFrames();
 		this.mode = "stale";
 	}
@@ -259,6 +262,14 @@ export class Html5Player extends Player {
 		this.parkIframe();
 		this.mountLoadingGraphic();
 		this.emitCaptureStarted();
+	}
+
+	private transitionToFailed(): void {
+		if (this.disposed) return;
+		this.mode = "failed";
+		this.parkIframe();
+		this.removeLoadingGraphic();
+		this.createFallbackGraphic();
 	}
 
 	// ─── capture pipeline ──────────────────────────────────────────────────────
@@ -359,15 +370,15 @@ export class Html5Player extends Player {
 	private captureIframeAsForeignObjectSvg(width: number, height: number): string {
 		if (!this.iframe?.contentDocument) throw new Error("iframe not ready");
 		const doc = this.iframe.contentDocument;
+		const serializer = new XMLSerializer();
 		const styles = Array.from(doc.querySelectorAll("style"))
-			.map(el => `<style>${el.textContent ?? ""}</style>`)
+			.map(el => serializer.serializeToString(el))
 			.join("");
 		const animationOverride = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
 		const bodyClone = doc.body.cloneNode(true) as HTMLElement;
-		bodyClone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
 		const existingStyle = bodyClone.getAttribute("style") ?? "";
 		bodyClone.setAttribute("style", `width:${width}px;height:${height}px;margin:0;overflow:hidden;${existingStyle}`);
-		const bodyXml = new XMLSerializer().serializeToString(bodyClone);
+		const bodyXml = serializer.serializeToString(bodyClone);
 		return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="${width}" height="${height}">${styles}${animationOverride}${bodyXml}</foreignObject></svg>`;
 	}
 
@@ -417,7 +428,7 @@ export class Html5Player extends Player {
 	 */
 	public override async prepareStaticRender(): Promise<void> {
 		try {
-			if (this.disposed || !this.iframe) return;
+			if (this.disposed || !this.iframe || this.mode === "failed") return;
 			const frames = await this.captureFrames();
 			if (this.disposed || !frames || frames.length === 0) return;
 			const idx = Math.min(Math.max(0, Math.floor(this.getPlaybackTime() * this.captureFps)), frames.length - 1);
@@ -462,10 +473,13 @@ export class Html5Player extends Player {
 		this.iframe.srcdoc = composeHtml5IframeSrcdoc(this.asset);
 		try {
 			await waitForIframeLoad(this.iframe, undefined, true);
+			if (this.disposed || this.contentHash !== newHash) return;
 			this.beginCapture();
 		} catch (err) {
+			if (this.disposed || this.contentHash !== newHash) return;
 			console.warn("[Html5Player] reload iframe load failed:", err);
 			this.emitCaptureFailed(err, "static-placeholder");
+			this.transitionToFailed();
 		}
 	}
 
@@ -479,13 +493,22 @@ export class Html5Player extends Player {
 	}
 
 	private createFallbackGraphic(): void {
+		if (this.fallbackGraphic) return;
 		const width = this.clipConfiguration.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || this.edit.size.height;
 		const graphics = createPlaceholderGraphic(width, height);
+		this.fallbackGraphic = graphics;
 		this.renderedWidth = width;
 		this.renderedHeight = height;
 		this.contentContainer.addChild(graphics);
 		this.configureKeyframes();
+	}
+
+	private removeFallbackGraphic(): void {
+		if (!this.fallbackGraphic) return;
+		this.contentContainer.removeChild(this.fallbackGraphic);
+		this.fallbackGraphic.destroy();
+		this.fallbackGraphic = null;
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -497,7 +520,7 @@ export class Html5Player extends Player {
 			if (this.loadingSetProgress && this.captureFramesTotal > 0) {
 				this.loadingSetProgress(this.captureFramesDone / this.captureFramesTotal);
 			}
-		} else if (this.iframe) {
+		} else if (this.iframe && this.mode !== "failed") {
 			this.syncIframePosition();
 			if (this.isActive()) this.seekHarness(this.getPlaybackTime());
 		}
@@ -507,32 +530,34 @@ export class Html5Player extends Player {
 		if (this.disposed || !this.iframe) return;
 		if (this.mode === "capturing" || this.mode === "playback") return;
 		if (this.captureInFlight) return;
+		const hashAtStart = this.contentHash;
 
 		if (this.capturedFrames && this.capturedHash === this.contentHash) {
 			this.transitionToPlayback().catch(err => {
+				if (this.disposed || this.contentHash !== hashAtStart) return;
 				console.warn("[Html5Player] transitionToPlayback failed:", err);
-				this.transitionToEditing();
+				this.emitCaptureFailed(err, "static-placeholder");
+				this.transitionToFailed();
 			});
 			return;
 		}
 
 		this.transitionToCapturing();
-		const hashAtStart = this.contentHash;
 		this.captureFrames()
 			.then(async frames => {
-				if (this.disposed) return;
-				const fresh = !!frames && frames.length > 0 && this.capturedHash === hashAtStart && this.contentHash === hashAtStart;
+				if (this.disposed || this.contentHash !== hashAtStart) return;
+				const fresh = !!frames && frames.length > 0 && this.capturedHash === hashAtStart;
 				if (!fresh) {
-					// Stale/empty result — fall back to the live iframe instead of stranding the loader.
-					if (this.mode === "capturing") this.transitionToEditing();
+					if (this.mode === "capturing") this.transitionToFailed();
 					return;
 				}
 				await this.transitionToPlayback();
 			})
 			.catch(err => {
+				if (this.disposed || this.contentHash !== hashAtStart) return;
 				console.warn("[Html5Player] capture failed:", err);
-				this.emitCaptureFailed(err, "live-iframe");
-				if (this.mode === "capturing") this.transitionToEditing();
+				this.emitCaptureFailed(err, "static-placeholder");
+				if (this.mode === "capturing") this.transitionToFailed();
 			});
 	}
 
@@ -637,6 +662,7 @@ export class Html5Player extends Player {
 
 	public override dispose(): void {
 		this.disposed = true;
+		this.removeFallbackGraphic();
 		super.dispose();
 		this.iframe?.remove();
 		this.iframe = null;
