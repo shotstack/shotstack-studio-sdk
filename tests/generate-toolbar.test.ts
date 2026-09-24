@@ -582,6 +582,42 @@ describe("GenerateToolbar", () => {
 		toolbar.dispose();
 	});
 
+	describe("source images on model selection", () => {
+		it.each([undefined, [], ["https://cdn/reference.png", "{{REFERENCE}}"]])(
+			"seeds only empty reference lists and preserves placeholders (%j)",
+			imageUrls => {
+				const edit = createMockEdit({ type: "image", prompt: "edit this", src: "https://cdn/resolved.png", options: { imageUrls } });
+				edit.getDocumentClip.mockReturnValue({ asset: { type: "image", src: "{{IMAGE}}", options: { imageUrls } } });
+				Object.assign(edit, { generationSettings: jest.fn() });
+				edit.getGenerationModels.mockReturnValue([model("image-edit", "image", [], [{ name: "imageUrls", title: "Source images" }])]);
+				const { toolbar, container } = mountToolbar(edit);
+				container.querySelector<HTMLButtonElement>("[data-model-value='image-edit']")!.click();
+				expect(edit.updateClip).toHaveBeenCalledWith(0, 0, {
+					asset: { model: "image-edit", options: { imageUrls: imageUrls?.length ? imageUrls : ["{{IMAGE}}"] } }
+				});
+				toolbar.dispose();
+			}
+		);
+
+		it.each([
+			{ settings: false, src: "https://cdn/source.png", type: "image", acceptsImages: true },
+			{ settings: true, src: undefined, type: "image", acceptsImages: true },
+			{ settings: true, src: "  ", type: "image", acceptsImages: true },
+			{ settings: true, src: "https://cdn/source.mp4", type: "video", acceptsImages: true },
+			{ settings: true, src: "https://cdn/source.png", type: "image", acceptsImages: false }
+		])("does not invent source inputs when unavailable or not enabled (%j)", ({ settings, src, type, acceptsImages }) => {
+			const edit = createMockEdit({ type, src, prompt: "a cat" });
+			if (settings) Object.assign(edit, { generationSettings: jest.fn() });
+			edit.getGenerationModels.mockReturnValue([
+				model("target", type as GenerationAssetType, [], acceptsImages ? [{ name: "imageUrls", title: "Source images" }] : [])
+			]);
+			const { toolbar, container } = mountToolbar(edit);
+			container.querySelector<HTMLButtonElement>("[data-model-value='target']")!.click();
+			expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { model: "target", options: {} } });
+			toolbar.dispose();
+		});
+	});
+
 	describe("host status", () => {
 		it("opens the host action from a status button without generating", () => {
 			const edit = createMockEdit();
