@@ -12,6 +12,7 @@ export type GenerationConfig = {
 export type GenerationStatus = {
 	text: string;
 	tone?: "neutral" | "warning" | "error";
+	onActivate?: () => void;
 };
 
 export type GenerationStatusRequest = GenerationConfig & {

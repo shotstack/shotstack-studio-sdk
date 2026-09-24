@@ -39,6 +39,8 @@ export class GenerateToolbar extends BaseToolbar {
 	private generateBtn: HTMLButtonElement | null = null;
 	private generateError: HTMLElement | null = null;
 	private generateNote: HTMLElement | null = null;
+	private generateNoteAction: HTMLButtonElement | null = null;
+	private generateGroup: HTMLElement | null = null;
 	private modelBtn: HTMLButtonElement | null = null;
 	private modelLabel: HTMLElement | null = null;
 	private modelPopup: HTMLElement | null = null;
@@ -92,10 +94,13 @@ export class GenerateToolbar extends BaseToolbar {
 				<button class="ss-media-toolbar-btn ss-ai-picker" data-options-picker type="button" aria-haspopup="dialog">Options</button>
 				<div class="ss-media-toolbar-popup ss-ai-options-popup" data-options-popup></div>
 			</div>
-			<button class="ss-media-toolbar-btn ss-ai-generate-btn" data-action="generate">
-				<span data-generate-label>Generate</span>
-			</button>
-			<span class="ss-ai-note" data-generate-note hidden>Generates on render</span>
+			<div class="ss-ai-generate-group" data-generate-group>
+				<button class="ss-media-toolbar-btn ss-ai-generate-btn" data-action="generate">
+					<span data-generate-label>Generate</span>
+				</button>
+				<span class="ss-ai-note" data-generate-note hidden>Generates on render</span>
+				<button type="button" class="ss-ai-note ss-ai-note--action" data-generate-note-action hidden></button>
+			</div>
 			<span class="ss-ai-error" data-generate-error hidden></span>
 		`;
 
@@ -105,6 +110,8 @@ export class GenerateToolbar extends BaseToolbar {
 		this.generateBtn = this.container.querySelector("[data-action='generate']");
 		this.generateError = this.container.querySelector("[data-generate-error]");
 		this.generateNote = this.container.querySelector("[data-generate-note]");
+		this.generateNoteAction = this.container.querySelector("[data-generate-note-action]");
+		this.generateGroup = this.container.querySelector("[data-generate-group]");
 		this.modelBtn = this.container.querySelector("[data-model-picker]");
 		this.modelLabel = this.container.querySelector("[data-model-label]");
 		this.modelPopup = this.container.querySelector("[data-model-popup]");
@@ -162,6 +169,11 @@ export class GenerateToolbar extends BaseToolbar {
 		this.optionsBtn?.addEventListener("click", e => {
 			e.stopPropagation();
 			this.togglePopup(this.optionsPopup);
+		}, { signal });
+		this.generateNoteAction?.addEventListener("click", e => {
+			e.stopPropagation();
+			const clipId = this.getSelectedClipId();
+			if (clipId) this.edit.getGenerationStatus(clipId)?.onActivate?.();
 		}, { signal });
 	}
 
@@ -417,22 +429,29 @@ export class GenerateToolbar extends BaseToolbar {
 		const hasGenerator = this.edit.hasAssetGenerator();
 		this.generateBtn.hidden = !hasGenerator;
 		const status = hasGenerator ? this.edit.getGenerationStatus(this.getSelectedClipId() ?? "") : undefined;
-		if (this.generateNote) {
+		this.generateGroup?.classList.toggle("has-status", status !== undefined);
+		if (this.generateNote && this.generateNoteAction) {
+			const actionable = status?.onActivate !== undefined;
 			if (!hasGenerator) {
 				this.generateNote.textContent = "Generates on render";
 				this.generateNote.title = "Rendering generates this from the prompt. Register an asset generator to preview it here.";
 				delete this.generateNote.dataset["tone"];
-				this.generateNote.hidden = false;
 			} else if (status) {
-				this.generateNote.textContent = status.text;
-				this.generateNote.dataset["tone"] = status.tone ?? "neutral";
-				this.generateNote.removeAttribute("title");
-				this.generateNote.hidden = false;
-			} else {
-				this.generateNote.textContent = "";
-				delete this.generateNote.dataset["tone"];
-				this.generateNote.removeAttribute("title");
-				this.generateNote.hidden = true;
+				const target = actionable ? this.generateNoteAction : this.generateNote;
+				target.textContent = status.text;
+				target.dataset["tone"] = status.tone ?? "neutral";
+				target.removeAttribute("title");
+			}
+			for (const [element, shown] of [
+				[this.generateNote, !hasGenerator || (status !== undefined && !actionable)],
+				[this.generateNoteAction, actionable]
+			] as const) {
+				if (!shown) {
+					element.textContent = "";
+					delete element.dataset["tone"];
+					element.removeAttribute("title");
+				}
+				element.hidden = !shown;
 			}
 		}
 		if (!hasGenerator) {
@@ -480,6 +499,8 @@ export class GenerateToolbar extends BaseToolbar {
 		this.generateBtn = null;
 		this.generateError = null;
 		this.generateNote = null;
+		this.generateNoteAction = null;
+		this.generateGroup = null;
 		this.modelBtn = null;
 		this.modelLabel = null;
 		this.modelPopup = null;

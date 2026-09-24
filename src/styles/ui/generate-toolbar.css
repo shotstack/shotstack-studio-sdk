@@ -88,11 +88,58 @@
 	display: none;
 }
 
-.ss-ai-note[data-tone="warning"] {
+.ss-ai-generate-group {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.ss-ai-generate-group.has-status > .ss-ai-generate-btn {
+	border-radius: 0;
+}
+
+.ss-ai-generate-group.has-status > .ss-ai-note:not([hidden]) {
+	display: inline-flex;
+	align-items: center;
+	height: 32px;
+	padding: 0 10px;
+	background: rgba(255, 255, 255, 0.04);
+	border-left: 1px solid rgba(255, 255, 255, 0.08);
+	color: rgba(255, 255, 255, 0.7);
+	font-size: 12px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+.ss-ai-note--action {
+	appearance: none;
+	border: 0;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.ss-ai-generate-group.has-status > .ss-ai-note--action:hover {
+	background: rgba(255, 255, 255, 0.14);
+	color: #fff;
+}
+
+.ss-ai-generate-group.has-status > .ss-ai-note--action:active {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+.ss-ai-note--action:focus-visible {
+	outline: 2px solid rgba(255, 255, 255, 0.7);
+	outline-offset: -3px;
+}
+
+.ss-ai-note[data-tone="warning"],
+.ss-ai-generate-group.has-status > .ss-ai-note[data-tone="warning"]:not([hidden]) {
 	color: #fcd34d;
 }
 
-.ss-ai-note[data-tone="error"] {
+.ss-ai-note[data-tone="error"],
+.ss-ai-generate-group.has-status > .ss-ai-note[data-tone="error"]:not([hidden]) {
 	color: #fca5a5;
 }
 
