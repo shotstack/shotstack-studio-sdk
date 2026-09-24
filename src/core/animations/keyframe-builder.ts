@@ -130,7 +130,7 @@ export class KeyframeBuilder {
 	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
 		return keyframes
 			.filter((kf): kf is Keyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
-			.toSorted((a, b) => a.start - b.start)
+			.sort((a, b) => a.start - b.start)
 			.map(keyframe => ({
 				start: keyframe.start,
 				length: keyframe.length,

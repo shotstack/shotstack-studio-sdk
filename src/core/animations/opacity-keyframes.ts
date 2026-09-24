@@ -149,7 +149,7 @@ export function upsertOpacityPoint(
 	const time = snapOpacityTime(localTime, clipLength, fps);
 	const existing = findOpacityPoint(points, time, fps);
 	const next = existing ? points.map(point => (point === existing ? { time: point.time, value } : point)) : [...points, { time, value }];
-	return next.toSorted((a, b) => a.time - b.time);
+	return next.sort((a, b) => a.time - b.time);
 }
 
 export function removeOpacityPoint(points: readonly OpacityPoint[], localTime: number, fps: number): OpacityPoint[] {
