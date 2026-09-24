@@ -76,6 +76,12 @@ export abstract class Player extends Entity {
 	/** True when the player's asset needs external resolution (e.g. alias caption awaiting transcription). */
 	public needsResolution = false;
 
+	/**
+	 * Why the asset couldn't be shown, or null. A failing player draws a placeholder and still
+	 * resolves load() so the rest of the edit keeps loading; this is how the failure is reported.
+	 */
+	public loadError: string | null = null;
+
 	protected edit: Edit;
 	public clipConfiguration: ResolvedClip;
 
@@ -231,7 +237,12 @@ export abstract class Player extends Entity {
 		}
 	}
 
+	protected recordLoadError(error: unknown): void {
+		this.loadError = error instanceof Error ? error.message : String(error);
+	}
+
 	public override async load(): Promise<void> {
+		this.loadError = null;
 		if (this.lumaWrapper?.destroyed) {
 			this.lumaWrapper = new pixi.Container();
 			this.getContainer().addChild(this.lumaWrapper);

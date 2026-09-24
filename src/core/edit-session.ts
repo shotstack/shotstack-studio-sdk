@@ -887,6 +887,10 @@ export class Edit {
 	 * @internal
 	 */
 	public getClipError(trackIdx: number, clipIdx: number): { error: string; assetType: string } | null {
+		const player = this.getPlayerClip(trackIdx, clipIdx);
+		if (player?.loadError) {
+			return { error: player.loadError, assetType: (player.clipConfiguration.asset as { type?: string })?.type ?? "unknown" };
+		}
 		const recorded = this.clipErrors.get(`${trackIdx}-${clipIdx}`);
 		if (recorded) return recorded;
 		const asset = this.getResolvedClip(trackIdx, clipIdx)?.asset;
@@ -1741,18 +1745,27 @@ export class Edit {
 
 				this.addPlayerToContainer(trackIdx, clip);
 
-				clip.load().catch(error => {
-					// Capture load errors for restored clips (same pattern as initial load)
-					const assetType = (clip.clipConfiguration?.asset as { type?: string })?.type ?? "unknown";
-					const errorMessage = error instanceof Error ? error.message : String(error);
-					this.clipErrors.set(`${trackIdx}-${insertIdx}`, { error: errorMessage, assetType });
-					this.internalEvents.emit(EditEvent.ClipLoadFailed, {
-						trackIndex: trackIdx,
-						clipIndex: insertIdx,
-						error: errorMessage,
-						assetType
+				clip
+					.load()
+					.then(() => {
+						if (!clip.loadError) return;
+						const indices = this.findClipIndices(clip);
+						if (!indices) return;
+						const assetType = (clip.clipConfiguration?.asset as { type?: string })?.type ?? "unknown";
+						this.internalEvents.emit(EditEvent.ClipLoadFailed, { ...indices, error: clip.loadError, assetType });
+					})
+					.catch(error => {
+						// Capture load errors for restored clips (same pattern as initial load)
+						const assetType = (clip.clipConfiguration?.asset as { type?: string })?.type ?? "unknown";
+						const errorMessage = error instanceof Error ? error.message : String(error);
+						this.clipErrors.set(`${trackIdx}-${insertIdx}`, { error: errorMessage, assetType });
+						this.internalEvents.emit(EditEvent.ClipLoadFailed, {
+							trackIndex: trackIdx,
+							clipIndex: insertIdx,
+							error: errorMessage,
+							assetType
+						});
 					});
-				});
 
 				this.updateTotalDuration();
 			},

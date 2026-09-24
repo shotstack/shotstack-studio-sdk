@@ -15,6 +15,7 @@ export class SvgPlayer extends Player {
 	private renderedWidth: number = 0;
 	private renderedHeight: number = 0;
 	private pendingRender: Promise<void> | null = null;
+	private placeholder: pixi.Graphics | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Svg);
@@ -53,6 +54,7 @@ export class SvgPlayer extends Player {
 		try {
 			const validationResult = SvgAssetSchema.safeParse(svgAsset);
 			if (!validationResult.success) {
+				this.recordLoadError(`Invalid svg asset: ${validationResult.error.issues.map(i => i.message).join("; ")}`);
 				this.createFallbackGraphic();
 				return;
 			}
@@ -62,24 +64,40 @@ export class SvgPlayer extends Player {
 			this.configureKeyframes();
 		} catch (error) {
 			console.error("Failed to render SVG asset:", error);
+			this.recordLoadError(error);
 			this.createFallbackGraphic();
 		}
 	}
 
 	public override async reloadAsset(): Promise<void> {
-		await this.rerenderAtCurrentDimensions();
+		this.loadError = null;
+		try {
+			await this.rerenderAtCurrentDimensions();
+		} catch (error) {
+			console.error("Failed to render SVG asset:", error);
+			this.recordLoadError(error);
+			this.createFallbackGraphic();
+		}
 	}
 
 	private createFallbackGraphic(): void {
 		const width = this.clipConfiguration.width || this.edit.size.width;
 		const height = this.clipConfiguration.height || this.edit.size.height;
 
-		const graphics = createPlaceholderGraphic(width, height);
+		this.clearPlaceholder();
+		this.placeholder = createPlaceholderGraphic(width, height);
 
 		this.renderedWidth = width;
 		this.renderedHeight = height;
-		this.contentContainer.addChild(graphics);
+		this.contentContainer.addChild(this.placeholder);
 		this.configureKeyframes();
+	}
+
+	private clearPlaceholder(): void {
+		if (!this.placeholder) return;
+		this.contentContainer.removeChild(this.placeholder);
+		this.placeholder.destroy();
+		this.placeholder = null;
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -90,6 +108,7 @@ export class SvgPlayer extends Player {
 		super.dispose();
 
 		this.pendingRender = null;
+		this.placeholder = null;
 
 		if (this.sprite) {
 			this.sprite.destroy();
@@ -136,9 +155,9 @@ export class SvgPlayer extends Player {
 	}
 
 	private async rerenderAtCurrentDimensions(): Promise<void> {
-		// Wait for any pending render to complete
+		// Wait for any pending render to complete; its failure is reported by whoever started it.
 		if (this.pendingRender) {
-			await this.pendingRender;
+			await this.pendingRender.catch(() => undefined);
 		}
 
 		// Clean up old sprite/texture
@@ -154,8 +173,12 @@ export class SvgPlayer extends Player {
 
 		// Start new render
 		this.pendingRender = this.doRender();
-		await this.pendingRender;
-		this.pendingRender = null;
+		try {
+			await this.pendingRender;
+		} finally {
+			this.pendingRender = null;
+		}
+		this.clearPlaceholder();
 	}
 
 	private async doRender(): Promise<void> {

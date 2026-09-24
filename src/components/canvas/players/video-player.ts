@@ -44,6 +44,7 @@ export class VideoPlayer extends Player {
 			this.configureKeyframes();
 		} catch (error) {
 			console.warn(`[VideoPlayer.load] FAILED clipId=${this.clipId}:`, error);
+			this.recordLoadError(error);
 			this.createFallbackGraphic();
 		} finally {
 			this.skipVideoUpdate = false;
@@ -157,12 +158,14 @@ export class VideoPlayer extends Player {
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
 
+		this.loadError = null;
 		try {
 			this.disposeVideo();
 			this.clearPlaceholder();
 			await this.loadVideo();
 		} catch (error) {
 			console.warn(`[VideoPlayer.reloadAsset] FAILED clipId=${this.clipId}:`, error);
+			this.recordLoadError(error);
 			this.createFallbackGraphic();
 		} finally {
 			this.skipVideoUpdate = false;
