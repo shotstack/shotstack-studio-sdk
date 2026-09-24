@@ -20,7 +20,9 @@ jest.mock("@styles/inject", () => ({
 	injectShotstackStyles: jest.fn()
 }));
 
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
+import { AssetGenerator } from "@core/generation/asset-generator";
+import type { GenerationStatus } from "@core/generation/generation-status";
 import type { GenerationAssetType, GenerationModelDefinition, GenerationOptionDefinition } from "@core/generation/model-catalogue";
 import { GenerateToolbar } from "@core/ui/generate-toolbar";
 
@@ -36,6 +38,7 @@ function createMockEdit(asset: Record<string, unknown> = { type: "image", prompt
 		getDocument: jest.fn(),
 		hasAssetGenerator: jest.fn().mockReturnValue(true),
 		getClipGenerationState: jest.fn(),
+		getGenerationStatus: jest.fn(),
 		generateClip: jest.fn().mockResolvedValue(undefined),
 		resolveMergeFields: jest.fn((value: string) => value),
 		updateClip: jest.fn(),
@@ -577,5 +580,141 @@ describe("GenerateToolbar", () => {
 		});
 
 		toolbar.dispose();
+	});
+
+	describe("host status", () => {
+		it("keeps Generate and Enter blocked until an error status refresh settles", async () => {
+			const edit = createMockEdit();
+			let generations = 0;
+			const generator = new AssetGenerator({
+				getClipAsset: () => ({ type: "image", prompt: "a dog" }),
+				applyGeneratedSrc: async () => {},
+				emitStarted: () => {},
+				emitCompleted: () => {},
+				emitFailed: () => {},
+				emitStatusChanged: clipId => {
+					const listener = edit.getInternalEvents().on.mock.calls.find(([name]) => name === InternalEvent.GenerationStatusChanged)?.[1];
+					listener?.({ clipId });
+				}
+			});
+			generator.register(async () => {
+				generations += 1;
+				return { url: "https://cdn/out.png" };
+			});
+			edit.getGenerationStatus.mockImplementation(clipId => generator.getStatus(clipId));
+			edit.generateClip.mockImplementation(clipId => generator.generate(clipId));
+			let resolveStatus!: (value: GenerationStatus | undefined) => void;
+			const pending = new Promise<GenerationStatus | undefined>(resolve => {
+				resolveStatus = resolve;
+			});
+			generator.registerStatus(({ prompt }) => (prompt === "a cat" ? { text: "Insufficient credits", tone: "error" } : pending));
+			const config = { clipId: "clip-1", type: "image" as const, options: {}, length: 4, prompt: "a cat" };
+			generator.describe(config);
+			const { toolbar, container } = mountToolbar(edit);
+			const button = container.querySelector<HTMLButtonElement>("[data-action='generate']")!;
+			const prompt = container.querySelector<HTMLInputElement>("[data-prompt-input]")!;
+			expect(button.disabled).toBe(true);
+			generator.describe({ ...config, prompt: "a dog" });
+			expect(button.disabled).toBe(true);
+			button.click();
+			prompt.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+			expect(generations).toBe(0);
+			resolveStatus(undefined);
+			await pending;
+			expect(button.disabled).toBe(false);
+			prompt.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+			expect(generations).toBe(1);
+			toolbar.dispose();
+		});
+
+		it("shows the host's text in the note slot with its tone", () => {
+			const edit = createMockEdit();
+			edit.getGenerationStatus.mockReturnValue({ text: "neutral line", tone: "neutral" });
+			const { toolbar, container } = mountToolbar(edit);
+			const note = container.querySelector<HTMLElement>("[data-generate-note]");
+			expect(note?.hidden).toBe(false);
+			expect(note?.textContent).toBe("neutral line");
+			expect(note?.dataset["tone"]).toBe("neutral");
+			expect(container.querySelector<HTMLButtonElement>("[data-action='generate']")?.disabled).toBe(false);
+			toolbar.dispose();
+		});
+
+		it("disables Generate only for an error tone", () => {
+			const edit = createMockEdit();
+			edit.getGenerationStatus.mockReturnValue({ text: "blocked", tone: "error" });
+			const { toolbar, container } = mountToolbar(edit);
+			expect(container.querySelector<HTMLButtonElement>("[data-action='generate']")?.disabled).toBe(true);
+			expect(container.querySelector<HTMLElement>("[data-generate-note]")?.dataset["tone"]).toBe("error");
+			container.querySelector<HTMLInputElement>("[data-prompt-input]")?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+			expect(edit.generateClip).not.toHaveBeenCalled();
+
+			edit.getGenerationStatus.mockReturnValue({ text: "caution", tone: "warning" });
+			toolbar.show(0, 0);
+			expect(container.querySelector<HTMLButtonElement>("[data-action='generate']")?.disabled).toBe(false);
+			toolbar.dispose();
+		});
+
+		it("hides the note again when the status is cleared", () => {
+			const edit = createMockEdit();
+			edit.getGenerationStatus.mockReturnValue({ text: "x" });
+			const { toolbar, container } = mountToolbar(edit);
+			const note = container.querySelector<HTMLElement>("[data-generate-note]");
+			expect(note?.dataset["tone"]).toBe("neutral");
+			edit.getGenerationStatus.mockReturnValue(undefined);
+			toolbar.show(0, 0);
+			expect(note?.hidden).toBe(true);
+			expect(note?.dataset["tone"]).toBeUndefined();
+			toolbar.dispose();
+		});
+
+		it("still shows the no-generator note when no generator is registered", () => {
+			const edit = createMockEdit();
+			edit.hasAssetGenerator.mockReturnValue(false);
+			edit.getGenerationStatus.mockReturnValue({ text: "ignored" });
+			const { toolbar, container } = mountToolbar(edit);
+			expect(container.querySelector("[data-generate-note]")?.textContent).toBe("Generates on render");
+			toolbar.dispose();
+		});
+
+		it("carries the no-generator tooltip only when no generator is registered", () => {
+			const edit = createMockEdit();
+			edit.hasAssetGenerator.mockReturnValue(false);
+			const { toolbar, container } = mountToolbar(edit);
+			expect(container.querySelector("[data-generate-note]")?.getAttribute("title")).toBe(
+				"Rendering generates this from the prompt. Register an asset generator to preview it here."
+			);
+			toolbar.dispose();
+		});
+
+		it("drops the no-generator tooltip once a generator reports a status", () => {
+			const edit = createMockEdit();
+			edit.getGenerationStatus.mockReturnValue({ text: "now" });
+			const { toolbar, container } = mountToolbar(edit);
+			expect(container.querySelector("[data-generate-note]")?.hasAttribute("title")).toBe(false);
+			toolbar.dispose();
+		});
+
+		it("re-syncs when the status for the selected clip changes", () => {
+			const edit = createMockEdit();
+			const { toolbar, container } = mountToolbar(edit);
+			const handler = edit.getInternalEvents().on.mock.calls.find(([name]) => name === InternalEvent.GenerationStatusChanged)?.[1];
+			expect(handler).toBeDefined();
+			edit.getGenerationStatus.mockReturnValue({ text: "now" });
+			handler({ clipId: "clip-1" });
+			expect(container.querySelector("[data-generate-note]")?.textContent).toBe("now");
+			toolbar.dispose();
+		});
+
+		it("ignores a status change for a clip other than the selected one", () => {
+			const edit = createMockEdit();
+			edit.getGenerationStatus.mockReturnValue({ text: "original" });
+			const { toolbar, container } = mountToolbar(edit);
+			const handler = edit.getInternalEvents().on.mock.calls.find(([name]) => name === InternalEvent.GenerationStatusChanged)?.[1];
+			expect(handler).toBeDefined();
+			edit.getGenerationStatus.mockReturnValue({ text: "unrelated clip's line" });
+			handler({ clipId: "other-clip" });
+			expect(container.querySelector("[data-generate-note]")?.textContent).toBe("original");
+			toolbar.dispose();
+		});
 	});
 });

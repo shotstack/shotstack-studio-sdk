@@ -138,7 +138,8 @@ export const InternalEvent = {
 	ClipBlurred: "clip:blurred",
 
 	// Asset generation UI
-	AssetGeneratorChanged: "assetGenerator:changed"
+	AssetGeneratorChanged: "assetGenerator:changed",
+	GenerationStatusChanged: "generation:statusChanged"
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -237,4 +238,5 @@ export type InternalEventMap = {
 
 	// Asset generation UI
 	[InternalEvent.AssetGeneratorChanged]: void;
+	[InternalEvent.GenerationStatusChanged]: { clipId: string };
 };

@@ -27,7 +27,7 @@ const CONTRACT = {
 		}
 	},
 	runtimeExports: ["Edit", "Canvas", "Controls", "Timeline", "UIController", "VideoExporter", "VERSION"],
-	internalRuntimeExports: ["Edit", "ShotstackEdit", "registerGenerationSettings"],
+	internalRuntimeExports: ["Edit", "ShotstackEdit", "registerGenerationSettings", "registerGenerationStatus"],
 	dtsHiddenMembersByClass: {
 		UIController: [
 			"updateOverlays(",
@@ -67,10 +67,16 @@ const CONTRACT = {
 			"getInternalEvents(",
 			"getGenerationModels(",
 			"pruneUnusedFonts(",
-			"getClipGenerationState("
+			"getClipGenerationState(",
+			"getGenerationStatus("
 		]
 	},
 	dtsForbiddenTokens: [
+		"registerGenerationStatus",
+		"setGenerationStatus",
+		"type GenerationConfig =",
+		"type GenerationStatus =",
+		"generation:configChanged",
 		"registerGenerationSettings",
 		"generationSettings",
 		"GenerationSettingsHandler",
@@ -252,7 +258,7 @@ const checkInternalDeclarationSurface = () => {
 	const dtsPath = resolve(__dirname, "dist/internal.d.ts");
 	const dtsContent = readFileSync(dtsPath, "utf-8");
 	const errors = [];
-	const requiredTokens = ["export declare class Edit", "export declare class ShotstackEdit extends Edit", "export declare class MergeFieldService", "export declare function registerGenerationSettings"];
+	const requiredTokens = ["export declare class Edit", "export declare class ShotstackEdit extends Edit", "export declare class MergeFieldService", "export declare function registerGenerationSettings", "export declare function registerGenerationStatus"];
 	const isEntryStubOnly = /^\s*export\s+\*\s+from\s+['"]\.\/internal['"]\s*;\s*export\s*\{\s*\}\s*;?\s*$/.test(dtsContent);
 
 	for (const token of requiredTokens) {
@@ -384,8 +390,8 @@ const checkBundleSizes = () => {
 const runRuntimeExportSmokeTest = async (name, modulePath, expectedExports) => {
 	try {
 		const module = await import(modulePath);
-		if (modulePath === "./dist/shotstack-studio.es.js" && "registerGenerationSettings" in module) {
-			failWithDetails(name, ["Internal settings hook leaked into public exports"]);
+		if (modulePath === "./dist/shotstack-studio.es.js" && ["registerGenerationSettings", "registerGenerationStatus"].some(symbol => symbol in module)) {
+			failWithDetails(name, ["Internal generation hook leaked into public exports"]);
 		}
 		const missing = expectedExports.filter(symbol => !module[symbol]);
 

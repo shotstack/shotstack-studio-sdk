@@ -18,6 +18,7 @@ function makeDeps(overrides: Partial<AssetGeneratorDeps> = {}) {
 		applyGeneratedSrc: async (clipId, url) => {
 			applied.push({ clipId, url });
 		},
+		emitStatusChanged: () => {},
 		emitStarted: clipId => started.push(clipId),
 		emitCompleted: clipId => completed.push(clipId),
 		emitFailed: (clipId, error) => failed.push({ clipId, error }),

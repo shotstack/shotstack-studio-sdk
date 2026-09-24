@@ -1,5 +1,6 @@
 import { isAiAsset } from "@core/shared/ai-asset-utils";
 
+import type { GenerationConfig, GenerationStatus, GenerationStatusProvider } from "./generation-status";
 import {
 	type GenerationAssetType,
 	type GenerationModelCatalogueResponse,
@@ -40,6 +41,7 @@ export interface AssetGeneratorDeps {
 	emitStarted: (clipId: string) => void;
 	emitCompleted: (clipId: string) => void;
 	emitFailed: (clipId: string, error: string) => void;
+	emitStatusChanged: (clipId: string) => void;
 }
 
 /**
@@ -50,6 +52,9 @@ export interface AssetGeneratorDeps {
 export class AssetGenerator {
 	private handler?: AssetGeneratorHandler;
 	private models?: readonly GenerationModelDefinition[];
+	private statusProvider?: GenerationStatusProvider;
+	private statusController: AbortController | null = null;
+	private status: { clipId: string; value: GenerationStatus } | null = null;
 	private readonly states = new Map<string, ClipGenerationState>();
 	private readonly controllers = new Map<string, AbortController>();
 
@@ -58,6 +63,57 @@ export class AssetGenerator {
 	public register(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void {
 		this.handler = handler;
 		this.models = options?.catalogue === undefined ? undefined : readGenerationModels(options.catalogue);
+	}
+
+	public registerStatus(provider: GenerationStatusProvider): () => void {
+		const callback: GenerationStatusProvider = request => provider(request);
+		this.statusProvider = callback;
+		this.describe(null);
+		return () => {
+			if (this.statusProvider !== callback) return;
+			this.statusProvider = undefined;
+			this.describe(null);
+		};
+	}
+
+	public getStatus(clipId: string): GenerationStatus | undefined {
+		return this.status?.clipId === clipId ? this.status.value : undefined;
+	}
+
+	public describe(config: GenerationConfig | null): void {
+		this.statusController?.abort();
+		this.statusController = null;
+		if (!config || !this.statusProvider) {
+			this.setStatus(null);
+			return;
+		}
+		// A pending refresh must not lift an existing block for this clip.
+		if (this.status?.clipId !== config.clipId || this.status.value.tone !== "error") this.setStatus(null);
+		const controller = new AbortController();
+		this.statusController = controller;
+		const settle = (value: GenerationStatus | undefined): void => {
+			if (controller.signal.aborted) return;
+			this.setStatus(value ? { clipId: config.clipId, value } : null);
+		};
+		const fail = (error: unknown): void => {
+			if (controller.signal.aborted) return;
+			console.warn(`Generation status: ${error instanceof Error ? error.message : String(error)}`);
+			settle(undefined);
+		};
+		try {
+			const result = this.statusProvider({ ...structuredClone(config), signal: controller.signal });
+			if (result instanceof Promise) result.then(settle, fail);
+			else settle(result);
+		} catch (error) {
+			fail(error);
+		}
+	}
+
+	private setStatus(next: { clipId: string; value: GenerationStatus } | null): void {
+		const previous = this.status;
+		this.status = next;
+		const changed = next ?? previous;
+		if (changed) this.deps.emitStatusChanged(changed.clipId);
 	}
 
 	public getModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
@@ -125,5 +181,6 @@ export class AssetGenerator {
 	public abortAll(): void {
 		for (const clipId of [...this.controllers.keys()]) this.abort(clipId);
 		this.states.clear();
+		this.describe(null);
 	}
 }

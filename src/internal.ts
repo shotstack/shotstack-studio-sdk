@@ -16,3 +16,6 @@ export type { MergeField, MergeFieldService } from "@core/merge";
 export { InvalidAssetUrlError } from "@core/url-validation";
 
 export { registerGenerationSettings } from "@core/generation/generation-settings";
+
+export { registerGenerationStatus } from "@core/generation/generation-status";
+export type { GenerationConfig, GenerationStatus, GenerationStatusRequest, GenerationStatusProvider } from "@core/generation/generation-status";
