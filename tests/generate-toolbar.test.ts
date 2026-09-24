@@ -583,6 +583,65 @@ describe("GenerateToolbar", () => {
 	});
 
 	describe("host status", () => {
+		it("opens the host action from a status button without generating", () => {
+			const edit = createMockEdit();
+			const onActivate = jest.fn();
+			edit.getGenerationStatus.mockReturnValue({ text: "0.5 credits", onActivate });
+			const { toolbar, container } = mountToolbar(edit);
+			const action = container.querySelector<HTMLButtonElement>("[data-generate-note-action]");
+			expect(action).not.toBeNull();
+			expect(action?.hidden).toBe(false);
+			expect(action?.type).toBe("button");
+			expect(action?.textContent).toBe("0.5 credits");
+			expect(container.querySelector<HTMLElement>("[data-generate-note]")?.hidden).toBe(true);
+			action?.click();
+			expect(onActivate).toHaveBeenCalledTimes(1);
+			expect(edit.generateClip).not.toHaveBeenCalled();
+			toolbar.dispose();
+		});
+
+		it("uses the current action and clears it when status becomes passive or absent", () => {
+			const edit = createMockEdit();
+			const first = jest.fn();
+			const second = jest.fn();
+			edit.getGenerationStatus.mockReturnValue({ text: "First", onActivate: first });
+			const { toolbar, container } = mountToolbar(edit);
+			const action = container.querySelector<HTMLButtonElement>("[data-generate-note-action]");
+			expect(action).not.toBeNull();
+			edit.getGenerationStatus.mockReturnValue({ text: "Second", onActivate: second });
+			toolbar.show(0, 0);
+			action?.click();
+			expect(second).toHaveBeenCalledTimes(1);
+			expect(first).not.toHaveBeenCalled();
+			edit.getGenerationStatus.mockReturnValue({ text: "Read only" });
+			toolbar.show(0, 0);
+			expect(action?.hidden).toBe(true);
+			expect(action?.textContent).toBe("");
+			expect(container.querySelector<HTMLElement>("[data-generate-note]")?.hidden).toBe(false);
+			action?.click();
+			expect(second).toHaveBeenCalledTimes(1);
+			edit.getGenerationStatus.mockReturnValue(undefined);
+			toolbar.show(0, 0);
+			expect(container.querySelector<HTMLElement>("[data-generate-note]")?.hidden).toBe(true);
+			expect(action?.hidden).toBe(true);
+			toolbar.dispose();
+		});
+
+		it("keeps the status action available when an error blocks generation", () => {
+			const edit = createMockEdit();
+			const onActivate = jest.fn();
+			edit.getGenerationStatus.mockReturnValue({ text: "Add credits", tone: "error", onActivate });
+			const { toolbar, container } = mountToolbar(edit);
+			const action = container.querySelector<HTMLButtonElement>("[data-generate-note-action]");
+			expect(action?.dataset["tone"]).toBe("error");
+			expect(action?.disabled).toBe(false);
+			expect(container.querySelector<HTMLButtonElement>("[data-action='generate']")?.disabled).toBe(true);
+			action?.click();
+			expect(onActivate).toHaveBeenCalledTimes(1);
+			expect(edit.generateClip).not.toHaveBeenCalled();
+			toolbar.dispose();
+		});
+
 		it("keeps Generate and Enter blocked until an error status refresh settles", async () => {
 			const edit = createMockEdit();
 			let generations = 0;
