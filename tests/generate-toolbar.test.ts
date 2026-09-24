@@ -173,6 +173,17 @@ describe("GenerateToolbar", () => {
 		toolbar.dispose();
 	});
 
+	it("shows catalogue names while selecting and saving model identifiers", () => {
+		const edit = createMockEdit({ type: "image", prompt: "a cat", model: "nano-banana-2" });
+		edit.getGenerationModels.mockReturnValue([{ ...model("nano-banana-2"), name: "Nano Banana 2" }, model("flux-schnell")]);
+		const { toolbar, container } = mountToolbar(edit);
+		expect(container.querySelector("[data-model-label]")?.textContent).toBe("Nano Banana 2");
+		expect([...container.querySelectorAll("[data-model-value]")].map(node => node.textContent)).toEqual(["Nano Banana 2", "flux-schnell"]);
+		container.querySelector<HTMLButtonElement>('[data-model-value="nano-banana-2"]')?.click();
+		expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { model: "nano-banana-2", options: {} } });
+		toolbar.dispose();
+	});
+
 	it("shows available models without inventing an automatic entry", () => {
 		const edit = createMockEdit();
 		edit.getGenerationModels.mockReturnValue([model("flux-schnell"), model("nano-banana-2")]);

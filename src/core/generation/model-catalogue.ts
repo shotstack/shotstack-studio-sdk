@@ -24,6 +24,7 @@ export type GenerationUnsupportedOption = {
 
 export type GenerationModelDefinition = {
 	model: string;
+	name?: string;
 	type: GenerationAssetType;
 	optionNames: readonly string[];
 	options: readonly GenerationOptionDefinition[];
@@ -106,6 +107,7 @@ export const readGenerationModels = (catalogue: unknown): readonly GenerationMod
 		return [
 			{
 				model: entry["model"],
+				...(typeof entry["name"] === "string" && entry["name"].trim() ? { name: entry["name"].trim() } : {}),
 				type: entry["type"] as GenerationAssetType,
 				optionNames: Object.keys(properties),
 				options,

@@ -53,6 +53,12 @@ const catalogue: GenerationModelCatalogueResponse = {
 };
 
 describe("generation model catalogue", () => {
+	it.each(["Nano Banana 2", undefined, "", "  ", 42])("reads a display name safely: %p", name => {
+		const [entry] = readGenerationModels({ models: [{ ...modelWithOptions({}), name }] });
+		expect(entry).toMatchObject({ model: "custom" });
+		expect(entry?.name).toBe(name === "Nano Banana 2" ? name : undefined);
+	});
+
 	it("keeps expanded models and excludes required input media", () => {
 		const models = readGenerationModels(catalogue);
 
