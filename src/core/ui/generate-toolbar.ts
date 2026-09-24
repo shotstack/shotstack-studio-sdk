@@ -257,6 +257,16 @@ export class GenerateToolbar extends BaseToolbar {
 		const rawAsset = record(this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx)?.asset);
 		const resolvedAsset = record(this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx)?.asset);
 		const options = reconcileGenerationOptions(model, record(rawAsset["options"]), record(resolvedAsset["options"]));
+		if (
+			this.edit.generationSettings &&
+			model.optionNames.includes("imageUrls") &&
+			rawAsset["type"] === "image" &&
+			typeof rawAsset["src"] === "string" &&
+			rawAsset["src"].trim() &&
+			(options["imageUrls"] === undefined || (Array.isArray(options["imageUrls"]) && options["imageUrls"].length === 0))
+		) {
+			options["imageUrls"] = [rawAsset["src"]];
+		}
 		this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, { asset: { model: model.model, options } } as never);
 		this.closeAllPopups();
 	}
