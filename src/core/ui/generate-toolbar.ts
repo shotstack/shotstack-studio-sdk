@@ -28,7 +28,7 @@ const modelLabelText = (
 	selectedModel: GenerationModelDefinition | undefined
 ): string => {
 	if (models === undefined) return "";
-	if (selectedModel) return selectedModel.model;
+	if (selectedModel) return selectedModel.name || selectedModel.model;
 	if (selected) return `${selected} (Unavailable)`;
 	return models.length === 0 ? "No models available" : "Select model";
 };
@@ -248,7 +248,7 @@ export class GenerateToolbar extends BaseToolbar {
 			button.type = "button";
 			button.className = "ss-media-toolbar-popup-item";
 			button.dataset["modelValue"] = model.model;
-			button.textContent = model.model;
+			button.textContent = model.name || model.model;
 			button.classList.toggle("active", model.model === selected);
 			button.addEventListener("click", () => this.selectModel(model));
 			this.modelPopup.appendChild(button);
