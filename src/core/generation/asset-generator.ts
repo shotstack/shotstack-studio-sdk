@@ -83,10 +83,12 @@ export class AssetGenerator {
 	public describe(config: GenerationConfig | null): void {
 		this.statusController?.abort();
 		this.statusController = null;
-		this.setStatus(null);
 		if (!config || !this.statusProvider) {
+			this.setStatus(null);
 			return;
 		}
+		// A pending refresh must not lift an existing block for this clip.
+		if (this.status?.clipId !== config.clipId || this.status.value.tone !== "error") this.setStatus(null);
 		const controller = new AbortController();
 		this.statusController = controller;
 		const settle = (value: GenerationStatus | undefined): void => {
@@ -99,7 +101,7 @@ export class AssetGenerator {
 			settle(undefined);
 		};
 		try {
-			const result = this.statusProvider({ ...config, signal: controller.signal });
+			const result = this.statusProvider({ ...structuredClone(config), signal: controller.signal });
 			if (result instanceof Promise) result.then(settle, fail);
 			else settle(result);
 		} catch (error) {

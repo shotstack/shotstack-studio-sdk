@@ -21,6 +21,8 @@ jest.mock("@styles/inject", () => ({
 }));
 
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
+import { AssetGenerator } from "@core/generation/asset-generator";
+import type { GenerationStatus } from "@core/generation/generation-status";
 import type { GenerationAssetType, GenerationModelDefinition, GenerationOptionDefinition } from "@core/generation/model-catalogue";
 import { GenerateToolbar } from "@core/ui/generate-toolbar";
 
@@ -581,6 +583,50 @@ describe("GenerateToolbar", () => {
 	});
 
 	describe("host status", () => {
+		it("keeps Generate and Enter blocked until an error status refresh settles", async () => {
+			const edit = createMockEdit();
+			let generations = 0;
+			const generator = new AssetGenerator({
+				getClipAsset: () => ({ type: "image", prompt: "a dog" }),
+				applyGeneratedSrc: async () => {},
+				emitStarted: () => {},
+				emitCompleted: () => {},
+				emitFailed: () => {},
+				emitStatusChanged: clipId => {
+					const listener = edit.getInternalEvents().on.mock.calls.find(([name]) => name === InternalEvent.GenerationStatusChanged)?.[1];
+					listener?.({ clipId });
+				}
+			});
+			generator.register(async () => {
+				generations += 1;
+				return { url: "https://cdn/out.png" };
+			});
+			edit.getGenerationStatus.mockImplementation(clipId => generator.getStatus(clipId));
+			edit.generateClip.mockImplementation(clipId => generator.generate(clipId));
+			let resolveStatus!: (value: GenerationStatus | undefined) => void;
+			const pending = new Promise<GenerationStatus | undefined>(resolve => {
+				resolveStatus = resolve;
+			});
+			generator.registerStatus(({ prompt }) => (prompt === "a cat" ? { text: "Insufficient credits", tone: "error" } : pending));
+			const config = { clipId: "clip-1", type: "image" as const, options: {}, length: 4, prompt: "a cat" };
+			generator.describe(config);
+			const { toolbar, container } = mountToolbar(edit);
+			const button = container.querySelector<HTMLButtonElement>("[data-action='generate']")!;
+			const prompt = container.querySelector<HTMLInputElement>("[data-prompt-input]")!;
+			expect(button.disabled).toBe(true);
+			generator.describe({ ...config, prompt: "a dog" });
+			expect(button.disabled).toBe(true);
+			button.click();
+			prompt.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+			expect(generations).toBe(0);
+			resolveStatus(undefined);
+			await pending;
+			expect(button.disabled).toBe(false);
+			prompt.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+			expect(generations).toBe(1);
+			toolbar.dispose();
+		});
+
 		it("shows the host's text in the note slot with its tone", () => {
 			const edit = createMockEdit();
 			edit.getGenerationStatus.mockReturnValue({ text: "neutral line", tone: "neutral" });

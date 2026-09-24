@@ -2022,6 +2022,26 @@ describe("Edit Clip Operations", () => {
 			expect(replacement).toHaveBeenCalledTimes(1);
 		});
 
+		it("isolates generated options from status provider mutations", async () => {
+			const { e, status } = await promptEdit({
+				asset: { type: "image", prompt: "a cat", options: { resolution: "1K", imageUrls: ["https://cdn/reference.png"] } }
+			});
+			status.mockImplementation(({ options }) => {
+				Object.assign(options, { resolution: "4K" });
+				(options["imageUrls"] as string[]).push("https://cdn/extra.png");
+				return { text: "estimated" };
+			});
+			let generatedOptions: unknown;
+			e.registerAssetGenerator(async ({ asset }) => {
+				generatedOptions = asset["options"];
+				return { url: "https://cdn/out.png" };
+			});
+			e.selectClip(0, 0);
+			await e.generateClip(e.getClipId(0, 0)!);
+			expect(generatedOptions).toEqual({ resolution: "1K", imageUrls: ["https://cdn/reference.png"] });
+			e.dispose();
+		});
+
 		it("aborts a pending answer on dispose", async () => {
 			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
 			status.mockImplementation(() => new Promise<GenerationStatus>(() => {}));
