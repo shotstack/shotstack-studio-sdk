@@ -130,8 +130,6 @@ export class KeyframeBuilder {
 	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
 		return keyframes
 			.filter((kf): kf is Keyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
-			// Use slice().sort — Array.prototype.toSorted is Chrome 110+ / Safari 16+ only.
-			.slice()
 			.sort((a, b) => a.start - b.start)
 			.map(keyframe => ({
 				start: keyframe.start,
