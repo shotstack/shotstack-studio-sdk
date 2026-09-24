@@ -1271,6 +1271,37 @@ describe("Edit loadEdit()", () => {
 			const { tracks } = getEditState(edit);
 			expect(tracks[0].length).toBe(2);
 		});
+
+		it("reports a clip whose player fell back to a placeholder", async () => {
+			const loadFailedHandler = jest.fn();
+			events.on("clip:loadFailed", loadFailedHandler);
+
+			// Real players draw a placeholder and resolve load() rather than rejecting.
+			const { ImagePlayer: ImagePlayerMock } = jest.requireMock("@canvas/players/image-player");
+			ImagePlayerMock.mockImplementationOnce((editInstance: Edit, config: ResolvedClip) => {
+				const player = createMockPlayer(editInstance, config, PlayerType.Image);
+				player["load"] = jest.fn(async () => {
+					player["loadError"] = "Invalid image source 'bad.jpg'.";
+				});
+				return player;
+			});
+
+			await edit.loadEdit(
+				createMinimalEdit([
+					{
+						clips: [
+							{ asset: { type: "image", src: "https://example.com/bad.jpg" }, start: 0, length: 3, fit: "crop" },
+							{ asset: { type: "image", src: "https://example.com/good.jpg" }, start: 3, length: 3, fit: "crop" }
+						]
+					}
+				])
+			);
+
+			expect(loadFailedHandler).toHaveBeenCalledWith(
+				expect.objectContaining({ trackIndex: 0, clipIndex: 0, error: "Invalid image source 'bad.jpg'.", assetType: "image" })
+			);
+			expect(edit.getClipError(0, 0)).toEqual({ error: "Invalid image source 'bad.jpg'.", assetType: "image" });
+		});
 	});
 });
 

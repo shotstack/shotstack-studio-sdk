@@ -468,6 +468,46 @@ describe("SvgPlayer", () => {
 			consoleSpy.mockRestore();
 		});
 
+		it("records why it fell back when rendering fails", async () => {
+			mockRenderSvgAssetToPng.mockRejectedValueOnce(new Error("Render failed"));
+			const player = new SvgPlayer(createMockEdit(), createSvgClipConfig());
+			const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+			await player.load();
+
+			expect(player.loadError).toBe("Render failed");
+			consoleSpy.mockRestore();
+		});
+
+		it("records why it fell back when validation fails", async () => {
+			const player = new SvgPlayer(createMockEdit(), createInvalidSvgClipConfig());
+
+			await player.load();
+
+			expect(player.loadError).toEqual(expect.any(String));
+		});
+
+		it("has no load error after a successful render", async () => {
+			const player = new SvgPlayer(createMockEdit(), createSvgClipConfig());
+
+			await player.load();
+
+			expect(player.loadError).toBeNull();
+		});
+
+		it("falls back and records the error when a re-render fails", async () => {
+			const player = new SvgPlayer(createMockEdit(), createSvgClipConfig());
+			await player.load();
+			mockRenderSvgAssetToPng.mockRejectedValueOnce(new Error("Render failed"));
+			const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
+			await expect(player.reloadAsset()).resolves.toBeUndefined();
+
+			expect(createPlaceholderGraphic).toHaveBeenCalled();
+			expect(player.loadError).toBe("Render failed");
+			consoleSpy.mockRestore();
+		});
+
 		it("creates fallback graphic when WASM init fails", async () => {
 			// Canvas's initResvg handles the fetch internally; we simulate a
 			// failure by making the SDK-side initResvg call reject.

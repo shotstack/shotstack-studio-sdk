@@ -25,7 +25,8 @@ export class ImagePlayer extends Player {
 		try {
 			await this.loadTexture();
 			this.configureKeyframes();
-		} catch {
+		} catch (error) {
+			this.recordLoadError(error);
 			this.createFallbackGraphic();
 		}
 	}
@@ -76,10 +77,12 @@ export class ImagePlayer extends Player {
 	public override async reloadAsset(): Promise<void> {
 		this.disposeTexture();
 		this.clearPlaceholder();
+		this.loadError = null;
 
 		try {
 			await this.loadTexture();
-		} catch {
+		} catch (error) {
+			this.recordLoadError(error);
 			this.createFallbackGraphic();
 		}
 	}

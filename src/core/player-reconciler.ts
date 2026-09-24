@@ -210,6 +210,8 @@ export class PlayerReconciler {
 		const loadPromise = player
 			.load()
 			.then(() => {
+				if (player.loadError) this.reportLoadFailure(player, player.loadError);
+
 				// Emit PlayerLoaded for all players
 				this.edit.getInternalEvents().emit(InternalEvent.PlayerLoaded, {
 					player,
@@ -346,6 +348,17 @@ export class PlayerReconciler {
 	}
 
 	/**
+	 * Announce a player that couldn't show its asset. Its position is looked up now, not when the
+	 * load started, because clips can move while an asset is still loading.
+	 */
+	private reportLoadFailure(player: Player, error: string): void {
+		const indices = this.edit.findClipIndices(player);
+		if (!indices) return;
+		const assetType = (player.clipConfiguration.asset as { type?: string })?.type ?? "unknown";
+		this.edit.getInternalEvents().emit(EditEvent.ClipLoadFailed, { ...indices, error, assetType });
+	}
+
+	/**
 	 * Check if asset properties changed (excluding type, which is handled separately).
 	 */
 	private assetChanged(current: unknown, resolved: unknown): boolean {
@@ -376,9 +389,11 @@ export class PlayerReconciler {
 				.reloadAsset()
 				.then(() => {
 					player.reconfigureAfterRestore();
+					if (player.loadError) this.reportLoadFailure(player, player.loadError);
 				})
 				.catch(error => {
 					console.error("Failed to reload asset:", error);
+					this.reportLoadFailure(player, error instanceof Error ? error.message : String(error));
 				});
 		} else {
 			player.reconfigureAfterRestore();
