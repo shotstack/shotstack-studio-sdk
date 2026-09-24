@@ -14,3 +14,5 @@ export type { MergeField, MergeFieldService } from "@core/merge";
 
 // URL preflight
 export { InvalidAssetUrlError } from "@core/url-validation";
+
+export { registerGenerationSettings } from "@core/generation/generation-settings";

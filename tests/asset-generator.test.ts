@@ -1,5 +1,5 @@
 import { AssetGenerator, type AssetGeneratorDeps } from "@core/generation/asset-generator";
-import type { GenerationModelCatalogueResponse } from "@core/generation/model-catalogue";
+import { missingGenerationOptions, reconcileGenerationOptions, type GenerationModelCatalogueResponse } from "@core/generation/model-catalogue";
 
 const PROMPT_ASSET = { type: "image", prompt: "a red apple" };
 
@@ -41,6 +41,25 @@ describe("AssetGenerator", () => {
 
 		generator.register(async () => ({ url: "https://cdn/out.png" }));
 		expect(generator.getModels("image")).toBeUndefined();
+	});
+
+	it("retains models with required complex options in the catalogue snapshot", () => {
+		const generator = new AssetGenerator(makeDeps().deps);
+		const catalogue: GenerationModelCatalogueResponse = {
+			models: [{ model: "nano-banana-2-edit", type: "image", options: {
+				type: "object", additionalProperties: false, required: ["imageUrls"],
+				properties: { imageUrls: { type: "array", title: "Reference images", items: { type: "string", format: "uri" }, minItems: 1, maxItems: 14 } }
+			} }]
+		};
+		const handler = async () => ({ url: "https://cdn/out.png" });
+		generator.register(handler, { catalogue });
+		const [model] = generator.getModels("image")!;
+		expect(model?.model).toBe("nano-banana-2-edit");
+		if (!model) return;
+		expect(missingGenerationOptions(model, {})).toEqual(["Reference images"]);
+		const values = { imageUrls: ["https://cdn/reference.png"] };
+		expect(missingGenerationOptions(model, values)).toEqual([]);
+		expect(reconcileGenerationOptions(model, values, values)).toEqual(values);
 	});
 
 	it("returns only models for the requested asset type", () => {

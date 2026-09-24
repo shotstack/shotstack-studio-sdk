@@ -167,6 +167,10 @@ export class GenerateToolbar extends BaseToolbar {
 	}
 
 	private requestGeneration(): void {
+		const asset = record(this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx)?.asset);
+		const type = GENERATION_TYPE[String(asset["type"])];
+		const model = type ? this.edit.getGenerationModels(type)?.find(entry => entry.model === asset["model"]) : undefined;
+		if (model && missingGenerationOptions(model, record(asset["options"])).length > 0) return;
 		const clipId = this.getSelectedClipId();
 		if (!clipId) return;
 		if ((this.promptInput?.value ?? "").trim() === "") return;
@@ -317,7 +321,8 @@ export class GenerateToolbar extends BaseToolbar {
 		for (const option of model.unsupported) {
 			const row = document.createElement("div");
 			row.className = "ss-ai-option-row is-unsupported";
-			row.title = "This option can only be set outside the editor.";
+			this.optionRows.set(option.name, row);
+			row.title = this.edit.generationSettings ? "Use Generation settings to configure this option." : "This option can only be set outside the editor.";
 			const title = document.createElement("span");
 			title.textContent = option.title;
 			const state = document.createElement("span");
@@ -325,6 +330,21 @@ export class GenerateToolbar extends BaseToolbar {
 			state.textContent = values[option.name] === undefined ? "Not set" : "Configured";
 			row.append(title, state);
 			this.optionsPopup.appendChild(row);
+		}
+
+		if (this.edit.generationSettings) {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "ss-media-toolbar-btn";
+			button.dataset["action"] = "generation-options";
+			button.textContent = "Generation settings";
+			button.addEventListener("click", () => {
+				const clipId = this.getSelectedClipId();
+				if (!clipId) return;
+				this.closeAllPopups();
+				this.edit.generationSettings?.({ clipId, model: model.model });
+			});
+			this.optionsPopup.appendChild(button);
 		}
 	}
 
@@ -336,6 +356,9 @@ export class GenerateToolbar extends BaseToolbar {
 			for (const option of model.options) {
 				const row = this.optionRows.get(option.name);
 				row?.toggleAttribute("data-missing", option.required && !isGenerationOptionValueValid(option, values[option.name]));
+			}
+			for (const option of model.unsupported) {
+				this.optionRows.get(option.name)?.toggleAttribute("data-missing", option.required === true && values[option.name] === undefined);
 			}
 		}
 		return missing;
@@ -357,7 +380,7 @@ export class GenerateToolbar extends BaseToolbar {
 
 		if (this.optionsBtn) {
 			const empty = selectedModel !== undefined && selectedModel.options.length === 0 && selectedModel.unsupported.length === 0;
-			this.optionsBtn.hidden = models === undefined || models.length === 0 || empty;
+			this.optionsBtn.hidden = models === undefined || models.length === 0 || (empty && !this.edit.generationSettings);
 			this.optionsBtn.disabled = selectedModel === undefined;
 		}
 		const values = record(asset["options"]);
