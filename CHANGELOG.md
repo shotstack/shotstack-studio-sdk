@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.0] - 2026-09-24
+
+### Added
+
+- Opt-in generation annotations through `registerGenerationStatus` in the `/internal` entry point (#171)
+- Host-provided status text and tone in the AI toolbar; error statuses block Generate and Enter, including while a replacement status is pending (#171)
+
+## [2.20.0] - 2026-09-24
+
+### Added
+
+- `registerGenerationSettings` in the `/internal` entry point connects the AI toolbar to a host-provided settings panel, including options the toolbar cannot display (#191)
+
+## [2.19.8] - 2026-09-24
+
+### Fixed
+
+- Show catalogue display names in the AI model menu while preserving model IDs in clips (#195)
+
+## [2.19.7] - 2026-09-24
+
+### Fixed
+
+- Pin the test transformer to prevent invalid coverage paths from breaking CI artifact uploads (#196)
+
+## [2.19.6] - 2026-09-16
+
+### Fixed
+
+- Assign fresh clip aliases on paste to prevent duplicate-alias resolution errors (#188)
+
+## [2.19.5] - 2026-09-15
+
+### Fixed
+
+- Wait for video readiness and prepare incoming frames before playback cuts (#187)
+
+## [2.19.4] - 2026-09-15
+
+### Fixed
+
+- Skip empty prompt commits that would fail asset validation
+- Apply text transforms only to asset types that support them
+- Handle an unavailable viewport position when calculating content bounds
+- Skip invalid clip commits when a media source is empty
+
+## [2.19.3] - 2026-09-15
+
+### Fixed
+
+- Surface preview failures with troubleshooting links (#186)
+
+## [2.19.2] - 2026-09-08
+
+### Fixed
+
+- Sanitise invalid text colours before creating text styles (#178)
+
+## [2.19.1] - 2026-09-08
+
+### Added
+
+- Document the `create-video-editor` scaffold command (#175)
+- Add the required copyright notice and licensor line of business to the licence file (#174)
+
+### Fixed
+
+- Disable the speed stepper for zoom transitions (#177)
+
 ## [2.19.0] - 2026-09-02
 
 ### Added
@@ -393,6 +462,18 @@ All notable changes to this project will be documented in this file.
 
 - add rich-caption toolbar with layout, word animation, and active word controls
 
+## [2.1.5] - 2026-03-11
+
+### Changed
+
+- Update `@shotstack/shotstack-canvas` to `^2.0.17`
+
+## [2.1.4] - 2026-03-10
+
+### Changed
+
+- Update `@shotstack/shotstack-canvas` to `^2.0.16`
+
 ## [2.1.3] - 2026-03-10
 
 ### Fixed
@@ -427,9 +508,15 @@ All notable changes to this project will be documented in this file.
 
 ## [2.0.4] - 2026-03-04
 
-### Added
+### Fixed
 
-- Externalize `@napi-rs/canvas` in Vite/Rollup build configs to prevent bundling of native Node addons
+- Externalise `canvas` in both build configurations to prevent bundling native Node addons (#69)
+
+## [2.0.3] - 2026-03-04
+
+### Fixed
+
+- Externalise `@napi-rs/canvas` in both build configurations to prevent bundling native Node addons (#68)
 
 ## [2.0.2] - 2026-03-04
 
