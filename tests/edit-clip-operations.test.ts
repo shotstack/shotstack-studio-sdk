@@ -1,3 +1,9 @@
+import {
+	registerGenerationStatus,
+	type GenerationStatus,
+	type GenerationStatusProvider,
+	type GenerationStatusRequest
+} from "@core/generation/generation-status";
 /**
  * Edit Class Clip Operations Tests
  *
@@ -1813,86 +1819,64 @@ describe("Edit Clip Operations", () => {
 	});
 
 	describe("generation status", () => {
-		it("stores a status per clip and announces the change", () => {
-			edit.setGenerationStatus("clip-a", { text: "host line", tone: "neutral" });
-			expect(edit.getGenerationStatus("clip-a")).toEqual({ text: "host line", tone: "neutral" });
-			expect(emitSpy).toHaveBeenCalledWith(InternalEvent.GenerationStatusChanged, { clipId: "clip-a" });
-		});
-
-		it("clears a status with undefined", () => {
-			edit.setGenerationStatus("clip-a", { text: "x" });
-			edit.setGenerationStatus("clip-a", undefined);
-			expect(edit.getGenerationStatus("clip-a")).toBeUndefined();
-			expect(emitSpy).toHaveBeenLastCalledWith(InternalEvent.GenerationStatusChanged, { clipId: "clip-a" });
-		});
-
-		it("keeps statuses for different clips apart", () => {
-			edit.setGenerationStatus("clip-a", { text: "a" });
-			edit.setGenerationStatus("clip-b", { text: "b", tone: "error" });
-			expect(edit.getGenerationStatus("clip-a")).toEqual({ text: "a" });
-			expect(edit.getGenerationStatus("clip-b")).toEqual({ text: "b", tone: "error" });
-		});
-
-		it("drops stored statuses on dispose", () => {
-			edit.setGenerationStatus("clip-a", { text: "a" });
-			edit.dispose();
-			expect(edit.getGenerationStatus("clip-a")).toBeUndefined();
-		});
-	});
-
-	describe("generation:configChanged", () => {
-		const configs = (spy: jest.SpyInstance) =>
-			spy.mock.calls.filter(([name]) => name === EditEvent.GenerationConfigChanged).map(([, payload]) => payload);
+		type Provider = jest.Mock<ReturnType<GenerationStatusProvider>, [GenerationStatusRequest]>;
 
 		const promptEdit = async (clip: Record<string, unknown>, merge: { find: string; replace: string }[] = []) => {
-			const e = new Edit({
+			const e = new ShotstackEdit({
 				timeline: { tracks: [{ clips: [{ start: 0, length: 4, ...clip }] }] },
 				...(merge.length ? { merge } : {}),
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 			} as never);
 			await e.load();
-			const spy = jest.spyOn(e.getInternalEvents(), "emit");
-			return { e, spy };
+			const status: Provider = jest.fn();
+			registerGenerationStatus(e, status);
+			return { e, status };
 		};
 
-		it("emits the selected clip's configuration on selection", async () => {
-			const { e, spy } = await promptEdit({
+		const configs = (status: Provider) => status.mock.calls.map(([{ signal: _signal, ...config }]) => config);
+		const flush = () =>
+			new Promise<void>(resolve => {
+				setTimeout(resolve, 0);
+			});
+
+		it("describes the selected clip's configuration on selection", async () => {
+			const { e, status } = await promptEdit({
 				asset: { type: "audio", prompt: "hello", model: "polly-neural", options: { voice: "Matthew" } }
 			});
 			e.selectClip(0, 0);
-			expect(configs(spy)).toEqual([
+			expect(configs(status)).toEqual([
 				{ clipId: e.getClipId(0, 0), type: "audio", model: "polly-neural", options: { voice: "Matthew" }, length: 4, prompt: "hello" }
 			]);
 		});
 
 		it("resolves merge fields in the prompt", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "image", prompt: "a {{ THING }}" } }, [{ find: "THING", replace: "cat" }]);
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a {{ THING }}" } }, [{ find: "THING", replace: "cat" }]);
 			e.selectClip(0, 0);
-			expect(configs(spy)[0]).toMatchObject({ prompt: "a cat" });
+			expect(configs(status)[0]).toMatchObject({ prompt: "a cat" });
 		});
 
 		it("reads a text-to-speech prompt from the text field and reports audio", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "text-to-speech", text: "say this", voice: "Matthew" } });
+			const { e, status } = await promptEdit({ asset: { type: "text-to-speech", text: "say this", voice: "Matthew" } });
 			e.selectClip(0, 0);
-			expect(configs(spy)[0]).toMatchObject({ type: "audio", prompt: "say this" });
+			expect(configs(status)[0]).toMatchObject({ type: "audio", prompt: "say this" });
 		});
 
 		it("omits model when the clip has none and reports empty options", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
 			e.selectClip(0, 0);
-			const [payload] = configs(spy);
-			expect(payload).not.toHaveProperty("model");
-			expect(payload.options).toEqual({});
+			const [config] = configs(status);
+			expect(config).not.toHaveProperty("model");
+			expect(config.options).toEqual({});
 		});
 
 		it("reports undefined length for auto", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "video", prompt: "pan" }, length: "auto" });
+			const { e, status } = await promptEdit({ asset: { type: "video", prompt: "pan" }, length: "auto" });
 			e.selectClip(0, 0);
-			expect(configs(spy)[0]).toHaveProperty("length", undefined);
+			expect(configs(status)[0]).toHaveProperty("length", undefined);
 		});
 
 		it("reports resolved seconds for end", async () => {
-			const e = new Edit({
+			const e = new ShotstackEdit({
 				timeline: {
 					tracks: [
 						{ clips: [{ asset: { type: "video", prompt: "pan" }, start: 2, length: "end" }] },
@@ -1902,52 +1886,148 @@ describe("Edit Clip Operations", () => {
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 			} as never);
 			await e.load();
-			const spy = jest.spyOn(e.getInternalEvents(), "emit");
+			const status: Provider = jest.fn();
+			registerGenerationStatus(e, status);
 			e.selectClip(0, 0);
-			expect(configs(spy)[0].length).toBe(8);
+			expect(configs(status)[0].length).toBe(8);
 		});
 
-		it("re-emits when the selected clip's option changes and not otherwise", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "image", prompt: "a cat", model: "m", options: { resolution: "1K" } } });
+		it("asks again when the selected clip's option changes and not otherwise", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat", model: "m", options: { resolution: "1K" } } });
 			e.selectClip(0, 0);
 			await e.updateClip(0, 0, { asset: { options: { resolution: "2K" } } } as never);
 			await e.updateClip(0, 0, { start: 1 } as never); // no config field touched
-			expect(configs(spy).map(c => c.options)).toEqual([{ resolution: "1K" }, { resolution: "2K" }]);
+			expect(configs(status).map(c => c.options)).toEqual([{ resolution: "1K" }, { resolution: "2K" }]);
 		});
 
-		it("emits nothing for a clip without a prompt", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "image", src: "https://cdn/x.png" } });
+		it("asks nothing for a clip without a prompt", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", src: "https://cdn/x.png" } });
 			e.selectClip(0, 0);
-			expect(configs(spy)).toHaveLength(0);
+			expect(configs(status)).toHaveLength(0);
 		});
 
-		it("emits nothing after the selection is cleared", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+		it("asks nothing after the selection is cleared", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
 			e.selectClip(0, 0);
 			e.clearSelection();
 			await e.updateClip(0, 0, { asset: { prompt: "a dog" } } as never);
-			expect(configs(spy)).toHaveLength(1);
+			expect(configs(status)).toHaveLength(1);
 		});
 
-		it("announces the same configuration again when the clip is re-selected", async () => {
-			const { e, spy } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+		it("asks again when the clip is re-selected", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
 			e.selectClip(0, 0);
 			e.clearSelection();
 			e.selectClip(0, 0);
-			expect(configs(spy).map(c => c.prompt)).toEqual(["a cat", "a cat"]);
+			expect(configs(status).map(c => c.prompt)).toEqual(["a cat", "a cat"]);
 		});
 
-		it("re-emits when a live merge field value edit changes the prompt", async () => {
+		it("asks again when a live merge field value edit changes the prompt", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a {{ THING }}" } }, [{ find: "THING", replace: "cat" }]);
+			e.selectClip(0, 0);
+			e.updateMergeFieldValueLive("THING", "dog");
+			expect(configs(status).map(c => c.prompt)).toEqual(["a cat", "a dog"]);
+		});
+
+		it("describes the selection immediately when the internal hook is registered", async () => {
 			const e = new ShotstackEdit({
-				timeline: { tracks: [{ clips: [{ asset: { type: "image", prompt: "a {{ THING }}" }, start: 0, length: 4 }] }] },
-				merge: [{ find: "THING", replace: "cat" }],
+				timeline: { tracks: [{ clips: [{ asset: { type: "image", prompt: "a cat" }, start: 0, length: 4 }] }] },
 				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 			} as never);
 			await e.load();
+			e.selectClip(0, 0);
+			const status: Provider = jest.fn();
+			registerGenerationStatus(e, status);
+			expect(configs(status).map(c => c.prompt)).toEqual(["a cat"]);
+		});
+
+		it("shows the provider's answer for the selected clip and announces it", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			status.mockReturnValue({ text: "0.5 credits" });
 			const spy = jest.spyOn(e.getInternalEvents(), "emit");
 			e.selectClip(0, 0);
-			e.updateMergeFieldValueLive("THING", "dog");
-			expect(configs(spy).map(c => c.prompt)).toEqual(["a cat", "a dog"]);
+			const clipId = e.getClipId(0, 0) ?? "";
+			expect(e.getGenerationStatus(clipId)).toEqual({ text: "0.5 credits" });
+			expect(spy).toHaveBeenCalledWith(InternalEvent.GenerationStatusChanged, { clipId });
+		});
+
+		it("awaits an asynchronous answer", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			status.mockResolvedValue({ text: "later" });
+			e.selectClip(0, 0);
+			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toBeUndefined();
+			await flush();
+			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toEqual({ text: "later" });
+		});
+
+		it("discards an answer that arrives after the configuration changed", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			let resolveFirst!: (value: GenerationStatus) => void;
+			status
+				.mockImplementationOnce(
+					() =>
+						new Promise<GenerationStatus>(resolve => {
+							resolveFirst = resolve;
+						})
+				)
+				.mockReturnValueOnce({ text: "second" });
+			e.selectClip(0, 0);
+			await e.updateClip(0, 0, { asset: { prompt: "a dog" } } as never);
+			resolveFirst({ text: "first" });
+			await flush();
+			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toEqual({ text: "second" });
+			expect(status.mock.calls[0][0].signal.aborted).toBe(true);
+		});
+
+		it("clears the line for undefined and on deselection", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			status.mockReturnValueOnce({ text: "shown" }).mockReturnValueOnce(undefined);
+			e.selectClip(0, 0);
+			const clipId = e.getClipId(0, 0) ?? "";
+			expect(e.getGenerationStatus(clipId)).toEqual({ text: "shown" });
+			await e.updateClip(0, 0, { asset: { prompt: "a dog" } } as never);
+			expect(e.getGenerationStatus(clipId)).toBeUndefined();
+			status.mockReturnValue({ text: "again" });
+			e.clearSelection();
+			e.selectClip(0, 0);
+			expect(e.getGenerationStatus(clipId)).toEqual({ text: "again" });
+			e.clearSelection();
+			expect(e.getGenerationStatus(clipId)).toBeUndefined();
+		});
+
+		it("treats a throwing provider as no answer", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+			status.mockImplementation(() => {
+				throw new Error("boom");
+			});
+			e.selectClip(0, 0);
+			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toBeUndefined();
+			expect(warn).toHaveBeenCalledWith("Generation status: boom");
+			warn.mockRestore();
+		});
+
+		it("ignores stale cleanup and clears the current provider on removal", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			e.selectClip(0, 0);
+			const removeOld = registerGenerationStatus(e, status);
+			const replacement = jest.fn(() => ({ text: "new" }));
+			const remove = registerGenerationStatus(e, replacement);
+			removeOld();
+			const clipId = e.getClipId(0, 0) ?? "";
+			expect(e.getGenerationStatus(clipId)).toEqual({ text: "new" });
+			remove();
+			expect(e.getGenerationStatus(clipId)).toBeUndefined();
+			await e.updateClip(0, 0, { asset: { prompt: "changed" } } as never);
+			expect(replacement).toHaveBeenCalledTimes(1);
+		});
+
+		it("aborts a pending answer on dispose", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
+			status.mockImplementation(() => new Promise<GenerationStatus>(() => {}));
+			e.selectClip(0, 0);
+			e.dispose();
+			expect(status.mock.calls[0][0].signal.aborted).toBe(true);
 		});
 	});
 });

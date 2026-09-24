@@ -599,6 +599,8 @@ describe("GenerateToolbar", () => {
 			const { toolbar, container } = mountToolbar(edit);
 			expect(container.querySelector<HTMLButtonElement>("[data-action='generate']")?.disabled).toBe(true);
 			expect(container.querySelector<HTMLElement>("[data-generate-note]")?.dataset["tone"]).toBe("error");
+			container.querySelector<HTMLInputElement>("[data-prompt-input]")?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+			expect(edit.generateClip).not.toHaveBeenCalled();
 
 			edit.getGenerationStatus.mockReturnValue({ text: "caution", tone: "warning" });
 			toolbar.show(0, 0);

@@ -23,16 +23,10 @@ import { SetUpdatedClipCommand } from "@core/commands/set-updated-clip-command";
 import { type TimingUpdateParams, UpdateClipTimingCommand } from "@core/commands/update-clip-timing-command";
 import { UpdateTextContentCommand } from "@core/commands/update-text-content-command";
 import type { MergeFieldBinding } from "@core/edit-document";
-import {
-	EditEvent,
-	InternalEvent,
-	type EditEventMap,
-	type InternalEventMap,
-	type GenerationConfig,
-	type GenerationStatus
-} from "@core/events/edit-events";
+import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter, type ReadonlyEventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
+import type { GenerationConfig, GenerationStatus, GenerationStatusProvider } from "@core/generation/generation-status";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
@@ -131,7 +125,6 @@ export class Edit {
 	// ─── Internal Bookkeeping ─────────────────────────────────────────────────
 	private clipsToDispose = new Set<Player>();
 	private clipErrors = new Map<string, { error: string; assetType: string }>();
-	private generationStatuses = new Map<string, GenerationStatus>();
 	private lastGenerationConfigKey: string | null = null;
 	private playerByClipId = new Map<string, Player>();
 	private lumaContentRelations = new Map<string, string>();
@@ -156,7 +149,10 @@ export class Edit {
 		const resolved = clipId ? this.getResolvedClipById(clipId) : null;
 		const raw = clipId ? this.getDocumentClipById(clipId) : null;
 		if (!clipId || !resolved || !raw || !isAiAsset(resolved.asset)) {
-			this.lastGenerationConfigKey = null;
+			if (this.lastGenerationConfigKey !== null) {
+				this.lastGenerationConfigKey = null;
+				this.assetGenerator.describe(null);
+			}
 			return;
 		}
 
@@ -177,7 +173,7 @@ export class Edit {
 		const key = JSON.stringify(config);
 		if (key === this.lastGenerationConfigKey) return;
 		this.lastGenerationConfigKey = key;
-		this.internalEvents.emit(EditEvent.GenerationConfigChanged, config);
+		this.assetGenerator.describe(config);
 	};
 
 	/**
@@ -214,7 +210,8 @@ export class Edit {
 			applyGeneratedSrc: (clipId, url) => this.applyGeneratedSrc(clipId, url),
 			emitStarted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationStarted, { clipId }),
 			emitCompleted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationCompleted, { clipId }),
-			emitFailed: (clipId, error) => this.internalEvents.emit(EditEvent.ClipGenerationFailed, { clipId, error })
+			emitFailed: (clipId, error) => this.internalEvents.emit(EditEvent.ClipGenerationFailed, { clipId, error }),
+			emitStatusChanged: clipId => this.internalEvents.emit(InternalEvent.GenerationStatusChanged, { clipId })
 		});
 		this.mergeFieldService = new MergeFieldService(this.internalEvents);
 		this.outputSettings = new OutputSettingsManager(this);
@@ -333,7 +330,6 @@ export class Edit {
 		this.internalEvents.off(InternalEvent.Resolved, this.onResolvedForGeneration);
 		for (const name of Edit.GenerationConfigTriggers) this.internalEvents.off(name, this.emitGenerationConfig);
 		this.assetGenerator.abortAll();
-		this.generationStatuses.clear();
 		this.lumaMaskController.dispose();
 		this.playerReconciler.dispose();
 
@@ -494,15 +490,17 @@ export class Edit {
 		this.internalEvents.emit(InternalEvent.AssetGeneratorChanged);
 	}
 
-	public setGenerationStatus(clipId: string, status: GenerationStatus | undefined): void {
-		if (status === undefined) this.generationStatuses.delete(clipId);
-		else this.generationStatuses.set(clipId, status);
-		this.internalEvents.emit(InternalEvent.GenerationStatusChanged, { clipId });
+	/** @internal */
+	public registerGenerationStatus(provider: GenerationStatusProvider): () => void {
+		const unregister = this.assetGenerator.registerStatus(provider);
+		this.lastGenerationConfigKey = null;
+		this.emitGenerationConfig();
+		return unregister;
 	}
 
 	/** @internal */
 	public getGenerationStatus(clipId: string): GenerationStatus | undefined {
-		return this.generationStatuses.get(clipId);
+		return this.assetGenerator.getStatus(clipId);
 	}
 
 	/** @internal */
