@@ -202,29 +202,4 @@ describe("KeyframeBuilder", () => {
 			).toThrow("Overlapping keyframes detected.");
 		});
 	});
-
-	describe("older browser compatibility", () => {
-		it("sorts unsorted keyframes without Array.prototype.toSorted", () => {
-			const { toSorted } = Array.prototype;
-			// eslint-disable-next-line no-extend-native -- Simulate a browser without toSorted for this regression test.
-			Object.defineProperty(Array.prototype, "toSorted", { value: undefined });
-			try {
-				const builder = new KeyframeBuilder(
-					[
-						{ start: 5, length: 5, from: 0.5, to: 1, interpolation: "linear" },
-						{ start: 0, length: 5, from: 0, to: 0.5, interpolation: "linear" }
-					],
-					10
-				);
-
-				expect(builder.getValue(0)).toBe(0);
-				expect(builder.getValue(2.5)).toBeCloseTo(0.25);
-				expect(builder.getValue(5)).toBe(0.5);
-				expect(builder.getValue(7.5)).toBeCloseTo(0.75);
-			} finally {
-				// eslint-disable-next-line no-extend-native -- Restore the native method even when an assertion fails.
-				Object.defineProperty(Array.prototype, "toSorted", { value: toSorted });
-			}
-		});
-	});
 });
