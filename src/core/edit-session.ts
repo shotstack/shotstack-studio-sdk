@@ -471,7 +471,7 @@ export class Edit {
 
 	/** @internal */
 	public getGenerationModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
-		return this.assetGenerator.getModels(type, this.generationSettings !== undefined);
+		return this.assetGenerator.getModels(type)?.filter(model => this.generationSettings || !model.unsupported.some(option => option.required));
 	}
 
 	/**

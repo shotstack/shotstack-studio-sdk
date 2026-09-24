@@ -81,7 +81,7 @@ const readOption = (name: string, value: unknown, required: boolean): Generation
 	return option;
 };
 
-export const readGenerationModels = (catalogue: unknown, includeUnsupported = false): readonly GenerationModelDefinition[] => {
+export const readGenerationModels = (catalogue: unknown): readonly GenerationModelDefinition[] => {
 	if (!isRecord(catalogue) || !Array.isArray(catalogue["models"])) return [];
 
 	return catalogue["models"].flatMap(entry => {
@@ -108,7 +108,6 @@ export const readGenerationModels = (catalogue: unknown, includeUnsupported = fa
 				...(required.includes(name) ? { required: true } : {})
 			});
 		}
-		if (!includeUnsupported && required.some(name => !options.some(option => option.name === name))) return [];
 
 		return [
 			{

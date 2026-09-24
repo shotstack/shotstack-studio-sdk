@@ -57,11 +57,11 @@ export class AssetGenerator {
 
 	public register(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void {
 		this.handler = handler;
-		this.models = options?.catalogue === undefined ? undefined : readGenerationModels(options.catalogue, true);
+		this.models = options?.catalogue === undefined ? undefined : readGenerationModels(options.catalogue);
 	}
 
-	public getModels(type: GenerationAssetType, includeUnsupported = false): readonly GenerationModelDefinition[] | undefined {
-		return this.models?.filter(model => model.type === type && (includeUnsupported || !model.unsupported.some(option => option.required)));
+	public getModels(type: GenerationAssetType): readonly GenerationModelDefinition[] | undefined {
+		return this.models?.filter(model => model.type === type);
 	}
 
 	public hasHandler(): boolean {

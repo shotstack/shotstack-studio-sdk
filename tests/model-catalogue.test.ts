@@ -94,16 +94,16 @@ describe("generation model catalogue", () => {
 		expect(entry?.optionNames).toEqual(["forceInstrumental", "compositionPlan"]);
 	});
 
-	it("keeps optional unsupported properties but rejects unsupported required ones", () => {
+	it("keeps unsupported options and records which ones are required", () => {
 		const optional = modelWithOptions({ seed: { type: "number" } });
 		const required = modelWithOptions({ seed: { type: "number" } }, ["seed"]);
 
 		expect(readGenerationModels({ models: [optional] })).toHaveLength(1);
-		expect(readGenerationModels({ models: [required] })).toHaveLength(0);
+		expect(readGenerationModels({ models: [required] })[0]?.unsupported).toEqual([{ name: "seed", title: "seed", required: true }]);
 	});
 
-	it("rejects a required name with no schema even when advanced options are enabled", () => {
-		expect(readGenerationModels({ models: [modelWithOptions({}, ["missing"])] }, true)).toEqual([]);
+	it("rejects a required name with no schema", () => {
+		expect(readGenerationModels({ models: [modelWithOptions({}, ["missing"])] })).toEqual([]);
 	});
 
 	it.each([
