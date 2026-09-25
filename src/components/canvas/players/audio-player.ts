@@ -12,7 +12,7 @@ export class AudioPlayer extends Player {
 	private audioResource: howler.Howl | null;
 	private isPlaying: boolean;
 
-	private volumeKeyframeBuilder!: KeyframeBuilder;
+	private volumeKeyframeBuilder: KeyframeBuilder | undefined;
 
 	private syncTimer: number;
 
@@ -45,8 +45,7 @@ export class AudioPlayer extends Player {
 		this.audioResource = audioResource;
 
 		// Create volume keyframes after timing is resolved (not in constructor)
-		const baseVolume = typeof audioClipConfiguration.volume === "number" ? audioClipConfiguration.volume : 1;
-		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioClipConfiguration, baseVolume), this.getLength(), baseVolume);
+		this.rebuildVolumeKeyframeBuilder();
 
 		// Set initial volume immediately so the Howl never sits at the default of 1.0
 		this.audioResource.volume(this.getVolume());
@@ -115,6 +114,7 @@ export class AudioPlayer extends Player {
 			this.audioResource.unload();
 		}
 		this.audioResource = null;
+		this.volumeKeyframeBuilder = undefined;
 
 		super.dispose();
 	}
@@ -142,6 +142,7 @@ export class AudioPlayer extends Player {
 		}
 
 		this.audioResource = audioResource;
+		this.rebuildVolumeKeyframeBuilder();
 		this.audioResource.volume(this.getVolume());
 	}
 
@@ -149,9 +150,7 @@ export class AudioPlayer extends Player {
 		super.reconfigureAfterRestore();
 
 		// Rebuild volume keyframes with updated timing
-		const audioAsset = this.clipConfiguration.asset as AudioAsset;
-		const baseVolume = typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
-		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
+		this.rebuildVolumeKeyframeBuilder();
 	}
 
 	public override getSize(): Size {
@@ -159,6 +158,10 @@ export class AudioPlayer extends Player {
 	}
 
 	public getVolume(): number {
+		// A failed keyframe build can leave loaded audio available to the ticker.
+		if (!this.volumeKeyframeBuilder) {
+			return this.getBaseVolume();
+		}
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
 	}
 
@@ -171,6 +174,17 @@ export class AudioPlayer extends Player {
 		if (!this.audioResource) return 0;
 		// Both seek() and getSourceTime() are in source-media seconds
 		return Math.abs((this.audioResource.seek() as number) - this.getSourceTime());
+	}
+
+	private getBaseVolume(): number {
+		const audioAsset = this.clipConfiguration.asset as AudioAsset;
+		return typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
+	}
+
+	private rebuildVolumeKeyframeBuilder(): void {
+		const audioAsset = this.clipConfiguration.asset as AudioAsset;
+		const baseVolume = this.getBaseVolume();
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {
