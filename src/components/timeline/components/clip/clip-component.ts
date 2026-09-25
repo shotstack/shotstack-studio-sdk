@@ -258,25 +258,28 @@ export class ClipComponent {
 			this.currentError = error;
 			this.element.classList.add("ss-clip--error");
 
-			// Create error badge if needed
-			if (!this.errorBadge) {
-				const badge = document.createElement("a");
+			this.errorBadge?.remove();
+			const message = formatClipErrorMessage(error.error, error.assetType);
+			const badge = document.createElement(error.error.startsWith("CORS may be blocking") ? "a" : "span");
+			if (badge instanceof HTMLAnchorElement) {
 				badge.href = "https://t.shotstack.io/cors";
 				badge.target = "_blank";
 				badge.rel = "noopener noreferrer";
 				badge.setAttribute("aria-label", "Fix this clip’s preview (opens in a new tab)");
-				badge.addEventListener("pointerdown", e => e.stopPropagation());
-				badge.addEventListener("keydown", e => e.stopPropagation());
-				badge.addEventListener("click", e => e.stopPropagation());
-				badge.addEventListener("contextmenu", e => e.stopPropagation());
-				this.errorBadge = badge;
-				this.errorBadge.className = "ss-clip-error-badge";
-				this.errorBadge.textContent = "⚠";
-				this.element.appendChild(this.errorBadge);
+			} else {
+				badge.tabIndex = 0;
+				badge.setAttribute("role", "img");
+				badge.setAttribute("aria-label", message);
 			}
-
-			// User-friendly tooltip
-			this.errorBadge.title = formatClipErrorMessage(error.error, error.assetType);
+			badge.addEventListener("pointerdown", e => e.stopPropagation());
+			badge.addEventListener("keydown", e => e.stopPropagation());
+			badge.addEventListener("click", e => e.stopPropagation());
+			badge.addEventListener("contextmenu", e => e.stopPropagation());
+			badge.className = "ss-clip-error-badge";
+			badge.textContent = "⚠";
+			badge.title = message;
+			this.errorBadge = badge;
+			this.element.appendChild(badge);
 		} else if (!error && this.currentError) {
 			// Clear error state
 			this.currentError = null;

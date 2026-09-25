@@ -121,6 +121,11 @@ describe("formatClipErrorMessage", () => {
 	});
 
 	describe("generic errors", () => {
+		it("preserves the underlying failure when a source URL is present", () => {
+			const error = 'Decoder failed for "https://example.com/video.mp4"';
+			expect(formatClipErrorMessage(error, "video")).toContain(error);
+		});
+
 		it("should return generic message for unknown file with URL", () => {
 			const error = 'Failed: "https://example.com/file.xyz"';
 			const message = formatClipErrorMessage(error, "image");

@@ -8,6 +8,7 @@ it("updates a paused timeline on asset failure and recovery, with accessible hel
 	const tracker = new AssetLoadTracker();
 	const events = new EventEmitter();
 	const source = "https://example.com/video.mp4";
+	let loadError = { error: "Overlapping keyframes detected.", assetType: "svg" };
 	const config = { timeline: { tracks: [{ clips: [{ id: "clip-1", asset: { type: "video", src: source }, start: 0, length: 5 }] }] } };
 	const edit = {
 		events,
@@ -17,7 +18,7 @@ it("updates a paused timeline on asset failure and recovery, with accessible hel
 		getEdit: () => config,
 		isClipSelected: () => false,
 		getClipGenerationState: () => undefined,
-		getClipError: () => (tracker.registry[source]?.status === "failed" ? { error: `CORS may be blocking '${source}'.`, assetType: "video" } : null),
+		getClipError: () => (tracker.registry[source]?.status === "failed" ? loadError : null),
 		playbackTime: sec(0),
 		totalDuration: sec(5),
 		isPlaying: false
@@ -28,6 +29,14 @@ it("updates a paused timeline on asset failure and recovery, with accessible hel
 	timeline.registerClipRenderer("video", { render: () => {} });
 	await timeline.load();
 	tracker.registry[source] = { status: "failed", progress: 1 };
+	tracker.emit("onAssetLoadInfoUpdated", { registry: tracker.registry });
+	const animationBadge = container.querySelector<HTMLElement>(".ss-clip-error-badge");
+	expect(animationBadge?.title).toContain("Animation keyframes overlap");
+	expect(animationBadge?.hasAttribute("href")).toBe(false);
+	expect(animationBadge?.tabIndex).toBe(0);
+	expect(animationBadge?.getAttribute("aria-label")).toContain("Animation keyframes overlap");
+
+	loadError = { error: `CORS may be blocking '${source}'.`, assetType: "video" };
 	tracker.emit("onAssetLoadInfoUpdated", { registry: tracker.registry });
 	const badge = container.querySelector<HTMLAnchorElement>("a.ss-clip-error-badge");
 	expect(badge).not.toBeNull();
@@ -45,6 +54,13 @@ it("updates a paused timeline on asset failure and recovery, with accessible hel
 	expect(contextMenu.defaultPrevented).toBe(false);
 	expect(badge?.href).toBe("https://t.shotstack.io/cors");
 	expect(badge?.target).toBe("_blank");
+	loadError = { error: "Failed to load SVG image", assetType: "svg" };
+	tracker.emit("onAssetLoadInfoUpdated", { registry: tracker.registry });
+	const svgBadge = container.querySelector<HTMLElement>(".ss-clip-error-badge");
+	expect(svgBadge?.hasAttribute("href")).toBe(false);
+	expect(svgBadge?.title).toContain(loadError.error);
+	expect(svgBadge?.getAttribute("aria-label")).toContain(loadError.error);
+	expect(container.querySelectorAll(".ss-clip-error-badge")).toHaveLength(1);
 	tracker.registry[source] = { status: "success", progress: 1 };
 	tracker.emit("onAssetLoadInfoUpdated", { registry: tracker.registry });
 	expect(container.querySelector(".ss-clip-error-badge")).toBeNull();
