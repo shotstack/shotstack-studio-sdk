@@ -137,6 +137,22 @@ describe("KeyframeBuilder", () => {
 	});
 
 	describe("timeline boundary safety", () => {
+		it("plays adjacent decimal segments whose normalised end still rounds past the next start", () => {
+			const builder = new KeyframeBuilder(
+				[
+					{ start: 0, length: 0.7, from: 0, to: 1 },
+					{ start: 0.7, length: 3.2, from: 1, to: 1 },
+					{ start: 3.9, length: 0.35, from: 1, to: 0 }
+				],
+				4.25
+			);
+
+			expect(builder.getValue(0.35)).toBeCloseTo(0.5);
+			expect(builder.getValue(2)).toBe(1);
+			expect(builder.getValue(4.075)).toBeCloseTo(0.5);
+			expect(builder.getValue(4.25)).toBe(0);
+		});
+
 		it("preserves and evaluates a keyframe that extends beyond a shortened clip", () => {
 			const builder = new KeyframeBuilder([{ start: 0, length: 10, from: 0, to: 1, interpolation: "linear" }], 5);
 
