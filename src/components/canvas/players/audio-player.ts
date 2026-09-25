@@ -61,7 +61,8 @@ export class AudioPlayer extends Player {
 
 		this.getContainer().alpha = 0;
 
-		if (!this.audioResource) {
+		if (!this.audioResource || this.audioResource.state() !== "loaded") {
+			this.isPlaying = false;
 			return;
 		}
 
@@ -82,7 +83,8 @@ export class AudioPlayer extends Player {
 				this.audioResource.volume(this.getVolume());
 			}
 
-			if (this.audioResource.rate() !== speed) {
+			// Howler's rate getter dereferences the first sound, which may not exist after teardown.
+			if (this.audioResource.playing() && this.audioResource.rate() !== speed) {
 				this.audioResource.rate(speed);
 			}
 
