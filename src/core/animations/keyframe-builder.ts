@@ -161,7 +161,7 @@ export class KeyframeBuilder {
 
 			if (!next) break;
 
-			if (current.start + current.length > next.start) {
+			if (current.start + current.length - next.start > TIME_EPSILON) {
 				throw new Error("Overlapping keyframes detected.");
 			}
 		}
