@@ -24,6 +24,10 @@ export function extractFilenameFromError(error: string): string | null {
  * Detects wrong file type scenarios and provides helpful suggestions.
  */
 export function formatClipErrorMessage(error: string, assetType: string): string {
+	if (error === "Overlapping keyframes detected.") {
+		return "⚠️ Animation keyframes overlap\n\nThis clip couldn't be loaded.\n\nEach animation segment must finish before the next begins, or meet it at the same time.";
+	}
+
 	const filename = extractFilenameFromError(error);
 	const fileExt = filename?.split(".").pop()?.toLowerCase();
 	if (error.startsWith("CORS may be blocking")) {
@@ -72,9 +76,9 @@ export function formatClipErrorMessage(error: string, assetType: string): string
 
 	// Generic file load error
 	if (filename) {
-		return `⚠️ Couldn't load file\n\n"${filename}" failed to load.\n\nCheck that the file exists and the link is correct.`;
+		return `⚠️ Couldn't load file\n\n"${filename}" failed to load.\n\nCheck that the file exists and the link is correct.\n\n${error}`;
 	}
 
 	// Fallback for unknown errors
-	return `⚠️ Something went wrong\n\nThis clip couldn't be loaded.\n\nPlease check your media files.`;
+	return `⚠️ Something went wrong\n\nThis clip couldn't be loaded.\n\n${error}`;
 }
