@@ -239,12 +239,8 @@ export class ClipComponent {
 		if (generating) this.element.setAttribute("aria-busy", "true");
 		else this.element.removeAttribute("aria-busy");
 
-		if (state?.status === "failed") {
-			this.element.classList.add("ss-clip--error");
-			this.element.title = state.error ?? "Generation failed";
-		} else if (this.element.title && !this.currentError) {
-			this.element.title = "";
-		}
+		this.element.classList.toggle("ss-clip--error", state?.status === "failed" || this.currentError !== null);
+		this.element.title = state?.status === "failed" ? (state.error ?? "Generation failed") : "";
 	}
 
 	/** Show/hide error state based on clip error */
