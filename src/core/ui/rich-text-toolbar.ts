@@ -808,8 +808,7 @@ export class RichTextToolbar extends BaseToolbar {
 					clearTimeout(this.textEditDebounceTimer);
 					this.textEditDebounceTimer = null;
 				}
-				this.applyTextEdit();
-				this.closeAllPopups();
+				if (this.applyTextEdit()) this.closeAllPopups();
 			}
 			if (e.key === "Escape") {
 				this.closeAllPopups();
@@ -1138,6 +1137,7 @@ export class RichTextToolbar extends BaseToolbar {
 				const templateText = this.edit.getTemplateClipText(this.selectedTrackIdx, this.selectedClipIdx);
 				const asset = this.getCurrentAsset();
 				this.textEditArea.value = templateText ?? asset?.text ?? "";
+				this.textEditArea.setCustomValidity("");
 				this.textEditArea.focus();
 			}
 		});
@@ -1162,14 +1162,23 @@ export class RichTextToolbar extends BaseToolbar {
 		}, 150);
 	}
 
-	private applyTextEdit(): void {
-		if (!this.textEditArea) return;
+	private validateTextEdit(templateText: string, resolvedText: string): boolean {
+		if (!this.textEditArea) return false;
+		// The schema limit applies to UTF-16 length, including resolved variable values.
+		const tooLong = Math.max(templateText.length, resolvedText.length) > 5000;
+		this.textEditArea.setCustomValidity(tooLong ? "Text, including variable values, must be 5,000 characters or fewer." : "");
+		return this.textEditArea.reportValidity();
+	}
+
+	private applyTextEdit(): boolean {
+		if (!this.textEditArea) return false;
 		const templateText = this.textEditArea.value;
 
 		const shotstackEdit = this.getShotstackEdit();
 
 		// Resolve any merge field templates in the text for canvas rendering
 		const resolvedText = shotstackEdit?.mergeFields.resolve(templateText) ?? templateText;
+		if (!this.validateTextEdit(templateText, resolvedText)) return false;
 
 		// Update merge field binding for export to preserve templates
 		const document = this.edit.getDocument();
@@ -1193,6 +1202,7 @@ export class RichTextToolbar extends BaseToolbar {
 			asset: { text: resolvedText } as ResolvedClip["asset"]
 		});
 		this.syncState();
+		return true;
 	}
 
 	// ─── Autocomplete for Merge Field Variables ─────────────────────────────────
@@ -1257,6 +1267,10 @@ export class RichTextToolbar extends BaseToolbar {
 
 	private insertVariable(varName: string): void {
 		if (!this.textEditArea) return;
+		if (this.textEditDebounceTimer) {
+			clearTimeout(this.textEditDebounceTimer);
+			this.textEditDebounceTimer = null;
+		}
 
 		const before = this.textEditArea.value.substring(0, this.autocompleteStartPos);
 		const after = this.textEditArea.value.substring(this.textEditArea.selectionStart);
@@ -1265,9 +1279,8 @@ export class RichTextToolbar extends BaseToolbar {
 		const templateText = `${before}{{ ${varName} }}${after}`;
 
 		// Resolve for clipConfiguration (canvas rendering)
-		const field = this.getShotstackEdit()?.mergeFields.get(varName);
-		const resolvedValue = field?.defaultValue ?? `{{ ${varName} }}`;
-		const resolvedText = `${before}${resolvedValue}${after}`;
+		const resolvedText = this.getShotstackEdit()?.mergeFields.resolve(templateText) ?? templateText;
+		if (!this.validateTextEdit(templateText, resolvedText)) return;
 
 		// Keep template in text area (user can see merge fields)
 		this.textEditArea.value = templateText;
