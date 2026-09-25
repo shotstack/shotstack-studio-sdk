@@ -391,6 +391,55 @@
 	color: rgba(0, 0, 0, 0.8);
 }
 
+/* Add-variable form */
+.ss-variables-add-form {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 4px 8px 8px;
+}
+
+.ss-variables-add-form[hidden] {
+	display: none;
+}
+
+.ss-variables-add-actions {
+	display: flex;
+	gap: 6px;
+	justify-content: flex-end;
+}
+
+.ss-variables-add-confirm,
+.ss-variables-add-cancel {
+	padding: 6px 10px;
+	border: none;
+	border-radius: 8px;
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ss-variables-add-confirm {
+	background: rgba(99, 102, 241, 0.12);
+	color: rgba(79, 70, 229, 0.95);
+}
+
+.ss-variables-add-confirm:hover {
+	background: rgba(99, 102, 241, 0.2);
+}
+
+.ss-variables-add-cancel {
+	background: rgba(0, 0, 0, 0.05);
+	color: rgba(0, 0, 0, 0.55);
+}
+
+.ss-variables-add-cancel:hover {
+	background: rgba(0, 0, 0, 0.1);
+	color: rgba(0, 0, 0, 0.8);
+}
+
 /* THE scroll container - single source of scroll */
 .ss-variables-list {
 	flex: 1 1 auto;
