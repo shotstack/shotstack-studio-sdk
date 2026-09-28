@@ -1,11 +1,5 @@
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
-import {
-	isGenerationOptionValueValid,
-	missingGenerationOptions,
-	reconcileGenerationOptions,
-	type GenerationModelDefinition,
-	type GenerationOptionDefinition
-} from "@core/generation/model-catalogue";
+import { missingGenerationOptions, reconcileGenerationOptions, type GenerationModelDefinition } from "@core/generation/model-catalogue";
 import { MERGE_FIELD_TEST_PATTERN } from "@core/merge/merge-field-service";
 import { canCarryPrompt, GENERATION_TYPE, promptProperty } from "@core/shared/ai-asset-utils";
 import { injectShotstackStyles } from "@styles/inject";
@@ -13,12 +7,6 @@ import { injectShotstackStyles } from "@styles/inject";
 import { BaseToolbar, TOOLBAR_ICONS } from "./base-toolbar";
 
 const PROMPT_DEBOUNCE_MS = 300;
-
-const OPTION_INPUT_TYPE: Readonly<Record<GenerationOptionDefinition["type"], string>> = {
-	boolean: "checkbox",
-	integer: "number",
-	string: "text"
-};
 
 const record = (value: unknown): Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -45,8 +33,6 @@ export class GenerateToolbar extends BaseToolbar {
 	private modelLabel: HTMLElement | null = null;
 	private modelPopup: HTMLElement | null = null;
 	private optionsBtn: HTMLButtonElement | null = null;
-	private optionsPopup: HTMLElement | null = null;
-	private optionRows = new Map<string, HTMLElement>();
 	private promptDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private generationUnsubscribers: (() => void)[] = [];
 	private abortController: AbortController | null = null;
@@ -90,10 +76,7 @@ export class GenerateToolbar extends BaseToolbar {
 				</button>
 				<div class="ss-media-toolbar-popup ss-ai-model-popup" data-model-popup role="menu"></div>
 			</div>
-			<div class="ss-ai-picker-wrap">
-				<button class="ss-media-toolbar-btn ss-ai-picker" data-options-picker type="button" aria-haspopup="dialog">Options</button>
-				<div class="ss-media-toolbar-popup ss-ai-options-popup" data-options-popup></div>
-			</div>
+			<button class="ss-media-toolbar-btn ss-ai-picker" data-options-picker type="button">Options</button>
 			<div class="ss-ai-generate-group" data-generate-group>
 				<button class="ss-media-toolbar-btn ss-ai-generate-btn" data-action="generate">
 					<span data-generate-label>Generate</span>
@@ -116,7 +99,6 @@ export class GenerateToolbar extends BaseToolbar {
 		this.modelLabel = this.container.querySelector("[data-model-label]");
 		this.modelPopup = this.container.querySelector("[data-model-popup]");
 		this.optionsBtn = this.container.querySelector("[data-options-picker]");
-		this.optionsPopup = this.container.querySelector("[data-options-popup]");
 
 		this.setupEventListeners();
 		this.subscribeToEditState();
@@ -168,7 +150,11 @@ export class GenerateToolbar extends BaseToolbar {
 		}, { signal });
 		this.optionsBtn?.addEventListener("click", e => {
 			e.stopPropagation();
-			this.togglePopup(this.optionsPopup);
+			const clipId = this.getSelectedClipId();
+			const { model } = record(this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx)?.asset);
+			if (!clipId || typeof model !== "string") return;
+			this.closeAllPopups();
+			this.edit.generationSettings?.({ clipId, model });
 		}, { signal });
 		this.generateNoteAction?.addEventListener("click", e => {
 			e.stopPropagation();
@@ -286,108 +272,10 @@ export class GenerateToolbar extends BaseToolbar {
 		}
 	}
 
-	private createOptionControl(option: GenerationOptionDefinition, value: unknown): HTMLInputElement | HTMLSelectElement {
-		if (option.values) {
-			const select = document.createElement("select");
-			const empty = document.createElement("option");
-			empty.value = "";
-			empty.textContent = "Select…";
-			select.appendChild(empty);
-			for (const candidate of option.values) {
-				const item = document.createElement("option");
-				item.value = candidate;
-				item.textContent = candidate;
-				select.appendChild(item);
-			}
-			select.value = typeof value === "string" ? value : "";
-			return select;
-		}
-
-		const input = document.createElement("input");
-		input.type = option.format === "uri" ? "url" : OPTION_INPUT_TYPE[option.type];
-		if (input.type === "checkbox") input.checked = value === true;
-		else input.value = value === undefined ? "" : String(value);
-		if (option.minimum !== undefined) input.min = String(option.minimum);
-		if (option.maximum !== undefined) input.max = String(option.maximum);
-		return input;
-	}
-
-	private readOptionControl(control: HTMLInputElement | HTMLSelectElement, option: GenerationOptionDefinition): unknown {
-		if (control instanceof HTMLInputElement && control.type === "checkbox") return control.checked;
-		if (control.value === "") return undefined;
-		return option.type === "integer" ? Number(control.value) : control.value;
-	}
-
-	private renderOptions(model: GenerationModelDefinition, values: Record<string, unknown>): void {
-		if (!this.optionsPopup) return;
-		this.optionsPopup.replaceChildren();
-		this.optionRows.clear();
-		for (const option of model.options) {
-			const row = document.createElement("label");
-			row.className = "ss-ai-option-row";
-			row.dataset["optionRow"] = option.name;
-			const title = document.createElement("span");
-			title.textContent = option.title;
-			const value = values[option.name] ?? (option.hasDefault ? option.defaultValue : undefined);
-			const control = this.createOptionControl(option, value);
-			control.dataset["option"] = option.name;
-			// A required boolean is satisfied by false, which an unchecked required checkbox reports as invalid.
-			control.required = option.required && option.type !== "boolean";
-			control.addEventListener("change", () => {
-				// An empty required field is the missing-option state and must commit; malformed input must not.
-				if (!control.validity.valid && !control.validity.valueMissing) return;
-				const next = this.readOptionControl(control, option);
-				this.edit.updateClip(this.selectedTrackIdx, this.selectedClipIdx, { asset: { options: { [option.name]: next } } } as never);
-				this.syncMissingOptions(model, { ...values, [option.name]: next });
-			});
-			row.append(title, control);
-			this.optionRows.set(option.name, row);
-			this.optionsPopup.appendChild(row);
-		}
-
-		for (const option of model.unsupported) {
-			const row = document.createElement("div");
-			row.className = "ss-ai-option-row is-unsupported";
-			this.optionRows.set(option.name, row);
-			row.title = this.edit.generationSettings ? "Use Generation settings to configure this option." : "This option can only be set outside the editor.";
-			const title = document.createElement("span");
-			title.textContent = option.title;
-			const state = document.createElement("span");
-			state.className = "ss-ai-option-state";
-			state.textContent = values[option.name] === undefined ? "Not set" : "Configured";
-			row.append(title, state);
-			this.optionsPopup.appendChild(row);
-		}
-
-		if (this.edit.generationSettings) {
-			const button = document.createElement("button");
-			button.type = "button";
-			button.className = "ss-media-toolbar-btn";
-			button.dataset["action"] = "generation-options";
-			button.textContent = "Generation settings";
-			button.addEventListener("click", () => {
-				const clipId = this.getSelectedClipId();
-				if (!clipId) return;
-				this.closeAllPopups();
-				this.edit.generationSettings?.({ clipId, model: model.model });
-			});
-			this.optionsPopup.appendChild(button);
-		}
-	}
-
 	private syncMissingOptions(model: GenerationModelDefinition | undefined, values: Record<string, unknown>): readonly string[] {
 		const missing = model ? missingGenerationOptions(model, values) : [];
 		this.optionsBtn?.classList.toggle("has-error", missing.length > 0);
-		if (this.optionsBtn) this.optionsBtn.title = missing.length > 0 ? `Missing: ${missing.join(", ")}` : "Generation options";
-		if (model) {
-			for (const option of model.options) {
-				const row = this.optionRows.get(option.name);
-				row?.toggleAttribute("data-missing", option.required && !isGenerationOptionValueValid(option, values[option.name]));
-			}
-			for (const option of model.unsupported) {
-				this.optionRows.get(option.name)?.toggleAttribute("data-missing", option.required === true && values[option.name] === undefined);
-			}
-		}
+		if (this.optionsBtn) this.optionsBtn.title = missing.length > 0 ? `Missing: ${missing.join(", ")}` : "Generation settings";
 		return missing;
 	}
 
@@ -406,18 +294,10 @@ export class GenerateToolbar extends BaseToolbar {
 		this.renderModelPopup(models ?? [], selected);
 
 		if (this.optionsBtn) {
-			const empty = selectedModel !== undefined && selectedModel.options.length === 0 && selectedModel.unsupported.length === 0;
-			this.optionsBtn.hidden = models === undefined || models.length === 0 || (empty && !this.edit.generationSettings);
+			this.optionsBtn.hidden = models === undefined || models.length === 0 || !this.edit.generationSettings;
 			this.optionsBtn.disabled = selectedModel === undefined;
 		}
-		const values = record(asset["options"]);
-		if (selectedModel) {
-			this.renderOptions(selectedModel, values);
-		} else {
-			this.optionsPopup?.replaceChildren();
-			this.optionRows.clear();
-		}
-		return this.syncMissingOptions(selectedModel, values);
+		return this.syncMissingOptions(selectedModel, record(asset["options"]));
 	}
 
 	protected override syncState(): void {
@@ -490,7 +370,7 @@ export class GenerateToolbar extends BaseToolbar {
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
-		return [this.modelPopup, this.optionsPopup];
+		return [this.modelPopup];
 	}
 
 	override dispose(): void {
@@ -515,7 +395,5 @@ export class GenerateToolbar extends BaseToolbar {
 		this.modelLabel = null;
 		this.modelPopup = null;
 		this.optionsBtn = null;
-		this.optionsPopup = null;
-		this.optionRows.clear();
 	}
 }
