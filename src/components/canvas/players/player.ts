@@ -453,8 +453,8 @@ export abstract class Player extends Entity {
 	 * Playback speed of the asset (1 = normal). Matches `asset.speed` used by renders.
 	 */
 	public getAssetSpeed(): number {
-		const { speed = 1 } = this.clipConfiguration.asset as { speed?: number };
-		return speed;
+		const { speed } = this.clipConfiguration.asset as { speed?: unknown };
+		return typeof speed === "number" ? speed : 1;
 	}
 
 	/**

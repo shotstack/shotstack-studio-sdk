@@ -164,6 +164,7 @@ export class MediaToolbar extends BaseToolbar {
 	private speedValue: HTMLSpanElement | null = null;
 	private speedDisplayInput: HTMLInputElement | null = null;
 	private currentSpeed: number = 1;
+	private speedAnimated = false;
 
 	// ─── Advanced Menu ───────────────────────────────────────────────────────────
 	private dynamicToggle: HTMLInputElement | null = null;
@@ -835,7 +836,8 @@ export class MediaToolbar extends BaseToolbar {
 
 			// Playback speed
 			if (SPEED_ASSET_TYPES.has(this.assetType)) {
-				const asset = clip.asset as { speed?: number };
+				const asset = clip.asset as { speed?: unknown };
+				this.speedAnimated = Array.isArray(asset.speed);
 				this.currentSpeed = typeof asset.speed === "number" ? asset.speed : 1;
 			}
 		}
@@ -868,7 +870,7 @@ export class MediaToolbar extends BaseToolbar {
 
 		// Show/hide speed section (only for types whose preview honours speed)
 		if (this.speedSection) {
-			this.speedSection.classList.toggle("hidden", !SPEED_ASSET_TYPES.has(this.assetType));
+			this.speedSection.classList.toggle("hidden", !SPEED_ASSET_TYPES.has(this.assetType) || this.speedAnimated);
 		}
 
 		// Hide the advanced/dynamic source divider and button for AI types
