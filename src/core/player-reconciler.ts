@@ -153,6 +153,8 @@ export class PlayerReconciler {
 			// Sync track containers AFTER players are disposed and tracks rebuilt
 			// This ensures empty tracks are correctly identified for removal
 			this.syncTrackContainers(resolved.timeline.tracks.length);
+			// Disposal recalculates the duration before replacement players exist; recalculate once they do.
+			this.edit.updateTotalDuration();
 
 			return result;
 		} finally {
