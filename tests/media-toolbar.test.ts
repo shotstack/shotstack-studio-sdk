@@ -868,6 +868,13 @@ describe("MediaToolbar", () => {
 			toolbar.dispose();
 		});
 
+		it("hides the speed section when speed is animated", () => {
+			const { toolbar, parent } = mountWithVideoClip({ speed: [{ from: 1, to: 3, start: 0, length: 1 }] });
+			const speedSection = parent.querySelector("[data-speed-section]") as HTMLElement;
+			expect(speedSection.classList.contains("hidden")).toBe(true);
+			toolbar.dispose();
+		});
+
 		it("hides the speed section for image assets", () => {
 			const mockEdit = createMockEditSession();
 			mockEdit.getResolvedClip.mockReturnValue(createImageClip());

@@ -8,6 +8,29 @@ import * as pixi from "pixi.js";
 import { createPlaceholderGraphic } from "./placeholder-graphic";
 import { Player, PlayerType } from "./player";
 
+// Chrome throws NotSupportedError for playbackRate outside this range.
+const MIN_PLAYBACK_RATE = 0.0625;
+const MAX_PLAYBACK_RATE = 16;
+const SPEED_STEP_SECONDS = 0.01;
+
+type AnimatedSpeed = { curve: KeyframeBuilder; sourceOffsets: Float64Array };
+
+function createAnimatedSpeed(asset: VideoAsset, length: number): AnimatedSpeed | null {
+	const tweens = asset.speed;
+	if (!Array.isArray(tweens) || tweens.length === 0) return null;
+	const [first] = [...tweens].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+	// The render holds the first tween's speed before it starts; KeyframeBuilder would otherwise ramp from 0.
+	const curve = new KeyframeBuilder(tweens, length, typeof first.from === "number" ? first.from : 1);
+	// Trapezoid rule, matching the render, so linear ramps land exactly.
+	const sourceOffsets = new Float64Array(Math.ceil(length / SPEED_STEP_SECONDS) + 1);
+	for (let i = 1; i < sourceOffsets.length; i += 1) {
+		const from = curve.getValue((i - 1) * SPEED_STEP_SECONDS);
+		const to = curve.getValue(i * SPEED_STEP_SECONDS);
+		sourceOffsets[i] = sourceOffsets[i - 1] + ((from + to) / 2) * SPEED_STEP_SECONDS;
+	}
+	return { curve, sourceOffsets };
+}
+
 export class VideoPlayer extends Player {
 	private texture: pixi.Texture<pixi.VideoSource> | null;
 	private sprite: pixi.Sprite | null;
@@ -15,6 +38,7 @@ export class VideoPlayer extends Player {
 	private isPlaying: boolean;
 
 	private volumeKeyframeBuilder: KeyframeBuilder;
+	private animatedSpeed: AnimatedSpeed | null;
 
 	private syncTimer: number;
 	private activeSyncTimer: number;
@@ -31,6 +55,7 @@ export class VideoPlayer extends Player {
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
+		this.animatedSpeed = createAnimatedSpeed(videoAsset, this.getLength());
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
 		this.skipVideoUpdate = false;
@@ -75,7 +100,8 @@ export class VideoPlayer extends Player {
 
 		const speed = this.getAssetSpeed();
 		const sourceTime = this.getSourceTime();
-		const shouldClipPlay = this.edit.isPlaying && this.isActive() && speed > 0;
+		const nativeRate = speed >= MIN_PLAYBACK_RATE && speed <= MAX_PLAYBACK_RATE;
+		const shouldClipPlay = this.edit.isPlaying && this.isActive() && nativeRate;
 		const desyncThreshold = 0.3;
 
 		if (shouldClipPlay) {
@@ -118,7 +144,7 @@ export class VideoPlayer extends Player {
 		// Prepare future clips after a backward seek, before they become visible.
 		// Active paused/frozen clips still sync every 100ms for scrubbing.
 		const shouldSync = this.syncTimer > 100;
-		if (this.edit.playbackTime < this.getStart() || ((!this.edit.isPlaying || speed === 0) && this.isActive() && shouldSync)) {
+		if (this.edit.playbackTime < this.getStart() || ((!this.edit.isPlaying || !nativeRate) && this.isActive() && shouldSync)) {
 			this.syncTimer = 0;
 			if (Math.abs(this.texture.source.resource.currentTime - sourceTime) > 0.01) {
 				this.texture.source.resource.currentTime = sourceTime;
@@ -177,6 +203,7 @@ export class VideoPlayer extends Player {
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
+		this.animatedSpeed = createAnimatedSpeed(videoAsset, this.getLength());
 	}
 
 	private async loadVideo(): Promise<void> {
@@ -282,6 +309,24 @@ export class VideoPlayer extends Player {
 
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	public override getAssetSpeed(): number {
+		return this.animatedSpeed ? this.animatedSpeed.curve.getValue(this.getPlaybackTime()) : super.getAssetSpeed();
+	}
+
+	public override getSourceTime(): number {
+		if (!this.animatedSpeed) return super.getSourceTime();
+		const { trim = 0 } = this.clipConfiguration.asset as VideoAsset;
+		const { sourceOffsets } = this.animatedSpeed;
+		const position = Math.min(this.getPlaybackTime() / SPEED_STEP_SECONDS, sourceOffsets.length - 1);
+		const index = Math.floor(position);
+		const next = Math.min(index + 1, sourceOffsets.length - 1);
+		return trim + sourceOffsets[index] + (sourceOffsets[next] - sourceOffsets[index]) * (position - index);
+	}
+
+	public override getMaxLength(): number | null {
+		return this.animatedSpeed ? null : super.getMaxLength();
 	}
 
 	public override getSourceDuration(): number | null {

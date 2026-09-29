@@ -368,6 +368,57 @@ describe("media player fallbacks", () => {
 		expect(player.getSize()).toEqual({ width: 1280, height: 720 });
 		expect(Number.isFinite(player.getScale())).toBe(true);
 	});
+
+	it("seeks animated-speed clips instead of setting playback rates the browser rejects", async () => {
+		const edit = createEdit();
+		const video = document.createElement("video");
+		let currentTime = 0;
+		const rates: number[] = [];
+		Object.defineProperties(video, {
+			currentTime: {
+				get: () => currentTime,
+				set: (value: number) => {
+					currentTime = value;
+				}
+			},
+			seeking: { get: () => false },
+			readyState: { value: 4 },
+			playbackRate: {
+				get: () => rates.at(-1) ?? 1,
+				set: (value: number) => {
+					rates.push(value);
+				}
+			},
+			play: { value: jest.fn().mockResolvedValue(undefined) },
+			pause: { value: jest.fn() }
+		});
+		const texture = new pixi.Texture({ source: new pixi.VideoSource({ resource: video }), width: 1280, height: 720 } as ConstructorParameters<
+			typeof pixi.Texture
+		>[0]);
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(texture);
+		const clip = {
+			...createVideoClip(),
+			asset: {
+				type: "video",
+				src: "https://example.com/video.mp4",
+				trim: 3,
+				speed: [
+					{ from: 0, to: 0, start: 0, length: 1 },
+					{ from: -2, to: -2, start: 1, length: 1 }
+				]
+			}
+		} as ResolvedClip;
+		const player = new VideoPlayer(edit as never, clip);
+		await player.load();
+
+		edit.isPlaying = true;
+		[0.5, 1.5].forEach(time => {
+			edit.playbackTime = time;
+			player.update(0, 101);
+			expect(currentTime).toBeCloseTo(player.getSourceTime(), 5);
+		});
+		expect(rates.every(rate => rate >= 0.0625 && rate <= 16)).toBe(true);
+	});
 });
 
 describe("player disposal during load", () => {

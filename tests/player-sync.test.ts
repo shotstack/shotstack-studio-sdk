@@ -16,7 +16,7 @@ import { LumaPlayer } from "@canvas/players/luma-player";
 import { CaptionPlayer } from "@canvas/players/caption-player";
 import type { Edit } from "@core/edit-session";
 import { sec, type Seconds } from "@core/timing/types";
-import type { ResolvedClip, VideoAsset, AudioAsset, LumaAsset, CaptionAsset } from "@schemas";
+import type { ResolvedClip, VideoAsset, AudioAsset, LumaAsset, CaptionAsset, Tween } from "@schemas";
 import * as pixi from "pixi.js";
 
 // Mock pixi-filters (must be before pixi.js)
@@ -411,6 +411,60 @@ describe("getMaxLength", () => {
 		const noMedia = new VideoPlayer(createMockEdit(0), createVideoClipConfig());
 		expect(noMedia.getMaxLength()).toBeNull();
 		expect(createVideoPlayerWithDuration(0, 0).getMaxLength()).toBeNull();
+	});
+});
+
+function createAnimatedSpeedClipConfig(speed: Tween[], trim = 0): ResolvedClip {
+	return {
+		asset: { type: "video", src: "test.mp4", trim, speed } as VideoAsset,
+		start: 0,
+		length: 2
+	} as ResolvedClip;
+}
+
+describe("animated speed", () => {
+	it("starts the source at trim and advances by the integrated speed", () => {
+		// 1× → 3× over the first second covers 2 s of source
+		const player = new VideoPlayer(createMockEdit(1), createAnimatedSpeedClipConfig([{ from: 1, to: 3, start: 0, length: 1 }], 1));
+		expect(player.getSourceTime()).toBeCloseTo(3, 3);
+	});
+
+	it("holds the last speed after the final tween", () => {
+		const player = new VideoPlayer(createMockEdit(1.5), createAnimatedSpeedClipConfig([{ from: 1, to: 3, start: 0, length: 1 }]));
+		expect(player.getSourceTime()).toBeCloseTo(3.5, 3);
+		expect(player.getAssetSpeed()).toBeCloseTo(3, 5);
+	});
+
+	it("holds the first speed before the first tween", () => {
+		const player = new VideoPlayer(createMockEdit(0.5), createAnimatedSpeedClipConfig([{ from: 2, to: 2, start: 1, length: 1 }]));
+		expect(player.getSourceTime()).toBeCloseTo(1, 3);
+	});
+
+	it("freezes at trim when the speed is 0", () => {
+		const player = new VideoPlayer(createMockEdit(1), createAnimatedSpeedClipConfig([{ from: 0, to: 0, start: 0, length: 2 }], 4));
+		expect(player.getSourceTime()).toBeCloseTo(4, 5);
+	});
+
+	it("leaves the resize limit unbounded once media is loaded", () => {
+		const player = new VideoPlayer(createMockEdit(0), createAnimatedSpeedClipConfig([{ from: 1, to: 2, start: 0, length: 1 }]));
+		// @ts-expect-error - accessing private property for testing
+		player.texture = { source: new pixi.VideoSource({ resource: createMockVideoElement() }), width: 1920, height: 1080 };
+		expect(player.getMaxLength()).toBeNull();
+	});
+
+	it("plays an empty speed array at 1× from trim", () => {
+		const player = new VideoPlayer(createMockEdit(1), createAnimatedSpeedClipConfig([], 2));
+		expect(player.getAssetSpeed()).toBe(1);
+		expect(player.getSourceTime()).toBeCloseTo(3, 5);
+	});
+
+	it("keeps adjacent tweens separate: freeze then reverse", () => {
+		const speed = [
+			{ from: 0, to: 0, start: 0, length: 1 },
+			{ from: -2, to: -2, start: 1, length: 1 }
+		];
+		expect(new VideoPlayer(createMockEdit(0.5), createAnimatedSpeedClipConfig(speed, 3)).getSourceTime()).toBeCloseTo(3, 3);
+		expect(new VideoPlayer(createMockEdit(1.5), createAnimatedSpeedClipConfig(speed, 3)).getSourceTime()).toBeCloseTo(2, 1);
 	});
 });
 
