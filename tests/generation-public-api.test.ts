@@ -164,6 +164,30 @@ describe("generation through the public API", () => {
 		edit.dispose();
 	});
 
+	it("keeps the timeline length when the last clip's generated asset replaces its placeholder", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "audio", prompt: "a calm harbour at dusk" }, start: 0, length: 5 },
+							{ asset: { type: "audio", prompt: "gulls over the water" }, start: 5, length: 5 }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		const last = (edit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[1] as Clip & { id: string }).id;
+		edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/gulls.mp3" }));
+
+		await edit.generateClip(last);
+
+		expect(edit.totalDuration).toBe(10);
+		edit.dispose();
+	});
+
 	it("reports the handler's message on failure, and resolves rather than rejecting", async () => {
 		const edit = await editWithPromptClip();
 		const failures: Array<{ clipId: string; error: string }> = [];
