@@ -8,6 +8,18 @@ describe("sanitizeColor", () => {
 		expect(sanitizeColor("   ")).toBe("#ffffff");
 	});
 
+	it("falls back for 5-digit hex that previously slipped past the sanitizer", () => {
+		expect(sanitizeColor("#00000")).toBe("#ffffff");
+		expect(sanitizeColor("#12345")).toBe("#ffffff");
+		expect(sanitizeColor("0x00000")).toBe("#ffffff");
+	});
+
+	it("falls back for unsubstituted merge-field tokens", () => {
+		expect(sanitizeColor("{{ BG_COLOR }}")).toBe("#ffffff");
+		expect(sanitizeColor("{{BG_COLOR}}")).toBe("#ffffff");
+		expect(sanitizeColor("{{ FONT_COLOR }}", "#000000")).toBe("#000000");
+	});
+
 	it("falls back for nullish and non-string values", () => {
 		expect(sanitizeColor(undefined)).toBe("#ffffff");
 		expect(sanitizeColor(null)).toBe("#ffffff");
@@ -16,6 +28,7 @@ describe("sanitizeColor", () => {
 	it("preserves valid hex, named, and functional colors", () => {
 		expect(sanitizeColor("#ffffff")).toBe("#ffffff");
 		expect(sanitizeColor("#fff")).toBe("#fff");
+		expect(sanitizeColor("#ffff")).toBe("#ffff");
 		expect(sanitizeColor("#ff00ff00")).toBe("#ff00ff00");
 		expect(sanitizeColor("red")).toBe("red");
 		expect(sanitizeColor("rgb(255, 0, 0)")).toBe("rgb(255, 0, 0)");
@@ -23,5 +36,6 @@ describe("sanitizeColor", () => {
 
 	it("uses a custom fallback when provided", () => {
 		expect(sanitizeColor("#00", "#000000")).toBe("#000000");
+		expect(sanitizeColor("#00000", "#000000")).toBe("#000000");
 	});
 });
