@@ -3,6 +3,7 @@ import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
+import { sanitizeColor } from "@core/shared/color-utils";
 import { ms } from "@core/timing/types";
 import type { UIController } from "@core/ui/ui-controller";
 import { checkWebGLSupport, WebGLUnsupportedError } from "@core/webgl-support";
@@ -110,7 +111,7 @@ export class Canvas {
 		this.viewportContainer.sortableChildren = true;
 
 		this.editBackground = new pixi.Graphics();
-		this.editBackground.fillStyle = { color: this.edit.getTimelineBackground() };
+		this.editBackground.fillStyle = { color: sanitizeColor(this.edit.getTimelineBackground(), "#000000") };
 		this.editBackground.rect(0, 0, this.edit.size.width, this.edit.size.height);
 		this.editBackground.fill();
 		this.viewportContainer.addChild(this.editBackground);
@@ -533,7 +534,7 @@ export class Canvas {
 	public updateViewportForSize(width: number, height: number, backgroundColor: string): void {
 		if (this.editBackground) {
 			this.editBackground.clear();
-			this.editBackground.fillStyle = { color: backgroundColor };
+			this.editBackground.fillStyle = { color: sanitizeColor(backgroundColor, "#000000") };
 			this.editBackground.rect(0, 0, width, height);
 			this.editBackground.fill();
 		}
