@@ -1845,8 +1845,29 @@ describe("Edit Clip Operations", () => {
 			});
 			e.selectClip(0, 0);
 			expect(configs(status)).toEqual([
-				{ clipId: e.getClipId(0, 0), type: "audio", model: "polly-neural", options: { voice: "Matthew" }, length: 4, prompt: "hello" }
+				{
+					asset: expect.objectContaining({ type: "audio", prompt: "hello", model: "polly-neural", options: { voice: "Matthew" } }),
+					clipId: e.getClipId(0, 0),
+					type: "audio",
+					model: "polly-neural",
+					options: { voice: "Matthew" },
+					length: 4,
+					prompt: "hello"
+				}
 			]);
+		});
+
+		it("passes the complete resolved asset for quoting and refreshes legacy voice changes", async () => {
+			const { e, status } = await promptEdit({ asset: { type: "text-to-speech", text: "{{ WORDS }}", voice: "Joanna" } }, [
+				{ find: "WORDS", replace: "hello" }
+			]);
+			e.selectClip(0, 0);
+			const clipId = e.getClipId(0, 0)!;
+			expect(status.mock.calls.at(-1)?.[0]).toMatchObject({ asset: { type: "text-to-speech", text: "hello", voice: "Joanna" } });
+			const previous = status.mock.calls.at(-1)![0];
+			await e.updateClipById(clipId, { asset: { type: "text-to-speech", text: "{{ WORDS }}", voice: "Matthew" } } as never);
+			expect(previous.signal.aborted).toBe(true);
+			expect(status.mock.calls.at(-1)?.[0]).toMatchObject({ asset: { voice: "Matthew", text: "hello" } });
 		});
 
 		it("resolves merge fields in the prompt", async () => {
@@ -1955,7 +1976,7 @@ describe("Edit Clip Operations", () => {
 			const { e, status } = await promptEdit({ asset: { type: "image", prompt: "a cat" } });
 			status.mockResolvedValue({ text: "later" });
 			e.selectClip(0, 0);
-			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toBeUndefined();
+			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toMatchObject({ pending: true });
 			await flush();
 			expect(e.getGenerationStatus(e.getClipId(0, 0) ?? "")).toEqual({ text: "later" });
 		});

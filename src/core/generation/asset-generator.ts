@@ -102,8 +102,10 @@ export class AssetGenerator {
 		};
 		try {
 			const result = this.statusProvider({ ...structuredClone(config), signal: controller.signal });
-			if (result instanceof Promise) result.then(settle, fail);
-			else settle(result);
+			if (result instanceof Promise) {
+				if (this.status?.value.tone !== "error") this.setStatus({ clipId: config.clipId, value: { text: "Checking generation…", pending: true } });
+				result.then(settle, fail);
+			} else settle(result);
 		} catch (error) {
 			fail(error);
 		}

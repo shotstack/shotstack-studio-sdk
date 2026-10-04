@@ -2,6 +2,7 @@ import type { Edit } from "@core/edit-session";
 
 export type GenerationConfig = {
 	clipId: string;
+	asset: Record<string, unknown>;
 	type: "image" | "video" | "audio";
 	model?: string;
 	options: Record<string, unknown>;
@@ -11,6 +12,7 @@ export type GenerationConfig = {
 
 export type GenerationStatus = {
 	text: string;
+	pending?: boolean;
 	tone?: "neutral" | "warning" | "error";
 	onActivate?: () => void;
 };
