@@ -195,10 +195,7 @@ describe("GenerateToolbar", () => {
 		expect(container.querySelector("[data-model-label]")?.textContent).toBe("Select model");
 		expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.disabled).toBe(true);
 		container.querySelector<HTMLButtonElement>("[data-model-picker]")?.click();
-		expect([...container.querySelectorAll("[data-model-value]")].map(node => node.textContent)).toEqual([
-			"flux-schnell",
-			"nano-banana-2"
-		]);
+		expect([...container.querySelectorAll("[data-model-value]")].map(node => node.textContent)).toEqual(["flux-schnell", "nano-banana-2"]);
 		expect(container.textContent).not.toContain("Automatic");
 		toolbar.dispose();
 	});
@@ -603,7 +600,7 @@ describe("GenerateToolbar", () => {
 			toolbar.dispose();
 		});
 
-		it("keeps Generate and Enter blocked until an error status refresh settles", async () => {
+		it.each([true, false])("keeps Generate and Enter blocked until an async status settles (previous error: %s)", async previousError => {
 			const edit = createMockEdit();
 			let generations = 0;
 			const generator = new AssetGenerator({
@@ -627,8 +624,8 @@ describe("GenerateToolbar", () => {
 			const pending = new Promise<GenerationStatus | undefined>(resolve => {
 				resolveStatus = resolve;
 			});
-			generator.registerStatus(({ prompt }) => (prompt === "a cat" ? { text: "Insufficient credits", tone: "error" } : pending));
-			const config = { clipId: "clip-1", type: "image" as const, options: {}, length: 4, prompt: "a cat" };
+			generator.registerStatus(({ prompt }) => (previousError && prompt === "a cat" ? { text: "Insufficient credits", tone: "error" } : pending));
+			const config = { asset: { type: "image", prompt: "a cat" }, clipId: "clip-1", type: "image" as const, options: {}, length: 4, prompt: "a cat" };
 			generator.describe(config);
 			const { toolbar, container } = mountToolbar(edit);
 			const button = container.querySelector<HTMLButtonElement>("[data-action='generate']")!;

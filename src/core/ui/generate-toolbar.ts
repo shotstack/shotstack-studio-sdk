@@ -172,7 +172,8 @@ export class GenerateToolbar extends BaseToolbar {
 		if (!clipId) return;
 		if ((this.promptInput?.value ?? "").trim() === "") return;
 		if (this.edit.getClipGenerationState(clipId)?.status === "generating") return;
-		if (this.edit.getGenerationStatus(clipId)?.tone === "error") return;
+		const status = this.edit.getGenerationStatus(clipId);
+		if (status?.pending || status?.tone === "error") return;
 		// A generation failure surfaces as clip state; a rejection means the clip could not be
 		// generated at all — no handler registered, or nothing on the asset to generate from.
 		this.edit.generateClip(clipId).catch((error: unknown) => {
@@ -354,7 +355,7 @@ export class GenerateToolbar extends BaseToolbar {
 		const generating = state?.status === "generating";
 		const hasPrompt = (this.promptInput?.value ?? "").trim() !== "";
 		const label = this.generateBtn.querySelector("[data-generate-label]");
-		const blocked = status?.tone === "error";
+		const blocked = status?.pending || status?.tone === "error";
 		this.generateBtn.disabled = generating || !hasPrompt || missing.length > 0 || blocked;
 		this.generateBtn.classList.toggle("is-generating", generating);
 		if (label) {

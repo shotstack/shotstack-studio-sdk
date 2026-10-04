@@ -162,6 +162,7 @@ export class Edit {
 		const { options } = asset;
 		const config: GenerationConfig = {
 			clipId,
+			asset,
 			type,
 			...(typeof asset["model"] === "string" ? { model: asset["model"] } : {}),
 			options: typeof options === "object" && options !== null && !Array.isArray(options) ? (options as Record<string, unknown>) : {},
