@@ -257,6 +257,8 @@ hands back a preview that the render replaces.
 
 `edit.continueFromClip(clipId)` adds a generated video straight after a video or image clip and selects it, ready for a prompt. The new clip's `options.startSrc` is the source clip's `src`, so a video continues from its last frame and an image is animated. It needs a registered generator whose catalogue has a video model that accepts `startSrc`; when there is one, the clip and asset toolbars show a Continue button.
 
+Regenerating a clip updates the clips that continue from it: their `startSrc` or `endSrc` moves to the new file and their output is cleared, so they show as needing generation. One undo restores both.
+
 ### Canvas
 
 `Canvas` renders the current edit.

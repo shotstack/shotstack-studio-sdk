@@ -261,4 +261,31 @@ describe("generation through the public API", () => {
 		});
 		edit.dispose();
 	});
+
+	it("repoints a continuation when its source is regenerated, as one undo step", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "image", prompt: "a lighthouse", src: "https://cdn.example.com/old.png" }, start: 0, length: 4 },
+							{ asset: { type: "video", prompt: "waves", options: { startSrc: "https://cdn.example.com/old.png" } }, start: 4, length: 5 }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/new.png" }));
+		const clips = () => edit.getEdit().timeline.tracks[0]!.clips as Array<{ asset: { src?: string; options?: { startSrc?: string } } }>;
+
+		await edit.generateClip(clipIdOf(edit));
+		expect(clips()[1]!.asset.options?.startSrc).toBe("https://cdn.example.com/new.png");
+
+		await edit.undo();
+		expect(clips()[0]!.asset.src).toBe("https://cdn.example.com/old.png");
+		expect(clips()[1]!.asset.options?.startSrc).toBe("https://cdn.example.com/old.png");
+		edit.dispose();
+	});
 });

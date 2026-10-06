@@ -9,6 +9,7 @@ import { parseSvgIntrinsicSize, sanitiseSvg } from "@core/clipboard/svg-clipboar
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { AddTracksCommand } from "@core/commands/add-tracks-command";
+import { CompositeCommand } from "@core/commands/composite-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
@@ -26,7 +27,7 @@ import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter, type ReadonlyEventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
-import { canContinueFrom, continuationClip, continuationModel } from "@core/generation/continue-clip";
+import { canContinueFrom, continuationClip, continuationModel, repointChain } from "@core/generation/continue-clip";
 import type { GenerationConfig, GenerationStatus, GenerationStatusProvider } from "@core/generation/generation-status";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
@@ -572,7 +573,16 @@ export class Edit {
 			clipIndex: found.clipIndex,
 			bindingPathMoves: migration?.bindingPathMoves
 		});
-		const result = await this.executeCommand(command);
+		const previous = (initialConfig.asset as { src?: unknown }).src;
+		const tracks = Array.from({ length: this.document.getTrackCount() }, (_, t) => this.document.getClipsInTrack(t) as ResolvedClip[]);
+		const followers =
+			typeof previous === "string" && previous !== url
+				? repointChain(tracks, previous, url).map(
+						({ trackIndex, clipIndex, clip }) =>
+							new SetUpdatedClipCommand(structuredClone(tracks[trackIndex]![clipIndex]!), clip, { trackIndex, clipIndex })
+					)
+				: [];
+		const result = await this.executeCommand(followers.length ? new CompositeCommand([command, ...followers], "regenerateChain") : command);
 		if (result.status !== "success") throw new Error(result.message ?? "Could not apply the generated asset");
 	}
 

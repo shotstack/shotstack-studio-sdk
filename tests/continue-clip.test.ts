@@ -1,4 +1,4 @@
-import { canContinueFrom, continuationClip, continuationModel } from "../src/core/generation/continue-clip";
+import { canContinueFrom, continuationClip, continuationModel, repointChain } from "../src/core/generation/continue-clip";
 import type { GenerationModelDefinition } from "../src/core/generation/model-catalogue";
 
 const model = (name: string, optionNames: string[]): GenerationModelDefinition => ({
@@ -35,5 +35,27 @@ describe("continue-clip", () => {
 		});
 		expect((next.asset as { prompt: string }).prompt.trim()).not.toBe("");
 		expect(typeof next.id).toBe("string");
+	});
+
+	it("repoints clips that start or end on the regenerated file and clears their output", () => {
+		const tracks = [
+			[clip({ type: "image", prompt: "a lighthouse", src: "https://cdn.example/new.png" })],
+			[
+				clip({ type: "video", prompt: "next", src: "https://cdn.example/b.mp4", options: { startSrc: "https://cdn.example/old.png" } }),
+				clip({ type: "video", prompt: "other", src: "https://cdn.example/c.mp4", options: { startSrc: "https://cdn.example/x.png" } })
+			]
+		] as never;
+		const moved = repointChain(tracks, "https://cdn.example/old.png", "https://cdn.example/new.png");
+		expect(moved).toHaveLength(1);
+		expect(moved[0]).toMatchObject({ trackIndex: 1, clipIndex: 0 });
+		expect(moved[0]!.clip.asset).toEqual({ type: "video", prompt: "next", options: { startSrc: "https://cdn.example/new.png" } });
+	});
+
+	it("keeps the file of a clip with no prompt to regenerate from", () => {
+		const tracks = [[clip({ type: "video", src: "https://cdn.example/b.mp4", options: { endSrc: "https://cdn.example/old.png" } })]] as never;
+		expect(repointChain(tracks, "https://cdn.example/old.png", "https://cdn.example/new.png")[0]!.clip.asset).toMatchObject({
+			src: "https://cdn.example/b.mp4",
+			options: { endSrc: "https://cdn.example/new.png" }
+		});
 	});
 });
