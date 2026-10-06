@@ -118,7 +118,8 @@ const editWithPromptClip = async (): Promise<Edit> => {
 	return edit;
 };
 
-const clipIdOf = (edit: Edit): string => (edit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string }).id;
+const clipIdOf = (edit: Edit): string =>
+	(edit.getEdit({ includeIds: true }).timeline.tracks[0]?.clips[0] as Clip & { id: string }).id;
 
 describe("generation through the public API", () => {
 	it.each([true, false])("scopes the internal settings hook to its registration (before catalogue: %s)", async beforeCatalogue => {
@@ -126,22 +127,12 @@ describe("generation through the public API", () => {
 		const open = jest.fn();
 		let cleanup: (() => void) | undefined;
 		if (beforeCatalogue) cleanup = registerGenerationSettings(edit, open);
-		edit.registerAssetGenerator(async () => ({ url: "unused" }), {
-			catalogue: {
-				models: [
-					{
-						model: "complex",
-						type: "audio",
-						options: {
-							type: "object",
-							additionalProperties: false,
-							required: ["plan"],
-							properties: { plan: { type: "object" } }
-						}
-					}
-				]
-			}
-		});
+		edit.registerAssetGenerator(async () => ({ url: "unused" }), { catalogue: {
+			models: [{ model: "complex", type: "audio", options: {
+				type: "object", additionalProperties: false, required: ["plan"],
+				properties: { plan: { type: "object" } }
+			} }]
+		} });
 		if (!beforeCatalogue) {
 			expect(edit.getGenerationModels("audio")).toEqual([]);
 			cleanup = registerGenerationSettings(edit, open);

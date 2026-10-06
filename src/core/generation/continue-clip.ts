@@ -2,7 +2,7 @@ import type { Clip, ResolvedClip } from "@schemas";
 
 import type { GenerationModelDefinition } from "./model-catalogue";
 
-// ponytail: a fixed starter prompt and length; take the length from the source if users ask for it.
+// Starter values; the prompt and length are edited like any other clip's.
 const CONTINUE_PROMPT = "Continue the shot";
 const CONTINUE_LENGTH = 5;
 
