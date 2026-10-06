@@ -1,6 +1,6 @@
 import { CommandSuccess, type CommandContext, type CommandResult, type EditCommand } from "./types";
 
-// Applies several commands as one undo step, stopping at the first that does not succeed.
+// Applies several commands as one undo step. A step that does not succeed rolls back the steps before it.
 export class CompositeCommand implements EditCommand {
 	readonly name: string;
 	private executed: EditCommand[] = [];
@@ -17,7 +17,10 @@ export class CompositeCommand implements EditCommand {
 		let first: CommandResult | undefined;
 		for (const command of this.commands) {
 			const result = await command.execute(context);
-			if (result.status !== "success") return result;
+			if (result.status !== "success") {
+				await this.undo(context);
+				return result;
+			}
 			this.executed.push(command);
 			first ??= result;
 		}

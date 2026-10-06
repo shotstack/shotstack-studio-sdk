@@ -135,6 +135,8 @@ export class Edit {
 	private isBatchingEvents: boolean = false;
 	private isExporting: boolean = false;
 	private lastResolved: ResolvedEdit | null = null;
+	// Session-only: the file each repointed clip lost, so regenerating it still repoints its own continuations.
+	private readonly lostSrcs = new Map<string, string>();
 
 	/**
 	 * Clip removal reaches the generator the way it reaches the reconciler: from resolved state,
@@ -211,7 +213,7 @@ export class Edit {
 		this.playerReconciler = new PlayerReconciler(this);
 		this.assetGenerator = new AssetGenerator({
 			getClipAsset: clipId => this.getResolvedClipById(clipId)?.asset as Record<string, unknown> | undefined,
-			applyGeneratedSrc: (clipId, url) => this.applyGeneratedSrc(clipId, url),
+			applyGeneratedSrc: (clipId, url, signal) => this.applyGeneratedSrc(clipId, url, signal),
 			emitStarted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationStarted, { clipId }),
 			emitCompleted: clipId => this.internalEvents.emit(EditEvent.ClipGenerationCompleted, { clipId }),
 			emitFailed: (clipId, error) => this.internalEvents.emit(EditEvent.ClipGenerationFailed, { clipId, error }),
@@ -534,19 +536,21 @@ export class Edit {
 	 *
 	 * Rejects only when no generator is registered or the clip has nothing to generate from.
 	 * A generation failure resolves and surfaces as a `clip:generationFailed` event. Removing
-	 * the clip, reloading the edit, disposing it or another clip's regeneration repointing it
-	 * resolves writing nothing, and no completed
+	 * the clip, reloading the edit or disposing it resolves writing nothing, and no completed
 	 * or failed event follows the `clip:generationStarted` already emitted. A second call while
 	 * one is in flight for the same clip is ignored.
+	 *
+	 * Regenerating the clip this one continues from moves its `startSrc` or `endSrc`. A result
+	 * not yet written by then is discarded and reported as `clip:generationFailed`.
 	 */
 	public generateClip(clipId: string): Promise<void> {
 		return this.assetGenerator.generate(clipId);
 	}
 
 	/**
-	 * Add a generated video that starts from a video or image clip, right after it, and select it
-	 * so its prompt can be written. Needs a registered generator whose catalogue has a video model
-	 * that takes `startSrc`.
+	 * Add a pending video clip after a video or image clip, starting from its file, and select it so
+	 * its prompt can be written. Generates nothing, so nothing is spent. Rejects when the clip can't
+	 * be continued: it has no file, or no registered video model takes `startSrc`.
 	 */
 	public async continueFromClip(clipId: string): Promise<void> {
 		const found = this.document.getClipById(clipId);
@@ -560,9 +564,36 @@ export class Edit {
 		if (placed) this.selectClip(placed.trackIndex, placed.clipIndex);
 	}
 
-	private async applyGeneratedSrc(clipId: string, url: string): Promise<void> {
+	// Built when the queue reaches it: a regeneration queued ahead may repoint this clip or supersede this result.
+	private async applyGeneratedSrc(clipId: string, url: string, signal: AbortSignal): Promise<void> {
+		let applied: EditCommand | null = null;
+		let lostSrc: string | undefined;
+		const command: EditCommand = {
+			name: "setUpdatedClip",
+			execute: async context => {
+				if (!applied) {
+					if (signal.aborted) return CommandNoop("The generation was superseded");
+					lostSrc = this.lostSrcs.get(clipId);
+					applied = this.generatedSrcCommand(clipId, url, lostSrc);
+					if (!applied) return CommandNoop(`No clip with id ${clipId}`);
+				}
+				const result = await applied.execute(context);
+				if (result.status === "success") this.lostSrcs.delete(clipId);
+				return result;
+			},
+			undo: context => {
+				if (lostSrc !== undefined) this.lostSrcs.set(clipId, lostSrc);
+				return applied?.undo?.(context) ?? CommandNoop("Nothing was applied");
+			},
+			dispose: () => applied?.dispose?.()
+		};
+		const result = await this.executeCommand(command);
+		if (result.status !== "success") throw new Error(result.message ?? "Could not apply the generated asset");
+	}
+
+	private generatedSrcCommand(clipId: string, url: string, lostSrc: string | undefined): EditCommand | null {
 		const found = this.document.getClipById(clipId);
-		if (!found) return;
+		if (!found) return null;
 		const initialConfig = structuredClone(found.clip) as ResolvedClip;
 		const migration = migrateLegacyGeneratedAsset(initialConfig.asset, url);
 		const finalConfig = {
@@ -575,11 +606,13 @@ export class Edit {
 			clipIndex: found.clipIndex,
 			bindingPathMoves: migration?.bindingPathMoves
 		});
-		const previous = (initialConfig.asset as { src?: unknown }).src;
-		const chain = typeof previous === "string" && previous !== url ? new RepointChainCommand(previous, url, clipId) : null;
-		const result = await this.executeCommand(chain ? new CompositeCommand([command, chain], "regenerateChain") : command);
-		if (result.status !== "success") throw new Error(result.message ?? "Could not apply the generated asset");
-		chain?.repointed.forEach(id => this.assetGenerator.abort(id));
+		// A legacy asset's src is an input, not an output anything continues from.
+		if (migration) return command;
+		const { src } = initialConfig.asset as { src?: unknown };
+		const previous = typeof src === "string" ? src : lostSrc;
+		if (previous === undefined || previous === url) return command;
+		const chain = new RepointChainCommand(previous, url, clipId, this.lostSrcs, id => this.assetGenerator.supersede(id, "Its start frame changed."));
+		return new CompositeCommand([command, chain], command.name);
 	}
 
 	/**
