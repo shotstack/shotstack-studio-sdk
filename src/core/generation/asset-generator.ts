@@ -14,9 +14,10 @@ export interface AssetGenerationRequest {
 	/** Snapshot of the clip's asset when generation started. */
 	asset: Record<string, unknown>;
 	/**
-	 * Signalled when the SDK stops waiting for this generation — the clip was removed, or the
-	 * edit was reloaded or disposed. Cancel the underlying request if the provider supports it;
-	 * otherwise ignore it and let the request finish. Either way the SDK discards the result.
+	 * Signalled when the SDK stops waiting for this generation — the clip was removed, its start
+	 * or end frame changed, or the edit was reloaded or disposed. Cancel the underlying request
+	 * if the provider supports it; otherwise ignore it and let the request finish. Either way the
+	 * SDK discards the result.
 	 */
 	signal: AbortSignal;
 }
@@ -37,7 +38,7 @@ export interface ClipGenerationState {
 
 export interface AssetGeneratorDeps {
 	getClipAsset: (clipId: string) => Record<string, unknown> | undefined;
-	applyGeneratedSrc: (clipId: string, url: string) => Promise<void>;
+	applyGeneratedSrc: (clipId: string, url: string, signal: AbortSignal) => Promise<void>;
 	emitStarted: (clipId: string) => void;
 	emitCompleted: (clipId: string) => void;
 	emitFailed: (clipId: string, error: string) => void;
@@ -153,7 +154,7 @@ export class AssetGenerator {
 				signal: controller.signal
 			});
 			if (controller.signal.aborted) return;
-			await this.deps.applyGeneratedSrc(clipId, url);
+			await this.deps.applyGeneratedSrc(clipId, url, controller.signal);
 			if (controller.signal.aborted) return;
 			this.states.delete(clipId);
 			this.deps.emitCompleted(clipId);
@@ -172,6 +173,14 @@ export class AssetGenerator {
 		this.controllers.get(clipId)?.abort();
 		this.controllers.delete(clipId);
 		this.states.delete(clipId);
+	}
+
+	/** Abort an in-flight generation whose result no longer applies, and report it as failed. */
+	public supersede(clipId: string, error: string): void {
+		if (!this.controllers.has(clipId)) return;
+		this.abort(clipId);
+		this.states.set(clipId, { status: "failed", error });
+		this.deps.emitFailed(clipId, error);
 	}
 
 	/** Drop generation for clips that are no longer in the edit. */

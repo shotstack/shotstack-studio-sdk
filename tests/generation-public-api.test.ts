@@ -261,4 +261,279 @@ describe("generation through the public API", () => {
 		});
 		edit.dispose();
 	});
+
+	it("repoints a continuation when its source is regenerated, as one undo step", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "image", prompt: "a lighthouse", src: "https://cdn.example.com/old.png" }, start: 0, length: 4 },
+							{
+								asset: {
+									type: "video",
+									prompt: "waves",
+									src: "https://cdn.example.com/waves.mp4",
+									options: { startSrc: "https://cdn.example.com/old.png" }
+								},
+								start: 4,
+								length: 5
+							}
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/new.png" }));
+		const clips = () => edit.getEdit().timeline.tracks[0]!.clips as Array<{ asset: { src?: string; options?: { startSrc?: string } } }>;
+
+		await edit.generateClip(clipIdOf(edit));
+		expect(clips()[1]!.asset.options?.startSrc).toBe("https://cdn.example.com/new.png");
+		expect(clips()[1]!.asset.src).toBeUndefined();
+
+		await edit.undo();
+		expect(clips()[0]!.asset.src).toBe("https://cdn.example.com/old.png");
+		expect(clips()[1]!.asset.options?.startSrc).toBe("https://cdn.example.com/old.png");
+		expect(clips()[1]!.asset.src).toBe("https://cdn.example.com/waves.mp4");
+		edit.dispose();
+	});
+
+	it("discards a follower's in-flight generation when its source is regenerated", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "image", prompt: "a lighthouse", src: "https://cdn.example.com/old.png" }, start: 0, length: 4 },
+							{ asset: { type: "video", prompt: "waves", options: { startSrc: "https://cdn.example.com/old.png" } }, start: 4, length: 5 }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		let release: () => void = () => {};
+		const gate = new Promise<void>(resolve => {
+			release = resolve;
+		});
+		edit.registerAssetGenerator(async ({ asset }) => {
+			if ((asset as { type: string }).type === "video") {
+				await gate;
+				return { url: "https://cdn.example.com/stale.mp4" };
+			}
+			return { url: "https://cdn.example.com/new.png" };
+		});
+		const completed: string[] = [];
+		edit.events.on(EditEvent.ClipGenerationCompleted, e => completed.push(e.clipId));
+		const failures: Array<{ clipId: string; error: string }> = [];
+		edit.events.on(EditEvent.ClipGenerationFailed, e => failures.push(e));
+		const ids = [0, 1].map(c => edit.getDocument()!.getClipId(0, c) as string);
+
+		const stale = edit.generateClip(ids[1]!);
+		await edit.generateClip(ids[0]!);
+		expect(edit.getClipGenerationState(ids[1]!)).toEqual({ status: "failed", error: "Its start frame changed." });
+		release();
+		await stale;
+
+		const clips = edit.getEdit().timeline.tracks[0]!.clips as Array<{ asset: { src?: string } }>;
+		expect(clips[1]!.asset.src).toBeUndefined();
+		expect(completed).toEqual([ids[0]]);
+		expect(failures).toEqual([{ clipId: ids[1], error: "Its start frame changed." }]);
+		edit.dispose();
+	});
+
+	it("never repoints the regenerated clip itself", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{
+								asset: {
+									type: "video",
+									prompt: "loop",
+									src: "https://cdn.example.com/old.mp4",
+									options: { startSrc: "https://cdn.example.com/old.mp4" }
+								},
+								start: 0,
+								length: 4
+							}
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/new.mp4" }));
+		await edit.generateClip(clipIdOf(edit));
+		const { asset } = edit.getEdit().timeline.tracks[0]!.clips[0] as { asset: { src?: string; options?: { startSrc?: string } } };
+		expect(asset.src).toBe("https://cdn.example.com/new.mp4");
+		expect(asset.options?.startSrc).toBe("https://cdn.example.com/old.mp4");
+		edit.dispose();
+	});
+
+	describe("a chain of continuations", () => {
+		type ChainClip = { asset: { src?: string; options?: { startSrc?: string } } };
+		const url = (name: string) => `https://cdn.example.com/${name}.mp4`;
+		const video = (prompt: string, src: string, startSrc: string, start: number) => ({
+			asset: { type: "video" as const, prompt, src, options: { startSrc } },
+			start,
+			length: 5
+		});
+
+		// A, then B continuing from A, then C continuing from B; each generation writes `<prompt>-new`.
+		const chainEdit = async () => {
+			const edit = new Edit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{ asset: { type: "image", prompt: "a", src: url("a") }, start: 0, length: 4 },
+								video("b", url("b"), url("a"), 4),
+								video("c", url("c"), url("b"), 9)
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await edit.load();
+			edit.registerAssetGenerator(async ({ asset }) => ({ url: url(`${(asset as { prompt: string }).prompt}-new`) }));
+			const ids = [0, 1, 2].map(c => edit.getDocument()!.getClipId(0, c) as string);
+			const clip = (index: number) => edit.getEdit().timeline.tracks[0]!.clips[index] as ChainClip;
+			return { edit, ids, clip };
+		};
+
+		it("repoints the next clip when a cleared continuation is regenerated", async () => {
+			const { edit, ids, clip } = await chainEdit();
+
+			await edit.generateClip(ids[0]!);
+			expect(clip(1).asset.src).toBeUndefined();
+			await edit.generateClip(ids[1]!);
+			expect(clip(2).asset.options?.startSrc).toBe(url("b-new"));
+			expect(clip(2).asset.src).toBeUndefined();
+			expect(edit.getClipGenerationState(ids[2]!)).toBeUndefined();
+
+			await edit.undo();
+			expect(clip(2).asset.options?.startSrc).toBe(url("b"));
+			await edit.generateClip(ids[1]!);
+			expect(clip(2).asset.options?.startSrc).toBe(url("b-new"));
+			edit.dispose();
+		});
+
+		it("forgets the file a repoint cleared once the repoint is undone", async () => {
+			const { edit, ids, clip } = await chainEdit();
+
+			await edit.generateClip(ids[0]!);
+			await edit.undo();
+			expect(clip(1).asset.src).toBe(url("b"));
+			await edit.updateClipById(ids[1]!, { asset: { ...edit.getClipById(ids[1]!)!.asset, src: undefined } } as Partial<Clip>);
+			await edit.generateClip(ids[1]!);
+
+			expect(clip(2).asset).toMatchObject({ src: url("c"), options: { startSrc: url("b") } });
+			edit.dispose();
+		});
+	});
+
+	it("leaves continuations alone when a legacy image-to-video clip moves its input image to its options", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "image-to-video", prompt: "drift", src: "https://cdn.example.com/img.png" }, start: 0, length: 4 },
+							{
+								asset: {
+									type: "video",
+									prompt: "next",
+									src: "https://cdn.example.com/next.mp4",
+									options: { startSrc: "https://cdn.example.com/img.png" }
+								},
+								start: 4,
+								length: 5
+							}
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/drift.mp4" }));
+
+		await edit.generateClip(clipIdOf(edit));
+
+		expect(edit.getEdit().timeline.tracks[0]!.clips[1]!.asset).toMatchObject({
+			src: "https://cdn.example.com/next.mp4",
+			options: { startSrc: "https://cdn.example.com/img.png" }
+		});
+		edit.dispose();
+	});
+
+	it("drops a follower's result that queued behind the regeneration repointing it", async () => {
+		const edit = new Edit({
+			timeline: {
+				tracks: [
+					{
+						clips: [
+							{ asset: { type: "image", prompt: "a lighthouse", src: "https://cdn.example.com/old.png" }, start: 0, length: "auto" },
+							{ asset: { type: "video", prompt: "waves", options: { startSrc: "https://cdn.example.com/old.png" } }, start: 4, length: 5 }
+						]
+					}
+				]
+			},
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		let releaseFollower: () => void = () => {};
+		const followerGate = new Promise<void>(resolve => {
+			releaseFollower = resolve;
+		});
+		edit.registerAssetGenerator(async ({ asset }) => {
+			if ((asset as { type: string }).type === "image") return { url: "https://cdn.example.com/new.png" };
+			await followerGate;
+			return { url: "https://cdn.example.com/stale.mp4" };
+		});
+		// The source's auto length holds the queue on its probe while the follower's result arrives.
+		let releaseProbe: () => void = () => {};
+		const probe = new Promise<void>(resolve => {
+			releaseProbe = resolve;
+		});
+		let probing: () => void = () => {};
+		const probed = new Promise<void>(resolve => {
+			probing = resolve;
+		});
+		jest.spyOn(edit, "resolveClipAutoLength").mockImplementation(() => {
+			probing();
+			return probe;
+		});
+		const completed: string[] = [];
+		edit.events.on(EditEvent.ClipGenerationCompleted, e => completed.push(e.clipId));
+		const failures: string[] = [];
+		edit.events.on(EditEvent.ClipGenerationFailed, e => failures.push(e.clipId));
+		const ids = [0, 1].map(c => edit.getDocument()!.getClipId(0, c) as string);
+
+		const follower = edit.generateClip(ids[1]!);
+		const source = edit.generateClip(ids[0]!);
+		await probed;
+		releaseFollower();
+		await new Promise(resolve => {
+			setTimeout(resolve, 0);
+		});
+		releaseProbe();
+		await Promise.all([source, follower]);
+
+		const { asset } = edit.getEdit().timeline.tracks[0]!.clips[1] as { asset: { src?: string; options?: { startSrc?: string } } };
+		expect(asset.options?.startSrc).toBe("https://cdn.example.com/new.png");
+		expect(asset.src).toBeUndefined();
+		expect(completed).toEqual([ids[0]]);
+		expect(failures).toEqual([ids[1]]);
+		await edit.undo();
+		expect(edit.canUndo).toBe(false);
+		edit.dispose();
+	});
 });

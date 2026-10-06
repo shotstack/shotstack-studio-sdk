@@ -26,3 +26,21 @@ export const continuationClip = (source: ResolvedClip, model: GenerationModelDef
 		start,
 		length: CONTINUE_LENGTH
 	}) as Clip;
+
+export type ChainRepoint = { trackIndex: number; clipIndex: number; clip: ResolvedClip };
+
+// A clip with a prompt loses the output it made from the old file, so it shows as needing generation.
+export const repointChain = (tracks: readonly (readonly ResolvedClip[])[], previous: string, next: string): ChainRepoint[] =>
+	tracks.flatMap((clips, trackIndex) =>
+		clips.flatMap((clip, clipIndex) => {
+			const { options } = clip.asset as { options?: Record<string, unknown> };
+			const fields = ["startSrc", "endSrc"].filter(field => options?.[field] === previous);
+			if (!options || fields.length === 0) return [];
+			const asset: Record<string, unknown> = {
+				...clip.asset,
+				options: { ...options, ...Object.fromEntries(fields.map(field => [field, next])) }
+			};
+			if (typeof asset["prompt"] === "string") delete asset["src"];
+			return [{ trackIndex, clipIndex, clip: { ...clip, asset } as ResolvedClip }];
+		})
+	);
