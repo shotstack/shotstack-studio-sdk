@@ -253,6 +253,10 @@ Generation is content-addressed, so the same prompt, model and options resolve t
 asset on every render. A generator that does not go through Shotstack's own generation
 hands back a preview that the render replaces.
 
+#### Continuing a clip
+
+`edit.continueFromClip(clipId)` adds a generated video straight after a video or image clip and selects it, ready for a prompt. The new clip's `options.startSrc` is the source clip's `src`, so a video continues from its last frame and an image is animated. It needs a registered generator whose catalogue has a video model that accepts `startSrc`; when there is one, the clip and asset toolbars show a Continue button.
+
 ### Canvas
 
 `Canvas` renders the current edit.

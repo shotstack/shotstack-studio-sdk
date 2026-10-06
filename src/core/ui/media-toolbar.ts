@@ -453,6 +453,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.setupOutsideClickHandler();
 		this.enableDrag();
 		this.appendDeleteButton();
+		this.appendContinueButton();
 	}
 
 	/**

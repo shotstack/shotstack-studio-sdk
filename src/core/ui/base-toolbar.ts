@@ -1,5 +1,6 @@
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { canContinueFrom, continuationModel } from "@core/generation/continue-clip";
 import type { ResolvedClip } from "@schemas";
 
 import { makeToolbarDraggable, type ToolbarDragHandle } from "./toolbar-drag";
@@ -28,6 +29,7 @@ export const BUILT_IN_FONTS = [
 
 /** Shared SVG icon paths for toolbars */
 export const TOOLBAR_ICONS = {
+	continue: `<path d="M5 12h12"/><polyline points="13 6 19 12 13 18"/>`,
 	alignLeft: `<path d="M3 5h12v2H3V5zm0 4h18v2H3V9zm0 4h12v2H3v-2zm0 4h18v2H3v-2z"/>`,
 	alignCenter: `<path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/>`,
 	alignRight: `<path d="M9 5h12v2H9V5zm-6 4h18v2H3V9zm6 4h12v2H9v-2zm-6 4h18v2H3v-2z"/>`,
@@ -59,6 +61,7 @@ export abstract class BaseToolbar {
 	protected clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
 	protected dragResult: ToolbarDragHandle | null = null;
 	private deleteBtn: HTMLButtonElement | null = null;
+	private continueBtn: HTMLButtonElement | null = null;
 	private clipCountListener: (() => void) | null = null;
 
 	constructor(edit: Edit) {
@@ -73,6 +76,36 @@ export abstract class BaseToolbar {
 		this.buildDeleteButton();
 		this.ensureClipCountSubscription();
 		this.refreshDeleteState();
+	}
+
+	// Sits in the right-aligned delete group, before the divider.
+	protected appendContinueButton(): void {
+		if (!this.container) return;
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "ss-toolbar-continue-btn";
+		btn.dataset["action"] = "continue-clip";
+		btn.title = "Continue with a generated video";
+		btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TOOLBAR_ICONS.continue}</svg>`;
+		btn.addEventListener("click", e => {
+			e.stopPropagation();
+			const clipId = this.getSelectedClipId();
+			if (!clipId) return;
+			this.edit.continueFromClip(clipId).catch(err => {
+				console.warn("[shotstack-studio:base-toolbar] continueFromClip failed", err);
+			});
+		});
+		const group = this.container.querySelector(".ss-toolbar-delete-wrap");
+		if (group) group.insertBefore(btn, group.firstChild);
+		else this.container.appendChild(btn);
+		this.continueBtn = btn;
+		this.refreshContinueState();
+	}
+
+	protected refreshContinueState(): void {
+		if (!this.continueBtn) return;
+		const clip = this.selectedTrackIdx >= 0 ? this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx) : null;
+		this.continueBtn.hidden = !(canContinueFrom(clip) && continuationModel(this.edit.getGenerationModels("video")));
 	}
 
 	private buildDeleteButton(): void {
@@ -170,6 +203,7 @@ export abstract class BaseToolbar {
 		this.selectedClipIdx = clipIndex;
 		this.syncState();
 		this.refreshDeleteState();
+		this.refreshContinueState();
 		if (this.container) {
 			this.container.classList.add("visible");
 			this.container.style.display = ""; // Clear inline style, let CSS control
