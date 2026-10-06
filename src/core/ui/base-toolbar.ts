@@ -63,6 +63,7 @@ export abstract class BaseToolbar {
 	private deleteBtn: HTMLButtonElement | null = null;
 	private continueBtn: HTMLButtonElement | null = null;
 	private clipCountListener: (() => void) | null = null;
+	private continueListener: (() => void) | null = null;
 
 	constructor(edit: Edit) {
 		this.edit = edit;
@@ -86,6 +87,7 @@ export abstract class BaseToolbar {
 		btn.className = "ss-toolbar-continue-btn";
 		btn.dataset["action"] = "continue-clip";
 		btn.title = "Continue with a generated video";
+		btn.setAttribute("aria-label", btn.title);
 		btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TOOLBAR_ICONS.continue}</svg>`;
 		btn.addEventListener("click", e => {
 			e.stopPropagation();
@@ -99,6 +101,11 @@ export abstract class BaseToolbar {
 		if (group) group.insertBefore(btn, group.firstChild);
 		else this.container.appendChild(btn);
 		this.continueBtn = btn;
+		// A generation can land on the selected clip while the toolbar is open.
+		if (!this.continueListener) {
+			this.continueListener = () => this.refreshContinueState();
+			this.edit.events.on(EditEvent.EditChanged, this.continueListener);
+		}
 		this.refreshContinueState();
 	}
 
@@ -242,7 +249,12 @@ export abstract class BaseToolbar {
 			this.edit.events.off(EditEvent.ClipRestored, this.clipCountListener);
 			this.clipCountListener = null;
 		}
+		if (this.continueListener) {
+			this.edit.events.off(EditEvent.EditChanged, this.continueListener);
+			this.continueListener = null;
+		}
 		this.deleteBtn = null;
+		this.continueBtn = null;
 
 		this.container?.remove();
 		this.container = null;

@@ -7,6 +7,7 @@ jest.mock("../src/components/canvas/players/player", () => ({ Player: class Mock
 jest.mock("../src/core/shotstack-edit", () => ({ ShotstackEdit: class MockShotstackEdit {} }));
 jest.mock("../src/core/edit-session", () => ({}));
 
+import { EditEvent } from "../src/core/events/edit-events";
 import { BaseToolbar } from "../src/core/ui/base-toolbar";
 
 class TestToolbar extends BaseToolbar {
@@ -46,6 +47,7 @@ describe("Continue button", () => {
 		toolbar.mount(document.body);
 		toolbar.show(0, 0);
 		expect(continueButton().hidden).toBe(false);
+		expect(continueButton().getAttribute("aria-label")).toBe(continueButton().title);
 		continueButton().click();
 		expect(edit.continueFromClip).toHaveBeenCalledWith("clip-1");
 	});
@@ -55,5 +57,26 @@ describe("Continue button", () => {
 		toolbar.mount(document.body);
 		toolbar.show(0, 0);
 		expect(continueButton().hidden).toBe(true);
+	});
+
+	it("appears when a generation lands on the selected clip, and stops listening on dispose", () => {
+		let src: string | undefined;
+		const edit = {
+			...fakeEdit(undefined),
+			events: { on: jest.fn(), off: jest.fn() },
+			getResolvedClip: () => ({ asset: { type: "video", ...(src && { src }) }, start: 0, length: 5 })
+		};
+		const toolbar = new TestToolbar(edit as never);
+		toolbar.mount(document.body);
+		toolbar.show(0, 0);
+		expect(continueButton().hidden).toBe(true);
+
+		src = "https://cdn.example/a.mp4";
+		const [, onEditChanged] = edit.events.on.mock.calls.find(([name]) => name === EditEvent.EditChanged)!;
+		onEditChanged();
+		expect(continueButton().hidden).toBe(false);
+
+		toolbar.dispose();
+		expect(edit.events.off).toHaveBeenCalledWith(EditEvent.EditChanged, onEditChanged);
 	});
 });
