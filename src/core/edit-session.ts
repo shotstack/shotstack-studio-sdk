@@ -13,6 +13,7 @@ import { CompositeCommand } from "@core/commands/composite-command";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
+import { RepointChainCommand } from "@core/commands/repoint-chain-command";
 import { SetOutputAspectRatioCommand } from "@core/commands/set-output-aspect-ratio-command";
 import { SetOutputDestinationsCommand } from "@core/commands/set-output-destinations-command";
 import { SetOutputFormatCommand } from "@core/commands/set-output-format-command";
@@ -27,7 +28,7 @@ import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter, type ReadonlyEventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
-import { canContinueFrom, continuationClip, continuationModel, repointChain } from "@core/generation/continue-clip";
+import { canContinueFrom, continuationClip, continuationModel } from "@core/generation/continue-clip";
 import type { GenerationConfig, GenerationStatus, GenerationStatusProvider } from "@core/generation/generation-status";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
@@ -533,7 +534,8 @@ export class Edit {
 	 *
 	 * Rejects only when no generator is registered or the clip has nothing to generate from.
 	 * A generation failure resolves and surfaces as a `clip:generationFailed` event. Removing
-	 * the clip, reloading the edit or disposing it resolves writing nothing, and no completed
+	 * the clip, reloading the edit, disposing it or another clip's regeneration repointing it
+	 * resolves writing nothing, and no completed
 	 * or failed event follows the `clip:generationStarted` already emitted. A second call while
 	 * one is in flight for the same clip is ignored.
 	 */
@@ -574,16 +576,10 @@ export class Edit {
 			bindingPathMoves: migration?.bindingPathMoves
 		});
 		const previous = (initialConfig.asset as { src?: unknown }).src;
-		const tracks = Array.from({ length: this.document.getTrackCount() }, (_, t) => this.document.getClipsInTrack(t) as ResolvedClip[]);
-		const followers =
-			typeof previous === "string" && previous !== url
-				? repointChain(tracks, previous, url).map(
-						({ trackIndex, clipIndex, clip }) =>
-							new SetUpdatedClipCommand(structuredClone(tracks[trackIndex]![clipIndex]!), clip, { trackIndex, clipIndex })
-					)
-				: [];
-		const result = await this.executeCommand(followers.length ? new CompositeCommand([command, ...followers], "regenerateChain") : command);
+		const chain = typeof previous === "string" && previous !== url ? new RepointChainCommand(previous, url, clipId) : null;
+		const result = await this.executeCommand(chain ? new CompositeCommand([command, chain], "regenerateChain") : command);
 		if (result.status !== "success") throw new Error(result.message ?? "Could not apply the generated asset");
+		chain?.repointed.forEach(id => this.assetGenerator.abort(id));
 	}
 
 	/**

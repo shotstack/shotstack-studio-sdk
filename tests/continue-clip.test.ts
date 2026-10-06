@@ -58,4 +58,12 @@ describe("continue-clip", () => {
 			options: { endSrc: "https://cdn.example/new.png" }
 		});
 	});
+
+	it("repoints both start and end when a clip uses the file for each", () => {
+		const tracks = [
+			[clip({ type: "video", prompt: "x", options: { startSrc: "https://cdn.example/old.png", endSrc: "https://cdn.example/old.png" } })]
+		] as never;
+		const [moved] = repointChain(tracks, "https://cdn.example/old.png", "https://cdn.example/new.png");
+		expect(moved!.clip.asset).toMatchObject({ options: { startSrc: "https://cdn.example/new.png", endSrc: "https://cdn.example/new.png" } });
+	});
 });

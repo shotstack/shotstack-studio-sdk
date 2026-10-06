@@ -1,7 +1,7 @@
 import { CompositeCommand } from "../src/core/commands/composite-command";
 
 describe("CompositeCommand", () => {
-	it("runs commands in order, undoes every command in reverse, and reports the first result", async () => {
+	it("stops at the first step that does not succeed and undoes only what ran", async () => {
 		const calls: string[] = [];
 		const step = (id: string, status: "success" | "noop" = "success") => ({
 			name: id,
@@ -14,9 +14,14 @@ describe("CompositeCommand", () => {
 				return { status: "success" as const };
 			}
 		});
-		const command = new CompositeCommand([step("a", "noop"), step("b")], "both");
-		expect(await command.execute()).toEqual({ status: "noop" });
-		await command.undo();
-		expect(calls).toEqual(["do a", "do b", "undo b", "undo a"]);
+		const stopped = new CompositeCommand([step("a", "noop"), step("b")], "stop");
+		expect(await stopped.execute()).toEqual({ status: "noop" });
+		expect(calls).toEqual(["do a"]);
+
+		calls.length = 0;
+		const ran = new CompositeCommand([step("a"), step("b"), step("c", "noop"), step("d")], "ran");
+		await ran.execute();
+		await ran.undo();
+		expect(calls).toEqual(["do a", "do b", "do c", "undo b", "undo a"]);
 	});
 });
