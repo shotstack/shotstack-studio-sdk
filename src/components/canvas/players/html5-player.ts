@@ -385,6 +385,28 @@ export class Html5Player extends Player {
 		const bodyClone = doc.body.cloneNode(true) as HTMLElement;
 		// Scripts never run in an SVG image, and their source can hold characters XML forbids, which fail the frame.
 		bodyClone.querySelectorAll("script").forEach(script => script.remove());
+		// A cloned canvas has no pixels. Painting them as its own background keeps every style that targets the canvas.
+		// An SVG image runs without scripting, so it lays a canvas out as fallback content: an inline box with no
+		// size of its own. Pinning display and the used size inline restores the layout of the live canvas.
+		const sourceCanvases = doc.body.querySelectorAll("canvas");
+		const clonedCanvases = bodyClone.querySelectorAll("canvas");
+		for (let i = 0; i < clonedCanvases.length; i += 1) {
+			const { style } = clonedCanvases[i];
+			const used = doc.defaultView?.getComputedStyle(sourceCanvases[i]);
+			if (used) {
+				style.display = used.display === "inline" ? "inline-block" : used.display;
+				style.width = used.width;
+				style.height = used.height;
+			}
+			try {
+				style.backgroundImage = `url("${sourceCanvases[i].toDataURL()}")`;
+				style.backgroundSize = "100% 100%";
+				style.backgroundOrigin = "content-box";
+				style.backgroundRepeat = "no-repeat";
+			} catch {
+				// a tainted canvas can't be read, so it stays blank
+			}
+		}
 		const existingStyle = bodyClone.getAttribute("style") ?? "";
 		bodyClone.setAttribute("style", `width:${width}px;height:${height}px;margin:0;overflow:hidden;${existingStyle}`);
 		const bodyXml = serializer.serializeToString(bodyClone);

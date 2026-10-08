@@ -167,6 +167,23 @@ it("leaves scripts out of the capture so their source can't break the frame", ()
 	expect(doc.body.querySelector("script")).not.toBeNull();
 });
 
+it("paints canvas pixels into the capture as the canvas's own background", () => {
+	const { harness, iframe } = createPlayer();
+	const doc = iframe.contentDocument!;
+	const canvas = doc.createElement("canvas");
+	canvas.setAttribute("style", "border: 4px solid gold;");
+	doc.body.replaceChildren(canvas);
+	jest.spyOn(Object.getPrototypeOf(canvas) as HTMLCanvasElement, "toDataURL").mockReturnValue("data:image/png;base64,AAAA");
+
+	const parsed = new DOMParser().parseFromString(harness.captureIframeAsForeignObjectSvg(1080, 1920), "image/svg+xml");
+	const style = parsed.querySelector("canvas")?.getAttribute("style") ?? "";
+
+	expect(style).toMatch(/background-image: url\("?data:image\/png;base64,AAAA"?\)/);
+	expect(style).toContain("background-size: 100% 100%");
+	expect(style).toContain("border: 4px solid gold");
+	expect(canvas.getAttribute("style")).toBe("border: 4px solid gold;");
+});
+
 it("keeps a failed capture inside its canvas layer and retries only after the asset changes", async () => {
 	const { player, harness, iframe, events, edit } = createPlayer();
 	jest.spyOn(console, "warn").mockImplementation(() => {});
