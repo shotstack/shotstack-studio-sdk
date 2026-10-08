@@ -313,6 +313,13 @@ export class Html5Player extends Player {
 			return cached.pngs;
 		}
 
+		// Live editing seeks this iframe, and a seeked animation can leave state
+		// a fresh page lacks (GSAP writes start values inline once a tween has
+		// rendered). The backend captures from a fresh page, so capture does too.
+		this.iframe.srcdoc = composeHtml5IframeSrcdoc(this.asset);
+		await waitForIframeLoad(this.iframe, undefined, true);
+		if (stale() || !this.iframe?.contentDocument) return null;
+
 		try {
 			await this.iframe.contentDocument.fonts.ready;
 		} catch {

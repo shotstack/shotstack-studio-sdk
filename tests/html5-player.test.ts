@@ -16,7 +16,12 @@ jest.mock("@canvas/players/player", () => ({
 	PlayerType: { Html5: "html5" }
 }));
 jest.mock("@shotstack/shotstack-canvas", () => ({
-	composeHtml5IframeSrcdoc: () => "<html><body>Updated</body></html>"
+	composeHtml5IframeSrcdoc: () => "<html><body>Updated</body></html>",
+	computeHtml5FrameCount: () => ({ frameCount: 1 })
+}));
+jest.mock("@canvas/players/html5-cache", () => ({
+	html5CacheGet: async () => null,
+	html5CachePut: async () => undefined
 }));
 jest.mock("@canvas/players/placeholder-graphic", () => ({
 	createPlaceholderGraphic: () => ({ kind: "failed", destroy: jest.fn() }),
@@ -31,6 +36,7 @@ type PlayerHarness = {
 	contentContainer: { children: unknown[] };
 	captureIframeAsForeignObjectSvg(width: number, height: number): string;
 	captureFrames(): Promise<Blob[] | null>;
+	seekHarness(seconds: number): void;
 	hashAsset(): Promise<string>;
 	beginCapture(): void;
 	syncIframePosition(): void;
@@ -103,6 +109,28 @@ it("ignores an older iframe timeout while newer content is loading", async () =>
 
 	expect(events.emit).not.toHaveBeenCalledWith(EditEvent.ClipCaptureFailed, expect.anything());
 	expect(harness.contentContainer.children).toEqual([expect.objectContaining({ kind: "loading" })]);
+});
+
+it("captures from a freshly loaded document rather than the live-edited one", async () => {
+	const { player, harness, iframe } = createPlayer();
+	Object.assign(player, { getLength: () => 1 });
+	iframe.srcdoc = "<html><body>Scrubbed</body></html>";
+	const steps: string[] = [];
+	iframe.addEventListener("load", () => steps.push("load"));
+	jest.spyOn(harness, "seekHarness").mockImplementation(() => {
+		steps.push(`seek ${iframe.srcdoc}`);
+		throw new Error("stop after first seek");
+	});
+
+	const capture = harness.captureFrames();
+	await new Promise(resolve => {
+		setTimeout(resolve, 0);
+	});
+	iframe.dispatchEvent(new Event("load"));
+
+	await expect(capture).rejects.toThrow("stop after first seek");
+	expect(steps.at(-1)).toBe("seek <html><body>Updated</body></html>");
+	expect(steps.indexOf("load")).toBeLessThan(steps.length - 1);
 });
 
 it("captures inline SVG backgrounds and CSS metacharacters as valid XML without changing their contents", () => {
