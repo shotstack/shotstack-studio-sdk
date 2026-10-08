@@ -383,6 +383,8 @@ export class Html5Player extends Player {
 			.join("");
 		const animationOverride = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
 		const bodyClone = doc.body.cloneNode(true) as HTMLElement;
+		// Scripts never run in an SVG image, and their source can hold characters XML forbids, which fail the frame.
+		bodyClone.querySelectorAll("script").forEach(script => script.remove());
 		const existingStyle = bodyClone.getAttribute("style") ?? "";
 		bodyClone.setAttribute("style", `width:${width}px;height:${height}px;margin:0;overflow:hidden;${existingStyle}`);
 		const bodyXml = serializer.serializeToString(bodyClone);
