@@ -124,6 +124,21 @@ it("captures inline SVG backgrounds and CSS metacharacters as valid XML without 
 	expect(doc.head.querySelector("style")?.textContent).toBe(css);
 });
 
+it("leaves scripts out of the capture so their source can't break the frame", () => {
+	const { harness, iframe } = createPlayer();
+	const doc = iframe.contentDocument!;
+	const script = doc.createElement("script");
+	script.textContent = 'const unit = "\u0001";';
+	doc.body.replaceChildren(script, Object.assign(doc.createElement("div"), { className: "title", textContent: "Shown" }));
+
+	const parsed = new DOMParser().parseFromString(harness.captureIframeAsForeignObjectSvg(1080, 1920), "image/svg+xml");
+
+	expect(parsed.querySelector("parsererror")).toBeNull();
+	expect(parsed.querySelector("script")).toBeNull();
+	expect(parsed.querySelector(".title")?.textContent).toBe("Shown");
+	expect(doc.body.querySelector("script")).not.toBeNull();
+});
+
 it("keeps a failed capture inside its canvas layer and retries only after the asset changes", async () => {
 	const { player, harness, iframe, events, edit } = createPlayer();
 	jest.spyOn(console, "warn").mockImplementation(() => {});
