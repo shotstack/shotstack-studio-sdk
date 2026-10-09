@@ -26,6 +26,7 @@ import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent, InternalEvent, type EditEventMap, type InternalEventMap } from "@core/events/edit-events";
 import { EventEmitter, type ReadonlyEventEmitter } from "@core/events/event-emitter";
 import { parseFontFamily } from "@core/fonts/font-config";
+import { canContinueFrom, continuationClip, continuationModel } from "@core/generation/continue-clip";
 import type { GenerationConfig, GenerationStatus, GenerationStatusProvider } from "@core/generation/generation-status";
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
@@ -537,6 +538,23 @@ export class Edit {
 	 */
 	public generateClip(clipId: string): Promise<void> {
 		return this.assetGenerator.generate(clipId);
+	}
+
+	/**
+	 * Add a generated video that starts from a video or image clip, right after it, and select it
+	 * so its prompt can be written. Needs a registered generator whose catalogue has a video model
+	 * that takes `startSrc`.
+	 */
+	public async continueFromClip(clipId: string): Promise<void> {
+		const found = this.document.getClipById(clipId);
+		const source = found ? this.getResolvedClip(found.trackIndex, found.clipIndex) : null;
+		const model = continuationModel(this.getGenerationModels("video"));
+		if (!found || !source || !model || !canContinueFrom(source)) throw new Error("This clip can't be continued");
+		const end = this.getTracks()[found.trackIndex]?.[found.clipIndex]?.getEnd() ?? 0;
+		const clip = continuationClip(source, model, end);
+		await insertClipWithOverlapPolicy(this, found.trackIndex, clip);
+		const placed = this.getClipPositionById(clip.id as string);
+		if (placed) this.selectClip(placed.trackIndex, placed.clipIndex);
 	}
 
 	private async applyGeneratedSrc(clipId: string, url: string): Promise<void> {

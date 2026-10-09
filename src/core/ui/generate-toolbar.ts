@@ -105,6 +105,7 @@ export class GenerateToolbar extends BaseToolbar {
 		this.setupOutsideClickHandler();
 		this.enableDrag();
 		this.appendDeleteButton();
+		this.appendContinueButton();
 	}
 
 	private setupEventListeners(): void {
