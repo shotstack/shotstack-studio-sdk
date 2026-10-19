@@ -4,7 +4,8 @@ import type { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
 import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
-import { ExportError } from "@core/export/export-utils";
+import { ExportError, exportBitrate } from "@core/export/export-utils";
+import { calculateSizeFromPreset } from "@core/output-settings-manager";
 import { canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
 
 const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
@@ -63,8 +64,9 @@ function createHarness() {
 		isPlaying: false,
 		playbackTime: 1.5,
 		totalDuration: 1,
+		size: { ...SIZE },
 		tracks: [] as Array<Array<{ clipId: string; needsResolution: boolean }>>,
-		getEdit: () => ({ output: { fps: 2, size: SIZE } }),
+		getEdit: () => ({ output: { fps: 2 } }),
 		getOutputFormat: jest.fn(() => "mp4"),
 		getResolvedEdit: () => ({ timeline: { tracks: [] }, output: { format: "mp4" } }),
 		getFontUrlByFamilyAndWeight: () => null,
@@ -410,6 +412,35 @@ describe("editor restart", () => {
 
 		expect(app.start).not.toHaveBeenCalled();
 		exporter.dispose();
+	});
+});
+
+describe("output size", () => {
+	it("draws and encodes at the size the editor lays clips out in, with a bitrate for that size", async () => {
+		const { exporter, edit, renderer } = createHarness();
+		// An edit sized by resolution "hd" and aspectRatio "9:16", with no output.size.
+		edit.size = calculateSizeFromPreset("hd", "9:16");
+
+		await exporter.exportBlob();
+
+		expect(renderer.extract.pixels).toHaveBeenCalledWith(expect.objectContaining({ frame: { x: 0, y: 0, width: 720, height: 1280 } }));
+		expect(canEncodeVideo).toHaveBeenCalledWith("avc", { width: 720, height: 1280, bitrate: 2_222_222 });
+		expect(CanvasSource).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 1280 }), { codec: "avc", bitrate: 2_222_222 });
+		exporter.dispose();
+	});
+});
+
+describe("exportBitrate", () => {
+	it("keeps 5 Mbps at 1080p in either orientation and scales with pixel count", () => {
+		expect(exportBitrate({ width: 1920, height: 1080 })).toBe(5_000_000);
+		expect(exportBitrate({ width: 1080, height: 1920 })).toBe(5_000_000);
+		expect(exportBitrate({ width: 3840, height: 2160 })).toBe(20_000_000);
+		expect(exportBitrate({ width: 1280, height: 720 })).toBe(2_222_222);
+	});
+
+	it("never drops below 1 Mbps", () => {
+		expect(exportBitrate({ width: 640, height: 360 })).toBe(1_000_000);
+		expect(exportBitrate({ width: 512, height: 288 })).toBe(1_000_000);
 	});
 });
 
