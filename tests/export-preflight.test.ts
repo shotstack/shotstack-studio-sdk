@@ -16,7 +16,12 @@ jest.mock("mediabunny", () => ({
 	WEBM: {}
 }));
 
-jest.mock("pixi.js", () => ({ Texture: { from: jest.fn() } }));
+// Player modules extend pixi filters at load.
+jest.mock("pixi.js", () => ({
+	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
+	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
+	Texture: { from: jest.fn() }
+}));
 
 const customFonts: Record<string, string> = {
 	"Brand Sans|400": "https://example.com/brand-sans.ttf",
@@ -140,8 +145,9 @@ describe("findBrowserIssue", () => {
 
 describe("VideoFrameProcessor.initialize", () => {
 	it("reports a video the browser can't decode as video-source", async () => {
-		// isVideoPlayer recognises a player by its class name.
 		class VideoPlayer {
+			playerType = "video";
+
 			clipId = "mov-clip";
 
 			clipConfiguration = { asset: { type: "video", src: "https://example.com/clip.mov" } };

@@ -1,3 +1,4 @@
+import { PlayerType } from "@canvas/players/player";
 import { Input, UrlSource, MP4, WEBM, CanvasSink, type InputVideoTrack } from "mediabunny";
 import * as pixi from "pixi.js";
 
@@ -15,13 +16,9 @@ export interface VideoPlayerExtended {
 	getLength?(): number;
 }
 
+// By type, not class name: minification renames classes, and a luma matte can hold a video texture too.
 export function isVideoPlayer(player: unknown): player is VideoPlayerExtended {
-	if (!player || typeof player !== "object") return false;
-	const p = player as Record<string, unknown>;
-	const name = p.constructor?.name;
-	if (name === "RichTextPlayer" || name === "RichCaptionPlayer") return false;
-	const texture = p["texture"] as { source?: { resource?: unknown } } | undefined;
-	return name === "VideoPlayer" || texture?.source?.resource instanceof HTMLVideoElement;
+	return typeof player === "object" && player !== null && "playerType" in player && player.playerType === PlayerType.Video;
 }
 
 interface ClipDecoder {

@@ -44,7 +44,10 @@ jest.mock("mediabunny", () => ({
 	WEBM: {}
 }));
 
+// Player modules extend pixi filters at load.
 jest.mock("pixi.js", () => ({
+	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
+	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 	Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
 	Texture: { from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
 }));
@@ -337,8 +340,10 @@ describe("off-screen export", () => {
 describe("speed", () => {
 	it("decodes each video frame at the player's own source time for that frame", async () => {
 		const { exporter, edit } = createHarness();
-		// isVideoPlayer recognises a player by its class name; getSourceTime stands in for the preview's speed mapping.
+		// getSourceTime stands in for the preview's speed mapping.
 		class VideoPlayer {
+			playerType = "video";
+
 			clipId = "fast-clip";
 
 			needsResolution = false;
