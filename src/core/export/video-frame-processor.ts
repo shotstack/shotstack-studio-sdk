@@ -83,12 +83,14 @@ export class VideoFrameProcessor {
 		if (!wrapped) return;
 
 		if (!decoder.texture) {
+			const live = decoder.originalTexture;
 			const canvas = document.createElement("canvas");
-			canvas.width = wrapped.canvas.width;
-			canvas.height = wrapped.canvas.height;
+			// Sized like the live video texture, so its frame (the asset's crop) picks the same pixels here.
+			canvas.width = live?.source.width || wrapped.canvas.width;
+			canvas.height = live?.source.height || wrapped.canvas.height;
 			decoder.canvas = canvas;
 			decoder.ctx = canvas.getContext("2d", { alpha: true }) ?? undefined;
-			decoder.texture = pixi.Texture.from(canvas);
+			decoder.texture = new pixi.Texture({ source: pixi.Texture.from(canvas).source, frame: live?.frame });
 		}
 
 		decoder.ctx?.drawImage(wrapped.canvas, 0, 0, decoder.canvas!.width, decoder.canvas!.height);

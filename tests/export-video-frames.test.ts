@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 
-import { isVideoPlayer, VideoFrameProcessor } from "@core/export/video-frame-processor";
-import { Input } from "mediabunny";
+import { isVideoPlayer, VideoFrameProcessor, type VideoPlayerExtended } from "@core/export/video-frame-processor";
+import { CanvasSink, Input } from "mediabunny";
 
 jest.mock("mediabunny", () => ({ Input: jest.fn(), UrlSource: jest.fn(), CanvasSink: jest.fn(), MP4: {}, WEBM: {} }));
 
@@ -9,8 +9,16 @@ jest.mock("mediabunny", () => ({ Input: jest.fn(), UrlSource: jest.fn(), CanvasS
 jest.mock("pixi.js", () => ({
 	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
 	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
-	Texture: { from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
+	Texture: Object.assign(
+		jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
+		{ from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
+	)
 }));
+
+beforeAll(() => {
+	// jsdom has no 2D canvas; the processor only draws into one.
+	Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ drawImage: jest.fn() }) });
+});
 
 describe("isVideoPlayer", () => {
 	it("recognises a video player by its type, whatever name the bundler gives its class", () => {
@@ -56,5 +64,35 @@ describe("VideoFrameProcessor", () => {
 		processor.restore();
 
 		expect(player.skipVideoUpdate).toBe(false);
+	});
+});
+
+describe("VideoFrameProcessor.replaceVideoTexture", () => {
+	it("keeps the crop the player's own texture applies", async () => {
+		const live = { source: { width: 1920, height: 1080 }, frame: { x: 192, y: 0, width: 1536, height: 1080 } };
+		const player = {
+			playerType: "video",
+			clipConfiguration: { asset: { type: "video", src: "https://example.com/clip.mp4" } },
+			texture: live,
+			getSourceTime: () => 0
+		};
+		jest
+			.mocked(Input)
+			.mockImplementationOnce(
+				() => ({ getPrimaryVideoTrack: async () => ({ canDecode: async () => true }), dispose: jest.fn() }) as unknown as InstanceType<typeof Input>
+			);
+		jest
+			.mocked(CanvasSink)
+			.mockImplementationOnce(
+				() => ({ getCanvas: async () => ({ canvas: { width: 1920, height: 1080 } }) }) as unknown as InstanceType<typeof CanvasSink>
+			);
+		const processor = new VideoFrameProcessor();
+		await processor.initialize([player]);
+
+		await processor.replaceVideoTexture(player as unknown as VideoPlayerExtended);
+
+		expect(player.texture).not.toBe(live);
+		expect(player.texture).toMatchObject({ frame: live.frame });
+		processor.restore();
 	});
 });
