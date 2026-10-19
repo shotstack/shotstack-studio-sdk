@@ -303,6 +303,18 @@ describe("ExportCoordinator.exportBlob", () => {
 		await first;
 		exporter.dispose();
 	});
+
+	it("refuses a second exporter on the same edit while one is running", async () => {
+		const { exporter, edit, app } = createHarness();
+		const second = new ExportCoordinator(edit as unknown as Edit, { application: app } as unknown as Canvas);
+		const first = exporter.exportBlob();
+
+		await expect(second.exportBlob()).rejects.toMatchObject({ phase: "init", message: "Export in progress" });
+		await first;
+		await expect(second.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+		second.dispose();
+	});
 });
 
 describe("output settings", () => {

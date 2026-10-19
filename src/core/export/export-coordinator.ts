@@ -31,6 +31,9 @@ export const ASSET_SETTLE_TIMEOUT_MS = 30_000;
 
 const cancelled = (): ExportError => new ExportError("Export cancelled", "cancelled");
 
+// Per edit, not per exporter: two exports of one edit would both move its playhead and swap its video textures.
+const exporting = new WeakSet<Edit>();
+
 // A stalled asset request can keep a load pending indefinitely, so the wait is bounded and a cancel ends it early.
 function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, signal?: AbortSignal): Promise<void> {
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -53,7 +56,6 @@ function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, sig
 export class ExportCoordinator {
 	private readonly edit: Edit;
 	private readonly app: pixi.Application;
-	private isExporting = false;
 	private videoProcessor = new VideoFrameProcessor();
 	private audioProcessor = new AudioProcessor();
 	private progressUI = new ExportProgressUI();
@@ -69,7 +71,7 @@ export class ExportCoordinator {
 	}
 
 	async export(filename = "shotstack-export.mp4", fps?: number): Promise<void> {
-		if (this.isExporting) throw new ExportError("Export in progress", "init");
+		if (exporting.has(this.edit)) throw new ExportError("Export in progress", "init");
 
 		this.progressUI.create();
 		try {
@@ -95,14 +97,14 @@ export class ExportCoordinator {
 	}
 
 	private async encode(fps: number, { signal, onProgress }: ExportBlobOptions): Promise<Blob> {
-		if (this.isExporting) throw new ExportError("Export in progress", "init");
+		if (exporting.has(this.edit)) throw new ExportError("Export in progress", "init");
 		const throwIfAborted = (): void => {
 			if (signal?.aborted) throw cancelled();
 		};
 		throwIfAborted();
 		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
 
-		this.isExporting = true;
+		exporting.add(this.edit);
 		let output: Output | undefined;
 
 		try {
@@ -156,7 +158,7 @@ export class ExportCoordinator {
 			}
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
-			this.isExporting = false;
+			exporting.delete(this.edit);
 			// Releases decoders the checks opened when the export stops before drawing a frame.
 			this.videoProcessor.restore();
 		}
@@ -246,7 +248,7 @@ export class ExportCoordinator {
 
 	private handleKeyDown = (e: KeyboardEvent): void => {
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-		if (e.code === "KeyE" && (e.metaKey || e.ctrlKey) && !this.isExporting) {
+		if (e.code === "KeyE" && (e.metaKey || e.ctrlKey) && !exporting.has(this.edit)) {
 			e.preventDefault();
 			this.export("shotstack-export.mp4", this.edit.getEdit().output?.fps || 30).catch(err => console.error("Export failed:", err));
 		}
