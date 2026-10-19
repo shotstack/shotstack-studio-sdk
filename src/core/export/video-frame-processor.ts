@@ -1,7 +1,6 @@
 import { Input, UrlSource, MP4, WEBM, CanvasSink, type InputVideoTrack } from "mediabunny";
 import * as pixi from "pixi.js";
 
-import { videoSourceTime } from "./export-timing";
 import type { ExportIssue } from "./export-utils";
 
 export interface VideoPlayerExtended {
@@ -10,6 +9,7 @@ export interface VideoPlayerExtended {
 	sprite?: { texture?: pixi.Texture };
 	clipConfiguration?: { asset?: { src?: string; trim?: number; type?: string } };
 	skipVideoUpdate?: boolean;
+	getSourceTime(): number;
 	getStart?(): number;
 	getEnd?(): number;
 	getLength?(): number;
@@ -28,8 +28,6 @@ interface ClipDecoder {
 	input: Input;
 	track: InputVideoTrack;
 	sink: CanvasSink;
-	trim: number;
-	start: number;
 	canvas?: HTMLCanvasElement;
 	ctx?: CanvasRenderingContext2D;
 	texture?: pixi.Texture;
@@ -60,8 +58,6 @@ export class VideoFrameProcessor {
 						input,
 						track,
 						sink: new CanvasSink(track, { poolSize: 2 }),
-						trim: player.clipConfiguration?.asset?.trim ?? 0,
-						start: player.getStart?.() ?? 0,
 						originalTexture: player.texture
 					});
 				} catch (error) {
@@ -75,12 +71,13 @@ export class VideoFrameProcessor {
 		return issues;
 	}
 
-	/** Point a clip's texture at the decoded source frame for the given timeline time. */
-	async replaceVideoTexture(player: VideoPlayerExtended, timestamp: number): Promise<void> {
+	/** Point a clip's texture at the decoded source frame for the edit's current playback time. */
+	async replaceVideoTexture(player: VideoPlayerExtended): Promise<void> {
 		const decoder = this.decoders.get(player);
 		if (!decoder) return;
 
-		const sourceTime = Math.max(0, videoSourceTime(timestamp, decoder.start, decoder.trim));
+		// The preview's own mapping, so trim, speed and speed curves land on the same source frame.
+		const sourceTime = Math.max(0, player.getSourceTime());
 		const wrapped = await decoder.sink.getCanvas(sourceTime);
 		if (!wrapped) return;
 

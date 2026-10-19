@@ -5,7 +5,7 @@ import type { Edit } from "@core/edit-session";
 import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError } from "@core/export/export-utils";
-import { canEncodeVideo, CanvasSource, Output } from "mediabunny";
+import { canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
 
 const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
 
@@ -45,7 +45,7 @@ jest.mock("mediabunny", () => ({
 
 jest.mock("pixi.js", () => ({
 	Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
-	Texture: { from: jest.fn() }
+	Texture: { from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
 }));
 
 // The canvas package needs TextEncoder, which jsdom lacks; the export only uses its font-name parser.
@@ -99,7 +99,7 @@ beforeAll(() => {
 	Object.assign(globalThis, {
 		ImageData: jest.fn((data: Uint8ClampedArray, width: number, height: number) => ({ data, width, height }))
 	});
-	Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ putImageData: jest.fn() }) });
+	Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ putImageData: jest.fn(), drawImage: jest.fn() }) });
 });
 
 beforeEach(() => {
@@ -328,6 +328,53 @@ describe("off-screen export", () => {
 
 		expect(edit.pause).toHaveBeenCalled();
 		expect(edit.seek.mock.invocationCallOrder[0]).toBeLessThan(edit.play.mock.invocationCallOrder[0]);
+		exporter.dispose();
+	});
+});
+
+describe("speed", () => {
+	it("decodes each video frame at the player's own source time for that frame", async () => {
+		const { exporter, edit } = createHarness();
+		// isVideoPlayer recognises a player by its class name; getSourceTime stands in for the preview's speed mapping.
+		class VideoPlayer {
+			clipId = "fast-clip";
+
+			needsResolution = false;
+
+			clipConfiguration = { asset: { type: "video", src: "https://example.com/clip.mp4" } };
+
+			start = 0;
+
+			length = 1;
+
+			update = jest.fn();
+
+			constructor(private readonly session: { playbackTime: number }) {}
+
+			getSourceTime(): number {
+				return this.session.playbackTime * 3;
+			}
+
+			getStart(): number {
+				return this.start;
+			}
+
+			getEnd(): number {
+				return this.start + this.length;
+			}
+		}
+		edit.tracks = [[new VideoPlayer(edit)]];
+		const getCanvas = jest.fn(async () => ({ canvas: { width: 2, height: 2 } }));
+		jest
+			.mocked(Input)
+			.mockImplementationOnce(
+				() => ({ getPrimaryVideoTrack: async () => ({ canDecode: async () => true }), dispose: jest.fn() }) as unknown as InstanceType<typeof Input>
+			);
+		jest.mocked(CanvasSink).mockImplementationOnce(() => ({ getCanvas }) as unknown as InstanceType<typeof CanvasSink>);
+
+		await exporter.exportBlob();
+
+		expect(getCanvas.mock.calls).toEqual([[0], [1.5]]);
 		exporter.dispose();
 	});
 });

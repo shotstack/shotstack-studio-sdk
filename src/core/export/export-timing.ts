@@ -1,7 +1,4 @@
 /** Pure timing math for export. */
-export function videoSourceTime(timestamp: number, clipStart: number, trim: number): number {
-	return timestamp - clipStart + trim;
-}
 
 /** A linear volume segment, clip-local seconds. */
 export interface VolumeTween {
