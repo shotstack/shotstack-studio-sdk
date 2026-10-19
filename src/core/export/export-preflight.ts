@@ -4,7 +4,7 @@ import type { Edit } from "@core/edit-session";
 import { resolveFontPath } from "@core/fonts/font-config";
 import { NAMED_FONT_WEIGHTS } from "@core/fonts/font-weights";
 import { isPendingAiAsset } from "@core/shared/ai-asset-utils";
-import { isTextHtml } from "@core/shared/asset-utils";
+import { inferAssetTypeFromUrl, isTextHtml } from "@core/shared/asset-utils";
 import type { ResolvedClip } from "@schemas";
 import { canEncodeVideo } from "mediabunny";
 
@@ -39,6 +39,8 @@ function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] 
 	if (asset.type === "video" && asset.chromaKey) add("chroma-key", "Chroma key isn't available in the browser.");
 	if (clip.filter && clip.filter !== "none") add("filter", `The ${clip.filter} filter isn't available in the browser.`);
 	if (asset.type === "html5" || (asset.type === "html" && !isTextHtml(asset.html))) add("html", "This HTML clip can only be rendered in the cloud.");
+	// Mattes redraw in the editor's update loop, which export doesn't run, so a video matte would hold one frame.
+	if (asset.type === "luma" && inferAssetTypeFromUrl(asset.src) === "video") add("luma", "Video luma mattes aren't available in the browser.");
 	if (clip.effect && !animates(new EffectPresetBuilder(clip).buildRelative(UNIT_SIZE, UNIT_SIZE))) {
 		add("effect", `The ${clip.effect} effect isn't available in the browser.`);
 	}

@@ -119,6 +119,15 @@ describe("findEditIssues", () => {
 		expect(codes(withWeight("normal"))).toEqual(["font"]);
 	});
 
+	it("reports a luma matte drawn from a video as luma, and passes an image matte", () => {
+		expect(
+			codes([
+				clip({ id: "video-matte", asset: { type: "luma", src: "https://example.com/wipe.mp4?v=2" } }),
+				clip({ id: "image-matte", asset: { type: "luma", src: "https://example.com/wipe.png" } })
+			])
+		).toEqual(["luma"]);
+	});
+
 	it("reports an edit longer than the limit as too-long", () => {
 		expect(codes([], { duration: MAX_EXPORT_SECONDS + 1 })).toEqual(["too-long"]);
 		expect(codes([], { duration: MAX_EXPORT_SECONDS })).toEqual([]);

@@ -35,7 +35,18 @@ export class SimpleLRUCache<T> extends Map<string, T> {
 }
 
 export type ExportIssueCode =
-	"ai-pending" | "output-format" | "video-source" | "chroma-key" | "filter" | "html" | "effect" | "transition" | "font" | "too-long" | "browser";
+	| "ai-pending"
+	| "output-format"
+	| "video-source"
+	| "chroma-key"
+	| "filter"
+	| "html"
+	| "effect"
+	| "transition"
+	| "font"
+	| "luma"
+	| "too-long"
+	| "browser";
 
 export interface ExportIssue {
 	code: ExportIssueCode;
