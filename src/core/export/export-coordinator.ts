@@ -76,12 +76,16 @@ export class ExportCoordinator {
 				onProgress: (fraction, stage) => this.progressUI.update(fraction * 100, 100, stage)
 			});
 
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = filename;
-			a.click();
-			URL.revokeObjectURL(url);
+			try {
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = filename;
+				a.click();
+				URL.revokeObjectURL(url);
+			} catch (error) {
+				throw new ExportError(`Export failed: ${error}`, "export");
+			}
 
 			this.progressUI.update(100, 100, "Complete!");
 		} finally {
@@ -98,9 +102,10 @@ export class ExportCoordinator {
 		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
 
 		this.isExporting = true;
-		const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+		let output: Output | undefined;
 
 		try {
+			output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 			const cfg = this.prepareConfig(fps);
 			report(0, "Preparing...");
 
@@ -144,7 +149,10 @@ export class ExportCoordinator {
 			return new Blob([data], { type: "video/mp4" });
 		} catch (error) {
 			// An export that stops early would otherwise hold its encoders until garbage collection.
-			if (output.state === "pending" || output.state === "started") await output.cancel();
+			if (output && (output.state === "pending" || output.state === "started")) {
+				// A failed cancel must not replace the error that stopped the export.
+				await output.cancel().catch(() => {});
+			}
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
 			this.isExporting = false;

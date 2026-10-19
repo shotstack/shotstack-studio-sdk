@@ -5,7 +5,7 @@ import type { Edit } from "@core/edit-session";
 import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError } from "@core/export/export-utils";
-import { canEncodeVideo, CanvasSource } from "mediabunny";
+import { canEncodeVideo, CanvasSource, Output } from "mediabunny";
 
 const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
 
@@ -251,6 +251,35 @@ describe("ExportCoordinator.exportBlob", () => {
 		jest.useRealTimers();
 	});
 
+	it("releases the single-flight flag when the output can't be constructed", async () => {
+		const { exporter } = createHarness();
+		jest.mocked(Output).mockImplementationOnce(() => {
+			throw new Error("no muxer");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+	});
+
+	it("keeps the original error when cancelling the output also fails", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		jest.mocked(CanvasSource).mockImplementationOnce(() => {
+			controller.abort();
+			return { add: jest.fn() } as unknown as CanvasSource;
+		});
+		const construct = jest.mocked(Output).getMockImplementation() as unknown as (...a: unknown[]) => { cancel: jest.Mock };
+		jest.mocked(Output).mockImplementationOnce((...args: unknown[]) => {
+			const output = construct(...args);
+			output.cancel.mockRejectedValue(new Error("cancel failed"));
+			return output as never;
+		});
+
+		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
 	it("refuses a second export while one is running", async () => {
 		const { exporter } = createHarness();
 		const first = exporter.exportBlob();
@@ -304,6 +333,18 @@ describe("off-screen export", () => {
 });
 
 describe("ExportCoordinator.export", () => {
+	it("wraps a failed download as an export-phase error and removes the overlay", async () => {
+		const { exporter } = createHarness();
+		const create = jest.fn(() => {
+			throw new Error("blocked");
+		});
+		Object.assign(URL, { createObjectURL: create });
+
+		await expect(exporter.export()).rejects.toMatchObject({ name: "ExportError", phase: "export" });
+		expect(document.body.children).toHaveLength(0);
+		exporter.dispose();
+	});
+
 	it("downloads the file under the given name behind its overlay", async () => {
 		const { exporter } = createHarness();
 		const downloads: string[] = [];
