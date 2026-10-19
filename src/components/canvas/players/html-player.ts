@@ -1,4 +1,5 @@
 import type { Edit } from "@core/edit-session";
+import { isTextHtml } from "@core/shared/asset-utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type HtmlAsset, HtmlAssetPosition } from "@schemas";
 import * as pixiFilters from "pixi-filters";
@@ -160,7 +161,7 @@ export class HtmlPlayer extends Player {
 		const htmlAsset = this.clipConfiguration.asset as HtmlAsset;
 		const { html, css = "", position } = htmlAsset;
 
-		if (!html.includes('data-html-type="text"')) {
+		if (!isTextHtml(html)) {
 			console.warn("Unsupported html format.");
 			return null;
 		}

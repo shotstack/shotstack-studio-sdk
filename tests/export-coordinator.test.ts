@@ -2,9 +2,10 @@
 
 import type { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
-import { ExportCoordinator } from "@core/export/export-coordinator";
+import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError } from "@core/export/export-utils";
+import { canEncodeVideo, CanvasSource } from "mediabunny";
 
 const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
 
@@ -34,6 +35,7 @@ jest.mock("mediabunny", () => ({
 	BufferTarget: jest.fn().mockImplementation(() => ({ buffer: null })),
 	CanvasSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
 	AudioBufferSource: jest.fn(),
+	canEncodeVideo: jest.fn(),
 	Input: jest.fn(),
 	UrlSource: jest.fn(),
 	CanvasSink: jest.fn(),
@@ -45,6 +47,9 @@ jest.mock("pixi.js", () => ({
 	Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
 	Texture: { from: jest.fn() }
 }));
+
+// The canvas package needs TextEncoder, which jsdom lacks; the export only uses its font-name parser.
+jest.mock("@shotstack/shotstack-canvas", () => ({ parseFontFamily: (family: string) => ({ family, weight: "400" }) }));
 
 jest.mock("../src/core/export/audio-processor", () => ({
 	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: jest.fn().mockResolvedValue(null) }))
@@ -58,7 +63,15 @@ function createHarness() {
 		isPlaying: false,
 		playbackTime: 1.5,
 		totalDuration: 1,
+		tracks: [] as Array<Array<{ clipId: string; needsResolution: boolean }>>,
 		getEdit: () => ({ output: { fps: 2, size: SIZE } }),
+		getOutputFormat: jest.fn(() => "mp4"),
+		getResolvedEdit: () => ({ timeline: { tracks: [] }, output: { format: "mp4" } }),
+		getFontUrlByFamilyAndWeight: () => null,
+		whenSettled: jest.fn(() => Promise.resolve()),
+		getLoadingClipIds: jest.fn(() => [] as string[]),
+		getTracks: () => edit.tracks,
+		getClipError: jest.fn<{ error: string; assetType: string } | null, [number, number]>(() => null),
 		setExportMode: jest.fn(),
 		executeEditCommand: jest.fn((command: { execute: (context: unknown) => unknown }) =>
 			command.execute({ getClips: () => [], getTracks: () => [] })
@@ -78,9 +91,8 @@ function createHarness() {
 }
 
 beforeAll(() => {
-	// jsdom has no WebCodecs or 2D canvas; the coordinator only needs them to exist.
+	// jsdom has no 2D canvas; the coordinator only needs one to exist.
 	Object.assign(globalThis, {
-		VideoEncoder: jest.fn(),
 		ImageData: jest.fn((data: Uint8ClampedArray, width: number, height: number) => ({ data, width, height }))
 	});
 	Object.assign(HTMLCanvasElement.prototype, { getContext: () => ({ putImageData: jest.fn() }) });
@@ -89,6 +101,8 @@ beforeAll(() => {
 beforeEach(() => {
 	mockOutputs.length = 0;
 	document.body.innerHTML = "";
+	jest.mocked(canEncodeVideo).mockResolvedValue(true);
+	jest.mocked(CanvasSource).mockClear();
 });
 
 describe("ExportCoordinator.exportBlob", () => {
@@ -148,6 +162,89 @@ describe("ExportCoordinator.exportBlob", () => {
 		expect(edit.setExportMode).toHaveBeenLastCalledWith(false);
 		expect(canvas.resumeTicker).toHaveBeenCalled();
 		exporter.dispose();
+	});
+
+	it("refuses an unsupported edit before encoding and lists every issue", async () => {
+		const { exporter, edit } = createHarness();
+		edit.getOutputFormat.mockReturnValue("gif");
+		jest.mocked(canEncodeVideo).mockResolvedValue(false);
+
+		const error = await exporter.exportBlob().catch((e: unknown) => e);
+
+		expect(error).toMatchObject({ phase: "unsupported" });
+		expect((error as ExportError).issues?.map(issue => issue.code)).toEqual(["output-format", "browser"]);
+		expect(CanvasSource).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("waits for loads to settle, then fails a clip left on its placeholder with phase assets", async () => {
+		const { exporter, edit } = createHarness();
+		edit.tracks = [
+			[
+				{ clipId: "clip-ok", needsResolution: false },
+				{ clipId: "clip-404", needsResolution: false }
+			]
+		];
+		let settled = false;
+		edit.whenSettled.mockImplementation(async () => {
+			settled = true;
+		});
+		edit.getClipError.mockImplementation((_track, clip) => {
+			expect(settled).toBe(true);
+			return clip === 1 ? { error: "Request failed with status 404", assetType: "image" } : null;
+		});
+
+		const error = await exporter.exportBlob().catch((e: unknown) => e);
+
+		expect(error).toMatchObject({ phase: "assets", context: { clipId: "clip-404" } });
+		expect(CanvasSource).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("fails a clip still waiting for its source with phase assets", async () => {
+		const { exporter, edit } = createHarness();
+		edit.tracks = [[{ clipId: "caption", needsResolution: true }]];
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "assets", context: { clipId: "caption" } });
+		exporter.dispose();
+	});
+
+	it("fails with phase assets, naming a clip, when a load hasn't settled by the timeout", async () => {
+		jest.useFakeTimers();
+		const { exporter, edit } = createHarness();
+		edit.whenSettled.mockReturnValue(new Promise<void>(() => {}));
+		edit.getLoadingClipIds.mockReturnValue(["slow-clip"]);
+		let outcome: unknown = "pending";
+
+		const result = exporter.exportBlob().catch((e: unknown) => {
+			outcome = e;
+		});
+		await jest.advanceTimersByTimeAsync(ASSET_SETTLE_TIMEOUT_MS - 1);
+		expect(outcome).toBe("pending");
+		await jest.advanceTimersByTimeAsync(1);
+		await result;
+
+		expect(outcome).toMatchObject({ phase: "assets", context: { clipId: "slow-clip" } });
+		expect((outcome as ExportError).message).toContain("didn't finish loading");
+		expect(CanvasSource).not.toHaveBeenCalled();
+		exporter.dispose();
+		jest.useRealTimers();
+	});
+
+	it("still cancels a load that never settles when aborted before the timeout", async () => {
+		jest.useFakeTimers();
+		const { exporter, edit } = createHarness();
+		edit.whenSettled.mockReturnValue(new Promise<void>(() => {}));
+		const controller = new AbortController();
+
+		const pending = exporter.exportBlob({ signal: controller.signal });
+		await jest.advanceTimersByTimeAsync(ASSET_SETTLE_TIMEOUT_MS / 2);
+		controller.abort();
+
+		await expect(pending).rejects.toMatchObject({ phase: "cancelled" });
+		expect(jest.getTimerCount()).toBe(0);
+		exporter.dispose();
+		jest.useRealTimers();
 	});
 
 	it("refuses a second export while one is running", async () => {

@@ -4,6 +4,7 @@ export { Edit } from "@core/edit-session";
 export { Canvas } from "@canvas/shotstack-canvas";
 export { Controls } from "@core/inputs/controls";
 export { VideoExporter, ExportError } from "@core/export";
+export type { ExportIssue, ExportIssueCode } from "@core/export";
 export { Timeline } from "@timeline/index";
 export { UIController } from "@core/ui/ui-controller";
 export { WebGLUnsupportedError } from "@core/webgl-support";

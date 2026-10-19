@@ -1,0 +1,70 @@
+import { EffectPresetBuilder } from "@animations/effect-preset-builder";
+import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
+import type { Edit } from "@core/edit-session";
+import { resolveFontPath } from "@core/fonts/font-config";
+import { isPendingAiAsset } from "@core/shared/ai-asset-utils";
+import { isTextHtml } from "@core/shared/asset-utils";
+import type { ResolvedClip } from "@schemas";
+import { canEncodeVideo } from "mediabunny";
+
+import type { ExportIssue, ExportIssueCode } from "./export-utils";
+
+/** The encoded file and the audio mix are both held in memory until the export finishes. */
+export const MAX_EXPORT_SECONDS = 300;
+
+type PreflightEdit = Pick<Edit, "getResolvedEdit" | "getOutputFormat" | "getFontUrlByFamilyAndWeight" | "totalDuration">;
+
+const UNIT_SIZE = { width: 1, height: 1 };
+
+// The preset builders return no keyframes for a name they don't know, which the preview draws as no animation.
+const animates = (keyframeSet: object): boolean => Object.values(keyframeSet).some(value => Array.isArray(value) && value.length > 0);
+
+function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] {
+	const issues: ExportIssue[] = [];
+	const add = (code: ExportIssueCode, message: string): void => {
+		issues.push({ code, message, clipId: clip.id });
+	};
+	const { asset } = clip;
+
+	if (isPendingAiAsset(asset)) add("ai-pending", "This clip hasn't been generated yet.");
+	if (asset.type === "video" && asset.chromaKey) add("chroma-key", "Chroma key isn't available in the browser.");
+	if (clip.filter && clip.filter !== "none") add("filter", `The ${clip.filter} filter isn't available in the browser.`);
+	if (asset.type === "html5" || (asset.type === "html" && !isTextHtml(asset.html))) add("html", "This HTML clip can only be rendered in the cloud.");
+	if (clip.effect && !animates(new EffectPresetBuilder(clip).buildRelative(UNIT_SIZE, UNIT_SIZE))) {
+		add("effect", `The ${clip.effect} effect isn't available in the browser.`);
+	}
+
+	const transitions = new TransitionPresetBuilder(clip).buildRelative();
+	for (const direction of ["in", "out"] as const) {
+		const name = clip.transition?.[direction];
+		if (name && name !== "none" && !animates(transitions[direction])) add("transition", `The ${name} transition isn't available in the browser.`);
+	}
+
+	if ("font" in asset && asset.font?.family) {
+		const { family } = asset.font;
+		const weight = "weight" in asset.font && typeof asset.font.weight === "number" ? asset.font.weight : 400;
+		if (!resolveFontPath(family, weight) && !edit.getFontUrlByFamilyAndWeight(family, weight)) {
+			add("font", `The ${family} font isn't built in or listed in the edit's fonts.`);
+		}
+	}
+
+	return issues;
+}
+
+export function findEditIssues(edit: PreflightEdit): ExportIssue[] {
+	const issues: ExportIssue[] = [];
+	const format = edit.getOutputFormat();
+	if (format !== "mp4") issues.push({ code: "output-format", message: `The browser exports MP4 only, and this edit asks for ${format}.` });
+	if (edit.totalDuration > MAX_EXPORT_SECONDS) {
+		issues.push({ code: "too-long", message: `The browser exports up to ${MAX_EXPORT_SECONDS / 60} minutes of video.` });
+	}
+	for (const track of edit.getResolvedEdit().timeline.tracks) {
+		for (const clip of track.clips) issues.push(...findClipIssues(edit, clip));
+	}
+	return issues;
+}
+
+export async function findBrowserIssue(size: { width: number; height: number }, bitrate: number): Promise<ExportIssue | null> {
+	if (await canEncodeVideo("avc", { width: size.width, height: size.height, bitrate })) return null;
+	return { code: "browser", message: `This browser can't encode H.264 video at ${size.width}×${size.height}.` };
+}

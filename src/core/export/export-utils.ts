@@ -34,6 +34,15 @@ export class SimpleLRUCache<T> extends Map<string, T> {
 	}
 }
 
+export type ExportIssueCode =
+	"ai-pending" | "output-format" | "video-source" | "chroma-key" | "filter" | "html" | "effect" | "transition" | "font" | "too-long" | "browser";
+
+export interface ExportIssue {
+	code: ExportIssueCode;
+	message: string;
+	clipId?: string;
+}
+
 /**
  * Export error with context
  */
@@ -42,20 +51,11 @@ export class ExportError extends Error {
 		message: string,
 		public readonly phase: string = "unknown",
 		public readonly context: Record<string, unknown> = {},
-		cause?: Error
+		cause?: Error,
+		public readonly issues?: ExportIssue[]
 	) {
 		super(message);
 		this.name = "ExportError";
 		this.cause = cause;
-	}
-}
-
-/**
- * Browser compatibility error
- */
-export class BrowserCompatibilityError extends ExportError {
-	constructor(message: string, missingFeatures: string[]) {
-		super(message, "initialization", { missingFeatures });
-		this.name = "BrowserCompatibilityError";
 	}
 }
