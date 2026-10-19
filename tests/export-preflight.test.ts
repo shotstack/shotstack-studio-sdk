@@ -3,10 +3,11 @@ import { exportBitrate } from "@core/export/export-utils";
 import { VideoFrameProcessor } from "@core/export/video-frame-processor";
 import { sec } from "@core/timing/types";
 import type { ResolvedClip, ResolvedEdit } from "@schemas";
-import { canEncodeVideo } from "mediabunny";
+import { canEncodeAudio, canEncodeVideo } from "mediabunny";
 
 jest.mock("mediabunny", () => ({
 	canEncodeVideo: jest.fn(),
+	canEncodeAudio: jest.fn(),
 	Input: jest.fn().mockImplementation(() => ({
 		getPrimaryVideoTrack: jest.fn().mockRejectedValue(new Error("Input has an unsupported or unrecognizable format.")),
 		dispose: jest.fn()
@@ -153,7 +154,7 @@ describe("findBrowserIssue", () => {
 	it("reports a browser that can't encode the output as browser", async () => {
 		jest.mocked(canEncodeVideo).mockResolvedValueOnce(false);
 
-		await expect(findBrowserIssue({ width: 1920, height: 1080 }, 5_000_000)).resolves.toEqual({
+		await expect(findBrowserIssue({ width: 1920, height: 1080 }, 5_000_000, false)).resolves.toEqual({
 			code: "browser",
 			message: "This browser can't encode H.264 video at 1920×1080."
 		});
@@ -163,7 +164,20 @@ describe("findBrowserIssue", () => {
 	it("reports nothing when the encoder accepts the config", async () => {
 		jest.mocked(canEncodeVideo).mockResolvedValueOnce(true);
 
-		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222)).resolves.toBeNull();
+		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222, false)).resolves.toBeNull();
+	});
+
+	it("reports a browser that can't encode AAC as browser when the edit has audio", async () => {
+		jest.mocked(canEncodeVideo).mockResolvedValue(true);
+		jest.mocked(canEncodeAudio).mockResolvedValue(false);
+
+		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222, true)).resolves.toEqual({
+			code: "browser",
+			message: "This browser can't encode AAC audio."
+		});
+		jest.mocked(canEncodeAudio).mockClear();
+		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222, false)).resolves.toBeNull();
+		expect(canEncodeAudio).not.toHaveBeenCalled();
 	});
 });
 

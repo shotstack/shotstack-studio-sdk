@@ -6,9 +6,9 @@ import { NAMED_FONT_WEIGHTS } from "@core/fonts/font-weights";
 import { isPendingAiAsset } from "@core/shared/ai-asset-utils";
 import { inferAssetTypeFromUrl, isTextHtml } from "@core/shared/asset-utils";
 import type { ResolvedClip } from "@schemas";
-import { canEncodeVideo } from "mediabunny";
+import { canEncodeAudio, canEncodeVideo } from "mediabunny";
 
-import { exportBitrate, type ExportIssue, type ExportIssueCode } from "./export-utils";
+import { AUDIO_BITRATE, exportBitrate, type ExportIssue, type ExportIssueCode } from "./export-utils";
 
 /** The audio mix is held in memory until the export finishes, and it grows with length at any size. */
 export const MAX_EXPORT_SECONDS = 300;
@@ -85,7 +85,12 @@ export function findEditIssues(edit: PreflightEdit, bitrate: number): ExportIssu
 	return issues;
 }
 
-export async function findBrowserIssue(size: { width: number; height: number }, bitrate: number): Promise<ExportIssue | null> {
-	if (await canEncodeVideo("avc", { width: size.width, height: size.height, bitrate })) return null;
-	return { code: "browser", message: `This browser can't encode H.264 video at ${size.width}×${size.height}.` };
+export async function findBrowserIssue(size: { width: number; height: number }, bitrate: number, audio: boolean): Promise<ExportIssue | null> {
+	if (!(await canEncodeVideo("avc", { width: size.width, height: size.height, bitrate }))) {
+		return { code: "browser", message: `This browser can't encode H.264 video at ${size.width}×${size.height}.` };
+	}
+	// Asked before the mix, which can take a while, rather than failing once it's done.
+	if (audio && !(await canEncodeAudio("aac", { bitrate: AUDIO_BITRATE })))
+		return { code: "browser", message: "This browser can't encode AAC audio." };
+	return null;
 }

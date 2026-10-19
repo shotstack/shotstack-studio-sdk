@@ -6,7 +6,7 @@ import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError, exportBitrate } from "@core/export/export-utils";
 import { calculateSizeFromPreset } from "@core/output-settings-manager";
-import { canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
+import { canEncodeAudio, canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
 
 const mockOutputs: Array<{ cancel: jest.Mock; addAudioTrack: jest.Mock; state: string }> = [];
 
@@ -37,6 +37,7 @@ jest.mock("mediabunny", () => ({
 	CanvasSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
 	AudioBufferSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
 	canEncodeVideo: jest.fn(),
+	canEncodeAudio: jest.fn(),
 	Input: jest.fn(),
 	UrlSource: jest.fn(),
 	CanvasSink: jest.fn(),
@@ -59,9 +60,10 @@ jest.mock("pixi.js", () => ({
 jest.mock("@shotstack/shotstack-canvas", () => ({ parseFontFamily: (family: string) => ({ family, weight: "400" }) }));
 
 const mockRenderMix = jest.fn();
+const mockHasAudio = jest.fn();
 
 jest.mock("../src/core/export/audio-processor", () => ({
-	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: mockRenderMix }))
+	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: mockRenderMix, hasAudio: mockHasAudio }))
 }));
 
 const SIZE = { width: 4, height: 2 };
@@ -118,6 +120,8 @@ beforeEach(() => {
 	jest.mocked(canEncodeVideo).mockResolvedValue(true);
 	jest.mocked(CanvasSource).mockClear();
 	mockRenderMix.mockReset().mockResolvedValue(null);
+	mockHasAudio.mockReset().mockReturnValue(false);
+	jest.mocked(canEncodeAudio).mockReset().mockResolvedValue(true);
 });
 
 describe("ExportCoordinator.exportBlob", () => {
@@ -311,6 +315,22 @@ describe("output settings", () => {
 
 		expect(mockRenderMix).not.toHaveBeenCalled();
 		expect(mockOutputs[0].addAudioTrack).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("refuses an edit with audio before mixing when the browser can't encode AAC, unless it's muted", async () => {
+		const { exporter, edit } = createHarness();
+		mockHasAudio.mockReturnValue(true);
+		jest.mocked(canEncodeAudio).mockResolvedValue(false);
+
+		const error = await exporter.exportBlob().catch((e: unknown) => e);
+
+		expect(error).toMatchObject({ phase: "unsupported" });
+		expect((error as ExportError).issues?.map(issue => issue.code)).toEqual(["browser"]);
+		expect(mockRenderMix).not.toHaveBeenCalled();
+
+		edit.getEdit.mockReturnValue({ output: { fps: 2, mute: true } });
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
 		exporter.dispose();
 	});
 });

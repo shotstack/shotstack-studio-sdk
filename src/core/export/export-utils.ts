@@ -71,6 +71,9 @@ export class ExportError extends Error {
 	}
 }
 
+/** AAC bitrate for the mix, which is stereo at 48 kHz: the format canEncodeAudio checks by default. */
+export const AUDIO_BITRATE = 192_000;
+
 /**
  * 5 Mbps at 1920×1080 scaled by pixel count, so every output size gets the bits per pixel that 1080p
  * had, with a 1 Mbps floor: small outputs still carry text, which blurs first when starved.

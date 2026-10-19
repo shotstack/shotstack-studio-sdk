@@ -7,7 +7,7 @@ import * as pixi from "pixi.js";
 import { AudioProcessor } from "./audio-processor";
 import { findBrowserIssue, findEditIssues } from "./export-preflight";
 import { ExportProgressUI } from "./export-progress-ui";
-import { ExportError, exportBitrate } from "./export-utils";
+import { AUDIO_BITRATE, ExportError, exportBitrate } from "./export-utils";
 import { VideoFrameProcessor } from "./video-frame-processor";
 
 interface ExportConfig {
@@ -16,6 +16,7 @@ interface ExportConfig {
 	bitrate: number;
 	frames: number;
 	frameDuration: number;
+	muted: boolean;
 }
 
 export interface ExportBlobOptions {
@@ -123,12 +124,11 @@ export class ExportCoordinator {
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
-			const muted = this.edit.getEdit().output?.mute === true;
-			const mixedAudio = muted ? null : await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
+			const mixedAudio = cfg.muted ? null : await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
 			throwIfAborted();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {
-				audioSource = new AudioBufferSource({ codec: "aac", bitrate: 192_000 });
+				audioSource = new AudioBufferSource({ codec: "aac", bitrate: AUDIO_BITRATE });
 				output.addAudioTrack(audioSource);
 			}
 
@@ -166,7 +166,8 @@ export class ExportCoordinator {
 		await waitForLoads(this.edit, signal);
 
 		const issues = findEditIssues(this.edit, cfg.bitrate);
-		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate);
+		const audio = !cfg.muted && this.audioProcessor.hasAudio(this.edit.getTracks());
+		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate, audio);
 		if (browserIssue) issues.push(browserIssue);
 		issues.push(...(await this.videoProcessor.initialize(this.edit.getTracks().flat())));
 		if (issues.length > 0) {
@@ -266,7 +267,8 @@ export class ExportCoordinator {
 			size,
 			bitrate: exportBitrate(size),
 			frames: Math.ceil(this.edit.totalDuration * fps),
-			frameDuration: 1 / fps // seconds per frame
+			frameDuration: 1 / fps, // seconds per frame
+			muted: this.edit.getEdit().output?.mute === true
 		};
 	}
 }

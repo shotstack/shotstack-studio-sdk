@@ -26,6 +26,10 @@ interface AudioBearingClip {
  * Mixes every audio-bearing clip into one export track
  */
 export class AudioProcessor {
+	hasAudio(tracks: ReadonlyArray<ReadonlyArray<Player>>): boolean {
+		return this.collectClips(tracks).length > 0;
+	}
+
 	/** Decode and mix all audio-bearing clips into one buffer; null when there is no audio. */
 	async renderMix(tracks: ReadonlyArray<ReadonlyArray<Player>>, totalDuration: number): Promise<AudioBuffer | null> {
 		const clips = this.collectClips(tracks);
