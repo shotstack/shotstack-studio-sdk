@@ -368,7 +368,7 @@ Before encoding, both methods check that the browser can draw the edit the way a
 | `transition` | A transition without a preset in the editor |
 | `font` | A font that is neither built in nor listed in `timeline.fonts` |
 | `luma` | A luma matte whose source is a video |
-| `too-long` | The edit runs longer than five minutes |
+| `too-long` | The edit runs longer than five minutes, or less above 1080p (75 seconds at 4K) |
 | `browser` | The browser can't encode H.264 at the output size |
 
 ## Merge Fields

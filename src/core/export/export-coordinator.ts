@@ -164,7 +164,7 @@ export class ExportCoordinator {
 	private async checkExportable(cfg: ExportConfig, signal?: AbortSignal): Promise<void> {
 		await waitForLoads(this.edit, signal);
 
-		const issues = findEditIssues(this.edit);
+		const issues = findEditIssues(this.edit, cfg.bitrate);
 		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate);
 		if (browserIssue) issues.push(browserIssue);
 		issues.push(...(await this.videoProcessor.initialize(this.edit.getTracks().flat())));

@@ -8,10 +8,12 @@ import { inferAssetTypeFromUrl, isTextHtml } from "@core/shared/asset-utils";
 import type { ResolvedClip } from "@schemas";
 import { canEncodeVideo } from "mediabunny";
 
-import type { ExportIssue, ExportIssueCode } from "./export-utils";
+import { exportBitrate, type ExportIssue, type ExportIssueCode } from "./export-utils";
 
-/** The encoded file and the audio mix are both held in memory until the export finishes. */
+/** The audio mix is held in memory until the export finishes, and it grows with length at any size. */
 export const MAX_EXPORT_SECONDS = 300;
+/** The encoded video is held in memory too: five minutes' worth at 1080p, so larger outputs get less time. */
+export const MAX_EXPORT_BITS = MAX_EXPORT_SECONDS * exportBitrate({ width: 1920, height: 1080 });
 
 type PreflightEdit = Pick<Edit, "getResolvedEdit" | "getOutputFormat" | "getFontUrlByFamilyAndWeight" | "totalDuration">;
 
@@ -62,12 +64,15 @@ function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] 
 	return issues;
 }
 
-export function findEditIssues(edit: PreflightEdit): ExportIssue[] {
+export function findEditIssues(edit: PreflightEdit, bitrate: number): ExportIssue[] {
 	const issues: ExportIssue[] = [];
 	const format = edit.getOutputFormat();
 	if (format !== "mp4") issues.push({ code: "output-format", message: `The browser exports MP4 only, and this edit asks for ${format}.` });
-	if (edit.totalDuration > MAX_EXPORT_SECONDS) {
-		issues.push({ code: "too-long", message: `The browser exports up to ${MAX_EXPORT_SECONDS / 60} minutes of video.` });
+	if (edit.totalDuration > MAX_EXPORT_SECONDS || edit.totalDuration * bitrate > MAX_EXPORT_BITS) {
+		issues.push({
+			code: "too-long",
+			message: `The browser exports up to ${MAX_EXPORT_SECONDS / 60} minutes of video at 1080p, and less at larger sizes.`
+		});
 	}
 	for (const track of edit.getResolvedEdit().timeline.tracks) {
 		for (const clip of track.clips) issues.push(...findClipIssues(edit, clip));

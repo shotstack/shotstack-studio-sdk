@@ -1,4 +1,5 @@
 import { findBrowserIssue, findEditIssues, MAX_EXPORT_SECONDS } from "@core/export/export-preflight";
+import { exportBitrate } from "@core/export/export-utils";
 import { VideoFrameProcessor } from "@core/export/video-frame-processor";
 import { sec } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
@@ -47,8 +48,10 @@ function editWith(
 	};
 }
 
-const codes = (clips: ResolvedClip[], options?: { format?: string; duration?: number }): string[] =>
-	findEditIssues(editWith(clips, options)).map(issue => issue.code);
+const HD_BITRATE = exportBitrate({ width: 1920, height: 1080 });
+
+const codes = (clips: ResolvedClip[], options?: { format?: string; duration?: number; bitrate?: number }): string[] =>
+	findEditIssues(editWith(clips, options), options?.bitrate ?? HD_BITRATE).map(issue => issue.code);
 
 describe("findEditIssues", () => {
 	it("passes an edit the browser draws the way the cloud does", () => {
@@ -59,11 +62,11 @@ describe("findEditIssues", () => {
 			clip({ asset: { type: "html", html: '<p data-html-type="text">Hi</p>' }, filter: "none" })
 		];
 
-		expect(findEditIssues(editWith(faithful))).toEqual([]);
+		expect(findEditIssues(editWith(faithful), HD_BITRATE)).toEqual([]);
 	});
 
 	it("reports a prompt clip that hasn't been generated as ai-pending", () => {
-		expect(findEditIssues(editWith([clip({ id: "prompt-clip", asset: { type: "image", prompt: "A red kite" } })]))).toEqual([
+		expect(findEditIssues(editWith([clip({ id: "prompt-clip", asset: { type: "image", prompt: "A red kite" } })]), HD_BITRATE)).toEqual([
 			{ code: "ai-pending", message: "This clip hasn't been generated yet.", clipId: "prompt-clip" }
 		]);
 	});
@@ -131,6 +134,14 @@ describe("findEditIssues", () => {
 	it("reports an edit longer than the limit as too-long", () => {
 		expect(codes([], { duration: MAX_EXPORT_SECONDS + 1 })).toEqual(["too-long"]);
 		expect(codes([], { duration: MAX_EXPORT_SECONDS })).toEqual([]);
+	});
+
+	it("gives larger outputs less time, since the encoded file is held in memory", () => {
+		const uhd = exportBitrate({ width: 3840, height: 2160 });
+
+		expect(codes([], { duration: MAX_EXPORT_SECONDS, bitrate: uhd })).toEqual(["too-long"]);
+		expect(codes([], { duration: MAX_EXPORT_SECONDS / 4, bitrate: uhd })).toEqual([]);
+		expect(codes([], { duration: MAX_EXPORT_SECONDS, bitrate: HD_BITRATE })).toEqual([]);
 	});
 });
 
