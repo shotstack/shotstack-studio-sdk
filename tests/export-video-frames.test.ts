@@ -9,10 +9,8 @@ jest.mock("mediabunny", () => ({ Input: jest.fn(), UrlSource: jest.fn(), CanvasS
 jest.mock("pixi.js", () => ({
 	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
 	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
-	Texture: Object.assign(
-		jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
-		{ from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
-	)
+	Texture: jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
+	TextureSource: { from: jest.fn(() => ({ update: jest.fn() })) }
 }));
 
 beforeAll(() => {

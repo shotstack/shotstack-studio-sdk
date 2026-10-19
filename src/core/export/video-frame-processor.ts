@@ -92,7 +92,8 @@ export class VideoFrameProcessor {
 			canvas.height = live?.source.height || wrapped.canvas.height;
 			decoder.canvas = canvas;
 			decoder.ctx = canvas.getContext("2d", { alpha: true }) ?? undefined;
-			decoder.texture = new pixi.Texture({ source: pixi.Texture.from(canvas).source, frame: live?.frame });
+			// A bare source: Texture.from would cache a texture per canvas that restore() never destroys.
+			decoder.texture = new pixi.Texture({ source: pixi.TextureSource.from(canvas), frame: live?.frame });
 		}
 
 		decoder.ctx?.drawImage(wrapped.canvas, 0, 0, decoder.canvas!.width, decoder.canvas!.height);

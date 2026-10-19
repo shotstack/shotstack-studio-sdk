@@ -52,10 +52,8 @@ jest.mock("pixi.js", () => ({
 	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
 	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 	Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
-	Texture: Object.assign(
-		jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
-		{ from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
-	)
+	Texture: jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
+	TextureSource: { from: jest.fn(() => ({ update: jest.fn() })) }
 }));
 
 // The canvas package needs TextEncoder, which jsdom lacks; the export only uses its font-name parser.

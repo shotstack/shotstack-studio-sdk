@@ -89,8 +89,9 @@ export async function findBrowserIssue(size: { width: number; height: number }, 
 	if (!(await canEncodeVideo("avc", { width: size.width, height: size.height, bitrate }))) {
 		return { code: "browser", message: `This browser can't encode H.264 video at ${size.width}×${size.height}.` };
 	}
-	// Asked before the mix, which can take a while, rather than failing once it's done.
-	if (audio && !(await canEncodeAudio("aac", { bitrate: AUDIO_BITRATE })))
+	// Asked up front: the encoder is first needed after the audio mix, which can take a while.
+	if (audio && !(await canEncodeAudio("aac", { bitrate: AUDIO_BITRATE }))) {
 		return { code: "browser", message: "This browser can't encode AAC audio." };
+	}
 	return null;
 }
