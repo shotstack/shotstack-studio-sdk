@@ -2,7 +2,7 @@ import { findBrowserIssue, findEditIssues, MAX_EXPORT_SECONDS } from "@core/expo
 import { exportBitrate } from "@core/export/export-utils";
 import { VideoFrameProcessor } from "@core/export/video-frame-processor";
 import { sec } from "@core/timing/types";
-import type { ResolvedClip } from "@schemas";
+import type { ResolvedClip, ResolvedEdit } from "@schemas";
 import { canEncodeVideo } from "mediabunny";
 
 jest.mock("mediabunny", () => ({
@@ -36,12 +36,11 @@ const clip = (fields: Partial<ResolvedClip> & Pick<ResolvedClip, "asset">): Reso
 	...fields
 });
 
-function editWith(
-	clips: ResolvedClip[],
-	{ format = "mp4", duration = 5 }: { format?: string; duration?: number } = {}
-): Parameters<typeof findEditIssues>[0] {
+type EditOptions = { format?: string; duration?: number; output?: Partial<ResolvedEdit["output"]> };
+
+function editWith(clips: ResolvedClip[], { format = "mp4", duration = 5, output }: EditOptions = {}): Parameters<typeof findEditIssues>[0] {
 	return {
-		getResolvedEdit: () => ({ timeline: { tracks: [{ clips }] }, output: { format: "mp4" } }),
+		getResolvedEdit: () => ({ timeline: { tracks: [{ clips }] }, output: { format: "mp4", ...output } }),
 		getOutputFormat: () => format,
 		getFontUrlByFamilyAndWeight: (family: string, weight: number) => customFonts[`${family}|${weight}`] ?? null,
 		totalDuration: duration
@@ -50,7 +49,7 @@ function editWith(
 
 const HD_BITRATE = exportBitrate({ width: 1920, height: 1080 });
 
-const codes = (clips: ResolvedClip[], options?: { format?: string; duration?: number; bitrate?: number }): string[] =>
+const codes = (clips: ResolvedClip[], options?: EditOptions & { bitrate?: number }): string[] =>
 	findEditIssues(editWith(clips, options), options?.bitrate ?? HD_BITRATE).map(issue => issue.code);
 
 describe("findEditIssues", () => {
@@ -77,6 +76,11 @@ describe("findEditIssues", () => {
 
 	it("reports a non-MP4 output as output-format", () => {
 		expect(codes([], { format: "gif" })).toEqual(["output-format"]);
+	});
+
+	it("reports a range or scaleTo as output-format, since the browser exports the whole timeline at the edit's size", () => {
+		expect(codes([], { output: { range: { start: 1, length: 2 } } })).toEqual(["output-format"]);
+		expect(codes([], { output: { scaleTo: "sd" } })).toEqual(["output-format"]);
 	});
 
 	it("reports chroma key as chroma-key", () => {

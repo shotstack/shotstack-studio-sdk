@@ -68,6 +68,11 @@ export function findEditIssues(edit: PreflightEdit, bitrate: number): ExportIssu
 	const issues: ExportIssue[] = [];
 	const format = edit.getOutputFormat();
 	if (format !== "mp4") issues.push({ code: "output-format", message: `The browser exports MP4 only, and this edit asks for ${format}.` });
+	const { output } = edit.getResolvedEdit();
+	if (output.range) issues.push({ code: "output-format", message: "The browser exports the whole timeline, and this edit asks for a range." });
+	if (output.scaleTo) {
+		issues.push({ code: "output-format", message: `The browser exports at the edit's size, and this edit asks to scale to ${output.scaleTo}.` });
+	}
 	if (edit.totalDuration > MAX_EXPORT_SECONDS || edit.totalDuration * bitrate > MAX_EXPORT_BITS) {
 		issues.push({
 			code: "too-long",

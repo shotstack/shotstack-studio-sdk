@@ -8,7 +8,7 @@ import { ExportError, exportBitrate } from "@core/export/export-utils";
 import { calculateSizeFromPreset } from "@core/output-settings-manager";
 import { canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
 
-const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
+const mockOutputs: Array<{ cancel: jest.Mock; addAudioTrack: jest.Mock; state: string }> = [];
 
 jest.mock("mediabunny", () => ({
 	Output: jest.fn().mockImplementation(({ target }: { target: { buffer: ArrayBuffer | null } }) => {
@@ -35,7 +35,7 @@ jest.mock("mediabunny", () => ({
 	Mp4OutputFormat: jest.fn(),
 	BufferTarget: jest.fn().mockImplementation(() => ({ buffer: null })),
 	CanvasSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
-	AudioBufferSource: jest.fn(),
+	AudioBufferSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
 	canEncodeVideo: jest.fn(),
 	Input: jest.fn(),
 	UrlSource: jest.fn(),
@@ -58,8 +58,10 @@ jest.mock("pixi.js", () => ({
 // The canvas package needs TextEncoder, which jsdom lacks; the export only uses its font-name parser.
 jest.mock("@shotstack/shotstack-canvas", () => ({ parseFontFamily: (family: string) => ({ family, weight: "400" }) }));
 
+const mockRenderMix = jest.fn();
+
 jest.mock("../src/core/export/audio-processor", () => ({
-	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: jest.fn().mockResolvedValue(null) }))
+	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: mockRenderMix }))
 }));
 
 const SIZE = { width: 4, height: 2 };
@@ -72,7 +74,7 @@ function createHarness() {
 		totalDuration: 1,
 		size: { ...SIZE },
 		tracks: [] as Array<Array<{ clipId: string; needsResolution: boolean }>>,
-		getEdit: () => ({ output: { fps: 2 } }),
+		getEdit: jest.fn(() => ({ output: { fps: 2 } as { fps: number; mute?: boolean } })),
 		getOutputFormat: jest.fn(() => "mp4"),
 		getResolvedEdit: () => ({ timeline: { tracks: [] }, output: { format: "mp4" } }),
 		getFontUrlByFamilyAndWeight: () => null,
@@ -115,6 +117,7 @@ beforeEach(() => {
 	document.body.innerHTML = "";
 	jest.mocked(canEncodeVideo).mockResolvedValue(true);
 	jest.mocked(CanvasSource).mockClear();
+	mockRenderMix.mockReset().mockResolvedValue(null);
 });
 
 describe("ExportCoordinator.exportBlob", () => {
@@ -294,6 +297,20 @@ describe("ExportCoordinator.exportBlob", () => {
 
 		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "init" });
 		await first;
+		exporter.dispose();
+	});
+});
+
+describe("output settings", () => {
+	it("mixes no audio and adds no audio track for a muted output", async () => {
+		const { exporter, edit } = createHarness();
+		edit.getEdit.mockReturnValue({ output: { fps: 2, mute: true } });
+		mockRenderMix.mockResolvedValue({ duration: 1 });
+
+		await exporter.exportBlob();
+
+		expect(mockRenderMix).not.toHaveBeenCalled();
+		expect(mockOutputs[0].addAudioTrack).not.toHaveBeenCalled();
 		exporter.dispose();
 	});
 });

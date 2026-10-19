@@ -123,7 +123,8 @@ export class ExportCoordinator {
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
-			const mixedAudio = await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
+			const muted = this.edit.getEdit().output?.mute === true;
+			const mixedAudio = muted ? null : await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
 			throwIfAborted();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {

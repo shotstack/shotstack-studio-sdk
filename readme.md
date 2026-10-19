@@ -359,7 +359,7 @@ Before encoding, both methods check that the browser can draw the edit the way a
 | Code | Reason |
 | --- | --- |
 | `ai-pending` | A prompt clip hasn't been generated yet |
-| `output-format` | `output.format` isn't `mp4` |
+| `output-format` | `output.format` isn't `mp4`, or the edit sets `output.range` or `output.scaleTo` |
 | `video-source` | The browser can't decode a video (MP4 and WebM only) |
 | `chroma-key` | A video uses chroma key |
 | `filter` | A clip uses a filter |
