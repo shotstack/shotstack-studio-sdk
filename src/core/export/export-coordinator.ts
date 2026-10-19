@@ -244,18 +244,23 @@ export class ExportCoordinator {
 					}
 				}
 
-				throwIfStopped();
-				// pixi renders the container into a texture with its own transform swapped for the frame's,
-				// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
-				const pixels = this.app.renderer.extract.pixels({
-					target: container,
-					frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height),
-					resolution: 1
-				});
+				// update() only starts rich text and caption draws; finish this frame's before reading pixels.
+				const active = clips.filter(clip => clip.isActive());
+				await Promise.all(active.map(clip => clip.prepareStaticRender()));
+				try {
+					throwIfStopped();
+					// pixi renders the container into a texture with its own transform swapped for the frame's,
+					// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
+					const pixels = this.app.renderer.extract.pixels({
+						target: container,
+						frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height),
+						resolution: 1
+					});
 
-				const imageData = new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height);
-
-				ctx.putImageData(imageData, 0, 0);
+					ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height), 0, 0);
+				} finally {
+					for (const clip of active) clip.endStaticRender();
+				}
 
 				await videoSource.add(i / cfg.fps, 1 / cfg.fps);
 

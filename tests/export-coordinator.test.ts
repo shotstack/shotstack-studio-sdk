@@ -486,6 +486,35 @@ describe("off-screen export", () => {
 	});
 });
 
+describe("asynchronous drawing", () => {
+	it("finishes each active clip's draw before extracting its frame, and ends it after", async () => {
+		const { exporter, edit, renderer } = createHarness();
+		const order: string[] = [];
+		const title = {
+			clipId: "title",
+			needsResolution: false,
+			update: jest.fn(),
+			isActive: () => edit.playbackTime >= 0.5,
+			prepareStaticRender: jest.fn(async () => {
+				await Promise.resolve();
+				order.push(`drawn at ${edit.playbackTime}`);
+			}),
+			endStaticRender: jest.fn(() => order.push("ended"))
+		};
+		edit.tracks = [[title]];
+		const extract = renderer.extract.pixels.getMockImplementation()!;
+		renderer.extract.pixels.mockImplementation(() => {
+			order.push("extracted");
+			return extract();
+		});
+
+		await exporter.exportBlob();
+
+		expect(order).toEqual(["extracted", "drawn at 0.5", "extracted", "ended"]);
+		exporter.dispose();
+	});
+});
+
 describe("speed", () => {
 	it("decodes each video frame at the player's own source time for that frame", async () => {
 		const { exporter, edit } = createHarness();
@@ -518,6 +547,12 @@ describe("speed", () => {
 			getEnd(): number {
 				return this.start + this.length;
 			}
+
+			isActive = jest.fn(() => true);
+
+			prepareStaticRender = jest.fn(async () => {});
+
+			endStaticRender = jest.fn();
 		}
 		edit.tracks = [[new VideoPlayer(edit)]];
 		const getCanvas = jest.fn(async () => ({ canvas: { width: 2, height: 2 } }));
