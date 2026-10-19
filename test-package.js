@@ -26,7 +26,7 @@ const CONTRACT = {
 			require: "./dist/internal.umd.js"
 		}
 	},
-	runtimeExports: ["Edit", "Canvas", "Controls", "Timeline", "UIController", "VideoExporter", "VERSION"],
+	runtimeExports: ["Edit", "Canvas", "Controls", "Timeline", "UIController", "VideoExporter", "ExportError", "VERSION"],
 	internalRuntimeExports: ["Edit", "ShotstackEdit", "registerGenerationSettings", "registerGenerationStatus"],
 	dtsHiddenMembersByClass: {
 		UIController: [

@@ -25,6 +25,13 @@ interface EditState {
 	scale: { x: number; y: number };
 }
 
+export interface ExportBlobOptions {
+	signal?: AbortSignal;
+	onProgress?: (fraction: number, stage: string) => void;
+}
+
+type Progress = (fraction: number, stage: string) => void;
+
 export class ExportCoordinator {
 	private readonly edit: Edit;
 	private readonly canvas: Canvas;
@@ -42,29 +49,60 @@ export class ExportCoordinator {
 		document.addEventListener("keydown", this.handleKeyDown);
 	}
 
+	async exportBlob(options: ExportBlobOptions = {}): Promise<Blob> {
+		return this.encode(this.edit.getEdit().output?.fps ?? 30, options);
+	}
+
 	async export(filename = "shotstack-export.mp4", fps?: number): Promise<void> {
+		if (this.isExporting) throw new ExportError("Export in progress", "init");
+
+		this.progressUI.create();
+		try {
+			const blob = await this.encode(fps ?? this.edit.getEdit().output?.fps ?? 30, {
+				onProgress: (fraction, stage) => this.progressUI.update(fraction * 100, 100, stage)
+			});
+
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
+
+			this.progressUI.update(100, 100, "Complete!");
+		} finally {
+			this.progressUI.remove();
+		}
+	}
+
+	private async encode(fps: number, { signal, onProgress }: ExportBlobOptions): Promise<Blob> {
 		if (typeof VideoEncoder === "undefined") {
 			throw new BrowserCompatibilityError("WebCodecs API not supported", ["VideoEncoder"]);
 		}
 		if (this.isExporting) throw new ExportError("Export in progress", "init");
+		const throwIfAborted = (): void => {
+			if (signal?.aborted) throw new ExportError("Export cancelled", "cancelled");
+		};
+		throwIfAborted();
+		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
 
 		this.isExporting = true;
 		const savedState = this.saveEditState();
 		this.edit.setExportMode(true);
+		const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 
 		try {
-			this.progressUI.create();
 			this.canvas.pauseTicker();
 
 			this.edit.executeEditCommand(this.exportCommand);
 
-			const cfg = this.prepareConfig(fps ?? this.edit.getEdit().output?.fps ?? 30);
-			this.progressUI.update(0, 100, "Preparing...");
+			const cfg = this.prepareConfig(fps);
+			report(0, "Preparing...");
 
 			await this.videoProcessor.initialize(this.exportCommand.getClips());
-			this.progressUI.update(10, 100, "Video ready");
+			throwIfAborted();
+			report(0.1, "Video ready");
 
-			const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 			const canvas = document.createElement("canvas");
 			canvas.width = cfg.size.width;
 			canvas.height = cfg.size.height;
@@ -74,8 +112,9 @@ export class ExportCoordinator {
 			const videoSource = new CanvasSource(canvas, { codec: "avc", bitrate: 5_000_000 });
 			output.addVideoTrack(videoSource);
 
-			this.progressUI.update(15, 100, "Mixing audio...");
+			report(0.15, "Mixing audio...");
 			const mixedAudio = await this.audioProcessor.renderMix(this.exportCommand.getTracks(), this.edit.totalDuration);
+			throwIfAborted();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {
 				audioSource = new AudioBufferSource({ codec: "aac", bitrate: 192_000 });
@@ -85,34 +124,27 @@ export class ExportCoordinator {
 			await output.start();
 
 			if (audioSource && mixedAudio) {
-				this.progressUI.update(20, 100, "Encoding audio...");
+				report(0.2, "Encoding audio...");
 				await audioSource.add(mixedAudio);
 			}
 
-			this.progressUI.update(25, 100, "Exporting...");
-			await this.processFrames(cfg, videoSource, canvas, ctx);
+			report(0.25, "Exporting...");
+			await this.processFrames(cfg, videoSource, ctx, report, throwIfAborted);
 
 			await output.finalize();
 
 			const data = (output.target as BufferTarget).buffer;
 			if (!data) throw new Error("No video data");
 
-			const blob = new Blob([data], { type: "video/mp4" });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = filename;
-			a.click();
-			URL.revokeObjectURL(url);
-
-			this.progressUI.update(100, 100, "Complete!");
+			return new Blob([data], { type: "video/mp4" });
 		} catch (error) {
+			// An export that stops early would otherwise hold its encoders until garbage collection.
+			if (output.state === "pending" || output.state === "started") await output.cancel();
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
 			this.isExporting = false;
 			this.edit.setExportMode(false);
 			this.canvas.resumeTicker();
-			this.progressUI.remove();
 			this.restoreEditState(savedState);
 		}
 	}
@@ -120,8 +152,9 @@ export class ExportCoordinator {
 	private async processFrames(
 		cfg: ExportConfig,
 		videoSource: CanvasSource,
-		_canvas: HTMLCanvasElement,
-		ctx: CanvasRenderingContext2D
+		ctx: CanvasRenderingContext2D,
+		report: Progress,
+		throwIfAborted: () => void
 	): Promise<void> {
 		const container = this.edit.getViewportContainer();
 		this.edit.pause();
@@ -132,6 +165,7 @@ export class ExportCoordinator {
 		const players = this.videoProcessor.disableVideoPlayback(this.exportCommand.getClips());
 
 		for (let i = 0; i < cfg.frames; i += 1) {
+			throwIfAborted();
 			const frameTime = i * cfg.frameDuration;
 			this.edit.playbackTime = sec(frameTime);
 
@@ -160,7 +194,7 @@ export class ExportCoordinator {
 
 			await videoSource.add(i / cfg.fps, 1 / cfg.fps);
 
-			this.progressUI.update(25 + Math.round(((i + 1) / cfg.frames) * 75), 100, "Exporting...");
+			report(0.25 + ((i + 1) / cfg.frames) * 0.75, "Exporting...");
 		}
 	}
 
