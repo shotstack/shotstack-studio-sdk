@@ -39,7 +39,7 @@ export class VideoFrameProcessor {
 	private paused = new Set<VideoPlayerExtended>();
 
 	/** Open a decoder per video clip; a source the browser can't decode comes back as an issue. */
-	async initialize(clips: ReadonlyArray<unknown>): Promise<ExportIssue[]> {
+	async initialize(clips: ReadonlyArray<unknown>, signal?: AbortSignal): Promise<ExportIssue[]> {
 		const players = clips.filter(isVideoPlayer);
 		const issues: ExportIssue[] = [];
 
@@ -53,6 +53,8 @@ export class VideoFrameProcessor {
 					const track = await input.getPrimaryVideoTrack();
 					if (!track) return;
 					if (!(await track.canDecode())) throw new Error("No decoder for this codec");
+					// A cancelled export stops waiting for its probes and cleans up, so a late one cleans up after itself.
+					if (signal?.aborted) return;
 					this.decoders.set(player, {
 						input,
 						track,

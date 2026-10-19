@@ -34,23 +34,27 @@ const cancelled = (): ExportError => new ExportError("Export cancelled", "cancel
 // Per edit, not per exporter: two exports of one edit would both move its playhead and swap its video textures.
 const exporting = new WeakSet<Edit>();
 
-// A stalled asset request can keep a load pending indefinitely, so the wait is bounded and a cancel ends it early.
-function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, signal?: AbortSignal): Promise<void> {
-	let timer: ReturnType<typeof setTimeout> | undefined;
+// Rejects as soon as the signal aborts; the work itself runs on and its result is ignored.
+function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
 	let onAbort = (): void => {};
-	const stopped = new Promise<never>((_, reject) => {
-		timer = setTimeout(() => {
-			const [clipId] = edit.getLoadingClipIds();
-			reject(new ExportError(`A clip's asset didn't finish loading within ${ASSET_SETTLE_TIMEOUT_MS / 1000} seconds`, "assets", { clipId }));
-		}, ASSET_SETTLE_TIMEOUT_MS);
+	const aborted = new Promise<never>((_, reject) => {
 		onAbort = () => reject(cancelled());
 		if (signal?.aborted) onAbort();
 		else signal?.addEventListener("abort", onAbort, { once: true });
 	});
-	return Promise.race([edit.whenSettled(), stopped]).finally(() => {
-		clearTimeout(timer);
-		signal?.removeEventListener("abort", onAbort);
+	return Promise.race([work, aborted]).finally(() => signal?.removeEventListener("abort", onAbort));
+}
+
+// A stalled asset request can keep a load pending indefinitely, so the wait is bounded and a cancel ends it early.
+function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, signal?: AbortSignal): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timedOut = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => {
+			const [clipId] = edit.getLoadingClipIds();
+			reject(new ExportError(`A clip's asset didn't finish loading within ${ASSET_SETTLE_TIMEOUT_MS / 1000} seconds`, "assets", { clipId }));
+		}, ASSET_SETTLE_TIMEOUT_MS);
 	});
+	return untilAborted(Promise.race([edit.whenSettled(), timedOut]), signal).finally(() => clearTimeout(timer));
 }
 
 export class ExportCoordinator {
@@ -126,7 +130,7 @@ export class ExportCoordinator {
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
-			const mixedAudio = cfg.muted ? null : await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
+			const mixedAudio = cfg.muted ? null : await untilAborted(this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration), signal);
 			throwIfAborted();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {
@@ -145,6 +149,7 @@ export class ExportCoordinator {
 			await this.processFrames(cfg, videoSource, ctx, report, throwIfAborted);
 
 			await output.finalize();
+			throwIfAborted();
 
 			const data = (output.target as BufferTarget).buffer;
 			if (!data) throw new Error("No video data");
@@ -156,6 +161,8 @@ export class ExportCoordinator {
 				// A failed cancel must not replace the error that stopped the export.
 				await output.cancel().catch(() => {});
 			}
+			// The host asked to stop, so an error that races the cancel still reports as cancelled.
+			if (signal?.aborted) throw cancelled();
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
 			exporting.delete(this.edit);
@@ -169,9 +176,9 @@ export class ExportCoordinator {
 
 		const issues = findEditIssues(this.edit, cfg.bitrate);
 		const audio = !cfg.muted && this.audioProcessor.hasAudio(this.edit.getTracks());
-		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate, audio);
+		const browserIssue = await untilAborted(findBrowserIssue(cfg.size, cfg.bitrate, audio), signal);
 		if (browserIssue) issues.push(browserIssue);
-		issues.push(...(await this.videoProcessor.initialize(this.edit.getTracks().flat())));
+		issues.push(...(await untilAborted(this.videoProcessor.initialize(this.edit.getTracks().flat(), signal), signal)));
 		if (issues.length > 0) {
 			throw new ExportError("This edit can't be exported in the browser", "unsupported", {}, undefined, issues);
 		}

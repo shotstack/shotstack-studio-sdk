@@ -295,6 +295,60 @@ describe("ExportCoordinator.exportBlob", () => {
 		exporter.dispose();
 	});
 
+	it("rejects with phase cancelled promptly when aborted during the audio mix", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		mockRenderMix.mockImplementation(() => {
+			queueMicrotask(() => controller.abort());
+			return new Promise(() => {});
+		});
+
+		const outcome = await Promise.race([
+			exporter.exportBlob({ signal: controller.signal }).catch((e: unknown) => e),
+			new Promise(resolve => {
+				setTimeout(() => resolve("still mixing"), 50);
+			})
+		]);
+
+		expect(outcome).toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
+	it("reports a failure that follows an abort as cancelled", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		const construct = jest.mocked(Output).getMockImplementation() as unknown as (...a: unknown[]) => { start: jest.Mock };
+		jest.mocked(Output).mockImplementationOnce((...args: unknown[]) => {
+			const output = construct(...args);
+			output.start.mockImplementation(async () => {
+				controller.abort();
+				throw new Error("muxer stopped");
+			});
+			return output as never;
+		});
+
+		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
+	it("rejects with phase cancelled when aborted while the file is finalised", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		const construct = jest.mocked(Output).getMockImplementation() as unknown as (...a: unknown[]) => { finalize: jest.Mock };
+		jest.mocked(Output).mockImplementationOnce((...args: unknown[]) => {
+			const output = construct(...args);
+			const finalize = output.finalize.getMockImplementation() as () => Promise<void>;
+			output.finalize.mockImplementation(async () => {
+				await finalize();
+				controller.abort();
+			});
+			return output as never;
+		});
+
+		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
 	it("refuses a second export while one is running", async () => {
 		const { exporter } = createHarness();
 		const first = exporter.exportBlob();

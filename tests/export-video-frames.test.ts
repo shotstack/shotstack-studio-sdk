@@ -55,6 +55,31 @@ describe("VideoFrameProcessor", () => {
 		expect(dispose).toHaveBeenCalledTimes(1);
 	});
 
+	it("releases a decoder that opens after a cancelled export has cleaned up", async () => {
+		const dispose = jest.fn();
+		let openTrack = (): void => {};
+		jest.mocked(Input).mockImplementationOnce(
+			() =>
+				({
+					getPrimaryVideoTrack: () =>
+						new Promise(resolve => {
+							openTrack = () => resolve({ canDecode: async () => true });
+						}),
+					dispose
+				}) as unknown as InstanceType<typeof Input>
+		);
+		const processor = new VideoFrameProcessor();
+		const controller = new AbortController();
+
+		const probing = processor.initialize([videoPlayer()], controller.signal);
+		controller.abort();
+		processor.restore();
+		openTrack();
+		await probing;
+
+		expect(dispose).toHaveBeenCalledTimes(1);
+	});
+
 	it("restarts every paused video player, including one that got no decoder", () => {
 		const processor = new VideoFrameProcessor();
 		const player = videoPlayer("");
