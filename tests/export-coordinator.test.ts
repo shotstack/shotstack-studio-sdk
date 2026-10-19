@@ -89,7 +89,7 @@ function createHarness() {
 			})
 		}
 	};
-	const app = { renderer, stop: jest.fn(), start: jest.fn() };
+	const app = { renderer, ticker: { started: true }, stop: jest.fn(), start: jest.fn() };
 	const exporter = new ExportCoordinator(edit as unknown as Edit, { application: app } as unknown as Canvas);
 	return { edit, app, renderer, viewport, viewAtExtract, exporter };
 }
@@ -328,6 +328,40 @@ describe("off-screen export", () => {
 
 		expect(edit.pause).toHaveBeenCalled();
 		expect(edit.seek.mock.invocationCallOrder[0]).toBeLessThan(edit.play.mock.invocationCallOrder[0]);
+		exporter.dispose();
+	});
+});
+
+describe("editor restart", () => {
+	it("restarts the app and rejects when pausing playback throws", async () => {
+		const { exporter, edit, app } = createHarness();
+		edit.pause.mockImplementationOnce(() => {
+			throw new Error("listener failed");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(app.start).toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("restarts the app even when restoring the playhead throws", async () => {
+		const { exporter, edit, app } = createHarness();
+		edit.seek.mockImplementationOnce(() => {
+			throw new Error("clip update failed");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(app.start).toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("leaves an app that was already stopped stopped", async () => {
+		const { exporter, app } = createHarness();
+		app.ticker.started = false;
+
+		await exporter.exportBlob();
+
+		expect(app.start).not.toHaveBeenCalled();
 		exporter.dispose();
 	});
 });

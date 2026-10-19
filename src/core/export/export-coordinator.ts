@@ -193,11 +193,13 @@ export class ExportCoordinator {
 
 		// Each frame moves every clip to that frame's time. Stopping the app keeps the screen on the last
 		// frame it drew, so the user never sees those moves; extract renders off-screen either way.
+		const tickerWasRunning = this.app.ticker.started;
 		this.app.stop();
-		this.edit.pause();
-		const players = this.videoProcessor.disableVideoPlayback(clips);
 
 		try {
+			this.edit.pause();
+			const players = this.videoProcessor.disableVideoPlayback(clips);
+
 			for (let i = 0; i < cfg.frames; i += 1) {
 				throwIfAborted();
 				const frameTime = i * cfg.frameDuration;
@@ -232,10 +234,11 @@ export class ExportCoordinator {
 				report(0.25 + ((i + 1) / cfg.frames) * 0.75, "Exporting...");
 			}
 		} finally {
+			// First, so a throw while restoring playback can't leave the editor frozen. start() only schedules a frame.
+			if (tickerWasRunning) this.app.start();
 			this.videoProcessor.restore();
 			this.edit.seek(sec(playbackTime));
 			if (wasPlaying) this.edit.play();
-			this.app.start();
 		}
 	}
 
