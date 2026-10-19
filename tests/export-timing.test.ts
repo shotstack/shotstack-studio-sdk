@@ -1,12 +1,3 @@
-/**
- * Regression tests for export timing math.
- *
- * The export module historically treated the canvas players' second-based
- * timings as milliseconds, dividing by 1000 in three places. That froze
- * exported video on its first frame and truncated audio to ~0.1% of its
- * length. These tests pin the units to seconds so the regression cannot recur.
- */
-
 import { buildVolumeAutomation } from "../src/core/export/export-timing";
 
 describe("buildVolumeAutomation", () => {

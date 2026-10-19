@@ -54,13 +54,17 @@ export interface ExportIssue {
 	clipId?: string;
 }
 
+/** Where an export stopped; `unknown` when an `ExportError` is built without one. */
+export type ExportPhase = "init" | "assets" | "unsupported" | "export" | "cancelled" | "unknown";
+
 /**
  * Export error with context
  */
 export class ExportError extends Error {
 	constructor(
 		message: string,
-		public readonly phase: string = "unknown",
+		// `string & {}` accepts any string while editors still suggest the known phases.
+		public readonly phase: ExportPhase | (string & {}) = "unknown",
 		public readonly context: Record<string, unknown> = {},
 		cause?: Error,
 		public readonly issues?: ExportIssue[]

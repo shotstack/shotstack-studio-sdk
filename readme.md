@@ -354,7 +354,7 @@ const file = await exporter
   });
 ```
 
-Before encoding, both methods check that the browser can draw the edit the way a cloud render would. If it can't, they reject with an `ExportError` whose `phase` is `unsupported` and whose `issues` list each problem as `{ code, message, clipId? }`. `clipId` is the clip's `id` as returned by `edit.getEdit({ includeIds: true })`. A clip that failed to load, or whose asset is still loading after 30 seconds, rejects with `phase` `assets` and its `clipId` in `context`.
+Before encoding, both methods check the edit for features the browser is known to draw differently from a cloud render. If they find any, they reject with an `ExportError` whose `phase` is `unsupported` and whose `issues` list each problem as `{ code, message, clipId? }`. `clipId` is the clip's `id` as returned by `edit.getEdit({ includeIds: true })`. A clip that failed to load, or whose asset is still loading after 30 seconds, rejects with `phase` `assets` and its `clipId` in `context`. Starting an export while another export of the same edit runs rejects with `phase` `init`, and a failure while encoding rejects with `phase` `export`.
 
 | Code | Reason |
 | --- | --- |
@@ -366,10 +366,10 @@ Before encoding, both methods check that the browser can draw the edit the way a
 | `html` | An `html` clip that isn't the plain text form, or any `html5` clip |
 | `effect` | An effect without a preset in the editor |
 | `transition` | A transition without a preset in the editor |
-| `font` | A font that is neither built in nor listed in `timeline.fonts` |
+| `font` | A font that is neither built in (including the Google catalogue) nor loaded with the edit's `timeline.fonts` |
 | `luma` | A luma matte whose source is a video |
-| `too-long` | The edit runs longer than five minutes, or less above 1080p (75 seconds at 4K) |
-| `browser` | The browser can't encode H.264 at the output size |
+| `too-long` | The edit runs longer than five minutes, or than the shorter limit for sizes above 1080p (75 seconds at 4K) |
+| `browser` | The browser can't encode H.264 at the output size, or AAC when the edit has audio |
 
 ## Merge Fields
 
