@@ -18,6 +18,11 @@ jest.mock("mediabunny", () => ({
 
 jest.mock("pixi.js", () => ({ Texture: { from: jest.fn() } }));
 
+const customFonts: Record<string, string> = {
+	"Brand Sans|400": "https://example.com/brand-sans.ttf",
+	"Bold Only|700": "https://example.com/bold-only.ttf"
+};
+
 const clip = (fields: Partial<ResolvedClip> & Pick<ResolvedClip, "asset">): ResolvedClip => ({
 	id: "clip-1",
 	start: sec(0),
@@ -32,7 +37,7 @@ function editWith(
 	return {
 		getResolvedEdit: () => ({ timeline: { tracks: [{ clips }] }, output: { format: "mp4" } }),
 		getOutputFormat: () => format,
-		getFontUrlByFamilyAndWeight: (family: string) => (family === "Brand Sans" ? "https://example.com/brand-sans.ttf" : null),
+		getFontUrlByFamilyAndWeight: (family: string, weight: number) => customFonts[`${family}|${weight}`] ?? null,
 		totalDuration: duration
 	};
 }
@@ -97,6 +102,16 @@ describe("findEditIssues", () => {
 
 	it("reports a font that is neither built in nor in the edit's fonts as font", () => {
 		expect(codes([clip({ asset: { type: "rich-text", text: "Hi", font: { family: "Not A Real Font" } } })])).toEqual(["font"]);
+	});
+
+	it("reads string font weights the way the preview does", () => {
+		const withWeight = (weight: string): ResolvedClip[] => [
+			clip({ asset: { type: "rich-text", text: "Hi", font: { family: "Bold Only", weight } } })
+		];
+
+		expect(codes(withWeight("bold"))).toEqual([]);
+		expect(codes(withWeight("700"))).toEqual([]);
+		expect(codes(withWeight("normal"))).toEqual(["font"]);
 	});
 
 	it("reports an edit longer than the limit as too-long", () => {

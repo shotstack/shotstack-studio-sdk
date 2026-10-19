@@ -2,6 +2,7 @@ import { EffectPresetBuilder } from "@animations/effect-preset-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import type { Edit } from "@core/edit-session";
 import { resolveFontPath } from "@core/fonts/font-config";
+import { NAMED_FONT_WEIGHTS } from "@core/fonts/font-weights";
 import { isPendingAiAsset } from "@core/shared/ai-asset-utils";
 import { isTextHtml } from "@core/shared/asset-utils";
 import type { ResolvedClip } from "@schemas";
@@ -18,6 +19,14 @@ const UNIT_SIZE = { width: 1, height: 1 };
 
 // The preset builders return no keyframes for a name they don't know, which the preview draws as no animation.
 const animates = (keyframeSet: object): boolean => Object.values(keyframeSet).some(value => Array.isArray(value) && value.length > 0);
+
+// Mirrors RichTextPlayer's weight reading, so the check asks for the weight the preview registers.
+function fontWeightOf(weight: unknown): number {
+	if (typeof weight === "number") return weight;
+	if (typeof weight !== "string") return 400;
+	const parsed = NAMED_FONT_WEIGHTS[weight.toLowerCase().trim()] ?? parseInt(weight, 10);
+	return Number.isNaN(parsed) ? 400 : parsed;
+}
 
 function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] {
 	const issues: ExportIssue[] = [];
@@ -42,7 +51,7 @@ function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] 
 
 	if ("font" in asset && asset.font?.family) {
 		const { family } = asset.font;
-		const weight = "weight" in asset.font && typeof asset.font.weight === "number" ? asset.font.weight : 400;
+		const weight = fontWeightOf("weight" in asset.font ? asset.font.weight : undefined);
 		if (!resolveFontPath(family, weight) && !edit.getFontUrlByFamilyAndWeight(family, weight)) {
 			add("font", `The ${family} font isn't built in or listed in the edit's fonts.`);
 		}
