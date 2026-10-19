@@ -26,7 +26,13 @@ function createBufferSource() {
 const createGain = () => ({ gain: { setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn() }, connect: (node: unknown) => node });
 
 function mediaClip(playerType: PlayerType, asset: Record<string, unknown>, start: number, length: number): Player {
-	return { playerType, clipConfiguration: { asset }, getStart: () => start, getLength: () => length } as unknown as Player;
+	return {
+		clipId: `${playerType}-clip`,
+		playerType,
+		clipConfiguration: { asset },
+		getStart: () => start,
+		getLength: () => length
+	} as unknown as Player;
 }
 
 beforeAll(() => {
@@ -81,5 +87,35 @@ describe("AudioProcessor speed", () => {
 		expect(curve[curve.length - 1]).toBeCloseTo(3);
 		expect(scheduled[0].start).toEqual([[0.5, 1]]);
 		expect(scheduled[0].stop).toEqual([[2.5]]);
+	});
+});
+
+describe("AudioProcessor failures", () => {
+	beforeEach(() => {
+		jest.spyOn(console, "warn").mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
+	it("fails with phase assets, naming the clip, when an audio or speech clip's file can't be fetched or decoded", async () => {
+		jest.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+		await expect(
+			new AudioProcessor().renderMix([[mediaClip(PlayerType.Audio, { type: "audio", src: "https://example.com/gone.mp3" }, 0, 4)]], 10)
+		).rejects.toMatchObject({ name: "ExportError", phase: "assets", context: { clipId: "audio-clip" } });
+
+		jest.mocked(fetch).mockResolvedValueOnce({ ok: false } as Response);
+		await expect(
+			new AudioProcessor().renderMix([[mediaClip(PlayerType.TextToSpeech, { type: "text-to-speech", src: "https://example.com/tts.mp3" }, 0, 4)]], 10)
+		).rejects.toMatchObject({ phase: "assets", context: { clipId: "text-to-speech-clip" } });
+	});
+
+	it("leaves a video without usable audio silent", async () => {
+		jest.mocked(fetch).mockResolvedValueOnce({ ok: false } as Response);
+
+		await expect(
+			new AudioProcessor().renderMix([[mediaClip(PlayerType.Video, { type: "video", src: "https://example.com/silent.mp4" }, 0, 4)]], 10)
+		).resolves.toBeNull();
 	});
 });

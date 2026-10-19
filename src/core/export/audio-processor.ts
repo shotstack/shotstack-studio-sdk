@@ -3,6 +3,7 @@ import { createAnimatedSpeed } from "@canvas/players/video-player";
 import type { VideoAsset } from "@schemas";
 
 import { buildVolumeAutomation, type VolumeTween } from "./export-timing";
+import { ExportError } from "./export-utils";
 
 const OUTPUT_SAMPLE_RATE = 48_000;
 const OUTPUT_CHANNELS = 2;
@@ -13,6 +14,8 @@ const SPEED_STEP_SECONDS = 0.01;
 const AUDIO_BEARING = new Set<string>([PlayerType.Audio, PlayerType.Video, PlayerType.TextToSpeech]);
 
 interface AudioBearingClip {
+	clipId: string | null;
+	video: boolean;
 	src: string;
 	start: number;
 	length: number;
@@ -42,6 +45,8 @@ export class AudioProcessor {
 
 		for (const clip of clips) {
 			const buffer = await this.decode(clip.src, ctx, decodeCache);
+			// A video may have no audio track; an audio or speech clip without its audio would export silent.
+			if (!buffer && !clip.video) throw new ExportError("A clip's audio couldn't be loaded", "assets", { clipId: clip.clipId });
 			if (buffer) {
 				const source = ctx.createBufferSource();
 				source.buffer = buffer;
@@ -130,6 +135,8 @@ export class AudioProcessor {
 		if (typeof asset?.src !== "string" || !asset.src) return null;
 
 		return {
+			clipId: clip.clipId,
+			video: clip.playerType === PlayerType.Video,
 			src: asset.src,
 			start: clip.getStart(),
 			length: clip.getLength(),
