@@ -1,5 +1,6 @@
 import { Canvas } from "@canvas/shotstack-canvas";
 import { Edit } from "@core/edit-session";
+import { EditEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource } from "mediabunny";
 import * as pixi from "pixi.js";
@@ -110,6 +111,16 @@ export class ExportCoordinator {
 
 		exporting.add(this.edit);
 		let output: Output | undefined;
+		let changed = false;
+		const markChanged = (): void => {
+			changed = true;
+		};
+		const stopWatching = this.edit.events.on(EditEvent.EditChanged, markChanged);
+		// The editor stays live during export; anything checked, mixed or drawn before a change no longer matches the edit.
+		const throwIfStopped = (): void => {
+			throwIfAborted();
+			if (changed) throw new ExportError("The edit or playback changed during export", "export");
+		};
 
 		try {
 			output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
@@ -117,7 +128,7 @@ export class ExportCoordinator {
 			report(0, "Preparing...");
 
 			await this.checkExportable(cfg, signal);
-			throwIfAborted();
+			throwIfStopped();
 			report(0.1, "Video ready");
 
 			const canvas = document.createElement("canvas");
@@ -131,7 +142,7 @@ export class ExportCoordinator {
 
 			report(0.15, "Mixing audio...");
 			const mixedAudio = cfg.muted ? null : await untilAborted(this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration), signal);
-			throwIfAborted();
+			throwIfStopped();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {
 				audioSource = new AudioBufferSource({ codec: "aac", bitrate: AUDIO_BITRATE });
@@ -146,7 +157,7 @@ export class ExportCoordinator {
 			}
 
 			report(0.25, "Exporting...");
-			await this.processFrames(cfg, videoSource, ctx, report, throwIfAborted);
+			await this.processFrames(cfg, videoSource, ctx, report, throwIfStopped, markChanged);
 
 			await output.finalize();
 			throwIfAborted();
@@ -165,6 +176,7 @@ export class ExportCoordinator {
 			if (signal?.aborted) throw cancelled();
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
+			stopWatching();
 			exporting.delete(this.edit);
 			// Releases decoders the checks opened when the export stops before drawing a frame.
 			this.videoProcessor.restore();
@@ -196,7 +208,8 @@ export class ExportCoordinator {
 		videoSource: CanvasSource,
 		ctx: CanvasRenderingContext2D,
 		report: Progress,
-		throwIfAborted: () => void
+		throwIfStopped: () => void,
+		onPlayback: () => void
 	): Promise<void> {
 		const container = this.edit.getViewportContainer();
 		const clips = this.edit.getTracks().flat();
@@ -206,13 +219,16 @@ export class ExportCoordinator {
 		// frame it drew, so the user never sees those moves; extract renders off-screen either way.
 		const tickerWasRunning = this.app.ticker.started;
 		this.app.stop();
+		const stopWatching: Array<() => void> = [];
 
 		try {
 			this.edit.pause();
+			// From here the export owns the playhead, so a play, pause or seek by anyone else stops it.
+			stopWatching.push(this.edit.events.on(EditEvent.PlaybackPlay, onPlayback), this.edit.events.on(EditEvent.PlaybackPause, onPlayback));
 			const players = this.videoProcessor.disableVideoPlayback(clips);
 
 			for (let i = 0; i < cfg.frames; i += 1) {
-				throwIfAborted();
+				throwIfStopped();
 				const frameTime = i * cfg.frameDuration;
 				this.edit.playbackTime = sec(frameTime);
 
@@ -228,6 +244,7 @@ export class ExportCoordinator {
 					}
 				}
 
+				throwIfStopped();
 				// pixi renders the container into a texture with its own transform swapped for the frame's,
 				// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
 				const pixels = this.app.renderer.extract.pixels({
@@ -245,7 +262,9 @@ export class ExportCoordinator {
 				report(0.25 + ((i + 1) / cfg.frames) * 0.75, "Exporting...");
 			}
 		} finally {
-			// First, so a throw while restoring playback can't leave the editor frozen. start() only schedules a frame.
+			// Restoring the playhead below seeks, which must not count as a change.
+			for (const stop of stopWatching) stop();
+			// Before restoring playback, so a throw there can't leave the editor frozen. start() only schedules a frame.
 			if (tickerWasRunning) this.app.start();
 			this.videoProcessor.restore();
 			this.edit.seek(sec(playbackTime));

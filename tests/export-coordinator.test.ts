@@ -2,6 +2,8 @@
 
 import type { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
+import { EditEvent, type EditEventMap } from "@core/events/edit-events";
+import { EventEmitter } from "@core/events/event-emitter";
 import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError, exportBitrate } from "@core/export/export-utils";
@@ -70,7 +72,9 @@ const SIZE = { width: 4, height: 2 };
 
 function createHarness() {
 	const viewport = { position: { x: 120, y: 80 }, scale: { x: 0.5, y: 0.5 }, visible: true };
+	const events = new EventEmitter<EditEventMap>();
 	const edit = {
+		events,
 		isPlaying: false,
 		playbackTime: 1.5,
 		totalDuration: 1,
@@ -87,9 +91,10 @@ function createHarness() {
 		setExportMode: jest.fn(),
 		executeEditCommand: jest.fn(),
 		getViewportContainer: () => viewport,
-		pause: jest.fn(),
-		play: jest.fn(),
-		seek: jest.fn()
+		// Like the editor's own: seeking pauses, and both report it.
+		pause: jest.fn(() => events.emit(EditEvent.PlaybackPause)),
+		play: jest.fn(() => events.emit(EditEvent.PlaybackPlay)),
+		seek: jest.fn((): void => edit.pause())
 	};
 	const viewAtExtract: Array<typeof viewport> = [];
 	const renderer = {
@@ -397,6 +402,44 @@ describe("output settings", () => {
 
 		edit.getEdit.mockReturnValue({ output: { fps: 2, mute: true } });
 		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+	});
+});
+
+describe("changes during export", () => {
+	const listenersOn = (events: EventEmitter<EditEventMap>): string[] => Object.keys((events as unknown as { events: object }).events);
+
+	it.each([
+		["the playhead is moved", (edit: { seek: (time: number) => void }) => edit.seek(0.25)],
+		["the edit changes", (edit: { events: EventEmitter<EditEventMap> }) => edit.events.emit(EditEvent.EditChanged, { source: "test", timestamp: 0 })]
+	])("rejects with phase export when %s between frames, leaving nothing subscribed", async (_, change) => {
+		const { exporter, edit, renderer } = createHarness();
+		jest.mocked(CanvasSource).mockImplementationOnce(() => ({ add: jest.fn(async () => change(edit)) }) as unknown as CanvasSource);
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export", message: "The edit or playback changed during export" });
+		expect(renderer.extract.pixels).toHaveBeenCalledTimes(1);
+		expect(listenersOn(edit.events)).toEqual([]);
+		exporter.dispose();
+	});
+
+	it("rejects when the edit changes while the audio mixes", async () => {
+		const { exporter, edit } = createHarness();
+		mockRenderMix.mockImplementation(async () => {
+			edit.events.emit(EditEvent.EditChanged, { source: "test", timestamp: 0 });
+			return null;
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(listenersOn(edit.events)).toEqual([]);
+		exporter.dispose();
+	});
+
+	it("isn't stopped by its own pause and restore, and leaves nothing subscribed", async () => {
+		const { exporter, edit } = createHarness();
+		edit.isPlaying = true;
+
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		expect(listenersOn(edit.events)).toEqual([]);
 		exporter.dispose();
 	});
 });
