@@ -337,7 +337,7 @@ const exporter = new VideoExporter(edit, canvas);
 await exporter.export("my-video.mp4", 25);
 ```
 
-`exportBlob()` runs the same export without the progress overlay or the download and resolves with the MP4 `Blob`. `onProgress` receives a fraction from 0 to 1 and a stage label. Aborting the signal rejects with an `ExportError` whose `phase` is `cancelled`. The editor stays live while an export runs, but changing the edit, or playing, pausing or seeking, rejects the export with `phase` `export`.
+`exportBlob()` runs the same export without the progress overlay or the download and resolves with the MP4 `Blob`. `onProgress` receives a fraction from 0 to 1 and a stage label. Aborting the signal rejects with an `ExportError` whose `phase` is `cancelled`. The editor stays live while an export runs: changing the edit rejects the export with `phase` `export`, and so does playing, pausing or seeking once it has started drawing frames.
 
 ```typescript
 import { ExportError } from "@shotstack/shotstack-studio";
