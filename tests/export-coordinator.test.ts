@@ -513,6 +513,42 @@ describe("asynchronous drawing", () => {
 	});
 });
 
+describe("cleanup", () => {
+	it("ends every prepared draw when one fails, and rejects", async () => {
+		const { exporter, edit, renderer } = createHarness();
+		const clip = (prepare: () => Promise<void>) => ({
+			clipId: "title",
+			needsResolution: false,
+			update: jest.fn(),
+			isActive: () => true,
+			prepareStaticRender: jest.fn(prepare),
+			endStaticRender: jest.fn()
+		});
+		const drawn = clip(async () => {});
+		const failed = clip(async () => {
+			throw new Error("draw failed");
+		});
+		edit.tracks = [[drawn, failed]];
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(renderer.extract.pixels).not.toHaveBeenCalled();
+		expect(drawn.endStaticRender).toHaveBeenCalledTimes(1);
+		expect(failed.endStaticRender).toHaveBeenCalledTimes(1);
+		exporter.dispose();
+	});
+
+	it("releases the edit for the next export when watching it for changes fails", async () => {
+		const { exporter, edit } = createHarness();
+		jest.spyOn(edit.events, "on").mockImplementationOnce(() => {
+			throw new Error("listener limit");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ name: "ExportError", phase: "export" });
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+	});
+});
+
 describe("speed", () => {
 	it("decodes each video frame at the player's own source time for that frame", async () => {
 		const { exporter, edit } = createHarness();

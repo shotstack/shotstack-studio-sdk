@@ -109,20 +109,21 @@ export class ExportCoordinator {
 		throwIfAborted();
 		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
 
-		exporting.add(this.edit);
 		let output: Output | undefined;
 		let changed = false;
 		const markChanged = (): void => {
 			changed = true;
 		};
-		const stopWatching = this.edit.events.on(EditEvent.EditChanged, markChanged);
+		let stopWatching = (): void => {};
 		// The editor stays live during export; anything checked, mixed or drawn before a change no longer matches the edit.
 		const throwIfStopped = (): void => {
 			throwIfAborted();
 			if (changed) throw new ExportError("The edit or playback changed during export", "export");
 		};
 
+		exporting.add(this.edit);
 		try {
+			stopWatching = this.edit.events.on(EditEvent.EditChanged, markChanged);
 			output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 			const cfg = this.prepareConfig(fps);
 			report(0, "Preparing...");
@@ -246,8 +247,8 @@ export class ExportCoordinator {
 
 				// update() only starts rich text and caption draws; finish this frame's before reading pixels.
 				const active = clips.filter(clip => clip.isActive());
-				await Promise.all(active.map(clip => clip.prepareStaticRender()));
 				try {
+					await Promise.all(active.map(clip => clip.prepareStaticRender()));
 					throwIfStopped();
 					// pixi renders the container into a texture with its own transform swapped for the frame's,
 					// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
