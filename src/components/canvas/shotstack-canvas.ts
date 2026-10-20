@@ -335,11 +335,13 @@ export class Canvas {
 	): Promise<string> {
 		const container = this.getViewportContainer();
 		// Neutralise the editor's zoom/pan so the extract is a 1:1 output-resolution frame. The
-		// ticker is paused around the swap so the on-screen view never renders in this transient
-		// state; position and scale (and the ticker) are restored in `finally`.
+		// Application draws the stage from this same ticker, so it stops for the swap: any frame drawn
+		// while the extract is awaited would put the moved view on screen.
+		const { ticker } = this.application;
+		const wasRunning = ticker.started;
 		const { x: posX, y: posY } = container.position;
 		const { x: scaleX, y: scaleY } = container.scale;
-		this.pauseTicker();
+		ticker.stop();
 		container.position.set(0, 0);
 		container.scale.set(1, 1);
 		try {
@@ -347,7 +349,7 @@ export class Canvas {
 		} finally {
 			container.position.set(posX, posY);
 			container.scale.set(scaleX, scaleY);
-			this.resumeTicker();
+			if (wasRunning) ticker.start();
 		}
 	}
 
