@@ -1,3 +1,4 @@
+import { PlayerType } from "@canvas/players/player";
 import { Input, UrlSource, MP4, WEBM, CanvasSink, type InputVideoTrack } from "mediabunny";
 import * as pixi from "pixi.js";
 
@@ -15,13 +16,9 @@ export interface VideoPlayerExtended {
 	getLength?(): number;
 }
 
+// By type, not class name: minification renames classes, and a luma matte can hold a video texture too.
 export function isVideoPlayer(player: unknown): player is VideoPlayerExtended {
-	if (!player || typeof player !== "object") return false;
-	const p = player as Record<string, unknown>;
-	const name = p.constructor?.name;
-	if (name === "RichTextPlayer" || name === "RichCaptionPlayer") return false;
-	const texture = p["texture"] as { source?: { resource?: unknown } } | undefined;
-	return name === "VideoPlayer" || texture?.source?.resource instanceof HTMLVideoElement;
+	return typeof player === "object" && player !== null && "playerType" in player && player.playerType === PlayerType.Video;
 }
 
 interface ClipDecoder {
@@ -39,10 +36,11 @@ interface ClipDecoder {
  */
 export class VideoFrameProcessor {
 	private decoders = new Map<VideoPlayerExtended, ClipDecoder>();
+	private paused = new Set<VideoPlayerExtended>();
 
 	/** Open a decoder per video clip; a source the browser can't decode comes back as an issue. */
-	async initialize(clips: ReadonlyArray<unknown>): Promise<ExportIssue[]> {
-		const players = clips.filter(isVideoPlayer) as VideoPlayerExtended[];
+	async initialize(clips: ReadonlyArray<unknown>, signal?: AbortSignal): Promise<ExportIssue[]> {
+		const players = clips.filter(isVideoPlayer);
 		const issues: ExportIssue[] = [];
 
 		await Promise.all(
@@ -50,20 +48,25 @@ export class VideoFrameProcessor {
 				const src = this.getVideoKey(player);
 				if (!src) return;
 				const input = new Input({ source: new UrlSource(src), formats: [MP4, WEBM] });
+				let kept = false;
 				try {
 					const track = await input.getPrimaryVideoTrack();
 					if (!track) return;
 					if (!(await track.canDecode())) throw new Error("No decoder for this codec");
+					// A cancelled export stops waiting for its probes and cleans up, so a late one cleans up after itself.
+					if (signal?.aborted) return;
 					this.decoders.set(player, {
 						input,
 						track,
 						sink: new CanvasSink(track, { poolSize: 2 }),
 						originalTexture: player.texture
 					});
+					kept = true;
 				} catch (error) {
-					input.dispose();
 					console.warn("Export: can't decode video", src, error);
 					issues.push({ code: "video-source", message: "This video's format can't be decoded in the browser.", clipId: player.clipId ?? undefined });
+				} finally {
+					if (!kept) input.dispose();
 				}
 			})
 		);
@@ -82,12 +85,15 @@ export class VideoFrameProcessor {
 		if (!wrapped) return;
 
 		if (!decoder.texture) {
+			const live = decoder.originalTexture;
 			const canvas = document.createElement("canvas");
-			canvas.width = wrapped.canvas.width;
-			canvas.height = wrapped.canvas.height;
+			// Sized like the live video texture, so its frame (the asset's crop) picks the same pixels here.
+			canvas.width = live?.source.width || wrapped.canvas.width;
+			canvas.height = live?.source.height || wrapped.canvas.height;
 			decoder.canvas = canvas;
 			decoder.ctx = canvas.getContext("2d", { alpha: true }) ?? undefined;
-			decoder.texture = pixi.Texture.from(canvas);
+			// A bare source: Texture.from would cache a texture per canvas that restore() never destroys.
+			decoder.texture = new pixi.Texture({ source: pixi.TextureSource.from(canvas), frame: live?.frame });
 		}
 
 		decoder.ctx?.drawImage(wrapped.canvas, 0, 0, decoder.canvas!.width, decoder.canvas!.height);
@@ -102,13 +108,14 @@ export class VideoFrameProcessor {
 
 	/** Pause the live <video> elements and return the export's video players. */
 	disableVideoPlayback(clips: ReadonlyArray<unknown>): VideoPlayerExtended[] {
-		const players = clips.filter(isVideoPlayer) as VideoPlayerExtended[];
+		const players = clips.filter(isVideoPlayer);
 		for (const player of players) {
 			const resource = player.texture?.source?.resource;
 			if (resource instanceof HTMLVideoElement) resource.pause();
 			// The decoder drives frames during export; stop the player's own video update.
 			// eslint-disable-next-line no-param-reassign
 			player.skipVideoUpdate = true;
+			this.paused.add(player);
 		}
 		return players;
 	}
@@ -126,11 +133,12 @@ export class VideoFrameProcessor {
 				}
 				decoder.texture?.destroy(true);
 			}
-			// eslint-disable-next-line no-param-reassign
-			player.skipVideoUpdate = false;
 			decoder.input.dispose();
 		}
 		this.decoders.clear();
+		// Every player the export paused, decoded or not; one left skipping updates stays frozen in the editor.
+		for (const player of this.paused) player.skipVideoUpdate = false;
+		this.paused.clear();
 	}
 
 	getVideoKey(player: VideoPlayerExtended): string {

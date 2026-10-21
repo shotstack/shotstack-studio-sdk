@@ -2,13 +2,15 @@
 
 import type { Canvas } from "@canvas/shotstack-canvas";
 import type { Edit } from "@core/edit-session";
+import { EditEvent, type EditEventMap } from "@core/events/edit-events";
+import { EventEmitter } from "@core/events/event-emitter";
 import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError, exportBitrate } from "@core/export/export-utils";
 import { calculateSizeFromPreset } from "@core/output-settings-manager";
-import { canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
+import { canEncodeAudio, canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
 
-const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
+const mockOutputs: Array<{ cancel: jest.Mock; addAudioTrack: jest.Mock; state: string }> = [];
 
 jest.mock("mediabunny", () => ({
 	Output: jest.fn().mockImplementation(({ target }: { target: { buffer: ArrayBuffer | null } }) => {
@@ -35,8 +37,9 @@ jest.mock("mediabunny", () => ({
 	Mp4OutputFormat: jest.fn(),
 	BufferTarget: jest.fn().mockImplementation(() => ({ buffer: null })),
 	CanvasSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
-	AudioBufferSource: jest.fn(),
+	AudioBufferSource: jest.fn().mockImplementation(() => ({ add: jest.fn().mockResolvedValue(undefined) })),
 	canEncodeVideo: jest.fn(),
+	canEncodeAudio: jest.fn(),
 	Input: jest.fn(),
 	UrlSource: jest.fn(),
 	CanvasSink: jest.fn(),
@@ -44,29 +47,38 @@ jest.mock("mediabunny", () => ({
 	WEBM: {}
 }));
 
+// Player modules extend pixi filters at load.
 jest.mock("pixi.js", () => ({
+	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
+	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 	Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
-	Texture: { from: jest.fn(() => ({ source: { update: jest.fn() }, destroy: jest.fn() })) }
+	Texture: jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
+	TextureSource: { from: jest.fn(() => ({ update: jest.fn() })) }
 }));
 
 // The canvas package needs TextEncoder, which jsdom lacks; the export only uses its font-name parser.
 jest.mock("@shotstack/shotstack-canvas", () => ({ parseFontFamily: (family: string) => ({ family, weight: "400" }) }));
 
+const mockRenderMix = jest.fn();
+const mockHasAudio = jest.fn();
+
 jest.mock("../src/core/export/audio-processor", () => ({
-	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: jest.fn().mockResolvedValue(null) }))
+	AudioProcessor: jest.fn().mockImplementation(() => ({ renderMix: mockRenderMix, hasAudio: mockHasAudio }))
 }));
 
 const SIZE = { width: 4, height: 2 };
 
 function createHarness() {
 	const viewport = { position: { x: 120, y: 80 }, scale: { x: 0.5, y: 0.5 }, visible: true };
+	const events = new EventEmitter<EditEventMap>();
 	const edit = {
+		events,
 		isPlaying: false,
 		playbackTime: 1.5,
 		totalDuration: 1,
 		size: { ...SIZE },
 		tracks: [] as Array<Array<{ clipId: string; needsResolution: boolean }>>,
-		getEdit: () => ({ output: { fps: 2 } }),
+		getEdit: jest.fn(() => ({ output: { fps: 2 } as { fps: number; mute?: boolean } })),
 		getOutputFormat: jest.fn(() => "mp4"),
 		getResolvedEdit: () => ({ timeline: { tracks: [] }, output: { format: "mp4" } }),
 		getFontUrlByFamilyAndWeight: () => null,
@@ -77,9 +89,10 @@ function createHarness() {
 		setExportMode: jest.fn(),
 		executeEditCommand: jest.fn(),
 		getViewportContainer: () => viewport,
-		pause: jest.fn(),
-		play: jest.fn(),
-		seek: jest.fn()
+		// Like the editor's own: seeking pauses, and both report it.
+		pause: jest.fn(() => events.emit(EditEvent.PlaybackPause)),
+		play: jest.fn(() => events.emit(EditEvent.PlaybackPlay)),
+		seek: jest.fn((): void => edit.pause())
 	};
 	const viewAtExtract: Array<typeof viewport> = [];
 	const renderer = {
@@ -109,6 +122,9 @@ beforeEach(() => {
 	document.body.innerHTML = "";
 	jest.mocked(canEncodeVideo).mockResolvedValue(true);
 	jest.mocked(CanvasSource).mockClear();
+	mockRenderMix.mockReset().mockResolvedValue(null);
+	mockHasAudio.mockReset().mockReturnValue(false);
+	jest.mocked(canEncodeAudio).mockReset().mockResolvedValue(true);
 });
 
 describe("ExportCoordinator.exportBlob", () => {
@@ -282,12 +298,146 @@ describe("ExportCoordinator.exportBlob", () => {
 		exporter.dispose();
 	});
 
+	it("rejects with phase cancelled promptly when aborted during the audio mix", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		mockRenderMix.mockImplementation(() => {
+			queueMicrotask(() => controller.abort());
+			return new Promise(() => {});
+		});
+
+		const outcome = await Promise.race([
+			exporter.exportBlob({ signal: controller.signal }).catch((e: unknown) => e),
+			new Promise(resolve => {
+				setTimeout(() => resolve("still mixing"), 50);
+			})
+		]);
+
+		expect(outcome).toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
+	it("reports a failure that follows an abort as cancelled", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		const construct = jest.mocked(Output).getMockImplementation() as unknown as (...a: unknown[]) => { start: jest.Mock };
+		jest.mocked(Output).mockImplementationOnce((...args: unknown[]) => {
+			const output = construct(...args);
+			output.start.mockImplementation(async () => {
+				controller.abort();
+				throw new Error("muxer stopped");
+			});
+			return output as never;
+		});
+
+		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
+	it("rejects with phase cancelled when aborted while the file is finalised", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		const construct = jest.mocked(Output).getMockImplementation() as unknown as (...a: unknown[]) => { finalize: jest.Mock };
+		jest.mocked(Output).mockImplementationOnce((...args: unknown[]) => {
+			const output = construct(...args);
+			const finalize = output.finalize.getMockImplementation() as () => Promise<void>;
+			output.finalize.mockImplementation(async () => {
+				await finalize();
+				controller.abort();
+			});
+			return output as never;
+		});
+
+		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
 	it("refuses a second export while one is running", async () => {
 		const { exporter } = createHarness();
 		const first = exporter.exportBlob();
 
 		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "init" });
 		await first;
+		exporter.dispose();
+	});
+
+	it("refuses a second exporter on the same edit while one is running", async () => {
+		const { exporter, edit, app } = createHarness();
+		const second = new ExportCoordinator(edit as unknown as Edit, { application: app } as unknown as Canvas);
+		const first = exporter.exportBlob();
+
+		await expect(second.exportBlob()).rejects.toMatchObject({ phase: "init", message: "Export in progress" });
+		await first;
+		await expect(second.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+		second.dispose();
+	});
+});
+
+describe("output settings", () => {
+	it("mixes no audio and adds no audio track for a muted output", async () => {
+		const { exporter, edit } = createHarness();
+		edit.getEdit.mockReturnValue({ output: { fps: 2, mute: true } });
+		mockRenderMix.mockResolvedValue({ duration: 1 });
+
+		await exporter.exportBlob();
+
+		expect(mockRenderMix).not.toHaveBeenCalled();
+		expect(mockOutputs[0].addAudioTrack).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("refuses an edit with audio before mixing when the browser can't encode AAC, unless it's muted", async () => {
+		const { exporter, edit } = createHarness();
+		mockHasAudio.mockReturnValue(true);
+		jest.mocked(canEncodeAudio).mockResolvedValue(false);
+
+		const error = await exporter.exportBlob().catch((e: unknown) => e);
+
+		expect(error).toMatchObject({ phase: "unsupported" });
+		expect((error as ExportError).issues?.map(issue => issue.code)).toEqual(["browser"]);
+		expect(mockRenderMix).not.toHaveBeenCalled();
+
+		edit.getEdit.mockReturnValue({ output: { fps: 2, mute: true } });
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+	});
+});
+
+describe("changes during export", () => {
+	const listenersOn = (events: EventEmitter<EditEventMap>): string[] => Object.keys((events as unknown as { events: object }).events);
+
+	it.each([
+		["the playhead is moved", (edit: { seek: (time: number) => void }) => edit.seek(0.25)],
+		["the edit changes", (edit: { events: EventEmitter<EditEventMap> }) => edit.events.emit(EditEvent.EditChanged, { source: "test", timestamp: 0 })]
+	])("rejects with phase export when %s between frames, leaving nothing subscribed", async (_, change) => {
+		const { exporter, edit, renderer } = createHarness();
+		jest.mocked(CanvasSource).mockImplementationOnce(() => ({ add: jest.fn(async () => change(edit)) }) as unknown as CanvasSource);
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export", message: "The edit or playback changed during export" });
+		expect(renderer.extract.pixels).toHaveBeenCalledTimes(1);
+		expect(listenersOn(edit.events)).toEqual([]);
+		exporter.dispose();
+	});
+
+	it("rejects when the edit changes while the audio mixes", async () => {
+		const { exporter, edit } = createHarness();
+		mockRenderMix.mockImplementation(async () => {
+			edit.events.emit(EditEvent.EditChanged, { source: "test", timestamp: 0 });
+			return null;
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(listenersOn(edit.events)).toEqual([]);
+		exporter.dispose();
+	});
+
+	it("isn't stopped by its own pause and restore, and leaves nothing subscribed", async () => {
+		const { exporter, edit } = createHarness();
+		edit.isPlaying = true;
+
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		expect(listenersOn(edit.events)).toEqual([]);
 		exporter.dispose();
 	});
 });
@@ -334,11 +484,78 @@ describe("off-screen export", () => {
 	});
 });
 
+describe("asynchronous drawing", () => {
+	it("finishes each active clip's draw before extracting its frame, and ends it after", async () => {
+		const { exporter, edit, renderer } = createHarness();
+		const order: string[] = [];
+		const title = {
+			clipId: "title",
+			needsResolution: false,
+			update: jest.fn(),
+			isActive: () => edit.playbackTime >= 0.5,
+			prepareStaticRender: jest.fn(async () => {
+				await Promise.resolve();
+				order.push(`drawn at ${edit.playbackTime}`);
+			}),
+			endStaticRender: jest.fn(() => order.push("ended"))
+		};
+		edit.tracks = [[title]];
+		const extract = renderer.extract.pixels.getMockImplementation()!;
+		renderer.extract.pixels.mockImplementation(() => {
+			order.push("extracted");
+			return extract();
+		});
+
+		await exporter.exportBlob();
+
+		expect(order).toEqual(["extracted", "drawn at 0.5", "extracted", "ended"]);
+		exporter.dispose();
+	});
+});
+
+describe("cleanup", () => {
+	it("ends every prepared draw when one fails, and rejects", async () => {
+		const { exporter, edit, renderer } = createHarness();
+		const clip = (prepare: () => Promise<void>) => ({
+			clipId: "title",
+			needsResolution: false,
+			update: jest.fn(),
+			isActive: () => true,
+			prepareStaticRender: jest.fn(prepare),
+			endStaticRender: jest.fn()
+		});
+		const drawn = clip(async () => {});
+		const failed = clip(async () => {
+			throw new Error("draw failed");
+		});
+		edit.tracks = [[drawn, failed]];
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(renderer.extract.pixels).not.toHaveBeenCalled();
+		expect(drawn.endStaticRender).toHaveBeenCalledTimes(1);
+		expect(failed.endStaticRender).toHaveBeenCalledTimes(1);
+		exporter.dispose();
+	});
+
+	it("releases the edit for the next export when watching it for changes fails", async () => {
+		const { exporter, edit } = createHarness();
+		jest.spyOn(edit.events, "on").mockImplementationOnce(() => {
+			throw new Error("listener limit");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ name: "ExportError", phase: "export" });
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+	});
+});
+
 describe("speed", () => {
 	it("decodes each video frame at the player's own source time for that frame", async () => {
 		const { exporter, edit } = createHarness();
-		// isVideoPlayer recognises a player by its class name; getSourceTime stands in for the preview's speed mapping.
+		// getSourceTime stands in for the preview's speed mapping.
 		class VideoPlayer {
+			playerType = "video";
+
 			clipId = "fast-clip";
 
 			needsResolution = false;
@@ -364,6 +581,12 @@ describe("speed", () => {
 			getEnd(): number {
 				return this.start + this.length;
 			}
+
+			isActive = jest.fn(() => true);
+
+			prepareStaticRender = jest.fn(async () => {});
+
+			endStaticRender = jest.fn();
 		}
 		edit.tracks = [[new VideoPlayer(edit)]];
 		const getCanvas = jest.fn(async () => ({ canvas: { width: 2, height: 2 } }));

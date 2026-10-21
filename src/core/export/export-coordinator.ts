@@ -1,5 +1,6 @@
 import { Canvas } from "@canvas/shotstack-canvas";
 import { Edit } from "@core/edit-session";
+import { EditEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource } from "mediabunny";
 import * as pixi from "pixi.js";
@@ -7,7 +8,7 @@ import * as pixi from "pixi.js";
 import { AudioProcessor } from "./audio-processor";
 import { findBrowserIssue, findEditIssues } from "./export-preflight";
 import { ExportProgressUI } from "./export-progress-ui";
-import { ExportError, exportBitrate } from "./export-utils";
+import { AUDIO_BITRATE, ExportError, exportBitrate } from "./export-utils";
 import { VideoFrameProcessor } from "./video-frame-processor";
 
 interface ExportConfig {
@@ -16,6 +17,7 @@ interface ExportConfig {
 	bitrate: number;
 	frames: number;
 	frameDuration: number;
+	muted: boolean;
 }
 
 export interface ExportBlobOptions {
@@ -30,29 +32,35 @@ export const ASSET_SETTLE_TIMEOUT_MS = 30_000;
 
 const cancelled = (): ExportError => new ExportError("Export cancelled", "cancelled");
 
-// A stalled asset request can keep a load pending indefinitely, so the wait is bounded and a cancel ends it early.
-function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, signal?: AbortSignal): Promise<void> {
-	let timer: ReturnType<typeof setTimeout> | undefined;
+// Per edit, not per exporter: two exports of one edit would both move its playhead and swap its video textures.
+const exporting = new WeakSet<Edit>();
+
+// Rejects as soon as the signal aborts; the work itself runs on and its result is ignored.
+function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
 	let onAbort = (): void => {};
-	const stopped = new Promise<never>((_, reject) => {
-		timer = setTimeout(() => {
-			const [clipId] = edit.getLoadingClipIds();
-			reject(new ExportError(`A clip's asset didn't finish loading within ${ASSET_SETTLE_TIMEOUT_MS / 1000} seconds`, "assets", { clipId }));
-		}, ASSET_SETTLE_TIMEOUT_MS);
+	const aborted = new Promise<never>((_, reject) => {
 		onAbort = () => reject(cancelled());
 		if (signal?.aborted) onAbort();
 		else signal?.addEventListener("abort", onAbort, { once: true });
 	});
-	return Promise.race([edit.whenSettled(), stopped]).finally(() => {
-		clearTimeout(timer);
-		signal?.removeEventListener("abort", onAbort);
+	return Promise.race([work, aborted]).finally(() => signal?.removeEventListener("abort", onAbort));
+}
+
+// A stalled asset request can keep a load pending indefinitely, so the wait is bounded and a cancel ends it early.
+function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, signal?: AbortSignal): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timedOut = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => {
+			const [clipId] = edit.getLoadingClipIds();
+			reject(new ExportError(`A clip's asset didn't finish loading within ${ASSET_SETTLE_TIMEOUT_MS / 1000} seconds`, "assets", { clipId }));
+		}, ASSET_SETTLE_TIMEOUT_MS);
 	});
+	return untilAborted(Promise.race([edit.whenSettled(), timedOut]), signal).finally(() => clearTimeout(timer));
 }
 
 export class ExportCoordinator {
 	private readonly edit: Edit;
 	private readonly app: pixi.Application;
-	private isExporting = false;
 	private videoProcessor = new VideoFrameProcessor();
 	private audioProcessor = new AudioProcessor();
 	private progressUI = new ExportProgressUI();
@@ -68,7 +76,7 @@ export class ExportCoordinator {
 	}
 
 	async export(filename = "shotstack-export.mp4", fps?: number): Promise<void> {
-		if (this.isExporting) throw new ExportError("Export in progress", "init");
+		if (exporting.has(this.edit)) throw new ExportError("Export in progress", "init");
 
 		this.progressUI.create();
 		try {
@@ -94,23 +102,34 @@ export class ExportCoordinator {
 	}
 
 	private async encode(fps: number, { signal, onProgress }: ExportBlobOptions): Promise<Blob> {
-		if (this.isExporting) throw new ExportError("Export in progress", "init");
+		if (exporting.has(this.edit)) throw new ExportError("Export in progress", "init");
 		const throwIfAborted = (): void => {
 			if (signal?.aborted) throw cancelled();
 		};
 		throwIfAborted();
 		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
 
-		this.isExporting = true;
 		let output: Output | undefined;
+		let changed = false;
+		const markChanged = (): void => {
+			changed = true;
+		};
+		let stopWatching = (): void => {};
+		// The editor stays live during export; anything checked, mixed or drawn before a change no longer matches the edit.
+		const throwIfStopped = (): void => {
+			throwIfAborted();
+			if (changed) throw new ExportError("The edit or playback changed during export", "export");
+		};
 
+		exporting.add(this.edit);
 		try {
+			stopWatching = this.edit.events.on(EditEvent.EditChanged, markChanged);
 			output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 			const cfg = this.prepareConfig(fps);
 			report(0, "Preparing...");
 
 			await this.checkExportable(cfg, signal);
-			throwIfAborted();
+			throwIfStopped();
 			report(0.1, "Video ready");
 
 			const canvas = document.createElement("canvas");
@@ -123,11 +142,11 @@ export class ExportCoordinator {
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
-			const mixedAudio = await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
-			throwIfAborted();
+			const mixedAudio = cfg.muted ? null : await untilAborted(this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration), signal);
+			throwIfStopped();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {
-				audioSource = new AudioBufferSource({ codec: "aac", bitrate: 192_000 });
+				audioSource = new AudioBufferSource({ codec: "aac", bitrate: AUDIO_BITRATE });
 				output.addAudioTrack(audioSource);
 			}
 
@@ -139,9 +158,10 @@ export class ExportCoordinator {
 			}
 
 			report(0.25, "Exporting...");
-			await this.processFrames(cfg, videoSource, ctx, report, throwIfAborted);
+			await this.processFrames(cfg, videoSource, ctx, report, throwIfStopped, markChanged);
 
 			await output.finalize();
+			throwIfAborted();
 
 			const data = (output.target as BufferTarget).buffer;
 			if (!data) throw new Error("No video data");
@@ -153,9 +173,12 @@ export class ExportCoordinator {
 				// A failed cancel must not replace the error that stopped the export.
 				await output.cancel().catch(() => {});
 			}
+			// The host asked to stop, so an error that races the cancel still reports as cancelled.
+			if (signal?.aborted) throw cancelled();
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
-			this.isExporting = false;
+			stopWatching();
+			exporting.delete(this.edit);
 			// Releases decoders the checks opened when the export stops before drawing a frame.
 			this.videoProcessor.restore();
 		}
@@ -164,10 +187,11 @@ export class ExportCoordinator {
 	private async checkExportable(cfg: ExportConfig, signal?: AbortSignal): Promise<void> {
 		await waitForLoads(this.edit, signal);
 
-		const issues = findEditIssues(this.edit);
-		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate);
+		const issues = findEditIssues(this.edit, cfg.bitrate);
+		const audio = !cfg.muted && this.audioProcessor.hasAudio(this.edit.getTracks());
+		const browserIssue = await untilAborted(findBrowserIssue(cfg.size, cfg.bitrate, audio), signal);
 		if (browserIssue) issues.push(browserIssue);
-		issues.push(...(await this.videoProcessor.initialize(this.edit.getTracks().flat())));
+		issues.push(...(await untilAborted(this.videoProcessor.initialize(this.edit.getTracks().flat(), signal), signal)));
 		if (issues.length > 0) {
 			throw new ExportError("This edit can't be exported in the browser", "unsupported", {}, undefined, issues);
 		}
@@ -185,7 +209,8 @@ export class ExportCoordinator {
 		videoSource: CanvasSource,
 		ctx: CanvasRenderingContext2D,
 		report: Progress,
-		throwIfAborted: () => void
+		throwIfStopped: () => void,
+		onPlayback: () => void
 	): Promise<void> {
 		const container = this.edit.getViewportContainer();
 		const clips = this.edit.getTracks().flat();
@@ -195,13 +220,16 @@ export class ExportCoordinator {
 		// frame it drew, so the user never sees those moves; extract renders off-screen either way.
 		const tickerWasRunning = this.app.ticker.started;
 		this.app.stop();
+		const stopWatching: Array<() => void> = [];
 
 		try {
 			this.edit.pause();
+			// From here the export owns the playhead, so a play, pause or seek by anyone else stops it.
+			stopWatching.push(this.edit.events.on(EditEvent.PlaybackPlay, onPlayback), this.edit.events.on(EditEvent.PlaybackPause, onPlayback));
 			const players = this.videoProcessor.disableVideoPlayback(clips);
 
 			for (let i = 0; i < cfg.frames; i += 1) {
-				throwIfAborted();
+				throwIfStopped();
 				const frameTime = i * cfg.frameDuration;
 				this.edit.playbackTime = sec(frameTime);
 
@@ -217,24 +245,32 @@ export class ExportCoordinator {
 					}
 				}
 
-				// pixi renders the container into a texture with its own transform swapped for the frame's,
-				// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
-				const pixels = this.app.renderer.extract.pixels({
-					target: container,
-					frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height),
-					resolution: 1
-				});
+				// update() only starts rich text and caption draws; finish this frame's before reading pixels.
+				const active = clips.filter(clip => clip.isActive());
+				try {
+					await Promise.all(active.map(clip => clip.prepareStaticRender()));
+					throwIfStopped();
+					// pixi renders the container into a texture with its own transform swapped for the frame's,
+					// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
+					const pixels = this.app.renderer.extract.pixels({
+						target: container,
+						frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height),
+						resolution: 1
+					});
 
-				const imageData = new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height);
-
-				ctx.putImageData(imageData, 0, 0);
+					ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height), 0, 0);
+				} finally {
+					for (const clip of active) clip.endStaticRender();
+				}
 
 				await videoSource.add(i / cfg.fps, 1 / cfg.fps);
 
 				report(0.25 + ((i + 1) / cfg.frames) * 0.75, "Exporting...");
 			}
 		} finally {
-			// First, so a throw while restoring playback can't leave the editor frozen. start() only schedules a frame.
+			// Restoring the playhead below seeks, which must not count as a change.
+			for (const stop of stopWatching) stop();
+			// Before restoring playback, so a throw there can't leave the editor frozen. start() only schedules a frame.
 			if (tickerWasRunning) this.app.start();
 			this.videoProcessor.restore();
 			this.edit.seek(sec(playbackTime));
@@ -244,7 +280,7 @@ export class ExportCoordinator {
 
 	private handleKeyDown = (e: KeyboardEvent): void => {
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-		if (e.code === "KeyE" && (e.metaKey || e.ctrlKey) && !this.isExporting) {
+		if (e.code === "KeyE" && (e.metaKey || e.ctrlKey) && !exporting.has(this.edit)) {
 			e.preventDefault();
 			this.export("shotstack-export.mp4", this.edit.getEdit().output?.fps || 30).catch(err => console.error("Export failed:", err));
 		}
@@ -265,7 +301,8 @@ export class ExportCoordinator {
 			size,
 			bitrate: exportBitrate(size),
 			frames: Math.ceil(this.edit.totalDuration * fps),
-			frameDuration: 1 / fps // seconds per frame
+			frameDuration: 1 / fps, // seconds per frame
+			muted: this.edit.getEdit().output?.mute === true
 		};
 	}
 }

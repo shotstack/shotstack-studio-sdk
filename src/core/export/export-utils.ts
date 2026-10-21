@@ -35,7 +35,18 @@ export class SimpleLRUCache<T> extends Map<string, T> {
 }
 
 export type ExportIssueCode =
-	"ai-pending" | "output-format" | "video-source" | "chroma-key" | "filter" | "html" | "effect" | "transition" | "font" | "too-long" | "browser";
+	| "ai-pending"
+	| "output-format"
+	| "video-source"
+	| "chroma-key"
+	| "filter"
+	| "html"
+	| "effect"
+	| "transition"
+	| "font"
+	| "luma"
+	| "too-long"
+	| "browser";
 
 export interface ExportIssue {
 	code: ExportIssueCode;
@@ -43,13 +54,17 @@ export interface ExportIssue {
 	clipId?: string;
 }
 
+/** Where an export stopped; `unknown` when an `ExportError` is built without one. */
+export type ExportPhase = "init" | "assets" | "unsupported" | "export" | "cancelled" | "unknown";
+
 /**
  * Export error with context
  */
 export class ExportError extends Error {
 	constructor(
 		message: string,
-		public readonly phase: string = "unknown",
+		// `string & {}` accepts any string while editors still suggest the known phases.
+		public readonly phase: ExportPhase | (string & {}) = "unknown",
 		public readonly context: Record<string, unknown> = {},
 		cause?: Error,
 		public readonly issues?: ExportIssue[]
@@ -59,6 +74,9 @@ export class ExportError extends Error {
 		this.cause = cause;
 	}
 }
+
+/** AAC bitrate for the mix, which is stereo at 48 kHz: the format canEncodeAudio checks by default. */
+export const AUDIO_BITRATE = 192_000;
 
 /**
  * 5 Mbps at 1920×1080 scaled by pixel count, so every output size gets the bits per pixel that 1080p

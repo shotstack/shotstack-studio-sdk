@@ -4,6 +4,7 @@
 
 // Export main coordinator as VideoExporter for backward compatibility
 export { ExportCoordinator as VideoExporter } from "./export-coordinator";
+export type { ExportBlobOptions } from "./export-coordinator";
 
 // Export processors
 export { VideoFrameProcessor } from "./video-frame-processor";
@@ -11,7 +12,7 @@ export { AudioProcessor } from "./audio-processor";
 
 // Export utilities and errors
 export { SimpleLRUCache, ExportError } from "./export-utils";
-export type { ExportIssue, ExportIssueCode } from "./export-utils";
+export type { ExportIssue, ExportIssueCode, ExportPhase } from "./export-utils";
 
 // Export UI component
 export { ExportProgressUI } from "./export-progress-ui";

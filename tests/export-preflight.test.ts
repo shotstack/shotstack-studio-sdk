@@ -1,11 +1,13 @@
 import { findBrowserIssue, findEditIssues, MAX_EXPORT_SECONDS } from "@core/export/export-preflight";
+import { exportBitrate } from "@core/export/export-utils";
 import { VideoFrameProcessor } from "@core/export/video-frame-processor";
 import { sec } from "@core/timing/types";
-import type { ResolvedClip } from "@schemas";
-import { canEncodeVideo } from "mediabunny";
+import type { ResolvedClip, ResolvedEdit } from "@schemas";
+import { canEncodeAudio, canEncodeVideo } from "mediabunny";
 
 jest.mock("mediabunny", () => ({
 	canEncodeVideo: jest.fn(),
+	canEncodeAudio: jest.fn(),
 	Input: jest.fn().mockImplementation(() => ({
 		getPrimaryVideoTrack: jest.fn().mockRejectedValue(new Error("Input has an unsupported or unrecognizable format.")),
 		dispose: jest.fn()
@@ -16,7 +18,12 @@ jest.mock("mediabunny", () => ({
 	WEBM: {}
 }));
 
-jest.mock("pixi.js", () => ({ Texture: { from: jest.fn() } }));
+// Player modules extend pixi filters at load.
+jest.mock("pixi.js", () => ({
+	// eslint-disable-next-line global-require, @typescript-eslint/no-require-imports -- jest.mock factories can't use imports
+	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
+	Texture: { from: jest.fn() }
+}));
 
 const customFonts: Record<string, string> = {
 	"Brand Sans|400": "https://example.com/brand-sans.ttf",
@@ -30,20 +37,21 @@ const clip = (fields: Partial<ResolvedClip> & Pick<ResolvedClip, "asset">): Reso
 	...fields
 });
 
-function editWith(
-	clips: ResolvedClip[],
-	{ format = "mp4", duration = 5 }: { format?: string; duration?: number } = {}
-): Parameters<typeof findEditIssues>[0] {
+type EditOptions = { format?: string; duration?: number; output?: Partial<ResolvedEdit["output"]> };
+
+function editWith(clips: ResolvedClip[], { format = "mp4", duration = 5, output }: EditOptions = {}): Parameters<typeof findEditIssues>[0] {
 	return {
-		getResolvedEdit: () => ({ timeline: { tracks: [{ clips }] }, output: { format: "mp4" } }),
+		getResolvedEdit: () => ({ timeline: { tracks: [{ clips }] }, output: { format: "mp4", ...output } }),
 		getOutputFormat: () => format,
 		getFontUrlByFamilyAndWeight: (family: string, weight: number) => customFonts[`${family}|${weight}`] ?? null,
 		totalDuration: duration
 	};
 }
 
-const codes = (clips: ResolvedClip[], options?: { format?: string; duration?: number }): string[] =>
-	findEditIssues(editWith(clips, options)).map(issue => issue.code);
+const HD_BITRATE = exportBitrate({ width: 1920, height: 1080 });
+
+const codes = (clips: ResolvedClip[], options?: EditOptions & { bitrate?: number }): string[] =>
+	findEditIssues(editWith(clips, options), options?.bitrate ?? HD_BITRATE).map(issue => issue.code);
 
 describe("findEditIssues", () => {
 	it("passes an edit the browser draws the way the cloud does", () => {
@@ -54,11 +62,11 @@ describe("findEditIssues", () => {
 			clip({ asset: { type: "html", html: '<p data-html-type="text">Hi</p>' }, filter: "none" })
 		];
 
-		expect(findEditIssues(editWith(faithful))).toEqual([]);
+		expect(findEditIssues(editWith(faithful), HD_BITRATE)).toEqual([]);
 	});
 
 	it("reports a prompt clip that hasn't been generated as ai-pending", () => {
-		expect(findEditIssues(editWith([clip({ id: "prompt-clip", asset: { type: "image", prompt: "A red kite" } })]))).toEqual([
+		expect(findEditIssues(editWith([clip({ id: "prompt-clip", asset: { type: "image", prompt: "A red kite" } })]), HD_BITRATE)).toEqual([
 			{ code: "ai-pending", message: "This clip hasn't been generated yet.", clipId: "prompt-clip" }
 		]);
 	});
@@ -69,6 +77,11 @@ describe("findEditIssues", () => {
 
 	it("reports a non-MP4 output as output-format", () => {
 		expect(codes([], { format: "gif" })).toEqual(["output-format"]);
+	});
+
+	it("reports a range or scaleTo as output-format, since the browser exports the whole timeline at the edit's size", () => {
+		expect(codes([], { output: { range: { start: 1, length: 2 } } })).toEqual(["output-format"]);
+		expect(codes([], { output: { scaleTo: "sd" } })).toEqual(["output-format"]);
 	});
 
 	it("reports chroma key as chroma-key", () => {
@@ -114,9 +127,26 @@ describe("findEditIssues", () => {
 		expect(codes(withWeight("normal"))).toEqual(["font"]);
 	});
 
+	it("reports a luma matte drawn from a video as luma, and passes an image matte", () => {
+		expect(
+			codes([
+				clip({ id: "video-matte", asset: { type: "luma", src: "https://example.com/wipe.mp4?v=2" } }),
+				clip({ id: "image-matte", asset: { type: "luma", src: "https://example.com/wipe.png" } })
+			])
+		).toEqual(["luma"]);
+	});
+
 	it("reports an edit longer than the limit as too-long", () => {
 		expect(codes([], { duration: MAX_EXPORT_SECONDS + 1 })).toEqual(["too-long"]);
 		expect(codes([], { duration: MAX_EXPORT_SECONDS })).toEqual([]);
+	});
+
+	it("gives larger outputs less time, since the encoded file is held in memory", () => {
+		const uhd = exportBitrate({ width: 3840, height: 2160 });
+
+		expect(codes([], { duration: MAX_EXPORT_SECONDS, bitrate: uhd })).toEqual(["too-long"]);
+		expect(codes([], { duration: MAX_EXPORT_SECONDS / 4, bitrate: uhd })).toEqual([]);
+		expect(codes([], { duration: MAX_EXPORT_SECONDS, bitrate: HD_BITRATE })).toEqual([]);
 	});
 });
 
@@ -124,7 +154,7 @@ describe("findBrowserIssue", () => {
 	it("reports a browser that can't encode the output as browser", async () => {
 		jest.mocked(canEncodeVideo).mockResolvedValueOnce(false);
 
-		await expect(findBrowserIssue({ width: 1920, height: 1080 }, 5_000_000)).resolves.toEqual({
+		await expect(findBrowserIssue({ width: 1920, height: 1080 }, 5_000_000, false)).resolves.toEqual({
 			code: "browser",
 			message: "This browser can't encode H.264 video at 1920×1080."
 		});
@@ -134,14 +164,28 @@ describe("findBrowserIssue", () => {
 	it("reports nothing when the encoder accepts the config", async () => {
 		jest.mocked(canEncodeVideo).mockResolvedValueOnce(true);
 
-		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222)).resolves.toBeNull();
+		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222, false)).resolves.toBeNull();
+	});
+
+	it("reports a browser that can't encode AAC as browser when the edit has audio", async () => {
+		jest.mocked(canEncodeVideo).mockResolvedValue(true);
+		jest.mocked(canEncodeAudio).mockResolvedValue(false);
+
+		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222, true)).resolves.toEqual({
+			code: "browser",
+			message: "This browser can't encode AAC audio."
+		});
+		jest.mocked(canEncodeAudio).mockClear();
+		await expect(findBrowserIssue({ width: 1280, height: 720 }, 2_222_222, false)).resolves.toBeNull();
+		expect(canEncodeAudio).not.toHaveBeenCalled();
 	});
 });
 
 describe("VideoFrameProcessor.initialize", () => {
 	it("reports a video the browser can't decode as video-source", async () => {
-		// isVideoPlayer recognises a player by its class name.
 		class VideoPlayer {
+			playerType = "video";
+
 			clipId = "mov-clip";
 
 			clipConfiguration = { asset: { type: "video", src: "https://example.com/clip.mov" } };

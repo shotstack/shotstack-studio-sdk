@@ -4,14 +4,16 @@ import type { Edit } from "@core/edit-session";
 import { resolveFontPath } from "@core/fonts/font-config";
 import { NAMED_FONT_WEIGHTS } from "@core/fonts/font-weights";
 import { isPendingAiAsset } from "@core/shared/ai-asset-utils";
-import { isTextHtml } from "@core/shared/asset-utils";
+import { inferAssetTypeFromUrl, isTextHtml } from "@core/shared/asset-utils";
 import type { ResolvedClip } from "@schemas";
-import { canEncodeVideo } from "mediabunny";
+import { canEncodeAudio, canEncodeVideo } from "mediabunny";
 
-import type { ExportIssue, ExportIssueCode } from "./export-utils";
+import { AUDIO_BITRATE, exportBitrate, type ExportIssue, type ExportIssueCode } from "./export-utils";
 
-/** The encoded file and the audio mix are both held in memory until the export finishes. */
+/** The audio mix is held in memory until the export finishes, and it grows with length at any size. */
 export const MAX_EXPORT_SECONDS = 300;
+/** The encoded video is held in memory too: five minutes' worth at 1080p, so larger outputs get less time. */
+export const MAX_EXPORT_BITS = MAX_EXPORT_SECONDS * exportBitrate({ width: 1920, height: 1080 });
 
 type PreflightEdit = Pick<Edit, "getResolvedEdit" | "getOutputFormat" | "getFontUrlByFamilyAndWeight" | "totalDuration">;
 
@@ -39,6 +41,8 @@ function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] 
 	if (asset.type === "video" && asset.chromaKey) add("chroma-key", "Chroma key isn't available in the browser.");
 	if (clip.filter && clip.filter !== "none") add("filter", `The ${clip.filter} filter isn't available in the browser.`);
 	if (asset.type === "html5" || (asset.type === "html" && !isTextHtml(asset.html))) add("html", "This HTML clip can only be rendered in the cloud.");
+	// Mattes redraw in the editor's update loop, which export doesn't run, so a video matte would hold one frame.
+	if (asset.type === "luma" && inferAssetTypeFromUrl(asset.src) === "video") add("luma", "Video luma mattes aren't available in the browser.");
 	if (clip.effect && !animates(new EffectPresetBuilder(clip).buildRelative(UNIT_SIZE, UNIT_SIZE))) {
 		add("effect", `The ${clip.effect} effect isn't available in the browser.`);
 	}
@@ -60,12 +64,20 @@ function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] 
 	return issues;
 }
 
-export function findEditIssues(edit: PreflightEdit): ExportIssue[] {
+export function findEditIssues(edit: PreflightEdit, bitrate: number): ExportIssue[] {
 	const issues: ExportIssue[] = [];
 	const format = edit.getOutputFormat();
 	if (format !== "mp4") issues.push({ code: "output-format", message: `The browser exports MP4 only, and this edit asks for ${format}.` });
-	if (edit.totalDuration > MAX_EXPORT_SECONDS) {
-		issues.push({ code: "too-long", message: `The browser exports up to ${MAX_EXPORT_SECONDS / 60} minutes of video.` });
+	const { output } = edit.getResolvedEdit();
+	if (output.range) issues.push({ code: "output-format", message: "The browser exports the whole timeline, and this edit asks for a range." });
+	if (output.scaleTo) {
+		issues.push({ code: "output-format", message: `The browser exports at the edit's size, and this edit asks to scale to ${output.scaleTo}.` });
+	}
+	if (edit.totalDuration > MAX_EXPORT_SECONDS || edit.totalDuration * bitrate > MAX_EXPORT_BITS) {
+		issues.push({
+			code: "too-long",
+			message: `The browser exports up to ${MAX_EXPORT_SECONDS / 60} minutes of video at 1080p, and less at larger sizes.`
+		});
 	}
 	for (const track of edit.getResolvedEdit().timeline.tracks) {
 		for (const clip of track.clips) issues.push(...findClipIssues(edit, clip));
@@ -73,7 +85,13 @@ export function findEditIssues(edit: PreflightEdit): ExportIssue[] {
 	return issues;
 }
 
-export async function findBrowserIssue(size: { width: number; height: number }, bitrate: number): Promise<ExportIssue | null> {
-	if (await canEncodeVideo("avc", { width: size.width, height: size.height, bitrate })) return null;
-	return { code: "browser", message: `This browser can't encode H.264 video at ${size.width}×${size.height}.` };
+export async function findBrowserIssue(size: { width: number; height: number }, bitrate: number, audio: boolean): Promise<ExportIssue | null> {
+	if (!(await canEncodeVideo("avc", { width: size.width, height: size.height, bitrate }))) {
+		return { code: "browser", message: `This browser can't encode H.264 video at ${size.width}×${size.height}.` };
+	}
+	// Asked up front: the encoder is first needed after the audio mix, which can take a while.
+	if (audio && !(await canEncodeAudio("aac", { bitrate: AUDIO_BITRATE }))) {
+		return { code: "browser", message: "This browser can't encode AAC audio." };
+	}
+	return null;
 }
