@@ -59,3 +59,11 @@ export class ExportError extends Error {
 		this.cause = cause;
 	}
 }
+
+/**
+ * 5 Mbps at 1920×1080 scaled by pixel count, so every output size gets the bits per pixel that 1080p
+ * had, with a 1 Mbps floor: small outputs still carry text, which blurs first when starved.
+ */
+export function exportBitrate({ width, height }: { width: number; height: number }): number {
+	return Math.max(1_000_000, Math.round((5_000_000 * width * height) / (1920 * 1080)));
+}

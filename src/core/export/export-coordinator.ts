@@ -7,7 +7,7 @@ import * as pixi from "pixi.js";
 import { AudioProcessor } from "./audio-processor";
 import { findBrowserIssue, findEditIssues } from "./export-preflight";
 import { ExportProgressUI } from "./export-progress-ui";
-import { ExportError } from "./export-utils";
+import { ExportError, exportBitrate } from "./export-utils";
 import { VideoFrameProcessor } from "./video-frame-processor";
 
 interface ExportConfig {
@@ -257,13 +257,13 @@ export class ExportCoordinator {
 	}
 
 	private prepareConfig(fps: number): ExportConfig {
-		const outputSize = this.edit.getEdit().output?.size;
-		const size = { width: outputSize?.width ?? 1920, height: outputSize?.height ?? 1080 };
+		// The size the canvas lays clips out in: the resolution preset shaped by aspectRatio, else output.size.
+		const size = { width: this.edit.size.width, height: this.edit.size.height };
 		// totalDuration is in seconds
 		return {
 			fps,
 			size,
-			bitrate: 5_000_000,
+			bitrate: exportBitrate(size),
 			frames: Math.ceil(this.edit.totalDuration * fps),
 			frameDuration: 1 / fps // seconds per frame
 		};
