@@ -16,3 +16,8 @@ export function inferAssetTypeFromUrl(src: string): "image" | "video" {
 	}
 	return "image";
 }
+
+/** The only HTML form HtmlPlayer can draw: marked-up text styled by a single CSS rule. */
+export function isTextHtml(html: string): boolean {
+	return html.includes('data-html-type="text"');
+}

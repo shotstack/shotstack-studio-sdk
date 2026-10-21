@@ -6,13 +6,15 @@ import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource 
 import * as pixi from "pixi.js";
 
 import { AudioProcessor } from "./audio-processor";
+import { findBrowserIssue, findEditIssues } from "./export-preflight";
 import { ExportProgressUI } from "./export-progress-ui";
-import { ExportError, BrowserCompatibilityError } from "./export-utils";
+import { ExportError } from "./export-utils";
 import { VideoFrameProcessor } from "./video-frame-processor";
 
 interface ExportConfig {
 	fps: number;
 	size: { width: number; height: number };
+	bitrate: number;
 	frames: number;
 	frameDuration: number;
 }
@@ -31,6 +33,30 @@ export interface ExportBlobOptions {
 }
 
 type Progress = (fraction: number, stage: string) => void;
+
+/** How long an export waits for in-flight asset loads before failing with phase `assets`. */
+export const ASSET_SETTLE_TIMEOUT_MS = 30_000;
+
+const cancelled = (): ExportError => new ExportError("Export cancelled", "cancelled");
+
+// A stalled asset request can keep a load pending indefinitely, so the wait is bounded and a cancel ends it early.
+function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, signal?: AbortSignal): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let onAbort = (): void => {};
+	const stopped = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => {
+			const [clipId] = edit.getLoadingClipIds();
+			reject(new ExportError(`A clip's asset didn't finish loading within ${ASSET_SETTLE_TIMEOUT_MS / 1000} seconds`, "assets", { clipId }));
+		}, ASSET_SETTLE_TIMEOUT_MS);
+		onAbort = () => reject(cancelled());
+		if (signal?.aborted) onAbort();
+		else signal?.addEventListener("abort", onAbort, { once: true });
+	});
+	return Promise.race([edit.whenSettled(), stopped]).finally(() => {
+		clearTimeout(timer);
+		signal?.removeEventListener("abort", onAbort);
+	});
+}
 
 export class ExportCoordinator {
 	private readonly edit: Edit;
@@ -76,12 +102,9 @@ export class ExportCoordinator {
 	}
 
 	private async encode(fps: number, { signal, onProgress }: ExportBlobOptions): Promise<Blob> {
-		if (typeof VideoEncoder === "undefined") {
-			throw new BrowserCompatibilityError("WebCodecs API not supported", ["VideoEncoder"]);
-		}
 		if (this.isExporting) throw new ExportError("Export in progress", "init");
 		const throwIfAborted = (): void => {
-			if (signal?.aborted) throw new ExportError("Export cancelled", "cancelled");
+			if (signal?.aborted) throw cancelled();
 		};
 		throwIfAborted();
 		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
@@ -99,7 +122,7 @@ export class ExportCoordinator {
 			const cfg = this.prepareConfig(fps);
 			report(0, "Preparing...");
 
-			await this.videoProcessor.initialize(this.exportCommand.getClips());
+			await this.checkExportable(cfg, signal);
 			throwIfAborted();
 			report(0.1, "Video ready");
 
@@ -109,7 +132,7 @@ export class ExportCoordinator {
 			const ctx = canvas.getContext("2d");
 			if (!ctx) throw new Error("No 2D context");
 
-			const videoSource = new CanvasSource(canvas, { codec: "avc", bitrate: 5_000_000 });
+			const videoSource = new CanvasSource(canvas, { codec: "avc", bitrate: cfg.bitrate });
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
@@ -146,6 +169,25 @@ export class ExportCoordinator {
 			this.edit.setExportMode(false);
 			this.canvas.resumeTicker();
 			this.restoreEditState(savedState);
+		}
+	}
+
+	private async checkExportable(cfg: ExportConfig, signal?: AbortSignal): Promise<void> {
+		await waitForLoads(this.edit, signal);
+
+		const issues = findEditIssues(this.edit);
+		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate);
+		if (browserIssue) issues.push(browserIssue);
+		issues.push(...(await this.videoProcessor.initialize(this.exportCommand.getClips())));
+		if (issues.length > 0) {
+			throw new ExportError("This edit can't be exported in the browser", "unsupported", {}, undefined, issues);
+		}
+
+		for (const [trackIndex, track] of this.edit.getTracks().entries()) {
+			for (const [clipIndex, player] of track.entries()) {
+				const failure = this.edit.getClipError(trackIndex, clipIndex)?.error ?? (player.needsResolution ? "its source isn't ready yet" : null);
+				if (failure) throw new ExportError(`A clip couldn't be loaded: ${failure}`, "assets", { clipId: player.clipId });
+			}
 		}
 	}
 
@@ -219,6 +261,7 @@ export class ExportCoordinator {
 		return {
 			fps,
 			size,
+			bitrate: 5_000_000,
 			frames: Math.ceil(this.edit.totalDuration * fps),
 			frameDuration: 1 / fps // seconds per frame
 		};

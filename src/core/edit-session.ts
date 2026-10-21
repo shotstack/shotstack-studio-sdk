@@ -2405,6 +2405,11 @@ export class Edit {
 		return this.playerReconciler.whenSettled();
 	}
 
+	/** @internal */
+	public getLoadingClipIds(): string[] {
+		return this.playerReconciler.getLoadingClipIds();
+	}
+
 	/**
 	 * Capture the rendered output frame as a base64 data URL.
 	 *

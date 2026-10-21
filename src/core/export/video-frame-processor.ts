@@ -2,9 +2,10 @@ import { Input, UrlSource, MP4, WEBM, CanvasSink, type InputVideoTrack } from "m
 import * as pixi from "pixi.js";
 
 import { videoSourceTime } from "./export-timing";
-import { BrowserCompatibilityError } from "./export-utils";
+import type { ExportIssue } from "./export-utils";
 
 export interface VideoPlayerExtended {
+	clipId?: string | null;
 	texture?: pixi.Texture & { source?: { resource?: unknown; update?: () => void } };
 	sprite?: { texture?: pixi.Texture };
 	clipConfiguration?: { asset?: { src?: string; trim?: number; type?: string } };
@@ -41,32 +42,37 @@ interface ClipDecoder {
 export class VideoFrameProcessor {
 	private decoders = new Map<VideoPlayerExtended, ClipDecoder>();
 
-	/** Open a decoder per video clip; throws if the browser cannot decode a source. */
-	async initialize(clips: ReadonlyArray<unknown>): Promise<void> {
+	/** Open a decoder per video clip; a source the browser can't decode comes back as an issue. */
+	async initialize(clips: ReadonlyArray<unknown>): Promise<ExportIssue[]> {
 		const players = clips.filter(isVideoPlayer) as VideoPlayerExtended[];
+		const issues: ExportIssue[] = [];
 
 		await Promise.all(
 			players.map(async player => {
 				const src = this.getVideoKey(player);
-				if (src) {
-					const input = new Input({ source: new UrlSource(src), formats: [MP4, WEBM] });
+				if (!src) return;
+				const input = new Input({ source: new UrlSource(src), formats: [MP4, WEBM] });
+				try {
 					const track = await input.getPrimaryVideoTrack();
-					if (track) {
-						if (!(await track.canDecode())) {
-							throw new BrowserCompatibilityError(`Cannot decode video source: ${src}`, ["VideoDecoder"]);
-						}
-						this.decoders.set(player, {
-							input,
-							track,
-							sink: new CanvasSink(track, { poolSize: 2 }),
-							trim: player.clipConfiguration?.asset?.trim ?? 0,
-							start: player.getStart?.() ?? 0,
-							originalTexture: player.texture
-						});
-					}
+					if (!track) return;
+					if (!(await track.canDecode())) throw new Error("No decoder for this codec");
+					this.decoders.set(player, {
+						input,
+						track,
+						sink: new CanvasSink(track, { poolSize: 2 }),
+						trim: player.clipConfiguration?.asset?.trim ?? 0,
+						start: player.getStart?.() ?? 0,
+						originalTexture: player.texture
+					});
+				} catch (error) {
+					input.dispose();
+					console.warn("Export: can't decode video", src, error);
+					issues.push({ code: "video-source", message: "This video's format can't be decoded in the browser.", clipId: player.clipId ?? undefined });
 				}
 			})
 		);
+
+		return issues;
 	}
 
 	/** Point a clip's texture at the decoded source frame for the given timeline time. */

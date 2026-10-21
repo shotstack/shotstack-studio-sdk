@@ -3,6 +3,7 @@ import { Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { parseFontFamily, resolveFontPath } from "@core/fonts/font-config";
 import { extractFontNames, isGoogleFontUrl } from "@core/fonts/font-utils";
+import { NAMED_FONT_WEIGHTS } from "@core/fonts/font-weights";
 import { type Size, type Vector } from "@layouts/geometry";
 import { RichTextAssetSchema, type RichTextAsset, type ResolvedClip } from "@schemas";
 import { createTextEngine, type CanvasRichTextAsset } from "@shotstack/shotstack-canvas";
@@ -14,24 +15,6 @@ type TextEngine = Awaited<ReturnType<typeof createTextEngine>>;
 
 export class RichTextPlayer extends Player {
 	private static readonly PREVIEW_FPS = 60;
-	/** CSS font-weight string → numeric value. Extends WEIGHT_MODIFIERS (@core/fonts/font-config.ts) with CSS aliases. */
-	private static readonly NAMED_WEIGHTS: Record<string, number> = {
-		thin: 100,
-		hairline: 100,
-		extralight: 200,
-		ultralight: 200,
-		light: 300,
-		normal: 400,
-		regular: 400,
-		medium: 500,
-		semibold: 600,
-		demibold: 600,
-		bold: 700,
-		extrabold: 800,
-		ultrabold: 800,
-		black: 900,
-		heavy: 900
-	};
 	private static readonly fontCapabilityCache = new Map<string, Promise<boolean>>();
 	private static readonly fontBytesCache = new Map<string, Promise<ArrayBuffer>>();
 	private textEngine: TextEngine | null = null;
@@ -82,7 +65,7 @@ export class RichTextPlayer extends Player {
 		const explicitWeight = richTextAsset.font?.weight;
 		if (typeof explicitWeight === "number") return explicitWeight;
 		if (typeof explicitWeight === "string") {
-			const named = RichTextPlayer.NAMED_WEIGHTS[explicitWeight.toLowerCase().trim()];
+			const named = NAMED_FONT_WEIGHTS[explicitWeight.toLowerCase().trim()];
 			if (named !== undefined) return named;
 			const parsed = parseInt(explicitWeight, 10);
 			if (!Number.isNaN(parsed)) return parsed;

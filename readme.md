@@ -354,6 +354,22 @@ const file = await exporter
   });
 ```
 
+Before encoding, both methods check that the browser can draw the edit the way a cloud render would. If it can't, they reject with an `ExportError` whose `phase` is `unsupported` and whose `issues` list each problem as `{ code, message, clipId? }`. `clipId` is the clip's `id` as returned by `edit.getEdit({ includeIds: true })`. A clip that failed to load, or whose asset is still loading after 30 seconds, rejects with `phase` `assets` and its `clipId` in `context`.
+
+| Code | Reason |
+| --- | --- |
+| `ai-pending` | A prompt clip hasn't been generated yet |
+| `output-format` | `output.format` isn't `mp4` |
+| `video-source` | The browser can't decode a video (MP4 and WebM only) |
+| `chroma-key` | A video uses chroma key |
+| `filter` | A clip uses a filter |
+| `html` | An `html` clip that isn't the plain text form, or any `html5` clip |
+| `effect` | An effect without a preset in the editor |
+| `transition` | A transition without a preset in the editor |
+| `font` | A font that is neither built in nor listed in `timeline.fonts` |
+| `too-long` | The edit runs longer than five minutes |
+| `browser` | The browser can't encode H.264 at the output size |
+
 ## Merge Fields
 
 Merge fields are template placeholders, typically in the form `{{ FIELD_NAME }}`.

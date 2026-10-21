@@ -37,8 +37,8 @@ export class PlayerReconciler {
 	 */
 	private enableCreation = true;
 
-	/** In-flight player load promises, so off-playback captures (captureFrame) can await asset readiness. */
-	private readonly inFlightLoads = new Set<Promise<void>>();
+	/** In-flight player loads by clip id: captureFrame awaits them, and an export that gives up on one names its clip. */
+	private readonly inFlightLoads = new Map<Promise<void>, string>();
 
 	constructor(private readonly edit: Edit) {
 		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.onResolved);
@@ -72,8 +72,12 @@ export class PlayerReconciler {
 	 */
 	public async whenSettled(): Promise<void> {
 		while (this.inFlightLoads.size > 0) {
-			await Promise.allSettled([...this.inFlightLoads]);
+			await Promise.allSettled([...this.inFlightLoads.keys()]);
 		}
+	}
+
+	public getLoadingClipIds(): string[] {
+		return [...this.inFlightLoads.values()];
 	}
 
 	/**
@@ -252,7 +256,7 @@ export class PlayerReconciler {
 			});
 
 		// Track the load so off-playback captures can await asset readiness (see whenSettled()).
-		this.inFlightLoads.add(loadPromise);
+		this.inFlightLoads.set(loadPromise, clipId);
 		return loadPromise.finally(() => this.inFlightLoads.delete(loadPromise));
 	}
 
