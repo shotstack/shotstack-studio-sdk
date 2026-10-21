@@ -5,7 +5,7 @@ import type { Edit } from "@core/edit-session";
 import { ASSET_SETTLE_TIMEOUT_MS, ExportCoordinator } from "@core/export/export-coordinator";
 import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError } from "@core/export/export-utils";
-import { canEncodeVideo, CanvasSource } from "mediabunny";
+import { canEncodeVideo, CanvasSource, Output } from "mediabunny";
 
 const mockOutputs: Array<{ cancel: jest.Mock; state: string }> = [];
 
@@ -73,21 +73,25 @@ function createHarness() {
 		getTracks: () => edit.tracks,
 		getClipError: jest.fn<{ error: string; assetType: string } | null, [number, number]>(() => null),
 		setExportMode: jest.fn(),
-		executeEditCommand: jest.fn((command: { execute: (context: unknown) => unknown }) =>
-			command.execute({ getClips: () => [], getTracks: () => [] })
-		),
+		executeEditCommand: jest.fn(),
 		getViewportContainer: () => viewport,
 		pause: jest.fn(),
 		play: jest.fn(),
 		seek: jest.fn()
 	};
+	const viewAtExtract: Array<typeof viewport> = [];
 	const renderer = {
 		render: jest.fn(),
-		extract: { pixels: jest.fn(() => ({ pixels: new Uint8ClampedArray(SIZE.width * SIZE.height * 4), width: SIZE.width, height: SIZE.height })) }
+		extract: {
+			pixels: jest.fn(() => {
+				viewAtExtract.push(JSON.parse(JSON.stringify(viewport)));
+				return { pixels: new Uint8ClampedArray(SIZE.width * SIZE.height * 4), width: SIZE.width, height: SIZE.height };
+			})
+		}
 	};
-	const canvas = { application: { renderer }, pauseTicker: jest.fn(), resumeTicker: jest.fn() };
-	const exporter = new ExportCoordinator(edit as unknown as Edit, canvas as unknown as Canvas);
-	return { edit, canvas, renderer, viewport, exporter };
+	const app = { renderer, ticker: { started: true }, stop: jest.fn(), start: jest.fn() };
+	const exporter = new ExportCoordinator(edit as unknown as Edit, { application: app } as unknown as Canvas);
+	return { edit, app, renderer, viewport, viewAtExtract, exporter };
 }
 
 beforeAll(() => {
@@ -142,12 +146,12 @@ describe("ExportCoordinator.exportBlob", () => {
 		controller.abort();
 
 		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ name: "ExportError", phase: "cancelled" });
-		expect(edit.setExportMode).not.toHaveBeenCalled();
+		expect(edit.whenSettled).not.toHaveBeenCalled();
 		exporter.dispose();
 	});
 
 	it("stops between frames when aborted, cancels the output and restores the session", async () => {
-		const { exporter, edit, canvas, renderer } = createHarness();
+		const { exporter, edit, app, renderer } = createHarness();
 		const controller = new AbortController();
 		const onProgress = jest.fn((fraction: number) => {
 			if (fraction > 0.25) controller.abort();
@@ -159,8 +163,8 @@ describe("ExportCoordinator.exportBlob", () => {
 		expect((error as ExportError).phase).toBe("cancelled");
 		expect(renderer.extract.pixels).toHaveBeenCalledTimes(1);
 		expect(mockOutputs[0].cancel).toHaveBeenCalled();
-		expect(edit.setExportMode).toHaveBeenLastCalledWith(false);
-		expect(canvas.resumeTicker).toHaveBeenCalled();
+		expect(edit.seek).toHaveBeenCalledWith(1.5);
+		expect(app.start).toHaveBeenCalled();
 		exporter.dispose();
 	});
 
@@ -247,6 +251,35 @@ describe("ExportCoordinator.exportBlob", () => {
 		jest.useRealTimers();
 	});
 
+	it("releases the single-flight flag when the output can't be constructed", async () => {
+		const { exporter } = createHarness();
+		jest.mocked(Output).mockImplementationOnce(() => {
+			throw new Error("no muxer");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+		exporter.dispose();
+	});
+
+	it("keeps the original error when cancelling the output also fails", async () => {
+		const { exporter } = createHarness();
+		const controller = new AbortController();
+		jest.mocked(CanvasSource).mockImplementationOnce(() => {
+			controller.abort();
+			return { add: jest.fn() } as unknown as CanvasSource;
+		});
+		const construct = jest.mocked(Output).getMockImplementation() as unknown as (...a: unknown[]) => { cancel: jest.Mock };
+		jest.mocked(Output).mockImplementationOnce((...args: unknown[]) => {
+			const output = construct(...args);
+			output.cancel.mockRejectedValue(new Error("cancel failed"));
+			return output as never;
+		});
+
+		await expect(exporter.exportBlob({ signal: controller.signal })).rejects.toMatchObject({ phase: "cancelled" });
+		exporter.dispose();
+	});
+
 	it("refuses a second export while one is running", async () => {
 		const { exporter } = createHarness();
 		const first = exporter.exportBlob();
@@ -257,7 +290,95 @@ describe("ExportCoordinator.exportBlob", () => {
 	});
 });
 
+describe("off-screen export", () => {
+	it("draws each frame from the viewport container at output size while the view stays where the user left it", async () => {
+		const { exporter, edit, renderer, viewport, viewAtExtract } = createHarness();
+		const before = JSON.parse(JSON.stringify(viewport));
+
+		await exporter.exportBlob();
+
+		expect(renderer.extract.pixels).toHaveBeenCalledTimes(2);
+		expect(renderer.extract.pixels).toHaveBeenCalledWith({ target: viewport, frame: { x: 0, y: 0, width: 4, height: 2 }, resolution: 1 });
+		expect(viewAtExtract).toEqual([before, before]);
+		expect(viewport).toEqual(before);
+		expect(renderer.render).not.toHaveBeenCalled();
+		expect(edit.setExportMode).not.toHaveBeenCalled();
+		expect(edit.executeEditCommand).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("holds the on-screen frame while drawing, then puts the playhead back", async () => {
+		const { exporter, edit, app, renderer } = createHarness();
+
+		await exporter.exportBlob();
+
+		const extracts = renderer.extract.pixels.mock.invocationCallOrder;
+		expect(app.stop.mock.invocationCallOrder[0]).toBeLessThan(extracts[0]);
+		expect(app.start.mock.invocationCallOrder[0]).toBeGreaterThan(extracts[extracts.length - 1]);
+		expect(edit.seek).toHaveBeenCalledWith(1.5);
+		expect(edit.play).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("resumes playback that was running when the export started", async () => {
+		const { exporter, edit } = createHarness();
+		edit.isPlaying = true;
+
+		await exporter.exportBlob();
+
+		expect(edit.pause).toHaveBeenCalled();
+		expect(edit.seek.mock.invocationCallOrder[0]).toBeLessThan(edit.play.mock.invocationCallOrder[0]);
+		exporter.dispose();
+	});
+});
+
+describe("editor restart", () => {
+	it("restarts the app and rejects when pausing playback throws", async () => {
+		const { exporter, edit, app } = createHarness();
+		edit.pause.mockImplementationOnce(() => {
+			throw new Error("listener failed");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(app.start).toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("restarts the app even when restoring the playhead throws", async () => {
+		const { exporter, edit, app } = createHarness();
+		edit.seek.mockImplementationOnce(() => {
+			throw new Error("clip update failed");
+		});
+
+		await expect(exporter.exportBlob()).rejects.toMatchObject({ phase: "export" });
+		expect(app.start).toHaveBeenCalled();
+		exporter.dispose();
+	});
+
+	it("leaves an app that was already stopped stopped", async () => {
+		const { exporter, app } = createHarness();
+		app.ticker.started = false;
+
+		await exporter.exportBlob();
+
+		expect(app.start).not.toHaveBeenCalled();
+		exporter.dispose();
+	});
+});
+
 describe("ExportCoordinator.export", () => {
+	it("wraps a failed download as an export-phase error and removes the overlay", async () => {
+		const { exporter } = createHarness();
+		const create = jest.fn(() => {
+			throw new Error("blocked");
+		});
+		Object.assign(URL, { createObjectURL: create });
+
+		await expect(exporter.export()).rejects.toMatchObject({ name: "ExportError", phase: "export" });
+		expect(document.body.children).toHaveLength(0);
+		exporter.dispose();
+	});
+
 	it("downloads the file under the given name behind its overlay", async () => {
 		const { exporter } = createHarness();
 		const downloads: string[] = [];

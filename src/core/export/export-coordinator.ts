@@ -1,5 +1,4 @@
 import { Canvas } from "@canvas/shotstack-canvas";
-import { ExportCommand } from "@core/commands/export-command";
 import { Edit } from "@core/edit-session";
 import { sec } from "@core/timing/types";
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource } from "mediabunny";
@@ -17,14 +16,6 @@ interface ExportConfig {
 	bitrate: number;
 	frames: number;
 	frameDuration: number;
-}
-
-interface EditState {
-	wasPlaying: boolean;
-	time: number;
-	visible: boolean;
-	pos: { x: number; y: number };
-	scale: { x: number; y: number };
 }
 
 export interface ExportBlobOptions {
@@ -60,17 +51,14 @@ function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, sig
 
 export class ExportCoordinator {
 	private readonly edit: Edit;
-	private readonly canvas: Canvas;
 	private readonly app: pixi.Application;
 	private isExporting = false;
 	private videoProcessor = new VideoFrameProcessor();
 	private audioProcessor = new AudioProcessor();
 	private progressUI = new ExportProgressUI();
-	private exportCommand = new ExportCommand();
 
 	constructor(edit: Edit, canvas: Canvas) {
 		this.edit = edit;
-		this.canvas = canvas;
 		this.app = canvas.application;
 		document.addEventListener("keydown", this.handleKeyDown);
 	}
@@ -88,12 +76,16 @@ export class ExportCoordinator {
 				onProgress: (fraction, stage) => this.progressUI.update(fraction * 100, 100, stage)
 			});
 
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = filename;
-			a.click();
-			URL.revokeObjectURL(url);
+			try {
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = filename;
+				a.click();
+				URL.revokeObjectURL(url);
+			} catch (error) {
+				throw new ExportError(`Export failed: ${error}`, "export");
+			}
 
 			this.progressUI.update(100, 100, "Complete!");
 		} finally {
@@ -110,15 +102,10 @@ export class ExportCoordinator {
 		const report: Progress = (fraction, stage) => onProgress?.(fraction, stage);
 
 		this.isExporting = true;
-		const savedState = this.saveEditState();
-		this.edit.setExportMode(true);
-		const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+		let output: Output | undefined;
 
 		try {
-			this.canvas.pauseTicker();
-
-			this.edit.executeEditCommand(this.exportCommand);
-
+			output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 			const cfg = this.prepareConfig(fps);
 			report(0, "Preparing...");
 
@@ -136,7 +123,7 @@ export class ExportCoordinator {
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
-			const mixedAudio = await this.audioProcessor.renderMix(this.exportCommand.getTracks(), this.edit.totalDuration);
+			const mixedAudio = await this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration);
 			throwIfAborted();
 			let audioSource: AudioBufferSource | null = null;
 			if (mixedAudio) {
@@ -162,13 +149,15 @@ export class ExportCoordinator {
 			return new Blob([data], { type: "video/mp4" });
 		} catch (error) {
 			// An export that stops early would otherwise hold its encoders until garbage collection.
-			if (output.state === "pending" || output.state === "started") await output.cancel();
+			if (output && (output.state === "pending" || output.state === "started")) {
+				// A failed cancel must not replace the error that stopped the export.
+				await output.cancel().catch(() => {});
+			}
 			throw error instanceof ExportError ? error : new ExportError(`Export failed: ${error}`, "export");
 		} finally {
 			this.isExporting = false;
-			this.edit.setExportMode(false);
-			this.canvas.resumeTicker();
-			this.restoreEditState(savedState);
+			// Releases decoders the checks opened when the export stops before drawing a frame.
+			this.videoProcessor.restore();
 		}
 	}
 
@@ -178,7 +167,7 @@ export class ExportCoordinator {
 		const issues = findEditIssues(this.edit);
 		const browserIssue = await findBrowserIssue(cfg.size, cfg.bitrate);
 		if (browserIssue) issues.push(browserIssue);
-		issues.push(...(await this.videoProcessor.initialize(this.exportCommand.getClips())));
+		issues.push(...(await this.videoProcessor.initialize(this.edit.getTracks().flat())));
 		if (issues.length > 0) {
 			throw new ExportError("This edit can't be exported in the browser", "unsupported", {}, undefined, issues);
 		}
@@ -199,44 +188,57 @@ export class ExportCoordinator {
 		throwIfAborted: () => void
 	): Promise<void> {
 		const container = this.edit.getViewportContainer();
-		this.edit.pause();
-		Object.assign(container.position, { x: 0, y: 0 });
-		Object.assign(container.scale, { x: 1, y: 1 });
-		container.visible = true;
+		const clips = this.edit.getTracks().flat();
+		const { isPlaying: wasPlaying, playbackTime } = this.edit;
 
-		const players = this.videoProcessor.disableVideoPlayback(this.exportCommand.getClips());
+		// Each frame moves every clip to that frame's time. Stopping the app keeps the screen on the last
+		// frame it drew, so the user never sees those moves; extract renders off-screen either way.
+		const tickerWasRunning = this.app.ticker.started;
+		this.app.stop();
 
-		for (let i = 0; i < cfg.frames; i += 1) {
-			throwIfAborted();
-			const frameTime = i * cfg.frameDuration;
-			this.edit.playbackTime = sec(frameTime);
+		try {
+			this.edit.pause();
+			const players = this.videoProcessor.disableVideoPlayback(clips);
 
-			for (const clip of this.exportCommand.getClips()) {
-				clip.update(0, 0);
-			}
+			for (let i = 0; i < cfg.frames; i += 1) {
+				throwIfAborted();
+				const frameTime = i * cfg.frameDuration;
+				this.edit.playbackTime = sec(frameTime);
 
-			for (const player of players) {
-				const start = player.getStart?.() || 0;
-				const end = player.getEnd?.() || start + (player.getLength?.() || 0);
-				if (frameTime >= start && frameTime < end) {
-					await this.videoProcessor.replaceVideoTexture(player, frameTime);
+				for (const clip of clips) {
+					clip.update(0, 0);
 				}
+
+				for (const player of players) {
+					const start = player.getStart?.() || 0;
+					const end = player.getEnd?.() || start + (player.getLength?.() || 0);
+					if (frameTime >= start && frameTime < end) {
+						await this.videoProcessor.replaceVideoTexture(player, frameTime);
+					}
+				}
+
+				// pixi renders the container into a texture with its own transform swapped for the frame's,
+				// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
+				const pixels = this.app.renderer.extract.pixels({
+					target: container,
+					frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height),
+					resolution: 1
+				});
+
+				const imageData = new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height);
+
+				ctx.putImageData(imageData, 0, 0);
+
+				await videoSource.add(i / cfg.fps, 1 / cfg.fps);
+
+				report(0.25 + ((i + 1) / cfg.frames) * 0.75, "Exporting...");
 			}
-
-			this.app.renderer.render(this.app.stage);
-
-			const pixels = this.app.renderer.extract.pixels({
-				target: container,
-				frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height)
-			});
-
-			const imageData = new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height);
-
-			ctx.putImageData(imageData, 0, 0);
-
-			await videoSource.add(i / cfg.fps, 1 / cfg.fps);
-
-			report(0.25 + ((i + 1) / cfg.frames) * 0.75, "Exporting...");
+		} finally {
+			// First, so a throw while restoring playback can't leave the editor frozen. start() only schedules a frame.
+			if (tickerWasRunning) this.app.start();
+			this.videoProcessor.restore();
+			this.edit.seek(sec(playbackTime));
+			if (wasPlaying) this.edit.play();
 		}
 	}
 
@@ -265,28 +267,5 @@ export class ExportCoordinator {
 			frames: Math.ceil(this.edit.totalDuration * fps),
 			frameDuration: 1 / fps // seconds per frame
 		};
-	}
-
-	private saveEditState(): EditState {
-		const c = this.edit.getViewportContainer();
-		return {
-			wasPlaying: this.edit.isPlaying,
-			time: this.edit.playbackTime,
-			visible: c.visible,
-			pos: { x: c.position.x, y: c.position.y },
-			scale: { x: c.scale.x, y: c.scale.y }
-		};
-	}
-
-	private restoreEditState(state: EditState): void {
-		const c = this.edit.getViewportContainer();
-		this.edit.setExportMode(false);
-		this.videoProcessor.restore();
-
-		Object.assign(c.position, state.pos);
-		Object.assign(c.scale, state.scale);
-		c.visible = state.visible;
-		this.edit.seek(sec(state.time));
-		if (state.wasPlaying) this.edit.play();
 	}
 }
