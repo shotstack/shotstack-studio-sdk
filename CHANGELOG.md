@@ -2,18 +2,146 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.25.0] - 2026-10-21
+
+### Added
+
+- HTML5 previews show images and fonts uploaded to Shotstack Ingest, inlined the way the cloud render inlines them; a file that fails to load marks the clip as failed (#235)
+
+## [2.24.5] - 2026-10-21
+
+### Changed
+
+- Upgraded `@shotstack/shotstack-canvas` to ^2.13.1 so Lottie animations with expressions preview in HTML5 clips (#234)
+
+## [2.24.4] - 2026-10-20
+
+### Fixed
+
+- Stop the editor flashing an unzoomed composition while `captureFrame` extracts a frame (#233)
+
+## [2.24.3] - 2026-10-08
+
+### Changed
+
+- Upgraded `@shotstack/shotstack-canvas` to ^2.12.0 (#222, #223)
+
+## [2.24.2] - 2026-10-08
+
+### Fixed
+
+- Show `<canvas>` content such as charts, particles and generative art in HTML5 previews (#220)
+
+## [2.24.1] - 2026-10-08
+
+### Fixed
+
+- Capture HTML5 clips from a freshly loaded document so frames match the render regardless of where the playhead has been (#218)
+
+## [2.24.0] - 2026-10-04
+
+### Changed
+
+- Upgraded `@shotstack/schemas` to 1.22.0 (#214)
+
+## [2.23.2] - 2026-09-29
+
+### Fixed
+
+- Fall back from invalid hex colours (such as 5-digit values) and unsubstituted merge tokens instead of crashing text styles and the timeline background (#212)
+
+## [2.23.1] - 2026-09-29
+
+### Fixed
+
+- Keep the edit's full length when generating the last clip on the timeline (#211)
+
+## [2.23.0] - 2026-09-29
+
+### Added
+
+- Preview animated video `speed` the way renders play it; the speed control hides for animated speed (#209)
+
+### Changed
+
+- Upgraded `@shotstack/schemas` to 1.20.1 (#208)
+
+### Fixed
+
+- Constant video speeds below 0.0625× preview instead of throwing (#209)
+
+## [2.22.8] - 2026-09-28
+
+### Changed
+
+- The toolbar Options button opens the host's generation settings for the selected clip and model, replacing the partial settings popup; Options is hidden when no settings handler is registered (#207)
+
+## [2.22.7] - 2026-09-25
+
+### Fixed
+
+- Replace the Add Variable browser prompt, which can throw in some browser contexts, with an inline toolbar form (#194)
+
+## [2.22.6] - 2026-09-25
+
+### Fixed
+
+- Reject rich-text edits and variable insertions over 5,000 characters with a validation message, keeping the draft, instead of crashing or truncating (#192)
+
+## [2.22.5] - 2026-09-25
+
+### Fixed
+
+- Fall back to the configured audio volume when volume keyframes fail to build, and rebuild them for replacement audio (#190)
+
+## [2.22.4] - 2026-09-25
+
+### Fixed
+
+- Restore timeline thumbnails and clear failed styling when a generation retry succeeds (#204)
+- Accept adjacent keyframe segments whose boundaries differ only by floating-point rounding (#205)
+- Link timeline preview-error badges to CORS help only for likely CORS failures, explain overlapping animation segments, and show the underlying error otherwise (#206)
+
+## [2.22.3] - 2026-09-25
+
+### Fixed
+
+- Guard audio rate reads against an empty Howler sound pool without blocking playback recovery (#189)
+
+## [2.22.2] - 2026-09-25
+
+### Changed
+
+- Upgraded `@shotstack/shotstack-canvas` to ^2.11.1 so GSAP animations stay seekable while HTML5 capture is queued (#203)
+
+### Fixed
+
+- Load keyframed templates, and add opacity keyframes, in browsers without `Array.prototype.toSorted` (#193)
+
+## [2.22.1] - 2026-09-24
+
+### Fixed
+
+- `clip:loadFailed` and `getClipError()` report svg, image and video clips that fall back to a placeholder (#202)
+- A failed svg `reloadAsset()` falls back to a placeholder instead of leaving the clip blank, and a later successful render clears it (#202)
+
+## [2.22.0] - 2026-09-24
+
+### Added
+
+- Selecting an image-editing model seeds its empty `imageUrls` from the clip's source image (#200)
+
+## [2.21.1] - 2026-09-24
+
+### Fixed
+
+- Serialise inline SVG styles safely in HTML5 capture, and keep a failed capture's iframe from covering foreground clips (#198)
+
 ## [2.21.0] - 2026-09-24
 
 ### Added
 
-- Opt-in generation annotations through `registerGenerationStatus` in the `/internal` entry point (#171)
 - Host-provided status text and tone in the AI toolbar; error statuses block Generate and Enter, including while a replacement status is pending (#171)
-
-## [2.20.0] - 2026-09-24
-
-### Added
-
-- `registerGenerationSettings` in the `/internal` entry point connects the AI toolbar to a host-provided settings panel, including options the toolbar cannot display (#191)
 
 ## [2.19.8] - 2026-09-24
 
