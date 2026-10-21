@@ -4,7 +4,15 @@ import { EditEvent } from "@core/events/edit-events";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 import { nextFrame } from "@shared/utils";
-import { Html5AssetSchema, composeHtml5IframeSrcdoc, computeHtml5FrameCount, type Html5Asset } from "@shotstack/shotstack-canvas";
+import {
+	Html5AssetSchema,
+	composeHtml5IframeSrcdoc,
+	computeHtml5FrameCount,
+	findHtml5IngestUrls,
+	html5ClipLongestEdge,
+	inlineHtml5IngestAssets,
+	type Html5Asset
+} from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
 import { computeHtml5CacheKey, html5CacheGet, html5CachePut } from "./html5-cache";
@@ -97,6 +105,7 @@ export class Html5Player extends Player {
 	private captureFramesTotal: number = 0;
 	private disposed: boolean = false;
 	private seekErrorReported: boolean = false;
+	private mounting: Promise<void> | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Html5);
@@ -184,8 +193,19 @@ export class Html5Player extends Player {
 		}
 	}
 
-	public override async load(): Promise<void> {
-		await super.load();
+	public override load(): Promise<void> {
+		return this.trackMount(super.load().then(() => this.mountAsset()));
+	}
+
+	// A reload waits on this, so a mount slowed by ingest fetches never runs alongside a second one.
+	private trackMount(mount: Promise<void>): Promise<void> {
+		this.mounting = mount.finally(() => {
+			this.mounting = null;
+		});
+		return this.mounting;
+	}
+
+	private async mountAsset(): Promise<void> {
 		try {
 			const validation = Html5AssetSchema.safeParse(this.asset);
 			if (!validation.success) {
@@ -193,12 +213,22 @@ export class Html5Player extends Player {
 				return;
 			}
 			await this.mountIframe(validation.data);
+			this.removeFallbackGraphic();
 			this.configureKeyframes();
 			this.beginCapture();
 		} catch (error) {
 			console.error("Failed to render html5 asset:", error instanceof Error ? `${error.message}\n${error.stack}` : error);
+			this.recordLoadError(error);
+			this.emitCaptureFailed(error, "static-placeholder");
 			this.createFallbackGraphic();
 		}
+	}
+
+	// Captured frames are SVG images, which can't load remote files, so ingest files are inlined as data URIs.
+	// Callers await this only when the asset has ingest URLs, so other assets compose without yielding.
+	private async composeWithIngestFiles(asset: Html5Asset): Promise<string> {
+		const longestEdge = html5ClipLongestEdge(this.clipConfiguration, this.edit.getResolvedEdit()?.output);
+		return composeHtml5IframeSrcdoc(await inlineHtml5IngestAssets(asset, longestEdge));
 	}
 
 	private async mountIframe(asset: Html5Asset): Promise<void> {
@@ -215,7 +245,9 @@ export class Html5Player extends Player {
 			`position:absolute;left:${IFRAME_OFFSCREEN_X}px;top:0;width:${width}px;height:${height}px;` +
 			`border:0;margin:0;padding:0;pointer-events:none;transform-origin:top left;` +
 			`z-index:50;background:transparent`;
-		iframe.srcdoc = composeHtml5IframeSrcdoc(asset);
+		iframe.srcdoc = findHtml5IngestUrls(asset).length > 0 ? await this.composeWithIngestFiles(asset) : composeHtml5IframeSrcdoc(asset);
+		// Ingest fetches can outlast the player, and dispose only removes an iframe it can see.
+		if (this.disposed) return;
 		this.getIframeMountElement().appendChild(iframe);
 		await waitForIframeLoad(iframe);
 
@@ -316,7 +348,9 @@ export class Html5Player extends Player {
 		// Live editing seeks this iframe, and a seeked animation can leave state
 		// a fresh page lacks (GSAP writes start values inline once a tween has
 		// rendered). The backend captures from a fresh page, so capture does too.
-		this.iframe.srcdoc = composeHtml5IframeSrcdoc(this.asset);
+		const srcdoc = findHtml5IngestUrls(this.asset).length > 0 ? await this.composeWithIngestFiles(this.asset) : composeHtml5IframeSrcdoc(this.asset);
+		if (stale()) return null;
+		this.iframe.srcdoc = srcdoc;
 		await waitForIframeLoad(this.iframe, undefined, true);
 		if (stale() || !this.iframe?.contentDocument) return null;
 
@@ -492,7 +526,18 @@ export class Html5Player extends Player {
 	}
 
 	public override async reloadAsset(): Promise<void> {
-		if (!this.iframe) return;
+		if (this.mounting) {
+			await this.mounting;
+			await this.reloadAsset();
+			return;
+		}
+		if (this.disposed) return;
+		if (!this.iframe) {
+			// A failed mount leaves no iframe to reload, so the changed asset gets a fresh mount.
+			this.loadError = null;
+			await this.trackMount(this.mountAsset());
+			return;
+		}
 		const newHash = await this.hashAsset();
 		if (newHash === this.contentHash) return;
 		this.contentHash = newHash;
@@ -501,8 +546,13 @@ export class Html5Player extends Player {
 		this.captureInFlight = null;
 		this.hasTriggeredCapture = false;
 		this.seekErrorReported = false;
-		this.iframe.srcdoc = composeHtml5IframeSrcdoc(this.asset);
 		try {
+			const srcdoc =
+				findHtml5IngestUrls(this.asset).length > 0 ? await this.composeWithIngestFiles(this.asset) : composeHtml5IframeSrcdoc(this.asset);
+			if (this.disposed || this.contentHash !== newHash) return;
+			// A capture that started while the files loaded writes this page itself; writing it here would reload the page mid-capture.
+			if (this.captureInFlight) return;
+			this.iframe.srcdoc = srcdoc;
 			await waitForIframeLoad(this.iframe, undefined, true);
 			if (this.disposed || this.contentHash !== newHash) return;
 			this.beginCapture();
