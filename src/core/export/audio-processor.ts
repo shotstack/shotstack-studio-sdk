@@ -1,9 +1,13 @@
 import { PlayerType, type Player } from "@canvas/players/player";
+import { createAnimatedSpeed } from "@canvas/players/video-player";
+import type { VideoAsset } from "@schemas";
 
 import { buildVolumeAutomation, type VolumeTween } from "./export-timing";
 
 const OUTPUT_SAMPLE_RATE = 48_000;
 const OUTPUT_CHANNELS = 2;
+// Matches the step VideoPlayer integrates its speed curve at.
+const SPEED_STEP_SECONDS = 0.01;
 
 // Player types whose `src` is (or, for text-to-speech, becomes) an audio-bearing file.
 const AUDIO_BEARING = new Set<string>([PlayerType.Audio, PlayerType.Video, PlayerType.TextToSpeech]);
@@ -15,6 +19,7 @@ interface AudioBearingClip {
 	trim: number;
 	volume: number | VolumeTween[] | undefined;
 	effect: string | undefined;
+	speed: VideoAsset["speed"];
 }
 
 /**
@@ -42,8 +47,10 @@ export class AudioProcessor {
 				source.connect(gain).connect(ctx.destination);
 
 				try {
-					// when = timeline start, offset = trim into the source, duration = clip length
-					source.start(Math.max(0, clip.start), Math.max(0, clip.trim), Math.max(0, clip.length));
+					const when = Math.max(0, clip.start);
+					const offset = this.applySpeed(source.playbackRate, clip, when);
+					source.start(when, Math.max(0, offset));
+					source.stop(when + Math.max(0, clip.length));
 					scheduled += 1;
 				} catch (error) {
 					// e.g. trim past the source end — contribute nothing rather than fail the export.
@@ -54,6 +61,23 @@ export class AudioProcessor {
 
 		if (!scheduled) return null;
 		return ctx.startRendering();
+	}
+
+	/**
+	 * Mirrors the preview's source time: a constant speed scales the trim as well as the rate,
+	 * while a speed curve starts at the trim and integrates from there. Returns the source offset.
+	 */
+	private applySpeed(rate: AudioParam, clip: AudioBearingClip, when: number): number {
+		const animated = createAnimatedSpeed(clip.speed, clip.length);
+		if (!animated) {
+			const speed = typeof clip.speed === "number" ? clip.speed : 1;
+			rate.setValueAtTime(speed, when);
+			return speed * clip.trim;
+		}
+		const samples = Math.max(2, Math.ceil(clip.length / SPEED_STEP_SECONDS) + 1);
+		const curve = Float32Array.from({ length: samples }, (_, i) => animated.curve.getValue((i * clip.length) / (samples - 1)));
+		rate.setValueCurveAtTime(curve, when, clip.length);
+		return clip.trim;
 	}
 
 	private applyVolume(param: AudioParam, clip: AudioBearingClip): void {
@@ -98,8 +122,7 @@ export class AudioProcessor {
 	private asAudioClip(clip: Player): AudioBearingClip | null {
 		if (!AUDIO_BEARING.has(clip.playerType)) return null;
 		const asset = clip.clipConfiguration?.asset as
-			| { src?: unknown; trim?: number; volume?: unknown; volumeEffect?: string; effect?: string }
-			| undefined;
+			{ src?: unknown; trim?: number; volume?: unknown; volumeEffect?: string; effect?: string; speed?: VideoAsset["speed"] } | undefined;
 		if (typeof asset?.src !== "string" || !asset.src) return null;
 
 		return {
@@ -108,7 +131,8 @@ export class AudioProcessor {
 			length: clip.getLength(),
 			trim: asset.trim ?? 0,
 			volume: asset.volume as number | VolumeTween[] | undefined,
-			effect: asset.volumeEffect ?? asset.effect
+			effect: asset.volumeEffect ?? asset.effect,
+			speed: asset.speed
 		};
 	}
 }

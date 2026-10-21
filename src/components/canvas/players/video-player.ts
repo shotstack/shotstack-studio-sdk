@@ -15,8 +15,7 @@ const SPEED_STEP_SECONDS = 0.01;
 
 type AnimatedSpeed = { curve: KeyframeBuilder; sourceOffsets: Float64Array };
 
-function createAnimatedSpeed(asset: VideoAsset, length: number): AnimatedSpeed | null {
-	const tweens = asset.speed;
+export function createAnimatedSpeed(tweens: VideoAsset["speed"], length: number): AnimatedSpeed | null {
 	if (!Array.isArray(tweens) || tweens.length === 0) return null;
 	const [first] = [...tweens].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
 	// The render holds the first tween's speed before it starts; KeyframeBuilder would otherwise ramp from 0.
@@ -55,7 +54,7 @@ export class VideoPlayer extends Player {
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
-		this.animatedSpeed = createAnimatedSpeed(videoAsset, this.getLength());
+		this.animatedSpeed = createAnimatedSpeed(videoAsset.speed, this.getLength());
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
 		this.skipVideoUpdate = false;
@@ -203,7 +202,7 @@ export class VideoPlayer extends Player {
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
-		this.animatedSpeed = createAnimatedSpeed(videoAsset, this.getLength());
+		this.animatedSpeed = createAnimatedSpeed(videoAsset.speed, this.getLength());
 	}
 
 	private async loadVideo(): Promise<void> {

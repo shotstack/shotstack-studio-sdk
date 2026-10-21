@@ -213,7 +213,7 @@ export class ExportCoordinator {
 					const start = player.getStart?.() || 0;
 					const end = player.getEnd?.() || start + (player.getLength?.() || 0);
 					if (frameTime >= start && frameTime < end) {
-						await this.videoProcessor.replaceVideoTexture(player, frameTime);
+						await this.videoProcessor.replaceVideoTexture(player);
 					}
 				}
 
