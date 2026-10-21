@@ -24,7 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Upgraded `@shotstack/shotstack-canvas` to ^2.12.0
+- Upgraded `@shotstack/shotstack-canvas` to ^2.12.0 (#222, #223)
 
 ## [2.24.2] - 2026-10-08
 
