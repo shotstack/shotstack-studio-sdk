@@ -9,6 +9,12 @@ import type { ResolvedClip } from "@schemas";
 jest.mock("pixi.js", () => ({}));
 jest.mock("@canvas/players/player", () => ({
 	Player: class {
+		async load() {
+			await Promise.resolve(this);
+		}
+
+		recordLoadError = jest.fn();
+
 		update() {
 			return this;
 		}
@@ -16,9 +22,24 @@ jest.mock("@canvas/players/player", () => ({
 	PlayerType: { Html5: "html5" }
 }));
 jest.mock("@shotstack/shotstack-canvas", () => ({
-	composeHtml5IframeSrcdoc: () => "<html><body>Updated</body></html>",
-	computeHtml5FrameCount: () => ({ frameCount: 1 })
+	Html5AssetSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
+	composeHtml5IframeSrcdoc: jest.fn(() => "<html><body>Updated</body></html>"),
+	computeHtml5FrameCount: () => ({ frameCount: 1 }),
+	findHtml5IngestUrls: jest.fn(() => []),
+	html5ClipLongestEdge: jest.fn(() => 1280),
+	inlineHtml5IngestAssets: jest.fn()
 }));
+const canvasLib = jest.requireMock("@shotstack/shotstack-canvas") as {
+	composeHtml5IframeSrcdoc: jest.Mock;
+	findHtml5IngestUrls: jest.Mock;
+	html5ClipLongestEdge: jest.Mock;
+	inlineHtml5IngestAssets: jest.Mock;
+};
+const INGEST_URL = "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/owner/src/source.png";
+const flush = () =>
+	new Promise(resolve => {
+		setTimeout(resolve, 0);
+	});
 jest.mock("@canvas/players/html5-cache", () => ({
 	html5CacheGet: async () => null,
 	html5CachePut: async () => undefined
@@ -45,7 +66,12 @@ type PlayerHarness = {
 
 function createPlayer() {
 	const events = { emit: jest.fn() };
-	const edit = { size: { width: 1080, height: 1920 }, isPlaying: false, getInternalEvents: () => events };
+	const edit = {
+		size: { width: 1080, height: 1920 },
+		isPlaying: false,
+		getInternalEvents: () => events,
+		getResolvedEdit: () => ({ output: { resolution: "hd" } })
+	};
 	const clip = { id: "background", start: 0, length: 60, asset: { type: "html5", html: "<div>Background</div>" } };
 	const player = new Html5Player(edit as unknown as Edit, clip as ResolvedClip);
 	const iframe = document.createElement("iframe");
@@ -217,4 +243,191 @@ it("keeps a failed capture inside its canvas layer and retries only after the as
 
 	expect(capture).toHaveBeenCalledTimes(2);
 	expect(harness.contentContainer.children).toEqual([expect.objectContaining({ kind: "loading" })]);
+});
+
+it("composes the page from ingest files inlined for the clip's size", async () => {
+	const { player, harness, iframe } = createPlayer();
+	const inlined = { type: "html5", html: '<img src="data:image/webp;base64,AAAA">' };
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockResolvedValueOnce(inlined);
+	canvasLib.composeHtml5IframeSrcdoc.mockClear();
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+	jest.spyOn(harness, "beginCapture").mockImplementation(() => {});
+
+	const reload = player.reloadAsset();
+	await flush();
+	iframe.dispatchEvent(new Event("load"));
+	await reload;
+
+	expect(canvasLib.html5ClipLongestEdge).toHaveBeenCalledWith(expect.objectContaining({ id: "background" }), { resolution: "hd" });
+	expect(canvasLib.inlineHtml5IngestAssets).toHaveBeenCalledWith(expect.objectContaining({ type: "html5" }), 1280);
+	expect(canvasLib.composeHtml5IframeSrcdoc).toHaveBeenCalledWith(inlined);
+});
+
+it("marks the clip failed when an ingest file can't be inlined", async () => {
+	const { player, harness, events } = createPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockRejectedValueOnce(new Error(`html5 asset file not found: ${INGEST_URL}`));
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+
+	await player.reloadAsset();
+
+	expect(events.emit).toHaveBeenCalledWith(
+		EditEvent.ClipCaptureFailed,
+		expect.objectContaining({ error: `html5 asset file not found: ${INGEST_URL}` })
+	);
+});
+
+it("keeps the newer page when an older reload finishes inlining last", async () => {
+	const { player, harness, iframe } = createPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	jest.spyOn(harness, "hashAsset").mockResolvedValueOnce("older").mockResolvedValueOnce("newer");
+	jest.spyOn(harness, "beginCapture").mockImplementation(() => {});
+	let finishOlder: (asset: unknown) => void = () => {};
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]).mockReturnValueOnce([]);
+	canvasLib.inlineHtml5IngestAssets.mockReturnValueOnce(
+		new Promise(resolve => {
+			finishOlder = resolve;
+		})
+	);
+	canvasLib.composeHtml5IframeSrcdoc.mockReturnValueOnce("<p>newer</p>").mockReturnValueOnce("<p>older</p>");
+
+	const older = player.reloadAsset();
+	await flush();
+	const newer = player.reloadAsset();
+	await flush();
+	iframe.dispatchEvent(new Event("load"));
+	await newer;
+	finishOlder({ type: "html5", html: "older" });
+	await older;
+
+	expect(iframe.srcdoc).toBe("<p>newer</p>");
+});
+
+it("marks the clip failed when an ingest file can't be inlined at mount", async () => {
+	const { player, harness, events, edit } = createPlayer();
+	Object.assign(edit, { getOutputFps: () => 30 });
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+	jest.spyOn(console, "error").mockImplementation(() => {});
+	const recordLoadError = jest.spyOn(player as unknown as { recordLoadError(e: unknown): void }, "recordLoadError");
+	Object.assign(player, { createFallbackGraphic: jest.fn() });
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockRejectedValueOnce(new Error(`html5 asset file not found: ${INGEST_URL}`));
+
+	await player.load();
+
+	expect(recordLoadError).toHaveBeenCalledWith(expect.objectContaining({ message: `html5 asset file not found: ${INGEST_URL}` }));
+	expect(events.emit).toHaveBeenCalledWith(
+		EditEvent.ClipCaptureFailed,
+		expect.objectContaining({ error: `html5 asset file not found: ${INGEST_URL}` })
+	);
+});
+
+it("recovers a clip whose ingest file failed at mount once the asset changes", async () => {
+	const { player, harness, events, edit } = createPlayer();
+	Object.assign(edit, { getOutputFps: () => 30, getCanvas: () => null });
+	Object.assign(player, { iframe: null });
+	jest.spyOn(harness, "hashAsset").mockResolvedValueOnce("broken").mockResolvedValueOnce("fixed");
+	jest.spyOn(harness, "beginCapture").mockImplementation(() => {});
+	jest.spyOn(console, "error").mockImplementation(() => {});
+	jest
+		.spyOn(player as unknown as { recordLoadError(e: unknown): void }, "recordLoadError")
+		.mockImplementation(error => Object.assign(player, { loadError: (error as Error).message }));
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]).mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets
+		.mockRejectedValueOnce(new Error(`html5 asset file not found: ${INGEST_URL}`))
+		.mockResolvedValueOnce({ type: "html5", html: "fixed" });
+
+	await player.load();
+	expect(player.loadError).toBe(`html5 asset file not found: ${INGEST_URL}`);
+
+	await player.reloadAsset();
+
+	expect(player.loadError).toBeNull();
+	expect(harness.iframe?.isConnected).toBe(true);
+	expect(harness.contentContainer.children).toEqual([]);
+	expect(events.emit.mock.calls.filter(([name]) => name === EditEvent.ClipCaptureFailed)).toHaveLength(1);
+});
+
+it("applies an asset change made during a slow mount to the one mounted iframe", async () => {
+	const { player, harness, edit } = createPlayer();
+	Object.assign(edit, { getOutputFps: () => 30, getCanvas: () => null });
+	Object.assign(player, { iframe: null });
+	jest.spyOn(harness, "hashAsset").mockResolvedValueOnce("mounted").mockResolvedValueOnce("changed");
+	jest.spyOn(harness, "beginCapture").mockImplementation(() => {});
+	let finishMount: (asset: unknown) => void = () => {};
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockReturnValueOnce(
+		new Promise(resolve => {
+			finishMount = resolve;
+		})
+	);
+	canvasLib.composeHtml5IframeSrcdoc.mockReturnValueOnce("<p>mounted</p>").mockReturnValueOnce("<p>changed</p>");
+
+	const load = player.load();
+	await flush();
+	const reload = player.reloadAsset();
+	await flush();
+	finishMount({ type: "html5", html: "mounted" });
+	await load;
+	await flush();
+	harness.iframe.dispatchEvent(new Event("load"));
+	await reload;
+
+	expect(document.querySelectorAll("iframe")).toHaveLength(2);
+	expect(harness.iframe.srcdoc).toBe("<p>changed</p>");
+});
+
+it("mounts no iframe for a player disposed while its ingest files load", async () => {
+	const { player, harness, edit } = createPlayer();
+	Object.assign(edit, { getOutputFps: () => 30, getCanvas: () => null });
+	Object.assign(player, { iframe: null });
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+	let finishInline: (asset: unknown) => void = () => {};
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockReturnValueOnce(
+		new Promise(resolve => {
+			finishInline = resolve;
+		})
+	);
+
+	const load = player.load();
+	await flush();
+	Object.assign(player, { disposed: true });
+	finishInline({ type: "html5", html: "late" });
+	await load;
+
+	expect(document.querySelectorAll("iframe")).toHaveLength(1);
+	expect(harness.iframe).toBeNull();
+});
+
+it("leaves an in-flight capture's page alone when a reload finishes inlining later", async () => {
+	const { player, harness, iframe, edit } = createPlayer();
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+	const beginCapture = jest.spyOn(harness, "beginCapture");
+	jest.spyOn(harness as unknown as { runCapture(): Promise<Blob[] | null> }, "runCapture").mockImplementation(() => {
+		iframe.srcdoc = "<p>capture</p>";
+		return new Promise(() => {});
+	});
+	let finishReload: (asset: unknown) => void = () => {};
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockReturnValueOnce(
+		new Promise(resolve => {
+			finishReload = resolve;
+		})
+	);
+
+	const reload = player.reloadAsset();
+	await flush();
+	edit.isPlaying = true;
+	player.update(0, 0);
+	await flush();
+	finishReload({ type: "html5", html: "reloaded" });
+	await flush();
+	iframe.dispatchEvent(new Event("load"));
+	await reload;
+
+	expect(iframe.srcdoc).toBe("<p>capture</p>");
+	expect(beginCapture).toHaveBeenCalledTimes(1);
 });
