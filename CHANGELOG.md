@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.26.1] - 2026-10-21
+
+### Changed
+
+- Exports check the edit and the browser before encoding, and reject with an `ExportError` listing the issues instead of producing a video that differs from the cloud render (#225, #229)
+- Exporting no longer moves the editor's view or playhead, adds an undo entry or emits `edit:changed` (#226)
+
+### Fixed
+
+- Exported frames and audio follow clip `speed` (#227)
+- Export size and bitrate follow the edit's `resolution` and `aspectRatio` (#228)
+- Cropped video, muted outputs and the first frame of animated text export as they preview (#229)
+
+## [2.26.0] - 2026-10-21
+
+### Added
+
+- `VideoExporter.exportBlob()` resolves with the MP4 as a `Blob`, with progress and cancellation and without the overlay or download (#224)
+
 ## [2.25.0] - 2026-10-21
 
 ### Added
