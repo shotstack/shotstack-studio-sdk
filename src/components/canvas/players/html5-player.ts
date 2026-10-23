@@ -32,6 +32,16 @@ function forceLayout(el: HTMLElement): void {
 	el.getBoundingClientRect();
 }
 
+function createOffscreenIframe(width: number, height: number): HTMLIFrameElement {
+	const iframe = document.createElement("iframe");
+	iframe.setAttribute("aria-hidden", "true");
+	iframe.style.cssText =
+		`position:absolute;left:${IFRAME_OFFSCREEN_X}px;top:0;width:${width}px;height:${height}px;` +
+		`border:0;margin:0;padding:0;pointer-events:none;transform-origin:top left;` +
+		`z-index:50;background:transparent`;
+	return iframe;
+}
+
 function waitForIframeLoad(iframe: HTMLIFrameElement, timeoutMs: number = IFRAME_LOAD_TIMEOUT_MS, awaitNextLoad: boolean = false): Promise<void> {
 	return new Promise((resolve, reject) => {
 		if (!awaitNextLoad && iframe.contentDocument?.readyState === "complete") {
@@ -106,6 +116,11 @@ export class Html5Player extends Player {
 	private disposed: boolean = false;
 	private seekErrorReported: boolean = false;
 	private mounting: Promise<void> | null = null;
+	private stillChain: Promise<unknown> = Promise.resolve();
+	private stillIframe: HTMLIFrameElement | null = null;
+	private stillHash: string | null = null;
+	private stillTime: number = 0;
+	private stillTexture: pixi.Texture | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Html5);
@@ -142,8 +157,7 @@ export class Html5Player extends Player {
 		if (this.iframe) this.iframe.style.left = `${IFRAME_OFFSCREEN_X}px`;
 	}
 
-	private seekHarness(seconds: number): void {
-		const win = this.harnessWindow;
+	private seekHarness(seconds: number, win: HarnessWindow | null = this.harnessWindow): void {
 		const seek = win?.[SEEK_KEY];
 		if (typeof seek !== "function") return;
 		try {
@@ -239,12 +253,7 @@ export class Html5Player extends Player {
 		this.captureFps = this.edit.getOutputFps() || 30;
 		this.contentHash = await this.hashAsset();
 
-		const iframe = document.createElement("iframe");
-		iframe.setAttribute("aria-hidden", "true");
-		iframe.style.cssText =
-			`position:absolute;left:${IFRAME_OFFSCREEN_X}px;top:0;width:${width}px;height:${height}px;` +
-			`border:0;margin:0;padding:0;pointer-events:none;transform-origin:top left;` +
-			`z-index:50;background:transparent`;
+		const iframe = createOffscreenIframe(width, height);
 		iframe.srcdoc = findHtml5IngestUrls(asset).length > 0 ? await this.composeWithIngestFiles(asset) : composeHtml5IframeSrcdoc(asset);
 		// Ingest fetches can outlast the player, and dispose only removes an iframe it can see.
 		if (this.disposed) return;
@@ -269,6 +278,8 @@ export class Html5Player extends Player {
 		this.removeLoadingGraphic();
 		this.parkIframe();
 		this.mode = "playback";
+		// Stills read the bake from here on, so the still page goes once any still using it is done.
+		this.stillChain = this.stillChain.then(() => this.dropStillPage());
 	}
 
 	private transitionToEditing(): void {
@@ -348,19 +359,7 @@ export class Html5Player extends Player {
 		// Live editing seeks this iframe, and a seeked animation can leave state
 		// a fresh page lacks (GSAP writes start values inline once a tween has
 		// rendered). The backend captures from a fresh page, so capture does too.
-		const srcdoc = findHtml5IngestUrls(this.asset).length > 0 ? await this.composeWithIngestFiles(this.asset) : composeHtml5IframeSrcdoc(this.asset);
-		if (stale()) return null;
-		this.iframe.srcdoc = srcdoc;
-		await waitForIframeLoad(this.iframe, undefined, true);
-		if (stale() || !this.iframe?.contentDocument) return null;
-
-		try {
-			await this.iframe.contentDocument.fonts.ready;
-		} catch {
-			/* older browsers — proceed */
-		}
-		await nextFrame();
-		if (stale()) return null;
+		if (!(await this.loadFreshPage(this.iframe, stale))) return null;
 
 		const { frameCount } = computeHtml5FrameCount({
 			clipLengthSeconds: this.getLength(),
@@ -408,9 +407,25 @@ export class Html5Player extends Player {
 		return blobs;
 	}
 
-	private captureIframeAsForeignObjectSvg(width: number, height: number): string {
-		if (!this.iframe?.contentDocument) throw new Error("iframe not ready");
-		const doc = this.iframe.contentDocument;
+	private async loadFreshPage(iframe: HTMLIFrameElement, stale: () => boolean): Promise<boolean> {
+		const srcdoc = findHtml5IngestUrls(this.asset).length > 0 ? await this.composeWithIngestFiles(this.asset) : composeHtml5IframeSrcdoc(this.asset);
+		if (stale()) return false;
+		iframe.srcdoc = srcdoc; // eslint-disable-line no-param-reassign -- reloading the iframe it is given is this helper's job
+		await waitForIframeLoad(iframe, undefined, true);
+		if (stale() || !iframe.contentDocument) return false;
+
+		try {
+			await iframe.contentDocument.fonts.ready;
+		} catch {
+			/* older browsers — proceed */
+		}
+		await nextFrame();
+		return !stale();
+	}
+
+	private captureIframeAsForeignObjectSvg(width: number, height: number, iframe: HTMLIFrameElement | null = this.iframe): string {
+		if (!iframe?.contentDocument) throw new Error("iframe not ready");
+		const doc = iframe.contentDocument;
 		const serializer = new XMLSerializer();
 		const styles = Array.from(doc.querySelectorAll("style"))
 			.map(el => serializer.serializeToString(el))
@@ -494,15 +509,21 @@ export class Html5Player extends Player {
 	public override async prepareStaticRender(): Promise<void> {
 		try {
 			if (this.disposed || !this.iframe || this.mode === "failed") return;
-			const frames = await this.captureFrames();
-			if (this.disposed || !frames || frames.length === 0) return;
-			const idx = Math.min(Math.max(0, Math.floor(this.getPlaybackTime() * this.captureFps)), frames.length - 1);
-			const texture = await this.getDecodedFrame(idx);
+			const seconds = this.getPlaybackTime();
+			const frames = this.capturedFrames && this.capturedHash === this.contentHash ? this.capturedFrames : null;
+			// The bake queues behind every other clip's, so a still without one renders just its own frame.
+			const texture = frames
+				? await this.getDecodedFrame(Math.min(Math.max(0, Math.floor(seconds * this.captureFps)), frames.length - 1))
+				: await this.renderStill(seconds);
 			if (this.disposed || !texture) return;
-			if (this.playbackSprite) {
+			if (frames && this.playbackSprite) {
 				this.playbackSprite.texture = texture;
 				return;
 			}
+			this.stillTexture?.destroy(true);
+			this.stillTexture = frames ? null : texture;
+			// The loading bar is editor chrome, and a transparent clip would show it through the frame.
+			if (this.loadingGraphic) this.loadingGraphic.visible = false;
 			if (this.staticSprite) {
 				this.staticSprite.texture = texture;
 			} else {
@@ -516,13 +537,75 @@ export class Html5Player extends Player {
 		}
 	}
 
+	// Stills of one player share its still page, so they take turns on it.
+	private renderStill(seconds: number): Promise<pixi.Texture | null> {
+		const run = this.stillChain.then(() => this.runStill(seconds));
+		this.stillChain = run.catch(() => undefined);
+		return run;
+	}
+
+	private async runStill(seconds: number): Promise<pixi.Texture | null> {
+		const cacheKey = this.contentHash;
+		if (!cacheKey) return null;
+		const stale = (): boolean => this.disposed || this.contentHash !== cacheKey;
+		const cached = await html5CacheGet(cacheKey);
+		if (stale()) return null;
+		const fps = cached?.fps ?? this.captureFps;
+		const frameCount =
+			cached?.pngs.length ??
+			computeHtml5FrameCount({ clipLengthSeconds: this.getLength(), jsContent: this.asset.js, cssContent: this.asset.css, fps }).frameCount;
+		// Seeking to the bake's frame time makes a still match the frame playback shows there.
+		const idx = Math.min(Math.max(0, Math.floor(seconds * fps)), frameCount - 1);
+		const blob = cached ? cached.pngs[idx] : await this.captureStillFrame(idx / fps, cacheKey, stale);
+		if (!blob || stale()) return null;
+		const bmp = await createImageBitmap(blob);
+		if (stale()) {
+			bmp.close();
+			return null;
+		}
+		return pixi.Texture.from(bmp);
+	}
+
+	// A still seeks a page of its own, so the bake's page only ever moves forward from a fresh load. The still page
+	// moves forward too: going back reloads it, since a rewound tween leaves its start values inline.
+	private async captureStillFrame(seconds: number, cacheKey: string, stale: () => boolean): Promise<Blob | null> {
+		if (!this.stillIframe) {
+			this.stillIframe = createOffscreenIframe(this.renderedWidth, this.renderedHeight);
+			this.getIframeMountElement().appendChild(this.stillIframe);
+		}
+		const iframe = this.stillIframe;
+		if (this.stillHash !== cacheKey || seconds < this.stillTime) {
+			this.stillHash = null;
+			if (!(await this.loadFreshPage(iframe, stale))) return null;
+			this.stillHash = cacheKey;
+		}
+		const doc = iframe.contentDocument;
+		if (!doc) return null;
+		this.stillTime = seconds;
+		this.seekHarness(seconds, iframe.contentWindow);
+		forceLayout(doc.body);
+		const W = this.renderedWidth;
+		const H = this.renderedHeight;
+		const frame = await foreignObjectSvgToWebp(this.captureIframeAsForeignObjectSvg(W, H, iframe), W, H);
+		return new Blob([frame as BlobPart], { type: "image/webp" });
+	}
+
+	private dropStillPage(): void {
+		this.stillIframe?.remove();
+		this.stillIframe = null;
+		this.stillHash = null;
+	}
+
 	/** @internal */
 	public override endStaticRender(): void {
+		if (this.loadingGraphic) this.loadingGraphic.visible = true;
 		if (!this.staticSprite) return;
 		this.contentContainer.removeChild(this.staticSprite);
-		// Texture is owned by the decoded-frame cache — destroy the sprite but not the texture.
+		// A baked frame's texture belongs to the decoded-frame cache, so only a still's own texture goes with the sprite.
 		this.staticSprite.destroy();
 		this.staticSprite = null;
+		this.stillTexture?.destroy(true);
+		this.stillTexture = null;
 	}
 
 	public override async reloadAsset(): Promise<void> {
@@ -751,6 +834,9 @@ export class Html5Player extends Player {
 		this.playbackSprite = null;
 		this.staticSprite?.destroy();
 		this.staticSprite = null;
+		this.stillTexture?.destroy(true);
+		this.stillTexture = null;
+		this.dropStillPage();
 		this.removeLoadingGraphic();
 		this.disposeCapturedFrames();
 	}
