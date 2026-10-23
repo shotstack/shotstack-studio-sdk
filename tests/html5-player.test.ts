@@ -6,7 +6,10 @@ import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas";
 
 // Canvas rendering is unavailable in jsdom; the HTML5 DOM and state transitions stay real.
-jest.mock("pixi.js", () => ({}));
+jest.mock("pixi.js", () => ({
+	Sprite: jest.fn((texture: unknown) => ({ texture, destroy: jest.fn() })),
+	Texture: { from: (source: unknown) => ({ source, destroy: jest.fn() }) }
+}));
 jest.mock("@canvas/players/player", () => ({
 	Player: class {
 		async load() {
@@ -24,7 +27,9 @@ jest.mock("@canvas/players/player", () => ({
 jest.mock("@shotstack/shotstack-canvas", () => ({
 	Html5AssetSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
 	composeHtml5IframeSrcdoc: jest.fn(() => "<html><body>Updated</body></html>"),
-	computeHtml5FrameCount: () => ({ frameCount: 1 }),
+	computeHtml5FrameCount: ({ clipLengthSeconds, fps }: { clipLengthSeconds: number; fps: number }) => ({
+		frameCount: Math.ceil(clipLengthSeconds * fps)
+	}),
 	findHtml5IngestUrls: jest.fn(() => []),
 	html5ClipLongestEdge: jest.fn(() => 1280),
 	inlineHtml5IngestAssets: jest.fn()
@@ -41,9 +46,10 @@ const flush = () =>
 		setTimeout(resolve, 0);
 	});
 jest.mock("@canvas/players/html5-cache", () => ({
-	html5CacheGet: async () => null,
+	html5CacheGet: jest.fn(async () => null),
 	html5CachePut: async () => undefined
 }));
+const cacheLib = jest.requireMock("@canvas/players/html5-cache") as { html5CacheGet: jest.Mock };
 jest.mock("@canvas/players/placeholder-graphic", () => ({
 	createPlaceholderGraphic: () => ({ kind: "failed", destroy: jest.fn() }),
 	createCaptureLoadingGraphic: () => ({ container: { kind: "loading", destroy: jest.fn() }, setProgress: jest.fn() })
@@ -55,9 +61,10 @@ type PlayerHarness = {
 	capturedHash: string | null;
 	capturedFrames: Blob[] | null;
 	contentContainer: { children: unknown[] };
-	captureIframeAsForeignObjectSvg(width: number, height: number): string;
+	captureIframeAsForeignObjectSvg(width: number, height: number, iframe?: HTMLIFrameElement | null): string;
 	captureFrames(): Promise<Blob[] | null>;
-	seekHarness(seconds: number): void;
+	runCapture(): Promise<Blob[] | null>;
+	seekHarness(seconds: number, win?: Window | null): void;
 	hashAsset(): Promise<string>;
 	beginCapture(): void;
 	syncIframePosition(): void;
@@ -430,4 +437,121 @@ it("leaves an in-flight capture's page alone when a reload finishes inlining lat
 
 	expect(iframe.srcdoc).toBe("<p>capture</p>");
 	expect(beginCapture).toHaveBeenCalledTimes(1);
+});
+
+type StaticSprite = { texture: { source: { blob: Blob }; destroy: jest.Mock } };
+
+// jsdom's Blob has no text(), and a frame's bytes are the URI-encoded markup it was drawn from.
+const frameMarkup = (blob: Blob) =>
+	new Promise<string>(resolve => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(decodeURIComponent(reader.result as string));
+		reader.readAsText(blob);
+	});
+
+// jsdom never navigates to a srcdoc and can't decode or draw images. These stand-ins load a fresh page for
+// every srcdoc written, and rasterise a frame as the markup it was drawn from.
+function createStillPlayer() {
+	const created = createPlayer();
+	Object.assign(created.edit, { getCanvas: () => null });
+	Object.assign(created.player, { getLength: () => 2 });
+	jest.spyOn(HTMLIFrameElement.prototype, "srcdoc", "set").mockImplementation(function navigate(this: HTMLIFrameElement) {
+		setTimeout(() => {
+			const doc = this.contentDocument!;
+			doc.body = doc.createElement("body");
+			this.dispatchEvent(new Event("load"));
+		}, 0);
+	});
+	Object.assign(HTMLImageElement.prototype, { decode: async () => undefined });
+	Object.assign(globalThis, { createImageBitmap: async (blob: Blob) => ({ blob, close: jest.fn() }) });
+	let drawn = "";
+	jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+		drawImage: (img: HTMLImageElement) => {
+			drawn = img.src;
+		}
+	} as never);
+	jest.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(done => {
+		const bytes = Uint8Array.from(drawn, c => c.charCodeAt(0));
+		done({ arrayBuffer: async () => bytes.buffer } as unknown as Blob);
+	});
+	const result = { ...created, seeks: [] as string[], onSeek: null as ((seek: string) => void) | null };
+	// A seek writes its time into the page. A rewind marks it, the way a rewound tween leaves its start values inline.
+	jest.spyOn(created.harness, "seekHarness").mockImplementation((seconds, win = created.iframe.contentWindow) => {
+		const { body } = win!.document;
+		if (seconds < Number(body.getAttribute("data-t") ?? 0)) body.setAttribute("data-rewound", "");
+		body.setAttribute("data-t", String(seconds));
+		body.textContent = `t=${seconds}`;
+		const seek = `${win === created.iframe.contentWindow ? "bake" : "still"} ${seconds}`;
+		result.seeks.push(seek);
+		result.onSeek?.(seek);
+	});
+	return result;
+}
+
+it("renders a still from its own page without waiting for the clip's capture", async () => {
+	const { player, harness, iframe } = createStillPlayer();
+	Object.assign(player, { getLength: () => 60, getPlaybackTime: () => 12.5 });
+	jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+	const serialise = jest.spyOn(harness, "captureIframeAsForeignObjectSvg");
+	harness.beginCapture();
+
+	await player.prepareStaticRender();
+
+	const [loading, sprite] = harness.contentContainer.children as [{ visible?: boolean }, StaticSprite];
+	expect(serialise).toHaveBeenCalledTimes(1);
+	expect(serialise.mock.calls[0][2]).not.toBe(iframe);
+	expect(await frameMarkup(sprite.texture.source.blob)).toContain(">t=12.5<");
+	expect(loading.visible).toBe(false);
+	player.endStaticRender();
+	expect(loading.visible).toBe(true);
+});
+
+it("takes a still from captured frames, in memory or cached, without rendering one", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 1 });
+	const serialise = jest.spyOn(harness, "captureIframeAsForeignObjectSvg");
+	cacheLib.html5CacheGet.mockResolvedValueOnce({ pngs: [new Blob(["cached 0"]), new Blob(["cached 1"])], fps: 1, frameCount: 2 });
+
+	await player.prepareStaticRender();
+	const cached = harness.contentContainer.children[0] as StaticSprite;
+	expect(await frameMarkup(cached.texture.source.blob)).toBe("cached 1");
+	player.endStaticRender();
+
+	harness.capturedFrames = [new Blob(["baked 0"]), new Blob(["baked 1"])];
+	harness.capturedHash = harness.contentHash;
+	await player.prepareStaticRender();
+	const baked = harness.contentContainer.children[0] as StaticSprite;
+	expect(await frameMarkup(baked.texture.source.blob)).toBe("baked 1");
+	player.endStaticRender();
+
+	expect(serialise).not.toHaveBeenCalled();
+	expect(document.querySelectorAll("iframe")).toHaveLength(1);
+	expect(cached.texture.destroy).toHaveBeenCalled();
+	expect(baked.texture.destroy).not.toHaveBeenCalled();
+});
+
+it("keeps a still taken mid-capture and the capture from changing each other's frames", async () => {
+	const setup = createStillPlayer();
+	const { player, harness, seeks } = setup;
+	Object.assign(player, { getPlaybackTime: () => 1.5 });
+	await player.prepareStaticRender();
+	player.endStaticRender();
+
+	// Partway through the capture, take a still from before both the capture's frame and the last still's.
+	let still: Promise<void> = Promise.resolve();
+	setup.onSeek = seek => {
+		if (seek !== `bake ${8 / 30}`) return;
+		Object.assign(player, { getPlaybackTime: () => 0.1 });
+		still = player.prepareStaticRender();
+	};
+	const frames = await harness.runCapture();
+	await still;
+
+	const markup = await Promise.all(frames!.map(frameMarkup));
+	expect(markup.map(frame => /data-t="([^"]*)"/.exec(frame)?.[1])).toEqual(Array.from({ length: 60 }, (_, i) => String(i / 30)));
+	expect(markup.join("")).not.toContain("data-rewound");
+	const stillMarkup = await frameMarkup((harness.contentContainer.children[0] as StaticSprite).texture.source.blob);
+	expect(stillMarkup).toContain(">t=0.1<");
+	expect(stillMarkup).not.toContain("data-rewound");
+	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
 });
