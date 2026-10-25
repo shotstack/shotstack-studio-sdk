@@ -76,6 +76,7 @@ function createPlayer() {
 	const edit = {
 		size: { width: 1080, height: 1920 },
 		isPlaying: false,
+		getHtml5Bake: () => "on-load",
 		getInternalEvents: () => events,
 		getResolvedEdit: () => ({ output: { resolution: "hd" } })
 	};
@@ -554,4 +555,49 @@ it("keeps a still taken mid-capture and the capture from changing each other's f
 	expect(stillMarkup).toContain(">t=0.1<");
 	expect(stillMarkup).not.toContain("data-rewound");
 	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
+});
+
+function createMountingPlayer(html5Bake: "on-load" | "on-play") {
+	const created = createPlayer();
+	Object.assign(created.edit, { getOutputFps: () => 30, getCanvas: () => null, getHtml5Bake: () => html5Bake });
+	Object.assign(created.player, { iframe: null });
+	jest.spyOn(created.harness, "syncIframePosition").mockImplementation(() => {});
+	jest.spyOn(created.harness, "seekHarness").mockImplementation(() => {});
+	const capture = jest.spyOn(created.harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+	return { ...created, capture };
+}
+
+it("bakes a clip as soon as it loads by default", async () => {
+	const { player, harness, capture } = createMountingPlayer("on-load");
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+
+	await player.load();
+
+	expect(capture).toHaveBeenCalledTimes(1);
+});
+
+it("leaves a clip unbaked until playback when the edit bakes on play", async () => {
+	const { player, harness, edit, capture } = createMountingPlayer("on-play");
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+
+	await player.load();
+	player.update(0, 0);
+	expect(capture).not.toHaveBeenCalled();
+
+	edit.isPlaying = true;
+	player.update(0, 0);
+	expect(capture).toHaveBeenCalledTimes(1);
+});
+
+it("doesn't bake a changed clip until playback when the edit bakes on play", async () => {
+	const { player, harness, capture } = createMountingPlayer("on-play");
+	jest.spyOn(harness, "hashAsset").mockResolvedValueOnce("mounted").mockResolvedValueOnce("changed");
+	await player.load();
+
+	const reload = player.reloadAsset();
+	await flush();
+	harness.iframe.dispatchEvent(new Event("load"));
+	await reload;
+
+	expect(capture).not.toHaveBeenCalled();
 });

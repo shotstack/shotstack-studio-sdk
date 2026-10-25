@@ -71,6 +71,10 @@ import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-v
 /** Internal type for clips with hydrated IDs during edit updates */
 type ClipWithId = Clip & { id?: string };
 
+export interface EditOptions {
+	html5Bake?: "on-load" | "on-play";
+}
+
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
 export class Edit {
@@ -81,6 +85,7 @@ export class Edit {
 
 	// ─── Core Configuration ───────────────────────────────────────────────────
 	private document: EditDocument;
+	private readonly html5Bake: NonNullable<EditOptions["html5Bake"]>;
 	/** @internal */
 	public size: Size;
 	private backgroundColor: string;
@@ -180,9 +185,10 @@ export class Edit {
 	/**
 	 * Create an Edit instance from a template configuration.
 	 */
-	constructor(template: EditConfig) {
+	constructor(template: EditConfig, options: EditOptions = {}) {
 		// Validate template eagerly so invalid configs fail at construction time
 		EditSchema.parse(template);
+		this.html5Bake = options.html5Bake ?? "on-load";
 
 		this.tracks = [];
 		this.playbackTime = sec(0);
@@ -2356,6 +2362,11 @@ export class Edit {
 	public setOutputFps(fps: number): Promise<CommandResult> {
 		const command = new SetOutputFpsCommand(fps);
 		return this.executeCommand(command);
+	}
+
+	/** @internal */
+	public getHtml5Bake(): NonNullable<EditOptions["html5Bake"]> {
+		return this.html5Bake;
 	}
 
 	public getOutputFps(): number {

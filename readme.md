@@ -179,6 +179,14 @@ const snapshot = edit.getEdit();
 const durationSeconds = edit.totalDuration;
 ```
 
+`html5` clips pre-render every frame as soon as they load, ready for playback. An edit that is only ever captured with `edit.captureFrame()`, never played, can skip that work:
+
+```typescript
+const edit = new Edit(templateJson, { html5Bake: "on-play" });
+```
+
+Its `html5` clips then render each captured frame on its own, and pre-render only if the edit plays. Captured frames are the same either way.
+
 #### Events
 
 Listen using string event names:

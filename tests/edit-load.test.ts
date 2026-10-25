@@ -353,6 +353,18 @@ function createMinimalEditWithResolution(tracks: { clips: TestClip[] }[], resolu
 	} as EditConfig;
 }
 
+describe("Edit html5 bake option", () => {
+	const config: EditConfig = {
+		timeline: { tracks: [{ clips: [MINIMAL_CLIP] }] },
+		output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+	};
+
+	it("bakes html5 clips on load unless told to wait for playback", () => {
+		expect(new Edit(config).getHtml5Bake()).toBe("on-load");
+		expect(new Edit(config, { html5Bake: "on-play" }).getHtml5Bake()).toBe("on-play");
+	});
+});
+
 describe("Edit loadEdit()", () => {
 	let edit: Edit;
 	let events: EventEmitter;
