@@ -56,6 +56,7 @@ import {
 } from "@schemas";
 import { calculateOverlap } from "@timeline/interaction/interaction-calculations";
 import * as pixi from "pixi.js";
+import { z } from "zod";
 
 import { CommandQueue } from "./commands/command-queue";
 import { CommandNoop, type EditCommand, type CommandContext, type CommandResult } from "./commands/types";
@@ -71,6 +72,15 @@ import { InvalidAssetUrlError, extractClipUrls, extractTrackUrls } from "./url-v
 /** Internal type for clips with hydrated IDs during edit updates */
 type ClipWithId = Clip & { id?: string };
 
+export interface EditOptions {
+	html5Prerender?: "on-load" | "on-play";
+}
+
+// Strict, so a misspelt option fails like an invalid template instead of being ignored.
+const EditOptionsSchema: z.ZodType<EditOptions> = z.strictObject({
+	html5Prerender: z.enum(["on-load", "on-play"]).optional()
+});
+
 // ─── Edit Session Class ───────────────────────────────────────────────────────
 
 export class Edit {
@@ -81,6 +91,7 @@ export class Edit {
 
 	// ─── Core Configuration ───────────────────────────────────────────────────
 	private document: EditDocument;
+	private readonly html5Prerender: NonNullable<EditOptions["html5Prerender"]>;
 	/** @internal */
 	public size: Size;
 	private backgroundColor: string;
@@ -180,9 +191,10 @@ export class Edit {
 	/**
 	 * Create an Edit instance from a template configuration.
 	 */
-	constructor(template: EditConfig) {
+	constructor(template: EditConfig, options: EditOptions = {}) {
 		// Validate template eagerly so invalid configs fail at construction time
 		EditSchema.parse(template);
+		this.html5Prerender = EditOptionsSchema.parse(options).html5Prerender ?? "on-load";
 
 		this.tracks = [];
 		this.playbackTime = sec(0);
@@ -2356,6 +2368,11 @@ export class Edit {
 	public setOutputFps(fps: number): Promise<CommandResult> {
 		const command = new SetOutputFpsCommand(fps);
 		return this.executeCommand(command);
+	}
+
+	/** @internal */
+	public getHtml5Prerender(): NonNullable<EditOptions["html5Prerender"]> {
+		return this.html5Prerender;
 	}
 
 	public getOutputFps(): number {

@@ -229,7 +229,8 @@ export class Html5Player extends Player {
 			await this.mountIframe(validation.data);
 			this.removeFallbackGraphic();
 			this.configureKeyframes();
-			this.beginCapture();
+			// An edit that pre-renders on play leaves the bake to update(), which starts it once the edit plays.
+			if (this.edit.getHtml5Prerender() === "on-load") this.beginCapture();
 		} catch (error) {
 			console.error("Failed to render html5 asset:", error instanceof Error ? `${error.message}\n${error.stack}` : error);
 			this.recordLoadError(error);
@@ -638,7 +639,7 @@ export class Html5Player extends Player {
 			this.iframe.srcdoc = srcdoc;
 			await waitForIframeLoad(this.iframe, undefined, true);
 			if (this.disposed || this.contentHash !== newHash) return;
-			this.beginCapture();
+			if (this.edit.getHtml5Prerender() === "on-load") this.beginCapture();
 		} catch (err) {
 			if (this.disposed || this.contentHash !== newHash) return;
 			console.warn("[Html5Player] reload iframe load failed:", err);
