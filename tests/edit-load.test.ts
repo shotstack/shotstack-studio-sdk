@@ -353,15 +353,20 @@ function createMinimalEditWithResolution(tracks: { clips: TestClip[] }[], resolu
 	} as EditConfig;
 }
 
-describe("Edit html5 bake option", () => {
+describe("Edit options", () => {
 	const config: EditConfig = {
 		timeline: { tracks: [{ clips: [MINIMAL_CLIP] }] },
 		output: { size: { width: 1920, height: 1080 }, format: "mp4" }
 	};
 
-	it("bakes html5 clips on load unless told to wait for playback", () => {
-		expect(new Edit(config).getHtml5Bake()).toBe("on-load");
-		expect(new Edit(config, { html5Bake: "on-play" }).getHtml5Bake()).toBe("on-play");
+	it("pre-renders html5 clips on load unless told to wait for playback", () => {
+		expect(new Edit(config).getHtml5Prerender()).toBe("on-load");
+		expect(new Edit(config, { html5Prerender: "on-play" }).getHtml5Prerender()).toBe("on-play");
+	});
+
+	it("rejects an unknown option or value when the edit is created", () => {
+		expect(() => new Edit(config, { html5Prerender: "lazy" } as never)).toThrow();
+		expect(() => new Edit(config, { html5PreRender: "on-play" } as never)).toThrow();
 	});
 });
 

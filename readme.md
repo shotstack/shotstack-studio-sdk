@@ -179,13 +179,13 @@ const snapshot = edit.getEdit();
 const durationSeconds = edit.totalDuration;
 ```
 
-`html5` clips pre-render every frame as soon as they load, ready for playback. An edit that is only ever captured with `edit.captureFrame()`, never played, can skip that work:
+Each `html5` clip pre-renders all its frames when it loads, for smooth playback and so the canvas can draw it among the other clips. An edit that is only captured with `edit.captureFrame()` can wait until it plays instead:
 
 ```typescript
-const edit = new Edit(templateJson, { html5Bake: "on-play" });
+const edit = new Edit(templateJson, { html5Prerender: "on-play" });
 ```
 
-Its `html5` clips then render each captured frame on its own, and pre-render only if the edit plays. Captured frames are the same either way.
+Captured frames are the same either way. Until the edit plays, though, the canvas shows `html5` clips as live pages on top of the other clips, without effects, so keep the default, `"on-load"`, for an edit that someone watches.
 
 #### Events
 

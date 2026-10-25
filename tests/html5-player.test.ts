@@ -76,7 +76,7 @@ function createPlayer() {
 	const edit = {
 		size: { width: 1080, height: 1920 },
 		isPlaying: false,
-		getHtml5Bake: () => "on-load",
+		getHtml5Prerender: () => "on-load",
 		getInternalEvents: () => events,
 		getResolvedEdit: () => ({ output: { resolution: "hd" } })
 	};
@@ -557,9 +557,9 @@ it("keeps a still taken mid-capture and the capture from changing each other's f
 	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
 });
 
-function createMountingPlayer(html5Bake: "on-load" | "on-play") {
+function createMountingPlayer(html5Prerender: "on-load" | "on-play") {
 	const created = createPlayer();
-	Object.assign(created.edit, { getOutputFps: () => 30, getCanvas: () => null, getHtml5Bake: () => html5Bake });
+	Object.assign(created.edit, { getOutputFps: () => 30, getCanvas: () => null, getHtml5Prerender: () => html5Prerender });
 	Object.assign(created.player, { iframe: null });
 	jest.spyOn(created.harness, "syncIframePosition").mockImplementation(() => {});
 	jest.spyOn(created.harness, "seekHarness").mockImplementation(() => {});
@@ -567,7 +567,7 @@ function createMountingPlayer(html5Bake: "on-load" | "on-play") {
 	return { ...created, capture };
 }
 
-it("bakes a clip as soon as it loads by default", async () => {
+it("pre-renders a clip as soon as it loads by default", async () => {
 	const { player, harness, capture } = createMountingPlayer("on-load");
 	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
 
@@ -576,7 +576,7 @@ it("bakes a clip as soon as it loads by default", async () => {
 	expect(capture).toHaveBeenCalledTimes(1);
 });
 
-it("leaves a clip unbaked until playback when the edit bakes on play", async () => {
+it("waits for playback to pre-render a clip when the edit pre-renders on play", async () => {
 	const { player, harness, edit, capture } = createMountingPlayer("on-play");
 	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
 
@@ -589,7 +589,7 @@ it("leaves a clip unbaked until playback when the edit bakes on play", async () 
 	expect(capture).toHaveBeenCalledTimes(1);
 });
 
-it("doesn't bake a changed clip until playback when the edit bakes on play", async () => {
+it("doesn't pre-render a changed clip before playback when the edit pre-renders on play", async () => {
 	const { player, harness, capture } = createMountingPlayer("on-play");
 	jest.spyOn(harness, "hashAsset").mockResolvedValueOnce("mounted").mockResolvedValueOnce("changed");
 	await player.load();
