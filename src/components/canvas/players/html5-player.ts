@@ -360,19 +360,49 @@ export class Html5Player extends Player {
 			return this.captureInFlight;
 		}
 		const queuedFor = this.contentHash;
-		const capture: Promise<Blob[] | null> = Html5Player.captureChain
-			.then(() => {
-				// A content change while this waited in the queue would bake the new content at this capture's floor.
-				if (this.disposed || this.contentHash !== queuedFor) return null;
-				return this.runCapture(minScale);
-			})
+		const previous = Html5Player.captureChain;
+		// Cached frames cost no bake, so they never wait in the queue behind one.
+		const capture: Promise<Blob[] | null> = this.bakeScale(minScale)
+			.then(scale => this.adoptCachedBake(scale))
+			.then(
+				cached =>
+					cached ??
+					previous.then(() => {
+						// A content change while this waited in the queue would bake the new content at this capture's floor.
+						if (this.disposed || this.contentHash !== queuedFor) return null;
+						return this.runCapture(minScale);
+					})
+			)
 			.finally(() => {
 				// A content change frees the slot, and a newer capture may hold it by now.
 				if (this.captureInFlight === capture) this.captureInFlight = null;
 			});
 		this.captureInFlight = capture;
-		Html5Player.captureChain = capture.catch(() => undefined);
+		// A cache hit settles early, so the next bake waits on the whole queue, not just this capture.
+		Html5Player.captureChain = Promise.allSettled([previous, capture]).then(() => undefined);
 		return capture;
+	}
+
+	// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
+	// transform isn't applied, so its bake reads only the viewport's zoom and may re-bake once the clip is active.
+	private async bakeScale(minScale: number): Promise<number> {
+		await nextFrame();
+		return Math.max(bakeScaleFor(this.onScreenScale()), minScale);
+	}
+
+	private async adoptCachedBake(scale: number): Promise<Blob[] | null> {
+		const { contentHash } = this;
+		if (!contentHash) return null;
+		const stale = (): boolean => this.disposed || this.contentHash !== contentHash;
+		const cacheKey = `${contentHash}@${scale}`;
+		const cached = await html5CacheGet(cacheKey);
+		if (stale() || !cached) return null;
+		this.captureFramesTotal = cached.frameCount;
+		this.captureFramesDone = cached.frameCount;
+		this.captureFps = cached.fps;
+		if (!(await this.adoptBake(cached.pngs, cacheKey, scale, stale))) return null;
+		this.emitCaptureCompleted(cached.frameCount);
+		return cached.pngs;
 	}
 
 	// A re-bake passes the scale it was started for, so a later, smaller sample can't bake softer frames.
@@ -383,23 +413,13 @@ export class Html5Player extends Player {
 		if (!contentHash) return null;
 		const stale = (): boolean => this.disposed || this.contentHash !== contentHash;
 
-		// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
-		// transform isn't applied, so its bake reads only the viewport's zoom and may re-bake once the clip is active.
-		await nextFrame();
+		const scale = await this.bakeScale(minScale);
 		if (stale()) return null;
-		const scale = Math.max(bakeScaleFor(this.onScreenScale()), minScale);
+		// The display scale can change while a clip waits in the queue, which can turn up a cached bake at the new scale.
+		const cached = await this.adoptCachedBake(scale);
+		if (cached) return cached;
+		if (stale()) return null;
 		const cacheKey = `${contentHash}@${scale}`;
-
-		const cached = await html5CacheGet(cacheKey);
-		if (stale()) return null;
-		if (cached) {
-			this.captureFramesTotal = cached.frameCount;
-			this.captureFramesDone = cached.frameCount;
-			this.captureFps = cached.fps;
-			if (!(await this.adoptBake(cached.pngs, cacheKey, scale, stale))) return null;
-			this.emitCaptureCompleted(cached.frameCount);
-			return cached.pngs;
-		}
 
 		// An earlier capture may have seeked this iframe, and a seeked animation can leave state
 		// a fresh page lacks (GSAP writes start values inline once a tween has
