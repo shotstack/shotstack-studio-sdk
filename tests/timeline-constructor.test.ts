@@ -20,6 +20,7 @@ function createMockEdit() {
 		getResolvedEdit: jest.fn(() => ({ timeline: { tracks: [] } })),
 		getEdit: jest.fn(() => ({ timeline: { tracks: [] } })),
 		isClipSelected: jest.fn(() => false),
+		getPendingCaptures: jest.fn(() => ({ pending: 0, total: 0 })),
 		selectClip: jest.fn(),
 		clearSelection: jest.fn()
 	};

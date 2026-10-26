@@ -36,6 +36,8 @@
 .ss-toolbar-section:first-child {
 	position: absolute;
 	left: 12px;
+	/* Keeps the status line clear of the centred playback controls at narrow widths. */
+	max-width: calc(50% - 160px);
 }
 
 /* Right section - positioned absolute to not affect center */
@@ -98,6 +100,15 @@
 .ss-toolbar-btn svg {
 	width: 16px;
 	height: 16px;
+}
+
+.ss-toolbar-status {
+	font-size: 11px;
+	color: #6b7280;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
 }
 
 .ss-time-display {

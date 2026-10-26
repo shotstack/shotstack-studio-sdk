@@ -66,6 +66,7 @@ export class Timeline {
 	private readonly handleClipSelected: () => void;
 	private readonly handleClipLoadFailed: () => void;
 	private readonly handleClipGeneration: () => void;
+	private readonly handleClipCapture: () => void;
 	private readonly handleClipUpdated: () => void;
 	private readonly handleClipFocusChanged: () => void;
 	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
@@ -120,6 +121,7 @@ export class Timeline {
 			this.requestRender();
 		};
 		this.handleClipGeneration = () => this.requestRender();
+		this.handleClipCapture = () => this.requestRender();
 		this.handleClipUpdated = () => this.requestRender();
 		this.handleClipFocusChanged = () => this.requestRender();
 		this.handleRulerMouseMove = (e: MouseEvent) => {
@@ -175,6 +177,7 @@ export class Timeline {
 		// Update toolbar
 		this.toolbar?.updatePlayState(playback.isPlaying);
 		this.toolbar?.updateTimeDisplay(playback.time, playback.duration);
+		this.toolbar?.setPendingCaptures(this.edit.getPendingCaptures());
 		this.toolbar?.draw();
 
 		// Update ruler and draw
@@ -266,6 +269,9 @@ export class Timeline {
 		this.edit.events.on(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
 		this.edit.events.on(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
 		this.edit.events.on(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
+		this.edit.events.on(EditEvent.ClipCaptureStarted, this.handleClipCapture);
+		this.edit.events.on(EditEvent.ClipCaptureCompleted, this.handleClipCapture);
+		this.edit.events.on(EditEvent.ClipCaptureFailed, this.handleClipCapture);
 
 		// Listen for focus changes (source popup hover-to-highlight)
 		const internal = this.edit.getInternalEvents();
@@ -289,6 +295,9 @@ export class Timeline {
 		this.edit.events.off(EditEvent.ClipGenerationStarted, this.handleClipGeneration);
 		this.edit.events.off(EditEvent.ClipGenerationCompleted, this.handleClipGeneration);
 		this.edit.events.off(EditEvent.ClipGenerationFailed, this.handleClipGeneration);
+		this.edit.events.off(EditEvent.ClipCaptureStarted, this.handleClipCapture);
+		this.edit.events.off(EditEvent.ClipCaptureCompleted, this.handleClipCapture);
+		this.edit.events.off(EditEvent.ClipCaptureFailed, this.handleClipCapture);
 
 		const internal = this.edit.getInternalEvents();
 		internal.off(InternalEvent.ClipFocused, this.handleClipFocusChanged);

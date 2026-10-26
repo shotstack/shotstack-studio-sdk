@@ -1,4 +1,8 @@
+import type { PendingCaptures } from "@core/pending-captures";
 import { type Seconds, sec } from "@core/timing/types";
+
+// Short preparations, such as cache hits, are over before anyone could read the line.
+const PREPARING_DELAY_MS = 500;
 
 export interface ToolbarOptions {
 	onPlay: () => void;
@@ -15,6 +19,9 @@ export class ToolbarComponent {
 	private timeDisplayElement: HTMLElement | null = null;
 	private playButton: HTMLButtonElement | null = null;
 	private zoomSlider: HTMLInputElement | null = null;
+	private statusElement: HTMLElement | null = null;
+	private statusTimer: ReturnType<typeof setTimeout> | null = null;
+	private statusText = "";
 	private isPlaying = false;
 	private currentTime: Seconds = sec(0);
 	private duration: Seconds = sec(0);
@@ -39,13 +46,19 @@ export class ToolbarComponent {
 	}
 
 	public dispose(): void {
+		if (this.statusTimer) clearTimeout(this.statusTimer);
+		this.statusTimer = null;
 		this.element.remove();
 	}
 
 	private buildElement(initialZoom: number): void {
-		// Left section - empty for balance
 		const leftSection = document.createElement("div");
 		leftSection.className = "ss-toolbar-section";
+		this.statusElement = document.createElement("span");
+		this.statusElement.className = "ss-toolbar-status";
+		// Stays rendered and empty when idle: a live region announces text written into it, not one revealed by display.
+		this.statusElement.setAttribute("role", "status");
+		leftSection.appendChild(this.statusElement);
 		this.element.appendChild(leftSection);
 
 		// Center section - playback controls + time display
@@ -125,6 +138,28 @@ export class ToolbarComponent {
 		btn.innerHTML = icon;
 		btn.addEventListener("click", onClick);
 		return btn;
+	}
+
+	// Called on every draw, so it only touches the DOM when the line changes.
+	public setPendingCaptures({ pending, total }: PendingCaptures): void {
+		const status = this.statusElement;
+		if (!status) return;
+		if (pending === 0) {
+			if (this.statusTimer) clearTimeout(this.statusTimer);
+			this.statusTimer = null;
+			if (status.textContent) status.textContent = "";
+			return;
+		}
+		this.statusText = `Preparing smooth playback · ${total - pending} of ${total} ready`;
+		if (status.textContent) {
+			if (status.textContent !== this.statusText) status.textContent = this.statusText;
+			return;
+		}
+		if (this.statusTimer) return;
+		this.statusTimer = setTimeout(() => {
+			this.statusTimer = null;
+			status.textContent = this.statusText;
+		}, PREPARING_DELAY_MS);
 	}
 
 	public updatePlayState(isPlaying: boolean): void {
