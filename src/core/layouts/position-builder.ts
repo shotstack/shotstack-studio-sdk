@@ -103,3 +103,16 @@ export function absoluteToRelative(containerSize: Size, entitySize: Size, anchor
 			};
 	}
 }
+
+/**
+ * How far a clip turned `angle` degrees about its centre sits from where turning about `origin` would put it.
+ * `origin` is a fraction of `size` from the top left, as the render's rotation origin is.
+ */
+export function rotationOriginOffset(size: Size, origin: Vector, angle: number): Vector {
+	const x = (origin.x - 0.5) * size.width;
+	const y = (origin.y - 0.5) * size.height;
+	const radians = (angle * Math.PI) / 180;
+	const cos = Math.cos(radians);
+	const sin = Math.sin(radians);
+	return { x: x - (x * cos - y * sin), y: y - (x * sin + y * cos) };
+}
