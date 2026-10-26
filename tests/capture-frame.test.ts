@@ -87,4 +87,33 @@ describe("Canvas.captureFrame", () => {
 		expect(ticker.start).not.toHaveBeenCalled();
 		expect(ticker.started).toBe(false);
 	});
+
+	it("captures output pixels whatever the screen's density", async () => {
+		const { canvas } = setup();
+		const { base64 } = (canvas as unknown as { application: { renderer: { extract: { base64: jest.Mock } } } }).application.renderer.extract;
+
+		await canvas.captureFrame();
+
+		expect(base64).toHaveBeenCalledWith(expect.objectContaining({ resolution: 1 }));
+	});
+});
+
+describe("Canvas.centerEdit", () => {
+	it("centres in CSS pixels when the canvas element is drawn at twice that density", () => {
+		const viewportContainer = { position: point(0, 0), scale: point(0.2, 0.2) };
+		const canvas = Object.create(Canvas.prototype) as Canvas;
+		Object.assign(canvas, {
+			edit: { size: { width: 1920, height: 1080 } },
+			application: { canvas: { width: 800, height: 600 } },
+			viewportSize: { width: 400, height: 300 },
+			currentZoom: 0.2,
+			viewportContainer,
+			overlayContainer: { position: point(0, 0), scale: point(1, 1) },
+			uiController: null
+		});
+
+		canvas.centerEdit();
+
+		expect(viewportContainer.position).toMatchObject({ x: 400 / 2 - (1920 * 0.2) / 2, y: 300 / 2 - (1080 * 0.2) / 2 });
+	});
 });
