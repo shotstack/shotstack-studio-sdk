@@ -1,4 +1,4 @@
-import { type Keyframe } from "@schemas";
+import { type AnimationKeyframe } from "@schemas";
 
 import { KeyframeBuilder } from "./keyframe-builder";
 
@@ -31,7 +31,7 @@ export class ComposedKeyframeBuilder {
 	 * For additive mode, keyframes should represent deltas (e.g., 0 → 0.1 means "move by 0.1")
 	 * For multiplicative mode, keyframes should represent factors (e.g., 1 → 1.3 means "scale by 1.3x")
 	 */
-	addLayer(keyframes: Keyframe[]): void {
+	addLayer(keyframes: AnimationKeyframe[]): void {
 		if (keyframes.length === 0) return;
 
 		const neutralValue = this.mode === "additive" ? 0 : 1;

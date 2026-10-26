@@ -19,7 +19,7 @@ import {
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { relativeToAbsolute, absoluteToRelative } from "@layouts/position-builder";
-import { type Clip, type ResolvedClip, type Keyframe } from "@schemas";
+import { type Clip, type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
@@ -100,6 +100,8 @@ export abstract class Player extends Entity {
 	private wipeOutFromRight: boolean = false;
 	private wipeOutStart: number = Number.POSITIVE_INFINITY;
 	private wipeFilter: WipeFilter | null = null;
+	private zoomBlurBuilder?: KeyframeBuilder;
+	private zoomBlurFilter: pixi.BlurFilter | null = null;
 
 	private wipeMask: pixi.Graphics | null;
 	protected lumaWrapper: pixi.Container;
@@ -222,19 +224,22 @@ export abstract class Player extends Entity {
 		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
 		// Mask keyframes (reveal effect)
-		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
+		const maskXKeyframes = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
 			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
 		}
 
 		// Wipe brightness sweep (wipeLeft/wipeRight) — driven through WipeFilter, not a mask.
-		const brightnessKeyframes: Keyframe[] = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
+		const brightnessKeyframes = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
 		if (brightnessKeyframes.length) {
 			this.wipeBrightnessBuilder = new KeyframeBuilder(brightnessKeyframes, length);
 			this.wipeInFromRight = transitionSet.in.wipeFromRight;
 			this.wipeOutFromRight = transitionSet.out.wipeFromRight;
 			this.wipeOutStart = transitionSet.out.brightnessKeyframes[0]?.start ?? Number.POSITIVE_INFINITY;
 		}
+
+		const blurKeyframes = [...transitionSet.in.blurKeyframes, ...transitionSet.out.blurKeyframes];
+		this.zoomBlurBuilder = blurKeyframes.length ? new KeyframeBuilder(blurKeyframes, length) : undefined;
 	}
 
 	protected recordLoadError(error: unknown): void {
@@ -298,6 +303,7 @@ export abstract class Player extends Entity {
 		// Update wipe/reveal mask animation
 		this.updateWipeMask();
 		this.updateWipeFilter();
+		this.updateZoomBlur();
 
 		if (this.shouldDiscardFrame()) {
 			this.contentContainer.alpha = 0;
@@ -351,11 +357,35 @@ export abstract class Player extends Entity {
 		this.wipeFilter = null;
 	}
 
+	private updateZoomBlur(): void {
+		if (!this.zoomBlurBuilder) {
+			if (!this.zoomBlurFilter) return;
+			this.getContainer().filters = [];
+			this.zoomBlurFilter.destroy();
+			this.zoomBlurFilter = null;
+			return;
+		}
+		if (!this.zoomBlurFilter) {
+			this.zoomBlurFilter = new pixi.BlurFilter();
+			this.getContainer().filters = [this.zoomBlurFilter];
+		}
+		// The render blurs by a whole-pixel radius before applying the clip's scale, so on screen the blur grows with scale
+		// and the canvas zoom. ponytail: pixi's Gaussian approximates the render's three box passes; match the kernel if they drift.
+		const time = this.getPlaybackTime();
+		const radius = Math.trunc(this.zoomBlurBuilder.getValue(time));
+		const canvas = this.getContainer().parent?.worldTransform;
+		const canvasZoom = canvas ? Math.hypot(canvas.a, canvas.b) : 1;
+		this.zoomBlurFilter.enabled = radius > 0;
+		this.zoomBlurFilter.strength = radius * (this.scaleKeyframeBuilder?.getValue(time) ?? 1) * canvasZoom;
+	}
+
 	public override dispose(): void {
 		this.wipeMask?.destroy();
 		this.wipeMask = null;
 		this.wipeFilter?.destroy();
 		this.wipeFilter = null;
+		this.zoomBlurFilter?.destroy();
+		this.zoomBlurFilter = null;
 
 		this.contentContainer?.destroy();
 		this.lumaWrapper?.destroy();
