@@ -3,6 +3,7 @@
 import { Html5Player } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import { sec } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
 // Canvas rendering is unavailable in jsdom; the HTML5 DOM and state transitions stay real.
@@ -12,6 +13,25 @@ jest.mock("pixi.js", () => ({
 }));
 jest.mock("@canvas/players/player", () => ({
 	Player: class {
+		private resolvedTiming: { start: number; length: number };
+
+		constructor(
+			_edit: unknown,
+			private clipConfiguration: { start: number; length: number }
+		) {
+			this.resolvedTiming = { start: clipConfiguration.start, length: clipConfiguration.length };
+		}
+
+		getLength() {
+			return this.resolvedTiming.length;
+		}
+
+		setResolvedTiming(timing: { start: number; length: number }) {
+			this.resolvedTiming = { ...timing };
+			this.clipConfiguration.start = timing.start;
+			this.clipConfiguration.length = timing.length;
+		}
+
 		async load() {
 			await Promise.resolve(this);
 		}
@@ -50,6 +70,7 @@ const flush = () =>
 		setTimeout(resolve, 0);
 	});
 jest.mock("@canvas/players/html5-cache", () => ({
+	computeHtml5CacheKey: jest.fn(async () => "content"),
 	html5CacheGet: jest.fn(async () => null),
 	html5CachePut: async () => undefined
 }));
@@ -870,6 +891,95 @@ it("doesn't pre-render a changed clip before playback when the edit pre-renders 
 	await reload;
 
 	expect(capture).not.toHaveBeenCalled();
+});
+
+it("gives a bake a new key when the clip's length or frame rate changes", async () => {
+	const { player, harness } = createPlayer();
+	Object.assign(player, { getLength: () => 3, captureFps: 30 });
+	const short = await harness.hashAsset();
+	Object.assign(player, { getLength: () => 6 });
+	const long = await harness.hashAsset();
+	Object.assign(player, { captureFps: 60 });
+	const faster = await harness.hashAsset();
+	// Both bake 120 frames, so only the frame rate tells these two apart.
+	Object.assign(player, { getLength: () => 4, captureFps: 30 });
+	const fourSeconds = await harness.hashAsset();
+	Object.assign(player, { getLength: () => 2, captureFps: 60 });
+	const twoSecondsFaster = await harness.hashAsset();
+
+	expect(new Set([short, long, faster]).size).toBe(3);
+	expect(twoSecondsFaster).not.toBe(fourSeconds);
+});
+
+it("re-bakes a loaded clip when its resolved length changes", () => {
+	const { player } = createPlayer();
+	const lengthsSeen: number[] = [];
+	const reload = jest.spyOn(player, "reloadAsset").mockImplementation(async () => {
+		lengthsSeen.push(player.getLength());
+	});
+
+	player.setResolvedTiming({ start: sec(0), length: sec(90) });
+
+	expect(reload).toHaveBeenCalledTimes(1);
+	expect(lengthsSeen).toEqual([90]);
+});
+
+it("doesn't re-bake a clip when only its start changes", () => {
+	const { player } = createPlayer();
+	const reload = jest.spyOn(player, "reloadAsset").mockResolvedValue(undefined);
+
+	player.setResolvedTiming({ start: sec(5), length: sec(60) });
+
+	expect(reload).not.toHaveBeenCalled();
+});
+
+it("re-bakes a clip whose length resolves while it mounts", async () => {
+	const { player, harness } = createMountingPlayer("on-load");
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+	const reload = jest.spyOn(player, "reloadAsset").mockResolvedValue(undefined);
+
+	const load = player.load();
+	player.setResolvedTiming({ start: sec(0), length: sec(90) });
+	await load;
+
+	expect(reload).toHaveBeenCalledTimes(1);
+});
+
+it("doesn't mount a clip that hasn't loaded when its length resolves", async () => {
+	const { player, harness } = createMountingPlayer("on-load");
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+	const reload = jest.spyOn(player, "reloadAsset");
+
+	player.setResolvedTiming({ start: sec(0), length: sec(90) });
+	await flush();
+
+	expect(reload).not.toHaveBeenCalled();
+	expect(harness.iframe).toBeNull();
+	expect(document.querySelectorAll("iframe")).toHaveLength(1);
+});
+
+it("keeps the newer key when an older reload's digest finishes last", async () => {
+	const { player, harness, iframe } = createPlayer();
+	const beginCapture = jest.spyOn(harness, "beginCapture").mockImplementation(() => {});
+	const digests: ((key: string) => void)[] = [];
+	jest.spyOn(harness, "hashAsset").mockImplementation(
+		() =>
+			new Promise(resolve => {
+				digests.push(resolve);
+			})
+	);
+
+	const older = player.reloadAsset();
+	const newer = player.reloadAsset();
+	digests[1]("newer");
+	await flush();
+	digests[0]("older");
+	await flush();
+	iframe.dispatchEvent(new Event("load"));
+	await Promise.all([older, newer]);
+
+	expect(harness.contentHash).toBe("newer");
+	expect(beginCapture).toHaveBeenCalledTimes(1);
 });
 
 it("shows stills, not the live page, before an on-play edit plays", async () => {
