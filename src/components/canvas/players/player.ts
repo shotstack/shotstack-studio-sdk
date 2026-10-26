@@ -19,7 +19,7 @@ import {
 } from "@core/timing/types";
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
-import { relativeToAbsolute, absoluteToRelative } from "@layouts/position-builder";
+import { relativeToAbsolute, absoluteToRelative, rotationOriginOffset } from "@layouts/position-builder";
 import { type Clip, type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
@@ -103,6 +103,7 @@ export abstract class Player extends Entity {
 	private wipeFilter: WipeFilter | null = null;
 	private zoomBlurBuilder?: KeyframeBuilder;
 	private zoomBlurFilter: pixi.BlurFilter | null = null;
+	private rotationOrigin?: { x: KeyframeBuilder; y: KeyframeBuilder };
 
 	private wipeMask: pixi.Graphics | null;
 	protected lumaWrapper: pixi.Container;
@@ -241,6 +242,23 @@ export abstract class Player extends Entity {
 
 		const blurKeyframes = [...transitionSet.in.blurKeyframes, ...transitionSet.out.blurKeyframes];
 		this.zoomBlurBuilder = blurKeyframes.length ? new KeyframeBuilder(blurKeyframes, length) : undefined;
+
+		// The render keeps one origin curve: the in shuffle's origin (or the centre) eases to the out shuffle's by the time it starts.
+		const { origin: inOrigin } = transitionSet.in;
+		const { origin: outOrigin } = transitionSet.out;
+		const outStart = transitionSet.out.rotationKeyframes[0]?.start ?? length;
+		const originCurve = (from = 0.5, to?: number) =>
+			new KeyframeBuilder(to === undefined ? from : [{ from, to, start: 0, length: outStart, interpolation: "bezier", easing: "smooth" }], length);
+		this.rotationOrigin =
+			inOrigin || outOrigin ? { x: originCurve(inOrigin?.x, outOrigin?.x), y: originCurve(inOrigin?.y, outOrigin?.y) } : undefined;
+	}
+
+	private getRotationOriginOffset(angle: number, scale: Vector): Vector {
+		if (!this.rotationOrigin) return { x: 0, y: 0 };
+		const time = this.getPlaybackTime();
+		const size = this.getSize();
+		const origin = { x: this.rotationOrigin.x.getValue(time), y: this.rotationOrigin.y.getValue(time) };
+		return rotationOriginOffset({ width: size.width * scale.x, height: size.height * scale.y }, origin, angle);
 	}
 
 	protected recordLoadError(error: unknown): void {
@@ -284,12 +302,12 @@ export abstract class Player extends Entity {
 		const pivot = this.getPivot();
 		const position = this.getPosition();
 		const scaleVector = this.getContainerScale();
+		const angle = this.getRotation();
+		const turn = this.getRotationOriginOffset(angle, scaleVector);
 
 		this.getContainer().scale.set(scaleVector.x, scaleVector.y);
 		this.getContainer().pivot.set(pivot.x, pivot.y);
-		this.getContainer().position.set(position.x + pivot.x, position.y + pivot.y);
-
-		const angle = this.getRotation();
+		this.getContainer().position.set(position.x + pivot.x + turn.x, position.y + pivot.y + turn.y);
 
 		this.contentContainer.alpha = this.getOpacity();
 		this.getContainer().angle = angle;
