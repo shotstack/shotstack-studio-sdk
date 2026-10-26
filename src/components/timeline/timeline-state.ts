@@ -29,6 +29,7 @@ export class TimelineStateManager {
 
 		// Document changes trigger Resolved event
 		this.edit.getInternalEvents().on(InternalEvent.Resolved, this.invalidateCache);
+		this.edit.getInternalEvents().on(InternalEvent.CaptureProgressChanged, this.invalidateCache);
 
 		// Listen on clip/timeline events
 		this.edit.events.on(EditEvent.ClipUpdated, this.invalidateCache);
@@ -240,6 +241,7 @@ export class TimelineStateManager {
 	public dispose(): void {
 		// Remove event listeners
 		this.edit.getInternalEvents().off(InternalEvent.Resolved, this.invalidateCache);
+		this.edit.getInternalEvents().off(InternalEvent.CaptureProgressChanged, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipUpdated, this.invalidateCache);
 		this.edit.events.off(EditEvent.TimelineUpdated, this.invalidateCache);
 		this.edit.events.off(EditEvent.ClipGenerationStarted, this.invalidateCache);

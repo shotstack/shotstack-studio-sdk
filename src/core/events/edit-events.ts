@@ -139,7 +139,10 @@ export const InternalEvent = {
 
 	// Asset generation UI
 	AssetGeneratorChanged: "assetGenerator:changed",
-	GenerationStatusChanged: "generation:statusChanged"
+	GenerationStatusChanged: "generation:statusChanged",
+
+	// html5 bake progress, in steps
+	CaptureProgressChanged: "capture:progressChanged"
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -239,4 +242,5 @@ export type InternalEventMap = {
 	// Asset generation UI
 	[InternalEvent.AssetGeneratorChanged]: void;
 	[InternalEvent.GenerationStatusChanged]: { clipId: string };
+	[InternalEvent.CaptureProgressChanged]: { clipId: string | null };
 };

@@ -2,7 +2,7 @@
 
 import { Html5Player, bakeScaleFor, captureFramesInFlight } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
@@ -618,6 +618,16 @@ function createStillPlayer() {
 	});
 	return result;
 }
+
+it("announces bake progress in 5% steps, not on every frame", async () => {
+	const { harness, events } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+
+	await harness.runCapture();
+
+	const steps = events.emit.mock.calls.filter(([name]) => name === InternalEvent.CaptureProgressChanged);
+	expect(steps).toHaveLength(20);
+	expect(steps[0][1]).toEqual({ clipId: "background" });
+});
 
 it("renders a still from its own page without waiting for the clip's capture", async () => {
 	const { player, harness, iframe } = createStillPlayer();

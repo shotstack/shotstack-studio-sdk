@@ -1,6 +1,6 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import type { PlaybackReadiness } from "@core/pending-captures";
 import type { ResolvedTiming } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
@@ -32,6 +32,7 @@ const SEEK_KEY = "__shotstackSeek" as const;
 const CAPTURE_SLICE_MS = 12;
 // A frame in flight holds its canvas until toBlob takes its pixels.
 const CAPTURE_MEMORY_BUDGET_BYTES = 256 * 1024 * 1024;
+const CAPTURE_PROGRESS_STEPS = 20;
 const BAKE_SCALES = [0.25, 0.5, 0.75, 1];
 
 function forceLayout(el: HTMLElement): void {
@@ -225,6 +226,14 @@ export class Html5Player extends Player {
 			});
 		} catch (emitErr) {
 			console.warn("[Html5Player] failed to emit ClipCaptureStarted:", emitErr);
+		}
+	}
+
+	private emitCaptureProgress(): void {
+		try {
+			this.edit.getInternalEvents().emit(InternalEvent.CaptureProgressChanged, { clipId: this.clipId });
+		} catch (emitErr) {
+			console.warn("[Html5Player] failed to emit CaptureProgressChanged:", emitErr);
 		}
 	}
 
@@ -448,6 +457,7 @@ export class Html5Player extends Player {
 		let lastSvg = "";
 		let lastFrame: Promise<Blob> | null = null;
 		let issued = 0;
+		let progressStep = 0;
 		let sliceStart = -Infinity;
 		// Frames publish in order, so the oldest in flight gates the window.
 		while (blobs.length < frameCount) {
@@ -473,6 +483,12 @@ export class Html5Player extends Player {
 				if (stale()) return null;
 				blobs.push(frame);
 				this.captureFramesDone += 1;
+				// Steps, not frames: enough for a ring to fill smoothly, and bounded whatever the frame count.
+				const step = Math.floor((this.captureFramesDone / frameCount) * CAPTURE_PROGRESS_STEPS);
+				if (step > progressStep) {
+					progressStep = step;
+					this.emitCaptureProgress();
+				}
 			}
 		}
 

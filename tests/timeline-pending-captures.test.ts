@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 import { Timeline } from "@timeline/timeline";
 import { AssetLoadTracker } from "@core/events/asset-load-tracker";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { EventEmitter } from "@core/events/event-emitter";
 import type { PendingCaptures, PlaybackReadiness } from "@core/pending-captures";
 import { sec } from "@core/timing/types";
@@ -22,7 +22,7 @@ async function mountTimeline() {
 		getClipGenerationState: () => undefined,
 		getClipError: () => null,
 		getPendingCaptures,
-		getPlayerByClipId: () => ({ getPlaybackReadiness: () => player.readiness, getCaptureProgress: () => player.progress }),
+		getClipCaptureProgress: () => (player.readiness === "pending" ? player.progress : null),
 		playbackTime: sec(0),
 		totalDuration: sec(5),
 		isPlaying: false
@@ -40,6 +40,7 @@ async function mountTimeline() {
 		state = next;
 		events.emit(event, { clipId: "clip-1", assetType: "html5" });
 	};
+	const step = () => events.emit(InternalEvent.CaptureProgressChanged, { clipId: "clip-1" });
 	return {
 		timeline,
 		status,
@@ -47,6 +48,7 @@ async function mountTimeline() {
 		clip,
 		player,
 		report,
+		step,
 		getPendingCaptures,
 		setState: (next: PendingCaptures) => {
 			state = next;
@@ -81,19 +83,22 @@ it("fills a ring around the play button 500 ms after something starts preparing,
 	expect(status().textContent).toBe("");
 });
 
-it("follows bake progress between capture events, and stops sampling once nothing prepares", async () => {
-	const { ring, report, setState, getPendingCaptures } = await mountTimeline();
+it("follows bake progress on the player's progress steps, without polling", async () => {
+	const { ring, clip, player, report, step, setState, getPendingCaptures } = await mountTimeline();
 
+	Object.assign(player, { readiness: "pending", progress: 0.2 });
 	report({ pending: 1, total: 1, progress: 0.2 });
 	jest.advanceTimersByTime(500);
 	expect(ring().getAttribute("aria-valuenow")).toBe("20");
-	setState({ pending: 1, total: 1, progress: 0.6 });
-	jest.advanceTimersByTime(200);
-	expect(ring().getAttribute("aria-valuenow")).toBe("60");
 
-	report({ pending: 0, total: 1, progress: 1 }, EditEvent.ClipCaptureCompleted);
+	Object.assign(player, { progress: 0.6 });
+	setState({ pending: 1, total: 1, progress: 0.6 });
+	step();
+	expect(ring().getAttribute("aria-valuenow")).toBe("60");
+	expect(clip().style.getPropertyValue("--ss-capture-progress")).toBe("0.6");
+
 	const reads = getPendingCaptures.mock.calls.length;
-	jest.advanceTimersByTime(1000);
+	jest.advanceTimersByTime(2000);
 	expect(getPendingCaptures.mock.calls.length).toBe(reads);
 });
 
@@ -133,7 +138,7 @@ it("never shows preparing for an edit without html5 clips", async () => {
 	expect(status().textContent).toBe("");
 });
 
-it("clears the wait and the sampling when the timeline is disposed", async () => {
+it("clears the wait when the timeline is disposed", async () => {
 	const { timeline, status, report, getPendingCaptures } = await mountTimeline();
 	const line = status();
 

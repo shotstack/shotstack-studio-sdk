@@ -8,6 +8,10 @@ export interface PendingCaptures {
 
 type ReportsReadiness = { getPlaybackReadiness(): PlaybackReadiness; getCaptureProgress(): number };
 
+export function captureProgressOf(player: ReportsReadiness | null): number | null {
+	return player?.getPlaybackReadiness() === "pending" ? player.getCaptureProgress() : null;
+}
+
 export function countPendingCaptures(players: Iterable<ReportsReadiness>): PendingCaptures {
 	let pending = 0;
 	let total = 0;

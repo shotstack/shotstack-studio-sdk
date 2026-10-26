@@ -21,7 +21,7 @@ function createMockEdit() {
 		getEdit: jest.fn(() => ({ timeline: { tracks: [] } })),
 		isClipSelected: jest.fn(() => false),
 		getPendingCaptures: jest.fn(() => ({ pending: 0, total: 0, progress: 1 })),
-		getPlayerByClipId: jest.fn(() => null),
+		getClipCaptureProgress: jest.fn(() => null),
 		selectClip: jest.fn(),
 		clearSelection: jest.fn()
 	};
