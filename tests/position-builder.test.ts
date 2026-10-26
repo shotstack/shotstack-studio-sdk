@@ -1,4 +1,4 @@
-import { relativeToAbsolute, absoluteToRelative } from "@core/layouts/position-builder";
+import { relativeToAbsolute, absoluteToRelative, rotationOriginOffset } from "@core/layouts/position-builder";
 
 describe("PositionBuilder", () => {
 	describe("relativeToAbsolute", () => {
@@ -73,6 +73,22 @@ describe("PositionBuilder", () => {
 
 			expect(horizontal.x).not.toBe(vertical.x);
 			expect(horizontal.y).not.toBe(vertical.y);
+		});
+	});
+
+	describe("rotationOriginOffset", () => {
+		it("leaves a turn about the centre where it is", () => {
+			const offset = rotationOriginOffset({ width: 100, height: 50 }, { x: 0.5, y: 0.5 }, 30);
+
+			expect(offset.x).toBeCloseTo(0);
+			expect(offset.y).toBeCloseTo(0);
+		});
+
+		it("moves the centre the way a clockwise turn about the left edge would", () => {
+			const offset = rotationOriginOffset({ width: 100, height: 50 }, { x: 0, y: 0.5 }, 90);
+
+			expect(offset.x).toBeCloseTo(-50);
+			expect(offset.y).toBeCloseTo(50);
 		});
 	});
 });
