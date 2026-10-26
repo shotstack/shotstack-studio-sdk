@@ -1,12 +1,10 @@
-import { ComposedKeyframeBuilder } from "@animations/composed-keyframe-builder";
 import { EffectPresetBuilder } from "@animations/effect-preset-builder";
-import { KeyframeBuilder } from "@animations/keyframe-builder";
+import { KeyframeBuilder, type PresetPoint } from "@animations/keyframe-builder";
 import { TransitionPresetBuilder } from "@animations/transition-preset-builder";
 import { WipeFilter } from "@animations/wipe-filter";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
-import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import {
 	type AliasReference,
 	type ResolvedTiming,
@@ -19,7 +17,7 @@ import {
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { relativeToAbsolute, absoluteToRelative, rotationOriginOffset } from "@layouts/position-builder";
-import { type Clip, type ResolvedClip } from "@schemas";
+import { type Clip, type Keyframe, type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
@@ -87,13 +85,13 @@ export abstract class Player extends Entity {
 
 	private resolvedTiming: ResolvedTiming;
 
-	private offsetXKeyframeBuilder?: ComposedKeyframeBuilder;
-	private offsetYKeyframeBuilder?: ComposedKeyframeBuilder;
-	private scaleKeyframeBuilder?: ComposedKeyframeBuilder;
-	private opacityKeyframeBuilder?: ComposedKeyframeBuilder;
-	private rotationKeyframeBuilder?: ComposedKeyframeBuilder;
-	private skewXKeyframeBuilder?: ComposedKeyframeBuilder;
-	private skewYKeyframeBuilder?: ComposedKeyframeBuilder;
+	private offsetXKeyframeBuilder?: KeyframeBuilder;
+	private offsetYKeyframeBuilder?: KeyframeBuilder;
+	private scaleKeyframeBuilder?: KeyframeBuilder;
+	private opacityKeyframeBuilder?: KeyframeBuilder;
+	private rotationKeyframeBuilder?: KeyframeBuilder;
+	private skewXKeyframeBuilder?: KeyframeBuilder;
+	private skewYKeyframeBuilder?: KeyframeBuilder;
 	private maskXKeyframeBuilder?: KeyframeBuilder;
 	private wipeBrightnessBuilder?: KeyframeBuilder;
 	private wipeInFromRight: boolean = false;
@@ -145,50 +143,17 @@ export abstract class Player extends Entity {
 	protected configureKeyframes() {
 		const length = this.getLength();
 		const config = this.clipConfiguration;
+		// A property that holds neither a number nor tweens, such as an unresolved merge field, plays its default.
+		const curve = (value: Keyframe[] | number | undefined, fallback: number) =>
+			new KeyframeBuilder(typeof value === "number" || (Array.isArray(value) && value.length > 0) ? value : fallback);
 
-		// Extract base values from clip configuration
-		const baseOffsetX = typeof config.offset?.x === "number" ? config.offset.x : 0;
-		const baseOffsetY = typeof config.offset?.y === "number" ? config.offset.y : 0;
-		const baseScale = typeof config.scale === "number" ? config.scale : 1;
-		const baseOpacity = typeof config.opacity === "number" ? config.opacity : 1;
-		const baseRotation = typeof config.transform?.rotate?.angle === "number" ? config.transform.rotate.angle : 0;
-		const baseSkewX = typeof config.transform?.skew?.x === "number" ? config.transform.skew.x : 0;
-		const baseSkewY = typeof config.transform?.skew?.y === "number" ? config.transform.skew.y : 0;
-
-		// Create composed builders with base values
-		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, "additive");
-		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, "additive");
-		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, "multiplicative");
-		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, "multiplicative", { min: 0, max: 1 });
-		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, "additive");
-		this.skewXKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewX, "additive");
-		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, "additive");
-
-		// If user has custom keyframes, add them and skip effect/transition layers
-		if (hasKeyframedVisualProperty(this.clipConfiguration)) {
-			if (Array.isArray(config.scale)) {
-				this.scaleKeyframeBuilder.addLayer(config.scale);
-			}
-			if (Array.isArray(config.opacity)) {
-				this.opacityKeyframeBuilder.addLayer(config.opacity);
-			}
-			if (Array.isArray(config.offset?.x)) {
-				this.offsetXKeyframeBuilder.addLayer(config.offset.x);
-			}
-			if (Array.isArray(config.offset?.y)) {
-				this.offsetYKeyframeBuilder.addLayer(config.offset.y);
-			}
-			if (Array.isArray(config.transform?.rotate?.angle)) {
-				this.rotationKeyframeBuilder.addLayer(config.transform.rotate.angle);
-			}
-			if (Array.isArray(config.transform?.skew?.x)) {
-				this.skewXKeyframeBuilder.addLayer(config.transform.skew.x);
-			}
-			if (Array.isArray(config.transform?.skew?.y)) {
-				this.skewYKeyframeBuilder.addLayer(config.transform.skew.y);
-			}
-			return;
-		}
+		this.offsetXKeyframeBuilder = curve(config.offset?.x, 0);
+		this.offsetYKeyframeBuilder = curve(config.offset?.y, 0);
+		this.scaleKeyframeBuilder = curve(config.scale, 1);
+		this.opacityKeyframeBuilder = curve(config.opacity, 1);
+		this.rotationKeyframeBuilder = curve(config.transform?.rotate?.angle, 0);
+		this.skewXKeyframeBuilder = curve(config.transform?.skew?.x, 0);
+		this.skewYKeyframeBuilder = curve(config.transform?.skew?.y, 0);
 
 		// Build resolved clip config for preset builders
 		const resolvedClipConfig: ResolvedClip = {
@@ -197,59 +162,40 @@ export abstract class Player extends Entity {
 			length
 		};
 
-		// Build relative effect keyframes (factors/deltas)
 		const effectSet = new EffectPresetBuilder(resolvedClipConfig).buildRelative(this.edit.size, this.getSize());
-
-		// Build relative transition keyframes (separate in/out sets)
 		const transitionSet = new TransitionPresetBuilder(resolvedClipConfig).buildRelative();
 
-		// Add effect layer
-		this.offsetXKeyframeBuilder.addLayer(effectSet.offsetXKeyframes);
-		this.offsetYKeyframeBuilder.addLayer(effectSet.offsetYKeyframes);
-		this.scaleKeyframeBuilder.addLayer(effectSet.scaleKeyframes);
-		this.opacityKeyframeBuilder.addLayer(effectSet.opacityKeyframes);
-		this.rotationKeyframeBuilder.addLayer(effectSet.rotationKeyframes);
-
-		// Add transition-in layer
-		this.offsetXKeyframeBuilder.addLayer(transitionSet.in.offsetXKeyframes);
-		this.offsetYKeyframeBuilder.addLayer(transitionSet.in.offsetYKeyframes);
-		this.scaleKeyframeBuilder.addLayer(transitionSet.in.scaleKeyframes);
-		this.opacityKeyframeBuilder.addLayer(transitionSet.in.opacityKeyframes);
-		this.rotationKeyframeBuilder.addLayer(transitionSet.in.rotationKeyframes);
-
-		// Add transition-out layer
-		this.offsetXKeyframeBuilder.addLayer(transitionSet.out.offsetXKeyframes);
-		this.offsetYKeyframeBuilder.addLayer(transitionSet.out.offsetYKeyframes);
-		this.scaleKeyframeBuilder.addLayer(transitionSet.out.scaleKeyframes);
-		this.opacityKeyframeBuilder.addLayer(transitionSet.out.opacityKeyframes);
-		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
-
-		// Mask keyframes (reveal effect)
-		const maskXKeyframes = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
-		if (maskXKeyframes.length) {
-			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes);
+		// The render applies the effect, then the in transition, then the out, each over the curves left by those before.
+		for (const preset of [effectSet, transitionSet.in, transitionSet.out]) {
+			this.offsetXKeyframeBuilder.addPresetPoints(preset.offsetXKeyframes);
+			this.offsetYKeyframeBuilder.addPresetPoints(preset.offsetYKeyframes);
+			this.scaleKeyframeBuilder.addPresetPoints(preset.scaleKeyframes);
+			this.opacityKeyframeBuilder.addPresetPoints(preset.opacityKeyframes);
+			this.rotationKeyframeBuilder.addPresetPoints(preset.rotationKeyframes);
 		}
+
+		// Curves only transitions drive, resting at a value that leaves the clip untouched.
+		const transitionCurve = (rest: number, ...phases: PresetPoint[][]) => {
+			if (!phases.some(points => points.length)) return undefined;
+			const builder = new KeyframeBuilder(rest);
+			phases.forEach(points => builder.addPresetPoints(points));
+			return builder;
+		};
+		const { in: transitionIn, out: transitionOut } = transitionSet;
+
+		this.maskXKeyframeBuilder = transitionCurve(1, transitionIn.maskXKeyframes, transitionOut.maskXKeyframes);
 
 		// Wipe brightness sweep (wipeLeft/wipeRight) — driven through WipeFilter, not a mask.
-		const brightnessKeyframes = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
-		if (brightnessKeyframes.length) {
-			this.wipeBrightnessBuilder = new KeyframeBuilder(brightnessKeyframes);
-			this.wipeInFromRight = transitionSet.in.wipeFromRight;
-			this.wipeOutFromRight = transitionSet.out.wipeFromRight;
-			this.wipeOutStart = transitionSet.out.brightnessKeyframes[0]?.start ?? Number.POSITIVE_INFINITY;
-		}
+		this.wipeBrightnessBuilder = transitionCurve(-1, transitionIn.brightnessKeyframes, transitionOut.brightnessKeyframes);
+		this.wipeInFromRight = transitionIn.wipeFromRight;
+		this.wipeOutFromRight = transitionOut.wipeFromRight;
+		this.wipeOutStart = transitionOut.brightnessKeyframes[0]?.time ?? Number.POSITIVE_INFINITY;
 
-		const blurKeyframes = [...transitionSet.in.blurKeyframes, ...transitionSet.out.blurKeyframes];
-		this.zoomBlurBuilder = blurKeyframes.length ? new KeyframeBuilder(blurKeyframes) : undefined;
+		this.zoomBlurBuilder = transitionCurve(0, transitionIn.blurKeyframes, transitionOut.blurKeyframes);
 
-		// The render keeps one origin curve: the in shuffle's origin (or the centre) eases to the out shuffle's by the time it starts.
-		const { origin: inOrigin } = transitionSet.in;
-		const { origin: outOrigin } = transitionSet.out;
-		const outStart = transitionSet.out.rotationKeyframes[0]?.start ?? length;
-		const originCurve = (from = 0.5, to?: number) =>
-			new KeyframeBuilder(to === undefined ? from : [{ from, to, start: 0, length: outStart, interpolation: "bezier", easing: "smooth" }]);
-		this.rotationOrigin =
-			inOrigin || outOrigin ? { x: originCurve(inOrigin?.x, outOrigin?.x), y: originCurve(inOrigin?.y, outOrigin?.y) } : undefined;
+		const originX = transitionCurve(0.5, transitionIn.originXKeyframes, transitionOut.originXKeyframes);
+		const originY = transitionCurve(0.5, transitionIn.originYKeyframes, transitionOut.originYKeyframes);
+		this.rotationOrigin = originX && originY ? { x: originX, y: originY } : undefined;
 	}
 
 	private getRotationOriginOffset(angle: number, scale: Vector): Vector {
@@ -561,7 +507,8 @@ export abstract class Player extends Entity {
 	}
 
 	public getOpacity(): number {
-		return this.opacityKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
+		const opacity = this.opacityKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
+		return Math.min(1, Math.max(0, opacity));
 	}
 
 	public getPosition(): Vector {
