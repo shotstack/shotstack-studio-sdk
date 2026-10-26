@@ -455,7 +455,7 @@ const frameMarkup = (blob: Blob) =>
 function createStillPlayer() {
 	const created = createPlayer();
 	Object.assign(created.edit, { getCanvas: () => null });
-	Object.assign(created.player, { getLength: () => 2 });
+	Object.assign(created.player, { getLength: () => 2, captureFps: 30 });
 	jest.spyOn(HTMLIFrameElement.prototype, "srcdoc", "set").mockImplementation(function navigate(this: HTMLIFrameElement) {
 		setTimeout(() => {
 			const doc = this.contentDocument!;

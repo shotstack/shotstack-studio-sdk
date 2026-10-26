@@ -122,6 +122,22 @@ describe("Output Resolution and AspectRatio", () => {
 	let edit: Edit;
 	let emitSpy: jest.SpyInstance;
 
+	describe("output fps", () => {
+		it("defaults to the render's 25 fps", () => {
+			expect(edit.getOutputFps()).toBe(25);
+		});
+
+		it("defaults to the render's 12 fps at preview resolution", async () => {
+			await edit.setOutputResolution("preview");
+			expect(edit.getOutputFps()).toBe(12);
+		});
+
+		it("uses the edit's fps when set", async () => {
+			await edit.setOutputFps(30);
+			expect(edit.getOutputFps()).toBe(30);
+		});
+	});
+
 	beforeEach(async () => {
 		edit = new Edit(createMinimalEdit());
 		await edit.load();

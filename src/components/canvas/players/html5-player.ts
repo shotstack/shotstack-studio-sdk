@@ -100,7 +100,7 @@ export class Html5Player extends Player {
 	private decodedFrames: Map<number, pixi.Texture> = new Map();
 	private decodeInFlight: number | null = null;
 	private captureInFlight: Promise<Blob[] | null> | null = null;
-	private captureFps: number = 30;
+	private captureFps: number = 25;
 	private mode: Html5Mode = "editing";
 	private contentHash: string | null = null;
 	private capturedHash: string | null = null;
@@ -251,7 +251,7 @@ export class Html5Player extends Player {
 		const height = this.clipConfiguration.height || this.edit.size.height;
 		this.renderedWidth = width;
 		this.renderedHeight = height;
-		this.captureFps = this.edit.getOutputFps() || 30;
+		this.captureFps = this.edit.getOutputFps();
 		this.contentHash = await this.hashAsset();
 
 		const iframe = createOffscreenIframe(width, height);
