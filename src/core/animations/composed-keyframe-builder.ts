@@ -16,12 +16,10 @@ export class ComposedKeyframeBuilder {
 	private readonly baseValue: number;
 	private readonly mode: CompositionMode;
 	private readonly layers: KeyframeBuilder[] = [];
-	private readonly length: number;
 	private readonly clampRange?: { min: number; max: number };
 
-	constructor(baseValue: number, length: number, mode: CompositionMode, clampRange?: { min: number; max: number }) {
+	constructor(baseValue: number, mode: CompositionMode, clampRange?: { min: number; max: number }) {
 		this.baseValue = baseValue;
-		this.length = length;
 		this.mode = mode;
 		this.clampRange = clampRange;
 	}
@@ -34,8 +32,7 @@ export class ComposedKeyframeBuilder {
 	addLayer(keyframes: AnimationKeyframe[]): void {
 		if (keyframes.length === 0) return;
 
-		const neutralValue = this.mode === "additive" ? 0 : 1;
-		this.layers.push(new KeyframeBuilder(keyframes, this.length, neutralValue));
+		this.layers.push(new KeyframeBuilder(keyframes));
 	}
 
 	/**
