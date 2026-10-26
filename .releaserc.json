@@ -5,6 +5,7 @@
 			"@semantic-release/commit-analyzer",
 			{
 				"preset": "angular",
+				"parserOpts": { "headerPattern": "^(?:\\[\\d+/\\d+\\] )?(\\w*)(?:\\((.*)\\))?!?: (.*)$" },
 				"releaseRules": [
 					{
 						"message": "*/fix/*",
@@ -33,7 +34,13 @@
 				]
 			}
 		],
-		"@semantic-release/release-notes-generator",
+		[
+			"@semantic-release/release-notes-generator",
+			{
+				"preset": "angular",
+				"parserOpts": { "headerPattern": "^(?:\\[\\d+/\\d+\\] )?(\\w*)(?:\\((.*)\\))?!?: (.*)$" }
+			}
+		],
 		[
 			"@semantic-release/npm",
 			{
