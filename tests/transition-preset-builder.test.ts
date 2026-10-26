@@ -22,12 +22,41 @@ describe("TransitionPresetBuilder", () => {
 		["carouselUpFast", 0.25],
 		["fadeSlow", 2],
 		["fadeFast", 0.5],
-		["zoom", 0.4]
+		["zoom", 0.4],
+		["shuffleTopRight", 1],
+		["shuffleTopRightSlow", 2],
+		["shuffleTopRightFast", 0.5]
 	])("runs %s for the render's %s seconds", (name, length) => {
 		const { in: phase } = build({ in: name as never });
-		const [keyframe] = [...phase.offsetXKeyframes, ...phase.offsetYKeyframes, ...phase.opacityKeyframes];
+		const [keyframe] = [...phase.offsetXKeyframes, ...phase.offsetYKeyframes, ...phase.opacityKeyframes, ...phase.rotationKeyframes];
 
 		expect(keyframe.length).toBe(length);
+	});
+
+	it.each([
+		["shuffleBottomLeft", 17, { x: -1.6, y: 0.5 }],
+		["shuffleBottomRight", -17, { x: 2.6, y: 0.5 }],
+		["shuffleTopLeft", -17, { x: -1.6, y: 0.5 }],
+		["shuffleTopRight", 17, { x: 2.6, y: 0.5 }],
+		["shuffleLeftBottom", -25, { x: 0.5, y: 3.6 }],
+		["shuffleLeftTop", 25, { x: 0.5, y: -2.6 }],
+		["shuffleRightBottom", 25, { x: 0.5, y: 3.6 }],
+		["shuffleRightTop", -25, { x: 0.5, y: -2.6 }]
+	])("swings %s by %s degrees about the render's origin", (name, angle, origin) => {
+		const { in: phaseIn, out: phaseOut } = build({ in: name as never, out: name as never });
+
+		expect(phaseIn.rotationKeyframes).toEqual([{ from: angle, to: 0, start: 0, length: 1, ...SMOOTH }]);
+		expect(phaseOut.rotationKeyframes).toEqual([{ from: 0, to: angle, start: 4, length: 1, ...SMOOTH }]);
+		expect(phaseIn.origin).toEqual(origin);
+		expect(phaseOut.origin).toEqual(origin);
+	});
+
+	it("grows shuffles by half at the clip's edge without fading them", () => {
+		const { in: phaseIn, out: phaseOut } = build({ in: "shuffleLeftTop", out: "shuffleLeftTop" });
+
+		expect(phaseIn.scaleKeyframes).toEqual([{ from: 1.5, to: 1, start: 0, length: 1, ...SMOOTH }]);
+		expect(phaseOut.scaleKeyframes).toEqual([{ from: 1, to: 1.5, start: 4, length: 1, ...SMOOTH }]);
+		expect([...phaseIn.opacityKeyframes, ...phaseOut.opacityKeyframes]).toEqual([]);
 	});
 
 	it("eases fades with the render's default curve", () => {
