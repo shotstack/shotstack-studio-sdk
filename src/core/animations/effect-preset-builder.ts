@@ -1,13 +1,15 @@
-import { type ResolvedClip, type Keyframe } from "@schemas";
+import { type ResolvedClip } from "@schemas";
 
 import { type Size } from "../layouts/geometry";
 
+import { type PresetPoint } from "./keyframe-builder";
+
 export type EffectKeyframeSet = {
-	offsetXKeyframes: Keyframe[];
-	offsetYKeyframes: Keyframe[];
-	opacityKeyframes: Keyframe[];
-	scaleKeyframes: Keyframe[];
-	rotationKeyframes: Keyframe[];
+	offsetXKeyframes: PresetPoint[];
+	offsetYKeyframes: PresetPoint[];
+	opacityKeyframes: PresetPoint[];
+	scaleKeyframes: PresetPoint[];
+	rotationKeyframes: PresetPoint[];
 };
 
 export type RelativeEffectKeyframeSet = EffectKeyframeSet;
@@ -26,11 +28,11 @@ export class EffectPresetBuilder {
 	}
 
 	public buildRelative(editSize: Size, clipSize: Size): RelativeEffectKeyframeSet {
-		const offsetXKeyframes: Keyframe[] = [];
-		const offsetYKeyframes: Keyframe[] = [];
-		const opacityKeyframes: Keyframe[] = [];
-		const scaleKeyframes: Keyframe[] = [];
-		const rotationKeyframes: Keyframe[] = [];
+		const offsetXKeyframes: PresetPoint[] = [];
+		const offsetYKeyframes: PresetPoint[] = [];
+		const opacityKeyframes: PresetPoint[] = [];
+		const scaleKeyframes: PresetPoint[] = [];
+		const rotationKeyframes: PresetPoint[] = [];
 
 		const { effect, length } = this.clipConfiguration;
 
@@ -43,15 +45,20 @@ export class EffectPresetBuilder {
 
 		switch (effectName) {
 			case "zoomIn": {
-				const zoomSpeed = this.getZoomSpeed();
-				// Factor: starts at 1x, ends at zoomSpeed (e.g., 1.3x)
-				scaleKeyframes.push({ from: 1, to: zoomSpeed, start, length, interpolation: "linear" });
+				// The render adds the zoom to the scale it reads at the clip's start.
+				const amount = this.getZoomSpeed() - 1;
+				scaleKeyframes.push(
+					{ time: start, value: 0, at: start, interpolation: "linear" },
+					{ time: length, value: amount, at: start, interpolation: "linear" }
+				);
 				break;
 			}
 			case "zoomOut": {
-				const zoomSpeed = this.getZoomSpeed();
-				// Factor: starts at zoomSpeed (e.g., 1.3x), ends at 1x
-				scaleKeyframes.push({ from: zoomSpeed, to: 1, start, length, interpolation: "linear" });
+				const amount = this.getZoomSpeed() - 1;
+				scaleKeyframes.push(
+					{ time: start, value: amount, at: start, interpolation: "linear" },
+					{ time: length, value: 0, at: start, interpolation: "linear" }
+				);
 				break;
 			}
 			case "slideLeft":
@@ -71,15 +78,16 @@ export class EffectPresetBuilder {
 				let targetOffset = this.getSlideStart();
 				const scaleFactor = 1 + targetOffset * 2;
 
+				// Like the render's, a slide sets the offset on its axis outright, and the scale too when it enlarges the clip.
 				if (fittedDimension < editDimension * scaleFactor) {
-					scaleKeyframes.push({ from: scaleFactor, to: scaleFactor, start, length, interpolation: "linear" });
+					scaleKeyframes.push({ time: start, value: scaleFactor, interpolation: "constant" });
 				} else {
 					targetOffset = (fittedDimension - editDimension) / 2 / editDimension;
 				}
 
 				const [from, to] = startsPositive ? [targetOffset, -targetOffset] : [-targetOffset, targetOffset];
 				const targetKeyframes = isHorizontal ? offsetXKeyframes : offsetYKeyframes;
-				targetKeyframes.push({ from, to, start, length });
+				targetKeyframes.push({ time: start, value: from, interpolation: "linear" }, { time: length, value: to, interpolation: "linear" });
 				break;
 			}
 			default:

@@ -23,9 +23,8 @@ export function isKeyframedValue(value: unknown): boolean {
 /**
  * True when any visual property is keyframed or bound.
  *
- * Studio previews such clips without effect and transition layers, so the player
- * and the toolbars must agree on the property list; keep this the only copy.
- * Preview-only: rendered output composes presets over keyframes instead.
+ * The toolbars keep effects and transitions off such clips, so they must agree on
+ * the property list; keep this the only copy.
  */
 export function hasKeyframedVisualProperty(clip: Clip): boolean {
 	return [
