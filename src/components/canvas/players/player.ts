@@ -157,13 +157,13 @@ export abstract class Player extends Entity {
 		const baseSkewY = typeof config.transform?.skew?.y === "number" ? config.transform.skew.y : 0;
 
 		// Create composed builders with base values
-		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, length, "additive");
-		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, length, "additive");
-		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, length, "multiplicative");
-		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, length, "multiplicative", { min: 0, max: 1 });
-		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, length, "additive");
-		this.skewXKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewX, length, "additive");
-		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, length, "additive");
+		this.offsetXKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetX, "additive");
+		this.offsetYKeyframeBuilder = new ComposedKeyframeBuilder(baseOffsetY, "additive");
+		this.scaleKeyframeBuilder = new ComposedKeyframeBuilder(baseScale, "multiplicative");
+		this.opacityKeyframeBuilder = new ComposedKeyframeBuilder(baseOpacity, "multiplicative", { min: 0, max: 1 });
+		this.rotationKeyframeBuilder = new ComposedKeyframeBuilder(baseRotation, "additive");
+		this.skewXKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewX, "additive");
+		this.skewYKeyframeBuilder = new ComposedKeyframeBuilder(baseSkewY, "additive");
 
 		// If user has custom keyframes, add them and skip effect/transition layers
 		if (hasKeyframedVisualProperty(this.clipConfiguration)) {
@@ -228,27 +228,27 @@ export abstract class Player extends Entity {
 		// Mask keyframes (reveal effect)
 		const maskXKeyframes = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
-			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
+			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes);
 		}
 
 		// Wipe brightness sweep (wipeLeft/wipeRight) — driven through WipeFilter, not a mask.
 		const brightnessKeyframes = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
 		if (brightnessKeyframes.length) {
-			this.wipeBrightnessBuilder = new KeyframeBuilder(brightnessKeyframes, length);
+			this.wipeBrightnessBuilder = new KeyframeBuilder(brightnessKeyframes);
 			this.wipeInFromRight = transitionSet.in.wipeFromRight;
 			this.wipeOutFromRight = transitionSet.out.wipeFromRight;
 			this.wipeOutStart = transitionSet.out.brightnessKeyframes[0]?.start ?? Number.POSITIVE_INFINITY;
 		}
 
 		const blurKeyframes = [...transitionSet.in.blurKeyframes, ...transitionSet.out.blurKeyframes];
-		this.zoomBlurBuilder = blurKeyframes.length ? new KeyframeBuilder(blurKeyframes, length) : undefined;
+		this.zoomBlurBuilder = blurKeyframes.length ? new KeyframeBuilder(blurKeyframes) : undefined;
 
 		// The render keeps one origin curve: the in shuffle's origin (or the centre) eases to the out shuffle's by the time it starts.
 		const { origin: inOrigin } = transitionSet.in;
 		const { origin: outOrigin } = transitionSet.out;
 		const outStart = transitionSet.out.rotationKeyframes[0]?.start ?? length;
 		const originCurve = (from = 0.5, to?: number) =>
-			new KeyframeBuilder(to === undefined ? from : [{ from, to, start: 0, length: outStart, interpolation: "bezier", easing: "smooth" }], length);
+			new KeyframeBuilder(to === undefined ? from : [{ from, to, start: 0, length: outStart, interpolation: "bezier", easing: "smooth" }]);
 		this.rotationOrigin =
 			inOrigin || outOrigin ? { x: originCurve(inOrigin?.x, outOrigin?.x), y: originCurve(inOrigin?.y, outOrigin?.y) } : undefined;
 	}

@@ -33,9 +33,17 @@ function seekVideo(video: HTMLVideoElement, time: number): Promise<string | unde
 
 export function createAnimatedSpeed(tweens: VideoAsset["speed"], length: number): AnimatedSpeed | null {
 	if (!Array.isArray(tweens) || tweens.length === 0) return null;
-	const [first] = [...tweens].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
-	// The render holds the first tween's speed before it starts; KeyframeBuilder would otherwise ramp from 0.
-	const curve = new KeyframeBuilder(tweens, length, typeof first.from === "number" ? first.from : 1);
+	const sorted = [...tweens].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+	// The render bridges gaps between speed tweens linearly, whatever the next tween's interpolation.
+	const bridged = sorted.flatMap((tween, index) => {
+		const previous = sorted[index - 1];
+		const gapStart = (previous?.start ?? 0) + (previous?.length ?? 0);
+		const gap = (tween.start ?? 0) - gapStart;
+		return previous && gap > 0
+			? [{ from: previous.to, to: tween.from, start: gapStart, length: gap, interpolation: "linear" as const }, tween]
+			: [tween];
+	});
+	const curve = new KeyframeBuilder(bridged);
 	// Trapezoid rule, matching the render, so linear ramps land exactly.
 	const sourceOffsets = new Float64Array(Math.ceil(length / SPEED_STEP_SECONDS) + 1);
 	for (let i = 1; i < sourceOffsets.length; i += 1) {
@@ -69,7 +77,7 @@ export class VideoPlayer extends Player {
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
 
-		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
+		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1);
 		this.animatedSpeed = createAnimatedSpeed(videoAsset.speed, this.getLength());
 		this.syncTimer = 0;
 		this.activeSyncTimer = 0;
@@ -223,7 +231,7 @@ export class VideoPlayer extends Player {
 		super.reconfigureAfterRestore();
 
 		const videoAsset = this.clipConfiguration.asset as VideoAsset;
-		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1, this.getLength());
+		this.volumeKeyframeBuilder = new KeyframeBuilder(videoAsset.volume ?? 1);
 		this.animatedSpeed = createAnimatedSpeed(videoAsset.speed, this.getLength());
 	}
 
