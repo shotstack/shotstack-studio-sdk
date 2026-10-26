@@ -1,21 +1,23 @@
-import { type Vector } from "@layouts/geometry";
-import { type ResolvedClip, type AnimationKeyframe } from "@schemas";
+import { type ResolvedClip } from "@schemas";
+
+import { type PresetPoint } from "./keyframe-builder";
 
 export type TransitionKeyframeSet = {
-	offsetXKeyframes: AnimationKeyframe[];
-	offsetYKeyframes: AnimationKeyframe[];
-	opacityKeyframes: AnimationKeyframe[];
-	scaleKeyframes: AnimationKeyframe[];
-	rotationKeyframes: AnimationKeyframe[];
-	maskXKeyframes: AnimationKeyframe[];
+	offsetXKeyframes: PresetPoint[];
+	offsetYKeyframes: PresetPoint[];
+	opacityKeyframes: PresetPoint[];
+	scaleKeyframes: PresetPoint[];
+	rotationKeyframes: PresetPoint[];
+	maskXKeyframes: PresetPoint[];
 	/** Wipe brightness sweep (+1 hidden → −1 revealed), applied through WipeFilter. */
-	brightnessKeyframes: AnimationKeyframe[];
+	brightnessKeyframes: PresetPoint[];
 	/** Zoom blur radius, in pixels of the clip before its scale applies. */
-	blurKeyframes: AnimationKeyframe[];
+	blurKeyframes: PresetPoint[];
+	/** The point the clip rotates about, as a fraction of its size from the top left. */
+	originXKeyframes: PresetPoint[];
+	originYKeyframes: PresetPoint[];
 	/** Wipe reveal direction for this phase: true = from the right edge inward, false = from the left. */
 	wipeFromRight: boolean;
-	/** The point the clip rotates about, as a fraction of its size from the top left; the centre when unset. */
-	origin?: Vector;
 };
 
 export type RelativeTransitionKeyframeSet = {
@@ -24,11 +26,7 @@ export type RelativeTransitionKeyframeSet = {
 };
 
 type ParsedTransition = { name: string; speed: string | undefined };
-
-// The render's presets use its default Bezier handles, cubic-bezier(0.5, 0, 0.5, 1).
-const SMOOTH = { interpolation: "bezier", easing: "smooth" } as const;
-const LINEAR = { interpolation: "linear" } as const;
-type Curve = typeof SMOOTH | typeof LINEAR;
+type Curve = PresetPoint["interpolation"];
 
 // The render's shuffles swing the clip about a point well outside it: [degrees, origin x, origin y].
 const SHUFFLES: Record<string, [number, number, number]> = {
@@ -76,6 +74,8 @@ export class TransitionPresetBuilder {
 			maskXKeyframes: [],
 			brightnessKeyframes: [],
 			blurKeyframes: [],
+			originXKeyframes: [],
+			originYKeyframes: [],
 			wipeFromRight: false
 		};
 	}
@@ -90,22 +90,27 @@ export class TransitionPresetBuilder {
 		const start = direction === "in" ? 0 : this.clipConfiguration.length - length;
 		const transitionName = this.getPresetName(direction);
 		const isIn = direction === "in";
+		const edgeTime = isIn ? 0 : this.clipConfiguration.length;
+		const innerTime = isIn ? length : start;
 
-		// The render eases between a point at the clip's edge and one where the transition meets the clip, and each
-		// segment takes its later point's curve: an in transition follows the inner point, an out transition the edge.
-		const ramp = (edge: number, rest: number, edgeCurve: Curve, innerCurve: Curve): AnimationKeyframe =>
-			isIn ? { from: edge, to: rest, start, length, ...innerCurve } : { from: rest, to: edge, start, length, ...edgeCurve };
-		const fade = ramp(0, 1, SMOOTH, SMOOTH);
+		// Like the render, a transition reads the property at both its ends, then adds a point at each: the clip's edge
+		// takes `edge` (added to the value read at `edgeAt`, if given) and the inner end keeps the value read there.
+		const ramp = (edge: number, edgeAt: number | undefined, edgeCurve: Curve, innerCurve: Curve): PresetPoint[] => {
+			const edgePoint = { time: edgeTime, value: edge, at: edgeAt, interpolation: edgeCurve };
+			const innerPoint = { time: innerTime, value: 0, at: innerTime, interpolation: innerCurve };
+			return isIn ? [edgePoint, innerPoint] : [innerPoint, edgePoint];
+		};
+		const fade = ramp(0, undefined, "bezier", "bezier");
 
 		switch (transitionName) {
 			case "fade": {
-				keyframes.opacityKeyframes.push(fade);
+				keyframes.opacityKeyframes.push(...fade);
 				break;
 			}
 			case "zoom": {
-				keyframes.scaleKeyframes.push(ramp(10, 1, SMOOTH, LINEAR));
-				keyframes.opacityKeyframes.push(fade);
-				keyframes.blurKeyframes.push(ramp(5, 0, SMOOTH, SMOOTH));
+				keyframes.scaleKeyframes.push(...ramp(9, edgeTime, "bezier", "linear"));
+				keyframes.opacityKeyframes.push(...fade);
+				keyframes.blurKeyframes.push(...ramp(5, undefined, "bezier", "bezier"));
 				break;
 			}
 			case "slideLeft":
@@ -126,19 +131,19 @@ export class TransitionPresetBuilder {
 				const edge = (isIn === entersFromPositive ? 1 : -1) * distance;
 
 				const targetKeyframes = isHorizontal ? keyframes.offsetXKeyframes : keyframes.offsetYKeyframes;
-				targetKeyframes.push(ramp(edge, 0, SMOOTH, LINEAR));
-				if (isSlide) keyframes.opacityKeyframes.push(fade);
+				targetKeyframes.push(...ramp(edge, edgeTime, "bezier", "linear"));
+				if (isSlide) keyframes.opacityKeyframes.push(...fade);
 				break;
 			}
 			case "reveal": {
-				keyframes.maskXKeyframes.push(ramp(0, 1, SMOOTH, SMOOTH));
+				keyframes.maskXKeyframes.push(...ramp(0, undefined, "bezier", "bezier"));
 				break;
 			}
 			case "wipeLeft":
 			case "wipeRight": {
 				// Brightness sweeps +1 (hidden) → −1 (revealed) in, and back out, applied via WipeFilter.
 				// wipeLeft reveals from the right edge inward; wipeRight from the left.
-				keyframes.brightnessKeyframes.push(ramp(1, -1, SMOOTH, SMOOTH));
+				keyframes.brightnessKeyframes.push(...ramp(1, undefined, "bezier", "bezier"));
 				keyframes.wipeFromRight = transitionName === "wipeLeft" ? isIn : !isIn;
 				break;
 			}
@@ -146,9 +151,11 @@ export class TransitionPresetBuilder {
 				const shuffle = SHUFFLES[transitionName];
 				if (!shuffle) break;
 				const [angle, x, y] = shuffle;
-				keyframes.rotationKeyframes.push(ramp(angle, 0, SMOOTH, SMOOTH));
-				keyframes.scaleKeyframes.push(ramp(1.5, 1, SMOOTH, SMOOTH));
-				keyframes.origin = { x, y };
+				// The render measures both ends of the swing from the rotation where it meets the clip.
+				keyframes.rotationKeyframes.push(...ramp(angle, innerTime, "bezier", "bezier"));
+				keyframes.scaleKeyframes.push(...ramp(0.5, edgeTime, "bezier", "bezier"));
+				keyframes.originXKeyframes.push({ time: start, value: x, interpolation: "bezier" });
+				keyframes.originYKeyframes.push({ time: start, value: y, interpolation: "bezier" });
 				break;
 			}
 		}
