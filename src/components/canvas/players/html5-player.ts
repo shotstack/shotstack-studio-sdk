@@ -1,6 +1,7 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import type { ResolvedTiming } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 import { nextFrame } from "@shared/utils";
@@ -41,8 +42,7 @@ function createOffscreenIframe(width: number, height: number): HTMLIFrameElement
 	iframe.setAttribute("aria-hidden", "true");
 	iframe.style.cssText =
 		`position:absolute;left:${IFRAME_OFFSCREEN_X}px;top:0;width:${width}px;height:${height}px;` +
-		`border:0;margin:0;padding:0;pointer-events:none;transform-origin:top left;` +
-		`z-index:50;background:transparent`;
+		`border:0;margin:0;padding:0;pointer-events:none;background:transparent`;
 	return iframe;
 }
 
@@ -93,13 +93,13 @@ export function bakeScaleFor(onScreenScale: number): number {
 }
 
 /**
- * Drives whether the live iframe or the captured frame[] is the visible source.
+ * Drives whether stills or the captured frame[] fill the clip's canvas layer. The iframe stays off-screen.
  *
- *   editing   — iframe live, no sprite. Default for new content.
- *   capturing — iframe parked, loading placeholder shown.
- *   playback  — captured sprite mounted, iframe parked. Pixi-side filters apply.
- *   stale     — captured frame[] invalidated by content change; iframe re-shown.
- *   failed    — iframe parked, placeholder stays in the clip's canvas layer.
+ *   editing   — stills of the playhead's frame. Default for new content.
+ *   capturing — stills while frames bake, with a loading placeholder until the first one arrives.
+ *   playback  — captured sprite mounted.
+ *   stale     — captured frame[] invalidated by content change; stills until the next bake.
+ *   failed    — placeholder stays in the clip's canvas layer.
  */
 type Html5Mode = "editing" | "capturing" | "playback" | "stale" | "failed";
 
@@ -133,11 +133,17 @@ export class Html5Player extends Player {
 	private disposed: boolean = false;
 	private seekErrorReported: boolean = false;
 	private mounting: Promise<void> | null = null;
+	private lastReloadId: number = 0;
 	private stillChain: Promise<unknown> = Promise.resolve();
 	private stillIframe: HTMLIFrameElement | null = null;
 	private stillHash: string | null = null;
 	private stillTime: number = 0;
+	private stillBlob: Blob | null = null;
 	private stillTexture: pixi.Texture | null = null;
+	private liveStill: pixi.Sprite | null = null;
+	private liveStillFrame: number = -1;
+	private liveStillInFlight: boolean = false;
+	private stillRequest: number | null = null;
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Html5);
@@ -151,15 +157,23 @@ export class Html5Player extends Player {
 		return (this.iframe?.contentWindow ?? null) as HarnessWindow | null;
 	}
 
-	private hashAsset(): Promise<string> {
-		const { asset } = this;
-		return computeHtml5CacheKey({
+	// A bake holds a fixed number of frames at a fixed rate, so both belong in its key.
+	private async hashAsset(): Promise<string> {
+		const { asset, captureFps } = this;
+		const { frameCount } = computeHtml5FrameCount({
+			clipLengthSeconds: this.getLength(),
+			jsContent: asset.js,
+			cssContent: asset.css,
+			fps: captureFps
+		});
+		const content = await computeHtml5CacheKey({
 			html: asset.html ?? "",
 			css: asset.css ?? "",
 			js: asset.js ?? "",
 			width: this.renderedWidth,
 			height: this.renderedHeight
 		});
+		return `${content}:${frameCount}@${captureFps}`;
 	}
 
 	// Canvas pixels per clip pixel: a bake at this scale or above looks as sharp as a full-size one.
@@ -171,16 +185,8 @@ export class Html5Player extends Player {
 		return Math.max(Math.hypot(a, b), Math.hypot(c, d)) * stretch * (this.edit.getCanvas()?.application.renderer.resolution ?? 1);
 	}
 
-	private getStudioCanvas(): HTMLCanvasElement | null {
-		return this.edit.getCanvas()?.application.canvas ?? null;
-	}
-
 	private getIframeMountElement(): HTMLElement {
 		return this.edit.getCanvas()?.getRootElement() ?? document.body;
-	}
-
-	private parkIframe(): void {
-		if (this.iframe) this.iframe.style.left = `${IFRAME_OFFSCREEN_X}px`;
 	}
 
 	private seekHarness(seconds: number, win: HarnessWindow | null = this.harnessWindow): void {
@@ -293,19 +299,21 @@ export class Html5Player extends Player {
 
 	private async transitionToPlayback(): Promise<void> {
 		if (!this.capturedFrames || this.capturedFrames.length === 0 || !this.iframe) return;
-		const firstTexture = await this.getDecodedFrame(0);
-		if (!firstTexture || this.disposed) return;
-		const sprite = new pixi.Sprite(firstTexture);
+		// The playhead's own frame replaces the still, so the switch doesn't jump.
+		const idx = Math.min(Math.max(0, Math.floor(this.getPlaybackTime() * this.captureFps)), this.capturedFrames.length - 1);
+		const texture = await this.getDecodedFrame(idx);
+		if (!texture || this.disposed) return;
+		this.removeLiveStill();
+		const sprite = new pixi.Sprite(texture);
 		// A capture in progress shows its own copy of the clip.
 		sprite.visible = !this.staticSprite;
 		this.contentContainer.addChild(sprite);
 		this.playbackSprite = sprite;
-		this.lastFrameIdx = 0;
+		this.lastFrameIdx = idx;
 		if (this.clipConfiguration.width && this.clipConfiguration.height) {
 			this.applyFixedDimensions();
 		}
 		this.removeLoadingGraphic();
-		this.parkIframe();
 		this.mode = "playback";
 		// A still reloads the page on demand, so it goes once no still needs it.
 		this.stillChain = this.stillChain.then(() => this.dropStillPage());
@@ -317,6 +325,8 @@ export class Html5Player extends Player {
 	}
 
 	private transitionToStale(): void {
+		// Editing and stale show stills too, so a still of the old content goes whatever the mode.
+		this.removeLiveStill();
 		if (this.mode === "stale" || this.mode === "editing") return;
 		if (this.playbackSprite) {
 			this.contentContainer.removeChild(this.playbackSprite);
@@ -331,16 +341,15 @@ export class Html5Player extends Player {
 
 	private transitionToCapturing(): void {
 		this.mode = "capturing";
-		this.parkIframe();
-		this.mountLoadingGraphic();
+		if (!this.liveStill) this.mountLoadingGraphic();
 		this.emitCaptureStarted();
 	}
 
 	private transitionToFailed(): void {
 		if (this.disposed) return;
 		this.mode = "failed";
-		this.parkIframe();
 		this.removeLoadingGraphic();
+		this.removeLiveStill();
 		this.createFallbackGraphic();
 	}
 
@@ -392,7 +401,7 @@ export class Html5Player extends Player {
 			return cached.pngs;
 		}
 
-		// Live editing seeks this iframe, and a seeked animation can leave state
+		// An earlier capture may have seeked this iframe, and a seeked animation can leave state
 		// a fresh page lacks (GSAP writes start values inline once a tween has
 		// rendered). The backend captures from a fresh page, so capture does too.
 		if (!(await this.loadFreshPage(this.iframe, stale))) return null;
@@ -608,7 +617,7 @@ export class Html5Player extends Player {
 				this.staticSprite.texture = texture;
 			} else {
 				this.staticSprite = new pixi.Sprite(texture);
-				// applyFixedDimensions fits the first sprite it finds.
+				// applyFixedDimensions fits the first sprite, which has to be this one and not a hidden still or bake.
 				this.contentContainer.addChildAt(this.staticSprite, 0);
 				if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
 			}
@@ -620,9 +629,11 @@ export class Html5Player extends Player {
 	}
 
 	// The ticker draws while a still renders, so these hide only once it's ready or has failed. A transparent still
-	// would show them through it: the loading bar is editor chrome, and a scaled bake is soft.
+	// would show them through it: the loading bar is editor chrome, the live still may be of another time, and a
+	// scaled bake is soft.
 	private hideForCapture(): void {
 		if (this.loadingGraphic) this.loadingGraphic.visible = false;
+		if (this.liveStill) this.liveStill.visible = false;
 		if (this.playbackSprite) this.playbackSprite.visible = false;
 	}
 
@@ -658,6 +669,9 @@ export class Html5Player extends Player {
 	// A still seeks a page of its own, so the bake's page only ever moves forward from a fresh load. The still page
 	// moves forward too: going back reloads it, since a rewound tween leaves its start values inline.
 	private async captureStillFrame(seconds: number, cacheKey: string, stale: () => boolean): Promise<Blob | null> {
+		// A capture usually asks for the frame the live still has just taken.
+		if (this.stillBlob && this.stillHash === cacheKey && this.stillTime === seconds) return this.stillBlob;
+		this.stillBlob = null;
 		if (!this.stillIframe) {
 			this.stillIframe = createOffscreenIframe(this.renderedWidth, this.renderedHeight);
 			this.getIframeMountElement().appendChild(this.stillIframe);
@@ -676,18 +690,21 @@ export class Html5Player extends Player {
 		const W = this.renderedWidth;
 		const H = this.renderedHeight;
 		const frame = await foreignObjectSvgToWebp(this.captureIframeAsForeignObjectSvg(W, H, iframe), W, H);
-		return new Blob([frame as BlobPart], { type: "image/webp" });
+		this.stillBlob = new Blob([frame as BlobPart], { type: "image/webp" });
+		return this.stillBlob;
 	}
 
 	private dropStillPage(): void {
 		this.stillIframe?.remove();
 		this.stillIframe = null;
 		this.stillHash = null;
+		this.stillBlob = null;
 	}
 
 	/** @internal */
 	public override endStaticRender(): void {
 		if (this.loadingGraphic) this.loadingGraphic.visible = true;
+		if (this.liveStill) this.liveStill.visible = true;
 		if (this.playbackSprite) this.playbackSprite.visible = true;
 		if (!this.staticSprite) return;
 		this.contentContainer.removeChild(this.staticSprite);
@@ -696,6 +713,14 @@ export class Html5Player extends Player {
 		this.staticSprite = null;
 		this.stillTexture?.destroy(true);
 		this.stillTexture = null;
+	}
+
+	// Every path that resolves a clip's length lands here. A clip yet to mount reads its length when it does.
+	public override setResolvedTiming(timing: ResolvedTiming): void {
+		const previousLength = this.getLength();
+		super.setResolvedTiming(timing);
+		if (timing.length === previousLength || !(this.iframe || this.mounting)) return;
+		this.reloadAsset().catch(err => console.warn("[Html5Player] re-bake after a length change failed:", err));
 	}
 
 	public override async reloadAsset(): Promise<void> {
@@ -711,7 +736,11 @@ export class Html5Player extends Player {
 			await this.trackMount(this.mountAsset());
 			return;
 		}
+		this.lastReloadId += 1;
+		const reloadId = this.lastReloadId;
 		const newHash = await this.hashAsset();
+		// Digests can finish out of order, so only the newest reload may write the key and the page.
+		if (reloadId !== this.lastReloadId) return;
 		if (newHash === this.contentHash) return;
 		this.contentHash = newHash;
 		this.transitionToStale();
@@ -772,13 +801,11 @@ export class Html5Player extends Player {
 		if (this.mode === "playback") {
 			this.driveSpriteTextureSwap();
 			this.rebakeIfShownLarger();
-		} else if (this.mode === "capturing") {
+		} else if (this.iframe && this.mode !== "failed" && this.isActive()) {
 			if (this.loadingSetProgress && this.captureFramesTotal > 0) {
 				this.loadingSetProgress(this.captureFramesDone / this.captureFramesTotal);
 			}
-		} else if (this.iframe && this.mode !== "failed") {
-			this.syncIframePosition();
-			if (this.isActive()) this.seekHarness(this.getPlaybackTime());
+			this.showStillAt(this.getPlaybackTime());
 		}
 	}
 
@@ -889,46 +916,59 @@ export class Html5Player extends Player {
 			.catch(err => console.warn("[Html5Player] frame decode failed:", err));
 	}
 
-	// Computes the clip's rect within the Studio root
-	private syncIframePosition(): void {
-		if (!this.iframe) return;
-		if (!this.isActive()) {
-			this.parkIframe();
-			return;
+	// One still renders at a time. Positions asked for meanwhile replace each other, so only the newest renders next.
+	private showStillAt(seconds: number): void {
+		const frame = Math.floor(seconds * this.captureFps);
+		if (frame === this.liveStillFrame) return;
+		this.liveStillFrame = frame;
+		this.stillRequest = seconds;
+		if (!this.liveStillInFlight) this.renderLiveStills().catch(err => console.warn("[Html5Player] still failed:", err));
+	}
+
+	private async renderLiveStills(): Promise<void> {
+		this.liveStillInFlight = true;
+		try {
+			while (this.stillRequest !== null) {
+				const seconds = this.stillRequest;
+				const frame = Math.floor(seconds * this.captureFps);
+				const hash = this.contentHash;
+				this.stillRequest = null;
+				const attempt = () =>
+					this.renderStill(seconds).catch(err => {
+						if (!this.disposed) console.warn("[Html5Player] still failed:", err);
+						return null;
+					});
+				let texture = await attempt();
+				// A page can load too slowly once, so a failed still gets one more try while nothing newer is waiting.
+				if (!texture && this.liveStillFrame === frame && this.stillRequest === null) texture = await attempt();
+				const unbaked = this.mode === "editing" || this.mode === "stale" || this.mode === "capturing";
+				if (!texture || this.disposed || !unbaked || this.contentHash !== hash) {
+					texture?.destroy(true);
+				} else if (this.liveStill) {
+					this.liveStill.texture.destroy(true);
+					this.liveStill.texture = texture;
+				} else {
+					this.removeLoadingGraphic();
+					this.liveStill = new pixi.Sprite(texture);
+					// A capture in progress shows its own copy of the clip.
+					this.liveStill.visible = !this.staticSprite;
+					this.contentContainer.addChild(this.liveStill);
+					if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
+				}
+			}
+		} finally {
+			this.liveStillInFlight = false;
 		}
-		const studioCanvas = this.getStudioCanvas();
-		if (!studioCanvas) {
-			this.parkIframe();
-			return;
-		}
+	}
 
-		const m = this.contentContainer.worldTransform;
-		const naturalW = this.renderedWidth;
-		const naturalH = this.renderedHeight;
-		const tlX = m.tx;
-		const tlY = m.ty;
-		const brX = m.a * naturalW + m.c * naturalH + m.tx;
-		const brY = m.b * naturalW + m.d * naturalH + m.ty;
-		const pixiX = Math.min(tlX, brX);
-		const pixiY = Math.min(tlY, brY);
-		const pixiW = Math.abs(brX - tlX);
-		const pixiH = Math.abs(brY - tlY);
-
-		const rect = studioCanvas.getBoundingClientRect();
-		const scaleX = rect.width / studioCanvas.width;
-		const scaleY = rect.height / studioCanvas.height;
-		const left = studioCanvas.offsetLeft + pixiX * scaleX;
-		const top = studioCanvas.offsetTop + pixiY * scaleY;
-		const w = Math.max(1, pixiW * scaleX);
-		const h = Math.max(1, pixiH * scaleY);
-
-		const { style } = this.iframe;
-		style.left = `${left}px`;
-		style.top = `${top}px`;
-		style.width = `${naturalW}px`;
-		style.height = `${naturalH}px`;
-		style.transform = `scale(${w / naturalW}, ${h / naturalH})`;
-		style.opacity = `${this.getOpacity()}`;
+	private removeLiveStill(): void {
+		this.stillRequest = null;
+		this.liveStillFrame = -1;
+		if (!this.liveStill) return;
+		this.contentContainer.removeChild(this.liveStill);
+		this.liveStill.texture.destroy(true);
+		this.liveStill.destroy();
+		this.liveStill = null;
 	}
 
 	public override dispose(): void {
@@ -943,6 +983,7 @@ export class Html5Player extends Player {
 		this.staticSprite = null;
 		this.stillTexture?.destroy(true);
 		this.stillTexture = null;
+		this.removeLiveStill();
 		this.dropStillPage();
 		this.removeLoadingGraphic();
 		this.disposeCapturedFrames();
@@ -971,7 +1012,6 @@ export class Html5Player extends Player {
 	}
 
 	protected override onDimensionsChanged(): void {
-		// iframe content is DOM-native at its natural resolution; clip-level
-		// scaling is applied by syncIframePosition per Pixi tick. Nothing to do.
+		// Frames keep the size the page mounted at, and applyFixedDimensions fits them to the clip each tick.
 	}
 }
