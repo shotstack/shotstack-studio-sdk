@@ -29,8 +29,9 @@ type HarnessWindow = Window & {
 const SEEK_KEY = "__shotstackSeek" as const;
 // A frame's work varies by machine and by whether the frame is held, so the loop yields by time.
 const CAPTURE_SLICE_MS = 12;
-// A frame in flight holds a full-size canvas until toBlob takes its pixels.
+// A frame in flight holds its canvas until toBlob takes its pixels.
 const CAPTURE_MEMORY_BUDGET_BYTES = 256 * 1024 * 1024;
+const BAKE_SCALES = [0.25, 0.5, 0.75, 1];
 
 function forceLayout(el: HTMLElement): void {
 	el.getBoundingClientRect();
@@ -64,17 +65,17 @@ function waitForIframeLoad(iframe: HTMLIFrameElement, timeoutMs: number = IFRAME
 	});
 }
 
-async function foreignObjectSvgToWebp(svg: string, width: number, height: number): Promise<Uint8Array> {
+async function foreignObjectSvgToWebp(svg: string, width: number, height: number, scale: number = 1): Promise<Uint8Array> {
 	const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 	const img = new Image();
 	img.src = url;
 	await img.decode();
 	const canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
+	canvas.width = width * scale;
+	canvas.height = height * scale;
 	const ctx = canvas.getContext("2d");
 	if (!ctx) throw new Error("2D context unavailable for foreignObject rasterise");
-	ctx.drawImage(img, 0, 0, width, height);
+	ctx.drawImage(img, 0, 0, width * scale, height * scale);
 	const blob = await new Promise<Blob | null>(resolve => {
 		canvas.toBlob(resolve, "image/webp", 0.85);
 	});
@@ -85,6 +86,10 @@ async function foreignObjectSvgToWebp(svg: string, width: number, height: number
 export function captureFramesInFlight(logicalCores: number | undefined, frameBytes: number): number {
 	const byCores = Math.min(Math.max(logicalCores ?? 4, 4), 16);
 	return Math.max(1, Math.min(byCores, Math.floor(CAPTURE_MEMORY_BUDGET_BYTES / frameBytes)));
+}
+
+export function bakeScaleFor(onScreenScale: number): number {
+	return BAKE_SCALES.find(scale => scale >= onScreenScale) ?? 1;
 }
 
 /**
@@ -105,6 +110,10 @@ export class Html5Player extends Player {
 	private renderedWidth: number = 0;
 	private renderedHeight: number = 0;
 	private capturedFrames: Blob[] | null = null;
+	private capturedScale: number = 1;
+	private readonly globalTransform = new pixi.Matrix();
+	// Stays set after a failed re-bake, so a failure isn't retried every frame.
+	private rebakeStarted: boolean = false;
 	private decodedFrames: Map<number, pixi.Texture> = new Map();
 	private decodeInFlight: number | null = null;
 	private captureInFlight: Promise<Blob[] | null> | null = null;
@@ -165,6 +174,15 @@ export class Html5Player extends Player {
 			height: this.renderedHeight
 		});
 		return `${content}:${frameCount}@${captureFps}`;
+	}
+
+	// Canvas pixels per clip pixel: a bake at this scale or above looks as sharp as a full-size one.
+	private onScreenScale(): number {
+		const { a, b, c, d } = this.contentContainer.getGlobalTransform(this.globalTransform);
+		// A resized clip's stretch is on the sprite, under the container this reads.
+		const { width, height } = this.clipConfiguration;
+		const stretch = width && height ? Math.max(width / this.renderedWidth, height / this.renderedHeight) : 1;
+		return Math.max(Math.hypot(a, b), Math.hypot(c, d)) * stretch * (this.edit.getCanvas()?.application.renderer.resolution ?? 1);
 	}
 
 	private getIframeMountElement(): HTMLElement {
@@ -287,6 +305,8 @@ export class Html5Player extends Player {
 		if (!texture || this.disposed) return;
 		this.removeLiveStill();
 		const sprite = new pixi.Sprite(texture);
+		// A capture in progress shows its own copy of the clip.
+		sprite.visible = !this.staticSprite;
 		this.contentContainer.addChild(sprite);
 		this.playbackSprite = sprite;
 		this.lastFrameIdx = idx;
@@ -295,7 +315,7 @@ export class Html5Player extends Player {
 		}
 		this.removeLoadingGraphic();
 		this.mode = "playback";
-		// Stills read the bake from here on, so the still page goes once any still using it is done.
+		// A still reloads the page on demand, so it goes once no still needs it.
 		this.stillChain = this.stillChain.then(() => this.dropStillPage());
 	}
 
@@ -335,32 +355,40 @@ export class Html5Player extends Player {
 
 	// ─── capture pipeline ──────────────────────────────────────────────────────
 
-	private async captureFrames(): Promise<Blob[] | null> {
-		if (this.capturedFrames && this.capturedHash === this.contentHash) {
-			return this.capturedFrames;
-		}
+	private async captureFrames(minScale: number = 0): Promise<Blob[] | null> {
 		if (this.captureInFlight) {
 			return this.captureInFlight;
 		}
-		const previous = Html5Player.captureChain;
-		this.captureInFlight = previous
+		const queuedFor = this.contentHash;
+		const capture: Promise<Blob[] | null> = Html5Player.captureChain
 			.then(() => {
-				if (this.disposed) return null;
-				return this.runCapture();
+				// A content change while this waited in the queue would bake the new content at this capture's floor.
+				if (this.disposed || this.contentHash !== queuedFor) return null;
+				return this.runCapture(minScale);
 			})
 			.finally(() => {
-				this.captureInFlight = null;
+				// A content change frees the slot, and a newer capture may hold it by now.
+				if (this.captureInFlight === capture) this.captureInFlight = null;
 			});
-		Html5Player.captureChain = this.captureInFlight.catch(() => undefined);
-		return this.captureInFlight;
+		this.captureInFlight = capture;
+		Html5Player.captureChain = capture.catch(() => undefined);
+		return capture;
 	}
 
-	private async runCapture(): Promise<Blob[] | null> {
+	// A re-bake passes the scale it was started for, so a later, smaller sample can't bake softer frames.
+	private async runCapture(minScale: number = 0): Promise<Blob[] | null> {
 		if (!this.iframe || !this.iframe.contentDocument || !this.iframe.contentWindow) return null;
 
-		if (!this.contentHash) return null;
-		const cacheKey = this.contentHash;
-		const stale = (): boolean => this.disposed || this.contentHash !== cacheKey;
+		const { contentHash } = this;
+		if (!contentHash) return null;
+		const stale = (): boolean => this.disposed || this.contentHash !== contentHash;
+
+		// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
+		// transform isn't applied, so its bake reads only the viewport's zoom and may re-bake once the clip is active.
+		await nextFrame();
+		if (stale()) return null;
+		const scale = Math.max(bakeScaleFor(this.onScreenScale()), minScale);
+		const cacheKey = `${contentHash}@${scale}`;
 
 		const cached = await html5CacheGet(cacheKey);
 		if (stale()) return null;
@@ -368,8 +396,7 @@ export class Html5Player extends Player {
 			this.captureFramesTotal = cached.frameCount;
 			this.captureFramesDone = cached.frameCount;
 			this.captureFps = cached.fps;
-			this.capturedFrames = cached.pngs;
-			this.capturedHash = cacheKey;
+			if (!(await this.adoptBake(cached.pngs, cacheKey, scale, stale))) return null;
 			this.emitCaptureCompleted(cached.frameCount);
 			return cached.pngs;
 		}
@@ -391,7 +418,7 @@ export class Html5Player extends Player {
 		this.captureFramesTotal = frameCount;
 		this.captureFramesDone = 0;
 
-		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, W * H * 4);
+		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, Math.trunc(W * scale) * Math.trunc(H * scale) * 4);
 		const blobs: Blob[] = [];
 		const pending: Promise<Blob>[] = [];
 		// The SVG is a frame's whole input, so an identical one draws identical bytes and shares the previous frame's Blob.
@@ -412,7 +439,7 @@ export class Html5Player extends Player {
 				const svg = this.captureIframeAsForeignObjectSvg(W, H);
 				if (!lastFrame || svg !== lastSvg) {
 					lastSvg = svg;
-					lastFrame = foreignObjectSvgToWebp(svg, W, H).then(bytes => new Blob([bytes as BlobPart], { type: "image/webp" }));
+					lastFrame = foreignObjectSvgToWebp(svg, W, H, scale).then(bytes => new Blob([bytes as BlobPart], { type: "image/webp" }));
 					// Marks a queued frame's failure handled; awaiting it rethrows.
 					lastFrame.catch(() => undefined);
 				}
@@ -426,8 +453,7 @@ export class Html5Player extends Player {
 			}
 		}
 
-		this.capturedFrames = blobs;
-		this.capturedHash = cacheKey;
+		if (!(await this.adoptBake(blobs, cacheKey, scale, stale))) return null;
 		this.emitCaptureCompleted(frameCount);
 
 		html5CachePut(cacheKey, {
@@ -440,6 +466,27 @@ export class Html5Player extends Player {
 		}).catch(err => console.warn("[Html5Player] cache put failed:", err));
 
 		return blobs;
+	}
+
+	// A re-bake decodes the frame on screen before it swaps in, so the sprite never shows a destroyed texture.
+	private async adoptBake(frames: Blob[], cacheKey: string, scale: number, stale: () => boolean): Promise<boolean> {
+		const idx = Math.min(this.lastFrameIdx, frames.length - 1);
+		const blob = this.playbackSprite ? frames[idx] : undefined;
+		const shown = blob ? pixi.Texture.from({ resource: await createImageBitmap(blob), resolution: scale }) : null;
+		if (stale()) {
+			shown?.destroy(true);
+			return false;
+		}
+		this.disposeCapturedFrames();
+		this.capturedFrames = frames;
+		this.capturedHash = cacheKey;
+		this.capturedScale = scale;
+		if (shown && this.playbackSprite) {
+			this.decodedFrames.set(idx, shown);
+			this.playbackSprite.texture = shown;
+			this.lastFrameIdx = idx;
+		}
+		return true;
 	}
 
 	private async loadFreshPage(iframe: HTMLIFrameElement, stale: () => boolean): Promise<boolean> {
@@ -498,21 +545,24 @@ export class Html5Player extends Player {
 	}
 
 	private async getDecodedFrame(idx: number): Promise<pixi.Texture | null> {
-		if (!this.capturedFrames) return null;
+		const frames = this.capturedFrames;
+		if (!frames) return null;
 		const existing = this.decodedFrames.get(idx);
 		if (existing) {
 			this.decodedFrames.delete(idx);
 			this.decodedFrames.set(idx, existing);
 			return existing;
 		}
-		const blob = this.capturedFrames[idx];
+		const blob = frames[idx];
 		if (!blob) return null;
 		const bmp = await createImageBitmap(blob);
-		if (this.disposed) {
+		// A re-bake that swapped in meanwhile draws at another scale.
+		if (this.disposed || this.capturedFrames !== frames) {
 			bmp.close();
 			return null;
 		}
-		const texture = pixi.Texture.from(bmp);
+		// The resolution makes a scaled frame's texture report the clip's full size.
+		const texture = pixi.Texture.from({ resource: bmp, resolution: this.capturedScale });
 		if (this.disposed) {
 			texture.destroy(true);
 			return null;
@@ -545,7 +595,8 @@ export class Html5Player extends Player {
 		try {
 			if (this.disposed || !this.iframe || this.mode === "failed") return;
 			const seconds = this.getPlaybackTime();
-			const frames = this.capturedFrames && this.capturedHash === this.contentHash ? this.capturedFrames : null;
+			// A scaled bake is too soft for a still, so a still reads only a full-size one.
+			const frames = this.capturedFrames && this.capturedHash === `${this.contentHash}@1` ? this.capturedFrames : null;
 			// The bake queues behind every other clip's, so a still without one renders just its own frame.
 			const texture = frames
 				? await this.getDecodedFrame(Math.min(Math.max(0, Math.floor(seconds * this.captureFps)), frames.length - 1))
@@ -566,7 +617,7 @@ export class Html5Player extends Player {
 				this.staticSprite.texture = texture;
 			} else {
 				this.staticSprite = new pixi.Sprite(texture);
-				// applyFixedDimensions fits the first sprite, which has to be this one and not a hidden still.
+				// applyFixedDimensions fits the first sprite, which has to be this one and not a hidden still or bake.
 				this.contentContainer.addChildAt(this.staticSprite, 0);
 				if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
 			}
@@ -577,11 +628,13 @@ export class Html5Player extends Player {
 		}
 	}
 
-	// A transparent still would show these through it, and a failed one leaves the clip blank: the loading bar is
-	// editor chrome, and the live still may be of another time.
+	// The ticker draws while a still renders, so these hide only once it's ready or has failed. A transparent still
+	// would show them through it: the loading bar is editor chrome, the live still may be of another time, and a
+	// scaled bake is soft.
 	private hideForCapture(): void {
 		if (this.loadingGraphic) this.loadingGraphic.visible = false;
 		if (this.liveStill) this.liveStill.visible = false;
+		if (this.playbackSprite) this.playbackSprite.visible = false;
 	}
 
 	// Stills of one player share its still page, so they take turns on it.
@@ -595,7 +648,7 @@ export class Html5Player extends Player {
 		const cacheKey = this.contentHash;
 		if (!cacheKey) return null;
 		const stale = (): boolean => this.disposed || this.contentHash !== cacheKey;
-		const cached = await html5CacheGet(cacheKey);
+		const cached = await html5CacheGet(`${cacheKey}@1`);
 		if (stale()) return null;
 		const fps = cached?.fps ?? this.captureFps;
 		const frameCount =
@@ -652,6 +705,7 @@ export class Html5Player extends Player {
 	public override endStaticRender(): void {
 		if (this.loadingGraphic) this.loadingGraphic.visible = true;
 		if (this.liveStill) this.liveStill.visible = true;
+		if (this.playbackSprite) this.playbackSprite.visible = true;
 		if (!this.staticSprite) return;
 		this.contentContainer.removeChild(this.staticSprite);
 		// A baked frame's texture belongs to the decoded-frame cache, so only a still's own texture goes with the sprite.
@@ -719,6 +773,7 @@ export class Html5Player extends Player {
 		this.capturedHash = null;
 		this.lastFrameIdx = -1;
 		this.decodeInFlight = null;
+		this.rebakeStarted = false;
 	}
 
 	private createFallbackGraphic(): void {
@@ -745,6 +800,7 @@ export class Html5Player extends Player {
 		this.triggerCaptureIfNeeded();
 		if (this.mode === "playback") {
 			this.driveSpriteTextureSwap();
+			this.rebakeIfShownLarger();
 		} else if (this.iframe && this.mode !== "failed" && this.isActive()) {
 			if (this.loadingSetProgress && this.captureFramesTotal > 0) {
 				this.loadingSetProgress(this.captureFramesDone / this.captureFramesTotal);
@@ -759,7 +815,7 @@ export class Html5Player extends Player {
 		if (this.captureInFlight) return;
 		const hashAtStart = this.contentHash;
 
-		if (this.capturedFrames && this.capturedHash === this.contentHash) {
+		if (this.capturedFrames && this.capturedHash === `${this.contentHash}@${this.capturedScale}`) {
 			this.transitionToPlayback().catch(err => {
 				if (this.disposed || this.contentHash !== hashAtStart) return;
 				console.warn("[Html5Player] transitionToPlayback failed:", err);
@@ -773,7 +829,7 @@ export class Html5Player extends Player {
 		this.captureFrames()
 			.then(async frames => {
 				if (this.disposed || this.contentHash !== hashAtStart) return;
-				const fresh = !!frames && frames.length > 0 && this.capturedHash === hashAtStart;
+				const fresh = !!frames && frames.length > 0 && this.capturedHash === `${hashAtStart}@${this.capturedScale}`;
 				if (!fresh) {
 					if (this.mode === "capturing") this.transitionToFailed();
 					return;
@@ -786,6 +842,21 @@ export class Html5Player extends Player {
 				this.emitCaptureFailed(err, "static-placeholder");
 				if (this.mode === "capturing") this.transitionToFailed();
 			});
+	}
+
+	// The frames on screen stay until the sharper bake swaps them out.
+	private rebakeIfShownLarger(): void {
+		if (this.rebakeStarted || this.captureInFlight || !this.isActive()) return;
+		const target = bakeScaleFor(this.onScreenScale());
+		if (target <= this.capturedScale) return;
+		this.rebakeStarted = true;
+		this.emitCaptureStarted();
+		const hashAtStart = this.contentHash;
+		this.captureFrames(target).catch(err => {
+			if (this.disposed || this.contentHash !== hashAtStart) return;
+			console.warn("[Html5Player] re-bake failed:", err);
+			this.emitCaptureFailed(err, "scaled-frames");
+		});
 	}
 
 	private triggerCaptureIfNeeded(): void {
