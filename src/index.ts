@@ -12,6 +12,7 @@ export { WebGLUnsupportedError } from "@core/webgl-support";
 export type { UIControllerOptions, ToolbarButtonConfig } from "@core/ui/ui-controller";
 export type { AssetGenerationRequest, AssetGeneratorHandler, AssetGeneratorOptions } from "@core/generation/asset-generator";
 export type { EditConfig } from "@core/schemas";
+export type { PendingCaptures } from "@core/pending-captures";
 export type { EditOptions } from "@core/edit-session";
 export type { CommandResult } from "@core/commands/types";
 

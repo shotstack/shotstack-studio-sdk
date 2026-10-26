@@ -24,6 +24,9 @@ describe("CSS Class Coverage", () => {
 		it("contains timeline container classes", () => {
 			expect(styles).toContain(".ss-html-timeline");
 			expect(styles).toContain(".ss-ruler-tracks-wrapper");
+			expect(styles).toContain(".ss-toolbar-status");
+			expect(styles).toContain(".ss-play-progress");
+			expect(styles).toContain(".ss-clip--preparing");
 		});
 
 		it("contains track classes", () => {

@@ -152,7 +152,8 @@ const CONTRACT = {
 			tokens: [
 				"load(): Promise<void>;",
 				"registerAssetGenerator(handler: AssetGeneratorHandler, options?: AssetGeneratorOptions): void;",
-				"generateClip(clipId: string): Promise<void>;"
+				"generateClip(clipId: string): Promise<void>;",
+				"getPendingCaptures(): PendingCaptures;"
 			]
 		},
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },

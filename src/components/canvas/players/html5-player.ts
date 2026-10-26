@@ -1,6 +1,7 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
+import type { PlaybackReadiness } from "@core/pending-captures";
 import type { ResolvedTiming } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
@@ -31,6 +32,7 @@ const SEEK_KEY = "__shotstackSeek" as const;
 const CAPTURE_SLICE_MS = 12;
 // A frame in flight holds its canvas until toBlob takes its pixels.
 const CAPTURE_MEMORY_BUDGET_BYTES = 256 * 1024 * 1024;
+const CAPTURE_PROGRESS_STEPS = 20;
 const BAKE_SCALES = [0.25, 0.5, 0.75, 1];
 
 function forceLayout(el: HTMLElement): void {
@@ -227,6 +229,14 @@ export class Html5Player extends Player {
 		}
 	}
 
+	private emitCaptureProgress(): void {
+		try {
+			this.edit.getInternalEvents().emit(InternalEvent.CaptureProgressChanged, { clipId: this.clipId });
+		} catch (emitErr) {
+			console.warn("[Html5Player] failed to emit CaptureProgressChanged:", emitErr);
+		}
+	}
+
 	private emitCaptureCompleted(frameCount: number): void {
 		try {
 			this.edit.getInternalEvents().emit(EditEvent.ClipCaptureCompleted, {
@@ -341,6 +351,8 @@ export class Html5Player extends Player {
 
 	private transitionToCapturing(): void {
 		this.mode = "capturing";
+		this.captureFramesDone = 0;
+		this.captureFramesTotal = 0;
 		if (!this.liveStill) this.mountLoadingGraphic();
 		this.emitCaptureStarted();
 	}
@@ -360,19 +372,49 @@ export class Html5Player extends Player {
 			return this.captureInFlight;
 		}
 		const queuedFor = this.contentHash;
-		const capture: Promise<Blob[] | null> = Html5Player.captureChain
-			.then(() => {
-				// A content change while this waited in the queue would bake the new content at this capture's floor.
-				if (this.disposed || this.contentHash !== queuedFor) return null;
-				return this.runCapture(minScale);
-			})
+		const previous = Html5Player.captureChain;
+		// Cached frames cost no bake, so they never wait in the queue behind one.
+		const capture: Promise<Blob[] | null> = this.bakeScale(minScale)
+			.then(scale => this.adoptCachedBake(scale))
+			.then(
+				cached =>
+					cached ??
+					previous.then(() => {
+						// A content change while this waited in the queue would bake the new content at this capture's floor.
+						if (this.disposed || this.contentHash !== queuedFor) return null;
+						return this.runCapture(minScale);
+					})
+			)
 			.finally(() => {
 				// A content change frees the slot, and a newer capture may hold it by now.
 				if (this.captureInFlight === capture) this.captureInFlight = null;
 			});
 		this.captureInFlight = capture;
-		Html5Player.captureChain = capture.catch(() => undefined);
+		// A cache hit settles early, so the next bake waits on the whole queue, not just this capture.
+		Html5Player.captureChain = Promise.allSettled([previous, capture]).then(() => undefined);
 		return capture;
+	}
+
+	// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
+	// transform isn't applied, so its bake reads only the viewport's zoom and may re-bake once the clip is active.
+	private async bakeScale(minScale: number): Promise<number> {
+		await nextFrame();
+		return Math.max(bakeScaleFor(this.onScreenScale()), minScale);
+	}
+
+	private async adoptCachedBake(scale: number): Promise<Blob[] | null> {
+		const { contentHash } = this;
+		if (!contentHash) return null;
+		const stale = (): boolean => this.disposed || this.contentHash !== contentHash;
+		const cacheKey = `${contentHash}@${scale}`;
+		const cached = await html5CacheGet(cacheKey);
+		if (stale() || !cached) return null;
+		this.captureFramesTotal = cached.frameCount;
+		this.captureFramesDone = cached.frameCount;
+		this.captureFps = cached.fps;
+		if (!(await this.adoptBake(cached.pngs, cacheKey, scale, stale))) return null;
+		this.emitCaptureCompleted(cached.frameCount);
+		return cached.pngs;
 	}
 
 	// A re-bake passes the scale it was started for, so a later, smaller sample can't bake softer frames.
@@ -383,23 +425,13 @@ export class Html5Player extends Player {
 		if (!contentHash) return null;
 		const stale = (): boolean => this.disposed || this.contentHash !== contentHash;
 
-		// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
-		// transform isn't applied, so its bake reads only the viewport's zoom and may re-bake once the clip is active.
-		await nextFrame();
+		const scale = await this.bakeScale(minScale);
 		if (stale()) return null;
-		const scale = Math.max(bakeScaleFor(this.onScreenScale()), minScale);
+		// The display scale can change while a clip waits in the queue, which can turn up a cached bake at the new scale.
+		const cached = await this.adoptCachedBake(scale);
+		if (cached) return cached;
+		if (stale()) return null;
 		const cacheKey = `${contentHash}@${scale}`;
-
-		const cached = await html5CacheGet(cacheKey);
-		if (stale()) return null;
-		if (cached) {
-			this.captureFramesTotal = cached.frameCount;
-			this.captureFramesDone = cached.frameCount;
-			this.captureFps = cached.fps;
-			if (!(await this.adoptBake(cached.pngs, cacheKey, scale, stale))) return null;
-			this.emitCaptureCompleted(cached.frameCount);
-			return cached.pngs;
-		}
 
 		// An earlier capture may have seeked this iframe, and a seeked animation can leave state
 		// a fresh page lacks (GSAP writes start values inline once a tween has
@@ -425,6 +457,7 @@ export class Html5Player extends Player {
 		let lastSvg = "";
 		let lastFrame: Promise<Blob> | null = null;
 		let issued = 0;
+		let progressStep = 0;
 		let sliceStart = -Infinity;
 		// Frames publish in order, so the oldest in flight gates the window.
 		while (blobs.length < frameCount) {
@@ -450,6 +483,12 @@ export class Html5Player extends Player {
 				if (stale()) return null;
 				blobs.push(frame);
 				this.captureFramesDone += 1;
+				// Steps, not frames: enough for a ring to fill smoothly, and bounded whatever the frame count.
+				const step = Math.floor((this.captureFramesDone / frameCount) * CAPTURE_PROGRESS_STEPS);
+				if (step > progressStep) {
+					progressStep = step;
+					this.emitCaptureProgress();
+				}
 			}
 		}
 
@@ -761,8 +800,8 @@ export class Html5Player extends Player {
 		} catch (err) {
 			if (this.disposed || this.contentHash !== newHash) return;
 			console.warn("[Html5Player] reload iframe load failed:", err);
-			this.emitCaptureFailed(err, "static-placeholder");
 			this.transitionToFailed();
+			this.emitCaptureFailed(err, "static-placeholder");
 		}
 	}
 
@@ -793,6 +832,21 @@ export class Html5Player extends Player {
 		this.contentContainer.removeChild(this.fallbackGraphic);
 		this.fallbackGraphic.destroy();
 		this.fallbackGraphic = null;
+	}
+
+	public override getPlaybackReadiness(): PlaybackReadiness {
+		if (this.disposed || this.fallbackGraphic) return null;
+		// Frames count from adoption, when captureCompleted fires; playback takes over a decode later, with no event.
+		const adopted = !!this.capturedFrames && this.capturedHash === `${this.contentHash}@${this.capturedScale}`;
+		if (adopted || this.mode === "playback") return "ready";
+		if (this.mode === "capturing") return "pending";
+		// An edit that pre-renders on play bakes nothing until it plays.
+		return this.edit.getHtml5Prerender() === "on-load" || this.hasTriggeredCapture ? "pending" : null;
+	}
+
+	public override getCaptureProgress(): number {
+		if (this.getPlaybackReadiness() !== "pending") return 1;
+		return this.captureFramesTotal > 0 ? this.captureFramesDone / this.captureFramesTotal : 0;
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -831,7 +885,9 @@ export class Html5Player extends Player {
 				if (this.disposed || this.contentHash !== hashAtStart) return;
 				const fresh = !!frames && frames.length > 0 && this.capturedHash === `${hashAtStart}@${this.capturedScale}`;
 				if (!fresh) {
-					if (this.mode === "capturing") this.transitionToFailed();
+					if (this.mode !== "capturing") return;
+					this.transitionToFailed();
+					this.emitCaptureFailed(new Error("The capture produced no frames"), "static-placeholder");
 					return;
 				}
 				await this.transitionToPlayback();
@@ -839,8 +895,9 @@ export class Html5Player extends Player {
 			.catch(err => {
 				if (this.disposed || this.contentHash !== hashAtStart) return;
 				console.warn("[Html5Player] capture failed:", err);
-				this.emitCaptureFailed(err, "static-placeholder");
+				// Listeners redraw on the failure, so the clip shows it first.
 				if (this.mode === "capturing") this.transitionToFailed();
+				this.emitCaptureFailed(err, "static-placeholder");
 			});
 	}
 
