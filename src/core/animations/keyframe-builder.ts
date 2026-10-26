@@ -1,4 +1,4 @@
-import { type Keyframe, type NumericKeyframe } from "@schemas";
+import { type AnimationKeyframe, type NumericKeyframe } from "@schemas";
 
 import { CurveInterpolator } from "./curve-interpolator";
 
@@ -18,7 +18,7 @@ export class KeyframeBuilder {
 
 	private cachedIndex = 0;
 
-	constructor(value: Keyframe[] | number, length: number, initialValue = 0) {
+	constructor(value: AnimationKeyframe[] | number, length: number, initialValue = 0) {
 		this.property = this.createKeyframes(value, length, initialValue);
 		this.length = length;
 
@@ -110,7 +110,7 @@ export class KeyframeBuilder {
 		return -1;
 	}
 
-	private createKeyframes(value: Keyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {
+	private createKeyframes(value: AnimationKeyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {
 		if (typeof value === "number") {
 			return [{ start: 0, length, from: value, to: value }];
 		}
@@ -127,9 +127,9 @@ export class KeyframeBuilder {
 		return this.insertFillerKeyframes(normalizedKeyframes, length, initialValue);
 	}
 
-	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
+	private createNormalizedKeyframes(keyframes: AnimationKeyframe[]): NumericKeyframe[] {
 		return keyframes
-			.filter((kf): kf is Keyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
+			.filter((kf): kf is AnimationKeyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
 			.sort((a, b) => a.start - b.start)
 			.map(keyframe => ({
 				start: keyframe.start,

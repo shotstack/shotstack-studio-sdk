@@ -1,14 +1,14 @@
-import { type ResolvedClip, type Keyframe } from "@schemas";
+import { type ResolvedClip, type AnimationKeyframe } from "@schemas";
 
 export type TransitionKeyframeSet = {
-	offsetXKeyframes: Keyframe[];
-	offsetYKeyframes: Keyframe[];
-	opacityKeyframes: Keyframe[];
-	scaleKeyframes: Keyframe[];
-	rotationKeyframes: Keyframe[];
-	maskXKeyframes: Keyframe[];
+	offsetXKeyframes: AnimationKeyframe[];
+	offsetYKeyframes: AnimationKeyframe[];
+	opacityKeyframes: AnimationKeyframe[];
+	scaleKeyframes: AnimationKeyframe[];
+	rotationKeyframes: AnimationKeyframe[];
+	maskXKeyframes: AnimationKeyframe[];
 	/** Wipe brightness sweep (+1 hidden → −1 revealed), applied through WipeFilter. */
-	brightnessKeyframes: Keyframe[];
+	brightnessKeyframes: AnimationKeyframe[];
 	/** Wipe reveal direction for this phase: true = from the right edge inward, false = from the left. */
 	wipeFromRight: boolean;
 };

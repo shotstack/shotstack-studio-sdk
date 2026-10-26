@@ -20,7 +20,7 @@ import {
 import { Pointer } from "@inputs/pointer";
 import { type Size, type Vector } from "@layouts/geometry";
 import { relativeToAbsolute, absoluteToRelative } from "@layouts/position-builder";
-import { type Clip, type ResolvedClip, type Keyframe } from "@schemas";
+import { type Clip, type ResolvedClip } from "@schemas";
 import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
@@ -223,13 +223,13 @@ export abstract class Player extends Entity {
 		this.rotationKeyframeBuilder.addLayer(transitionSet.out.rotationKeyframes);
 
 		// Mask keyframes (reveal effect)
-		const maskXKeyframes: Keyframe[] = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
+		const maskXKeyframes = [...transitionSet.in.maskXKeyframes, ...transitionSet.out.maskXKeyframes];
 		if (maskXKeyframes.length) {
 			this.maskXKeyframeBuilder = new KeyframeBuilder(maskXKeyframes, length);
 		}
 
 		// Wipe brightness sweep (wipeLeft/wipeRight) — driven through WipeFilter, not a mask.
-		const brightnessKeyframes: Keyframe[] = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
+		const brightnessKeyframes = [...transitionSet.in.brightnessKeyframes, ...transitionSet.out.brightnessKeyframes];
 		if (brightnessKeyframes.length) {
 			this.wipeBrightnessBuilder = new KeyframeBuilder(brightnessKeyframes, length);
 			this.wipeInFromRight = transitionSet.in.wipeFromRight;
