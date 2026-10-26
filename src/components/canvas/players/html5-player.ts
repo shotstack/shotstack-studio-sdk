@@ -1,6 +1,7 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import type { ResolvedTiming } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
 import { nextFrame } from "@shared/utils";
@@ -116,6 +117,7 @@ export class Html5Player extends Player {
 	private disposed: boolean = false;
 	private seekErrorReported: boolean = false;
 	private mounting: Promise<void> | null = null;
+	private lastReloadId: number = 0;
 	private stillChain: Promise<unknown> = Promise.resolve();
 	private stillIframe: HTMLIFrameElement | null = null;
 	private stillHash: string | null = null;
@@ -134,15 +136,23 @@ export class Html5Player extends Player {
 		return (this.iframe?.contentWindow ?? null) as HarnessWindow | null;
 	}
 
-	private hashAsset(): Promise<string> {
-		const { asset } = this;
-		return computeHtml5CacheKey({
+	// A bake holds a fixed number of frames at a fixed rate, so both belong in its key.
+	private async hashAsset(): Promise<string> {
+		const { asset, captureFps } = this;
+		const { frameCount } = computeHtml5FrameCount({
+			clipLengthSeconds: this.getLength(),
+			jsContent: asset.js,
+			cssContent: asset.css,
+			fps: captureFps
+		});
+		const content = await computeHtml5CacheKey({
 			html: asset.html ?? "",
 			css: asset.css ?? "",
 			js: asset.js ?? "",
 			width: this.renderedWidth,
 			height: this.renderedHeight
 		});
+		return `${content}:${frameCount}@${captureFps}`;
 	}
 
 	private getStudioCanvas(): HTMLCanvasElement | null {
@@ -609,6 +619,14 @@ export class Html5Player extends Player {
 		this.stillTexture = null;
 	}
 
+	// Every path that resolves a clip's length lands here. A clip yet to mount reads its length when it does.
+	public override setResolvedTiming(timing: ResolvedTiming): void {
+		const previousLength = this.getLength();
+		super.setResolvedTiming(timing);
+		if (timing.length === previousLength || !(this.iframe || this.mounting)) return;
+		this.reloadAsset().catch(err => console.warn("[Html5Player] re-bake after a length change failed:", err));
+	}
+
 	public override async reloadAsset(): Promise<void> {
 		if (this.mounting) {
 			await this.mounting;
@@ -622,7 +640,11 @@ export class Html5Player extends Player {
 			await this.trackMount(this.mountAsset());
 			return;
 		}
+		this.lastReloadId += 1;
+		const reloadId = this.lastReloadId;
 		const newHash = await this.hashAsset();
+		// Digests can finish out of order, so only the newest reload may write the key and the page.
+		if (reloadId !== this.lastReloadId) return;
 		if (newHash === this.contentHash) return;
 		this.contentHash = newHash;
 		this.transitionToStale();
