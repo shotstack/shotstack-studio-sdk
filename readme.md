@@ -187,16 +187,19 @@ const edit = new Edit(templateJson, { html5Prerender: "on-play" });
 
 Captured frames are the same either way. Until the edit plays, the canvas shows each `html5` clip as a still of its frame at the playhead, in its layer and with its effects. Playback stays choppy until the frames are ready, so keep the default, `"on-load"`, for an edit that someone watches.
 
-`edit.getPendingCaptures()` returns `{ pending, total }`: how many `html5` clips are still preparing smooth playback, out of those that will play pre-rendered frames. Failed clips, and an `"on-play"` edit's clips before it plays, count in neither. The timeline shows this beside its play button. A player of your own can read it on the capture events:
+`edit.getPendingCaptures()` returns `{ pending, total, progress }`: how many `html5` clips are still preparing smooth playback, out of those that will play pre-rendered frames, and how far along they are, from 0 to 1 by frames baked. Failed clips, and an `"on-play"` edit's clips before it plays, count in neither number. The timeline shows this as a ring around its play button and a ring in each preparing clip. A player of your own can read it on the capture events, and a few times a second in between, since progress moves without them:
 
 ```typescript
 const showPreparing = () => {
-  const { pending, total } = edit.getPendingCaptures();
-  status.textContent = pending > 0 ? `Preparing smooth playback · ${total - pending} of ${total} ready` : "";
+  const { pending, progress } = edit.getPendingCaptures();
+  ring.hidden = pending === 0;
+  ring.style.setProperty("--progress", String(progress));
 };
 edit.events.on("clip:captureStarted", showPreparing);
 edit.events.on("clip:captureCompleted", showPreparing);
 edit.events.on("clip:captureFailed", showPreparing);
+setInterval(showPreparing, 250);
+showPreparing();
 ```
 
 #### Events

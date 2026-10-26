@@ -67,6 +67,7 @@ export class Timeline {
 	private readonly handleClipLoadFailed: () => void;
 	private readonly handleClipGeneration: () => void;
 	private readonly handleClipCapture: () => void;
+	private preparingTimer: ReturnType<typeof setInterval> | null = null;
 	private readonly handleClipUpdated: () => void;
 	private readonly handleClipFocusChanged: () => void;
 	private readonly handleRulerMouseMove: (e: MouseEvent) => void;
@@ -177,7 +178,18 @@ export class Timeline {
 		// Update toolbar
 		this.toolbar?.updatePlayState(playback.isPlaying);
 		this.toolbar?.updateTimeDisplay(playback.time, playback.duration);
-		this.toolbar?.setPendingCaptures(this.edit.getPendingCaptures());
+		const pendingCaptures = this.edit.getPendingCaptures();
+		this.toolbar?.setPendingCaptures(pendingCaptures);
+		// Bake progress moves without events, so the timeline samples it while anything prepares.
+		if (pendingCaptures.pending > 0 && !this.preparingTimer) {
+			this.preparingTimer = setInterval(() => {
+				this.stateManager.invalidateCache();
+				this.requestRender();
+			}, 200);
+		} else if (pendingCaptures.pending === 0 && this.preparingTimer) {
+			clearInterval(this.preparingTimer);
+			this.preparingTimer = null;
+		}
 		this.toolbar?.draw();
 
 		// Update ruler and draw
@@ -195,6 +207,8 @@ export class Timeline {
 
 	/** Clean up and unmount the timeline */
 	public dispose(): void {
+		if (this.preparingTimer) clearInterval(this.preparingTimer);
+		this.preparingTimer = null;
 		// Stop animation loop
 		this.stopRenderLoop();
 
@@ -417,6 +431,10 @@ export class Timeline {
 			getClipRenderer: type => this.clipRenderers.get(type),
 			getClipError: (trackIndex, clipIndex) => this.edit.getClipError(trackIndex, clipIndex),
 			getClipGenerationState: clipId => this.edit.getClipGenerationState(clipId),
+			getClipCaptureProgress: clipId => {
+				const player = this.edit.getPlayerByClipId(clipId);
+				return player?.getPlaybackReadiness() === "pending" ? player.getCaptureProgress() : null;
+			},
 			hasAttachedLuma: (trackIndex, clipIndex) => this.stateManager.hasAttachedLuma(trackIndex, clipIndex),
 			findAttachedLuma: (trackIndex, clipIndex) => this.stateManager.findAttachedLuma(trackIndex, clipIndex),
 			onMaskClick: (contentTrackIndex, contentClipIndex) => {

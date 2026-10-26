@@ -170,6 +170,27 @@ it.each([
 	expect(player.getPlaybackReadiness()).toBe(expected);
 });
 
+it.each([
+	["baking", { mode: "capturing", captureFramesDone: 30, captureFramesTotal: 60 }, 0.5],
+	["queued behind another clip's bake", { mode: "capturing", captureFramesDone: 0, captureFramesTotal: 0 }, 0],
+	["ready", { mode: "playback" }, 1]
+])("reports its bake progress when %s", (_, state, expected) => {
+	const { player } = createPlayer();
+	Object.assign(player, state);
+
+	expect(player.getCaptureProgress()).toBe(expected);
+});
+
+it("starts a new bake's progress from zero", () => {
+	const { player, harness } = createPlayer();
+	Object.assign(player, { mode: "stale", captureFramesDone: 60, captureFramesTotal: 60 });
+	jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+
+	harness.beginCapture();
+
+	expect(player.getCaptureProgress()).toBe(0);
+});
+
 it("reports ready once its frames are adopted, before playback takes over", () => {
 	const { player, harness } = createPlayer();
 	Object.assign(player, { mode: "capturing", capturedScale: 1 });

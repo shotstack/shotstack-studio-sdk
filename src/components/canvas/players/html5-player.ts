@@ -342,6 +342,8 @@ export class Html5Player extends Player {
 
 	private transitionToCapturing(): void {
 		this.mode = "capturing";
+		this.captureFramesDone = 0;
+		this.captureFramesTotal = 0;
 		if (!this.liveStill) this.mountLoadingGraphic();
 		this.emitCaptureStarted();
 	}
@@ -824,6 +826,11 @@ export class Html5Player extends Player {
 		if (this.mode === "capturing") return "pending";
 		// An edit that pre-renders on play bakes nothing until it plays.
 		return this.edit.getHtml5Prerender() === "on-load" || this.hasTriggeredCapture ? "pending" : null;
+	}
+
+	public override getCaptureProgress(): number {
+		if (this.getPlaybackReadiness() !== "pending") return 1;
+		return this.captureFramesTotal > 0 ? this.captureFramesDone / this.captureFramesTotal : 0;
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {

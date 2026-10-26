@@ -586,6 +586,10 @@ export abstract class Player extends Entity {
 		return null;
 	}
 
+	public getCaptureProgress(): number {
+		return 1;
+	}
+
 	public isActive(): boolean {
 		// playbackTime is in seconds, matching clip start/end
 		return this.edit.playbackTime >= this.getStart() && this.edit.playbackTime < this.getEnd();

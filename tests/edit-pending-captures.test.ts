@@ -1,14 +1,19 @@
-import { countPendingCaptures } from "@core/pending-captures";
+import { countPendingCaptures, type PlaybackReadiness } from "@core/pending-captures";
 
-type Readiness = "pending" | "ready" | null;
+const stub = (readiness: PlaybackReadiness, progress = readiness === "pending" ? 0 : 1) => ({
+	getPlaybackReadiness: () => readiness,
+	getCaptureProgress: () => progress
+});
 
-const stub = (readiness: Readiness) => ({ getPlaybackReadiness: () => readiness });
-
-it("sums html5 clips that are pending or ready", () => {
-	expect(countPendingCaptures([stub("pending"), stub("ready"), stub(null), stub("pending")])).toEqual({ pending: 2, total: 3 });
+it("sums html5 clips that are pending or ready, with their bake progress", () => {
+	expect(countPendingCaptures([stub("pending", 0.5), stub("ready"), stub(null), stub("pending", 0)])).toEqual({
+		pending: 2,
+		total: 3,
+		progress: 0.5
+	});
 });
 
 it("reports nothing for an edit without html5 clips", () => {
-	expect(countPendingCaptures([stub(null), stub(null)])).toEqual({ pending: 0, total: 0 });
-	expect(countPendingCaptures([])).toEqual({ pending: 0, total: 0 });
+	expect(countPendingCaptures([stub(null), stub(null)])).toEqual({ pending: 0, total: 0, progress: 1 });
+	expect(countPendingCaptures([])).toEqual({ pending: 0, total: 0, progress: 1 });
 });

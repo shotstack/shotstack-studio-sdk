@@ -571,7 +571,7 @@ export class Edit {
 		if (result.status !== "success") throw new Error(result.message ?? "Could not apply the generated asset");
 	}
 
-	/** Failed clips, and an on-play edit's clips before it plays, count in neither number. */
+	/** Counts html5 clips only: failed ones, and an on-play edit's before it plays, are left out of `pending` and `total`. */
 	public getPendingCaptures(): PendingCaptures {
 		return countPendingCaptures(this.clips);
 	}

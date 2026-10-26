@@ -22,6 +22,7 @@ export class ToolbarComponent {
 	private statusElement: HTMLElement | null = null;
 	private statusTimer: ReturnType<typeof setTimeout> | null = null;
 	private statusText = "";
+	private progressRing: HTMLElement | null = null;
 	private isPlaying = false;
 	private currentTime: Seconds = sec(0);
 	private duration: Seconds = sec(0);
@@ -80,7 +81,20 @@ export class ToolbarComponent {
 			}
 		});
 		this.playButton.classList.add("ss-play-btn");
-		centerSection.appendChild(this.playButton);
+		// The button's icon is rewritten on every draw, so the ring sits beside the button, not inside it.
+		const playWrap = document.createElement("span");
+		playWrap.className = "ss-play-wrap";
+		playWrap.appendChild(this.playButton);
+		this.progressRing = document.createElement("span");
+		this.progressRing.className = "ss-play-progress";
+		this.progressRing.setAttribute("role", "progressbar");
+		this.progressRing.setAttribute("aria-label", "Preparing smooth playback");
+		this.progressRing.setAttribute("aria-valuemin", "0");
+		this.progressRing.setAttribute("aria-valuemax", "100");
+		this.progressRing.innerHTML =
+			'<svg viewBox="0 0 52 52" aria-hidden="true"><circle class="ss-play-progress-track" cx="26" cy="26" r="24"/><circle class="ss-play-progress-fill" cx="26" cy="26" r="24" pathLength="100"/></svg>';
+		playWrap.appendChild(this.progressRing);
+		centerSection.appendChild(playWrap);
 
 		// Skip forward button
 		const skipForwardBtn = this.createButton("skip-forward", this.getSkipForwardIcon(), () => {
@@ -141,9 +155,18 @@ export class ToolbarComponent {
 	}
 
 	// Called on every draw, so it only touches the DOM when the line changes.
-	public setPendingCaptures({ pending, total }: PendingCaptures): void {
+	public setPendingCaptures({ pending, total, progress }: PendingCaptures): void {
 		const status = this.statusElement;
 		if (!status) return;
+		const ring = this.progressRing;
+		if (ring) {
+			const value = String(pending > 0 ? Math.round(progress * 100) : 100);
+			if (ring.getAttribute("aria-valuenow") !== value) {
+				ring.style.setProperty("--ss-play-progress", value);
+				ring.setAttribute("aria-valuenow", value);
+			}
+			ring.classList.toggle("ss-play-progress--shown", pending > 0 && !!status.textContent);
+		}
 		if (pending === 0) {
 			if (this.statusTimer) clearTimeout(this.statusTimer);
 			this.statusTimer = null;
@@ -159,6 +182,7 @@ export class ToolbarComponent {
 		this.statusTimer = setTimeout(() => {
 			this.statusTimer = null;
 			status.textContent = this.statusText;
+			this.progressRing?.classList.add("ss-play-progress--shown");
 		}, PREPARING_DELAY_MS);
 	}
 

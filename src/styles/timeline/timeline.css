@@ -1199,3 +1199,69 @@ a.ss-clip-error-badge {
 		transform: rotate(360deg);
 	}
 }
+
+.ss-play-wrap {
+	position: relative;
+	display: inline-flex;
+}
+
+.ss-play-progress {
+	position: absolute;
+	inset: -6px;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.3s;
+}
+
+.ss-play-progress--shown {
+	opacity: 1;
+}
+
+.ss-play-progress svg {
+	width: 100%;
+	height: 100%;
+	transform: rotate(-90deg);
+}
+
+.ss-play-progress circle {
+	fill: none;
+	stroke-width: 3;
+}
+
+.ss-play-progress-track {
+	stroke: #e5e7eb;
+}
+
+.ss-play-progress-fill {
+	stroke: #3b82f6;
+	stroke-linecap: round;
+	stroke-dasharray: 100;
+	stroke-dashoffset: calc(100 - var(--ss-play-progress, 0));
+	transition: stroke-dashoffset 0.25s linear;
+}
+
+/* The status line stays for screen readers; the ring carries it visually. */
+.ss-toolbar-status {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+/* A clip that is still preparing swaps its icon for a ring that fills with its own bake. */
+.ss-clip.ss-clip--preparing .ss-clip-icon {
+	box-sizing: border-box;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: conic-gradient(currentColor calc(var(--ss-capture-progress, 0) * 1turn), transparent 0);
+	box-shadow: inset 0 0 0 1.5px currentColor;
+	font-size: 0;
+	opacity: 0.85;
+}
+
+.ss-clip.ss-clip--preparing .ss-clip-icon svg {
+	display: none;
+}

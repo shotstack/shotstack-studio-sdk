@@ -19,6 +19,7 @@ export interface ClipComponentOptions {
 	getClipError?: (trackIndex: number, clipIndex: number) => { error: string; assetType: string } | null;
 	/** Get generation state for a clip (while an AI asset is being generated) */
 	getClipGenerationState?: (clipId: string) => { status: "generating" | "failed"; error?: string } | undefined;
+	getClipCaptureProgress?: (clipId: string) => number | null;
 	/** Reference to attached luma (if this clip has a mask) */
 	attachedLuma?: LumaRef;
 	/** Callback when mask badge is clicked - passes the CONTENT clip indices */
@@ -235,12 +236,19 @@ export class ClipComponent {
 		const state = clipId ? this.options.getClipGenerationState?.(clipId) : undefined;
 		const generating = state?.status === "generating";
 
+		const progress = clipId ? (this.options.getClipCaptureProgress?.(clipId) ?? null) : null;
+		const preparing = progress !== null;
+
 		this.element.classList.toggle("ss-clip--generating", generating);
-		if (generating) this.element.setAttribute("aria-busy", "true");
+		this.element.classList.toggle("ss-clip--preparing", preparing);
+		if (preparing) this.element.style.setProperty("--ss-capture-progress", String(progress));
+		if (generating || preparing) this.element.setAttribute("aria-busy", "true");
 		else this.element.removeAttribute("aria-busy");
 
 		this.element.classList.toggle("ss-clip--error", state?.status === "failed" || this.currentError !== null);
-		this.element.title = state?.status === "failed" ? (state.error ?? "Generation failed") : "";
+		let title = preparing ? "Preparing smooth playback" : "";
+		if (state?.status === "failed") title = state.error ?? "Generation failed";
+		this.element.title = title;
 	}
 
 	/** Show/hide error state based on clip error */
