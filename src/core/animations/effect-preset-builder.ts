@@ -59,17 +59,19 @@ export class EffectPresetBuilder {
 			case "slideUp":
 			case "slideDown": {
 				const isHorizontal = effectName === "slideLeft" || effectName === "slideRight";
-				const startsPositive = effectName === "slideLeft" || effectName === "slideUp";
+				// Left and down start on the positive side of their axis (offset y points up).
+				const startsPositive = effectName === "slideLeft" || effectName === "slideDown";
 
-				const fittedSize = this.getFittedSize(editSize, clipSize);
+				// The render checks for overflow with the media fitted to the frame's other side, whatever the clip's fit.
 				const editDimension = isHorizontal ? editSize.width : editSize.height;
-				const fittedDimension = isHorizontal ? fittedSize.width : fittedSize.height;
+				const fittedDimension = isHorizontal
+					? (clipSize.width / clipSize.height) * editSize.height
+					: (clipSize.height / clipSize.width) * editSize.width;
 
 				let targetOffset = this.getSlideStart();
-				const minScale = editDimension + editDimension * targetOffset * 2;
+				const scaleFactor = 1 + targetOffset * 2;
 
-				if (fittedDimension < minScale) {
-					const scaleFactor = minScale / fittedDimension;
+				if (fittedDimension < editDimension * scaleFactor) {
 					scaleKeyframes.push({ from: scaleFactor, to: scaleFactor, start, length, interpolation: "linear" });
 				} else {
 					targetOffset = (fittedDimension - editDimension) / 2 / editDimension;
@@ -111,36 +113,18 @@ export class EffectPresetBuilder {
 	private getSlideStart(): number {
 		const { name, speed } = this.effectPreset;
 
+		// Fractions of the frame, matching the render.
 		if (name.startsWith("slide")) {
 			switch (speed) {
 				case "Slow":
 					return 0.03;
 				case "Fast":
-					return 0.2;
-				default:
 					return 0.12;
+				default:
+					return 0.08;
 			}
 		}
 
 		return 0;
-	}
-
-	private getFittedSize(editSize: Size, clipSize: Size): Size {
-		const fit = this.clipConfiguration.fit ?? "crop";
-
-		switch (fit) {
-			case "cover":
-			case "crop": {
-				const scale = Math.max(editSize.width / clipSize.width, editSize.height / clipSize.height);
-				return { width: clipSize.width * scale, height: clipSize.height * scale };
-			}
-			case "contain": {
-				const scale = Math.min(editSize.width / clipSize.width, editSize.height / clipSize.height);
-				return { width: clipSize.width * scale, height: clipSize.height * scale };
-			}
-			case "none":
-			default:
-				return clipSize;
-		}
 	}
 }
