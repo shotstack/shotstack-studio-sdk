@@ -1,3 +1,4 @@
+import { type Vector } from "@layouts/geometry";
 import { type ResolvedClip, type AnimationKeyframe } from "@schemas";
 
 export type TransitionKeyframeSet = {
@@ -13,6 +14,8 @@ export type TransitionKeyframeSet = {
 	blurKeyframes: AnimationKeyframe[];
 	/** Wipe reveal direction for this phase: true = from the right edge inward, false = from the left. */
 	wipeFromRight: boolean;
+	/** The point the clip rotates about, as a fraction of its size from the top left; the centre when unset. */
+	origin?: Vector;
 };
 
 export type RelativeTransitionKeyframeSet = {
@@ -26,6 +29,18 @@ type ParsedTransition = { name: string; speed: string | undefined };
 const SMOOTH = { interpolation: "bezier", easing: "smooth" } as const;
 const LINEAR = { interpolation: "linear" } as const;
 type Curve = typeof SMOOTH | typeof LINEAR;
+
+// The render's shuffles swing the clip about a point well outside it: [degrees, origin x, origin y].
+const SHUFFLES: Record<string, [number, number, number]> = {
+	shuffleBottomLeft: [17, -1.6, 0.5],
+	shuffleBottomRight: [-17, 2.6, 0.5],
+	shuffleTopLeft: [-17, -1.6, 0.5],
+	shuffleTopRight: [17, 2.6, 0.5],
+	shuffleLeftBottom: [-25, 0.5, 3.6],
+	shuffleLeftTop: [25, 0.5, -2.6],
+	shuffleRightBottom: [25, 0.5, 3.6],
+	shuffleRightTop: [-25, 0.5, -2.6]
+};
 
 export class TransitionPresetBuilder {
 	private readonly clipConfiguration: ResolvedClip;
@@ -127,8 +142,15 @@ export class TransitionPresetBuilder {
 				keyframes.wipeFromRight = transitionName === "wipeLeft" ? isIn : !isIn;
 				break;
 			}
-			default:
+			default: {
+				const shuffle = SHUFFLES[transitionName];
+				if (!shuffle) break;
+				const [angle, x, y] = shuffle;
+				keyframes.rotationKeyframes.push(ramp(angle, 0, SMOOTH, SMOOTH));
+				keyframes.scaleKeyframes.push(ramp(1.5, 1, SMOOTH, SMOOTH));
+				keyframes.origin = { x, y };
 				break;
+			}
 		}
 
 		return keyframes;

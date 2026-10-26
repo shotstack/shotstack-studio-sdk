@@ -108,9 +108,11 @@ describe("findEditIssues", () => {
 	});
 
 	it("reports a transition the presets don't animate as transition", () => {
-		expect(codes([clip({ asset: { type: "image", src: "https://example.com/a.png" }, transition: { in: "shuffleTopRight", out: "fade" } })])).toEqual(
-			["transition"]
-		);
+		// Every schema transition has a preset today; an unknown name stands in for one the schema adds later.
+		const name = "spin" as NonNullable<ResolvedClip["transition"]>["in"];
+		expect(codes([clip({ asset: { type: "image", src: "https://example.com/a.png" }, transition: { in: name, out: "fade" } })])).toEqual([
+			"transition"
+		]);
 	});
 
 	it("reports a font that is neither built in nor in the edit's fonts as font", () => {
