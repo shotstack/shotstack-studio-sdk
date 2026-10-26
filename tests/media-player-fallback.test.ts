@@ -331,6 +331,49 @@ describe("media player fallbacks", () => {
 		expect(player.getContentContainer().children).toHaveLength(outcome === "error" ? 1 : 0);
 	});
 
+	// 101 ms lets the tick's scrub sync start the seek; 16 ms leaves it to the capture.
+	it.each([101, 16])("holds a still capture until the video lands on the playhead (tick %i ms)", async elapsed => {
+		const edit = createEdit();
+		const video = document.createElement("video");
+		let currentTime = 0;
+		let seeking = false;
+		Object.defineProperties(video, {
+			currentTime: {
+				get: () => currentTime,
+				set: (value: number) => {
+					currentTime = value;
+					seeking = true;
+				}
+			},
+			seeking: { get: () => seeking },
+			readyState: { value: 4 },
+			pause: { value: jest.fn() }
+		});
+		const texture = new pixi.Texture({ source: new pixi.VideoSource({ resource: video }), width: 1280, height: 720 } as ConstructorParameters<
+			typeof pixi.Texture
+		>[0]);
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(texture);
+		const player = new VideoPlayer(edit as never, createVideoClip());
+		await player.load();
+
+		edit.playbackTime = 4.25;
+		player.update(0, elapsed);
+		let prepared = false;
+		const preparing = player.prepareStaticRender().then(() => {
+			prepared = true;
+		});
+		await new Promise<void>(resolve => {
+			setTimeout(resolve, 0);
+		});
+		expect(currentTime).toBe(4.25);
+		expect(prepared).toBe(false);
+
+		seeking = false;
+		video.dispatchEvent(new Event("seeked"));
+		await preparing;
+		expect(prepared).toBe(true);
+	});
+
 	it("uses display dimensions for a failed image placeholder", async () => {
 		const edit = createEdit();
 		edit.assetLoader.load.mockResolvedValueOnce(null);
