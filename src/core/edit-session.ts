@@ -30,6 +30,7 @@ import type { GenerationConfig, GenerationStatus, GenerationStatusProvider } fro
 import { LumaMaskController } from "@core/luma-mask-controller";
 import { MergeFieldService, type SerializedMergeField } from "@core/merge";
 import { calculateSizeFromPreset, OutputSettingsManager } from "@core/output-settings-manager";
+import { captureProgressOf, countPendingCaptures, type PendingCaptures } from "@core/pending-captures";
 import { SelectionManager } from "@core/selection-manager";
 import { GENERATION_TYPE, isAiAsset, promptProperty } from "@core/shared/ai-asset-utils";
 import { findEligibleSourceClips, ensureClipAlias } from "@core/shared/source-clip-finder";
@@ -568,6 +569,19 @@ export class Edit {
 		});
 		const result = await this.executeCommand(command);
 		if (result.status !== "success") throw new Error(result.message ?? "Could not apply the generated asset");
+	}
+
+	/** Counts html5 clips only: failed ones, and an on-play edit's before it plays, are left out of `pending` and `total`. */
+	public getPendingCaptures(): PendingCaptures {
+		return countPendingCaptures(this.clips);
+	}
+
+	/**
+	 * A preparing html5 clip's bake progress, from 0 to 1, or null when the clip isn't preparing.
+	 * @internal
+	 */
+	public getClipCaptureProgress(clipId: string): number | null {
+		return captureProgressOf(this.getPlayerByClipId(clipId));
 	}
 
 	/**

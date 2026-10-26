@@ -2,7 +2,7 @@
 
 import { Html5Player, bakeScaleFor, captureFramesInFlight } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
-import { EditEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
 import type { ResolvedClip } from "@schemas";
 
@@ -110,6 +110,7 @@ type PlayerHarness = {
 	beginCapture(): void;
 	renderStill(seconds: number): Promise<unknown>;
 	transitionToPlayback(): Promise<void>;
+	transitionToFailed(): void;
 };
 
 function createPlayer() {
@@ -152,6 +153,95 @@ afterEach(() => {
 	jest.clearAllMocks();
 	jest.useRealTimers();
 	document.body.replaceChildren();
+});
+
+it.each([
+	["mounting in an on-load edit", { mode: "editing" }, "on-load", "pending"],
+	["capturing", { mode: "capturing" }, "on-load", "pending"],
+	["stale after a content or length change", { mode: "stale" }, "on-load", "pending"],
+	["playing baked frames, even during a sharper re-bake", { mode: "playback", rebakeStarted: true }, "on-load", "ready"],
+	["an on-play edit before its play", { mode: "editing" }, "on-play", null],
+	["an on-play edit once its bake is triggered", { mode: "editing", hasTriggeredCapture: true }, "on-play", "pending"]
+])("reports playback readiness when %s", (_, state, prerender, expected) => {
+	const { player, edit } = createPlayer();
+	Object.assign(edit, { getHtml5Prerender: () => prerender });
+	Object.assign(player, state);
+
+	expect(player.getPlaybackReadiness()).toBe(expected);
+});
+
+it.each([
+	["baking", { mode: "capturing", captureFramesDone: 30, captureFramesTotal: 60 }, 0.5],
+	["queued behind another clip's bake", { mode: "capturing", captureFramesDone: 0, captureFramesTotal: 0 }, 0],
+	["ready", { mode: "playback" }, 1]
+])("reports its bake progress when %s", (_, state, expected) => {
+	const { player } = createPlayer();
+	Object.assign(player, state);
+
+	expect(player.getCaptureProgress()).toBe(expected);
+});
+
+it("starts a new bake's progress from zero", () => {
+	const { player, harness } = createPlayer();
+	Object.assign(player, { mode: "stale", captureFramesDone: 60, captureFramesTotal: 60 });
+	jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+
+	harness.beginCapture();
+
+	expect(player.getCaptureProgress()).toBe(0);
+});
+
+it("reports ready once its frames are adopted, before playback takes over", () => {
+	const { player, harness } = createPlayer();
+	Object.assign(player, { mode: "capturing", capturedScale: 1 });
+	harness.capturedFrames = [new Blob(["baked 0"])];
+	harness.capturedHash = `${harness.contentHash}@1`;
+
+	expect(player.getPlaybackReadiness()).toBe("ready");
+});
+
+// A listener that redraws on the failure must already see the clip as failed.
+function readinessWhenFailureAnnounced(player: Html5Player, events: { emit: jest.Mock }): unknown[] {
+	const seen: unknown[] = [];
+	events.emit.mockImplementation((name: string) => {
+		if (name === EditEvent.ClipCaptureFailed) seen.push(player.getPlaybackReadiness());
+	});
+	return seen;
+}
+
+it.each([
+	["a bake that throws", (harness: PlayerHarness) => jest.spyOn(harness, "captureFrames").mockRejectedValue(new Error("bake failed"))],
+	["a bake that yields no frames", (harness: PlayerHarness) => jest.spyOn(harness, "captureFrames").mockResolvedValue(null)]
+])("announces %s only once the clip reports no readiness", async (_, fail) => {
+	const { player, harness, events } = createPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	const seen = readinessWhenFailureAnnounced(player, events);
+	fail(harness);
+
+	harness.beginCapture();
+	await until(() => seen.length === 1);
+
+	expect(seen).toEqual([null]);
+});
+
+it("announces a failed reload only once the clip reports no readiness", async () => {
+	const { player, harness, events } = createPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockRejectedValueOnce(new Error("ingest failed"));
+	const seen = readinessWhenFailureAnnounced(player, events);
+
+	await player.reloadAsset();
+
+	expect(seen).toEqual([null]);
+});
+
+it("reports no playback readiness after a failed bake", () => {
+	const { player, harness } = createPlayer();
+	harness.transitionToFailed();
+
+	expect(player.getPlaybackReadiness()).toBeNull();
 });
 
 it("ignores a capture decode failure after its content has been replaced", async () => {
@@ -528,6 +618,16 @@ function createStillPlayer() {
 	});
 	return result;
 }
+
+it("announces bake progress in 5% steps, not on every frame", async () => {
+	const { harness, events } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+
+	await harness.runCapture();
+
+	const steps = events.emit.mock.calls.filter(([name]) => name === InternalEvent.CaptureProgressChanged);
+	expect(steps).toHaveLength(20);
+	expect(steps[0][1]).toEqual({ clipId: "background" });
+});
 
 it("renders a still from its own page without waiting for the clip's capture", async () => {
 	const { player, harness, iframe } = createStillPlayer();

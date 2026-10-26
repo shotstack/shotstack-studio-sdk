@@ -6,6 +6,7 @@ import { WipeFilter } from "@animations/wipe-filter";
 import { type Edit } from "@core/edit-session";
 import { InternalEvent } from "@core/events/edit-events";
 import { calculateContainerScale, calculateFitScale, calculateSpriteTransform, type FitMode } from "@core/layout/fit-system";
+import { type PlaybackReadiness } from "@core/pending-captures";
 import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import {
 	type AliasReference,
@@ -578,6 +579,15 @@ export abstract class Player extends Entity {
 			x: this.skewXKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0,
 			y: this.skewYKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 0
 		};
+	}
+
+	// Only players that pre-render frames can play choppily while they prepare.
+	public getPlaybackReadiness(): PlaybackReadiness {
+		return null;
+	}
+
+	public getCaptureProgress(): number {
+		return 1;
 	}
 
 	public isActive(): boolean {

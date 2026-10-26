@@ -1,4 +1,8 @@
+import type { PendingCaptures } from "@core/pending-captures";
 import { type Seconds, sec } from "@core/timing/types";
+
+// Short preparations, such as cache hits, are over before anyone could read the line.
+const PREPARING_DELAY_MS = 500;
 
 export interface ToolbarOptions {
 	onPlay: () => void;
@@ -15,6 +19,10 @@ export class ToolbarComponent {
 	private timeDisplayElement: HTMLElement | null = null;
 	private playButton: HTMLButtonElement | null = null;
 	private zoomSlider: HTMLInputElement | null = null;
+	private statusElement: HTMLElement | null = null;
+	private statusTimer: ReturnType<typeof setTimeout> | null = null;
+	private statusText = "";
+	private progressRing: HTMLElement | null = null;
 	private isPlaying = false;
 	private currentTime: Seconds = sec(0);
 	private duration: Seconds = sec(0);
@@ -39,13 +47,19 @@ export class ToolbarComponent {
 	}
 
 	public dispose(): void {
+		if (this.statusTimer) clearTimeout(this.statusTimer);
+		this.statusTimer = null;
 		this.element.remove();
 	}
 
 	private buildElement(initialZoom: number): void {
-		// Left section - empty for balance
 		const leftSection = document.createElement("div");
 		leftSection.className = "ss-toolbar-section";
+		this.statusElement = document.createElement("span");
+		this.statusElement.className = "ss-toolbar-status";
+		// Stays rendered and empty when idle: a live region announces text written into it, not one revealed by display.
+		this.statusElement.setAttribute("role", "status");
+		leftSection.appendChild(this.statusElement);
 		this.element.appendChild(leftSection);
 
 		// Center section - playback controls + time display
@@ -67,7 +81,20 @@ export class ToolbarComponent {
 			}
 		});
 		this.playButton.classList.add("ss-play-btn");
-		centerSection.appendChild(this.playButton);
+		// The button's icon is rewritten on every draw, so the ring sits beside the button, not inside it.
+		const playWrap = document.createElement("span");
+		playWrap.className = "ss-play-wrap";
+		playWrap.appendChild(this.playButton);
+		this.progressRing = document.createElement("span");
+		this.progressRing.className = "ss-play-progress";
+		this.progressRing.setAttribute("role", "progressbar");
+		this.progressRing.setAttribute("aria-label", "Preparing smooth playback");
+		this.progressRing.setAttribute("aria-valuemin", "0");
+		this.progressRing.setAttribute("aria-valuemax", "100");
+		this.progressRing.innerHTML =
+			'<svg viewBox="0 0 52 52" aria-hidden="true"><circle class="ss-play-progress-track" cx="26" cy="26" r="24"/><circle class="ss-play-progress-fill" cx="26" cy="26" r="24" pathLength="100"/></svg>';
+		playWrap.appendChild(this.progressRing);
+		centerSection.appendChild(playWrap);
 
 		// Skip forward button
 		const skipForwardBtn = this.createButton("skip-forward", this.getSkipForwardIcon(), () => {
@@ -125,6 +152,38 @@ export class ToolbarComponent {
 		btn.innerHTML = icon;
 		btn.addEventListener("click", onClick);
 		return btn;
+	}
+
+	// Called on every draw, so it only touches the DOM when the line changes.
+	public setPendingCaptures({ pending, total, progress }: PendingCaptures): void {
+		const status = this.statusElement;
+		if (!status) return;
+		const ring = this.progressRing;
+		if (ring) {
+			const value = String(pending > 0 ? Math.round(progress * 100) : 100);
+			if (ring.getAttribute("aria-valuenow") !== value) {
+				ring.style.setProperty("--ss-play-progress", value);
+				ring.setAttribute("aria-valuenow", value);
+			}
+			ring.classList.toggle("ss-play-progress--shown", pending > 0 && !!status.textContent);
+		}
+		if (pending === 0) {
+			if (this.statusTimer) clearTimeout(this.statusTimer);
+			this.statusTimer = null;
+			if (status.textContent) status.textContent = "";
+			return;
+		}
+		this.statusText = `Preparing smooth playback · ${total - pending} of ${total} ready`;
+		if (status.textContent) {
+			if (status.textContent !== this.statusText) status.textContent = this.statusText;
+			return;
+		}
+		if (this.statusTimer) return;
+		this.statusTimer = setTimeout(() => {
+			this.statusTimer = null;
+			status.textContent = this.statusText;
+			this.progressRing?.classList.add("ss-play-progress--shown");
+		}, PREPARING_DELAY_MS);
 	}
 
 	public updatePlayState(isPlaying: boolean): void {
