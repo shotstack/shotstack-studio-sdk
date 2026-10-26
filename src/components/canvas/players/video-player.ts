@@ -15,6 +15,22 @@ const SPEED_STEP_SECONDS = 0.01;
 
 type AnimatedSpeed = { curve: KeyframeBuilder; sourceOffsets: Float64Array };
 
+/** Resolves with the event that ended the seek, or undefined when the element wasn't seeking. */
+function seekVideo(video: HTMLVideoElement, time: number): Promise<string | undefined> {
+	return new Promise(resolve => {
+		const events = ["seeked", "abort", "emptied", "error"];
+		const onSettled = (event?: Event) => {
+			for (const type of events) video.removeEventListener(type, onSettled);
+			resolve(event?.type);
+		};
+		for (const type of events) video.addEventListener(type, onSettled);
+		// eslint-disable-next-line no-param-reassign -- seeking is the point
+		if (Math.abs(video.currentTime - time) > 0.01) video.currentTime = time;
+		// A seek already under way (from the playhead tick) still has to finish before its frame can be read.
+		if (!video.seeking) onSettled();
+	});
+}
+
 export function createAnimatedSpeed(tweens: VideoAsset["speed"], length: number): AnimatedSpeed | null {
 	if (!Array.isArray(tweens) || tweens.length === 0) return null;
 	const [first] = [...tweens].sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
@@ -151,6 +167,12 @@ export class VideoPlayer extends Player {
 		}
 	}
 
+	public override async prepareStaticRender(): Promise<void> {
+		const video = this.texture?.source.resource;
+		// Export swaps in a decoded canvas frame; only a live element can still be mid-seek.
+		if (video instanceof HTMLVideoElement) await seekVideo(video, this.getSourceTime());
+	}
+
 	public override dispose(): void {
 		this.disposeVideo();
 		this.clearPlaceholder();
@@ -250,22 +272,10 @@ export class VideoPlayer extends Player {
 		}
 
 		if (video instanceof HTMLVideoElement) {
-			const sourceTime = this.getSourceTime();
-			if (Math.abs(video.currentTime - sourceTime) > 0.01) {
-				const outcome = await new Promise<string | undefined>(resolve => {
-					const events = ["seeked", "abort", "emptied", "error"];
-					const onSettled = (event?: Event) => {
-						for (const type of events) video.removeEventListener(type, onSettled);
-						resolve(event?.type);
-					};
-					for (const type of events) video.addEventListener(type, onSettled);
-					video.currentTime = sourceTime;
-					if (!video.seeking) onSettled();
-				});
-				// Disposal and source replacement cancel the seek without producing a frame.
-				if (this.texture?.source.resource !== video || outcome === "abort" || outcome === "emptied") return;
-				if (outcome === "error") throw new Error("Video seeking failed.");
-			}
+			const outcome = await seekVideo(video, this.getSourceTime());
+			// Disposal and source replacement cancel the seek without producing a frame.
+			if (this.texture?.source.resource !== video || outcome === "abort" || outcome === "emptied") return;
+			if (outcome === "error") throw new Error("Video seeking failed.");
 		}
 
 		this.sprite = new pixi.Sprite(this.texture);
