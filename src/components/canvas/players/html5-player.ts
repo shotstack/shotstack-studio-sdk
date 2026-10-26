@@ -375,20 +375,28 @@ export class Html5Player extends Player {
 		this.captureFramesDone = 0;
 
 		const blobs: Blob[] = [];
+		// The SVG is a frame's whole input, so an identical one draws identical bytes and shares the previous frame's Blob.
+		let lastSvg = "";
+		let lastFrame: Promise<Blob> | null = null;
 		for (let i = 0; i < frameCount; i += CAPTURE_CONCURRENCY) {
 			await nextFrame();
 			if (stale()) return null;
-			const batch: Promise<Uint8Array>[] = [];
+			const batch: Promise<Blob>[] = [];
 			for (let j = i; j < Math.min(i + CAPTURE_CONCURRENCY, frameCount); j += 1) {
 				this.seekHarness(j / fps);
 				forceLayout(this.iframe.contentDocument.body);
-				batch.push(foreignObjectSvgToWebp(this.captureIframeAsForeignObjectSvg(W, H), W, H));
+				const svg = this.captureIframeAsForeignObjectSvg(W, H);
+				if (!lastFrame || svg !== lastSvg) {
+					lastSvg = svg;
+					lastFrame = foreignObjectSvgToWebp(svg, W, H).then(bytes => new Blob([bytes as BlobPart], { type: "image/webp" }));
+				}
+				batch.push(lastFrame);
 			}
 			const frames = await Promise.all(batch);
 			if (stale()) return null;
 			for (const frame of frames) {
 				this.captureFramesDone += 1;
-				blobs.push(new Blob([frame as BlobPart], { type: "image/webp" }));
+				blobs.push(frame);
 			}
 		}
 
