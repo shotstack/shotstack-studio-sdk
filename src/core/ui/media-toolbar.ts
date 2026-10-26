@@ -11,7 +11,6 @@ import {
 } from "@core/animations/opacity-keyframes";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
-import { hasKeyframedVisualProperty } from "@core/shared/clip-utils";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import type { ResolvedClip } from "@schemas";
@@ -949,20 +948,16 @@ export class MediaToolbar extends BaseToolbar {
 		const fps = this.edit.getOutputFps();
 		const currentPoint = localTime === null ? undefined : findOpacityPoint(visiblePoints, localTime, fps);
 
-		const hasEffect = Boolean(clip.effect);
-		const hasTransition = Boolean(clip.transition?.in || clip.transition?.out);
-		const hasPreset = hasEffect || hasTransition;
 		const animated = Array.isArray(clip.opacity) || (points?.length ?? 0) > 0;
 		let disabledReason = "";
 		if (!editable) disabledReason = "This opacity animation can be previewed but not edited";
 		else if (isBound) disabledReason = "Remove the merge field before keyframing opacity";
-		else if (hasPreset) disabledReason = "Remove the clip effect or transition before keyframing opacity";
 		else if (localTime === null) disabledReason = "Move the playhead over the clip to edit opacity keyframes";
 		else if (currentPoint && points?.length === 2 && points.some(point => point !== currentPoint && point.time > clip.length + TIME_EPSILON)) {
 			disabledReason = "Extend the clip before removing this keyframe";
 		}
 
-		this.opacitySlider?.setEnabled(!isBound && editable && (!animated || (!hasPreset && localTime !== null)));
+		this.opacitySlider?.setEnabled(!isBound && editable && (!animated || localTime !== null));
 
 		if (this.opacityKeyframeBtn) {
 			let state: keyof typeof KEYFRAME_BUTTON_STATES = "static";
@@ -979,23 +974,6 @@ export class MediaToolbar extends BaseToolbar {
 		const navigationTime = this.edit.playbackTime - clip.start;
 		if (this.opacityPreviousKeyframeBtn) this.opacityPreviousKeyframeBtn.disabled = !findOpacityPoint(visiblePoints, navigationTime, fps, -1);
 		if (this.opacityNextKeyframeBtn) this.opacityNextKeyframeBtn.disabled = !findOpacityPoint(visiblePoints, navigationTime, fps, 1);
-
-		// Only committed keyframes gate presets. An armed-but-unwritten point has no
-		// document presence, so gating on it would disable controls with nothing to undo.
-		const hasVisualKeyframes = hasKeyframedVisualProperty(clip);
-		this.setPresetButtonEnabled(this.effectBtn, !(hasVisualKeyframes && !hasEffect), "Effects can't be combined with keyframes in the editor");
-		this.setPresetButtonEnabled(
-			this.transitionBtn,
-			!(hasVisualKeyframes && !hasTransition),
-			"Transitions can't be combined with keyframes in the editor"
-		);
-	}
-
-	private setPresetButtonEnabled(button: HTMLButtonElement | null, enabled: boolean, disabledReason: string): void {
-		if (!button) return;
-		Object.assign(button, { disabled: !enabled, title: enabled ? "" : disabledReason });
-		if (enabled) button.removeAttribute("aria-label");
-		else button.setAttribute("aria-label", disabledReason);
 	}
 
 	// ─── Two-Phase Drag Helpers ──────────────────────────────────────────────────
@@ -1076,7 +1054,7 @@ export class MediaToolbar extends BaseToolbar {
 		let opacity: ResolvedClip["opacity"] = nextValue;
 		if (points.length > 0) {
 			const localTime = this.opacityDragTime ?? this.getOpacityTime(clip);
-			if (localTime === null || clip.effect || clip.transition?.in || clip.transition?.out) {
+			if (localTime === null) {
 				this.syncOpacityState(clip);
 				return;
 			}
@@ -1107,14 +1085,7 @@ export class MediaToolbar extends BaseToolbar {
 
 		const points = this.getOpacityPoints(clip, clipId);
 		const localTime = this.getOpacityTime(clip);
-		if (
-			points === null ||
-			localTime === null ||
-			this.getShotstackEdit()?.getMergeFieldForProperty(clipId, "opacity") ||
-			clip.effect ||
-			clip.transition?.in ||
-			clip.transition?.out
-		) {
+		if (points === null || localTime === null || this.getShotstackEdit()?.getMergeFieldForProperty(clipId, "opacity")) {
 			this.syncOpacityState(clip);
 			return;
 		}
@@ -1329,15 +1300,6 @@ export class MediaToolbar extends BaseToolbar {
 
 	private applyTransitionUpdate(): void {
 		const transition = this.transitionPanel?.getClipValue();
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (clip && hasKeyframedVisualProperty(clip)) {
-			const changesIn = Boolean(transition?.in && transition.in !== clip.transition?.in);
-			const changesOut = Boolean(transition?.out && transition.out !== clip.transition?.out);
-			if (changesIn || changesOut) {
-				this.transitionPanel?.setFromClip(clip.transition);
-				return;
-			}
-		}
 		this.applyClipUpdate({ transition });
 	}
 
@@ -1345,11 +1307,6 @@ export class MediaToolbar extends BaseToolbar {
 
 	private applyEffect(): void {
 		const effectValue = this.effectPanel?.getClipValue();
-		const clip = this.edit.getResolvedClip(this.selectedTrackIdx, this.selectedClipIdx);
-		if (effectValue && clip && hasKeyframedVisualProperty(clip)) {
-			this.effectPanel?.setFromClip(clip.effect);
-			return;
-		}
 		this.applyClipUpdate({ effect: effectValue });
 	}
 

@@ -508,27 +508,64 @@ describe("MediaToolbar", () => {
 			toolbar.dispose();
 		});
 
-		it("blocks effects and transitions while opacity is animated", () => {
+		it("offers effects and transitions while opacity is animated", () => {
 			const mockEdit = createMockEditSession();
 			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
 
 			const { toolbar, parent } = mountToolbar(mockEdit);
 			toolbar.show(0, 0);
 
-			expect((parent.querySelector('[data-action="effect"]') as HTMLButtonElement).disabled).toBe(true);
-			expect((parent.querySelector('[data-action="transition"]') as HTMLButtonElement).disabled).toBe(true);
+			expect((parent.querySelector('[data-action="effect"]') as HTMLButtonElement).disabled).toBe(false);
+			expect((parent.querySelector('[data-action="transition"]') as HTMLButtonElement).disabled).toBe(false);
 			toolbar.dispose();
 		});
 
-		it("blocks keyframe activation while a preset is present", () => {
+		it("adds an effect and a transition to a clip with animated opacity", () => {
 			const mockEdit = createMockEditSession();
-			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ effect: "zoomIn" }));
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			(parent.querySelector('[data-effect-type="zoom"]') as HTMLButtonElement).click();
+			(parent.querySelector('[data-effect="fade"]') as HTMLButtonElement).click();
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, { effect: expect.stringMatching(/^zoom/) });
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, { transition: expect.objectContaining({ in: "fade" }) });
+			toolbar.dispose();
+		});
+
+		it("keyframes opacity on a clip with an effect and a transition", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 1;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ effect: "zoomIn", transition: { in: "fade" } }));
 
 			const { toolbar, parent } = mountToolbar(mockEdit);
 			toolbar.show(0, 0);
 			const keyframe = parent.querySelector("[data-opacity-keyframe]") as HTMLButtonElement;
-			expect(keyframe.disabled).toBe(true);
-			expect(keyframe.title).toContain("effect or transition");
+			expect(keyframe.disabled).toBe(false);
+			keyframe.click();
+			mockEdit.playbackTime = 3;
+			keyframe.click();
+
+			expect(mockEdit.updateClip).toHaveBeenCalledWith(0, 0, { opacity: expect.arrayContaining([expect.objectContaining({ start: 1, length: 2 })]) });
+			toolbar.dispose();
+		});
+
+		it("auto-keys a slider drag on an animated clip with a transition", () => {
+			const mockEdit = createMockEditSession();
+			mockEdit.playbackTime = 2;
+			mockEdit.getResolvedClip.mockReturnValue(createImageClip({ opacity: opacityTweens, transition: { in: "fade" } }));
+
+			const { toolbar, parent } = mountToolbar(mockEdit);
+			toolbar.show(0, 0);
+			const range = parent.querySelector("[data-opacity-slider-mount] input[type='range']") as HTMLInputElement;
+			range.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+			range.value = "40";
+			range.dispatchEvent(new Event("input", { bubbles: true }));
+			range.dispatchEvent(new Event("change", { bubbles: true }));
+
+			const update = mockEdit.updateClipInDocument.mock.calls[0]?.[1];
+			expect(update?.opacity).toEqual(expect.arrayContaining([{ from: 0.2, to: 0.4, start: 1, length: 1, interpolation: "linear" }]));
 			toolbar.dispose();
 		});
 
