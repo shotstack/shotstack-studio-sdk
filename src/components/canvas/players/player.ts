@@ -651,9 +651,6 @@ export abstract class Player extends Entity {
 		clipMask.rect(-halfBorder, -halfBorder, clipWidth + borderWidth, clipHeight + borderWidth);
 		clipMask.fill(0xffffff);
 
-		// keep animation code exactly as-is
-		const currentUserScale = this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1;
-
 		sprite.anchor.set(0.5, 0.5);
 
 		// Use pure function for sprite transform calculation
@@ -663,10 +660,6 @@ export abstract class Player extends Entity {
 
 		sprite.scale.set(transform.scaleX, transform.scaleY);
 		sprite.position.set(transform.positionX, transform.positionY);
-
-		// 🟣 keep animation logic untouched
-		this.contentContainer.scale.set(currentUserScale, currentUserScale);
-		this.contentContainer.position.set((clipWidth / 2) * (1 - currentUserScale), (clipHeight / 2) * (1 - currentUserScale));
 	}
 
 	protected applyAnchorPositioning(anchor: string, clipWidth: number, clipHeight: number, sprite: pixi.Sprite): void {

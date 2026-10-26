@@ -348,6 +348,21 @@ describe("media player fallbacks", () => {
 		expect((player.getContentContainer().children[0] as { __placeholder?: boolean }).__placeholder).toBe(true);
 	});
 
+	it.each([
+		["static", 0.3],
+		["keyframed", [{ from: 1, to: 0.3, start: 0, length: 0.5 }]]
+	])("applies a %s scale once to a clip with width and height", async (_, scale) => {
+		const edit = createEdit();
+		edit.playbackTime = 1.5;
+		edit.assetLoader.load.mockResolvedValueOnce(new pixi.Texture({ source: new pixi.ImageSource({}), width: 1920, height: 1080 } as never));
+		const player = new ImagePlayer(edit as never, { ...createImageClip(), width: 1080, height: 1080, length: 2, scale } as ResolvedClip);
+		await player.load();
+
+		player.applyPlayheadState();
+
+		expect(player.getContainer().scale.x * player.getContentContainer().scale.x).toBeCloseTo(0.3);
+	});
+
 	it("replaces a failed video placeholder after a successful reload", async () => {
 		const edit = createEdit();
 		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(createVideoTexture(1280, 720));
