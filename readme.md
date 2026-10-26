@@ -187,6 +187,18 @@ const edit = new Edit(templateJson, { html5Prerender: "on-play" });
 
 Captured frames are the same either way. Until the edit plays, the canvas shows each `html5` clip as a still of its frame at the playhead, in its layer and with its effects. Playback stays choppy until the frames are ready, so keep the default, `"on-load"`, for an edit that someone watches.
 
+`edit.getPendingCaptures()` returns `{ pending, total }`: how many `html5` clips are still preparing smooth playback, out of those that will play pre-rendered frames. Failed clips, and an `"on-play"` edit's clips before it plays, count in neither. The timeline shows this beside its play button. A player of your own can read it on the capture events:
+
+```typescript
+const showPreparing = () => {
+  const { pending, total } = edit.getPendingCaptures();
+  status.textContent = pending > 0 ? `Preparing smooth playback · ${total - pending} of ${total} ready` : "";
+};
+edit.events.on("clip:captureStarted", showPreparing);
+edit.events.on("clip:captureCompleted", showPreparing);
+edit.events.on("clip:captureFailed", showPreparing);
+```
+
 #### Events
 
 Listen using string event names:
@@ -221,6 +233,9 @@ Available event names:
 | Duration | `duration:changed` |
 | Output | `output:resized`, `output:resolutionChanged`, `output:aspectRatioChanged`, `output:fpsChanged`, `output:formatChanged`, `output:destinationsChanged` |
 | Merge fields | `mergefield:changed` |
+| `html5` pre-rendering | `clip:captureStarted`, `clip:captureCompleted`, `clip:captureFailed` |
+
+A failed capture's `fallback` is `"static-placeholder"` when the clip shows a placeholder, or `"scaled-frames"` when a sharper pre-render failed and the clip keeps its current frames.
 
 ### Generating assets from prompts
 

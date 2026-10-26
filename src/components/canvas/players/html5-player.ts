@@ -1,6 +1,7 @@
 import { Player, PlayerType } from "@canvas/players/player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
+import type { PlaybackReadiness } from "@core/pending-captures";
 import type { ResolvedTiming } from "@core/timing/types";
 import { type Size } from "@layouts/geometry";
 import type { ResolvedClip } from "@schemas";
@@ -781,8 +782,8 @@ export class Html5Player extends Player {
 		} catch (err) {
 			if (this.disposed || this.contentHash !== newHash) return;
 			console.warn("[Html5Player] reload iframe load failed:", err);
-			this.emitCaptureFailed(err, "static-placeholder");
 			this.transitionToFailed();
+			this.emitCaptureFailed(err, "static-placeholder");
 		}
 	}
 
@@ -813,6 +814,16 @@ export class Html5Player extends Player {
 		this.contentContainer.removeChild(this.fallbackGraphic);
 		this.fallbackGraphic.destroy();
 		this.fallbackGraphic = null;
+	}
+
+	public override getPlaybackReadiness(): PlaybackReadiness {
+		if (this.disposed || this.fallbackGraphic) return null;
+		// Frames count from adoption, when captureCompleted fires; playback takes over a decode later, with no event.
+		const adopted = !!this.capturedFrames && this.capturedHash === `${this.contentHash}@${this.capturedScale}`;
+		if (adopted || this.mode === "playback") return "ready";
+		if (this.mode === "capturing") return "pending";
+		// An edit that pre-renders on play bakes nothing until it plays.
+		return this.edit.getHtml5Prerender() === "on-load" || this.hasTriggeredCapture ? "pending" : null;
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -851,7 +862,9 @@ export class Html5Player extends Player {
 				if (this.disposed || this.contentHash !== hashAtStart) return;
 				const fresh = !!frames && frames.length > 0 && this.capturedHash === `${hashAtStart}@${this.capturedScale}`;
 				if (!fresh) {
-					if (this.mode === "capturing") this.transitionToFailed();
+					if (this.mode !== "capturing") return;
+					this.transitionToFailed();
+					this.emitCaptureFailed(new Error("The capture produced no frames"), "static-placeholder");
 					return;
 				}
 				await this.transitionToPlayback();
@@ -859,8 +872,9 @@ export class Html5Player extends Player {
 			.catch(err => {
 				if (this.disposed || this.contentHash !== hashAtStart) return;
 				console.warn("[Html5Player] capture failed:", err);
-				this.emitCaptureFailed(err, "static-placeholder");
+				// Listeners redraw on the failure, so the clip shows it first.
 				if (this.mode === "capturing") this.transitionToFailed();
+				this.emitCaptureFailed(err, "static-placeholder");
 			});
 	}
 

@@ -110,6 +110,7 @@ type PlayerHarness = {
 	beginCapture(): void;
 	renderStill(seconds: number): Promise<unknown>;
 	transitionToPlayback(): Promise<void>;
+	transitionToFailed(): void;
 };
 
 function createPlayer() {
@@ -152,6 +153,74 @@ afterEach(() => {
 	jest.clearAllMocks();
 	jest.useRealTimers();
 	document.body.replaceChildren();
+});
+
+it.each([
+	["mounting in an on-load edit", { mode: "editing" }, "on-load", "pending"],
+	["capturing", { mode: "capturing" }, "on-load", "pending"],
+	["stale after a content or length change", { mode: "stale" }, "on-load", "pending"],
+	["playing baked frames, even during a sharper re-bake", { mode: "playback", rebakeStarted: true }, "on-load", "ready"],
+	["an on-play edit before its play", { mode: "editing" }, "on-play", null],
+	["an on-play edit once its bake is triggered", { mode: "editing", hasTriggeredCapture: true }, "on-play", "pending"]
+])("reports playback readiness when %s", (_, state, prerender, expected) => {
+	const { player, edit } = createPlayer();
+	Object.assign(edit, { getHtml5Prerender: () => prerender });
+	Object.assign(player, state);
+
+	expect(player.getPlaybackReadiness()).toBe(expected);
+});
+
+it("reports ready once its frames are adopted, before playback takes over", () => {
+	const { player, harness } = createPlayer();
+	Object.assign(player, { mode: "capturing", capturedScale: 1 });
+	harness.capturedFrames = [new Blob(["baked 0"])];
+	harness.capturedHash = `${harness.contentHash}@1`;
+
+	expect(player.getPlaybackReadiness()).toBe("ready");
+});
+
+// A listener that redraws on the failure must already see the clip as failed.
+function readinessWhenFailureAnnounced(player: Html5Player, events: { emit: jest.Mock }): unknown[] {
+	const seen: unknown[] = [];
+	events.emit.mockImplementation((name: string) => {
+		if (name === EditEvent.ClipCaptureFailed) seen.push(player.getPlaybackReadiness());
+	});
+	return seen;
+}
+
+it.each([
+	["a bake that throws", (harness: PlayerHarness) => jest.spyOn(harness, "captureFrames").mockRejectedValue(new Error("bake failed"))],
+	["a bake that yields no frames", (harness: PlayerHarness) => jest.spyOn(harness, "captureFrames").mockResolvedValue(null)]
+])("announces %s only once the clip reports no readiness", async (_, fail) => {
+	const { player, harness, events } = createPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	const seen = readinessWhenFailureAnnounced(player, events);
+	fail(harness);
+
+	harness.beginCapture();
+	await until(() => seen.length === 1);
+
+	expect(seen).toEqual([null]);
+});
+
+it("announces a failed reload only once the clip reports no readiness", async () => {
+	const { player, harness, events } = createPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+	canvasLib.findHtml5IngestUrls.mockReturnValueOnce([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockRejectedValueOnce(new Error("ingest failed"));
+	const seen = readinessWhenFailureAnnounced(player, events);
+
+	await player.reloadAsset();
+
+	expect(seen).toEqual([null]);
+});
+
+it("reports no playback readiness after a failed bake", () => {
+	const { player, harness } = createPlayer();
+	harness.transitionToFailed();
+
+	expect(player.getPlaybackReadiness()).toBeNull();
 });
 
 it("ignores a capture decode failure after its content has been replaced", async () => {
