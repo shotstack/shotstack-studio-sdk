@@ -440,6 +440,15 @@ describe("animated speed", () => {
 		expect(player.getSourceTime()).toBeCloseTo(1, 3);
 	});
 
+	it("bridges a gap between speed tweens linearly, whatever the next tween's interpolation", () => {
+		const speed: Tween[] = [
+			{ from: 1, to: 1, start: 0, length: 0.5 },
+			{ from: 3, to: 3, start: 1, length: 1, interpolation: "constant" }
+		];
+		// 0.5 s at 1× then 0.5 s ramping 1× → 3×
+		expect(new VideoPlayer(createMockEdit(1), createAnimatedSpeedClipConfig(speed)).getSourceTime()).toBeCloseTo(1.5, 2);
+	});
+
 	it("freezes at trim when the speed is 0", () => {
 		const player = new VideoPlayer(createMockEdit(1), createAnimatedSpeedClipConfig([{ from: 0, to: 0, start: 0, length: 2 }], 4));
 		expect(player.getSourceTime()).toBeCloseTo(4, 5);

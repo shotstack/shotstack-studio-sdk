@@ -186,7 +186,7 @@ export class AudioPlayer extends Player {
 	private rebuildVolumeKeyframeBuilder(): void {
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
 		const baseVolume = this.getBaseVolume();
-		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume), this.getLength(), baseVolume);
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume));
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {

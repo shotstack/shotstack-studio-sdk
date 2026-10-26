@@ -132,11 +132,15 @@ export class CurveInterpolator {
 		};
 	}
 
-	public getValue(from: number, to: number, progress: number, easing?: string): number {
+	/** An easing's handles, leaving the start then entering the end; the render reads an unknown name as `ease`. */
+	public getHandles(easing?: string): number[][] {
+		return this.curves[easing ?? ""] ?? this.curves["ease"];
+	}
+
+	public getValue(from: number, to: number, progress: number, handles: number[][]): number {
 		if (progress <= 0) return from;
 		if (progress >= 1) return to;
 
-		const handles = this.curves[easing ?? ""] ?? this.curves["ease"];
 		const [[controlPoint1X, controlPoint1Y], [controlPoint2X, controlPoint2Y]] = handles;
 
 		// Standard cubic-bezier timing function: solve the X-axis bezier for t at this progress,
