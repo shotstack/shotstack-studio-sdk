@@ -19,21 +19,3 @@ export function stripInternalProperties(clip: Clip): Clip {
 export function isKeyframedValue(value: unknown): boolean {
 	return Boolean(value) && typeof value !== "number";
 }
-
-/**
- * True when any visual property is keyframed or bound.
- *
- * The toolbars keep effects and transitions off such clips, so they must agree on
- * the property list; keep this the only copy.
- */
-export function hasKeyframedVisualProperty(clip: Clip): boolean {
-	return [
-		clip.opacity,
-		clip.scale,
-		clip.offset?.x,
-		clip.offset?.y,
-		clip.transform?.rotate?.angle,
-		clip.transform?.skew?.x,
-		clip.transform?.skew?.y
-	].some(isKeyframedValue);
-}
