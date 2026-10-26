@@ -41,6 +41,10 @@ jest.mock("@canvas/players/player", () => ({
 		update() {
 			return this;
 		}
+
+		dispose() {
+			return this;
+		}
 	},
 	PlayerType: { Html5: "html5" }
 }));
@@ -81,6 +85,7 @@ type PlayerHarness = {
 	contentHash: string;
 	capturedHash: string | null;
 	capturedFrames: Blob[] | null;
+	clipConfiguration: { width?: number; height?: number };
 	contentContainer: { children: unknown[] };
 	captureIframeAsForeignObjectSvg(width: number, height: number, iframe?: HTMLIFrameElement | null): string;
 	captureFrames(): Promise<Blob[] | null>;
@@ -88,7 +93,7 @@ type PlayerHarness = {
 	seekHarness(seconds: number, win?: Window | null): void;
 	hashAsset(): Promise<string>;
 	beginCapture(): void;
-	syncIframePosition(): void;
+	renderStill(seconds: number): Promise<unknown>;
 	transitionToPlayback(): Promise<void>;
 };
 
@@ -115,6 +120,7 @@ function createPlayer() {
 		contentContainer: {
 			children,
 			addChild: (child: unknown) => children.push(child),
+			addChildAt: (child: unknown, index: number) => children.splice(index, 0, child),
 			removeChild: (child: unknown) => children.splice(children.indexOf(child), 1)
 		},
 		configureKeyframes: jest.fn(),
@@ -243,9 +249,6 @@ it("keeps a failed capture inside its canvas layer and retries only after the as
 	const { player, harness, iframe, events, edit } = createPlayer();
 	jest.spyOn(console, "warn").mockImplementation(() => {});
 	const capture = jest.spyOn(harness, "captureFrames").mockRejectedValue(new Error("The source image cannot be decoded."));
-	const sync = jest.spyOn(harness, "syncIframePosition").mockImplementation(() => {
-		iframe.style.left = "0px";
-	});
 
 	harness.beginCapture();
 	await new Promise(resolve => {
@@ -257,8 +260,6 @@ it("keeps a failed capture inside its canvas layer and retries only after the as
 	player.update(0, 0);
 	await player.prepareStaticRender();
 
-	expect(iframe.style.left).toBe("-10000px");
-	expect(sync).not.toHaveBeenCalled();
 	expect(capture).toHaveBeenCalledTimes(1);
 	expect(harness.contentContainer.children).toEqual([expect.objectContaining({ kind: "failed" })]);
 	expect(events.emit).toHaveBeenCalledWith(EditEvent.ClipCaptureFailed, expect.objectContaining({ fallback: "static-placeholder" }));
@@ -435,6 +436,7 @@ it("leaves an in-flight capture's page alone when a reload finishes inlining lat
 	const { player, harness, iframe, edit } = createPlayer();
 	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
 	const beginCapture = jest.spyOn(harness, "beginCapture");
+	jest.spyOn(harness, "renderStill").mockResolvedValue(null);
 	jest.spyOn(harness as unknown as { runCapture(): Promise<Blob[] | null> }, "runCapture").mockImplementation(() => {
 		iframe.srcdoc = "<p>capture</p>";
 		return new Promise(() => {});
@@ -519,7 +521,7 @@ it("renders a still from its own page without waiting for the clip's capture", a
 
 	await player.prepareStaticRender();
 
-	const [loading, sprite] = harness.contentContainer.children as [{ visible?: boolean }, StaticSprite];
+	const [sprite, loading] = harness.contentContainer.children as [StaticSprite, { visible?: boolean }];
 	expect(serialise).toHaveBeenCalledTimes(1);
 	expect(serialise.mock.calls[0][2]).not.toBe(iframe);
 	expect(await frameMarkup(sprite.texture.source.blob)).toContain(">t=12.5<");
@@ -578,14 +580,282 @@ it("keeps a still taken mid-capture and the capture from changing each other's f
 	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
 });
 
+const until = async (condition: () => boolean, deadline = Date.now() + 2000): Promise<void> => {
+	if (condition()) return;
+	if (Date.now() > deadline) throw new Error(`timed out waiting for ${condition}`);
+	await flush();
+	await until(condition, deadline);
+};
+const layer = (harness: PlayerHarness) => harness.contentContainer.children as Array<StaticSprite & { visible?: boolean }>;
+const stillShown = (harness: PlayerHarness) => () => layer(harness).some(child => child.texture?.source?.blob);
+const baking = (harness: PlayerHarness) => jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+
+it("shows the playhead's still while the clip bakes", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getLength: () => 60, getPlaybackTime: () => 12.5 });
+	baking(harness);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+
+	expect(layer(harness)).toHaveLength(1);
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=12.5<");
+});
+
+it("renders only the newest playhead position after a burst of moves", async () => {
+	const { player, harness, seeks } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	[0.1, 0.5, 0.9, 1.3].forEach(t => {
+		Object.assign(player, { getPlaybackTime: () => t });
+		player.update(0, 0);
+	});
+	await until(() => seeks.includes("still 1.3"));
+
+	expect(seeks.filter(seek => seek.startsWith("still"))).toEqual(["still 0.1", "still 1.3"]);
+	expect(layer(harness)).toHaveLength(1);
+});
+
+it("tries a failed still once more, but not on every tick", async () => {
+	const { player, harness } = createStillPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	baking(harness);
+	harness.beginCapture();
+	const still = jest.spyOn(harness, "renderStill").mockRejectedValueOnce(new Error("iframe load timed out"));
+	player.update(0, 0);
+	await until(stillShown(harness));
+	expect(still).toHaveBeenCalledTimes(2);
+
+	still.mockResolvedValue(null);
+	Object.assign(player, { getPlaybackTime: () => 1 });
+	player.update(0, 0);
+	await flush();
+	player.update(0, 0);
+	player.update(0, 0);
+	await flush();
+	expect(still).toHaveBeenCalledTimes(4);
+});
+
+it("keeps showing stills after one fails to mount", async () => {
+	const { player, harness, seeks } = createStillPlayer();
+	const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+	Object.assign(harness.clipConfiguration, { width: 540, height: 960 });
+	const fit = jest.fn().mockImplementationOnce(() => {
+		throw new Error("fit failed");
+	});
+	Object.assign(player, { applyFixedDimensions: fit });
+	player.update(0, 0);
+	await until(() => fit.mock.calls.length === 1);
+	Object.assign(player, { getPlaybackTime: () => 1 });
+	player.update(0, 0);
+	await until(() => seeks.includes("still 1"));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=1<");
+	expect(warn).toHaveBeenCalledWith("[Html5Player] still failed:", expect.objectContaining({ message: "fit failed" }));
+});
+
+it("swaps the still for baked frames once the bake finishes", async () => {
+	const { player, harness } = createStillPlayer();
+	let finish: (frames: Blob[]) => void = () => {};
+	jest.spyOn(harness, "captureFrames").mockImplementation(
+		() =>
+			new Promise(resolve => {
+				finish = resolve;
+			})
+	);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const still = layer(harness)[0];
+	harness.capturedFrames = [new Blob(["baked 0"])];
+	harness.capturedHash = harness.contentHash;
+	finish(harness.capturedFrames);
+	await until(() => !layer(harness).includes(still));
+
+	expect(still.texture.destroy).toHaveBeenCalled();
+	expect(layer(harness)).toHaveLength(1);
+});
+
+it("switches from the still to the playhead's baked frame", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 1 });
+	let finish: (frames: Blob[]) => void = () => {};
+	jest.spyOn(harness, "captureFrames").mockImplementation(
+		() =>
+			new Promise(resolve => {
+				finish = resolve;
+			})
+	);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const still = layer(harness)[0];
+	harness.capturedFrames = Array.from({ length: 60 }, (_, i) => new Blob([`baked ${i}`]));
+	harness.capturedHash = harness.contentHash;
+	finish(harness.capturedFrames);
+	await until(() => !layer(harness).includes(still));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toBe("baked 30");
+});
+
+it("replaces the still with the placeholder when the bake fails", async () => {
+	const { player, harness } = createStillPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	let fail: (error: Error) => void = () => {};
+	jest.spyOn(harness, "captureFrames").mockImplementation(
+		() =>
+			new Promise((_, reject) => {
+				fail = reject;
+			})
+	);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const still = layer(harness)[0];
+	fail(new Error("The source image cannot be decoded."));
+	await until(() => !layer(harness).includes(still));
+
+	expect(still.texture.destroy).toHaveBeenCalled();
+	expect(layer(harness)).toEqual([expect.objectContaining({ kind: "failed" })]);
+});
+
+it("shows a still again after the clip's content changes", async () => {
+	const { player, harness } = createStillPlayer();
+	harness.capturedFrames = [new Blob(["baked 0"])];
+	harness.capturedHash = harness.contentHash;
+	await harness.transitionToPlayback();
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+	baking(harness);
+	await player.reloadAsset();
+	player.update(0, 0);
+	await until(stillShown(harness));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0<");
+});
+
+it("keeps a capture to one copy of the clip while a still is showing", async () => {
+	const { player, harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const live = layer(harness)[0];
+
+	await player.prepareStaticRender();
+	expect(live.visible).toBe(false);
+	expect(layer(harness)).toHaveLength(2);
+	player.endStaticRender();
+	expect(live.visible).toBe(true);
+	expect(layer(harness)).toEqual([live]);
+});
+
+it("fits a capture's sprite, not the hidden still, to a clip with its own size", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(harness.clipConfiguration, { width: 540, height: 960 });
+	// applyFixedDimensions fits the layer's first sprite.
+	const fitted: unknown[] = [];
+	Object.assign(player, { applyFixedDimensions: () => fitted.push(layer(harness).find(child => child.texture)) });
+	baking(harness);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const live = layer(harness)[0];
+	await player.prepareStaticRender();
+
+	expect(fitted.at(-1)).toBe(layer(harness).find(child => child !== live));
+});
+
+it("takes a capture's still from the live still at the same frame", async () => {
+	const { player, harness, seeks } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	player.update(0, 0);
+	await player.prepareStaticRender();
+	player.endStaticRender();
+	await player.prepareStaticRender();
+
+	expect(seeks.filter(seek => seek.startsWith("still"))).toEqual(["still 0"]);
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0<");
+});
+
+it.each([
+	["renders nothing", () => Promise.resolve(null)],
+	["throws", () => Promise.reject(new Error("iframe load timed out"))]
+])("leaves the clip blank in a capture whose still %s", async (_, fail) => {
+	const { player, harness } = createStillPlayer();
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	baking(harness);
+	harness.beginCapture();
+	const still = jest.spyOn(harness, "renderStill").mockImplementation(fail);
+	await player.prepareStaticRender();
+	const [loading] = layer(harness);
+	expect(loading.visible).toBe(false);
+	player.endStaticRender();
+	expect(loading.visible).toBe(true);
+
+	still.mockRestore();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const [live] = layer(harness);
+	jest.spyOn(harness, "renderStill").mockImplementation(fail);
+	await player.prepareStaticRender();
+	expect(layer(harness)).toEqual([live]);
+	expect(live.visible).toBe(false);
+	player.endStaticRender();
+	expect(live.visible).toBe(true);
+});
+
+it("keeps a still that arrives during a capture out of it", async () => {
+	const { player, harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	await player.prepareStaticRender();
+	player.update(0, 0);
+	await until(() => layer(harness).filter(child => child.texture?.source?.blob).length === 2);
+	const live = layer(harness)[1];
+
+	expect(live.visible).toBe(false);
+	player.endStaticRender();
+	expect(live.visible).toBe(true);
+	expect(layer(harness)).toEqual([live]);
+});
+
+it("shows a still of the changed content before an on-play edit plays", async () => {
+	const { player, harness, edit } = createStillPlayer();
+	Object.assign(edit, { getHtml5Prerender: () => "on-play" });
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const old = layer(harness)[0];
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("updated");
+	await player.reloadAsset();
+	player.update(0, 0);
+	await until(() => layer(harness).some(child => child !== old && child.texture?.source?.blob));
+
+	expect(old.texture.destroy).toHaveBeenCalled();
+	expect(layer(harness)).toHaveLength(1);
+});
+
+it("destroys the still with the player", async () => {
+	const { player, harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	player.update(0, 0);
+	await until(stillShown(harness));
+	const still = layer(harness)[0] as StaticSprite & { destroy: jest.Mock };
+	player.dispose();
+
+	expect(still.destroy).toHaveBeenCalled();
+	expect(still.texture.destroy).toHaveBeenCalled();
+});
+
 function createMountingPlayer(html5Prerender: "on-load" | "on-play") {
 	const created = createPlayer();
 	Object.assign(created.edit, { getOutputFps: () => 30, getCanvas: () => null, getHtml5Prerender: () => html5Prerender });
 	Object.assign(created.player, { iframe: null });
-	jest.spyOn(created.harness, "syncIframePosition").mockImplementation(() => {});
+	const still = jest.spyOn(created.harness, "renderStill").mockResolvedValue(null);
 	jest.spyOn(created.harness, "seekHarness").mockImplementation(() => {});
 	const capture = jest.spyOn(created.harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
-	return { ...created, capture };
+	return { ...created, capture, still };
 }
 
 it("pre-renders a clip as soon as it loads by default", async () => {
@@ -710,4 +980,15 @@ it("keeps the newer key when an older reload's digest finishes last", async () =
 
 	expect(harness.contentHash).toBe("newer");
 	expect(beginCapture).toHaveBeenCalledTimes(1);
+});
+
+it("shows stills, not the live page, before an on-play edit plays", async () => {
+	const { player, harness, capture, still } = createMountingPlayer("on-play");
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("mounted");
+	await player.load();
+	player.update(0, 0);
+
+	expect(still).toHaveBeenCalledWith(0);
+	expect(harness.iframe.style.left).toBe("-10000px");
+	expect(capture).not.toHaveBeenCalled();
 });
