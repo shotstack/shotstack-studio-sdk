@@ -1,4 +1,4 @@
-import { type AnimationKeyframe, type NumericKeyframe } from "@schemas";
+import { type Keyframe, type NumericKeyframe } from "@schemas";
 
 import { CurveInterpolator } from "./curve-interpolator";
 
@@ -13,14 +13,17 @@ export const TIME_EPSILON = 1e-6;
 /** A curve point as the render keeps them: a segment takes its right point's interpolation and the handles facing into it. */
 type Point = { time: number; value: number; interpolation: NumericKeyframe["interpolation"]; handleLeft: number[]; handleRight: number[] };
 
+/** A point a preset adds, with the render's default handles. `value` is absolute, or added to the curve's value at `at`. */
+export type PresetPoint = { time: number; value: number; interpolation: NonNullable<Point["interpolation"]>; at?: number };
+
 const curves = new CurveInterpolator();
 // The render gives every point its default curve's handles unless a tween sets them.
 const [DEFAULT_RIGHT, DEFAULT_LEFT] = curves.getHandles("smooth");
 
 export class KeyframeBuilder {
-	private readonly points: Point[];
+	private points: Point[];
 
-	constructor(value: AnimationKeyframe[] | number) {
+	constructor(value: Keyframe[] | number) {
 		this.points = this.createPoints(value);
 	}
 
@@ -43,7 +46,16 @@ export class KeyframeBuilder {
 		}
 	}
 
-	private createPoints(value: AnimationKeyframe[] | number): Point[] {
+	/** Adds a preset as the render does: every value is read before any point is added, and a point replaces any at its time. */
+	public addPresetPoints(points: PresetPoint[]): void {
+		const values = points.map(point => point.value + (point.at === undefined ? 0 : this.getValue(point.at)));
+		points.forEach(({ time, interpolation }, index) => {
+			const point = { time, value: values[index], interpolation, handleLeft: DEFAULT_LEFT, handleRight: DEFAULT_RIGHT };
+			this.points = [...this.points.filter(existing => Math.abs(existing.time - time) > TIME_EPSILON), point].sort((a, b) => a.time - b.time);
+		});
+	}
+
+	private createPoints(value: Keyframe[] | number): Point[] {
 		if (typeof value === "number") {
 			return [{ time: 0, value, interpolation: "constant", handleLeft: DEFAULT_LEFT, handleRight: DEFAULT_RIGHT }];
 		}
@@ -67,9 +79,9 @@ export class KeyframeBuilder {
 		});
 	}
 
-	private createNormalizedKeyframes(keyframes: AnimationKeyframe[]): NumericKeyframe[] {
+	private createNormalizedKeyframes(keyframes: Keyframe[]): NumericKeyframe[] {
 		return keyframes
-			.filter((kf): kf is AnimationKeyframe & { start: number; length: number } => Number.isFinite(kf.start) && Number.isFinite(kf.length))
+			.filter((kf): kf is Keyframe & { start: number; length: number } => Number.isFinite(kf.start) && Number.isFinite(kf.length))
 			.sort((a, b) => a.start - b.start)
 			.map(keyframe => ({
 				start: keyframe.start,
