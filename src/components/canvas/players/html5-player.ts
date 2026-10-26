@@ -26,7 +26,10 @@ type HarnessWindow = Window & {
 	["__shotstackSeek"]?: (ms: number) => void;
 };
 const SEEK_KEY = "__shotstackSeek" as const;
-const CAPTURE_CONCURRENCY = 4;
+// A frame's work varies by machine and by whether the frame is held, so the loop yields by time.
+const CAPTURE_SLICE_MS = 12;
+// A frame in flight holds a full-size canvas until toBlob takes its pixels.
+const CAPTURE_MEMORY_BUDGET_BYTES = 256 * 1024 * 1024;
 
 function forceLayout(el: HTMLElement): void {
 	el.getBoundingClientRect();
@@ -77,6 +80,11 @@ async function foreignObjectSvgToWebp(svg: string, width: number, height: number
 	});
 	if (!blob) throw new Error(`canvas.toBlob returned null — taint? (svg bytes=${svg.length})`);
 	return new Uint8Array(await blob.arrayBuffer());
+}
+
+export function captureFramesInFlight(logicalCores: number | undefined, frameBytes: number): number {
+	const byCores = Math.min(Math.max(logicalCores ?? 4, 4), 16);
+	return Math.max(1, Math.min(byCores, Math.floor(CAPTURE_MEMORY_BUDGET_BYTES / frameBytes)));
 }
 
 /**
@@ -374,29 +382,38 @@ export class Html5Player extends Player {
 		this.captureFramesTotal = frameCount;
 		this.captureFramesDone = 0;
 
+		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, W * H * 4);
 		const blobs: Blob[] = [];
+		const pending: Promise<Blob>[] = [];
 		// The SVG is a frame's whole input, so an identical one draws identical bytes and shares the previous frame's Blob.
 		let lastSvg = "";
 		let lastFrame: Promise<Blob> | null = null;
-		for (let i = 0; i < frameCount; i += CAPTURE_CONCURRENCY) {
-			await nextFrame();
-			if (stale()) return null;
-			const batch: Promise<Blob>[] = [];
-			for (let j = i; j < Math.min(i + CAPTURE_CONCURRENCY, frameCount); j += 1) {
-				this.seekHarness(j / fps);
+		let issued = 0;
+		let sliceStart = -Infinity;
+		// Frames publish in order, so the oldest in flight gates the window.
+		while (blobs.length < frameCount) {
+			if (issued < frameCount && pending.length < framesInFlight) {
+				if (performance.now() - sliceStart >= CAPTURE_SLICE_MS) {
+					await nextFrame();
+					if (stale()) return null;
+					sliceStart = performance.now();
+				}
+				this.seekHarness(issued / fps);
 				forceLayout(this.iframe.contentDocument.body);
 				const svg = this.captureIframeAsForeignObjectSvg(W, H);
 				if (!lastFrame || svg !== lastSvg) {
 					lastSvg = svg;
 					lastFrame = foreignObjectSvgToWebp(svg, W, H).then(bytes => new Blob([bytes as BlobPart], { type: "image/webp" }));
+					// Marks a queued frame's failure handled; awaiting it rethrows.
+					lastFrame.catch(() => undefined);
 				}
-				batch.push(lastFrame);
-			}
-			const frames = await Promise.all(batch);
-			if (stale()) return null;
-			for (const frame of frames) {
-				this.captureFramesDone += 1;
+				pending.push(lastFrame);
+				issued += 1;
+			} else {
+				const frame = await pending.shift()!;
+				if (stale()) return null;
 				blobs.push(frame);
+				this.captureFramesDone += 1;
 			}
 		}
 

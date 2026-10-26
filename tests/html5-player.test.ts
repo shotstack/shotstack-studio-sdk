@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { Html5Player } from "@canvas/players/html5-player";
+import { Html5Player, captureFramesInFlight } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas";
@@ -41,9 +41,9 @@ const canvasLib = jest.requireMock("@shotstack/shotstack-canvas") as {
 	inlineHtml5IngestAssets: jest.Mock;
 };
 const INGEST_URL = "https://shotstack-ingest-api-v1-sources.s3.ap-southeast-2.amazonaws.com/owner/src/source.png";
-const flush = () =>
+const flush = (ms = 0) =>
 	new Promise(resolve => {
-		setTimeout(resolve, 0);
+		setTimeout(resolve, ms);
 	});
 jest.mock("@canvas/players/html5-cache", () => ({
 	html5CacheGet: jest.fn(async () => null),
@@ -571,6 +571,135 @@ it("draws a frame only when the page changed, reusing the last frame's blob", as
 	expect(toBlob).toHaveBeenCalledTimes(16);
 	expect(frames[59]).toBe(frames[15]);
 	expect(await frameMarkup(frames[59])).toContain('data-t="0.5"');
+});
+
+it.each([
+	[undefined, 4],
+	[2, 4],
+	[4, 4],
+	[8, 8],
+	[10, 10],
+	[32, 16]
+])("keeps frames in flight for %p logical cores: %p", (cores, expected) => {
+	expect(captureFramesInFlight(cores, 1920 * 1080 * 4)).toBe(expected);
+});
+
+it("caps frames in flight so their canvases fit in 256 MiB", () => {
+	expect(captureFramesInFlight(16, 3840 * 2160 * 4)).toBe(8);
+});
+
+const until = async (condition: () => boolean, deadline = Date.now() + 2000): Promise<void> => {
+	if (condition()) return;
+	if (Date.now() > deadline) throw new Error(`timed out waiting for ${condition}`);
+	await flush(5);
+	await until(condition, deadline);
+};
+
+const holdToBlob = () => {
+	const toBlob = jest.mocked(HTMLCanvasElement.prototype.toBlob);
+	const draw = toBlob.getMockImplementation()!;
+	const held: Array<() => void> = [];
+	// The stand-in encodes whatever was drawn last, so each frame is encoded as it is held.
+	toBlob.mockImplementation(function hold(this: HTMLCanvasElement, done, ...rest) {
+		draw.call(this, blob => held.push(() => done(blob)), ...rest);
+	});
+	const releaseAll = () => {
+		toBlob.mockImplementation(draw);
+		held.splice(0).forEach(release => release());
+	};
+	return { held, releaseAll };
+};
+
+it.each([
+	[100, 100, 12, 12],
+	[3840, 2160, 16, 8]
+])("draws ahead of the oldest unfinished frame up to the in-flight limit at %ix%i on %i cores: %i", async (width, height, cores, inFlight) => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { renderedWidth: width, renderedHeight: height });
+	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(cores);
+	const { held, releaseAll } = holdToBlob();
+
+	const capture = harness.runCapture();
+	await until(() => held.length >= inFlight);
+	await flush(100); // a window that overdraws would draw its extra frame within a frame or two
+	expect(held).toHaveLength(inFlight);
+	held.shift()!();
+	await until(() => held.length >= inFlight);
+	await flush(100);
+	expect(held).toHaveLength(inFlight);
+
+	releaseAll();
+	const frames = (await capture)!;
+	expect(frames).toHaveLength(60);
+	const markup = await Promise.all(frames.map(frameMarkup));
+	expect(markup.map(frame => /data-t="([^"]*)"/.exec(frame)?.[1])).toEqual(Array.from({ length: 60 }, (_, i) => String(i / 30)));
+});
+
+it("returns no frames when the content changes while frames are in flight", async () => {
+	const { harness } = createStillPlayer();
+	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(4);
+	const { held, releaseAll } = holdToBlob();
+
+	const capture = harness.runCapture();
+	await until(() => held.length >= 4);
+	harness.contentHash = "changed";
+	releaseAll();
+
+	expect(await capture).toBeNull();
+	expect(harness.capturedFrames).toBeNull();
+});
+
+it("returns no frames when the content changes while a clip shorter than the window is in flight", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getLength: () => 0.05 }); // 2 frames: fewer than the smallest window
+	const { held, releaseAll } = holdToBlob();
+
+	const capture = harness.runCapture();
+	await until(() => held.length >= 2);
+	harness.contentHash = "changed";
+	releaseAll();
+
+	expect(await capture).toBeNull();
+	expect(harness.capturedFrames).toBeNull();
+});
+
+const countYields = () =>
+	jest.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
+		callback(0);
+		return 0;
+	});
+
+it("yields once per time slice, not per frame, when every frame is held", async () => {
+	const { harness } = createStillPlayer();
+	const seek = jest.mocked(harness.seekHarness);
+	const write = seek.getMockImplementation()!;
+	seek.mockImplementation((_seconds, win) => write(0, win));
+	jest.spyOn(performance, "now").mockReturnValue(1000);
+	const yields = countYields();
+
+	expect(await harness.runCapture()).toHaveLength(60);
+	expect(yields).toHaveBeenCalledTimes(1 + 1); // the page load, then the first frame
+});
+
+it("yields before every frame when each frame outlasts the time slice", async () => {
+	const { harness } = createStillPlayer();
+	let clock = 0;
+	jest.spyOn(performance, "now").mockImplementation(() => {
+		clock += 13;
+		return clock;
+	});
+	const yields = countYields();
+
+	expect(await harness.runCapture()).toHaveLength(60);
+	expect(yields).toHaveBeenCalledTimes(1 + 60); // the page load, then each frame
+});
+
+it("rejects once on a failed frame, leaving no unhandled rejections from the frames behind it", async () => {
+	const { harness } = createStillPlayer();
+	jest.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementation(done => done(null));
+
+	await expect(harness.runCapture()).rejects.toThrow("canvas.toBlob returned null");
+	await flush(); // the runtime reports unhandled rejections a task after they settle
 });
 
 function createMountingPlayer(html5Prerender: "on-load" | "on-play") {
