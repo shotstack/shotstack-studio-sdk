@@ -1,14 +1,21 @@
 /** @jest-environment jsdom */
 
-import { Html5Player, captureFramesInFlight } from "@canvas/players/html5-player";
+import { Html5Player, bakeScaleFor, captureFramesInFlight } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip } from "@schemas";
 
 // Canvas rendering is unavailable in jsdom; the HTML5 DOM and state transitions stay real.
 jest.mock("pixi.js", () => ({
+	Matrix: jest.fn(),
 	Sprite: jest.fn((texture: unknown) => ({ texture, destroy: jest.fn() })),
-	Texture: { from: (source: unknown) => ({ source, destroy: jest.fn() }) }
+	Texture: {
+		from: (source: { resource?: unknown; resolution?: number }) => ({
+			source: source.resource ?? source,
+			resolution: source.resolution,
+			destroy: jest.fn()
+		})
+	}
 }));
 jest.mock("@canvas/players/player", () => ({
 	Player: class {
@@ -45,9 +52,16 @@ const flush = (ms = 0) =>
 	new Promise(resolve => {
 		setTimeout(resolve, ms);
 	});
+const until = async (condition: () => boolean, deadline = Date.now() + 2000): Promise<void> => {
+	if (condition()) return;
+	if (Date.now() > deadline) throw new Error(`timed out waiting for ${condition}`);
+	await flush(5);
+	await until(condition, deadline);
+};
+
 jest.mock("@canvas/players/html5-cache", () => ({
 	html5CacheGet: jest.fn(async () => null),
-	html5CachePut: async () => undefined
+	html5CachePut: jest.fn(async () => undefined)
 }));
 const cacheLib = jest.requireMock("@canvas/players/html5-cache") as { html5CacheGet: jest.Mock };
 jest.mock("@canvas/players/placeholder-graphic", () => ({
@@ -60,14 +74,17 @@ type PlayerHarness = {
 	contentHash: string;
 	capturedHash: string | null;
 	capturedFrames: Blob[] | null;
+	clipConfiguration: { width?: number; height?: number };
 	contentContainer: { children: unknown[] };
 	captureIframeAsForeignObjectSvg(width: number, height: number, iframe?: HTMLIFrameElement | null): string;
-	captureFrames(): Promise<Blob[] | null>;
-	runCapture(): Promise<Blob[] | null>;
+	captureInFlight: Promise<Blob[] | null> | null;
+	captureFrames(minScale?: number): Promise<Blob[] | null>;
+	runCapture(minScale?: number): Promise<Blob[] | null>;
 	seekHarness(seconds: number, win?: Window | null): void;
 	hashAsset(): Promise<string>;
 	beginCapture(): void;
 	syncIframePosition(): void;
+	renderStill(seconds: number): Promise<unknown>;
 	transitionToPlayback(): Promise<void>;
 };
 
@@ -78,7 +95,8 @@ function createPlayer() {
 		isPlaying: false,
 		getHtml5Prerender: () => "on-load",
 		getInternalEvents: () => events,
-		getResolvedEdit: () => ({ output: { resolution: "hd" } })
+		getResolvedEdit: () => ({ output: { resolution: "hd" } }),
+		getCanvas: () => null
 	};
 	const clip = { id: "background", start: 0, length: 60, asset: { type: "html5", html: "<div>Background</div>" } };
 	const player = new Html5Player(edit as unknown as Edit, clip as ResolvedClip);
@@ -94,7 +112,9 @@ function createPlayer() {
 		contentContainer: {
 			children,
 			addChild: (child: unknown) => children.push(child),
-			removeChild: (child: unknown) => children.splice(children.indexOf(child), 1)
+			addChildAt: (child: unknown, index: number) => children.splice(index, 0, child),
+			removeChild: (child: unknown) => children.splice(children.indexOf(child), 1),
+			getGlobalTransform: () => ({ a: 1, b: 0, c: 0, d: 1 })
 		},
 		configureKeyframes: jest.fn(),
 		isActive: () => true,
@@ -105,6 +125,7 @@ function createPlayer() {
 
 afterEach(() => {
 	jest.restoreAllMocks();
+	jest.clearAllMocks();
 	jest.useRealTimers();
 	document.body.replaceChildren();
 });
@@ -113,7 +134,7 @@ it("ignores a capture decode failure after its content has been replaced", async
 	const { harness, events } = createPlayer();
 	jest.spyOn(console, "warn").mockImplementation(() => {});
 	harness.capturedFrames = [new Blob()];
-	harness.capturedHash = harness.contentHash;
+	harness.capturedHash = `${harness.contentHash}@1`;
 	jest.spyOn(harness, "transitionToPlayback").mockRejectedValue(new Error("decode failed"));
 
 	harness.beginCapture();
@@ -157,9 +178,7 @@ it("captures from a freshly loaded document rather than the live-edited one", as
 	});
 
 	const capture = harness.captureFrames();
-	await new Promise(resolve => {
-		setTimeout(resolve, 0);
-	});
+	await until(() => iframe.srcdoc === "<html><body>Updated</body></html>");
 	iframe.dispatchEvent(new Event("load"));
 
 	await expect(capture).rejects.toThrow("stop after first seek");
@@ -498,7 +517,7 @@ it("renders a still from its own page without waiting for the clip's capture", a
 
 	await player.prepareStaticRender();
 
-	const [loading, sprite] = harness.contentContainer.children as [{ visible?: boolean }, StaticSprite];
+	const [sprite, loading] = harness.contentContainer.children as [StaticSprite, { visible?: boolean }];
 	expect(serialise).toHaveBeenCalledTimes(1);
 	expect(serialise.mock.calls[0][2]).not.toBe(iframe);
 	expect(await frameMarkup(sprite.texture.source.blob)).toContain(">t=12.5<");
@@ -519,7 +538,7 @@ it("takes a still from captured frames, in memory or cached, without rendering o
 	player.endStaticRender();
 
 	harness.capturedFrames = [new Blob(["baked 0"]), new Blob(["baked 1"])];
-	harness.capturedHash = harness.contentHash;
+	harness.capturedHash = `${harness.contentHash}@1`;
 	await player.prepareStaticRender();
 	const baked = harness.contentContainer.children[0] as StaticSprite;
 	expect(await frameMarkup(baked.texture.source.blob)).toBe("baked 1");
@@ -587,13 +606,6 @@ it.each([
 it("caps frames in flight so their canvases fit in 256 MiB", () => {
 	expect(captureFramesInFlight(16, 3840 * 2160 * 4)).toBe(8);
 });
-
-const until = async (condition: () => boolean, deadline = Date.now() + 2000): Promise<void> => {
-	if (condition()) return;
-	if (Date.now() > deadline) throw new Error(`timed out waiting for ${condition}`);
-	await flush(5);
-	await until(condition, deadline);
-};
 
 const holdToBlob = () => {
 	const toBlob = jest.mocked(HTMLCanvasElement.prototype.toBlob);
@@ -678,7 +690,7 @@ it("yields once per time slice, not per frame, when every frame is held", async 
 	const yields = countYields();
 
 	expect(await harness.runCapture()).toHaveLength(60);
-	expect(yields).toHaveBeenCalledTimes(1 + 1); // the page load, then the first frame
+	expect(yields).toHaveBeenCalledTimes(2 + 1); // the scale read and the page load, then the first frame
 });
 
 it("yields before every frame when each frame outlasts the time slice", async () => {
@@ -691,7 +703,7 @@ it("yields before every frame when each frame outlasts the time slice", async ()
 	const yields = countYields();
 
 	expect(await harness.runCapture()).toHaveLength(60);
-	expect(yields).toHaveBeenCalledTimes(1 + 60); // the page load, then each frame
+	expect(yields).toHaveBeenCalledTimes(2 + 60); // the scale read and the page load, then each frame
 });
 
 it("rejects once on a failed frame, leaving no unhandled rejections from the frames behind it", async () => {
@@ -700,6 +712,273 @@ it("rejects once on a failed frame, leaving no unhandled rejections from the fra
 
 	await expect(harness.runCapture()).rejects.toThrow("canvas.toBlob returned null");
 	await flush(); // the runtime reports unhandled rejections a task after they settle
+});
+
+it.each([
+	[0.1, 0.25],
+	[0.46, 0.5],
+	[0.5, 0.5],
+	[0.51, 0.75],
+	[0.9, 1],
+	[2, 1]
+])("bakes a clip shown at %p of its size at %p", (onScreen, expected) => {
+	expect(bakeScaleFor(onScreen)).toBe(expected);
+});
+
+const shownAt = (harness: PlayerHarness, scale: number) =>
+	Object.assign(harness.contentContainer, { getGlobalTransform: () => ({ a: scale, b: 0, c: 0, d: scale }) });
+
+type PlaybackSprite = { visible?: boolean; texture: { source: { blob: Blob }; resolution?: number; destroy: jest.Mock } };
+
+it("draws frames at the bake scale and sizes their texture back to the clip", async () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { renderedWidth: 1080, renderedHeight: 1920 });
+	shownAt(harness, 0.46);
+	const drawImage = jest.fn();
+	jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage } as never);
+
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+
+	expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 540, 960);
+	expect((harness.contentContainer.children.at(-1) as PlaybackSprite).texture.resolution).toBe(0.5);
+});
+
+it("draws a full-size frame of a fractional clip size as an unscaled draw does", async () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { renderedWidth: 1080.6, renderedHeight: 1920.4 });
+	const drawImage = jest.fn();
+	const canvases: number[][] = [];
+	jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function context(this: HTMLCanvasElement) {
+		canvases.push([this.width, this.height]);
+		return { drawImage } as never;
+	});
+
+	await harness.runCapture();
+
+	expect(canvases[0]).toEqual([1080, 1920]);
+	expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 0, 1080.6, 1920.4);
+});
+
+it("plays a cached bake without reloading the page", async () => {
+	const { harness } = createStillPlayer();
+	const pngs = [new Blob(["cached 0"])];
+	cacheLib.html5CacheGet.mockResolvedValueOnce({ pngs, fps: 30, frameCount: 1 });
+
+	expect(await harness.runCapture()).toBe(pngs);
+	expect(cacheLib.html5CacheGet).toHaveBeenCalledWith("original@1");
+	expect(canvasLib.composeHtml5IframeSrcdoc).not.toHaveBeenCalled();
+});
+
+it("keys each bake by its scale", async () => {
+	const { harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	await harness.runCapture();
+	expect(jest.requireMock("@canvas/players/html5-cache").html5CachePut).toHaveBeenCalledWith("original@0.5", expect.anything());
+});
+
+it("keeps stills and captures at full resolution while a scaled bake exists", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(harness, { capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5 });
+	const serialise = jest.spyOn(harness, "captureIframeAsForeignObjectSvg");
+
+	await player.prepareStaticRender();
+
+	expect(serialise).toHaveBeenCalledTimes(1);
+	expect(cacheLib.html5CacheGet).toHaveBeenCalledWith("original@1");
+});
+
+it("hides a scaled bake's sprite while a capture's still is up, with the still first", async () => {
+	const { player, harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+	const playback = harness.contentContainer.children[0] as PlaybackSprite;
+
+	await player.prepareStaticRender();
+
+	const [still] = harness.contentContainer.children as [PlaybackSprite];
+	expect(still).not.toBe(playback);
+	expect(still.texture.resolution).toBeUndefined();
+	expect(playback.visible).toBe(false);
+	player.endStaticRender();
+	expect(harness.contentContainer.children).toEqual([playback]);
+	expect(playback.visible).toBe(true);
+});
+
+it("leaves a scaled bake hidden when a capture's still fails", async () => {
+	const { player, harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+	const playback = harness.contentContainer.children[0] as PlaybackSprite;
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	jest.spyOn(harness, "captureIframeAsForeignObjectSvg").mockImplementation(() => {
+		throw new Error("serialise failed");
+	});
+
+	await player.prepareStaticRender();
+
+	expect(harness.contentContainer.children).toEqual([playback]);
+	expect(playback.visible).toBe(false);
+
+	player.endStaticRender();
+	expect(playback.visible).toBe(true);
+	jest.spyOn(harness, "renderStill").mockResolvedValue(null);
+	await player.prepareStaticRender();
+	expect(playback.visible).toBe(false);
+	player.endStaticRender();
+	expect(playback.visible).toBe(true);
+});
+
+it("keeps a scaled bake on screen until a capture's still is ready", async () => {
+	const { player, harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+	const playback = harness.contentContainer.children[0] as PlaybackSprite;
+	let finish: (texture: unknown) => void = () => {};
+	jest.spyOn(harness, "renderStill").mockImplementation(
+		() =>
+			new Promise(resolve => {
+				finish = resolve;
+			})
+	);
+
+	const capture = player.prepareStaticRender();
+	await flush();
+	expect(playback.visible).toBe(true);
+	finish({ destroy: jest.fn() });
+	await capture;
+	expect(playback.visible).toBe(false);
+	expect(harness.contentContainer.children).toHaveLength(2);
+});
+
+it("keeps a bake that finishes during a capture hidden behind the capture's still", async () => {
+	const { player, harness } = createStillPlayer();
+	await player.prepareStaticRender();
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+	const [, playback] = harness.contentContainer.children as [PlaybackSprite, PlaybackSprite];
+
+	expect(playback.visible).toBe(false);
+	player.endStaticRender();
+	expect(harness.contentContainer.children).toEqual([playback]);
+	expect(playback.visible).toBe(true);
+});
+
+it("re-bakes once at the higher scale when the clip is shown larger", async () => {
+	const { player, harness, events } = createStillPlayer();
+	Object.assign(harness, { capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5, mode: "playback" });
+	shownAt(harness, 0.8);
+	const capture = jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+	Object.assign(player, { isActive: () => false });
+	player.update(0, 0);
+	expect(capture).not.toHaveBeenCalled();
+
+	Object.assign(player, { isActive: () => true });
+	player.update(0, 0);
+	shownAt(harness, 0.3);
+	player.update(0, 0);
+	expect(capture).toHaveBeenCalledTimes(1);
+	expect(capture).toHaveBeenCalledWith(1);
+	expect(events.emit).toHaveBeenCalledWith(EditEvent.ClipCaptureStarted, expect.anything());
+
+	// The clip zoomed back out before the bake read its scale: the bake keeps its target, and doesn't re-arm.
+	await harness.runCapture(1);
+	shownAt(harness, 0.8);
+	player.update(0, 0);
+	expect(harness.capturedHash).toBe("original@1");
+	expect(capture).toHaveBeenCalledTimes(1);
+});
+
+it("re-bakes once when a clip is resized larger", () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(harness, {
+		renderedWidth: 1080,
+		renderedHeight: 1920,
+		capturedFrames: [new Blob(["baked 0"])],
+		capturedHash: "original@0.5",
+		capturedScale: 0.5,
+		mode: "playback"
+	});
+	shownAt(harness, 0.4);
+	const capture = jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+	player.update(0, 0);
+	expect(capture).not.toHaveBeenCalled();
+
+	Object.assign(harness.clipConfiguration, { width: 2160, height: 1920 });
+	player.update(0, 0);
+	player.update(0, 0);
+	expect(capture).toHaveBeenCalledTimes(1);
+	expect(capture).toHaveBeenCalledWith(1);
+});
+
+it("reports a failed re-bake and keeps the frames it has", async () => {
+	const { player, harness, events } = createStillPlayer();
+	const frames = [new Blob(["baked 0"])];
+	Object.assign(harness, { capturedFrames: frames, capturedHash: "original@0.5", capturedScale: 0.5, mode: "playback" });
+	shownAt(harness, 0.8);
+	jest.spyOn(console, "warn").mockImplementation(() => {});
+	jest.spyOn(harness, "captureFrames").mockRejectedValue(new Error("re-bake failed"));
+
+	player.update(0, 0);
+	await flush();
+
+	expect(events.emit).toHaveBeenCalledWith(
+		EditEvent.ClipCaptureFailed,
+		expect.objectContaining({ error: "re-bake failed", fallback: "scaled-frames" })
+	);
+	expect(harness.capturedFrames).toBe(frames);
+});
+
+it("drops a re-bake queued for content that has since changed, leaving the newer capture in flight", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(harness, { capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5, mode: "playback" });
+	shownAt(harness, 0.8);
+	const { captureChain } = Html5Player as unknown as { captureChain: Promise<unknown> };
+	let drain = () => {};
+	Object.assign(Html5Player, {
+		captureChain: new Promise<void>(resolve => {
+			drain = resolve;
+		})
+	});
+	try {
+		player.update(0, 0);
+		const rebake = harness.captureInFlight!;
+
+		jest.spyOn(harness, "hashAsset").mockResolvedValue("changed");
+		shownAt(harness, 0.3);
+		await player.reloadAsset();
+		const newer = harness.captureInFlight;
+		expect(newer).not.toBeNull();
+		drain();
+		await rebake;
+		expect(harness.captureInFlight).toBe(newer);
+
+		await newer;
+		const { html5CachePut } = jest.requireMock("@canvas/players/html5-cache");
+		expect(html5CachePut).toHaveBeenCalledWith("changed@0.5", expect.anything());
+		expect(html5CachePut).not.toHaveBeenCalledWith("changed@1", expect.anything());
+	} finally {
+		Object.assign(Html5Player, { captureChain });
+	}
+});
+
+it("swaps a sharper bake in under the frame on screen and frees the earlier one", async () => {
+	const { harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+	const sprite = harness.contentContainer.children[0] as PlaybackSprite;
+	const earlier = sprite.texture;
+
+	shownAt(harness, 0.8);
+	await harness.runCapture();
+
+	expect(earlier.destroy).toHaveBeenCalled();
+	expect(sprite.texture.resolution).toBe(1);
+	expect(await frameMarkup(sprite.texture.source.blob)).toContain('data-t="0"');
 });
 
 function createMountingPlayer(html5Prerender: "on-load" | "on-play") {
