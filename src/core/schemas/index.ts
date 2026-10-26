@@ -122,8 +122,8 @@ export type ExtendedCaptionAsset = CaptionAsset & {
 // ─── Internal Animation Types ───────────────────────────────────────────────
 // Keyframes with all required fields and numeric values for animation interpolation
 
-/** A tween as the animation code reads it. */
-export type AnimationKeyframe = Tween;
+/** A tween as the animation code reads it. `smooth` is the render's default curve, which its presets use. */
+export type AnimationKeyframe = Omit<Tween, "easing"> & { easing?: Tween["easing"] | "smooth" };
 
 export interface NumericKeyframe {
 	start: number;
