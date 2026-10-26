@@ -172,8 +172,8 @@ export class Canvas {
 			this.currentZoom = Math.min(Math.max(newZoom, this.minZoom), this.maxZoom);
 
 			const stageCenter = {
-				x: this.application.canvas.width / 2,
-				y: this.application.canvas.height / 2
+				x: this.viewportSize.width / 2,
+				y: this.viewportSize.height / 2
 			};
 
 			const distanceFromCenter = {
@@ -239,9 +239,10 @@ export class Canvas {
 			return;
 		}
 
+		// In CSS pixels: the canvas element's own width counts device pixels.
 		this.viewportContainer.position = {
-			x: this.application.canvas.width / 2 - (this.edit.size.width * this.currentZoom) / 2,
-			y: this.application.canvas.height / 2 - (this.edit.size.height * this.currentZoom) / 2
+			x: this.viewportSize.width / 2 - (this.edit.size.width * this.currentZoom) / 2,
+			y: this.viewportSize.height / 2 - (this.edit.size.height * this.currentZoom) / 2
 		};
 
 		this.syncContentTransforms();
@@ -380,7 +381,9 @@ export class Canvas {
 			target,
 			...(frame ? { frame } : {}),
 			format: pixiFormat,
-			quality: options.quality ?? 0.85
+			quality: options.quality ?? 0.85,
+			// Captures stay in output pixels whatever the screen's density.
+			resolution: 1
 		});
 	}
 
@@ -623,6 +626,9 @@ export class Canvas {
 			width: this.viewportSize.width,
 			height: this.viewportSize.height,
 			antialias: true,
+			// Draws at the screen's pixel density, so text and frames stay sharp on phones and retina screens. 2 caps the fill cost on 3x phones.
+			resolution: Math.min(window.devicePixelRatio || 1, 2),
+			autoDensity: true,
 			powerPreference: "high-performance",
 			eventFeatures: {
 				globalMove: true, // Required for drag handling in SelectionHandles
