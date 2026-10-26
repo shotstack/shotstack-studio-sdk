@@ -580,6 +580,22 @@ it("keeps a still taken mid-capture and the capture from changing each other's f
 	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
 });
 
+it("draws a frame only when the page changed, reusing the last frame's blob", async () => {
+	const { harness } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	const seek = jest.mocked(harness.seekHarness);
+	const write = seek.getMockImplementation()!;
+	seek.mockImplementation((seconds, win) => write(Math.min(seconds, 0.5), win));
+	const toBlob = jest.mocked(HTMLCanvasElement.prototype.toBlob);
+	toBlob.mockClear();
+
+	const frames = (await harness.runCapture())!;
+
+	expect(frames).toHaveLength(60);
+	expect(toBlob).toHaveBeenCalledTimes(16);
+	expect(frames[59]).toBe(frames[15]);
+	expect(await frameMarkup(frames[59])).toContain('data-t="0.5"');
+});
+
 const until = async (condition: () => boolean, deadline = Date.now() + 2000): Promise<void> => {
 	if (condition()) return;
 	if (Date.now() > deadline) throw new Error(`timed out waiting for ${condition}`);
