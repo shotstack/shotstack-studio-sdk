@@ -10,109 +10,42 @@ import { CurveInterpolator } from "./curve-interpolator";
  */
 export const TIME_EPSILON = 1e-6;
 
+/** A curve point as the render keeps them: a segment takes its right point's interpolation and the handles facing into it. */
+type Point = { time: number; value: number; interpolation: NumericKeyframe["interpolation"]; handleLeft: number[]; handleRight: number[] };
+
+const curves = new CurveInterpolator();
+// The render gives every point its default curve's handles unless a tween sets them.
+const [DEFAULT_RIGHT, DEFAULT_LEFT] = curves.getHandles("smooth");
+
 export class KeyframeBuilder {
-	private readonly property: NumericKeyframe[];
-	private readonly length: number;
+	private readonly points: Point[];
 
-	private readonly cubicBuilder: CurveInterpolator;
-
-	private cachedIndex = 0;
-
-	constructor(value: AnimationKeyframe[] | number, length: number, initialValue = 0) {
-		this.property = this.createKeyframes(value, length, initialValue);
-		this.length = length;
-
-		this.cubicBuilder = new CurveInterpolator();
+	constructor(value: AnimationKeyframe[] | number) {
+		this.points = this.createPoints(value);
 	}
 
 	public getValue(time: number): number {
-		const keyframe = this.findKeyframe(time);
-		if (!keyframe) {
-			if (this.property.length > 0) {
-				if (time >= this.length) return this.property[this.property.length - 1].to;
-				if (time < 0) return this.property[0].from;
-			}
-			return 1;
-		}
+		const index = this.points.findLastIndex(point => point.time <= time);
+		const left = this.points[index];
+		const right = this.points[index + 1];
+		// Before the first point and after the last the curve holds that point's value; with no usable tween it reads 1.
+		if (!left || !right) return (left ?? right)?.value ?? 1;
 
-		const progress = (time - keyframe.start) / keyframe.length;
-		switch (keyframe.interpolation) {
+		const progress = (time - left.time) / (right.time - left.time);
+		switch (right.interpolation) {
 			case "bezier":
-				return this.cubicBuilder.getValue(keyframe.from, keyframe.to, progress, keyframe.easing);
+				return curves.getValue(left.value, right.value, progress, [left.handleRight, right.handleLeft]);
 			case "constant":
-				return keyframe.from;
+				return left.value;
 			case "linear":
 			default:
-				return keyframe.from + (keyframe.to - keyframe.from) * progress;
+				return left.value + (right.value - left.value) * progress;
 		}
 	}
 
-	private findKeyframe(time: number): NumericKeyframe | undefined {
-		const props = this.property;
-		if (props.length === 0) return undefined;
-
-		const cached = props[this.cachedIndex];
-		if (cached) {
-			const cachedEnd = cached.start + cached.length;
-			if (Number.isFinite(cachedEnd) && time >= cached.start && time < cachedEnd) {
-				return cached;
-			}
-		}
-
-		const nextIdx = this.cachedIndex + 1;
-		if (nextIdx < props.length) {
-			const next = props[nextIdx];
-			const nextEnd = next.start + next.length;
-			if (Number.isFinite(nextEnd) && time >= next.start && time < nextEnd) {
-				this.cachedIndex = nextIdx;
-				return next;
-			}
-		}
-
-		const prevIdx = this.cachedIndex - 1;
-		if (prevIdx >= 0) {
-			const prev = props[prevIdx];
-			const prevEnd = prev.start + prev.length;
-			if (Number.isFinite(prevEnd) && time >= prev.start && time < prevEnd) {
-				this.cachedIndex = prevIdx;
-				return prev;
-			}
-		}
-
-		const idx = this.binarySearchKeyframe(time);
-		if (idx !== -1) {
-			this.cachedIndex = idx;
-			return props[idx];
-		}
-
-		return undefined;
-	}
-
-	private binarySearchKeyframe(time: number): number {
-		const props = this.property;
-		let low = 0;
-		let high = props.length - 1;
-
-		while (low <= high) {
-			const mid = Math.floor((low + high) / 2);
-			const kf = props[mid];
-			const end = kf.start + kf.length;
-
-			if (!Number.isFinite(end) || time >= end) {
-				low = mid + 1;
-			} else if (time < kf.start) {
-				high = mid - 1;
-			} else {
-				return mid;
-			}
-		}
-
-		return -1;
-	}
-
-	private createKeyframes(value: AnimationKeyframe[] | number, length: number, initialValue = 0): NumericKeyframe[] {
+	private createPoints(value: AnimationKeyframe[] | number): Point[] {
 		if (typeof value === "number") {
-			return [{ start: 0, length, from: value, to: value }];
+			return [{ time: 0, value, interpolation: "constant", handleLeft: DEFAULT_LEFT, handleRight: DEFAULT_RIGHT }];
 		}
 
 		if (!value.length) {
@@ -124,12 +57,19 @@ export class KeyframeBuilder {
 		this.normaliseAdjacentBoundaries(normalizedKeyframes);
 		this.validateKeyframes(normalizedKeyframes);
 
-		return this.insertFillerKeyframes(normalizedKeyframes, length, initialValue);
+		// Adjacent tweens each keep a point at their shared time, so each keeps its own curve.
+		return normalizedKeyframes.flatMap(({ start, length, from, to, interpolation, easing }) => {
+			const [handleRight, handleLeft] = interpolation === "bezier" ? curves.getHandles(easing) : [DEFAULT_RIGHT, DEFAULT_LEFT];
+			return [
+				{ time: start, value: from, interpolation, handleLeft: DEFAULT_LEFT, handleRight },
+				{ time: start + length, value: to, interpolation, handleLeft, handleRight: DEFAULT_RIGHT }
+			];
+		});
 	}
 
 	private createNormalizedKeyframes(keyframes: AnimationKeyframe[]): NumericKeyframe[] {
 		return keyframes
-			.filter((kf): kf is AnimationKeyframe & { start: number; length: number } => typeof kf.start === "number" && typeof kf.length === "number")
+			.filter((kf): kf is AnimationKeyframe & { start: number; length: number } => Number.isFinite(kf.start) && Number.isFinite(kf.length))
 			.sort((a, b) => a.start - b.start)
 			.map(keyframe => ({
 				start: keyframe.start,
@@ -165,44 +105,5 @@ export class KeyframeBuilder {
 				throw new Error("Overlapping keyframes detected.");
 			}
 		}
-	}
-
-	private insertFillerKeyframes(keyframes: NumericKeyframe[], length: number, initialValue = 0): NumericKeyframe[] {
-		const updatedKeyframes: NumericKeyframe[] = [];
-
-		for (let i = 0; i < keyframes.length; i += 1) {
-			const current = keyframes[i];
-			const next = keyframes[i + 1];
-
-			const shouldFillStart = i === 0 && current.start > 0;
-			if (shouldFillStart) {
-				const fillerKeyframe: NumericKeyframe = { start: 0, length: current.start, from: initialValue, to: current.from };
-				updatedKeyframes.push(fillerKeyframe);
-			}
-
-			updatedKeyframes.push(current);
-
-			if (!next) {
-				const shouldFillEnd = length - (current.start + current.length) > 0;
-				if (shouldFillEnd) {
-					const currentStart = current.start + current.length;
-					const fillerKeyframe: NumericKeyframe = { start: currentStart, length: length - currentStart, from: current.to, to: current.to };
-
-					updatedKeyframes.push(fillerKeyframe);
-				}
-
-				break;
-			}
-
-			const shouldFillMiddle = next.start - (current.start + current.length) > 0;
-			if (shouldFillMiddle) {
-				const fillerStart = current.start + current.length;
-				const fillerLength = next.start - fillerStart;
-				const fillerKeyframe: NumericKeyframe = { start: fillerStart, length: fillerLength, from: current.to, to: next.from };
-				updatedKeyframes.push(fillerKeyframe);
-			}
-		}
-
-		return updatedKeyframes;
 	}
 }

@@ -98,7 +98,7 @@ export function encodeOpacityPoints(points: readonly OpacityPoint[], clipLength:
 
 export function evaluateOpacity(value: Clip["opacity"], localTime: number, clipLength: number): number | null {
 	try {
-		const evaluated = new KeyframeBuilder(value ?? 1, clipLength, 1).getValue(Math.max(0, Math.min(localTime, clipLength)));
+		const evaluated = new KeyframeBuilder(value ?? 1).getValue(Math.max(0, Math.min(localTime, clipLength)));
 		return Number.isFinite(evaluated) ? Math.max(0, Math.min(1, evaluated)) : null;
 	} catch {
 		return null;
