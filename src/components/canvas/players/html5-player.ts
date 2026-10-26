@@ -141,7 +141,9 @@ export class Html5Player extends Player {
 			css: asset.css ?? "",
 			js: asset.js ?? "",
 			width: this.renderedWidth,
-			height: this.renderedHeight
+			height: this.renderedHeight,
+			length: this.getLength(),
+			fps: this.captureFps
 		});
 	}
 
@@ -364,6 +366,7 @@ export class Html5Player extends Player {
 
 		const { frameCount } = computeHtml5FrameCount({
 			clipLengthSeconds: this.getLength(),
+			htmlContent: this.asset.html,
 			jsContent: this.asset.js,
 			cssContent: this.asset.css,
 			fps: this.captureFps
@@ -554,7 +557,13 @@ export class Html5Player extends Player {
 		const fps = cached?.fps ?? this.captureFps;
 		const frameCount =
 			cached?.pngs.length ??
-			computeHtml5FrameCount({ clipLengthSeconds: this.getLength(), jsContent: this.asset.js, cssContent: this.asset.css, fps }).frameCount;
+			computeHtml5FrameCount({
+				clipLengthSeconds: this.getLength(),
+				htmlContent: this.asset.html,
+				jsContent: this.asset.js,
+				cssContent: this.asset.css,
+				fps
+			}).frameCount;
 		// Seeking to the bake's frame time makes a still match the frame playback shows there.
 		const idx = Math.min(Math.max(0, Math.floor(seconds * fps)), frameCount - 1);
 		const blob = cached ? cached.pngs[idx] : await this.captureStillFrame(idx / fps, cacheKey, stale);

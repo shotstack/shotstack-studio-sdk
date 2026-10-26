@@ -46,10 +46,11 @@ const flush = () =>
 		setTimeout(resolve, 0);
 	});
 jest.mock("@canvas/players/html5-cache", () => ({
+	computeHtml5CacheKey: jest.fn(async () => "key"),
 	html5CacheGet: jest.fn(async () => null),
 	html5CachePut: async () => undefined
 }));
-const cacheLib = jest.requireMock("@canvas/players/html5-cache") as { html5CacheGet: jest.Mock };
+const cacheLib = jest.requireMock("@canvas/players/html5-cache") as { computeHtml5CacheKey: jest.Mock; html5CacheGet: jest.Mock };
 jest.mock("@canvas/players/placeholder-graphic", () => ({
 	createPlaceholderGraphic: () => ({ kind: "failed", destroy: jest.fn() }),
 	createCaptureLoadingGraphic: () => ({ container: { kind: "loading", destroy: jest.fn() }, setProgress: jest.fn() })
@@ -107,6 +108,13 @@ afterEach(() => {
 	jest.restoreAllMocks();
 	jest.useRealTimers();
 	document.body.replaceChildren();
+});
+
+it("keys a capture to the clip's length and frame rate", async () => {
+	const { player, harness } = createPlayer();
+	Object.assign(player, { captureFps: 25, getLength: () => 4 });
+	await harness.hashAsset();
+	expect(cacheLib.computeHtml5CacheKey).toHaveBeenLastCalledWith(expect.objectContaining({ length: 4, fps: 25 }));
 });
 
 it("ignores a capture decode failure after its content has been replaced", async () => {
