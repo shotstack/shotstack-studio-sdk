@@ -291,9 +291,10 @@ export class Html5Player extends Player {
 
 	// Captured frames are SVG images, which can't load remote files, so ingest files are inlined as data URIs.
 	// Callers await this only when the asset has ingest URLs, so other assets compose without yielding.
-	private async composeWithIngestFiles(asset: Html5Asset): Promise<string> {
+	// Every frame decodes its inlined images again, so a scaled bake inlines images sized for its scale.
+	private async composeWithIngestFiles(asset: Html5Asset, scale: number = 1): Promise<string> {
 		const longestEdge = html5ClipLongestEdge(this.clipConfiguration, this.edit.getResolvedEdit()?.output);
-		return composeHtml5IframeSrcdoc(await inlineHtml5IngestAssets(asset, longestEdge));
+		return composeHtml5IframeSrcdoc(await inlineHtml5IngestAssets(asset, longestEdge * scale));
 	}
 
 	private async mountIframe(asset: Html5Asset): Promise<void> {
@@ -442,7 +443,7 @@ export class Html5Player extends Player {
 		// An earlier capture may have seeked this iframe, and a seeked animation can leave state
 		// a fresh page lacks (GSAP writes start values inline once a tween has
 		// rendered). The backend captures from a fresh page, so capture does too.
-		if (!(await this.loadFreshPage(this.iframe, stale))) return null;
+		if (!(await this.loadFreshPage(this.iframe, stale, scale))) return null;
 
 		const { frameCount } = computeHtml5FrameCount({
 			clipLengthSeconds: this.getLength(),
@@ -535,8 +536,9 @@ export class Html5Player extends Player {
 		return true;
 	}
 
-	private async loadFreshPage(iframe: HTMLIFrameElement, stale: () => boolean): Promise<boolean> {
-		const srcdoc = findHtml5IngestUrls(this.asset).length > 0 ? await this.composeWithIngestFiles(this.asset) : composeHtml5IframeSrcdoc(this.asset);
+	private async loadFreshPage(iframe: HTMLIFrameElement, stale: () => boolean, scale: number = 1): Promise<boolean> {
+		const srcdoc =
+			findHtml5IngestUrls(this.asset).length > 0 ? await this.composeWithIngestFiles(this.asset, scale) : composeHtml5IframeSrcdoc(this.asset);
 		if (stale()) return false;
 		iframe.srcdoc = srcdoc; // eslint-disable-line no-param-reassign -- reloading the iframe it is given is this helper's job
 		await waitForIframeLoad(iframe, undefined, true);

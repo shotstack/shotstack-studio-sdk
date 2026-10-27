@@ -938,6 +938,20 @@ it("keys each bake by its scale", async () => {
 	expect(jest.requireMock("@canvas/players/html5-cache").html5CachePut).toHaveBeenCalledWith("original@0.5", expect.anything());
 });
 
+it("inlines ingest files sized for the bake's scale, and for full size in a still", async () => {
+	const { player, harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	canvasLib.findHtml5IngestUrls.mockReturnValue([INGEST_URL]);
+	canvasLib.inlineHtml5IngestAssets.mockImplementation(async asset => asset);
+
+	await harness.runCapture();
+	expect(canvasLib.inlineHtml5IngestAssets).toHaveBeenLastCalledWith(expect.objectContaining({ type: "html5" }), 640);
+
+	await player.prepareStaticRender();
+	player.endStaticRender();
+	expect(canvasLib.inlineHtml5IngestAssets).toHaveBeenLastCalledWith(expect.objectContaining({ type: "html5" }), 1280);
+});
+
 it("keeps stills and captures at full resolution while a scaled bake exists", async () => {
 	const { player, harness } = createStillPlayer();
 	Object.assign(harness, { capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5 });
