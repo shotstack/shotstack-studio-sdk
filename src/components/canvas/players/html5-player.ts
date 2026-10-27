@@ -35,6 +35,13 @@ const CAPTURE_SLICE_MS = 12;
 const CAPTURE_MEMORY_BUDGET_BYTES = 256 * 1024 * 1024;
 const CAPTURE_PROGRESS_STEPS = 20;
 const BAKE_SCALES = [0.25, 0.5, 0.75, 1];
+// A remembered frame holds its body markup, so a window bounds the memory. 300 frames covers a 10 s loop at 30 fps.
+const REPEAT_WINDOW_FRAMES = 300;
+const ANIMATION_OVERRIDE = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
+
+function foreignObjectSvg(width: number, height: number, styles: string, body: string): string {
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="${width}" height="${height}">${styles}${ANIMATION_OVERRIDE}${body}</foreignObject></svg>`;
+}
 
 function forceLayout(el: HTMLElement): void {
 	el.getBoundingClientRect();
@@ -460,9 +467,9 @@ export class Html5Player extends Player {
 		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, Math.trunc(W * scale) * Math.trunc(H * scale) * 4);
 		const blobs: Blob[] = [];
 		const pending: Promise<Blob>[] = [];
-		// The SVG is a frame's whole input, so an identical one draws identical bytes and shares the previous frame's Blob.
-		let lastSvg = "";
-		let lastFrame: Promise<Blob> | null = null;
+		// The SVG is a frame's whole input, so a frame that repeats a recent one draws identical bytes and shares its Blob.
+		const recent = new Map<string, Promise<Blob>>();
+		let recentStyles = "";
 		let issued = 0;
 		let progressStep = 0;
 		let sliceStart = -Infinity;
@@ -476,14 +483,23 @@ export class Html5Player extends Player {
 				}
 				this.seekHarness(issued / fps);
 				forceLayout(this.iframe.contentDocument.body);
-				const svg = this.captureIframeAsForeignObjectSvg(W, H);
-				if (!lastFrame || svg !== lastSvg) {
-					lastSvg = svg;
-					lastFrame = foreignObjectSvgToWebp(svg, W, H, scale).then(bytes => new Blob([bytes as BlobPart], { type: "image/webp" }));
-					// Marks a queued frame's failure handled; awaiting it rethrows.
-					lastFrame.catch(() => undefined);
+				const { styles, body } = this.serialiseIframe(W, H);
+				if (styles !== recentStyles) {
+					recent.clear();
+					recentStyles = styles;
 				}
-				pending.push(lastFrame);
+				let drawn = recent.get(body);
+				if (!drawn) {
+					drawn = foreignObjectSvgToWebp(foreignObjectSvg(W, H, styles, body), W, H, scale).then(
+						bytes => new Blob([bytes as BlobPart], { type: "image/webp" })
+					);
+					// Marks a queued frame's failure handled; awaiting it rethrows.
+					drawn.catch(() => undefined);
+					// A Map iterates in insertion order, so its first key is the oldest frame.
+					if (recent.size >= REPEAT_WINDOW_FRAMES) recent.delete(recent.keys().next().value!);
+					recent.set(body, drawn);
+				}
+				pending.push(drawn);
 				issued += 1;
 			} else {
 				const frame = await pending.shift()!;
@@ -552,13 +568,19 @@ export class Html5Player extends Player {
 	}
 
 	private captureIframeAsForeignObjectSvg(width: number, height: number, iframe: HTMLIFrameElement | null = this.iframe): string {
+		const { styles, body } = this.serialiseIframe(width, height, iframe);
+		return foreignObjectSvg(width, height, styles, body);
+	}
+
+	// The styles carry the page's inlined fonts and images, hundreds of KB that rarely change between frames, so a
+	// bake compares them apart from the body.
+	private serialiseIframe(width: number, height: number, iframe: HTMLIFrameElement | null = this.iframe): { styles: string; body: string } {
 		if (!iframe?.contentDocument) throw new Error("iframe not ready");
 		const doc = iframe.contentDocument;
 		const serializer = new XMLSerializer();
 		const styles = Array.from(doc.querySelectorAll("style"))
 			.map(el => serializer.serializeToString(el))
 			.join("");
-		const animationOverride = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
 		const bodyClone = doc.body.cloneNode(true) as HTMLElement;
 		// Scripts never run in an SVG image, and their source can hold characters XML forbids, which fail the frame.
 		bodyClone.querySelectorAll("script").forEach(script => script.remove());
@@ -586,8 +608,7 @@ export class Html5Player extends Player {
 		}
 		const existingStyle = bodyClone.getAttribute("style") ?? "";
 		bodyClone.setAttribute("style", `width:${width}px;height:${height}px;margin:0;overflow:hidden;${existingStyle}`);
-		const bodyXml = serializer.serializeToString(bodyClone);
-		return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="${width}" height="${height}">${styles}${animationOverride}${bodyXml}</foreignObject></svg>`;
+		return { styles, body: serializer.serializeToString(bodyClone) };
 	}
 
 	private async getDecodedFrame(idx: number): Promise<pixi.Texture | null> {
