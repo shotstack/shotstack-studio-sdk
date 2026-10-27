@@ -58,15 +58,16 @@ jest.mock("@canvas/players/player", () => ({
 jest.mock("@shotstack/shotstack-canvas", () => ({
 	Html5AssetSchema: { safeParse: (data: unknown) => ({ success: true, data }) },
 	composeHtml5IframeSrcdoc: jest.fn(() => "<html><body>Updated</body></html>"),
-	computeHtml5FrameCount: ({ clipLengthSeconds, fps }: { clipLengthSeconds: number; fps: number }) => ({
+	computeHtml5FrameCount: jest.fn(({ clipLengthSeconds, fps }: { clipLengthSeconds: number; fps: number }) => ({
 		frameCount: Math.ceil(clipLengthSeconds * fps)
-	}),
+	})),
 	findHtml5IngestUrls: jest.fn(() => []),
 	html5ClipLongestEdge: jest.fn(() => 1280),
 	inlineHtml5IngestAssets: jest.fn()
 }));
 const canvasLib = jest.requireMock("@shotstack/shotstack-canvas") as {
 	composeHtml5IframeSrcdoc: jest.Mock;
+	computeHtml5FrameCount: jest.Mock;
 	findHtml5IngestUrls: jest.Mock;
 	html5ClipLongestEdge: jest.Mock;
 	inlineHtml5IngestAssets: jest.Mock;
@@ -278,6 +279,24 @@ it("ignores an older iframe timeout while newer content is loading", async () =>
 
 	expect(events.emit).not.toHaveBeenCalledWith(EditEvent.ClipCaptureFailed, expect.anything());
 	expect(harness.contentContainer.children).toEqual([expect.objectContaining({ kind: "loading" })]);
+});
+
+// A page animated only by a style block in its markup has frames to capture, as it does in the render.
+it("counts frames from the page's markup when keying and capturing it", async () => {
+	const { player, harness, iframe } = createPlayer();
+	Object.assign(player, { getLength: () => 1 });
+	jest.spyOn(harness, "seekHarness").mockImplementation(() => {
+		throw new Error("stop after first seek");
+	});
+
+	await harness.hashAsset();
+	const capture = harness.captureFrames();
+	await until(() => iframe.srcdoc === "<html><body>Updated</body></html>");
+	iframe.dispatchEvent(new Event("load"));
+	await expect(capture).rejects.toThrow("stop after first seek");
+
+	const counted = canvasLib.computeHtml5FrameCount.mock.calls.map(([args]) => args.htmlContent);
+	expect(counted).toEqual(["<div>Background</div>", "<div>Background</div>"]);
 });
 
 it("captures from a freshly loaded document rather than the live-edited one", async () => {
@@ -645,6 +664,17 @@ it("renders a still from its own page without waiting for the clip's capture", a
 	expect(loading.visible).toBe(false);
 	player.endStaticRender();
 	expect(loading.visible).toBe(true);
+});
+
+it("counts frames from the page's markup when rendering a still", async () => {
+	const { player, harness } = createStillPlayer();
+	jest.spyOn(harness, "captureFrames").mockImplementation(() => new Promise(() => {}));
+	harness.beginCapture();
+
+	await player.prepareStaticRender();
+	player.endStaticRender();
+
+	expect(canvasLib.computeHtml5FrameCount).toHaveBeenCalledWith(expect.objectContaining({ htmlContent: "<div>Background</div>" }));
 });
 
 it("takes a still from captured frames, in memory or cached, without rendering one", async () => {
