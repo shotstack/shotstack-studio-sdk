@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
 
+import { BakeQueue } from "@canvas/players/bake-queue";
 import { Html5Player, bakeScaleFor, captureFramesInFlight } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
@@ -31,6 +32,14 @@ jest.mock("@canvas/players/player", () => ({
 
 		getLength() {
 			return this.resolvedTiming.length;
+		}
+
+		getStart() {
+			return this.resolvedTiming.start;
+		}
+
+		getEnd() {
+			return this.resolvedTiming.start + this.resolvedTiming.length;
 		}
 
 		setResolvedTiming(timing: { start: number; length: number }) {
@@ -119,6 +128,7 @@ function createPlayer() {
 	const edit = {
 		size: { width: 1080, height: 1920 },
 		isPlaying: false,
+		playbackTime: 0,
 		getHtml5Prerender: () => "on-load",
 		getInternalEvents: () => events,
 		getResolvedEdit: () => ({ output: { resolution: "hd" } }),
@@ -1083,17 +1093,34 @@ it("reports a failed re-bake and keeps the frames it has", async () => {
 	expect(harness.capturedFrames).toBe(frames);
 });
 
+type SharedQueue = { bakes: BakeQueue };
+
+// Stands in for another clip's bake at the head of the shared queue.
+function holdCaptureQueue(): { drain: () => void; restore: () => void } {
+	const { bakes } = Html5Player as unknown as SharedQueue;
+	const held = new BakeQueue();
+	let drain = () => {};
+	const gate = new Promise<void>(resolve => {
+		drain = resolve;
+	});
+	// Under the playhead from the start, so it runs ahead of any clip that joins after it.
+	held.add({ start: () => 0, end: () => Infinity, playhead: () => 0 }, () => gate);
+	Object.assign(Html5Player, { bakes: held });
+	return { drain, restore: () => Object.assign(Html5Player, { bakes }) };
+}
+
+// Earlier tests can leave a bake that never settles on the shared queue.
+function emptyCaptureQueue(): () => void {
+	const { bakes } = Html5Player as unknown as SharedQueue;
+	Object.assign(Html5Player, { bakes: new BakeQueue() });
+	return () => Object.assign(Html5Player, { bakes });
+}
+
 it("drops a re-bake queued for content that has since changed, leaving the newer capture in flight", async () => {
 	const { player, harness } = createStillPlayer();
 	Object.assign(harness, { capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5, mode: "playback" });
 	shownAt(harness, 0.8);
-	const { captureChain } = Html5Player as unknown as { captureChain: Promise<unknown> };
-	let drain = () => {};
-	Object.assign(Html5Player, {
-		captureChain: new Promise<void>(resolve => {
-			drain = resolve;
-		})
-	});
+	const queue = holdCaptureQueue();
 	try {
 		player.update(0, 0);
 		const rebake = harness.captureInFlight!;
@@ -1103,7 +1130,7 @@ it("drops a re-bake queued for content that has since changed, leaving the newer
 		await player.reloadAsset();
 		const newer = harness.captureInFlight;
 		expect(newer).not.toBeNull();
-		drain();
+		queue.drain();
 		await rebake;
 		expect(harness.captureInFlight).toBe(newer);
 
@@ -1112,28 +1139,9 @@ it("drops a re-bake queued for content that has since changed, leaving the newer
 		expect(html5CachePut).toHaveBeenCalledWith("changed@0.5", expect.anything());
 		expect(html5CachePut).not.toHaveBeenCalledWith("changed@1", expect.anything());
 	} finally {
-		Object.assign(Html5Player, { captureChain });
+		queue.restore();
 	}
 });
-
-// Stands in for another clip's bake at the head of the shared queue.
-function holdCaptureQueue(): { drain: () => void; restore: () => void } {
-	const { captureChain } = Html5Player as unknown as { captureChain: Promise<unknown> };
-	let drain = () => {};
-	Object.assign(Html5Player, {
-		captureChain: new Promise<void>(resolve => {
-			drain = resolve;
-		})
-	});
-	return { drain, restore: () => Object.assign(Html5Player, { captureChain }) };
-}
-
-// Earlier tests can leave a capture that never settles on the shared queue.
-function emptyCaptureQueue(): () => void {
-	const { captureChain } = Html5Player as unknown as { captureChain: Promise<unknown> };
-	Object.assign(Html5Player, { captureChain: Promise.resolve() });
-	return () => Object.assign(Html5Player, { captureChain });
-}
 
 it("adopts cached frames while another clip's bake holds the queue", async () => {
 	const { harness, events } = createStillPlayer();
@@ -1202,15 +1210,26 @@ it("keeps the queue's bakes in order when a cached clip sits between them", asyn
 	}
 });
 
-it("leaves no capture's frames on the shared queue once it settles", async () => {
-	const { harness } = createStillPlayer();
-	cacheLib.html5CacheGet.mockResolvedValueOnce({ pngs: [new Blob(["cached 0"])], fps: 1, frameCount: 1 });
+it("bakes the clip that plays first ahead of one whose page loaded first", async () => {
+	const later = createStillPlayer();
+	const opening = createStillPlayer();
+	Object.assign(later.player, { getStart: () => 54.4, getEnd: () => 80.37 });
+	Object.assign(opening.player, { getStart: () => 0, getEnd: () => 24.4 });
+	const baked: string[] = [];
+	const bake = (name: string) => async () => {
+		baked.push(name);
+		return null;
+	};
+	jest.spyOn(later.harness, "runCapture").mockImplementation(bake("later"));
+	jest.spyOn(opening.harness, "runCapture").mockImplementation(bake("opening"));
+	jest.spyOn(console, "warn").mockImplementation(() => {});
 	const restore = emptyCaptureQueue();
 	try {
-		harness.beginCapture();
-		await until(() => harness.capturedFrames !== null);
+		later.harness.beginCapture();
+		opening.harness.beginCapture();
+		await until(() => baked.length === 2);
 
-		await expect((Html5Player as unknown as { captureChain: Promise<unknown> }).captureChain).resolves.toBeUndefined();
+		expect(baked).toEqual(["opening", "later"]);
 	} finally {
 		restore();
 	}
