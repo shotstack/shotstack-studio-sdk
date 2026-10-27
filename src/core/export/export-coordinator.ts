@@ -72,7 +72,7 @@ export class ExportCoordinator {
 	}
 
 	async exportBlob(options: ExportBlobOptions = {}): Promise<Blob> {
-		return this.encode(this.edit.getEdit().output?.fps ?? 30, options);
+		return this.encode(this.edit.getOutputFps(), options);
 	}
 
 	async export(filename = "shotstack-export.mp4", fps?: number): Promise<void> {
@@ -80,7 +80,7 @@ export class ExportCoordinator {
 
 		this.progressUI.create();
 		try {
-			const blob = await this.encode(fps ?? this.edit.getEdit().output?.fps ?? 30, {
+			const blob = await this.encode(fps ?? this.edit.getOutputFps(), {
 				onProgress: (fraction, stage) => this.progressUI.update(fraction * 100, 100, stage)
 			});
 
@@ -282,7 +282,7 @@ export class ExportCoordinator {
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 		if (e.code === "KeyE" && (e.metaKey || e.ctrlKey) && !exporting.has(this.edit)) {
 			e.preventDefault();
-			this.export("shotstack-export.mp4", this.edit.getEdit().output?.fps || 30).catch(err => console.error("Export failed:", err));
+			this.export("shotstack-export.mp4", this.edit.getOutputFps()).catch(err => console.error("Export failed:", err));
 		}
 	};
 

@@ -80,6 +80,7 @@ function createHarness() {
 		tracks: [] as Array<Array<{ clipId: string; needsResolution: boolean }>>,
 		getEdit: jest.fn(() => ({ output: { fps: 2 } as { fps: number; mute?: boolean } })),
 		getOutputFormat: jest.fn(() => "mp4"),
+		getOutputFps: jest.fn(() => 2),
 		getResolvedEdit: () => ({ timeline: { tracks: [] }, output: { format: "mp4" } }),
 		getFontUrlByFamilyAndWeight: () => null,
 		whenSettled: jest.fn(() => Promise.resolve()),

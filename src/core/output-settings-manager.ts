@@ -130,7 +130,9 @@ export class OutputSettingsManager {
 	}
 
 	getFps(): number {
-		return this.edit.getResolvedEdit()?.output?.fps ?? 30;
+		const output = this.edit.getResolvedEdit()?.output;
+		// The render's defaults, so the preview and the render step through the same frames.
+		return output?.fps ?? (output?.resolution === "preview" ? 12 : 25);
 	}
 
 	// ─── Format ───────────────────────────────────────────────────────────────
