@@ -17,6 +17,7 @@ import {
 } from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
+import { BakeQueue } from "./bake-queue";
 import { computeHtml5CacheKey, html5CacheGet, html5CachePut } from "./html5-cache";
 import { createCaptureLoadingGraphic, createPlaceholderGraphic } from "./placeholder-graphic";
 
@@ -106,7 +107,9 @@ export function bakeScaleFor(onScreenScale: number): number {
 type Html5Mode = "editing" | "capturing" | "playback" | "stale" | "failed";
 
 export class Html5Player extends Player {
-	private static captureChain: Promise<unknown> = Promise.resolve();
+	private static bakes = new BakeQueue();
+	// Pages still mounting. A bake joins the queue once they have, so the queue orders every clip that loaded together.
+	private static readonly mounts = new Set<Promise<void>>();
 
 	private iframe: HTMLIFrameElement | null = null;
 	private renderedWidth: number = 0;
@@ -146,6 +149,7 @@ export class Html5Player extends Player {
 	private liveStillFrame: number = -1;
 	private liveStillInFlight: boolean = false;
 	private stillRequest: number | null = null;
+	private readonly bakeSlot = { start: () => this.getStart(), end: () => this.getEnd(), playhead: () => this.edit.playbackTime };
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Html5);
@@ -256,10 +260,13 @@ export class Html5Player extends Player {
 
 	// A reload waits on this, so a mount slowed by ingest fetches never runs alongside a second one.
 	private trackMount(mount: Promise<void>): Promise<void> {
-		this.mounting = mount.finally(() => {
+		const tracked = mount.finally(() => {
 			this.mounting = null;
+			Html5Player.mounts.delete(tracked);
 		});
-		return this.mounting;
+		this.mounting = tracked;
+		Html5Player.mounts.add(tracked);
+		return tracked;
 	}
 
 	private async mountAsset(): Promise<void> {
@@ -373,27 +380,25 @@ export class Html5Player extends Player {
 			return this.captureInFlight;
 		}
 		const queuedFor = this.contentHash;
-		const previous = Html5Player.captureChain;
 		// Cached frames cost no bake, so they never wait in the queue behind one.
 		const capture: Promise<Blob[] | null> = this.bakeScale(minScale)
 			.then(scale => this.adoptCachedBake(scale))
-			.then(
-				cached =>
-					cached ??
-					previous.then(() => {
-						// A content change while this waited in the queue would bake the new content at this capture's floor.
-						if (this.disposed || this.contentHash !== queuedFor) return null;
-						return this.runCapture(minScale);
-					})
-			)
+			.then(cached => cached ?? this.queueBake(queuedFor, minScale))
 			.finally(() => {
 				// A content change frees the slot, and a newer capture may hold it by now.
 				if (this.captureInFlight === capture) this.captureInFlight = null;
 			});
 		this.captureInFlight = capture;
-		// A cache hit settles early, so the next bake waits on the whole queue, not just this capture.
-		Html5Player.captureChain = Promise.allSettled([previous, capture]).then(() => undefined);
 		return capture;
+	}
+
+	private async queueBake(queuedFor: string | null, minScale: number): Promise<Blob[] | null> {
+		while (Html5Player.mounts.size > 0) await Promise.allSettled([...Html5Player.mounts]);
+		return Html5Player.bakes.add(this.bakeSlot, async () => {
+			// A content change while this waited in the queue would bake the new content at this capture's floor.
+			if (this.disposed || this.contentHash !== queuedFor) return null;
+			return this.runCapture(minScale);
+		});
 	}
 
 	// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
