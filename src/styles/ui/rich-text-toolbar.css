@@ -1191,6 +1191,8 @@ input.ss-toolbar-popup-value:disabled {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+	max-height: 280px;
+	overflow-y: auto;
 }
 .ss-source-item {
 	display: flex;
