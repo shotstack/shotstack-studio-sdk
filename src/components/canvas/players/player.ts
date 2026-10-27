@@ -23,6 +23,8 @@ import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
 
+import { COLOR_FILTERS, ColorFilter } from "./color-filter";
+
 /**
  * Tracks a merge field binding for a specific property path.
  * Used to restore placeholders on export for properties that haven't changed.
@@ -51,6 +53,21 @@ export enum PlayerType {
 	TextToSpeech = "text-to-speech",
 	RichCaption = "rich-caption"
 }
+
+// The render filters clips it draws as images and leaves those it plays as video untouched.
+const FILTERED_PLAYERS = new Set([
+	PlayerType.Image,
+	PlayerType.Text,
+	PlayerType.RichText,
+	PlayerType.Shape,
+	PlayerType.Caption,
+	PlayerType.Html,
+	PlayerType.Svg,
+	PlayerType.TextToImage
+]);
+
+// pixi's Gaussian at this strength spreads as far as the render's radius-10 box blur (σ ≈ 6.06 px).
+const CLIP_BLUR_STRENGTH = 4.69;
 
 /**
  * Base class for all visual content players in the canvas.
@@ -101,6 +118,9 @@ export abstract class Player extends Entity {
 	private wipeFilter: WipeFilter | null = null;
 	private zoomBlurBuilder?: KeyframeBuilder;
 	private zoomBlurFilter: pixi.BlurFilter | null = null;
+	private zoomBlurRadius = 0;
+	private clipFilterName: ResolvedClip["filter"];
+	private clipFilter: pixi.Filter | null = null;
 	private rotationOrigin?: { x: KeyframeBuilder; y: KeyframeBuilder };
 
 	private wipeMask: pixi.Graphics | null;
@@ -126,6 +146,7 @@ export abstract class Player extends Entity {
 		this.contentContainer = new pixi.Container();
 		this.lumaWrapper.addChild(this.contentContainer);
 		this.getContainer().addChild(this.lumaWrapper);
+		this.getContainer().onRender = () => this.sizeBlurs();
 	}
 
 	public reconfigureAfterRestore(): void {
@@ -265,6 +286,8 @@ export abstract class Player extends Entity {
 			this.applyFixedDimensions();
 		}
 
+		this.updateClipFilter();
+
 		// Update wipe/reveal mask animation
 		this.updateWipeMask();
 		this.updateWipeFilter();
@@ -301,6 +324,35 @@ export abstract class Player extends Entity {
 		this.wipeMask.fill(0xffffff);
 	}
 
+	private updateClipFilter(): void {
+		const { asset } = this.clipConfiguration;
+		const rendersAsVideo = asset.type === "rich-text" && Boolean(asset.animation?.preset);
+		const name = FILTERED_PLAYERS.has(this.playerType) && !rendersAsVideo ? this.clipConfiguration.filter : undefined;
+
+		if (name !== this.clipFilterName) {
+			this.clipFilter?.destroy();
+			this.clipFilter = this.createClipFilter(name);
+			this.clipFilterName = name;
+			this.syncContentFilters();
+		}
+	}
+
+	private createClipFilter(name: ResolvedClip["filter"]): pixi.Filter | null {
+		if (name === "blur") {
+			const blur = new pixi.BlurFilter();
+			// The render's box blur clamps at the clip's edges, so they stay sharp.
+			blur.repeatEdgePixels = true;
+			return blur;
+		}
+		const color = name && COLOR_FILTERS[name];
+		return color ? new ColorFilter(color) : null;
+	}
+
+	private syncContentFilters(): void {
+		// The render filters a clip before its transitions.
+		this.contentContainer.filters = [this.clipFilter, this.wipeFilter].filter((filter): filter is pixi.Filter => filter !== null);
+	}
+
 	private updateWipeFilter(): void {
 		if (!this.wipeBrightnessBuilder) {
 			this.removeWipeFilter();
@@ -308,7 +360,7 @@ export abstract class Player extends Entity {
 		}
 		if (!this.wipeFilter) {
 			this.wipeFilter = new WipeFilter();
-			this.contentContainer.filters = [this.wipeFilter];
+			this.syncContentFilters();
 		}
 		const time = this.getPlaybackTime();
 		this.wipeFilter.brightness = this.wipeBrightnessBuilder.getValue(time);
@@ -317,9 +369,9 @@ export abstract class Player extends Entity {
 
 	private removeWipeFilter(): void {
 		if (!this.wipeFilter) return;
-		this.contentContainer.filters = [];
 		this.wipeFilter.destroy();
 		this.wipeFilter = null;
+		this.syncContentFilters();
 	}
 
 	private updateZoomBlur(): void {
@@ -334,14 +386,19 @@ export abstract class Player extends Entity {
 			this.zoomBlurFilter = new pixi.BlurFilter();
 			this.getContainer().filters = [this.zoomBlurFilter];
 		}
-		// The render blurs by a whole-pixel radius before applying the clip's scale, so on screen the blur grows with scale
-		// and the canvas zoom. pixi's Gaussian approximates the render's three box-blur passes.
-		const time = this.getPlaybackTime();
-		const radius = Math.trunc(this.zoomBlurBuilder.getValue(time));
-		const canvas = this.getContainer().parent?.worldTransform;
-		const canvasZoom = canvas ? Math.hypot(canvas.a, canvas.b) : 1;
-		this.zoomBlurFilter.enabled = radius > 0;
-		this.zoomBlurFilter.strength = radius * (this.scaleKeyframeBuilder?.getValue(time) ?? 1) * canvasZoom;
+		this.zoomBlurRadius = Math.trunc(this.zoomBlurBuilder.getValue(this.getPlaybackTime()));
+		this.zoomBlurFilter.enabled = this.zoomBlurRadius > 0;
+	}
+
+	// The render blurs by whole pixels before applying the clip's scale, so a blur grows with scale and the zoom it is
+	// drawn at. Sizing it as each frame draws follows that zoom: the editor's on screen, 1:1 in a capture.
+	private sizeBlurs(): void {
+		if (!this.zoomBlurFilter && !(this.clipFilter instanceof pixi.BlurFilter)) return;
+		const canvas = this.getContainer().parent?.getGlobalTransform();
+		const scale = (this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1) * (canvas ? Math.hypot(canvas.a, canvas.b) : 1);
+		// pixi's Gaussian approximates the render's three box-blur passes.
+		if (this.zoomBlurFilter) this.zoomBlurFilter.strength = this.zoomBlurRadius * scale;
+		if (this.clipFilter instanceof pixi.BlurFilter) this.clipFilter.strength = CLIP_BLUR_STRENGTH * scale;
 	}
 
 	public override dispose(): void {
@@ -351,6 +408,9 @@ export abstract class Player extends Entity {
 		this.wipeFilter = null;
 		this.zoomBlurFilter?.destroy();
 		this.zoomBlurFilter = null;
+		this.clipFilter?.destroy();
+		this.clipFilter = null;
+		this.clipFilterName = undefined;
 
 		this.contentContainer?.destroy();
 		this.lumaWrapper?.destroy();
