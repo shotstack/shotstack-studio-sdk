@@ -118,6 +118,8 @@ export class Html5Player extends Player {
 	private static bakes = new BakeQueue();
 	// Pages still mounting. A bake joins the queue once they have, so the queue orders every clip that loaded together.
 	private static readonly mounts = new Set<Promise<void>>();
+	// Frames every bake has in flight. Bakes take turns, so they share one window and one memory budget.
+	private static readonly inFlight = { frames: 0, bytes: 0 };
 
 	private iframe: HTMLIFrameElement | null = null;
 	private renderedWidth: number = 0;
@@ -405,11 +407,11 @@ export class Html5Player extends Player {
 
 	private async queueBake(queuedFor: string | null, minScale: number): Promise<Blob[] | null> {
 		while (Html5Player.mounts.size > 0) await Promise.allSettled([...Html5Player.mounts]);
-		return Html5Player.bakes.add(this.bakeSlot, async () => {
+		return Html5Player.bakes.add(this.bakeSlot, async turn => {
 			// A content change while this waited in the queue would bake the new content at this capture's floor.
 			if (this.disposed || this.contentHash !== queuedFor) return null;
 			try {
-				return await this.runCapture(minScale);
+				return await this.runCapture(minScale, turn);
 			} finally {
 				this.bakeNextIndex = null;
 			}
@@ -452,7 +454,7 @@ export class Html5Player extends Player {
 	}
 
 	// A re-bake passes the scale it was started for, so a later, smaller sample can't bake softer frames.
-	private async runCapture(minScale: number = 0): Promise<Blob[] | null> {
+	private async runCapture(minScale: number = 0, turn: () => Promise<void> = async () => {}): Promise<Blob[] | null> {
 		if (!this.iframe || !this.iframe.contentDocument || !this.iframe.contentWindow) return null;
 
 		const { contentHash } = this;
@@ -485,7 +487,11 @@ export class Html5Player extends Player {
 		this.captureFramesTotal = frameCount;
 		this.captureFramesDone = 0;
 
-		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, Math.trunc(W * scale) * Math.trunc(H * scale) * 4);
+		const frameBytes = Math.trunc(W * scale) * Math.trunc(H * scale) * 4;
+		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, frameBytes);
+		const { inFlight } = Html5Player;
+		const hasRoom = (): boolean =>
+			inFlight.frames === 0 || (inFlight.frames < framesInFlight && inFlight.bytes + frameBytes <= CAPTURE_MEMORY_BUDGET_BYTES);
 		// The playhead's frame goes first, so the clip under it plays soonest.
 		const segments = passSegments(
 			Array.from({ length: frameCount }, (_, i) => i),
@@ -505,15 +511,21 @@ export class Html5Player extends Player {
 		let sliceStart = -Infinity;
 		// Frames publish in the order they were issued, so the oldest in flight gates the window.
 		while (published < frameCount) {
-			if (issued < frameCount && pending.length < framesInFlight) {
+			if (issued < frameCount && hasRoom()) {
 				const idx = order[issued];
 				this.bakeNextIndex = idx;
-				if (freshPageAt.has(issued) && !(await this.loadFreshPage(this.iframe, stale, scale))) return null;
 				if (performance.now() - sliceStart >= CAPTURE_SLICE_MS) {
 					await nextFrame();
 					if (stale()) return null;
+					await turn();
+					if (stale()) return null;
 					sliceStart = performance.now();
 				}
+			}
+			// Other bakes draw during their turns, so the window is read again once this one has its turn back.
+			if (issued < frameCount && hasRoom()) {
+				const idx = order[issued];
+				if (freshPageAt.has(issued) && !(await this.loadFreshPage(this.iframe, stale, scale))) return null;
 				this.seekHarness(idx / fps);
 				forceLayout(this.iframe.contentDocument.body);
 				const { styles, body } = this.serialiseIframe(W, H);
@@ -523,9 +535,14 @@ export class Html5Player extends Player {
 				}
 				let drawn = recent.get(body);
 				if (!drawn) {
-					drawn = foreignObjectSvgToWebp(foreignObjectSvg(W, H, styles, body), W, H, scale).then(
-						bytes => new Blob([bytes as BlobPart], { type: "image/webp" })
-					);
+					inFlight.frames += 1;
+					inFlight.bytes += frameBytes;
+					drawn = foreignObjectSvgToWebp(foreignObjectSvg(W, H, styles, body), W, H, scale)
+						.then(bytes => new Blob([bytes as BlobPart], { type: "image/webp" }))
+						.finally(() => {
+							inFlight.frames -= 1;
+							inFlight.bytes -= frameBytes;
+						});
 					// Marks a queued frame's failure handled; awaiting it rethrows.
 					drawn.catch(() => undefined);
 					// A Map iterates in insertion order, so its first key is the oldest frame.
@@ -534,7 +551,7 @@ export class Html5Player extends Player {
 				}
 				pending.push({ idx, drawn });
 				issued += 1;
-			} else {
+			} else if (pending.length > 0) {
 				const { idx, drawn } = pending.shift()!;
 				const frame = await drawn;
 				if (stale()) return null;
@@ -547,6 +564,10 @@ export class Html5Player extends Player {
 					progressStep = step;
 					this.emitCaptureProgress();
 				}
+			} else {
+				// Other bakes' frames fill the window, and they finish without their bakes' turns.
+				await nextFrame();
+				if (stale()) return null;
 			}
 		}
 

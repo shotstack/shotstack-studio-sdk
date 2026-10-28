@@ -857,6 +857,48 @@ it.each([
 	expect(markup.map(frame => /data-t="([^"]*)"/.exec(frame)?.[1])).toEqual(Array.from({ length: 60 }, (_, i) => String(i / 30)));
 });
 
+const sliceEveryFrame = () => {
+	let clock = 0;
+	jest.spyOn(performance, "now").mockImplementation(() => {
+		clock += 13;
+		return clock;
+	});
+};
+
+const sharedInFlight = () => (Html5Player as unknown as { inFlight: { frames: number; bytes: number } }).inFlight;
+
+it("waits for another bake's frames to leave the window before drawing its own", async () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { renderedWidth: 3840, renderedHeight: 2160 });
+	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(16);
+	Object.assign(sharedInFlight(), { frames: 8, bytes: 8 * 3840 * 2160 * 4 });
+	let waits = 0;
+	jest.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
+		waits += 1;
+		if (waits === 5) Object.assign(sharedInFlight(), { frames: 0, bytes: 0 });
+		setTimeout(() => callback(0), 0);
+		return 0;
+	});
+
+	expect(await harness.runCapture()).toHaveLength(60);
+	expect(waits).toBeGreaterThanOrEqual(5);
+	expect(sharedInFlight()).toEqual({ frames: 0, bytes: 0 });
+});
+
+it("releases its share of the in-flight window when disposed mid-bake", async () => {
+	const { player, harness } = createStillPlayer();
+	const { held, releaseAll } = holdToBlob();
+	const capture = harness.runCapture();
+	await until(() => held.length > 0);
+
+	player.dispose();
+	releaseAll();
+	await capture;
+	await flush();
+
+	expect(sharedInFlight()).toEqual({ frames: 0, bytes: 0 });
+});
+
 it("returns no frames when the content changes while frames are in flight", async () => {
 	const { harness } = createStillPlayer();
 	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(4);
@@ -1293,6 +1335,46 @@ it("bakes the clip that plays first ahead of one whose page loaded first", async
 		await until(() => baked.length === 2);
 
 		expect(baked).toEqual(["opening", "later"]);
+	} finally {
+		restore();
+	}
+});
+
+it("shares one in-flight window between bakes that take turns", async () => {
+	const a = createStillPlayer();
+	const b = createStillPlayer();
+	b.harness.contentHash = "other";
+	[a, b].forEach(({ harness }) => Object.assign(harness, { renderedWidth: 3840, renderedHeight: 2160 }));
+	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(16);
+	sliceEveryFrame();
+	const { held, releaseAll } = holdToBlob();
+	const restore = emptyCaptureQueue();
+	try {
+		const captures = [a.harness.captureFrames(), b.harness.captureFrames()];
+		await until(() => held.length >= 8);
+		await flush(100);
+		expect(held).toHaveLength(8);
+
+		releaseAll();
+		expect((await Promise.all(captures)).map(frames => frames?.length)).toEqual([60, 60]);
+	} finally {
+		restore();
+	}
+});
+
+it("alternates overlapping clips' frames rather than baking one clip whole", async () => {
+	const a = createStillPlayer();
+	const b = createStillPlayer();
+	b.harness.contentHash = "other";
+	const order: string[] = [];
+	a.onSeek = seek => seek.startsWith("bake") && order.push("a");
+	b.onSeek = seek => seek.startsWith("bake") && order.push("b");
+	sliceEveryFrame();
+	const restore = emptyCaptureQueue();
+	try {
+		await Promise.all([a.harness.captureFrames(), b.harness.captureFrames()]);
+
+		expect(new Set(order.slice(0, 10)).size).toBe(2);
 	} finally {
 		restore();
 	}
