@@ -737,6 +737,22 @@ it("keeps a still taken mid-capture and the capture from changing each other's f
 	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
 });
 
+it("bakes from the playhead to the clip's end, then from a fresh page up to the playhead", async () => {
+	const { harness, edit, iframe, seeks } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	Object.assign(edit, { playbackTime: 1 });
+	const loads = jest.spyOn(HTMLIFrameElement.prototype, "srcdoc", "set");
+	loads.mockClear();
+
+	const frames = (await harness.runCapture())!;
+
+	const order = [...Array.from({ length: 30 }, (_, i) => 30 + i), ...Array.from({ length: 30 }, (_, i) => i)];
+	expect(seeks.filter(seek => seek.startsWith("bake"))).toEqual(order.map(i => `bake ${i / 30}`));
+	expect(loads.mock.contexts.filter(context => context === iframe)).toHaveLength(2);
+	const markup = await Promise.all(frames.map(frameMarkup));
+	expect(markup.map(frame => /data-t="([^"]*)"/.exec(frame)?.[1])).toEqual(Array.from({ length: 60 }, (_, i) => String(i / 30)));
+	expect(markup.some(frame => frame.includes("data-rewound"))).toBe(false);
+});
+
 it("draws a frame only when the page changed, reusing the last frame's blob", async () => {
 	const { harness } = createStillPlayer(); // 2 s at 30 fps: 60 frames
 	const seek = jest.mocked(harness.seekHarness);

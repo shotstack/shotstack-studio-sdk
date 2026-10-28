@@ -17,6 +17,7 @@ import {
 } from "@shotstack/shotstack-canvas";
 import * as pixi from "pixi.js";
 
+import { passSegments } from "./bake-order";
 import { BakeQueue } from "./bake-queue";
 import { computeHtml5CacheKey, html5CacheGet, html5CachePut } from "./html5-cache";
 import { createCaptureLoadingGraphic, createPlaceholderGraphic } from "./placeholder-graphic";
@@ -423,6 +424,11 @@ export class Html5Player extends Player {
 		return start + (idx + 1) / this.captureFps;
 	}
 
+	// The frame on screen at the playhead, or past the last frame once the playhead has left the clip.
+	private bakeAnchor(frameCount: number): number {
+		return Math.min(Math.max(0, Math.floor((this.edit.playbackTime - this.getStart()) * this.captureFps)), frameCount);
+	}
+
 	// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
 	// transform isn't applied, so its bake reads only the viewport's zoom and may re-bake once the clip is active.
 	private async bakeScale(minScale: number): Promise<number> {
@@ -480,24 +486,35 @@ export class Html5Player extends Player {
 		this.captureFramesDone = 0;
 
 		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, Math.trunc(W * scale) * Math.trunc(H * scale) * 4);
-		const blobs: Blob[] = [];
-		const pending: Promise<Blob>[] = [];
+		// The playhead's frame goes first, so the clip under it plays soonest.
+		const segments = passSegments(
+			Array.from({ length: frameCount }, (_, i) => i),
+			this.bakeAnchor(frameCount)
+		);
+		const order = segments.flat();
+		// Where each segment after the first starts in the issue order.
+		const freshPageAt = new Set(segments.slice(0, -1).map((_, i) => segments.slice(0, i + 1).flat().length));
+		const frames: Array<Blob | undefined> = new Array(frameCount);
+		const pending: { idx: number; drawn: Promise<Blob> }[] = [];
 		// The SVG is a frame's whole input, so a frame that repeats a recent one draws identical bytes and shares its Blob.
 		const recent = new Map<string, Promise<Blob>>();
 		let recentStyles = "";
 		let issued = 0;
-		this.bakeNextIndex = 0;
+		let published = 0;
 		let progressStep = 0;
 		let sliceStart = -Infinity;
-		// Frames publish in order, so the oldest in flight gates the window.
-		while (blobs.length < frameCount) {
+		// Frames publish in the order they were issued, so the oldest in flight gates the window.
+		while (published < frameCount) {
 			if (issued < frameCount && pending.length < framesInFlight) {
+				const idx = order[issued];
+				this.bakeNextIndex = idx;
+				if (freshPageAt.has(issued) && !(await this.loadFreshPage(this.iframe, stale, scale))) return null;
 				if (performance.now() - sliceStart >= CAPTURE_SLICE_MS) {
 					await nextFrame();
 					if (stale()) return null;
 					sliceStart = performance.now();
 				}
-				this.seekHarness(issued / fps);
+				this.seekHarness(idx / fps);
 				forceLayout(this.iframe.contentDocument.body);
 				const { styles, body } = this.serialiseIframe(W, H);
 				if (styles !== recentStyles) {
@@ -515,13 +532,14 @@ export class Html5Player extends Player {
 					if (recent.size >= REPEAT_WINDOW_FRAMES) recent.delete(recent.keys().next().value!);
 					recent.set(body, drawn);
 				}
-				pending.push(drawn);
+				pending.push({ idx, drawn });
 				issued += 1;
-				this.bakeNextIndex = issued;
 			} else {
-				const frame = await pending.shift()!;
+				const { idx, drawn } = pending.shift()!;
+				const frame = await drawn;
 				if (stale()) return null;
-				blobs.push(frame);
+				frames[idx] = frame;
+				published += 1;
 				this.captureFramesDone += 1;
 				// Steps, not frames: enough for a ring to fill smoothly, and bounded whatever the frame count.
 				const step = Math.floor((this.captureFramesDone / frameCount) * CAPTURE_PROGRESS_STEPS);
@@ -532,6 +550,8 @@ export class Html5Player extends Player {
 			}
 		}
 
+		// Every index has published by now.
+		const blobs = frames as Blob[];
 		if (!(await this.adoptBake(blobs, cacheKey, scale, stale))) return null;
 		this.emitCaptureCompleted(frameCount);
 
