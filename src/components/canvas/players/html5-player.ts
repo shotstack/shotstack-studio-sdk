@@ -494,8 +494,6 @@ export class Html5Player extends Player {
 		const frameBytes = Math.trunc(W * scale) * Math.trunc(H * scale) * 4;
 		const framesInFlight = captureFramesInFlight(navigator.hardwareConcurrency, frameBytes);
 		const { inFlight } = Html5Player;
-		const hasRoom = (): boolean =>
-			inFlight.frames === 0 || (inFlight.frames < framesInFlight && inFlight.bytes + frameBytes <= CAPTURE_MEMORY_BUDGET_BYTES);
 		// The playhead's frame goes first, so the clip under it plays soonest.
 		const segments = passSegments(
 			Array.from({ length: frameCount }, (_, i) => i),
@@ -510,7 +508,10 @@ export class Html5Player extends Player {
 			this.bakingFrames = frames;
 			this.bakingScale = scale;
 		}
-		const pending: { idx: number; drawn: Promise<Blob> }[] = [];
+		const pending: { idx: number; drawn: Promise<Blob>; settled?: Blob }[] = [];
+		const hasRoom = (): boolean =>
+			pending.length < framesInFlight &&
+			(inFlight.frames === 0 || (inFlight.frames < framesInFlight && inFlight.bytes + frameBytes <= CAPTURE_MEMORY_BUDGET_BYTES));
 		// The SVG is a frame's whole input, so a frame that repeats a recent one draws identical bytes and shares its Blob.
 		const recent = new Map<string, Promise<Blob>>();
 		let recentStyles = "";
@@ -518,8 +519,21 @@ export class Html5Player extends Player {
 		let published = 0;
 		let progressStep = 0;
 		let sliceStart = -Infinity;
+		const publish = (idx: number, frame: Blob): void => {
+			frames[idx] = frame;
+			published += 1;
+			this.captureFramesDone += 1;
+			// Steps, not frames: enough for a ring to fill smoothly, and bounded whatever the frame count.
+			const step = Math.floor((this.captureFramesDone / frameCount) * CAPTURE_PROGRESS_STEPS);
+			if (step > progressStep) {
+				progressStep = step;
+				this.emitCaptureProgress();
+			}
+		};
 		// Frames publish in the order they were issued, so the oldest in flight gates the window.
 		while (published < frameCount) {
+			// Draws finish while the bake yields, so finished frames publish before the next one is drawn.
+			for (let head = pending[0]?.settled; head; head = pending[0]?.settled) publish(pending.shift()!.idx, head);
 			if (issued < frameCount && hasRoom()) {
 				const idx = order[issued];
 				this.bakeNextIndex = idx;
@@ -558,22 +572,21 @@ export class Html5Player extends Player {
 					if (recent.size >= REPEAT_WINDOW_FRAMES) recent.delete(recent.keys().next().value!);
 					recent.set(body, drawn);
 				}
-				pending.push({ idx, drawn });
+				const entry: (typeof pending)[number] = { idx, drawn };
+				drawn.then(
+					blob => {
+						entry.settled = blob;
+					},
+					() => undefined
+				);
+				pending.push(entry);
 				issued += 1;
 			} else if (pending.length > 0) {
 				const { idx, drawn } = pending.shift()!;
 				const frame = await drawn;
 				if (stale()) return null;
-				frames[idx] = frame;
-				published += 1;
-				this.captureFramesDone += 1;
-				// Steps, not frames: enough for a ring to fill smoothly, and bounded whatever the frame count.
-				const step = Math.floor((this.captureFramesDone / frameCount) * CAPTURE_PROGRESS_STEPS);
-				if (step > progressStep) {
-					progressStep = step;
-					this.emitCaptureProgress();
-				}
-			} else {
+				publish(idx, frame);
+			} else if (issued < frameCount) {
 				// Other bakes' frames fill the window, and they finish without their bakes' turns.
 				await nextFrame();
 				if (stale()) return null;

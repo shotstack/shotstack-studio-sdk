@@ -869,6 +869,24 @@ const sliceEveryFrame = () => {
 
 const sharedInFlight = () => (Html5Player as unknown as { inFlight: { frames: number; bytes: number } }).inFlight;
 
+it("publishes frames and progress while later frames still draw", async () => {
+	const { harness, events } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	Object.assign(harness, { mode: "capturing" });
+	sliceEveryFrame();
+	const steps = () => events.emit.mock.calls.filter(([name]) => name === InternalEvent.CaptureProgressChanged).length;
+	let atLastSeek = { landed: 0, steps: 0 };
+	const record = jest.mocked(harness.seekHarness).getMockImplementation()!;
+	jest.mocked(harness.seekHarness).mockImplementation((seconds, win) => {
+		record(seconds, win);
+		if (seconds === 59 / 30) atLastSeek = { landed: harness.bakingFrames!.filter(Boolean).length, steps: steps() };
+	});
+
+	await harness.runCapture();
+
+	expect(atLastSeek.landed).toBeGreaterThan(30);
+	expect(atLastSeek.steps).toBeGreaterThan(10);
+});
+
 it("waits for another bake's frames to leave the window before drawing its own", async () => {
 	const { harness } = createStillPlayer();
 	Object.assign(harness, { renderedWidth: 3840, renderedHeight: 2160 });
