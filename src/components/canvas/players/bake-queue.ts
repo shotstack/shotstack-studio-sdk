@@ -1,16 +1,14 @@
-/** Where a waiting bake's clip sits on the timeline. Read at each pick, so seeks and edits count. */
+/** Where a waiting bake stands on the timeline. Read at each pick, so seeks, edits and progress count. */
 export interface BakeSlot {
-	start(): number;
-	end(): number;
+	/** Timeline time at which the next frame this bake draws leaves the screen. */
+	nextFrameEnd(): number;
 	playhead(): number;
 }
 
-/** The clip under the playhead goes first, then those ahead in start order, then those already passed. */
+/** Frames playback still needs go first, earliest first, then frames it has already passed. */
 function rank(slot: BakeSlot): [number, number] {
-	const playhead = slot.playhead();
-	const start = slot.start();
-	if (start <= playhead && playhead < slot.end()) return [0, start];
-	return [start > playhead ? 1 : 2, start];
+	const nextFrameEnd = slot.nextFrameEnd();
+	return [nextFrameEnd <= slot.playhead() ? 1 : 0, nextFrameEnd];
 }
 
 export function nextBake(waiting: readonly BakeSlot[]): number {
@@ -18,7 +16,7 @@ export function nextBake(waiting: readonly BakeSlot[]): number {
 	let bestRank = rank(waiting[0]);
 	for (let i = 1; i < waiting.length; i += 1) {
 		const candidate = rank(waiting[i]);
-		// Strictly better only, so clips that tie keep their arrival order.
+		// Strictly better only, so bakes that tie keep their arrival order.
 		if (candidate[0] < bestRank[0] || (candidate[0] === bestRank[0] && candidate[1] < bestRank[1])) {
 			best = i;
 			bestRank = candidate;
@@ -28,18 +26,25 @@ export function nextBake(waiting: readonly BakeSlot[]): number {
 }
 
 /**
- * Runs bakes one at a time. Each pick waits a task, so clips that join together are all
- * waiting when it is made, and it reads the playhead then.
+ * Runs bakes one at a time. A bake hands its turn back by awaiting `turn` and rejoins the end of the
+ * waiting list, so bakes whose frames overlap alternate. Each pick waits a task, so clips that join
+ * together are all waiting when it is made, and it reads the playhead then.
  */
 export class BakeQueue {
 	private readonly waiting: { slot: BakeSlot; run: () => void }[] = [];
 	private running = false;
 	private scheduled = false;
 
-	public add<T>(slot: BakeSlot, bake: () => Promise<T>): Promise<T> {
+	public add<T>(slot: BakeSlot, bake: (turn: () => Promise<void>) => Promise<T>): Promise<T> {
 		return new Promise<T>((resolve, reject) => {
+			const turn = (): Promise<void> =>
+				new Promise<void>(resume => {
+					this.waiting.push({ slot, run: resume });
+					this.running = false;
+					this.schedule();
+				});
 			const run = (): void => {
-				bake()
+				bake(turn)
 					.then(resolve, reject)
 					.finally(() => {
 						this.running = false;

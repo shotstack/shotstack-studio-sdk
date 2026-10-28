@@ -156,7 +156,9 @@ export class Html5Player extends Player {
 	private liveStillFrame: number = -1;
 	private liveStillInFlight: boolean = false;
 	private stillRequest: number | null = null;
-	private readonly bakeSlot = { start: () => this.getStart(), end: () => this.getEnd(), playhead: () => this.edit.playbackTime };
+	// The frame the running bake draws next. Null between bakes.
+	private bakeNextIndex: number | null = null;
+	private readonly bakeSlot = { nextFrameEnd: () => this.nextFrameEnd(), playhead: () => this.edit.playbackTime };
 
 	constructor(edit: Edit, clipConfiguration: ResolvedClip) {
 		super(edit, clipConfiguration, PlayerType.Html5);
@@ -405,8 +407,20 @@ export class Html5Player extends Player {
 		return Html5Player.bakes.add(this.bakeSlot, async () => {
 			// A content change while this waited in the queue would bake the new content at this capture's floor.
 			if (this.disposed || this.contentHash !== queuedFor) return null;
-			return this.runCapture(minScale);
+			try {
+				return await this.runCapture(minScale);
+			} finally {
+				this.bakeNextIndex = null;
+			}
 		});
+	}
+
+	// A bake that hasn't started begins at the playhead's frame, or at the clip's first once the playhead has passed it.
+	private nextFrameEnd(): number {
+		const start = this.getStart();
+		const { playbackTime } = this.edit;
+		const idx = this.bakeNextIndex ?? (playbackTime >= this.getEnd() ? 0 : Math.max(0, Math.floor((playbackTime - start) * this.captureFps)));
+		return start + (idx + 1) / this.captureFps;
 	}
 
 	// After a tick, an active clip's global transform is the size the canvas shows it at. An inactive clip's own
@@ -472,6 +486,7 @@ export class Html5Player extends Player {
 		const recent = new Map<string, Promise<Blob>>();
 		let recentStyles = "";
 		let issued = 0;
+		this.bakeNextIndex = 0;
 		let progressStep = 0;
 		let sliceStart = -Infinity;
 		// Frames publish in order, so the oldest in flight gates the window.
@@ -502,6 +517,7 @@ export class Html5Player extends Player {
 				}
 				pending.push(drawn);
 				issued += 1;
+				this.bakeNextIndex = issued;
 			} else {
 				const frame = await pending.shift()!;
 				if (stale()) return null;

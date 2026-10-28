@@ -1150,8 +1150,8 @@ function holdCaptureQueue(): { drain: () => void; restore: () => void } {
 	const gate = new Promise<void>(resolve => {
 		drain = resolve;
 	});
-	// Under the playhead from the start, so it runs ahead of any clip that joins after it.
-	held.add({ start: () => 0, end: () => Infinity, playhead: () => 0 }, () => gate);
+	// Ahead of the playhead and earliest, so it runs ahead of any clip that joins after it.
+	held.add({ nextFrameEnd: () => 0, playhead: () => -Infinity }, () => gate);
 	Object.assign(Html5Player, { bakes: held });
 	return { drain, restore: () => Object.assign(Html5Player, { bakes }) };
 }
