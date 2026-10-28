@@ -126,6 +126,9 @@ export class Html5Player extends Player {
 	private renderedHeight: number = 0;
 	private capturedFrames: Blob[] | null = null;
 	private capturedScale: number = 1;
+	// A first bake's frames by index as they land, for the stills they replace. Export never reads them.
+	private bakingFrames: Array<Blob | undefined> | null = null;
+	private bakingScale: number = 1;
 	private readonly globalTransform = new pixi.Matrix();
 	// Stays set after a failed re-bake, so a failure isn't retried every frame.
 	private rebakeStarted: boolean = false;
@@ -381,6 +384,7 @@ export class Html5Player extends Player {
 	private transitionToFailed(): void {
 		if (this.disposed) return;
 		this.mode = "failed";
+		this.bakingFrames = null;
 		this.removeLoadingGraphic();
 		this.removeLiveStill();
 		this.createFallbackGraphic();
@@ -501,6 +505,11 @@ export class Html5Player extends Player {
 		// Where each segment after the first starts in the issue order.
 		const freshPageAt = new Set(segments.slice(0, -1).map((_, i) => segments.slice(0, i + 1).flat().length));
 		const frames: Array<Blob | undefined> = new Array(frameCount);
+		// A re-bake leaves complete frames on screen until it finishes, so only a first bake shows frames as they land.
+		if (this.mode === "capturing") {
+			this.bakingFrames = frames;
+			this.bakingScale = scale;
+		}
 		const pending: { idx: number; drawn: Promise<Blob> }[] = [];
 		// The SVG is a frame's whole input, so a frame that repeats a recent one draws identical bytes and shares its Blob.
 		const recent = new Map<string, Promise<Blob>>();
@@ -903,6 +912,7 @@ export class Html5Player extends Player {
 		this.decodedFrames.clear();
 		this.capturedFrames = null;
 		this.capturedHash = null;
+		this.bakingFrames = null;
 		this.lastFrameIdx = -1;
 		this.decodeInFlight = null;
 		this.rebakeStarted = false;
@@ -1088,9 +1098,10 @@ export class Html5Player extends Player {
 						if (!this.disposed) console.warn("[Html5Player] still failed:", err);
 						return null;
 					});
-				let texture = await attempt();
+				const baked = this.bakingFrames?.[frame];
+				let texture = baked ? await this.bakingTexture(baked) : await attempt();
 				// A page can load too slowly once, so a failed still gets one more try while nothing newer is waiting.
-				if (!texture && this.liveStillFrame === frame && this.stillRequest === null) texture = await attempt();
+				if (!texture && !baked && this.liveStillFrame === frame && this.stillRequest === null) texture = await attempt();
 				const unbaked = this.mode === "editing" || this.mode === "stale" || this.mode === "capturing";
 				if (!texture || this.disposed || !unbaked || this.contentHash !== hash) {
 					texture?.destroy(true);
@@ -1109,6 +1120,11 @@ export class Html5Player extends Player {
 		} finally {
 			this.liveStillInFlight = false;
 		}
+	}
+
+	// The resolution makes a scaled frame's texture report the clip's full size.
+	private async bakingTexture(blob: Blob): Promise<pixi.Texture> {
+		return pixi.Texture.from({ resource: await createImageBitmap(blob), resolution: this.bakingScale });
 	}
 
 	private removeLiveStill(): void {

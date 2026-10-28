@@ -121,6 +121,8 @@ type PlayerHarness = {
 	renderStill(seconds: number): Promise<unknown>;
 	transitionToPlayback(): Promise<void>;
 	transitionToFailed(): void;
+	bakingFrames: Array<Blob | undefined> | null;
+	reloadAsset(): Promise<void>;
 };
 
 function createPlayer() {
@@ -1486,6 +1488,98 @@ it("keeps showing stills after one fails to mount", async () => {
 
 	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=1<");
 	expect(warn).toHaveBeenCalledWith("[Html5Player] still failed:", expect.objectContaining({ message: "fit failed" }));
+});
+
+const bakedAt = (...indices: number[]) => Array.from({ length: 60 }, (_, i) => (indices.includes(i) ? new Blob([`baked ${i}`]) : undefined));
+
+it("plays a frame from a bake still in progress instead of rendering a still", async () => {
+	const { player, harness, seeks } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 0.5 });
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(15), bakingScale: 0.5 });
+	player.update(0, 0);
+	await until(stillShown(harness));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toBe("baked 15");
+	expect((layer(harness)[0].texture as { resolution?: number }).resolution).toBe(0.5);
+	expect(seeks.some(seek => seek.startsWith("still"))).toBe(false);
+});
+
+it("renders a still where the bake in progress hasn't reached", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 0.5 });
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(...Array.from({ length: 10 }, (_, i) => i)), bakingScale: 1 });
+	player.update(0, 0);
+	await until(stillShown(harness));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.5<");
+});
+
+it("renders an export's still mid-bake, never a frame from the bake in progress", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 0.5 });
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(...Array.from({ length: 60 }, (_, i) => i)), bakingScale: 1 });
+	const serialise = jest.spyOn(harness, "captureIframeAsForeignObjectSvg");
+
+	await player.prepareStaticRender();
+
+	expect(serialise).toHaveBeenCalledTimes(1);
+	expect(await frameMarkup((harness.contentContainer.children[0] as StaticSprite).texture.source.blob)).toContain(">t=0.5<");
+	player.endStaticRender();
+});
+
+it("forgets a bake's frames once the clip's content changes", async () => {
+	const { player, harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(0, 1, 2) });
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("changed");
+
+	await player.reloadAsset();
+
+	expect(harness.bakingFrames).toBeNull();
+});
+
+it("forgets a failed bake's frames", () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { bakingFrames: bakedAt(0, 1, 2) });
+
+	harness.transitionToFailed();
+
+	expect(harness.bakingFrames).toBeNull();
+});
+
+it("keeps a sharper re-bake's frames hidden until it finishes", async () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { mode: "playback", capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5 });
+	const { held, releaseAll } = holdToBlob();
+	const capture = harness.runCapture(1);
+	await until(() => held.length > 0);
+
+	expect(harness.bakingFrames).toBeNull();
+	releaseAll();
+	await capture;
+});
+
+it("shows a first bake's frames as they land", async () => {
+	const { harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	const { held, releaseAll } = holdToBlob();
+	const capture = harness.runCapture();
+	await until(() => held.length > 1);
+	held.shift()!();
+	await until(() => harness.bakingFrames?.[0] !== undefined);
+
+	expect(harness.bakingFrames).toHaveLength(60);
+	expect(harness.bakingFrames!.filter(Boolean)).toHaveLength(1);
+	releaseAll();
+	await capture;
 });
 
 it("swaps the still for baked frames once the bake finishes", async () => {
