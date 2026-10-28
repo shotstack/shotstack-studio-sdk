@@ -25,7 +25,7 @@ import { createCaptureLoadingGraphic, createPlaceholderGraphic } from "./placeho
 const IFRAME_OFFSCREEN_X = -10000;
 const IFRAME_LOAD_TIMEOUT_MS = 10_000;
 const DECODED_FRAME_LIMIT = 30;
-// One first-pass stride: a held frame is never more than 233 ms behind at 30 fps.
+// How stale a held frame may be when it's chosen: 233 ms at 30 fps.
 const HELD_FRAME_LIMIT = 7;
 
 type HarnessWindow = Window & {
@@ -170,6 +170,8 @@ export class Html5Player extends Player {
 	private liveStillFrame: number = -1;
 	// False while the live still is a held frame from before the playhead, so pausing on it renders the exact one.
 	private liveStillExact: boolean = true;
+	// The frame the live still shows, which a held frame trails.
+	private liveStillShown: number = -1;
 	private liveStillInFlight: boolean = false;
 	private stillRequest: number | null = null;
 	// The frame the running bake draws next. Null between bakes.
@@ -1117,36 +1119,49 @@ export class Html5Player extends Player {
 				const frame = Math.floor(seconds * this.captureFps);
 				const hash = this.contentHash;
 				this.stillRequest = null;
-				const attempt = () =>
-					this.renderStill(seconds).catch(err => {
-						if (!this.disposed) console.warn("[Html5Player] still failed:", err);
-						return null;
-					});
-				// Playing, a clip holds a recent baked frame rather than spend bake time on a still.
+				// A still takes main-thread time from the bake, so a playing clip holds a recent baked frame.
 				const held = this.bakingFrames ? heldFrame(this.bakingFrames, frame, this.edit.isPlaying ? HELD_FRAME_LIMIT : 0) : null;
-				const baked = held === null ? undefined : this.bakingFrames?.[held];
-				if (baked && held !== frame) this.liveStillExact = false;
-				let texture = baked ? await this.bakingTexture(baked) : await attempt();
-				// A page can load too slowly once, so a failed still gets one more try while nothing newer is waiting.
-				if (!texture && !baked && this.liveStillFrame === frame && this.stillRequest === null) texture = await attempt();
-				const unbaked = this.mode === "editing" || this.mode === "stale" || this.mode === "capturing";
-				if (!texture || this.disposed || !unbaked || this.contentHash !== hash) {
-					texture?.destroy(true);
-				} else if (this.liveStill) {
-					this.liveStill.texture.destroy(true);
-					this.liveStill.texture = texture;
+				const shown = this.liveStillShown;
+				// Playback never steps back to an older frame, or decodes the frame it already shows.
+				if (this.edit.isPlaying && held !== null && this.liveStill && held <= shown && shown <= frame) {
+					this.liveStillExact = shown === frame;
 				} else {
-					this.removeLoadingGraphic();
-					this.liveStill = new pixi.Sprite(texture);
-					// A capture in progress shows its own copy of the clip.
-					this.liveStill.visible = !this.staticSprite;
-					this.contentContainer.addChild(this.liveStill);
-					if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
+					await this.renderLiveStill(seconds, frame, held, hash);
 				}
 			}
 		} finally {
 			this.liveStillInFlight = false;
 		}
+	}
+
+	private async renderLiveStill(seconds: number, frame: number, held: number | null, hash: string | null): Promise<void> {
+		const attempt = () =>
+			this.renderStill(seconds).catch(err => {
+				if (!this.disposed) console.warn("[Html5Player] still failed:", err);
+				return null;
+			});
+		const baked = held === null ? undefined : this.bakingFrames?.[held];
+		if (baked && held !== frame) this.liveStillExact = false;
+		let texture = baked ? await this.bakingTexture(baked) : await attempt();
+		// A page can load too slowly once, so a failed still gets one more try while nothing newer is waiting.
+		if (!texture && !baked && this.liveStillFrame === frame && this.stillRequest === null) texture = await attempt();
+		const unbaked = this.mode === "editing" || this.mode === "stale" || this.mode === "capturing";
+		if (!texture || this.disposed || !unbaked || this.contentHash !== hash) {
+			texture?.destroy(true);
+			return;
+		}
+		this.liveStillShown = baked && held !== null ? held : frame;
+		if (this.liveStill) {
+			this.liveStill.texture.destroy(true);
+			this.liveStill.texture = texture;
+			return;
+		}
+		this.removeLoadingGraphic();
+		this.liveStill = new pixi.Sprite(texture);
+		// A capture in progress shows its own copy of the clip.
+		this.liveStill.visible = !this.staticSprite;
+		this.contentContainer.addChild(this.liveStill);
+		if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
 	}
 
 	// The resolution makes a scaled frame's texture report the clip's full size.
@@ -1157,7 +1172,7 @@ export class Html5Player extends Player {
 	private removeLiveStill(): void {
 		this.stillRequest = null;
 		this.liveStillFrame = -1;
-		this.liveStillExact = true;
+		this.liveStillShown = -1;
 		if (!this.liveStill) return;
 		this.contentContainer.removeChild(this.liveStill);
 		this.liveStill.texture.destroy(true);

@@ -1604,6 +1604,7 @@ it.each([
 	[[0, 3], 2, 7, 0],
 	[[0, 3], 3, 7, 3],
 	[[0], 8, 7, null],
+	[[1], 8, 7, 1],
 	[[0, 3], 2, 0, null],
 	[[19], 20, 7, 19]
 ])("finds the frame to hold among %p at %p within %p frames: %p", (present, idx, maxBehind, expected) => {
@@ -1632,8 +1633,36 @@ it("holds the nearest baked frame while playing ahead of the bake", async () => 
 	expect(seeks.some(seek => seek.startsWith("still"))).toBe(false);
 });
 
+it("holds a baked frame exactly 7 frames back while playing", async () => {
+	const { harness } = await playingAhead(5);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toBe("baked 5");
+});
+
 it("renders a still while playing when the nearest baked frame is more than 7 frames back", async () => {
-	const { harness } = await playingAhead(0);
+	const { harness } = await playingAhead(4);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.4<");
+});
+
+it("decodes a held frame once while playing on through it", async () => {
+	const { player } = await playingAhead(8);
+	const decode = jest.spyOn(globalThis, "createImageBitmap");
+	[0.4, 0.4, 13 / 30, 13 / 30, 14 / 30].forEach(t => {
+		Object.assign(player, { getPlaybackTime: () => t });
+		player.update(0, 0);
+	});
+	await flush(50);
+
+	expect(decode).not.toHaveBeenCalled();
+});
+
+it("never steps back to an older baked frame than the still on screen while playing", async () => {
+	const { player, harness } = await playingAhead(0); // a still of frame 12
+	harness.bakingFrames![11] = new Blob(["baked 11"]);
+	Object.assign(player, { getPlaybackTime: () => 13 / 30 });
+	player.update(0, 0);
+	await flush(50);
 
 	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.4<");
 });
