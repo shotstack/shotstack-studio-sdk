@@ -342,7 +342,7 @@ const checkUmdGlobalMappings = () => {
 
 		const iifeArgCount = iifeArgs.split(",").length;
 
-		const factoryMatch = fd.match(/\}\)\([^,]+,function\(([^)]*)\)/);
+		const factoryMatch = fd.match(/\}\)\([^,]+,\(?function\(([^)]*)\)/);
 		if (!factoryMatch) {
 			errors.push(`${bundlePath}: Could not parse factory function signature.`);
 			continue;
