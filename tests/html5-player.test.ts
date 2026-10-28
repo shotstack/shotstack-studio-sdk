@@ -753,6 +753,39 @@ it("draws a frame only when the page changed, reusing the last frame's blob", as
 	expect(await frameMarkup(frames[59])).toContain('data-t="0.5"');
 });
 
+it("draws each frame of a looping page once, reusing it every time the loop comes round", async () => {
+	const { harness, iframe } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	jest.mocked(harness.seekHarness).mockImplementation((seconds, win = iframe.contentWindow) => {
+		const { body } = win!.document;
+		body.textContent = `phase=${Math.round(seconds * 30) % 15}`;
+	});
+	const toBlob = jest.mocked(HTMLCanvasElement.prototype.toBlob);
+	toBlob.mockClear();
+
+	const frames = (await harness.runCapture())!;
+
+	expect(toBlob).toHaveBeenCalledTimes(15);
+	expect(frames[45]).toBe(frames[0]);
+	expect(frames[59]).toBe(frames[14]);
+	expect(await frameMarkup(frames[59])).toContain(">phase=14<");
+});
+
+it("shares no frame between pages that differ only in their styles", async () => {
+	const { harness, iframe } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	jest.mocked(harness.seekHarness).mockImplementation((seconds, win = iframe.contentWindow) => {
+		const doc = win!.document;
+		const style = doc.querySelector("style") ?? doc.head.appendChild(doc.createElement("style"));
+		style.textContent = seconds >= 2 / 3 && seconds < 4 / 3 ? ".b{}" : ".a{}";
+		doc.body.textContent = "same";
+	});
+
+	const frames = (await harness.runCapture())!;
+
+	expect(await frameMarkup(frames[30])).toContain(".b{}");
+	expect(await frameMarkup(frames[59])).toContain(".a{}");
+	expect(frames[59]).not.toBe(frames[30]);
+});
+
 it.each([
 	[undefined, 4],
 	[2, 4],
