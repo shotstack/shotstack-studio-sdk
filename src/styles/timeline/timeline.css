@@ -256,13 +256,15 @@
 .ss-track[data-asset-type="shape"] {
 	background: rgba(255, 243, 184, 0.3);
 }
-.ss-track[data-asset-type="caption"] {
+.ss-track[data-asset-type="caption"],
+.ss-track[data-asset-type="rich-caption"] {
 	background: rgba(252, 228, 236, 0.3);
 }
 .ss-track[data-asset-type="svg"] {
 	background: rgba(251, 233, 231, 0.3);
 }
-.ss-track[data-asset-type="html"] {
+.ss-track[data-asset-type="html"],
+.ss-track[data-asset-type="html5"] {
 	background: rgba(179, 229, 252, 0.3);
 }
 .ss-track[data-asset-type="luma"] {
@@ -364,7 +366,8 @@
 	--clip-fg: #f57f17;
 	--clip-border: #f9a825;
 }
-.ss-clip[data-asset-type="caption"] {
+.ss-clip[data-asset-type="caption"],
+.ss-clip[data-asset-type="rich-caption"] {
 	--clip-bg: #fce4ec;
 	--clip-fg: #880e4f;
 	--clip-border: #c2185b;
@@ -374,7 +377,8 @@
 	--clip-fg: #bf360c;
 	--clip-border: #e64a19;
 }
-.ss-clip[data-asset-type="html"] {
+.ss-clip[data-asset-type="html"],
+.ss-clip[data-asset-type="html5"] {
 	--clip-bg: #b3e5fc;
 	--clip-fg: #006064;
 	--clip-border: #0097a7;
