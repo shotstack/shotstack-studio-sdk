@@ -2,7 +2,6 @@
 import { BufferingNotice, type ContentBounds, visibleBounds } from "@canvas/buffering-notice";
 
 const wide: ContentBounds = { left: 100, right: 740, top: 50, bottom: 410 };
-const narrow: ContentBounds = { left: 20, right: 320, top: 10, bottom: 180 };
 
 function mountNotice() {
 	let now = 0;
@@ -19,11 +18,10 @@ function mountNotice() {
 			notice.update(buffering, idle, bounds);
 		}
 	};
-	const expanded = () => element.getAttribute("aria-expanded") === "true";
 	const pauseTicking = (ms: number) => {
 		now += ms;
 	};
-	return { notice, element, root, play, expanded, pauseTicking };
+	return { notice, element, root, play, pauseTicking };
 }
 
 afterEach(() => {
@@ -57,66 +55,13 @@ it("goes after 1.5 s of smooth playback, and at once when paused or fully loaded
 	expect(element.hidden).toBe(true);
 });
 
-it("shows the full message for 4 s the first time, then collapses to the word", () => {
-	const { element, play, expanded } = mountNotice();
-	play(500, true);
-	expect(expanded()).toBe(true);
-	expect(element.textContent).toContain("You can keep watching. It'll be smoother once it's loaded.");
-
-	play(3950, true);
-	expect(expanded()).toBe(true);
-	play(50, true);
-	expect(expanded()).toBe(false);
-	expect(element.textContent).toContain("Buffering");
-});
-
-it("starts collapsed when it appears again", () => {
-	const { play, expanded } = mountNotice();
-	play(500, true);
-	play(1500, false);
+it("says only Buffering, and leaves it to the toolbar's status to tell assistive tech", () => {
+	const { element, play } = mountNotice();
 
 	play(500, true);
 
-	expect(expanded()).toBe(false);
-});
-
-it("starts collapsed on a video narrower than 400 px", () => {
-	const { play, expanded } = mountNotice();
-
-	play(500, true, false, narrow);
-
-	expect(expanded()).toBe(false);
-});
-
-it("opens while hovered, and stays open once clicked until clicked again", () => {
-	const { element, play, expanded } = mountNotice();
-	play(4500, true);
-	expect(expanded()).toBe(false);
-
-	element.dispatchEvent(new Event("pointerenter"));
-	expect(expanded()).toBe(true);
-	element.dispatchEvent(new Event("pointerleave"));
-	expect(expanded()).toBe(false);
-
-	element.click();
-	element.dispatchEvent(new Event("pointerleave"));
-	play(100, true);
-	expect(expanded()).toBe(true);
-	element.click();
-	expect(expanded()).toBe(false);
-});
-
-it("keeps its clicks and presses from reaching the canvas under it", () => {
-	const { element, root, play } = mountNotice();
-	play(500, true);
-	const reached = jest.fn();
-	root.addEventListener("pointerdown", reached);
-	root.addEventListener("click", reached);
-
-	element.dispatchEvent(new Event("pointerdown", { bubbles: true }));
-	element.click();
-
-	expect(reached).not.toHaveBeenCalled();
+	expect(element.textContent).toBe("Buffering");
+	expect(element.getAttribute("aria-hidden")).toBe("true");
 });
 
 it("sits inside the video's bottom-left corner", () => {
@@ -126,16 +71,6 @@ it("sits inside the video's bottom-left corner", () => {
 
 	expect(element.style.left).toBe("112px");
 	expect(element.style.top).toBe("398px");
-});
-
-it("gives assistive tech the whole message as a button", () => {
-	const { element, play } = mountNotice();
-
-	play(4500, true);
-
-	expect(element.tagName).toBe("BUTTON");
-	expect(element.type).toBe("button");
-	expect(element.getAttribute("aria-label")).toBe("Buffering. You can keep watching. It'll be smoother once it's loaded.");
 });
 
 it("leaves the canvas when disposed", () => {
