@@ -1,3 +1,4 @@
+import { BufferingNotice } from "@canvas/buffering-notice";
 import type { Player } from "@canvas/players/player";
 import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
@@ -61,6 +62,7 @@ export class Canvas {
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
 	private onWheelBound: (e: WheelEvent) => void;
 	private canvasRoot: HTMLDivElement | null = null;
+	private readonly bufferingNotice = new BufferingNotice();
 
 	constructor(edit: Edit) {
 		this.application = new pixi.Application();
@@ -141,6 +143,7 @@ export class Canvas {
 
 		root.style.position = "relative";
 		root.appendChild(this.application.canvas);
+		this.bufferingNotice.mount(root);
 
 		// Auto-mount UIController to canvas root (toolbars sit inside canvas)
 		// mount() handles deferred positioning via double rAF
@@ -648,6 +651,8 @@ export class Canvas {
 
 	private onTick(ticker: pixi.Ticker): void {
 		this.edit.update(ticker.deltaTime, ms(ticker.deltaMS));
+		const idle = !this.edit.isPlaying || this.edit.getPendingCaptures().pending === 0;
+		this.bufferingNotice.update(this.edit.isPlaybackBuffering(), idle, this.getContentBounds());
 
 		// Update canvas overlays (selection handles, guides, etc.)
 		this.uiController?.updateOverlays(ticker.deltaTime, ticker.deltaMS);
@@ -693,6 +698,7 @@ export class Canvas {
 	}
 
 	public dispose(): void {
+		this.bufferingNotice.dispose();
 		// Unsubscribe from Edit internal events
 		const internalEvents = this.edit.getInternalEvents();
 		internalEvents.off(InternalEvent.PlayerAddedToTrack, this.onPlayerAddedToTrack);

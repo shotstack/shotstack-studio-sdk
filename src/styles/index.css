@@ -22,6 +22,7 @@
 @import "./ui/background-color-picker.css";
 @import "./ui/font-picker.css";
 @import "./ui/webgl-error.css";
+@import "./ui/buffering-notice.css";
 
 /* Canvas Styles */
 @import "./canvas/canvas-pan.css";

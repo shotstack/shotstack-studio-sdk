@@ -1,0 +1,69 @@
+/* Sits in the video's corner while html5 playback stutters. It's editor chrome, so it never reaches an export. */
+.ss-buffering-notice {
+	position: absolute;
+	z-index: 8;
+	transform: translateY(-100%);
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	max-width: 280px;
+	padding: 6px 11px;
+	border: 0;
+	border-radius: 999px;
+	background: rgb(17 24 39 / 72%);
+	backdrop-filter: blur(4px);
+	color: #fff;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	font-size: 12px;
+	line-height: 1.3;
+	text-align: left;
+	cursor: pointer;
+}
+
+.ss-buffering-notice[hidden] {
+	display: none;
+}
+
+.ss-buffering-notice:focus-visible {
+	outline: 2px solid #3b82f6;
+	outline-offset: 2px;
+}
+
+.ss-buffering-notice-spinner {
+	flex: none;
+	width: 12px;
+	height: 12px;
+	border: 2px solid rgb(255 255 255 / 35%);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: ss-buffering-spin 0.9s linear infinite;
+}
+
+.ss-buffering-notice-label {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.ss-buffering-notice-message {
+	opacity: 0.85;
+}
+
+.ss-buffering-notice-message::before {
+	content: "· ";
+}
+
+.ss-buffering-notice:not(.ss-buffering-notice--expanded) .ss-buffering-notice-message {
+	display: none;
+}
+
+@keyframes ss-buffering-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ss-buffering-notice-spinner {
+		animation-duration: 3s;
+	}
+}
