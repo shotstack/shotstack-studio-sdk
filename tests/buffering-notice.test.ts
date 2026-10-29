@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-import { BufferingNotice, type ContentBounds } from "@canvas/buffering-notice";
+import { BufferingNotice, type ContentBounds, visibleBounds } from "@canvas/buffering-notice";
 
 const wide: ContentBounds = { left: 100, right: 740, top: 50, bottom: 410 };
 const narrow: ContentBounds = { left: 20, right: 320, top: 10, bottom: 180 };
@@ -13,14 +13,17 @@ function mountNotice() {
 	notice.update(false, false, wide);
 	const { element } = notice;
 	// Ticks at 50 ms, the way the canvas would call it every frame.
-	const play = (ms: number, buffering: boolean, idle = false, bounds = wide) => {
+	const play = (ms: number, buffering: boolean, idle = false, bounds: ContentBounds | null = wide) => {
 		for (let t = 0; t < ms; t += 50) {
 			now += 50;
 			notice.update(buffering, idle, bounds);
 		}
 	};
 	const expanded = () => element.getAttribute("aria-expanded") === "true";
-	return { notice, element, root, play, expanded };
+	const pauseTicking = (ms: number) => {
+		now += ms;
+	};
+	return { notice, element, root, play, expanded, pauseTicking };
 }
 
 afterEach(() => {
@@ -141,4 +144,35 @@ it("leaves the canvas when disposed", () => {
 	notice.dispose();
 
 	expect(root.querySelector(".ss-buffering-notice")).toBeNull();
+});
+
+it("keeps to the part of the video inside the preview", () => {
+	const { element, play } = mountNotice();
+	const shown = visibleBounds({ left: -50, right: 600, top: -20, bottom: 900 }, 800, 500);
+	expect(shown).toEqual({ left: 0, right: 600, top: 0, bottom: 500 });
+
+	play(500, true, false, shown);
+
+	expect(element.style.left).toBe("12px");
+	expect(element.style.top).toBe("488px");
+});
+
+it("hides while none of the video is in view", () => {
+	const { element, play } = mountNotice();
+	play(500, true);
+	const offscreen = visibleBounds({ left: 900, right: 1500, top: 0, bottom: 300 }, 800, 500);
+	expect(offscreen).toBeNull();
+
+	play(50, true, false, offscreen);
+
+	expect(element.hidden).toBe(true);
+});
+
+it("dates no timer from before a pause in ticking", () => {
+	const { element, play, pauseTicking } = mountNotice();
+	pauseTicking(5000);
+
+	play(50, true);
+
+	expect(element.hidden).toBe(true);
 });

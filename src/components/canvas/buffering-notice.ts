@@ -5,6 +5,15 @@ export interface ContentBounds {
 	bottom: number;
 }
 
+/** The part of the video inside a preview of this size, or null when none of it is. */
+export function visibleBounds(content: ContentBounds, width: number, height: number): ContentBounds | null {
+	const left = Math.max(content.left, 0);
+	const right = Math.min(content.right, width);
+	const top = Math.max(content.top, 0);
+	const bottom = Math.min(content.bottom, height);
+	return right > left && bottom > top ? { left, right, top, bottom } : null;
+}
+
 // Long enough that one late frame doesn't flash it, short enough that a real stutter gets explained.
 const SHOW_AFTER_MS = 500;
 const HIDE_AFTER_MS = 1500;
@@ -12,6 +21,8 @@ const EXPANDED_FOR_MS = 4000;
 // Narrower than this, the full message would cover too much of the picture.
 const NARROW_VIDEO_PX = 400;
 const INSET_PX = 12;
+// A longer gap between ticks means ticking paused, as in an export or a hidden tab, and says nothing about stutter.
+const MAX_TICK_GAP_MS = 100;
 const LABEL = "Buffering";
 const MESSAGE = "You can keep watching. It'll be smoother once it's loaded.";
 
@@ -44,7 +55,7 @@ export class BufferingNotice {
 			'<span class="ss-buffering-notice-spinner" aria-hidden="true"></span><span class="ss-buffering-notice-label"></span><span class="ss-buffering-notice-message"></span>';
 		this.element.querySelector(".ss-buffering-notice-label")!.textContent = LABEL;
 		this.element.querySelector(".ss-buffering-notice-message")!.textContent = MESSAGE;
-		// The canvas pans and selects on its own pointer events.
+		// The canvas root pans on pointerdown, and open popups close on outside clicks.
 		this.element.addEventListener("pointerdown", event => event.stopPropagation());
 		this.element.addEventListener("click", event => {
 			event.stopPropagation();
@@ -65,13 +76,13 @@ export class BufferingNotice {
 		root.appendChild(this.element);
 	}
 
-	/** `idle` is paused or fully loaded, which hides it at once. */
-	public update(buffering: boolean, idle: boolean, bounds: ContentBounds): void {
+	/** `idle` is paused or fully loaded, and `bounds` is null when none of the video is in view. Either hides it at once. */
+	public update(buffering: boolean, idle: boolean, bounds: ContentBounds | null): void {
 		const now = this.now();
 		// A change happened somewhere after the last tick, so its timer starts there.
-		const previous = this.lastTickAt ?? now;
+		const previous = this.lastTickAt !== null && now - this.lastTickAt <= MAX_TICK_GAP_MS ? this.lastTickAt : now;
 		this.lastTickAt = now;
-		if (idle) {
+		if (idle || !bounds) {
 			this.bufferingSince = null;
 			this.smoothSince = null;
 			this.hide();

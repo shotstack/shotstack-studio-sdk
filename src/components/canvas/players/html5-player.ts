@@ -972,11 +972,10 @@ export class Html5Player extends Player {
 		return this.edit.getHtml5Prerender() === "on-load" || this.hasTriggeredCapture ? "pending" : null;
 	}
 
-	// A playing clip stutters whenever it shows anything but the playhead's own frame.
+	// A baked frame reaches the screen a tick or two after the playhead does, so the bake decides, not the screen.
 	public override isPlaybackBuffering(): boolean {
-		if (this.disposed || !this.edit.isPlaying || !this.isActive()) return false;
-		if (this.mode === "playback" || this.mode === "failed") return false;
-		return this.liveStillShown !== Math.floor(this.getPlaybackTime() * this.captureFps);
+		if (!this.edit.isPlaying || !this.isActive() || this.getPlaybackReadiness() !== "pending") return false;
+		return !this.bakingFrames?.[Math.floor(this.getPlaybackTime() * this.captureFps)];
 	}
 
 	public override getCaptureProgress(): number {
