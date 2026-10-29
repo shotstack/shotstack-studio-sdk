@@ -31,6 +31,58 @@ export interface ClipComponentOptions {
 }
 
 /** Renders a single clip element */
+function fileName(src: string): string {
+	return (src.split("/").pop() || src).split("?")[0];
+}
+
+function truncateLabel(text: string): string {
+	return text.substring(0, 20) + (text.length > 20 ? "..." : "");
+}
+
+const BLOCK_ELEMENTS =
+	"address, article, aside, blockquote, dd, div, dl, dt, figcaption, figure, footer, h1, h2, h3, h4, h5, h6, header, li, main, nav, ol, p, pre, section, table, td, th, tr, ul";
+
+/** Each block's text on an html5 page, in reading order, with inline pieces such as animated words joined. */
+function pageLines(html: string): string[] {
+	// Parsing runs none of the page's scripts.
+	const doc = new DOMParser().parseFromString(html, "text/html");
+	doc.querySelectorAll("script, style, template, noscript").forEach(element => element.remove());
+	const lines: string[] = [];
+	let line = "";
+	const endLine = (): void => {
+		const text = line.replace(/\s+/g, " ").trim();
+		if (text) lines.push(text);
+		line = "";
+	};
+	const read = (node: Node): void => {
+		if (node.nodeType === Node.TEXT_NODE) {
+			const text = node.textContent ?? "";
+			// Line and word spans often sit flush against each other. Letters split one per span stay together.
+			if (text.trim().length > 1 && /\S$/.test(line) && /^\S/.test(text)) line += " ";
+			line += text;
+			return;
+		}
+		if (node.nodeType !== Node.ELEMENT_NODE) return;
+		const block = (node as Element).matches(BLOCK_ELEMENTS) || node.nodeName === "BR";
+		if (block) endLine();
+		node.childNodes.forEach(read);
+		if (block) endLine();
+	};
+	read(doc.body);
+	endLine();
+	return lines;
+}
+
+/**
+ * The line that reads as the page's headline. Pages often open with counters, bullets and all-caps labels, and a
+ * headline is the first line of two or more words in sentence case.
+ */
+export function pageHeadline(html: string): string | null {
+	const lines = pageLines(html);
+	const sentence = lines.find(text => /\p{Ll}/u.test(text) && (text.match(/\p{L}{2,}/gu)?.length ?? 0) >= 2);
+	return sentence ?? lines.find(text => /\p{L}/u.test(text)) ?? null;
+}
+
 export class ClipComponent {
 	public readonly element: HTMLElement;
 	private readonly options: ClipComponentOptions;
@@ -44,6 +96,9 @@ export class ClipComponent {
 	// Cached element references (avoid querySelector every frame)
 	private iconEl: HTMLElement | null = null;
 	private labelEl: HTMLElement | null = null;
+	// Parsing a page for its label is too slow to repeat on every draw.
+	private html5LabelSource: string | null = null;
+	private html5Label = "";
 	private badgeEl: HTMLElement | null = null;
 
 	constructor(clip: ClipState, options: ClipComponentOptions) {
@@ -368,6 +423,8 @@ export class ClipComponent {
 			shape: "◇",
 			caption: "≡",
 			html: "<>",
+			html5: "<>",
+			"rich-caption": "≡",
 			luma: "◐",
 			svg: "◇"
 		};
@@ -407,14 +464,27 @@ export class ClipComponent {
 			return "Shape";
 		}
 
-		if ("src" in asset && typeof asset.src === "string") {
+		if (assetType === "html5") {
+			const html = "html" in asset && typeof asset.html === "string" ? asset.html : "";
+			if (html !== this.html5LabelSource) {
+				this.html5LabelSource = html;
+				this.html5Label = truncateLabel(pageHeadline(html) ?? "HTML");
+			}
+			return this.html5Label;
+		}
+
+		// Its words come from parsing or transcribing the source at load, so the label names the source.
+		if (assetType === "rich-caption" && "src" in asset && typeof asset.src === "string") {
 			const { src } = asset;
-			const filename = src.split("/").pop() || src;
-			return filename.split("?")[0];
+			return `Captions · ${src.startsWith("alias://") ? src.slice("alias://".length) : fileName(src)}`;
+		}
+
+		if ("src" in asset && typeof asset.src === "string") {
+			return fileName(asset.src);
 		}
 
 		if ("text" in asset && typeof asset.text === "string") {
-			return asset.text.substring(0, 20) + (asset.text.length > 20 ? "..." : "");
+			return truncateLabel(asset.text);
 		}
 
 		return assetType || "Clip";
