@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 
 import { BakeQueue } from "@canvas/players/bake-queue";
-import { Html5Player, bakeScaleFor, captureFramesInFlight } from "@canvas/players/html5-player";
+import { Html5Player, bakeScaleFor, captureFramesInFlight, heldFrame } from "@canvas/players/html5-player";
 import type { Edit } from "@core/edit-session";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { sec } from "@core/timing/types";
@@ -1598,6 +1598,83 @@ it("shows a first bake's frames as they land", async () => {
 	expect(harness.bakingFrames!.filter(Boolean)).toHaveLength(1);
 	releaseAll();
 	await capture;
+});
+
+it.each([
+	[[0, 3], 2, 7, 0],
+	[[0, 3], 3, 7, 3],
+	[[0], 8, 7, null],
+	[[1], 8, 7, 1],
+	[[0, 3], 2, 0, null],
+	[[19], 20, 7, 19]
+])("finds the frame to hold among %p at %p within %p frames: %p", (present, idx, maxBehind, expected) => {
+	const frames = Array.from({ length: 20 }, (_, i) => (present.includes(i) ? new Blob([`${i}`]) : undefined));
+
+	expect(heldFrame(frames, idx, maxBehind)).toBe(expected);
+});
+
+const playingAhead = async (...baked: number[]) => {
+	const created = createStillPlayer();
+	const { player, harness, edit } = created;
+	Object.assign(edit, { isPlaying: true });
+	Object.assign(player, { getPlaybackTime: () => 0.4 }); // frame 12
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(...baked), bakingScale: 1 });
+	player.update(0, 0);
+	await until(stillShown(harness));
+	return created;
+};
+
+it("holds the nearest baked frame while playing ahead of the bake", async () => {
+	const { harness, seeks } = await playingAhead(8, 16);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toBe("baked 8");
+	expect(seeks.some(seek => seek.startsWith("still"))).toBe(false);
+});
+
+it("holds a baked frame exactly 7 frames back while playing", async () => {
+	const { harness } = await playingAhead(5);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toBe("baked 5");
+});
+
+it("renders a still while playing when the nearest baked frame is more than 7 frames back", async () => {
+	const { harness } = await playingAhead(4);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.4<");
+});
+
+it("decodes a held frame once while playing on through it", async () => {
+	const { player } = await playingAhead(8);
+	const decode = jest.spyOn(globalThis, "createImageBitmap");
+	[0.4, 0.4, 13 / 30, 13 / 30, 14 / 30].forEach(t => {
+		Object.assign(player, { getPlaybackTime: () => t });
+		player.update(0, 0);
+	});
+	await flush(50);
+
+	expect(decode).not.toHaveBeenCalled();
+});
+
+it("never steps back to an older baked frame than the still on screen while playing", async () => {
+	const { player, harness } = await playingAhead(0); // a still of frame 12
+	harness.bakingFrames![11] = new Blob(["baked 11"]);
+	Object.assign(player, { getPlaybackTime: () => 13 / 30 });
+	player.update(0, 0);
+	await flush(50);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.4<");
+});
+
+it("renders the exact still once playback pauses on a held frame", async () => {
+	const { player, harness, edit } = await playingAhead(8, 16);
+	const held = layer(harness)[0].texture;
+	Object.assign(edit, { isPlaying: false });
+	player.update(0, 0);
+	await until(() => layer(harness)[0].texture !== held);
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.4<");
 });
 
 it("swaps the still for baked frames once the bake finishes", async () => {
