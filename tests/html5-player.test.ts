@@ -1626,6 +1626,35 @@ const playingAhead = async (...baked: number[]) => {
 	return created;
 };
 
+it("reports buffering while playing a held frame, a late still or nothing", async () => {
+	const held = await playingAhead(8);
+	expect(held.player.isPlaybackBuffering()).toBe(true);
+
+	const late = await playingAhead(0); // a still of frame 12, the playhead's own
+	expect(late.player.isPlaybackBuffering()).toBe(false);
+	Object.assign(late.player, { getPlaybackTime: () => 13 / 30 });
+	expect(late.player.isPlaybackBuffering()).toBe(true);
+
+	const empty = createStillPlayer();
+	Object.assign(empty.edit, { isPlaying: true });
+	baking(empty.harness);
+	empty.harness.beginCapture();
+	expect(empty.player.isPlaybackBuffering()).toBe(true);
+});
+
+it("reports no buffering while paused, on the playhead's own baked frame, or once the bake is complete", async () => {
+	const { player, harness, edit } = await playingAhead(12);
+	expect(player.isPlaybackBuffering()).toBe(false);
+
+	Object.assign(player, { getPlaybackTime: () => 13 / 30 });
+	Object.assign(edit, { isPlaying: false });
+	expect(player.isPlaybackBuffering()).toBe(false);
+
+	Object.assign(edit, { isPlaying: true });
+	Object.assign(harness, { mode: "playback" });
+	expect(player.isPlaybackBuffering()).toBe(false);
+});
+
 it("holds the nearest baked frame while playing ahead of the bake", async () => {
 	const { harness, seeks } = await playingAhead(8, 16);
 

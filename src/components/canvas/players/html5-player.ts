@@ -972,6 +972,13 @@ export class Html5Player extends Player {
 		return this.edit.getHtml5Prerender() === "on-load" || this.hasTriggeredCapture ? "pending" : null;
 	}
 
+	// A playing clip stutters whenever it shows anything but the playhead's own frame.
+	public override isPlaybackBuffering(): boolean {
+		if (this.disposed || !this.edit.isPlaying || !this.isActive()) return false;
+		if (this.mode === "playback" || this.mode === "failed") return false;
+		return this.liveStillShown !== Math.floor(this.getPlaybackTime() * this.captureFps);
+	}
+
 	public override getCaptureProgress(): number {
 		if (this.getPlaybackReadiness() !== "pending") return 1;
 		return this.captureFramesTotal > 0 ? this.captureFramesDone / this.captureFramesTotal : 0;
