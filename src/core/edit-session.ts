@@ -585,6 +585,14 @@ export class Edit {
 	}
 
 	/**
+	 * Whether a playing html5 clip is showing a held frame, a late still or nothing.
+	 * @internal
+	 */
+	public isPlaybackBuffering(): boolean {
+		return this.clips.some(player => player.isPlaybackBuffering());
+	}
+
+	/**
 	 * Transient generation state for a clip, or undefined when idle. Not part of the
 	 * edit: never saved, never undone, cleared on reload.
 	 * @internal

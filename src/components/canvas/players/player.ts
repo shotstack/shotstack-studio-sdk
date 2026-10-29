@@ -585,6 +585,10 @@ export abstract class Player extends Entity {
 		return 1;
 	}
 
+	public isPlaybackBuffering(): boolean {
+		return false;
+	}
+
 	public isActive(): boolean {
 		// playbackTime is in seconds, matching clip start/end
 		return this.edit.playbackTime >= this.getStart() && this.edit.playbackTime < this.getEnd();

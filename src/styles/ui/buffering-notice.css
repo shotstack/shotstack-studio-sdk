@@ -1,0 +1,48 @@
+/* Sits in the video's corner while html5 playback stutters. It's editor chrome, so it never reaches an export. */
+.ss-buffering-notice {
+	position: absolute;
+	z-index: 8;
+	transform: translateY(-100%);
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding: 6px 11px;
+	border-radius: 999px;
+	background: rgb(17 24 39 / 72%);
+	-webkit-backdrop-filter: blur(4px);
+	backdrop-filter: blur(4px);
+	color: #fff;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.3;
+	white-space: nowrap;
+	/* A label, not a control: clicks go through to the canvas. */
+	pointer-events: none;
+}
+
+.ss-buffering-notice[hidden] {
+	display: none;
+}
+
+.ss-buffering-notice-spinner {
+	flex: none;
+	width: 12px;
+	height: 12px;
+	border: 2px solid rgb(255 255 255 / 35%);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: ss-buffering-spin 0.9s linear infinite;
+}
+
+@keyframes ss-buffering-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ss-buffering-notice-spinner {
+		animation-duration: 3s;
+	}
+}

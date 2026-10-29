@@ -1,8 +1,9 @@
+import { BufferingNotice, visibleBounds } from "@canvas/buffering-notice";
 import type { Player } from "@canvas/players/player";
 import { AlignmentGuides } from "@canvas/system/alignment-guides";
 import { createWebGLErrorOverlay } from "@canvas/webgl-error-overlay";
 import { Edit } from "@core/edit-session";
-import { InternalEvent } from "@core/events/edit-events";
+import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { sanitizeColor } from "@core/shared/color-utils";
 import { ms } from "@core/timing/types";
 import type { UIController } from "@core/ui/ui-controller";
@@ -61,6 +62,7 @@ export class Canvas {
 	private onBackgroundClickBound: (event: pixi.FederatedPointerEvent) => void;
 	private onWheelBound: (e: WheelEvent) => void;
 	private canvasRoot: HTMLDivElement | null = null;
+	private readonly bufferingNotice = new BufferingNotice();
 
 	constructor(edit: Edit) {
 		this.application = new pixi.Application();
@@ -141,6 +143,7 @@ export class Canvas {
 
 		root.style.position = "relative";
 		root.appendChild(this.application.canvas);
+		this.bufferingNotice.mount(root);
 
 		// Auto-mount UIController to canvas root (toolbars sit inside canvas)
 		// mount() handles deferred positioning via double rAF
@@ -568,6 +571,7 @@ export class Canvas {
 		internalEvents.on(InternalEvent.PlayerRemovedFromTrack, this.onPlayerRemovedFromTrack);
 		internalEvents.on(InternalEvent.TrackContainerRemoved, this.onTrackContainerRemoved);
 		internalEvents.on(InternalEvent.ViewportSizeChanged, this.onViewportSizeChanged);
+		this.edit.events.on(EditEvent.PlaybackPause, this.onPlaybackPause);
 		internalEvents.on(InternalEvent.ViewportNeedsZoomToFit, this.onViewportNeedsZoomToFit);
 	}
 
@@ -601,6 +605,11 @@ export class Canvas {
 
 	private onTrackContainerRemoved = ({ trackIndex }: { trackIndex: number }): void => {
 		this.removeTrackContainer(trackIndex);
+	};
+
+	// An export stops the ticker before it pauses, so no tick would be left to hide the notice.
+	private onPlaybackPause = (): void => {
+		this.bufferingNotice.update(false, true, null);
 	};
 
 	private onViewportSizeChanged = ({ width, height, backgroundColor }: { width: number; height: number; backgroundColor: string }): void => {
@@ -648,6 +657,9 @@ export class Canvas {
 
 	private onTick(ticker: pixi.Ticker): void {
 		this.edit.update(ticker.deltaTime, ms(ticker.deltaMS));
+		const idle = !this.edit.isPlaying || this.edit.getPendingCaptures().pending === 0;
+		const shown = visibleBounds(this.getContentBounds(), this.viewportSize.width, this.viewportSize.height);
+		this.bufferingNotice.update(this.edit.isPlaybackBuffering(), idle, shown);
 
 		// Update canvas overlays (selection handles, guides, etc.)
 		this.uiController?.updateOverlays(ticker.deltaTime, ticker.deltaMS);
@@ -693,6 +705,7 @@ export class Canvas {
 	}
 
 	public dispose(): void {
+		this.bufferingNotice.dispose();
 		// Unsubscribe from Edit internal events
 		const internalEvents = this.edit.getInternalEvents();
 		internalEvents.off(InternalEvent.PlayerAddedToTrack, this.onPlayerAddedToTrack);
@@ -700,6 +713,7 @@ export class Canvas {
 		internalEvents.off(InternalEvent.PlayerRemovedFromTrack, this.onPlayerRemovedFromTrack);
 		internalEvents.off(InternalEvent.TrackContainerRemoved, this.onTrackContainerRemoved);
 		internalEvents.off(InternalEvent.ViewportSizeChanged, this.onViewportSizeChanged);
+		this.edit.events.off(EditEvent.PlaybackPause, this.onPlaybackPause);
 		internalEvents.off(InternalEvent.ViewportNeedsZoomToFit, this.onViewportNeedsZoomToFit);
 
 		const root = document.querySelector<HTMLDivElement>(Canvas.CanvasSelector);

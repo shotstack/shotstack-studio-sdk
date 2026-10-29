@@ -1626,6 +1626,47 @@ const playingAhead = async (...baked: number[]) => {
 	return created;
 };
 
+it("reports buffering while the playhead's frame isn't baked, whatever is on screen", async () => {
+	const held = await playingAhead(8);
+	expect(held.player.isPlaybackBuffering()).toBe(true);
+
+	const still = await playingAhead(0);
+	expect(still.player.isPlaybackBuffering()).toBe(true);
+
+	const empty = createStillPlayer();
+	Object.assign(empty.edit, { isPlaying: true });
+	baking(empty.harness);
+	empty.harness.beginCapture();
+	expect(empty.player.isPlaybackBuffering()).toBe(true);
+});
+
+it("reports no buffering once the playhead's frame is baked, before it reaches the screen", async () => {
+	const { player, harness } = await playingAhead(12);
+	expect(player.isPlaybackBuffering()).toBe(false);
+
+	// The playhead moves before the frame on screen catches up.
+	Object.assign(player, { getPlaybackTime: () => 13 / 30 });
+	harness.bakingFrames![13] = new Blob(["baked 13"]);
+	expect(player.isPlaybackBuffering()).toBe(false);
+
+	Object.assign(player, { getPlaybackTime: () => 14 / 30 });
+	expect(player.isPlaybackBuffering()).toBe(true);
+});
+
+it("reports no buffering while paused, once the bake is complete, or for a clip that failed", async () => {
+	const { player, harness, edit } = await playingAhead(8);
+	Object.assign(edit, { isPlaying: false });
+	expect(player.isPlaybackBuffering()).toBe(false);
+
+	Object.assign(edit, { isPlaying: true });
+	Object.assign(harness, { mode: "playback" });
+	expect(player.isPlaybackBuffering()).toBe(false);
+
+	const failed = await playingAhead(8);
+	Object.assign(failed.harness, { fallbackGraphic: { destroy: jest.fn() } });
+	expect(failed.player.isPlaybackBuffering()).toBe(false);
+});
+
 it("holds the nearest baked frame while playing ahead of the bake", async () => {
 	const { harness, seeks } = await playingAhead(8, 16);
 
