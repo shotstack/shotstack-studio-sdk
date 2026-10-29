@@ -121,6 +121,8 @@ type PlayerHarness = {
 	renderStill(seconds: number): Promise<unknown>;
 	transitionToPlayback(): Promise<void>;
 	transitionToFailed(): void;
+	bakingFrames: Array<Blob | undefined> | null;
+	reloadAsset(): Promise<void>;
 };
 
 function createPlayer() {
@@ -737,6 +739,22 @@ it("keeps a still taken mid-capture and the capture from changing each other's f
 	expect(seeks.indexOf("still 0.1")).toBeLessThan(seeks.indexOf(`bake ${59 / 30}`));
 });
 
+it("bakes from the playhead to the clip's end, then from a fresh page up to the playhead", async () => {
+	const { harness, edit, iframe, seeks } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	Object.assign(edit, { playbackTime: 1 });
+	const loads = jest.spyOn(HTMLIFrameElement.prototype, "srcdoc", "set");
+	loads.mockClear();
+
+	const frames = (await harness.runCapture())!;
+
+	const order = [...Array.from({ length: 30 }, (_, i) => 30 + i), ...Array.from({ length: 30 }, (_, i) => i)];
+	expect(seeks.filter(seek => seek.startsWith("bake"))).toEqual(order.map(i => `bake ${i / 30}`));
+	expect(loads.mock.contexts.filter(context => context === iframe)).toHaveLength(2);
+	const markup = await Promise.all(frames.map(frameMarkup));
+	expect(markup.map(frame => /data-t="([^"]*)"/.exec(frame)?.[1])).toEqual(Array.from({ length: 60 }, (_, i) => String(i / 30)));
+	expect(markup.some(frame => frame.includes("data-rewound"))).toBe(false);
+});
+
 it("draws a frame only when the page changed, reusing the last frame's blob", async () => {
 	const { harness } = createStillPlayer(); // 2 s at 30 fps: 60 frames
 	const seek = jest.mocked(harness.seekHarness);
@@ -839,6 +857,66 @@ it.each([
 	expect(frames).toHaveLength(60);
 	const markup = await Promise.all(frames.map(frameMarkup));
 	expect(markup.map(frame => /data-t="([^"]*)"/.exec(frame)?.[1])).toEqual(Array.from({ length: 60 }, (_, i) => String(i / 30)));
+});
+
+const sliceEveryFrame = () => {
+	let clock = 0;
+	jest.spyOn(performance, "now").mockImplementation(() => {
+		clock += 13;
+		return clock;
+	});
+};
+
+const sharedInFlight = () => (Html5Player as unknown as { inFlight: { frames: number; bytes: number } }).inFlight;
+
+it("publishes frames and progress while later frames still draw", async () => {
+	const { harness, events } = createStillPlayer(); // 2 s at 30 fps: 60 frames
+	Object.assign(harness, { mode: "capturing" });
+	sliceEveryFrame();
+	const steps = () => events.emit.mock.calls.filter(([name]) => name === InternalEvent.CaptureProgressChanged).length;
+	let atLastSeek = { landed: 0, steps: 0 };
+	const record = jest.mocked(harness.seekHarness).getMockImplementation()!;
+	jest.mocked(harness.seekHarness).mockImplementation((seconds, win) => {
+		record(seconds, win);
+		if (seconds === 59 / 30) atLastSeek = { landed: harness.bakingFrames!.filter(Boolean).length, steps: steps() };
+	});
+
+	await harness.runCapture();
+
+	expect(atLastSeek.landed).toBeGreaterThan(30);
+	expect(atLastSeek.steps).toBeGreaterThan(10);
+});
+
+it("waits for another bake's frames to leave the window before drawing its own", async () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { renderedWidth: 3840, renderedHeight: 2160 });
+	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(16);
+	Object.assign(sharedInFlight(), { frames: 8, bytes: 8 * 3840 * 2160 * 4 });
+	let waits = 0;
+	jest.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
+		waits += 1;
+		if (waits === 5) Object.assign(sharedInFlight(), { frames: 0, bytes: 0 });
+		setTimeout(() => callback(0), 0);
+		return 0;
+	});
+
+	expect(await harness.runCapture()).toHaveLength(60);
+	expect(waits).toBeGreaterThanOrEqual(5);
+	expect(sharedInFlight()).toEqual({ frames: 0, bytes: 0 });
+});
+
+it("releases its share of the in-flight window when disposed mid-bake", async () => {
+	const { player, harness } = createStillPlayer();
+	const { held, releaseAll } = holdToBlob();
+	const capture = harness.runCapture();
+	await until(() => held.length > 0);
+
+	player.dispose();
+	releaseAll();
+	await capture;
+	await flush();
+
+	expect(sharedInFlight()).toEqual({ frames: 0, bytes: 0 });
 });
 
 it("returns no frames when the content changes while frames are in flight", async () => {
@@ -1150,8 +1228,8 @@ function holdCaptureQueue(): { drain: () => void; restore: () => void } {
 	const gate = new Promise<void>(resolve => {
 		drain = resolve;
 	});
-	// Under the playhead from the start, so it runs ahead of any clip that joins after it.
-	held.add({ start: () => 0, end: () => Infinity, playhead: () => 0 }, () => gate);
+	// Ahead of the playhead and earliest, so it runs ahead of any clip that joins after it.
+	held.add({ nextFrameEnd: () => 0, playhead: () => -Infinity }, () => gate);
 	Object.assign(Html5Player, { bakes: held });
 	return { drain, restore: () => Object.assign(Html5Player, { bakes }) };
 }
@@ -1282,6 +1360,46 @@ it("bakes the clip that plays first ahead of one whose page loaded first", async
 	}
 });
 
+it("shares one in-flight window between bakes that take turns", async () => {
+	const a = createStillPlayer();
+	const b = createStillPlayer();
+	b.harness.contentHash = "other";
+	[a, b].forEach(({ harness }) => Object.assign(harness, { renderedWidth: 3840, renderedHeight: 2160 }));
+	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(16);
+	sliceEveryFrame();
+	const { held, releaseAll } = holdToBlob();
+	const restore = emptyCaptureQueue();
+	try {
+		const captures = [a.harness.captureFrames(), b.harness.captureFrames()];
+		await until(() => held.length >= 8);
+		await flush(100);
+		expect(held).toHaveLength(8);
+
+		releaseAll();
+		expect((await Promise.all(captures)).map(frames => frames?.length)).toEqual([60, 60]);
+	} finally {
+		restore();
+	}
+});
+
+it("alternates overlapping clips' frames rather than baking one clip whole", async () => {
+	const a = createStillPlayer();
+	const b = createStillPlayer();
+	b.harness.contentHash = "other";
+	const order: string[] = [];
+	a.onSeek = seek => seek.startsWith("bake") && order.push("a");
+	b.onSeek = seek => seek.startsWith("bake") && order.push("b");
+	sliceEveryFrame();
+	const restore = emptyCaptureQueue();
+	try {
+		await Promise.all([a.harness.captureFrames(), b.harness.captureFrames()]);
+
+		expect(new Set(order.slice(0, 10)).size).toBe(2);
+	} finally {
+		restore();
+	}
+});
+
 it("drops a cached bake whose content changed during the lookup", async () => {
 	const { harness, events } = createStillPlayer();
 	let hit: (value: unknown) => void = () => {};
@@ -1388,6 +1506,98 @@ it("keeps showing stills after one fails to mount", async () => {
 
 	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=1<");
 	expect(warn).toHaveBeenCalledWith("[Html5Player] still failed:", expect.objectContaining({ message: "fit failed" }));
+});
+
+const bakedAt = (...indices: number[]) => Array.from({ length: 60 }, (_, i) => (indices.includes(i) ? new Blob([`baked ${i}`]) : undefined));
+
+it("plays a frame from a bake still in progress instead of rendering a still", async () => {
+	const { player, harness, seeks } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 0.5 });
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(15), bakingScale: 0.5 });
+	player.update(0, 0);
+	await until(stillShown(harness));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toBe("baked 15");
+	expect((layer(harness)[0].texture as { resolution?: number }).resolution).toBe(0.5);
+	expect(seeks.some(seek => seek.startsWith("still"))).toBe(false);
+});
+
+it("renders a still where the bake in progress hasn't reached", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 0.5 });
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(...Array.from({ length: 10 }, (_, i) => i)), bakingScale: 1 });
+	player.update(0, 0);
+	await until(stillShown(harness));
+
+	expect(await frameMarkup(layer(harness)[0].texture.source.blob)).toContain(">t=0.5<");
+});
+
+it("renders an export's still mid-bake, never a frame from the bake in progress", async () => {
+	const { player, harness } = createStillPlayer();
+	Object.assign(player, { getPlaybackTime: () => 0.5 });
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(...Array.from({ length: 60 }, (_, i) => i)), bakingScale: 1 });
+	const serialise = jest.spyOn(harness, "captureIframeAsForeignObjectSvg");
+
+	await player.prepareStaticRender();
+
+	expect(serialise).toHaveBeenCalledTimes(1);
+	expect(await frameMarkup((harness.contentContainer.children[0] as StaticSprite).texture.source.blob)).toContain(">t=0.5<");
+	player.endStaticRender();
+});
+
+it("forgets a bake's frames once the clip's content changes", async () => {
+	const { player, harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	Object.assign(harness, { bakingFrames: bakedAt(0, 1, 2) });
+	jest.spyOn(harness, "hashAsset").mockResolvedValue("changed");
+
+	await player.reloadAsset();
+
+	expect(harness.bakingFrames).toBeNull();
+});
+
+it("forgets a failed bake's frames", () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { bakingFrames: bakedAt(0, 1, 2) });
+
+	harness.transitionToFailed();
+
+	expect(harness.bakingFrames).toBeNull();
+});
+
+it("keeps a sharper re-bake's frames hidden until it finishes", async () => {
+	const { harness } = createStillPlayer();
+	Object.assign(harness, { mode: "playback", capturedFrames: [new Blob(["baked 0"])], capturedHash: "original@0.5", capturedScale: 0.5 });
+	const { held, releaseAll } = holdToBlob();
+	const capture = harness.runCapture(1);
+	await until(() => held.length > 0);
+
+	expect(harness.bakingFrames).toBeNull();
+	releaseAll();
+	await capture;
+});
+
+it("shows a first bake's frames as they land", async () => {
+	const { harness } = createStillPlayer();
+	baking(harness);
+	harness.beginCapture();
+	const { held, releaseAll } = holdToBlob();
+	const capture = harness.runCapture();
+	await until(() => held.length > 1);
+	held.shift()!();
+	await until(() => harness.bakingFrames?.[0] !== undefined);
+
+	expect(harness.bakingFrames).toHaveLength(60);
+	expect(harness.bakingFrames!.filter(Boolean)).toHaveLength(1);
+	releaseAll();
+	await capture;
 });
 
 it("swaps the still for baked frames once the bake finishes", async () => {
