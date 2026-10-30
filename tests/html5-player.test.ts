@@ -1050,6 +1050,15 @@ it("draws frames at the bake scale and sizes their texture back to the clip", as
 	expect((harness.contentContainer.children.at(-1) as PlaybackSprite).texture.resolution).toBe(0.5);
 });
 
+it("draws frames on a software canvas, since Firefox's GPU canvas fills some gradients solid", async () => {
+	const { harness } = createStillPlayer();
+	const getContext = jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage: jest.fn() } as never);
+
+	await harness.runCapture();
+
+	expect(getContext).toHaveBeenCalledWith("2d", { willReadFrequently: true });
+});
+
 it("draws a full-size frame of a fractional clip size as an unscaled draw does", async () => {
 	const { harness } = createStillPlayer();
 	Object.assign(harness, { renderedWidth: 1080.6, renderedHeight: 1920.4 });
