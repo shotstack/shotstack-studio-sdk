@@ -408,6 +408,18 @@ describe("output settings", () => {
 		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
 		exporter.dispose();
 	});
+
+	it("tags the video as limited range even when the encoder reports full range", async () => {
+		const { exporter } = createHarness();
+		await exporter.exportBlob();
+
+		const [, config] = jest.mocked(CanvasSource).mock.calls[0];
+		const meta = { decoderConfig: { codec: "avc1.42001f", colorSpace: { fullRange: true, matrix: "bt709" as const } } };
+		config.onEncodedPacket?.({} as never, meta);
+
+		expect(meta.decoderConfig.colorSpace).toEqual({ fullRange: false, matrix: "bt709" });
+		exporter.dispose();
+	});
 });
 
 describe("changes during export", () => {
@@ -656,7 +668,10 @@ describe("output size", () => {
 
 		expect(RenderTexture.create).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 1280, resolution: 1 }));
 		expect(canEncodeVideo).toHaveBeenCalledWith("avc", { width: 720, height: 1280, bitrate: 2_222_222 });
-		expect(CanvasSource).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 1280 }), { codec: "avc", bitrate: 2_222_222 });
+		expect(CanvasSource).toHaveBeenCalledWith(
+			expect.objectContaining({ width: 720, height: 1280 }),
+			expect.objectContaining({ codec: "avc", bitrate: 2_222_222 })
+		);
 		exporter.dispose();
 	});
 });

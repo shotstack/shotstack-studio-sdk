@@ -138,7 +138,16 @@ export class ExportCoordinator {
 			const ctx = canvas.getContext("2d");
 			if (!ctx) throw new Error("No 2D context");
 
-			const videoSource = new CanvasSource(canvas, { codec: "avc", bitrate: cfg.bitrate });
+			const videoSource = new CanvasSource(canvas, {
+				codec: "avc",
+				bitrate: cfg.bitrate,
+				// Chrome, Safari and Firefox all encode canvas frames as limited range, but Safari reports full range,
+				// which players honour by showing white as grey.
+				onEncodedPacket: (_packet, meta) => {
+					const colorSpace = meta?.decoderConfig?.colorSpace;
+					if (colorSpace) colorSpace.fullRange = false;
+				}
+			});
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
