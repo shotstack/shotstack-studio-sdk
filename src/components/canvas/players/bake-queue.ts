@@ -1,3 +1,5 @@
+import { nextTask } from "@shared/utils";
+
 /** Where a waiting bake stands on the timeline. Read at each pick, so seeks, edits and progress count. */
 export interface BakeSlot {
 	/** Timeline time at which the next frame this bake draws leaves the screen. */
@@ -59,12 +61,12 @@ export class BakeQueue {
 	private schedule(): void {
 		if (this.running || this.scheduled || this.waiting.length === 0) return;
 		this.scheduled = true;
-		setTimeout(() => {
+		nextTask().then(() => {
 			this.scheduled = false;
 			if (this.running || this.waiting.length === 0) return;
 			const [next] = this.waiting.splice(nextBake(this.waiting.map(({ slot }) => slot)), 1);
 			this.running = true;
 			next.run();
-		}, 0);
+		});
 	}
 }

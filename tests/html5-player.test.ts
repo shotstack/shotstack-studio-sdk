@@ -902,6 +902,7 @@ const sliceEveryFrame = () => {
 };
 
 const sharedInFlight = () => (Html5Player as unknown as { inFlight: { frames: number; bytes: number } }).inFlight;
+const roomWaiters = () => (Html5Player as unknown as { roomWaiters: Array<() => void> }).roomWaiters;
 
 it("publishes frames and progress while later frames still draw", async () => {
 	const { harness, events } = createStillPlayer(); // 2 s at 30 fps: 60 frames
@@ -926,16 +927,23 @@ it("waits for another bake's frames to leave the window before drawing its own",
 	Object.assign(harness, { renderedWidth: 3840, renderedHeight: 2160 });
 	jest.spyOn(Navigator.prototype, "hardwareConcurrency", "get").mockReturnValue(16);
 	Object.assign(sharedInFlight(), { frames: 8, bytes: 8 * 3840 * 2160 * 4 });
-	let waits = 0;
-	jest.spyOn(window, "requestAnimationFrame").mockImplementation(callback => {
-		waits += 1;
-		if (waits === 5) Object.assign(sharedInFlight(), { frames: 0, bytes: 0 });
-		setTimeout(() => callback(0), 0);
-		return 0;
-	});
+	const toBlob = jest.mocked(HTMLCanvasElement.prototype.toBlob);
+	toBlob.mockClear();
+	const rafs = jest.spyOn(window, "requestAnimationFrame");
 
-	expect(await harness.runCapture()).toHaveLength(60);
-	expect(waits).toBeGreaterThanOrEqual(5);
+	const capture = harness.runCapture();
+	await until(() => roomWaiters().length > 0);
+	const rafsWhileWaiting = rafs.mock.calls.length;
+	await flush(20);
+	expect(toBlob).not.toHaveBeenCalled();
+	expect(rafs.mock.calls.length).toBe(rafsWhileWaiting);
+	// The other bake's frames land.
+	Object.assign(sharedInFlight(), { frames: 0, bytes: 0 });
+	roomWaiters()
+		.splice(0)
+		.forEach(wake => wake());
+
+	expect(await capture).toHaveLength(60);
 	expect(sharedInFlight()).toEqual({ frames: 0, bytes: 0 });
 });
 

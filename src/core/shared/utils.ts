@@ -146,8 +146,28 @@ export function createThrottle<TArgs extends unknown[]>(
 	return { call, flush, cancel };
 }
 
-/** Resolve on the next animation frame, or a timer when rAF is paused (hidden document). @internal */
+/**
+ * Resolve on the next task. A hidden page holds timers back for a second or more, but not messages.
+ * @internal
+ */
+export function nextTask(): Promise<void> {
+	return new Promise<void>(resolve => {
+		if (typeof document === "undefined" || !document.hidden) {
+			setTimeout(resolve, 0);
+			return;
+		}
+		const { port1, port2 } = new MessageChannel();
+		port1.onmessage = () => {
+			port1.close();
+			resolve();
+		};
+		port2.postMessage(null);
+	});
+}
+
+/** Resolve on the next animation frame, or a timer when rAF stalls. A hidden page paints nothing, so it waits a task. @internal */
 export function nextFrame(): Promise<void> {
+	if (typeof document !== "undefined" && document.hidden) return nextTask();
 	return new Promise<void>(resolve => {
 		let settled = false;
 		const finish = (): void => {

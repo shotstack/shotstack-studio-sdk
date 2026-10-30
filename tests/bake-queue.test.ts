@@ -7,6 +7,11 @@ const settle = () =>
 		setTimeout(resolve, 0);
 	});
 
+afterEach(() => {
+	Reflect.deleteProperty(globalThis, "document");
+	jest.useRealTimers();
+});
+
 describe("nextBake", () => {
 	it("takes the earliest next frame still ahead of the playhead, then frames it has passed", () => {
 		const playhead = () => 30;
@@ -106,6 +111,13 @@ describe("BakeQueue", () => {
 		await Promise.all([first, ...rest]);
 
 		expect(ran).toEqual(["A", "C", "B"]);
+	});
+
+	it("starts a bake while the page is hidden and holds its timers back", async () => {
+		jest.useFakeTimers();
+		Object.assign(globalThis, { document: { hidden: true } });
+
+		await expect(new BakeQueue().add(at(0.1), async () => "baked")).resolves.toBe("baked");
 	});
 
 	it("moves on after a bake fails, and hands the failure to its caller", async () => {
