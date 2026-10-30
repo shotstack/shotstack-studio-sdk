@@ -41,7 +41,7 @@ const BAKE_SCALES = [0.25, 0.5, 0.75, 1];
 // A remembered frame holds its body markup, so a window bounds the memory. 300 frames covers a 10 s loop at 30 fps.
 const REPEAT_WINDOW_FRAMES = 300;
 // Part of every bake's cache key, so raising it redraws every cached bake.
-const FRAME_DRAWING_VERSION = 1;
+const FRAME_DRAWING_VERSION = 2;
 const ANIMATION_OVERRIDE = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
 
 // A base64 bitmap in a frame's markup: a CSS url(), an <img> source, or a canvas painted as a background.
@@ -109,7 +109,8 @@ async function foreignObjectSvgToWebp(svg: string, width: number, height: number
 	const canvas = document.createElement("canvas");
 	canvas.width = width * scale;
 	canvas.height = height * scale;
-	const ctx = canvas.getContext("2d");
+	// Firefox's GPU canvas draws some of a frame's gradients as a solid fill. A canvas set for reading back draws in software.
+	const ctx = canvas.getContext("2d", { willReadFrequently: true });
 	if (!ctx) throw new Error("2D context unavailable for foreignObject rasterise");
 	ctx.drawImage(img, 0, 0, width * scale, height * scale);
 	const blob = await new Promise<Blob | null>(resolve => {
