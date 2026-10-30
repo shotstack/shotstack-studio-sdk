@@ -9,6 +9,7 @@ import { ExportProgressUI } from "@core/export/export-progress-ui";
 import { ExportError, exportBitrate } from "@core/export/export-utils";
 import { calculateSizeFromPreset } from "@core/output-settings-manager";
 import { canEncodeAudio, canEncodeVideo, CanvasSink, CanvasSource, Input, Output } from "mediabunny";
+import { RenderTarget, RenderTexture } from "pixi.js";
 
 const mockOutputs: Array<{ cancel: jest.Mock; addAudioTrack: jest.Mock; state: string }> = [];
 
@@ -53,7 +54,10 @@ jest.mock("pixi.js", () => ({
 	...require("./helpers/pixi-mock-filters").pixiFilterStubs,
 	Rectangle: jest.fn().mockImplementation((x: number, y: number, width: number, height: number) => ({ x, y, width, height })),
 	Texture: jest.fn((options: object) => ({ ...options, destroy: jest.fn() })),
-	TextureSource: { from: jest.fn(() => ({ update: jest.fn() })) }
+	TextureSource: { from: jest.fn(() => ({ update: jest.fn() })) },
+	Matrix: jest.fn(),
+	RenderTexture: { create: jest.fn((options: object) => ({ ...options, destroy: jest.fn() })) },
+	RenderTarget: jest.fn().mockImplementation((options: object) => ({ ...options, destroy: jest.fn() }))
 }));
 
 // The canvas package needs TextEncoder, which jsdom lacks; the export only uses its font-name parser.
@@ -97,6 +101,7 @@ function createHarness() {
 	};
 	const viewAtExtract: Array<typeof viewport> = [];
 	const renderer = {
+		view: { antialias: true },
 		render: jest.fn(),
 		extract: {
 			pixels: jest.fn(() => {
@@ -451,10 +456,12 @@ describe("off-screen export", () => {
 		await exporter.exportBlob();
 
 		expect(renderer.extract.pixels).toHaveBeenCalledTimes(2);
-		expect(renderer.extract.pixels).toHaveBeenCalledWith({ target: viewport, frame: { x: 0, y: 0, width: 4, height: 2 }, resolution: 1 });
+		expect(RenderTexture.create).toHaveBeenCalledWith(expect.objectContaining({ width: 4, height: 2, resolution: 1 }));
+		// Every draw goes to the export's own target, never to the screen.
+		expect(renderer.render).toHaveBeenCalledTimes(2);
+		expect(renderer.render.mock.calls.every(([options]) => options.container === viewport && options.target)).toBe(true);
 		expect(viewAtExtract).toEqual([before, before]);
 		expect(viewport).toEqual(before);
-		expect(renderer.render).not.toHaveBeenCalled();
 		expect(edit.setExportMode).not.toHaveBeenCalled();
 		expect(edit.executeEditCommand).not.toHaveBeenCalled();
 		exporter.dispose();
@@ -641,17 +648,32 @@ describe("editor restart", () => {
 
 describe("output size", () => {
 	it("draws and encodes at the size the editor lays clips out in, with a bitrate for that size", async () => {
-		const { exporter, edit, renderer } = createHarness();
+		const { exporter, edit } = createHarness();
 		// An edit sized by resolution "hd" and aspectRatio "9:16", with no output.size.
 		edit.size = calculateSizeFromPreset("hd", "9:16");
 
 		await exporter.exportBlob();
 
-		expect(renderer.extract.pixels).toHaveBeenCalledWith(expect.objectContaining({ frame: { x: 0, y: 0, width: 720, height: 1280 } }));
+		expect(RenderTexture.create).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 1280, resolution: 1 }));
 		expect(canEncodeVideo).toHaveBeenCalledWith("avc", { width: 720, height: 1280, bitrate: 2_222_222 });
 		expect(CanvasSource).toHaveBeenCalledWith(expect.objectContaining({ width: 720, height: 1280 }), { codec: "avc", bitrate: 2_222_222 });
 		exporter.dispose();
 	});
+});
+
+it("draws every frame into one render target that has a stencil buffer from its first frame", async () => {
+	const { exporter, renderer } = createHarness(); // 1 s at 2 fps: 2 frames
+	jest.mocked(RenderTarget).mockClear();
+
+	await exporter.exportBlob();
+
+	expect(RenderTarget).toHaveBeenCalledTimes(1);
+	expect(RenderTarget).toHaveBeenCalledWith(expect.objectContaining({ stencil: true }));
+	const target = jest.mocked(RenderTarget).mock.results[0].value;
+	expect(renderer.render).toHaveBeenCalledTimes(2);
+	expect(renderer.render.mock.calls.map(([options]) => options.target)).toEqual([target, target]);
+	expect(target.destroy).toHaveBeenCalled();
+	exporter.dispose();
 });
 
 describe("exportBitrate", () => {
