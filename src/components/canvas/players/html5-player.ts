@@ -40,10 +40,33 @@ const CAPTURE_PROGRESS_STEPS = 20;
 const BAKE_SCALES = [0.25, 0.5, 0.75, 1];
 // A remembered frame holds its body markup, so a window bounds the memory. 300 frames covers a 10 s loop at 30 fps.
 const REPEAT_WINDOW_FRAMES = 300;
+// Part of every bake's cache key, so raising it redraws every cached bake.
+const FRAME_DRAWING_VERSION = 1;
 const ANIMATION_OVERRIDE = `<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>`;
 
+// A base64 bitmap in a frame's markup: a CSS url(), an <img> source, or a canvas painted as a background.
+const NESTED_BITMAP = /data:image\/(?!svg)[\w.+-]+;base64,[A-Za-z0-9+/=]+/g;
+
+// WebKit lays an SVG image out as offscreen, so a large bitmap inside one decodes asynchronously and a draw before
+// the decode lands leaves it out. Nothing signals that decode, but an <img decoding="sync"> decodes synchronously, so
+// one per bitmap, painted ahead of the page, has every bitmap ready within the same draw. opacity:0 would skip its paint.
+// Other engines decode in time and would pay for the extra decodes on every frame. Every iOS browser runs WebKit and
+// reports Apple as its vendor.
 function foreignObjectSvg(width: number, height: number, styles: string, body: string): string {
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><foreignObject width="${width}" height="${height}">${styles}${ANIMATION_OVERRIDE}${body}</foreignObject></svg>`;
+	const decoders =
+		navigator.vendor === "Apple Computer, Inc."
+			? [...new Set(`${styles}${body}`.match(NESTED_BITMAP))]
+					.map(
+						src =>
+							`<img xmlns="http://www.w3.org/1999/xhtml" decoding="sync" src="${src}" style="position:absolute;left:0;top:0;width:1px;height:1px;filter:opacity(0)!important"/>`
+					)
+					.join("")
+			: "";
+	return (
+		`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+		`${decoders && `<foreignObject width="1" height="1">${decoders}</foreignObject>`}` +
+		`<foreignObject width="${width}" height="${height}">${styles}${ANIMATION_OVERRIDE}${body}</foreignObject></svg>`
+	);
 }
 
 function forceLayout(el: HTMLElement): void {
@@ -207,7 +230,7 @@ export class Html5Player extends Player {
 			width: this.renderedWidth,
 			height: this.renderedHeight
 		});
-		return `${content}:${frameCount}@${captureFps}`;
+		return `${content}:${frameCount}@${captureFps}:v${FRAME_DRAWING_VERSION}`;
 	}
 
 	// Canvas pixels per clip pixel: a bake at this scale or above looks as sharp as a full-size one.

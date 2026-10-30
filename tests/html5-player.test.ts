@@ -382,6 +382,40 @@ it("paints canvas pixels into the capture as the canvas's own background", () =>
 	expect(canvas.getAttribute("style")).toBe("border: 4px solid gold;");
 });
 
+it("decodes every image a capture embeds before the page paints in WebKit, without drawing it", () => {
+	const { harness, iframe } = createPlayer();
+	const doc = iframe.contentDocument!;
+	jest.spyOn(navigator, "vendor", "get").mockReturnValue("Apple Computer, Inc.");
+	const photo = "data:image/jpeg;base64,/9j/4AAQ";
+	const style = doc.createElement("style");
+	style.textContent = `.hero{background:url(${photo}) center/cover} .again{background-image:url('${photo}')} .grain{background:url('data:image/svg+xml;utf8,<svg/>')}`;
+	doc.head.appendChild(style);
+	const canvas = doc.createElement("canvas");
+	doc.body.replaceChildren(Object.assign(doc.createElement("div"), { className: "hero" }), canvas);
+	jest.spyOn(Object.getPrototypeOf(canvas) as HTMLCanvasElement, "toDataURL").mockReturnValue("data:image/png;base64,AAAA");
+
+	const parsed = new DOMParser().parseFromString(harness.captureIframeAsForeignObjectSvg(1080, 1920), "image/svg+xml");
+	const [decoders, page] = Array.from(parsed.documentElement.children);
+	const images = Array.from(decoders.querySelectorAll("img"));
+
+	expect(parsed.querySelector("parsererror")).toBeNull();
+	expect(images.map(img => img.getAttribute("src"))).toEqual([photo, "data:image/png;base64,AAAA"]);
+	expect(images.every(img => img.getAttribute("decoding") === "sync" && img.getAttribute("style")!.includes("filter:opacity(0)"))).toBe(true);
+	expect(page.querySelector(".hero")).not.toBeNull();
+});
+
+it("leaves embedded images to the page outside WebKit", () => {
+	const { harness, iframe } = createPlayer();
+	const doc = iframe.contentDocument!;
+	jest.spyOn(navigator, "vendor", "get").mockReturnValue("Google Inc.");
+	doc.body.replaceChildren(Object.assign(doc.createElement("img"), { src: "data:image/jpeg;base64,/9j/4AAQ" }));
+
+	const parsed = new DOMParser().parseFromString(harness.captureIframeAsForeignObjectSvg(1080, 1920), "image/svg+xml");
+
+	expect(parsed.documentElement.children).toHaveLength(1);
+	expect(parsed.querySelectorAll("img")).toHaveLength(1);
+});
+
 it("keeps a failed capture inside its canvas layer and retries only after the asset changes", async () => {
 	const { player, harness, iframe, events, edit } = createPlayer();
 	jest.spyOn(console, "warn").mockImplementation(() => {});
