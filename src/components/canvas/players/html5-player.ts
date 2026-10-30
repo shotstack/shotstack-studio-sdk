@@ -128,6 +128,8 @@ export class Html5Player extends Player {
 	private static readonly mounts = new Set<Promise<void>>();
 	// Frames every bake has in flight. Bakes take turns, so they share one window and one memory budget.
 	private static readonly inFlight = { frames: 0, bytes: 0 };
+	// Bakes waiting for room in the window, woken whenever any bake's frame lands.
+	private static readonly roomWaiters: Array<() => void> = [];
 
 	private iframe: HTMLIFrameElement | null = null;
 	private renderedWidth: number = 0;
@@ -577,6 +579,7 @@ export class Html5Player extends Player {
 						.finally(() => {
 							inFlight.frames -= 1;
 							inFlight.bytes -= frameBytes;
+							Html5Player.roomWaiters.splice(0).forEach(wake => wake());
 						});
 					// Marks a queued frame's failure handled; awaiting it rethrows.
 					drawn.catch(() => undefined);
@@ -599,8 +602,11 @@ export class Html5Player extends Player {
 				if (stale()) return null;
 				publish(idx, frame);
 			} else if (issued < frameCount) {
-				// Other bakes' frames fill the window, and they finish without their bakes' turns.
-				await nextFrame();
+				// Other bakes' frames fill the window and land without their bakes' turns. Polling for that would spin on a hidden
+				// page, where a task comes at once.
+				await new Promise<void>(resolve => {
+					Html5Player.roomWaiters.push(resolve);
+				});
 				if (stale()) return null;
 			}
 		}
