@@ -221,6 +221,16 @@ export class ExportCoordinator {
 		const tickerWasRunning = this.app.ticker.started;
 		this.app.stop();
 		const stopWatching: Array<() => void> = [];
+		// Into a new texture pixi adds the stencil buffer at the first mask, mid-frame, and Firefox then draws that
+		// frame's masked containers blank. A target that has its stencil from the start draws every frame.
+		const frameTexture = pixi.RenderTexture.create({
+			width: cfg.size.width,
+			height: cfg.size.height,
+			resolution: 1,
+			antialias: this.app.renderer.view.antialias
+		});
+		const frameTarget = new pixi.RenderTarget({ colorTextures: [frameTexture], stencil: true, depth: true });
+		const frameTransform = new pixi.Matrix();
 
 		try {
 			this.edit.pause();
@@ -250,13 +260,10 @@ export class ExportCoordinator {
 				try {
 					await Promise.all(active.map(clip => clip.prepareStaticRender()));
 					throwIfStopped();
-					// pixi renders the container into a texture with its own transform swapped for the frame's,
-					// so the editor's pan and zoom never reach these pixels; resolution pins them to output pixels.
-					const pixels = this.app.renderer.extract.pixels({
-						target: container,
-						frame: new pixi.Rectangle(0, 0, cfg.size.width, cfg.size.height),
-						resolution: 1
-					});
+					// The identity transform stands in for the container's own, so the editor's pan and zoom never reach
+					// these pixels; the texture's resolution pins them to output pixels.
+					this.app.renderer.render({ container, target: frameTarget, transform: frameTransform, clearColor: [0, 0, 0, 0] });
+					const pixels = this.app.renderer.extract.pixels(frameTexture);
 
 					ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels.pixels), pixels.width, pixels.height), 0, 0);
 				} finally {
@@ -272,6 +279,8 @@ export class ExportCoordinator {
 			for (const stop of stopWatching) stop();
 			// Before restoring playback, so a throw there can't leave the editor frozen. start() only schedules a frame.
 			if (tickerWasRunning) this.app.start();
+			frameTarget.destroy();
+			frameTexture.destroy(true);
 			this.videoProcessor.restore();
 			this.edit.seek(sec(playbackTime));
 			if (wasPlaying) this.edit.play();
