@@ -229,4 +229,36 @@ describe("generation through the public API", () => {
 		await expect(edit.generateClip(clipIdOf(edit))).rejects.toThrow(/No asset generator registered/);
 		edit.dispose();
 	});
+
+	it("continues a generated image with a video that starts from its file", async () => {
+		const edit = new Edit({
+			timeline: { tracks: [{ clips: [{ asset: { type: "image", prompt: "a lighthouse" }, start: 0, length: 4 }] }] },
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+		edit.registerAssetGenerator(async () => ({ url: "https://cdn.example.com/lighthouse.png" }), {
+			catalogue: {
+				models: [
+					{
+						model: "i2v",
+						type: "video",
+						options: {
+							type: "object",
+							additionalProperties: false,
+							required: ["startSrc"],
+							properties: { startSrc: { type: "string", format: "uri" } }
+						}
+					}
+				]
+			}
+		});
+		await edit.generateClip(clipIdOf(edit));
+		await edit.continueFromClip(clipIdOf(edit));
+		expect(edit.getEdit().timeline.tracks[0]?.clips[1]).toMatchObject({
+			start: 4,
+			length: 5,
+			asset: { type: "video", model: "i2v", options: { startSrc: "https://cdn.example.com/lighthouse.png" } }
+		});
+		edit.dispose();
+	});
 });
