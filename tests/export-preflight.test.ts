@@ -59,7 +59,8 @@ describe("findEditIssues", () => {
 			clip({ asset: { type: "image", src: "https://example.com/a.png" }, effect: "zoomInSlow", transition: { in: "fade", out: "none" } }),
 			clip({ asset: { type: "rich-text", text: "Hi", font: { family: "Montserrat", weight: 700 } }, transition: { out: "slideLeftFast" } }),
 			clip({ asset: { type: "text", text: "Hi", font: { family: "Brand Sans" } } }),
-			clip({ asset: { type: "html", html: '<p data-html-type="text">Hi</p>' }, filter: "none" })
+			clip({ asset: { type: "html", html: '<p data-html-type="text">Hi</p>' }, filter: "none" }),
+			clip({ asset: { type: "html5", html: "<div>Hi</div>" } })
 		];
 
 		expect(findEditIssues(editWith(faithful), HD_BITRATE)).toEqual([]);
@@ -92,13 +93,8 @@ describe("findEditIssues", () => {
 		expect(codes([clip({ asset: { type: "image", src: "https://example.com/a.png" }, filter: "greyscale" })])).toEqual(["filter"]);
 	});
 
-	it("reports HTML that isn't the plain text form, and any html5 clip, as html", () => {
-		expect(
-			codes([
-				clip({ asset: { type: "html", html: "<table><tr><td>Hi</td></tr></table>" } }),
-				clip({ asset: { type: "html5", html: "<div>Hi</div>" } })
-			])
-		).toEqual(["html", "html"]);
+	it("reports HTML that isn't the plain text form as html", () => {
+		expect(codes([clip({ asset: { type: "html", html: "<table><tr><td>Hi</td></tr></table>" } })])).toEqual(["html"]);
 	});
 
 	it("reports an effect the presets don't animate as effect", () => {

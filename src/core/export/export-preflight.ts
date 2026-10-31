@@ -40,7 +40,7 @@ function findClipIssues(edit: PreflightEdit, clip: ResolvedClip): ExportIssue[] 
 	if (isPendingAiAsset(asset)) add("ai-pending", "This clip hasn't been generated yet.");
 	if (asset.type === "video" && asset.chromaKey) add("chroma-key", "Chroma key isn't available in the browser.");
 	if (clip.filter && clip.filter !== "none") add("filter", `The ${clip.filter} filter isn't available in the browser.`);
-	if (asset.type === "html5" || (asset.type === "html" && !isTextHtml(asset.html))) add("html", "This HTML clip can only be rendered in the cloud.");
+	if (asset.type === "html" && !isTextHtml(asset.html)) add("html", "This HTML clip can only be rendered in the cloud.");
 	// Mattes redraw in the editor's update loop, which export doesn't run, so a video matte would hold one frame.
 	if (asset.type === "luma" && inferAssetTypeFromUrl(asset.src) === "video") add("luma", "Video luma mattes aren't available in the browser.");
 	if (clip.effect && !animates(new EffectPresetBuilder(clip).buildRelative(UNIT_SIZE, UNIT_SIZE))) {

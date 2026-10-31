@@ -1168,6 +1168,29 @@ it("leaves a scaled bake hidden when a capture's still fails", async () => {
 	expect(playback.visible).toBe(true);
 });
 
+it("rejects an export's frame that can't be drawn, after hiding the clip's bake", async () => {
+	const { player, harness } = createStillPlayer();
+	shownAt(harness, 0.46);
+	await harness.runCapture();
+	await harness.transitionToPlayback();
+	const playback = harness.contentContainer.children[0] as PlaybackSprite;
+	jest.spyOn(harness, "captureIframeAsForeignObjectSvg").mockImplementation(() => {
+		throw new Error("serialise failed");
+	});
+
+	await expect(player.prepareStaticRender({ strict: true })).rejects.toThrow("serialise failed");
+	expect(playback.visible).toBe(false);
+	player.endStaticRender();
+
+	jest.spyOn(harness, "renderStill").mockResolvedValue(null);
+	await expect(player.prepareStaticRender({ strict: true })).rejects.toThrow("couldn't be drawn");
+	player.endStaticRender();
+
+	harness.transitionToFailed();
+	await expect(player.prepareStaticRender({ strict: true })).rejects.toThrow("didn't load");
+	await expect(player.prepareStaticRender()).resolves.toBeUndefined();
+});
+
 it("keeps a scaled bake on screen until a capture's still is ready", async () => {
 	const { player, harness } = createStillPlayer();
 	shownAt(harness, 0.46);

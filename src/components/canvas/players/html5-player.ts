@@ -781,9 +781,13 @@ export class Html5Player extends Player {
 	 * Project the current playhead's frame into the Pixi scene for an off-playback capture.
 	 * @internal
 	 */
-	public override async prepareStaticRender(): Promise<void> {
+	public override async prepareStaticRender({ strict = false }: { strict?: boolean } = {}): Promise<void> {
 		try {
-			if (this.disposed || !this.iframe || this.mode === "failed") return;
+			if (this.disposed) return;
+			if (!this.iframe || this.mode === "failed") {
+				if (strict) throw new Error("The HTML5 clip didn't load");
+				return;
+			}
 			const seconds = this.getPlaybackTime();
 			// A scaled bake is too soft for a still, so a still reads only a full-size one.
 			const frames = this.capturedFrames && this.capturedHash === `${this.contentHash}@1` ? this.capturedFrames : null;
@@ -793,6 +797,7 @@ export class Html5Player extends Player {
 				: await this.renderStill(seconds);
 			if (this.disposed) return;
 			if (!texture) {
+				if (strict) throw new Error("The HTML5 clip's frame couldn't be drawn");
 				this.hideForCapture();
 				return;
 			}
@@ -812,8 +817,9 @@ export class Html5Player extends Player {
 				if (this.clipConfiguration.width && this.clipConfiguration.height) this.applyFixedDimensions();
 			}
 		} catch (err) {
-			// A capture failure must leave only this clip blank in the snapshot — never break the whole capture.
+			// A snapshot leaves only this clip blank. An export can't: a video missing the clip would pass for faithful.
 			this.hideForCapture();
+			if (strict) throw err;
 			console.warn("[Html5Player] prepareStaticRender failed:", err);
 		}
 	}

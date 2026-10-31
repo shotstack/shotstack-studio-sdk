@@ -655,10 +655,11 @@ export abstract class Player extends Entity {
 	}
 
 	/**
-	 * Project this player's current frame into the Pixi scene for a one-off static capture.
+	 * Project this player's current frame into the Pixi scene for a one-off static capture. `strict` rejects when the
+	 * frame can't be drawn, where a snapshot would leave the clip out.
 	 * @internal
 	 */
-	public async prepareStaticRender(): Promise<void> {
+	public async prepareStaticRender(_options?: { strict?: boolean }): Promise<void> {
 		// Default: content is already a Pixi-scene projection — nothing to do.
 	}
 

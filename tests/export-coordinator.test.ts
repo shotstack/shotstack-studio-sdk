@@ -529,6 +529,7 @@ describe("asynchronous drawing", () => {
 		await exporter.exportBlob();
 
 		expect(order).toEqual(["extracted", "drawn at 0.5", "extracted", "ended"]);
+		expect(title.prepareStaticRender).toHaveBeenCalledWith({ strict: true });
 		exporter.dispose();
 	});
 });
