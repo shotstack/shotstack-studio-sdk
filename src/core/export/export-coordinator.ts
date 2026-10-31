@@ -267,7 +267,7 @@ export class ExportCoordinator {
 				// update() only starts rich text and caption draws; finish this frame's before reading pixels.
 				const active = clips.filter(clip => clip.isActive());
 				try {
-					await Promise.all(active.map(clip => clip.prepareStaticRender()));
+					await Promise.all(active.map(clip => clip.prepareStaticRender({ strict: true })));
 					throwIfStopped();
 					// The identity transform stands in for the container's own, so the editor's pan and zoom never reach
 					// these pixels; the texture's resolution pins them to output pixels.
