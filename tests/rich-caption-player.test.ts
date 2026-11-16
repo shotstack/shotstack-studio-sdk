@@ -4,6 +4,7 @@
 
 import type { Edit } from "@core/edit-session";
 import { sec } from "@core/timing/types";
+import type { Size } from "@layouts/geometry";
 import type { RichCaptionAsset, ResolvedClip } from "@schemas";
 
 let mockRegisterFromBytes: jest.Mock;
@@ -261,6 +262,7 @@ function createMockEdit(overrides: Partial<Record<string, unknown>> = {}): Edit 
 		getTimelineFonts: jest.fn().mockReturnValue([]),
 		getFontMetadata: jest.fn().mockReturnValue(new Map()),
 		getFontUrlByFamilyAndWeight: jest.fn().mockReturnValue(null),
+		getDocument: jest.fn().mockReturnValue({ getOutput: () => ({ size: { width: 1920, height: 1080 } }) }),
 		getEdit: jest.fn().mockReturnValue({
 			output: { size: { width: 1920, height: 1080 } },
 			timeline: { fonts: [] }
@@ -559,6 +561,20 @@ describe("RichCaptionPlayer", () => {
 			expect(mockGenerateRichCaptionFrame).toHaveBeenCalledTimes(2);
 		});
 
+		it("reads no edit snapshot while frames play", async () => {
+			const edit = createMockEdit();
+			const player = new RichCaptionPlayer(edit, createClip(createAsset()));
+			await player.load();
+			(edit.getEdit as jest.Mock).mockClear();
+
+			[0.1, 0.2, 0.3, 0.4, 0.5].forEach(time => {
+				(edit as unknown as Record<string, unknown>)["playbackTime"] = time;
+				player.update(0.016, 16);
+			});
+
+			expect(edit.getEdit).not.toHaveBeenCalled();
+		});
+
 		it("renders karaoke animation on every update", async () => {
 			const asset = createAsset({
 				animation: { style: "karaoke", speed: 1, direction: "up" }
@@ -675,6 +691,23 @@ describe("RichCaptionPlayer", () => {
 			const player = new RichCaptionPlayer(edit, clip);
 			const size = player.getSize();
 			expect(size).toEqual({ width: 1920, height: 1080 });
+		});
+
+		it("sizes a clip without dimensions from the current output size", () => {
+			const output: { size?: Size } = { size: { width: 1000, height: 500 } };
+			const edit = createMockEdit({ getDocument: () => ({ getOutput: () => output }) });
+			const clip = createClip(createAsset());
+			delete (clip as Record<string, unknown>)["width"];
+			delete (clip as Record<string, unknown>)["height"];
+			const player = new RichCaptionPlayer(edit, clip);
+
+			expect(player.getSize()).toEqual({ width: 1000, height: 500 });
+
+			output.size = { width: 640, height: 360 };
+			expect(player.getSize()).toEqual({ width: 640, height: 360 });
+
+			delete output.size;
+			expect(player.getSize()).toEqual({ width: 1920, height: 1080 });
 		});
 
 		it("supports edge resize", () => {
