@@ -745,6 +745,7 @@ export class Canvas {
 		this.container?.destroy();
 
 		this.uiController = null;
-		this.application.destroy(true, { children: true, texture: true });
+		// `releaseGlobalResources` stays unset: pixi's pools are shared by every canvas in the document.
+		this.application.destroy({ removeView: true }, { children: true, texture: true });
 	}
 }
