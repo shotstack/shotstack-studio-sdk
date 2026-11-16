@@ -157,6 +157,7 @@ const CONTRACT = {
 			]
 		},
 		{ className: "Canvas", tokens: ["load(): Promise<void>;"] },
+		{ className: "Controls", tokens: ["dispose(): void;"] },
 		{ className: "UIController", tokens: ["registerButton(config: ToolbarButtonConfig): this;"] },
 		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }
 	],

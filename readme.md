@@ -350,7 +350,10 @@ import { Controls } from "@shotstack/shotstack-studio";
 
 const controls = new Controls(edit);
 await controls.load();
+controls.dispose();
 ```
+
+`load()` listens for key presses on `document`. Call `dispose()` when the editor is removed from the page.
 
 ### VideoExporter
 
