@@ -613,10 +613,11 @@ export class RichCaptionPlayer extends Player {
 	}
 
 	public override getSize(): Size {
-		const editData = this.edit.getEdit();
+		// An output size set alongside a resolution preset differs from edit.size, which follows the preset.
+		const outputSize = this.edit.getDocument()?.getOutput().size;
 		return {
-			width: this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width,
-			height: this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height
+			width: this.clipConfiguration.width || outputSize?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || outputSize?.height || this.edit.size.height
 		};
 	}
 

@@ -179,6 +179,7 @@ function createMockEdit(fontUrlsByKey: Record<string, string>): Edit {
 		getTimelineFonts: jest.fn().mockReturnValue(fontUrls.map(src => ({ src }))),
 		getFontMetadata: jest.fn().mockReturnValue(new Map<string, { baseFamilyName: string; weight: number }>()),
 		getFontUrlByFamilyAndWeight: jest.fn().mockImplementation((family: string, weight: number) => fontUrlsByKey[`${family}|${weight}`] ?? null),
+		getDocument: jest.fn().mockReturnValue({ getOutput: () => ({ size: { width: 1280, height: 720 } }) }),
 		getEdit: jest.fn().mockReturnValue({
 			output: { size: { width: 1280, height: 720 } },
 			timeline: { fonts: fontUrls.map(src => ({ src })) }
@@ -315,6 +316,20 @@ describe("RichTextPlayer font caching", () => {
 
 		expect(mockRegisterFontFromFile).toHaveBeenCalledTimes(2);
 		expect(mockFetch).toHaveBeenCalledTimes(2);
+	});
+
+	it("resolves a timeline font by filename without reading an edit snapshot", async () => {
+		const fontUrl = "https://cdn.test/SourceSans.ttf";
+		const edit = createMockEdit({ "no metadata match": fontUrl });
+		const asset = createAsset(400, "SourceSans");
+		const player = new RichTextPlayer(edit, createClip(asset));
+		await player.load();
+		(edit.getEdit as jest.Mock).mockClear();
+
+		await reconfigure(player, asset);
+
+		expect(mockFetch).toHaveBeenCalledWith(fontUrl);
+		expect(edit.getEdit).not.toHaveBeenCalled();
 	});
 
 	it("evicts failed font bytes from cache allowing retry on subsequent load", async () => {

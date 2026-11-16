@@ -1,9 +1,10 @@
 /** @jest-environment jsdom */
 
 import { ShotstackEdit } from "@core/shotstack-edit";
+import { ms } from "@core/timing/types";
 import { UIController } from "@core/ui/ui-controller";
 import type { Canvas } from "@canvas/shotstack-canvas";
-import type { RichTextAsset } from "@schemas";
+import type { EditConfig, RichTextAsset } from "@schemas";
 import * as pixi from "pixi.js";
 
 jest.mock("pixi-filters", () => ({
@@ -25,6 +26,9 @@ jest.mock("pixi.js", () => {
 			zIndex: 0,
 			visible: true,
 			destroyed: false,
+			scale: { set: jest.fn() },
+			pivot: { set: jest.fn() },
+			position: { set: jest.fn() },
 			addChild: jest.fn((child: { parent?: unknown }) => {
 				children.push(child);
 				if (typeof child === "object" && child !== null) {
@@ -173,7 +177,7 @@ describe("Rich-text length validation", () => {
 	}
 
 	it("retains oversized Unicode text for correction and saves a valid boundary edit", async () => {
-		const oversized = `${"a".repeat(4999)  }😀`;
+		const oversized = `${"a".repeat(4999)}😀`;
 		await typeText(oversized);
 		expect(savedText()).toBe("Original");
 		expect(area.value).toBe(oversized);
@@ -181,7 +185,7 @@ describe("Rich-text length validation", () => {
 		area.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
 		expect(area.closest<HTMLElement>("[data-text-edit-popup]")!.classList.contains("visible")).toBe(true);
 
-		const valid = `${"a".repeat(4998)  }😀`;
+		const valid = `${"a".repeat(4998)}😀`;
 		await typeText(valid);
 		expect(savedText()).toBe(valid);
 		expect(area.validationMessage).toBe("");
@@ -192,7 +196,7 @@ describe("Rich-text length validation", () => {
 		{ kind: "resolved text", prefix: "", value: "x".repeat(5001) }
 	])("rejects an oversized $kind insertion without a delayed partial-token save", async ({ prefix, value }) => {
 		edit.mergeFields.register({ name: "NAME", defaultValue: value });
-		const draft = `${prefix  }{{ N`;
+		const draft = `${prefix}{{ N`;
 		area.value = draft;
 		area.setSelectionRange(draft.length, draft.length);
 		area.dispatchEvent(new Event("input", { bubbles: true }));
@@ -224,5 +228,67 @@ describe("Rich-text length validation", () => {
 		expect((edit.getResolvedEdit().timeline.tracks[0].clips[0].asset as RichTextAsset).text).toBe("Z");
 		expect(area.value).toBe("{{ LONG }}");
 		expect(area.validationMessage).toContain("5,000");
+	});
+});
+
+describe("Rich-text clip size", () => {
+	let edit: ShotstackEdit;
+
+	async function loadRichText(output: EditConfig["output"], clip: { width?: number; height?: number } = {}) {
+		globalThis.structuredClone ??= value => JSON.parse(JSON.stringify(value));
+		jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+		Object.assign(pixi.Texture, { from: () => ({ source: { update() {} }, destroy() {} }) });
+		edit = new ShotstackEdit({
+			timeline: { tracks: [{ clips: [{ asset: { type: "rich-text", text: "Hello" }, start: 0, length: 3, ...clip }] }] },
+			output
+		});
+		await edit.load();
+		return edit.getPlayerClip(0, 0)!;
+	}
+
+	afterEach(() => {
+		edit?.dispose();
+		jest.restoreAllMocks();
+	});
+
+	it("reads no edit snapshot while frames play", async () => {
+		await loadRichText({ size: { width: 1920, height: 1080 }, format: "mp4" });
+		const getEdit = jest.spyOn(edit, "getEdit");
+
+		for (let frame = 0; frame < 5; frame += 1) edit.update(1, ms(16));
+
+		expect(getEdit).not.toHaveBeenCalled();
+	});
+
+	it("follows the output size through a resize, an undo, a preset and a reload", async () => {
+		const player = await loadRichText({ size: { width: 1920, height: 1080 }, format: "mp4" });
+		expect(player.getSize()).toEqual({ width: 1920, height: 1080 });
+
+		await edit.setOutputSize(1280, 720);
+		expect(player.getSize()).toEqual({ width: 1280, height: 720 });
+
+		await edit.undo();
+		expect(player.getSize()).toEqual({ width: 1920, height: 1080 });
+
+		await edit.setOutputResolution("sd");
+		expect(player.getSize()).toEqual({ width: 1024, height: 576 });
+
+		await edit.loadEdit({ ...edit.getEdit(), output: { size: { width: 800, height: 600 }, format: "mp4" } });
+		expect(edit.getPlayerClip(0, 0)!.getSize()).toEqual({ width: 800, height: 600 });
+	});
+
+	it("keeps a clip's own size when the output size changes", async () => {
+		const player = await loadRichText({ size: { width: 1920, height: 1080 }, format: "mp4" }, { width: 400, height: 200 });
+
+		await edit.setOutputSize(1280, 720);
+
+		expect(player.getSize()).toEqual({ width: 400, height: 200 });
+	});
+
+	it("sizes a clip from the output size when a resolution preset is also set", async () => {
+		const player = await loadRichText({ resolution: "hd", size: { width: 500, height: 400 }, format: "mp4" });
+
+		expect(edit.size).toEqual({ width: 1280, height: 720 });
+		expect(player.getSize()).toEqual({ width: 500, height: 400 });
 	});
 });

@@ -219,8 +219,7 @@ export class RichTextPlayer extends Player {
 		}
 
 		// Check timeline fonts by filename matching (legacy fallback)
-		const editData = this.edit.getEdit();
-		const timelineFonts = editData?.timeline?.fonts || [];
+		const timelineFonts = this.edit.getTimelineFonts();
 		const matchingFont = timelineFonts.find(font => {
 			const { full, base } = extractFontNames(font.src);
 			const requested = family.toLowerCase();
@@ -372,9 +371,7 @@ export class RichTextPlayer extends Player {
 	}
 
 	private createFallbackText(richTextAsset: RichTextAsset): void {
-		const editData = this.edit.getEdit();
-		const containerWidth = this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width;
-		const containerHeight = this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height;
+		const { width: containerWidth, height: containerHeight } = this.getSize();
 
 		const style = new pixi.TextStyle({
 			fontFamily: richTextAsset.font?.family || "Arial",
@@ -521,10 +518,11 @@ export class RichTextPlayer extends Player {
 	}
 
 	public override getSize(): Size {
-		const editData = this.edit.getEdit();
+		// An output size set alongside a resolution preset differs from edit.size, which follows the preset.
+		const outputSize = this.edit.getDocument()?.getOutput().size;
 		return {
-			width: this.clipConfiguration.width || editData?.output?.size?.width || this.edit.size.width,
-			height: this.clipConfiguration.height || editData?.output?.size?.height || this.edit.size.height
+			width: this.clipConfiguration.width || outputSize?.width || this.edit.size.width,
+			height: this.clipConfiguration.height || outputSize?.height || this.edit.size.height
 		};
 	}
 
