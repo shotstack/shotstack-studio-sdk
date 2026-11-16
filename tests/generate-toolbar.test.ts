@@ -734,4 +734,25 @@ describe("GenerateToolbar", () => {
 			toolbar.dispose();
 		});
 	});
+
+	describe("continue button", () => {
+		const continueBtn = (container: HTMLElement) => container.querySelector<HTMLButtonElement>('[data-action="continue-clip"]');
+		const withModels = (asset: Record<string, unknown>) => {
+			const edit = createMockEdit(asset);
+			edit.getGenerationModels.mockReturnValue([model("i2v", "video", [option("startSrc", "string")])]);
+			return edit;
+		};
+
+		it("is offered once the clip has a generated file", () => {
+			const { toolbar, container } = mountToolbar(withModels({ type: "video", prompt: "pan", src: "https://cdn.example/a.mp4" }));
+			expect(continueBtn(container)?.hidden).toBe(false);
+			toolbar.dispose();
+		});
+
+		it("is hidden while the clip has no file yet", () => {
+			const { toolbar, container } = mountToolbar(withModels({ type: "video", prompt: "pan" }));
+			expect(continueBtn(container)?.hidden).toBe(true);
+			toolbar.dispose();
+		});
+	});
 });
