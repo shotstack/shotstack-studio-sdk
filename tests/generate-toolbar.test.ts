@@ -24,7 +24,9 @@ import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { AssetGenerator } from "@core/generation/asset-generator";
 import type { GenerationStatus } from "@core/generation/generation-status";
 import type { GenerationAssetType, GenerationModelDefinition, GenerationOptionDefinition } from "@core/generation/model-catalogue";
+import { deepMerge } from "@core/shared/utils";
 import { GenerateToolbar } from "@core/ui/generate-toolbar";
+import { ResolvedClipSchema } from "@schemas";
 
 type MockEdit = ReturnType<typeof createMockEdit>;
 
@@ -535,6 +537,71 @@ describe("GenerateToolbar", () => {
 			]);
 			const { toolbar, container } = mountToolbar(edit);
 			container.querySelector<HTMLButtonElement>("[data-model-value='target']")!.click();
+			expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { model: "target", options: {} } });
+			toolbar.dispose();
+		});
+	});
+
+	describe("model selection against the asset schema", () => {
+		// Validates each update the way Edit.updateClip does, so a rejected write throws here too.
+		const createValidatingEdit = (asset: Record<string, unknown>, type: GenerationAssetType): MockEdit => {
+			const clip = { id: "clip-1", asset, start: 0, length: 5 };
+			const edit = createMockEdit(asset);
+			edit.getDocumentClip.mockReturnValue(clip);
+			edit.getResolvedClip.mockReturnValue(clip);
+			edit.getGenerationModels.mockReturnValue([model("target", type)]);
+			Object.assign(edit, { generationSettings: jest.fn() });
+			edit.updateClip.mockImplementation((_track: number, _clip: number, updates: Record<string, unknown>) =>
+				ResolvedClipSchema.parse(deepMerge(clip, updates))
+			);
+			return edit;
+		};
+		const rejectedWrites = (edit: MockEdit): unknown[] =>
+			edit.updateClip.mock.results.filter(result => result.type === "throw").map(result => result.value.issues);
+
+		const legacy: Array<[Record<string, unknown>, GenerationAssetType]> = [
+			[{ type: "text-to-image", prompt: "a cat" }, "image"],
+			[{ type: "image-to-video", src: "https://cdn/start.png", prompt: "a cat" }, "video"],
+			[{ type: "text-to-speech", text: "a cat", voice: "Matthew" }, "audio"]
+		];
+
+		it.each(legacy)("offers no model or options on %j, whose schema has neither field", (asset, type) => {
+			const edit = createValidatingEdit(asset, type);
+			const { toolbar, container } = mountToolbar(edit);
+
+			container.querySelectorAll<HTMLButtonElement>("[data-model-value]").forEach(button => button.click());
+
+			expect(rejectedWrites(edit)).toEqual([]);
+			expect(edit.updateClip).not.toHaveBeenCalled();
+			expect(container.querySelector<HTMLButtonElement>("[data-model-picker]")?.hidden).toBe(true);
+			expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(true);
+			toolbar.dispose();
+		});
+
+		it.each(legacy)("still edits the prompt and generates on %j", (asset, type) => {
+			const edit = createValidatingEdit(asset, type);
+			const { toolbar, container } = mountToolbar(edit);
+			const input = container.querySelector<HTMLInputElement>("[data-prompt-input]");
+
+			expect(input?.value).toBe("a cat");
+			input!.value = "a dog";
+			input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+			expect(rejectedWrites(edit)).toEqual([]);
+			expect(edit.updateClip).toHaveBeenCalledTimes(1);
+			expect(edit.generateClip).toHaveBeenCalledWith("clip-1");
+			toolbar.dispose();
+		});
+
+		it.each<GenerationAssetType>(["image", "video", "audio"])("saves a picked model on %s", type => {
+			const edit = createValidatingEdit({ type, prompt: "a cat" }, type);
+			const { toolbar, container } = mountToolbar(edit);
+
+			expect(container.querySelector<HTMLButtonElement>("[data-model-picker]")?.hidden).toBe(false);
+			expect(container.querySelector<HTMLButtonElement>("[data-options-picker]")?.hidden).toBe(false);
+			container.querySelector<HTMLButtonElement>("[data-model-value='target']")!.click();
+
+			expect(rejectedWrites(edit)).toEqual([]);
 			expect(edit.updateClip).toHaveBeenCalledWith(0, 0, { asset: { model: "target", options: {} } });
 			toolbar.dispose();
 		});
