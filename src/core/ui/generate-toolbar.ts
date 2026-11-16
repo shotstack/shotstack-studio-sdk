@@ -2,6 +2,7 @@ import { EditEvent, InternalEvent } from "@core/events/edit-events";
 import { missingGenerationOptions, reconcileGenerationOptions, type GenerationModelDefinition } from "@core/generation/model-catalogue";
 import { MERGE_FIELD_TEST_PATTERN } from "@core/merge/merge-field-service";
 import { canCarryPrompt, GENERATION_TYPE, promptProperty } from "@core/shared/ai-asset-utils";
+import { AssetSchema } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar, TOOLBAR_ICONS } from "./base-toolbar";
@@ -10,6 +11,9 @@ const PROMPT_DEBOUNCE_MS = 300;
 
 const record = (value: unknown): Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
+const canCarryModel = (type: string): boolean =>
+	AssetSchema.options.some(schema => "model" in schema.shape && schema.shape.type.safeParse(type).success);
 
 const modelLabelText = (
 	models: readonly GenerationModelDefinition[] | undefined,
@@ -281,7 +285,7 @@ export class GenerateToolbar extends BaseToolbar {
 	}
 
 	private syncCatalogueControls(asset: Record<string, unknown>): readonly string[] {
-		const type = typeof asset["type"] === "string" ? GENERATION_TYPE[asset["type"]] : undefined;
+		const type = typeof asset["type"] === "string" && canCarryModel(asset["type"]) ? GENERATION_TYPE[asset["type"]] : undefined;
 		const models = type ? this.edit.getGenerationModels(type) : undefined;
 		const selected = typeof asset["model"] === "string" ? asset["model"] : undefined;
 		const selectedModel = models?.find(model => model.model === selected);
