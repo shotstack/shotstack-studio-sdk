@@ -54,16 +54,19 @@ export enum PlayerType {
 	RichCaption = "rich-caption"
 }
 
-// The render filters clips it draws as images and leaves those it plays as video untouched.
+// Clip types whose render applies the clip filter, whether it draws them as an image or plays them as video.
 const FILTERED_PLAYERS = new Set([
+	PlayerType.Video,
 	PlayerType.Image,
 	PlayerType.Text,
 	PlayerType.RichText,
 	PlayerType.Shape,
 	PlayerType.Caption,
 	PlayerType.Html,
+	PlayerType.Html5,
 	PlayerType.Svg,
-	PlayerType.TextToImage
+	PlayerType.TextToImage,
+	PlayerType.RichCaption
 ]);
 
 // pixi's Gaussian at this strength spreads as far as the render's radius-10 box blur (σ ≈ 6.06 px).
@@ -325,9 +328,7 @@ export abstract class Player extends Entity {
 	}
 
 	private updateClipFilter(): void {
-		const { asset } = this.clipConfiguration;
-		const rendersAsVideo = asset.type === "rich-text" && Boolean(asset.animation?.preset);
-		const name = FILTERED_PLAYERS.has(this.playerType) && !rendersAsVideo ? this.clipConfiguration.filter : undefined;
+		const name = FILTERED_PLAYERS.has(this.playerType) ? this.clipConfiguration.filter : undefined;
 
 		if (name !== this.clipFilterName) {
 			this.clipFilter?.destroy();
