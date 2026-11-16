@@ -10,18 +10,20 @@ export class Controls {
 	private seekDistanceLarge: number = 0.5; // 500ms in seconds
 	private frameTime: number = 1 / 60; // ~16.67ms in seconds
 	private pendingPaste: Promise<void> | null = null;
+	private disposed = false;
 
 	constructor(edit: Edit) {
 		this.edit = edit;
 	}
 
 	public async load(): Promise<void> {
+		this.disposed = false;
 		document.addEventListener("keydown", this.handleKeyDown);
 		document.addEventListener("keyup", this.handleKeyUp);
 	}
 
-	/** @internal */
 	public dispose(): void {
+		this.disposed = true;
 		document.removeEventListener("keydown", this.handleKeyDown);
 		document.removeEventListener("keyup", this.handleKeyUp);
 	}
@@ -206,12 +208,14 @@ export class Controls {
 	/** Resolve Ctrl/Cmd+V across all paste sources. */
 	private async dispatchPaste(): Promise<void> {
 		const svgFromMime = await readSvgFromClipboardItems();
+		if (this.disposed) return;
 		if (svgFromMime) {
 			await this.tryAddSvgClip(svgFromMime);
 			return;
 		}
 
 		const text = await readSystemClipboardText();
+		if (this.disposed) return;
 		if (text) {
 			const clip = tryParseClipJson(text);
 			if (clip) {
