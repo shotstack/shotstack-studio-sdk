@@ -3,6 +3,12 @@
 
 export const pixiFilterStubs = {
 	Filter: class {
+		resources: Record<string, unknown>;
+
+		constructor(options: { resources?: Record<string, unknown> } = {}) {
+			this.resources = options.resources ?? {};
+		}
+
 		destroy(): void {}
 	},
 	BlurFilter: class {
@@ -15,7 +21,12 @@ export const pixiFilterStubs = {
 	GlProgram: { from: (): Record<string, unknown> => ({}) },
 	GpuProgram: { from: (): Record<string, unknown> => ({}) },
 	UniformGroup: class {
-		uniforms: Record<string, unknown> = {};
+		uniforms: Record<string, unknown>;
+
+		// pixi keeps each `{ value, type }` structure as its bare value.
+		constructor(structures: Record<string, { value: unknown }> = {}) {
+			this.uniforms = Object.fromEntries(Object.entries(structures).map(([name, { value }]) => [name, value]));
+		}
 	},
 	defaultFilterVert: ""
 };

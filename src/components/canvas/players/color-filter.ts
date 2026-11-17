@@ -116,6 +116,13 @@ fn mainFragment(@location(0) uv: vec2<f32>, @builtin(position) position: vec4<f3
 `;
 
 export class ColorFilter extends Filter {
+	private readonly uniformGroup: UniformGroup<{
+		uContrast: { value: number; type: "f32" };
+		uBrightness: { value: number; type: "f32" };
+		uSaturation: { value: number; type: "f32" };
+		uNegate: { value: number; type: "f32" };
+	}>;
+
 	constructor({ contrast = 0, brightness = 0, saturation = 1, negate = false }: ColorParams) {
 		const glProgram = GlProgram.from({ vertex: defaultFilterVert, fragment: glFragment, name: "color-filter" });
 		const gpuProgram = GpuProgram.from({
@@ -129,5 +136,19 @@ export class ColorFilter extends Filter {
 			uNegate: { value: negate ? 1 : 0, type: "f32" }
 		});
 		super({ glProgram, gpuProgram, resources: { colorUniforms }, padding: 0 });
+		this.uniformGroup = colorUniforms;
+	}
+
+	/** A multiplier about mid-grey, where 1 leaves the frame as it is; the constructor's `contrast` is a −255…255 number. */
+	public set contrastFactor(value: number) {
+		this.uniformGroup.uniforms.uContrast = value;
+	}
+
+	public set brightness(value: number) {
+		this.uniformGroup.uniforms.uBrightness = value;
+	}
+
+	public set saturation(value: number) {
+		this.uniformGroup.uniforms.uSaturation = value;
 	}
 }
