@@ -46,17 +46,24 @@ describe("Player clip filters", () => {
 		expect(blur.strength).toBeCloseTo(4.69 * 0.5);
 	});
 
-	it("leaves clips the render draws as video unfiltered", () => {
-		expect(filtersOf(draw(PlayerType.Video, { filter: "greyscale" }))).toEqual([]);
-		expect(filtersOf(draw(PlayerType.Html5, { filter: "greyscale" }))).toEqual([]);
+	it("draws a video clip through its filter", () => {
+		expect(filtersOf(draw(PlayerType.Video, { filter: "greyscale" }))).toEqual([expect.any(ColorFilter)]);
 	});
 
-	it("filters rich text only while it renders as an image", () => {
+	it("draws an html5 clip through its filter", () => {
+		expect(filtersOf(draw(PlayerType.Html5, { filter: "greyscale" }))).toEqual([expect.any(ColorFilter)]);
+	});
+
+	it("draws rich captions through their filter", () => {
+		expect(filtersOf(draw(PlayerType.RichCaption, { filter: "greyscale" }))).toEqual([expect.any(ColorFilter)]);
+	});
+
+	it("draws rich text through its filter whether or not it animates", () => {
 		const text = { type: "rich-text", text: "Hi" } as ResolvedClip["asset"];
 		const animated = { ...text, animation: { preset: "typewriter" } } as ResolvedClip["asset"];
 
 		expect(filtersOf(draw(PlayerType.RichText, { asset: text, filter: "darken" }))).toEqual([expect.any(ColorFilter)]);
-		expect(filtersOf(draw(PlayerType.RichText, { asset: animated, filter: "darken" }))).toEqual([]);
+		expect(filtersOf(draw(PlayerType.RichText, { asset: animated, filter: "darken" }))).toEqual([expect.any(ColorFilter)]);
 	});
 
 	it("applies the filter before a wipe transition", () => {
