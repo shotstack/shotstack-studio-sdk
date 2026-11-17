@@ -5,8 +5,11 @@ export const pixiFilterStubs = {
 	Filter: class {
 		resources: Record<string, unknown>;
 
-		constructor(options: { resources?: Record<string, unknown> } = {}) {
+		glProgram: unknown;
+
+		constructor(options: { resources?: Record<string, unknown>; glProgram?: unknown } = {}) {
 			this.resources = options.resources ?? {};
+			this.glProgram = options.glProgram;
 		}
 
 		destroy(): void {}
@@ -14,11 +17,16 @@ export const pixiFilterStubs = {
 	BlurFilter: class {
 		strength = 0;
 
+		strengthX = 0;
+
+		strengthY = 0;
+
 		repeatEdgePixels = false;
 
 		destroy(): void {}
 	},
-	GlProgram: { from: (): Record<string, unknown> => ({}) },
+	// A program is the options it was asked for, so a test can read the sources a filter would compile.
+	GlProgram: { from: (options: Record<string, unknown> = {}): Record<string, unknown> => options },
 	GpuProgram: { from: (): Record<string, unknown> => ({}) },
 	UniformGroup: class {
 		uniforms: Record<string, unknown>;
