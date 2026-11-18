@@ -56,6 +56,7 @@ export type Font = components["schemas"]["Font"];
 // Asset types
 export type VideoAsset = components["schemas"]["VideoAsset"];
 export type AudioAsset = components["schemas"]["AudioAsset"];
+export type Duck = components["schemas"]["Duck"];
 export type ImageAsset = components["schemas"]["ImageAsset"];
 export type TextAsset = components["schemas"]["TextAsset"];
 export type RichTextAsset = components["schemas"]["RichTextAsset"];

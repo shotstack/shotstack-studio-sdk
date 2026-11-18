@@ -1,7 +1,13 @@
 import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
-import { type AliasReferenceMap, convertMultipleAliasReferences, extractAliasNames, restoreAliasReferences } from "./alias-reference-utils";
+import {
+	type AliasReferenceMap,
+	convertMultipleAliasReferences,
+	extractAliasNames,
+	pruneDuckReferences,
+	restoreAliasReferences
+} from "./alias-reference-utils";
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
 /**
@@ -39,6 +45,7 @@ export class DeleteTrackCommand implements EditCommand {
 				skipIndices.add(`${this.trackIdx}:${c}`);
 			}
 			this.convertedReferences = convertMultipleAliasReferences(document, context.getEditState(), aliasNames, skipIndices);
+			pruneDuckReferences(document, new Set(aliasNames), this.convertedReferences, skipIndices);
 		}
 
 		// Document mutation - remove track (and all its clips)
