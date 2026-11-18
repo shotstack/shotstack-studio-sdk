@@ -8,6 +8,7 @@ import { clipToJsonString } from "@core/clipboard/clip-json";
 import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
 import { remintPastedClipIdentity } from "@core/clipboard/remint-pasted-alias";
 import { writeSystemClipboardText } from "@core/clipboard/system-clipboard";
+import { documentAliasNames, pruneMissingDuckReferences } from "@core/commands/alias-reference-utils";
 import { EditEvent } from "@core/events/edit-events";
 import type { ResolvedClip, Clip } from "@core/schemas";
 import { stripInternalProperties } from "@core/shared/clip-utils";
@@ -153,6 +154,7 @@ export class SelectionManager {
 		pastedClip.start = this.edit.playbackTime as Seconds;
 
 		remintPastedClipIdentity(pastedClip as { id?: string; alias?: string });
+		pruneMissingDuckReferences(pastedClip, documentAliasNames(this.edit.getDocument()));
 
 		return insertClipWithOverlapPolicy(this.edit, this.copiedClip.trackIndex, pastedClip);
 	}

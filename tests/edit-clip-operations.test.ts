@@ -11,6 +11,8 @@ import {
  * These are the core editing operations that modify timeline content.
  */
 
+import { DuckLevelService } from "@core/audio/duck-levels";
+import { restoreAliasReferences } from "@core/commands/alias-reference-utils";
 import { Edit } from "@core/edit-session";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import { EditEvent, InternalEvent } from "@core/events/edit-events";
@@ -2069,6 +2071,235 @@ describe("Edit Clip Operations", () => {
 			e.selectClip(0, 0);
 			e.dispose();
 			expect(status.mock.calls[0][0].signal.aborted).toBe(true);
+		});
+	});
+});
+
+// A ducking clip's `duck.under` must only name aliases that exist. Deleting the clips it ducks under, or pasting it
+// somewhere they are missing, has to prune those references, and undo has to put the original `duck` back.
+describe("duck references", () => {
+	const VOICE = "https://example.com/voice.mp3";
+	const PASTED = "https://example.com/pasted.mp3";
+
+	const audio = (src: string, extra: Record<string, unknown> = {}) => ({ type: "audio" as const, src, ...extra });
+	const image = (start: number): Clip => ({ asset: { type: "image", src: "https://example.com/i.jpg" }, start, length: 1 }) as Clip;
+	const voice = (alias: string, src = VOICE): Clip => ({ alias, asset: audio(src), start: 0, length: 5 }) as Clip;
+	const bed = (src: string, duck: unknown, start: number | string = 0): Clip =>
+		({ asset: audio(src, { volume: 0.8, duck }), start, length: 10 }) as Clip;
+
+	let edit: Edit;
+
+	async function load(...tracks: Clip[][]): Promise<void> {
+		edit = new Edit({
+			timeline: { tracks: tracks.map(clips => ({ clips })) },
+			output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+		});
+		await edit.load();
+	}
+
+	/** The document's clips, which is the model the server validates. */
+	const docClips = (): Clip[] =>
+		edit
+			.getDocument()!
+			.getTimeline()
+			.tracks.flatMap(track => track.clips);
+	const byAsset = (src: string): Clip => docClips().find(clip => (clip.asset as { src?: string }).src === src)!;
+	const duckOf = (src: string): unknown => (byAsset(src).asset as { duck?: unknown }).duck;
+
+	beforeEach(() => {
+		// The level service would try to fetch and decode the example URLs.
+		jest.spyOn(DuckLevelService.prototype, "refresh").mockImplementation(() => undefined);
+	});
+
+	afterEach(() => {
+		edit.dispose();
+		jest.restoreAllMocks();
+	});
+
+	describe("deleting clips that are ducked under", () => {
+		// Track 0 keeps an image so deleting the voice leaves the track, and the edit, alive.
+		const MUSIC_A = "https://example.com/a.mp3";
+		const MUSIC_B = "https://example.com/b.mp3";
+
+		it("removes the deleted alias from every duck.under", async () => {
+			await load(
+				[voice("voice"), image(5)],
+				[bed(MUSIC_A, { under: ["alias://voice", "alias://other"] })],
+				[bed(MUSIC_B, { under: ["alias://other", "alias://voice"], volume: 0.2 })],
+				[voice("other", "https://example.com/other.mp3")]
+			);
+
+			await edit.deleteClip(0, 0);
+
+			expect(duckOf(MUSIC_A)).toEqual({ under: ["alias://other"] });
+			expect(duckOf(MUSIC_B)).toEqual({ under: ["alias://other"], volume: 0.2 });
+		});
+
+		it("drops duck when the last reference goes", async () => {
+			await load([voice("voice"), image(5)], [bed(MUSIC_A, { under: "alias://voice", volume: 0.2 })]);
+
+			await edit.deleteClip(0, 0);
+
+			const { asset } = byAsset(MUSIC_A);
+			expect("duck" in asset).toBe(false);
+			expect(asset).toMatchObject({ type: "audio", src: MUSIC_A, volume: 0.8 });
+		});
+
+		it("undo restores the whole duck object", async () => {
+			const kept = { under: ["alias://voice", "alias://other"], volume: 0.2 };
+			const dropped = { under: "alias://voice", volume: 0.3 };
+			await load([voice("voice"), image(5)], [bed(MUSIC_A, kept)], [bed(MUSIC_B, dropped)], [voice("other", "https://example.com/other.mp3")]);
+
+			await edit.deleteClip(0, 0);
+			expect(duckOf(MUSIC_A)).toEqual({ under: ["alias://other"], volume: 0.2 });
+			expect(duckOf(MUSIC_B)).toBeUndefined();
+
+			await edit.undo();
+
+			expect(duckOf(MUSIC_A)).toEqual(kept);
+			expect(duckOf(MUSIC_B)).toEqual(dropped);
+		});
+
+		it("undo restores a bed that starts with its voice exactly", async () => {
+			await load([voice("voice"), image(5)], [bed(MUSIC_A, { under: "alias://voice", volume: 0.2 }, "alias://voice")]);
+			const before = structuredClone(byAsset(MUSIC_A));
+
+			await edit.deleteClip(0, 0);
+			expect(byAsset(MUSIC_A).start).toBe(0);
+			expect(duckOf(MUSIC_A)).toBeUndefined();
+
+			await edit.undo();
+
+			expect(byAsset(MUSIC_A)).toEqual(before);
+		});
+
+		it("leaves ducking clips that do not name the deleted alias alone", async () => {
+			await load([voice("voice"), image(5)], [bed(MUSIC_A, { under: "alias://other" })], [voice("other", "https://example.com/other.mp3")]);
+
+			await edit.deleteClip(0, 0);
+
+			expect(duckOf(MUSIC_A)).toEqual({ under: "alias://other" });
+		});
+	});
+
+	describe("restoreAliasReferences", () => {
+		it("gives the document its own copy of the stored duck", async () => {
+			await load([voice("voice"), image(5)], [bed("https://example.com/a.mp3", { under: "alias://voice" })]);
+			const document = edit.getDocument()!;
+			const bedId = (document.getClip(1, 0) as { id: string }).id;
+			const duck = { under: ["alias://voice", "alias://other"], volume: 0.3 };
+
+			restoreAliasReferences(document, new Map([[bedId, { duck }]]));
+
+			const restored = (document.getClip(1, 0)!.asset as { duck?: unknown }).duck;
+			expect(restored).toEqual(duck);
+			expect(restored).not.toBe(duck);
+			expect((restored as typeof duck).under).not.toBe(duck.under);
+		});
+	});
+
+	describe("deleting a track", () => {
+		const MUSIC = "https://example.com/music.mp3";
+		const OUTSIDE_BED = "https://example.com/outside.mp3";
+		const OTHER_VOICE = "https://example.com/other.mp3";
+
+		it("removes the references to both of its referenced clips", async () => {
+			await load(
+				[voice("voice")],
+				[voice("narrator", OTHER_VOICE), voice("host", "https://example.com/host.mp3")],
+				[bed(MUSIC, { under: ["alias://voice", "alias://narrator", "alias://host"] })]
+			);
+
+			await edit.deleteTrack(1);
+
+			expect(duckOf(MUSIC)).toEqual({ under: ["alias://voice"] });
+		});
+
+		it("restores the references when the deletion is undone", async () => {
+			const duck = { under: ["alias://voice", "alias://narrator", "alias://host"], volume: 0.25 };
+			await load([voice("voice")], [voice("narrator", OTHER_VOICE), voice("host", "https://example.com/host.mp3")], [bed(MUSIC, duck)]);
+
+			await edit.deleteTrack(1);
+			await edit.undo();
+
+			expect(duckOf(MUSIC)).toEqual(duck);
+		});
+
+		it("restores both clips exactly when the track holds the voice and the bed ducking under it", async () => {
+			await load(
+				[image(0)],
+				[voice("voice"), bed(MUSIC, { under: "alias://voice", volume: 0.2 }, 5)],
+				[bed(OUTSIDE_BED, { under: "alias://voice" })]
+			);
+			const before = structuredClone(edit.getDocument()!.getTimeline());
+
+			await edit.deleteTrack(1);
+			expect(duckOf(OUTSIDE_BED)).toBeUndefined();
+
+			await edit.undo();
+
+			expect(edit.getDocument()!.getTimeline()).toEqual(before);
+		});
+	});
+
+	describe("pasting a ducking clip", () => {
+		const UNKNOWN = { under: ["alias://voice", "alias://gone"], volume: 0.2 };
+
+		it("pasteClip drops references to aliases the edit no longer has", async () => {
+			await load(
+				[voice("voice"), image(5)],
+				[bed(PASTED, { under: ["alias://voice", "alias://other"], volume: 0.2 })],
+				[voice("other", "https://example.com/o.mp3")]
+			);
+			edit.copyClip(1, 0);
+			await edit.deleteClip(2, 0);
+
+			await edit.pasteClip();
+
+			const pasted = docClips().filter(clip => (clip.asset as { src?: string }).src === PASTED);
+			expect(pasted).toHaveLength(2);
+			// Both the original (pruned by the delete) and the copy (pruned on paste) end up the same.
+			expect(pasted.map(clip => (clip.asset as { duck?: unknown }).duck)).toEqual([
+				{ under: ["alias://voice"], volume: 0.2 },
+				{ under: ["alias://voice"], volume: 0.2 }
+			]);
+		});
+
+		it("pasteClip drops duck when none of its targets remain", async () => {
+			await load([voice("voice"), image(5)], [bed(PASTED, { under: "alias://voice" })]);
+			edit.copyClip(1, 0);
+			await edit.deleteClip(0, 0);
+
+			await edit.pasteClip();
+
+			const pasted = docClips().filter(clip => (clip.asset as { src?: string }).src === PASTED);
+			expect(pasted).toHaveLength(2);
+			expect(pasted.map(clip => "duck" in clip.asset)).toEqual([false, false]);
+		});
+
+		it("addClipFromJson keeps the references whose targets exist and drops the rest", async () => {
+			await load([voice("voice"), image(5)]);
+
+			await edit.addClipFromJson(bed(PASTED, UNKNOWN));
+
+			expect(duckOf(PASTED)).toEqual({ under: ["alias://voice"], volume: 0.2 });
+		});
+
+		it("addClipFromJson drops duck when none of its targets exist", async () => {
+			await load([voice("voice"), image(5)]);
+
+			await edit.addClipFromJson(JSON.stringify(bed(PASTED, { under: "alias://gone", volume: 0.2 })));
+
+			expect("duck" in byAsset(PASTED).asset).toBe(false);
+		});
+
+		it("addTracksFromJson prunes every clip in the pasted tracks", async () => {
+			await load([voice("voice"), image(5)]);
+
+			await edit.addTracksFromJson([{ clips: [bed(PASTED, UNKNOWN)] }, { clips: [bed("https://example.com/b.mp3", { under: "alias://gone" })] }]);
+
+			expect(duckOf(PASTED)).toEqual({ under: ["alias://voice"], volume: 0.2 });
+			expect("duck" in byAsset("https://example.com/b.mp3").asset).toBe(false);
 		});
 	});
 });

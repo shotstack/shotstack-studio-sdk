@@ -10,6 +10,7 @@ import { parseSvgIntrinsicSize, sanitiseSvg } from "@core/clipboard/svg-clipboar
 import { AddClipCommand } from "@core/commands/add-clip-command";
 import { AddTrackCommand } from "@core/commands/add-track-command";
 import { AddTracksCommand } from "@core/commands/add-tracks-command";
+import { documentAliasNames, pruneMissingDuckReferences } from "@core/commands/alias-reference-utils";
 import { DeleteClipCommand } from "@core/commands/delete-clip-command";
 import { DeleteTrackCommand } from "@core/commands/delete-track-command";
 import { MoveClipCommand } from "@core/commands/move-clip-command";
@@ -870,6 +871,7 @@ export class Edit {
 		}
 
 		remintPastedClipIdentity(parsed as { id?: string; alias?: string });
+		pruneMissingDuckReferences(parsed, documentAliasNames(this.document));
 
 		const asset = parsed.asset as { type?: string; src?: string } | undefined;
 		if (asset?.type === "svg" && typeof asset.src === "string") {
@@ -910,11 +912,13 @@ export class Edit {
 		const anchor = (opts.start ?? this.playbackTime) as number;
 		const offset = anchor - minStart;
 
+		const knownAliases = documentAliasNames(this.document);
 		const prepared: Track[] = tracks.map(track => ({
 			...track,
 			clips: track.clips.map(clip => {
 				const cloned = structuredClone(clip) as Clip;
 				remintPastedClipIdentity(cloned as { id?: string; alias?: string });
+				pruneMissingDuckReferences(cloned, knownAliases);
 				const asset = cloned.asset as { type?: string; src?: string } | undefined;
 				if (asset?.type === "svg" && typeof asset.src === "string") {
 					asset.src = sanitiseSvg(asset.src);

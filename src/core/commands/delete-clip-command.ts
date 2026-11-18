@@ -2,7 +2,7 @@ import type { MergeFieldBinding } from "@core/edit-document";
 import { EditEvent } from "@core/events/edit-events";
 import type { Clip } from "@schemas";
 
-import { type AliasReferenceMap, convertAliasReferencesToValues, restoreAliasReferences } from "./alias-reference-utils";
+import { type AliasReferenceMap, convertAliasReferencesToValues, pruneDuckReferences, restoreAliasReferences } from "./alias-reference-utils";
 import { DeleteTrackCommand } from "./delete-track-command";
 import { type EditCommand, type CommandContext, type CommandResult, CommandSuccess, CommandNoop } from "./types";
 
@@ -55,6 +55,7 @@ export class DeleteClipCommand implements EditCommand {
 		if (clipAlias) {
 			const skipIndices = new Set([`${this.trackIdx}:${this.clipIdx}`]);
 			this.convertedReferences = convertAliasReferencesToValues(document, context.getEditState(), clipAlias, skipIndices);
+			pruneDuckReferences(document, new Set([clipAlias]), this.convertedReferences, skipIndices);
 		}
 
 		// Clear any error associated with this clip before deletion
