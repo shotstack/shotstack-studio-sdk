@@ -1092,3 +1092,9 @@
 .ss-audio-fade-btn.active .ss-audio-fade-label {
 	color: rgba(255, 255, 255, 0.9);
 }
+
+/* Duck popup */
+.ss-media-toolbar-popup--duck {
+	min-width: 260px;
+	padding: 12px;
+}

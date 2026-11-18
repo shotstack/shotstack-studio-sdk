@@ -150,6 +150,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		getClipGenerationState: jest.fn(() => undefined),
 		getResolvedClip: jest.fn(() => null),
 		getResolvedClipById: jest.fn(() => null),
+		getResolvedEdit: jest.fn(() => ({ timeline: { tracks: [] } })),
 		getDocumentClip: jest.fn(() => ({ start: 0, length: 1 })),
 		getCurrentTime: jest.fn(() => 0),
 		getEdit: jest.fn(() => ({

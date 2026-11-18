@@ -57,6 +57,7 @@ function createMockEditSession() {
 		getClipId: jest.fn().mockReturnValue("clip-1"),
 		getResolvedClip: jest.fn(),
 		getDocumentClip: jest.fn(),
+		getResolvedEdit: jest.fn(() => ({ timeline: { tracks: [] } })),
 		updateClip: jest.fn(),
 		updateClipInDocument: jest.fn(),
 		resolveClip: jest.fn(),
