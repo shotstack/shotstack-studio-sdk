@@ -13,7 +13,7 @@ import type { Edit } from "@core/edit-session";
 import { EditEvent } from "@core/events/edit-events";
 import { validateAssetUrl } from "@core/shared/utils";
 import { ShotstackEdit } from "@core/shotstack-edit";
-import type { ResolvedClip } from "@schemas";
+import type { AudioAsset, Duck, ResolvedClip } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
@@ -905,6 +905,7 @@ export class MediaToolbar extends BaseToolbar {
 				this.volumeBtn.title = volumeKeyframed ? "Keyframed volume cannot be edited with this control" : "";
 			}
 			this.syncOpacityState(clip);
+			this.syncDuckState(clip);
 		}
 	}
 
@@ -1020,6 +1021,12 @@ export class MediaToolbar extends BaseToolbar {
 
 		const final = this.captureClipState();
 		if (final) {
+			const duck = controlId === "volume" ? MediaToolbar.autoDuckAt(final.clip.asset as Record<string, unknown>) : null;
+			if (duck) {
+				final.clip.asset = { ...final.clip.asset, duck } as ResolvedClip["asset"];
+				this.edit.updateClipInDocument(session.clipId, { asset: final.clip.asset });
+				this.edit.resolveClip(session.clipId);
+			}
 			this.edit.commitClipUpdate(session.clipId, session.initialState, final.clip);
 		}
 		if (controlId === "opacity") this.opacityDragTime = null;
@@ -1186,7 +1193,10 @@ export class MediaToolbar extends BaseToolbar {
 			this.syncState();
 			return;
 		}
-		const updates = { asset: { ...asset, volume: value / 100 } as typeof clip.asset };
+		const next = { ...asset, volume: value / 100 };
+		// Drag ticks only preview; endSliderDrag settles the level when the drag commits.
+		const duck = this.dragManager.isDragging("volume") ? null : MediaToolbar.autoDuckAt(next);
+		const updates = { asset: (duck ? { ...next, duck } : next) as typeof clip.asset };
 
 		if (this.dragManager.isDragging("volume")) {
 			this.edit.updateClipInDocument(clipId, updates);
@@ -1224,6 +1234,13 @@ export class MediaToolbar extends BaseToolbar {
 		const clipId = this.edit.getClipId(this.selectedTrackIdx, this.selectedClipIdx);
 		if (!clip || !clipId) return;
 
+		// Ducking needs normal speed, and a popup opened before duck was set outlives the Speed button's lock.
+		const docClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
+		if ((docClip?.asset as { duck?: unknown } | undefined)?.duck) {
+			this.syncState();
+			return;
+		}
+
 		const asset = clip.asset as Record<string, unknown>;
 		const newAsset: Record<string, unknown> = { ...asset, speed: this.currentSpeed === 1 ? undefined : this.currentSpeed };
 		const updates: Record<string, unknown> = { asset: newAsset };
@@ -1233,7 +1250,6 @@ export class MediaToolbar extends BaseToolbar {
 		const oldSpeed = typeof asset["speed"] === "number" ? (asset["speed"] as number) : 1;
 		if (oldSpeed > 0 && oldSpeed !== this.currentSpeed) {
 			const ratio = oldSpeed / this.currentSpeed;
-			const docClip = this.edit.getDocumentClip(this.selectedTrackIdx, this.selectedClipIdx);
 			if (typeof docClip?.length === "number") {
 				updates["length"] = Math.max(0.1, docClip.length * ratio);
 			}
@@ -1348,6 +1364,24 @@ export class MediaToolbar extends BaseToolbar {
 			if (svg) {
 				svg.outerHTML = iconMap[this.audioFadeEffect] || ICONS.fadeNone;
 			}
+		}
+	}
+
+	// ─── Duck ────────────────────────────────────────────────────────────────────
+
+	/** `duck` without its Custom level once the asset's volume has reached it, since a dip must stay below the volume; otherwise null. */
+	private static autoDuckAt(asset: Record<string, unknown>): Duck | null {
+		const { volume, duck } = asset as { volume?: unknown; duck?: Duck };
+		if (typeof duck?.volume !== "number" || typeof volume !== "number" || volume > duck.volume) return null;
+		return { ...duck, volume: undefined };
+	}
+
+	private syncDuckState(clip: ResolvedClip): void {
+		const audio = this.assetType === "audio";
+		const ducking = audio && Boolean((clip.asset as AudioAsset).duck);
+		if (this.speedBtn) {
+			this.speedBtn.disabled = ducking;
+			this.speedBtn.title = ducking ? "Turn off ducking to change speed" : "";
 		}
 	}
 
