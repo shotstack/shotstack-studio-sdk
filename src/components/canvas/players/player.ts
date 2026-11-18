@@ -23,6 +23,7 @@ import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
 
+import { type BuiltClipFilter, buildClipFilters } from "./clip-filters";
 import { COLOR_FILTERS, ColorFilter } from "./color-filter";
 
 /**
@@ -124,6 +125,8 @@ export abstract class Player extends Entity {
 	private zoomBlurRadius = 0;
 	private clipFilterName: ResolvedClip["filter"];
 	private clipFilter: pixi.Filter | null = null;
+	private clipFilters: BuiltClipFilter[] = [];
+	private clipFiltersKey = "[]";
 	private rotationOrigin?: { x: KeyframeBuilder; y: KeyframeBuilder };
 
 	private wipeMask: pixi.Graphics | null;
@@ -328,14 +331,29 @@ export abstract class Player extends Entity {
 	}
 
 	private updateClipFilter(): void {
-		const name = FILTERED_PLAYERS.has(this.playerType) ? this.clipConfiguration.filter : undefined;
+		const filtered = FILTERED_PLAYERS.has(this.playerType);
+		const name = filtered ? this.clipConfiguration.filter : undefined;
+		const entries = filtered ? (this.clipConfiguration.filters ?? []) : [];
+		const entriesKey = JSON.stringify(entries);
+		let changed = false;
 
 		if (name !== this.clipFilterName) {
 			this.clipFilter?.destroy();
 			this.clipFilter = this.createClipFilter(name);
 			this.clipFilterName = name;
-			this.syncContentFilters();
+			changed = true;
 		}
+
+		if (entriesKey !== this.clipFiltersKey) {
+			this.clipFilters.forEach(({ filter }) => filter.destroy());
+			// Settled before building, so entries that fail to build fail once rather than on every frame.
+			this.clipFilters = [];
+			this.clipFiltersKey = entriesKey;
+			this.clipFilters = buildClipFilters(entries);
+			changed = true;
+		}
+
+		if (changed) this.syncContentFilters();
 	}
 
 	private createClipFilter(name: ResolvedClip["filter"]): pixi.Filter | null {
@@ -351,7 +369,9 @@ export abstract class Player extends Entity {
 
 	private syncContentFilters(): void {
 		// The render filters a clip before its transitions.
-		this.contentContainer.filters = [this.clipFilter, this.wipeFilter].filter((filter): filter is pixi.Filter => filter !== null);
+		this.contentContainer.filters = [...this.clipFilters.map(({ filter }) => filter), this.clipFilter, this.wipeFilter].filter(
+			(filter): filter is pixi.Filter => filter !== null
+		);
 	}
 
 	private updateWipeFilter(): void {
@@ -394,9 +414,12 @@ export abstract class Player extends Entity {
 	// The render blurs by whole pixels before applying the clip's scale, so a blur grows with scale and the zoom it is
 	// drawn at. Sizing it as each frame draws follows that zoom: the editor's on screen, 1:1 in a capture.
 	private sizeBlurs(): void {
-		if (!this.zoomBlurFilter && !(this.clipFilter instanceof pixi.BlurFilter)) return;
+		if (!this.zoomBlurFilter && !(this.clipFilter instanceof pixi.BlurFilter) && !this.clipFilters.length) return;
+		const time = this.getPlaybackTime();
 		const canvas = this.getContainer().parent?.getGlobalTransform();
-		const scale = (this.scaleKeyframeBuilder?.getValue(this.getPlaybackTime()) ?? 1) * (canvas ? Math.hypot(canvas.a, canvas.b) : 1);
+		const scale = (this.scaleKeyframeBuilder?.getValue(time) ?? 1) * (canvas ? Math.hypot(canvas.a, canvas.b) : 1);
+		// Filters take the on-screen scale, which is only known as the frame draws.
+		this.clipFilters.forEach(({ update }) => update(time, scale));
 		// pixi's Gaussian approximates the render's three box-blur passes.
 		if (this.zoomBlurFilter) this.zoomBlurFilter.strength = this.zoomBlurRadius * scale;
 		if (this.clipFilter instanceof pixi.BlurFilter) this.clipFilter.strength = CLIP_BLUR_STRENGTH * scale;
@@ -412,6 +435,9 @@ export abstract class Player extends Entity {
 		this.clipFilter?.destroy();
 		this.clipFilter = null;
 		this.clipFilterName = undefined;
+		this.clipFilters.forEach(({ filter }) => filter.destroy());
+		this.clipFilters = [];
+		this.clipFiltersKey = "[]";
 
 		this.contentContainer?.destroy();
 		this.lumaWrapper?.destroy();

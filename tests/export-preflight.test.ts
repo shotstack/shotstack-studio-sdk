@@ -93,6 +93,16 @@ describe("findEditIssues", () => {
 		expect(codes([clip({ asset: { type: "image", src: "https://example.com/a.png" }, filter: "greyscale" })])).toEqual(["filter"]);
 	});
 
+	it("reports clip filters as filter, and passes an empty list", () => {
+		const image = { type: "image", src: "https://example.com/a.png" } as const;
+		const filtered = clip({ id: "filtered", asset: image, filters: [{ type: "brightness", value: 0.2 }] });
+
+		expect(findEditIssues(editWith([filtered]), HD_BITRATE)).toEqual([
+			{ code: "filter", message: "Filters aren't available in the browser.", clipId: "filtered" }
+		]);
+		expect(codes([clip({ asset: image, filters: [] })])).toEqual([]);
+	});
+
 	it("reports HTML that isn't the plain text form as html", () => {
 		expect(codes([clip({ asset: { type: "html", html: "<table><tr><td>Hi</td></tr></table>" } })])).toEqual(["html"]);
 	});
