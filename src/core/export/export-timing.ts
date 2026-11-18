@@ -30,7 +30,11 @@ export function buildVolumeAutomation(volume: number | VolumeTween[] | undefined
 			points.push({ time: start, value: tween.from });
 			points.push({ time: end, value: tween.to });
 		}
-		return points.length ? points : [{ time: 0, value: 1 }];
+		if (!points.length) return [{ time: 0, value: 1 }];
+
+		// A GainNode sits at 1 before its first event, while the player holds the earliest tween's `from`.
+		const earliest = points.reduce((first, point) => (point.time < first.time ? point : first));
+		return earliest.time > 0 ? [{ time: 0, value: earliest.value }, ...points] : points;
 	}
 
 	const base = typeof volume === "number" ? volume : 1;

@@ -25,7 +25,9 @@
  * 17. Hide loading overlay (in finally block)
  */
 
+import { DuckLevelService } from "@core/audio/duck-levels";
 import { Edit } from "@core/edit-session";
+import { InternalEvent } from "@core/events/edit-events";
 import { ShotstackEdit } from "@core/shotstack-edit";
 import { PlayerType } from "@canvas/players/player";
 import type { EventEmitter } from "@core/events/event-emitter";
@@ -1345,4 +1347,49 @@ it("keeps same-source video failures separate for each clip", () => {
 	};
 	expect(edit.getClipError(0, 0)).toBeNull();
 	expect(edit.getClipError(0, 1)).not.toBeNull();
+});
+
+describe("duck levels", () => {
+	afterEach(() => jest.restoreAllMocks());
+
+	it("refreshes once loaded and after every resolve, and is disposed with the session", async () => {
+		const refresh = jest.spyOn(DuckLevelService.prototype, "refresh");
+		const dispose = jest.spyOn(DuckLevelService.prototype, "dispose");
+		const edit = new Edit(createMinimalEdit());
+
+		await edit.load();
+		expect(refresh).toHaveBeenLastCalledWith(edit.getResolvedEdit());
+
+		const resolved = edit.resolve();
+		expect(refresh).toHaveBeenLastCalledWith(resolved);
+
+		refresh.mockClear();
+		edit.resolveClip(edit.getClipId(0, 0) ?? "");
+		expect(refresh).toHaveBeenCalledWith(edit.getResolvedEdit());
+
+		edit.dispose();
+		expect(dispose).toHaveBeenCalledTimes(1);
+	});
+
+	it("announces levels once loaded, so players rebuild their dips when nothing is measured", async () => {
+		const refresh = jest.spyOn(DuckLevelService.prototype, "refresh");
+		const edit = new Edit(
+			createMinimalEdit([
+				{ clips: [{ alias: "voice", asset: { type: "audio", src: "https://example.com/voice.mp3" }, start: 2, length: 3 }] },
+				{
+					clips: [
+						{ asset: { type: "audio", src: "https://example.com/music.mp3", duck: { under: "alias://voice", volume: 0.2 } }, start: 0, length: 10 }
+					]
+				}
+			])
+		);
+		const changed = jest.fn();
+		edit.getInternalEvents().on(InternalEvent.DuckLevelsChanged, changed);
+
+		await edit.load();
+
+		expect(changed).toHaveBeenCalledTimes(1);
+		expect(refresh.mock.invocationCallOrder.at(-1)).toBeLessThan(changed.mock.invocationCallOrder[0]);
+		edit.dispose();
+	});
 });

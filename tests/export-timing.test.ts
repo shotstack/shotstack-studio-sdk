@@ -48,4 +48,23 @@ describe("buildVolumeAutomation", () => {
 			{ time: 1, value: 1 }
 		]);
 	});
+
+	it("holds the earliest keyframe's from value until it starts", () => {
+		expect(
+			buildVolumeAutomation(
+				[
+					{ from: 0.3, to: 1, start: 2, length: 1 },
+					{ from: 1, to: 0.6, start: 4, length: 1 }
+				],
+				undefined,
+				6
+			)
+		).toEqual([
+			{ time: 0, value: 0.3 },
+			{ time: 2, value: 0.3 },
+			{ time: 3, value: 1 },
+			{ time: 4, value: 1 },
+			{ time: 5, value: 0.6 }
+		]);
+	});
 });

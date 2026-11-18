@@ -58,6 +58,20 @@ function waitForLoads(edit: Pick<Edit, "whenSettled" | "getLoadingClipIds">, sig
 	return untilAborted(Promise.race([edit.whenSettled(), timedOut]), signal).finally(() => clearTimeout(timer));
 }
 
+// A stalled audio fetch can keep a measurement pending indefinitely. Past the timeout the mix uses the levels announced
+// so far and the default level for the rest, which is what preview plays. Levels are announced when a whole batch of
+// fetches lands, so one stalled fetch also holds back levels that need only the other files in its batch.
+function waitForDuckLevels(edit: Pick<Edit, "getDuckLevels">, signal?: AbortSignal): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timedOut = new Promise<void>(resolve => {
+		timer = setTimeout(() => {
+			console.warn(`Export: audio levels weren't all measured within ${ASSET_SETTLE_TIMEOUT_MS / 1000} seconds; the rest duck to the default level`);
+			resolve();
+		}, ASSET_SETTLE_TIMEOUT_MS);
+	});
+	return untilAborted(Promise.race([edit.getDuckLevels().whenSettled(), timedOut]), signal).finally(() => clearTimeout(timer));
+}
+
 export class ExportCoordinator {
 	private readonly edit: Edit;
 	private readonly app: pixi.Application;
@@ -151,6 +165,8 @@ export class ExportCoordinator {
 			output.addVideoTrack(videoSource);
 
 			report(0.15, "Mixing audio...");
+			// Players rebuild their ducked volume as measured levels land, and the mix reads those volumes.
+			if (!cfg.muted) await waitForDuckLevels(this.edit, signal);
 			const mixedAudio = cfg.muted ? null : await untilAborted(this.audioProcessor.renderMix(this.edit.getTracks(), this.edit.totalDuration), signal);
 			throwIfStopped();
 			let audioSource: AudioBufferSource | null = null;

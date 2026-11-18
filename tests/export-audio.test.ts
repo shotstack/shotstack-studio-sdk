@@ -23,15 +23,24 @@ function createBufferSource() {
 	return source;
 }
 
-const createGain = () => ({ gain: { setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn() }, connect: (node: unknown) => node });
+type Gain = { setValueAtTime: jest.Mock; linearRampToValueAtTime: jest.Mock };
 
-function mediaClip(playerType: PlayerType, asset: Record<string, unknown>, start: number, length: number): Player {
+const gains: Gain[] = [];
+
+function createGain() {
+	const gain: Gain = { setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn() };
+	gains.push(gain);
+	return { gain, connect: (node: unknown) => node };
+}
+
+function mediaClip(playerType: PlayerType, asset: Record<string, unknown>, start: number, length: number, player: object = {}): Player {
 	return {
 		clipId: `${playerType}-clip`,
 		playerType,
 		clipConfiguration: { asset },
 		getStart: () => start,
-		getLength: () => length
+		getLength: () => length,
+		...player
 	} as unknown as Player;
 }
 
@@ -51,6 +60,7 @@ beforeAll(() => {
 
 beforeEach(() => {
 	scheduled.length = 0;
+	gains.length = 0;
 });
 
 describe("AudioProcessor speed", () => {
@@ -117,5 +127,60 @@ describe("AudioProcessor failures", () => {
 		await expect(
 			new AudioProcessor().renderMix([[mediaClip(PlayerType.Video, { type: "video", src: "https://example.com/silent.mp4" }, 0, 4)]], 10)
 		).resolves.toBeNull();
+	});
+});
+
+describe("AudioProcessor ducking", () => {
+	const FADING = { type: "audio", src: "https://example.com/music.mp3", volume: 1, effect: "fadeIn" };
+	const MUSIC = { ...FADING, duck: { under: "alias://voice" } };
+
+	it("mixes a ducked clip at its effective volume with no separate fade", async () => {
+		const dip = [
+			{ from: 1, to: 0.1, start: 1, length: 0.3 },
+			{ from: 0.1, to: 1, start: 3, length: 0.3 }
+		];
+		await new AudioProcessor().renderMix(
+			[
+				[
+					mediaClip(PlayerType.Audio, MUSIC, 2, 6, { getEffectiveVolume: () => dip }),
+					mediaClip(PlayerType.Audio, MUSIC, 0, 6, { getEffectiveVolume: () => 0.5 })
+				]
+			],
+			10
+		);
+
+		expect(gains[0].setValueAtTime.mock.calls).toEqual([[1, 2]]);
+		expect(gains[0].linearRampToValueAtTime.mock.calls).toEqual([
+			[1, 3],
+			[0.1, 3.3],
+			[0.1, 5],
+			[1, 5.3]
+		]);
+		expect(gains[1].setValueAtTime.mock.calls).toEqual([[0.5, 0]]);
+		expect(gains[1].linearRampToValueAtTime).not.toHaveBeenCalled();
+	});
+
+	it("holds a ducked bed at its volume from the clip's start until its first dip", async () => {
+		const dip = [
+			{ from: 0.5, to: 0.1, start: 4.32, length: 0.3 },
+			{ from: 0.1, to: 0.5, start: 7, length: 0.3 }
+		];
+		const bed = { type: "audio", src: "https://example.com/music.mp3", volume: 0.5, duck: { under: "alias://voice" } };
+		await new AudioProcessor().renderMix([[mediaClip(PlayerType.Audio, bed, 1, 10, { getEffectiveVolume: () => dip })]], 12);
+
+		expect(gains[0].setValueAtTime.mock.calls).toEqual([[0.5, 1]]);
+		const [value, time] = gains[0].linearRampToValueAtTime.mock.calls[0];
+		expect(value).toBe(0.5);
+		expect(time).toBeCloseTo(5.32);
+	});
+
+	it("keeps the asset's volume and fade for a clip without duck", async () => {
+		await new AudioProcessor().renderMix([[mediaClip(PlayerType.Audio, { ...FADING, volume: 0.8 }, 0, 6, { getEffectiveVolume: () => 0.5 })]], 10);
+
+		expect(gains[0].setValueAtTime.mock.calls).toEqual([[0, 0]]);
+		expect(gains[0].linearRampToValueAtTime.mock.calls).toEqual([
+			[0.8, 2],
+			[0.8, 6]
+		]);
 	});
 });
