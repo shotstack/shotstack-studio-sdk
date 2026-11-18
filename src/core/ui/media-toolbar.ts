@@ -17,6 +17,7 @@ import type { AudioAsset, Duck, ResolvedClip } from "@schemas";
 import { injectShotstackStyles } from "@styles/inject";
 
 import { BaseToolbar } from "./base-toolbar";
+import { DuckPanel } from "./composites/DuckPanel";
 import { EffectPanel } from "./composites/EffectPanel";
 import { TransitionPanel } from "./composites/TransitionPanel";
 import { DragStateManager } from "./drag-state-manager";
@@ -120,6 +121,7 @@ export class MediaToolbar extends BaseToolbar {
 	// ─── Composite UI Components ─────────────────────────────────────────────────
 	private transitionPanel: TransitionPanel | null = null;
 	private effectPanel: EffectPanel | null = null;
+	private duckPanel: DuckPanel | null = null;
 	private opacitySlider: SliderControl | null = null;
 	private scaleSlider: SliderControl | null = null;
 	private mergeFieldManager: MergeFieldLabelManager | null = null;
@@ -138,6 +140,7 @@ export class MediaToolbar extends BaseToolbar {
 	private advancedBtn: HTMLButtonElement | null = null;
 	private audioFadeBtn: HTMLButtonElement | null = null;
 	private speedBtn: HTMLButtonElement | null = null;
+	private duckBtn: HTMLButtonElement | null = null;
 
 	// ─── Popup Elements ──────────────────────────────────────────────────────────
 	private fitPopup: HTMLDivElement | null = null;
@@ -149,6 +152,7 @@ export class MediaToolbar extends BaseToolbar {
 	private advancedPopup: HTMLDivElement | null = null;
 	private audioFadePopup: HTMLDivElement | null = null;
 	private speedPopup: HTMLDivElement | null = null;
+	private duckPopup: HTMLDivElement | null = null;
 
 	// ─── Other Elements ──────────────────────────────────────────────────────────
 	private fitLabel: HTMLSpanElement | null = null;
@@ -158,6 +162,7 @@ export class MediaToolbar extends BaseToolbar {
 	private volumeSection: HTMLDivElement | null = null;
 	private visualSection: HTMLDivElement | null = null;
 	private audioSection: HTMLDivElement | null = null;
+	private duckSection: HTMLDivElement | null = null;
 	private speedSection: HTMLDivElement | null = null;
 	private speedSlider: HTMLInputElement | null = null;
 	private speedValue: HTMLSpanElement | null = null;
@@ -360,6 +365,20 @@ export class MediaToolbar extends BaseToolbar {
 						</div>
 					</div>
 				</div>
+
+				<!-- Duck (audio assets only) -->
+				<div class="ss-media-toolbar-audio" data-duck-section>
+					<div class="ss-media-toolbar-divider"></div>
+					<div class="ss-media-toolbar-dropdown">
+						<button class="ss-media-toolbar-btn" data-action="duck">
+							<span>Duck</span>
+							${ICONS.chevron}
+						</button>
+						<div class="ss-media-toolbar-popup ss-media-toolbar-popup--duck" data-popup="duck">
+							<div data-duck-panel-mount></div>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			${
@@ -405,6 +424,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.advancedBtn = this.container.querySelector('[data-action="advanced"]');
 		this.audioFadeBtn = this.container.querySelector('[data-action="audio-fade"]');
 		this.speedBtn = this.container.querySelector('[data-action="speed"]');
+		this.duckBtn = this.container.querySelector('[data-action="duck"]');
 
 		this.fitPopup = this.container.querySelector('[data-popup="fit"]');
 		this.opacityPopup = this.container.querySelector('[data-popup="opacity"]');
@@ -415,6 +435,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.advancedPopup = this.container.querySelector('[data-popup="advanced"]');
 		this.audioFadePopup = this.container.querySelector('[data-popup="audio-fade"]');
 		this.speedPopup = this.container.querySelector('[data-popup="speed"]');
+		this.duckPopup = this.container.querySelector('[data-popup="duck"]');
 
 		this.fitLabel = this.container.querySelector("[data-fit-label]");
 		this.volumeValue = this.container.querySelector("[data-volume-value]");
@@ -423,6 +444,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeSection = this.container.querySelector("[data-volume-section]");
 		this.visualSection = this.container.querySelector("[data-visual-section]");
 		this.audioSection = this.container.querySelector("[data-audio-section]");
+		this.duckSection = this.container.querySelector("[data-duck-section]");
 		this.speedSection = this.container.querySelector("[data-speed-section]");
 		this.speedSlider = this.container.querySelector("[data-speed-slider]");
 		this.speedValue = this.container.querySelector("[data-speed-value]");
@@ -531,6 +553,12 @@ export class MediaToolbar extends BaseToolbar {
 			this.effectPanel.onChange(() => this.applyEffect());
 			this.effectPanel.mount(effectMount as HTMLElement);
 		}
+
+		const duckMount = this.container?.querySelector("[data-duck-panel-mount]");
+		if (duckMount) {
+			this.duckPanel = new DuckPanel(this.edit);
+			this.duckPanel.mount(duckMount as HTMLElement);
+		}
 	}
 
 	private setupEventListeners(): void {
@@ -608,6 +636,15 @@ export class MediaToolbar extends BaseToolbar {
 			e => {
 				e.stopPropagation();
 				this.togglePopupByName("speed");
+			},
+			{ signal }
+		);
+		this.duckBtn?.addEventListener(
+			"click",
+			e => {
+				e.stopPropagation();
+				this.duckPanel?.sync();
+				this.togglePopupByName("duck");
 			},
 			{ signal }
 		);
@@ -753,7 +790,9 @@ export class MediaToolbar extends BaseToolbar {
 		this.syncState();
 	}
 
-	private togglePopupByName(popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade" | "speed"): void {
+	private togglePopupByName(
+		popup: "fit" | "opacity" | "scale" | "volume" | "transition" | "effect" | "advanced" | "audio-fade" | "speed" | "duck"
+	): void {
 		const popupMap = {
 			fit: { popup: this.fitPopup, btn: this.fitBtn },
 			opacity: { popup: this.opacityPopup, btn: this.opacityBtn },
@@ -763,7 +802,8 @@ export class MediaToolbar extends BaseToolbar {
 			effect: { popup: this.effectPopup, btn: this.effectBtn },
 			advanced: { popup: this.advancedPopup, btn: this.advancedBtn },
 			"audio-fade": { popup: this.audioFadePopup, btn: this.audioFadeBtn },
-			speed: { popup: this.speedPopup, btn: this.speedBtn }
+			speed: { popup: this.speedPopup, btn: this.speedBtn },
+			duck: { popup: this.duckPopup, btn: this.duckBtn }
 		};
 
 		const isCurrentlyOpen = popupMap[popup].popup?.classList.contains("visible");
@@ -788,6 +828,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.advancedBtn?.classList.remove("active");
 		this.audioFadeBtn?.classList.remove("active");
 		this.speedBtn?.classList.remove("active");
+		this.duckBtn?.classList.remove("active");
 	}
 
 	protected override getPopupList(): (HTMLElement | null)[] {
@@ -800,7 +841,8 @@ export class MediaToolbar extends BaseToolbar {
 			this.effectPopup,
 			this.advancedPopup,
 			this.audioFadePopup,
-			this.speedPopup
+			this.speedPopup,
+			this.duckPopup
 		];
 	}
 
@@ -866,6 +908,8 @@ export class MediaToolbar extends BaseToolbar {
 		if (this.audioSection) {
 			this.audioSection.classList.toggle("hidden", !AUDIO_FADE_ASSET_TYPES.has(this.assetType));
 		}
+		// The API defines `duck` on audio assets only, so text-to-speech keeps Fade without it.
+		this.duckSection?.classList.toggle("hidden", this.assetType !== "audio");
 
 		// Show/hide speed section (only for types whose preview honours speed)
 		if (this.speedSection) {
@@ -1379,10 +1423,18 @@ export class MediaToolbar extends BaseToolbar {
 	private syncDuckState(clip: ResolvedClip): void {
 		const audio = this.assetType === "audio";
 		const ducking = audio && Boolean((clip.asset as AudioAsset).duck);
+		this.duckPanel?.setClip(this.selectedTrackIdx, this.selectedClipIdx);
+		const reason = audio ? (this.duckPanel?.blocker() ?? "") : "";
+		if (this.duckBtn) {
+			// Left enabled while ducking, so an imported edit that breaks a rule can still be switched off.
+			this.duckBtn.disabled = Boolean(reason) && !ducking;
+			this.duckBtn.title = reason;
+		}
 		if (this.speedBtn) {
 			this.speedBtn.disabled = ducking;
 			this.speedBtn.title = ducking ? "Turn off ducking to change speed" : "";
 		}
+		if (audio && this.isPopupOpen(this.duckPopup)) this.duckPanel?.sync();
 	}
 
 	private applyClipUpdate(updates: Record<string, unknown>): void {
@@ -1605,6 +1657,7 @@ export class MediaToolbar extends BaseToolbar {
 		// Dispose composite components
 		this.transitionPanel?.dispose();
 		this.effectPanel?.dispose();
+		this.duckPanel?.dispose();
 		this.opacitySlider?.dispose();
 		this.scaleSlider?.dispose();
 
@@ -1618,6 +1671,7 @@ export class MediaToolbar extends BaseToolbar {
 
 		this.transitionPanel = null;
 		this.effectPanel = null;
+		this.duckPanel = null;
 		this.opacitySlider = null;
 		this.scaleSlider = null;
 
@@ -1633,6 +1687,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.advancedBtn = null;
 		this.audioFadeBtn = null;
 		this.speedBtn = null;
+		this.duckBtn = null;
 
 		this.fitPopup = null;
 		this.opacityPopup = null;
@@ -1643,6 +1698,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.advancedPopup = null;
 		this.audioFadePopup = null;
 		this.speedPopup = null;
+		this.duckPopup = null;
 
 		this.fitLabel = null;
 		this.volumeSlider = null;
@@ -1651,6 +1707,7 @@ export class MediaToolbar extends BaseToolbar {
 		this.volumeSection = null;
 		this.visualSection = null;
 		this.audioSection = null;
+		this.duckSection = null;
 		this.speedSection = null;
 		this.speedSlider = null;
 		this.speedValue = null;
