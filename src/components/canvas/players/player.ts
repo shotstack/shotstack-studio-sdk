@@ -23,7 +23,7 @@ import * as pixi from "pixi.js";
 
 import { Entity } from "../../../core/shared/entity";
 
-import { type BuiltClipFilter, buildClipFilters } from "./clip-filters";
+import { type BuiltClipFilter, buildClipFilters, CLIP_BLUR_STRENGTH } from "./clip-filters";
 import { COLOR_FILTERS, ColorFilter } from "./color-filter";
 
 /**
@@ -69,9 +69,6 @@ const FILTERED_PLAYERS = new Set([
 	PlayerType.TextToImage,
 	PlayerType.RichCaption
 ]);
-
-// pixi's Gaussian at this strength spreads as far as the render's radius-10 box blur (σ ≈ 6.06 px).
-const CLIP_BLUR_STRENGTH = 4.69;
 
 /**
  * Base class for all visual content players in the canvas.
@@ -417,12 +414,28 @@ export abstract class Player extends Entity {
 		if (!this.zoomBlurFilter && !(this.clipFilter instanceof pixi.BlurFilter) && !this.clipFilters.length) return;
 		const time = this.getPlaybackTime();
 		const canvas = this.getContainer().parent?.getGlobalTransform();
-		const scale = (this.scaleKeyframeBuilder?.getValue(time) ?? 1) * (canvas ? Math.hypot(canvas.a, canvas.b) : 1);
+		const clipScale = this.scaleKeyframeBuilder?.getValue(time) ?? 1;
+		const scale = clipScale * (canvas ? Math.hypot(canvas.a, canvas.b) : 1);
+		const upscale = this.getFrameUpscale();
+		const frameScale = scale * upscale;
 		// Filters take the on-screen scale, which is only known as the frame draws.
-		this.clipFilters.forEach(({ update }) => update(time, scale));
+		if (this.clipFilters.length) {
+			// Their frame is the content as pixi draws it: its bounds inside any mask, at the container's scale without the
+			// scaling the render applies after it filters. A clip scaled to nothing draws nothing, so its frame is left empty.
+			const bounds = this.contentContainer.getLocalBounds();
+			const drawn = this.getContainer().scale;
+			const afterFilter = clipScale * upscale || 1;
+			const frame = { width: (bounds.width * drawn.x) / afterFilter, height: (bounds.height * drawn.y) / afterFilter };
+			this.clipFilters.forEach(({ update }) => update(time, frameScale, frame));
+		}
 		// pixi's Gaussian approximates the render's three box-blur passes.
 		if (this.zoomBlurFilter) this.zoomBlurFilter.strength = this.zoomBlurRadius * scale;
-		if (this.clipFilter instanceof pixi.BlurFilter) this.clipFilter.strength = CLIP_BLUR_STRENGTH * scale;
+		if (this.clipFilter instanceof pixi.BlurFilter) this.clipFilter.strength = CLIP_BLUR_STRENGTH * frameScale;
+	}
+
+	/** How much larger the clip draws than the frame the render filters, before the clip's own scale. */
+	protected getFrameUpscale(): number {
+		return 1;
 	}
 
 	public override dispose(): void {

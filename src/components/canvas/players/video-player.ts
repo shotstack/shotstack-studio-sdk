@@ -1,5 +1,6 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
+import { calculateFitScale, type FitMode } from "@core/layout/fit-system";
 import { toLoadUrl } from "@core/shared/utils";
 import { type Size } from "@layouts/geometry";
 import { type ResolvedClip, type VideoAsset } from "@schemas";
@@ -200,6 +201,14 @@ export class VideoPlayer extends Player {
 		}
 
 		return this.placeholder ? this.getDisplaySize() : { width: 0, height: 0 };
+	}
+
+	// The render filters a video at its own size when that is smaller than the size it draws at, and upscales after.
+	protected override getFrameUpscale(): number {
+		const source = this.sprite?.texture;
+		if (!source?.width || !source.height) return 1;
+		const fit = (this.clipConfiguration.fit ?? "crop") as FitMode;
+		return Math.max(1, calculateFitScale(source, this.getDisplaySize(), fit));
 	}
 
 	public override supportsEdgeResize(): boolean {
