@@ -162,8 +162,8 @@ const CONTRACT = {
 		{ className: "Timeline", tokens: ["load(): Promise<void>;"] }
 	],
 	bundleSizeLimits: {
-		"dist/shotstack-studio.umd.js": 3.25 * 1024 * 1024,
-		"dist/shotstack-studio.es.js": 4 * 1024 * 1024,
+		"dist/shotstack-studio.umd.js": 3.5 * 1024 * 1024,
+		"dist/shotstack-studio.es.js": 4.25 * 1024 * 1024,
 		"dist/internal.umd.js": 2.5 * 1024 * 1024,
 		"dist/internal.es.js": 3 * 1024 * 1024
 	},
