@@ -42,6 +42,8 @@ export function aliases(dirname: string): Record<string, string> {
 		"@export": resolve(dirname, "src/core/export"),
 		"@styles": resolve(dirname, "src/styles"),
 		"@templates": resolve(dirname, "src/templates"),
+		// Vite takes the first matching key and a key also matches `key/...`, so the subpath must precede the bare package.
+		"@shotstack/shotstack-canvas/duck": resolve(dirname, "node_modules/@shotstack/shotstack-canvas/dist/duck.js"),
 		"@shotstack/shotstack-canvas": resolve(dirname, "node_modules/@shotstack/shotstack-canvas/dist/entry.web.js")
 	};
 }
