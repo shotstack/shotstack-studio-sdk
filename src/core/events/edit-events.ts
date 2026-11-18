@@ -124,6 +124,9 @@ export const InternalEvent = {
 	// Resolution - document to resolved edit transformation
 	Resolved: "resolved",
 
+	// Measured duck levels landed or changed
+	DuckLevelsChanged: "duck:levelsChanged",
+
 	// Edit → Canvas visual sync
 	PlayerAddedToTrack: "player:addedToTrack",
 	PlayerMovedBetweenTracks: "player:movedBetweenTracks",
@@ -217,6 +220,7 @@ export type InternalEventMap = {
 
 	// Resolution
 	[InternalEvent.Resolved]: { edit: ResolvedEdit };
+	[InternalEvent.DuckLevelsChanged]: Record<string, never>;
 
 	// Edit → Canvas visual sync
 	[InternalEvent.PlayerAddedToTrack]: { player: Player; trackIndex: number };

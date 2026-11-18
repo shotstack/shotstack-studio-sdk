@@ -1,6 +1,7 @@
 import { type Player, PlayerType } from "@canvas/players/player";
 import { PlayerFactory } from "@canvas/players/player-factory";
 import type { Canvas } from "@canvas/shotstack-canvas";
+import { DuckLevelService } from "@core/audio/duck-levels";
 // TODO: Consolidate commands - many have overlapping concerns and could be unified
 import { tryParseClipJson, tryParseTracksJson } from "@core/clipboard/clip-json";
 import { insertClipWithOverlapPolicy } from "@core/clipboard/paste-dispatcher";
@@ -122,6 +123,7 @@ export class Edit {
 	private lumaMaskController: LumaMaskController;
 	private playerReconciler: PlayerReconciler;
 	private assetGenerator: AssetGenerator;
+	private duckLevels: DuckLevelService;
 	/** @internal */
 	public generationSettings?: GenerationSettingsHandler;
 	private outputSettings!: OutputSettingsManager;
@@ -154,6 +156,8 @@ export class Edit {
 		for (const track of edit.timeline.tracks) for (const clip of track.clips) live.add(clip.id);
 		this.assetGenerator.abortMissing(live);
 	};
+
+	private readonly onResolvedForDucking = ({ edit }: { edit: ResolvedEdit }): void => this.duckLevels.refresh(edit);
 
 	// Clearing the key on deselection lets a re-selected clip announce itself again.
 	private emitGenerationConfig = (): void => {
@@ -228,6 +232,8 @@ export class Edit {
 			emitStatusChanged: clipId => this.internalEvents.emit(InternalEvent.GenerationStatusChanged, { clipId })
 		});
 		this.mergeFieldService = new MergeFieldService(this.internalEvents);
+		this.duckLevels = new DuckLevelService(this.internalEvents);
+		this.internalEvents.on(InternalEvent.Resolved, this.onResolvedForDucking);
 		this.outputSettings = new OutputSettingsManager(this);
 		this.selectionManager = new SelectionManager(this);
 		this.timingManager = new TimingManager(this);
@@ -305,6 +311,11 @@ export class Edit {
 		// 10. Update total duration
 		this.updateTotalDuration();
 
+		// Loading resolves without announcing it, so nothing else would measure this edit's dips.
+		this.duckLevels.refresh(this.getResolvedEdit());
+		// Players built their dips at step 7, before timing resolved, and a Custom or unmeasurable dip never gets a level to rebuild on.
+		this.internalEvents.emit(InternalEvent.DuckLevelsChanged, {});
+
 		// 11. Load soundtrack if present
 		if (parsedEdit.timeline.soundtrack) {
 			await this.loadSoundtrack(parsedEdit.timeline.soundtrack);
@@ -342,8 +353,10 @@ export class Edit {
 		this.generationSettings = undefined;
 		this.clearClips();
 		this.internalEvents.off(InternalEvent.Resolved, this.onResolvedForGeneration);
+		this.internalEvents.off(InternalEvent.Resolved, this.onResolvedForDucking);
 		for (const name of Edit.GenerationConfigTriggers) this.internalEvents.off(name, this.emitGenerationConfig);
 		this.assetGenerator.abortAll();
+		this.duckLevels.dispose();
 		this.lumaMaskController.dispose();
 		this.playerReconciler.dispose();
 
@@ -694,6 +707,11 @@ export class Edit {
 		return this.lastResolved;
 	}
 
+	/** @internal */
+	public getDuckLevels(): DuckLevelService {
+		return this.duckLevels;
+	}
+
 	/**
 	 * Get a specific clip from the resolved edit.
 	 * @internal
@@ -809,6 +827,8 @@ export class Edit {
 			if (cachedTrack && cachedTrack.clips[result.clipIndex]) {
 				cachedTrack.clips[result.clipIndex] = result.resolved;
 			}
+			// This path skips Resolved, but a resized bed still changes the windows its dips are measured over.
+			this.duckLevels.refresh(this.lastResolved);
 		}
 
 		// Update the player via the reconciler's single-player update

@@ -1,8 +1,10 @@
 import { KeyframeBuilder } from "@animations/keyframe-builder";
 import type { Edit } from "@core/edit-session";
+import { InternalEvent } from "@core/events/edit-events";
 import { type Size } from "@layouts/geometry";
 import { AudioLoadParser } from "@loaders/audio-load-parser";
 import { type AudioAsset, type ResolvedClip, type Keyframe } from "@schemas";
+import { duckedVolumeFor, scanDucking } from "@shotstack/shotstack-canvas/duck";
 import * as howler from "howler";
 import * as pixi from "pixi.js";
 
@@ -13,6 +15,8 @@ export class AudioPlayer extends Player {
 	private isPlaying: boolean;
 
 	private volumeKeyframeBuilder: KeyframeBuilder | undefined;
+	private effectiveVolume: Keyframe[] | number = 1;
+	private disposed = false;
 
 	private syncTimer: number;
 
@@ -51,6 +55,12 @@ export class AudioPlayer extends Player {
 		this.audioResource.volume(this.getVolume());
 
 		this.configureKeyframes();
+
+		// dispose() can run during the awaits above; subscribing after it would never be undone.
+		if (this.disposed) return;
+		const events = this.edit.getInternalEvents();
+		events.on(InternalEvent.Resolved, this.rebuildDuckedVolume);
+		events.on(InternalEvent.DuckLevelsChanged, this.rebuildDuckedVolume);
 	}
 
 	public override update(deltaTime: number, elapsed: number): void {
@@ -111,6 +121,11 @@ export class AudioPlayer extends Player {
 	}
 
 	public override dispose(): void {
+		this.disposed = true;
+		const events = this.edit.getInternalEvents();
+		events.off(InternalEvent.Resolved, this.rebuildDuckedVolume);
+		events.off(InternalEvent.DuckLevelsChanged, this.rebuildDuckedVolume);
+
 		if (this.audioResource) {
 			this.audioResource.stop();
 			this.audioResource.unload();
@@ -167,6 +182,11 @@ export class AudioPlayer extends Player {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
 	}
 
+	/** The volume the keyframes were built from, clip-local, with any fade or dips already applied. */
+	public getEffectiveVolume(): Keyframe[] | number {
+		return this.effectiveVolume;
+	}
+
 	public override getSourceDuration(): number | null {
 		const duration = this.audioResource?.duration();
 		return typeof duration === "number" && duration > 0 ? duration : null;
@@ -183,14 +203,27 @@ export class AudioPlayer extends Player {
 		return typeof audioAsset.volume === "number" ? audioAsset.volume : 1;
 	}
 
+	// A clip's dips follow the clips it ducks under, which can move without this clip changing.
+	private readonly rebuildDuckedVolume = (): void => {
+		if ((this.clipConfiguration.asset as AudioAsset).duck) this.rebuildVolumeKeyframeBuilder();
+	};
+
 	private rebuildVolumeKeyframeBuilder(): void {
 		const audioAsset = this.clipConfiguration.asset as AudioAsset;
 		const baseVolume = this.getBaseVolume();
-		this.volumeKeyframeBuilder = new KeyframeBuilder(this.createVolumeKeyframes(audioAsset, baseVolume));
+		this.effectiveVolume = this.createVolumeKeyframes(audioAsset, baseVolume);
+		this.volumeKeyframeBuilder = new KeyframeBuilder(this.effectiveVolume);
 	}
 
 	private createVolumeKeyframes(asset: AudioAsset, baseVolume: number): Keyframe[] | number {
 		const { effect, volume } = asset;
+
+		if (asset.duck) {
+			const resolved = this.edit.getResolvedEdit();
+			const clip = resolved.timeline.tracks.flatMap(track => track.clips).find(({ id }) => id === this.clipId) ?? this.clipConfiguration;
+			// The dips already carry the asset's fade.
+			return duckedVolumeFor(clip, scanDucking(resolved).aliases, this.edit.getDuckLevels().levelsFor(clip.id));
+		}
 
 		if (!effect || effect === "none" || Array.isArray(volume)) {
 			return volume ?? 1;

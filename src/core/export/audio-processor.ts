@@ -1,3 +1,4 @@
+import type { AudioPlayer } from "@canvas/players/audio-player";
 import { PlayerType, type Player } from "@canvas/players/player";
 import { createAnimatedSpeed } from "@canvas/players/video-player";
 import type { VideoAsset } from "@schemas";
@@ -131,8 +132,11 @@ export class AudioProcessor {
 	private asAudioClip(clip: Player): AudioBearingClip | null {
 		if (!AUDIO_BEARING.has(clip.playerType)) return null;
 		const asset = clip.clipConfiguration?.asset as
-			{ src?: unknown; trim?: number; volume?: unknown; volumeEffect?: string; effect?: string; speed?: VideoAsset["speed"] } | undefined;
+			| { src?: unknown; trim?: number; volume?: unknown; volumeEffect?: string; effect?: string; speed?: VideoAsset["speed"]; duck?: unknown }
+			| undefined;
 		if (typeof asset?.src !== "string" || !asset.src) return null;
+		// The preview's ducked volume already carries the fade, so it must not be applied again.
+		const ducked = Boolean(asset.duck) && clip.playerType === PlayerType.Audio;
 
 		return {
 			clipId: clip.clipId,
@@ -141,8 +145,8 @@ export class AudioProcessor {
 			start: clip.getStart(),
 			length: clip.getLength(),
 			trim: asset.trim ?? 0,
-			volume: asset.volume as number | VolumeTween[] | undefined,
-			effect: asset.volumeEffect ?? asset.effect,
+			volume: (ducked ? (clip as AudioPlayer).getEffectiveVolume() : asset.volume) as number | VolumeTween[] | undefined,
+			effect: ducked ? undefined : (asset.volumeEffect ?? asset.effect),
 			speed: asset.speed
 		};
 	}

@@ -88,6 +88,8 @@ function createHarness() {
 		getResolvedEdit: () => ({ timeline: { tracks: [] }, output: { format: "mp4" } }),
 		getFontUrlByFamilyAndWeight: () => null,
 		whenSettled: jest.fn(() => Promise.resolve()),
+		duckLevels: { whenSettled: jest.fn(() => Promise.resolve()) },
+		getDuckLevels: () => edit.duckLevels,
 		getLoadingClipIds: jest.fn(() => [] as string[]),
 		getTracks: () => edit.tracks,
 		getClipError: jest.fn<{ error: string; assetType: string } | null, [number, number]>(() => null),
@@ -407,6 +409,57 @@ describe("output settings", () => {
 		edit.getEdit.mockReturnValue({ output: { fps: 2, mute: true } });
 		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
 		exporter.dispose();
+	});
+
+	it("mixes audio only once the duck levels have settled", async () => {
+		const { exporter, edit } = createHarness();
+		const order: string[] = [];
+		edit.duckLevels.whenSettled.mockImplementation(async () => {
+			await null;
+			order.push("settled");
+		});
+		mockRenderMix.mockImplementation(async () => {
+			order.push("mixed");
+			return null;
+		});
+
+		await exporter.exportBlob();
+
+		expect(order).toEqual(["settled", "mixed"]);
+		exporter.dispose();
+	});
+
+	it("mixes with the levels measured so far when they haven't settled by the timeout", async () => {
+		jest.useFakeTimers();
+		const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+		const { exporter, edit } = createHarness();
+		edit.duckLevels.whenSettled.mockReturnValue(new Promise<void>(() => {}));
+
+		const result = exporter.exportBlob();
+		await jest.advanceTimersByTimeAsync(ASSET_SETTLE_TIMEOUT_MS - 1);
+		expect(mockRenderMix).not.toHaveBeenCalled();
+		await jest.advanceTimersByTimeAsync(1);
+
+		await expect(result).resolves.toBeInstanceOf(Blob);
+		expect(mockRenderMix).toHaveBeenCalledTimes(1);
+		expect(warn).toHaveBeenCalledTimes(1);
+		warn.mockRestore();
+		exporter.dispose();
+		jest.useRealTimers();
+	});
+
+	it("neither warns nor leaves a timer behind when the duck levels settle first", async () => {
+		jest.useFakeTimers();
+		const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+		const { exporter } = createHarness();
+
+		await expect(exporter.exportBlob()).resolves.toBeInstanceOf(Blob);
+
+		expect(warn).not.toHaveBeenCalled();
+		expect(jest.getTimerCount()).toBe(0);
+		warn.mockRestore();
+		exporter.dispose();
+		jest.useRealTimers();
 	});
 
 	it("tags the video as limited range even when the encoder reports full range", async () => {
