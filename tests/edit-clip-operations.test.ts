@@ -1050,6 +1050,33 @@ describe("Edit Clip Operations", () => {
 		});
 	});
 
+	describe("mute", () => {
+		it("keeps a clip's mute through load and export", async () => {
+			const mutedEdit = new Edit({
+				timeline: {
+					tracks: [
+						{
+							clips: [
+								{
+									asset: { type: "audio", src: "https://example.com/voice.mp3", mute: { words: ["bob"], sound: "bleep" } },
+									start: 0,
+									length: 5
+								}
+							]
+						}
+					]
+				},
+				output: { size: { width: 1920, height: 1080 }, format: "mp4" }
+			});
+			await mutedEdit.load();
+
+			expect(mutedEdit.getEdit().timeline.tracks[0]?.clips[0]?.asset).toMatchObject({
+				mute: { words: ["bob"], sound: "bleep" }
+			});
+			mutedEdit.dispose();
+		});
+	});
+
 	describe("clip operations undo integration", () => {
 		it("addClip undo removes the added clip", async () => {
 			await edit.addClip(0, createVideoClip(0, 5));
