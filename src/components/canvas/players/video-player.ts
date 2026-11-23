@@ -129,19 +129,15 @@ export class VideoPlayer extends Player {
 		const desyncThreshold = 0.3;
 
 		if (shouldClipPlay) {
+			this.applyPlaybackVolume();
 			if (!this.isPlaying) {
 				this.isPlaying = true;
 				this.activeSyncTimer = 0;
-				this.texture.source.resource.volume = this.getVolume();
 				// Preserve the prepared frame unless playback has moved substantially.
 				if (Math.abs(this.texture.source.resource.currentTime - sourceTime) > desyncThreshold) {
 					this.texture.source.resource.currentTime = sourceTime;
 				}
 				this.texture.source.resource.play().catch(console.error);
-			}
-
-			if (this.texture.source.resource.volume !== this.getVolume()) {
-				this.texture.source.resource.volume = this.getVolume();
 			}
 
 			if (this.texture.source.resource.playbackRate !== speed) {
@@ -257,7 +253,7 @@ export class VideoPlayer extends Player {
 		}
 
 		const loadUrl = toLoadUrl(src);
-		const loadOptions: pixi.UnresolvedAsset = { src: loadUrl, data: { autoPlay: false, muted: false } };
+		const loadOptions: pixi.UnresolvedAsset = { src: loadUrl, data: { autoPlay: false, muted: videoAsset.volume === 0 } };
 
 		// Use unique loader to create independent video element per player
 		// This prevents conflicts when multiple clips use the same video source
@@ -298,10 +294,8 @@ export class VideoPlayer extends Player {
 		this.sprite = new pixi.Sprite(this.texture);
 		this.contentContainer.addChild(this.sprite);
 
-		// Set initial volume immediately so the element never sits at the browser default of 1.0
-		this.texture.source.resource.volume = this.getVolume();
-
-		this.texture.source.resource.preservesPitch = false;
+		this.applyPlaybackVolume();
+		video.preservesPitch = false;
 	}
 
 	private disposeVideo(): void {
@@ -335,6 +329,19 @@ export class VideoPlayer extends Player {
 
 	public getVolume(): number {
 		return this.volumeKeyframeBuilder.getValue(this.getPlaybackTime());
+	}
+
+	private applyPlaybackVolume(): void {
+		const video = this.texture?.source.resource;
+		if (!video) return;
+
+		// iOS can ignore volume writes, so a clip configured at zero needs an explicit mute.
+		const muted = (this.clipConfiguration.asset as VideoAsset).volume === 0;
+		if (!muted) {
+			const volume = this.getVolume();
+			if (video.volume !== volume) video.volume = volume;
+		}
+		if (video.muted !== muted) video.muted = muted;
 	}
 
 	public override getAssetSpeed(): number {

@@ -220,6 +220,40 @@ function createVideoTexture(width: number, height: number) {
 }
 
 describe("media player fallbacks", () => {
+	it("mutes zero-volume clips even when the browser ignores volume writes", async () => {
+		const edit = createEdit();
+		const video = document.createElement("video");
+		const setVolume = jest.fn();
+		const play = jest.fn(() => Promise.resolve(video.muted));
+		Object.defineProperties(video, {
+			readyState: { value: 4 },
+			volume: { get: () => 1, set: setVolume },
+			play: { value: play }
+		});
+		const texture = new pixi.Texture({ source: new pixi.VideoSource({ resource: video }) });
+		edit.assetLoader.loadVideoUnique.mockResolvedValueOnce(texture);
+		const asset = { type: "video" as const, src: "https://example.com/video.mp4", volume: 0 };
+		const player = new VideoPlayer(edit as never, { ...createVideoClip(), asset });
+		await player.load();
+
+		expect(edit.assetLoader.loadVideoUnique).toHaveBeenCalledWith(expect.any(String), {
+			src: expect.any(String),
+			data: { autoPlay: false, muted: true }
+		});
+		expect(video.muted).toBe(true);
+		edit.isPlaying = true;
+		player.update(0, 16);
+		expect(play).toHaveBeenCalledTimes(1);
+		await expect(play.mock.results[0].value).resolves.toBe(true);
+		expect(setVolume).not.toHaveBeenCalled();
+
+		asset.volume = 0.35;
+		player.reconfigureAfterRestore();
+		player.update(0, 16);
+		expect(video.muted).toBe(false);
+		expect(setVolume).toHaveBeenLastCalledWith(0.35);
+	});
+
 	it.each([1, 1.5])("prepares trimmed frames before display and after rewind at speed %s", async speed => {
 		const edit = createEdit();
 		edit.playbackTime = 12.47;
