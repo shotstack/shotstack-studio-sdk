@@ -168,6 +168,7 @@ function createMockEdit(overrides: Record<string, unknown> = {}) {
 		updateClip: jest.fn(),
 		deleteClip: jest.fn(),
 		canDeleteClip: jest.fn(() => true),
+		getGenerationModels: jest.fn(() => []),
 		getToolbarButtons: jest.fn((): ToolbarButtonConfig[] => []),
 		getSelectedClipInfo: jest.fn((): { trackIndex: number; clipIndex: number } | null => null),
 		hasAssetGenerator: jest.fn(() => false),
